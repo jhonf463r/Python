@@ -1,18 +1,18 @@
-## 2026-10-13 CURRENT ROUTING OVERLAY — DESKTOP PROVENANCE UNAVAILABLE; APP SERVER SOURCE GATE
+## 2026-10-13 CURRENT ROUTING OVERLAY — CODEX APP SERVER AUTH MODE UNRESOLVED
 
-Canonical result: [CHAT-ARCH-2026-10-13-234-desktop-provenance-unavailable-appserver-next.md](./CHAT-ARCH-2026-10-13-234-desktop-provenance-unavailable-appserver-next.md).
+Canonical constraint: [CHAT-ARCH-2026-10-13-235-codex-plan-entitlement-auth-mode.md](./CHAT-ARCH-2026-10-13-235-codex-plan-entitlement-auth-mode.md).
 
-**Owner objective:** a governed `IABV → Codex → IABV` development handoff with explicit intent, one-use approval, correlated result and evaluation by the existing consumer.
+**Owner objective:** governed `IABV → Codex → IABV` development handoff, followed by the separate D016 code-evolution loop.
 
-**Latest result:** `LAUNCH_PROVENANCE_UNAVAILABLE`. The reported Desktop process/window identity is known, but available evidence does not show that the live process uses IABV's capture home. This is not evidence of a mismatch. Do not repeat the window scan or broaden process inspection.
+**Latest Desktop result:** `LAUNCH_PROVENANCE_UNAVAILABLE`. The existing window/process was identified in the report, but its active capture home was not proven. This is not evidence of a mismatch; do not repeat invasive process inspection.
 
-**First open edge:** `CODEX_APP_SERVER_PREFLIGHT_AUTH_HOME_AND_TASK_POLICY_UNRESOLVED`.
+**First open edge:** `CODEX_APP_SERVER_AUTH_MODE_AND_ENTITLEMENT_UNRESOLVED`. Codex's official help distinguishes native Codex Local/CLI, included in Free with usage limits, from the separate SIWC third-party app path for ChatGPT-plan usage, which has eligible Plus/Pro conditions. Do not assume the candidate adapter uses one mode without reading its source.
 
-**Next action:** Codex performs a bounded read-only source/configuration review of the existing App Server path only: what `preflight()` checks vs. normal dispatch; source-supported existing authentication/home selection without a billable API route; task-specific tool policy that prevents effects before execution; and terminal result correlation/consumer evaluation. No App Server invocation, processes, network, UI/CDP, tests or code changes. Stop before any question requiring runtime or additional permission.
+**Next action:** bounded read-only source/config audit of the existing App Server adapter: identify its exact auth mode and `CODEX_HOME`; determine what `preflight()` checks and whether dispatch omits it; assess whether task-specific tool policy prevents effects before execution; trace terminal correlation to the existing consumer. No credential inspection, environment dump, App Server invocation, process, network, UI/CDP, tests, source edits, OAuth setup, API key, additional spend, installation or download.
 
-**Preservation/cost:** last reported worktree `codex/m0a-safe-ui-boot`, HEAD `5b1d89022ee4cdc63c1f88e050f086b40a42875c`, 56 tracked modifications and 5 untracked items. Preserve all content, including reported modified `.pyc` files. These are report-derived, not newly measured. No paid API key, additional spend, installation, download or provider expansion.
+**Preservation:** preserve reported worktree `codex/m0a-safe-ui-boot`, HEAD `5b1d89022ee4cdc63c1f88e050f086b40a42875c`, 56 tracked modifications and 5 untracked items. These are actor-reported and not newly measured. No cleanup or Git mutation.
 
-**Separate routes:** ChatGPT Web remains `TARGET_DISCOVERY_BLOCKED`; Ollama remains `WIRED_REPORTED / SYNTHETIC_TESTS_REPORTED / LIVE_INFERENCE_UNPROVEN`; Desktop remains unable to prove capture-home linkage; App Server is a static candidate, not an operationally accepted route. M0-B and D016 causal self-development remain unproven.
+ChatGPT Web remains `TARGET_DISCOVERY_BLOCKED`; Ollama remains `WIRED_REPORTED / SYNTHETIC_TESTS_REPORTED / LIVE_INFERENCE_UNPROVEN`; no real Codex round trip, M0-B selection or D016 causal reuse has been verified.
 
 ---
 
