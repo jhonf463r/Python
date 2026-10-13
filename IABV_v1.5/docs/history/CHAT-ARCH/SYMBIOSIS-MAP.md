@@ -1,3 +1,13 @@
+## 2026-10-13 ROUTING UPDATE — HUMAN AUTHORITY, IABV COORDINATION, CODEX EXECUTION
+
+Canonical: [CHAT-ARCH-2026-10-13-241-codex-development-bridge-route-adjudication.md](./CHAT-ARCH-2026-10-13-241-codex-development-bridge-route-adjudication.md).
+
+Target relation: Human owner grants exact operation/resource/scope; IABV preserves intent, authorization, task identity and result correlation; Codex performs only the authorized coding work inside a demonstrably confined candidate environment; the existing IABV consumer/verifier evaluates the returned artifacts; the owner alone decides promotion/rejection. No role gets implied authority from another role's response.
+
+The tool-free-turn schema limitation is not the same as a no-tools coding workflow. The open edge is `CODEX_BOUNDED_DEVELOPMENT_EXECUTION_BOUNDARY_UNPROVEN`. Do not label the bridge operational or the learning loop closed until runtime response, consumer evaluation and later causal reuse are evidenced.
+
+---
+
 ## 2026-10-13 RELATION DELTA — EXPECTED PROTOCOL DOES NOT DECLARE A GLOBAL NO-TOOLS CONTRACT
 
 Canonical: [CHAT-ARCH-2026-10-13-240-versioned-0120-tool-control-limit.md](./CHAT-ARCH-2026-10-13-240-versioned-0120-tool-control-limit.md).
