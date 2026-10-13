@@ -1,3 +1,13 @@
+## 2026-10-13 LATEST ROUTE COMPARISON — APP SERVER VS INSTALLED CODEX CLI EXEC
+
+Canonical: [CHAT-ARCH-2026-10-13-245-windows-codex-execution-route-comparison.md](./CHAT-ARCH-2026-10-13-245-windows-codex-execution-route-comparison.md).
+
+The current App Server adapter remains reported blocked for coding mode. Official Cookbook documents `codex exec --sandbox workspace-write` for scripted coding; a public Windows App Server report (#37818) documents a specific `workspace-write` turn exposing neither command nor file-change items. Neither external example proves the Owner's local route, but it means both existing Codex interfaces must be compared before designing a new executor.
+
+Next edge: `CODEX_WINDOWS_CODING_TRANSPORT_AND_SANDBOX_COMPATIBILITY_UNRESOLVED`. One non-mutating local capability inventory first; no agent turn, implementation or setup.
+
+---
+
 ## 2026-10-13 NEXT ROUTE TEST — EXISTING CODEX NATIVE WINDOWS SANDBOX MAY BE THE LOWEST-CHANGE CODING BOUNDARY
 
 Canonical: [CHAT-ARCH-2026-10-13-244-windows-sandbox-route-refinement.md](./CHAT-ARCH-2026-10-13-244-windows-sandbox-route-refinement.md).
