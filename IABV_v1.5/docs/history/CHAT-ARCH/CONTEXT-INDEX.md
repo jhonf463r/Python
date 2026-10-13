@@ -1,3 +1,13 @@
+## 2026-10-13 FIRST OPEN EDGE — DESIGN THE CONFINED CODEX CANDIDATE-WORKSPACE ROUTE
+
+Canonical result: [CHAT-ARCH-2026-10-13-243-codex-bounded-development-mode-blocked.md](./CHAT-ARCH-2026-10-13-243-codex-bounded-development-mode-blocked.md).
+
+`CODEX_BOUNDED_DEV_MODE_STATICALLY_BLOCKED` from the Owner-supplied source audit: existing App Server returns text and IDs, requests read-only access to an empty root, lacks a candidate-diff/artifact route, does not bind authorization to a candidate root/commands/publication policy, and has no demonstrated OS filesystem/network/credential boundary. Job Object is process lifecycle containment only. Effective CLI/auth/cost and runtime consumer evaluation remain unproven.
+
+Next: `CODEX_CANDIDATE_WORKSPACE_EXECUTION_BOUNDARY_DESIGN_UNRESOLVED`. Read entry 243. Prepare one design-only comparison of current App Server with enforceable isolation versus a distinct contained executor; map every effect to the layer enforcing it; preserve exact task identity, authorization scope, result correlation, evidence artifact, independent verification and owner-gated promotion. Do not repeat generic schema searches or broaden providers. No tests, processes, network, credentials, code changes or spending.
+
+---
+
 ## 2026-10-13 TRANSCRIPT INTAKE / SPACE-TIME RECONCILIATION — RECORD 242
 
 Record: [CHAT-ARCH-2026-10-13-242-inline-transcript-intake-and-continuity-audit.md](./CHAT-ARCH-2026-10-13-242-inline-transcript-intake-and-continuity-audit.md).
