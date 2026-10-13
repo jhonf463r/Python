@@ -1,3 +1,15 @@
+## 2026-10-13 RELATION DELTA — EXEC PROFILE SELECTION MUST NOT FALL BACK TO LEGACY SANDBOX
+
+Canonical: [CHAT-ARCH-2026-10-13-251-exec-v0120-permission-profile-dispatch.md](./CHAT-ARCH-2026-10-13-251-exec-v0120-permission-profile-dispatch.md).
+
+Proposed chain: SafeUI authorization → exact `exec` binary → existing approved host home/session → inline `default_permissions` profile with candidate-only writes/minimal read roots → already-provisioned Windows backend enforces child file/network limits → correlated terminal result and independently computed diff → existing consumer/verifier → Owner-only promotion.
+
+In Codex 0.120, passing `--sandbox`/`--full-auto` forces the legacy policy path; `exec` also sets approval policy to `Never`. A source-only candidate should therefore select the permission profile through config overrides without those flags and must prove the resulting local policy. Do not include broad root read; exclude sensitive home/credential paths from agent-child readable roots. Local backend, auth/quota/cost and consumer compatibility remain unproven.
+
+First open edge: `CODEX_EXEC_V0120_PROFILE_ROUTE_BACKEND_AND_ENVIRONMENT_UNVERIFIED`.
+
+---
+
 ## 2026-10-13 RELATION DELTA — SEPARATE CODEX HOST AUTH FROM AGENT-COMMAND FILE ACCESS
 
 Canonical: [CHAT-ARCH-2026-10-13-250-cloud-static-audit-windows-sandbox-home-separation.md](./CHAT-ARCH-2026-10-13-250-cloud-static-audit-windows-sandbox-home-separation.md).
