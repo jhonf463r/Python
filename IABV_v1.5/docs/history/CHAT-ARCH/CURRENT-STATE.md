@@ -1,3 +1,15 @@
+## 2026-10-13 ROUTE DECISION — CODEX DEVELOPMENT MUST BE EVALUATED AS A CONFINED CODING TASK, NOT A TOOL-FREE CHAT TURN
+
+Canonical: [CHAT-ARCH-2026-10-13-241-codex-development-bridge-route-adjudication.md](./CHAT-ARCH-2026-10-13-241-codex-development-bridge-route-adjudication.md).
+
+The 0.120.0 schema negative finding remains valid for a tool-free text-only turn. It does not prove that Codex cannot support the actual goal: an IABV-authorized development task with tools intentionally enabled but confined by an effective OS/workspace boundary. Stop broad searches for a global tools-off flag.
+
+**Next edge:** `CODEX_BOUNDED_DEVELOPMENT_EXECUTION_BOUNDARY_UNPROVEN`. Perform only the bounded source-only feasibility audit in entry 241: existing App Server adapter, direct config/tool registry, Windows sandbox/launch composition, and existing result consumer. Determine whether effects can be confined to a disposable candidate worktree, commands/scopes bounded, external network/MCP/app effects prevented, and task/thread/turn/artifact correlation preserved. Auth mode, effective sandbox, quota/cost and real consumer evaluation remain independent open gates. No code edits, tests, runtime, credentials or spend.
+
+Preserve local branch `codex/m0a-safe-ui-boot`, reported HEAD `5b1d89022ee4cdc63c1f88e050f086b40a42875c`, and all reported dirty/untracked work. No automatic promotion, commit, push or main-code mutation.
+
+---
+
 ## 2026-10-13 ROUTING UPDATE — EXPECTED 0.120.0 CONTRACT HAS NO DEMONSTRATED GLOBAL TOOLS-OFF FIELD
 
 Canonical: [CHAT-ARCH-2026-10-13-240-versioned-0120-tool-control-limit.md](./CHAT-ARCH-2026-10-13-240-versioned-0120-tool-control-limit.md).
