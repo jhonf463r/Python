@@ -1,3 +1,15 @@
+## 2026-10-13 LATEST RESULT — CODEX 0.120 PERMISSION-PROFILE ROUTE IDENTIFIED; LOCAL BACKEND STILL UNPROVEN
+
+Canonical result: [CHAT-ARCH-2026-10-13-251-exec-v0120-permission-profile-dispatch.md](./CHAT-ARCH-2026-10-13-251-exec-v0120-permission-profile-dispatch.md).
+
+A second cloud-only source pass narrowed the future `exec` design. Versioned `rust-v0.120.0` shows that `--sandbox`/`--full-auto` forces the legacy sandbox policy-selection route; without a sandbox-mode override, a higher-precedence `default_permissions` config layer can select the more precise permission-profile path. The exec harness also sets `approval_policy=Never`, so this route cannot depend on interactive per-command approvals: all effects must be authorized in advance and sandbox denials must fail closed.
+
+Candidate design to adjudicate: an in-memory `-c` permission profile, with a disposable candidate as the only writable root, explicit/minimal Windows runtime read roots, no broad `:root=read`, restricted child network, and sensitive Codex home/credential paths omitted from child-readable roots. Keep the existing host auth and sandboxed command filesystem access separate. This is source-based design, not local proof.
+
+**First open edge:** `CODEX_EXEC_V0120_PROFILE_ROUTE_BACKEND_AND_ENVIRONMENT_UNVERIFIED`. The Owner's already-available Windows backend must demonstrably enforce that profile; do not assume elevated sandbox provisioning, read credentials, or invoke the CLI. Current runtime state remains C/blocked; A/B is still unselected, and no implementation/preflight/turn is authorized. Preserve the dirty local worktree.
+
+---
+
 ## 2026-10-13 LATEST RESULT — CLOUD AUDIT NARROWS WINDOWS HOME-ISOLATION DESIGN
 
 Canonical result: [CHAT-ARCH-2026-10-13-250-cloud-static-audit-windows-sandbox-home-separation.md](./CHAT-ARCH-2026-10-13-250-cloud-static-audit-windows-sandbox-home-separation.md).
