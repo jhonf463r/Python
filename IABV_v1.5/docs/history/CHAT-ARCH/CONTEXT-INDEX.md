@@ -1,3 +1,14 @@
+## Latest route record — Entry 248
+
+- Record: [CHAT-ARCH-2026-10-13-248-exec-launch-contract-design-adjudication.md](./CHAT-ARCH-2026-10-13-248-exec-launch-contract-design-adjudication.md)
+- Classification: `CODEX_EXEC_LAUNCH_CONTRACT_DESIGN_READY_FOR_OWNER_ADJUDICATION`.
+- Decision scope: accept as design-ready, not as Owner approval or implementation authorization.
+- Central unresolved constraint: dedicated/explicit `CODEX_HOME` and safe credential isolation must coexist with already-available authentication, no credential copy, no new OAuth/login setup and zero extra spend; no eligible home has been established.
+- First open edge: `CODEX_EXEC_LAUNCH_CONTRACT_OWNER_DECISION_PENDING`.
+- No code/runtime/tests/credentials/install/spend/promotion. Preserve the local dirty/untracked worktree.
+
+---
+
 ## Latest route record — Entry 247
 
 - Record: [CHAT-ARCH-2026-10-13-247-codex-exec-integration-boundary-static-block.md](./CHAT-ARCH-2026-10-13-247-codex-exec-integration-boundary-static-block.md)
