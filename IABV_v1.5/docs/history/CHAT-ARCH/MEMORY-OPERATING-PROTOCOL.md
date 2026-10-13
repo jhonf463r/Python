@@ -1,3 +1,15 @@
+## Continuity delta — Codex exec launch design requires Owner decision (2026-10-13)
+
+Canonical: [CHAT-ARCH-2026-10-13-248-exec-launch-contract-design-adjudication.md](./CHAT-ARCH-2026-10-13-248-exec-launch-contract-design-adjudication.md).
+
+Preserve the distinction between design readiness and authorization to implement. The design must bind the SafeUI authorization, exact child executable/environment, target home/policy, OS-enforced containment, candidate baseline, terminal artifacts, current consumer and owner-only promotion. Existing data-model fields for artifacts do not prove the actual diff producer/consumer route.
+
+Do not hide the design conflict between an explicit/dedicated `CODEX_HOME` and the constraints of no credential copying, no new login/OAuth, existing authentication and no extra spend. If no already-authenticated home fits the approved policy, the correct outcome is to remain blocked.
+
+First open edge: `CODEX_EXEC_LAUNCH_CONTRACT_OWNER_DECISION_PENDING`. No implementation or runtime authorization is implied by writeback.
+
+---
+
 ## Current continuity delta — Codex exec integration boundary (2026-10-13)
 
 Canonical: [CHAT-ARCH-2026-10-13-247-codex-exec-integration-boundary-static-block.md](./CHAT-ARCH-2026-10-13-247-codex-exec-integration-boundary-static-block.md).
