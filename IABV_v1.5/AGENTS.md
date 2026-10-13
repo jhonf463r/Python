@@ -1,3 +1,13 @@
+## Current route overlay — Codex execpolicy Allow rules may bypass inner sandbox (2026-10-13; entry 252)
+
+Read [CHAT-ARCH-2026-10-13-252-execpolicy-allow-can-bypass-sandbox.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-252-execpolicy-allow-can-bypass-sandbox.md), then entries 251–247.
+
+Public Codex `rust-v0.120.0` source shows an explicit matching execpolicy `Allow` can set `bypass_sandbox=true`, which the orchestrator maps to `SandboxType::None`. Rules are loaded from `rules/*.rules` in all applicable config-layer folders. Built-in known-safe-command heuristics are distinct, but the Owner's effective user/managed rule set remains unverified.
+
+A profile selected through `default_permissions` is insufficient by itself. First establish whether any supported non-runtime switch excludes the user rules; if not, a separately authorized local non-mutating rule-layer preflight or an independently enforced outer OS boundary is required. Keep C/block until then. No launch/turn, local policy read, credentials, tests, implementation, install/spend, commit/push or promotion. Preserve the dirty worktree.
+
+---
+
 ## Current route overlay — Codex 0.120 permission-profile dispatch candidate (2026-10-13; entry 251)
 
 Read [CHAT-ARCH-2026-10-13-251-exec-v0120-permission-profile-dispatch.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-251-exec-v0120-permission-profile-dispatch.md), then entries 250–247.
