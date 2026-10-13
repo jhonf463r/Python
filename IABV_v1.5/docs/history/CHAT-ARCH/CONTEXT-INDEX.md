@@ -1,3 +1,13 @@
+## 2026-10-13 FIRST CODE-LEVEL EDGE — PRESERVE SAFEUI TASK ID BEFORE DISPATCH
+
+Canonical: [CHAT-ARCH-2026-10-13-236-appserver-task-id-correlation-blocker.md](./CHAT-ARCH-2026-10-13-236-appserver-task-id-correlation-blocker.md).
+
+The supplied static audit says `ToolTeachService.build_task_from_request` preserves the authorized ID for three destinations, but regenerates it for `codex_app_server` and `codex_installed`. SafeUI rejects the returned identity after `execute_external_consultation()`, potentially after dispatch. First repair: preserve the original ID and reject missing/mismatched identity before adapter execution; focused synthetic test must assert zero dispatch on invalid identity. This edit/test phase still requires separate Owner authorization.
+
+Do not conflate the ID fix with authentication, pre-effect tool policy, live transport, consumer evaluation or D016. Preserve the dirty worktree.
+
+---
+
 ## 2026-10-13 CODEX ACCESS GATE — NATIVE AUTH VS SIWC
 
 Canonical: [CHAT-ARCH-2026-10-13-235-codex-plan-entitlement-auth-mode.md](./CHAT-ARCH-2026-10-13-235-codex-plan-entitlement-auth-mode.md).
