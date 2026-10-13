@@ -1,3 +1,13 @@
+## 2026-10-13 SYMBIOSIS DELTA — M0B AUTONOMY RUN / PUBLIC GOVERNANCE CONTRACT (ENTRY 265)
+
+Canonical: [CHAT-ARCH-2026-10-13-265-autonomy-run-paused-too-early-public-gate-contract.md](./CHAT-ARCH-2026-10-13-265-autonomy-run-paused-too-early-public-gate-contract.md).
+
+Knowledge delta: the latest run did not invoke tools or continue independent work. Published main shows a fail-closed audit gate and a blocked-response schema, but not a dedicated narrow grant route in the inspected surfaces. That source contract is not the missing live local result.
+
+Routing delta: keep M0A blocked, while Codex/coordinator continues public-main-only trace of MCP governance and existing Control Center approval paths, reconciles Entries 219–226, and produces a minimal contract/test spec. No alternate local read or dirty-worktree mutation.
+
+---
+
 ## 2026-10-13 SYMBIOSIS DELTA — M0B-R4 GOVERNANCE OPERATION NOT EXPOSED (ENTRY 264)
 
 Canonical: [CHAT-ARCH-2026-10-13-264-m0b-r4-governance-diagnostic-missing.md](./CHAT-ARCH-2026-10-13-264-m0b-r4-governance-diagnostic-missing.md).
