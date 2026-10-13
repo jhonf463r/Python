@@ -1,3 +1,15 @@
+## 2026-10-13 ROUTE RESULT — CODEX CODING REQUIRES AN ENFORCED CANDIDATE BOUNDARY
+
+Canonical: [CHAT-ARCH-2026-10-13-243-codex-bounded-development-mode-blocked.md](./CHAT-ARCH-2026-10-13-243-codex-bounded-development-mode-blocked.md).
+
+Relation contract: Owner grants exact operation/resource/scope; IABV preserves the task ID, prompt/digest and provenance; Codex executes necessary coding tools only within an OS-enforced candidate boundary; the existing consumer and independent verifier assess the resulting diff/tests; Owner alone decides promote/reject/revert.
+
+The currently reviewed adapter is not that coding bridge. It captures text but no candidate diff and requests read-only scope. A Job Object is not a complete sandbox. The missing relation is an enforceable candidate-execution boundary plus evidence-bearing artifact handoff.
+
+Next edge: `CODEX_CANDIDATE_WORKSPACE_EXECUTION_BOUNDARY_DESIGN_UNRESOLVED`. No implementation or live task yet.
+
+---
+
 ## 2026-10-13 ROUTING UPDATE — HUMAN AUTHORITY, IABV COORDINATION, CODEX EXECUTION
 
 Canonical: [CHAT-ARCH-2026-10-13-241-codex-development-bridge-route-adjudication.md](./CHAT-ARCH-2026-10-13-241-codex-development-bridge-route-adjudication.md).
