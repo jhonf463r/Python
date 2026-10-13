@@ -1,3 +1,13 @@
+## 2026-10-13 LATEST RESULT — NO IABV CLI EXEC LAUNCH CONTRACT
+
+Canonical: [CHAT-ARCH-2026-10-13-247-codex-exec-integration-boundary-static-block.md](./CHAT-ARCH-2026-10-13-247-codex-exec-integration-boundary-static-block.md).
+
+The supplied static audit found the current integration uses App Server; it did not find an IABV `exec` adapter that establishes the child environment and artifact handoff. Therefore the effective home/policy of a hypothetical CLI child is not a value that can be recovered from current source alone. The old App Server environment and the interactive shell are not substitutes. Keep the route blocked.
+
+Next edge: `CODEX_EXEC_LAUNCH_ENVIRONMENT_CONTRACT_UNDEFINED`. Produce a design-only, source-grounded contract before any implementation authorization. No runtime, tests, configuration changes, secrets, installation or spend.
+
+---
+
 ## 2026-10-13 LATEST RESULT — VERSIONED CODEX EXEC CONTRACT NARROWS THE NEXT GATE
 
 Canonical: [CHAT-ARCH-2026-10-13-246-codex-exec-0120-static-contract-and-target-home.md](./CHAT-ARCH-2026-10-13-246-codex-exec-0120-static-contract-and-target-home.md).
