@@ -1,3 +1,13 @@
+## 2026-10-13 FIRST OPEN EDGE — VERIFY APP SERVER COMPATIBILITY WITH CODEX'S NATIVE WINDOWS SANDBOX
+
+Canonical: [CHAT-ARCH-2026-10-13-244-windows-sandbox-route-refinement.md](./CHAT-ARCH-2026-10-13-244-windows-sandbox-route-refinement.md).
+
+The report in entry 243 still blocks the current text-only/read-only adapter for code changes. New official documentation establishes that Codex can use native Windows sandboxing for agent-spawned commands; `workspace-write` supports bounded file edits and routine commands. This is a candidate realization, not evidence of local effective enforcement. The report's expected `0.120.0` userAgent plus dynamic `PATH` resolver means actual CLI/protocol identity is unresolved; don't infer support from current docs or newer MXC release notes.
+
+Next: `CODEX_NATIVE_WINDOWS_SANDBOX_IN_APP_SERVER_MODE_UNVERIFIED`. Audit only the exact existing adapter request, sandbox root/cwd, direct Windows config contract, MCP/app/plugin/browser scope and candidate diff/result capture. Determine if built-in sandbox can be reused without new setup, credentials or spending. No runtime, tests, credentials or code changes.
+
+---
+
 ## 2026-10-13 FIRST OPEN EDGE — DESIGN THE CONFINED CODEX CANDIDATE-WORKSPACE ROUTE
 
 Canonical result: [CHAT-ARCH-2026-10-13-243-codex-bounded-development-mode-blocked.md](./CHAT-ARCH-2026-10-13-243-codex-bounded-development-mode-blocked.md).
