@@ -1,3 +1,15 @@
+## 2026-10-13 LATEST RESULT — EXEC LAUNCH DESIGN READY; OWNER DECISION STILL PENDING
+
+Canonical result: [CHAT-ARCH-2026-10-13-248-exec-launch-contract-design-adjudication.md](./CHAT-ARCH-2026-10-13-248-exec-launch-contract-design-adjudication.md).
+
+Owner-supplied design result: `CODEX_EXEC_LAUNCH_CONTRACT_DESIGN_READY_FOR_OWNER_ADJUDICATION`. The proposal correctly binds SafeUI authorization/task identity to an exact future executable, explicit child environment, candidate/baseline, enforced boundary and evidence-bearing artifact receipt. This adjudication accepts the work as ready for Owner decision only; it does not approve implementation or authorize a turn.
+
+One material constraint conflict remains: the proposal calls for an explicit/dedicated `CODEX_HOME`, forbids credential copying/new OAuth/setup, and requires existing authentication with no added spend. An eligible already-authenticated home has not been identified. If no home satisfies all constraints, remain blocked.
+
+**First open edge:** `CODEX_EXEC_LAUNCH_CONTRACT_OWNER_DECISION_PENDING`. Decide the permitted existing-home/authentication pattern and the subsequent candidate/security acceptance gates. No implementation, process, test, credential inspection, install or spend. Preserve the dirty local worktree.
+
+---
+
 ## 2026-10-13 LATEST RESULT — CURRENT IABV HAS NO EXEC LAUNCH CONTRACT
 
 Canonical result: [CHAT-ARCH-2026-10-13-247-codex-exec-integration-boundary-static-block.md](./CHAT-ARCH-2026-10-13-247-codex-exec-integration-boundary-static-block.md).
