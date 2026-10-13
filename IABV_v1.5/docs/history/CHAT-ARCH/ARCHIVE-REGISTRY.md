@@ -1,3 +1,14 @@
+## 2026-10-13 REGISTRATION — ENTRY 255: CLI VERSION / MODEL / INCLUDED-USAGE GATE
+
+- Record: [CHAT-ARCH-2026-10-13-255-cli-version-model-entitlement-compatibility.md](./CHAT-ARCH-2026-10-13-255-cli-version-model-entitlement-compatibility.md)
+- Classification: `CODEX_0120_INSTALLED_VERSION_CURRENT_MODEL_COMPATIBILITY_UNPROVEN`.
+- Current official source: CLI 0.144.0 minimum for GPT-5.6 and CLI 0.153.0 for GPT-6 Astra; previously identified local package is reported as 0.120.0.
+- Codex plan inclusion is subject to limits; actual Owner account model/access/quota and no-paid-fallback state remain unproven.
+- First open edge: `CODEX_EXEC_VERSION_MODEL_AND_INCLUDED_USAGE_COMPATIBILITY_UNVERIFIED`.
+- No installation/update, CLI turn, paid credit/API use, credential inspection, or promotion authorized.
+
+---
+
 ## 2026-10-13 REGISTRATION — ENTRY 254: CODEX PLAN USAGE AND ZERO-EXTRA-SPEND GATE
 
 - Record: [CHAT-ARCH-2026-10-13-254-codex-plan-usage-and-zero-extra-spend-gate.md](./CHAT-ARCH-2026-10-13-254-codex-plan-usage-and-zero-extra-spend-gate.md)
