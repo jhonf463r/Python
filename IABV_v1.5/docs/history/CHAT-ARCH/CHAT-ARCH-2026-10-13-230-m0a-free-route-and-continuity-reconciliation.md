@@ -126,7 +126,7 @@ If safe destination discovery cannot be done with existing admissible access, ke
 - [CONTEXT-INDEX.md](CONTEXT-INDEX.md)
 - [MEMORY-OPERATING-PROTOCOL.md](MEMORY-OPERATING-PROTOCOL.md)
 - [Constitution / UAAL-ROOT-001](UNIVERSAL-ADAPTIVE-ALGORITHM-CONSTITUTION-2026-10-04.md)
-- [D016 self-development inflection](CHAT-ARCH-2026-10-05-054-iabv-self-development-code-plasticity.md)
+- [D016 self-development inflection](CHAT-ARCH-2026-10-05-054-iabv-self-development-inflection-code-plasticity.md)
 - [RQ128 M0 routing reconciliation](CHAT-ARCH-2026-10-07-128-m0-causal-routing-reconciliation.md)
 - [229 SafeUI target-discovery continuity](CHAT-ARCH-2026-10-13-229-m0a-safeui-target-discovery-continuity.md)
 
