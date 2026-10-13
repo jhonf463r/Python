@@ -1,3 +1,15 @@
+## 2026-10-13 LATEST RESULT — AUTH/HOME, EXECPOLICY AND ZERO-EXTRA-SPEND ARE THREE SEPARATE GATES
+
+Canonical result: [CHAT-ARCH-2026-10-13-254-codex-plan-usage-and-zero-extra-spend-gate.md](./CHAT-ARCH-2026-10-13-254-codex-plan-usage-and-zero-extra-spend-gate.md).
+
+Current official OpenAI Help Center documentation says Codex is included in ChatGPT plans including Free/Go, with plan-dependent limits; all other activity consumes included allowances and/or applicable credits/billing, and eligible accounts may purchase additional usage credits after reaching limits. This proves a documented plan-included route, not the Owner's active auth state, remaining quota, credit setting or a no-extra-charge guarantee.
+
+Combined with entries 252–253: a new `CODEX_HOME` does not automatically reuse the old keyring auth lookup, and an explicit execpolicy `Allow` may bypass Codex's inner sandbox. The candidate route must resolve all three: already-authorized auth/home, a ruleset that cannot bypass confinement (or independently enforced outer boundary), and a hard stop before paid credits/API fallback.
+
+**First open edge:** `CODEX_EXEC_AUTH_HOME_POLICY_AND_USAGE_BUDGET_ROUTE_UNRESOLVED`. Continue cloud analysis; runtime status remains C/block and A/B are still unselected. No CLI turn, new login, credential copy, install/update, credit purchase or extra spend. Preserve dirty/untracked local work.
+
+---
+
 ## 2026-10-13 LATEST RESULT — CODEX HOME BINDS AUTH LOOKUP AND EXECPOLICY RULE SOURCES
 
 Canonical result: [CHAT-ARCH-2026-10-13-253-codex-home-auth-and-execpolicy-coupling.md](./CHAT-ARCH-2026-10-13-253-codex-home-auth-and-execpolicy-coupling.md).
