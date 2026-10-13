@@ -1,3 +1,14 @@
+## 2026-10-13 — PUBLIC GOVERNANCE CONTRACT CAN PROCEED WHILE M0A STAYS BLOCKED (ENTRY 265)
+
+Canonical: [CHAT-ARCH-2026-10-13-265-autonomy-run-paused-too-early-public-gate-contract.md](./CHAT-ARCH-2026-10-13-265-autonomy-run-paused-too-early-public-gate-contract.md).
+
+- **OWNER-REPORTED:** latest run exposed no narrow diagnostic/grant operation and performed no MCP call, local read, tests, AI query or canonical writeback.
+- **PROVEN_BY_SOURCE:** published `IABVMCPServer._governance_block_for_route` emits a blocked response with reason/detail and applicable block or permission-gate records; audit reader routes share the fail-closed gate. Public server has `autonomy_status`/`autonomy_update_task` for continuity, not a scoped read grant.
+- **NOT ESTABLISHED:** prior local invocation's exact payload; M0A source/adapter; any local-only governance diagnostic; a functioning Codex↔ChatGPT autonomous turn-return loop.
+- **Next edge:** trace the existing Control Center/approval contracts on pinned public main and reconcile Entries 219–226. Produce a bounded minimal diagnostic/grant contract and test spec; no local bypass. KEEP_BLOCKED locally; public static analysis may proceed.
+
+---
+
 ## 2026-10-13 — M0B-R4 GOVERNANCE DIAGNOSTIC / TARGET IDENTITY CAPABILITY MISSING FROM SESSION (ENTRY 264)
 
 Canonical: [CHAT-ARCH-2026-10-13-264-m0b-r4-governance-diagnostic-missing.md](./CHAT-ARCH-2026-10-13-264-m0b-r4-governance-diagnostic-missing.md).
