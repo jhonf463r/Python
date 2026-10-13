@@ -1,3 +1,13 @@
+## 2026-10-13 OPEN EDGE — GLOBAL TOOL SUPPRESSION NOT SHOWN IN EXPECTED 0.120.0 CONTRACT
+
+Canonical record: [CHAT-ARCH-2026-10-13-240-versioned-0120-tool-control-limit.md](./CHAT-ARCH-2026-10-13-240-versioned-0120-tool-control-limit.md).
+
+Version-tagged public source `rust-v0.120.0` shows no generic all-tools-off field in `ThreadStartParams` or `TurnStartParams`; typed `ToolsV2` controls specific web-search/image features, while `include_apply_patch_tool` is selective. These sources do not establish the actual local executable version, since the Owner reports dynamic `PATH` resolution, and do not exhaust every internal runtime path. They do not yield a demonstrated no-tools solution.
+
+Next edge: `CODEX_APP_SERVER_NO_GLOBAL_TOOL_DISABLE_IN_EXPECTED_0120_CONTRACT`. Source-review existing adapter/config/registry to determine whether any effective pre-turn global restriction exists. If absent, keep App Server blocked for tool-free text consultation; consider an existing text-only provider or a separately governed isolated coding-task mode. No runtime, credentials, tests, source edits or spend.
+
+---
+
 ## 2026-10-13 OPEN EDGE — TARGET CLI / PROTOCOL AND NO-TOOLS CONTRACT UNPROVEN
 
 Canonical: [CHAT-ARCH-2026-10-13-239-target-protocol-tool-surface-audit.md](./CHAT-ARCH-2026-10-13-239-target-protocol-tool-surface-audit.md).
