@@ -1,3 +1,15 @@
+## 2026-10-13 METHOD UPDATE — DISCRIMINATE EXISTING CODEX EXECUTION INTERFACES BEFORE ADDING AN EXECUTOR
+
+Canonical result: [CHAT-ARCH-2026-10-13-245-windows-codex-execution-route-comparison.md](./CHAT-ARCH-2026-10-13-245-windows-codex-execution-route-comparison.md).
+
+A blocked App Server coding turn does not automatically imply that all local Codex execution paths are unsuitable. Official documentation shows `codex exec --sandbox workspace-write` as an automation pattern; a public issue reports a specific Windows App Server workspace-write turn with no command/file-change items. These are route-selection evidence, not proof of local readiness.
+
+Recompute route from exact installed binary/protocol, non-secret sandbox configuration, allowed tools and output/artifact contract. Do not infer effective enforcement from documentation alone. Prefer a one-time non-mutating metadata inventory before any runtime capability fixture. Preserve the distinction between external issue reports, source proof, live behavior and independent verification.
+
+Next edge: `CODEX_WINDOWS_CODING_TRANSPORT_AND_SANDBOX_COMPATIBILITY_UNRESOLVED`. No run, source edit, tests, auth changes or spend is authorized.
+
+---
+
 ## 2026-10-13 METHOD UPDATE — USE DOCUMENTED NATIVE SANDBOX AS A CANDIDATE, NOT AS LOCAL PROOF
 
 Canonical: [CHAT-ARCH-2026-10-13-244-windows-sandbox-route-refinement.md](./CHAT-ARCH-2026-10-13-244-windows-sandbox-route-refinement.md).
