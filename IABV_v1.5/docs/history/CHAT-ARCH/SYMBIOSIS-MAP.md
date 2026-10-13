@@ -1,3 +1,13 @@
+## 2026-10-13 SYMBIOSIS DELTA — M0B-R4 GOVERNANCE OPERATION NOT EXPOSED (ENTRY 264)
+
+Canonical: [CHAT-ARCH-2026-10-13-264-m0b-r4-governance-diagnostic-missing.md](./CHAT-ARCH-2026-10-13-264-m0b-r4-governance-diagnostic-missing.md).
+
+Knowledge delta: the reviewed session cannot retrieve scoped block metadata or prove the exact server/checkout identity. This is not a local-source finding and does not prove global absence of governance code. Owner consent and runtime gate state remain separate.
+
+Routing delta: do not send Codex back to the blocked local reader. The first open edge is a supported governance diagnostic/target-provenance/scoped-decision seam; only after it yields direct target proof and an auditable grant may Codex perform M0B-R4 source comparison. ChatGPT/Codex autonomy must remain evidence-correlated and policy-governed, not achieved by bypassing the gate.
+
+---
+
 ## 2026-10-13 SYMBIOSIS DELTA — M0B-R3: DIRECT CODEX CHANNEL AND SHARED MCP TOOLS (ENTRY 263)
 
 Canonical: [CHAT-ARCH-2026-10-13-263-m0b-r3-autonomy-bridge-adjudication.md](./CHAT-ARCH-2026-10-13-263-m0b-r3-autonomy-bridge-adjudication.md).
