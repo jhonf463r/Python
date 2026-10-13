@@ -1,3 +1,13 @@
+## 2026-10-13 REGISTRATION — ENTRY 243: CURRENT CODEX PATH NOT A BOUNDED CODING BRIDGE
+
+- Record: [CHAT-ARCH-2026-10-13-243-codex-bounded-development-mode-blocked.md](./CHAT-ARCH-2026-10-13-243-codex-bounded-development-mode-blocked.md)
+- Classification: `CODEX_BOUNDED_DEV_MODE_STATICALLY_BLOCKED` from an Owner-supplied source audit.
+- Durable negative finding: current adapter is a text response/correlation path, not a writable candidate-worktree and artifact-return path; current requested scope is read-only; process Job Object does not establish filesystem, credential or network isolation.
+- Next route: `CODEX_CANDIDATE_WORKSPACE_EXECUTION_BOUNDARY_DESIGN_UNRESOLVED`.
+- Evidence boundary: local worktree inventory and source findings are report-only in this writeback. No runtime or product code was changed; no real response or consumer evaluation is claimed.
+
+---
+
 ## 2026-10-13 REGISTRATION — ENTRY 242: INLINE TRANSCRIPT INTAKE AND CONTINUITY AUDIT
 
 - Record: [CHAT-ARCH-2026-10-13-242-inline-transcript-intake-and-continuity-audit.md](./CHAT-ARCH-2026-10-13-242-inline-transcript-intake-and-continuity-audit.md)
