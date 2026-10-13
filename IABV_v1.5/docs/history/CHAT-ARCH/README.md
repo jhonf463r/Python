@@ -1,3 +1,13 @@
+## 2026-10-13 LATEST RESULT — VERSIONED CODEX EXEC CONTRACT NARROWS THE NEXT GATE
+
+Canonical: [CHAT-ARCH-2026-10-13-246-codex-exec-0120-static-contract-and-target-home.md](./CHAT-ARCH-2026-10-13-246-codex-exec-0120-static-contract-and-target-home.md).
+
+The inspected Windows shell's CLI/package is owner-reported as Codex `0.120.0`; the public `rust-v0.120.0` source declares `exec`, sandbox-mode and output options. This is not proof that IABV inherits the same executable or effective policy. Do not transplant the newer Cookbook command wholesale or copy the unrelated `danger-full-access` config.
+
+Next edge: `CODEX_EXEC_TARGET_HOME_AND_EFFECTIVE_POLICY_UNPROVEN`. Static-only trace of IABV's child `PATH`/working directory/`CODEX_HOME`, plus allowlisted non-secret policy values. No CLI/App Server process, turn, tests, config/code mutation, credentials, install, or spend.
+
+---
+
 ## 2026-10-13 LATEST ROUTE COMPARISON — APP SERVER VS INSTALLED CODEX CLI EXEC
 
 Canonical: [CHAT-ARCH-2026-10-13-245-windows-codex-execution-route-comparison.md](./CHAT-ARCH-2026-10-13-245-windows-codex-execution-route-comparison.md).
