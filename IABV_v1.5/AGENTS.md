@@ -1,3 +1,13 @@
+## Current route overlay after CLI exec integration block (2026-10-13; entry 247)
+
+Read [CHAT-ARCH-2026-10-13-247-codex-exec-integration-boundary-static-block.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-247-codex-exec-integration-boundary-static-block.md), then entries 243–246.
+
+Owner-supplied static audit classifies the current integration as `CODEX_EXECUTION_INTERFACE_STATICALLY_BLOCKED`. The existing App Server path constructs its own environment/home, but no IABV CLI `exec` adapter contract was found. Do not infer a hypothetical child's effective `CODEX_HOME` from the interactive shell or reuse the App Server home by assumption. The observed `danger-full-access` / `approval_policy = "never"` config belongs to another context and is not an approved target policy.
+
+Next edge: `CODEX_EXEC_LAUNCH_ENVIRONMENT_CONTRACT_UNDEFINED`. Produce a design-only specification from current source before considering implementation. No process, CLI/App Server invocation, turn, tests, code/config edit, secrets, install, spend, commit/push or promotion. Preserve dirty/untracked local changes.
+
+---
+
 ## Current route overlay after CLI interface identification (2026-10-13; entry 246)
 
 Read [CHAT-ARCH-2026-10-13-246-codex-exec-0120-static-contract-and-target-home.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-246-codex-exec-0120-static-contract-and-target-home.md), then entries 243–245.
