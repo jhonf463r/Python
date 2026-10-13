@@ -1,3 +1,13 @@
+## 2026-10-13 METHOD UPDATE — VERSIONED SCHEMA NEGATIVE FINDING IS BOUNDED
+
+Canonical: [CHAT-ARCH-2026-10-13-240-versioned-0120-tool-control-limit.md](./CHAT-ARCH-2026-10-13-240-versioned-0120-tool-control-limit.md).
+
+Reviewed public `rust-v0.120.0` schemas do not declare a general tool-list/all-tools-off field in `ThreadStartParams` or `TurnStartParams`; `ToolsV2` controls specific capabilities only. This is a bounded negative finding about named typed structures, not proof of every runtime behavior and not proof of the actual local binary version. Preserve that caveat.
+
+Next edge: `CODEX_APP_SERVER_NO_GLOBAL_TOOL_DISABLE_IN_EXPECTED_0120_CONTRACT`. Stop broad upstream searching. Source-review the existing local adapter/config/tool registry to decide whether an actual pre-turn tool restriction exists. If not, do not force the App Server into a tool-free role. Consider an existing text-only transport or a separate isolated coding-task design; no implementation, runtime or spending is authorized here.
+
+---
+
 ## 2026-10-13 METHOD UPDATE — EXPECTED VERSION IS NOT EXECUTABLE IDENTITY
 
 Canonical: [CHAT-ARCH-2026-10-13-239-target-protocol-tool-surface-audit.md](./CHAT-ARCH-2026-10-13-239-target-protocol-tool-surface-audit.md).
