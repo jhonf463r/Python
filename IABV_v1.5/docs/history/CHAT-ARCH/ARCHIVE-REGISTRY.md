@@ -1,3 +1,14 @@
+## 2026-10-13 REGISTRATION — ENTRY 251: CODEX EXEC 0.120 PERMISSION-PROFILE DISPATCH
+
+- Record: [CHAT-ARCH-2026-10-13-251-exec-v0120-permission-profile-dispatch.md](./CHAT-ARCH-2026-10-13-251-exec-v0120-permission-profile-dispatch.md)
+- Classification: `CODEX_EXEC_V0120_PROFILE_ROUTE_STATICALLY_IDENTIFIED_LOCAL_BACKEND_UNPROVEN`.
+- Durable finding: avoid assuming `--sandbox workspace-write` is compatible with precise `default_permissions` profiles in 0.120; CLI sandbox overrides force legacy policy interpretation. Exec harness sets `approval_policy=Never`.
+- Candidate source-level path: config overrides that select an explicit permission profile without sandbox-mode override, with candidate-only write/minimal read roots and restricted child network.
+- First open edge: `CODEX_EXEC_V0120_PROFILE_ROUTE_BACKEND_AND_ENVIRONMENT_UNVERIFIED`.
+- No runtime, implementation, credential inspection, installation, spend, commit/push or promotion. Preserve dirty/untracked local changes.
+
+---
+
 ## 2026-10-13 REGISTRATION — ENTRY 250: WINDOWS HOME READ-DENIAL FEASIBILITY
 
 - Record: [CHAT-ARCH-2026-10-13-250-cloud-static-audit-windows-sandbox-home-separation.md](./CHAT-ARCH-2026-10-13-250-cloud-static-audit-windows-sandbox-home-separation.md)
