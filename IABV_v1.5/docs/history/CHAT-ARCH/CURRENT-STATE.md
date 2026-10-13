@@ -1,3 +1,17 @@
+## 2026-10-13 CURRENT ROUTING OVERLAY — TASK ID REPAIR PASS, APP SERVER GATES REMAIN
+
+Canonical result: [CHAT-ARCH-2026-10-13-237-codex-task-id-repair-synthetic-pass.md](./CHAT-ARCH-2026-10-13-237-codex-task-id-repair-synthetic-pass.md).
+
+**Latest result:** `CODEX_TASK_ID_REPAIR_PASS` (Owner-supplied report; synthetic evidence only, not independently rerun here). The reported repair preserves the exact SafeUI-authorized 32-character lowercase hexadecimal ID for `codex_app_server` and `codex_installed`, rejects missing/malformed/mismatched IDs in SafeUI before authorization consumption/external consultation, and revalidates in ToolTeachService before adapter dispatch. The focused test run reportedly finished at 32 passed after correcting three initial harness failures; whitespace checks passed.
+
+**Local/remote boundary:** the dirty local worktree remains `codex/m0a-safe-ui-boot` at `5b1d89022ee4cdc63c1f88e050f086b40a42875c`, with 56 tracked modifications and 6 untracked files per report. Preserve everything, including pre-existing `.pyc` edits. The patch is not on remote `main` unless later evidence proves otherwise.
+
+**Next edge:** `CODEX_APP_SERVER_AUTH_HOME_PREFLIGHT_AND_EFFECTIVE_TOOL_POLICY_UNRESOLVED`. Resume a narrow read-only source review of exact App Server auth/home selection, required preflight checks, and effective tool restrictions before effects; trace terminal correlation into the existing consumer as source evidence allows. No credential contents, runtime, network, UI/CDP, API setup, source edits or spending. No real dispatch until the remaining gates and separate runtime authorization are handled.
+
+**Still not proven:** a real IABV→Codex→IABV round-trip, current authentication/session/quota, prevention of unwanted effects before tool execution, observed consumer evaluation, M0-B and D016 causal reuse.
+
+---
+
 ## 2026-10-13 CURRENT ROUTING OVERLAY — CODEX TASK ID LOST BEFORE DISPATCH ACCEPTANCE
 
 Canonical result: [CHAT-ARCH-2026-10-13-236-appserver-task-id-correlation-blocker.md](./CHAT-ARCH-2026-10-13-236-appserver-task-id-correlation-blocker.md).
