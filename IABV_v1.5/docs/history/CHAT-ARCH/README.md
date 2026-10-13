@@ -1,3 +1,13 @@
+## 2026-10-13 LATEST RESULT — INSTALLED CLI 0.120 IS BELOW CURRENT DOCUMENTED MODEL MINIMUMS
+
+Canonical: [CHAT-ARCH-2026-10-13-255-cli-version-model-entitlement-compatibility.md](./CHAT-ARCH-2026-10-13-255-cli-version-model-entitlement-compatibility.md).
+
+Current official Help Center docs list CLI 0.144.0 as minimum for GPT-5.6 and 0.153.0 for GPT-6 Astra. The previously inspected CLI 0.120.0 may still have another supported model route, but current-model access is not established. Codex is included across ChatGPT plans with limits; no active account/quota/no-extra-spend guarantee can be inferred from package presence.
+
+First open edge: `CODEX_EXEC_VERSION_MODEL_AND_INCLUDED_USAGE_COMPATIBILITY_UNVERIFIED`. Do not update/install or use API keys/paid credits to bridge the gap under current constraints. Continue static analysis; C/block remains.
+
+---
+
 ## 2026-10-13 LATEST RESULT — PLAN-INCLUDED CODEX IS DOCUMENTED; ACTUAL ENTITLEMENT/COST REMAIN UNPROVEN
 
 Canonical: [CHAT-ARCH-2026-10-13-254-codex-plan-usage-and-zero-extra-spend-gate.md](./CHAT-ARCH-2026-10-13-254-codex-plan-usage-and-zero-extra-spend-gate.md).
