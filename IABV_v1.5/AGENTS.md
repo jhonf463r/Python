@@ -1,3 +1,13 @@
+## Current route overlay — Codex authentication and execpolicy must be jointly resolved (2026-10-13; entry 253)
+
+Read [CHAT-ARCH-2026-10-13-253-codex-home-auth-and-execpolicy-coupling.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-253-codex-home-auth-and-execpolicy-coupling.md), then entries 252–250.
+
+Codex 0.120 file auth uses `CODEX_HOME/auth.json`; keyring auth lookup hashes the canonical home path. The execpolicy loader imports `rules/*.rules` from all applicable config-layer folders, and matching explicit `Allow` rules may yield `SandboxType::None` for a command. No rule-exclusion option was found in the reviewed `ExecCli` struct and loader. A separate home does not automatically reuse the current keyring auth; reusing the current home also reuses its policy sources.
+
+First open edge: `CODEX_EXEC_AUTH_HOME_POLICY_ISOLATION_ROUTE_UNRESOLVED`. Continue static source analysis. If no supported separation exists, require a separately authorized non-mutating local preflight of the auth store mode and applicable policy provenance, without revealing secrets. No home/symlink creation, login, CLI/runtime, tests, code/config changes, install, spend, commit/push or promotion. Preserve the dirty worktree.
+
+---
+
 ## Current route overlay — Codex execpolicy Allow rules may bypass inner sandbox (2026-10-13; entry 252)
 
 Read [CHAT-ARCH-2026-10-13-252-execpolicy-allow-can-bypass-sandbox.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-252-execpolicy-allow-can-bypass-sandbox.md), then entries 251–247.
