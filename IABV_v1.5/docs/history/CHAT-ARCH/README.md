@@ -1,3 +1,11 @@
+## 2026-10-13 LATEST CLARIFICATION — OBSERVATION PERMISSION DOES NOT RELEASE AUDIT (ENTRY 266)
+
+Canonical: [CHAT-ARCH-2026-10-13-266-observation-approval-is-not-audit-release.md](./CHAT-ARCH-2026-10-13-266-observation-approval-is-not-audit-release.md).
+
+The inspected Control Center action `approve_observation_permission` is specifically for observation; tests use `observe_window_content:codex`. No evidence shows it releases the audit-reader operational block or proves the MCP checkout target. Entries 218–224 are a separate mutation-authority line with an unresolved Owner gate; do not use them as permission to implement a release path or search identity/auth broadly. Keep local M0A blocked; inspect only existing documented public-source control paths, then draft a narrow diagnostic/scoped-decision contract if no explicit route exists.
+
+---
+
 ## 2026-10-13 LATEST RESULT — M0B RUN STOPPED AT LOCAL GATE; CONTINUE PUBLIC-SOURCE WORK (ENTRY 265)
 
 Canonical: [CHAT-ARCH-2026-10-13-265-autonomy-run-paused-too-early-public-gate-contract.md](./CHAT-ARCH-2026-10-13-265-autonomy-run-paused-too-early-public-gate-contract.md).
