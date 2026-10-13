@@ -1,3 +1,13 @@
+## 2026-10-13 RELATION DELTA — EXEC CHILD ENVIRONMENT HAS NO CONTRACT
+
+Canonical: [CHAT-ARCH-2026-10-13-247-codex-exec-integration-boundary-static-block.md](./CHAT-ARCH-2026-10-13-247-codex-exec-integration-boundary-static-block.md).
+
+The current integrated relation reaches Codex through the App Server adapter, not a proven CLI `exec` adapter. The missing future relation is SafeUI authorization → pinned/resolved child executable → explicitly selected dedicated `CODEX_HOME` and effective Windows policy → confined candidate changes and evidence-bearing result → existing consumer/verifier → owner-only promotion. No part of this should be inferred from the interactive shell's environment or from the App Server route alone.
+
+Next edge: `CODEX_EXEC_LAUNCH_ENVIRONMENT_CONTRACT_UNDEFINED`. Design only; no live exchange, operational bridge or causal learning has been established.
+
+---
+
 ## 2026-10-13 RELATION DELTA — EXEC CONTRACT IDENTIFIED; TARGET POLICY MISSING
 
 Canonical: [CHAT-ARCH-2026-10-13-246-codex-exec-0120-static-contract-and-target-home.md](./CHAT-ARCH-2026-10-13-246-codex-exec-0120-static-contract-and-target-home.md).
