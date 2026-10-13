@@ -1,3 +1,13 @@
+## 2026-10-13 REGISTRATION — CODEX BRIDGE COMPARISON INCONCLUSIVE
+
+Canonical record: `CHAT-ARCH-2026-10-13-232-codex-bridge-comparison-result.md`.
+
+Owner-supplied static audit compared App Server and Desktop. Both paths are reported connected to the normal SafeUI flow, but live execution is unproven. App Server has unresolved auth/home and pre-effect tool-policy questions; Desktop has unresolved unique-window and process/session-to-rollout capture binding. Current status: `CODEX_BRIDGE_COMPARISON_INCONCLUSIVE`. Next action is a separately authorized read-only Desktop availability/correlation preflight without prompt dispatch. Preserve all dirty and untracked worktree content. No runtime operation is authorized by this writeback.
+
+Tags: IABV / M0-A / Codex / App Server / Desktop / correlation / SafeUI / evidence boundary / self-development
+
+---
+
 ## 2026-10-13 REGISTRATION — CODEX DEVELOPMENT BRIDGE PRIORITY CLARIFICATION
 
 Canonical record: `CHAT-ARCH-2026-10-13-231-codex-bridge-priority-clarification.md`.
