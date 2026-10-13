@@ -1,3 +1,11 @@
+## 2026-10-13 SYMBIOSIS DELTA — OBSERVATION PERMISSION / AUDIT RELEASE BOUNDARY (ENTRY 266)
+
+Canonical: [CHAT-ARCH-2026-10-13-266-observation-approval-is-not-audit-release.md](./CHAT-ARCH-2026-10-13-266-observation-approval-is-not-audit-release.md).
+
+Control Center's observed approval action is scoped to observation, not proven audit release. Routing must not infer read authority from an observation permission label. Mutation-authority entries 218–224 are a different governed line and cannot be transplanted into this path without matching scope. Keep local M0A blocked; continue bounded public-source tracing of the existing audit/Control Center path only.
+
+---
+
 ## 2026-10-13 SYMBIOSIS DELTA — M0B AUTONOMY RUN / PUBLIC GOVERNANCE CONTRACT (ENTRY 265)
 
 Canonical: [CHAT-ARCH-2026-10-13-265-autonomy-run-paused-too-early-public-gate-contract.md](./CHAT-ARCH-2026-10-13-265-autonomy-run-paused-too-early-public-gate-contract.md).
