@@ -1,3 +1,15 @@
+## 2026-10-13 FIRST OPEN EDGE — CODEX AUTH/HOME, POLICY ISOLATION AND USAGE-BUDGET ROUTE UNRESOLVED
+
+Canonical: [CHAT-ARCH-2026-10-13-254-codex-plan-usage-and-zero-extra-spend-gate.md](./CHAT-ARCH-2026-10-13-254-codex-plan-usage-and-zero-extra-spend-gate.md).
+
+The current Help Center documents plan-included Codex for Free/Go and other ChatGPT plans, but with variable limits; additional usage credits may be purchased in eligible accounts after included allowance. It does not establish the Owner's active CLI auth, quota, credit settings or guarantee no incremental charge.
+
+At the same time: keyring auth in Codex 0.120 is keyed by canonical `CODEX_HOME` path; a new home does not automatically reuse the old entry. Applicable `rules/*.rules` layers can contain explicit `Allow` policies that bypass the inner sandbox. A candidate must solve home/auth lookup, effective rule confinement, and a hard stop before paid credits/API fallback.
+
+First edge: `CODEX_EXEC_AUTH_HOME_POLICY_AND_USAGE_BUDGET_ROUTE_UNRESOLVED`. Cloud source analysis can continue; local entitlement/auth/rule state requires a separately authorized non-mutating preflight. No turn, secrets, new login, install, credit purchase or spend authorized.
+
+---
+
 ## 2026-10-13 FIRST ARCHITECTURE EDGE — CODEX AUTH HOME / EXECPOLICY ISOLATION ROUTE UNRESOLVED
 
 Canonical: [CHAT-ARCH-2026-10-13-253-codex-home-auth-and-execpolicy-coupling.md](./CHAT-ARCH-2026-10-13-253-codex-home-auth-and-execpolicy-coupling.md).
