@@ -1,3 +1,11 @@
+## Current route overlay — M0B Entry 265: continue public-source work without bypassing local gate
+
+Read [CHAT-ARCH-2026-10-13-265-autonomy-run-paused-too-early-public-gate-contract.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-265-autonomy-run-paused-too-early-public-gate-contract.md), then Entries 264 and 263.
+
+The supplied run stopped without invoking MCP or carrying out independent work. Keep local M0A blocked; do not infer its contents from public main. However, a local source gate does not prohibit static inspection of published public main. Continue on that bounded path: trace `_governance_block_for_route`, audit reader wiring, `autonomy_status`/`autonomy_update_task`, and the existing Control Center/approval route; reconcile Entries 219–226 before defining a new seam. Produce a reuse-first, code-facing narrow-diagnostic + separate scoped-grant contract and tests/spec. No local readers, broad snapshot, dirty-worktree modification, tests/runtime, push or merge until scope is separately verified and authorized. Local posture remains KEEP_BLOCKED.
+
+---
+
 ## Current route overlay — M0B-R4 governance capability gap (2026-10-13; entry 264)
 
 Read [CHAT-ARCH-2026-10-13-264-m0b-r4-governance-diagnostic-missing.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-264-m0b-r4-governance-diagnostic-missing.md), then entry 263.
