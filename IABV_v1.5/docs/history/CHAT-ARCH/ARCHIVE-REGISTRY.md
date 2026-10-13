@@ -1,3 +1,13 @@
+## 2026-10-13 REGISTRATION — CODEX PLAN ENTITLEMENT / AUTH MODE DISTINCTION
+
+Canonical record: `CHAT-ARCH-2026-10-13-235-codex-plan-entitlement-auth-mode.md`.
+
+Summary: Documents the distinction between native Codex Local/CLI usage included in Free plans (with limits) and SIWC ChatGPT-plan usage by third-party apps (eligible Plus/Pro accounts and participating apps). The local App Server adapter's auth mode remains unresolved. Next is a bounded read-only source/config audit; no OAuth registration, API key, runtime, credential inspection or additional spend.
+
+Tags: IABV / Codex / App Server / OAuth / Free plan / SIWC / entitlement / no extra spend
+
+---
+
 ## 2026-10-13 REGISTRATION — DESKTOP LAUNCH PROVENANCE UNAVAILABLE
 
 Canonical: `CHAT-ARCH-2026-10-13-234-desktop-provenance-unavailable-appserver-next.md`.
