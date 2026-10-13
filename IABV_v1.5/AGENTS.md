@@ -1,3 +1,15 @@
+## Current route overlay — Cloud static review continues; Windows home isolation is the discriminator (2026-10-13; entry 250)
+
+Read [CHAT-ARCH-2026-10-13-250-cloud-static-audit-windows-sandbox-home-separation.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-250-cloud-static-audit-windows-sandbox-home-separation.md), then entries 249–246.
+
+Do not stop source-level analysis just because owner selection A/B/C or local runtime verification is pending. Public Codex `rust-v0.120.0` declares filesystem permission profiles (`read/write/none`) and Windows elevated/unelevated sandbox modes, but the backends support different subsets. The critical invariant is: the Codex host can use the already approved authenticated home, while agent-spawned commands cannot read sensitive home/credential paths and can write only to a disposable candidate. If the already-available backend cannot enforce that exact policy, fail closed.
+
+Published IABV bootstrap loads recognized secrets into parent `os.environ`; a future executor must use an explicit env allowlist and separately restrict agent-command env. Current remote `main` does not contain the Owner's unpublished dirty adapter source, so do not claim to have reviewed it directly.
+
+First technical edge: `CODEX_EXEC_WINDOWS_HOME_READ_DENIAL_FEASIBILITY_UNVERIFIED`. C remains the runtime default while A/B selection and local effectiveness are unproven. No launch, turn, test, secret inspection, source edits or spend. Preserve dirty/untracked work.
+
+---
+
 ## Current route overlay — Owner home/auth decision still pending (2026-10-13; entry 249)
 
 Read [CHAT-ARCH-2026-10-13-249-owner-decision-package-reviewed-no-selection.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-249-owner-decision-package-reviewed-no-selection.md), then entries 248–247.
