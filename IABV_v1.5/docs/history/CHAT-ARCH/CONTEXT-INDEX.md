@@ -1,3 +1,14 @@
+## Latest route record — Entry 253
+
+- Record: [CHAT-ARCH-2026-10-13-253-codex-home-auth-and-execpolicy-coupling.md](./CHAT-ARCH-2026-10-13-253-codex-home-auth-and-execpolicy-coupling.md)
+- Classification: `CODEX_EXEC_HOME_AUTH_AND_POLICY_COUPLING_SOURCE_CONFIRMED_LOCAL_STORE_MODE_UNPROVEN`.
+- Versioned source finding: file auth is `CODEX_HOME/auth.json`; keyring store keys hash the canonical `CODEX_HOME` path. Execpolicy loads rules from all applicable config-layer `rules/*.rules` folders, and matching explicit `Allow` rules may bypass the inner sandbox.
+- Consequence: same home preserves auth lookup but carries rule inputs; a new home separates rule location but does not automatically reuse keyring auth. No reviewed 0.120 ExecCli rule-exclusion option was found.
+- First open edge: `CODEX_EXEC_AUTH_HOME_POLICY_ISOLATION_ROUTE_UNRESOLVED`.
+- No local auth store/rule inspection, home/symlink creation or runtime authorized. Preserve local dirty/untracked state.
+
+---
+
 ## Latest route record — Entry 252
 
 - Record: [CHAT-ARCH-2026-10-13-252-execpolicy-allow-can-bypass-sandbox.md](./CHAT-ARCH-2026-10-13-252-execpolicy-allow-can-bypass-sandbox.md)
