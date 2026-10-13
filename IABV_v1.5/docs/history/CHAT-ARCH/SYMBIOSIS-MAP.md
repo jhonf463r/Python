@@ -1,3 +1,16 @@
+## 2026-10-13 RELATION DELTA — OWNER CHOOSES KEEP-BLOCKED; TOOL ROUTING IS NOT A VERIFIED CODING BRIDGE
+
+Canonical: [CHAT-ARCH-2026-10-13-258-owner-keeps-codex-blocked-static-candidate-boundary.md](./CHAT-ARCH-2026-10-13-258-owner-keeps-codex-blocked-static-candidate-boundary.md).
+
+Owner decision: C — hold launch while static design continues. The candidate relation remains:
+Owner grant → pinned task/baseline → independently confined executor → one bounded Codex turn → external candidate/diff receipt → independent verifier → existing consumer evaluation → Owner-only promote/reject/revert → later causal-reuse experiment.
+
+Published source narrows current organs' semantics: ToolRegistry routes tool cards but does not authorize scope; ToolTask/ToolResult provide generic task/result envelopes without the required typed code-candidate receipt; SandboxExperimentService evaluates route/configuration recommendations, not Git code candidates; PromotionPrPublisher documents a route decision rather than promoting executable code. The autonomous validation loop has source-level auto-execute/auto-sync capabilities, but no running-state claim is made.
+
+B (codex exec) remains only a potential transport, not a selected safe architecture. The control plane's authorized authentication must not expose secret material to agent-directed child tools; a separate enforcement layer must contain file/process/network effects even if Codex's own sandbox is bypassed. If that cannot be demonstrated, the bridge remains blocked. No proof of end-to-end symbiosis or causal learning.
+
+---
+
 ## 2026-10-13 RELATION DELTA — CURRENT CODEX CLI CATALOG AND EXEC ARE CANDIDATES, NOT A GOVERNED IABV BRIDGE
 
 Canonical: [CHAT-ARCH-2026-10-13-257-current-codex-catalog-and-exec-static-paths.md](./CHAT-ARCH-2026-10-13-257-current-codex-catalog-and-exec-static-paths.md). Public v0.162.1 source reveals a catalog command and a newer non-interactive exec interface; official plan docs list GPT-5.6 Terra in Codex for Free/Go subject to limits. This corrects a universal reading of entry 256, which was scoped to v0.120. Bundled catalog, client minimums and a plan matrix do not prove the local child binary, account eligibility, allowance or zero extra spend.

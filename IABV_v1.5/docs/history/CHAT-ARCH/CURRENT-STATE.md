@@ -1,3 +1,15 @@
+## 2026-10-13 OWNER CHOICE C — CODEX LAUNCH STAYS BLOCKED; STATIC DESIGN CONTINUES
+
+Canonical: [CHAT-ARCH-2026-10-13-258-owner-keeps-codex-blocked-static-candidate-boundary.md](./CHAT-ARCH-2026-10-13-258-owner-keeps-codex-blocked-static-candidate-boundary.md).
+
+The Owner explicitly chose C for the launch/auth gate: remain blocked until A or B can be proved safe, while static design and continuity continue. This supersedes entry 249's "no selection" status for this phase, but does not select a home/auth route or authorize implementation, preflight, CLI/App Server, tests, spend or promotion.
+
+Current-main source review confirms that ToolRegistry lookup is routing rather than authorization; ToolTask/ToolResult are not a typed baseline-bound code receipt; SandboxExperimentService compares route/configuration options rather than materializing Git candidates; ToolSandbox's sandbox=True is not an OS-boundary proof; and PromotionPrPublisher publishes route/evidence documentation, not executable code. AutonomousValidationCycleService contains auto-start/proposal/auto-sync paths in source, but the running instance's effective wiring/state is unverified.
+
+Keep KEEP_BLOCKED. Treat codex exec only as a conditional transport candidate, requiring independent OS enforcement and an external verifiable candidate receipt. First open edge: CODEX_CANDIDATE_EXECUTOR_CONFINEMENT_AND_RECEIPT_CONTRACT_UNRESOLVED.
+
+---
+
 ## 2026-10-13 LATEST RESULT — CURRENT CODEX CATALOG AND EXEC SURFACES FOUND; RUNTIME REMAINS BLOCKED
 
 Canonical result: [CHAT-ARCH-2026-10-13-257-current-codex-catalog-and-exec-static-paths.md](./CHAT-ARCH-2026-10-13-257-current-codex-catalog-and-exec-static-paths.md).

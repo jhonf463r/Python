@@ -1,3 +1,13 @@
+## Continuity method delta — owner selects C; code-candidate boundary remains unproven (2026-10-13; entry 258)
+
+Canonical: [CHAT-ARCH-2026-10-13-258-owner-keeps-codex-blocked-static-candidate-boundary.md](./CHAT-ARCH-2026-10-13-258-owner-keeps-codex-blocked-static-candidate-boundary.md). The Owner explicitly selects C: do not launch Codex unless a compatible route is proved; continue only static design/review. Entry 249's no-selection state is historical and is superseded for the launch gate. Do not infer A/B home/auth selection.
+
+New current-main source evidence: ToolRegistry picker logic routes to a card but does not authorize paths/commands/cost; ToolTask/ToolResult contain generic identity/output/artifact fields, not an independently verifiable baseline-bound diff receipt; SandboxExperimentService is a route/configuration comparison, not a Git code sandbox; ToolSandbox's sandbox flag is not OS containment; PromotionPrPublisher produces documentary/evidence PRs, not production-code promotion. AutonomousValidationCycleService includes possible auto-start/proposal execution/auto-sync paths, but current runtime state is unknown.
+
+Keep PROVEN_BY_SOURCE separate from OWNER_REPORTED/INFERRED/UNPROVEN. Don't turn generic artifacts, route promotion, persistence, prompt text, or source availability into proof of a bounded coding bridge or learning. Next edge: CODEX_CANDIDATE_EXECUTOR_CONFINEMENT_AND_RECEIPT_CONTRACT_UNRESOLVED. No runtime, local preflight, install, spend, credential access, code edits or promotion.
+
+---
+
 ## Continuity method delta — distinguish current source interfaces from authorized runtime (2026-10-13; entry 257)
 
 Canonical: [CHAT-ARCH-2026-10-13-257-current-codex-catalog-and-exec-static-paths.md](./CHAT-ARCH-2026-10-13-257-current-codex-catalog-and-exec-static-paths.md). The v0.120 catalog-only negative finding (entry 256) is scoped to that CLI. Upstream v0.162.1 exposes `codex debug models`; `--bundled` is local bundle-only, while the default path may resolve existing auth, request the remote catalog and persist cache. Never summarize this as a guaranteed side-effect-free catalog query.

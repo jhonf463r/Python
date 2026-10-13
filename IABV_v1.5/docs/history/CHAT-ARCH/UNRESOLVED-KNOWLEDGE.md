@@ -1,3 +1,17 @@
+## 2026-10-13 FIRST OPEN EDGE — CODEX CANDIDATE EXECUTOR CONFINEMENT AND RECEIPT CONTRACT UNRESOLVED
+
+Canonical: [CHAT-ARCH-2026-10-13-258-owner-keeps-codex-blocked-static-candidate-boundary.md](./CHAT-ARCH-2026-10-13-258-owner-keeps-codex-blocked-static-candidate-boundary.md).
+
+Owner selected C: keep Codex launch blocked while design and verification continue. No home/auth option A/B, execution, preflight or implementation is selected. Current-main source confirms the missing code-development seam: the route/config SandboxExperimentService is not a Git code candidate sandbox; generic ToolTask/ToolResult and CodexTaskSpec do not independently bind an authorization to baseline/candidate/diff; ToolSandbox's flag does not prove OS containment; PromotionPrPublisher is documentary.
+
+Next discrimination: statically compare the accessible local adapter/dispatch against remote main without commands or secrets; then specify an OS-enforced control-plane/tool-execution separation and receipt created outside the untrusted agent narrative. If local source remains unreadable, keep those facts UNPROVEN and request the narrow source excerpts/diff rather than resetting the dirty worktree.
+
+Independent unresolved gates remain: target executable/version; approved existing auth/home; model eligibility/quota/no-extra-spend stop; effective Windows file/credential/process/network boundary; execpolicy Allow bypass containment; one-use authorization and dispatch-once correlation; typed candidate/diff receipt; independent validation/consumer; Owner-gated code promotion and later causal-reuse measurement.
+
+KEEP_BLOCKED. First open edge: CODEX_CANDIDATE_EXECUTOR_CONFINEMENT_AND_RECEIPT_CONTRACT_UNRESOLVED.
+
+---
+
 ## 2026-10-13 FIRST OPEN EDGE — CURRENT CODEX EXECUTABLE, AUTH/USAGE AND CONFINEMENT UNVERIFIED
 
 Canonical: [CHAT-ARCH-2026-10-13-257-current-codex-catalog-and-exec-static-paths.md](./CHAT-ARCH-2026-10-13-257-current-codex-catalog-and-exec-static-paths.md).

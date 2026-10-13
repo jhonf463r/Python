@@ -1,3 +1,16 @@
+## 2026-10-13 REGISTRATION — ENTRY 258: OWNER SELECTS KEEP-BLOCKED; CANDIDATE CONFINEMENT/RECEIPT REMAINS OPEN
+
+- Record: [CHAT-ARCH-2026-10-13-258-owner-keeps-codex-blocked-static-candidate-boundary.md](./CHAT-ARCH-2026-10-13-258-owner-keeps-codex-blocked-static-candidate-boundary.md)
+- Owner decision: C — keep Codex launch blocked while static design continues; no A/B home/auth route selected.
+- Result: OWNER_SELECTED_KEEP_BLOCKED_CONTINUE_STATIC_DESIGN; runtime posture KEEP_BLOCKED.
+- Published source findings: ToolRegistry lookup is routing, not authorization; ToolTask/ToolResult lack a typed baseline-bound code receipt; SandboxExperimentService validates route/configuration recommendations rather than Git candidates; ToolSandbox is not OS containment; PromotionPrPublisher is documentation/evidence publication rather than executable-code promotion.
+- AutonomousValidationCycleService includes possible auto-start/proposal/auto-sync paths in source; actual running state is not measured.
+- B (codex exec) remains conditional transport candidate only; independent OS enforcement, authorized auth/usage route, candidate receipt, independent validation and owner-gated promotion remain unproven.
+- Next edge: CODEX_CANDIDATE_EXECUTOR_CONFINEMENT_AND_RECEIPT_CONTRACT_UNRESOLVED.
+- No app/CLI/App Server launch, local preflight, implementation, test/build, credential inspection, install, spend or code promotion authorized.
+
+---
+
 ## 2026-10-13 REGISTRATION — ENTRY 257: CURRENT CODEX CATALOG AND EXEC INTERFACES REVIEWED
 
 - Record: [CHAT-ARCH-2026-10-13-257-current-codex-catalog-and-exec-static-paths.md](./CHAT-ARCH-2026-10-13-257-current-codex-catalog-and-exec-static-paths.md)

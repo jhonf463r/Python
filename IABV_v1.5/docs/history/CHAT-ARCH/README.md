@@ -1,3 +1,17 @@
+## 2026-10-13 LATEST RESULT — OWNER SELECTS KEEP-BLOCKED; STATIC CODE-CANDIDATE BOUNDARY REVIEW CONTINUES
+
+Canonical: [CHAT-ARCH-2026-10-13-258-owner-keeps-codex-blocked-static-candidate-boundary.md](./CHAT-ARCH-2026-10-13-258-owner-keeps-codex-blocked-static-candidate-boundary.md).
+
+The Owner explicitly selected C for the launch gate: keep Codex blocked while architecture/source verification continues. This supersedes entry 249's pending-choice state for this phase; no A/B home/auth option has been selected, and no runtime, preflight, implementation, tests, installation, spend or promotion is authorized.
+
+Current-main source review confirms a semantic boundary: ToolRegistry performs selection rather than authorization; ToolTask/ToolResult are generic task/result envelopes, not a typed baseline-bound code receipt; SandboxExperimentService compares route/configuration recommendations, not Git code candidates; ToolSandbox's sandbox flag is not OS-level confinement; PromotionPrPublisher publishes documentation/evidence rather than executable code. The autonomous validation service has source-level auto-start/proposal/auto-sync paths; this does not prove any live runtime is active or that the Codex development bridge exists.
+
+B (codex exec) remains a potential transport only. A safe bridge still needs an independent OS-enforced execution boundary, a solution to authorized authentication without exposing secrets to tool processes, a candidate/diff receipt generated independently of the agent narrative, independent verification and explicit Owner-only code promotion.
+
+First open edge: CODEX_CANDIDATE_EXECUTOR_CONFINEMENT_AND_RECEIPT_CONTRACT_UNRESOLVED. Keep KEEP_BLOCKED.
+
+---
+
 ## 2026-10-13 LATEST RESULT — CURRENT CODEX CATALOG/EXEC SOURCE PATHS FOUND; IABV RUNTIME REMAINS BLOCKED
 
 Canonical: [CHAT-ARCH-2026-10-13-257-current-codex-catalog-and-exec-static-paths.md](./CHAT-ARCH-2026-10-13-257-current-codex-catalog-and-exec-static-paths.md).

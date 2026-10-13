@@ -1,3 +1,12 @@
+## Latest route record — Entry 258
+- Record: [CHAT-ARCH-2026-10-13-258-owner-keeps-codex-blocked-static-candidate-boundary.md](./CHAT-ARCH-2026-10-13-258-owner-keeps-codex-blocked-static-candidate-boundary.md)
+- Owner chose C: keep Codex launch blocked while static design continues; home/auth A/B is not selected.
+- Current-main source review clarifies that ToolRegistry selection is not authorization; ToolTask/ToolResult are generic envelopes; SandboxExperimentService is route/config comparison, not a Git code candidate sandbox; ToolSandbox flag is not OS containment; PromotionPrPublisher publishes route/evidence documentation, not code.
+- AutonomousValidationCycleService source includes auto-start/proposal/auto-sync paths; actual runtime state remains unknown.
+- B (codex exec) is only a conditional transport candidate. Need independent enforcement, safe auth/usage boundary, typed diff receipt and independent verification.
+- First open edge: CODEX_CANDIDATE_EXECUTOR_CONFINEMENT_AND_RECEIPT_CONTRACT_UNRESOLVED; posture KEEP_BLOCKED.
+---
+
 ## Latest route record — Entry 257
 - Record: [CHAT-ARCH-2026-10-13-257-current-codex-catalog-and-exec-static-paths.md](./CHAT-ARCH-2026-10-13-257-current-codex-catalog-and-exec-static-paths.md)
 - Result: CURRENT_CODEX_CATALOG_AND_EXEC_SURFACES_SOURCE_VERIFIED; KEEP_BLOCKED.

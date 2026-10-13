@@ -1,3 +1,15 @@
+## Current route overlay — Owner chooses C; do not launch Codex (2026-10-13; entry 258)
+
+Read [CHAT-ARCH-2026-10-13-258-owner-keeps-codex-blocked-static-candidate-boundary.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-258-owner-keeps-codex-blocked-static-candidate-boundary.md), then entries 257, 249, 243, 055, 056 and 170. The Owner selected C: keep launch blocked while source-only design continues. This resolves the prior no-selection status for the current phase but does not select home/auth A or B or authorize local preflight, implementation, runtime, tests/builds, install/spend or promotion.
+
+Current-main inspection established that ToolRegistry lookup is not authorization; ToolTask/ToolResult have no first-class baseline-bound code-receipt contract; SandboxExperimentService compares routes/configurations and is not Git code isolation; ToolSandbox is not proof of OS confinement; PromotionPrPublisher publishes documentation/evidence, not code promotion. AutonomousValidationCycleService has source-level auto-start/proposal/auto-sync paths, but actual runtime wiring/state remains UNPROVEN.
+
+Prioritize REUSE > COMPOSE > WIRE/REPAIR > EXTEND > NEW. Do not invent a second brain/router/memory. A narrow external enforcement/evidence boundary may still be necessary. B (codex exec) is a possible transport only, not approved safe architecture. Keep KEEP_BLOCKED and preserve any dirty/untracked local worktree.
+
+First open edge: CODEX_CANDIDATE_EXECUTOR_CONFINEMENT_AND_RECEIPT_CONTRACT_UNRESOLVED.
+
+---
+
 ## Current route overlay — v0.162.1 catalog/exec source found; no launch authorization (2026-10-13; entry 257)
 
 Read [CHAT-ARCH-2026-10-13-257-current-codex-catalog-and-exec-static-paths.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-257-current-codex-catalog-and-exec-static-paths.md), then entries 249 and 252–256. Entry 256's no-catalog-interface result is specifically about inspected v0.120.0; don't generalize it to current source. v0.162.1 exposes `codex debug models`; default may use existing auth/network/cache, while `--bundled` is static only. Its `exec` `--ignore-rules` skips user/project rules but not all possible managed/system layers; explicit Allow can bypass Codex's inner sandbox; headless approval is Never. Plan/model minimums do not prove this account's quota, eligibility or zero added spend.
