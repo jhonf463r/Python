@@ -1,3 +1,15 @@
+## Current route overlay — Codex 0.120 permission-profile dispatch candidate (2026-10-13; entry 251)
+
+Read [CHAT-ARCH-2026-10-13-251-exec-v0120-permission-profile-dispatch.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-251-exec-v0120-permission-profile-dispatch.md), then entries 250–247.
+
+Do not blindly use `codex exec --sandbox workspace-write` for the candidate boundary. Public `rust-v0.120.0` source selects legacy policy interpretation whenever CLI `sandbox_mode` is set; `--full-auto` sets it too. With no sandbox override/profile sandbox mode, a higher-precedence `default_permissions` setting can select permission-profile interpretation. The exec harness sets `approval_policy=Never`, so this is unattended execution that must fail closed under an enforced pre-approved profile, not interactive command approvals.
+
+Candidate profile: only the disposable candidate writable; minimal/system runtime read roots; no broad root-read permission; selected authenticated home and credential paths omitted from command-child read roots; child network/integrations deny by default. This is static design only. Effective local Windows backend/provisioning and no-extra-spend auth remain unproven.
+
+First open edge: `CODEX_EXEC_V0120_PROFILE_ROUTE_BACKEND_AND_ENVIRONMENT_UNVERIFIED`. C remains runtime default while A/B selection is pending. No process, CLI/App Server call, turn, test, secret inspection, implementation, install, spend, commit/push or promotion. Preserve all dirty local files.
+
+---
+
 ## Current route overlay — Cloud static review continues; Windows home isolation is the discriminator (2026-10-13; entry 250)
 
 Read [CHAT-ARCH-2026-10-13-250-cloud-static-audit-windows-sandbox-home-separation.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-250-cloud-static-audit-windows-sandbox-home-separation.md), then entries 249–246.
