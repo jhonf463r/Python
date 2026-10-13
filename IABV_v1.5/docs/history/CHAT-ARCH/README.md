@@ -1,3 +1,15 @@
+## 2026-10-13 LATEST CODEX BRIDGE RESULT — COMPARISON INCONCLUSIVE
+
+Canonical record: [CHAT-ARCH-2026-10-13-232-codex-bridge-comparison-result.md](./CHAT-ARCH-2026-10-13-232-codex-bridge-comparison-result.md).
+
+Owner-supplied Codex static audit compared App Server with the existing Desktop/rollout-capture path. Both are statically connected to SafeUI/ToolTeachService, but neither has proven a real exchange. App Server's auth/home and pre-effect tool-control guarantees remain unproven; Desktop's unique-window/process-to-rollout linkage and UIA availability remain unproven. No execution, tests, network or UI actions were performed in the reported audit.
+
+**Current route state:** `CODEX_BRIDGE_COMPARISON_INCONCLUSIVE`.
+**First open edge:** `DESKTOP_TARGET_AND_CAPTURE_SOURCE_LINKAGE_UNPROVEN`.
+**Next:** only after separate explicit Owner authorization, perform one read-only Desktop availability/correlation preflight; no prompt dispatch. If that cannot establish unique window + capture-source linkage, return to a bounded App Server auth/preflight/tool-policy analysis. Preserve dirty worktree; no provider expansion, no extra spend.
+
+---
+
 ## 2026-10-13 OWNER ROUTE-PRIORITY CORRECTION — CODEX SELF-DEVELOPMENT BRIDGE
 
 Canonical correction: [CHAT-ARCH-2026-10-13-231-codex-bridge-priority-clarification.md](./CHAT-ARCH-2026-10-13-231-codex-bridge-priority-clarification.md).
