@@ -1,3 +1,15 @@
+## 2026-10-13 METHOD UPDATE — EXPECTED VERSION IS NOT EXECUTABLE IDENTITY
+
+Canonical: [CHAT-ARCH-2026-10-13-239-target-protocol-tool-surface-audit.md](./CHAT-ARCH-2026-10-13-239-target-protocol-tool-surface-audit.md).
+
+The source-reported expected user-agent `0.120.0` does not pin the actual executable when resolution remains dynamic through `PATH`. Until existing source/manifests identify the target contract, upstream schema evidence is contextual only. Do not run the CLI merely to discover its version within a read-only tranche.
+
+The primary invariant remains: no real turn unless the contract proves, before `turn/start`, that all unwanted effect-capable tools are absent or sufficiently restricted. Requested sandbox/approval policy and rejection after message receipt cannot substitute for that invariant. Normal dispatch reportedly skips `preflight()`, and the preflight does not make unexpected inventory a fail-closed condition.
+
+Next edge: `CODEX_APP_SERVER_SERVER_ENFORCED_TOOL_SUPPRESSION_UNAVAILABLE_OR_UNPROVEN`. Remain source-only, preserve evidence categories, and keep auth/quota/cost and consumer evaluation separate.
+
+---
+
 ## 2026-10-13 METHOD UPDATE — TEXT-ONLY INTENT IS NOT EFFECTIVE TOOL POLICY
 
 Canonical: [CHAT-ARCH-2026-10-13-238-appserver-tool-suppression-unproven.md](./CHAT-ARCH-2026-10-13-238-appserver-tool-suppression-unproven.md).
