@@ -1,3 +1,15 @@
+## 2026-10-13 ROUTE REFINEMENT — CHECK CODEX'S NATIVE WINDOWS SANDBOX BEFORE DESIGNING A SEPARATE EXECUTOR
+
+Canonical supplement: [CHAT-ARCH-2026-10-13-244-windows-sandbox-route-refinement.md](./CHAT-ARCH-2026-10-13-244-windows-sandbox-route-refinement.md).
+
+Official Codex documentation says native Windows sandboxing can enforce filesystem/network permissions for agent-spawned commands; `workspace-write` is intended for bounded local code changes. This opens a potentially shorter route than creating a separate sandbox, but does not prove the Owner's current CLI/App Server version or config supports it. The reported resolver expects user-agent `0.120.0` and dynamically resolves the binary; newer MXC compatibility instructions are not proof about that install.
+
+**Next edge:** `CODEX_NATIVE_WINDOWS_SANDBOX_IN_APP_SERVER_MODE_UNVERIFIED`. Perform a bounded source-only compatibility/design check: exact adapter sandboxPolicy/root/cwd, how App Server tool commands inherit the native Windows sandbox, the actual expected CLI/protocol contract, effective `CODEX_HOME` sandbox options (no secrets), external integrations, and candidate diff capture. If the current native sandbox is supportable with the existing authorized plan/auth without install/setup/spend, prefer it. Otherwise keep blocked and define a separate contained executor. Do not assume native sandbox applies merely from the docs; do not run CLI, tests or runtime to find out in this tranche.
+
+The report in entry 243 remains accepted for the current adapter's read-only empty-root/text-only composition. Local state reported by Codex remains branch `codex/m0a-safe-ui-boot`, HEAD `5b1d89022ee4cdc63c1f88e050f086b40a42875c`, 56 modified tracked and 6 untracked; preserve everything. No implementation, runtime, credentials, OAuth/API setup, installation or spending.
+
+---
+
 ## 2026-10-13 LATEST ROUTE RESULT — EXISTING CODEX APP SERVER PATH IS NOT A BOUNDED CODING BRIDGE
 
 Canonical result: [CHAT-ARCH-2026-10-13-243-codex-bounded-development-mode-blocked.md](./CHAT-ARCH-2026-10-13-243-codex-bounded-development-mode-blocked.md).
