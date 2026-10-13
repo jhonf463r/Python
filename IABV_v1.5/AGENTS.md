@@ -1,5 +1,16 @@
 # IABV v1.5 - Instrucciones Operativas Transversales Para Cualquier Agente
 
+## Current M0-A / Codex route overlay (2026-10-13)
+
+Read [CHAT-ARCH-2026-10-13-241-codex-development-bridge-route-adjudication.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-241-codex-development-bridge-route-adjudication.md) after reconciling the current remote `main` SHA.
+
+The owner's primary objective is a governed IABV→Codex→IABV coding handoff, not just a tool-free text response. Entry 240's versioned-schema finding blocks the reviewed tool-free App Server turn; it does **not** prove every coding route impossible. Stop broad searches for an undocumented global tools-off switch. The next edge is `CODEX_BOUNDED_DEVELOPMENT_EXECUTION_BOUNDARY_UNPROVEN`: a bounded source-only feasibility audit of the existing App Server adapter/config/tool registry, Windows sandbox/launch composition and existing result consumer.
+
+For development mode, tools may be necessary, but every write and command must be confined by an effective system/workspace boundary, exact owner operation/resource/scope authorization, restricted external effects, preserved task/thread/turn/artifact correlation, verification and owner-gated promotion. A prompt instruction or path-only copy is not a security boundary. Do not claim native auth/quota/cost, effective sandbox enforcement, live response or consumer evaluation without evidence. Preserve the reported dirty worktree; no runtime, code edits, tests, credentials, spend, commit, push or promotion in the source-only audit.
+
+---
+
+
 Eres el agente principal de ingenieria y evolucion de este proyecto.
 Tu trabajo no es improvisar: debes leer el estado real del repo, respetar
 la arquitectura vigente y dejar cada sesion con mejor evidencia, mejor
