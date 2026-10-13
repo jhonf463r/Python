@@ -1,3 +1,13 @@
+## 2026-10-13 ACTIVE UNKNOWN — CANDIDATE-WORKSPACE EXECUTION DESIGN
+
+Canonical result: [CHAT-ARCH-2026-10-13-243-codex-bounded-development-mode-blocked.md](./CHAT-ARCH-2026-10-13-243-codex-bounded-development-mode-blocked.md).
+
+The existing adapter is reported statically blocked for coding mode. Unresolved choices: whether App Server can be executed with demonstrably effective OS-level filesystem/command confinement; if not, which distinct contained executor is viable without copying host credentials; how to allow only required Codex service communication while blocking unapproved network/MCP/app/browser effects; how to bind Owner approval to candidate root, baseline, allowed paths/commands and no-publication; how to capture and digest candidate diff/test artifacts; how the existing consumer and an independent verifier evaluate them; and what auth/quota/cost mode is truly available.
+
+Next edge: `CODEX_CANDIDATE_WORKSPACE_EXECUTION_BOUNDARY_DESIGN_UNRESOLVED`. Design only; local/runtime facts remain unproven unless directly observed. No code changes, tests, process launch, credential inspection or spend.
+
+---
+
 ## 2026-10-13 ACTIVE UNKNOWN — CODEX BOUNDED DEVELOPMENT EXECUTION BOUNDARY
 
 Canonical: [CHAT-ARCH-2026-10-13-241-codex-development-bridge-route-adjudication.md](./CHAT-ARCH-2026-10-13-241-codex-development-bridge-route-adjudication.md).
