@@ -1,3 +1,15 @@
+## 2026-10-13 FIRST OPEN EDGE — CODEX EXEC LAUNCH CONTRACT OWNER DECISION PENDING
+
+Canonical: [CHAT-ARCH-2026-10-13-248-exec-launch-contract-design-adjudication.md](./CHAT-ARCH-2026-10-13-248-exec-launch-contract-design-adjudication.md).
+
+The source-grounded design is ready for Owner adjudication, but not implementation. A critical policy choice remains: the future CLI requires an explicit, controlled `CODEX_HOME`, yet the project constraints prohibit copying credentials, starting a new login/OAuth flow, installing software or spending more. No already-authenticated home that satisfies those constraints has been established.
+
+Owner decision must define: (1) acceptable existing home/authentication pattern, or preserve the block if none exists; (2) candidate root/baseline; (3) command and network capabilities; (4) how effective Windows confinement will be demonstrated; and (5) which existing consumer/verifier determines acceptance of diffs/artifacts.
+
+No secrets or session data should be inspected to resolve this. No runtime turn, implementation or promotion is authorized by the design report.
+
+---
+
 ## 2026-10-13 FIRST OPEN EDGE — CODEX EXEC LAUNCH ENVIRONMENT CONTRACT UNDEFINED
 
 Canonical: [CHAT-ARCH-2026-10-13-247-codex-exec-integration-boundary-static-block.md](./CHAT-ARCH-2026-10-13-247-codex-exec-integration-boundary-static-block.md).
