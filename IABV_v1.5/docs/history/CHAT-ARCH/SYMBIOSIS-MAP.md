@@ -1,3 +1,15 @@
+## 2026-10-13 RELATION DELTA — TASK ID REPAIR REPORTED PASS; CORRELATION CHAIN STILL OPEN
+
+Canonical: [CHAT-ARCH-2026-10-13-237-codex-task-id-repair-synthetic-pass.md](./CHAT-ARCH-2026-10-13-237-codex-task-id-repair-synthetic-pass.md).
+
+Owner report says the identity relation now remains stable through SafeUI authorization, task construction and the pre-dispatch boundary for `codex_app_server` and `codex_installed`; mismatches are rejected before external consultation. The focused test run reportedly passed 32 cases. This is synthetic evidence only and has not been independently rerun here.
+
+The broader relation remains to prove: authorized operation/task → adapter dispatch → terminal task/thread/turn response → persisted ToolResult → existing consumer ingestion and evaluation. Auth/home, preflight and pre-effect tool denial are separate edges. Do not create another coordinator, token or memory organ; use the existing SafeUI, ToolTeachService, ToolRegistry and consumer path.
+
+Next edge: `CODEX_APP_SERVER_AUTH_HOME_PREFLIGHT_AND_EFFECTIVE_TOOL_POLICY_UNRESOLVED`. Source review only; no actual dispatch or causal-learning claim.
+
+---
+
 ## 2026-10-13 RELATION DELTA — SAFEUI TASK ID CORRELATION DEFECT
 
 Canonical: [CHAT-ARCH-2026-10-13-236-appserver-task-id-correlation-blocker.md](./CHAT-ARCH-2026-10-13-236-appserver-task-id-correlation-blocker.md).
