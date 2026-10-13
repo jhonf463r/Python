@@ -1,3 +1,13 @@
+## Latest route record — Entry 247
+
+- Record: [CHAT-ARCH-2026-10-13-247-codex-exec-integration-boundary-static-block.md](./CHAT-ARCH-2026-10-13-247-codex-exec-integration-boundary-static-block.md)
+- Classification: `CODEX_EXECUTION_INTERFACE_STATICALLY_BLOCKED` for the current IABV integration.
+- Evidence: owner-supplied static review says App Server has a home/environment construction, but no IABV CLI `exec` integration or future-child environment contract was found in scope.
+- First open edge: `CODEX_EXEC_LAUNCH_ENVIRONMENT_CONTRACT_UNDEFINED`.
+- Next task is design-only: bind authorization, exact executable, dedicated home/policy, Windows effect boundaries, artifact capture, consumer verification and owner-only promotion. No launch/test/implementation authorized. Preserve local dirty/untracked state.
+
+---
+
 ## Latest route record — Entry 246
 
 - Record: [CHAT-ARCH-2026-10-13-246-codex-exec-0120-static-contract-and-target-home.md](./CHAT-ARCH-2026-10-13-246-codex-exec-0120-static-contract-and-target-home.md)
