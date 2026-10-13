@@ -1,3 +1,11 @@
+## 2026-10-13 LATEST RESULT — READ-ONLY MODEL CATALOG GATE REMAINS BLOCKED
+
+Canonical: [CHAT-ARCH-2026-10-13-256-read-only-model-catalog-path-unavailable.md](./CHAT-ARCH-2026-10-13-256-read-only-model-catalog-path-unavailable.md).
+
+The inspected Codex 0.120 CLI did not establish a supported catalog-only request separate from a model turn. No catalog request or turn occurred. Keep KEEP_BLOCKED and CODEX_EXEC_VERSION_MODEL_AND_INCLUDED_USAGE_UNVERIFIED; this bounded finding does not prove all routes impossible or account-level model/cost eligibility.
+
+---
+
 ## 2026-10-13 LATEST RESULT — INSTALLED CLI 0.120 IS BELOW CURRENT DOCUMENTED MODEL MINIMUMS
 
 Canonical: [CHAT-ARCH-2026-10-13-255-cli-version-model-entitlement-compatibility.md](./CHAT-ARCH-2026-10-13-255-cli-version-model-entitlement-compatibility.md).

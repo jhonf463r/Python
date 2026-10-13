@@ -1,3 +1,9 @@
+## Current route overlay — authenticated catalog-only path not established (2026-10-13; entry 256)
+
+Read [CHAT-ARCH-2026-10-13-256-read-only-model-catalog-path-unavailable.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-256-read-only-model-catalog-path-unavailable.md), then entries 255–252. The reviewed rust-v0.120.0 CLI did not establish a supported isolated catalog-only request; ModelsManager is internal, and no catalog request or turn occurred. This does not prove every compatible route impossible. Keep KEEP_BLOCKED and first open edge CODEX_EXEC_VERSION_MODEL_AND_INCLUDED_USAGE_COMPATIBILITY_UNVERIFIED. Model compatibility beyond documented minimums, account auth/eligibility, quota, credit fallback and cost remain unproven. No runtime, credentials, install, inference or code action.
+
+---
+
 ## Current route overlay — CLI version/model and included-usage compatibility (2026-10-13; entry 255)
 
 Read [CHAT-ARCH-2026-10-13-255-cli-version-model-entitlement-compatibility.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-255-cli-version-model-entitlement-compatibility.md), then entries 254–252.

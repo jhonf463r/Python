@@ -1,3 +1,13 @@
+## 2026-10-13 FIRST OPEN EDGE — CODEX CATALOG-ONLY OBSERVATION UNAVAILABLE
+
+Canonical: [CHAT-ARCH-2026-10-13-256-read-only-model-catalog-path-unavailable.md](./CHAT-ARCH-2026-10-13-256-read-only-model-catalog-path-unavailable.md).
+
+The inspected rust-v0.120.0 CLI did not establish a supported isolated catalog-only interface; internal ModelsManager and bundled catalog cannot prove live account availability. No authenticated request or turn occurred. This bounded finding does not prove every route impossible.
+
+Keep KEEP_BLOCKED and CODEX_EXEC_VERSION_MODEL_AND_INCLUDED_USAGE_COMPATIBILITY_UNVERIFIED. Compatibility for any older model, active auth, account eligibility, included usage, quota, paid-credit fallback and cost remain UNPROVEN.
+
+---
+
 ## 2026-10-13 FIRST COMPATIBILITY EDGE — CODEX CLI VERSION, MODEL AND INCLUDED-USAGE ROUTE UNVERIFIED
 
 Canonical: [CHAT-ARCH-2026-10-13-255-cli-version-model-entitlement-compatibility.md](./CHAT-ARCH-2026-10-13-255-cli-version-model-entitlement-compatibility.md).

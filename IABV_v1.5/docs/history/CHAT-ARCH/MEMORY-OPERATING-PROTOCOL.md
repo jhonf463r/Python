@@ -1,3 +1,11 @@
+## Continuity method delta — catalog metadata is not a safe catalog-only query (2026-10-13)
+
+Canonical: [CHAT-ARCH-2026-10-13-256-read-only-model-catalog-path-unavailable.md](./CHAT-ARCH-2026-10-13-256-read-only-model-catalog-path-unavailable.md). In inspected Codex 0.120 source, an internal model manager can refresh remote models, while the reviewed CLI does not establish a standalone supported catalog-only operation. Do not substitute exec, App Server, a model turn, or bundled models.json for an isolated authenticated catalog observation. This bounded negative finding does not prove every compatible route impossible. Preserve PROVEN_BY_SOURCE versus OWNER_REPORTED and keep account eligibility, quota, credit fallback and cost UNPROVEN.
+
+First open edge remains CODEX_EXEC_VERSION_MODEL_AND_INCLUDED_USAGE_COMPATIBILITY_UNVERIFIED; posture KEEP_BLOCKED.
+
+---
+
 ## Continuity method delta — check current model minimums against pinned CLI version (2026-10-13)
 
 Canonical: [CHAT-ARCH-2026-10-13-255-cli-version-model-entitlement-compatibility.md](./CHAT-ARCH-2026-10-13-255-cli-version-model-entitlement-compatibility.md).

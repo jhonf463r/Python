@@ -1,3 +1,9 @@
+## 2026-10-13 RELATION DELTA — CATALOG METADATA DOES NOT CLOSE MODEL ELIGIBILITY
+
+Canonical: [CHAT-ARCH-2026-10-13-256-read-only-model-catalog-path-unavailable.md](./CHAT-ARCH-2026-10-13-256-read-only-model-catalog-path-unavailable.md). The examined Codex 0.120 CLI did not establish a supported catalog-only operation. Its internal model-manager refresh and bundled catalog do not establish a live authenticated response, account eligibility, quota or cost. No request or model turn occurred. This closes no runtime or IABV handoff relation; CODEX_EXEC_VERSION_MODEL_AND_INCLUDED_USAGE_COMPATIBILITY_UNVERIFIED remains open.
+
+---
+
 ## 2026-10-13 RELATION DELTA — PINNED CLI VERSION MUST MATCH AN AVAILABLE MODEL AND PLAN ROUTE
 
 Canonical: [CHAT-ARCH-2026-10-13-255-cli-version-model-entitlement-compatibility.md](./CHAT-ARCH-2026-10-13-255-cli-version-model-entitlement-compatibility.md).

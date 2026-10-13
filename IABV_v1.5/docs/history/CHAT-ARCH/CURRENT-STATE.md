@@ -1,3 +1,13 @@
+## 2026-10-13 LATEST RESULT — NO ISOLATED CATALOG-ONLY PATH ESTABLISHED
+
+Canonical result: [CHAT-ARCH-2026-10-13-256-read-only-model-catalog-path-unavailable.md](./CHAT-ARCH-2026-10-13-256-read-only-model-catalog-path-unavailable.md).
+
+The examined Codex 0.120 public CLI does not establish a standalone catalog-only operation. Its internal ModelsManager can refresh/list remote models, but no supported isolated catalog-only interface was established. No authenticated catalog request, model turn, login or alternate route occurred. This bounded finding does not prove every possible route impossible; bundled data is not live availability or account entitlement.
+
+Keep KEEP_BLOCKED and CODEX_EXEC_VERSION_MODEL_AND_INCLUDED_USAGE_COMPATIBILITY_UNVERIFIED. CLI 0.120 is below official minimums for GPT-5.6 and GPT-6 Astra; other-model compatibility, account/model eligibility, auth, quota, credits and cost remain unproven. See entry 256 and entries 252–255.
+
+---
+
 ## 2026-10-13 LATEST RESULT — CLI 0.120 MODEL COMPATIBILITY AND USAGE BUDGET ARE SEPARATE GATES
 
 Canonical result: [CHAT-ARCH-2026-10-13-255-cli-version-model-entitlement-compatibility.md](./CHAT-ARCH-2026-10-13-255-cli-version-model-entitlement-compatibility.md).

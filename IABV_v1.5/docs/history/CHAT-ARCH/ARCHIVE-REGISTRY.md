@@ -1,3 +1,15 @@
+## 2026-10-13 REGISTRATION — ENTRY 256: READ-ONLY MODEL CATALOG PATH UNAVAILABLE
+
+- Record: [CHAT-ARCH-2026-10-13-256-read-only-model-catalog-path-unavailable.md](./CHAT-ARCH-2026-10-13-256-read-only-model-catalog-path-unavailable.md)
+- Result: READ_ONLY_MODEL_CATALOG_PATH_UNAVAILABLE (mission-reported); posture KEEP_BLOCKED.
+- Source finding: inspected Codex 0.120 CLI does not establish a supported isolated catalog-only command; internal ModelsManager and bundled models.json are not a live account response.
+- No authenticated catalog request, login, inference, model turn or alternate route occurred.
+- GPT-5.6/Astra minimums and GPT-5.4 retirement are in OpenAI Help Center; GPT-5.2/GPT-5.3-Codex retirement is bounded to an OpenAI contributor reply on issue #25871.
+- Account/model eligibility, auth, included usage, quota, credits and cost remain unproven.
+- First open edge: CODEX_EXEC_VERSION_MODEL_AND_INCLUDED_USAGE_COMPATIBILITY_UNVERIFIED; posture KEEP_BLOCKED.
+
+---
+
 ## 2026-10-13 REGISTRATION — ENTRY 255: CLI VERSION / MODEL / INCLUDED-USAGE GATE
 
 - Record: [CHAT-ARCH-2026-10-13-255-cli-version-model-entitlement-compatibility.md](./CHAT-ARCH-2026-10-13-255-cli-version-model-entitlement-compatibility.md)

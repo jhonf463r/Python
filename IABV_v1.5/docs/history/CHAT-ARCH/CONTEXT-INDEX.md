@@ -1,3 +1,14 @@
+## Latest route record — Entry 256
+- Record: [CHAT-ARCH-2026-10-13-256-read-only-model-catalog-path-unavailable.md](./CHAT-ARCH-2026-10-13-256-read-only-model-catalog-path-unavailable.md)
+- Result: READ_ONLY_MODEL_CATALOG_PATH_UNAVAILABLE (mission-reported); posture KEEP_BLOCKED.
+- The inspected Codex 0.120 CLI did not establish a supported isolated catalog-only request. Internal ModelsManager and bundled models.json do not prove live account availability.
+- No authenticated catalog request, login, turn or alternate route occurred. This bounded finding does not prove every route impossible.
+- CLI 0.120 is below documented GPT-5.6/Astra minimums; other model compatibility, account auth/eligibility, quota, credit fallback and cost remain unproven.
+- First open edge: CODEX_EXEC_VERSION_MODEL_AND_INCLUDED_USAGE_COMPATIBILITY_UNVERIFIED.
+---
+
+---
+
 ## Latest route record — Entry 255
 
 - Record: [CHAT-ARCH-2026-10-13-255-cli-version-model-entitlement-compatibility.md](./CHAT-ARCH-2026-10-13-255-cli-version-model-entitlement-compatibility.md)
