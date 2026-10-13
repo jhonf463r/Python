@@ -1,3 +1,13 @@
+## 2026-10-13 TRANSCRIPT INTAKE / SPACE-TIME RECONCILIATION — RECORD 242
+
+Record: [CHAT-ARCH-2026-10-13-242-inline-transcript-intake-and-continuity-audit.md](./CHAT-ARCH-2026-10-13-242-inline-transcript-intake-and-continuity-audit.md).
+
+This record applies the canonical `CHAT / TRANSCRIPT INTAKE CONTRACT` to the inline report chain: it distinguishes visible pasted text from the named Markdown artifact whose bytes were not available, records provenance/completeness limits, and separates owner-reported local results from remote source proof. This is a continuity/method record; it does not change the active technical route.
+
+Active technical route remains entry 241. First open edge: `CODEX_BOUNDED_DEVELOPMENT_EXECUTION_BOUNDARY_UNPROVEN`.
+
+---
+
 ## 2026-10-13 FIRST OPEN EDGE — CODEX CANDIDATE-WORKSPACE EXECUTION BOUNDARY
 
 Canonical: [CHAT-ARCH-2026-10-13-241-codex-development-bridge-route-adjudication.md](./CHAT-ARCH-2026-10-13-241-codex-development-bridge-route-adjudication.md).
