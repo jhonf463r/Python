@@ -1,3 +1,13 @@
+## 2026-10-13 FIRST OPEN EDGE — NO GLOBAL TOOL DISABLE IN EXPECTED 0.120.0 TYPED CONTRACT
+
+Canonical: [CHAT-ARCH-2026-10-13-240-versioned-0120-tool-control-limit.md](./CHAT-ARCH-2026-10-13-240-versioned-0120-tool-control-limit.md).
+
+The public `rust-v0.120.0` thread/turn schemas expose no generic no-tools field; typed `ToolsV2` is selective rather than a complete tool registry. IABV's actual executable remains unproven due dynamic `PATH` resolution. Normal dispatch reportedly skips preflight, and no effective zero-tool surface is verified. Do not re-run broad upstream searches; decide from existing adapter/config/registry source whether a true server-side pre-turn restriction exists. If none, retain the block and select an evidence-grounded alternative mode.
+
+Next: `CODEX_APP_SERVER_NO_GLOBAL_TOOL_DISABLE_IN_EXPECTED_0120_CONTRACT`. Source-only; no runtime, tests, credentials, edits or spending.
+
+---
+
 ## 2026-10-13 FIRST OPEN EDGE — TARGET PROTOCOL IDENTITY AND PRE-EFFECT TOOL SUPPRESSION
 
 Canonical: [CHAT-ARCH-2026-10-13-239-target-protocol-tool-surface-audit.md](./CHAT-ARCH-2026-10-13-239-target-protocol-tool-surface-audit.md).
