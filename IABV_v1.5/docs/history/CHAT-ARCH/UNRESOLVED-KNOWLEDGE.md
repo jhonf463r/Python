@@ -2,6 +2,8 @@
 
 Canonical: [CHAT-ARCH-2026-10-13-246-codex-exec-0120-static-contract-and-target-home.md](./CHAT-ARCH-2026-10-13-246-codex-exec-0120-static-contract-and-target-home.md).
 
+**Edge ID:** `CODEX_EXEC_TARGET_HOME_AND_EFFECTIVE_POLICY_UNPROVEN`.
+
 The current shell resolver/package is identified by the supplied inventory, and versioned source declares Codex `exec` at `rust-v0.120.0`. Still unknown: which `PATH` and binary the IABV child receives; the exact home/config IABV assigns; effective Windows sandbox and approval policy; whether MCP/plugins/external effects are absent; auth/session, entitlement/quota/cost; and verified candidate-diff delivery into the existing consumer.
 
 Next operation is static inspection only of child-environment construction and allowlisted non-secret settings in the intended home. If that home or effective policy cannot be resolved without launching a process, stop and request separate Owner authorization for the smallest diagnostic. Do not run `codex --version`, `--help`, App Server or CLI; do not copy `danger-full-access` / `never` from the unrelated default home.
