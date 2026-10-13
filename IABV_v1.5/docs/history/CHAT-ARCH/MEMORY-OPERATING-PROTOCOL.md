@@ -1,3 +1,15 @@
+## Continuity method delta — inspect execpolicy bypass before accepting an inner sandbox (2026-10-13)
+
+Canonical: [CHAT-ARCH-2026-10-13-252-execpolicy-allow-can-bypass-sandbox.md](./CHAT-ARCH-2026-10-13-252-execpolicy-allow-can-bypass-sandbox.md).
+
+A permission profile is not enough if the agent can trigger a command that bypasses the inner sandbox. Public `rust-v0.120.0` source shows a matching explicit execpolicy `Allow` can set `bypass_sandbox=true`, and the orchestrator selects `SandboxType::None` for that attempt. The applicable policy set is loaded from rule files in the config-layer folders; do not assume only `CODEX_HOME/rules/default.rules` contributes.
+
+The default operational state stays blocked until either all applicable rule layers are shown incapable of allowing a command to escape confinement, or a separate outer OS boundary is demonstrated to contain the process independently of Codex's choice. Don't infer rule absence, inspect credentials, or test by launching a command.
+
+First open edge: `CODEX_EXEC_V0120_EFFECTIVE_EXEC_POLICY_RULESET_UNVERIFIED`. Cloud source analysis can continue; local effective policy remains unproven.
+
+---
+
 ## Continuity method delta — version-matched exec permission-profile route (2026-10-13)
 
 Canonical: [CHAT-ARCH-2026-10-13-251-exec-v0120-permission-profile-dispatch.md](./CHAT-ARCH-2026-10-13-251-exec-v0120-permission-profile-dispatch.md).
