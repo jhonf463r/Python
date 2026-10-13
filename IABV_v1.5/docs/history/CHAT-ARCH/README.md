@@ -1,3 +1,13 @@
+## 2026-10-13 LATEST RESULT — CODEX EXEC 0.120 PROFILE ROUTE NARROWED IN CLOUD SOURCE
+
+Canonical: [CHAT-ARCH-2026-10-13-251-exec-v0120-permission-profile-dispatch.md](./CHAT-ARCH-2026-10-13-251-exec-v0120-permission-profile-dispatch.md).
+
+Source-level result: in public Codex `rust-v0.120.0`, using `--sandbox` or `--full-auto` selects the legacy sandbox policy route. To try exact filesystem permission profiles, a future design needs the version's `default_permissions` profile route without that sandbox override. The profile should allow candidate-only writes and minimal runtime roots, without broad root read; the child network/integration policy must also be explicit. `exec` sets approval policy to `Never`, so there is no per-command prompt safety net.
+
+Next edge: `CODEX_EXEC_V0120_PROFILE_ROUTE_BACKEND_AND_ENVIRONMENT_UNVERIFIED`. Effective backend/provisioning on Owner Windows, auth/cost and artifact consumer stay unproven. No CLI invocation or implementation.
+
+---
+
 ## 2026-10-13 LATEST RESULT — CLOUD ANALYSIS CONTINUES; WINDOWS HOME READ DENIAL IS THE TECHNICAL GATE
 
 Canonical: [CHAT-ARCH-2026-10-13-250-cloud-static-audit-windows-sandbox-home-separation.md](./CHAT-ARCH-2026-10-13-250-cloud-static-audit-windows-sandbox-home-separation.md).
