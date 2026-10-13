@@ -1,3 +1,13 @@
+## 2026-10-13 RELATION DELTA — EXEC POLICY CAN CUT ACROSS THE INNER SANDBOX
+
+Canonical: [CHAT-ARCH-2026-10-13-252-execpolicy-allow-can-bypass-sandbox.md](./CHAT-ARCH-2026-10-13-252-execpolicy-allow-can-bypass-sandbox.md).
+
+A future Codex exec path must enforce: SafeUI authorization → approved executable/home → permission profile → applicable execpolicy rules cannot lift sandbox restrictions → Windows OS boundary contains all child commands → correlated diff/artifacts → existing consumer/verifier → Owner-only promotion. The versioned 0.120 source shows explicit `Allow` rules can yield a `SandboxType::None` command attempt. A permission profile and restricted network setting are therefore insufficient if an applicable rule can bypass the sandbox.
+
+Next edge: `CODEX_EXEC_V0120_EFFECTIVE_EXEC_POLICY_RULESET_UNVERIFIED`. Either establish safe effective rule precedence or independent outer confinement; otherwise C/block.
+
+---
+
 ## 2026-10-13 RELATION DELTA — EXEC PROFILE SELECTION MUST NOT FALL BACK TO LEGACY SANDBOX
 
 Canonical: [CHAT-ARCH-2026-10-13-251-exec-v0120-permission-profile-dispatch.md](./CHAT-ARCH-2026-10-13-251-exec-v0120-permission-profile-dispatch.md).
