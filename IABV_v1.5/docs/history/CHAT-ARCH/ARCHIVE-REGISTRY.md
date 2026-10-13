@@ -1,3 +1,14 @@
+## 2026-10-13 REGISTRATION — ENTRY 253: CODEX HOME AUTH AND EXECPOLICY COUPLING
+
+- Record: [CHAT-ARCH-2026-10-13-253-codex-home-auth-and-execpolicy-coupling.md](./CHAT-ARCH-2026-10-13-253-codex-home-auth-and-execpolicy-coupling.md)
+- Classification: `CODEX_EXEC_HOME_AUTH_AND_POLICY_COUPLING_SOURCE_CONFIRMED_LOCAL_STORE_MODE_UNPROVEN`.
+- Durable source finding: file auth lives at `CODEX_HOME/auth.json`; keyring auth key derives from canonical home path; execpolicy reads `rules/*.rules` across config layers.
+- Consequence: new home does not automatically reuse the old keyring auth, while existing home keeps policy sources that may include explicit Allow rules able to bypass the inner sandbox.
+- First open edge: `CODEX_EXEC_AUTH_HOME_POLICY_ISOLATION_ROUTE_UNRESOLVED`.
+- No credentials, home/symlink creation, login, runtime, spending, source/config changes or promotion. Preserve dirty local files.
+
+---
+
 ## 2026-10-13 REGISTRATION — ENTRY 252: CODEX EXECPOLICY ALLOW CAN BYPASS INNER SANDBOX
 
 - Record: [CHAT-ARCH-2026-10-13-252-execpolicy-allow-can-bypass-sandbox.md](./CHAT-ARCH-2026-10-13-252-execpolicy-allow-can-bypass-sandbox.md)
