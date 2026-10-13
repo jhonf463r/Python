@@ -1,3 +1,11 @@
+## 2026-10-13 ROUTE ADJUDICATION — THE TARGET IS A GOVERNED CODEX DEVELOPMENT HANDOFF
+
+Canonical: [CHAT-ARCH-2026-10-13-241-codex-development-bridge-route-adjudication.md](./CHAT-ARCH-2026-10-13-241-codex-development-bridge-route-adjudication.md).
+
+Do not equate the lack of a global `tools-off` field in the reviewed 0.120.0 turn schema with the impossibility of a Codex development bridge. Tool-free consultation and bounded coding are separate operation classes. The former requires demonstrable absence of effectful tools; the latter needs effective isolation of the candidate workspace and execution boundary, exact owner authorization, controlled commands/network and no automatic promotion. Next edge: `CODEX_BOUNDED_DEVELOPMENT_EXECUTION_BOUNDARY_UNPROVEN`; read entry 241 before designing another provider or repeating broad schema searches. No runtime or implementation is authorized by the record.
+
+---
+
 ## 2026-10-13 VERSIONED PROTOCOL CHECK — NO GENERAL TOOLS-OFF FIELD IN EXPECTED 0.120.0 SCHEMA
 
 Canonical: [CHAT-ARCH-2026-10-13-240-versioned-0120-tool-control-limit.md](./CHAT-ARCH-2026-10-13-240-versioned-0120-tool-control-limit.md).
