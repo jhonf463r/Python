@@ -1,3 +1,11 @@
+## Current route overlay — local source reader blocked; request narrow excerpts only (2026-10-13; entry 259)
+
+Read [CHAT-ARCH-2026-10-13-259-local-source-handoff-blocked.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-259-local-source-handoff-blocked.md). A supplied report says the workspace reader returned queued with no source text; this is not a local code finding. Do not substitute main for uncommitted changes or request the full 18-file bundle again. Ask for narrow local excerpts: adapter class/policy/request/result handling, bootstrap registration, actual SafeUI/ToolTeachService dispatch caller and result-consumer/evaluator call site. Identity-repair source/test only if necessary.
+
+No shell/Git, tests/builds, Codex/App Server/IABV, credentials or local mutations. Owner selected C: keep launch blocked. Immediate edge: LOCAL_DIRTY_WORKTREE_SOURCE_HANDOFF_UNRESOLVED; technical edge remains CODEX_CANDIDATE_EXECUTOR_CONFINEMENT_AND_RECEIPT_CONTRACT_UNRESOLVED.
+
+---
+
 ## Current route overlay — Owner chooses C; do not launch Codex (2026-10-13; entry 258)
 
 Read [CHAT-ARCH-2026-10-13-258-owner-keeps-codex-blocked-static-candidate-boundary.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-258-owner-keeps-codex-blocked-static-candidate-boundary.md), then entries 257, 249, 243, 055, 056 and 170. The Owner selected C: keep launch blocked while source-only design continues. This resolves the prior no-selection status for the current phase but does not select home/auth A or B or authorize local preflight, implementation, runtime, tests/builds, install/spend or promotion.

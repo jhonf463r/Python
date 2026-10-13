@@ -1,3 +1,13 @@
+## 2026-10-13 FIRST OPEN EDGE — LOCAL DIRTY WORKTREE SOURCE HANDOFF UNRESOLVED
+
+Canonical: [CHAT-ARCH-2026-10-13-259-local-source-handoff-blocked.md](./CHAT-ARCH-2026-10-13-259-local-source-handoff-blocked.md).
+
+The Owner-supplied report says the workspace reader returned queued without source text. This is not evidence that any local symbol exists or is absent. Do not reread the 18-file bundle or replace it with main. Obtain a small source excerpt packet: actual CodexAppServerToolAdapter implementation and policy/request/result methods; bootstrap registration; SafeUI/ToolTeachService dispatch caller; actual result-consumer/evaluator call site. Optionally include task-id repair source/test if relevant. No secrets or execution.
+
+After local source parity, the architecture edge remains CODEX_CANDIDATE_EXECUTOR_CONFINEMENT_AND_RECEIPT_CONTRACT_UNRESOLVED. KEEP_BLOCKED; owner-selected C remains operative.
+
+---
+
 ## 2026-10-13 FIRST OPEN EDGE — CODEX CANDIDATE EXECUTOR CONFINEMENT AND RECEIPT CONTRACT UNRESOLVED
 
 Canonical: [CHAT-ARCH-2026-10-13-258-owner-keeps-codex-blocked-static-candidate-boundary.md](./CHAT-ARCH-2026-10-13-258-owner-keeps-codex-blocked-static-candidate-boundary.md).

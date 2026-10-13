@@ -1,3 +1,16 @@
+## 2026-10-13 REGISTRATION — ENTRY 259: LOCAL SOURCE AUDIT BLOCKED; NARROW HANDOFF REQUIRED
+
+- Record: [CHAT-ARCH-2026-10-13-259-local-source-handoff-blocked.md](./CHAT-ARCH-2026-10-13-259-local-source-handoff-blocked.md)
+- Input: Owner-supplied report; reader returned queued without showing local source text.
+- Classification: LOCAL_WORKSPACE_SOURCE_ACCESS_BLOCKED_REPORTED; this is not a code finding.
+- No local branch/status/diff, adapter, dispatch or consumer was independently inspected.
+- Next evidence: adapter implementation/policy construction; bootstrap registration; actual SafeUI/ToolTeachService dispatch; actual adaptive result-consumer call site.
+- Do not substitute main for the dirty worktree; do not repeat the broad 18-file request. No runtime, tests, secrets, implementation or spend.
+- Owner chose C; KEEP_BLOCKED.
+- Immediate edge: LOCAL_DIRTY_WORKTREE_SOURCE_HANDOFF_UNRESOLVED.
+
+---
+
 ## 2026-10-13 REGISTRATION — ENTRY 258: OWNER SELECTS KEEP-BLOCKED; CANDIDATE CONFINEMENT/RECEIPT REMAINS OPEN
 
 - Record: [CHAT-ARCH-2026-10-13-258-owner-keeps-codex-blocked-static-candidate-boundary.md](./CHAT-ARCH-2026-10-13-258-owner-keeps-codex-blocked-static-candidate-boundary.md)

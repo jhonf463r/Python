@@ -1,3 +1,10 @@
+## Latest route record — Entry 259
+- Record: [CHAT-ARCH-2026-10-13-259-local-source-handoff-blocked.md](./CHAT-ARCH-2026-10-13-259-local-source-handoff-blocked.md)
+- Supplied report: local reader returned queued without source text; Owner-reported only, no local code conclusion.
+- Do not substitute main or repeat the full file bundle. Request narrow local excerpts of adapter policy/request/result, bootstrap registration, SafeUI/ToolTeachService dispatch, and actual result consumer/evaluator.
+- Owner decision C remains: launch blocked. Immediate edge: LOCAL_DIRTY_WORKTREE_SOURCE_HANDOFF_UNRESOLVED.
+---
+
 ## Latest route record — Entry 258
 - Record: [CHAT-ARCH-2026-10-13-258-owner-keeps-codex-blocked-static-candidate-boundary.md](./CHAT-ARCH-2026-10-13-258-owner-keeps-codex-blocked-static-candidate-boundary.md)
 - Owner chose C: keep Codex launch blocked while static design continues; home/auth A/B is not selected.

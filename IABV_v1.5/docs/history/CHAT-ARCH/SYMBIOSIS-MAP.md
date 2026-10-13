@@ -1,3 +1,11 @@
+## 2026-10-13 RELATION DELTA — LOCAL SOURCE ACCESS BLOCKER, NO CLAIM ABOUT LOCAL WIRING
+
+Canonical: [CHAT-ARCH-2026-10-13-259-local-source-handoff-blocked.md](./CHAT-ARCH-2026-10-13-259-local-source-handoff-blocked.md). The supplied audit reports that the workspace reader returned queued without source content. No local Adapter → SafeUI → ToolTeachService → result-consumer edge was newly verified. The published-main route is a comparison baseline only and cannot stand in for uncommitted local code.
+
+Next evidence packet is narrowly scoped: adapter class/policy construction, bootstrap registration, actual dispatch caller and actual result evaluator. Keep KEEP_BLOCKED, with no Codex/App Server or local preflight. The technical relation is still unproven until local source and then an effective independent execution/evidence boundary are established.
+
+---
+
 ## 2026-10-13 RELATION DELTA — OWNER CHOOSES KEEP-BLOCKED; TOOL ROUTING IS NOT A VERIFIED CODING BRIDGE
 
 Canonical: [CHAT-ARCH-2026-10-13-258-owner-keeps-codex-blocked-static-candidate-boundary.md](./CHAT-ARCH-2026-10-13-258-owner-keeps-codex-blocked-static-candidate-boundary.md).

@@ -1,3 +1,11 @@
+## 2026-10-13 LOCAL SOURCE AUDIT STOPPED — WORKSPACE READER DID NOT RETURN TEXT
+
+Canonical: [CHAT-ARCH-2026-10-13-259-local-source-handoff-blocked.md](./CHAT-ARCH-2026-10-13-259-local-source-handoff-blocked.md). The Owner-supplied report says source-open requests returned queued without displaying local text. This is a reported access blocker; the checkout, branch/status, adapter, dispatch and consumer were not independently inspected. Do not substitute published main for local changes and do not ask for the full 18-file bundle again.
+
+Owner decision C stays in force: Codex launch blocked; static/documentary work only. Next handoff is a small manually supplied source packet for the local CodexAppServerToolAdapter (wherever it actually lives), bootstrap registration, SafeUI/ToolTeachService dispatch and the actual adaptive result-consumer call site. No credentials or execution. Immediate edge: LOCAL_DIRTY_WORKTREE_SOURCE_HANDOFF_UNRESOLVED. Technical edge: CODEX_CANDIDATE_EXECUTOR_CONFINEMENT_AND_RECEIPT_CONTRACT_UNRESOLVED.
+
+---
+
 ## 2026-10-13 OWNER CHOICE C — CODEX LAUNCH STAYS BLOCKED; STATIC DESIGN CONTINUES
 
 Canonical: [CHAT-ARCH-2026-10-13-258-owner-keeps-codex-blocked-static-candidate-boundary.md](./CHAT-ARCH-2026-10-13-258-owner-keeps-codex-blocked-static-candidate-boundary.md).

@@ -1,3 +1,11 @@
+## Continuity delta — narrow local source handoff after queued/no-content reader result (2026-10-13; entry 259)
+
+Canonical: [CHAT-ARCH-2026-10-13-259-local-source-handoff-blocked.md](./CHAT-ARCH-2026-10-13-259-local-source-handoff-blocked.md). The queued/no-content outcome is Owner-reported; it proves no local code property. Avoid repeating the broad 18-file read request. Ask for only: (A) actual local CodexAppServerToolAdapter class and policy/request/result methods; (B) bootstrap registration plus the concrete SafeUI/ToolTeachService dispatch caller; (C) result consumer/evaluator call site; (D) task-ID repair source/test only if relevant. Existing remote canonical docs need not be pasted again.
+
+Preserve local-vs-remote provenance. Do not run shell/Git, tests, builds, Codex/App Server/IABV, or inspect secrets to obtain source. Owner choice C continues: no launch, preflight or implementation. Immediate edge: LOCAL_DIRTY_WORKTREE_SOURCE_HANDOFF_UNRESOLVED.
+
+---
+
 ## Continuity method delta — owner selects C; code-candidate boundary remains unproven (2026-10-13; entry 258)
 
 Canonical: [CHAT-ARCH-2026-10-13-258-owner-keeps-codex-blocked-static-candidate-boundary.md](./CHAT-ARCH-2026-10-13-258-owner-keeps-codex-blocked-static-candidate-boundary.md). The Owner explicitly selects C: do not launch Codex unless a compatible route is proved; continue only static design/review. Entry 249's no-selection state is historical and is superseded for the launch gate. Do not infer A/B home/auth selection.
