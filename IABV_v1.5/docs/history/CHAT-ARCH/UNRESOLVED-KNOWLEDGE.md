@@ -1,3 +1,13 @@
+## 2026-10-13 OPEN EDGE — DESKTOP CAPTURE-HOME LINKAGE UNPROVEN
+
+Canonical result: [CHAT-ARCH-2026-10-13-233-desktop-preflight-launch-provenance.md](./CHAT-ARCH-2026-10-13-233-desktop-preflight-launch-provenance.md).
+
+The supplied result `DESKTOP_PREFLIGHT_BLOCKED` identified one visible Codex Desktop window but could not establish that PID `12476` uses the IABV capture home `data/tool_teaching/external_assistants/codex_home`. The strict desktop capture reads `state_5.sqlite` and `sessions` under that path, while the strict UI path does not establish that the already-running process was launched with it.
+
+Next observation, only after explicit Owner authorization: one-time read-only launch-provenance check. Prefer existing non-sensitive process-start evidence. Never dump the process environment or inspect credentials, private profile contents or conversations. If the exact linkage cannot be proven safely, remain blocked. No prompt dispatch is authorized.
+
+---
+
 ## 2026-10-13 OPEN EDGE — DESKTOP TARGET / ROLLOUT LINKAGE
 
 Canonical comparison: [CHAT-ARCH-2026-10-13-232-codex-bridge-comparison-result.md](./CHAT-ARCH-2026-10-13-232-codex-bridge-comparison-result.md).
