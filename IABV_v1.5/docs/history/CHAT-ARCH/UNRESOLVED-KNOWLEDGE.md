@@ -1,3 +1,13 @@
+## 2026-10-13 OPEN EDGE — DESKTOP TARGET / ROLLOUT LINKAGE
+
+Canonical comparison: [CHAT-ARCH-2026-10-13-232-codex-bridge-comparison-result.md](./CHAT-ARCH-2026-10-13-232-codex-bridge-comparison-result.md).
+
+The received report is `CODEX_BRIDGE_COMPARISON_INCONCLUSIVE`. Need to determine whether one existing Codex Desktop window is eligible and whether the running process/session can be linked to the rollout/thread source used by `UIExecutionRunner`. Do so only after explicit Owner authorization, using read-only non-sensitive metadata; do not inspect conversation content, read credentials, type, click, dispatch, switch tabs or launch processes.
+
+If unique identity/capture linkage cannot be proven, remain blocked. App Server remains an alternative but requires separate resolution of usable authentication in the selected `CODEX_HOME` and effective pre-execution tool policy; rejected post-arrival events do not prove prevention before effects. No real round-trip or consumer evaluation is proven.
+
+---
+
 ## 2026-10-13 OPEN EDGE — CODEX-SPECIFIC DEVELOPMENT HANDOFF
 
 Canonical route correction: [CHAT-ARCH-2026-10-13-231-codex-bridge-priority-clarification.md](./CHAT-ARCH-2026-10-13-231-codex-bridge-priority-clarification.md).
