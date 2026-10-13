@@ -1,3 +1,17 @@
+## 2026-10-13 LATEST RESULT — M0B-R4 STOPPED: NARROW GOVERNANCE DIAGNOSTIC / TARGET IDENTITY UNAVAILABLE (ENTRY 264)
+
+Canonical: [CHAT-ARCH-2026-10-13-264-m0b-r4-governance-diagnostic-missing.md](./CHAT-ARCH-2026-10-13-264-m0b-r4-governance-diagnostic-missing.md).
+
+The 18:19 owner-supplied session report found no exposed governance operation meeting the requested narrow scope. It did not invoke `world_model_snapshot` because its payload is broad, and did not use list/read tools as a bypass. No block metadata, MCP server identity, or checkout target identity was obtained. This is a session-capability result, not proof that no governance implementation exists anywhere.
+
+**Posture: KEEP_BLOCKED.** Owner consent does not change the active runtime gate. Do not retry the reader, infer target from namespace, inspect through another path, query the broad snapshot, or clear resource guards.
+
+Next prerequisite is a supported control-plane route that (1) returns only the applicable block metadata, (2) directly identifies the responding MCP server and exact checkout, and (3) records an explicit, scoped, time-bounded read-only governance decision while preserving unrelated controls. These are interface requirements, not claims that such operations already exist. If no supported route exists, the gate stays closed until the legitimate control-plane owner exposes/resolves it.
+
+Only after direct target proof and an auditable scoped decision may M0B-R4 compare the actual local M0A App Server candidate with the published external-assistant/UI/Codex-rollout route and trace dispatch through validation to the real result consumer. No code/runtime/permission/local checkout changed. Existing edges remain: `SCOPED_GOVERNANCE_BLOCK_DIAGNOSTIC_OPERATION_MISSING`, `MCP_SERVER_AND_CHECKOUT_IDENTITY_UNRESOLVED`, `LOCAL_DIRTY_WORKTREE_SOURCE_HANDOFF_UNRESOLVED`, `CODEX_BRIDGE_ROUTE_REASSESSMENT_REQUIRED`, `CHATGPT_AUTOMATIC_TURN_AND_CORRELATED_RETURN_UNRESOLVED`.
+
+---
+
 ## 2026-10-13 LATEST RESULT — M0B-R3 BRIDGE DIRECTION ADJUDICATED (ENTRY 263)
 
 Canonical: [CHAT-ARCH-2026-10-13-263-m0b-r3-autonomy-bridge-adjudication.md](./CHAT-ARCH-2026-10-13-263-m0b-r3-autonomy-bridge-adjudication.md).
