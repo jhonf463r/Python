@@ -1,3 +1,15 @@
+## 2026-10-13 METHOD UPDATE — AUTHORIZED TASK ID MUST FAIL CLOSED BEFORE EFFECT
+
+Canonical result: [CHAT-ARCH-2026-10-13-236-appserver-task-id-correlation-blocker.md](./CHAT-ARCH-2026-10-13-236-appserver-task-id-correlation-blocker.md).
+
+A source audit reported that the SafeUI-authorized task ID is regenerated for both Codex destinations and checked only after the external consultation call may have dispatched. This is an effect-before-identity-acceptance defect, not merely a display/correlation issue.
+
+The next permitted implementation phase requires separate explicit Owner authorization. Keep it narrow: preserve the task ID in construction for both Codex destinations, reject missing/mismatched identity before adapter dispatch, and add synthetic tests asserting no adapter call. Do not combine with App Server runtime/auth changes or tool policy. Check current worktree status first and preserve all unrelated dirty/untracked files. No commit/push unless separately authorized.
+
+Static finding, synthetic verification, runtime dispatch, terminal response and consumer evaluation remain distinct evidence stages.
+
+---
+
 ## 2026-10-13 METHOD UPDATE — VERIFY CODEX AUTH MODE BEFORE SELECTING ROUTE
 
 Canonical: [CHAT-ARCH-2026-10-13-235-codex-plan-entitlement-auth-mode.md](./CHAT-ARCH-2026-10-13-235-codex-plan-entitlement-auth-mode.md).
