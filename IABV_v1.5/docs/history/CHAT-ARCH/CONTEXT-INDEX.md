@@ -1,3 +1,13 @@
+## 2026-10-13 CURRENT CODEX EDGE — DESKTOP CAPTURE-HOME PROVENANCE
+
+Canonical: [CHAT-ARCH-2026-10-13-233-desktop-preflight-launch-provenance.md](./CHAT-ARCH-2026-10-13-233-desktop-preflight-launch-provenance.md).
+
+The supplied preflight identified one visible Codex Desktop window, but could not establish that its running PID uses the IABV capture/session home. Expected source path: `data/tool_teaching/external_assistants/codex_home` (`state_5.sqlite` and `sessions`). The direct next edge is `DESKTOP_CAPTURE_HOME_LINKAGE_UNPROVEN`.
+
+Only after separate Owner authorization, inspect existing non-sensitive launch provenance for the PID or, if explicitly authorized and safely possible, only the allowlisted `CODEX_HOME` variable for that PID. Never dump the process environment or inspect credentials/profile contents. No UI controls, clicks, prompt, process launch or dispatch.
+
+---
+
 ## 2026-10-13 CURRENT CODEX BRIDGE EVIDENCE — DESKTOP PREFLIGHT GATE
 
 Canonical result: [CHAT-ARCH-2026-10-13-232-codex-bridge-comparison-result.md](./CHAT-ARCH-2026-10-13-232-codex-bridge-comparison-result.md).
