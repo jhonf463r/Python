@@ -1,3 +1,13 @@
+## Current route overlay after CLI interface identification (2026-10-13; entry 246)
+
+Read [CHAT-ARCH-2026-10-13-246-codex-exec-0120-static-contract-and-target-home.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-246-codex-exec-0120-static-contract-and-target-home.md), then entries 243–245.
+
+The supplied Windows inventory identifies the inspected shell's Codex `0.120.0` shim/native package. The versioned public `rust-v0.120.0` source declares `codex exec`, sandbox modes and output options. It does not establish that IABV inherits the same PATH, that its own CODEX_HOME is safe/effective, or that auth/quota/cost/network/tool restrictions and candidate artifact delivery work.
+
+Next edge: `CODEX_EXEC_TARGET_HOME_AND_EFFECTIVE_POLICY_UNPROVEN`. Source/config-only review of how IABV constructs its child environment and intended home; inspect only allowlisted non-secret policy values. Do not copy `danger-full-access` / `approval_policy = "never"` from another home. No process, CLI/App Server call, agent turn, tests, source/config changes, credentials, install, spend, commit/push or promotion. Preserve all local dirty/untracked content.
+
+---
+
 ## Current route overlay after the App Server coding-mode block (2026-10-13; entry 245)
 
 Read [CHAT-ARCH-2026-10-13-245-windows-codex-execution-route-comparison.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-245-windows-codex-execution-route-comparison.md), then consult entries 243–244 for the immediately prior findings.
