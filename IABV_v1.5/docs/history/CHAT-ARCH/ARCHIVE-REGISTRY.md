@@ -1,3 +1,14 @@
+## 2026-10-13 REGISTRATION — ENTRY 250: WINDOWS HOME READ-DENIAL FEASIBILITY
+
+- Record: [CHAT-ARCH-2026-10-13-250-cloud-static-audit-windows-sandbox-home-separation.md](./CHAT-ARCH-2026-10-13-250-cloud-static-audit-windows-sandbox-home-separation.md)
+- Classification: `CODEX_EXEC_CLOUD_DESIGN_AUDIT_CONTINUES_LOCAL_EFFECTIVENESS_UNPROVEN`.
+- Durable delta: Codex 0.120 supports a filesystem permission-profile model with `read/write/none`; the selected Windows sandbox backend determines whether a sensitive-home read denial is enforceable. Dedicated-home selection alone is insufficient.
+- Security delta: published IABV bootstrap loads secrets into parent `os.environ`; any coding executor must use explicit environment allowlisting.
+- First technical edge: `CODEX_EXEC_WINDOWS_HOME_READ_DENIAL_FEASIBILITY_UNVERIFIED`.
+- No A/B/C selection, runtime, implementation, credentials, install or spend is implied. Preserve all dirty/untracked local work.
+
+---
+
 ## 2026-10-13 REGISTRATION — ENTRY 249: HOME/AUTH DECISION PACKAGE REVIEWED, SELECTION PENDING
 
 - Record: [CHAT-ARCH-2026-10-13-249-owner-decision-package-reviewed-no-selection.md](./CHAT-ARCH-2026-10-13-249-owner-decision-package-reviewed-no-selection.md)
