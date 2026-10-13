@@ -1,3 +1,15 @@
+## 2026-10-13 LATEST RESULT — CODEX EXEC 0.120 INTERFACE IDENTIFIED; IABV TARGET HOME/POLICY STILL UNPROVEN
+
+Canonical result: [CHAT-ARCH-2026-10-13-246-codex-exec-0120-static-contract-and-target-home.md](./CHAT-ARCH-2026-10-13-246-codex-exec-0120-static-contract-and-target-home.md).
+
+Owner-supplied local inventory: `CODEX_EXECUTION_INTERFACE_IDENTIFIED`. It statically resolves the inspected shell's npm shim and native Windows package to Codex `0.120.0`; local IABV process `PATH` and target `CODEX_HOME` remain unproven. Versioned public source `rust-v0.120.0` declares a non-interactive `exec` path, sandbox modes and final/structured output options. This establishes an interface candidate, not an operational or security-tested coding bridge.
+
+Do not copy the unrelated session's observed `danger-full-access` / `approval_policy = "never"` config into IABV. No process, agent turn, tests, source/config edits, credentials, install, billing or spend.
+
+**Next edge:** `CODEX_EXEC_TARGET_HOME_AND_EFFECTIVE_POLICY_UNPROVEN`. Trace the exact child environment and intended Codex home in existing source; inspect only allowlisted non-secret sandbox/approval/config policy. If static evidence is insufficient, stop and request a separate owner authorization for the minimum diagnostic. Preserve all reported local dirty/untracked work.
+
+---
+
 ## 2026-10-13 LATEST RESULT — CURRENT CODEX APP SERVER ROUTE BLOCKED FOR CODING; COMPARE CLI EXEC BEFORE BUILDING A NEW EXECUTOR
 
 Canonical result: [CHAT-ARCH-2026-10-13-245-windows-codex-execution-route-comparison.md](./CHAT-ARCH-2026-10-13-245-windows-codex-execution-route-comparison.md).
