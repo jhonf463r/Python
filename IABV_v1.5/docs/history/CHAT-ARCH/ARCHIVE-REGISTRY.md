@@ -1,3 +1,13 @@
+## 2026-10-13 REGISTRATION — DESKTOP LAUNCH PROVENANCE UNAVAILABLE
+
+Canonical: `CHAT-ARCH-2026-10-13-234-desktop-provenance-unavailable-appserver-next.md`.
+
+Summary: Owner-supplied observation did not prove that the identified Desktop process uses IABV's rollout capture home. No mismatch is established. Next step is bounded, read-only App Server source/configuration audit; no App Server invocation, processes, network, UI/CDP, tests or source changes. Preserve the local dirty worktree and no-additional-spend requirement.
+
+Tags: IABV / M0-A / Codex / launch provenance / App Server / authorization / continuity / no runtime
+
+---
+
 ## 2026-10-13 REGISTRATION — DESKTOP PREFLIGHT BLOCKED AT CAPTURE-HOME PROVENANCE
 
 Canonical record: `CHAT-ARCH-2026-10-13-233-desktop-preflight-launch-provenance.md`.
