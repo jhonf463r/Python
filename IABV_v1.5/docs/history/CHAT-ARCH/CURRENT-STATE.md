@@ -1,3 +1,13 @@
+## 2026-10-13 ROUTING UPDATE — EXPECTED 0.120.0 CONTRACT HAS NO DEMONSTRATED GLOBAL TOOLS-OFF FIELD
+
+Canonical: [CHAT-ARCH-2026-10-13-240-versioned-0120-tool-control-limit.md](./CHAT-ARCH-2026-10-13-240-versioned-0120-tool-control-limit.md).
+
+The public `rust-v0.120.0` typed schemas were fetched by tag. Neither `ThreadStartParams` nor `TurnStartParams` declares a generic tool-list/all-tools-off parameter. `ToolsV2` contains only web-search/image settings, and the config source includes selective toggles, not a demonstrated global switch. This narrows the expected public contract but does not prove that the dynamically resolved local binary is 0.120.0 or that every internal configuration route has been exhausted.
+
+**Next edge:** `CODEX_APP_SERVER_NO_GLOBAL_TOOL_DISABLE_IN_EXPECTED_0120_CONTRACT`. Review existing adapter/config/tool-registry source only to decide whether a genuine pre-turn all-tools restriction exists. If not, do not use App Server for a tool-free text-only turn; choose between an existing text-only provider for consultation and a separately designed isolated coding-task route with explicitly bounded effects. Preserve auth/cost and consumer-evaluation gates. No runtime, prompt, tests, code/config changes, credentials or spend.
+
+---
+
 ## 2026-10-13 CURRENT ROUTING OVERLAY — TARGET PROTOCOL AND PRE-EFFECT TOOL SUPPRESSION UNPROVEN
 
 Canonical result: [CHAT-ARCH-2026-10-13-239-target-protocol-tool-surface-audit.md](./CHAT-ARCH-2026-10-13-239-target-protocol-tool-surface-audit.md).
