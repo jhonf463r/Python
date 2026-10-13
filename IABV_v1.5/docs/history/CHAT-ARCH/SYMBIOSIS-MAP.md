@@ -1,3 +1,19 @@
+## 2026-10-13 SYMBIOSIS DELTA — GOVERNANCE-GATE STOP AND TOOL-TARGET PROVENANCE (ENTRY 261)
+
+Canonical: [CHAT-ARCH-2026-10-13-261-m0b-r1-governance-gate-and-tool-provenance.md](./CHAT-ARCH-2026-10-13-261-m0b-r1-governance-gate-and-tool-provenance.md).
+
+Knowledge delta: M0B-R1 did not reveal local source; the RSK-namespaced audit tool returned `governance_blocked=true`. The exact gate payload is missing from the received summary. Published source shows audit file/list tools respect an existing governance gate.
+
+Routing delta: the immediate task is no longer “try another reader”; it is to reconcile the already-returned gate reason and the MCP server/workspace identity. The `rsk01a5` namespace suggests a possible mismatch with the distinct M0A checkout, but this is inferred, not proven.
+
+Workstream distinction: RSK-01A.5 asked whether MCP-read memory affects internal IABV context/routing; M0A/M0B asks whether a governed coding executor and result consumer are wired. Related to the global collaboration loop, but not interchangeable.
+
+Next edge: `IABV_AUDIT_GOVERNANCE_GATE_AND_TOOL_TARGET_PROVENANCE_UNRESOLVED` → after legitimate resolution, `LOCAL_DIRTY_WORKTREE_SOURCE_HANDOFF_UNRESOLVED` → `CODEX_CANDIDATE_EXECUTOR_CONFINEMENT_AND_RECEIPT_CONTRACT_UNRESOLVED`.
+
+No policy bypass, local read retry, runtime, test, source edit or promotion occurred. KEEP_BLOCKED.
+
+---
+
 ## 2026-10-13 SYMBIOSIS DELTA — AI-FIRST EVIDENCE RETRIEVAL / PERMISSIONS ARE NOT TRANSITIVE
 
 Canonical: [CHAT-ARCH-2026-10-13-260-ai-first-local-source-inspection-boundary.md](./CHAT-ARCH-2026-10-13-260-ai-first-local-source-inspection-boundary.md).

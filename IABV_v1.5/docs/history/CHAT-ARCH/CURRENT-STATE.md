@@ -1,3 +1,15 @@
+## 2026-10-13 LATEST RESULT — M0B-R1 GOVERNANCE GATE BLOCKED LOCAL SOURCE RETRIEVAL (ENTRY 261)
+
+Canonical: [CHAT-ARCH-2026-10-13-261-m0b-r1-governance-gate-and-tool-provenance.md](./CHAT-ARCH-2026-10-13-261-m0b-r1-governance-gate-and-tool-provenance.md).
+
+Owner-supplied M0B-R1 report: `mcp__iabv_v15_rsk01a5__list_repo_directory` returned `governance_blocked=true` with no names/content/hashes. Exact structured reason/block payload was not included. Published main confirms list/read audit tools pass through a fail-closed WorldModelSnapshot gate; the gate may reflect missing world-model state, an active `OperationalBlockRecord`, or a required ungranted permission gate. Do not infer absence of local code.
+
+The `rsk01a5` tool namespace is a clue to the separate historical RSK-01A.5 MCP/worktree lane, not proof of its current root. Reconcile tool/server identity and target checkout before any further source acquisition. Do not repeat list/read calls or use a broad world snapshot just to bypass the gate.
+
+Posture: KEEP_BLOCKED. Immediate edge: `IABV_AUDIT_GOVERNANCE_GATE_AND_TOOL_TARGET_PROVENANCE_UNRESOLVED`. Local source edge remains `LOCAL_DIRTY_WORKTREE_SOURCE_HANDOFF_UNRESOLVED`; technical edge remains `CODEX_CANDIDATE_EXECUTOR_CONFINEMENT_AND_RECEIPT_CONTRACT_UNRESOLVED`.
+
+---
+
 ## 2026-10-13 METHOD CORRECTION — AI-FIRST LOCAL SOURCE INSPECTION (ENTRY 260)
 
 Canonical: [CHAT-ARCH-2026-10-13-260-ai-first-local-source-inspection-boundary.md](./CHAT-ARCH-2026-10-13-260-ai-first-local-source-inspection-boundary.md).

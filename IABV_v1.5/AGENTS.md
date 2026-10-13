@@ -1,3 +1,15 @@
+## Current route overlay — M0B-R1 governance gate and MCP target provenance (2026-10-13; entry 261)
+
+Read [CHAT-ARCH-2026-10-13-261-m0b-r1-governance-gate-and-tool-provenance.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-261-m0b-r1-governance-gate-and-tool-provenance.md), then entries 260–258 and historical RSK-01A.5 records 035–036 when the MCP namespace matters.
+
+M0B-R1 reports that `mcp__iabv_v15_rsk01a5__list_repo_directory` was governance-blocked and returned no source. Treat as a gate/precondition stop, not source absence. Published main shows audit read/list calls pass through the WorldModelSnapshot governance gate. The exact structured gate reason/block record and current tool-to-workspace mapping are unproven.
+
+The `rsk01a5` namespace may be the distinct historical RSK-01A.5 connection/worktree; verify mapping before treating it as the M0A dirty checkout. No reader retries, alternate audit-tool bypass, gate clearing, broad world snapshot, local runtime/tests, credentials, implementation or promotion. Keep KEEP_BLOCKED.
+
+Immediate edge: `IABV_AUDIT_GOVERNANCE_GATE_AND_TOOL_TARGET_PROVENANCE_UNRESOLVED`; local source remains unresolved; technical edge remains `CODEX_CANDIDATE_EXECUTOR_CONFINEMENT_AND_RECEIPT_CONTRACT_UNRESOLVED`.
+
+---
+
 ## Current route overlay — AI-first source retrieval; do not make Owner copy source by default (2026-10-13; entry 260)
 
 Read [CHAT-ARCH-2026-10-13-260-ai-first-local-source-inspection-boundary.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-260-ai-first-local-source-inspection-boundary.md). Exhaust authorized repo/source tools before asking the Owner for manual excerpts. Published main is not a substitute for local dirty/uncommitted bytes; the current remote chat has no direct Windows filesystem/desktop bridge. Codex can inspect a local workspace only when running and authorized; IABV only through effective wired capabilities. Permissions are not transitive.

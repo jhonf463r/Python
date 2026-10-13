@@ -1,3 +1,15 @@
+## Continuity method delta — governance gate and source-tool provenance before retry (2026-10-13; entry 261)
+
+Canonical: [CHAT-ARCH-2026-10-13-261-m0b-r1-governance-gate-and-tool-provenance.md](./CHAT-ARCH-2026-10-13-261-m0b-r1-governance-gate-and-tool-provenance.md).
+
+When a local reader returns `governance_blocked=true`, classify the outcome as a governance/precondition stop, not a source/code finding. Preserve the exact structured `reason`, `detail`, applicable block/gate metadata and tool/server identity where available. Do not repeat the same call or route around policy.
+
+Before another source retrieval, reconcile which workspace/server the tool addresses. A namespaced connection such as `rsk01a5` may refer to a separate historical experiment/worktree; treat this as a hypothesis until the root mapping is verified. Do not equate similarly named workstreams.
+
+Avoid full environment/world snapshots when only a governance reason is required if those snapshots include unrelated focus/window information. Use narrow authorized metadata only. If the gate cannot be diagnosed within the allowed surface, stop and return the exact owner/governance decision required. No automatic clearing or bypass.
+
+---
+
 ## Continuity method delta — AI-first local evidence retrieval; no manual handoff by default (2026-10-13; entry 260)
 
 Canonical: [CHAT-ARCH-2026-10-13-260-ai-first-local-source-inspection-boundary.md](./CHAT-ARCH-2026-10-13-260-ai-first-local-source-inspection-boundary.md).

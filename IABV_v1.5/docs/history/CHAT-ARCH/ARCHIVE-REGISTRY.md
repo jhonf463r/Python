@@ -1,3 +1,15 @@
+## 2026-10-13 REGISTRATION — ENTRY 261: M0B-R1 GOVERNANCE GATE / TOOL TARGET PROVENANCE
+
+- Record: [CHAT-ARCH-2026-10-13-261-m0b-r1-governance-gate-and-tool-provenance.md](./CHAT-ARCH-2026-10-13-261-m0b-r1-governance-gate-and-tool-provenance.md)
+- Input: Owner-supplied Codex M0B-R1 report, reconciled with published-main MCP source and runbook.
+- Classification: `M0B_LOCAL_SOURCE_INSPECTION_BLOCKED_BY_GOVERNANCE_GATE`; no local code claim.
+- Result: `mcp__iabv_v15_rsk01a5__list_repo_directory` returned `governance_blocked=true`; exact structured reason/block metadata unavailable in the received summary.
+- Material delta: separate governance stop from source absence; reconcile the RSK-01A.5 connector identity against the intended M0A checkout before another retrieval attempt.
+- Posture: KEEP_BLOCKED. No runtime, retry, policy bypass, source edits or promotion.
+- Immediate edge: `IABV_AUDIT_GOVERNANCE_GATE_AND_TOOL_TARGET_PROVENANCE_UNRESOLVED`.
+
+---
+
 ## 2026-10-13 REGISTRATION — ENTRY 260: AI-FIRST SOURCE ACCESS BOUNDARY
 
 - Record: [CHAT-ARCH-2026-10-13-260-ai-first-local-source-inspection-boundary.md](./CHAT-ARCH-2026-10-13-260-ai-first-local-source-inspection-boundary.md)

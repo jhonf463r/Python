@@ -1,3 +1,18 @@
+## 2026-10-13 — GOVERNANCE-BLOCKED LOCAL READER / MCP TARGET PROVENANCE (ENTRY 261)
+
+Canonical: [CHAT-ARCH-2026-10-13-261-m0b-r1-governance-gate-and-tool-provenance.md](./CHAT-ARCH-2026-10-13-261-m0b-r1-governance-gate-and-tool-provenance.md).
+
+- **Owner-reported:** `mcp__iabv_v15_rsk01a5__list_repo_directory` returned `governance_blocked=true`; no directory entries/source/hash obtained.
+- **Source-proven:** published `server.py` routes audit read/list through a fail-closed WorldModelSnapshot gate; the runbook documents active operational blocks and ungranted permission gates as possible causes.
+- **Unproven:** the exact active `reason`, block record, scope/expiry, live server root, and whether this connection points to the intended M0A checkout.
+- **Inference to test:** the `rsk01a5` namespace may identify the historical RSK-01A.5 connector, whose reported worktree differs from the M0A checkout. Do not assume wrong root or correct root from the tool name alone.
+- **Next discriminating evidence:** existing call's structured gate payload and non-secret MCP server/tool target metadata. Do not retry the blocked audit tool, use broad world snapshots to evade the gate, or clear permissions.
+- **Immediate edge:** `IABV_AUDIT_GOVERNANCE_GATE_AND_TOOL_TARGET_PROVENANCE_UNRESOLVED`.
+- **Technical edge:** `CODEX_CANDIDATE_EXECUTOR_CONFINEMENT_AND_RECEIPT_CONTRACT_UNRESOLVED`.
+- **Posture:** KEEP_BLOCKED.
+
+---
+
 ## 2026-10-13 — LOCAL SOURCE ACCESS PLANE / AI-FIRST RETRIEVAL (ENTRY 260)
 
 Canonical: [CHAT-ARCH-2026-10-13-260-ai-first-local-source-inspection-boundary.md](./CHAT-ARCH-2026-10-13-260-ai-first-local-source-inspection-boundary.md).

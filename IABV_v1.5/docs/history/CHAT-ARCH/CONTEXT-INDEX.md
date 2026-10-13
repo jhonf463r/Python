@@ -1,3 +1,13 @@
+## Latest route record — Entry 261
+- Record: [CHAT-ARCH-2026-10-13-261-m0b-r1-governance-gate-and-tool-provenance.md](./CHAT-ARCH-2026-10-13-261-m0b-r1-governance-gate-and-tool-provenance.md)
+- M0B-R1 reported `governance_blocked=true` from `mcp__iabv_v15_rsk01a5__list_repo_directory`; no local names/content/hashes were returned. Exact structured reason/block payload is absent from the supplied summary.
+- Published source confirms audit listing/reading is gated by WorldModelSnapshot; the observed block is not a finding about the adapter's presence/absence.
+- `rsk01a5` signals possible confusion with the separate historical RSK-01A.5 tool/worktree. Root-to-checkout mapping is unproven; reconcile tool identity before source retrieval.
+- Next action: inspect the already-returned gate record and safe tool/server metadata only. Do not retry the reader, clear or bypass policy, or expose broad WorldModelSnapshot details.
+- Posture KEEP_BLOCKED. Immediate edge `IABV_AUDIT_GOVERNANCE_GATE_AND_TOOL_TARGET_PROVENANCE_UNRESOLVED`; local source edge and technical executor/receipt edge remain open.
+
+---
+
 ## Latest route record — Entry 260
 - Record: [CHAT-ARCH-2026-10-13-260-ai-first-local-source-inspection-boundary.md](./CHAT-ARCH-2026-10-13-260-ai-first-local-source-inspection-boundary.md)
 - Owner correction: do not default to asking the Owner to copy code; exhaust available authorized AI/tool retrieval first.

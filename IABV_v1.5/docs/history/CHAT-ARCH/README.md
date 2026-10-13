@@ -1,3 +1,13 @@
+## 2026-10-13 LATEST RESULT — M0B-R1 STOPPED AT GOVERNANCE GATE; TOOL TARGET MUST BE RECONCILED
+
+Canonical: [CHAT-ARCH-2026-10-13-261-m0b-r1-governance-gate-and-tool-provenance.md](./CHAT-ARCH-2026-10-13-261-m0b-r1-governance-gate-and-tool-provenance.md).
+
+M0B-R1 reports that `mcp__iabv_v15_rsk01a5__list_repo_directory` returned `governance_blocked=true` without source content. This is not a local code finding. The exact structured reason/block payload is not available in the received summary. Published main shows audit read/list calls fail closed through the WorldModelSnapshot governance gate.
+
+The `rsk01a5` namespace is a provenance signal: historical RSK-01A.5 targeted a separate worktree from the M0A checkout reported previously. Actual connector root is not proven. Next: inspect the already-returned gate payload and current tool/server identity only; do not repeat the reader or bypass governance. Keep KEEP_BLOCKED. Immediate edge IABV_AUDIT_GOVERNANCE_GATE_AND_TOOL_TARGET_PROVENANCE_UNRESOLVED.
+
+---
+
 ## 2026-10-13 LATEST RESULT — AI-FIRST LOCAL SOURCE INSPECTION BOUNDARY
 
 Canonical: [CHAT-ARCH-2026-10-13-260-ai-first-local-source-inspection-boundary.md](./CHAT-ARCH-2026-10-13-260-ai-first-local-source-inspection-boundary.md).
