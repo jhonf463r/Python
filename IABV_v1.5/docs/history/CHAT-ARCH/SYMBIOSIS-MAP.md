@@ -1,3 +1,15 @@
+## 2026-10-13 RELATION DELTA — EXEC LAUNCH DESIGN AWAITS OWNER DECISION
+
+Canonical: [CHAT-ARCH-2026-10-13-248-exec-launch-contract-design-adjudication.md](./CHAT-ARCH-2026-10-13-248-exec-launch-contract-design-adjudication.md).
+
+Proposed chain: Owner grants exact operation/scope → SafeUI correlates prompt digest and task → IABV resolves an approved CLI and explicit environment/home → Windows enforces candidate/command/network boundaries → terminal output and verified candidate diff are captured → existing IABV consumer/verifier evaluates → Owner alone promotes or rejects.
+
+The design is ready for decision, but the route is not implemented. An eligible already-authenticated home has not been established under the no credential copy, no new login/OAuth and no extra spend constraints. Data-model support is not proof of artifact production/evaluation.
+
+Next edge: `CODEX_EXEC_LAUNCH_CONTRACT_OWNER_DECISION_PENDING`. No live exchange or causal learning is established.
+
+---
+
 ## 2026-10-13 RELATION DELTA — EXEC CHILD ENVIRONMENT HAS NO CONTRACT
 
 Canonical: [CHAT-ARCH-2026-10-13-247-codex-exec-integration-boundary-static-block.md](./CHAT-ARCH-2026-10-13-247-codex-exec-integration-boundary-static-block.md).
