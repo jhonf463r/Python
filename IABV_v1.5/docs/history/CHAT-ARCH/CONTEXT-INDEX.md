@@ -1,3 +1,15 @@
+## Latest route record — Entry 250
+
+- Record: [CHAT-ARCH-2026-10-13-250-cloud-static-audit-windows-sandbox-home-separation.md](./CHAT-ARCH-2026-10-13-250-cloud-static-audit-windows-sandbox-home-separation.md)
+- Classification: `CODEX_EXEC_CLOUD_DESIGN_AUDIT_CONTINUES_LOCAL_EFFECTIVENESS_UNPROVEN`.
+- Cloud source finding: public `rust-v0.120.0` declares filesystem `read/write/none` profiles and Windows elevated/unelevated modes, with backend-specific support. An existing authenticated home can only be considered if the agent-command boundary can deny access to sensitive home paths while the Codex host can use the session.
+- Security finding: published IABV bootstrap loads secrets into `os.environ`; any future executor needs an explicit environment allowlist and a separately defined child-shell environment policy.
+- Publication boundary: current remote `main` contains the documentation record, not the Owner's dirty adapter source. Do not claim direct review of unpushed code.
+- First technical edge: `CODEX_EXEC_WINDOWS_HOME_READ_DENIAL_FEASIBILITY_UNVERIFIED`. Owner selection A/B/C remains pending; that does not block cloud design work, but C remains the runtime default.
+- No runtime, code changes, tests, secret inspection or spend.
+
+---
+
 ## Latest route record — Entry 249
 
 - Record: [CHAT-ARCH-2026-10-13-249-owner-decision-package-reviewed-no-selection.md](./CHAT-ARCH-2026-10-13-249-owner-decision-package-reviewed-no-selection.md)
