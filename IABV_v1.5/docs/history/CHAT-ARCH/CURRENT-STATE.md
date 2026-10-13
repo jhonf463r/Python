@@ -1,3 +1,15 @@
+## 2026-10-13 LATEST RESULT — CODEX HOME BINDS AUTH LOOKUP AND EXECPOLICY RULE SOURCES
+
+Canonical result: [CHAT-ARCH-2026-10-13-253-codex-home-auth-and-execpolicy-coupling.md](./CHAT-ARCH-2026-10-13-253-codex-home-auth-and-execpolicy-coupling.md).
+
+Version-matched source review refines the decision: file-backed auth uses `CODEX_HOME/auth.json`; keyring-backed auth derives its key from the canonical `CODEX_HOME` path, so a different home does not automatically reuse the same keyring session. Separately, Codex 0.120 loads `rules/*.rules` from all applicable configuration-layer folders; a matching explicit `Allow` rule may bypass the inner sandbox. The candidate permission profile alone does not remove that risk.
+
+No supported rule-isolation flag was found in the reviewed `ExecCli` interface, and the loader walks its config-layer folders. Whether the Owner's current auth store/rule set permits a safe existing-home route remains `UNPROVEN`. Do not copy credentials, create homes/symlinks, or initiate login.
+
+**First open edge:** `CODEX_EXEC_AUTH_HOME_POLICY_ISOLATION_ROUTE_UNRESOLVED`. Continue static source review. If no supported non-copying separation exists, the next branch requires a separately authorized non-mutating local policy preflight or stays blocked. No CLI turn, tests, source/config edits, install or spend. Preserve dirty/untracked work.
+
+---
+
 ## 2026-10-13 LATEST RESULT — EXEC POLICY ALLOW RULES CAN BYPASS CODEX'S OWN SANDBOX
 
 Canonical result: [CHAT-ARCH-2026-10-13-252-execpolicy-allow-can-bypass-sandbox.md](./CHAT-ARCH-2026-10-13-252-execpolicy-allow-can-bypass-sandbox.md).
