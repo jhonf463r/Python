@@ -1,3 +1,15 @@
+## 2026-10-13 LATEST RESULT — EXEC POLICY ALLOW RULES CAN BYPASS CODEX'S OWN SANDBOX
+
+Canonical result: [CHAT-ARCH-2026-10-13-252-execpolicy-allow-can-bypass-sandbox.md](./CHAT-ARCH-2026-10-13-252-execpolicy-allow-can-bypass-sandbox.md).
+
+Version-matched Codex `rust-v0.120.0` source establishes a critical additional gate: an **explicit execpolicy Allow rule** matching a command can set `bypass_sandbox=true`; the tool orchestrator then selects `SandboxType::None` for that attempt. The CLI loads rule files from `rules/*.rules` in applicable config-layer folders. Built-in “known safe command” heuristics are not the same as explicit Allow rules, but the Owner's effective rule set is unknown.
+
+Therefore the candidate permission-profile route in entry 251 is not enough by itself. Before any turn, either prove no applicable explicit Allow rule can match the permitted command surface, or demonstrate a separately enforced outer OS boundary that still contains commands when Codex bypasses its own sandbox. No assumption that an existing or dedicated home is free of such rules.
+
+**First open edge:** `CODEX_EXEC_V0120_EFFECTIVE_EXEC_POLICY_RULESET_UNVERIFIED`. Next: cloud-side source-only determination of whether 0.120 has a non-runtime switch to exclude user execpolicy rules; otherwise keep blocked until a separately authorized non-mutating local preflight resolves all layers. No CLI, tests, credentials, settings changes or spend. Preserve dirty/untracked local work.
+
+---
+
 ## 2026-10-13 LATEST RESULT — CODEX 0.120 PERMISSION-PROFILE ROUTE IDENTIFIED; LOCAL BACKEND STILL UNPROVEN
 
 Canonical result: [CHAT-ARCH-2026-10-13-251-exec-v0120-permission-profile-dispatch.md](./CHAT-ARCH-2026-10-13-251-exec-v0120-permission-profile-dispatch.md).
