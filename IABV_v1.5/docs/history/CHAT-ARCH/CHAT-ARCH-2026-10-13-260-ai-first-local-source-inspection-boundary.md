@@ -44,3 +44,18 @@ The best next work within this boundary is to continue source-grounded review of
 The assistant's job is to reduce Owner effort. Use **AI/tool-first retrieval** and reuse existing capabilities before asking the Owner to perform source archaeology manually. When local access is unavailable, state the exact missing bridge and keep the inaccessible fact unresolved; do not replace it with published `main`, guess at local code, or imply laptop access is active. Keep routing, authentication, OS-level confinement, and adaptive result consumption as separate proof obligations.
 
 No local runtime, tests, builds, preflight, code changes, secret inspection, or promotion occurred. This episode is documentary continuity only.
+
+
+## 6. Addendum — targeted remote branch and connector search (same session, after section 3)
+
+To avoid stopping at a broad main-only lookup, the follow-up checked two pages of the published branch list (191 branch entries total), the exact ref endpoint for `codex/m0a-safe-ui-boot`, the PR list filtered to head `jhonf463r:codex/m0a-safe-ui-boot`, the cited historical commit/tree, and the current integration catalog.
+
+- Exact published branch ref lookup: **404 / no such remote branch**.
+- Filtered branch inventory: no `codex/m0a-safe-ui-boot` branch.
+- Pull requests filtered to that exact head: **zero**.
+- Historical commit `5b1d89022ee4cdc63c1f88e050f086b40a42875c` is reachable on GitHub, but it is a historical documentation commit. The inspected tree has the same relevant `bootstrap.py`, `tool_adapters.py`, and `tool_teach_service.py` blob SHAs as current `main`; this is not the reported dirty local diff.
+- Searches of the currently available integration catalog for local filesystem/computer, remote desktop, and Windows workspace/terminal access returned no matching connector that can read the Owner's checkout from this conversation.
+
+This strengthens `REMOTE_DIRTY_WORKTREE_NOT_PUBLISHED_CONFIRMED`, while leaving the actual local worktree state **OWNER_REPORTED / UNPROVEN**. It is not evidence that the local class is absent; it is evidence that the specific remote route searched cannot deliver those uncommitted bytes. The safest current action is to keep analyzing published-source architecture and not force the Owner into manual source archaeology by default.
+
+Owner choice C remains operative. No local runtime, command, preflight, test/build, Codex/App Server turn, secret inspection, implementation or promotion occurred.
