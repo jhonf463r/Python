@@ -1,3 +1,13 @@
+## 2026-10-13 LATEST RESULT — AUTHENTICATION HOME AND EXEC POLICY ARE COUPLED
+
+Canonical: [CHAT-ARCH-2026-10-13-253-codex-home-auth-and-execpolicy-coupling.md](./CHAT-ARCH-2026-10-13-253-codex-home-auth-and-execpolicy-coupling.md).
+
+Codex 0.120 stores file-backed auth at `CODEX_HOME/auth.json`; keyring lookup is namespaced by a hash of the canonical home path. Meanwhile its execpolicy loader reads rules from each applicable config-layer folder. Reusing the existing home preserves authentication lookup but also retains its rule inputs; changing home can separate rules but won't automatically reuse the keyring session. Explicit `Allow` rules may bypass the inner sandbox.
+
+First open edge: `CODEX_EXEC_AUTH_HOME_POLICY_ISOLATION_ROUTE_UNRESOLVED`. No login/copy/home creation or CLI invocation is authorized. Continue versioned static analysis; maintain C/block until the existing auth and rule sets can be separated or shown compatible without new setup/spend.
+
+---
+
 ## 2026-10-13 LATEST RESULT — EXEC POLICY RULES ARE A PRE-SANDBOX SECURITY GATE
 
 Canonical: [CHAT-ARCH-2026-10-13-252-execpolicy-allow-can-bypass-sandbox.md](./CHAT-ARCH-2026-10-13-252-execpolicy-allow-can-bypass-sandbox.md).
