@@ -1,3 +1,11 @@
+## 2026-10-13 RELATION DELTA — CODEX AUTH MODE IS A ROUTE-SELECTING FACT
+
+Canonical: [CHAT-ARCH-2026-10-13-235-codex-plan-entitlement-auth-mode.md](./CHAT-ARCH-2026-10-13-235-codex-plan-entitlement-auth-mode.md).
+
+Native Codex Local/CLI (included in Free with limits) must not be conflated with SIWC plan-usage integration for third-party applications (eligibility applies separately). Determine which auth path the existing App Server adapter actually uses; use existing organs only and avoid creating an OAuth/auth architecture merely to remove uncertainty. No credential inspection or runtime action.
+
+---
+
 ## 2026-10-13 RELATION DELTA — DESKTOP CAPTURE LINKAGE UNAVAILABLE
 
 Canonical: [CHAT-ARCH-2026-10-13-234-desktop-provenance-unavailable-appserver-next.md](./CHAT-ARCH-2026-10-13-234-desktop-provenance-unavailable-appserver-next.md).
