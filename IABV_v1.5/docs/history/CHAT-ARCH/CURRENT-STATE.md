@@ -1,3 +1,13 @@
+## 2026-10-13 LATEST RESULT — CURRENT IABV HAS NO EXEC LAUNCH CONTRACT
+
+Canonical result: [CHAT-ARCH-2026-10-13-247-codex-exec-integration-boundary-static-block.md](./CHAT-ARCH-2026-10-13-247-codex-exec-integration-boundary-static-block.md).
+
+Owner-supplied source-audit result: `CODEX_EXECUTION_INTERFACE_STATICALLY_BLOCKED`. Existing IABV source integrates App Server and sets a dedicated home for that route. The inspected scope found no IABV CLI `exec` adapter that selects the future child executable, target `CODEX_HOME`, policy, and artifact handoff. The package present in the interactive shell does not establish the environment of a future IABV child. Do not infer a target home from the shell or transplant unrelated `danger-full-access` / `approval_policy = "never"` config.
+
+**First open edge:** `CODEX_EXEC_LAUNCH_ENVIRONMENT_CONTRACT_UNDEFINED`. Next is a design-only launch-contract specification binding SafeUI authorization, exact executable, dedicated home, Windows confinement, output/diff artifacts, existing consumer, zero-extra-spend gate, and owner-only promotion. No implementation, launch, test, secret inspection or spend is authorized. Preserve the dirty local worktree.
+
+---
+
 ## 2026-10-13 LATEST RESULT — CODEX EXEC 0.120 INTERFACE IDENTIFIED; IABV TARGET HOME/POLICY STILL UNPROVEN
 
 Canonical result: [CHAT-ARCH-2026-10-13-246-codex-exec-0120-static-contract-and-target-home.md](./CHAT-ARCH-2026-10-13-246-codex-exec-0120-static-contract-and-target-home.md).
