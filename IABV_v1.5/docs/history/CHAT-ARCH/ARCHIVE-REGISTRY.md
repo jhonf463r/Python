@@ -1,3 +1,15 @@
+## 2026-10-13 REGISTRATION — CODEX TASK ID REPAIR PASS (SYNTHETIC ONLY)
+
+Canonical record: `CHAT-ARCH-2026-10-13-237-codex-task-id-repair-synthetic-pass.md`.
+
+Summary: Owner-supplied `CODEX_TASK_ID_REPAIR_PASS`. The report says SafeUI-authorized ID preservation now covers `codex_app_server` and `codex_installed`; malformed/missing/mismatched identity is rejected before authorization consumption/external dispatch and rechecked by ToolTeachService before adapter invocation. Focused offline test run reportedly ended at 32 passed after three harness failures were corrected; diff/whitespace checks passed. Not independently rerun here; no App Server runtime, actual query, or consumer evaluation.
+
+Local state remains report-only: branch `codex/m0a-safe-ui-boot`, HEAD `5b1d89022ee4cdc63c1f88e050f086b40a42875c`, 56 tracked modifications and 6 untracked files. Preserve all dirty/untracked files and existing `.pyc` edits. Local patch not on remote `main` by this evidence.
+
+Tags: IABV / M0-A / Codex / SafeUI / task identity / fail closed / synthetic tests / local patch / auth unresolved / pre-effect tool policy / no runtime
+
+---
+
 ## 2026-10-13 REGISTRATION — APP SERVER TASK ID CORRELATION BLOCKER
 
 Canonical: `CHAT-ARCH-2026-10-13-236-appserver-task-id-correlation-blocker.md`.
