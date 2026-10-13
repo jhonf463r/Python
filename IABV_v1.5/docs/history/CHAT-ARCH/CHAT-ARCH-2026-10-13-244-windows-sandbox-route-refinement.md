@@ -17,7 +17,7 @@ Current official Codex documentation states that:
 - Current Windows implementations include `mxc`, `elevated` and `unelevated`. MXC availability is OS/build/policy-dependent; the docs identify Windows 11 24H2 build requirements and a one-command compatibility test in Codex CLI 0.162.0 and later. Legacy `elevated` requires administrator-approved setup; `unelevated` has weaker network isolation and lacks denied-read-path support.
 
 Official sources:
-- [Codex sandboxing](https://developers.openai.com/codex/security)
+- [Codex sandboxing](https://developers.openai.com/codex/sandboxing)
 - [Windows sandbox](https://developers.openai.com/codex/windows)
 - [Configuration basics](https://developers.openai.com/codex/config-basic)
 
