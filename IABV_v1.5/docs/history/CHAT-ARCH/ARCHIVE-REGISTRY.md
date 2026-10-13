@@ -1,3 +1,14 @@
+## 2026-10-13 REGISTRATION — ENTRY 245: WINDOWS CODEX EXECUTION ROUTE COMPARISON
+
+- Record: [CHAT-ARCH-2026-10-13-245-windows-codex-execution-route-comparison.md](./CHAT-ARCH-2026-10-13-245-windows-codex-execution-route-comparison.md)
+- Input: Owner-supplied `CODEX_NATIVE_WINDOWS_SANDBOX_PATH_STATICALLY_BLOCKED` report; additional official Cookbook and public GitHub issue review.
+- Durable routing delta: compare App Server against the exact installed CLI `exec` path before designing a separate executor.
+- External source caution: public issue #37818 reports a specific Windows App Server `workspace-write` turn with no command/file-change items. This is version-specific and is not proof of the Owner's install.
+- First open edge: `CODEX_WINDOWS_CODING_TRANSPORT_AND_SANDBOX_COMPATIBILITY_UNRESOLVED`.
+- Evidence boundary: no local process/config/runtime inspected by canonical writer; no code changed or real task dispatched.
+
+---
+
 ## 2026-10-13 REGISTRATION — ENTRY 244: NATIVE WINDOWS SANDBOX ROUTE REFINEMENT
 
 - Record: [CHAT-ARCH-2026-10-13-244-windows-sandbox-route-refinement.md](./CHAT-ARCH-2026-10-13-244-windows-sandbox-route-refinement.md)
