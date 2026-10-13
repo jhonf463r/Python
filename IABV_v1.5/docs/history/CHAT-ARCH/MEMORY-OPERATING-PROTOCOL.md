@@ -1,3 +1,15 @@
+## 2026-10-13 METHOD UPDATE — TEXT-ONLY INTENT IS NOT EFFECTIVE TOOL POLICY
+
+Canonical: [CHAT-ARCH-2026-10-13-238-appserver-tool-suppression-unproven.md](./CHAT-ARCH-2026-10-13-238-appserver-tool-suppression-unproven.md).
+
+Keep these evidence stages distinct: prompt intention; requested sandbox/approval parameters; server-accepted settings; tools actually exposed to the model; server-side execution; client handling after a request/event arrives; and downstream consumer evaluation. Evidence for an earlier stage does not establish a later stage.
+
+Owner audit says normal dispatch bypasses adapter `preflight()`, while the current preflight counts MCP inventory without requiring it to be empty. A read-only request plus post-receipt event rejection is insufficient proof that a tool could not act earlier.
+
+Next edge: `CODEX_APP_SERVER_SERVER_ENFORCED_TOOL_SUPPRESSION_UNAVAILABLE_OR_UNPROVEN`. Read-only match the target CLI/protocol contract and prove an effective server-side no-tools mode or retain the block. No runtime, credentials, tests, edits or spending.
+
+---
+
 ## 2026-10-13 METHOD UPDATE — IDENTITY DEFECT REPAIR REPORTED PASS; EVIDENCE STAGES STAY SEPARATE
 
 Canonical result: [CHAT-ARCH-2026-10-13-237-codex-task-id-repair-synthetic-pass.md](./CHAT-ARCH-2026-10-13-237-codex-task-id-repair-synthetic-pass.md).
