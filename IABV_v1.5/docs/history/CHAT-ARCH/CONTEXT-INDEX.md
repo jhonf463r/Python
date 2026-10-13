@@ -1,3 +1,13 @@
+## 2026-10-13 FIRST OPEN EDGE — CODEX CANDIDATE-WORKSPACE EXECUTION BOUNDARY
+
+Canonical: [CHAT-ARCH-2026-10-13-241-codex-development-bridge-route-adjudication.md](./CHAT-ARCH-2026-10-13-241-codex-development-bridge-route-adjudication.md).
+
+Owner's goal is the governed development loop `IABV task → Codex coding task → correlated terminal result/artifacts → existing consumer evaluation → owner-gated promotion`, not merely a tool-free answer. Entry 240's negative schema finding applies to tool-free text-only App Server turns; it does not rule out a separately confined coding mode.
+
+Next edge: `CODEX_BOUNDED_DEVELOPMENT_EXECUTION_BOUNDARY_UNPROVEN`. Source-only audit of the existing App Server/config/tool registry, Windows sandbox/launch composition and result-consumer route. Prove or reject effective candidate-worktree confinement, bounded commands, external-effect controls, and task/thread/turn/artifact correlation. Auth/quota/cost and runtime are separate. No broad upstream search, runtime, tests, credentials, edits or spend.
+
+---
+
 ## 2026-10-13 FIRST OPEN EDGE — NO GLOBAL TOOL DISABLE IN EXPECTED 0.120.0 TYPED CONTRACT
 
 Canonical: [CHAT-ARCH-2026-10-13-240-versioned-0120-tool-control-limit.md](./CHAT-ARCH-2026-10-13-240-versioned-0120-tool-control-limit.md).
