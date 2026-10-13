@@ -1,3 +1,11 @@
+## 2026-10-13 LATEST RESULT — OWNER DECISION PACKAGE REVIEWED; A/B/C NOT SELECTED
+
+Canonical: [CHAT-ARCH-2026-10-13-249-owner-decision-package-reviewed-no-selection.md](./CHAT-ARCH-2026-10-13-249-owner-decision-package-reviewed-no-selection.md).
+
+The supplied package correctly describes options A (existing authenticated home), B (already-existing dedicated authenticated home) and C (remain blocked). It does **not** contain an explicit Owner selection. Keep `CODEX_EXEC_LAUNCH_CONTRACT_OWNER_DECISION_PENDING` active. Current safe default is to remain blocked until a compatible home/authentication pattern and effective Windows confinement are proven; B is only a conditional preference if such a home already exists. No implementation, preflight, CLI turn, credential inspection or spend is authorized.
+
+---
+
 ## 2026-10-13 LATEST RESULT — EXEC LAUNCH DESIGN READY; OWNER DECISION STILL PENDING
 
 Canonical result: [CHAT-ARCH-2026-10-13-248-exec-launch-contract-design-adjudication.md](./CHAT-ARCH-2026-10-13-248-exec-launch-contract-design-adjudication.md).
