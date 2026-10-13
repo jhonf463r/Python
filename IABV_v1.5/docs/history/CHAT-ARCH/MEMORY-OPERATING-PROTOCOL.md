@@ -1,3 +1,15 @@
+## 2026-10-13 METHOD UPDATE — A TEXT RESPONSE ADAPTER IS NOT A CODING/ARTIFACT BRIDGE
+
+Canonical result: [CHAT-ARCH-2026-10-13-243-codex-bounded-development-mode-blocked.md](./CHAT-ARCH-2026-10-13-243-codex-bounded-development-mode-blocked.md).
+
+Preserve this new negative knowledge: a text response plus task/thread/turn metadata is not evidence of a code-change transport, writable candidate, verified diff or artifact bundle. A Job Object's process-tree management is not evidence of filesystem, credential or network isolation. Requested sandbox parameters and post-event rejection do not establish enforcement before effects.
+
+The source-audit classification is owner-reported, not independently remeasured by this writeback. Keep the evidence ladder intact: source report → attributable patch → synthetic tests → authorized runtime → terminal correlated response/artifacts → existing-consumer evaluation → independent verification → owner-gated promotion → measured causal reuse on a later non-identical task.
+
+Next edge: `CODEX_CANDIDATE_WORKSPACE_EXECUTION_BOUNDARY_DESIGN_UNRESOLVED`. Design only; reuse existing organs and do not add a parallel memory/router/orchestrator. No implementation or runtime is authorized.
+
+---
+
 ## 2026-10-13 METHOD UPDATE — DO NOT CONFUSE A TOOL-FREE CONSULTATION WITH A CODING TASK
 
 Canonical: [CHAT-ARCH-2026-10-13-241-codex-development-bridge-route-adjudication.md](./CHAT-ARCH-2026-10-13-241-codex-development-bridge-route-adjudication.md).
