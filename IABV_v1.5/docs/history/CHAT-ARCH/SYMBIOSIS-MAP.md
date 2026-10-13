@@ -1,3 +1,13 @@
+## 2026-10-13 RELATION DELTA — HOME/AUTH OPTION HAS NOT BEEN SELECTED
+
+Canonical: [CHAT-ARCH-2026-10-13-249-owner-decision-package-reviewed-no-selection.md](./CHAT-ARCH-2026-10-13-249-owner-decision-package-reviewed-no-selection.md).
+
+The proposed Owner→SafeUI→CLI→confined-candidate→artifact-consumer chain remains a design only. The report's comparison of A/B/C does not instantiate or authorize the chain. Keep the relation blocked until the Owner explicitly selects a permitted existing-home/auth pattern and independent evidence establishes isolation, no-extra-spend eligibility and verified artifact delivery.
+
+First open edge: `CODEX_EXEC_LAUNCH_CONTRACT_OWNER_DECISION_PENDING`.
+
+---
+
 ## 2026-10-13 RELATION DELTA — EXEC LAUNCH DESIGN AWAITS OWNER DECISION
 
 Canonical: [CHAT-ARCH-2026-10-13-248-exec-launch-contract-design-adjudication.md](./CHAT-ARCH-2026-10-13-248-exec-launch-contract-design-adjudication.md).
