@@ -1,3 +1,13 @@
+## 2026-10-13 FIRST EDGE UPDATE — TASK ID REPAIR REPORTED PASS; RESUME APP SERVER SOURCE GATES
+
+Canonical: [CHAT-ARCH-2026-10-13-237-codex-task-id-repair-synthetic-pass.md](./CHAT-ARCH-2026-10-13-237-codex-task-id-repair-synthetic-pass.md).
+
+The Owner reports the task ID defect repaired and a 32-passing focused synthetic test run. Both Codex destinations preserve the authorized ID; invalid or discrepant identity is rejected before external consultation/adapter dispatch. This is not independently rerun here and does not prove a live round-trip. Local dirty-worktree counts are report-only (56 tracked modified, 6 untracked); preserve all changes.
+
+Next edge: `CODEX_APP_SERVER_AUTH_HOME_PREFLIGHT_AND_EFFECTIVE_TOOL_POLICY_UNRESOLVED`. Continue bounded read-only source analysis of the existing App Server auth/home, dispatch preflight, and tool controls that prevent effects before execution; follow terminal correlation to the existing consumer without executing it. No credential inspection, runtime, network/UI/CDP, code edits, or real prompt dispatch. Do not repeat Desktop launch-provenance investigation.
+
+---
+
 ## 2026-10-13 FIRST CODE-LEVEL EDGE — PRESERVE SAFEUI TASK ID BEFORE DISPATCH
 
 Canonical: [CHAT-ARCH-2026-10-13-236-appserver-task-id-correlation-blocker.md](./CHAT-ARCH-2026-10-13-236-appserver-task-id-correlation-blocker.md).
