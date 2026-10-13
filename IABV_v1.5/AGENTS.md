@@ -1,3 +1,13 @@
+## Current route overlay — Owner home/auth decision still pending (2026-10-13; entry 249)
+
+Read [CHAT-ARCH-2026-10-13-249-owner-decision-package-reviewed-no-selection.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-249-owner-decision-package-reviewed-no-selection.md), then entries 248–247.
+
+The latest report enumerates A/B/C but does not explicitly select a home/authentication option. Do not infer authorization. Keep `codex exec` blocked. Option B is only a conditional candidate if an already-existing dedicated authenticated home is proven to meet all constraints. If not, remain blocked; do not copy credentials, initiate a new login or assume zero spend.
+
+First open edge: `CODEX_EXEC_LAUNCH_CONTRACT_OWNER_DECISION_PENDING`. No implementation, preflight, process, CLI/App Server turn, tests, credential inspection, installation, spend, commit/push or promotion. Preserve all dirty/untracked local files.
+
+---
+
 ## Current route overlay after exec design submission (2026-10-13; entry 248)
 
 Read [CHAT-ARCH-2026-10-13-248-exec-launch-contract-design-adjudication.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-248-exec-launch-contract-design-adjudication.md), then entries 243–247.
