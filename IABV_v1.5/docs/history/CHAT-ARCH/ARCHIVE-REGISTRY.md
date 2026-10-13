@@ -1,3 +1,13 @@
+## 2026-10-13 LATEST ROUTE ADJUDICATION — ENTRY 241
+
+- Record: [CHAT-ARCH-2026-10-13-241-codex-development-bridge-route-adjudication.md](./CHAT-ARCH-2026-10-13-241-codex-development-bridge-route-adjudication.md)
+- Purpose: distinguish tool-free Codex text consultation from a governed coding task; stop repeated global-tools-off schema searches and assess a confined candidate-workspace development route.
+- Decision: App Server remains blocked for a tool-free text-only turn under the reviewed 0.120.0 schema. The broader Codex development route is not adjudicated impossible, but is not operationally proven.
+- First open edge: `CODEX_BOUNDED_DEVELOPMENT_EXECUTION_BOUNDARY_UNPROVEN`.
+- Evidence boundary: the local worktree facts, task-ID repair and Ollama tests remain owner-reported; no local code was published by this documentation update.
+
+---
+
 ## 2026-10-13 REGISTRATION — VERSIONED 0.120.0 TOOL-CONTROL LIMIT
 
 Canonical record: `CHAT-ARCH-2026-10-13-240-versioned-0120-tool-control-limit.md`.
