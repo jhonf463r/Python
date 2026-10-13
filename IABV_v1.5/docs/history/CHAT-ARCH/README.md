@@ -1,3 +1,13 @@
+## 2026-10-13 LATEST RESULT — CODEX EXEC LAUNCH CONTRACT DESIGN READY FOR OWNER DECISION
+
+Canonical: [CHAT-ARCH-2026-10-13-248-exec-launch-contract-design-adjudication.md](./CHAT-ARCH-2026-10-13-248-exec-launch-contract-design-adjudication.md).
+
+The supplied design is accepted as ready for Owner adjudication, not as approved implementation. It correctly identifies the required authorization binding, exact executable/environment, enforced Windows boundary and verifiable artifact receipt. The unresolved design conflict is an explicit/dedicated `CODEX_HOME` versus existing authentication with no credential copy, new login/OAuth or extra spend.
+
+Next edge: `CODEX_EXEC_LAUNCH_CONTRACT_OWNER_DECISION_PENDING`. Keep runtime and implementation blocked until the Owner selects a compatible existing-home/auth path and accepts the security/artifact gates.
+
+---
+
 ## 2026-10-13 LATEST RESULT — NO IABV CLI EXEC LAUNCH CONTRACT
 
 Canonical: [CHAT-ARCH-2026-10-13-247-codex-exec-integration-boundary-static-block.md](./CHAT-ARCH-2026-10-13-247-codex-exec-integration-boundary-static-block.md).
