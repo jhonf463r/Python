@@ -1,3 +1,13 @@
+## 2026-10-13 REGISTRATION — ENTRY 263: M0B-R3 BRIDGE ADJUDICATION
+
+- Record: [CHAT-ARCH-2026-10-13-263-m0b-r3-autonomy-bridge-adjudication.md](./CHAT-ARCH-2026-10-13-263-m0b-r3-autonomy-bridge-adjudication.md)
+- Result: M0B_R3_STATIC_ARCHITECTURE_DIRECTION_CONFIRMED_WITH_EXISTING_UI_BRIDGE_REASSESSMENT_REQUIRED.
+- Material delta: current public main already registers `ExternalAssistantToolAdapter` and wires `ToolTeachService`; the published Codex card uses desktop/clipboard/Codex-rollout capture but is unavailable/unvalidated, and capture-pending results are held as unvalidated. Public main lacks the App Server adapter candidate.
+- ChatGPT can use MCP plugin/server tools, but no autonomous trigger-and-correlated-return loop is proven.
+- Next: after authorized governance resolution and target proof, one read-only local source comparison of App Server candidate vs existing UI/rollout route and actual consumer. No local execution/edits/tests or bypass. KEEP_BLOCKED.
+
+---
+
 ## 2026-10-13 REGISTRATION — ENTRY 261: M0B-R1 GOVERNANCE GATE / TOOL TARGET PROVENANCE
 
 - Record: [CHAT-ARCH-2026-10-13-261-m0b-r1-governance-gate-and-tool-provenance.md](./CHAT-ARCH-2026-10-13-261-m0b-r1-governance-gate-and-tool-provenance.md)
