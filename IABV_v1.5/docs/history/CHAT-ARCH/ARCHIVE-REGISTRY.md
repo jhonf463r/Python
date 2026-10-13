@@ -1,3 +1,13 @@
+## 2026-10-13 REGISTRATION — ENTRY 242: INLINE TRANSCRIPT INTAKE AND CONTINUITY AUDIT
+
+- Record: [CHAT-ARCH-2026-10-13-242-inline-transcript-intake-and-continuity-audit.md](./CHAT-ARCH-2026-10-13-242-inline-transcript-intake-and-continuity-audit.md)
+- Source identity: inline user-supplied M0-A/Codex report chain; named `20261013-150637.md` bytes were unavailable in the conversation file index, so original artifact completeness and byte hash remain unknown.
+- Purpose: record actual coverage and evidence provenance under the transcript-intake contract, separate owner-reported runtime/test outcomes from verified remote documentation, and preserve the chronological causal lineage through entries 229–241.
+- Routing impact: no new technical route; active edge remains `CODEX_BOUNDED_DEVELOPMENT_EXECUTION_BOUNDARY_UNPROVEN` in entry 241.
+- Method: report/persistence is not runtime evidence or causal learning; source coverage must not be overclaimed.
+
+---
+
 ## 2026-10-13 LATEST ROUTE ADJUDICATION — ENTRY 241
 
 - Record: [CHAT-ARCH-2026-10-13-241-codex-development-bridge-route-adjudication.md](./CHAT-ARCH-2026-10-13-241-codex-development-bridge-route-adjudication.md)
