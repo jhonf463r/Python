@@ -1,3 +1,13 @@
+## 2026-10-13 LATEST RESULT — APP SERVER TOOL SUPPRESSION UNPROVEN
+
+Canonical: [CHAT-ARCH-2026-10-13-238-appserver-tool-suppression-unproven.md](./CHAT-ARCH-2026-10-13-238-appserver-tool-suppression-unproven.md).
+
+Owner-supplied result: `APP_SERVER_STATICALLY_BLOCKED`. Task identity is reported integrated in normal SafeUI source, but no real turn occurred. The normal path reportedly skips the adapter's own preflight. Requested read-only/restricted sandbox and network settings, plus client-side rejection of received approval/events, do not prove that tools were unavailable before execution. Auth/session/quota/cost and consumer evaluation remain unproven. Current upstream protocol declarations also do not expose a generic all-tools-off field in the inspected `turn/start` shape; they are not yet matched to the local CLI version.
+
+Next edge: `CODEX_APP_SERVER_SERVER_ENFORCED_TOOL_SUPPRESSION_UNAVAILABLE_OR_UNPROVEN`. Bounded read-only audit of version-matched `thread/start`/`turn/start` protocol and effective tool exposure; no runtime, credentials, tests, code changes or spend. Do not authorize a real turn until a server-enforced no-tools guarantee is demonstrated.
+
+---
+
 ## 2026-10-13 LATEST RESULT — CODEX TASK ID REPAIR PASS (SYNTHETIC ONLY)
 
 Canonical: [CHAT-ARCH-2026-10-13-237-codex-task-id-repair-synthetic-pass.md](./CHAT-ARCH-2026-10-13-237-codex-task-id-repair-synthetic-pass.md).
