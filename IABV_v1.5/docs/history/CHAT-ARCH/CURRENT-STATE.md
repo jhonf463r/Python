@@ -1,3 +1,15 @@
+## 2026-10-13 LATEST RESULT — CLOUD AUDIT NARROWS WINDOWS HOME-ISOLATION DESIGN
+
+Canonical result: [CHAT-ARCH-2026-10-13-250-cloud-static-audit-windows-sandbox-home-separation.md](./CHAT-ARCH-2026-10-13-250-cloud-static-audit-windows-sandbox-home-separation.md).
+
+Cloud-side source inspection continued; it did not stop at the pending A/B/C choice. Public Codex source tagged `rust-v0.120.0` declares filesystem permission profiles with `read/write/none` and two Windows sandbox modes. Its own Core README warns that the elevated and unelevated Windows backends support different policy subsets and that unsupported unreadable carve-outs must fail closed. Thus an existing authenticated home could remain a design candidate only if the selected backend lets the Codex host authenticate while its spawned commands cannot read sensitive home/credential paths. A dedicated home alone is not enough; `workspace-write` alone is not proof.
+
+Additional remote-source finding: IABV's published `bootstrap.py` loads recognized secret values into the parent `os.environ`; the published general UI runner has launch paths that merge this environment into subprocess environments. Do not reuse that generic environment-merging pattern for a coding executor. Require explicit parent-child env separation and a reviewed shell environment policy.
+
+**First technical edge:** `CODEX_EXEC_WINDOWS_HOME_READ_DENIAL_FEASIBILITY_UNVERIFIED`. Current safe operational state remains C/blocked; the Owner has not selected A or B. However, cloud design/review can continue without that selection. A future local preflight still requires separate authorization and must verify only non-secret backend/policy values; no CLI turn, credentials or extra spend. The local dirty candidate source is unpublished and must not be inferred from remote `main`.
+
+---
+
 ## 2026-10-13 LATEST RESULT — OWNER DECISION PACKAGE REVIEWED; A/B/C NOT SELECTED
 
 Canonical: [CHAT-ARCH-2026-10-13-249-owner-decision-package-reviewed-no-selection.md](./CHAT-ARCH-2026-10-13-249-owner-decision-package-reviewed-no-selection.md).
