@@ -1,3 +1,13 @@
+## 2026-10-13 RELATION DELTA — CODEX WINDOW IDENTIFIED, CAPTURE HOME UNPROVEN
+
+Canonical: [CHAT-ARCH-2026-10-13-233-desktop-preflight-launch-provenance.md](./CHAT-ARCH-2026-10-13-233-desktop-preflight-launch-provenance.md).
+
+The reported visible target is `ChatGPT.exe` under the packaged Codex path (PID `12476`, HWND `0x17B0900`). IABV's strict rollout capture reads `data/tool_teaching/external_assistants/codex_home`, but the report cannot bind that store to the already-running PID. Title/path/PID alone are not a session-store binding.
+
+Next edge: use separately authorized, read-only launch provenance; do not inspect private conversations or broad environment values. A proven configured home would enable only planning of a later separately authorized dispatch, not send permission. Existing SafeUI, capture and consumer organs remain the intended architecture; do not create new ones.
+
+---
+
 ## 2026-10-13 RELATION DELTA — CODEX PATH COMPARISON INCONCLUSIVE
 
 Canonical: [CHAT-ARCH-2026-10-13-232-codex-bridge-comparison-result.md](./CHAT-ARCH-2026-10-13-232-codex-bridge-comparison-result.md).
