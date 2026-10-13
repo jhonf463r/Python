@@ -1,3 +1,17 @@
+## 2026-10-13 — M0B-R3 BRIDGE DIRECTION / EXISTING CODEX ROUTE REQUIRES COMPARISON (ENTRY 263)
+
+Canonical: [CHAT-ARCH-2026-10-13-263-m0b-r3-autonomy-bridge-adjudication.md](./CHAT-ARCH-2026-10-13-263-m0b-r3-autonomy-bridge-adjudication.md).
+
+- **PROVEN_BY_SOURCE:** public main registers `ExternalAssistantToolAdapter` and wires it through `ToolTeachService`; `codex_installed` card configures desktop/clipboard/rollout capture but is `available=false` and `unvalidated`; `UIExecutionRunner` can read Codex rollout files; `ToolValidator` keeps `response_capture_pending` as unvalidated.
+- **PROVEN_BY_SOURCE:** the fetched public `tool_adapters.py` and `bootstrap.py` have no `CodexAppServerToolAdapter` symbol/registration. This is not proof of local absence.
+- **OWNER_REPORTED:** M0B-R3 official-doc research, prior local dirty checkout and earlier MCP block.
+- **INFERRED:** App Server may be the cleanest programmatic Codex turn; the existing UI/rollout route may be the shortest reuse path. A local source comparison must decide.
+- **UNPROVEN:** local M0A adapter/wiring, effective auth/cost, task/turn binding, independent artifact verification, MCP-to-M0A mapping, and autonomous ChatGPT initiation/return.
+- **Next edge:** `CODEX_BRIDGE_ROUTE_REASSESSMENT_REQUIRED`, gated by `IABV_AUDIT_GOVERNANCE_GATE_AND_TOOL_TARGET_PROVENANCE_UNRESOLVED`.
+- **Posture:** KEEP_BLOCKED; no runtime or local changes.
+
+---
+
 ## 2026-10-13 — GOVERNANCE-BLOCKED LOCAL READER / MCP TARGET PROVENANCE (ENTRY 261)
 
 Canonical: [CHAT-ARCH-2026-10-13-261-m0b-r1-governance-gate-and-tool-provenance.md](./CHAT-ARCH-2026-10-13-261-m0b-r1-governance-gate-and-tool-provenance.md).
