@@ -1,3 +1,13 @@
+## 2026-10-13 RELATION DELTA — SAFEUI TASK ID CORRELATION DEFECT
+
+Canonical: [CHAT-ARCH-2026-10-13-236-appserver-task-id-correlation-blocker.md](./CHAT-ARCH-2026-10-13-236-appserver-task-id-correlation-blocker.md).
+
+The reported composition currently changes identity between SafeUI authorization and Codex task construction. The task ID must be a stable relation across authorization → ToolTask → adapter dispatch → result → consumer. A mismatch must stop before the effectful adapter call, not merely invalidate the return afterward.
+
+Use the existing SafeUI/ToolTeachService/ToolRegistry authorization and correlation organs; no parallel token or coordinator. A narrow edit/test tranche requires separate Owner authorization. Auth mode, effective tool policy, live Codex exchange and causal self-development remain distinct open edges.
+
+---
+
 ## 2026-10-13 RELATION DELTA — CODEX AUTH MODE IS A ROUTE-SELECTING FACT
 
 Canonical: [CHAT-ARCH-2026-10-13-235-codex-plan-entitlement-auth-mode.md](./CHAT-ARCH-2026-10-13-235-codex-plan-entitlement-auth-mode.md).
