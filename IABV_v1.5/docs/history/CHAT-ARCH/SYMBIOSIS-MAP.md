@@ -1,3 +1,15 @@
+## 2026-10-13 RELATION DELTA — AUTHENTICATION AND RULE POLICY SHARE CODEX HOME CONTEXT
+
+Canonical: [CHAT-ARCH-2026-10-13-253-codex-home-auth-and-execpolicy-coupling.md](./CHAT-ARCH-2026-10-13-253-codex-home-auth-and-execpolicy-coupling.md).
+
+Codex 0.120 binds file auth to `CODEX_HOME/auth.json` and keyring auth to a key derived from the canonical home path. The same home/config layers provide execpolicy rules. Thus choosing a different home changes authentication lookup; keeping the authenticated home may retain explicit Allow rules that can bypass the inner sandbox. A config permission profile set through `-c` does not remove these rule files.
+
+The unresolved relation is: approved existing authentication → rule-source policy whose explicit Allows cannot escape the sandbox → candidate-only execution. No-copy/no-new-login/no-spend constraints prevent casually solving this by duplicating the home.
+
+First open edge: `CODEX_EXEC_AUTH_HOME_POLICY_ISOLATION_ROUTE_UNRESOLVED`. No route selected yet.
+
+---
+
 ## 2026-10-13 RELATION DELTA — EXEC POLICY CAN CUT ACROSS THE INNER SANDBOX
 
 Canonical: [CHAT-ARCH-2026-10-13-252-execpolicy-allow-can-bypass-sandbox.md](./CHAT-ARCH-2026-10-13-252-execpolicy-allow-can-bypass-sandbox.md).
