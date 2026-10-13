@@ -1,3 +1,13 @@
+## 2026-10-13 SYMBIOSIS DELTA — M0B-R3: DIRECT CODEX CHANNEL AND SHARED MCP TOOLS (ENTRY 263)
+
+Canonical: [CHAT-ARCH-2026-10-13-263-m0b-r3-autonomy-bridge-adjudication.md](./CHAT-ARCH-2026-10-13-263-m0b-r3-autonomy-bridge-adjudication.md).
+
+Knowledge delta: Codex App Server is a direct programmatic-turn candidate. Independent source review found a pre-existing public-main desktop Codex route with rollout capture; it is not proven operational because the card is unavailable/unvalidated and historical traces can remain capture-pending. Compare before choosing. ChatGPT and Codex can consume MCP-exposed IABV tools through supported plugin surfaces, but this does not automatically give IABV a ChatGPT session trigger or correlated return.
+
+Routing delta: if/when governance authorizes local source inspection, compare the M0A App Server candidate against the existing UI/rollout route and trace dispatch to the result consumer. Do not rerun the blocked reader, infer the MCP target from its namespace, or use the active resource block as a reason to bypass controls. KEEP_BLOCKED.
+
+---
+
 ## 2026-10-13 SYMBIOSIS DELTA — GOVERNANCE-GATE STOP AND TOOL-TARGET PROVENANCE (ENTRY 261)
 
 Canonical: [CHAT-ARCH-2026-10-13-261-m0b-r1-governance-gate-and-tool-provenance.md](./CHAT-ARCH-2026-10-13-261-m0b-r1-governance-gate-and-tool-provenance.md).
