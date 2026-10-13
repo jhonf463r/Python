@@ -1,3 +1,15 @@
+## 2026-10-13 FIRST COMPATIBILITY EDGE — CODEX CLI VERSION, MODEL AND INCLUDED-USAGE ROUTE UNVERIFIED
+
+Canonical: [CHAT-ARCH-2026-10-13-255-cli-version-model-entitlement-compatibility.md](./CHAT-ARCH-2026-10-13-255-cli-version-model-entitlement-compatibility.md).
+
+Current official OpenAI docs state Codex CLI 0.144.0 minimum for GPT-5.6 and 0.153.0 for GPT-6 Astra. The owner-supplied inventory identified CLI 0.120.0 in one shell environment. Which models, if any, this binary can access under the Owner's account remains unproven; don't infer complete incompatibility or compatibility from the version alone. No install/update is allowed in the current route.
+
+Codex is included in ChatGPT plans subject to plan-dependent limits; eligible users may purchase extra usage credits beyond included allowance. This does not establish the Owner's auth/session, model access, remaining quota or cost fallback behavior. A future route must stop before paid credit/API usage and cannot promise no quota consumption.
+
+First open edge: `CODEX_EXEC_VERSION_MODEL_AND_INCLUDED_USAGE_COMPATIBILITY_UNVERIFIED`. Other independent gates remain: canonical home/keyring, applicable execpolicy Allow rules that can bypass inner sandbox, Windows backend effectiveness and verified diff consumer.
+
+---
+
 ## 2026-10-13 FIRST OPEN EDGE — CODEX AUTH/HOME, POLICY ISOLATION AND USAGE-BUDGET ROUTE UNRESOLVED
 
 Canonical: [CHAT-ARCH-2026-10-13-254-codex-plan-usage-and-zero-extra-spend-gate.md](./CHAT-ARCH-2026-10-13-254-codex-plan-usage-and-zero-extra-spend-gate.md).
