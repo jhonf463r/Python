@@ -1,3 +1,13 @@
+## Current route overlay — Codex plan usage is not a zero-spend guarantee (2026-10-13; entry 254)
+
+Read [CHAT-ARCH-2026-10-13-254-codex-plan-usage-and-zero-extra-spend-gate.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-254-codex-plan-usage-and-zero-extra-spend-gate.md), then entries 253–251.
+
+Official current Help Center docs state Codex is included in ChatGPT plans including Free/Go, with plan-dependent limits; eligible accounts may buy additional usage credits after limits. The Owner's active auth, included quota, credit settings, and billing/usage mode are not proven by public documentation or installed package metadata. Do not conflate “no API key/new OAuth” with “no quota consumed” or “no incremental charge.”
+
+The other live gates remain: existing home auth lookup is keyed by canonical home when using keyring; a matching explicit execpolicy Allow can bypass Codex's inner sandbox; local selected Windows backend/effective policy is unknown. First open edge: `CODEX_EXEC_AUTH_HOME_POLICY_AND_USAGE_BUDGET_ROUTE_UNRESOLVED`. No CLI/turn, secrets, new login, home mutation, install, credit purchase, spend, source edit, commit/push or promotion. Preserve dirty local work.
+
+---
+
 ## Current route overlay — Codex authentication and execpolicy must be jointly resolved (2026-10-13; entry 253)
 
 Read [CHAT-ARCH-2026-10-13-253-codex-home-auth-and-execpolicy-coupling.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-253-codex-home-auth-and-execpolicy-coupling.md), then entries 252–250.
