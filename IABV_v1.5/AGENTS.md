@@ -1,3 +1,13 @@
+## Current route overlay after the App Server coding-mode block (2026-10-13; entry 245)
+
+Read [CHAT-ARCH-2026-10-13-245-windows-codex-execution-route-comparison.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-245-windows-codex-execution-route-comparison.md), then consult entries 243–244 for the immediately prior findings.
+
+The current IABV App Server adapter is reported as text/read-only, without a writable candidate or diff artifact. Do not assume the native sandbox docs automatically make it a coding bridge. Official Codex Cookbook demonstrates CLI `exec --sandbox workspace-write`; public issue #37818 reports a specific Windows App Server `workspace-write` turn that exposed no command/file-change items. Treat this as route-discrimination evidence, not universal proof.
+
+Next edge: `CODEX_WINDOWS_CODING_TRANSPORT_AND_SANDBOX_COMPATIBILITY_UNRESOLVED`. First do a one-time non-mutating inventory of the exact resolved CLI/shim/package and non-secret effective Windows sandbox config. Compare App Server with the existing CLI `exec` route. No agent turn until a route and its effective boundary are verified. Do not read credentials, install/update, alter config, run tests, or spend. Preserve all local dirty/untracked work. No commit/push/promote.
+
+---
+
 ## Current Codex route refinement (2026-10-13; entry 244)
 
 Read [CHAT-ARCH-2026-10-13-244-windows-sandbox-route-refinement.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-244-windows-sandbox-route-refinement.md) and the blocked-current-adapter report in entry 243.
