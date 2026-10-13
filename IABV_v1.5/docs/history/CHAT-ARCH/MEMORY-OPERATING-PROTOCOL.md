@@ -1,3 +1,13 @@
+## Continuity delta — decision package is not an Owner selection (2026-10-13)
+
+Canonical: [CHAT-ARCH-2026-10-13-249-owner-decision-package-reviewed-no-selection.md](./CHAT-ARCH-2026-10-13-249-owner-decision-package-reviewed-no-selection.md).
+
+A package that enumerates A/B/C is not an explicit selection of one of those options. Keep the Owner decision pending unless the Owner directly adjudicates it. Until then, no implementation or runtime operation is authorized; use remain-blocked as the safe default. Do not inspect secrets to find a preferred home, copy credentials or infer consent from silence.
+
+First open edge: `CODEX_EXEC_LAUNCH_CONTRACT_OWNER_DECISION_PENDING`.
+
+---
+
 ## Continuity delta — Codex exec launch design requires Owner decision (2026-10-13)
 
 Canonical: [CHAT-ARCH-2026-10-13-248-exec-launch-contract-design-adjudication.md](./CHAT-ARCH-2026-10-13-248-exec-launch-contract-design-adjudication.md).
