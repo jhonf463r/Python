@@ -1,3 +1,13 @@
+## 2026-10-13 OPEN EDGE — CODEX-SPECIFIC DEVELOPMENT HANDOFF
+
+Canonical route correction: [CHAT-ARCH-2026-10-13-231-codex-bridge-priority-clarification.md](./CHAT-ARCH-2026-10-13-231-codex-bridge-priority-clarification.md).
+
+Unresolved question: can the existing local `CodexAppServerToolAdapter` be safely reached through the normal IABV flow and return a successful terminal Codex result, with known authentication/entitlement, enforceable pre-execution tool control, intent-bound single-use authorization, correlation and evaluation by the existing consumer? Compare only against RQ128's existing desktop/Codex-rollout path to identify the smallest viable route.
+
+No answer can be inferred from the adapter name, static graph, 58 reported synthetic Ollama tests or official App Server documentation. The prior ChatGPT Web `TARGET_DISCOVERY_BLOCKED` remains accurate for that distinct route, but does not block the Codex-specific source audit. No runtime or code-change permission is conveyed.
+
+---
+
 ## 2026-10-13 OPEN EDGE — FREE EXTERNAL BRIDGE AFTER OLLAMA WIRING
 ## 2026-10-13 ROUTE RECONCILIATION — FREE M0-A BRIDGE / OLLAMA LOCAL BRANCH
 
