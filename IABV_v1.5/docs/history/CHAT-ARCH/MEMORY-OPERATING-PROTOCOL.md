@@ -1,3 +1,13 @@
+## Continuity method delta — distinguish current source interfaces from authorized runtime (2026-10-13; entry 257)
+
+Canonical: [CHAT-ARCH-2026-10-13-257-current-codex-catalog-and-exec-static-paths.md](./CHAT-ARCH-2026-10-13-257-current-codex-catalog-and-exec-static-paths.md). The v0.120 catalog-only negative finding (entry 256) is scoped to that CLI. Upstream v0.162.1 exposes `codex debug models`; `--bundled` is local bundle-only, while the default path may resolve existing auth, request the remote catalog and persist cache. Never summarize this as a guaranteed side-effect-free catalog query.
+
+The current source also contains `exec --ignore-rules`, but that skips only User/Project rule layers; explicit Allow in other applicable policy can still bypass the inner sandbox. Headless approvals are Never by default; `--ignore-user-config` does not disable CODEX_HOME authentication; `--ephemeral` only promises non-persistence of session files. Plan inclusion/model catalog/version minima do not prove this account's allowance or zero extra spend.
+
+Preserve PROVEN_BY_SOURCE vs OWNER_REPORTED vs UNPROVEN. Keep KEEP_BLOCKED, do not run any catalog or exec command, and do not treat documentary capture as runtime learning. First open edge: `CODEX_EXEC_TARGET_VERSION_AUTH_USAGE_AND_CONFINEMENT_UNVERIFIED`.
+
+---
+
 ## Continuity method delta — catalog metadata is not a safe catalog-only query (2026-10-13)
 
 Canonical: [CHAT-ARCH-2026-10-13-256-read-only-model-catalog-path-unavailable.md](./CHAT-ARCH-2026-10-13-256-read-only-model-catalog-path-unavailable.md). In inspected Codex 0.120 source, an internal model manager can refresh remote models, while the reviewed CLI does not establish a standalone supported catalog-only operation. Do not substitute exec, App Server, a model turn, or bundled models.json for an isolated authenticated catalog observation. This bounded negative finding does not prove every compatible route impossible. Preserve PROVEN_BY_SOURCE versus OWNER_REPORTED and keep account eligibility, quota, credit fallback and cost UNPROVEN.

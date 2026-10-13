@@ -1,3 +1,15 @@
+## 2026-10-13 LATEST RESULT — CURRENT CODEX CATALOG/EXEC SOURCE PATHS FOUND; IABV RUNTIME REMAINS BLOCKED
+
+Canonical: [CHAT-ARCH-2026-10-13-257-current-codex-catalog-and-exec-static-paths.md](./CHAT-ARCH-2026-10-13-257-current-codex-catalog-and-exec-static-paths.md).
+
+The previous no-catalog-path result (entry 256) is bounded to Codex CLI 0.120. Public v0.162.1 source exposes `codex debug models` and an exec interface that may be a future candidate. The bundled catalog lists GPT-5.6 Terra (minimum 0.144.0), and official plan docs list Terra for Free/Go subject to usage limits. The default catalog command may read auth, use network and persist cache; only `--bundled` skips refresh.
+
+For code execution, `--ignore-rules` omits user/project rule files only, leaving other policy layers possible; an explicit Allow can bypass Codex's inner sandbox, and headless approval is Never. No safe Windows boundary, active account/allowance, zero-extra-spend route, task correlation, verified patch receipt or IABV consumer handoff was demonstrated. The local CLI was previously reported as 0.120.0; no update/install or command execution occurred.
+
+Keep KEEP_BLOCKED. First open edge: `CODEX_EXEC_TARGET_VERSION_AUTH_USAGE_AND_CONFINEMENT_UNVERIFIED`. Entry 249's owner launch/auth-home decision remains pending. No runtime, test, credential inspection or spend.
+
+---
+
 ## 2026-10-13 LATEST RESULT — READ-ONLY MODEL CATALOG GATE REMAINS BLOCKED
 
 Canonical: [CHAT-ARCH-2026-10-13-256-read-only-model-catalog-path-unavailable.md](./CHAT-ARCH-2026-10-13-256-read-only-model-catalog-path-unavailable.md).

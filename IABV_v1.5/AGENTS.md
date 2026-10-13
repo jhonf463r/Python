@@ -1,3 +1,11 @@
+## Current route overlay — v0.162.1 catalog/exec source found; no launch authorization (2026-10-13; entry 257)
+
+Read [CHAT-ARCH-2026-10-13-257-current-codex-catalog-and-exec-static-paths.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-257-current-codex-catalog-and-exec-static-paths.md), then entries 249 and 252–256. Entry 256's no-catalog-interface result is specifically about inspected v0.120.0; don't generalize it to current source. v0.162.1 exposes `codex debug models`; default may use existing auth/network/cache, while `--bundled` is static only. Its `exec` `--ignore-rules` skips user/project rules but not all possible managed/system layers; explicit Allow can bypass Codex's inner sandbox; headless approval is Never. Plan/model minimums do not prove this account's quota, eligibility or zero added spend.
+
+Keep KEEP_BLOCKED. Do not execute Codex, authenticate, update/install, inspect secrets, or modify code/config/worktree. Owner A/B/C launch/auth-home decision remains pending. Current first edge: `CODEX_EXEC_TARGET_VERSION_AUTH_USAGE_AND_CONFINEMENT_UNVERIFIED`. Source-derived candidate interface is not proven IABV integration, diff receipt, independent verification, behavioral learning or owner-approved promotion.
+
+---
+
 ## Current route overlay — authenticated catalog-only path not established (2026-10-13; entry 256)
 
 Read [CHAT-ARCH-2026-10-13-256-read-only-model-catalog-path-unavailable.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-256-read-only-model-catalog-path-unavailable.md), then entries 255–252. The reviewed rust-v0.120.0 CLI did not establish a supported isolated catalog-only request; ModelsManager is internal, and no catalog request or turn occurred. This does not prove every compatible route impossible. Keep KEEP_BLOCKED and first open edge CODEX_EXEC_VERSION_MODEL_AND_INCLUDED_USAGE_COMPATIBILITY_UNVERIFIED. Model compatibility beyond documented minimums, account auth/eligibility, quota, credit fallback and cost remain unproven. No runtime, credentials, install, inference or code action.

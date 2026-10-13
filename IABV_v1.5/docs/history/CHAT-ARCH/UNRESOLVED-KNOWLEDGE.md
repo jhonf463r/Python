@@ -1,3 +1,17 @@
+## 2026-10-13 FIRST OPEN EDGE — CURRENT CODEX EXECUTABLE, AUTH/USAGE AND CONFINEMENT UNVERIFIED
+
+Canonical: [CHAT-ARCH-2026-10-13-257-current-codex-catalog-and-exec-static-paths.md](./CHAT-ARCH-2026-10-13-257-current-codex-catalog-and-exec-static-paths.md).
+
+Current upstream source `rust-v0.162.1` provides a source-verified model catalog command and a non-interactive exec contract; GPT-5.6 Terra is listed with a 0.144.0 minimum and appears in the official Free/Go Codex plan matrix subject to limits. This only establishes a potential newer candidate. The local CLI was previously reported as 0.120.0; no local check, update, installation, login or query was performed.
+
+Critical exec-policy caution: `--ignore-rules` removes user/project rules only, leaving other applicable layers possible. Explicit `Allow` can still bypass the inner sandbox, and the headless route sets approval policy Never. Auth still uses CODEX_HOME even with `--ignore-user-config`; `--ephemeral` is not a general no-write guarantee. The default catalog command can authenticate, use network and write cache.
+
+Owner decision entry 249 remains pending. Account/model eligibility, quota/credit route, no-extra-spend, target executable/path, Windows OS confinement, task-to-turn/artifact correlation, diff capture, independent verification, result consumer and owner-gated promotion remain UNPROVEN.
+
+Keep KEEP_BLOCKED. First open edge: `CODEX_EXEC_TARGET_VERSION_AUTH_USAGE_AND_CONFINEMENT_UNVERIFIED`. Do not launch the catalog or exec command under this record.
+
+---
+
 ## 2026-10-13 FIRST OPEN EDGE — CODEX CATALOG-ONLY OBSERVATION UNAVAILABLE
 
 Canonical: [CHAT-ARCH-2026-10-13-256-read-only-model-catalog-path-unavailable.md](./CHAT-ARCH-2026-10-13-256-read-only-model-catalog-path-unavailable.md).

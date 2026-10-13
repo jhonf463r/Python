@@ -1,3 +1,13 @@
+## 2026-10-13 RELATION DELTA — CURRENT CODEX CLI CATALOG AND EXEC ARE CANDIDATES, NOT A GOVERNED IABV BRIDGE
+
+Canonical: [CHAT-ARCH-2026-10-13-257-current-codex-catalog-and-exec-static-paths.md](./CHAT-ARCH-2026-10-13-257-current-codex-catalog-and-exec-static-paths.md). Public v0.162.1 source reveals a catalog command and a newer non-interactive exec interface; official plan docs list GPT-5.6 Terra in Codex for Free/Go subject to limits. This corrects a universal reading of entry 256, which was scoped to v0.120. Bundled catalog, client minimums and a plan matrix do not prove the local child binary, account eligibility, allowance or zero extra spend.
+
+The relation remains: **IABV task authorization → bounded Codex execution → correlated patch/artifact → independent verification → owner-gated promotion**. No edge is proven operational by this source review. The default catalog path may access auth/network/cache. In exec, `--ignore-rules` does not exclude every policy layer; explicit Allow can bypass the inner sandbox; ephemeral mode and JSON output do not prove containment or verified diffs. Windows enforcement, task correlation and the current IABV result consumer remain open.
+
+Keep KEEP_BLOCKED. First open edge: `CODEX_EXEC_TARGET_VERSION_AUTH_USAGE_AND_CONFINEMENT_UNVERIFIED`.
+
+---
+
 ## 2026-10-13 RELATION DELTA — CATALOG METADATA DOES NOT CLOSE MODEL ELIGIBILITY
 
 Canonical: [CHAT-ARCH-2026-10-13-256-read-only-model-catalog-path-unavailable.md](./CHAT-ARCH-2026-10-13-256-read-only-model-catalog-path-unavailable.md). The examined Codex 0.120 CLI did not establish a supported catalog-only operation. Its internal model-manager refresh and bundled catalog do not establish a live authenticated response, account eligibility, quota or cost. No request or model turn occurred. This closes no runtime or IABV handoff relation; CODEX_EXEC_VERSION_MODEL_AND_INCLUDED_USAGE_COMPATIBILITY_UNVERIFIED remains open.

@@ -1,3 +1,12 @@
+## Latest route record — Entry 257
+- Record: [CHAT-ARCH-2026-10-13-257-current-codex-catalog-and-exec-static-paths.md](./CHAT-ARCH-2026-10-13-257-current-codex-catalog-and-exec-static-paths.md)
+- Result: CURRENT_CODEX_CATALOG_AND_EXEC_SURFACES_SOURCE_VERIFIED; KEEP_BLOCKED.
+- Current public CLI source v0.162.1 has `codex debug models` and a newer `exec` contract; default model-catalog mode may use auth/network/cache. GPT-5.6 Terra is listed with a 0.144.0 minimum; official plan docs list it for Free/Go within usage limits.
+- This is not a local version check, account lookup, authenticated request or operational test. Local CLI was previously owner-reported as 0.120.0; no update/install occurred.
+- `--ignore-rules` excludes user/project rules only; managed/system policy and explicit-Allow sandbox bypass remain relevant. `--ignore-user-config` still uses CODEX_HOME auth; `--ephemeral` is not global no-write.
+- First open edge: `CODEX_EXEC_TARGET_VERSION_AUTH_USAGE_AND_CONFINEMENT_UNVERIFIED`. Entry 249 owner decision and runtime/security/artifact gates remain open.
+---
+
 ## Latest route record — Entry 256
 - Record: [CHAT-ARCH-2026-10-13-256-read-only-model-catalog-path-unavailable.md](./CHAT-ARCH-2026-10-13-256-read-only-model-catalog-path-unavailable.md)
 - Result: READ_ONLY_MODEL_CATALOG_PATH_UNAVAILABLE (mission-reported); posture KEEP_BLOCKED.

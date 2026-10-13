@@ -1,3 +1,15 @@
+## 2026-10-13 REGISTRATION — ENTRY 257: CURRENT CODEX CATALOG AND EXEC INTERFACES REVIEWED
+
+- Record: [CHAT-ARCH-2026-10-13-257-current-codex-catalog-and-exec-static-paths.md](./CHAT-ARCH-2026-10-13-257-current-codex-catalog-and-exec-static-paths.md)
+- Result: CURRENT_CODEX_CATALOG_AND_EXEC_SURFACES_SOURCE_VERIFIED (public-source review only); posture KEEP_BLOCKED.
+- New source: v0.162.1 exposes `codex debug models` and `exec` flags; default catalog command may use auth/network/cache, while `--bundled` is static.
+- Candidate compatibility: GPT-5.6 Terra, CLI minimum 0.144.0, documented Free/Go Codex plan matrix subject to limits. Local CLI remains previously owner-reported as 0.120.0; no update.
+- Safety limitation: `--ignore-rules` omits User/Project policy only; other rules and explicit-Allow sandbox bypass remain possible. Windows containment, usage/no-extra-spend, identity/artifact flow and consumer integration are unproven.
+- Entry 256 is still valid within v0.120 scope, not as a universal current-CLI claim.
+- First open edge: `CODEX_EXEC_TARGET_VERSION_AUTH_USAGE_AND_CONFINEMENT_UNVERIFIED`; Owner launch/auth-home decision in entry 249 remains pending.
+
+---
+
 ## 2026-10-13 REGISTRATION — ENTRY 256: READ-ONLY MODEL CATALOG PATH UNAVAILABLE
 
 - Record: [CHAT-ARCH-2026-10-13-256-read-only-model-catalog-path-unavailable.md](./CHAT-ARCH-2026-10-13-256-read-only-model-catalog-path-unavailable.md)

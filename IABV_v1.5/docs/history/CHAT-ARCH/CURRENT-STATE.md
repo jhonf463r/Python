@@ -1,3 +1,17 @@
+## 2026-10-13 LATEST RESULT — CURRENT CODEX CATALOG AND EXEC SURFACES FOUND; RUNTIME REMAINS BLOCKED
+
+Canonical result: [CHAT-ARCH-2026-10-13-257-current-codex-catalog-and-exec-static-paths.md](./CHAT-ARCH-2026-10-13-257-current-codex-catalog-and-exec-static-paths.md).
+
+Public Codex `rust-v0.162.1` source exposes `codex debug models` (including `--bundled`) and a newer non-interactive `exec` contract. The static bundle contains GPT-5.6 Terra (minimum CLI 0.144.0); current OpenAI plan docs list Terra for Free/Go within plan limits. This is a candidate source route, not proof that IABV resolves that binary, the Owner's account is eligible, or usage is available at no extra charge.
+
+Important boundary: the default `debug models` command can use existing auth, contact the remote endpoint and write model cache; only `--bundled` avoids refresh. The new `exec` `--ignore-rules` switch omits User/Project rules only; managed/system policy can still apply, explicit `Allow` can bypass the inner sandbox, and `approval_policy=Never` means no interactive approval safety net. `--ignore-user-config` still uses `CODEX_HOME` for auth; `--ephemeral` only addresses session files.
+
+Keep KEEP_BLOCKED. Entry 256 remains bounded to the inspected CLI 0.120 and is not a universal claim about later versions. The locally reported 0.120 remains unchanged/unverified now; no install/update or runtime action occurred. Owner launch/auth-home decision (entry 249), usage/cost, Windows confinement, task identity, diff/receipt, verification and gated promotion remain unresolved.
+
+**First open edge:** `CODEX_EXEC_TARGET_VERSION_AUTH_USAGE_AND_CONFINEMENT_UNVERIFIED`. Source links and evidence classifications are in entry 257.
+
+---
+
 ## 2026-10-13 LATEST RESULT — NO ISOLATED CATALOG-ONLY PATH ESTABLISHED
 
 Canonical result: [CHAT-ARCH-2026-10-13-256-read-only-model-catalog-path-unavailable.md](./CHAT-ARCH-2026-10-13-256-read-only-model-catalog-path-unavailable.md).
