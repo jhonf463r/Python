@@ -1,3 +1,13 @@
+## Continuity method delta — auth home and policy-source separation (2026-10-13)
+
+Canonical: [CHAT-ARCH-2026-10-13-253-codex-home-auth-and-execpolicy-coupling.md](./CHAT-ARCH-2026-10-13-253-codex-home-auth-and-execpolicy-coupling.md).
+
+Don't treat a dedicated `CODEX_HOME` as a free safety upgrade. In Codex 0.120, file-backed auth lives at `CODEX_HOME/auth.json`; keyring auth lookup is keyed by the canonical home path. Execpolicy reads rules from all applicable config-layer folders. Therefore a new home won't automatically reuse the old keyring entry, while the existing home continues to load its rule policy. Matching explicit Allow rules can bypass the inner sandbox.
+
+No verified CLI flag to ignore user execpolicy rules was found in the inspected `ExecCli` and rule-loader source. Keep local auth/rule mode `UNPROVEN`; don't inspect credentials, create a home/symlink, or start login. Cloud analysis may continue. First open edge: `CODEX_EXEC_AUTH_HOME_POLICY_ISOLATION_ROUTE_UNRESOLVED`.
+
+---
+
 ## Continuity method delta — inspect execpolicy bypass before accepting an inner sandbox (2026-10-13)
 
 Canonical: [CHAT-ARCH-2026-10-13-252-execpolicy-allow-can-bypass-sandbox.md](./CHAT-ARCH-2026-10-13-252-execpolicy-allow-can-bypass-sandbox.md).
