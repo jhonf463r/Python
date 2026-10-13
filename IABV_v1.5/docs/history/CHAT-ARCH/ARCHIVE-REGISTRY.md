@@ -1,3 +1,13 @@
+## 2026-10-13 REGISTRATION — ENTRY 264: M0B-R4 GOVERNANCE DIAGNOSTIC / TARGET IDENTITY UNAVAILABLE
+
+- Record: [CHAT-ARCH-2026-10-13-264-m0b-r4-governance-diagnostic-missing.md](./CHAT-ARCH-2026-10-13-264-m0b-r4-governance-diagnostic-missing.md)
+- Input: owner-supplied 18:19 report. The reviewed session exposed no governance operation meeting the narrow scope.
+- Result: no active-block metadata and no direct MCP server/checkout identity; `world_model_snapshot` and alternate list/read attempts were deliberately not used.
+- Interpretation: session capability/precondition gap, not local source absence and not proof that governance code does not exist elsewhere.
+- Next: supported scoped block diagnostic, direct target identity and auditable bounded read-only decision. KEEP_BLOCKED; no bypass, runtime or local source changes.
+
+---
+
 ## 2026-10-13 REGISTRATION — ENTRY 263: M0B-R3 BRIDGE ADJUDICATION
 
 - Record: [CHAT-ARCH-2026-10-13-263-m0b-r3-autonomy-bridge-adjudication.md](./CHAT-ARCH-2026-10-13-263-m0b-r3-autonomy-bridge-adjudication.md)
