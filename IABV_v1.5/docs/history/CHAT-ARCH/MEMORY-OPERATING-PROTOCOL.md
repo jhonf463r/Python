@@ -1,3 +1,15 @@
+## Continuity method delta — continue cloud review while local facts remain blocked (2026-10-13)
+
+Canonical: [CHAT-ARCH-2026-10-13-250-cloud-static-audit-windows-sandbox-home-separation.md](./CHAT-ARCH-2026-10-13-250-cloud-static-audit-windows-sandbox-home-separation.md).
+
+Do not stop all analysis merely because the Owner's A/B/C choice or a local runtime fact is pending. Continue any discriminating source-level review, especially when version-matched public source can reduce uncertainty. Keep local-effective-state gates separate: remote source cannot show which Windows sandbox backend is provisioned, whether a local home is authenticated, or whether usage costs extra.
+
+The Codex 0.120 source supports filesystem permission profiles with `read/write/none`, but Windows backends differ in which restrictions they enforce. The next technical question is whether a sensitive authenticated home can be made unreadable to agent-spawned commands under a backend already available, while the CLI host can still use it. Published IABV code also loads secrets into `os.environ`; a future executor must not inherit that environment wholesale.
+
+C remains the operational default until proof/authorization gates close. First technical edge: `CODEX_EXEC_WINDOWS_HOME_READ_DENIAL_FEASIBILITY_UNVERIFIED`. Cloud writeback is external memory, not a live execution result.
+
+---
+
 ## Continuity delta — decision package is not an Owner selection (2026-10-13)
 
 Canonical: [CHAT-ARCH-2026-10-13-249-owner-decision-package-reviewed-no-selection.md](./CHAT-ARCH-2026-10-13-249-owner-decision-package-reviewed-no-selection.md).
