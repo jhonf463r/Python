@@ -1,3 +1,13 @@
+## 2026-10-13 METHOD UPDATE — USE DOCUMENTED NATIVE SANDBOX AS A CANDIDATE, NOT AS LOCAL PROOF
+
+Canonical: [CHAT-ARCH-2026-10-13-244-windows-sandbox-route-refinement.md](./CHAT-ARCH-2026-10-13-244-windows-sandbox-route-refinement.md).
+
+The official Codex documentation describes native Windows sandbox implementations and `workspace-write`; commands spawned by the agent inherit the enforced file/network permissions. This narrows the architecture search: assess this existing enforcement substrate before inventing a separate executor. However, documentation about a product capability does not prove that the dynamically resolved local CLI/App Server supports or effectively applies it. Match version, request semantics and local non-secret configuration; preserve `UNPROVEN` when that cannot be established without runtime.
+
+Next edge: `CODEX_NATIVE_WINDOWS_SANDBOX_IN_APP_SERVER_MODE_UNVERIFIED`. Keep stages distinct: documented capability → source path/config support → local effective sandbox evidence → authorized runtime task → candidate artifact → consumer evaluation → independent verification → owner-controlled promotion → later causal reuse. No setup or execution is authorized by this method update.
+
+---
+
 ## 2026-10-13 METHOD UPDATE — A TEXT RESPONSE ADAPTER IS NOT A CODING/ARTIFACT BRIDGE
 
 Canonical result: [CHAT-ARCH-2026-10-13-243-codex-bounded-development-mode-blocked.md](./CHAT-ARCH-2026-10-13-243-codex-bounded-development-mode-blocked.md).
