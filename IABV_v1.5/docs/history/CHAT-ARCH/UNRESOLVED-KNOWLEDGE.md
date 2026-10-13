@@ -1,3 +1,13 @@
+## 2026-10-13 ACTIVE UNKNOWN — EFFECTIVE WINDOWS SANDBOX UNDER THE LOCAL APP SERVER CONTRACT
+
+Canonical supplement: [CHAT-ARCH-2026-10-13-244-windows-sandbox-route-refinement.md](./CHAT-ARCH-2026-10-13-244-windows-sandbox-route-refinement.md).
+
+Official docs establish native Codex sandbox implementations on Windows, but local applicability remains open: actual CLI version/protocol (source reportedly expects 0.120.0 but resolves dynamically), App Server-to-command sandboxPolicy mapping, writable candidate root configuration, sandbox setup and effective network policy, native sandbox mode (mxc/elevated/unelevated), external MCP/app/browser tool availability, authorized ChatGPT-plan auth/quota/cost, and candidate diff capture/consumer evaluation.
+
+First edge: `CODEX_NATIVE_WINDOWS_SANDBOX_IN_APP_SERVER_MODE_UNVERIFIED`. Prefer built-in boundary if its exact local contract is supportable without installation/setup/spend. If not, design a separate executor. No runtime or credential inspection in this step.
+
+---
+
 ## 2026-10-13 ACTIVE UNKNOWN — CANDIDATE-WORKSPACE EXECUTION DESIGN
 
 Canonical result: [CHAT-ARCH-2026-10-13-243-codex-bounded-development-mode-blocked.md](./CHAT-ARCH-2026-10-13-243-codex-bounded-development-mode-blocked.md).
