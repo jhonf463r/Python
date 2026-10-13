@@ -1,3 +1,13 @@
+## 2026-10-13 RELATION DELTA — ADD EXPLICIT NO-EXTRA-SPEND STOP CONDITION
+
+Canonical: [CHAT-ARCH-2026-10-13-254-codex-plan-usage-and-zero-extra-spend-gate.md](./CHAT-ARCH-2026-10-13-254-codex-plan-usage-and-zero-extra-spend-gate.md).
+
+A future route requires three independent invariants: (1) an already-approved home/auth path that does not copy credentials or require new login; (2) applicable execpolicy layers cannot escape the inner sandbox, or an independently enforced outer OS boundary contains them; (3) the task can run only within the included allowance, with a hard stop before paid credits/API fallback. Public plan documentation says Codex is included with usage limits, not unlimited. Local account entitlement/quota/credit state remains `UNPROVEN`.
+
+First open edge: `CODEX_EXEC_AUTH_HOME_POLICY_AND_USAGE_BUDGET_ROUTE_UNRESOLVED`. Do not infer no extra spend from package installation.
+
+---
+
 ## 2026-10-13 RELATION DELTA — AUTHENTICATION AND RULE POLICY SHARE CODEX HOME CONTEXT
 
 Canonical: [CHAT-ARCH-2026-10-13-253-codex-home-auth-and-execpolicy-coupling.md](./CHAT-ARCH-2026-10-13-253-codex-home-auth-and-execpolicy-coupling.md).
