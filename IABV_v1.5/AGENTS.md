@@ -1,3 +1,13 @@
+## Current route overlay — M0B-R4 governance capability gap (2026-10-13; entry 264)
+
+Read [CHAT-ARCH-2026-10-13-264-m0b-r4-governance-diagnostic-missing.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-264-m0b-r4-governance-diagnostic-missing.md), then entry 263.
+
+The owner-supplied session result found no exposed narrow governance operation and obtained neither block metadata nor direct MCP server/checkout identity. This is not evidence that local source lacks the candidate adapter. Do not retry the blocked reader, use another reader to route around it, query the broad world snapshot, infer the target from the tool namespace, or clear general resource guards.
+
+Required prerequisite: the supported Control Center/control plane must expose or identify a minimal block diagnostic, direct target identity, and an auditable bounded read-only decision. These are requirements, not assumed existing APIs. Once the mechanism confirms the exact M0A checkout and grants the limited read, Codex can compare the App Server candidate against the existing external-assistant/UI/rollout route and trace the actual result consumer. Until then KEEP_BLOCKED; no code/runtime edits or tests.
+
+---
+
 ## Current route overlay — M0B-R3 Codex/App Server and existing rollout route (2026-10-13; entry 263)
 
 Read [CHAT-ARCH-2026-10-13-263-m0b-r3-autonomy-bridge-adjudication.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-263-m0b-r3-autonomy-bridge-adjudication.md), then entries 231 and 260–262 as needed.
