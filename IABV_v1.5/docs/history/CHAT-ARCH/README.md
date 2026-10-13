@@ -1,3 +1,13 @@
+## 2026-10-13 LATEST RESULT — CLOUD ANALYSIS CONTINUES; WINDOWS HOME READ DENIAL IS THE TECHNICAL GATE
+
+Canonical: [CHAT-ARCH-2026-10-13-250-cloud-static-audit-windows-sandbox-home-separation.md](./CHAT-ARCH-2026-10-13-250-cloud-static-audit-windows-sandbox-home-separation.md).
+
+Version-matched public Codex 0.120 source declares filesystem permission profiles and Windows elevated/unelevated sandbox modes. The selected Windows backend matters: exact read-denial policy may not be supported in all modes and must fail closed if unenforceable. A valid design separates host CLI authentication from agent-spawned command read access, keeps the candidate as the only writable root, and explicitly constructs child environments because IABV can load secrets into its parent environment.
+
+No A/B/C selection has been made. C remains the safe operational default, but the cloud-side static analysis can continue. First technical edge: `CODEX_EXEC_WINDOWS_HOME_READ_DENIAL_FEASIBILITY_UNVERIFIED`. No runtime, source edits, secrets or spend.
+
+---
+
 ## 2026-10-13 LATEST RESULT — OWNER PACKAGE REVIEWED, ROUTE STILL BLOCKED
 
 Canonical: [CHAT-ARCH-2026-10-13-249-owner-decision-package-reviewed-no-selection.md](./CHAT-ARCH-2026-10-13-249-owner-decision-package-reviewed-no-selection.md).
