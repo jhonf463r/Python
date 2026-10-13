@@ -1,3 +1,12 @@
+## Latest route record — Entry 266
+
+- Record: [CHAT-ARCH-2026-10-13-266-observation-approval-is-not-audit-release.md](./CHAT-ARCH-2026-10-13-266-observation-approval-is-not-audit-release.md)
+- Control Center's `approve_observation_permission` is an observation action; tests use `observe_window_content:codex`. It does not prove release of the audit-reader governance block or checkout identity.
+- Entries 218–224 concern mutation authority and keep broader trusted-identity exploration behind an Owner gate. Do not transfer that policy to this separate read-only gate.
+- Next: bounded public-source trace of existing Control Center/WorldModel routes for an explicit audit release. If absent, specify a narrow diagnostic + separate scoped decision; no implementation, broad auth search, local reader retry or bypass.
+
+---
+
 ## Latest route record — Entry 265
 
 - Record: [CHAT-ARCH-2026-10-13-265-autonomy-run-paused-too-early-public-gate-contract.md](./CHAT-ARCH-2026-10-13-265-autonomy-run-paused-too-early-public-gate-contract.md)
