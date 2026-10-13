@@ -25,7 +25,7 @@ Source review was performed against the published main snapshot identified above
 
 The published ToolRegistry picker selects a ToolCard by an existing task.tool_id where possible, then preferred assistant kind, lexical overlap against the task text/card description/capabilities, and finally a first-card fallback. This is a routing/availability mechanism. It does not prove that the selected tool is authorized for a candidate root, file scope, command allowlist, network policy, cost ceiling, or publication rule.
 
-Source: [tool_registry.py](../../src/iabv_v15/services/tools/tool_registry.py).
+Source: [tool_registry.py](../../../src/iabv_v15/services/tools/tool_registry.py).
 
 ### 2.2 Existing task/result contracts are generic, not a verified coding receipt
 
@@ -33,7 +33,7 @@ The published ToolTask includes task identity, tool ID, objective, actions, gene
 
 ToolResult includes task/result identity, status, output, extracted data, a generic list of artifact strings and metadata. It does not itself define a typed, independently verifiable candidate receipt binding baseline, candidate tree, diff digest, allowed scope and test evidence. CodexTaskSpec represents a planned coding task and contains file scope, constraints, acceptance criteria and test plan; its existence does not execute code or materialize a Git candidate.
 
-Sources: [models.py](../../src/iabv_v15/domain/models.py), [tool_validator.py](../../src/iabv_v15/services/tools/tool_validator.py).
+Sources: [models.py](../../../src/iabv_v15/domain/models.py), [tool_validator.py](../../../src/iabv_v15/services/tools/tool_validator.py).
 
 ### 2.3 The existing sandbox services are not Git code isolation
 
@@ -41,7 +41,7 @@ The published SandboxExperimentService validates route/configuration recommendat
 
 ToolSandbox calls the adapter with sandbox=True and wraps the returned payload. That flag and result label do not establish OS-enforced filesystem, credential, process or network containment.
 
-Sources: [sandbox_experiment_service.py](../../src/iabv_v15/services/self_teach/sandbox_experiment_service.py), [tool_sandbox.py](../../src/iabv_v15/services/tools/tool_sandbox.py).
+Sources: [sandbox_experiment_service.py](../../../src/iabv_v15/services/self_teach/sandbox_experiment_service.py), [tool_sandbox.py](../../../src/iabv_v15/services/tools/tool_sandbox.py).
 
 ### 2.4 Autonomous validation is real as a code path, but is not the missing Codex development bridge
 
@@ -49,13 +49,13 @@ The published AutonomousValidationCycleService defaults auto_start to enabled ou
 
 These behaviors do not demonstrate an authorized Codex code-edit task, isolated candidate, independent diff verification, or owner-approved code promotion. Any future Codex coding route must be an explicit separate operation with its own pre-dispatch authorization and fail-closed gates; it must not be silently added to the periodic autonomous proposal path.
 
-Source: [autonomous_validation_cycle.py](../../src/iabv_v15/services/self_teach/autonomous_validation_cycle.py).
+Source: [autonomous_validation_cycle.py](../../../src/iabv_v15/services/self_teach/autonomous_validation_cycle.py).
 
 ### 2.5 “Promotion” currently describes route/evidence publication, not code incorporation
 
 The published PromotionPrPublisher documentation describes generating markdown/JSON evidence, preparing a Git branch/commit, and publishing a documentation PR about a chosen route/tool. It explicitly does not change executable logic. This is useful audit infrastructure, but its name must not be taken as a production-code promotion contract.
 
-Sources: [promotion_pr_publisher.py](../../src/iabv_v15/services/self_teach/promotion_pr_publisher.py), historical contract [entry 055](./CHAT-ARCH-2026-10-05-055-self-code-candidate-diff-reconciliation.md).
+Sources: [promotion_pr_publisher.py](../../../src/iabv_v15/services/self_teach/promotion_pr_publisher.py), historical contract [entry 055](./CHAT-ARCH-2026-10-05-055-self-code-candidate-diff-reconciliation.md).
 
 ## 3. Historical reconciliation — do not repeat the same archaeology
 
