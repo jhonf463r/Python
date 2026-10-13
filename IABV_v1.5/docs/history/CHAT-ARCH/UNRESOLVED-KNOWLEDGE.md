@@ -1,3 +1,15 @@
+## 2026-10-13 OPEN EDGE — EFFECTIVE APP SERVER TOOL SURFACE NOT PROVEN
+
+Canonical record: [CHAT-ARCH-2026-10-13-238-appserver-tool-suppression-unproven.md](./CHAT-ARCH-2026-10-13-238-appserver-tool-suppression-unproven.md).
+
+Owner static audit reports that normal dispatch skips adapter `preflight()`; requested read-only/restricted sandbox settings and post-receipt rejection do not prove server-side tool execution is prevented before effects. The preflight's MCP inventory count does not fail closed according to the audit. Auth/session/quota/cost and actual consumer evaluation remain unproven.
+
+Current upstream protocol sources suggest that plugin-selection, sandbox and approval parameters do not themselves establish a global no-tools mode, but exact match to the local CLI is unproven.
+
+Next edge: `CODEX_APP_SERVER_SERVER_ENFORCED_TOOL_SUPPRESSION_UNAVAILABLE_OR_UNPROVEN`. Read-only identify the target protocol and establish whether its server-side contract prevents all effect-capable built-in, MCP and app/plugin tools before the turn. No runtime, tests, credentials, code edits, network/UI or spend.
+
+---
+
 ## 2026-10-13 OPEN EDGE — TASK ID REPAIR REPORTED PASS; AUTH / PREFLIGHT / PRE-EFFECT TOOL POLICY UNRESOLVED
 
 Canonical adjudication: [CHAT-ARCH-2026-10-13-237-codex-task-id-repair-synthetic-pass.md](./CHAT-ARCH-2026-10-13-237-codex-task-id-repair-synthetic-pass.md).
