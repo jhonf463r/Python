@@ -1,3 +1,13 @@
+## 2026-10-13 RELATION DELTA — SERVER TOOL SURFACE MUST BE KNOWN BEFORE TURN
+
+Canonical: [CHAT-ARCH-2026-10-13-238-appserver-tool-suppression-unproven.md](./CHAT-ARCH-2026-10-13-238-appserver-tool-suppression-unproven.md).
+
+Task identity is reported stable through SafeUI and ToolTeachService. The remaining missing relation is requested text-only intent → effective tool surface → possible server-side execution → client reaction. Rejecting received events does not prove the absence of earlier effects. Prove the exact target protocol's server-enforced behavior across built-in tools, MCP and app/plugin capabilities; otherwise keep App Server blocked for a text-only request.
+
+Next edge: `CODEX_APP_SERVER_SERVER_ENFORCED_TOOL_SUPPRESSION_UNAVAILABLE_OR_UNPROVEN`. Source-only. Do not start a turn.
+
+---
+
 ## 2026-10-13 RELATION DELTA — TASK ID REPAIR REPORTED PASS; CORRELATION CHAIN STILL OPEN
 
 Canonical: [CHAT-ARCH-2026-10-13-237-codex-task-id-repair-synthetic-pass.md](./CHAT-ARCH-2026-10-13-237-codex-task-id-repair-synthetic-pass.md).
