@@ -1,3 +1,13 @@
+## 2026-10-13 LATEST RESULT — DESKTOP LAUNCH PROVENANCE UNAVAILABLE
+
+Canonical: [CHAT-ARCH-2026-10-13-234-desktop-provenance-unavailable-appserver-next.md](./CHAT-ARCH-2026-10-13-234-desktop-provenance-unavailable-appserver-next.md).
+
+Owner report: `LAUNCH_PROVENANCE_UNAVAILABLE`. The existing Codex Desktop window/process was identified, but the available non-invasive evidence does not prove that it uses IABV's capture home. No mismatch is established and no prompt was sent. Do not repeat window discovery or widen process inspection to force a result.
+
+**Next:** bounded read-only source/config audit of the known App Server `preflight()`, auth/home selection, task/tool policy, and result-consumer path. No service invocation or code changes. Preserve dirty worktree; no added spend.
+
+---
+
 ## 2026-10-13 LATEST CODEX DESKTOP PREFLIGHT — CAPTURE-HOME PROVENANCE BLOCKED
 
 Canonical result: [CHAT-ARCH-2026-10-13-233-desktop-preflight-launch-provenance.md](./CHAT-ARCH-2026-10-13-233-desktop-preflight-launch-provenance.md).
