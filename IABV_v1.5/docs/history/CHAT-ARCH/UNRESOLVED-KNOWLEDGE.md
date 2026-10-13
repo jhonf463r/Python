@@ -1,3 +1,16 @@
+## 2026-10-13 — M0B-R4 GOVERNANCE DIAGNOSTIC / TARGET IDENTITY CAPABILITY MISSING FROM SESSION (ENTRY 264)
+
+Canonical: [CHAT-ARCH-2026-10-13-264-m0b-r4-governance-diagnostic-missing.md](./CHAT-ARCH-2026-10-13-264-m0b-r4-governance-diagnostic-missing.md).
+
+- **OWNER-REPORTED:** the reviewed session exposed no governance operation meeting the requested narrow scope; no block metadata or direct MCP server/checkout identity was obtained.
+- **PROVEN ABOUT THE SESSION REPORT:** the broad `world_model_snapshot` was not invoked and list/read operations were not used as a bypass.
+- **NOT ESTABLISHED:** absence of governance implementation across all IABV code; local M0A adapter/wiring; the reader's actual checkout target.
+- **Required interface (proposed, not existing):** scoped active-block diagnostics; direct non-secret MCP server + checkout identity; an auditable, bounded, path-allowlisted read-only governance decision.
+- **Next edge:** `SCOPED_GOVERNANCE_BLOCK_DIAGNOSTIC_OPERATION_MISSING` and `MCP_SERVER_AND_CHECKOUT_IDENTITY_UNRESOLVED`.
+- **Posture:** KEEP_BLOCKED; do not retry or bypass. No source/runtime changes.
+
+---
+
 ## 2026-10-13 — M0B-R3 BRIDGE DIRECTION / EXISTING CODEX ROUTE REQUIRES COMPARISON (ENTRY 263)
 
 Canonical: [CHAT-ARCH-2026-10-13-263-m0b-r3-autonomy-bridge-adjudication.md](./CHAT-ARCH-2026-10-13-263-m0b-r3-autonomy-bridge-adjudication.md).
