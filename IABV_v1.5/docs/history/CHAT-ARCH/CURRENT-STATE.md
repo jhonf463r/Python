@@ -1,15 +1,20 @@
-## 2026-10-10 RQ224 DESIGN ROUTE — OWNER IDENTITY TRUST OPTIONS READY FOR SELECTION
+## 2026-10-13 ACTIVE PRODUCT ROUTE — M0-A SAFEUI TARGET DISCOVERY BLOCKED
 
-Canonical design record: [CHAT-ARCH-2026-10-10-228-rq224-owner-identity-trust-options-design.md](./CHAT-ARCH-2026-10-10-228-rq224-owner-identity-trust-options-design.md).
+Canonical handoff: [CHAT-ARCH-2026-10-13-229-m0a-safeui-target-discovery-continuity.md](./CHAT-ARCH-2026-10-13-229-m0a-safeui-target-discovery-continuity.md).
 
-The Owner approved preparation of alternatives only. The record compares Option 0 (no automated mutation authority), A (enrolled Windows principal + explicit intent-bound confirmation), B (fresh OS-mediated presence verification), C (external identity assertion bound to immutable intent), and D (independent trust boundary / Model B). No option is selected by this writeback.
+Latest Owner-supplied result is `TARGET_DISCOVERY_BLOCKED`: code inspection found the configured CDP discovery path (`/json/version`, `/json/list`) but no safe read-only invocation was available in that session. No CDP request was made, no target count/URL/title/page identity was observed, and no canary or authorization was created/consumed.
 
-Source findings remain bounded to remote main at `fcc76be07d9b5845dc7ea95a610eec9deab17e3d`: the authorized `services/security/` and `ui/` scope did not demonstrate an authenticated Owner principal; `SystemIdentityRegistry` is subsystem metadata; account-choice approval is not Owner identity; the HumanApprovalBroker/UI path is not a demonstrated authenticated receipt route.
+Runtime startup is reported as `STARTUP_VERIFIED` on 2026-10-12 in an isolated-by-location/environment runtime. Manifest provenance and 191 offline passes are actor-reported, not independently rerun here. Isolation is not an OS-enforced write boundary; MCP auto-start was reported skipped. The worktree remains dirty and candidate changes have not been integrated into `main`.
 
-The required contract remains RQ223 `A=(P,O,R,S,D,T,N)`, verified and consumed before the first effect. RQ218 root/protected paths, immutable baseline, explicit file allowlist and clean isolated worktree remain unresolved. Model A applies only to the supervised prototype; it does not establish protection against process compromise. No implementation, tests/build, runtime, process action, MCP call/start/reconnect or snapshot disclosure is authorized. Preserve dirty/detached worktree `e46d8304167708bed0764d3bf2be8fd6643e8944`.
+**NEXT PRODUCT EDGE:** only after separate Owner authorization, consider one read-only metadata check against the existing configured loopback CDP endpoint, after proving the listener is the expected existing browser. Do not start browsers or helper processes, invoke SafeUI's authorization-producing path, navigate, inspect private page content, or send the canary. If the safe path is unavailable, remain blocked. M0-B and causal reuse remain unproven.
 
-The launch provenance plan also remains unimplemented; a post-`AppBootstrap` receipt cannot attest earlier startup effects. RQ224 stays open and global MCP readiness remains `TRANSITIVE_AUDIT_BLOCKED_BY_FURTHER_DEPENDENCIES`.
+---
 
+## 2026-10-13 RQ224 DECISION RECONCILIATION — OPTION A SELECTED, IMPLEMENTATION STILL BLOCKED
+
+Remote `main` at `9615031d9c5c4b5c10ad0e6287c22e507ccd81b9` records the Owner's 2026-10-11 selection of Option A (enrolled Windows principal plus explicit intent-bound confirmation) in [RQ228](./CHAT-ARCH-2026-10-10-228-rq224-owner-identity-trust-options-design.md). Threat Model A remains a first-supervised-prototype assumption. This is design direction only, not implementation authorization or proof that an enrolled Owner authority exists.
+
+RQ224 remains open: trusted enrollment/identity, binding of exact intent and UI/MCP instance, and a verifiable single-use receipt consumed before the first effect are not demonstrated. RQ223 requires `A=(P,O,R,S,D,T,N)`. RQ218's canonical root/protected paths, immutable baseline, exact edit allowlist and clean isolated worktree are unresolved. Global MCP readiness remains `TRANSITIVE_AUDIT_BLOCKED_BY_FURTHER_DEPENDENCIES`; RQ13-111 and RQ21.200 remain independent.
 ---
 
 ## 2026-10-11 SEQUENCING CORRECTION — RQ219/RQ220 ALREADY CLOSED IN SCOPE; SEPARATE RQ224 OWNER GATE

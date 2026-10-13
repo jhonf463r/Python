@@ -1,12 +1,33 @@
+## 2026-10-13 ACTIVE PRODUCT ROUTE — M0-A TARGET DISCOVERY BLOCKED
+
+Canonical handoff: [CHAT-ARCH-2026-10-13-229-m0a-safeui-target-discovery-continuity.md](./CHAT-ARCH-2026-10-13-229-m0a-safeui-target-discovery-continuity.md).
+
+Latest Owner-supplied result: `TARGET_DISCOVERY_BLOCKED`. SafeUI startup was reported in a path-isolated runtime and offline tests were reported as 191 passed, but neither proves a real ChatGPT Web round trip. Static inspection identified CDP discovery via `/json/version` and `/json/list`; no request was made, no eligible-page count was observed, and SafeUI's authorization-producing discovery route was not invoked.
+
+NEXT: only after separate Owner authorization, consider a single read-only metadata check against the already-configured loopback endpoint, and only if the listener can be tied to the expected existing browser without starting processes. No port scan, auxiliary process, browser start, CDP WebSocket, navigation, page scripting, pending approval creation or canary dispatch. If listener identity or safe access cannot be established, remain blocked.
+
+M0-B remains unproven. Preserve the dirty local worktree; its patch is not part of `main`. The free-API constraint remains: use the existing ChatGPT Web route, do not assume an API key or paid API.
+
+---
+## 2026-10-13 RQ224 STATUS CORRECTION — OPTION A SELECTED; SECURITY GATES REMAIN OPEN
+
+Canonical design record: [CHAT-ARCH-2026-10-10-228-rq224-owner-identity-trust-options-design.md](./CHAT-ARCH-2026-10-10-228-rq224-owner-identity-trust-options-design.md).
+
+The Owner selected Option A on 2026-10-11: enrolled Windows account/principal plus explicit intent-bound confirmation. Threat Model A is accepted for the first supervised prototype. These are design choices, not implementation permission. RQ224 remains open because enrollment/provenance, authenticated Owner identity, instance-to-intent binding and a verifiable single-use receipt consumed before the first effect are not demonstrated. RQ218 root/protected paths, immutable baseline, exact allowlist and isolated clean worktree remain open; global MCP readiness remains `TRANSITIVE_AUDIT_BLOCKED_BY_FURTHER_DEPENDENCIES`.
+
+Do not repeat RQ219/RQ220 searches or claim global absence of authentication. Do not treat startup, endpoint availability, SID, UI click or `approved=True` as mutation authority.
+
+---
+
 ## 2026-10-10 UPDATE — EXECUTION APPROVAL ROUTE UNAVAILABLE FOR CLEANUP
 
 Canonical: [CHAT-ARCH-2026-10-10-227-cross-chat-autonomy-resource-pressure-and-continuity.md](CHAT-ARCH-2026-10-10-227-cross-chat-autonomy-resource-pressure-and-continuity.md).
 
-**[LATEST REPORTED DENIAL]** `CreateProcess ... Rejected ... blocked by policy` occurred before PowerShell creation. Active approval policy reported as `never`; no supported in-session authorization mechanism was available under active instructions. No files were deleted.
+**[HISTORICAL REPORTED DENIAL — 2026-10-10]** `CreateProcess ... Rejected ... blocked by policy` occurred before PowerShell creation. No files were deleted.
 
-**[CANDIDATE SCOPE]** four cache paths (NVIDIA DXCache, NVIDIA GLCache, Local cache, uv cache), approximately 24,597,103 bytes; too small to close the gap. Latest C: measurement unchanged at `4,965,724,160` bytes free (~4.625 GiB), below source-reported `<=10 GiB` threshold.
+**[HISTORICAL CANDIDATE SCOPE]** four cache paths (NVIDIA DXCache, NVIDIA GLCache, Local cache, uv cache), approximately 24,597,103 bytes; too small to close the then-reported gap. C: was measured at `4,965,724,160` bytes free on 2026-10-10; a 2026-10-12 startup report later stated about 30.5 GB free. Current measurement is unknown until refreshed.
 
-**[NEXT GATE]** discover/use only a documented user-controlled approval/configuration mechanism if permitted by the environment, or use native Windows Storage cleanup through a normal authorized user path. Do not bypass policy or attribute effects to a rejected request. Re-measure actual free space afterward.
+**[CONDITIONAL NEXT GATE]** remeasure current free space first. If pressure is still critical, use only a documented, authorized cleanup route. Do not bypass policy or attribute effects to a rejected request.
 
 ---
 ## 2026-10-10 — CROSS-CHAT HANDOFF: RESOURCE PRESSURE, CLEANUP POLICY, RQ224 TRUST ANCHOR

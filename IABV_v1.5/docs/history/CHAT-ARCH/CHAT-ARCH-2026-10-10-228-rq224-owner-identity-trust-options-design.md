@@ -14,11 +14,11 @@
 
 ## STATUS / AUTHORITY BOUNDARY
 
-**Classification:** `OWNER_IDENTITY_TRUST_OPTIONS_READY_FOR_OWNER_SELECTION`.
+**Historical classification at original issuance:** `OWNER_IDENTITY_TRUST_OPTIONS_READY_FOR_OWNER_SELECTION`. The Owner later selected Option A on 2026-10-11 in the decision block at the top of this file; the preselection status below is superseded.
 
 **Design baseline:** remote `main @ fcc76be07d9b5845dc7ea95a610eec9deab17e3d`. The reviewed source is repository source only; this record says nothing about a running local instance or historically loaded bytes.
 
-The Owner's “ok” authorizes preparing and documenting options/guarantees/limitations. It does **not** select a technology or authorize implementation, worktree creation, configuration changes, tests/builds, process inspection, runtime, MCP start/reconnect/tool calls, operational snapshot disclosure, or any mutation. Model A remains the accepted threat assumption only for the first supervised prototype: process/code integrity is trusted. This does not supply the missing Owner identity, authorization receipt, or anti-replay mechanism.
+At the time this options record was initially prepared, the Owner had authorized comparison of options but had not yet selected one. The subsequent 2026-10-11 decision at the top of this file selects Option A as the design direction. That selection still does **not** authorize implementation, worktree creation, configuration changes, tests/builds, process inspection, runtime, MCP start/reconnect/tool calls, operational snapshot disclosure, or any mutation. Model A remains the accepted threat assumption only for the first supervised prototype: process/code integrity is trusted. This does not supply the missing Owner identity, authorization receipt, or anti-replay mechanism.
 
 ## 1. Source-grounded starting point
 
@@ -107,22 +107,22 @@ A separately enforced authorization service/process or hardware-backed boundary 
 - Source edits, worktree creation/change, tests/builds, runtime/process operations, MCP startup/reconnect/tool calls and snapshot disclosure are not authorized by this options document. They each retain separate gates.
 - The prospective launch-provenance plan has a timing caveat: recording after `AppBootstrap` cannot attest startup side effects that may already have occurred.
 
-## 6. Owner decision required
+## 6. Historical owner decision prompt — superseded on 2026-10-11
 
-Select one path for design refinement:
+At original issuance, select one path for design refinement. This prompt was resolved by the Owner's Option A decision at the top of this file; the alternatives below are retained as historical comparison, not current open choices:
 - **0** — keep automated mutation authority off; keep planning/read-only scope.
 - **A** — enrolled Windows principal plus explicit intent-bound confirmation, accepting shared/unlocked-session and trusted-process limitations.
 - **B** — add fresh OS-mediated user-presence authentication per privileged decision.
 - **C** — external identity provider with challenge-bound mutation decision.
 - **D** — pause Model A and authorize a separate Model B trust-boundary design.
-- **None yet** — refine trade-offs before selecting.
+- **None yet** — historical preselection state only; no longer the current decision.
 
 A selection only chooses the design direction. It does not authorize implementation, identify an already-existing trust source, close RQ224, or override the RQ218/RQ223 gates.
 
-## 7. Current classification
+## 7. Historical classification at original issuance
 
-`OWNER_IDENTITY_TRUST_OPTIONS_READY_FOR_OWNER_SELECTION`
+`OWNER_IDENTITY_TRUST_OPTIONS_READY_FOR_OWNER_SELECTION` (superseded for decision status by the 2026-10-11 Owner selection of Option A above).
 
-RQ224 remains open. Global MCP readiness remains `TRANSITIVE_AUDIT_BLOCKED_BY_FURTHER_DEPENDENCIES`. This record is a static design artifact only.
+RQ224 remains open. Global MCP readiness remains `TRANSITIVE_AUDIT_BLOCKED_BY_FURTHER_DEPENDENCIES`. The selected direction is a static design artifact only and does not authorize implementation.
 
 END OF RECORD

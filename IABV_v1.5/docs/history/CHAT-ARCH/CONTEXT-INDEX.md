@@ -1,15 +1,36 @@
+## 2026-10-13 ACTIVE PRODUCT ROUTE — M0-A TARGET DISCOVERY BLOCKED
+
+Canonical handoff: [CHAT-ARCH-2026-10-13-229-m0a-safeui-target-discovery-continuity.md](./CHAT-ARCH-2026-10-13-229-m0a-safeui-target-discovery-continuity.md).
+
+Latest Owner-supplied result: `TARGET_DISCOVERY_BLOCKED`. SafeUI startup was reported in a path-isolated runtime and offline tests were reported as 191 passed, but neither proves a real ChatGPT Web round trip. Static inspection identified CDP discovery via `/json/version` and `/json/list`; no request was made, no eligible-page count was observed, and SafeUI's authorization-producing discovery route was not invoked.
+
+NEXT: only after separate Owner authorization, consider a single read-only metadata check against the already-configured loopback endpoint, and only if the listener can be tied to the expected existing browser without starting processes. No port scan, auxiliary process, browser start, CDP WebSocket, navigation, page scripting, pending approval creation or canary dispatch. If listener identity or safe access cannot be established, remain blocked.
+
+M0-B remains unproven. Preserve the dirty local worktree; its patch is not part of `main`. The free-API constraint remains: use the existing ChatGPT Web route, do not assume an API key or paid API.
+
+---
+## 2026-10-13 RQ224 STATUS CORRECTION — OPTION A SELECTED; SECURITY GATES REMAIN OPEN
+
+Canonical design record: [CHAT-ARCH-2026-10-10-228-rq224-owner-identity-trust-options-design.md](./CHAT-ARCH-2026-10-10-228-rq224-owner-identity-trust-options-design.md).
+
+The Owner selected Option A on 2026-10-11: enrolled Windows account/principal plus explicit intent-bound confirmation. Threat Model A is accepted for the first supervised prototype. These are design choices, not implementation permission. RQ224 remains open because enrollment/provenance, authenticated Owner identity, instance-to-intent binding and a verifiable single-use receipt consumed before the first effect are not demonstrated. RQ218 root/protected paths, immutable baseline, exact allowlist and isolated clean worktree remain open; global MCP readiness remains `TRANSITIVE_AUDIT_BLOCKED_BY_FURTHER_DEPENDENCIES`.
+
+Do not repeat RQ219/RQ220 searches or claim global absence of authentication. Do not treat startup, endpoint availability, SID, UI click or `approved=True` as mutation authority.
+
+---
+
 ## 2026-10-10 RQ224 — OWNER IDENTITY TRUST OPTIONS
 
 Canonical: [CHAT-ARCH-2026-10-10-228-rq224-owner-identity-trust-options-design.md](./CHAT-ARCH-2026-10-10-228-rq224-owner-identity-trust-options-design.md).
 
-Use when deciding how a local Human Domain Owner is authenticated for IABV privileged mutations. Current authorized source scope did not establish that identity source; the record compares 0/A/B/C/D without selecting technology. Any chosen option must still bind principal, exact operation/resource/scope, approved delta, validity and unique-use identity, and be checked before the first side effect. No source edit/runtime permission; RQ218 and RQ223 gates remain. Preserve the dirty/detached worktree.
+Use for the historical comparison of how a local Human Domain Owner may be authenticated for IABV privileged mutations. The Owner subsequently selected Option A on 2026-10-11 (enrolled Windows principal plus explicit intent-bound confirmation); this chooses a design direction only and does not prove the identity source or receipt exists. Any chosen option must still bind principal, exact operation/resource/scope, approved delta, validity and unique-use identity, and be checked before the first side effect. No source edit/runtime permission; RQ218 and RQ223 gates remain. Preserve the dirty/detached worktree.
 
 ---
 ## 2026-10-10 ROUTING UPDATE — EXECUTION POLICY DENIES DISK CLEANUP
 
 Canonical: [CHAT-ARCH-2026-10-10-227-cross-chat-autonomy-resource-pressure-and-continuity.md](CHAT-ARCH-2026-10-10-227-cross-chat-autonomy-resource-pressure-and-continuity.md).
 
-Current cleanup stop is explicit: `CreateProcess ... Rejected ... blocked by policy` before PowerShell starts; active approval policy is reported as `never`. No deletion was performed in the latest phase. Do not bypass the policy. Find a supported user-controlled authorization route or use the normal Windows Storage cleanup UI. C: last reported at 4.625 GiB free; source threshold is `<=10 GiB`. Previously removed six clean worktrees, but latest cache request was denied. Preserve browsers/sessions, IABV/Codex and PR #464; see handoff for the cleanup history, worktree anomalies and exact figures.
+Historical cleanup request: `CreateProcess ... Rejected ... blocked by policy` before PowerShell starts; no deletion occurred. The 4.625 GiB measure belongs to 2026-10-10 and was later followed by a startup report of approximately 30.5 GB free on 2026-10-12. Current free space is not verified; measure before classifying resource pressure. Do not bypass policy. Previously removed six clean worktrees, but latest cache request was denied. Preserve browsers/sessions, IABV/Codex and PR #464; see handoff for the cleanup history, worktree anomalies and exact figures.
 
 ---
 ## 2026-10-10 ROUTING UPDATE — AUTONOMY VISION / RESOURCE PRESSURE / RQ224 CONTINUITY
@@ -18,7 +39,7 @@ Canonical handoff: [CHAT-ARCH-2026-10-10-227-cross-chat-autonomy-resource-pressu
 
 **Use this record before starting a new chat on IABV product autonomy or local cleanup.** The target is IABV as the primary human interface and coordinator of capability-bearing AIs, not a manual relay or a mandatory sequence of agents. Existing external-consultation code is statically composed per RQ128, but M0-A has no demonstrated complete runtime round trip; M0-B objective-driven actor selection is also unproven.
 
-Latest Owner-supplied local state: C: free `4,965,724,160` bytes (~4.625 GiB), below IABV's source-reported `<=10 GiB` critical threshold. The last cleanup deletion attempt (~24.6 MB of identified caches) was rejected before execution; no files were deleted in that phase. Six clean worktrees were removed in a previous phase; one pre-removal config query failed and the associated config is no longer recoverable. A prior untracked-file count discrepancy remains unresolved. Do not bypass the execution policy or repeat generic deletion attempts.
+Historical 2026-10-10 local state: C: free `4,965,724,160` bytes (~4.625 GiB), below IABV's source-reported `<=10 GiB` threshold; a 2026-10-12 startup report later stated ~30.5 GB free, not independently remeasured here. The last cleanup deletion attempt (~24.6 MB of identified caches) was rejected before execution; no files were deleted in that phase. Six clean worktrees were removed in a previous phase; one pre-removal config query failed and the associated config is no longer recoverable. A prior untracked-file count discrepancy remains unresolved. Do not bypass the execution policy or repeat generic deletion attempts.
 
 **Immediate operational next:** establish the supported permission route for the rejected cleanup or use an authorized native Windows cleanup surface; target verified, high-confidence expendable large artifacts; keep Edge/Chrome/Opera/Firefox authenticated profiles, credentials, IABV/Codex state, unique evidence and PR #464 protected.
 

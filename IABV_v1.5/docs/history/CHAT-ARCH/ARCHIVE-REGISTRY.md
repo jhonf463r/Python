@@ -1,8 +1,28 @@
-## 2026-10-10 REGISTRATION — RQ224 OWNER IDENTITY TRUST OPTIONS
+## 2026-10-13 REGISTRATION — M0-A SAFEUI TARGET-DISCOVERY CONTINUITY
+
+Canonical record: `CHAT-ARCH-2026-10-13-229-m0a-safeui-target-discovery-continuity.md`.
+
+Summary: Consolidates the supplied 2,095-line reconstruction and later Owner-supplied local reports. Offline tests are reported 191 passed; an isolated-by-path SafeUI startup is reported verified with manifest SHA-256 `8fbb03b193fe094f6fc69d9574fb897d2262cee99af06fa430c20c83189713b6`; latest target discovery remains `TARGET_DISCOVERY_BLOCKED`, with no CDP request and no canary sent. Preserves the dirty local worktree and separates M0-A transport from RQ224/RQ223 mutation authority. RQ224 Option A is selected design-only; RQ218/223 gates stay open. The later resource report differs from the older 4.625 GiB measure; current free space remains unverified.
+
+Tags: IABV / M0-A / SafeUI / target discovery / transcript intake / UAAL / RQ224 / RQ218 / RQ223 / evidence boundary / no canary
+
+---
+
+## 2026-10-11 REGISTRATION — RQ224 OWNER SELECTED OPTION A (DESIGN ONLY)
 
 Canonical record: `CHAT-ARCH-2026-10-10-228-rq224-owner-identity-trust-options-design.md`.
 
-Summary: Design-only comparison of fallback no-automation, enrolled Windows principal plus exact intent confirmation, fresh OS-mediated presence authentication, external identity assertion, and an independently enforced trust boundary. The Owner has not selected an option. The static source inspection remains bounded and found no current Owner identity source in the authorized directories; do not infer global absence. Model A is scoped to the first supervised prototype and no implementation/runtime is authorized. RQ218 root/path/baseline/clean-worktree gates and RQ223 mutation-bound receipt contract remain blockers.
+Summary: On 2026-10-11 the Owner selected an enrolled Windows principal plus explicit intent-bound confirmation as the RQ224 design direction and accepted threat Model A for the first supervised prototype. This does not demonstrate enrollment, trusted authority, a single-use receipt or permission to implement. RQ218/RQ223 gates remain open; MCP readiness remains blocked.
+
+Tags: IABV / RQ224 / Owner decision / Option A / Model A / design-only / no implementation
+
+---
+
+## 2026-10-10 HISTORICAL REGISTRATION — RQ224 OWNER IDENTITY TRUST OPTIONS
+
+Canonical record: `CHAT-ARCH-2026-10-10-228-rq224-owner-identity-trust-options-design.md`.
+
+Summary: Historical design-only comparison of fallback no-automation, enrolled Windows principal plus exact intent confirmation, fresh OS-mediated presence authentication, external identity assertion, and an independently enforced trust boundary. At original issuance no option had yet been selected; the Owner selected Option A on 2026-10-11, as recorded in the decision block at the top of the canonical record. The bounded source review did not establish that the selected mechanism already exists. Model A remains scoped to the first supervised prototype. RQ218 root/path/baseline/clean-worktree gates and the RQ223 mutation-bound receipt contract remain blockers.
 
 Tags: IABV / RQ224 / owner identity / trust source / design options / Model A / no implementation
 

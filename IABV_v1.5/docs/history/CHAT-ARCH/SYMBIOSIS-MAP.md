@@ -1,3 +1,23 @@
+## 2026-10-13 ACTIVE PRODUCT ROUTE — M0-A TARGET DISCOVERY BLOCKED
+
+Canonical handoff: [CHAT-ARCH-2026-10-13-229-m0a-safeui-target-discovery-continuity.md](./CHAT-ARCH-2026-10-13-229-m0a-safeui-target-discovery-continuity.md).
+
+Latest Owner-supplied result: `TARGET_DISCOVERY_BLOCKED`. SafeUI startup was reported in a path-isolated runtime and offline tests were reported as 191 passed, but neither proves a real ChatGPT Web round trip. Static inspection identified CDP discovery via `/json/version` and `/json/list`; no request was made, no eligible-page count was observed, and SafeUI's authorization-producing discovery route was not invoked.
+
+NEXT: only after separate Owner authorization, consider a single read-only metadata check against the already-configured loopback endpoint, and only if the listener can be tied to the expected existing browser without starting processes. No port scan, auxiliary process, browser start, CDP WebSocket, navigation, page scripting, pending approval creation or canary dispatch. If listener identity or safe access cannot be established, remain blocked.
+
+M0-B remains unproven. Preserve the dirty local worktree; its patch is not part of `main`. The free-API constraint remains: use the existing ChatGPT Web route, do not assume an API key or paid API.
+
+---
+## 2026-10-13 METHOD / RELATION DELTA — KEEP PRODUCT TRANSPORT AND MUTATION AUTHORITY SEPARATE
+
+The immediate M0-A edge is destination discovery, not another external-AI coordinator. Identify an existing ChatGPT Web target, present exact destination/text in SafeUI, obtain a single-use intent-bound decision, dispatch once, capture/correlate the same return and feed the existing adaptive consumer once. Every transition requires evidence. Current state remains `TARGET_DISCOVERY_BLOCKED`; no real round trip, M0-B inference or causal reuse has been demonstrated.
+
+RQ224 Option A was selected on 2026-10-11 as design direction only. Trusted Owner enrollment, UI/instance/intent binding and pre-effect single-use receipt remain unresolved under RQ224/RQ223; RQ218 still gates implementation. Do not let product-route progress imply mutation authorization.
+
+Resource reconciliation: `4,965,724,160` bytes (~4.625 GiB) was reported on 2026-10-10. A later 2026-10-12 startup report said ~30.5 GB free. Neither is an independently remeasured current value; current resource state is unknown pending a fresh measurement.
+
+---
 ## 2026-10-10 ROUTING / EVIDENCE DELTA — CLEANUP DENIAL
 
 Canonical: [CHAT-ARCH-2026-10-10-227-cross-chat-autonomy-resource-pressure-and-continuity.md](CHAT-ARCH-2026-10-10-227-cross-chat-autonomy-resource-pressure-and-continuity.md).
@@ -15,7 +35,7 @@ Canonical: [CHAT-ARCH-2026-10-10-227-cross-chat-autonomy-resource-pressure-and-c
 
 **Evidence-state invariant:** static handoff path ≠ runtime traversal; automatic capture design ≠ captured response; ingesting/persisting a result ≠ independent verification; stored knowledge ≠ later activation or causal reuse. M0-A and M0-B stay separate. The recent agent-side M0-A attempt stopped before `sendChat()` because no UI control surface was available in that session; IABV separately reported resource pressure. Neither is proof of an architectural defect.
 
-**Operational delta:** last supplied C: free space `4,965,724,160` bytes (~4.625 GiB), below source threshold `<=10 GiB`. A cache deletion request (~24.6 MB) was rejected before execution; no deletion occurred in that phase. Six prior clean worktree removals yielded an earlier measured volume delta of ~3.67 GB. There remain large, overlapping logical-size candidates and unresolved local inventory anomalies; no further blind worktree removal is warranted.
+**Historical operational delta (2026-10-10):** reported C: free space was `4,965,724,160` bytes (~4.625 GiB), below source threshold `<=10 GiB`. A cache deletion request (~24.6 MB) was rejected before execution; no deletion occurred in that phase. The later 2026-10-12 startup report stated ~30.5 GB free; current free space remains unverified. Six prior clean worktree removals yielded an earlier measured volume delta of ~3.67 GB. There remain large, overlapping logical-size candidates and unresolved local inventory anomalies; no further blind worktree removal is warranted.
 
 **Method delta:** after policy-denied cleanup, diagnose the exact denial and use the sanctioned permission/native cleanup route; do not repeat the same operation or bypass the policy. Favor verified expendable artifacts, preserve browser auth/profile data and unique work, and re-measure the whole volume. No new coordinator/memory organ is needed.
 

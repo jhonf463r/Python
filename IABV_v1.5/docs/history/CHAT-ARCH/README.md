@@ -1,15 +1,35 @@
-## 2026-10-10 ACTIVE ROUTE — RQ224 OWNER IDENTITY TRUST OPTIONS
+## 2026-10-13 ACTIVE PRODUCT ROUTE — M0-A TARGET DISCOVERY BLOCKED
+
+Canonical handoff: [CHAT-ARCH-2026-10-13-229-m0a-safeui-target-discovery-continuity.md](./CHAT-ARCH-2026-10-13-229-m0a-safeui-target-discovery-continuity.md).
+
+Latest Owner-supplied result: `TARGET_DISCOVERY_BLOCKED`. SafeUI startup was reported in a path-isolated runtime and offline tests were reported as 191 passed, but neither proves a real ChatGPT Web round trip. Static inspection identified CDP discovery via `/json/version` and `/json/list`; no request was made, no eligible-page count was observed, and SafeUI's authorization-producing discovery route was not invoked.
+
+NEXT: only after separate Owner authorization, consider a single read-only metadata check against the already-configured loopback endpoint, and only if the listener can be tied to the expected existing browser without starting processes. No port scan, auxiliary process, browser start, CDP WebSocket, navigation, page scripting, pending approval creation or canary dispatch. If listener identity or safe access cannot be established, remain blocked.
+
+M0-B remains unproven. Preserve the dirty local worktree; its patch is not part of `main`. The free-API constraint remains: use the existing ChatGPT Web route, do not assume an API key or paid API.
+
+---
+
+## 2026-10-13 RQ224 STATUS CORRECTION — OPTION A SELECTED; SECURITY GATES REMAIN OPEN
 
 Canonical design record: [CHAT-ARCH-2026-10-10-228-rq224-owner-identity-trust-options-design.md](./CHAT-ARCH-2026-10-10-228-rq224-owner-identity-trust-options-design.md).
 
-The bounded, authorized review of `src/iabv_v15/services/security/` and `src/iabv_v15/ui/` did not find a demonstrable authenticated Human Domain Owner source or an authenticated return to `HumanApprovalBroker.approve()`. Do not repeat RQ219/RQ220 or claim global absence of authentication. Owner-authorized next deliverable is a comparative design with Options 0/A/B/C/D; selection remains with the Owner. No implementation/runtime/MCP authority is conveyed. RQ218 and RQ223 gates remain open.
+The Owner selected Option A on 2026-10-11: enrolled Windows account/principal plus explicit intent-bound confirmation. Threat Model A is accepted for the first supervised prototype. These are design choices, not implementation permission. RQ224 remains open because enrollment/provenance, authenticated Owner identity, instance-to-intent binding and a verifiable single-use receipt consumed before the first effect are not demonstrated. RQ218 root/protected paths, immutable baseline, exact allowlist and isolated clean worktree remain open; global MCP readiness remains `TRANSITIVE_AUDIT_BLOCKED_BY_FURTHER_DEPENDENCIES`.
+
+Do not repeat RQ219/RQ220 searches or claim global absence of authentication. Do not treat startup, endpoint availability, SID, UI click or `approved=True` as mutation authority.
+---
+## 2026-10-10 HISTORICAL DESIGN SNAPSHOT — RQ224 OPTIONS BEFORE OWNER SELECTION
+
+Canonical design record: [CHAT-ARCH-2026-10-10-228-rq224-owner-identity-trust-options-design.md](./CHAT-ARCH-2026-10-10-228-rq224-owner-identity-trust-options-design.md).
+
+The bounded, authorized review of `src/iabv_v15/services/security/` and `src/iabv_v15/ui/` did not find a demonstrable authenticated Human Domain Owner source or an authenticated return to `HumanApprovalBroker.approve()`. Do not repeat RQ219/RQ220 or claim global absence of authentication. This was the preselection snapshot. The Owner subsequently selected Option A on 2026-10-11; see the decision block and canonical handoff. The later decision remains design-only and conveys no implementation/runtime/MCP authority. RQ218 and RQ223 gates remain open.
 
 ---
-## 2026-10-10 UPDATE — CLEANUP EXECUTION POLICY IS THE CURRENT OPERATIONAL STOP
+## 2026-10-10 HISTORICAL INCIDENT — CLEANUP REQUEST REJECTED BY EXECUTION POLICY
 
 Canonical handoff: [CHAT-ARCH-2026-10-10-227-cross-chat-autonomy-resource-pressure-and-continuity.md](CHAT-ARCH-2026-10-10-227-cross-chat-autonomy-resource-pressure-and-continuity.md).
 
-The latest Codex report says the cache deletion was rejected before PowerShell creation with `CreateProcess ... Rejected ... blocked by policy`; the active approval policy is reported as `never`, and the session has no supported authorization route. No files were deleted. C: remains at the last supplied measurement of `4,965,724,160` bytes free (~4.625 GiB), below the source-reported `<=10 GiB` critical threshold. Do not retry the same deletion, switch channels to bypass policy, or claim reclaimed space. Next: use a permitted user-controlled approval/configuration path if available, or native Windows Storage cleanup; target high-confidence large artifacts and remeasure.
+The denial itself remains a historical event: the request was rejected before PowerShell creation and no files were deleted in that phase. The 2026-10-10 free-space measurement (`4,965,724,160` bytes; ~4.625 GiB) was later followed by a 2026-10-12 startup report of approximately 30.5 GB free on C:. That later value has not been independently remeasured here, so current free space is unknown. Re-measure before classifying resource pressure; if still critical, use only an authorized cleanup path. Do not retry the denied request or bypass execution policy.
 
 ---
 ## 2026-10-10 CONTINUITY HANDOFF — DISK RESOURCE PRESSURE / MULTI-AI PRODUCT ROUTE
@@ -18,11 +38,11 @@ Canonical handoff: [CHAT-ARCH-2026-10-10-227-cross-chat-autonomy-resource-pressu
 
 The product north star remains `HUMAN ↔ IABV ↔ capability-bearing AI/tools`. M0-A (explicit mediated Codex consultation) is not proven end-to-end: the supplied Codex report reached the UI-channel boundary without an admissible agent-side control surface, and IABV separately reported `resource_pressure_critical` when the Owner submitted a request. M0-B (objective-driven external-capability inference) remains unproven. Do not re-audit the whole external-consultation architecture or invent a new coordinator.
 
-Latest Owner-supplied local report: C: free space is 4,965,724,160 bytes (about 4.625 GiB), below the source threshold `<=10 GiB`. The last proposed cache deletion (about 24.6 MB) was rejected by execution policy before running; no files were deleted in that phase. Six clean worktrees were previously removed normally and reportedly yielded about 3.67 GB net at that earlier measurement. See the handoff record for exact paths, anomalies and provenance.
+Historical 2026-10-10 measurement: C: had `4,965,724,160` bytes free (~4.625 GiB). The last proposed cache deletion (~24.6 MB) was rejected before execution; no files were deleted in that phase. Six clean worktrees were previously removed normally and reportedly yielded about 3.67 GB net at that earlier measurement. A later 2026-10-12 startup report stated approximately 30.5 GB free on C:, not independently remeasured here. Treat current free space as unknown until refreshed.
 
-**Immediate operational next:** identify the exact rejection and its sanctioned permission route, or use an authorized native Windows cleanup surface; then remove only verified expendable large artifacts and measure actual free space. Do not bypass execution policy, touch browser profiles/credentials, blindly delete worktrees, or claim pressure resolved without evidence.
+**Resource follow-up is conditional:** first obtain a fresh authorized free-space measurement. Only if it confirms pressure should cleanup be considered through a normal authorized Windows surface. Do not bypass execution policy, touch browser profiles/credentials, blindly delete worktrees, or claim pressure resolved without evidence.
 
-**Canonical technical route remains RQ224** for Owner trust source and replay-resistant initial enrollment/receipt; RQ226 is the continuity method, not a replacement route. Threat-model A and recovery design B are recorded as conversational design direction; the first trust anchor and implementation gates remain unresolved. Preserve the dirty worktree and protected PR #464.
+**RQ224 remains the separate security route** for Owner trust source and replay-resistant receipt consumption; RQ226 remains the continuity method, not a replacement route. Threat Model A and Option A are recorded design decisions, not implementation authority; the trust anchor and implementation gates remain unresolved. Preserve the dirty worktree and protected PR #464.
 
 ---
 ## 2026-10-09 ACTIVE ROUTE — RQ223 DESIGN RECONCILED; RQ224 TRUST-ANCHOR DESIGN NEXT
