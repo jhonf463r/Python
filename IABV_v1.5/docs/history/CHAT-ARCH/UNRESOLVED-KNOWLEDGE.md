@@ -1,3 +1,15 @@
+## 2026-10-13 FIRST TECHNICAL EDGE — WINDOWS HOME READ-DENIAL FEASIBILITY UNVERIFIED
+
+Canonical: [CHAT-ARCH-2026-10-13-250-cloud-static-audit-windows-sandbox-home-separation.md](./CHAT-ARCH-2026-10-13-250-cloud-static-audit-windows-sandbox-home-separation.md).
+
+Versioned public Codex 0.120 source declares permission profiles with filesystem `read/write/none`, `sandbox_workspace_write`, and Windows `elevated` / `unelevated` modes. The Core README states that the backend selected on Windows determines which policy subsets are actually enforceable; unsupported unreadable carve-outs must fail closed. Therefore an existing authenticated home is not automatically safe merely because the agent writes into a separate candidate. The key design invariant is that the Codex host may use its approved session while the sandboxed coding commands cannot read sensitive home/credential paths.
+
+A separate source finding: published IABV bootstrap parses `~/.iabv_secrets.ps1` and injects recognized values into parent `os.environ`. A future coding executor must explicitly allowlist its process environment, and define the shell-command environment separately; do not rely on default variable-name filtering alone.
+
+Cloud design can continue while owner A/B/C choice remains pending. Current safe runtime posture remains C/block. A future separately authorized local preflight must verify non-secret evidence of the already-available Windows backend and policy; no credentials, CLI turn or spend.
+
+---
+
 ## 2026-10-13 FIRST OPEN EDGE — OWNER HOME/AUTH DECISION STILL PENDING
 
 Canonical: [CHAT-ARCH-2026-10-13-249-owner-decision-package-reviewed-no-selection.md](./CHAT-ARCH-2026-10-13-249-owner-decision-package-reviewed-no-selection.md).
