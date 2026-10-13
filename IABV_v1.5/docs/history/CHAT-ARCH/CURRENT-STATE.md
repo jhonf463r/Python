@@ -1,3 +1,17 @@
+## 2026-10-13 LATEST RESULT — CLI 0.120 MODEL COMPATIBILITY AND USAGE BUDGET ARE SEPARATE GATES
+
+Canonical result: [CHAT-ARCH-2026-10-13-255-cli-version-model-entitlement-compatibility.md](./CHAT-ARCH-2026-10-13-255-cli-version-model-entitlement-compatibility.md).
+
+Current official OpenAI documentation says GPT-5.6 requires Codex CLI `0.144.0+` and GPT-6 Astra requires `0.153.0+`. The previously inventoried installed package is owner-reported as `0.120.0`; therefore do not assume that known binary can access those models. This does not prove it cannot use any other available model, and no update/install is authorized.
+
+Official plan docs say Codex is included in ChatGPT plans with usage limits; applicable use may consume included quota, and paid usage credits can be an additional route for eligible accounts. Actual auth, available model, remaining allowance and paid-credit fallback behavior are not proven for the Owner's account.
+
+Together with entries 252–253, these remain independent gates: (1) version/model compatibility, (2) auth-home/keyring and execpolicy source coupling, (3) explicit-Allow sandbox bypass, (4) included usage/no paid fallback. Runtime remains C/block.
+
+**First open edge:** `CODEX_EXEC_VERSION_MODEL_AND_INCLUDED_USAGE_COMPATIBILITY_UNVERIFIED`. Continue cloud analysis; do not install/update, launch the CLI, buy credits or use a paid API path. Preserve the dirty/untracked local worktree.
+
+---
+
 ## 2026-10-13 LATEST RESULT — AUTH/HOME, EXECPOLICY AND ZERO-EXTRA-SPEND ARE THREE SEPARATE GATES
 
 Canonical result: [CHAT-ARCH-2026-10-13-254-codex-plan-usage-and-zero-extra-spend-gate.md](./CHAT-ARCH-2026-10-13-254-codex-plan-usage-and-zero-extra-spend-gate.md).
