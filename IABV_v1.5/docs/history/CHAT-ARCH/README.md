@@ -1,3 +1,13 @@
+## 2026-10-13 LATEST CODEX DESKTOP PREFLIGHT — CAPTURE-HOME PROVENANCE BLOCKED
+
+Canonical result: [CHAT-ARCH-2026-10-13-233-desktop-preflight-launch-provenance.md](./CHAT-ARCH-2026-10-13-233-desktop-preflight-launch-provenance.md).
+
+Owner-supplied result `DESKTOP_PREFLIGHT_BLOCKED`: one visible Codex Desktop window was identified (`ChatGPT.exe` under the packaged `OpenAI.Codex` path, PID 12476, HWND `0x17B0900`), but the running process was not linked to the capture home expected by IABV (`data/tool_teaching/external_assistants/codex_home`). No process environment, private profile or conversation content was inspected; no prompt was sent.
+
+**Next:** only after separate explicit Owner authorization, one read-only launch-provenance check for the PID and exact `CODEX_HOME`/capture-home alignment. Prefer existing non-sensitive launch records; do not dump environment variables or inspect credentials. If provenance is unavailable without broad secret-bearing inspection, stop. Dispatch remains unauthorized. Preserve the dirty worktree and do not add providers.
+
+---
+
 ## 2026-10-13 LATEST CODEX BRIDGE RESULT — COMPARISON INCONCLUSIVE
 
 Canonical record: [CHAT-ARCH-2026-10-13-232-codex-bridge-comparison-result.md](./CHAT-ARCH-2026-10-13-232-codex-bridge-comparison-result.md).
