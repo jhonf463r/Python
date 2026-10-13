@@ -1,3 +1,13 @@
+## Continuity method delta — never promote observation consent to repository-read authority (2026-10-13; entry 266)
+
+Canonical: [CHAT-ARCH-2026-10-13-266-observation-approval-is-not-audit-release.md](./CHAT-ARCH-2026-10-13-266-observation-approval-is-not-audit-release.md).
+
+A permission label and a similar-sounding operational objective are not evidence of equivalent scope. In the published Control Center, `approve_observation_permission` is specifically an observation action and its inspected test scope is `observe_window_content:codex`. Do not treat it as approval to read a repository, release the audit route, or establish the MCP checkout identity unless the exact consumer and scope are proven in source.
+
+Keep read-only audit release separate from mutation authority. Existing mutation-authority policy records do not automatically authorize implementation of a new diagnostic/grant mechanism. Trace only existing in-scope call paths and stop at any explicit Owner gate.
+
+---
+
 ## Continuity method delta — a local precondition stop must not freeze independent work (2026-10-13; entry 265)
 
 Canonical: [CHAT-ARCH-2026-10-13-265-autonomy-run-paused-too-early-public-gate-contract.md](./CHAT-ARCH-2026-10-13-265-autonomy-run-paused-too-early-public-gate-contract.md).
