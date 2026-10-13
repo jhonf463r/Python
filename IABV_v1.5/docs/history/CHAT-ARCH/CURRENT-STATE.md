@@ -1,3 +1,15 @@
+## 2026-10-13 CURRENT ROUTING OVERLAY — APP SERVER EFFECTIVE TOOL SURFACE NOT VERIFIED
+
+Canonical result: [CHAT-ARCH-2026-10-13-238-appserver-tool-suppression-unproven.md](./CHAT-ARCH-2026-10-13-238-appserver-tool-suppression-unproven.md).
+
+Owner-supplied audit result: `APP_SERVER_STATICALLY_BLOCKED`. The task identity guard is reported integrated into normal SafeUI. The normal route does not call adapter `preflight()`; the request asks for restricted read-only execution, but the server's effective tool availability before a turn is not established. Client rejection of received requests/events is not proof of what happened earlier. Authentication, session/quota/cost, real response and consumer evaluation remain unproven.
+
+Current upstream App Server schema references are supplementary only: the inspected `turn/start` request shape lists plugin-selection and sandbox/approval parameters, not a general tool-surface-off switch; current README warns plugin selection does not yet filter plugin capabilities. The local CLI/protocol version is not matched to that upstream schema.
+
+**Next edge:** `CODEX_APP_SERVER_SERVER_ENFORCED_TOOL_SUPPRESSION_UNAVAILABLE_OR_UNPROVEN`. Continue version-/contract-matched read-only source analysis of the exact `thread/start`/`turn/start` request and effective capabilities. No runtime, credential inspection, tests, code/config changes, network/UI or spending. If a server-side no-tools guarantee cannot be established, keep the App Server text-only route blocked.
+
+---
+
 ## 2026-10-13 CURRENT ROUTING OVERLAY — TASK ID REPAIR PASS, APP SERVER GATES REMAIN
 
 Canonical result: [CHAT-ARCH-2026-10-13-237-codex-task-id-repair-synthetic-pass.md](./CHAT-ARCH-2026-10-13-237-codex-task-id-repair-synthetic-pass.md).
