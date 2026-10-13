@@ -1,3 +1,13 @@
+## Continuity method delta — distinguish included plan usage from zero cost (2026-10-13)
+
+Canonical: [CHAT-ARCH-2026-10-13-254-codex-plan-usage-and-zero-extra-spend-gate.md](./CHAT-ARCH-2026-10-13-254-codex-plan-usage-and-zero-extra-spend-gate.md).
+
+Current official Help Center docs show Codex included on ChatGPT plans including Free and Go, subject to limits, but this is not an account-level guarantee. An activity may consume the included plan allowance, and eligible accounts may purchase pay-as-you-go credits after the allowance is exhausted. Keep distinct: no API key, no new OAuth, no incremental cash charge, no plan quota consumed. Do not claim all four from one another.
+
+Combined security gates: the selected CODEX_HOME determines auth lookup and policy provenance; explicit execpolicy Allow may bypass the inner sandbox; local account quota/credit settings remain unproven. Do not launch a turn or add credit spend. First open edge: `CODEX_EXEC_AUTH_HOME_POLICY_AND_USAGE_BUDGET_ROUTE_UNRESOLVED`.
+
+---
+
 ## Continuity method delta — auth home and policy-source separation (2026-10-13)
 
 Canonical: [CHAT-ARCH-2026-10-13-253-codex-home-auth-and-execpolicy-coupling.md](./CHAT-ARCH-2026-10-13-253-codex-home-auth-and-execpolicy-coupling.md).
