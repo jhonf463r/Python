@@ -1,3 +1,13 @@
+## 2026-10-13 LATEST APP SERVER BLOCKER — TASK ID LOST BEFORE DISPATCH ACCEPTANCE
+
+Canonical: [CHAT-ARCH-2026-10-13-236-appserver-task-id-correlation-blocker.md](./CHAT-ARCH-2026-10-13-236-appserver-task-id-correlation-blocker.md).
+
+Owner-supplied `APP_SERVER_STATICALLY_BLOCKED` reports a concrete task-identity break: SafeUI authorizes `task_id`, but `ToolTeachService.build_task_from_request` creates a new UUID for both `codex_app_server` and `codex_installed`. SafeUI compares IDs only after external consultation may have dispatched. This can cause an external effect followed by rejection of the result. The report's source finding is not independently rerun here.
+
+**Next:** separately authorize a narrow source-edit + focused synthetic-test tranche that preserves the authorized ID for both destinations and proves mismatches block before any adapter dispatch. No auth setup, App Server runtime, tool-policy redesign or code promotion in that tranche. Auth/entitlement and pre-effect tool controls remain separate blockers.
+
+---
+
 ## 2026-10-13 ROUTE CONSTRAINT — CODEX AUTH MODE AND PLAN ENTITLEMENT
 
 Canonical: [CHAT-ARCH-2026-10-13-235-codex-plan-entitlement-auth-mode.md](./CHAT-ARCH-2026-10-13-235-codex-plan-entitlement-auth-mode.md).
