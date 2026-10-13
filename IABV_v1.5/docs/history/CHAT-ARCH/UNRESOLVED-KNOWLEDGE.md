@@ -1,3 +1,15 @@
+## 2026-10-13 FIRST ARCHITECTURE EDGE — CODEX AUTH HOME / EXECPOLICY ISOLATION ROUTE UNRESOLVED
+
+Canonical: [CHAT-ARCH-2026-10-13-253-codex-home-auth-and-execpolicy-coupling.md](./CHAT-ARCH-2026-10-13-253-codex-home-auth-and-execpolicy-coupling.md).
+
+Codex 0.120 file auth is read from `CODEX_HOME/auth.json`; keyring lookup hashes the canonical home path. Its execpolicy loader reads `rules/*.rules` across all applicable config-layer folders. A matching explicit policy `Allow` may bypass the inner command sandbox. No dedicated skip-user-rules option was found in the reviewed `ExecCli` or loader.
+
+Unknown locally: whether the Owner's existing auth store is file/keyring/auto; whether an already-existing dedicated authenticated home exists; which user/system/managed rule layers apply; whether any explicit Allow rule can match the task command surface; whether an outer Windows boundary contains bypasses; and whether use is available at no extra cost. Do not inspect credentials or create a home/symlink.
+
+First edge: `CODEX_EXEC_AUTH_HOME_POLICY_ISOLATION_ROUTE_UNRESOLVED`. Continue source review; if no documented source-level separation is supported, request a separately authorized non-mutating local preflight or remain blocked. No turn/implementation.
+
+---
+
 ## 2026-10-13 FIRST SECURITY EDGE — EFFECTIVE CODEX EXEC POLICY RULESET UNVERIFIED
 
 Canonical: [CHAT-ARCH-2026-10-13-252-execpolicy-allow-can-bypass-sandbox.md](./CHAT-ARCH-2026-10-13-252-execpolicy-allow-can-bypass-sandbox.md).
