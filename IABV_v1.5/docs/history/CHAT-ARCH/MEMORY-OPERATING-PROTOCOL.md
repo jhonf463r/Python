@@ -1,3 +1,13 @@
+## 2026-10-13 METHOD UPDATE — STOP AT UNAVAILABLE LAUNCH PROVENANCE
+
+Canonical: [CHAT-ARCH-2026-10-13-234-desktop-provenance-unavailable-appserver-next.md](./CHAT-ARCH-2026-10-13-234-desktop-provenance-unavailable-appserver-next.md).
+
+The latest permitted Desktop observation ended at `LAUNCH_PROVENANCE_UNAVAILABLE`. This is not proof of a home mismatch. Do not repeat the window enumeration or broaden to unrelated process data. Route next to a bounded source/configuration audit of the known App Server path, focused on its existing preflight, home/auth mechanism, task-specific tool policy and result-consumer path. Static evidence must not be described as live authentication or runtime success.
+
+No processes, network, UI, CDP, tests or source changes are authorized. Preserve all dirty/untracked files. A text-only transport result is not proof of a governed coding loop or causal learning.
+
+---
+
 ## 2026-10-13 METHOD UPDATE — PRE-FLIGHT MUST PROVE CAPTURE-HOME PROVENANCE
 
 Canonical result: [CHAT-ARCH-2026-10-13-233-desktop-preflight-launch-provenance.md](./CHAT-ARCH-2026-10-13-233-desktop-preflight-launch-provenance.md).
