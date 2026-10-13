@@ -1,3 +1,13 @@
+## 2026-10-13 OPEN EDGE — APP SERVER PREFLIGHT / AUTH HOME / TASK POLICY
+
+Canonical: [CHAT-ARCH-2026-10-13-234-desktop-provenance-unavailable-appserver-next.md](./CHAT-ARCH-2026-10-13-234-desktop-provenance-unavailable-appserver-next.md).
+
+Latest Desktop report is `LAUNCH_PROVENANCE_UNAVAILABLE`. The process and window are reported identified, but no evidence proves it uses the expected IABV capture home, and no contrary home is proven. Do not retry invasive process inspection.
+
+Next unresolved questions are source-level: does normal App Server dispatch enforce all useful preflight conditions; can it use already-authorized access without a paid API route; what policy prevents unintended tool effects before execution for text-only tasks; and how would a separately governed code-editing task constrain workspace/tools and deliver a result to the existing consumer? No App Server invocation or source mutation is authorized.
+
+---
+
 ## 2026-10-13 OPEN EDGE — DESKTOP CAPTURE-HOME LINKAGE UNPROVEN
 
 Canonical result: [CHAT-ARCH-2026-10-13-233-desktop-preflight-launch-provenance.md](./CHAT-ARCH-2026-10-13-233-desktop-preflight-launch-provenance.md).
