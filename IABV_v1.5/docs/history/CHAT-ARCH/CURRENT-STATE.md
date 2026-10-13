@@ -1,3 +1,13 @@
+## 2026-10-13 CURRENT ROUTING OVERLAY — TARGET PROTOCOL AND PRE-EFFECT TOOL SUPPRESSION UNPROVEN
+
+Canonical result: [CHAT-ARCH-2026-10-13-239-target-protocol-tool-surface-audit.md](./CHAT-ARCH-2026-10-13-239-target-protocol-tool-surface-audit.md).
+
+Owner-supplied result remains `APP_SERVER_STATICALLY_BLOCKED`. The source expects user-agent version `0.120.0`, but the resolver dynamically chooses a Codex executable from `PATH` and the reviewed manifests do not pin it. Actual executable/protocol identity is therefore `UNPROVEN`. Normal SafeUI dispatch reportedly bypasses adapter `preflight()`; the request contains sandbox/approval settings but no explicit empty tool list. Neither those settings nor post-receipt client rejection proves that all effect-capable tools are unavailable before execution.
+
+**Next edge:** `CODEX_APP_SERVER_SERVER_ENFORCED_TOOL_SUPPRESSION_UNAVAILABLE_OR_UNPROVEN`. Bounded read-only analysis only: identify a target protocol from existing source/manifests, match the actual request shape and establish a server-enforced pre-turn restriction over built-in, MCP and app/plugin tools. If not demonstrable, keep App Server blocked. Auth/session/quota/cost, live response and consumer evaluation remain unproven. No runtime, network, credentials, tests, code/config edits or spend.
+
+---
+
 ## 2026-10-13 CURRENT ROUTING OVERLAY — APP SERVER EFFECTIVE TOOL SURFACE NOT VERIFIED
 
 Canonical result: [CHAT-ARCH-2026-10-13-238-appserver-tool-suppression-unproven.md](./CHAT-ARCH-2026-10-13-238-appserver-tool-suppression-unproven.md).
