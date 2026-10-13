@@ -1,3 +1,13 @@
+## 2026-10-13 ROUTE UPDATE — EXISTING CODEX SANDBOX MAY SUPPLY THE CODING EXECUTION BOUNDARY
+
+Canonical: [CHAT-ARCH-2026-10-13-244-windows-sandbox-route-refinement.md](./CHAT-ARCH-2026-10-13-244-windows-sandbox-route-refinement.md).
+
+Potentially shortest relation: Owner authorizes exact task and candidate scope → IABV starts a Codex coding turn → Codex's native Windows sandbox confines commands to the approved workspace and network policy → IABV captures the candidate diff/test artifacts → existing consumer/verifier assesses them → Owner decides promotion. This is viable only if local App Server/version/config actually applies the sandbox and separately unapproved integrations are disabled before effects.
+
+The current adapter is not yet wired as this mode. No runtime proof or automatic promotion is implied. Next edge: `CODEX_NATIVE_WINDOWS_SANDBOX_IN_APP_SERVER_MODE_UNVERIFIED`.
+
+---
+
 ## 2026-10-13 ROUTE RESULT — CODEX CODING REQUIRES AN ENFORCED CANDIDATE BOUNDARY
 
 Canonical: [CHAT-ARCH-2026-10-13-243-codex-bounded-development-mode-blocked.md](./CHAT-ARCH-2026-10-13-243-codex-bounded-development-mode-blocked.md).
