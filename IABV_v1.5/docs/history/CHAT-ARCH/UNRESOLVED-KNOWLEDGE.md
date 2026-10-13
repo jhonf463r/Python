@@ -1,3 +1,15 @@
+## 2026-10-13 ACTIVE UNKNOWN — WHICH EXISTING CODEX INTERFACE CAN SAFELY WRITE A CANDIDATE ON WINDOWS?
+
+Canonical: [CHAT-ARCH-2026-10-13-245-windows-codex-execution-route-comparison.md](./CHAT-ARCH-2026-10-13-245-windows-codex-execution-route-comparison.md).
+
+The existing IABV App Server route is reported text/read-only and cannot return a verified code diff. Public sources show `codex exec --sandbox workspace-write` as an automation option, but also report a version-specific Windows App Server turn exposing no coding tool items and Windows sandbox child-process launch failures in some conditions. Local applicability remains unknown.
+
+Open facts: exact resolver-selected CLI/shim/package; supported App Server/CLI contract; non-secret effective Windows sandbox mode/setup; whether required file/command capabilities are exposed and actually confined; MCP/app/browser integration scope; artifact/diff capture; existing-consumer handoff; authentication/plan quota/cost.
+
+Next edge: `CODEX_WINDOWS_CODING_TRANSPORT_AND_SANDBOX_COMPATIBILITY_UNRESOLVED`. Non-mutating local capability inventory, no agent turn. Do not inspect credentials or launch an agent request.
+
+---
+
 ## 2026-10-13 ACTIVE UNKNOWN — EFFECTIVE WINDOWS SANDBOX UNDER THE LOCAL APP SERVER CONTRACT
 
 Canonical supplement: [CHAT-ARCH-2026-10-13-244-windows-sandbox-route-refinement.md](./CHAT-ARCH-2026-10-13-244-windows-sandbox-route-refinement.md).
