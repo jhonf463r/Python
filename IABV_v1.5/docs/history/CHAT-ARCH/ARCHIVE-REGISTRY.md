@@ -1,3 +1,14 @@
+## 2026-10-13 REGISTRATION — ENTRY 247: IABV EXEC LAUNCH CONTRACT MISSING
+
+- Record: [CHAT-ARCH-2026-10-13-247-codex-exec-integration-boundary-static-block.md](./CHAT-ARCH-2026-10-13-247-codex-exec-integration-boundary-static-block.md)
+- Classification: `CODEX_EXECUTION_INTERFACE_STATICALLY_BLOCKED` for current IABV integration.
+- Durable finding: current App Server path exists, but the inspected scope found no CLI `exec` adapter establishing a future child's executable, `CODEX_HOME`, policy and artifact handoff.
+- First open edge: `CODEX_EXEC_LAUNCH_ENVIRONMENT_CONTRACT_UNDEFINED`.
+- Next: design-only contract from current source; no runtime, tests, code/config edits, credential inspection, install or spend.
+- Preserve all owner-reported dirty/untracked work; these are not local files to normalize or clean.
+
+---
+
 ## 2026-10-13 REGISTRATION — ENTRY 246: CODEX EXEC 0.120 CONTRACT AND TARGET-HOME GATE
 
 - Record: [CHAT-ARCH-2026-10-13-246-codex-exec-0120-static-contract-and-target-home.md](./CHAT-ARCH-2026-10-13-246-codex-exec-0120-static-contract-and-target-home.md)
