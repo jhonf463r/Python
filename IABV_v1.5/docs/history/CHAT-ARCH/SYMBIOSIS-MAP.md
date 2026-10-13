@@ -1,3 +1,15 @@
+## 2026-10-13 RELATION DELTA — PINNED CLI VERSION MUST MATCH AN AVAILABLE MODEL AND PLAN ROUTE
+
+Canonical: [CHAT-ARCH-2026-10-13-255-cli-version-model-entitlement-compatibility.md](./CHAT-ARCH-2026-10-13-255-cli-version-model-entitlement-compatibility.md).
+
+The proposed relation now requires: pinned/verified executable version → model actually available to that version and the Owner's ChatGPT plan → included usage allowance with hard stop before paid credits/API fallback → approved home/auth → safe effective execpolicy and Windows confinement → correlated diff/consumer verification.
+
+Current official docs specify CLI 0.144+ for GPT-5.6 and 0.153+ for GPT-6 Astra, while the earlier shell inventory reported 0.120. This does not rule out any older compatible model, but no such route has been identified. Don't install/update or use paid API/credits to sidestep the constraint.
+
+First edge: `CODEX_EXEC_VERSION_MODEL_AND_INCLUDED_USAGE_COMPATIBILITY_UNVERIFIED`.
+
+---
+
 ## 2026-10-13 RELATION DELTA — ADD EXPLICIT NO-EXTRA-SPEND STOP CONDITION
 
 Canonical: [CHAT-ARCH-2026-10-13-254-codex-plan-usage-and-zero-extra-spend-gate.md](./CHAT-ARCH-2026-10-13-254-codex-plan-usage-and-zero-extra-spend-gate.md).
