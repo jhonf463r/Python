@@ -1,3 +1,13 @@
+## 2026-10-13 REGISTRATION — ENTRY 244: NATIVE WINDOWS SANDBOX ROUTE REFINEMENT
+
+- Record: [CHAT-ARCH-2026-10-13-244-windows-sandbox-route-refinement.md](./CHAT-ARCH-2026-10-13-244-windows-sandbox-route-refinement.md)
+- Source type: official Codex documentation review; no Owner-machine runtime inspected.
+- Durable delta: documented Windows native sandbox and `workspace-write` make a lower-change candidate route worth testing before a separate executor, but no local compatibility/effective enforcement is proven.
+- Entry 243 is not retracted: current IABV App Server composition remains reported text-only/read-only and lacks candidate artifact capture.
+- Next edge: `CODEX_NATIVE_WINDOWS_SANDBOX_IN_APP_SERVER_MODE_UNVERIFIED`.
+
+---
+
 ## 2026-10-13 REGISTRATION — ENTRY 243: CURRENT CODEX PATH NOT A BOUNDED CODING BRIDGE
 
 - Record: [CHAT-ARCH-2026-10-13-243-codex-bounded-development-mode-blocked.md](./CHAT-ARCH-2026-10-13-243-codex-bounded-development-mode-blocked.md)
