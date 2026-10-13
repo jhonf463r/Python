@@ -1,3 +1,15 @@
+## Current continuity delta — Codex exec target policy (2026-10-13)
+
+Canonical: [CHAT-ARCH-2026-10-13-246-codex-exec-0120-static-contract-and-target-home.md](./CHAT-ARCH-2026-10-13-246-codex-exec-0120-static-contract-and-target-home.md).
+
+Apply the evidence ladder strictly: the inspected shell's shim/package metadata is owner-reported; the public `rust-v0.120.0` CLI argument declarations are source-proven; equivalence with IABV's child environment and target Codex home is not proven. A persisted report is not local runtime verification or causal learning.
+
+Do not inherit or copy policy from a different Codex home. Never print credentials or session contents. If the effective target path/policy cannot be established statically, stop and request a separately authorized minimum diagnostic. Keep source state immutable and preserve dirty/untracked files.
+
+First open edge: `CODEX_EXEC_TARGET_HOME_AND_EFFECTIVE_POLICY_UNPROVEN`.
+
+---
+
 ## 2026-10-13 METHOD UPDATE — DISCRIMINATE EXISTING CODEX EXECUTION INTERFACES BEFORE ADDING AN EXECUTOR
 
 Canonical result: [CHAT-ARCH-2026-10-13-245-windows-codex-execution-route-comparison.md](./CHAT-ARCH-2026-10-13-245-windows-codex-execution-route-comparison.md).
