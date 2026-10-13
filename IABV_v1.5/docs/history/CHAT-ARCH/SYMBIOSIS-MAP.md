@@ -1,3 +1,13 @@
+## 2026-10-13 RELATION DELTA — DYNAMIC CLI RESOLUTION BREAKS PROTOCOL PROVENANCE
+
+Canonical: [CHAT-ARCH-2026-10-13-239-target-protocol-tool-surface-audit.md](./CHAT-ARCH-2026-10-13-239-target-protocol-tool-surface-audit.md).
+
+The adapter reportedly expects user-agent `0.120.0`, while resolving `codex.cmd`, `codex.ps1` or `codex` dynamically from `PATH`. No version pin was found in reviewed manifests; the actual executable/protocol relation remains `UNPROVEN`. Consequently, upstream protocol claims cannot yet be attributed to the local server.
+
+Next edge: `CODEX_APP_SERVER_SERVER_ENFORCED_TOOL_SUPPRESSION_UNAVAILABLE_OR_UNPROVEN`. Establish the target contract from existing source/manifests and prove a server-enforced restriction before effects, or maintain the block. Do not infer live behavior.
+
+---
+
 ## 2026-10-13 RELATION DELTA — SERVER TOOL SURFACE MUST BE KNOWN BEFORE TURN
 
 Canonical: [CHAT-ARCH-2026-10-13-238-appserver-tool-suppression-unproven.md](./CHAT-ARCH-2026-10-13-238-appserver-tool-suppression-unproven.md).
