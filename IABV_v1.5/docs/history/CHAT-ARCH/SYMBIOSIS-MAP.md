@@ -1,3 +1,15 @@
+## 2026-10-13 RELATION DELTA — SEPARATE CODEX HOST AUTH FROM AGENT-COMMAND FILE ACCESS
+
+Canonical: [CHAT-ARCH-2026-10-13-250-cloud-static-audit-windows-sandbox-home-separation.md](./CHAT-ARCH-2026-10-13-250-cloud-static-audit-windows-sandbox-home-separation.md).
+
+Refined candidate relation: approved Codex host uses an already authorized home/session → the Windows sandbox prevents agent-spawned commands from reading sensitive home/credential paths → only the disposable candidate is writable → child environment is explicitly allowlisted → only approved network/integration effects are possible → terminal diff/evidence enters the existing consumer/verifier → Owner alone decides promotion.
+
+The public `rust-v0.120.0` source has filesystem `read/write/none` profiles, but Windows elevated and unelevated backends have different enforcement capabilities. Unless the selected already-available backend can enforce the required read denial and candidate-only writes, do not proceed. Published IABV bootstrap loads secrets into its parent environment, so a general subprocess launch that merges `os.environ` must not be assumed safe for a coding executor.
+
+First technical edge: `CODEX_EXEC_WINDOWS_HOME_READ_DENIAL_FEASIBILITY_UNVERIFIED`. Option A/B remains unselected; current runtime route remains blocked.
+
+---
+
 ## 2026-10-13 RELATION DELTA — HOME/AUTH OPTION HAS NOT BEEN SELECTED
 
 Canonical: [CHAT-ARCH-2026-10-13-249-owner-decision-package-reviewed-no-selection.md](./CHAT-ARCH-2026-10-13-249-owner-decision-package-reviewed-no-selection.md).
