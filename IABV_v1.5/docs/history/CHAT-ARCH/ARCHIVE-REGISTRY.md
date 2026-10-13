@@ -1,3 +1,15 @@
+## 2026-10-13 REGISTRATION — TARGET PROTOCOL TOOL-SURFACE AUDIT REMAINS BLOCKED
+
+Canonical record: `CHAT-ARCH-2026-10-13-239-target-protocol-tool-surface-audit.md`.
+
+Summary: Owner-supplied `APP_SERVER_STATICALLY_BLOCKED`. Source expects user-agent `0.120.0`, but resolves the CLI dynamically and the reviewed manifests do not pin its version; actual executable/protocol is `UNPROVEN`. Normal SafeUI bypasses adapter `preflight()`; no explicit empty tool list is sent; sandbox/approval requests and post-receipt client rejection do not prove pre-effect tool suppression. Auth/session/quota/cost and actual consumer evaluation are also unproven. Keep App Server blocked unless the target contract is identified statically and guarantees the required server-side tool restriction before a turn.
+
+Next edge: `CODEX_APP_SERVER_SERVER_ENFORCED_TOOL_SUPPRESSION_UNAVAILABLE_OR_UNPROVEN`.
+
+Tags: IABV / M0-A / Codex / protocol provenance / tool surface / preflight / pre-effect control / blocked / static-only
+
+---
+
 ## 2026-10-13 REGISTRATION — APP SERVER EFFECTIVE TOOL SURFACE UNPROVEN
 
 Canonical record: `CHAT-ARCH-2026-10-13-238-appserver-tool-suppression-unproven.md`.
