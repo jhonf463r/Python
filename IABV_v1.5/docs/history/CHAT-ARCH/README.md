@@ -1,3 +1,13 @@
+## 2026-10-13 VERSIONED PROTOCOL CHECK — NO GENERAL TOOLS-OFF FIELD IN EXPECTED 0.120.0 SCHEMA
+
+Canonical: [CHAT-ARCH-2026-10-13-240-versioned-0120-tool-control-limit.md](./CHAT-ARCH-2026-10-13-240-versioned-0120-tool-control-limit.md).
+
+Supplementary read-only review of public `rust-v0.120.0` confirms the typed `ThreadStartParams` and `TurnStartParams` do not declare a general tool-list/all-tools-off field; `ToolsV2` covers specific web-search/image settings, while config has selective controls such as `include_apply_patch_tool`. This gives no demonstrated global no-tools solution for the expected contract. The actual local executable is still `UNPROVEN` because the Owner reports a dynamic `PATH` resolver.
+
+Next edge: `CODEX_APP_SERVER_NO_GLOBAL_TOOL_DISABLE_IN_EXPECTED_0120_CONTRACT`. Stop broad schema searches; decide from existing adapter/config/tool registry source whether any real pre-turn all-effect-capability restriction exists. If not, keep App Server unsuitable for a tool-free text-only turn and evaluate only existing text-only transport or a separately designed, guarded isolated coding-task route. No runtime, tests, code edits, credentials or spend.
+
+---
+
 ## 2026-10-13 LATEST RESULT — TARGET PROTOCOL IDENTITY AND TOOL SURFACE STILL UNPROVEN
 
 Canonical: [CHAT-ARCH-2026-10-13-239-target-protocol-tool-surface-audit.md](./CHAT-ARCH-2026-10-13-239-target-protocol-tool-surface-audit.md).
