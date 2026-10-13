@@ -1,3 +1,14 @@
+## 2026-10-13 REGISTRATION — ENTRY 249: HOME/AUTH DECISION PACKAGE REVIEWED, SELECTION PENDING
+
+- Record: [CHAT-ARCH-2026-10-13-249-owner-decision-package-reviewed-no-selection.md](./CHAT-ARCH-2026-10-13-249-owner-decision-package-reviewed-no-selection.md)
+- Classification: `CODEX_EXEC_OWNER_DECISION_PACKAGE_REVIEWED_NO_SELECTION`.
+- Durable delta: A/B/C were compared, but no Owner option was selected. Submission of a report is not authorization.
+- First open edge: `CODEX_EXEC_LAUNCH_CONTRACT_OWNER_DECISION_PENDING`.
+- Safe default: preserve the block until a compatible existing home/authentication pattern, effective isolation, no-extra-spend and artifact-consumer gates can be shown.
+- No implementation, preflight, runtime turn, secrets, new login, installation, spend, commit/push or promotion.
+
+---
+
 ## 2026-10-13 REGISTRATION — ENTRY 248: EXEC LAUNCH CONTRACT DESIGN READY FOR OWNER ADJUDICATION
 
 - Record: [CHAT-ARCH-2026-10-13-248-exec-launch-contract-design-adjudication.md](./CHAT-ARCH-2026-10-13-248-exec-launch-contract-design-adjudication.md)
