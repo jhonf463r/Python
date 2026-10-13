@@ -1,3 +1,13 @@
+## 2026-10-13 CURRENT CODEX BRIDGE EVIDENCE — DESKTOP PREFLIGHT GATE
+
+Canonical result: [CHAT-ARCH-2026-10-13-232-codex-bridge-comparison-result.md](./CHAT-ARCH-2026-10-13-232-codex-bridge-comparison-result.md).
+
+Latest supplied classification: `CODEX_BRIDGE_COMPARISON_INCONCLUSIVE`. Both paths are statically composed; neither has a live round-trip. App Server remains blocked on effective `CODEX_HOME` auth and pre-execution tool policy. Desktop remains blocked on an eligible unique window and process/session/rollout capture-source linkage.
+
+Immediate next action, only after explicit Owner authorization: read-only Desktop availability/correlation preflight, with no prompt, click, typing, process start, credential access or conversation read. If inconclusive, reassess App Server through a bounded source/config audit. D016 and causal reuse remain unproven.
+
+---
+
 ## 2026-10-13 ACTIVE OBJECTIVE — DIRECT IABV ↔ CODEX DEVELOPMENT BRIDGE
 
 Canonical: [CHAT-ARCH-2026-10-13-231-codex-bridge-priority-clarification.md](./CHAT-ARCH-2026-10-13-231-codex-bridge-priority-clarification.md).
