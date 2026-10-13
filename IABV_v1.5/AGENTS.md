@@ -1,3 +1,13 @@
+## Current route overlay — CLI version/model and included-usage compatibility (2026-10-13; entry 255)
+
+Read [CHAT-ARCH-2026-10-13-255-cli-version-model-entitlement-compatibility.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-255-cli-version-model-entitlement-compatibility.md), then entries 254–252.
+
+Public current OpenAI docs set Codex CLI 0.144.0 minimum for GPT-5.6 and 0.153.0 for GPT-6 Astra; earlier Owner-supplied static inspection found version 0.120.0 in one shell. Do not infer current-model compatibility or total incompatibility without evidence, and do not install/update within current constraints. Official plan inclusion is subject to limits; account-specific model eligibility, auth, quota and paid-credit fallback remain unproven.
+
+First open edge: `CODEX_EXEC_VERSION_MODEL_AND_INCLUDED_USAGE_COMPATIBILITY_UNVERIFIED`. In addition, auth-home/keyring coupling, execpolicy Allow sandbox bypass, Windows backend effectiveness and diff-consumer acceptance remain open. No CLI turn, install, login, paid credits/API, tests, credentials or source changes. Preserve dirty/untracked work.
+
+---
+
 ## Current route overlay — Codex plan usage is not a zero-spend guarantee (2026-10-13; entry 254)
 
 Read [CHAT-ARCH-2026-10-13-254-codex-plan-usage-and-zero-extra-spend-gate.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-254-codex-plan-usage-and-zero-extra-spend-gate.md), then entries 253–251.
