@@ -1,3 +1,13 @@
+## Current route overlay — AI-first source retrieval; do not make Owner copy source by default (2026-10-13; entry 260)
+
+Read [CHAT-ARCH-2026-10-13-260-ai-first-local-source-inspection-boundary.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-260-ai-first-local-source-inspection-boundary.md). Exhaust authorized repo/source tools before asking the Owner for manual excerpts. Published main is not a substitute for local dirty/uncommitted bytes; the current remote chat has no direct Windows filesystem/desktop bridge. Codex can inspect a local workspace only when running and authorized; IABV only through effective wired capabilities. Permissions are not transitive.
+
+Fresh main-source baseline lacks `CodexAppServerToolAdapter` and `codex_app_server` in the fetched `tool_adapters.py` and `bootstrap.py`; do not generalize that to local checkout. Preserve provenance and classify local details as UNPROVEN until the local source is actually read.
+
+Owner choice C remains binding: no Codex/App Server launch, local preflight/command, tests/builds, secrets, implementation or promotion. Manual handoff is a last resort only after proving no authorized automatic path is available; if needed, ask for the smallest specific missing fact, not a broad source dump. Immediate edge LOCAL_DIRTY_WORKTREE_SOURCE_HANDOFF_UNRESOLVED; technical edge CODEX_CANDIDATE_EXECUTOR_CONFINEMENT_AND_RECEIPT_CONTRACT_UNRESOLVED.
+
+---
+
 ## Current route overlay — local source reader blocked; request narrow excerpts only (2026-10-13; entry 259)
 
 Read [CHAT-ARCH-2026-10-13-259-local-source-handoff-blocked.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-259-local-source-handoff-blocked.md). A supplied report says the workspace reader returned queued with no source text; this is not a local code finding. Do not substitute main for uncommitted changes or request the full 18-file bundle again. Ask for narrow local excerpts: adapter class/policy/request/result handling, bootstrap registration, actual SafeUI/ToolTeachService dispatch caller and result-consumer/evaluator call site. Identity-repair source/test only if necessary.

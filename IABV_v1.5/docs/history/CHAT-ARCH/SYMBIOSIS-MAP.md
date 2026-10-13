@@ -1,3 +1,15 @@
+## 2026-10-13 SYMBIOSIS DELTA — AI-FIRST EVIDENCE RETRIEVAL / PERMISSIONS ARE NOT TRANSITIVE
+
+Canonical: [CHAT-ARCH-2026-10-13-260-ai-first-local-source-inspection-boundary.md](./CHAT-ARCH-2026-10-13-260-ai-first-local-source-inspection-boundary.md).
+
+Knowledge delta: published-main source can be read through GitHub, while the Owner's uncommitted local bytes cannot be inferred from it. The current chat has no direct Windows filesystem/desktop tool. Codex locally may inspect an authorized workspace; IABV may inspect only what the live process actually wires and is allowed to access. Neither capability is automatically present in this remote chat.
+
+Method delta: AI/tool-first retrieval; manual source copying is a last resort, not the default. When the bridge is missing, report a concrete access boundary and preserve UNPROVEN rather than shifting source archaeology to the Owner or guessing.
+
+Current edges: LOCAL_DIRTY_WORKTREE_SOURCE_HANDOFF_UNRESOLVED → CODEX_CANDIDATE_EXECUTOR_CONFINEMENT_AND_RECEIPT_CONTRACT_UNRESOLVED. Owner choice C remains operative; no Codex or IABV launch.
+
+---
+
 ## 2026-10-13 RELATION DELTA — LOCAL SOURCE ACCESS BLOCKER, NO CLAIM ABOUT LOCAL WIRING
 
 Canonical: [CHAT-ARCH-2026-10-13-259-local-source-handoff-blocked.md](./CHAT-ARCH-2026-10-13-259-local-source-handoff-blocked.md). The supplied audit reports that the workspace reader returned queued without source content. No local Adapter → SafeUI → ToolTeachService → result-consumer edge was newly verified. The published-main route is a comparison baseline only and cannot stand in for uncommitted local code.

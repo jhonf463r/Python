@@ -1,3 +1,15 @@
+## Continuity method delta — AI-first local evidence retrieval; no manual handoff by default (2026-10-13; entry 260)
+
+Canonical: [CHAT-ARCH-2026-10-13-260-ai-first-local-source-inspection-boundary.md](./CHAT-ARCH-2026-10-13-260-ai-first-local-source-inspection-boundary.md).
+
+Operating rule: before asking the Owner to copy code, exhaust available authorized tools in this order: fetch the exact published ref and files; search the repository and branches where supported; inspect any connected local source/workspace tool; verify the tools actually available in the current session. Do not confuse a product capability with a capability connected to this conversation. Do not substitute published main for dirty/uncommitted local source.
+
+Separate access planes: (1) ChatGPT's connected remote tools; (2) Codex locally launched in an authorized workspace; (3) the live IABV process and its effective filesystem/tool wiring. Permission does not transfer transitively between them. Here the connected session has GitHub/web access but no direct Windows filesystem bridge. Local Codex is not to be launched because the Owner's option C remains active.
+
+Only request a minimal manual source handoff if the evidence is local-only and no authorized machine path exists; state exactly why it cannot be retrieved automatically. If later authorized, prefer a read-only machine-generated evidence packet with paths, bounded excerpts, hashes, provenance and missing-edge markers. Never include secrets. No launch, local command, test/build, preflight, implementation, or promotion without separate authorization.
+
+---
+
 ## Continuity delta — narrow local source handoff after queued/no-content reader result (2026-10-13; entry 259)
 
 Canonical: [CHAT-ARCH-2026-10-13-259-local-source-handoff-blocked.md](./CHAT-ARCH-2026-10-13-259-local-source-handoff-blocked.md). The queued/no-content outcome is Owner-reported; it proves no local code property. Avoid repeating the broad 18-file read request. Ask for only: (A) actual local CodexAppServerToolAdapter class and policy/request/result methods; (B) bootstrap registration plus the concrete SafeUI/ToolTeachService dispatch caller; (C) result consumer/evaluator call site; (D) task-ID repair source/test only if relevant. Existing remote canonical docs need not be pasted again.

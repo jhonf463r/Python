@@ -1,3 +1,15 @@
+## 2026-10-13 METHOD CORRECTION — AI-FIRST LOCAL SOURCE INSPECTION (ENTRY 260)
+
+Canonical: [CHAT-ARCH-2026-10-13-260-ai-first-local-source-inspection-boundary.md](./CHAT-ARCH-2026-10-13-260-ai-first-local-source-inspection-boundary.md).
+
+The Owner correctly challenged the manual source handoff. First exhaust authorized automated retrieval; do not ask the Owner to copy local code while an AI-accessible route exists. Fresh remote fetch of `main @ 5873136d149d4fbcc0596b104cdb5a3b7fb6a1a2` found no `CodexAppServerToolAdapter` or `codex_app_server` in published `tool_adapters.py` (blob `f8ce508342d2da96f30b2152ffa242f08b187987`) or `bootstrap.py` (blob `e4befa6b683fc87aed7481f377f1332f5753e2c3`). This is only a published-main result, not a claim about the dirty local checkout.
+
+Current ChatGPT session has remote GitHub/web tools but no directly connected Windows filesystem/desktop reader. Codex can inspect a local workspace when launched and authorized; IABV can do so only through effective, wired local capabilities. These access planes do not share permissions automatically. Owner choice C still blocks launching Codex/App Server and any local preflight/runtime action.
+
+Next within current boundary: static/documentary review of published source and contract design. Do not ask the Owner to paste excerpts unless an automatic route is unavailable and the Owner explicitly chooses that handoff. Immediate edge remains LOCAL_DIRTY_WORKTREE_SOURCE_HANDOFF_UNRESOLVED; technical edge remains CODEX_CANDIDATE_EXECUTOR_CONFINEMENT_AND_RECEIPT_CONTRACT_UNRESOLVED.
+
+---
+
 ## 2026-10-13 LOCAL SOURCE AUDIT STOPPED — WORKSPACE READER DID NOT RETURN TEXT
 
 Canonical: [CHAT-ARCH-2026-10-13-259-local-source-handoff-blocked.md](./CHAT-ARCH-2026-10-13-259-local-source-handoff-blocked.md). The Owner-supplied report says source-open requests returned queued without displaying local text. This is a reported access blocker; the checkout, branch/status, adapter, dispatch and consumer were not independently inspected. Do not substitute published main for local changes and do not ask for the full 18-file bundle again.

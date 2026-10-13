@@ -1,3 +1,14 @@
+## 2026-10-13 REGISTRATION — ENTRY 260: AI-FIRST SOURCE ACCESS BOUNDARY
+
+- Record: [CHAT-ARCH-2026-10-13-260-ai-first-local-source-inspection-boundary.md](./CHAT-ARCH-2026-10-13-260-ai-first-local-source-inspection-boundary.md)
+- Material delta: owner correction accepted; AI/tool-first source retrieval is mandatory before manual source-copy requests.
+- Fresh published-main fetch: `tool_adapters.py` SHA `f8ce508342d2da96f30b2152ffa242f08b187987`, `bootstrap.py` SHA `e4befa6b683fc87aed7481f377f1332f5753e2c3`; neither contains `CodexAppServerToolAdapter` / `codex_app_server`.
+- This is not a local checkout finding. Current remote chat tool surface has no direct Windows filesystem bridge; local Codex/IABV access remains dependent on launch, wiring and effective permissions.
+- Owner option C remains active; no local launch, commands, preflight, test/build, secrets, implementation or promotion.
+- Routing: static/documentary review; immediate edge `LOCAL_DIRTY_WORKTREE_SOURCE_HANDOFF_UNRESOLVED`.
+
+---
+
 ## 2026-10-13 REGISTRATION — ENTRY 259: LOCAL SOURCE AUDIT BLOCKED; NARROW HANDOFF REQUIRED
 
 - Record: [CHAT-ARCH-2026-10-13-259-local-source-handoff-blocked.md](./CHAT-ARCH-2026-10-13-259-local-source-handoff-blocked.md)

@@ -1,3 +1,15 @@
+## 2026-10-13 — LOCAL SOURCE ACCESS PLANE / AI-FIRST RETRIEVAL (ENTRY 260)
+
+Canonical: [CHAT-ARCH-2026-10-13-260-ai-first-local-source-inspection-boundary.md](./CHAT-ARCH-2026-10-13-260-ai-first-local-source-inspection-boundary.md).
+
+The current connected chat tools can inspect published GitHub source but cannot directly read the Owner's Windows checkout. Published main @ 5873136d149d4fbcc0596b104cdb5a3b7fb6a1a2 lacks `CodexAppServerToolAdapter` and `codex_app_server` in fetched `tool_adapters.py` and `bootstrap.py`; this does not establish absence in local uncommitted changes. The earlier queued/no-content local reader outcome is Owner-reported.
+
+Unresolved facts: actual local source/wiring; whether a branch contains these changes; effective permissions and tool inventory of the live IABV process; Codex installation/authentication/entitlement; OS-level confinement; consumer of coding results. Do not replace these unknowns with assumptions.
+
+Method decision: exhaust AI/tool retrieval before requesting Owner copying. Current Owner decision C blocks local Codex/App Server launch and local preflight; do not bypass it. Future local inspection, if separately authorized, should return a bounded, read-only evidence packet. Technical frontier remains CODEX_CANDIDATE_EXECUTOR_CONFINEMENT_AND_RECEIPT_CONTRACT_UNRESOLVED.
+
+---
+
 ## 2026-10-13 FIRST OPEN EDGE — LOCAL DIRTY WORKTREE SOURCE HANDOFF UNRESOLVED
 
 Canonical: [CHAT-ARCH-2026-10-13-259-local-source-handoff-blocked.md](./CHAT-ARCH-2026-10-13-259-local-source-handoff-blocked.md).

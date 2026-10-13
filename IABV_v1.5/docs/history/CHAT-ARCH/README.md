@@ -1,3 +1,11 @@
+## 2026-10-13 LATEST RESULT — AI-FIRST LOCAL SOURCE INSPECTION BOUNDARY
+
+Canonical: [CHAT-ARCH-2026-10-13-260-ai-first-local-source-inspection-boundary.md](./CHAT-ARCH-2026-10-13-260-ai-first-local-source-inspection-boundary.md).
+
+The Owner correctly rejected premature manual source copying. Exhaust authorized automated retrieval before asking the Owner to paste code. Published main lacks the local-reported adapter symbol in the fetched adapter/ bootstrap files, but this says nothing conclusive about uncommitted local source. The current remote chat has no direct Windows filesystem tool; Codex and IABV have local access only through effective, running, authorized wiring. Owner option C remains active: no Codex/App Server launch or local preflight. Immediate edge LOCAL_DIRTY_WORKTREE_SOURCE_HANDOFF_UNRESOLVED.
+
+---
+
 ## 2026-10-13 LATEST RESULT — LOCAL SOURCE HANDOFF BLOCKED; NO LOCAL CODE CLAIM
 
 Canonical: [CHAT-ARCH-2026-10-13-259-local-source-handoff-blocked.md](./CHAT-ARCH-2026-10-13-259-local-source-handoff-blocked.md).

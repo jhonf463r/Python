@@ -1,3 +1,11 @@
+## Latest route record — Entry 260
+- Record: [CHAT-ARCH-2026-10-13-260-ai-first-local-source-inspection-boundary.md](./CHAT-ARCH-2026-10-13-260-ai-first-local-source-inspection-boundary.md)
+- Owner correction: do not default to asking the Owner to copy code; exhaust available authorized AI/tool retrieval first.
+- Main-source check: adapter and bootstrap files contain no `CodexAppServerToolAdapter` / `codex_app_server` at the fetched ref. This is not evidence about the uncommitted local checkout.
+- Access planes are distinct: remote chat tools, locally launched Codex, and the live IABV process. Permissions are not inherited across them; current chat has no direct Windows filesystem tool.
+- Owner-selected C still blocks Codex/App Server launch and local preflight. First edge `LOCAL_DIRTY_WORKTREE_SOURCE_HANDOFF_UNRESOLVED`; technical edge `CODEX_CANDIDATE_EXECUTOR_CONFINEMENT_AND_RECEIPT_CONTRACT_UNRESOLVED`.
+---
+
 ## Latest route record — Entry 259
 - Record: [CHAT-ARCH-2026-10-13-259-local-source-handoff-blocked.md](./CHAT-ARCH-2026-10-13-259-local-source-handoff-blocked.md)
 - Supplied report: local reader returned queued without source text; Owner-reported only, no local code conclusion.
