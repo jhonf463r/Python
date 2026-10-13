@@ -1,3 +1,13 @@
+## Latest route record — Entry 263
+
+- Record: [CHAT-ARCH-2026-10-13-263-m0b-r3-autonomy-bridge-adjudication.md](./CHAT-ARCH-2026-10-13-263-m0b-r3-autonomy-bridge-adjudication.md)
+- M0B-R3 makes Codex App Server the leading direct candidate for IABV → Codex → IABV, but local wiring and safe execution remain unproven.
+- Independent static review of published main found an existing route: `ExternalAssistantToolAdapter` → `UIExecutionRunner.capture_response_from_app` with Codex rollout capture. The published `codex_installed` card is unavailable/unvalidated and response capture can remain pending. Do not skip comparison with this route.
+- ChatGPT and Codex can share MCP-exposed tools through supported plugin/app surfaces, but that does not itself give IABV an autonomous ChatGPT trigger/return loop.
+- Next local source audit requires legitimate governance resolution and direct proof of MCP-to-M0A root mapping. No reader retry, local launch, tests, or bypass. KEEP_BLOCKED.
+
+---
+
 ## Latest route record — Entry 261
 - Record: [CHAT-ARCH-2026-10-13-261-m0b-r1-governance-gate-and-tool-provenance.md](./CHAT-ARCH-2026-10-13-261-m0b-r1-governance-gate-and-tool-provenance.md)
 - M0B-R1 reported `governance_blocked=true` from `mcp__iabv_v15_rsk01a5__list_repo_directory`; no local names/content/hashes were returned. Exact structured reason/block payload is absent from the supplied summary.
