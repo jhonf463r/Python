@@ -1,3 +1,13 @@
+## 2026-10-13 RELATION DELTA — EXPECTED PROTOCOL DOES NOT DECLARE A GLOBAL NO-TOOLS CONTRACT
+
+Canonical: [CHAT-ARCH-2026-10-13-240-versioned-0120-tool-control-limit.md](./CHAT-ARCH-2026-10-13-240-versioned-0120-tool-control-limit.md).
+
+Versioned `rust-v0.120.0` protocol source shows no generic turn-level available-tools/all-tools-off field; `ToolsV2` only exposes selected web-search/image settings. The actual local executable still cannot be identified through a dynamic resolver by this source inspection. Therefore no verified relation exists from IABV's request to a guaranteed tool-free server surface.
+
+Next edge: `CODEX_APP_SERVER_NO_GLOBAL_TOOL_DISABLE_IN_EXPECTED_0120_CONTRACT`. Decide source-only whether other existing config/registry controls can establish the exact invariant; otherwise use another mode for text-only consultation or design a separately governed isolated coding turn. No actual exchange.
+
+---
+
 ## 2026-10-13 RELATION DELTA — DYNAMIC CLI RESOLUTION BREAKS PROTOCOL PROVENANCE
 
 Canonical: [CHAT-ARCH-2026-10-13-239-target-protocol-tool-surface-audit.md](./CHAT-ARCH-2026-10-13-239-target-protocol-tool-surface-audit.md).
