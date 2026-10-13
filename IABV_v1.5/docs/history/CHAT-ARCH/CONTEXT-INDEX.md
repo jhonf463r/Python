@@ -1,3 +1,12 @@
+## Latest route record — Entry 264
+
+- Record: [CHAT-ARCH-2026-10-13-264-m0b-r4-governance-diagnostic-missing.md](./CHAT-ARCH-2026-10-13-264-m0b-r4-governance-diagnostic-missing.md)
+- The reviewed session exposed no narrowly scoped governance operation. The broad `world_model_snapshot` was not invoked; list/read tools were not used to bypass the active gate.
+- No block metadata or direct MCP-server/workspace identity was obtained. This does not establish that no governance code exists anywhere; it establishes that the reviewed session could not resolve the precondition with its exposed operations.
+- Next prerequisite: supported, minimal block diagnostics + direct execution-target identity + auditable scoped read-only decision. Until then, KEEP_BLOCKED; no reader retry, target inference, or bypass.
+
+---
+
 ## Latest route record — Entry 263
 
 - Record: [CHAT-ARCH-2026-10-13-263-m0b-r3-autonomy-bridge-adjudication.md](./CHAT-ARCH-2026-10-13-263-m0b-r3-autonomy-bridge-adjudication.md)
