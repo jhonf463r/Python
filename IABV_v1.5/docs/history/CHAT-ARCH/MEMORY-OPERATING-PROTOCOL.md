@@ -1,3 +1,13 @@
+## 2026-10-13 METHOD UPDATE — VERIFY CODEX AUTH MODE BEFORE SELECTING ROUTE
+
+Canonical: [CHAT-ARCH-2026-10-13-235-codex-plan-entitlement-auth-mode.md](./CHAT-ARCH-2026-10-13-235-codex-plan-entitlement-auth-mode.md).
+
+A material constraint is now recorded: native Codex Local/CLI availability and SIWC ChatGPT-plan usage in a third-party app are distinct routes with different eligibility. The App Server adapter's actual mode must be established from source before concluding that it can reuse Free-plan usage or that it requires billable access. No token/credential inspection, new OAuth app, API key, spend, installation or download.
+
+Next source-only slice: exact adapter auth/home selection, unused preflight seam, effective task/tool policy before effects, terminal correlation and existing-consumer evaluation. Static capability is not runtime entitlement or success.
+
+---
+
 ## 2026-10-13 METHOD UPDATE — STOP AT UNAVAILABLE LAUNCH PROVENANCE
 
 Canonical: [CHAT-ARCH-2026-10-13-234-desktop-provenance-unavailable-appserver-next.md](./CHAT-ARCH-2026-10-13-234-desktop-provenance-unavailable-appserver-next.md).
