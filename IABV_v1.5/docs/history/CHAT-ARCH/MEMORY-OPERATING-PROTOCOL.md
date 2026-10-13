@@ -6,7 +6,7 @@ Owner reports `CODEX_TASK_ID_REPAIR_PASS`: the SafeUI-authorized task ID is pres
 
 Keep the evidence ladder explicit: source-reported repair → independently reviewed diff/source → synthetic tests → authorized runtime dispatch → terminal correlated response → existing consumer evaluation → measurable causal reuse on a non-identical task. Never infer a later stage from an earlier one. A canonical 32-hex identity format does not itself establish authority; retain operation, destination, approved prompt/digest and scope bindings.
 
-Next method edge: bounded read-only resolution of exact App Server auth/home, preflight coverage and effective pre-effect tool restrictions. No credential contents, runtime/network/UI, further code edit or spend within this routing step. Preserve all unrelated worktree changes.
+Next edge: `CODEX_APP_SERVER_AUTH_HOME_PREFLIGHT_AND_EFFECTIVE_TOOL_POLICY_UNRESOLVED`. Action: bounded read-only resolution of exact App Server auth/home, preflight coverage and effective pre-effect tool restrictions. No credential contents, runtime/network/UI, further code edit or spend within this routing step. Preserve all unrelated worktree changes.
 
 ---
 
