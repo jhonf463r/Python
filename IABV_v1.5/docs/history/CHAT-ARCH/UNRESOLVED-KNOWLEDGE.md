@@ -2,6 +2,8 @@
 
 Canonical: [CHAT-ARCH-2026-10-13-247-codex-exec-integration-boundary-static-block.md](./CHAT-ARCH-2026-10-13-247-codex-exec-integration-boundary-static-block.md).
 
+**Edge ID:** `CODEX_EXEC_LAUNCH_ENVIRONMENT_CONTRACT_UNDEFINED`.
+
 The supplied audit accepts that current IABV code integrates App Server but does not define a CLI `exec` child environment, target home/policy, execution confinement or verified result handoff. The future target `CODEX_HOME` cannot be treated as an already-existing effective value. The shell's default config and the App Server home's configuration are not evidence of that future policy.
 
 Next: source-grounded design-only contract for exact executable selection, dedicated home, effective sandbox/approval assumptions, disabled-by-default external integration effects, authorization binding, diff/result capture, consumer verification, no-extra-spend gate and Owner-only promotion. Any fact absent from source remains `UNPROVEN`; no implementation, process or test is authorized.
