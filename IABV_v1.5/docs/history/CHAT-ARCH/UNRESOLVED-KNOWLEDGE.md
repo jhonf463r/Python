@@ -1,3 +1,15 @@
+## 2026-10-13 FIRST SECURITY EDGE — EFFECTIVE CODEX EXEC POLICY RULESET UNVERIFIED
+
+Canonical: [CHAT-ARCH-2026-10-13-252-execpolicy-allow-can-bypass-sandbox.md](./CHAT-ARCH-2026-10-13-252-execpolicy-allow-can-bypass-sandbox.md).
+
+In public Codex `rust-v0.120.0`, an explicit execpolicy `Allow` match can yield `ExecApprovalRequirement::Skip { bypass_sandbox: true }`; the orchestrator converts this to `SandboxType::None` for the first attempt. Execpolicy rules are loaded from `rules/*.rules` under applicable configuration-layer folders. This can defeat the assumed file/network confinement of the inner Codex sandbox for matching commands.
+
+Unknown: the actual policy folders/rules from the Owner's future selected `CODEX_HOME` and managed/user config layers; whether any Allow rule matches the planned command surface; whether a separate outer Windows boundary exists and stays effective even if Codex disables its sandbox; and whether there is a supported way to avoid user rules while retaining existing auth without setup/copying credentials.
+
+Next edge: `CODEX_EXEC_V0120_EFFECTIVE_EXEC_POLICY_RULESET_UNVERIFIED`. Continue cloud source-only review to identify any version-supported exclusion mechanism. If none exists, require separately authorized non-mutating local preflight of non-secret policy provenance or use only an independently enforced outer OS boundary. No process or turn authorized; keep C/block.
+
+---
+
 ## 2026-10-13 FIRST TECHNICAL EDGE — CODEX 0.120 PROFILE ROUTE BACKEND/ENVIRONMENT UNVERIFIED
 
 Canonical: [CHAT-ARCH-2026-10-13-251-exec-v0120-permission-profile-dispatch.md](./CHAT-ARCH-2026-10-13-251-exec-v0120-permission-profile-dispatch.md).
