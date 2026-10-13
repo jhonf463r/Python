@@ -1,3 +1,15 @@
+## 2026-10-13 LATEST RESULT — M0B-R3 BRIDGE DIRECTION ADJUDICATED (ENTRY 263)
+
+Canonical: [CHAT-ARCH-2026-10-13-263-m0b-r3-autonomy-bridge-adjudication.md](./CHAT-ARCH-2026-10-13-263-m0b-r3-autonomy-bridge-adjudication.md).
+
+M0B-R3 gives a useful static recommendation: Codex App Server is a direct candidate for IABV → Codex → IABV; Workspace Agents API trigger does not itself return a run ID/response body for retrieval. Independent public-main review adds a critical correction: IABV already has a published `ExternalAssistantToolAdapter` → `UIExecutionRunner.capture_response_from_app` Codex UI/rollout path. The public `codex_installed` card is `available=false`, `unvalidated`, approval-required, and configured for clipboard/Codex-rollout capture; pending capture is deliberately `UNVALIDATED`. Public `main` lacks `CodexAppServerToolAdapter` in adapter source/bootstrap, while earlier local-worktree reports remain unverified.
+
+Do not select App Server without comparing it to that existing path. First discriminating source task, once governance permits: compare the local M0A App Server candidate with the established external-assistant/rollout path and trace task → dispatch → result consumer. The MCP audit reader is still blocked; no alternate reader, launch, test, or policy bypass. For ChatGPT, a shared MCP plugin can expose IABV tools to both ChatGPT and Codex, but does not by itself start an autonomous ChatGPT turn or return a correlated result.
+
+Posture: KEEP_BLOCKED. Immediate edges: `LOCAL_DIRTY_WORKTREE_SOURCE_HANDOFF_UNRESOLVED`, `IABV_AUDIT_GOVERNANCE_GATE_AND_TOOL_TARGET_PROVENANCE_UNRESOLVED`, `CODEX_BRIDGE_ROUTE_REASSESSMENT_REQUIRED`, and `CHATGPT_AUTOMATIC_TURN_AND_CORRELATED_RETURN_UNRESOLVED`.
+
+---
+
 ## 2026-10-13 LATEST RESULT — M0B-R1 GOVERNANCE GATE BLOCKED LOCAL SOURCE RETRIEVAL (ENTRY 261)
 
 Canonical: [CHAT-ARCH-2026-10-13-261-m0b-r1-governance-gate-and-tool-provenance.md](./CHAT-ARCH-2026-10-13-261-m0b-r1-governance-gate-and-tool-provenance.md).
