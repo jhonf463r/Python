@@ -1,3 +1,19 @@
+## 2026-10-13 ACTIVE OBJECTIVE — DIRECT IABV ↔ CODEX DEVELOPMENT BRIDGE
+
+Canonical: [CHAT-ARCH-2026-10-13-231-codex-bridge-priority-clarification.md](./CHAT-ARCH-2026-10-13-231-codex-bridge-priority-clarification.md).
+
+Route this objective to a read-only Codex source audit of the existing local worktree. Compare `CodexAppServerToolAdapter` against the established RQ128 desktop/rollout-capture path. First unresolved edge: exact composition into normal SafeUI → ToolTeachService/ToolRegistry, effective auth/entitlement and enforced pre-execution tool policy. Then correlation of a successful terminal turn to the existing adaptive consumer. No runtime, edits or CDP is authorized by this routing note.
+
+Do not confuse:
+- generic ChatGPT Web consultation with a Codex development bridge;
+- Ollama synthetic wiring with a real inference;
+- `ToolResult` persistence with consumer evaluation or learning;
+- App Server documentation with proof that IABV's local adapter works.
+
+Keep record 230's ChatGPT Web/CDP route as an optional, previously selected generic-consultation route, not the priority for this clarified objective.
+
+---
+
 ## 2026-10-13 ROUTE RECONCILIATION — FREE M0-A BRIDGE / OLLAMA LOCAL BRANCH
 
 Canonical reconciliation: [CHAT-ARCH-2026-10-13-230-m0a-free-route-and-continuity-reconciliation.md](./CHAT-ARCH-2026-10-13-230-m0a-free-route-and-continuity-reconciliation.md).
