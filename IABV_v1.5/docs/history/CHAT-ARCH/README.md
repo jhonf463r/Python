@@ -1,3 +1,13 @@
+## 2026-10-13 LATEST RESULT — TARGET PROTOCOL IDENTITY AND TOOL SURFACE STILL UNPROVEN
+
+Canonical: [CHAT-ARCH-2026-10-13-239-target-protocol-tool-surface-audit.md](./CHAT-ARCH-2026-10-13-239-target-protocol-tool-surface-audit.md).
+
+The Owner's second static audit remains `APP_SERVER_STATICALLY_BLOCKED`. The adapter expects user-agent version `0.120.0`, but resolves `codex.cmd`, `codex.ps1` or `codex` dynamically from `PATH`; no manifest pin was found in the reviewed scope. Thus the actual executable/protocol identity is `UNPROVEN`. Normal SafeUI reportedly skips adapter `preflight()`, no explicit empty tool list is sent, and the requested sandbox/approval parameters plus post-receipt rejections do not prove server-enforced tool absence before effects. Do not authorize a real turn.
+
+Next edge: `CODEX_APP_SERVER_SERVER_ENFORCED_TOOL_SUPPRESSION_UNAVAILABLE_OR_UNPROVEN`. Remain read-only and match the adapter to an existing pinned/identifiable protocol contract; prove a pre-turn tool-suppression guarantee or retain the block. Auth/session/cost and actual consumer evaluation are also unproven. No runtime, credentials, tests, code edits or spend.
+
+---
+
 ## 2026-10-13 LATEST RESULT — APP SERVER TOOL SUPPRESSION UNPROVEN
 
 Canonical: [CHAT-ARCH-2026-10-13-238-appserver-tool-suppression-unproven.md](./CHAT-ARCH-2026-10-13-238-appserver-tool-suppression-unproven.md).
