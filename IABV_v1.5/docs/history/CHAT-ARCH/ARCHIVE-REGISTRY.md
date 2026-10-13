@@ -1,3 +1,14 @@
+## 2026-10-13 REGISTRATION — ENTRY 246: CODEX EXEC 0.120 CONTRACT AND TARGET-HOME GATE
+
+- Record: [CHAT-ARCH-2026-10-13-246-codex-exec-0120-static-contract-and-target-home.md](./CHAT-ARCH-2026-10-13-246-codex-exec-0120-static-contract-and-target-home.md)
+- Adjudication: `CODEX_EXEC_INTERFACE_CONTRACT_IDENTIFIED_TARGET_POLICY_UNPROVEN`.
+- Source contract: public `rust-v0.120.0` declares non-interactive `exec`, sandbox mode choices and output options.
+- Owner-supplied environment finding: current-session shim/native package metadata identify `0.120.0`; identity for IABV's own child environment is not proven.
+- First open edge: `CODEX_EXEC_TARGET_HOME_AND_EFFECTIVE_POLICY_UNPROVEN`.
+- Prohibitions: no process/agent turn/tests, no code/config edits, no credentials, no installation, no additional spend; preserve local dirty/untracked work.
+
+---
+
 ## 2026-10-13 REGISTRATION — ENTRY 245: WINDOWS CODEX EXECUTION ROUTE COMPARISON
 
 - Record: [CHAT-ARCH-2026-10-13-245-windows-codex-execution-route-comparison.md](./CHAT-ARCH-2026-10-13-245-windows-codex-execution-route-comparison.md)
