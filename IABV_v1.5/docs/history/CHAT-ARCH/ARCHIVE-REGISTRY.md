@@ -1,3 +1,13 @@
+## 2026-10-13 REGISTRATION — CODEX DEVELOPMENT BRIDGE PRIORITY CLARIFICATION
+
+Canonical record: `CHAT-ARCH-2026-10-13-231-codex-bridge-priority-clarification.md`.
+
+Summary: Owner clarified that immediate priority is a governed IABV → Codex → IABV handoff for development prompts and returned results. This supersedes record 230's immediate-action choice of generic ChatGPT Web target discovery, without erasing that evidence. Next is bounded static comparison of the existing local Codex App Server adapter against RQ128's existing desktop and Codex rollout-capture path. No source edits, tests, processes, CDP, inference, prompts or credential inspection are authorized. Preserve the dirty worktree; Ollama remains auxiliary; M0-B and D016 causal reuse remain unproven.
+
+Tags: IABV / Codex / M0-A / self-development / route priority / App Server / SafeUI / continuity / evidence boundary / no runtime
+
+---
+
 ## 2026-10-13 REGISTRATION — M0-A FREE-ROUTE AND CONTINUITY RECONCILIATION
 
 Canonical record: `CHAT-ARCH-2026-10-13-230-m0a-free-route-and-continuity-reconciliation.md`.
