@@ -1,3 +1,13 @@
+## 2026-10-13 LATEST RESULT — PLAN-INCLUDED CODEX IS DOCUMENTED; ACTUAL ENTITLEMENT/COST REMAIN UNPROVEN
+
+Canonical: [CHAT-ARCH-2026-10-13-254-codex-plan-usage-and-zero-extra-spend-gate.md](./CHAT-ARCH-2026-10-13-254-codex-plan-usage-and-zero-extra-spend-gate.md).
+
+Official current Help Center docs say Codex is included on ChatGPT plans including Free/Go, subject to plan-dependent limits; use beyond the included allowance may involve additional credits or billing. That does not prove this Owner's existing CLI 0.120 session is authenticated, has quota, or cannot consume paid credits. Combine this gate with the home/keyring coupling (entry 253) and explicit execpolicy Allow sandbox-bypass risk (entry 252).
+
+First open edge: `CODEX_EXEC_AUTH_HOME_POLICY_AND_USAGE_BUDGET_ROUTE_UNRESOLVED`. Do not start a turn or assume zero cost. Continue source-level cloud analysis; C/block stays operative.
+
+---
+
 ## 2026-10-13 LATEST RESULT — AUTHENTICATION HOME AND EXEC POLICY ARE COUPLED
 
 Canonical: [CHAT-ARCH-2026-10-13-253-codex-home-auth-and-execpolicy-coupling.md](./CHAT-ARCH-2026-10-13-253-codex-home-auth-and-execpolicy-coupling.md).
