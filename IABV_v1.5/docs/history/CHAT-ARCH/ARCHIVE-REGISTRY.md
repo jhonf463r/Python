@@ -1,3 +1,13 @@
+## 2026-10-13 REGISTRATION — DESKTOP PREFLIGHT BLOCKED AT CAPTURE-HOME PROVENANCE
+
+Canonical record: `CHAT-ARCH-2026-10-13-233-desktop-preflight-launch-provenance.md`.
+
+Summary: Owner supplied report identifies one visible Codex Desktop window (`ChatGPT.exe`, PID `12476`, HWND `0x17B0900`) but does not establish that its process uses the IABV capture home. Next edge is a separately authorized, one-time read-only launch-provenance check using an allowlisted non-sensitive source; no broad environment dump, credential/profile inspection, UI interaction or prompt dispatch. Worktree remains dirty and preserved.
+
+Tags: IABV / M0-A / Codex Desktop / launch provenance / capture home / correlation / SafeUI / continuity / no dispatch
+
+---
+
 ## 2026-10-13 REGISTRATION — CODEX BRIDGE COMPARISON INCONCLUSIVE
 
 Canonical record: `CHAT-ARCH-2026-10-13-232-codex-bridge-comparison-result.md`.
