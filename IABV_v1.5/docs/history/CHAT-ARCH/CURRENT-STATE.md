@@ -1,18 +1,18 @@
-## 2026-10-13 CURRENT ROUTING OVERLAY — DESKTOP CAPTURE-HOME PROVENANCE UNPROVEN
+## 2026-10-13 CURRENT ROUTING OVERLAY — DESKTOP PROVENANCE UNAVAILABLE; APP SERVER SOURCE GATE
 
-Canonical result: [CHAT-ARCH-2026-10-13-233-desktop-preflight-launch-provenance.md](./CHAT-ARCH-2026-10-13-233-desktop-preflight-launch-provenance.md).
+Canonical result: [CHAT-ARCH-2026-10-13-234-desktop-provenance-unavailable-appserver-next.md](./CHAT-ARCH-2026-10-13-234-desktop-provenance-unavailable-appserver-next.md).
 
-**Owner objective:** governed `IABV → Codex → IABV` development handoff with exact intent, one-use approval, correlated response and evaluation by the existing consumer.
+**Owner objective:** a governed `IABV → Codex → IABV` development handoff with explicit intent, one-use approval, correlated result and evaluation by the existing consumer.
 
-**Latest reported step:** `DESKTOP_PREFLIGHT_BLOCKED`. One visible top-level Codex Desktop window was reported as title `ChatGPT`, HWND `0x17B0900`, PID `12476`, image `ChatGPT.exe` under the packaged `OpenAI.Codex` path. This identifies a candidate window/process, not its active session store.
+**Latest result:** `LAUNCH_PROVENANCE_UNAVAILABLE`. The reported Desktop process/window identity is known, but available evidence does not show that the live process uses IABV's capture home. This is not evidence of a mismatch. Do not repeat the window scan or broaden process inspection.
 
-**First open edge:** `DESKTOP_CAPTURE_HOME_LINKAGE_UNPROVEN`. The strict rollout capture expects `data/tool_teaching/external_assistants/codex_home` (`state_5.sqlite` and `sessions`); no admissible evidence yet binds PID `12476` to that home.
+**First open edge:** `CODEX_APP_SERVER_PREFLIGHT_AUTH_HOME_AND_TASK_POLICY_UNRESOLVED`.
 
-**Next action:** obtain separate explicit Owner authorization for one read-only launch-provenance check. Prefer existing non-sensitive process-start evidence. If specifically necessary and safely possible, inspect only the allowlisted `CODEX_HOME` value for PID `12476` and minimum parent/launch metadata—never dump the environment, inspect credentials or private profile/session contents. If safe attribution is unavailable, stop. No process start, UI control, prompt or dispatch.
+**Next action:** Codex performs a bounded read-only source/configuration review of the existing App Server path only: what `preflight()` checks vs. normal dispatch; source-supported existing authentication/home selection without a billable API route; task-specific tool policy that prevents effects before execution; and terminal result correlation/consumer evaluation. No App Server invocation, processes, network, UI/CDP, tests or code changes. Stop before any question requiring runtime or additional permission.
 
-**Preservation/cost:** last reported worktree is `codex/m0a-safe-ui-boot` at `5b1d89022ee4cdc63c1f88e050f086b40a42875c`, 56 tracked modifications and 5 untracked items, including 38 modified `.pyc` files. Reported only; not independently remeasured here. Preserve all changes. No code/test/runtime authorization, paid API, additional spend, installation, download or provider expansion.
+**Preservation/cost:** last reported worktree `codex/m0a-safe-ui-boot`, HEAD `5b1d89022ee4cdc63c1f88e050f086b40a42875c`, 56 tracked modifications and 5 untracked items. Preserve all content, including reported modified `.pyc` files. These are report-derived, not newly measured. No paid API key, additional spend, installation, download or provider expansion.
 
-**Separate routes:** ChatGPT Web stays `TARGET_DISCOVERY_BLOCKED`; Ollama stays `WIRED_REPORTED / SYNTHETIC_TESTS_REPORTED / LIVE_INFERENCE_UNPROVEN`; App Server auth/home and pre-effect tool controls remain unproven. M0-B and D016 causal self-development remain unproven.
+**Separate routes:** ChatGPT Web remains `TARGET_DISCOVERY_BLOCKED`; Ollama remains `WIRED_REPORTED / SYNTHETIC_TESTS_REPORTED / LIVE_INFERENCE_UNPROVEN`; Desktop remains unable to prove capture-home linkage; App Server is a static candidate, not an operationally accepted route. M0-B and D016 causal self-development remain unproven.
 
 ---
 
