@@ -1,3 +1,14 @@
+## 2026-10-13 REGISTRATION — ENTRY 252: CODEX EXECPOLICY ALLOW CAN BYPASS INNER SANDBOX
+
+- Record: [CHAT-ARCH-2026-10-13-252-execpolicy-allow-can-bypass-sandbox.md](./CHAT-ARCH-2026-10-13-252-execpolicy-allow-can-bypass-sandbox.md)
+- Classification: `CODEX_EXEC_V0120_POLICY_RULES_CAN_BYPASS_SANDBOX_SOURCE_CONFIRMED_LOCAL_RULESET_UNPROVEN`.
+- Source-confirmed finding: a matching explicit `Allow` rule can create `bypass_sandbox=true`; orchestrator selects `SandboxType::None`. Rules are loaded from all applicable config-layer `rules/*.rules` directories.
+- Design consequence: entry 251's inner permission profile is not sufficient until effective rules are safe or an independent outer OS boundary is confirmed.
+- First open edge: `CODEX_EXEC_V0120_EFFECTIVE_EXEC_POLICY_RULESET_UNVERIFIED`.
+- No turn, local rules read, secret inspection, install, spend, source change, commit/push or promotion. Preserve dirty/untracked work.
+
+---
+
 ## 2026-10-13 REGISTRATION — ENTRY 251: CODEX EXEC 0.120 PERMISSION-PROFILE DISPATCH
 
 - Record: [CHAT-ARCH-2026-10-13-251-exec-v0120-permission-profile-dispatch.md](./CHAT-ARCH-2026-10-13-251-exec-v0120-permission-profile-dispatch.md)
