@@ -1,3 +1,13 @@
+## 2026-10-13 NEXT ROUTE TEST — EXISTING CODEX NATIVE WINDOWS SANDBOX MAY BE THE LOWEST-CHANGE CODING BOUNDARY
+
+Canonical: [CHAT-ARCH-2026-10-13-244-windows-sandbox-route-refinement.md](./CHAT-ARCH-2026-10-13-244-windows-sandbox-route-refinement.md).
+
+Official Codex docs describe a native Windows sandbox for spawned commands, bounded filesystem/network access and `workspace-write`. This is a viable candidate to investigate before a separate executor; actual compatibility/effectiveness on the owner's local dynamically resolved CLI remains `UNPROVEN`. Entry 243's finding still stands: the current IABV adapter is presently read-only/text-only and not a coding artifact bridge.
+
+Next edge: `CODEX_NATIVE_WINDOWS_SANDBOX_IN_APP_SERVER_MODE_UNVERIFIED`. Source-only compare exact App Server sandbox policy, candidate root, Windows sandbox implementation/config, integration inventory and artifact capture. If unavailable without added setup/cost, keep blocked and design a separate boundary. No runtime or implementation is authorized.
+
+---
+
 ## 2026-10-13 LATEST RESULT — CODEX TEXT ADAPTER IS NOT YET A GOVERNED CODING BRIDGE
 
 Canonical: [CHAT-ARCH-2026-10-13-243-codex-bounded-development-mode-blocked.md](./CHAT-ARCH-2026-10-13-243-codex-bounded-development-mode-blocked.md).
