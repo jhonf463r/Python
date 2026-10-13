@@ -1,3 +1,19 @@
+## 2026-10-13 CURRENT ROUTING OVERLAY — DIRECT CODEX DEVELOPMENT BRIDGE
+
+Canonical owner clarification: [CHAT-ARCH-2026-10-13-231-codex-bridge-priority-clarification.md](./CHAT-ARCH-2026-10-13-231-codex-bridge-priority-clarification.md).
+
+**Current priority:** establish the shortest safe path for IABV to send an explicitly authorized development prompt to Codex and automatically receive, correlate and evaluate the result. This is the Owner's clarified immediate product objective. `TARGET_DISCOVERY_BLOCKED` remains an accurate status for the separate ChatGPT Web route, but CDP discovery is not the next action for this Codex-specific objective.
+
+**First open edge:** `CODEX_ADAPTER_COMPOSITION_AUTH_CONTROL_UNPROVEN`. In the existing local worktree only, inspect whether `CodexAppServerToolAdapter` is connected to the normal SafeUI/ToolTeachService/ToolRegistry path, and compare it with the already-documented `ExternalAssistantToolAdapter` + `UIExecutionRunner` + Codex rollout/thread capture route (RQ128). Establish the earliest missing edge for composition, authentication/entitlement, pre-execution tool policy, exact one-use intent binding, terminal result/correlation and existing-consumer evaluation.
+
+**Next actor/action:** Codex; read-only static source audit of the already-existing worktree `C:\Users\faber\.codex\worktrees\m0a-safe-ui-boot\Python`. Verify actual branch/HEAD/status first and preserve all dirty/untracked content. No code edits, test execution, process lifecycle, HTTP/DNS, App Server invocation, UI/CDP, external prompt or credential inspection. Stop at the first permission/runtime boundary.
+
+**Evidence boundary:** the reported 58 Ollama synthetic passes and the App Server source/test material are actor-reported local-branch evidence, not canonical `main` code or a real Codex round trip. Preserve Ollama as auxiliary; no more provider expansion. Free/no-additional-spend constraint remains. No billable API key, subscription purchase, installation, model download or credential extraction.
+
+**Separate routes:** (1) Codex-specific development bridge = priority; (2) existing ChatGPT Web target discovery = optional generic consultation, still `TARGET_DISCOVERY_BLOCKED`; (3) Ollama = `WIRED_REPORTED / SYNTHETIC_TESTS_REPORTED / LIVE_INFERENCE_UNPROVEN`. M0-B and D016 causal self-development remain unproven.
+
+---
+
 ## 2026-10-13 ROUTE RECONCILIATION — FREE M0-A BRIDGE / OLLAMA LOCAL BRANCH
 
 Canonical reconciliation: [CHAT-ARCH-2026-10-13-230-m0a-free-route-and-continuity-reconciliation.md](./CHAT-ARCH-2026-10-13-230-m0a-free-route-and-continuity-reconciliation.md).
