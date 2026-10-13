@@ -1,3 +1,13 @@
+## 2026-10-13 LATEST RESULT — M0B-R4: NO NARROW GOVERNANCE OPERATION EXPOSED (ENTRY 264)
+
+Canonical: [CHAT-ARCH-2026-10-13-264-m0b-r4-governance-diagnostic-missing.md](./CHAT-ARCH-2026-10-13-264-m0b-r4-governance-diagnostic-missing.md).
+
+The reviewed session did not invoke the broad `world_model_snapshot` or use list/read operations to route around the active block. It obtained neither block metadata nor direct MCP-server/checkout identity. This is a session-capability finding, not proof that no governance code exists elsewhere. KEEP_BLOCKED.
+
+Next prerequisite: supported narrow block metadata, direct execution-target identity and an auditable scoped read-only decision. Do not retry the reader, infer the checkout from a namespace, or clear general resource guards. M0B-R4 source comparison remains unstarted.
+
+---
+
 ## 2026-10-13 LATEST RESULT — M0B-R3: CODEX APP SERVER CANDIDATE, BUT EXISTING CODEX UI/ROLLOUT ROUTE MUST BE COMPARED
 
 Canonical: [CHAT-ARCH-2026-10-13-263-m0b-r3-autonomy-bridge-adjudication.md](./CHAT-ARCH-2026-10-13-263-m0b-r3-autonomy-bridge-adjudication.md).
