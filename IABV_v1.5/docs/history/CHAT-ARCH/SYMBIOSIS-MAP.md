@@ -1,3 +1,13 @@
+## 2026-10-13 RELATION DELTA — DESKTOP CAPTURE LINKAGE UNAVAILABLE
+
+Canonical: [CHAT-ARCH-2026-10-13-234-desktop-provenance-unavailable-appserver-next.md](./CHAT-ARCH-2026-10-13-234-desktop-provenance-unavailable-appserver-next.md).
+
+The reported Desktop process does not have a proven link to the capture home that IABV reads. No mismatch has been proven. Stop further attempts to infer launch configuration from title, PID, executable or parent process.
+
+Use the existing App Server adapter as the next source-audit candidate, not as an assumed winner. Focus on preflight, home/auth selection, pre-effect tool policy by task type, correlation and existing-consumer evaluation. Do not introduce a parallel coordinator or execute the route.
+
+---
+
 ## 2026-10-13 RELATION DELTA — CODEX WINDOW IDENTIFIED, CAPTURE HOME UNPROVEN
 
 Canonical: [CHAT-ARCH-2026-10-13-233-desktop-preflight-launch-provenance.md](./CHAT-ARCH-2026-10-13-233-desktop-preflight-launch-provenance.md).
