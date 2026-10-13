@@ -1,3 +1,13 @@
+## 2026-10-13 ADJUDICATION — OBSERVATION APPROVAL DOES NOT RELEASE AUDIT GATE (ENTRY 266)
+
+Canonical: [CHAT-ARCH-2026-10-13-266-observation-approval-is-not-audit-release.md](./CHAT-ARCH-2026-10-13-266-observation-approval-is-not-audit-release.md).
+
+Public-main inspection confirms that Control Center's `approve_observation_permission` action is labelled as observation approval and its tested scope is `observe_window_content:codex`. There is no evidence in the inspected paths that this releases the `assistant_kind="audit"` governance block or proves MCP/checkout identity. Do not repurpose it as a generic read grant.
+
+Entries 218–224 concern mutation-authority design and leave the trusted authority source/greater identity exploration behind an Owner gate; do not silently transfer their scope to this separate read-only audit-release problem. The current M0A read remains KEEP_BLOCKED. Next public-source task: check only existing documented Control Center/WorldModel paths for an explicit supported audit-block release; if none, define the minimal diagnostic and separate scoped-decision contract, then stop before inventing a trust anchor, broad identity search or implementation. No local reader retry or worktree change.
+
+---
+
 ## 2026-10-13 LATEST RESULT — M0B RUN STOPPED TOO EARLY; PUBLIC GOVERNANCE CONTRACT CAN PROCEED (ENTRY 265)
 
 Canonical: [CHAT-ARCH-2026-10-13-265-autonomy-run-paused-too-early-public-gate-contract.md](./CHAT-ARCH-2026-10-13-265-autonomy-run-paused-too-early-public-gate-contract.md).
