@@ -1,3 +1,14 @@
+## Latest route record — Entry 249
+
+- Record: [CHAT-ARCH-2026-10-13-249-owner-decision-package-reviewed-no-selection.md](./CHAT-ARCH-2026-10-13-249-owner-decision-package-reviewed-no-selection.md)
+- Classification: `CODEX_EXEC_OWNER_DECISION_PACKAGE_REVIEWED_NO_SELECTION`.
+- The package explains options A/B/C but the Owner has not selected one. Do not infer authorization from a submitted report.
+- Current safe default: keep the route blocked; B is only conditionally preferred if an already-existing dedicated authenticated home is proven to meet every constraint.
+- First open edge: `CODEX_EXEC_LAUNCH_CONTRACT_OWNER_DECISION_PENDING`.
+- No implementation, preflight, CLI turn, secret inspection or spend.
+
+---
+
 ## Latest route record — Entry 248
 
 - Record: [CHAT-ARCH-2026-10-13-248-exec-launch-contract-design-adjudication.md](./CHAT-ARCH-2026-10-13-248-exec-launch-contract-design-adjudication.md)
