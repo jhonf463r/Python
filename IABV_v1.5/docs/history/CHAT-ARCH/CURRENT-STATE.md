@@ -1,3 +1,17 @@
+## 2026-10-13 LATEST RESULT — M0B RUN STOPPED TOO EARLY; PUBLIC GOVERNANCE CONTRACT CAN PROCEED (ENTRY 265)
+
+Canonical: [CHAT-ARCH-2026-10-13-265-autonomy-run-paused-too-early-public-gate-contract.md](./CHAT-ARCH-2026-10-13-265-autonomy-run-paused-too-early-public-gate-contract.md).
+
+The latest owner-supplied run performed no MCP calls, local reads, tests, AI queries or canonical writeback. Local M0A remains `KEEP_BLOCKED`; this is not new evidence about that checkout. The run also stopped before independent work could advance.
+
+Read-only inspection of published `main @ 106887cf92717324347d8df7fbcb2d4324d796df` confirms the audit gate can return a narrow-ish blocked payload (`reason`, `detail`, applicable `blocks`/`permission_gates`) but the public route is not a separate dedicated diagnostic/grant interface. The server also exposes `autonomy_status` and `autonomy_update_task` for task continuity, not source-read authorization. This published code does not establish what the prior local call actually returned.
+
+Next: Codex/coordinator must continue static review on pinned public main only: trace existing MCP governance and Control Center approval mechanisms, reconcile prior approved authorization contract entries (219–226) against this issue, and produce a minimal reuse-first code-facing contract/test specification. No local M0A reads, alternate readers, broad snapshot, implementation on the dirty checkout, or push/merge. The eventual local source comparison still requires direct target proof and an auditable scoped grant.
+
+Posture: local M0A `KEEP_BLOCKED`; independent public-source analysis `MAY PROCEED`.
+
+---
+
 ## 2026-10-13 LATEST RESULT — M0B-R4 STOPPED: NARROW GOVERNANCE DIAGNOSTIC / TARGET IDENTITY UNAVAILABLE (ENTRY 264)
 
 Canonical: [CHAT-ARCH-2026-10-13-264-m0b-r4-governance-diagnostic-missing.md](./CHAT-ARCH-2026-10-13-264-m0b-r4-governance-diagnostic-missing.md).
