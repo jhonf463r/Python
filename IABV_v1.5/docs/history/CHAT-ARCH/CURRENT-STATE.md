@@ -1,3 +1,23 @@
+## 2026-10-13 ROUTE RECONCILIATION — FREE M0-A BRIDGE / OLLAMA LOCAL BRANCH
+
+Canonical reconciliation: [CHAT-ARCH-2026-10-13-230-m0a-free-route-and-continuity-reconciliation.md](./CHAT-ARCH-2026-10-13-230-m0a-free-route-and-continuity-reconciliation.md).
+
+Owner-supplied local result: `M0A_OLLAMA_SAFEUI_ADAPTER_WIRED`; 58 focused synthetic tests reportedly pass. Worktree `codex/m0a-safe-ui-boot`, HEAD `5b1d89022ee4cdc63c1f88e050f086b40a42875c`, reportedly has 56 tracked modified files and 5 untracked. This is dirty local branch evidence, not code integrated into remote `main`; it has not been independently rerun here. No real Ollama inference or SafeUI round trip was observed.
+
+**Product routing decision:** preserve Ollama as an auxiliary local realization; do not treat it as the bridge to an independent ChatGPT/Codex session. The active free external M0-A route remains the existing ChatGPT Web session, with first open edge `TARGET_DISCOVERY_BLOCKED` per record 229. No billable API, API-key request, credits, subscription or model download is allowed under the current Owner constraint. Codex remains relevant to the longer-term code-development objective, but its current App Server path is not considered verified for the required execution/authentication and tool-control contract.
+
+**NEXT:** freeze adapter expansion and preserve the worktree. A read-only CDP metadata check requires separate explicit Owner authorization and prior proof that the loopback listener is the expected existing browser; do not start helper/browser processes, create approvals, inspect conversation content or send a canary during discovery. If that edge is safely closed later, proceed only through normal SafeUI exact-target/exact-text review, one-use approval, one dispatch, same-target response capture, correlation, ingestion and existing-consumer evaluation. M0-B and causal reuse remain unproven.
+
+---
+## EVIDENCE STATUS — DO NOT COLLAPSE MATURITY LEVELS
+
+- `OLLAMA_SAFEUI`: WIRED_REPORTED / SYNTHETIC_TESTS_REPORTED / LIVE_INFERENCE_UNPROVEN.
+- `CHATGPT_WEB_TARGET`: TARGET_DISCOVERY_BLOCKED.
+- `REAL_M0A_ROUND_TRIP`: UNPROVEN.
+- `M0B_OBJECTIVE_DRIVEN_ACTOR_SELECTION`: UNPROVEN.
+- `D016_SELF_DEVELOPMENT_CYCLE`: broader governed code-evolution loop and later causal reuse remain unproven.
+
+These statuses are separate. A local adapter cannot close the external-session discovery edge. A received/persisted response would still need to reach the existing consumer before it counts as a completed M0-A result.
 ## 2026-10-13 ACTIVE PRODUCT ROUTE — M0-A SAFEUI TARGET DISCOVERY BLOCKED
 
 Canonical handoff: [CHAT-ARCH-2026-10-13-229-m0a-safeui-target-discovery-continuity.md](./CHAT-ARCH-2026-10-13-229-m0a-safeui-target-discovery-continuity.md).
