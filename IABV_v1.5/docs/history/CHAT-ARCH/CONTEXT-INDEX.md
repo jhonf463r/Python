@@ -1,3 +1,13 @@
+## 2026-10-13 FIRST OPEN EDGE — TARGET PROTOCOL IDENTITY AND PRE-EFFECT TOOL SUPPRESSION
+
+Canonical: [CHAT-ARCH-2026-10-13-239-target-protocol-tool-surface-audit.md](./CHAT-ARCH-2026-10-13-239-target-protocol-tool-surface-audit.md).
+
+The Owner's target-protocol audit supports Option B: keep App Server blocked. Code expects user-agent `0.120.0`, while actual executable is resolved dynamically from `PATH` and not pinned in reviewed manifests, so the effective CLI/protocol is `UNPROVEN`. Normal dispatch does not call adapter `preflight()`; no explicit empty tool list is sent; requested sandbox/approval fields and post-receipt rejection do not prove pre-effect tool suppression.
+
+Next: `CODEX_APP_SERVER_SERVER_ENFORCED_TOOL_SUPPRESSION_UNAVAILABLE_OR_UNPROVEN`. Read-only match the actual protocol to existing source and prove server-enforced tool absence before turn start, including built-in/MCP/integration capabilities. No runtime, tests, credentials, edits or spending.
+
+---
+
 ## 2026-10-13 FIRST OPEN EDGE — APP SERVER EFFECTIVE TOOL SURFACE NOT VERIFIED
 
 Canonical: [CHAT-ARCH-2026-10-13-238-appserver-tool-suppression-unproven.md](./CHAT-ARCH-2026-10-13-238-appserver-tool-suppression-unproven.md).
