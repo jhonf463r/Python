@@ -1,3 +1,13 @@
+## 2026-10-13 REGISTRATION — APP SERVER TASK ID CORRELATION BLOCKER
+
+Canonical: `CHAT-ARCH-2026-10-13-236-appserver-task-id-correlation-blocker.md`.
+
+Summary: Owner-supplied static report says SafeUI-authorized `task_id` is regenerated for both Codex destinations by `ToolTeachService.build_task_from_request`, then rejected after consultation may have dispatched. Recommended next tranche: separately authorized narrow fix and synthetic tests proving stable ID and pre-dispatch denial. Authentication/entitlement and pre-effect tool policy remain open. No code was changed in the reported audit; preserve all dirty/untracked files.
+
+Tags: IABV / M0-A / Codex / task identity / authorization / correlation / fail closed / SafeUI / no runtime
+
+---
+
 ## 2026-10-13 REGISTRATION — CODEX PLAN ENTITLEMENT / AUTH MODE DISTINCTION
 
 Canonical record: `CHAT-ARCH-2026-10-13-235-codex-plan-entitlement-auth-mode.md`.
