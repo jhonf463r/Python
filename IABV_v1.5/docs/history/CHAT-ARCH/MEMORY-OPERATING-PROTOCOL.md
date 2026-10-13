@@ -1,3 +1,15 @@
+## Continuity method delta — check current model minimums against pinned CLI version (2026-10-13)
+
+Canonical: [CHAT-ARCH-2026-10-13-255-cli-version-model-entitlement-compatibility.md](./CHAT-ARCH-2026-10-13-255-cli-version-model-entitlement-compatibility.md).
+
+A version-matched source check of Codex 0.120 does not prove the old binary can access current models. Official current Help Center documentation specifies CLI 0.144.0 minimum for GPT-5.6 and 0.153.0 for GPT-6 Astra. Treat that as a compatibility gate, not as permission to update the binary. A compatible older model/plan-included route, if any, remains unproven.
+
+Codex is included on ChatGPT plans, but usage is limited and paid credits may be available after limits; do not equate plan inclusion with unlimited/no-cost use. The actual account state and billing/credit behavior remain unproven. No update/install, login, CLI turn or spend.
+
+First edge: `CODEX_EXEC_VERSION_MODEL_AND_INCLUDED_USAGE_COMPATIBILITY_UNVERIFIED`.
+
+---
+
 ## Continuity method delta — distinguish included plan usage from zero cost (2026-10-13)
 
 Canonical: [CHAT-ARCH-2026-10-13-254-codex-plan-usage-and-zero-extra-spend-gate.md](./CHAT-ARCH-2026-10-13-254-codex-plan-usage-and-zero-extra-spend-gate.md).
