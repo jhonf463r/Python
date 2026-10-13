@@ -1,3 +1,11 @@
+## 2026-10-13 CODEX ACCESS GATE — NATIVE AUTH VS SIWC
+
+Canonical: [CHAT-ARCH-2026-10-13-235-codex-plan-entitlement-auth-mode.md](./CHAT-ARCH-2026-10-13-235-codex-plan-entitlement-auth-mode.md).
+
+First distinguish the adapter's exact authentication mode. Native Codex Local/CLI is included in Free plan usage with limits; SIWC plan-usage integration for third-party apps has separate Plus/Pro eligibility. A catalog or adapter name is not entitlement evidence. Review only App Server auth/config/preflight/tool-policy source call sites; do not inspect credential contents or invoke the runtime. Desktop capture-home linkage remains unproven.
+
+---
+
 ## 2026-10-13 CURRENT EDGE — APP SERVER STATIC AUTH / HOME / TASK POLICY
 
 Canonical: [CHAT-ARCH-2026-10-13-234-desktop-provenance-unavailable-appserver-next.md](./CHAT-ARCH-2026-10-13-234-desktop-provenance-unavailable-appserver-next.md).
