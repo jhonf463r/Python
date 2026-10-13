@@ -1,3 +1,13 @@
+## Current route overlay — M0B-R3 Codex/App Server and existing rollout route (2026-10-13; entry 263)
+
+Read [CHAT-ARCH-2026-10-13-263-m0b-r3-autonomy-bridge-adjudication.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-263-m0b-r3-autonomy-bridge-adjudication.md), then entries 231 and 260–262 as needed.
+
+M0B-R3 makes App Server the direct programmatic Codex candidate, but published main already has `ExternalAssistantToolAdapter` + `UIExecutionRunner` and a `codex_installed` card configured for desktop/clipboard/rollout capture. The card is unavailable/unvalidated and capture-pending results remain unvalidated. Compare the local App Server candidate against this existing route before choosing. ChatGPT/Codex can use shared MCP tools, but IABV's ability to start an autonomous ChatGPT turn and receive a correlated result remains unresolved.
+
+Governance boundary remains binding: no retry of blocked MCP read/list, no local launch, tests, configuration/source edits or bypass. After authorized governance resolution and direct target mapping, the next source-only audit compares adapter, bootstrap, normal dispatch and result consumer. KEEP_BLOCKED.
+
+---
+
 ## Current route overlay — M0B-R1 governance gate and MCP target provenance (2026-10-13; entry 261)
 
 Read [CHAT-ARCH-2026-10-13-261-m0b-r1-governance-gate-and-tool-provenance.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-261-m0b-r1-governance-gate-and-tool-provenance.md), then entries 260–258 and historical RSK-01A.5 records 035–036 when the MCP namespace matters.
