@@ -1,3 +1,13 @@
+## 2026-10-13 OPEN EDGE — TARGET CLI / PROTOCOL AND NO-TOOLS CONTRACT UNPROVEN
+
+Canonical: [CHAT-ARCH-2026-10-13-239-target-protocol-tool-surface-audit.md](./CHAT-ARCH-2026-10-13-239-target-protocol-tool-surface-audit.md).
+
+The Owner's audit reports an expected CLI user-agent version `0.120.0`, but actual executable selection is dynamic via `PATH`, without a version pin in the reviewed manifests. Actual executable/protocol is `UNPROVEN`. SafeUI normal dispatch skips adapter `preflight()`; it requests restricted sandbox/approval settings but no explicit empty tool list. Received-message rejection is too late to prove no prior server-side effect. Authentication/session/quota/cost and the actual response/consumer outcome remain `UNPROVEN`.
+
+Next edge: `CODEX_APP_SERVER_SERVER_ENFORCED_TOOL_SUPPRESSION_UNAVAILABLE_OR_UNPROVEN`. Read-only determine whether existing source/manifests identify the target protocol, match the adapter request shape, and find a server-enforced pre-turn control covering built-in, MCP and app/plugin capabilities. Otherwise keep App Server blocked. No runtime, credential inspection, tests, source/config mutation or spend.
+
+---
+
 ## 2026-10-13 OPEN EDGE — EFFECTIVE APP SERVER TOOL SURFACE NOT PROVEN
 
 Canonical record: [CHAT-ARCH-2026-10-13-238-appserver-tool-suppression-unproven.md](./CHAT-ARCH-2026-10-13-238-appserver-tool-suppression-unproven.md).
