@@ -1,3 +1,13 @@
+## Latest route record — Entry 265
+
+- Record: [CHAT-ARCH-2026-10-13-265-autonomy-run-paused-too-early-public-gate-contract.md](./CHAT-ARCH-2026-10-13-265-autonomy-run-paused-too-early-public-gate-contract.md)
+- Latest run did not invoke tools or advance independent tasks; local M0A stays KEEP_BLOCKED.
+- Published main's audit gate includes reason/detail and applicable block/permission records in its blocked response contract; broad `world_model_snapshot` remains unsuitable as a narrow diagnostic. This does not recover the payload from the earlier local invocation.
+- Public MCP `autonomy_status`/`autonomy_update_task` concern task continuity, not granting source-read permissions.
+- Next: review public source only, trace existing Control Center/approval seams and prior authorization-contract entries 219–226, then produce a bounded diagnostic + scoped-grant contract/test spec. No local read bypass or implementation on dirty M0A.
+
+---
+
 ## Latest route record — Entry 264
 
 - Record: [CHAT-ARCH-2026-10-13-264-m0b-r4-governance-diagnostic-missing.md](./CHAT-ARCH-2026-10-13-264-m0b-r4-governance-diagnostic-missing.md)
