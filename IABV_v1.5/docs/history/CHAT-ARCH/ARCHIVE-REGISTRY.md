@@ -1,3 +1,13 @@
+## 2026-10-13 REGISTRATION — ENTRY 265: AUTONOMY RUN PAUSED AT LOCAL GATE; PUBLIC CONTRACT CAN PROCEED
+
+- Record: [CHAT-ARCH-2026-10-13-265-autonomy-run-paused-too-early-public-gate-contract.md](./CHAT-ARCH-2026-10-13-265-autonomy-run-paused-too-early-public-gate-contract.md)
+- Input: owner-supplied run report + independent read-only public-main source inspection.
+- Result: current run made no MCP call, local read, test, AI query or canonical writeback; local M0A remains blocked. Public source documents a blocked payload containing reason/detail and applicable block/permission records; this is not proof of the prior local payload.
+- Material delta: autonomous executor must proceed with independent public-source analysis rather than let a local gate freeze unrelated work.
+- Next: trace existing governance/approval seam in public source, reconcile existing authorization contract entries 219–226, create bounded diagnostic/scoped-grant contract + test spec. No local bypass, dirty-worktree mutation or push/merge.
+
+---
+
 ## 2026-10-13 REGISTRATION — ENTRY 264: M0B-R4 GOVERNANCE DIAGNOSTIC / TARGET IDENTITY UNAVAILABLE
 
 - Record: [CHAT-ARCH-2026-10-13-264-m0b-r4-governance-diagnostic-missing.md](./CHAT-ARCH-2026-10-13-264-m0b-r4-governance-diagnostic-missing.md)
