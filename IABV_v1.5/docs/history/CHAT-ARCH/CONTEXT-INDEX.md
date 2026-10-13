@@ -1,3 +1,14 @@
+## Latest route record — Entry 246
+
+- Record: [CHAT-ARCH-2026-10-13-246-codex-exec-0120-static-contract-and-target-home.md](./CHAT-ARCH-2026-10-13-246-codex-exec-0120-static-contract-and-target-home.md)
+- Adjudication: `CODEX_EXEC_INTERFACE_CONTRACT_IDENTIFIED_TARGET_POLICY_UNPROVEN`.
+- Provenance: owner-supplied Windows resolver/package inventory plus public `rust-v0.120.0` CLI source.
+- Durable finding: `exec` exists in that version's source contract; local IABV `PATH`, effective `CODEX_HOME`, auth/session, Windows sandbox enforcement, external integrations, quota/cost and consumer artifact handoff remain unproven.
+- First open edge: `CODEX_EXEC_TARGET_HOME_AND_EFFECTIVE_POLICY_UNPROVEN`.
+- Follow entry 246 before designing a coding turn. Preserve the dirty worktree. No process/runtime/test/source or configuration change is authorized.
+
+---
+
 ## 2026-10-13 FIRST OPEN EDGE — COMPARE APPSERVER WITH CODEX CLI EXEC ON THE EXACT WINDOWS INSTALLATION
 
 Canonical: [CHAT-ARCH-2026-10-13-245-windows-codex-execution-route-comparison.md](./CHAT-ARCH-2026-10-13-245-windows-codex-execution-route-comparison.md).
