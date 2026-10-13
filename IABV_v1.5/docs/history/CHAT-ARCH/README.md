@@ -1,3 +1,14 @@
+## 2026-10-13 LATEST RESULT — CODEX TASK ID REPAIR PASS (SYNTHETIC ONLY)
+
+Canonical: [CHAT-ARCH-2026-10-13-237-codex-task-id-repair-synthetic-pass.md](./CHAT-ARCH-2026-10-13-237-codex-task-id-repair-synthetic-pass.md).
+
+Owner-supplied result: `CODEX_TASK_ID_REPAIR_PASS`. The report says both Codex destinations now preserve the SafeUI-authorized 32-character lowercase hexadecimal task ID; SafeUI and ToolTeachService reject missing, malformed or discrepant IDs before adapter dispatch; authorization-consumption order was moved behind the preview-task ID check; approved destination/prompt/digest bindings and other destination behavior remain intact. Focused offline tests reportedly finished at 32 passed after three initial harness failures were corrected; diff whitespace checks passed. This result has not been independently rerun here.
+
+Local report only: branch `codex/m0a-safe-ui-boot`, HEAD `5b1d89022ee4cdc63c1f88e050f086b40a42875c`, 56 tracked modifications and 6 untracked files. Preserve all dirty changes and pre-existing `.pyc` modifications. This local patch is not part of remote `main`.
+
+**Adjudication:** the first code-level identity defect is reported repaired under synthetic tests; M0-A is **not** end-to-end. No App Server, real query, response-consumer evaluation or D016 loop was verified.
+
+**Next edge:** `CODEX_APP_SERVER_AUTH_HOME_PREFLIGHT_AND_EFFECTIVE_TOOL_POLICY_UNRESOLVED`. Continue a bounded read-only review of known App Server auth/home/preflight and pre-effect tool-policy call sites; trace consumer handoff from source only. No credential inspection, runtime, network/UI/CDP, new code edit or spend. A real round-trip requires separate authorization.
 ## 2026-10-13 LATEST APP SERVER BLOCKER — TASK ID LOST BEFORE DISPATCH ACCEPTANCE
 
 Canonical: [CHAT-ARCH-2026-10-13-236-appserver-task-id-correlation-blocker.md](./CHAT-ARCH-2026-10-13-236-appserver-task-id-correlation-blocker.md).
