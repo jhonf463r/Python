@@ -1,3 +1,13 @@
+## 2026-10-13 OPEN CODE EDGE — CODEX TASK ID NOT PRESERVED PRE-DISPATCH
+
+Canonical: [CHAT-ARCH-2026-10-13-236-appserver-task-id-correlation-blocker.md](./CHAT-ARCH-2026-10-13-236-appserver-task-id-correlation-blocker.md).
+
+Owner-supplied static audit indicates `safe_ui_single_use_task_id` is reused by `build_task_from_request` only for `chatgpt_web_assisted`, `openai_api_text` and `ollama_llm`. For `codex_app_server` and `codex_installed` a new UUID is generated, then SafeUI compares IDs after the consultation path may already have dispatched.
+
+Required narrow repair: preserve the approved ID for both Codex destinations, fail closed on missing/mismatch before adapter invocation, and add synthetic no-dispatch tests. Implementation/tests require separate Owner authorization. Authentication without extra cost, pre-effect tool controls and consumer evaluation are independent blockers.
+
+---
+
 ## 2026-10-13 OPEN EDGE — APP SERVER AUTH MODE AND ENTITLEMENT
 
 Canonical: [CHAT-ARCH-2026-10-13-235-codex-plan-entitlement-auth-mode.md](./CHAT-ARCH-2026-10-13-235-codex-plan-entitlement-auth-mode.md).
