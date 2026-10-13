@@ -1,3 +1,13 @@
+## 2026-10-13 REGISTRATION — ENTRY 266: OBSERVATION APPROVAL IS NOT AUDIT RELEASE
+
+- Record: [CHAT-ARCH-2026-10-13-266-observation-approval-is-not-audit-release.md](./CHAT-ARCH-2026-10-13-266-observation-approval-is-not-audit-release.md)
+- Evidence: public Control Center uses `approve_observation_permission`; inspected tests bind it to `observe_window_content:codex`.
+- Adjudication: no inspected source shows that this action releases an `assistant_kind="audit"` block or proves MCP/checkout identity.
+- Boundary: Entries 218–224 concern mutation authorization and leave further identity/authority exploration behind an Owner gate; do not transfer or expand that scope.
+- Next: trace only existing documented audit/Control Center paths; propose a minimal diagnostic and separate scoped decision if no supported release exists. KEEP_BLOCKED locally.
+
+---
+
 ## 2026-10-13 REGISTRATION — ENTRY 265: AUTONOMY RUN PAUSED AT LOCAL GATE; PUBLIC CONTRACT CAN PROCEED
 
 - Record: [CHAT-ARCH-2026-10-13-265-autonomy-run-paused-too-early-public-gate-contract.md](./CHAT-ARCH-2026-10-13-265-autonomy-run-paused-too-early-public-gate-contract.md)
