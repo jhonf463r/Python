@@ -1,3 +1,11 @@
+## 2026-10-13 CURRENT EDGE — APP SERVER STATIC AUTH / HOME / TASK POLICY
+
+Canonical: [CHAT-ARCH-2026-10-13-234-desktop-provenance-unavailable-appserver-next.md](./CHAT-ARCH-2026-10-13-234-desktop-provenance-unavailable-appserver-next.md).
+
+Desktop result `LAUNCH_PROVENANCE_UNAVAILABLE`: process/window identity was reported, but capture-home linkage remains unproven; no actual mismatch is established. Do not attempt a broader environment read. Next, Codex performs a bounded read-only review of existing App Server source seams: preflight ordering, authorized home selection, pre-effect task/tool policy, thread/turn correlation and existing-consumer evaluation. No runtime invocation or code edits.
+
+---
+
 ## 2026-10-13 CURRENT CODEX EDGE — DESKTOP CAPTURE-HOME PROVENANCE
 
 Canonical: [CHAT-ARCH-2026-10-13-233-desktop-preflight-launch-provenance.md](./CHAT-ARCH-2026-10-13-233-desktop-preflight-launch-provenance.md).
