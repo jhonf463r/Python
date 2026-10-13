@@ -1,3 +1,15 @@
+## 2026-10-13 — OBSERVATION GRANT DOES NOT PROVE AUDIT RELEASE (ENTRY 266)
+
+Canonical: [CHAT-ARCH-2026-10-13-266-observation-approval-is-not-audit-release.md](./CHAT-ARCH-2026-10-13-266-observation-approval-is-not-audit-release.md).
+
+- **PROVEN_BY_SOURCE:** Control Center offers `approve_observation_permission`; inspected tests use the scoped permission `observe_window_content:codex`.
+- **NOT PROVEN:** this action releases the audit governance block or authenticates the MCP checkout target.
+- Entries 218–224 govern mutation authority, not this read-only gate; RQ224's trust-source investigation has a separate Owner gate.
+- **Next edge:** determine within existing documented Control Center/WorldModel call paths whether an explicit audit-release operation exists. If not, prepare narrow diagnostic + separate scoped-decision contract, but do not implement a new trust anchor or expand identity exploration without the applicable authorization.
+- Posture: local M0A `KEEP_BLOCKED`.
+
+---
+
 ## 2026-10-13 — PUBLIC GOVERNANCE CONTRACT CAN PROCEED WHILE M0A STAYS BLOCKED (ENTRY 265)
 
 Canonical: [CHAT-ARCH-2026-10-13-265-autonomy-run-paused-too-early-public-gate-contract.md](./CHAT-ARCH-2026-10-13-265-autonomy-run-paused-too-early-public-gate-contract.md).
