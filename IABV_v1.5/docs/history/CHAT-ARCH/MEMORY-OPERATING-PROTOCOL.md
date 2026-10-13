@@ -1,3 +1,15 @@
+## Continuity method delta — version-matched exec permission-profile route (2026-10-13)
+
+Canonical: [CHAT-ARCH-2026-10-13-251-exec-v0120-permission-profile-dispatch.md](./CHAT-ARCH-2026-10-13-251-exec-v0120-permission-profile-dispatch.md).
+
+Continue cloud static analysis when local environment facts are pending. Source tagged `rust-v0.120.0` shows `exec` forces `approval_policy=Never`; this cannot be treated as a per-command approval loop. It also shows that `--sandbox`/`--full-auto` forces legacy sandbox-policy interpretation, while a higher-precedence `default_permissions` layer can choose permission-profile interpretation if no sandbox-mode override or selected profile sandbox mode is present.
+
+Thus evaluate a profile-selected route as a source-level candidate, not `--sandbox workspace-write` by reflex. Keep all permissions explicit, omit broad root read, make the disposable candidate the only writable code root, and require child network/integrations to be disabled before effects. Local Windows backend/effective policy, no-extra-spend authentication, real artifacts and existing-consumer evaluation remain independent unknowns.
+
+First open edge: `CODEX_EXEC_V0120_PROFILE_ROUTE_BACKEND_AND_ENVIRONMENT_UNVERIFIED`. This writeback is project memory, not a local runtime event.
+
+---
+
 ## Continuity method delta — continue cloud review while local facts remain blocked (2026-10-13)
 
 Canonical: [CHAT-ARCH-2026-10-13-250-cloud-static-audit-windows-sandbox-home-separation.md](./CHAT-ARCH-2026-10-13-250-cloud-static-audit-windows-sandbox-home-separation.md).
