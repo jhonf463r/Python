@@ -1,3 +1,13 @@
+## 2026-10-13 LATEST RESULT — CODEX TEXT ADAPTER IS NOT YET A GOVERNED CODING BRIDGE
+
+Canonical: [CHAT-ARCH-2026-10-13-243-codex-bounded-development-mode-blocked.md](./CHAT-ARCH-2026-10-13-243-codex-bounded-development-mode-blocked.md).
+
+The Owner-supplied audit classifies the existing path `CODEX_BOUNDED_DEV_MODE_STATICALLY_BLOCKED`: it captures a text response but does not create/verify a writable candidate diff. Its requested read-only turn scope and process Job Object do not prove OS-enforced filesystem/credential/network isolation. Do not equate a process Job with a security sandbox or permit code edits based only on prompt wording.
+
+Next edge: `CODEX_CANDIDATE_WORKSPACE_EXECUTION_BOUNDARY_DESIGN_UNRESOLVED`. One design-only task must compare an enforceably confined candidate workspace on the existing transport against a distinct OS-enforced execution boundary. It must include auth/quota/cost gates, exact authorization scope, diff/artifact capture, existing consumer/verifier and owner-only promotion. No code/runtime is authorized by this record.
+
+---
+
 ## 2026-10-13 ROUTE ADJUDICATION — THE TARGET IS A GOVERNED CODEX DEVELOPMENT HANDOFF
 
 Canonical: [CHAT-ARCH-2026-10-13-241-codex-development-bridge-route-adjudication.md](./CHAT-ARCH-2026-10-13-241-codex-development-bridge-route-adjudication.md).
