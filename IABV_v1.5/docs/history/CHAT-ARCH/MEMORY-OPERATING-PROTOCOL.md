@@ -1,3 +1,15 @@
+## 2026-10-13 METHOD UPDATE — PRE-FLIGHT MUST PROVE CAPTURE-HOME PROVENANCE
+
+Canonical result: [CHAT-ARCH-2026-10-13-233-desktop-preflight-launch-provenance.md](./CHAT-ARCH-2026-10-13-233-desktop-preflight-launch-provenance.md).
+
+The Desktop availability check did identify one visible window, but did not prove that the live process uses the directory read by IABV's Codex rollout capture. Do not repeat the window enumeration or infer session linkage from title, executable path or PID.
+
+The next discriminating observation is existing launch provenance for the exact PID and capture home, with a separate Owner authorization. Prefer existing non-sensitive source records. If direct process inspection is explicitly authorized, retrieve only the single allowlisted `CODEX_HOME` value and the minimum launch/parent metadata necessary; never dump environment variables or touch credential-bearing values. If safe allowlisted retrieval is unavailable, stop and report the blocker. No dispatch.
+
+A match proves only configuration alignment; a future same-session response still requires capture and correlation evidence. Preserve actor-report vs runtime evidence distinctions and all dirty/untracked worktree changes.
+
+---
+
 ## 2026-10-13 METHOD UPDATE — AFTER CODEX ROUTE COMPARISON
 
 Canonical result: [CHAT-ARCH-2026-10-13-232-codex-bridge-comparison-result.md](./CHAT-ARCH-2026-10-13-232-codex-bridge-comparison-result.md).
