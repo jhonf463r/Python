@@ -1,3 +1,14 @@
+## 2026-10-13 REGISTRATION — ENTRY 254: CODEX PLAN USAGE AND ZERO-EXTRA-SPEND GATE
+
+- Record: [CHAT-ARCH-2026-10-13-254-codex-plan-usage-and-zero-extra-spend-gate.md](./CHAT-ARCH-2026-10-13-254-codex-plan-usage-and-zero-extra-spend-gate.md)
+- Classification: `CODEX_EXEC_INCLUDED_PLAN_ROUTE_DOCUMENTED_ACCOUNT_ENTITLEMENT_AND_NO_EXTRA_CHARGE_UNPROVEN`.
+- Durable finding: official docs include Codex in ChatGPT plans (including Free/Go) under varying usage limits; beyond-limit paid credits/billing are a separate possible path.
+- Cross-gates: canonical-home path binds keyring lookup; explicit execpolicy Allow rules can bypass Codex's inner sandbox.
+- First open edge: `CODEX_EXEC_AUTH_HOME_POLICY_AND_USAGE_BUDGET_ROUTE_UNRESOLVED`.
+- No CLI turn, new login, credential copy, installation, purchase, spend or promotion authorized.
+
+---
+
 ## 2026-10-13 REGISTRATION — ENTRY 253: CODEX HOME AUTH AND EXECPOLICY COUPLING
 
 - Record: [CHAT-ARCH-2026-10-13-253-codex-home-auth-and-execpolicy-coupling.md](./CHAT-ARCH-2026-10-13-253-codex-home-auth-and-execpolicy-coupling.md)
