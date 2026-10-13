@@ -1,3 +1,15 @@
+## Current Codex development route overlay (2026-10-13; entry 243)
+
+Read [CHAT-ARCH-2026-10-13-243-codex-bounded-development-mode-blocked.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-243-codex-bounded-development-mode-blocked.md) after the required new-chat remote-state reconstruction.
+
+The Owner-supplied source report classifies the current adapter as `CODEX_BOUNDED_DEV_MODE_STATICALLY_BLOCKED`. It captures text and IDs, not a writable candidate worktree or verifiable diff. Its scope is reported as read-only; a Windows Job Object does not prove file/credential/network isolation. Do not try to bypass this by simply changing a prompt or switching the target directory to writable.
+
+Next edge: `CODEX_CANDIDATE_WORKSPACE_EXECUTION_BOUNDARY_DESIGN_UNRESOLVED`. A single design-only task must compare: (A) existing App Server with a demonstrably effective OS-enforced candidate boundary and artifact capture, versus (B) a separate contained executor. State exact auth/quota/cost, workspace/command/network limits, no credential copying, no unapproved MCP/apps, stable IDs, diff/test artifacts, existing consumer evaluation and owner-only promotion. If the boundary cannot be demonstrated, keep the route blocked and propose the smallest separate implementation task.
+
+Preserve the dirty local worktree and every modified/untracked file. No runtime, test, code/config edits, credential inspection, auth setup, spend, commit, push or promotion in the design tranche.
+
+---
+
 # IABV v1.5 - Instrucciones Operativas Transversales Para Cualquier Agente
 
 ## Current M0-A / Codex route overlay (2026-10-13)
