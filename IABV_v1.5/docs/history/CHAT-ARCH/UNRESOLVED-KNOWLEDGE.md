@@ -1,3 +1,13 @@
+## 2026-10-13 FIRST OPEN EDGE — OWNER HOME/AUTH DECISION STILL PENDING
+
+Canonical: [CHAT-ARCH-2026-10-13-249-owner-decision-package-reviewed-no-selection.md](./CHAT-ARCH-2026-10-13-249-owner-decision-package-reviewed-no-selection.md).
+
+The latest package lays out options A/B/C but does not explicitly select one. Do not attribute a choice to the Owner. Keep execution blocked. Prefer B only conditionally if an already-existing dedicated authenticated home is proven available, protected by an effective Windows boundary, usable without copying credentials or new login, and compatible with no additional spend. If no option meets every gate, remain at C.
+
+Implementation, preflight, runtime task, credential inspection and spending are not authorized by the package.
+
+---
+
 ## 2026-10-13 FIRST OPEN EDGE — CODEX EXEC LAUNCH CONTRACT OWNER DECISION PENDING
 
 Canonical: [CHAT-ARCH-2026-10-13-248-exec-launch-contract-design-adjudication.md](./CHAT-ARCH-2026-10-13-248-exec-launch-contract-design-adjudication.md).
