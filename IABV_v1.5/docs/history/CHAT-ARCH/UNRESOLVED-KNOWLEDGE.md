@@ -1,3 +1,11 @@
+## 2026-10-13 OPEN EDGE — APP SERVER AUTH MODE AND ENTITLEMENT
+
+Canonical: [CHAT-ARCH-2026-10-13-235-codex-plan-entitlement-auth-mode.md](./CHAT-ARCH-2026-10-13-235-codex-plan-entitlement-auth-mode.md).
+
+Does the existing App Server adapter use native Codex home/session auth, SIWC OAuth plan usage, or a billable API route? Current documentation says Codex Local/CLI is included on Free with limits, while SIWC plan-usage integration for third-party applications has separate Plus/Pro eligibility. The local adapter mode is not established. Inspect code/config only; no tokens, credential file contents, runtime or network. Keep no-extra-spend constraint.
+
+---
+
 ## 2026-10-13 OPEN EDGE — APP SERVER PREFLIGHT / AUTH HOME / TASK POLICY
 
 Canonical: [CHAT-ARCH-2026-10-13-234-desktop-provenance-unavailable-appserver-next.md](./CHAT-ARCH-2026-10-13-234-desktop-provenance-unavailable-appserver-next.md).
