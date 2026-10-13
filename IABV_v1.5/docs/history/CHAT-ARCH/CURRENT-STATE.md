@@ -1,18 +1,18 @@
-## 2026-10-13 CURRENT ROUTING OVERLAY — CODEX BRIDGE COMPARISON INCONCLUSIVE
+## 2026-10-13 CURRENT ROUTING OVERLAY — DESKTOP CAPTURE-HOME PROVENANCE UNPROVEN
 
-Canonical result: [CHAT-ARCH-2026-10-13-232-codex-bridge-comparison-result.md](./CHAT-ARCH-2026-10-13-232-codex-bridge-comparison-result.md).
+Canonical result: [CHAT-ARCH-2026-10-13-233-desktop-preflight-launch-provenance.md](./CHAT-ARCH-2026-10-13-233-desktop-preflight-launch-provenance.md).
 
-**Owner objective:** a governed `IABV → Codex → IABV` development handoff with exact intent, one-use approval, result correlation, ingestion and existing-consumer evaluation.
+**Owner objective:** governed `IABV → Codex → IABV` development handoff with exact intent, one-use approval, correlated response and evaluation by the existing consumer.
 
-**Current status:** `CODEX_BRIDGE_COMPARISON_INCONCLUSIVE`. The supplied static audit reports both App Server and Desktop connected to SafeUI, but neither has a real runtime round-trip. App Server's valid auth/home and pre-execution tool-control policy remain unproven. Desktop's unique eligible window and process/session-to-rollout capture linkage remain unproven.
+**Latest reported step:** `DESKTOP_PREFLIGHT_BLOCKED`. One visible top-level Codex Desktop window was reported as title `ChatGPT`, HWND `0x17B0900`, PID `12476`, image `ChatGPT.exe` under the packaged `OpenAI.Codex` path. This identifies a candidate window/process, not its active session store.
 
-**First open edge:** `DESKTOP_TARGET_AND_CAPTURE_SOURCE_LINKAGE_UNPROVEN`.
+**First open edge:** `DESKTOP_CAPTURE_HOME_LINKAGE_UNPROVEN`. The strict rollout capture expects `data/tool_teaching/external_assistants/codex_home` (`state_5.sqlite` and `sessions`); no admissible evidence yet binds PID `12476` to that home.
 
-**Next action:** after separate explicit Owner authorization, one read-only Desktop availability/correlation preflight only. Establish one eligible window and a defensible link to the capture source; do not type, click, dispatch, inspect conversation contents/credentials or start processes. If that fails, perform a bounded App Server auth/home/preflight/tool-policy source analysis; do not launch it.
+**Next action:** obtain separate explicit Owner authorization for one read-only launch-provenance check. Prefer existing non-sensitive process-start evidence. If specifically necessary and safely possible, inspect only the allowlisted `CODEX_HOME` value for PID `12476` and minimum parent/launch metadata—never dump the environment, inspect credentials or private profile/session contents. If safe attribution is unavailable, stop. No process start, UI control, prompt or dispatch.
 
-**Preservation/cost:** keep branch `codex/m0a-safe-ui-boot`, HEAD `5b1d89022ee4cdc63c1f88e050f086b40a42875c` as last reported; preserve 56 tracked modifications and 5 untracked items, including 38 modified `.pyc` files. These are actor-reported and not remeasured in this writeback. No code/test/runtime authorization. No paid API, extra spend, installations, downloads or provider expansion.
+**Preservation/cost:** last reported worktree is `codex/m0a-safe-ui-boot` at `5b1d89022ee4cdc63c1f88e050f086b40a42875c`, 56 tracked modifications and 5 untracked items, including 38 modified `.pyc` files. Reported only; not independently remeasured here. Preserve all changes. No code/test/runtime authorization, paid API, additional spend, installation, download or provider expansion.
 
-**Separate routes:** ChatGPT Web remains `TARGET_DISCOVERY_BLOCKED` but is no longer the active next action for the Codex-specific objective. Ollama remains `WIRED_REPORTED / SYNTHETIC_TESTS_REPORTED / LIVE_INFERENCE_UNPROVEN`. M0-B and D016 causal self-development remain unproven.
+**Separate routes:** ChatGPT Web stays `TARGET_DISCOVERY_BLOCKED`; Ollama stays `WIRED_REPORTED / SYNTHETIC_TESTS_REPORTED / LIVE_INFERENCE_UNPROVEN`; App Server auth/home and pre-effect tool controls remain unproven. M0-B and D016 causal self-development remain unproven.
 
 ---
 
