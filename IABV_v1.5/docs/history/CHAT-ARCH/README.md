@@ -1,3 +1,13 @@
+## 2026-10-13 ROUTE CONSTRAINT — CODEX AUTH MODE AND PLAN ENTITLEMENT
+
+Canonical: [CHAT-ARCH-2026-10-13-235-codex-plan-entitlement-auth-mode.md](./CHAT-ARCH-2026-10-13-235-codex-plan-entitlement-auth-mode.md).
+
+Official docs distinguish native Codex Local/CLI access (included in ChatGPT Free with limits) from the separate SIWC third-party app route for ChatGPT-plan usage (eligible Plus/Pro users and participating apps). Do not assume the local App Server adapter uses either mode until its source/config is checked. No API key, new OAuth registration, extra spend, credits, subscription, installation or download is allowed.
+
+Next: bounded read-only App Server auth-mode/home/preflight/tool-policy source audit. Desktop capture-home linkage remains unproven; do not repeat invasive process checks. No runtime invocation.
+
+---
+
 ## 2026-10-13 LATEST RESULT — DESKTOP LAUNCH PROVENANCE UNAVAILABLE
 
 Canonical: [CHAT-ARCH-2026-10-13-234-desktop-provenance-unavailable-appserver-next.md](./CHAT-ARCH-2026-10-13-234-desktop-provenance-unavailable-appserver-next.md).
