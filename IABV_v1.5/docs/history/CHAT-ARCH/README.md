@@ -1,3 +1,11 @@
+## 2026-10-13 LATEST RESULT — M0B RUN STOPPED AT LOCAL GATE; CONTINUE PUBLIC-SOURCE WORK (ENTRY 265)
+
+Canonical: [CHAT-ARCH-2026-10-13-265-autonomy-run-paused-too-early-public-gate-contract.md](./CHAT-ARCH-2026-10-13-265-autonomy-run-paused-too-early-public-gate-contract.md).
+
+The supplied run did not call MCP tools or continue independent work. Local M0A remains `KEEP_BLOCKED`, but the block must not stop static research against published `main`. Its gate implementation documents a blocked payload with reason/detail and applicable block/permission records; this does not reconstruct the missing local response. Next: trace existing Control Center/approval mechanisms, reconcile prior authorization contract entries 219–226, and formulate a minimal diagnostic + scoped-grant contract/tests. Do not read around the local gate or mutate the dirty checkout.
+
+---
+
 ## 2026-10-13 LATEST RESULT — M0B-R4: NO NARROW GOVERNANCE OPERATION EXPOSED (ENTRY 264)
 
 Canonical: [CHAT-ARCH-2026-10-13-264-m0b-r4-governance-diagnostic-missing.md](./CHAT-ARCH-2026-10-13-264-m0b-r4-governance-diagnostic-missing.md).
