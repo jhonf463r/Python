@@ -1,3 +1,13 @@
+## 2026-10-13 LATEST RESULT — EXEC POLICY RULES ARE A PRE-SANDBOX SECURITY GATE
+
+Canonical: [CHAT-ARCH-2026-10-13-252-execpolicy-allow-can-bypass-sandbox.md](./CHAT-ARCH-2026-10-13-252-execpolicy-allow-can-bypass-sandbox.md).
+
+Codex `rust-v0.120.0` loads `rules/*.rules` from config-layer folders. A matching explicit policy `Allow` can set `bypass_sandbox=true`, and the orchestrator maps that to `SandboxType::None`. This is distinct from built-in known-safe-command heuristics. Consequently, a selected filesystem permission profile does not guarantee all generated commands stay confined if a user/managed policy Allow rule matches.
+
+Next edge: `CODEX_EXEC_V0120_EFFECTIVE_EXEC_POLICY_RULESET_UNVERIFIED`. Inspect the versioned rule-loading contract statically first; don't assume a switch to exclude user rules exists. Until applicable rules are proven safe or an independent outer OS boundary is verified, keep C/block. No runtime or extra spend.
+
+---
+
 ## 2026-10-13 LATEST RESULT — CODEX EXEC 0.120 PROFILE ROUTE NARROWED IN CLOUD SOURCE
 
 Canonical: [CHAT-ARCH-2026-10-13-251-exec-v0120-permission-profile-dispatch.md](./CHAT-ARCH-2026-10-13-251-exec-v0120-permission-profile-dispatch.md).
