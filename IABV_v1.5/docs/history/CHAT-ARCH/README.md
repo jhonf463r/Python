@@ -1,3 +1,13 @@
+## 2026-10-13 OWNER ROUTE-PRIORITY CORRECTION — CODEX SELF-DEVELOPMENT BRIDGE
+
+Canonical correction: [CHAT-ARCH-2026-10-13-231-codex-bridge-priority-clarification.md](./CHAT-ARCH-2026-10-13-231-codex-bridge-priority-clarification.md).
+
+The Owner has clarified that the immediate desired bridge is **IABV → Codex → IABV for development prompts/results**, not merely generic ChatGPT Web consultation. This supersedes record 230's *next-action priority* for choosing ChatGPT Web target discovery; it does not invalidate records 229–230 or authorize runtime. Preserve the existing dirty local worktree. Next action: bounded read-only static audit of the worktree's candidate `CodexAppServerToolAdapter` against the established `ExternalAssistantToolAdapter` + `UIExecutionRunner` + Codex rollout-capture path. Do not execute App Server, call CDP, start processes, send prompts or edit code in that audit. No API key, billable API, new spend, install or model download.
+
+Current route reassessment: `CODEX_BRIDGE_ROUTE_REASSESSMENT_REQUIRED`. Composition, effective auth/entitlement, pre-execution tool controls, dispatch/return correlation and consumer evaluation remain unproven. ChatGPT Web remains an optional generic free consultation route, not proof of a Codex coding bridge.
+
+---
+
 ## 2026-10-13 ROUTE RECONCILIATION — FREE M0-A BRIDGE / OLLAMA LOCAL BRANCH
 
 Canonical reconciliation: [CHAT-ARCH-2026-10-13-230-m0a-free-route-and-continuity-reconciliation.md](./CHAT-ARCH-2026-10-13-230-m0a-free-route-and-continuity-reconciliation.md).
