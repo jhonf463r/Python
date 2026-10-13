@@ -1,3 +1,13 @@
+## 2026-10-13 ACTIVE UNKNOWN — CODEX BOUNDED DEVELOPMENT EXECUTION BOUNDARY
+
+Canonical: [CHAT-ARCH-2026-10-13-241-codex-development-bridge-route-adjudication.md](./CHAT-ARCH-2026-10-13-241-codex-development-bridge-route-adjudication.md).
+
+Still unresolved: whether the existing IABV Codex App Server route can enforce, before dispatch and through execution, a disposable candidate-worktree boundary; effective Windows file/command restrictions; network and MCP/app integration limits; exact local CLI/protocol identity; authenticated native Codex home and included quota/cost; dispatch-once, terminal-event and artifact correlation; and actual evaluation by the existing consumer.
+
+Do not reopen the broad search for a generic tools-off field as if it solved the development goal. Next edge: `CODEX_BOUNDED_DEVELOPMENT_EXECUTION_BOUNDARY_UNPROVEN`, via bounded read-only source audit only. See entry 241. No runtime, credentials, tests, edits or spending in this stage.
+
+---
+
 ## 2026-10-13 OPEN EDGE — GLOBAL TOOL SUPPRESSION NOT SHOWN IN EXPECTED 0.120.0 CONTRACT
 
 Canonical record: [CHAT-ARCH-2026-10-13-240-versioned-0120-tool-control-limit.md](./CHAT-ARCH-2026-10-13-240-versioned-0120-tool-control-limit.md).
