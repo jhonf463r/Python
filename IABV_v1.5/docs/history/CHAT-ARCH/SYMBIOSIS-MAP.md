@@ -1,3 +1,15 @@
+## 2026-10-13 RELATION DELTA — EXEC CONTRACT IDENTIFIED; TARGET POLICY MISSING
+
+Canonical: [CHAT-ARCH-2026-10-13-246-codex-exec-0120-static-contract-and-target-home.md](./CHAT-ARCH-2026-10-13-246-codex-exec-0120-static-contract-and-target-home.md).
+
+Established route candidate: IABV's intended coding task may use the existing Codex CLI `exec` contract if its child environment, target Codex home, effective sandbox, authorization, no-extra-spend eligibility and candidate artifact handoff can be demonstrated. The tag `rust-v0.120.0` declares `exec`, sandbox modes and result-output options.
+
+Missing relation remains: SafeUI authorization → the *actual* child binary and CODEX_HOME → effective Windows execution policy → bounded candidate diff/artifacts → existing consumer/verifier → owner-only promotion. Identifying a binary path or output-message file alone does not close this relation.
+
+Next edge: `CODEX_EXEC_TARGET_HOME_AND_EFFECTIVE_POLICY_UNPROVEN`. No runtime exchange or causal learning is established.
+
+---
+
 ## 2026-10-13 ROUTE EVIDENCE — COMPARE CODEX APP SERVER AND CLI EXEC BEFORE CREATING A NEW ORGAN
 
 Canonical: [CHAT-ARCH-2026-10-13-245-windows-codex-execution-route-comparison.md](./CHAT-ARCH-2026-10-13-245-windows-codex-execution-route-comparison.md).
