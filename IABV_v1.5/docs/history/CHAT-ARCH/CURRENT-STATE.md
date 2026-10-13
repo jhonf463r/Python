@@ -1,18 +1,20 @@
-## 2026-10-13 CURRENT ROUTING OVERLAY — CODEX APP SERVER AUTH MODE UNRESOLVED
+## 2026-10-13 CURRENT ROUTING OVERLAY — CODEX TASK ID LOST BEFORE DISPATCH ACCEPTANCE
 
-Canonical constraint: [CHAT-ARCH-2026-10-13-235-codex-plan-entitlement-auth-mode.md](./CHAT-ARCH-2026-10-13-235-codex-plan-entitlement-auth-mode.md).
+Canonical result: [CHAT-ARCH-2026-10-13-236-appserver-task-id-correlation-blocker.md](./CHAT-ARCH-2026-10-13-236-appserver-task-id-correlation-blocker.md).
 
-**Owner objective:** governed `IABV → Codex → IABV` development handoff, followed by the separate D016 code-evolution loop.
+**Owner objective:** governed `IABV → Codex → IABV` development handoff with exact intent, one-use authorization, correlated response and evaluation by the existing consumer.
 
-**Latest Desktop result:** `LAUNCH_PROVENANCE_UNAVAILABLE`. The existing window/process was identified in the report, but its active capture home was not proven. This is not evidence of a mismatch; do not repeat invasive process inspection.
+**Latest result:** `APP_SERVER_STATICALLY_BLOCKED`. The supplied read-only static audit reports `ToolTeachService.build_task_from_request` reuses `safe_ui_single_use_task_id` for `chatgpt_web_assisted`, `openai_api_text` and `ollama_llm`, but regenerates a UUID for `codex_app_server` and `codex_installed`. SafeUI compares the returned ID after `execute_external_consultation()` may already have dispatched. This can create an external effect followed by rejection of the result.
 
-**First open edge:** `CODEX_APP_SERVER_AUTH_MODE_AND_ENTITLEMENT_UNRESOLVED`. Codex's official help distinguishes native Codex Local/CLI, included in Free with usage limits, from the separate SIWC third-party app path for ChatGPT-plan usage, which has eligible Plus/Pro conditions. Do not assume the candidate adapter uses one mode without reading its source.
+**First code-level edge:** `CODEX_SAFE_UI_TASK_ID_NOT_PRESERVED_PRE_DISPATCH`.
 
-**Next action:** bounded read-only source/config audit of the existing App Server adapter: identify its exact auth mode and `CODEX_HOME`; determine what `preflight()` checks and whether dispatch omits it; assess whether task-specific tool policy prevents effects before execution; trace terminal correlation to the existing consumer. No credential inspection, environment dump, App Server invocation, process, network, UI/CDP, tests, source edits, OAuth setup, API key, additional spend, installation or download.
+**Next action:** request separate Owner authorization for a narrow source-edit + synthetic-test tranche: preserve the approved ID for both Codex destinations; reject missing/malformed/mismatched IDs before any adapter call; prove by offline tests that invalid identity causes zero dispatch. Recheck actual worktree status first and preserve all unrelated modified/untracked files. No App Server runtime, authentication setup, tool-policy redesign, tests beyond this focused tranche, code promotion, commit or push unless separately authorized.
 
-**Preservation:** preserve reported worktree `codex/m0a-safe-ui-boot`, HEAD `5b1d89022ee4cdc63c1f88e050f086b40a42875c`, 56 tracked modifications and 5 untracked items. These are actor-reported and not newly measured. No cleanup or Git mutation.
+**Remaining independent gates:** actual auth mode and no-extra-cost entitlement for the configured `CODEX_HOME`; adapter `preflight()` vs. normal dispatch; effective tool prevention before side effects; and observed evaluation by the existing consumer. The source report says a result can be persisted and later passed to `ingest_external_response`, but the consumer was not executed. Do not collapse any of these stages.
 
-ChatGPT Web remains `TARGET_DISCOVERY_BLOCKED`; Ollama remains `WIRED_REPORTED / SYNTHETIC_TESTS_REPORTED / LIVE_INFERENCE_UNPROVEN`; no real Codex round trip, M0-B selection or D016 causal reuse has been verified.
+**Preservation/cost:** last reported worktree `codex/m0a-safe-ui-boot`, HEAD `5b1d89022ee4cdc63c1f88e050f086b40a42875c`, 56 tracked modifications and 5 untracked items, not independently remeasured here. Preserve all files, including modified `.pyc` files. No paid API, new spend, OAuth setup, installation, download or provider expansion.
+
+**Separate routes:** Desktop capture-home linkage remains `LAUNCH_PROVENANCE_UNAVAILABLE`; ChatGPT Web remains `TARGET_DISCOVERY_BLOCKED`; Ollama remains `WIRED_REPORTED / SYNTHETIC_TESTS_REPORTED / LIVE_INFERENCE_UNPROVEN`. M0-B and D016 causal self-development remain unproven.
 
 ---
 
