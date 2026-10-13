@@ -1,3 +1,15 @@
+## 2026-10-13 REGISTRATION — VERSIONED 0.120.0 TOOL-CONTROL LIMIT
+
+Canonical record: `CHAT-ARCH-2026-10-13-240-versioned-0120-tool-control-limit.md`.
+
+Summary: Read-only inspection of public OpenAI Codex ref `rust-v0.120.0` found no generic all-tools-off field in `ThreadStartParams` or `TurnStartParams`; `ToolsV2` covers specific web-search/image settings, and inspected config exposes selective controls rather than a demonstrated global switch. This finding is bounded to the named public source and does not identify the local binary, which the Owner reports is resolved dynamically. App Server remains blocked for a tool-free text-only turn unless existing adapter/config/registry evidence establishes server-enforced pre-turn restriction across all effect-capable tools.
+
+Next edge: `CODEX_APP_SERVER_NO_GLOBAL_TOOL_DISABLE_IN_EXPECTED_0120_CONTRACT`.
+
+Tags: IABV / M0-A / Codex App Server / rust-v0.120.0 / tool suppression / protocol / blocked / source-only
+
+---
+
 ## 2026-10-13 REGISTRATION — TARGET PROTOCOL TOOL-SURFACE AUDIT REMAINS BLOCKED
 
 Canonical record: `CHAT-ARCH-2026-10-13-239-target-protocol-tool-surface-audit.md`.
