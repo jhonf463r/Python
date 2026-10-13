@@ -1,3 +1,14 @@
+## Latest route record — Entry 251
+
+- Record: [CHAT-ARCH-2026-10-13-251-exec-v0120-permission-profile-dispatch.md](./CHAT-ARCH-2026-10-13-251-exec-v0120-permission-profile-dispatch.md)
+- Classification: `CODEX_EXEC_V0120_PROFILE_ROUTE_STATICALLY_IDENTIFIED_LOCAL_BACKEND_UNPROVEN`.
+- Version-specific finding: `codex exec` in `rust-v0.120.0` sets `approval_policy=Never`. `--sandbox`/`--full-auto` force legacy policy interpretation; without those overrides, a higher-precedence `default_permissions` layer can select the configuration profile route.
+- Candidate: inline CLI config overrides for a permission profile; candidate root only writable; minimal Windows/runtime readable roots; no broad `:root=read`; keep sensitive Codex home/credential paths outside child readable roots; deny child network/integrations by default.
+- First open edge: `CODEX_EXEC_V0120_PROFILE_ROUTE_BACKEND_AND_ENVIRONMENT_UNVERIFIED`.
+- Local backend selection/provisioning, current auth/no-extra-spend, effect suppression and consumer-evaluated diff remain unproven. No runtime or implementation authorized.
+
+---
+
 ## Latest route record — Entry 250
 
 - Record: [CHAT-ARCH-2026-10-13-250-cloud-static-audit-windows-sandbox-home-separation.md](./CHAT-ARCH-2026-10-13-250-cloud-static-audit-windows-sandbox-home-separation.md)
