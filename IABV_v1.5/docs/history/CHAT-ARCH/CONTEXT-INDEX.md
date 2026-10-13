@@ -1,3 +1,15 @@
+## Latest route record — Entry 255
+
+- Record: [CHAT-ARCH-2026-10-13-255-cli-version-model-entitlement-compatibility.md](./CHAT-ARCH-2026-10-13-255-cli-version-model-entitlement-compatibility.md)
+- Classification: `CODEX_0120_INSTALLED_VERSION_CURRENT_MODEL_COMPATIBILITY_UNPROVEN`.
+- Current official model minimums: Codex CLI `0.144.0+` for GPT-5.6 and `0.153.0+` for GPT-6 Astra; owner-reported installed CLI is `0.120.0`.
+- This does not prove 0.120 has no usable older model, but current model access must not be assumed. No installation/update permitted.
+- Official plan docs include Codex in ChatGPT plans subject to limits; active account/auth/quota/paid-credit fallback remains unproven.
+- First open edge: `CODEX_EXEC_VERSION_MODEL_AND_INCLUDED_USAGE_COMPATIBILITY_UNVERIFIED`.
+- Cross-gates: auth home/keyring, execpolicy bypass and Windows boundary remain open. No runtime, credential inspection, credit purchase or extra spend.
+
+---
+
 ## Latest route record — Entry 254
 
 - Record: [CHAT-ARCH-2026-10-13-254-codex-plan-usage-and-zero-extra-spend-gate.md](./CHAT-ARCH-2026-10-13-254-codex-plan-usage-and-zero-extra-spend-gate.md)
