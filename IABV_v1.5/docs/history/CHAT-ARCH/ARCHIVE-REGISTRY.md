@@ -1,3 +1,14 @@
+## 2026-10-13 REGISTRATION — ENTRY 248: EXEC LAUNCH CONTRACT DESIGN READY FOR OWNER ADJUDICATION
+
+- Record: [CHAT-ARCH-2026-10-13-248-exec-launch-contract-design-adjudication.md](./CHAT-ARCH-2026-10-13-248-exec-launch-contract-design-adjudication.md)
+- Classification: `CODEX_EXEC_LAUNCH_CONTRACT_DESIGN_READY_FOR_OWNER_ADJUDICATION`.
+- Durable delta: proposal binds owner authorization, exact executable/environment, candidate root/baseline, effective OS boundary and evidence-bearing artifact receipt.
+- Open design constraint: dedicated/explicit home versus existing authentication with no credential copy, no new login/OAuth and no extra spend; qualifying home remains unknown.
+- First open edge: `CODEX_EXEC_LAUNCH_CONTRACT_OWNER_DECISION_PENDING`.
+- No implementation, runtime, tests, credential inspection, installation, spend, commit/push or promotion is authorized.
+
+---
+
 ## 2026-10-13 REGISTRATION — ENTRY 247: IABV EXEC LAUNCH CONTRACT MISSING
 
 - Record: [CHAT-ARCH-2026-10-13-247-codex-exec-integration-boundary-static-block.md](./CHAT-ARCH-2026-10-13-247-codex-exec-integration-boundary-static-block.md)
