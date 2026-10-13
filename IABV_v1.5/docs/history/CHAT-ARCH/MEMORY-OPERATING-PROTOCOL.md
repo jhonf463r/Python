@@ -1,3 +1,13 @@
+## Current continuity delta — Codex exec integration boundary (2026-10-13)
+
+Canonical: [CHAT-ARCH-2026-10-13-247-codex-exec-integration-boundary-static-block.md](./CHAT-ARCH-2026-10-13-247-codex-exec-integration-boundary-static-block.md).
+
+Do not ask for an effective home value of a hypothetical CLI child before IABV has a CLI launch contract. Existing App Server `CODEX_HOME` wiring applies only to that path. A value absent from the current shell also does not establish what a future IABV process would inherit. Keep facts, owner reports, inferences and unknowns separate.
+
+Next edge: `CODEX_EXEC_LAUNCH_ENVIRONMENT_CONTRACT_UNDEFINED`. Specify the child environment and security/artifact contract from current source only. Do not copy a different home’s `danger-full-access` / `never` settings, inspect secrets, launch processes or alter the dirty worktree.
+
+---
+
 ## Current continuity delta — Codex exec target policy (2026-10-13)
 
 Canonical: [CHAT-ARCH-2026-10-13-246-codex-exec-0120-static-contract-and-target-home.md](./CHAT-ARCH-2026-10-13-246-codex-exec-0120-static-contract-and-target-home.md).
