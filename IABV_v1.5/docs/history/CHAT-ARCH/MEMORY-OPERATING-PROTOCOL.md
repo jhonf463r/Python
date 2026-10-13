@@ -1,3 +1,13 @@
+## Continuity method delta — a local precondition stop must not freeze independent work (2026-10-13; entry 265)
+
+Canonical: [CHAT-ARCH-2026-10-13-265-autonomy-run-paused-too-early-public-gate-contract.md](./CHAT-ARCH-2026-10-13-265-autonomy-run-paused-too-early-public-gate-contract.md).
+
+When local source access is blocked, preserve that gate but classify work by dependency. The blocked task may not continue through another reader, but independent static research on a pinned public source, architecture analysis, contract design and non-invasive test specification can proceed. An autonomous executor must record the dependency and select the next executable task instead of stopping the whole mission.
+
+For the MCP governance issue, distinguish the documented blocked payload from the actual payload of a prior call; never reconstruct live evidence from public source. A minimal diagnostic explains only the applicable block metadata and must not itself grant access. A separate, trusted, scoped decision must bind the intended server/workspace/checkout, operation, allowlisted paths and expiry. Reconcile previously accepted authorization policy before proposing implementation.
+
+---
+
 ## Continuity method delta — never confuse owner consent with a runtime grant (2026-10-13; entry 264)
 
 Canonical: [CHAT-ARCH-2026-10-13-264-m0b-r4-governance-diagnostic-missing.md](./CHAT-ARCH-2026-10-13-264-m0b-r4-governance-diagnostic-missing.md).
