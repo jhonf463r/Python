@@ -1,3 +1,15 @@
+## 2026-10-13 REGISTRATION — APP SERVER EFFECTIVE TOOL SURFACE UNPROVEN
+
+Canonical record: `CHAT-ARCH-2026-10-13-238-appserver-tool-suppression-unproven.md`.
+
+Summary: `APP_SERVER_STATICALLY_BLOCKED` from the Owner's static audit. Task identity is reported integrated in normal SafeUI. The route does not call adapter `preflight()`; restricted read-only settings are requested, but effective tool availability before server execution is not proven. Client handling of received approval/event messages is not a guarantee about earlier server effects. The actual auth session, entitlement/quota/cost, terminal round-trip and consumer evaluation remain unproven. Current upstream schema is supplementary until matched to the target CLI version.
+
+Next edge: `CODEX_APP_SERVER_SERVER_ENFORCED_TOOL_SUPPRESSION_UNAVAILABLE_OR_UNPROVEN`. Read-only protocol contract analysis. No runtime, prompt, tests, credentials, code edit or spend.
+
+Tags: IABV / M0-A / Codex / App Server / effective tool surface / preflight / sandbox / blocked / source-only
+
+---
+
 ## 2026-10-13 REGISTRATION — CODEX TASK ID REPAIR PASS (SYNTHETIC ONLY)
 
 Canonical record: `CHAT-ARCH-2026-10-13-237-codex-task-id-repair-synthetic-pass.md`.
