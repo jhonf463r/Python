@@ -1,3 +1,17 @@
+## 2026-10-13 FIRST TECHNICAL EDGE — CODEX 0.120 PROFILE ROUTE BACKEND/ENVIRONMENT UNVERIFIED
+
+Canonical: [CHAT-ARCH-2026-10-13-251-exec-v0120-permission-profile-dispatch.md](./CHAT-ARCH-2026-10-13-251-exec-v0120-permission-profile-dispatch.md).
+
+Public `rust-v0.120.0` source narrows a candidate design: `codex exec` applies `approval_policy=Never`; a CLI `--sandbox`/`--full-auto` override selects legacy sandbox policy interpretation. In the absence of a sandbox override/profile sandbox mode, a higher-precedence `default_permissions` setting can select a permission profile. This needs a final static pass on precedence/representation, not runtime probing.
+
+Candidate profile must grant write only to a disposable candidate, allow only necessary Windows/system/runtime reads, omit broad `:root=read`, keep the chosen Codex home and credential paths outside agent-child readable roots, and disable child network/MCP/plugins/apps unless separately authorized. Since no per-command approval is available in exec, the environment/sandbox must be enforced before effects.
+
+Still unknown locally: selected/provisioned Windows backend and effective profile, existing auth/no-extra-spend, exact published/local source parity, external-tool suppression, artifact diff and consumer evaluation. Owner's A/B/C decision remains pending; C stays the operational default.
+
+Next edge: `CODEX_EXEC_V0120_PROFILE_ROUTE_BACKEND_AND_ENVIRONMENT_UNVERIFIED`. No runtime or implementation authorized.
+
+---
+
 ## 2026-10-13 FIRST TECHNICAL EDGE — WINDOWS HOME READ-DENIAL FEASIBILITY UNVERIFIED
 
 Canonical: [CHAT-ARCH-2026-10-13-250-cloud-static-audit-windows-sandbox-home-separation.md](./CHAT-ARCH-2026-10-13-250-cloud-static-audit-windows-sandbox-home-separation.md).
