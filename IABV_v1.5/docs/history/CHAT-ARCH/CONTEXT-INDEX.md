@@ -1,3 +1,13 @@
+## 2026-10-13 FIRST OPEN EDGE — COMPARE APPSERVER WITH CODEX CLI EXEC ON THE EXACT WINDOWS INSTALLATION
+
+Canonical: [CHAT-ARCH-2026-10-13-245-windows-codex-execution-route-comparison.md](./CHAT-ARCH-2026-10-13-245-windows-codex-execution-route-comparison.md).
+
+Entry 243 establishes that the current adapter is text/read-only, not a candidate-diff bridge. Entry 244 identified native Windows sandbox as a potential substrate, but local compatibility remains unproven. Official Codex Cookbook scripts `codex exec --sandbox workspace-write`; public issue #37818 reports a Windows App Server configuration where workspace-write exposed no command/file-change items. Treat the issue as a version-specific warning, not universal proof.
+
+Next: `CODEX_WINDOWS_CODING_TRANSPORT_AND_SANDBOX_COMPATIBILITY_UNRESOLVED`. Identify the exact installed CLI/shim/package and non-secret sandbox config, then compare existing App Server with CLI `exec`. No agent turn or code/test changes in the inventory tranche.
+
+---
+
 ## 2026-10-13 FIRST OPEN EDGE — VERIFY APP SERVER COMPATIBILITY WITH CODEX'S NATIVE WINDOWS SANDBOX
 
 Canonical: [CHAT-ARCH-2026-10-13-244-windows-sandbox-route-refinement.md](./CHAT-ARCH-2026-10-13-244-windows-sandbox-route-refinement.md).
