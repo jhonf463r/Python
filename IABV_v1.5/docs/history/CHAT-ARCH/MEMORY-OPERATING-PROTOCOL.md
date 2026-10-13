@@ -1,3 +1,15 @@
+## 2026-10-13 METHOD UPDATE — ROUTE TO THE OWNER'S CLARIFIED CODEX OBJECTIVE
+
+Canonical: [CHAT-ARCH-2026-10-13-231-codex-bridge-priority-clarification.md](./CHAT-ARCH-2026-10-13-231-codex-bridge-priority-clarification.md).
+
+When the objective is IABV self-development, first distinguish a generic external-AI consultation from a direct Codex development handoff. The Owner has clarified that the immediate priority is IABV sending development prompts to Codex and receiving/correlating Codex results. Do not continue with ChatGPT Web CDP discovery merely because it was the prior routing choice in record 230; preserve that route as a separate optional capability.
+
+Minimum next action: source-only audit of the existing local candidate `CodexAppServerToolAdapter` versus RQ128's `ExternalAssistantToolAdapter`/ `UIExecutionRunner`/ Codex rollout capture. Read the current state and verify branch/HEAD/status. Do not repeat broad architecture archaeology, expand providers, edit source, start processes, use CDP or inspect credentials. Distinguish static composition, synthetic tests, authenticated invocation, terminal result capture, correlation, consumer evaluation, and later causal reuse.
+
+Official protocol support makes App Server a candidate, not a verified route. A text instruction saying “do not use tools” is not an enforcement boundary; tool policy must be shown to prevent effects before execution. Existing user cost constraints apply: no billable API key or additional spend.
+
+---
+
 ## 2026-10-10 METHOD UPDATE — RESPECT PRE-PROCESS EXECUTION DENIAL
 
 Canonical: [CHAT-ARCH-2026-10-10-227-cross-chat-autonomy-resource-pressure-and-continuity.md](CHAT-ARCH-2026-10-10-227-cross-chat-autonomy-resource-pressure-and-continuity.md).
