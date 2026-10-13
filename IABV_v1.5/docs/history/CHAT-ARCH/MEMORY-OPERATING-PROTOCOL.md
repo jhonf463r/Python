@@ -1,3 +1,15 @@
+## 2026-10-13 METHOD UPDATE — IDENTITY DEFECT REPAIR REPORTED PASS; EVIDENCE STAGES STAY SEPARATE
+
+Canonical result: [CHAT-ARCH-2026-10-13-237-codex-task-id-repair-synthetic-pass.md](./CHAT-ARCH-2026-10-13-237-codex-task-id-repair-synthetic-pass.md).
+
+Owner reports `CODEX_TASK_ID_REPAIR_PASS`: the SafeUI-authorized task ID is preserved for both Codex destinations and rejected if absent, malformed or inconsistent before authorization consumption and external dispatch. Focused synthetic tests reportedly ended at 32 passed; this was not independently rerun by this writeback. Treat the result as local-source/test evidence supplied by the Owner, not remote-main verification or runtime proof.
+
+Keep the evidence ladder explicit: source-reported repair → independently reviewed diff/source → synthetic tests → authorized runtime dispatch → terminal correlated response → existing consumer evaluation → measurable causal reuse on a non-identical task. Never infer a later stage from an earlier one. A canonical 32-hex identity format does not itself establish authority; retain operation, destination, approved prompt/digest and scope bindings.
+
+Next method edge: bounded read-only resolution of exact App Server auth/home, preflight coverage and effective pre-effect tool restrictions. No credential contents, runtime/network/UI, further code edit or spend within this routing step. Preserve all unrelated worktree changes.
+
+---
+
 ## 2026-10-13 METHOD UPDATE — AUTHORIZED TASK ID MUST FAIL CLOSED BEFORE EFFECT
 
 Canonical result: [CHAT-ARCH-2026-10-13-236-appserver-task-id-correlation-blocker.md](./CHAT-ARCH-2026-10-13-236-appserver-task-id-correlation-blocker.md).
