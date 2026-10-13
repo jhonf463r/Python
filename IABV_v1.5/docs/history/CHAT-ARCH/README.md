@@ -1,3 +1,13 @@
+## 2026-10-13 LATEST RESULT — OWNER PACKAGE REVIEWED, ROUTE STILL BLOCKED
+
+Canonical: [CHAT-ARCH-2026-10-13-249-owner-decision-package-reviewed-no-selection.md](./CHAT-ARCH-2026-10-13-249-owner-decision-package-reviewed-no-selection.md).
+
+The decision package is accepted as analysis, not as the Owner's decision. No option A/B/C was selected. Do not read package delivery as consent to implementation. Keep the route blocked until an approved existing-home/authentication path, no-extra-spend eligibility and effective OS confinement can be demonstrated.
+
+First open edge: `CODEX_EXEC_LAUNCH_CONTRACT_OWNER_DECISION_PENDING`.
+
+---
+
 ## 2026-10-13 LATEST RESULT — CODEX EXEC LAUNCH CONTRACT DESIGN READY FOR OWNER DECISION
 
 Canonical: [CHAT-ARCH-2026-10-13-248-exec-launch-contract-design-adjudication.md](./CHAT-ARCH-2026-10-13-248-exec-launch-contract-design-adjudication.md).
