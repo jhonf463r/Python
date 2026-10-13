@@ -1,3 +1,15 @@
+## 2026-10-13 LATEST RESULT — CURRENT CODEX APP SERVER ROUTE BLOCKED FOR CODING; COMPARE CLI EXEC BEFORE BUILDING A NEW EXECUTOR
+
+Canonical result: [CHAT-ARCH-2026-10-13-245-windows-codex-execution-route-comparison.md](./CHAT-ARCH-2026-10-13-245-windows-codex-execution-route-comparison.md).
+
+Owner-supplied result: `CODEX_NATIVE_WINDOWS_SANDBOX_PATH_STATICALLY_BLOCKED`. Current App Server source is reported to request an empty-root read-only turn and return text/IDs, not a writable candidate diff. The latest external review adds a key caution: a public Windows report (#37818, CLI 0.147.0-alpha.6.5) describes App Server `workspace-write` with no `commandExecution`/`fileChange` items, while official Cookbook automation documents `codex exec --sandbox workspace-write`. These are evidence to compare routes, not proof of the Owner's local runtime behavior. A different Windows sandbox spawn report (#39276) reinforces that shell-path compatibility matters.
+
+**Next edge:** `CODEX_WINDOWS_CODING_TRANSPORT_AND_SANDBOX_COMPATIBILITY_UNRESOLVED`. First perform a one-time non-mutating local capability inventory: resolve the exact CLI/shim/package metadata; inspect only non-secret effective Windows sandbox mode/config; compare the existing App Server path with the installed CLI `exec` path. Do not launch an agent turn. If binary identity/effective sandbox cannot be proven statically, report the exact one-time local metadata query needed and stop. Only after route selection should a separate authorization consider a harmless coding capability fixture in a disposable candidate.
+
+No API billing, new OAuth, install/download, credential inspection, runtime turn, code edits or extra spend. Preserve the reported dirty local branch and all files.
+
+---
+
 ## 2026-10-13 ROUTE REFINEMENT — CHECK CODEX'S NATIVE WINDOWS SANDBOX BEFORE DESIGNING A SEPARATE EXECUTOR
 
 Canonical supplement: [CHAT-ARCH-2026-10-13-244-windows-sandbox-route-refinement.md](./CHAT-ARCH-2026-10-13-244-windows-sandbox-route-refinement.md).
