@@ -1,3 +1,15 @@
+## Current route overlay after exec design submission (2026-10-13; entry 248)
+
+Read [CHAT-ARCH-2026-10-13-248-exec-launch-contract-design-adjudication.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-248-exec-launch-contract-design-adjudication.md), then entries 243–247.
+
+The supplied proposal is accepted as design-ready for Owner adjudication only. It is not an implementation approval. It requires exact authorization/executable/environment linkage, a controlled candidate baseline, OS-enforced Windows containment, external-effect restrictions and a verifiable diff/artifact receipt delivered to the existing consumer.
+
+Key unresolved conflict: an explicit/dedicated `CODEX_HOME` plus existing authentication and zero additional spend, without copying credentials or starting new login/OAuth setup. No compatible already-authenticated home is established. If none meets the Owner-approved constraints, keep the route blocked.
+
+Next edge: `CODEX_EXEC_LAUNCH_CONTRACT_OWNER_DECISION_PENDING`. No CLI/App Server invocation, turn, test, code/config edit, credential inspection, installation, spend, commit/push or promotion. Preserve all local dirty/untracked work.
+
+---
+
 ## Current route overlay after CLI exec integration block (2026-10-13; entry 247)
 
 Read [CHAT-ARCH-2026-10-13-247-codex-exec-integration-boundary-static-block.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-247-codex-exec-integration-boundary-static-block.md), then entries 243–246.
