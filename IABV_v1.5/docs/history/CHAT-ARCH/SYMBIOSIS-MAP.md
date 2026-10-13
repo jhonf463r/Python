@@ -1,3 +1,15 @@
+## 2026-10-13 ROUTE EVIDENCE — COMPARE CODEX APP SERVER AND CLI EXEC BEFORE CREATING A NEW ORGAN
+
+Canonical: [CHAT-ARCH-2026-10-13-245-windows-codex-execution-route-comparison.md](./CHAT-ARCH-2026-10-13-245-windows-codex-execution-route-comparison.md).
+
+The Codex development handoff may reuse either the existing App Server transport or the installed CLI `exec` flow, if one can prove exact authorization, effective Windows sandboxing, candidate artifact capture and delivery to the existing IABV consumer. The App Server text/read-only path is presently reported blocked; official Cookbook documents CLI `exec` workspace-write automation; a public Windows issue warns that App Server workspace-write may not expose coding items in certain versions.
+
+Do not create a new executor until the exact local interface and sandbox config are identified. No route is runtime-verified.
+
+Next edge: `CODEX_WINDOWS_CODING_TRANSPORT_AND_SANDBOX_COMPATIBILITY_UNRESOLVED`.
+
+---
+
 ## 2026-10-13 ROUTE UPDATE — EXISTING CODEX SANDBOX MAY SUPPLY THE CODING EXECUTION BOUNDARY
 
 Canonical: [CHAT-ARCH-2026-10-13-244-windows-sandbox-route-refinement.md](./CHAT-ARCH-2026-10-13-244-windows-sandbox-route-refinement.md).
