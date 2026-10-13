@@ -1,3 +1,13 @@
+## 2026-10-13 RELATION / ROUTING DELTA — CODEX IS THE IMMEDIATE DEVELOPMENT-BRIDGE OBJECTIVE
+
+Canonical: [CHAT-ARCH-2026-10-13-231-codex-bridge-priority-clarification.md](./CHAT-ARCH-2026-10-13-231-codex-bridge-priority-clarification.md).
+
+The Owner clarified that the target is a governed IABV → Codex → IABV loop for development prompts/results. Route priority therefore changes from the generic ChatGPT Web target-discovery step in record 230 to a bounded static comparison of the existing Codex App Server candidate and the existing RQ128 desktop/rollout capture path. The old CDP state is preserved, but not the active next action for this clarified objective.
+
+Use existing SafeUI, ToolTeachService, ToolRegistry, authorization and result-consumer organs. Do not create a parallel coordinator or memory system; do not equate Ollama with Codex. Keep all local changes uncommitted and intact. No execution permission is implied.
+
+---
+
 ## 2026-10-13 RELATION DELTA — LOCAL OLLAMA IS AUXILIARY, EXTERNAL SESSION IS THE M0-A BRIDGE
 ## 2026-10-13 ROUTE RECONCILIATION — FREE M0-A BRIDGE / OLLAMA LOCAL BRANCH
 
