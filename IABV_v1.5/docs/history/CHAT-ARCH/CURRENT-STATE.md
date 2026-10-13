@@ -1,3 +1,17 @@
+## 2026-10-13 LATEST ROUTE RESULT — EXISTING CODEX APP SERVER PATH IS NOT A BOUNDED CODING BRIDGE
+
+Canonical result: [CHAT-ARCH-2026-10-13-243-codex-bounded-development-mode-blocked.md](./CHAT-ARCH-2026-10-13-243-codex-bounded-development-mode-blocked.md).
+
+Owner-supplied bounded source-audit result: `CODEX_BOUNDED_DEV_MODE_STATICALLY_BLOCKED`. In the reviewed current route, App Server captures a final text response and IDs, but does not provide a writable candidate worktree or verifiable diff/artifact package. The turn scope is reported as an empty-root read-only scope. A Job Object establishes process-tree management, not file/credential/network isolation. SafeUI authorization is not bound to candidate root, file/command scope or publication policy. CLI/protocol identity, actual authentication/quota/cost, effective sandbox, live response and consumer evaluation remain unproven.
+
+**Decision:** do not keep trying to stretch the current text-only route into a code-changing route by prompt instructions or simply changing read-only to writable.
+
+**Next edge:** `CODEX_CANDIDATE_WORKSPACE_EXECUTION_BOUNDARY_DESIGN_UNRESOLVED`. Assign one design-only task to compare a small number of routes: reuse App Server only if a real OS-enforced workspace/command boundary can be demonstrated, otherwise define a distinct confined executor. Bind Owner authorization to exact operation, prompt/digest, baseline, candidate root, permitted commands/scope and no-publication. Capture a verifiable candidate diff and test evidence; existing consumer/independent verifier evaluate; Owner alone promotes. No implementation, tests, runtime, credentials, network or spending in that design tranche.
+
+The source audit figures are actor-reported: worktree `codex/m0a-safe-ui-boot`, HEAD `5b1d89022ee4cdc63c1f88e050f086b40a42875c`, 56 tracked modified, 6 untracked. Preserve all existing local changes.
+
+---
+
 ## 2026-10-13 ROUTE DECISION — CODEX DEVELOPMENT MUST BE EVALUATED AS A CONFINED CODING TASK, NOT A TOOL-FREE CHAT TURN
 
 Canonical: [CHAT-ARCH-2026-10-13-241-codex-development-bridge-route-adjudication.md](./CHAT-ARCH-2026-10-13-241-codex-development-bridge-route-adjudication.md).
