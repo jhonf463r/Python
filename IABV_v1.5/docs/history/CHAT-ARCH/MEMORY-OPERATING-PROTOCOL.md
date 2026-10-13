@@ -1,3 +1,11 @@
+## Continuity method delta — compare new transport candidates with the existing working-shaped route (2026-10-13; entry 263)
+
+Canonical: [CHAT-ARCH-2026-10-13-263-m0b-r3-autonomy-bridge-adjudication.md](./CHAT-ARCH-2026-10-13-263-m0b-r3-autonomy-bridge-adjudication.md).
+
+When a new transport such as Codex App Server looks promising, do not assume it is superior until compared with the best existing path. In public main, `ExternalAssistantToolAdapter` delegates to a runner capable of desktop interaction and Codex rollout capture; the `codex_installed` card is unavailable/unvalidated, and pending capture remains unvalidated. M0A's reported local App Server adapter remains UNPROVEN until local source is legitimately observed. For ChatGPT, an MCP server can provide tools to its turn, but separate initiation and correlated return still need an architecture. The next source audit must compare both Codex routes, trace into the existing consumer, and preserve governance/identity constraints. No bypass or duplicate coordinator/memory.
+
+---
+
 ## Continuity method delta — governance gate and source-tool provenance before retry (2026-10-13; entry 261)
 
 Canonical: [CHAT-ARCH-2026-10-13-261-m0b-r1-governance-gate-and-tool-provenance.md](./CHAT-ARCH-2026-10-13-261-m0b-r1-governance-gate-and-tool-provenance.md).
