@@ -1,3 +1,11 @@
+## Continuity method delta — never confuse owner consent with a runtime grant (2026-10-13; entry 264)
+
+Canonical: [CHAT-ARCH-2026-10-13-264-m0b-r4-governance-diagnostic-missing.md](./CHAT-ARCH-2026-10-13-264-m0b-r4-governance-diagnostic-missing.md).
+
+When a limited read is owner-authorized but the runtime still returns or preserves a governance block, do not retry through another reader or infer the target from a tool namespace. If the current session exposes no safe operation for the exact decision, record the distinction: owner consent exists; runtime release and server/checkout provenance do not. The missing seam is a supported narrow block diagnostic + direct execution-target identity + auditable scoped decision. Do not query a broad machine snapshot merely to obtain one gate field. Keep the task blocked until a legitimate mechanism provides the decision; then resume at the first discriminating source comparison, not generic research.
+
+---
+
 ## Continuity method delta — compare new transport candidates with the existing working-shaped route (2026-10-13; entry 263)
 
 Canonical: [CHAT-ARCH-2026-10-13-263-m0b-r3-autonomy-bridge-adjudication.md](./CHAT-ARCH-2026-10-13-263-m0b-r3-autonomy-bridge-adjudication.md).
