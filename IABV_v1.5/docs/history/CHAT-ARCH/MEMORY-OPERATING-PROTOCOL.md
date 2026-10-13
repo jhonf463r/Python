@@ -1,3 +1,15 @@
+## 2026-10-13 METHOD UPDATE — AFTER CODEX ROUTE COMPARISON
+
+Canonical result: [CHAT-ARCH-2026-10-13-232-codex-bridge-comparison-result.md](./CHAT-ARCH-2026-10-13-232-codex-bridge-comparison-result.md).
+
+The static comparison has been received as `CODEX_BRIDGE_COMPARISON_INCONCLUSIVE`; do not rerun it without new evidence. Keep the Codex-specific development objective. The most discriminating next step is a separately authorized, read-only Desktop availability/correlation preflight, not dispatch. It must establish one eligible window and a defensible link between the observed process/session and the existing rollout source without reading private conversation data or credentials.
+
+If that evidence cannot be established, remain blocked and examine the exact App Server gates: unused preflight seam, auth/home identity, and pre-effect tool-control configuration. Do not start services or broaden the audit absent separate authorization.
+
+Treat the supplied report as actor-reported local evidence. Preserve every tracked/untracked change, including reported modified `.pyc` files. No provider expansion, cost escalation, source mutation or automatic retries. A persisted `ToolResult` remains distinct from consumer evaluation; evaluation remains distinct from causal reuse.
+
+---
+
 ## 2026-10-13 METHOD UPDATE — ROUTE TO THE OWNER'S CLARIFIED CODEX OBJECTIVE
 
 Canonical: [CHAT-ARCH-2026-10-13-231-codex-bridge-priority-clarification.md](./CHAT-ARCH-2026-10-13-231-codex-bridge-priority-clarification.md).
