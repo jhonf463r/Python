@@ -1,3 +1,13 @@
+## 2026-10-13 METHOD UPDATE — DO NOT CONFUSE A TOOL-FREE CONSULTATION WITH A CODING TASK
+
+Canonical: [CHAT-ARCH-2026-10-13-241-codex-development-bridge-route-adjudication.md](./CHAT-ARCH-2026-10-13-241-codex-development-bridge-route-adjudication.md).
+
+An absent global tools-off field in a versioned App Server schema blocks the reviewed *tool-free text-only mode*; it does not automatically block all Codex coding workflows. A coding task intentionally needs tools, so its governing invariant must be effective confinement and authorization of every effect, not natural-language instructions alone. Keep evidence stages distinct: source wiring, synthetic test, runtime dispatch, terminal correlated artifacts, existing-consumer evaluation, independent verification and measurable later causal reuse. GitHub persistence is portable temporal memory, not proof of automatic retrieval or learning.
+
+Next edge: `CODEX_BOUNDED_DEVELOPMENT_EXECUTION_BOUNDARY_UNPROVEN`; see entry 241. No runtime, credential inspection, implementation or spend is authorized.
+
+---
+
 ## 2026-10-13 METHOD UPDATE — VERSIONED SCHEMA NEGATIVE FINDING IS BOUNDED
 
 Canonical: [CHAT-ARCH-2026-10-13-240-versioned-0120-tool-control-limit.md](./CHAT-ARCH-2026-10-13-240-versioned-0120-tool-control-limit.md).
