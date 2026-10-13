@@ -1,3 +1,11 @@
+## 2026-10-13 LATEST RESULT — M0B-R3: CODEX APP SERVER CANDIDATE, BUT EXISTING CODEX UI/ROLLOUT ROUTE MUST BE COMPARED
+
+Canonical: [CHAT-ARCH-2026-10-13-263-m0b-r3-autonomy-bridge-adjudication.md](./CHAT-ARCH-2026-10-13-263-m0b-r3-autonomy-bridge-adjudication.md).
+
+The direct App Server path is the leading candidate for a programmatic Codex turn, but public main already contains an external-assistant path into the desktop Codex UI with clipboard/Codex-rollout response capture. Its current card is unavailable/unvalidated and capture can remain pending. Compare the local App Server adapter to the existing path before choosing a rewrite or new component. ChatGPT can consume IABV MCP tools, but automatic initiation and correlated return of a ChatGPT turn are still unresolved. Owner choice C and the governance read block remain effective; no local read retry or execution. KEEP_BLOCKED.
+
+---
+
 ## 2026-10-13 LATEST RESULT — M0B-R1 STOPPED AT GOVERNANCE GATE; TOOL TARGET MUST BE RECONCILED
 
 Canonical: [CHAT-ARCH-2026-10-13-261-m0b-r1-governance-gate-and-tool-provenance.md](./CHAT-ARCH-2026-10-13-261-m0b-r1-governance-gate-and-tool-provenance.md).
