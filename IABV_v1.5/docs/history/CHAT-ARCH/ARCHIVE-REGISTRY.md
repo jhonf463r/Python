@@ -2,7 +2,7 @@
 
 Canonical record: `CHAT-ARCH-2026-10-13-230-m0a-free-route-and-continuity-reconciliation.md`.
 
-Summary: records Owner-supplied Ollama SafeUI adapter outcome (58 synthetic passes, runtime unproven), keeps the local worktree separate from remote main, restates the permanent no-paid-API constraint, and preserves the canonical first open external bridge edge `TARGET_DISCOVERY_BLOCKED` for the existing ChatGPT Web session. Defines the shortest next route and evidence gates without authorizing runtime/CDP activity.
+Summary: records Owner-supplied Ollama SafeUI adapter outcome (58 synthetic passes, runtime unproven), keeps the local worktree separate from remote main, restates the permanent no-paid-API constraint, and preserves the canonical first open external bridge edge `TARGET_DISCOVERY_BLOCKED` for the existing ChatGPT Web session. It explicitly distinguishes a generic ChatGPT Web exchange from the separate Codex-specific code-development bridge. Defines the shortest next route and evidence gates without authorizing runtime/CDP activity.
 
 Tags: IABV / M0-A / free route / Ollama / ChatGPT Web / Codex / SafeUI / ToolTeachService / ToolResult / interaction space-time / continuity / evidence boundary / M0-B / D016
 
