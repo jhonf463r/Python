@@ -1,3 +1,13 @@
+## Current route overlay — M0B Entry 266: observation approval is not audit release
+
+Read [CHAT-ARCH-2026-10-13-266-observation-approval-is-not-audit-release.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-266-observation-approval-is-not-audit-release.md), then Entry 265.
+
+The inspected Control Center action `approve_observation_permission` is observation-scoped; the public tests use `observe_window_content:codex`. Do not treat it as permission to read the repo, release `assistant_kind="audit"`, or prove the MCP-to-checkout identity. Entries 218–224 concern mutation authority and leave broader trusted-identity work behind a separate Owner gate; do not transfer or expand that authorization.
+
+Next: inspect only existing public Control Center/WorldModel/audit-gate paths for an explicit supported audit release. If absent, write the narrow diagnostic + separate scoped-decision contract, but do not implement a new grant/trust source or search identity systems broadly. Local M0A remains KEEP_BLOCKED; no reader retry, local edit, runtime or bypass.
+
+---
+
 ## Current route overlay — M0B Entry 265: continue public-source work without bypassing local gate
 
 Read [CHAT-ARCH-2026-10-13-265-autonomy-run-paused-too-early-public-gate-contract.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-265-autonomy-run-paused-too-early-public-gate-contract.md), then Entries 264 and 263.
