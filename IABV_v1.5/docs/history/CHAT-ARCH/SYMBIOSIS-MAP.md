@@ -1,3 +1,13 @@
+## 2026-10-13 RELATION DELTA — CODEX PATH COMPARISON INCONCLUSIVE
+
+Canonical: [CHAT-ARCH-2026-10-13-232-codex-bridge-comparison-result.md](./CHAT-ARCH-2026-10-13-232-codex-bridge-comparison-result.md).
+
+SafeUI, ToolTeachService, ToolRegistry, App Server adapter, Desktop adapter/UIExecutionRunner and existing result ingestion are reported as connected source organs; the first route-specific seams differ. App Server: authentication/home and pre-effect tool governance. Desktop: unique target identification and process/session-to-rollout capture binding. Neither route is runtime-verified.
+
+Next recommended discriminating action is Owner authorization → read-only Desktop availability/correlation preflight. Do not send a prompt or modify source. If Desktop linkage is not provable, reassess App Server's existing preflight/auth/tool-policy path before selecting an implementation. Use existing organs only; no parallel coordinator, authorization broker or memory organ.
+
+---
+
 ## 2026-10-13 RELATION / ROUTING DELTA — CODEX IS THE IMMEDIATE DEVELOPMENT-BRIDGE OBJECTIVE
 
 Canonical: [CHAT-ARCH-2026-10-13-231-codex-bridge-priority-clarification.md](./CHAT-ARCH-2026-10-13-231-codex-bridge-priority-clarification.md).
