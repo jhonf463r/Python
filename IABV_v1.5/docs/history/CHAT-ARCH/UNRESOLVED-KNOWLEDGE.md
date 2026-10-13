@@ -11,6 +11,8 @@ Still unresolved:
 - Does a real terminal response preserve task/thread/turn IDs and reach the existing consumer for observed evaluation?
 - What separately authorized conditions would permit a real round-trip without extra cost?
 
+Next edge: `CODEX_APP_SERVER_AUTH_HOME_PREFLIGHT_AND_EFFECTIVE_TOOL_POLICY_UNRESOLVED`.
+
 Next action: bounded read-only source audit of existing App Server auth/home, preflight, direct tool-policy call sites and consumer handoff. No runtime, credential contents, process/UI/CDP, network, new code edit, API setup or spend. Preserve the dirty worktree.
 
 ---
