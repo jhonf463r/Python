@@ -1,3 +1,14 @@
+## Latest route record — Entry 273 (M0B-R8 independent contract review)
+
+- Record: [CHAT-ARCH-2026-10-13-273-m0b-r8-independent-contract-review.md](./CHAT-ARCH-2026-10-13-273-m0b-r8-independent-contract-review.md)
+- Verdict: `M0B_R8_CONTRACT_PASS_WITH_REQUIRED_REPAIRS`; provisional design baseline only.
+- Two required R8.1 clarifications: race-resistant file/directory handle binding against TOCTOU/path replacement; and explicit fail-closed scope matching for applicable governance blocks, including the documented `assistant_kind` vs `target_scope` discrepancy.
+- Entry 269 says the scope-filter discrepancy is a separate source-level hazard, not a proven cause of the reported M0A denial.
+- Next actor: Sonnet/Claude, one focused adversarial challenge of Entries 272–273, contract-only. No broad source archaeology or implementation.
+- Owner principal provenance, production issuer/integrity boundary, exact local checkout identity and supported release of the active governance block remain `UNPROVEN`. Keep `KEEP_BLOCKED`.
+
+---
+
 ## Latest route record — Entry 272 (M0B-R8 repository-read decision contract)
 
 - Record: [CHAT-ARCH-2026-10-13-272-m0b-r8-read-decision-contract.md](./CHAT-ARCH-2026-10-13-272-m0b-r8-read-decision-contract.md)
