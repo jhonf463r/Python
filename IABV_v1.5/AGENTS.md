@@ -1,3 +1,13 @@
+## Current route overlay — Entry 274: consolidated M0B-R8.1 contract
+
+Read [CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md) in full, then use the README-first canonical route. Entries 272–273 remain historical; Entry 274 is the single proposed normative contract pending a second challenge.
+
+Next actor: Sonnet/Claude, focused contract-only adversarial challenge of Entry 274 (F-01–F-12). Do not repeat broad source archaeology or send an implementation task to Codex yet. The adversarial input read documents only, not code; source/runtime behavior remains `UNPROVEN`.
+
+No local M0A read/retry/bypass, code implementation, tests/builds/runtime, credential inspection, authentication, software installation/update or launch. Model A remains selected; do not ask A/B again. `KEEP_BLOCKED`.
+
+---
+
 ## Current route overlay — Entry 273: R8 independent contract review
 
 Read [CHAT-ARCH-2026-10-13-273-m0b-r8-independent-contract-review.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-273-m0b-r8-independent-contract-review.md), then Entry 272 and Entry 269; use the canonical CHAT-ARCH README-first route.
