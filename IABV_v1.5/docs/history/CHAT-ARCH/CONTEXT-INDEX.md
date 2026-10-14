@@ -1,3 +1,15 @@
+## Latest route record — Entry 275 (M0B-R8.1 amendment 274.1 after C2)
+
+- Record: [CHAT-ARCH-2026-10-13-275-m0b-r8-1-contract-amendment-274-1.md](./CHAT-ARCH-2026-10-13-275-m0b-r8-1-contract-amendment-274-1.md)
+- Status: `M0B_R8_1_AMENDMENT_274_1_PROPOSED_PENDING_TARGETED_REVIEW`; posture `KEEP_BLOCKED`.
+- Input: second adversarial report C2, verdict `PASS_WITH_REPAIRS`, with C2-01–C2-11. Entry 275 carries proposed normative amendment to Entry 274.
+- Key constraints: verifiable Owner intent isolated from requester; trusted registration/block lineage; preserve existing denylist and root containment; atomic nonce/decision ledger state; restart expires active grants; tamper-evident anti-rollback ledger; idempotent operation IDs; distinguish staging, release authorization and delivery outcome; safe metadata-only path binding; restrictive v1 grammar; actual same-handle containment; raw-entry list caps; positive, exact-boundary, alias, recovery and OS-race evidence tests.
+- Review evidence is documentary only; C2 did not read code. Production trust, ledger, target identity, block scope model/release, revocation source, platform containment and delivery remain `UNPROVEN`.
+- **Operational consequence:** an applicable governance block cannot be cleared by the read grant; without separately supported governance-owned release, deny with terminal `BLOCK_RELEASE_UNSUPPORTED`. Contract work cannot unblock M0A.
+- Next actor: Sonnet/Claude, one targeted adversarial review of Entry 275 only. No broad source archaeology or implementation.
+
+---
+
 ## Latest route record — Entry 274 (M0B-R8.1 consolidated read-decision contract)
 
 - Record: [CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md](./CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md)
