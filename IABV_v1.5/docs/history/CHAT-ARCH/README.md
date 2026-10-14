@@ -1,3 +1,15 @@
+## 2026-10-13 LATEST RESULT — M0B-R7 APPROVAL CHAIN INCOMPLETE; KEEP_BLOCKED (ENTRY 271)
+
+Canonical: [CHAT-ARCH-2026-10-13-271-m0b-r7-approval-broker-chain-adjudication.md](./CHAT-ARCH-2026-10-13-271-m0b-r7-approval-broker-chain-adjudication.md).
+
+The bounded public search found a generic HumanApprovalBroker and ApprovalMemory, but no production edge from an approval result to an issued `ExternalActionAuthorization` with verified actor provenance and repository-read scope. ApprovalMemory can auto-resolve eligible matching requests with `approved=True, auto_resolved=True`; this is not fresh human approval. The generic ApprovalResult has no verified actor/principal field. Entry 271 contains exact blob SHAs and corrected lines; again the supplied `models.py:2989–3063` and `bootstrap.py:2413–2569` references do not match those declarations in the pinned blobs.
+
+Stop the bounded reuse search here rather than repeat it or widen into general authentication. Recommended next step is contract-only specification of a dedicated read-decision issuer/verifier with exact checkout/path scope and fresh-interactive-approval requirements. No implementation or local M0A read is authorized. `KEEP_BLOCKED`.
+
+Recover continuity: this README → CURRENT-STATE → CONTEXT-INDEX → MEMORY-OPERATING-PROTOCOL → Entry 271 and exact source blobs.
+
+---
+
 ## 2026-10-13 LATEST RESULT — M0B-R6 AUTHORITY CHAIN RECONCILED; KEEP_BLOCKED (ENTRY 270)
 
 Canonical: [CHAT-ARCH-2026-10-13-270-m0b-r6-authority-chain-reconciliation.md](./CHAT-ARCH-2026-10-13-270-m0b-r6-authority-chain-reconciliation.md).
