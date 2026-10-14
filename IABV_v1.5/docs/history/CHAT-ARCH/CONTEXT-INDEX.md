@@ -6,7 +6,7 @@
 - Integrity warning: historical corrupted Entry 275 blob `3106d55393e0a4f3f4488decfff94ef6071c47d1` is corrupted (duplicated preambles and damaged path grammar). Last clean historical blob: `0945248916fa4f83cc0e7d9d354e39fe3720bb5a` at commit `1e644ee663118b6567018cd2211c107e48489d4c`. Restoration attempt was blocked; do not cite the corrupted blob as normative. Entry 276 records the limitation honestly.
 - C3 reviewed documents, not code; implementation/source facts remain `UNPROVEN`.
 - An applicable governance block without independently supported governance-owned release remains terminal `BLOCK_RELEASE_UNSUPPORTED`; contract work cannot unblock M0A.
-- Next actor: Sonnet/Claude, target Entry 276 and clean Entry 274; use historical clean Entry 275 only for provenance. No broad archaeology or implementation.
+- Next actor: Sonnet/Claude, target Entry 274, the clean historical Entry 275 contract body at commit `1e644ee663118b6567018cd2211c107e48489d4c`, and Entry 276. Use Entry 276's corrected grammar and C3 amendments; do not use the corrupted later blob. No broad archaeology or implementation.
 
 ---
 
