@@ -1,3 +1,9 @@
+## Latest correction — Entry 275 path is now a supersession notice
+
+The statement below about blob `3106d55393e0a4f3f4488decfff94ef6071c47d1` refers to the corrupt historical blob, not the current content at the Entry 275 path. The current path is a warning/redirect notice. Use the clean historical blob at commit `1e644ee663118b6567018cd2211c107e48489d4c` only for lineage; Entry 276 contains the C3 repairs and corrected proposed grammar. Full-text restoration is still not claimed.
+
+---
+
 ## Continuity method delta — reconcile C3, prioritize document integrity, and apply R8.1-C3 (2026-10-13; Entry 276)
 
 Canonical: [CHAT-ARCH-2026-10-13-276-m0b-r8-1-c3-adjudication-and-274-2.md](./CHAT-ARCH-2026-10-13-276-m0b-r8-1-c3-adjudication-and-274-2.md).
