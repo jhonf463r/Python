@@ -1,3 +1,13 @@
+## 2026-10-13 CONTINUITY UPDATE — ENTRY 273: R8 DESIGN REVIEW WITH REQUIRED REPAIRS
+
+Canonical: [CHAT-ARCH-2026-10-13-273-m0b-r8-independent-contract-review.md](./CHAT-ARCH-2026-10-13-273-m0b-r8-independent-contract-review.md).
+
+Review result: `M0B_R8_CONTRACT_PASS_WITH_REQUIRED_REPAIRS`. The R8 separation-of-authority architecture is a provisional design baseline, not an implementation-ready contract. Entry 273 adds two normative requirements: race-resistant handle/object binding to prevent TOCTOU path substitution, and a complete fail-closed block-scope evaluator that does not assume the existing `assistant_kind` filter covers `target_scope`. The latter is an independent risk; it is not proven to have caused the M0A denial.
+
+Next actor: Sonnet/Claude performs one focused adversarial contract review of Entry 272 + Entry 273. If it passes, record the R8.1 design baseline; otherwise apply only discriminating repairs. No implementation or access authorization follows from this review. Exact local target identity, trusted principal/issuer and supported release semantics remain `UNPROVEN`; operational posture remains `KEEP_BLOCKED`.
+
+---
+
 ## 2026-10-13 CONTINUITY UPDATE — ENTRY 272: READ-DECISION CONTRACT SPECIFIED; NOT IMPLEMENTED
 
 Canonical: [CHAT-ARCH-2026-10-13-272-m0b-r8-read-decision-contract.md](./CHAT-ARCH-2026-10-13-272-m0b-r8-read-decision-contract.md).
