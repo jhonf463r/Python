@@ -1,3 +1,15 @@
+## Latest route record — Entry 276 (M0B-R8.1-C3 adjudication / amendment 274.2)
+
+- Record: [CHAT-ARCH-2026-10-13-276-m0b-r8-1-c3-adjudication-and-274-2.md](./CHAT-ARCH-2026-10-13-276-m0b-r8-1-c3-adjudication-and-274-2.md)
+- Status: `M0B_R8_1_AMENDMENT_274_2_PROPOSED_PENDING_TARGETED_REVIEW`; `KEEP_BLOCKED`.
+- C3 report: `PASS_WITH_REPAIRS`, C3-01–C3-11. Entry 276 proposes fixes for trusted Owner enrollment, registry/block-state anti-rollback, pre-approval path oracle, handoff state/idempotency, server-derived destination/session identity, clock jumps, raw listing counts, deterministic block verdicts and conformance matrix precedence.
+- Integrity warning: current Entry 275 blob `3106d55393e0a4f3f4488decfff94ef6071c47d1` is corrupted (duplicated preambles and damaged path grammar). Last clean historical blob: `0945248916fa4f83cc0e7d9d354e39fe3720bb5a` at commit `1e644ee663118b6567018cd2211c107e48489d4c`. Restoration attempt was blocked; do not cite the corrupted blob as normative. Entry 276 records the limitation honestly.
+- C3 reviewed documents, not code; implementation/source facts remain `UNPROVEN`.
+- An applicable governance block without independently supported governance-owned release remains terminal `BLOCK_RELEASE_UNSUPPORTED`; contract work cannot unblock M0A.
+- Next actor: Sonnet/Claude, target Entry 276 and clean Entry 274; use historical clean Entry 275 only for provenance. No broad archaeology or implementation.
+
+---
+
 ## Latest route record — Entry 275 (M0B-R8.1 amendment 274.1 after C2)
 
 - Record: [CHAT-ARCH-2026-10-13-275-m0b-r8-1-contract-amendment-274-1.md](./CHAT-ARCH-2026-10-13-275-m0b-r8-1-contract-amendment-274-1.md)
