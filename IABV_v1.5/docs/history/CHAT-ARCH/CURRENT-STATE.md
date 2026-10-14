@@ -8,7 +8,7 @@ The owner-supplied M0B-R8.1-C3 review returned `PASS_WITH_REPAIRS` with C3-01–
 
 The C3 report did not read code; source/runtime behavior remains `UNPROVEN`. A read decision still cannot release a governance block. If any applicable block lacks a separately supported governance-owned release, the outcome remains `BLOCK_RELEASE_UNSUPPORTED`. Status: `M0B_R8_1_AMENDMENT_274_2_PROPOSED_PENDING_TARGETED_REVIEW`; posture `KEEP_BLOCKED`.
 
-Next actor: Sonnet/Claude, targeted review of clean Entry 274 and Entry 276, using the historical clean Entry 275 blob only for lineage. No broad archaeology, implementation, tests/runtime, launch or local M0A access.
+Next actor: Sonnet/Claude, targeted review of Entry 274, the clean historical Entry 275 contract body at commit `1e644ee663118b6567018cd2211c107e48489d4c`, and Entry 276. Entry 276 supplies the corrected grammar and C3 amendments; do not use the corrupted later blob. No broad archaeology, implementation, tests/runtime, launch or local M0A access.
 
 ---
 
