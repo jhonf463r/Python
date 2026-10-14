@@ -8,6 +8,16 @@ Next actor: Sonnet/Claude for one focused challenge of Entry 274, trying concret
 
 ---
 
+## 2026-10-13 LATEST CONTRACT — ENTRY 274: M0B-R8.1 CONSOLIDATED; SECOND CHALLENGE PENDING
+
+Canonical: [CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md](./CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md).
+
+Entry 274 consolidates the R8 contract and the second adversarial review's F-01–F-12 repairs into one proposed normative document. V1 requires unconditional fresh interactive approval, issuer-to-UI separation, server-side session-bound decision/ledger, independent governance-owned block release (otherwise terminal `BLOCK_RELEASE_UNSUPPORTED`), scoped checkout/path identity without whole-tree scanning, race-resistant same-handle containment, mandatory durable intent/completion, authoritative revocation, finite atomic budgets and a fail-closed conformance matrix. These are contract rules, not verified implementation behavior.
+
+Next actor: Sonnet/Claude for one focused challenge of Entry 274, trying concrete counterexamples against F-01–F-12; no broad archaeology. If it passes, ChatGPT/coordinator can record the design baseline. Implementation/local read are still separate gates. `KEEP_BLOCKED`.
+
+---
+
 ## 2026-10-13 LATEST REVIEW — ENTRY 273: M0B-R8 DESIGN BASELINE PASS WITH REQUIRED REPAIRS
 
 Canonical: [CHAT-ARCH-2026-10-13-273-m0b-r8-independent-contract-review.md](./CHAT-ARCH-2026-10-13-273-m0b-r8-independent-contract-review.md).
