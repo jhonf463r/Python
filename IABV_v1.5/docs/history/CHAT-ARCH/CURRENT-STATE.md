@@ -1,3 +1,13 @@
+## 2026-10-13 CONTINUITY UPDATE — ENTRY 271: APPROVAL CHAIN INCOMPLETE; NEXT IS CONTRACT-ONLY
+
+Canonical: [CHAT-ARCH-2026-10-13-271-m0b-r7-approval-broker-chain-adjudication.md](./CHAT-ARCH-2026-10-13-271-m0b-r7-approval-broker-chain-adjudication.md).
+
+Independent public-source verification found the generic HumanApprovalBroker and ApprovalMemory, but no production bridge from `ApprovalResult` into an issued `ExternalActionAuthorization` with verified actor provenance. `ApprovalResult` has no verified actor field; ApprovalMemory can return `approved=True, auto_resolved=True` without a fresh UI prompt. Thus positive approval result is not enough for repository-read authority. Entry 271 records exact blob SHAs and corrected model/bootstrap anchors.
+
+The bounded reuse search is complete for this scope; do not repeat symbol searches or silently widen into general identity/authentication. Next recommended action: contract-only design of a distinct read decision/issuer/verifier bound to actual server/workspace/checkout, explicit paths/budgets/expiry, trusted actor provenance, and fresh interactive approval that rejects auto-resolution. This does not authorize implementation or local M0A access. Model A remains selected; do not ask A/B again. Keep `KEEP_BLOCKED`.
+
+---
+
 ## 2026-10-13 CONTINUITY UPDATE — ENTRY 270: M0B-R6 FOUND NO REPO-READ AUTHORITY CHAIN IN BOUNDED SCOPE
 
 Canonical: [CHAT-ARCH-2026-10-13-270-m0b-r6-authority-chain-reconciliation.md](./CHAT-ARCH-2026-10-13-270-m0b-r6-authority-chain-reconciliation.md).
