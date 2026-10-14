@@ -1,3 +1,13 @@
+## 2026-10-13 SYMBIOSIS DELTA — ENTRY 271: BROKER APPROVAL IS NOT A REPO-READ TRUST CHAIN
+
+Canonical: [CHAT-ARCH-2026-10-13-271-m0b-r7-approval-broker-chain-adjudication.md](./CHAT-ARCH-2026-10-13-271-m0b-r7-approval-broker-chain-adjudication.md).
+
+HumanApprovalBroker is a reusable request/result workflow, and ApprovalMemory can automatically resolve matching requests. Neither establishes a verified Owner principal in `ApprovalResult`, and no production adapter from its output to ExternalActionAuthorization was found in the bounded direct search. Do not re-use generic `approved=True`, `approved_by`, or `VALIDATED` as repository-read authority.
+
+Recommended next role split: public contract-only design can specify the missing read-decision boundary; Owner approval remains required for implementation or local M0A access. Further general identity/auth investigation is not implied. Keep `KEEP_BLOCKED`.
+
+---
+
 ## 2026-10-13 SYMBIOSIS DELTA — ENTRY 270: DEVIN ACTION AUTHORIZATION IS NOT REPOSITORY READ AUTHORITY
 
 Canonical: [CHAT-ARCH-2026-10-13-270-m0b-r6-authority-chain-reconciliation.md](./CHAT-ARCH-2026-10-13-270-m0b-r6-authority-chain-reconciliation.md).
