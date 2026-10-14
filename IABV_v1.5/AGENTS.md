@@ -1,3 +1,11 @@
+## Canonical route — Entry 276
+
+Read the CHAT-ARCH README, CURRENT-STATE, CONTEXT-INDEX and MEMORY-OPERATING-PROTOCOL, then Entry 276. Entry 275's current path is a supersession notice; its clean contract body is in the historical commit linked from Entry 276.
+
+Next: Sonnet/Claude targeted review of Entry 276. No implementation or local M0A access; `KEEP_BLOCKED`.
+
+---
+
 ## Current route overlay — Entry 275: amendment 274.1 after C2
 
 Read [CHAT-ARCH-2026-10-13-275-m0b-r8-1-contract-amendment-274-1.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-275-m0b-r8-1-contract-amendment-274-1.md) in full. Entry 274 remains the consolidated base contract; Entry 275 is its proposed amendment and takes precedence where it changes a rule. Then recover the README-first canonical route.
