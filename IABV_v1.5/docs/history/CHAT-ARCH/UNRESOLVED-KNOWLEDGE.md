@@ -1,3 +1,14 @@
+## 2026-10-13 — ENTRY 270: NO REPOSITORY-READ ISSUER FOUND IN BOUNDED DIRECT-REFERENCE PASS
+
+Canonical: [CHAT-ARCH-2026-10-13-270-m0b-r6-authority-chain-reconciliation.md](./CHAT-ARCH-2026-10-13-270-m0b-r6-authority-chain-reconciliation.md).
+
+- PROVEN_BY_SOURCE: `ExternalActionAuthorization` exists and is consumed by `DevinApiToolAdapter` for external Devin actions. Correct source blobs/anchors are in Entry 270; the supplied report's cited model/bootstrap ranges are misaligned.
+- PROVEN_BY_SOURCE, bounded: direct public searches returned the model definition and test factories, but no production authorization constructor/issuer; no repo/checkout/path binding exists in the inspected model/consumer chain.
+- UNPROVEN: authenticated Owner identity behind `approved_by`; production issuer outside the inspected paths; any issuer/verifier bound to MCP server + workspace/checkout + allowed relative-path list; local M0A identity and state.
+- Boundary: do not widen to general authentication by implication. Local M0A stays `KEEP_BLOCKED`.
+
+---
+
 ## 2026-10-13 — ENTRY 269: SOURCE ANCHORS RECONCILED; READ-AUTHORITY ISSUER STILL UNKNOWN
 
 Canonical: [CHAT-ARCH-2026-10-13-269-m0b-r5-reconciliation-and-next-owner-gate.md](./CHAT-ARCH-2026-10-13-269-m0b-r5-reconciliation-and-next-owner-gate.md).
