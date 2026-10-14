@@ -1,3 +1,14 @@
+## 2026-10-13 — ENTRY 274: R8.1 WORDING CONSOLIDATED; IMPLEMENTATION PREREQUISITES OPEN
+
+Canonical: [CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md](./CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md).
+
+- `PROVEN_BY_SOURCE` (document text only): the clauses in Entries 272–273 and the reported F-01–F-12 gaps are about contract wording. The adversarial report expressly says it did not read code.
+- `PROPOSED`: Entry 274's unconditional fresh-human policy, separated UI/issuer flow, session-bound server-side ledger, separate governance block release, scope-local target/object identity, same-handle TOCTOU rules, mandatory durable receipts, mandatory revocation, fixed v1 scope/caps and A1–A22 conformance matrix.
+- `UNPROVEN`: actual Owner principal proof and issuer; integrity/availability of a production ledger; exact live server/workspace/checkout; authoritative supported block dimensions and combination semantics; real target-OS containment; revocation source; block-release mechanism; and any compliant local implementation.
+- Next: Sonnet/Claude focused challenge of Entry 274. No source change, tests/runtime, local M0A read or launch. `KEEP_BLOCKED`.
+
+---
+
 ## 2026-10-13 — ENTRY 273: R8 CONTRACT REVIEW PASSED WITH REQUIRED REPAIRS
 
 Canonical: [CHAT-ARCH-2026-10-13-273-m0b-r8-independent-contract-review.md](./CHAT-ARCH-2026-10-13-273-m0b-r8-independent-contract-review.md).
