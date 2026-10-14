@@ -1,3 +1,15 @@
+## 2026-10-13 — ENTRY 275: AMENDMENT 274.1 PROPOSED; IMPLEMENTATION PREREQUISITES REMAIN OPEN
+
+Canonical: [CHAT-ARCH-2026-10-13-275-m0b-r8-1-contract-amendment-274-1.md](./CHAT-ARCH-2026-10-13-275-m0b-r8-1-contract-amendment-274-1.md).
+
+- `PROVEN_BY_SOURCE` (documentary text only): the supplied C2 report identifies counterexamples within Entry 274 and states that it did not inspect code. Entry 275 records proposed contractual responses.
+- `PROPOSED`: independent user-verification for fresh Owner approval; trusted registration/lineage and per-block audit; preservation of current reader denials; durable atomic nonce/decision state; anti-rollback ledger and idempotency; distinct staged/release/delivery status; safe non-oracular path preview; restrictive v1 path grammar; same-object containment; raw listing caps; explicit budget accounting and expanded tests.
+- `UNPROVEN`: actual authenticated Owner/user-verification source; trusted issuer and ledger integrity/durability/anti-rollback; real target/worktree lineage; authoritative block-scope schema; independent block-release mechanism; authoritative revocation; operating-system containment guarantees; and any conforming implementation.
+- **Important:** the proposed v1 contract cannot clear an applicable governance block. Without a separately supported governance-owned release, the expected result is `BLOCK_RELEASE_UNSUPPORTED`; M0A remains blocked.
+- Next: Sonnet/Claude targeted challenge of Entry 275. No code edits, tests/runtime, local M0A read or launch. `KEEP_BLOCKED`.
+
+---
+
 ## 2026-10-13 — ENTRY 274: R8.1 WORDING CONSOLIDATED; IMPLEMENTATION PREREQUISITES OPEN
 
 Canonical: [CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md](./CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md).
