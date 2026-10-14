@@ -1,3 +1,14 @@
+## 2026-10-13 REGISTRATION — ENTRY 272: M0B-R8 READ-DECISION CONTRACT
+
+- Record: [CHAT-ARCH-2026-10-13-272-m0b-r8-read-decision-contract.md](./CHAT-ARCH-2026-10-13-272-m0b-r8-read-decision-contract.md)
+- Type: CONTRACT DESIGN / GOVERNANCE BOUNDARY / NON-EXECUTED CONFORMANCE SPECIFICATION
+- Documentation baseline before Entry 272: `main` at `19bd5559c98fa771092f840dd3c2554fbcd9cd50`; pinned source baseline: `559f4ea20a9a9163cd9a9839b11d9991933f8c07`.
+- Status: `M0B_R8_READ_DECISION_CONTRACT_SPECIFIED_NOT_IMPLEMENTED`.
+- Design separates diagnostic, interactive approval receipt, issuer, scoped read decision, per-operation verifier and durable read receipt. Includes exact checkout/path binding, expiry/revocation, budgets, block-release semantics and rejection of auto-resolved approval for fresh-human gates.
+- Critical prerequisites (trusted principal, issuer/integrity boundary, local target identity and block-release mechanism) remain unresolved. No code, tests or local access authorized. `KEEP_BLOCKED`.
+
+---
+
 ## 2026-10-13 REGISTRATION — ENTRY 271: M0B-R7 APPROVAL CHAIN INCOMPLETE
 
 - Record: [CHAT-ARCH-2026-10-13-271-m0b-r7-approval-broker-chain-adjudication.md](./CHAT-ARCH-2026-10-13-271-m0b-r7-approval-broker-chain-adjudication.md)
