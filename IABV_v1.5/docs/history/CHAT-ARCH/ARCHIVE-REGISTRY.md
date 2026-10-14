@@ -1,3 +1,16 @@
+## 2026-10-13 REGISTRATION — ENTRY 275: M0B-R8.1 AMENDMENT 274.1 AFTER C2
+
+- Record: [CHAT-ARCH-2026-10-13-275-m0b-r8-1-contract-amendment-274-1.md](./CHAT-ARCH-2026-10-13-275-m0b-r8-1-contract-amendment-274-1.md)
+- Type: CONTRACT AMENDMENT / ADVERSARIAL COUNTEREXAMPLE RECONCILIATION / NON-EXECUTED TEST SPECIFICATION
+- Input: supplied C2 report `PASS_WITH_REPAIRS`, C2-01–C2-11.
+- Status: `M0B_R8_1_AMENDMENT_274_1_PROPOSED_PENDING_TARGETED_REVIEW`.
+- Proposed amendment covers independent user-verification, trusted registration/lineage and block decisions, preserved reader denial policy, atomic nonce/decision issuance, durable anti-rollback ledger, idempotent operation IDs/accounting, staged/release/delivery states, non-oracular pre-approval path binding, restrictive path grammar, same-object containment, raw listing counts and positive/boundary/recovery tests.
+- Evidence boundary: C2 reports no code inspection. Contract clauses are `PROPOSED`; production source/runtime claims remain `UNPROVEN`.
+- Block gate: no independent supported governance-owned release means terminal `BLOCK_RELEASE_UNSUPPORTED`; Entry 275 cannot unlock M0A.
+- Next actor: Sonnet/Claude, one targeted challenge of Entry 275. No implementation, local access, tests/runtime or launch; `KEEP_BLOCKED`.
+
+---
+
 ## 2026-10-13 REGISTRATION — ENTRY 274: M0B-R8.1 CONSOLIDATED CONTRACT
 
 - Record: [CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md](./CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md)
