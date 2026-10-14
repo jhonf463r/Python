@@ -7,6 +7,16 @@
 - Status: `M0B_R8_1_AMENDMENT_274_2_PROPOSED_PENDING_TARGETED_REVIEW`
 - Operational posture: `KEEP_BLOCKED`
 
+## 0. Effective grammar and Entry 275 integrity status
+
+The current path for Entry 275 is now a short supersession/provenance notice, not a full-text restoration. The clean historical body remains retrievable at commit `1e644ee663118b6567018cd2211c107e48489d4c`, blob `0945248916fa4f83cc0e7d9d354e39fe3720bb5a`. The corrupted blob is retained only in Git history. The effective review inputs are the clean historical Entry 275 body, Entry 274 and this amendment; do not cite the corrupted blob as valid contract text.
+
+**Proposed v1 path grammar (full-string match):** accept only slash-separated relative paths, with no leading slash and no backslash in caller input. Each component MUST match `^[A-Za-z0-9][A-Za-z0-9._ -]{0,126}[A-Za-z0-9_-]$`, or be one alphanumeric character. Total path length is at most 240 ASCII characters and nesting is at most 16 components. Before any filesystem lookup, reject colon/ADS, wildcards, traversal, trailing dot/space, any `~` short-name pattern, controls, non-ASCII/Unicode (including bidi/confusables), absolute/UNC/device paths and reserved Windows device basenames case-insensitively (`CON`, `PRN`, `AUX`, `NUL`, `CONIN$`, `CONOUT$`, `CLOCK$`, `COM1`–`COM9`, `LPT1`–`LPT9`, including when followed by an extension). Unsupported input returns `PATH_FORM_UNSUPPORTED`. Expanding the grammar requires a separately reviewed contract change.
+
+For directory listings, count actual raw entries, excluding only exact structural pseudo-names `.` and `..` if a platform returns them. The 201st actual entry denies the entire listing. Any invalid, sensitive, reparse/link or unsupported entry denies the whole listing; do not silently omit entries or disclose partial names. Require a stable enumeration view; if concurrent mutation cannot be excluded or detected reliably, discard and deny.
+
+To prevent recurrence of the Entry 275 edit defect, do not use replacement-string interpolation when inserted text contains a dollar sign directly before a Markdown backtick. Use a callback/literal-safe edit and verify the written blob: exactly one header, complete regex and reserved names, and expected section count.
+
 ## 1. Integrity incident and source provenance — C3-01
 
 C3 identified that the current `main` copy of Entry 275 became corrupted in the path-grammar section: five copies of the preamble appear at offsets reported by the reviewer; the regex and reserved-name tokens were truncated. This is not a design counterexample; it is a documentation-integrity failure in the canonical artifact.
@@ -15,7 +25,7 @@ The cause is consistent with a JavaScript replacement-string hazard: in a replac
 
 The original clean blob is still retrievable at historical commit `1e644ee663118b6567018cd2211c107e48489d4c`, blob `0945248916fa4f83cc0e7d9d354e39fe3720bb5a` (35,546 characters, one header). The corrupted current blob is `3106d55393e0a4f3f4488decfff94ef6071c47d1` (94,436 characters, five headers). The historical clean blob predates the intended restrictive grammar update, so it must be restored to a separate recovery artifact and then amended with a safe full-match grammar. Do not cite the corrupted current blob as a valid contract.
 
-A direct attempt to overwrite the corrupted file and a separate attempt to create a recovery copy were blocked by the GitHub connector security controls. Therefore this episode does **not** claim that Entry 275 has been repaired. Before treating the amendment as current canonical text, the artifact-integrity repair remains required. Use a new recovery filename if overwrite continues to be blocked, preserve the corrupt blob for provenance, and avoid replacement-string interpolation by using a callback or a literal-safe editing method.
+The full recovery-copy write was blocked. Subsequently, the current Entry 275 path was changed to a short supersession/provenance notice pointing to the clean historical blob and Entry 276. This contains the corrupted current text but is not a byte-for-byte restoration of the contract. The full clean body remains available in immutable history; this Entry 276 supplies the proposed path-grammar replacement.
 
 ## 2. Consolidated amendment 274.2 — C3-02 through C3-11
 
@@ -69,6 +79,6 @@ No code has been inspected or modified in this episode. The C3 report also state
 
 ## 4. Next actor
 
-**Next actor: Sonnet/Claude**, one targeted review of Entry 276 and the recovered Entry 275 artifact after that recovery is actually published. Do not perform a broad audit. Challenge only whether C3-02 through C3-11 close the reported cases and whether the recovery/precedence route is unambiguous.
+**Next actor: Sonnet/Claude**, one targeted review of the clean historical Entry 275 body (commit `1e644ee663118b6567018cd2211c107e48489d4c`) plus Entry 274 and this Entry 276. Do not use the superseded current Entry 275 notice as the contract text and do not perform a broad audit. Challenge the grammar in Section 0 and whether C3-02 through C3-11 close the reported cases.
 
 Current posture remains `KEEP_BLOCKED`. No implementation, testing/runtime, local M0A read, reader retry/bypass, credential inspection or launch is authorized.
