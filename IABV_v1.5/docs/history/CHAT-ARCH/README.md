@@ -1,4 +1,18 @@
-## 2026-10-13 CANONICAL ROUTE — ENTRY 278: CONSOLIDATED M0B-R8.1 CONTRACT CANDIDATE
+## 2026-10-13 CANONICAL ROUTE — ENTRY 279: C5 DELTA ADJUDICATION / AMENDMENT 274.4
+
+Canonical artifact: [CHAT-ARCH-2026-10-13-279-m0b-r8-1-c5-delta-adjudication-and-amendment-274-4.md](./CHAT-ARCH-2026-10-13-279-m0b-r8-1-c5-delta-adjudication-and-amendment-274-4.md) — blob `fccd67f375c265986215210b5161e684c65b7e27`, commit `5051c07c7db33390ba72ed9375e23c27782d7ef0`.
+
+The supplied Sonnet/Claude delta review of Entry 278 returned `PASS_WITH_REPAIRS`. Entry 279 records P1–P10 as one proposed amendment: complete deterministic per-fixture results; align overlapping gates; add operation-level idempotency; separate persisted `EXPIRED` decision status from `DECISION_EXPIRED` operation denial; define one delivery lifecycle; cover every denial/precedence and the exact clock boundary; split composite fixtures; close object-dependent pre-approval oracles; mark the inherited C3 grammar as superseded; and apply the lower of the decision ceiling and the hard cap.
+
+Entry 278 remains an immutable historical candidate and is not overwritten. Entry 279 is also not yet an accepted baseline. The next actor is Sonnet/Claude for one targeted delta review of Entry 278 plus Entry 279 only. If that passes, ChatGPT/coordinator must produce a new single consolidated candidate, fetch it back, and then request one delta review. Do not repeat broad source archaeology.
+
+Evidence boundary: Entry 278 and Entry 279 are verified as public documentary objects; the repairs and proposed tests remain `PROPOSED`. Source fidelity to historical blobs is not newly reverified by the C5 reviewer. All implementation/runtime/platform properties remain `UNPROVEN`.
+
+Operational posture: `KEEP_BLOCKED`. No local M0A access, blocked-reader retry/bypass, source implementation, tests/builds/runtime, credential inspection, authentication, installation/update or launch. Contract review cannot authorize a read or release a governance block.
+
+---
+
+## Historical route — ENTRY 278: consolidated M0B-R8.1 contract candidate (superseded by Entry 279)
 
 Canonical artifact: [CHAT-ARCH-2026-10-13-278-m0b-r8-1-consolidated-contract-candidate-274-3.md](./CHAT-ARCH-2026-10-13-278-m0b-r8-1-consolidated-contract-candidate-274-3.md) — blob `eb8ea575ea4081fece851c3ca2c5a042e7b781b8`, commit `43a9cc982317ddbc090dcfe3dd482bd3508fa773`.
 
