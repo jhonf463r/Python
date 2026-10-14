@@ -4,7 +4,7 @@ Canonical: [CHAT-ARCH-2026-10-13-276-m0b-r8-1-c3-adjudication-and-274-2.md](./CH
 
 C3 returned `PASS_WITH_REPAIRS`. Entry 276 consolidates the proposed C3-02–C3-11 fixes and records a document-integrity incident: the then-current Entry 275 file (now a supersession notice) was corrupted by replacement-string interpolation. Its clean historical blob is `0945248916fa4f83cc0e7d9d354e39fe3720bb5a` at commit `1e644ee663118b6567018cd2211c107e48489d4c`; do not use the corrupted historical blob `3106d55393e0a4f3f4488decfff94ef6071c47d1` as normative evidence. A repair write was blocked, so restoration is not claimed complete.
 
-Next: targeted Sonnet/Claude review of clean Entry 274 plus Entry 276, and the historical clean Entry 275 blob for lineage only. Do not repeat broad archaeology. Applicable governance blocks remain terminal `BLOCK_RELEASE_UNSUPPORTED` absent independent supported release. `KEEP_BLOCKED`.
+Next: targeted Sonnet/Claude review of Entry 274 plus the clean historical Entry 275 contract body and Entry 276. Entry 276 supplies the corrected grammar and C3 amendments; the corrupted historical blob is not normative. Do not repeat broad archaeology. Applicable governance blocks remain terminal `BLOCK_RELEASE_UNSUPPORTED` absent independent supported release. `KEEP_BLOCKED`.
 
 ---
 
