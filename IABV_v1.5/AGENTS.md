@@ -1,3 +1,13 @@
+## Current route overlay — Entry 273: R8 independent contract review
+
+Read [CHAT-ARCH-2026-10-13-273-m0b-r8-independent-contract-review.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-273-m0b-r8-independent-contract-review.md), then Entry 272 and Entry 269; use the canonical CHAT-ARCH README-first route.
+
+R8's diagnostic → fresh interactive approval receipt → trusted issuer → scoped read decision → per-operation reader verification → durable receipt chain is accepted only as a provisional design baseline. Entry 273 adds required R8.1 safeguards for (1) race-resistant binding to the actual opened filesystem object and (2) explicit fail-closed target-scope applicability for governance blocks. The documented `assistant_kind` vs `target_scope` mismatch is a separate hazard, not a proven cause of M0A denial.
+
+Next actor: Sonnet/Claude, focused contract-only adversarial challenge of Entries 272–273. Codex implementation is not authorized. Do not read/retry/bypass the blocked local reader, access M0A, run tests or processes, inspect credentials, authenticate, or launch IABV/Codex App Server. Exact target identity, Owner-principal provenance, issuer/integrity source and block-release semantics remain unproven. `KEEP_BLOCKED`.
+
+---
+
 ## Current route overlay — Entry 272: R8 contract-only
 
 Read [CHAT-ARCH-2026-10-13-272-m0b-r8-read-decision-contract.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-272-m0b-r8-read-decision-contract.md), then Entries 271–269 and follow the canonical README-first route.
