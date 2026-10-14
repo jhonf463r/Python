@@ -125,7 +125,7 @@ An already completed operation remains queryable after its associated decision e
 - Existing completed operation, response lost, process restarted, same key/arguments: return same `operation_id` and current terminal state; no content redelivery, second intent or budget change.
 - Existing unresolved operation, response lost, then restart: return `UNRESOLVED`; halt persists; no replay.
 - New operation token after the decision expires: `DECISION_EXPIRED`; no operation record, nonce or budget reservation is created.
-- Valid authenticated requester presents an unknown decision ID or a decision bound to another requester session/workspace: use the same public result `DECISION_NOT_APPLICABLE); do not halt the reader or reveal whether the ID exists.
+- Valid authenticated requester presents an unknown decision ID or a decision bound to another requester session/workspace: use the same public result `DECISION_NOT_APPLICABLE`; do not halt the reader or reveal whether the ID exists.
 - Ledger unavailable during operation-status query: `LEDGER_UNAVAILABLE`, not a fabricated `EXPIRED` status.
 
 ## 5. S6 — Fixed requester-visible approval-window boundary
@@ -169,7 +169,7 @@ Reserve `LEDGER_INTEGRITY_UNPROVEN` for verified/inferred ledger-chain, durable-
 
 For nonce cases: an expired nonce/decision is `DECISION_EXPIRED`; a replayed, mismatched or unauthenticated approval nonce that is not merely expired is `APPROVAL_CHANNEL_UNTRUSTED`. An authenticated operation request whose referenced decision does not apply is `DECISION_NOT_APPLICABLE`. The next consolidated R2 table must place and order this result explicitly, update all shifted gate numbers/references, and map each active fixture to one result.
 
-A missing/invalid per-operation ceiling is a malformed/non-applicable decision and returns `DECISION_NOT_APPLICABLE); never silently default to a more permissive cap. An actual exhausted aggregate budget remains `BUDGET_EXCEEDED`.
+A missing/invalid per-operation ceiling is a malformed/non-applicable decision and returns `DECISION_NOT_APPLICABLE`; never silently default to a more permissive cap. An actual exhausted aggregate budget remains `BUDGET_EXCEEDED`.
 
 **Discriminating tests:**
 
