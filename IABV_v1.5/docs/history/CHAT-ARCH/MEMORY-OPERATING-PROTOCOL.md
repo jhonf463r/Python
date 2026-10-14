@@ -1,3 +1,15 @@
+## Continuity method delta — C2 repairs consolidated as amendment 274.1 (2026-10-13; Entry 275)
+
+Canonical: [CHAT-ARCH-2026-10-13-275-m0b-r8-1-contract-amendment-274-1.md](./CHAT-ARCH-2026-10-13-275-m0b-r8-1-contract-amendment-274-1.md).
+
+The second adversarial report found C2-01–C2-11 in Entry 274. Entry 275 is the single proposed amendment for targeted re-review; don't split it into scattered patch prompts. The supplied review says it read documents, not source code. Do not promote textual repairs to implementation facts.
+
+R8.1 amendment rules: requester is untrusted and may run same-user code; fresh Owner approval requires independently verifiable user confirmation bound to the nonce and full safe scope, with fail-closed behavior if requester/UI separation cannot be enforced. Registration and block lineage are authority-controlled; a new checkout ID alone never proves a block non-applicable. Existing sensitive-file denylist and workspace containment remain mandatory and can only be narrowed, never weakened. Nonce consumption and decision issuance are atomic; active decisions expire on restart; ledger rollback, integrity, durability and idempotency fail closed. Staging, release authorization and delivery outcome are separate states. Pre-approval path preview follows the same safe root-handle rules, uses no unapproved content reads, and hides external-path existence. V1 path grammar is restrictive; path authorization combines canonical form, bound object identity, containment and existing denials. Listing limits count raw entries; invalid entries deny the whole listing. Require positive and exact-boundary tests, durable-recovery tests, and platform-specific race evidence; mocked I/O alone is insufficient.
+
+The governing release gate remains separate: an applicable block without a supported governance-owned release is terminal `BLOCK_RELEASE_UNSUPPORTED`. That is a design conclusion, not a capability; no M0A unlock follows. Next: Sonnet/Claude's targeted review of Entry 275. No code modification, tests/runtime, local read or launch; `KEEP_BLOCKED`.
+
+---
+
 ## Continuity method delta — consolidate R8.1 after adversarial review (2026-10-13; Entry 274)
 
 Canonical: [CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md](./CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md).
