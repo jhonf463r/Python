@@ -1,3 +1,14 @@
+## 2026-10-13 REGISTRATION — ENTRY 270: M0B-R6 AUTHORITY CHAIN ADJUDICATION
+
+- Record: [CHAT-ARCH-2026-10-13-270-m0b-r6-authority-chain-reconciliation.md](./CHAT-ARCH-2026-10-13-270-m0b-r6-authority-chain-reconciliation.md)
+- Type: PUBLIC SOURCE RECONCILIATION / PROVENANCE CORRECTION / AUTHORITY-BOUNDARY ADJUDICATION
+- Documentation baseline before this record: `main` identical to `109e4e34c40b71c6b8b7cffc173f319d75921770`; pinned code baseline: `559f4ea20a9a9163cd9a9839b11d9991933f8c07`.
+- Verdict: no repo-read issuer/authority chain found in bounded scope. The existing object has a Devin-specific consumer but does not bind repository/checkout/read paths. No production issuer was found in the bounded public search.
+- Entry 270 corrects inaccurate line anchors and records object blob SHAs; relevant code blobs match between pinned baseline and current `main`.
+- Further general identity/auth exploration remains a separate Owner gate. Local M0A / implementation / tests / launch remain `KEEP_BLOCKED`.
+
+---
+
 ## 2026-10-13 REGISTRATION — ENTRY 269: M0B-R5 RECONCILIATION AND AUTHORITY SCOPE GATE
 
 - Record: [CHAT-ARCH-2026-10-13-269-m0b-r5-reconciliation-and-next-owner-gate.md](./CHAT-ARCH-2026-10-13-269-m0b-r5-reconciliation-and-next-owner-gate.md)
