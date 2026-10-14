@@ -1,3 +1,13 @@
+## Latest route record — Entry 270 (M0B-R6 authority chain adjudication)
+
+- Record: [CHAT-ARCH-2026-10-13-270-m0b-r6-authority-chain-reconciliation.md](./CHAT-ARCH-2026-10-13-270-m0b-r6-authority-chain-reconciliation.md)
+- Bounded outcome: `NO_EXISTING_REPO_READ_AUTHORITY_CHAIN_FOUND_IN_BOUNDED_SCOPE`. `ExternalActionAuthorization` has a Devin-specific consumer; no production issuer was found in the directly related public source search.
+- Entry 270 corrects M0B-R6 source anchors and records exact blob SHAs. The report's `models.py:2989–3063` and `bootstrap.py:2413–2569` ranges do not identify those declarations in the pinned blobs; actual anchors are model 3227–3298, bootstrap 145–234, and Devin verifier 1865–1904.
+- The model/consumer chain does not bind repository, checkout identity, read operation or allowed paths. Do not treat it as a repo-read grant.
+- Further identity/auth subsystem exploration requires a separate Owner gate. Local M0A, implementation, tests/runtime and launch remain `KEEP_BLOCKED`.
+
+---
+
 ## Latest route record — Entry 269 (M0B-R5 reconciliation + Owner scope gate)
 
 - Record: [CHAT-ARCH-2026-10-13-269-m0b-r5-reconciliation-and-next-owner-gate.md](./CHAT-ARCH-2026-10-13-269-m0b-r5-reconciliation-and-next-owner-gate.md)
