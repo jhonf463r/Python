@@ -1,3 +1,13 @@
+## 2026-10-13 CONTINUITY UPDATE — ENTRY 274: CONSOLIDATED R8.1 CONTRACT; SECOND CHALLENGE PENDING
+
+Canonical: [CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md](./CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md).
+
+The Sonnet/Claude adversarial review of Entries 272–273 returned `PASS_WITH_REPAIRS` with F-01–F-12. Entry 274 consolidates proposed normative repairs: fresh interactive Owner approval is unconditional in v1; UI and issuer are separated from requester; decisions and budgets live in a durable server-side ledger bound to the authenticated session; read decisions cannot release governance blocks; all applicable blocks must be separately accounted for; identity is checkout/root/worktree and authorized-object scoped without whole-tree scanning; reader containment is tied to the same verified object; revocation and durable intent/completion are mandatory; and ambiguous policy, scope, identity or platform guarantees fail closed.
+
+This status closes wording gaps only. The reviewer did not read code; implementation behavior remains `UNPROVEN`. Authoritative block-scope semantics, issuer/principal provenance, ledger integrity, real target identity, OS-level containment, revocation and a supported block-release mechanism remain unproven. Status: `M0B_R8_1_CONSOLIDATED_CONTRACT_PROPOSED_PENDING_SECOND_CHALLENGE`; posture `KEEP_BLOCKED`. Next actor: Sonnet/Claude, focused review of Entry 274 only. No implementation, test/runtime, launch or local M0A access follows from contract review.
+
+---
+
 ## 2026-10-13 CONTINUITY UPDATE — ENTRY 273: R8 DESIGN REVIEW WITH REQUIRED REPAIRS
 
 Canonical: [CHAT-ARCH-2026-10-13-273-m0b-r8-independent-contract-review.md](./CHAT-ARCH-2026-10-13-273-m0b-r8-independent-contract-review.md).
