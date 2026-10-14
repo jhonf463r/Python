@@ -1,3 +1,15 @@
+## 2026-10-13 REGISTRATION — ENTRY 274: M0B-R8.1 CONSOLIDATED CONTRACT
+
+- Record: [CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md](./CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md)
+- Type: CONSOLIDATED SECURITY CONTRACT / ADVERSARIAL REPAIR ADJUDICATION / NON-EXECUTED CONFORMANCE MATRIX
+- Inputs: Entries 272 and 273 plus the supplied Sonnet/Claude `PASS_WITH_REPAIRS` report listing F-01–F-12.
+- Status: `M0B_R8_1_CONSOLIDATED_CONTRACT_PROPOSED_PENDING_SECOND_CHALLENGE`.
+- Effective contract text consolidates unconditional fresh Owner approval, issuer/UI separation, server-side session-bound ledger, independent block release, fail-closed block applicability, scoped checkout/path-object identity, OS-level same-handle containment, mandatory durable receipts, mandatory revocation, finite atomic budgets and v1 path/size/list constraints.
+- Evidence boundary: reviewer did not read code; all implementation/runtime claims remain `UNPROVEN`. Entry 274's clauses are `PROPOSED`.
+- Next actor: Sonnet/Claude, second focused adversarial challenge. No implementation or local M0A read authorized; `KEEP_BLOCKED`.
+
+---
+
 ## 2026-10-13 REGISTRATION — ENTRY 273: M0B-R8 INDEPENDENT CONTRACT REVIEW
 
 - Record: [CHAT-ARCH-2026-10-13-273-m0b-r8-independent-contract-review.md](./CHAT-ARCH-2026-10-13-273-m0b-r8-independent-contract-review.md)
