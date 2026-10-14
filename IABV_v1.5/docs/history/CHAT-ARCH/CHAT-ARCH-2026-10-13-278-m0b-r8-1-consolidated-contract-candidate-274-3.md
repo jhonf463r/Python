@@ -532,7 +532,7 @@ Stable test identity is namespaced by source. Entry 275 A1–A35 is the only act
 
 | Qualified ID | Condition / setup | Exactly one expected result |
 |---|---|---|
-| 275-A1 | Missing/unknown decision or missing ledger record | Deny before content I/O |
+| 275-A1 | Missing/unknown decision or missing ledger record | `LEDGER_INTEGRITY_UNPROVEN`; deny before content I/O |
 | 275-A2 | Same-OS-user UI automation/synthetic event attempts approval | No trusted attestation; no decision |
 | 275-A3 | ApprovalMemory, relaxed policy, forged/missing UI event, missing principal | Reject at issuance |
 | 275-A4 | Nonce/event replay, including after issuance crash/restart | Nonce consumed atomically; no second decision |
@@ -541,37 +541,37 @@ Stable test identity is namespaced by source. Entry 275 A1–A35 is the only act
 | 275-A7 | Scope, target, recipient, path, budget or requester-supplied purpose altered | Server-derived facts prevail; digest mismatch denies |
 | 275-A8 | Wrong server/workspace/root/worktree/lifecycle identity | Deny before content I/O |
 | 275-A9 | Dirty/detached checkout with proven minimum identity | Do not require a clean tree; no out-of-scope scan |
-| 275-A10 | Requested object/path changes between preview, approval, open and release | Deny or discard; no unverified bytes delivered |
-| 275-A11 | Root replacement, traversal substitution, symlink/junction/reparse escape | Read exact proven in-root object or deny |
-| 275-A12 | Unknown lineage, recreated/re-registered root and a block scoped to prior identity | Treat ambiguous block as applicable; deny `BLOCK_RELEASE_UNSUPPORTED` |
+| 275-A10 | Requested object/path changes between preview, approval, open and release | `PATH_SCOPE_UNAVAILABLE` as primary result; if content is staged, lifecycle status `DISCARDED`; no unverified bytes delivered |
+| 275-A11 | Root/path substitution or link/reparse escape where exact containment cannot be proven | `CONTAINMENT_UNPROVEN`; no outside-root content/names |
+| 275-A12 | Unknown or incomplete lineage for a block-scoped identity | `BLOCK_SCOPE_UNEVALUABLE` under C3-10; `BLOCK_RELEASE_UNSUPPORTED` applies only when scope is evaluable and the block is applicable but unreleased |
 | 275-A13 | All block types and scope dimensions | Table has explicit result per dimension/combination; every applicable block requires independent release |
 | 275-A14 | Missing/unsupported scope model or partial target identity | `BLOCK_SCOPE_UNEVALUABLE`; deny |
 | 275-A15 | No supported independent block release | `BLOCK_RELEASE_UNSUPPORTED`; deny |
 | 275-A16 | Same block ID but changed revision/digest | Old release does not apply |
-| 275-A17 | Revocation source unavailable, decision expires during staging/handoff | Deny/discard; no release |
+| 275-A17 [RETIRED] | Revocation source unavailable OR decision expires during staging/handoff | Composite retired; see 278-A17a and 278-A17b |
 | 275-A18 | Existing sensitive-file rule with file on allowlist | Deny despite allowlist |
 | 275-A19 | Valid in-root file absent from exact allowlist | Deny before content I/O |
 | 275-A20 | Listing target directory not explicitly allowed | Deny; disclose no names |
 | 275-A21 | Diagnostic-only request | Metadata only; zero file reads, no decision issued |
-| 275-A22 | Ledger restore/rollback, anchor mismatch or ledger down | No reads; recovery/Owner reconciliation required |
+| 275-A22 [RETIRED] | Ledger rollback/integrity failure OR ledger unavailable | Composite retired; see 278-A22a and 278-A22b |
 | 275-A23 | Concurrent operations compete for last budget units | Atomic reservations never overspend |
 | 275-A24 | Crash between intent, stage, release authorization and response | Correct durable state; no automatic replay; unresolved state halts reads |
 | 275-A25 | Completion/release record fails after internal read | No content delivery; maximum reservation charged; persistent halt |
-| 275-A26 | Exact 1 MiB file, valid exact-200-entry directory | Positive boundary succeeds only if all other gates pass |
-| 275-A27 | File over 1 MiB or directory with 201 raw entries | Deny whole operation; no partial content or names |
+| 275-A26 [RETIRED] | Exact 1 MiB file AND valid exact-200-entry directory | Composite retired; see 278-A26a and 278-A26b |
+| 275-A27 [RETIRED] | File over 1 MiB OR directory with 201 actual entries | Composite retired; see 278-A27a and 278-A27b |
 | 275-A28 | Directory contains 201 raw entries including link/reparse entries | Overflow detected from raw count; deny whole listing |
 | 275-A29 [RETIRED] | Historical combined alias-class case | Superseded by 277-A29a and 277-A29b; not active |
 | 275-A30 | Hard link with nlink not 1/unavailable or unsupported volume | Deny |
 | 275-A31 | Concurrent writer/replacement during staging | Deny/discard if exclusion or stable-object guarantee fails |
 | 275-A32 | Listing encounters one invalid, sensitive or reparse entry within 200 | Deny entire listing; no silent omission/partial names |
-| 275-A33 | Restored old ledger, duplicate operation ID and retry after lost reply | Detect rollback; same ID idempotent; no fresh budget/re-delivery |
+| 275-A33 | Restored old ledger, duplicate operation ID and retry after lost reply | Rollback/integrity failure selects `LEDGER_INTEGRITY_UNPROVEN`; retry remains idempotent with no fresh budget or re-delivery |
 | 275-A34 | Happy path with all evidence/authority available | Exact object only; durable release authorization before output; appropriate receipt status afterward |
-| 275-A35 | In-root non-sensitive file outside allowlist, directory prefix/wildcard, or sensitive path listed by directory | Deny; existing reader restrictions remain mandatory |
+| 275-A35 [RETIRED] | Outside-allowlist file OR directory-prefix/wildcard OR sensitive path in a list | Composite retired; 275-A18/A19/A20/A32 and 278-A35a/b cover the distinct conditions |
 | 276-A36 | Well-formed Owner attestation signed by a credential not enrolled in the protected trust store | `APPROVAL_CHANNEL_UNTRUSTED`; no decision |
 | 276-A37 | Before Owner confirmation, compare normal existing, normal nonexistent, sensitive existing and sensitive nonexistent paths | Requester-visible status/shape do not disclose existence; sensitive-name denial before lookup |
 | 276-A38 | Server-protected destination/provider configuration changes after approval preview but before content release | Digest mismatch; staged content discarded and no delivery |
 | 276-A39 | Monotonic clock stalls or suspend semantics are unknown while wall time advances beyond tolerance | Active decisions and pending nonces expire; fail closed |
-| 276-A40 | Enumeration reports structural `.` and `..` plus 200 actual entries, then 201 actual entries | Pseudo-entries excluded; 200 actual valid entries may pass, 201 denies the whole listing |
+| 276-A40 [RETIRED] | Structural pseudo-entries plus 200 actual entries OR 201 actual entries | Composite retired; see 278-A40a and 278-A40b |
 | 276-A41 | One applicable block plus another block whose scope evidence cannot be evaluated | Deterministic `BLOCK_SCOPE_UNEVALUABLE` precedence; no read or release inference |
 | 276-A42 | Decision issuance committed but reply lost; retry uses same request token and same scope | Same decision/state returned; nonce consumed and budget unchanged |
 | 276-A43 | Same request token reused with different scope digest | Deny and audit; no new decision or reset budget |
@@ -584,16 +584,35 @@ Stable test identity is namespaced by source. Entry 275 A1–A35 is the only act
 | 277-A47a | Workspace registration or checkout-lineage/tombstone epoch rolled back relative to independent anchor | `REGISTRY_ROLLBACK` |
 | 277-A47b | Registry/trust/destination epoch current; only active-block-set or scope-model epoch is stale/missing | `BLOCK_SCOPE_UNEVALUABLE` |
 | 277-A48 | A session/token value is copied to another local process or agent principal | Reject before content access; if process/agent distinction cannot be proved, issue no decision (`APPROVAL_CHANNEL_UNTRUSTED`) |
-| 277-A49 | Crash after `RELEASE_AUTHORIZED` and before `HANDOFF_RETURNED`, or after `HANDOFF_RETURNED` before durable final state/ack | `UNRESOLVED`; retain reservation, halt reads pending reconciliation, never auto-replay or claim `DELIVERED` without trusted acknowledgement |
+| 277-A49 [RETIRED] | Crash at either handoff transition | Composite retired; see 278-A49a and 278-A49b |
 | 277-A50 | Wall clock moves backwards after issuance, even if the delta is under two seconds | Expire all active decisions and pending nonces; fail closed; do not revive |
 | 277-A51 | Restored trust-store snapshot predates a credential revocation and its epoch is older than independent anchor | `REGISTRY_ROLLBACK` before approval/content access |
 | 277-A52 | Covered authority epoch changes after operation intent commit but before final release gate | `REGISTRY_ROLLBACK` primary code; durable operation state `DISCARDED`; no content, decision, nonce or budget reset |
 | 277-A53 | Retry committed issuance after process restart with same principal/session/token/digest | Return current state `EXPIRED`; no reactivation, new nonce or budget reset |
 | 277-A54 | Directory contains 199 valid actual entries and structural `.` and `..` pseudo-entries | Count/charge exactly 199 actual entries; listing may pass if all gates pass |
 | 277-A55 | Conformance manifest runs all positive, negative and exact-boundary grammar subcases; each subcase has a fixed setup/result | Manifest passes only if every required subcase has its specified result; deny-all fails |
-| 277-A56 | Clock disagreement crosses the proposed two-second tolerance, suspend semantics are unknown, or final-gate revocation freshness cannot be proved | Expire/fail closed (`DECISION_EXPIRED` or `REVOCATION_UNAVAILABLE`, selected by R2 precedence) |
+| 277-A56 [RETIRED] | Clock/suspend failure OR revocation freshness failure | Composite retired; see 278-A56a and 278-A56b |
 | 277-A57 | Relative path is syntactically valid and ≤240 characters, but root-plus-relative exceeds proven platform support | Uniform `PATH_SCOPE_UNAVAILABLE`; no unsupported lookup or assumed long-path mode |
 | 277-A58 | Full external state-sequence comparison for normal-existing/missing and sensitive-existing/missing targets | No existence oracle; no object-dependent `BLOCK_*` code before Owner confirmation; sensitive-name rejection precedes lookup |
+
+
+| 278-A17a | Authoritative revocation source unavailable/stale at a required gate while the decision has not independently expired | `REVOCATION_UNAVAILABLE`; discard staged content, deliver nothing |
+| 278-A17b | Decision expires during staging/handoff while the revocation source is otherwise available | `DECISION_EXPIRED`; discard staged content, deliver nothing |
+| 278-A22a | Restored ledger/anchor mismatch or integrity-chain failure | `LEDGER_INTEGRITY_UNPROVEN`; no reads pending recovery/reconciliation |
+| 278-A22b | Authoritative ledger cannot be accessed | `LEDGER_UNAVAILABLE`; no reads |
+| 278-A26a | Exact 1 MiB file and all authorization/identity/ledger gates pass | Positive boundary: allow exact bytes; commit durable completion before release |
+| 278-A26b | Exactly 200 valid actual directory entries; structural pseudo-names excluded | Positive boundary: permit listing and charge exactly 200 actual entries |
+| 278-A27a | File requires reading more than 1 MiB to detect overflow | `FILE_LIMIT_EXCEEDED`; no partial content |
+| 278-A27b | Directory contains 201 actual entries, regardless of structural pseudo-names | `LIST_LIMIT_EXCEEDED`; no partial names |
+| 278-A35a | Caller attempts a directory-prefix grant instead of an exact approved target | `PATH_SCOPE_UNAVAILABLE`; no prefix grant or child traversal authority |
+| 278-A35b | Caller includes a wildcard in a path request | `PATH_FORM_UNSUPPORTED` before lookup |
+| 278-A40a | Directory has structural `.` and `..` plus exactly 200 valid actual entries | Allow if all other gates pass; count/charge exactly 200 actual entries |
+| 278-A40b | Directory has 201 actual entries plus any structural pseudo-names | `LIST_LIMIT_EXCEEDED`; deny the complete listing |
+| 278-A49a | Crash after `RELEASE_AUTHORIZED` and before `HANDOFF_RETURNED` | `UNRESOLVED`; reservation retained, reader halted pending reconciliation, no automatic replay |
+| 278-A49b | Crash after `HANDOFF_RETURNED` and before durable final state/acknowledgement | `UNRESOLVED`; not `DELIVERED`, reservation retained, no automatic replay |
+| 278-A56a | Clock disagreement exceeds two seconds, or suspend semantics are not established | `DECISION_EXPIRED`; all active decisions and pending nonces expire |
+| 278-A56b | Final-gate revocation response is cached, stale, missing or lacks authenticated freshness | `REVOCATION_UNAVAILABLE`; discard, deliver nothing |
+Required acceptance evidence inherited from the C2 matrix: filesystem-race claims require (a) static review proving the same verified handle is used with no post-verification name-based reopen; (b) target-platform documentation/semantics for selected primitives; and (c) controlled real-filesystem substitution stress tests across defined race points and iterations. Stress tests are evidence, not formal proof of absence of every race; if primitives cannot meet the conditions, v1 fails closed. Ledger durability/anti-rollback tests include process restart, interrupted transaction/recovery, restored older ledger and anchor mismatch. A test that cannot simulate hardware power loss MUST NOT claim to prove power-loss durability.
 
 
 ## 7. Evidence, status and unresolved platform gates
