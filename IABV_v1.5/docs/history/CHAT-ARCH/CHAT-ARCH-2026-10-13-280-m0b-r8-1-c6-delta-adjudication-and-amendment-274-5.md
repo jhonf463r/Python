@@ -142,6 +142,27 @@ If the trusted time basis or fixed endpoint cannot be established, fail closed w
 
 Add `DECISION_NOT_APPLICABLE` to the R2 result taxonomy. Update the advertised count from 16 to **17 ordered primary terminal selections**; `UNRESOLVED` remains a fail-stop recovery state, not an ordinary denial code.
 
+The full ordered table for the next consolidation MUST be exactly this sequence, with the first applicable result selected and the stated recovery/phase constraints applied:
+
+1. `LEDGER_UNAVAILABLE` — authoritative ledger state cannot be durably read or a required write cannot be durably committed.
+2. `LEDGER_INTEGRITY_UNPROVEN` — a chain, durable-state authenticity or independent-anchor integrity check fails.
+3. `UNRESOLVED` — an earlier operation/handoff lacks a reconciled durable state; this is a fail-stop lifecycle result and halts new reads.
+4. `REGISTRY_ROLLBACK` — a required anti-rollback epoch is demonstrably stale/inconsistent with the independent anchor, including any R1 authority epoch.
+5. `DECISION_NOT_APPLICABLE` — the authenticated requester presents an unknown decision ID or a decision whose principal/session/workspace/target binding does not match; this result does not halt the reader.
+6. `APPROVAL_CHANNEL_UNTRUSTED` — authenticated approval evidence, requester identity evidence, UI/issuer separation or nonce provenance/replay protection is untrusted.
+7. `PATH_FORM_UNSUPPORTED` — syntax fails the active grammar before filesystem lookup.
+8. `PATH_SCOPE_UNAVAILABLE` — a safe path/object scope cannot be established in the permitted phase.
+9. `CONTAINMENT_UNPROVEN` — after an approved object binding exists, the actual opened object/containment does not match that binding or cannot be proven.
+10. `BLOCK_SCOPE_UNEVALUABLE` — required block/scope evidence is current but cannot establish applicability.
+11. `BLOCK_RELEASE_UNSUPPORTED` — the block is established as applicable but no independent valid governance-owned release exists.
+12. `DECISION_EXPIRED` — the decision/approval nonce is expired or clock semantics invalidate freshness; an existing operation-key status lookup remains governed by §4.3 instead.
+13. `DECISION_REVOKED` — an authenticated authoritative check proves revocation.
+14. `REVOCATION_UNAVAILABLE` — authoritative revocation cannot be checked with the required current freshness proof.
+15. `BUDGET_EXCEEDED` — aggregate reservation cannot be made atomically before content I/O.
+16. `FILE_LIMIT_EXCEEDED` — actual file length exceeds the effective file ceiling after the required final gate is considered.
+17. `LIST_LIMIT_EXCEEDED` — actual directory entries exceed the effective listing ceiling after the required final gate is considered.
+
+The first four system-health/fail-stop selections precede request-specific denial evaluation. `DECISION_NOT_APPLICABLE` follows successful requester authentication and ledger/epoch/recovery checks, and precedes approval/path/object checks. Public requester output remains separately governed by §2 and §5; the internal code is retained in protected audit fields.
 `DECISION_NOT_APPLICABLE` is used when a validly authenticated requester presents an unknown decision ID, a decision bound to another principal/session/workspace/target, or another non-matching decision binding. It MUST be requester-visible in the same shape for an unknown ID and a known-but-not-applicable ID, and MUST NOT trigger a global reader halt. Do not use `LEDGER_INTEGRITY_UNPROVEN` for a simple unknown ID.
 
 Reserve `LEDGER_INTEGRITY_UNPROVEN` for verified/inferred ledger-chain, durable-state-authenticity or independent-anchor failures. Reserve `LEDGER_UNAVAILABLE` for failures to durably read **or write** required ledger state, including an unavailable intent/completion commit. Such failures fail closed; if a read has already occurred internally but its completion cannot be committed, retain the maximum reservation, mark `UNRESOLVED` when durable state allows, deliver no content, and halt until reconciliation.
