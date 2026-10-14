@@ -1,3 +1,9 @@
+## Latest correction — Entry 275 integrity status
+
+The “current Entry 275 blob” phrase in earlier history refers to the then-current corrupt version. Blob `3106d55393e0a4f3f4488decfff94ef6071c47d1` is now historical; the current Entry 275 path contains a supersession notice. Entry 276 is the current C3 adjudication. Full-text restoration remains incomplete.
+
+---
+
 ## 2026-10-13 REGISTRATION — ENTRY 276: M0B-R8.1-C3 ADJUDICATION / AMENDMENT 274.2
 
 - Record: [CHAT-ARCH-2026-10-13-276-m0b-r8-1-c3-adjudication-and-274-2.md](./CHAT-ARCH-2026-10-13-276-m0b-r8-1-c3-adjudication-and-274-2.md)
