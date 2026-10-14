@@ -1,3 +1,9 @@
+## Latest correction — Entry 275 integrity status
+
+The corrupt Entry 275 blob `3106d55393e0a4f3f4488decfff94ef6071c47d1` is historical. The current Entry 275 path is a supersession notice, not the corrupt document. The clean prior blob remains available at commit `1e644ee663118b6567018cd2211c107e48489d4c`; Entry 276 records the proposed grammar repair and C3-02–C3-11 amendment. Full-text restoration is not claimed.
+
+---
+
 ## 2026-10-13 — ENTRY 276: C3 ADJUDICATION / DOCUMENT INTEGRITY AND AMENDMENT 274.2
 
 Canonical: [CHAT-ARCH-2026-10-13-276-m0b-r8-1-c3-adjudication-and-274-2.md](./CHAT-ARCH-2026-10-13-276-m0b-r8-1-c3-adjudication-and-274-2.md).
