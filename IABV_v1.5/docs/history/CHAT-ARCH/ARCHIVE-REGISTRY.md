@@ -1,3 +1,14 @@
+## 2026-10-13 REGISTRATION — ENTRY 271: M0B-R7 APPROVAL CHAIN INCOMPLETE
+
+- Record: [CHAT-ARCH-2026-10-13-271-m0b-r7-approval-broker-chain-adjudication.md](./CHAT-ARCH-2026-10-13-271-m0b-r7-approval-broker-chain-adjudication.md)
+- Type: PUBLIC SOURCE RECONCILIATION / TRUST-PROVENANCE ADJUDICATION / NEXT-ACTION ROUTING
+- Documentation baseline before write: `main` at `bc6db14f10c07eac7e1378b8db8d57674aac31bf`; pinned source baseline: `559f4ea20a9a9163cd9a9839b11d9991933f8c07`.
+- Verdict: generic broker/memory approval workflow exists; no production bridge to ExternalActionAuthorization or trusted repo-read issuer was found in bounded public source search. ApprovalMemory auto-resolution prevents treating a positive result as fresh human approval.
+- Exact broker/model/bootstrap/memory blob SHAs and corrected lines are in Entry 271. Stop the reuse search within this scope; next recommended action is contract-only specification.
+- Local M0A access, implementation, runtime and launch remain `KEEP_BLOCKED`.
+
+---
+
 ## 2026-10-13 REGISTRATION — ENTRY 270: M0B-R6 AUTHORITY CHAIN ADJUDICATION
 
 - Record: [CHAT-ARCH-2026-10-13-270-m0b-r6-authority-chain-reconciliation.md](./CHAT-ARCH-2026-10-13-270-m0b-r6-authority-chain-reconciliation.md)
