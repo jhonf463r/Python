@@ -1,3 +1,13 @@
+## Latest route record — Entry 271 (M0B-R7 approval chain adjudication)
+
+- Record: [CHAT-ARCH-2026-10-13-271-m0b-r7-approval-broker-chain-adjudication.md](./CHAT-ARCH-2026-10-13-271-m0b-r7-approval-broker-chain-adjudication.md)
+- Verdict: `PARTIAL_APPROVAL_WORKFLOW_FOUND`; `NO_PRODUCTION_EXTERNAL_ACTION_AUTHORIZATION_ISSUER_FOUND_IN_BOUNDED_PUBLIC_SEARCH`; `KEEP_BLOCKED`.
+- HumanApprovalBroker produces generic ApprovalResult; ApprovalMemory can auto-resolve to `approved=True, auto_resolved=True`; ApprovalResult carries no verified actor identity. No production bridge to ExternalActionAuthorization or repository-scoped read grant was found in the bounded direct symbol search.
+- Entry 271 corrects supplied model/bootstrap line anchors and stores exact blob SHAs; use it rather than the mismatched ranges.
+- The bounded reuse search is complete for scope. Next recommended action is contract-only design of a dedicated checkout/path-scoped read decision, with verified actor provenance and fresh interactive approval. No implementation or local M0A access; `KEEP_BLOCKED`.
+
+---
+
 ## Latest route record — Entry 270 (M0B-R6 authority chain adjudication)
 
 - Record: [CHAT-ARCH-2026-10-13-270-m0b-r6-authority-chain-reconciliation.md](./CHAT-ARCH-2026-10-13-270-m0b-r6-authority-chain-reconciliation.md)
