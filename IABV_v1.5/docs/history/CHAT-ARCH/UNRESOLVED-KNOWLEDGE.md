@@ -1,3 +1,14 @@
+## 2026-10-13 — ENTRY 273: R8 CONTRACT REVIEW PASSED WITH REQUIRED REPAIRS
+
+Canonical: [CHAT-ARCH-2026-10-13-273-m0b-r8-independent-contract-review.md](./CHAT-ARCH-2026-10-13-273-m0b-r8-independent-contract-review.md).
+
+- `PROPOSED`: R8's separation-of-authority architecture is accepted as a provisional design baseline with R8.1 addenda for race-resistant path/object binding and complete fail-closed governance-block scope evaluation.
+- `PROVEN_BY_SOURCE` (bounded to Entry 269's named blobs): the inspected governance filter checks `assistant_kind`, not `target_scope`. This is a separate hazard; its causation of the M0A denial is not established.
+- `UNPROVEN`: trusted Owner principal and issuer/integrity provenance; exact live MCP/workspace/checkout-state identity; support for releasing the actual active block; safe race-resistant reader implementation.
+- Next: one focused Sonnet/Claude challenge of Entries 272–273. No implementation, tests/runtime or local M0A read; `KEEP_BLOCKED`.
+
+---
+
 ## 2026-10-13 — ENTRY 272: CONTRACT SPECIFIED; TRUST AND TARGET PREREQUISITES OPEN
 
 Canonical: [CHAT-ARCH-2026-10-13-272-m0b-r8-read-decision-contract.md](./CHAT-ARCH-2026-10-13-272-m0b-r8-read-decision-contract.md).
