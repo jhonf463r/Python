@@ -1,3 +1,14 @@
+## 2026-10-13 REGISTRATION — ENTRY 276: M0B-R8.1-C3 ADJUDICATION / AMENDMENT 274.2
+
+- Record: [CHAT-ARCH-2026-10-13-276-m0b-r8-1-c3-adjudication-and-274-2.md](./CHAT-ARCH-2026-10-13-276-m0b-r8-1-c3-adjudication-and-274-2.md)
+- Type: DOCUMENT INTEGRITY ADJUDICATION / CONTRACT AMENDMENT / TARGETED REVIEW ROUTING
+- Input: C3 `PASS_WITH_REPAIRS`, findings C3-01–C3-11.
+- Status: `M0B_R8_1_AMENDMENT_274_2_PROPOSED_PENDING_TARGETED_REVIEW`.
+- Integrity: current Entry 275 blob `3106d55393e0a4f3f4488decfff94ef6071c47d1` is corrupted; clean historical blob `0945248916fa4f83cc0e7d9d354e39fe3720bb5a` is available at `1e644ee663118b6567018cd2211c107e48489d4c`. Repair was blocked and is not claimed.
+- Entry 276 proposes fixes to C3-02–C3-11. No code was inspected. Next actor: Sonnet/Claude, targeted review of Entry 276 and clean Entry 274. Applicable governance block without independent release remains `BLOCK_RELEASE_UNSUPPORTED`. `KEEP_BLOCKED`.
+
+---
+
 ## 2026-10-13 REGISTRATION — ENTRY 275: M0B-R8.1 AMENDMENT 274.1 AFTER C2
 
 - Record: [CHAT-ARCH-2026-10-13-275-m0b-r8-1-contract-amendment-274-1.md](./CHAT-ARCH-2026-10-13-275-m0b-r8-1-contract-amendment-274-1.md)
