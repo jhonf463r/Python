@@ -1,3 +1,15 @@
+## Continuity method delta — consolidate R8.1 after adversarial review (2026-10-13; Entry 274)
+
+Canonical: [CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md](./CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md).
+
+When a focused adversarial review finds contract weaknesses, consolidate the effective MUST/MUST NOT rules into one normative document instead of layering ambiguous addenda. Keep historical Entries 272–273 for provenance; Entry 274 is the proposed consolidated text pending a second challenge. The review input explicitly says no code was read, so only documentary wording gaps can be considered confirmed; runtime and implementation remain `UNPROVEN`.
+
+R8.1 requires unconditional fresh interactive Owner approval in v1; issuer-generated nonce/IDs and direct trusted-UI-to-issuer attestation; full safe display of target/path/limits/recipient; server-side, durable, requester-session-bound decisions; independent governance-owned block releases (otherwise `BLOCK_RELEASE_UNSUPPORTED`); explicit fail-closed multi-block scope semantics; mandatory target/root/worktree and authorized-object identity without whole-tree scans or spawned Git; race-resistant same-object handle containment; mandatory durable intent/completion; non-optional authoritative revocation; trusted-clock/expiry checks before operation and before content release; atomic budgets; no prefix/wildcard grants; whole-request denial on caps; and recovery that halts reads for orphan intents or unavailable authority state.
+
+Do not convert “text gap closed” into “implementation proven.” The target platform, handle confinement, trusted issuer/principal, ledger, block scope model, revocation source and release mechanism remain open. Next: Sonnet/Claude adversarially challenge Entry 274 only. No code changes, tests/runtime, local M0A access or launch; keep `KEEP_BLOCKED`.
+
+---
+
 ## Continuity method delta — independent contract review and R8.1 hardening (2026-10-13; Entry 273)
 
 Canonical: [CHAT-ARCH-2026-10-13-273-m0b-r8-independent-contract-review.md](./CHAT-ARCH-2026-10-13-273-m0b-r8-independent-contract-review.md).
