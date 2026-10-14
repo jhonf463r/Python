@@ -1,3 +1,13 @@
+## Current route overlay — M0B-R9.2/R10 continuity (Entry 267)
+
+Read [CHAT-ARCH-2026-10-13-267-m0b-r9-2-r10-continuity-reconciliation.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-267-m0b-r9-2-r10-continuity-reconciliation.md), then Entry 266.
+
+R9.2’s pinned ToolResult and ingestExternalResponse anchors were independently re-fetched and match the supplied blob SHAs. Public source also shows execute_task remembers a successful sandbox result before later adapter execution, while ToolMemory increments success_count whenever result.success is true without gating on stage/validation. Treat that as a concrete static metric-contamination risk, not a live runtime observation. The required return contract is task_id + execution_id + result_id + stage/provenance/validation + durable adaptive-consumer receipt.
+
+R10 is a design target only. Its supplied label is DESIGN_CONTRACT_ACCEPTED_PENDING_IMPLEMENTATION_AUTHORIZATION, but no implementation, local-read, test, launch, authentication, install/update or extra-spend permission is inferred. Local M0A and MCP target identity remain unproven; keep KEEP_BLOCKED. AI/tool-first retrieval is mandatory, but never use another reader to bypass a governance block. Do not repeat R9.2 without a new discriminating question.
+
+---
+
 ## Current route overlay — M0B Entry 266: observation approval is not audit release
 
 Read [CHAT-ARCH-2026-10-13-266-observation-approval-is-not-audit-release.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-266-observation-approval-is-not-audit-release.md), then Entry 265.

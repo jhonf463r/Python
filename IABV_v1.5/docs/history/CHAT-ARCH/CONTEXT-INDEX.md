@@ -1,3 +1,14 @@
+## Latest route record — Entry 267 (M0B-R9.2/R10 continuity)
+
+- Record: [CHAT-ARCH-2026-10-13-267-m0b-r9-2-r10-continuity-reconciliation.md](./CHAT-ARCH-2026-10-13-267-m0b-r9-2-r10-continuity-reconciliation.md)
+- Current public baseline before the write: main at 559f4ea20a9a9163cd9a9839b11d9991933f8c07. The two supplied R9.2 blob SHA/line anchors were independently confirmed at this pinned ref; the R9.1 raw-position discrepancy remains unresolved without functional consequence established.
+- New source finding: ToolTeachService remembers a sandbox result before later adapter execution; ToolMemory increments success_count solely from result.success. SANDBOX_PASS can therefore contaminate general success metrics. Static finding only; no runtime incident claimed.
+- R10 target contract: task_id + execution_id + result_id + stage + adapter/destination + authorization/content digest where applicable + capture provenance + validation + evaluation_id/durable receipt. No duplicate metrics/learning; manual capture remains distinct; legacy records remain unattributable.
+- R10 is recorded as a design target, not a code/checkout/test/launch grant. Local M0A identity/read authorization remains unresolved.
+- **Next:** no repeated general audit. When separately authorized, establish local target identity and source access, compare the real worktree, then implement the minimum eligible-stage/receipt wiring and run only separately authorized tests. Keep KEEP_BLOCKED.
+
+---
+
 ## Latest route record — Entry 266
 
 - Record: [CHAT-ARCH-2026-10-13-266-observation-approval-is-not-audit-release.md](./CHAT-ARCH-2026-10-13-266-observation-approval-is-not-audit-release.md)

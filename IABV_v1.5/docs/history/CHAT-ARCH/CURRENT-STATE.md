@@ -1,3 +1,19 @@
+## 2026-10-13 CONTINUITY UPDATE — M0B-R9.2/R10 RETURN-CONTRACT RECONCILIATION (ENTRY 267)
+
+Canonical: [CHAT-ARCH-2026-10-13-267-m0b-r9-2-r10-continuity-reconciliation.md](./CHAT-ARCH-2026-10-13-267-m0b-r9-2-r10-continuity-reconciliation.md).
+
+The public main baseline immediately before this documentation write was verified as 559f4ea20a9a9163cd9a9839b11d9991933f8c07. The reported blob SHAs for ToolResult and ingestExternalResponse independently match that pinned baseline. R9.1's earlier raw-position discrepancy remains historically unresolved and is not a reason to repeat broad retrieval.
+
+New static finding: execute_task remembers the external tool's sandbox result before the later adapter run; ToolMemory increments success_count from result.success without requiring a final stage or eligible validation. This can contaminate tool success metrics and downstream interaction learning. It is a source-level risk, not a runtime incident.
+
+R10's target contract is captured for continuity: task_id, execution_id, result_id, stage, destination/provenance, validation, evaluation_id and durable consumer receipt; deduplicate before metrics/learning; keep manual input distinct from automatic capture; preserve legacy records as unattributable. The supplied status label is DESIGN_CONTRACT_ACCEPTED_PENDING_IMPLEMENTATION_AUTHORIZATION, but the pasted decision also says proposed/subject to owner confirmation. This is a design target, not authorization to implement.
+
+**First technical edge:** RESULT_TO_ADAPTIVE_CONSUMER_CORRELATED_RECEIPT_CONTRACT_UNIMPLEMENTED, with preliminary sandbox success eligibility included in that repair.
+**Independent access gate:** MCP_SERVER_AND_CHECKOUT_IDENTITY_UNRESOLVED / LOCAL_M0A_READ_AUTHORITY_UNRESOLVED.
+**Posture:** KEEP_BLOCKED for local read, code edits, tests, runtime and Codex/App Server launch. Public static work may proceed only when it adds discriminating evidence. No source-code changes or tests were made by Entry 267.
+
+---
+
 ## 2026-10-13 ADJUDICATION — OBSERVATION APPROVAL DOES NOT RELEASE AUDIT GATE (ENTRY 266)
 
 Canonical: [CHAT-ARCH-2026-10-13-266-observation-approval-is-not-audit-release.md](./CHAT-ARCH-2026-10-13-266-observation-approval-is-not-audit-release.md).

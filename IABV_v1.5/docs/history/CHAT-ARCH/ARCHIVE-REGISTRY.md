@@ -1,3 +1,15 @@
+## 2026-10-13 REGISTRATION — ENTRY 267: M0B R9.2/R10 CONTINUITY RECONCILIATION
+
+- Record: [CHAT-ARCH-2026-10-13-267-m0b-r9-2-r10-continuity-reconciliation.md](./CHAT-ARCH-2026-10-13-267-m0b-r9-2-r10-continuity-reconciliation.md)
+- Type: CONTINUITY RECONCILIATION / SOURCE-VERIFICATION / BRIDGE-CONTRACT / SYMBIOSIS / METHOD / ROUTING
+- Baseline before this documentation write: public main at 559f4ea20a9a9163cd9a9839b11d9991933f8c07, directly verified. The documentation commit does not change source-code content.
+- Material delta: independently confirmed R9.2's two blob/line anchors and verified a concrete source-level metric risk: external consultation remembers sandbox_result before the later adapter run; ToolMemory increments success_count based on result.success without stage/validation eligibility.
+- R10 target contract is preserved, but this record grants no implementation, local-read, test or launch authority. Design language requiring owner confirmation is not promoted to an execution grant.
+- Edges: RESULT_TO_ADAPTIVE_CONSUMER_CORRELATED_RECEIPT_CONTRACT_UNIMPLEMENTED; MCP_SERVER_AND_CHECKOUT_IDENTITY_UNRESOLVED; CHATGPT_AUTOMATIC_TURN_AND_CORRELATED_RETURN_UNRESOLVED; CAUSAL_REUSE_OF_LEARNED_KNOWLEDGE_UNPROVEN.
+- Posture: KEEP_BLOCKED. Routing authority remains CURRENT-STATE.md.
+
+---
+
 ## 2026-10-13 REGISTRATION — ENTRY 266: OBSERVATION APPROVAL IS NOT AUDIT RELEASE
 
 - Record: [CHAT-ARCH-2026-10-13-266-observation-approval-is-not-audit-release.md](./CHAT-ARCH-2026-10-13-266-observation-approval-is-not-audit-release.md)

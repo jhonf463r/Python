@@ -1,3 +1,17 @@
+## 2026-10-13 SYMBIOSIS DELTA — M0B-R9.2/R10: CORRELATED RETURN, ELIGIBLE SUCCESS AND CAUSAL REUSE (ENTRY 267)
+
+Canonical: [CHAT-ARCH-2026-10-13-267-m0b-r9-2-r10-continuity-reconciliation.md](./CHAT-ARCH-2026-10-13-267-m0b-r9-2-r10-continuity-reconciliation.md).
+
+Roles/planes: the owner interacts through IABV's foreground UI; IABV should coordinate in the background; Codex is the specialized executor in its authorized environment; the bridge binds task, attempt, destination and result; validators and the existing adaptive consumer evaluate the returned evidence. ChatGPT/coordinator can inspect connected remote sources, but a direct IABV-initiated ChatGPT turn with correlated return remains unproven. Do not describe the target architecture as an operational loop.
+
+Material relation delta: the pinned public route persists a sandbox result before later adapter execution, while general success_count increments when result.success is true. This can blur “sandbox passed” with “external task succeeded.” Keep availability, sandbox, execution, capture, validation, learning, adaptive evaluation and causal reuse as distinct events.
+
+Reuse-first: prefer composition/wiring/repair of existing IABV organs over adding another orchestrator or memory. Return the validated, provenance-bearing ToolResult to the existing adaptive consumer and persist an idempotent receipt; require a later traced decision to claim causal learning.
+
+Routing: preserve the source baseline vs local dirty checkout distinction. Local M0A identity/read authorization and implementation authority remain unresolved. KEEP_BLOCKED; no bypass or launch.
+
+---
+
 ## 2026-10-13 SYMBIOSIS DELTA — OBSERVATION PERMISSION / AUDIT RELEASE BOUNDARY (ENTRY 266)
 
 Canonical: [CHAT-ARCH-2026-10-13-266-observation-approval-is-not-audit-release.md](./CHAT-ARCH-2026-10-13-266-observation-approval-is-not-audit-release.md).

@@ -1,3 +1,19 @@
+## Continuity method delta — preserve R9.2/R10 provenance and distinguish preliminary success from adaptive completion (2026-10-13; Entry 267)
+
+Canonical: [CHAT-ARCH-2026-10-13-267-m0b-r9-2-r10-continuity-reconciliation.md](./CHAT-ARCH-2026-10-13-267-m0b-r9-2-r10-continuity-reconciliation.md).
+
+When a new chat supplies a package of prior findings, reconcile it against the pinned public ref and the existing canonical trail before producing another general audit. Re-fetch exact high-value object SHAs/line anchors where feasible; preserve unresolved historical line discrepancies without reopening them unless new evidence discriminates between hypotheses. Never present owner-supplied local reports as independently inspected local source.
+
+Track bridge stages separately: adapter availability, preflight, sandbox, actual execution, response capture, correlation, validation, persistence, interaction learning, adaptive evaluation, durable receipt and later decision reuse. In particular, inspect whether a preliminary result is persisted or counted before the final external result exists. At the pinned public baseline, execute_task remembers the sandbox result and ToolMemory increments success_count based on result.success without conditioning on stage/validation. Treat this as a static eligibility defect-risk and correct it in a future authorized implementation; do not infer a live incident.
+
+Reuse the existing ToolTeachService, ToolSandbox, ToolValidator, ToolMemory, InteractionLearningService, repository, ViewModel, orchestrator and evolution service when source-compatible. Do not create a duplicate brain, router or memory. Use execution_id for each attempt, explicit stage/provenance, validation gating, idempotent durable consumer receipt and task/result/evaluation correlation. Do not require conversational capture from non-conversational adapters.
+
+Continuity is not transcript dumping: persist objective/context time, evidence/provenance, causal hypothesis, authorized discriminating action, observation, verification/reconciliation, knowledge/method/routing delta and an explicit next edge. Persistence is not learning; causal improvement requires a later traced decision and an outcome comparison.
+
+Keep planes distinct: user-facing IABV UI; background coordination/correlation bridge; Codex execution environment. The desired bridge is a background path visible from the UI, not another chat panel. AI/tool-first retrieval remains mandatory, yet a local governance block must never be bypassed. Separate design acceptance, local source-read authority, implementation, offline tests and real runtime/launch permissions. Owner choice C and KEEP_BLOCKED remain in force until each relevant gate is explicitly resolved.
+
+---
+
 ## Continuity method delta — never promote observation consent to repository-read authority (2026-10-13; entry 266)
 
 Canonical: [CHAT-ARCH-2026-10-13-266-observation-approval-is-not-audit-release.md](./CHAT-ARCH-2026-10-13-266-observation-approval-is-not-audit-release.md).

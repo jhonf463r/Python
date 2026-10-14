@@ -1,3 +1,18 @@
+## 2026-10-13 — M0B-R9.2/R10 RETURN-CONTRACT AND METRIC-ELIGIBILITY GAPS (ENTRY 267)
+
+Canonical: [CHAT-ARCH-2026-10-13-267-m0b-r9-2-r10-continuity-reconciliation.md](./CHAT-ARCH-2026-10-13-267-m0b-r9-2-r10-continuity-reconciliation.md).
+
+- **PROVEN_BY_SOURCE at pinned main 559f4ea20a9a9163cd9a9839b11d9991933f8c07:** ToolResult declares task_id/result_id but no first-class execution_id/stage/receipt in the inspected schema. execute_task remembers sandbox_result before the later adapter run. ToolValidator differentiates SANDBOX_PASS and UNVALIDATED awaiting-response states. ToolMemory increments success_count based on result.success without a validation/stage eligibility condition.
+- **Implication:** a successful preliminary sandbox can contaminate aggregate success metrics. This is a static path finding, not proof of a live incident or that every sandbox returns success.
+- **PROVEN_BY_SOURCE:** the two source object SHAs supplied by R9.2 now match direct reads at the pinned baseline: models.py blob a9033d21052c519e09f482097599c704a62ea916, ToolResult line 1319; control_center_viewmodel.py blob 628848c631e36b47b4a5b63b9e68d62687625235, ingestExternalResponse line 14239.
+- **OWNER_REPORTED / UNRESOLVED:** R9.1's raw-position discrepancy; no cause inferred.
+- **UNPROVEN:** actual M0A checkout identity/content, local adapter wiring, runtime Codex exchange, automated final-result-to-adaptive-consumer path, durable/idempotent consumer receipt, manual-response eligibility policy, and causal reuse in a later decision.
+- **PROPOSED:** task_id + execution_id + result_id + typed stage + destination/authorization + capture provenance + validation + evaluation_id + durable idempotent receipt; stage- and adapter-specific success eligibility.
+- **First engineering edge:** RESULT_TO_ADAPTIVE_CONSUMER_CORRELATED_RECEIPT_CONTRACT_UNIMPLEMENTED.
+- **Separate prerequisites:** MCP_SERVER_AND_CHECKOUT_IDENTITY_UNRESOLVED; scoped local-read authority and implementation authorization. KEEP_BLOCKED.
+
+---
+
 ## 2026-10-13 — OBSERVATION GRANT DOES NOT PROVE AUDIT RELEASE (ENTRY 266)
 
 Canonical: [CHAT-ARCH-2026-10-13-266-observation-approval-is-not-audit-release.md](./CHAT-ARCH-2026-10-13-266-observation-approval-is-not-audit-release.md).
