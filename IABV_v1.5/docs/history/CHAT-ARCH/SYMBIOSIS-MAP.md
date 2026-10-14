@@ -1,3 +1,13 @@
+## 2026-10-13 SYMBIOSIS DELTA — ENTRY 270: DEVIN ACTION AUTHORIZATION IS NOT REPOSITORY READ AUTHORITY
+
+Canonical: [CHAT-ARCH-2026-10-13-270-m0b-r6-authority-chain-reconciliation.md](./CHAT-ARCH-2026-10-13-270-m0b-r6-authority-chain-reconciliation.md).
+
+The existing `ExternalActionAuthorization` model is connected to a Devin-specific external-action consumer, but no production issuer or repository-read authority chain was found in the bounded public-source scope. The current model binds task/tool/adapter/prompt properties, not exact MCP server, workspace/checkout, read operation, or allowed repository paths. The standard bootstrap call sites also do not pass an authorization object to their guarded Devin helpers.
+
+Role division remains: Owner authorizes scope boundaries; Codex performs authorized public-source retrieval; ChatGPT/coordinator independently validates exact object provenance, line anchors and graph completeness, then updates canonical memory. No local M0A read, implementation, tests or launch is authorized. Further general identity/auth exploration needs a separate explicit decision.
+
+---
+
 ## 2026-10-13 SYMBIOSIS DELTA — ENTRY 269: R5 RECONCILED / CODEX ROLE CONDITIONAL ON OWNER SCOPE GATE
 
 Canonical: [CHAT-ARCH-2026-10-13-269-m0b-r5-reconciliation-and-next-owner-gate.md](./CHAT-ARCH-2026-10-13-269-m0b-r5-reconciliation-and-next-owner-gate.md).
