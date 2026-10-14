@@ -67,9 +67,27 @@ For each request, evaluate all blocks using the authoritative scope model and re
 
 ### C3-11 — one authoritative conformance suite
 
-The effective test specification is the union of Entry 274 and Entry 275, with this amendment's rules taking precedence. Give each case one globally unique ID; remove duplicate/contradictory IDs when publishing the consolidated matrix. The Entry 275 matrix must replace—not merely append to—the earlier Entry 274 matrix. A report with duplicate IDs, unspecified expected outcomes or no positive cases fails schema validation.
+The effective suite uses the clean historical Entry 275 matrix (A1–A35) as the sole base matrix; it entirely replaces Entry 274's historical A1–A22 matrix rather than merging those reused IDs. This amendment adds only new IDs A36 onward. The final published manifest MUST contain one globally unique ID per case, a traceability link to the relevant historical requirement, explicit setup and expected result, and a positive/negative/boundary classification. Duplicate IDs, ambiguous outcomes or absence of positive cases fail manifest validation.
 
 Add mandatory discriminating cases: unregistered Owner credential; registry/tombstone rollback; path-existence side channel across existing, missing and sensitive paths; unresolved handoff after crashes at each state boundary; retry after lost issuance response; copied session token; clock jump/suspend; 200 actual entries plus structural pseudo-entries versus 201 actual entries; simultaneous applicable and unevaluable blocks; and explicit regression cases for sensitive-path denial, non-allowlisted file, unapproved listing and diagnostic-only zero-file-read behavior. Preserve positive-path and exact-boundary cases so a deny-all implementation cannot pass.
+
+Supplemental discriminating cases (unique IDs after Entry 275 A1–A35):
+
+| ID | Condition | Required result |
+|---|---|---|
+| A36 | Well-formed Owner attestation signed by a credential not enrolled in the protected trust store | `APPROVAL_CHANNEL_UNTRUSTED`; no decision |
+| A37 | Before Owner confirmation, compare normal existing, normal nonexistent, sensitive existing and sensitive nonexistent paths | Requester-visible status/shape do not disclose existence; sensitive-name denial before lookup |
+| A38 | Server-protected destination/provider configuration changes after approval preview but before content release | Digest mismatch; staged content discarded and no delivery |
+| A39 | Monotonic clock stalls or suspend semantics are unknown while wall time advances beyond tolerance | Active decisions and pending nonces expire; fail closed |
+| A40 | Enumeration reports structural `.` and `..` plus 200 actual entries, then 201 actual entries | Pseudo-entries excluded; 200 actual valid entries may pass, 201 denies the whole listing |
+| A41 | One applicable block plus another block whose scope evidence cannot be evaluated | Deterministic `BLOCK_SCOPE_UNEVALUABLE` precedence; no read or release inference |
+| A42 | Decision issuance committed but reply lost; retry uses same request token and same scope | Same decision/state returned; nonce consumed and budget unchanged |
+| A43 | Same request token reused with different scope digest | Deny and audit; no new decision or reset budget |
+| A44 | Contract artifact contains duplicate top-level headers, malformed full-match regex, missing reserved-name suffixes or duplicate test IDs | Artifact/manifest validation fails; not adoptable |
+| A45 | Test suite has no positive path or exact-limit boundary case | Manifest validation fails; deny-all implementation cannot pass |
+| A46 | Local handoff returns but recipient acknowledgement is unavailable | Record `HANDOFF_RETURNED`, not `DELIVERED` |
+| A47 | Registry/tombstone epoch or active-block-set epoch is stale, missing or rolled back | `REGISTRY_ROLLBACK` or `BLOCK_SCOPE_UNEVALUABLE`; deny |
+
 
 ## 3. Operational rule
 
