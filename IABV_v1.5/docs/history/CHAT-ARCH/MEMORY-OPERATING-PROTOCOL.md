@@ -1,3 +1,17 @@
+## Continuity method delta — reconcile R5 anchors before routing the next authority search (2026-10-13; Entry 269)
+
+Canonical: [CHAT-ARCH-2026-10-13-269-m0b-r5-reconciliation-and-next-owner-gate.md](./CHAT-ARCH-2026-10-13-269-m0b-r5-reconciliation-and-next-owner-gate.md).
+
+A supplied audit's architectural conclusion can be sound while its line anchors are wrong. Re-fetch named files at the declared immutable commit, record Git blob SHAs, locate exact declarations and correct anchors before using them as evidence. Do not repeat the whole audit when corrected objects resolve the discrepancy.
+
+R5 found no separate supported audit-read diagnostic plus checkout-scoped decision in the inspected public paths. The existing refusal payload is not a separate diagnostic API; an observation grant is not a repository-read authorization. Preserve existing path/sensitive-file/size/list caps.
+
+RQ219/RQ220's bounded mutation-authority discovery is already closed; do not repeat it. Current-state records Model A selected for the first supervised prototype; do not re-ask A/B. A distinct read-only inspection of additional identity/authority sources beyond prior scope remains behind an explicit Owner scope gate. Do not silently expand source scope or issue Codex a prompt implying authorization. Once authorized, Codex searches only direct references and call sites, stops at a broader identity subsystem, and returns SHA/line-grounded evidence.
+
+Canonical route must be reconciled in full after every write: CHAT-ARCH README → CURRENT-STATE → CONTEXT-INDEX → MOP → SYMBIOSIS-MAP → UNRESOLVED-KNOWLEDGE → ARCHIVE-REGISTRY → AGENTS → new record.
+
+---
+
 ## Continuity method delta — repair the canonical memory front door and recompute the next actor (2026-10-13; Entry 268)
 
 Canonical: [CHAT-ARCH-2026-10-13-268-m0b-memory-front-door-and-governance-route-reconciliation.md](./CHAT-ARCH-2026-10-13-268-m0b-memory-front-door-and-governance-route-reconciliation.md).

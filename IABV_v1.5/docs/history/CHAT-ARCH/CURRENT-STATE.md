@@ -1,3 +1,15 @@
+## 2026-10-13 CONTINUITY UPDATE — ENTRY 269: M0B-R5 SOURCE RECONCILED; OWNER SCOPE GATE PENDING
+
+Canonical: [CHAT-ARCH-2026-10-13-269-m0b-r5-reconciliation-and-next-owner-gate.md](./CHAT-ARCH-2026-10-13-269-m0b-r5-reconciliation-and-next-owner-gate.md).
+
+M0B-R5's architecture conclusion is upheld within the inspected source scope: public audit readers use the governance gate; observation permission is not repository-read authority; no separate diagnostic plus checkout-scoped read-decision interface was found in the inspected MCP/WorldModel/Control Center paths. Several R5 source line anchors do not match the named declarations at its claimed pinned commit; Entry 269 re-fetched the exact blobs and supplies corrected lines.
+
+The next unresolved gate is not the Model A/B choice—CURRENT-STATE already records Model A for the first supervised MCP prototype. It is whether to authorize a distinct bounded static inspection of additional existing public identity/authority sources beyond RQ219/RQ220's already-closed scope, solely to look for an existing source of authenticated Owner authority/decision receipt. No broad identity search is permitted by implication.
+
+Next actor after explicit scope authorization: Codex, public-source only. Until then, no scope expansion; no local M0A read, blocked-reader retry, implementation, tests, runtime, installation/update, new auth or extra spend. KEEP_BLOCKED.
+
+---
+
 ## 2026-10-13 CONTINUITY UPDATE — ENTRY 268: SUPER-MEMORY FRONT DOOR AND M0B GOVERNANCE ROUTE RECONCILED
 
 Canonical: [CHAT-ARCH-2026-10-13-268-m0b-memory-front-door-and-governance-route-reconciliation.md](./CHAT-ARCH-2026-10-13-268-m0b-memory-front-door-and-governance-route-reconciliation.md).

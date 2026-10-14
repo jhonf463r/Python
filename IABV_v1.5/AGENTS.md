@@ -1,3 +1,13 @@
+## Current route overlay — Entry 269: R5 reconciled; next identity-source search requires explicit scope authorization
+
+Read [CHAT-ARCH-2026-10-13-269-m0b-r5-reconciliation-and-next-owner-gate.md](docs/history/CHAT-ARCH-2026-10-13-269-m0b-r5-reconciliation-and-next-owner-gate.md), then Entry 268.
+
+R5's main conclusion stands within inspected scope: current public audit readers are gated; observation permission is not repo-read authority; no dedicated diagnostic plus exact-checkout-scoped decision was found in those paths. Its source line citations are not all aligned to the named definitions at the claimed pinned baseline. Entry 269 contains exact verified blobs and corrected anchors.
+
+Do not repeat R9/R10/R5. The next useful action is an Owner scope decision, not manual code collection: whether to authorize a separate bounded, read-only public-source search of direct references/call sites for an existing authenticated Owner authority/receipt issuer/verifier outside the already closed RQ219/RQ220 search scope. Model A is already selected; do not ask it again. If authorized, Codex performs that limited search, then ChatGPT/coordinator independently verifies and writes back the material delta. No local M0A reader/retry, no implementation, tests, launch, credential/auth changes, installs/updates or extra spend. KEEP_BLOCKED.
+
+---
+
 ## Current route overlay — Entry 268: repair memory front door and define the next public-static task
 
 Read [CHAT-ARCH-2026-10-13-268-m0b-memory-front-door-and-governance-route-reconciliation.md](docs/history/CHAT-ARCH-2026-10-13-268-m0b-memory-front-door-and-governance-route-reconciliation.md), then Entries 267 and 266.

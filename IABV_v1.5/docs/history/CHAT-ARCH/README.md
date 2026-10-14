@@ -1,3 +1,13 @@
+## 2026-10-13 LATEST RESULT — M0B-R5 RECONCILED; SOURCE ANCHORS CORRECTED; OWNER SCOPE GATE NEXT (ENTRY 269)
+
+Canonical: [CHAT-ARCH-2026-10-13-269-m0b-r5-reconciliation-and-next-owner-gate.md](./CHAT-ARCH-2026-10-13-269-m0b-r5-reconciliation-and-next-owner-gate.md).
+
+R5's core contract finding is consistent with public source, but several line citations do not match the named symbols at pinned commit 559f4ea20a9a9163cd9a9839b11d9991933f8c07. Entry 269 records exact blob SHA and corrected anchors. Use those objects; do not repeat the broad audit.
+
+No separate audit-read diagnostic plus exact-checkout-scoped decision was found in the inspected MCP/WorldModel/Control Center surfaces. Observation permission is not repository-read authority. RQ219/RQ220 bounded searches are closed; Model A is already selected and must not be asked again. To inspect additional identity/authority sources outside that prior scope, an explicit Owner scope authorization remains necessary. Until then, no expanded Codex search and local M0A remains KEEP_BLOCKED.
+
+---
+
 ## 2026-10-13 LATEST CLARIFICATION — MEMORY FRONT DOOR REPAIRED / M0B GOVERNANCE ROUTE RECONCILED (ENTRY 268)
 
 Canonical: [CHAT-ARCH-2026-10-13-268-m0b-memory-front-door-and-governance-route-reconciliation.md](./CHAT-ARCH-2026-10-13-268-m0b-memory-front-door-and-governance-route-reconciliation.md).

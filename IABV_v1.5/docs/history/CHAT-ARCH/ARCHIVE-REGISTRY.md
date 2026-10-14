@@ -1,3 +1,15 @@
+## 2026-10-13 REGISTRATION — ENTRY 269: M0B-R5 RECONCILIATION AND AUTHORITY SCOPE GATE
+
+- Record: [CHAT-ARCH-2026-10-13-269-m0b-r5-reconciliation-and-next-owner-gate.md](./CHAT-ARCH-2026-10-13-269-m0b-r5-reconciliation-and-next-owner-gate.md)
+- Type: SOURCE-ANCHOR RECONCILIATION / GOVERNANCE CONTRACT / ROUTING
+- Documentation baseline: d77f04e2fe9a02d28803d95d8856c31effda4ffa; code baseline: 559f4ea20a9a9163cd9a9839b11d9991933f8c07.
+- R5's bounded control-flow conclusion is corroborated; several cited line ranges were misaligned with their named declarations. Exact blob SHAs/corrected anchors are in Entry 269.
+- No dedicated audit-read diagnostic plus checkout/path-scoped read decision was found in inspected public MCP/WorldModel/Control Center paths. No local M0A inference.
+- Model A already selected; do not ask A/B again. Broader directly related identity/authority source inspection remains Owner-gated.
+- Next AI after explicit scope authorization: Codex; public-source-only, no edits/tests/runtime. KEEP_BLOCKED.
+
+---
+
 ## 2026-10-13 REGISTRATION — ENTRY 268: MEMORY FRONT-DOOR / GOVERNANCE ROUTE RECONCILIATION
 
 - Record: [CHAT-ARCH-2026-10-13-268-m0b-memory-front-door-and-governance-route-reconciliation.md](./CHAT-ARCH-2026-10-13-268-m0b-memory-front-door-and-governance-route-reconciliation.md)

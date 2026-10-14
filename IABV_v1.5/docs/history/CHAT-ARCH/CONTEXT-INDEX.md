@@ -1,3 +1,13 @@
+## Latest route record — Entry 269 (M0B-R5 reconciliation + Owner scope gate)
+
+- Record: [CHAT-ARCH-2026-10-13-269-m0b-r5-reconciliation-and-next-owner-gate.md](./CHAT-ARCH-2026-10-13-269-m0b-r5-reconciliation-and-next-owner-gate.md)
+- R5's contract conclusion is consistent with inspected public source, but multiple provided line anchors do not match the named declarations at the claimed baseline. Entry 269 contains exact verified blob SHAs and corrected anchors; use it rather than copying unverified line links.
+- No dedicated audit-read diagnostic plus exact-checkout/path-scoped decision was found in the inspected public MCP/WorldModel/Control Center paths. Observation grants are not repository-read grants.
+- RQ219/RQ220 scope was already closed as no trusted mutation authority found in scope. Model A is already selected in current-state; do not ask A/B again.
+- Next gate: explicit Owner authorization for a distinct, bounded, read-only public-source inspection of directly related identity/authority sources beyond the already inspected paths. Next AI after approval: Codex. Until then KEEP_BLOCKED; no local read, implementation, tests or launch.
+
+---
+
 ## Latest route record — Entry 268 (memory front door + M0B governance gate)
 
 - Record: [CHAT-ARCH-2026-10-13-268-m0b-memory-front-door-and-governance-route-reconciliation.md](./CHAT-ARCH-2026-10-13-268-m0b-memory-front-door-and-governance-route-reconciliation.md)

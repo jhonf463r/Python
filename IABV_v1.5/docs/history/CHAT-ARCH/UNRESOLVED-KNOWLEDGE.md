@@ -1,3 +1,16 @@
+## 2026-10-13 — ENTRY 269: SOURCE ANCHORS RECONCILED; READ-AUTHORITY ISSUER STILL UNKNOWN
+
+Canonical: [CHAT-ARCH-2026-10-13-269-m0b-r5-reconciliation-and-next-owner-gate.md](./CHAT-ARCH-2026-10-13-269-m0b-r5-reconciliation-and-next-owner-gate.md).
+
+- PROVEN_BY_SOURCE: pinned blobs and exact declaration anchors for the audit gate/readers, OperationalBlockRecord, WorldModel observation grants, Control Center grant path/test and audit-tool path checks are recorded in Entry 269.
+- PROVEN_BY_SOURCE, bounded: no dedicated audit-read diagnostic plus separate checkout/path-scoped read-decision path was found in those inspected public surfaces.
+- UNPROVEN: issuer/verifier for a valid scoped read receipt; direct M0A server/worktree identity; actual live refusal payload; local code state.
+- Method correction: several anchors in the supplied R5 report do not match the named symbols at the reported pinned baseline; do not treat its line URLs as verified. Use exact blob/line anchors in Entry 269.
+- Owner gate: further public identity/authority source inspection beyond previously searched RQ219/RQ220 paths is not authorized by inference. Model A is already selected; do not re-ask A/B.
+- Next route: request explicit scope authorization only; after authorization, Codex performs bounded, direct-reference public-source archaeology. KEEP_BLOCKED.
+
+---
+
 ## 2026-10-13 — ENTRY 268: CONTINUITY ROUTE MISMATCH AND AUDIT-READ DECISION GAP
 
 Canonical: [CHAT-ARCH-2026-10-13-268-m0b-memory-front-door-and-governance-route-reconciliation.md](./CHAT-ARCH-2026-10-13-268-m0b-memory-front-door-and-governance-route-reconciliation.md).
