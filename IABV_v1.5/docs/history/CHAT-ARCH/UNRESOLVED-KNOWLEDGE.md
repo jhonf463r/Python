@@ -1,3 +1,15 @@
+## 2026-10-13 LATEST COORDINATOR ROUTE — ENTRY 277: C4 / AMENDMENT 274.3 PROPOSED
+
+Canonical: [CHAT-ARCH-2026-10-13-277-m0b-r8-1-c4-adjudication-and-274-3.md](./CHAT-ARCH-2026-10-13-277-m0b-r8-1-c4-adjudication-and-274-3.md).
+
+C4 returned `PASS_WITH_REPAIRS` with R1–R9. Entry 277 records the coordinator's text-only adjudication/proposed amendment and a single delta-review route; its status is `M0B_R8_1_AMENDMENT_274_3_PROPOSED_PENDING_DELTA_REVIEW`, not an accepted baseline. Keep `KEEP_BLOCKED`.
+
+Effective design inputs are Entry 274 (blob `5943a87d907436fc7ecac31534cbfcd31fe7de55`), the clean historical Entry 275 body at [its immutable commit](https://github.com/jhonf463r/Python/blob/1e644ee663118b6567018cd2211c107e48489d4c/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-275-m0b-r8-1-contract-amendment-274-1.md, blob `0945248916fa4f83cc0e7d9d354e39fe3720bb5a`), Entry 276 (blob `023272e14ec5c6ef26b904c47c3fed66eb93c532`) and proposed Entry 277. **The current Entry 275 path is a supersession/provenance notice, not the contract body.** Do not use the corrupt historical blob as normative text; do not claim a full restoration.
+
+Next actor: Sonnet/Claude, one targeted delta review of Entry 277 only; then coordinator reconciliation. No broad audit. No implementation, tests/build/runtime, local M0A access, blocked-reader retry/bypass, credential inspection, authentication, installation/update or launch. Entry 277 and its acceptance cannot release a governance block.
+
+---
+
 ## Latest correction — Entry 275 integrity status
 
 The corrupt Entry 275 blob `3106d55393e0a4f3f4488decfff94ef6071c47d1` is historical. The current Entry 275 path is a supersession notice, not the corrupt document. The clean prior blob remains available at commit `1e644ee663118b6567018cd2211c107e48489d4c`; Entry 276 records the proposed grammar repair and C3-02–C3-11 amendment. Full-text restoration is not claimed.
