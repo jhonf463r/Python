@@ -1,3 +1,15 @@
+## 2026-10-13 — ENTRY 272: CONTRACT SPECIFIED; TRUST AND TARGET PREREQUISITES OPEN
+
+Canonical: [CHAT-ARCH-2026-10-13-272-m0b-r8-read-decision-contract.md](./CHAT-ARCH-2026-10-13-272-m0b-r8-read-decision-contract.md).
+
+- **PROPOSED:** separate narrow diagnostic, fresh-human approval receipt, trusted issuer/decision, reader-side verifier and durable read-operation receipt.
+- **PROVEN_BY_SOURCE from Entry 271:** generic broker result has no verified actor field; ApprovalMemory may auto-resolve `approved=True, auto_resolved=True`; no production link to ExternalActionAuthorization was found in bounded direct search.
+- **UNPROVEN:** trusted authenticated Owner principal; integrity-protected production decision issuer/verifier; exact MCP/workspace/checkout state resolver; legitimate release of the actual applicable governance block; target-local M0A identity/state.
+- **Proposed policy default:** maximum five-minute grant lifetime for review; no evidence this is existing configuration. Existing per-file 1 MiB and per-listing 200-entry ceilings remain hard caps for the proposed initial scope.
+- **Posture:** contract-only, not implemented. No local read, source edits, tests, runtime or launch. `KEEP_BLOCKED`.
+
+---
+
 ## 2026-10-13 — ENTRY 271: HUMAN APPROVAL FLOW FOUND; TRUSTED READ AUTHORITY STILL UNPROVEN
 
 Canonical: [CHAT-ARCH-2026-10-13-271-m0b-r7-approval-broker-chain-adjudication.md](./CHAT-ARCH-2026-10-13-271-m0b-r7-approval-broker-chain-adjudication.md).
