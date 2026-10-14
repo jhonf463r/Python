@@ -1,3 +1,14 @@
+## Latest route record — Entry 274 (M0B-R8.1 consolidated read-decision contract)
+
+- Record: [CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md](./CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md)
+- Status: `M0B_R8_1_CONSOLIDATED_CONTRACT_PROPOSED_PENDING_SECOND_CHALLENGE`; `KEEP_BLOCKED`.
+- Consolidates F-01–F-12 from the adversarial review of Entries 272–273 into one proposed contract.
+- Normative v1: fresh interactive approval is unconditional; issuer/UI are separate from requester; decision is server-side, ledger-backed and session-bound; the read decision cannot release a block; all applicable blocks must be independently handled; exact target/path-object identity is verified without a whole-tree scan; same-handle OS containment and race tests are required; durable intent/completion, mandatory revocation and fail-closed recovery are required; directory-prefix/wildcard grants are excluded.
+- This resolves contract wording only. The supplied review read no code, so implementation/source behavior is `UNPROVEN`. Trusted principal/issuer, ledger integrity, target identity, scope model, OS enforcement, revocation source and block-release mechanism remain unproven.
+- Next actor: Sonnet/Claude, second focused adversarial challenge of Entry 274; no broad source search or implementation.
+
+---
+
 ## Latest route record — Entry 273 (M0B-R8 independent contract review)
 
 - Record: [CHAT-ARCH-2026-10-13-273-m0b-r8-independent-contract-review.md](./CHAT-ARCH-2026-10-13-273-m0b-r8-independent-contract-review.md)
