@@ -1,3 +1,13 @@
+## Current route overlay — Entry 270: M0B-R6 authority chain adjudicated; KEEP_BLOCKED
+
+Read [CHAT-ARCH-2026-10-13-270-m0b-r6-authority-chain-reconciliation.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-270-m0b-r6-authority-chain-reconciliation.md), then Entry 269, Entry 268 and the canonical README-first route.
+
+The bounded public-source pass found an `ExternalActionAuthorization` model and a Devin-specific consumer, but no production issuer or repository-scoped read-authority chain. Entry 270 records the exact code blob SHAs and corrected line anchors; do not reuse the supplied model/bootstrap line ranges. The object does not bind MCP server/workspace/checkout identity, repository-read operation or allowed paths. `approved_by` and `VALIDATED` are not proof of a trusted Owner principal.
+
+Do not search general identity/authentication without a new explicit Owner gate. Do not treat Devin authorization or observation permission as repository-read permission. Model A is already selected; do not ask A/B again. No local M0A read/retry/bypass, implementation, tests, runtime, launch, credential/auth change, installation/update or additional spend. `KEEP_BLOCKED`.
+
+---
+
 ## Current route overlay — Entry 269: R5 reconciled; next identity-source search requires explicit scope authorization
 
 Read [CHAT-ARCH-2026-10-13-269-m0b-r5-reconciliation-and-next-owner-gate.md](docs/history/CHAT-ARCH-2026-10-13-269-m0b-r5-reconciliation-and-next-owner-gate.md), then Entry 268.
