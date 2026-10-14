@@ -146,7 +146,7 @@ For an exact status query of an existing `UNRESOLVED` operation, if every mandat
 Keep the global ledger/anchor integrity check first, but separate it from request-selected validation of a single decision's binding envelope.
 
 - A global ledger-chain, anchor, or durable-ledger authenticity failure independently detected by the mandatory global integrity gate returns `LEDGER_INTEGRITY_UNPROVEN` and halts reads, regardless of the selected decision ID.
-- After requester authentication and global gates, if the supplied ID is unknown, if the decision is hidden before `not_before`, or if the selected decision's binding envelope cannot be authenticated on that request path, return public/internal `DECISION_NOT_APPLICABLE` with the same response shape. Set `expected_binding_result=BINDING_ENVELOPE_UNTRUSTED` for the envelope failure, record a protected anomaly, do not read content, and do not trigger a request-specific global halt.
+- For an operation/issuance request that supplies a decision ID directly (not a status query following an already authenticated operation-record link), if the supplied ID is unknown, if the decision is hidden before `not_before`, or if the selected decision's binding envelope cannot be authenticated on that request path, return public/internal `DECISION_NOT_APPLICABLE` with the same response shape. Set `expected_binding_result=BINDING_ENVELOPE_UNTRUSTED` for the envelope failure, record a protected anomaly, do not read content, and do not trigger a request-specific global halt. An exact status query whose authenticated operation record links to the decision is instead a required-record dependency and follows §4: an unreadable, unauthenticated, or malformed linked record must not be disguised as an unknown caller-supplied ID.
 - If a readable, authenticated binding envelope proves the selected decision is for a different principal/session/workspace/target, return `DECISION_NOT_APPLICABLE` with binding result `MISMATCH` and no halt.
 - Only after a selected envelope is authenticated and matches the requester/target may the full decision payload schema be examined. A matching, present, readable but malformed decision payload gives `LEDGER_INTEGRITY_UNPROVEN`, public `REQUEST_DENIED`, validator `DECISION_RECORD_SCHEMA_INVALID`, status `SCHEMA_INVALID` and halt pending reconciliation.
 
@@ -232,7 +232,7 @@ The field `expected_observation_sequence` must be an ordered, duplicate-free seq
 
 ### 8.4 State-effects grammar
 
-Define `state_effects` as a complete semicolon-delimited set of key-value pairs in this exact key order, with no whitespace-dependent parsing:
+Define `state_effects` as a complete semicolon-delimited set of key-value pairs in this exact key order, with no whitespace-dependent parsing. Serialize as `operation_record=<enum>;operation_lifecycle=<enum>;reader_state=<enum>;reservation=<enum>;probe_attempts_used=<0-or-1>;content_state=<enum>;decision_record=<enum>;owner_channel=<enum>`.
 `operation_record`, `operation_lifecycle`, `reader_state`, `reservation`, `probe_attempts_used`, `content_state`, `decision_record`, `owner_channel`.
 
 Allowed value vocabularies:
