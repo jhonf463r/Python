@@ -195,7 +195,7 @@ Define a **row-like ID candidate** as a physical Markdown line whose first non-w
 
 For candidate detection only, recognize the base pattern `[0-9]{3}-[Aa][0-9]+[a-zA-Z]?` as a substring of the trimmed first cell after stripping Markdown code delimiters for detection, not for acceptance. If such a candidate occurs in a pipe row outside the sole manifest table, the artifact is invalid. If it occurs inside the table but is not exactly the normalized ID syntax or otherwise violates the schema, the row is invalid. Do not silently ignore malformed candidates because they fail the strict accepted-ID regex.
 
-The normalized accepted ID remains exactly `^[0-9]{3}-A[0-9]+[a-z]?$$$$`, with separate status `ACTIVE` or `RETIRED`; remove the duplicated dollar-sign typo if any source copy contains it, so the operative regex is `^[0-9]{3}-A[0-9]+[a-z]?$$`. The parser must not use the broad candidate regex as the accepted-ID regex.
+The normalized accepted ID remains exactly `^[0-9]{3}-A[0-9]+[a-z]?$`, with separate status `ACTIVE` or `RETIRED`. The parser must not use the broad candidate regex as the accepted-ID regex.
 
 Required parser behavior:
 - Prose “see `278-A17a`” on a non-pipe line: not a row-like candidate, does not increase row count.
@@ -232,7 +232,7 @@ The field `expected_observation_sequence` must be an ordered, duplicate-free seq
 
 ### 8.4 State-effects grammar
 
-Define `state_effects` as a complete set of key-value pairs in this exact key order:
+Define `state_effects` as a complete semicolon-delimited set of key-value pairs in this exact key order, with no whitespace-dependent parsing:
 `operation_record`, `operation_lifecycle`, `reader_state`, `reservation`, `probe_attempts_used`, `content_state`, `decision_record`, `owner_channel`.
 
 Allowed value vocabularies:
