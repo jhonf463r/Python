@@ -1,3 +1,15 @@
+## 2026-10-13 LATEST ADJUDICATION — ENTRY 275: AMENDMENT 274.1; TARGETED REVIEW PENDING
+
+Canonical: [CHAT-ARCH-2026-10-13-275-m0b-r8-1-contract-amendment-274-1.md](./CHAT-ARCH-2026-10-13-275-m0b-r8-1-contract-amendment-274-1.md).
+
+The second adversarial pass (C2) returned `PASS_WITH_REPAIRS` with C2-01–C2-11. Entry 275 consolidates the proposed amendment 274.1: independently verifiable Owner intent rather than a generic UI event; authority-controlled target/registration lineage and block applicability; restoration of existing denylist/containment requirements; atomic nonce consumption; crash/rollback-safe, tamper-evident server ledger; distinct staged/release-authorized/delivery outcomes; safe pre-approval path resolution and non-oracular errors; a restrictive v1 path grammar and same-object containment; raw-entry listing caps; and discriminating positive/boundary/recovery tests.
+
+**Critical:** if a governance block applies, v1 has no ability to clear it without an independently supported governance-owned release. The terminal result is `BLOCK_RELEASE_UNSUPPORTED`; accepting the contract does not unblock M0A.
+
+Next actor: Sonnet/Claude for one targeted challenge of Entry 275 only. No implementation, local read, reader retry, tests/runtime or launch. `KEEP_BLOCKED`.
+
+---
+
 ## 2026-10-13 LATEST CONTRACT — ENTRY 274: M0B-R8.1 CONSOLIDATED; SECOND CHALLENGE PENDING
 
 Canonical: [CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md](./CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md).
