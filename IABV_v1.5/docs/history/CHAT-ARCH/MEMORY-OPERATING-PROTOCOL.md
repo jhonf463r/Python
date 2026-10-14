@@ -1,20 +1,18 @@
-## 2026-10-13 LATEST COORDINATOR ROUTE — ENTRY 277: C4 / AMENDMENT 274.3 PROPOSED
+## 2026-10-13 CANONICAL ROUTE — ENTRY 278: CONSOLIDATED M0B-R8.1 CONTRACT CANDIDATE
 
-Canonical: [CHAT-ARCH-2026-10-13-277-m0b-r8-1-c4-adjudication-and-274-3.md](./CHAT-ARCH-2026-10-13-277-m0b-r8-1-c4-adjudication-and-274-3.md), current blob `b9e4071e0b8cbeb3354ec7218d46864419402a7b` (commit `5116ee79ad01a250c749682949485d34de72b394`).
+Canonical artifact: [CHAT-ARCH-2026-10-13-278-m0b-r8-1-consolidated-contract-candidate-274-3.md](./CHAT-ARCH-2026-10-13-278-m0b-r8-1-consolidated-contract-candidate-274-3.md) — blob `046d6f509e5290d38774c6b651ae20ec56c8a1a0`, commit `635446f66e9fc386eeca7afe04e2306113686946`.
 
-C4 returned `PASS_WITH_REPAIRS` with R1–R9. Entry 277 records the coordinator's text-only adjudication/proposed amendment and one delta-review route; status is `M0B_R8_1_AMENDMENT_274_3_PROPOSED_PENDING_DELTA_REVIEW`, not an accepted baseline. Keep `KEEP_BLOCKED`.
+Entry 278 consolidates the operative text of Entry 274, the clean historical body of Entry 275, the C3 amendment in Entry 276 and C4 repairs R1–R9 in Entry 277 into one full-text candidate plus one namespaced conformance manifest. The final fetch-back verified a single top-level heading and 78 unique manifest rows. Composite/ambiguous cases identified during reconciliation have been split; C3-10's `BLOCK_SCOPE_UNEVALUABLE` precedence is preserved. The earlier duplicated README pointer to Entry 274 has also been removed.
 
-Effective inputs: Entry 274 (blob `5943a87d907436fc7ecac31534cbfcd31fe7de55`), clean historical Entry 275 body at [its immutable commit](https://github.com/jhonf463r/Python/blob/1e644ee663118b6567018cd2211c107e48489d4c/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-275-m0b-r8-1-contract-amendment-274-1.md) (blob `0945248916fa4f83cc0e7d9d354e39fe3720bb5a`), Entry 276 (blob `023272e14ec5c6ef26b904c47c3fed66eb93c532`) and proposed Entry 277. **The current Entry 275 path is a supersession/provenance notice, not the contract body.** Do not use the corrupt historical blob as normative text or claim a full restoration.
+Status: `M0B_R8_1_CONSOLIDATED_CANDIDATE_274_3_PENDING_TARGETED_DELTA_REVIEW`; operational posture: `KEEP_BLOCKED`. This is a proposed design artifact, not an accepted baseline or implementation evidence.
 
-Next: Sonnet/Claude, one targeted delta review of Entry 277 only, then coordinator reconciliation. No broad audit. No implementation, tests/build/runtime, local M0A access, blocked-reader retry/bypass, credential inspection, authentication, installation/update or launch. Entry 277 and its acceptance cannot release a governance block.
+Effective source provenance: Entry 274 blob `5943a87d907436fc7ecac31534cbfcd31fe7de55`; clean historical Entry 275 body at [its immutable commit](https://github.com/jhonf463r/Python/blob/1e644ee663118b6567018cd2211c107e48489d4c/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-275-m0b-r8-1-contract-amendment-274-1.md) (blob `0945248916fa4f83cc0e7d9d354e39fe3720bb5a`); Entry 276 blob `023272e14ec5c6ef26b904c47c3fed66eb93c532`; Entry 277 blob `b9e4071e0b8cbeb3354ec7218d46864419402a7b`. The current Entry 275 path remains a supersession notice and must not be treated as normative text.
 
----## Latest correction — Entry 275 path is now a supersession notice
+Next actor: Sonnet/Claude, one targeted delta review of Entry 278 only: test the merged clause precedence, single-result denial taxonomy, namespaced manifest and all R1–R9 regressions; report `PASS`, `PASS_WITH_REPAIRS` or `FAIL` with exact counterexamples, minimal fixes and discriminating tests. No broad audit/source archaeology.
 
-The statement below about blob `3106d55393e0a4f3f4488decfff94ef6071c47d1` refers to the corrupt historical blob, not the current content at the Entry 275 path. The current path is a warning/redirect notice. Use the clean historical blob at commit `1e644ee663118b6567018cd2211c107e48489d4c` as the uncorrupted Entry 275 contract body; review it together with Entry 274 and Entry 276, which supplies the corrected proposed grammar and C3 amendments. Full-text restoration is still not claimed.
+No implementation, product-source/config edits, tests/builds/runtime, local M0A access, blocked-reader retry/bypass, credential inspection, authentication, installation/update or launch. Acceptance of this design cannot release a governance block. No applicable block is lifted without independently supported governance-owned release.
 
----
-
-## Continuity method delta — reconcile C3, prioritize document integrity, and apply R8.1-C3 (2026-10-13; Entry 276)
+---## Continuity method delta — reconcile C3, prioritize document integrity, and apply R8.1-C3 (2026-10-13; Entry 276)
 
 Canonical: [CHAT-ARCH-2026-10-13-276-m0b-r8-1-c3-adjudication-and-274-2.md](./CHAT-ARCH-2026-10-13-276-m0b-r8-1-c3-adjudication-and-274-2.md).
 
