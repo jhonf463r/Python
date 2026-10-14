@@ -1,3 +1,13 @@
+## 2026-10-13 SYMBIOSIS DELTA — ENTRY 273: READ-AUTHORITY CONTRACT REVIEW
+
+Canonical: [CHAT-ARCH-2026-10-13-273-m0b-r8-independent-contract-review.md](./CHAT-ARCH-2026-10-13-273-m0b-r8-independent-contract-review.md).
+
+ChatGPT/coordinator independently reviewed Entry 272 against R5/Entry 269. The authority separation is coherent, but implementation-ready acceptance requires two R8.1 safeguards: (1) TOCTOU-resistant handle/object binding for each file read/list; (2) trusted, explicit applicability evaluation for governance-block scope, not just reliance on the current `assistant_kind` filter. Exact scope semantics must be grounded in the authoritative model. The mismatch is not established as the cause of local denial.
+
+Next actor: Sonnet/Claude for a focused adversarial contract review. Codex should not implement yet. Trusted Owner provenance, issuer integrity, exact live checkout identity and block-release semantics are unresolved. `KEEP_BLOCKED`.
+
+---
+
 ## 2026-10-13 SYMBIOSIS DELTA — ENTRY 272: PROPOSED READ-DECISION AUTHORITY BOUNDARY
 
 Canonical: [CHAT-ARCH-2026-10-13-272-m0b-r8-read-decision-contract.md](./CHAT-ARCH-2026-10-13-272-m0b-r8-read-decision-contract.md).
