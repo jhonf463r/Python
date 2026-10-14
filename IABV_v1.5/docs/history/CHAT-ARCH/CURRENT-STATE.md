@@ -1,3 +1,15 @@
+## 2026-10-13 CONTINUITY UPDATE — ENTRY 275: AMENDMENT 274.1; TARGETED REVIEW PENDING
+
+Canonical: [CHAT-ARCH-2026-10-13-275-m0b-r8-1-contract-amendment-274-1.md](./CHAT-ARCH-2026-10-13-275-m0b-r8-1-contract-amendment-274-1.md).
+
+The owner-supplied M0B-R8.1-C2 review returned `PASS_WITH_REPAIRS` with C2-01–C2-11. Entry 275 consolidates proposed contractual repairs: an independently verifiable Owner user-confirmation channel and explicit requester threat model; trusted registration lineage for block matching; preserved existing sensitive-file and workspace-containment denials; atomic nonce consumption and restart expiry; tamper-evident anti-rollback server ledger with idempotent operations; explicit staged/release/delivery states; safe non-oracular path preview; restrictive path grammar and same-object containment; raw-entry count semantics; and positive, boundary, recovery and filesystem-race evidence requirements.
+
+This resolves textual gaps only. The reviewer reported reading documents and no code; production behavior remains `UNPROVEN`. The actual trusted Owner-verification boundary, ledger/anchor, target identity, authoritative scope model, governance-owned release path, revocation source, target-platform containment and delivery semantics remain unproven.
+
+Operational status: `M0B_R8_1_AMENDMENT_274_1_PROPOSED_PENDING_TARGETED_REVIEW`; `KEEP_BLOCKED`. Next actor: Sonnet/Claude for a focused review of Entry 275 only. If a governance block applies, v1 cannot release it without a separate supported governance-owned attestation; result is terminal `BLOCK_RELEASE_UNSUPPORTED`. No implementation, tests/runtime, launch or local M0A access follows from this contract work.
+
+---
+
 ## 2026-10-13 CONTINUITY UPDATE — ENTRY 274: CONSOLIDATED R8.1 CONTRACT; SECOND CHALLENGE PENDING
 
 Canonical: [CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md](./CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md).
