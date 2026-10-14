@@ -1,3 +1,15 @@
+## 2026-10-13 CONTINUITY UPDATE — ENTRY 272: READ-DECISION CONTRACT SPECIFIED; NOT IMPLEMENTED
+
+Canonical: [CHAT-ARCH-2026-10-13-272-m0b-r8-read-decision-contract.md](./CHAT-ARCH-2026-10-13-272-m0b-r8-read-decision-contract.md).
+
+M0B-R8 specifies three separate boundaries: narrow diagnostic; issuer flow requiring fresh interactive approval with independently verified principal provenance; and reader-side verification of a distinct decision against the exact server/workspace/repository/checkout state, operation/path allowlist, expiry, revocation, finite budgets and any explicitly supported release of the applicable governance block. The contract also defines durable operation receipts, fail-closed behavior and future conformance cases that have not been executed.
+
+The existing HumanApprovalBroker/ApprovalMemory and Devin ExternalActionAuthorization do not presently demonstrate the required trusted issuer or identity chain. Auto-resolved approval, generic `approved=True`, `approved_by`, `VALIDATED`, and observation permission are not repo-read authority. Target identity and block-release semantics remain unproven. The proposed five-minute maximum lifetime is a design default for review, not a fact about current code. Existing reader guardrails (1 MiB/file, 200 entries/list) remain caps, not permission to expand.
+
+Status: `M0B_R8_READ_DECISION_CONTRACT_SPECIFIED_NOT_IMPLEMENTED`. Next: independent contract review/adoption and explicitly separate decision on any implementation. No local M0A access, source change, tests/runtime, launch, credential access or authentication is authorized; `KEEP_BLOCKED`. Model A remains selected; do not ask A/B again.
+
+---
+
 ## 2026-10-13 CONTINUITY UPDATE — ENTRY 271: APPROVAL CHAIN INCOMPLETE; NEXT IS CONTRACT-ONLY
 
 Canonical: [CHAT-ARCH-2026-10-13-271-m0b-r7-approval-broker-chain-adjudication.md](./CHAT-ARCH-2026-10-13-271-m0b-r7-approval-broker-chain-adjudication.md).
