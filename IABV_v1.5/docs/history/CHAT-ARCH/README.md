@@ -1,3 +1,15 @@
+## 2026-10-13 LATEST RESULT — M0B-R6 AUTHORITY CHAIN RECONCILED; KEEP_BLOCKED (ENTRY 270)
+
+Canonical: [CHAT-ARCH-2026-10-13-270-m0b-r6-authority-chain-reconciliation.md](./CHAT-ARCH-2026-10-13-270-m0b-r6-authority-chain-reconciliation.md).
+
+The bounded public-source review found an `ExternalActionAuthorization` model and a Devin-specific consumer, but no production issuer or repository-scoped read-authority chain in scope. The supplied M0B-R6 report omitted the direct consumer in `tool_adapters.py` and its cited `models.py` / `bootstrap.py` line ranges do not match the exact pinned blobs. Entry 270 records blob SHAs and corrected anchors, including model lines 3227–3298, bootstrap helpers 145–234, and Devin verifier 1865–1904.
+
+Relevant source blobs at pinned commit `559f4ea20a9a9163cd9a9839b11d9991933f8c07` match current `main` for the inspected files. The `ExternalActionAuthorization` fields and Devin consumer do not bind server/workspace/checkout identity, repository read operation, or allowed paths. No production constructor/issuer was found in the bounded public search; this is not a global absence claim. Stop before general identity/auth exploration. Local M0A, implementation, tests/runtime and launch remain `KEEP_BLOCKED`.
+
+Recover continuity: this README → CURRENT-STATE → CONTEXT-INDEX → MEMORY-OPERATING-PROTOCOL → Entry 270 and exact source blobs.
+
+---
+
 ## 2026-10-13 LATEST RESULT — M0B-R5 RECONCILED; SOURCE ANCHORS CORRECTED; OWNER SCOPE GATE NEXT (ENTRY 269)
 
 Canonical: [CHAT-ARCH-2026-10-13-269-m0b-r5-reconciliation-and-next-owner-gate.md](./CHAT-ARCH-2026-10-13-269-m0b-r5-reconciliation-and-next-owner-gate.md).
