@@ -75,3 +75,58 @@ This episode used read-only GitHub source/document retrieval and wrote documenta
 
 ---
 
+
+
+## 7. Reusable next-agent prompt — Codex / public-source-only
+
+Use this exact bounded task for the next Codex handoff:
+
+### M0B-R5 — Static code-facing contract for audit diagnosis and scoped read decision
+
+**Target actor:** Codex as code-contract analyst.  
+**Mode:** read-only inspection of published GitHub source and continuity records.  
+**Status:** KEEP_BLOCKED.  
+**Not authorized:** local M0A read, blocked MCP-reader retry, alternate-reader bypass, IABV/Codex/App Server launch, commands, tests/builds, runtime, source/config/document edits, commits/pushes, installation/update, new authentication, credentials, paid API/credits or extra spend.
+
+#### Continuity bootstrap — mandatory
+Read in order:
+1. `IABV_v1.5/docs/history/CHAT-ARCH/README.md`
+2. `CURRENT-STATE.md`
+3. `CONTEXT-INDEX.md`
+4. `MEMORY-OPERATING-PROTOCOL.md`
+5. Entry 268, then Entries 267, 266, 265 and 264 only as needed
+6. Reconcile the exact relevant records in Entries 219–226; do not reopen unrelated historic work.
+
+At start, verify the live main SHA and the source-file blob SHAs relevant to this issue. Entry 268's documentation baseline is `a9eb37d929dae5658b5f1a7e03d40edeb76c50db`; the audited code baseline is `559f4ea20a9a9163cd9a9839b11d9991933f8c07`. The two intervening updates are documentation-only, but verify source blobs rather than assume. If code differs, pin and report the actual source revision.
+
+#### Owner-decision reconciliation
+Current-State already records **RQ224 Model A selected for the first supervised MCP prototype**. Do not ask the Owner to select A/B again. This is a threat-model assumption only; it does not close RQ224, prove an authority/receipt implementation, authorize broad identity exploration, or grant repository-read access. The observation grant `observe_window_content:codex` is not a repository-read decision.
+
+#### Mission
+Produce the smallest source-grounded, reuse-first, code-facing contract and **unexecuted** test specification for the missing bounded repository-audit access decision. No implementation.
+
+#### Inspect only relevant public paths
+- `infra/mcp/server.py`: `_governance_block_for_route`, the registration and gate path for `read_repo_file` and `list_repo_directory`, the blocked response fields, and `autonomy_status` / `autonomy_update_task`.
+- `services/evolution/world_model_service.py`: `grant_observation_permission`, `revoke_observation_permission`, operational block production, and whether an existing operation explicitly releases an audit-reader block.
+- `ui/viewmodels/control_center_viewmodel.py` and its relevant QML/tests: the approval action, call chain, permission scope, retry, and any evidence of an audit-read release.
+- Directly relevant models, runbook, and canonical Entries 219–226 only.
+
+Do not do broad source archaeology. Do not claim that absence in this bounded inspection proves global absence. The existing reader's blocked response can contain reason/detail/block metadata; that is not equivalent to a dedicated diagnostic plus a separate access decision.
+
+#### Required output
+A. Compact source map: symbol/file, pinned blob SHA, line anchors, caller, callee, scope and returned evidence.
+B. A clear adjudication of whether an existing supported public path already performs both (1) a narrow diagnostic and (2) a separately authorized audit-read decision. Keep those two functions distinct.
+C. Minimum proposed contract:
+   - Diagnostic returns only applicable block/permission metadata; it never grants access.
+   - Decision binds a directly proven server/workspace/checkout identity; operation class; explicit relative-path allowlist; limits; expiry; authority/provenance; and decision ID.
+   - Unknown/missing/mismatched/stale/denied identity or decision, unavailable state, path outside allowlist, or expired authority fails closed.
+   - No observation permission is promoted to repository-read authority.
+   - Reuse current WorldModel/Control Center/gate/approval machinery where semantically correct. Do not invent a trust root or a second governance system. Identify any new seam only as PROPOSED.
+D. Non-executed discriminating tests for: block diagnostic reveals only applicable fields; diagnostic never releases gate; observation grant does not satisfy audit read; exact target and path binding; expiry/replay/mismatch; global active block preserved; unknown scope fails closed; disconnected and unknown network state where relevant; existing path traversal/secret/path limits remain enforced.
+E. Reconcile the proposed read-only decision with Entries 219–226. Respect their actual scope. State explicitly where mutation authorization differs from read-only audit access. Record Model A accurately and identify only genuinely missing owner decisions; do not re-ask settled questions.
+F. End with a small dependency table: PROVEN_BY_SOURCE / OWNER_REPORTED / PROPOSED / UNPROVEN, then name exactly one next edge. Do not propose implementation or a new architecture unless source proves existing organs cannot express the contract.
+
+#### Out of scope
+Do not modify the known unrelated gate semantics for `target_scope` or unknown `network_status` in this task. If encountered, record them as separate static risks and do not attribute them to the active local M0A block without runtime evidence. Do not select the Codex App Server vs Desktop route here; that comparison still requires legitimate local-source provenance. Do not claim the bridge is operational.
+
+Return the compact report to ChatGPT/coordinator for independent source reconciliation. The coordinator—not this report alone—will decide whether the canonical trace needs a further knowledge/method/routing delta.
