@@ -1,3 +1,15 @@
+## Continuity method delta — independent contract review and R8.1 hardening (2026-10-13; Entry 273)
+
+Canonical: [CHAT-ARCH-2026-10-13-273-m0b-r8-independent-contract-review.md](./CHAT-ARCH-2026-10-13-273-m0b-r8-independent-contract-review.md).
+
+A read-decision contract may correctly separate diagnostic, approval, issuer, reader verifier and durable receipt while still leaving implementation-critical race semantics underspecified. Before accepting a reader contract, tie path authorization to the actual opened filesystem object; a pathname check followed by a later open can have a TOCTOU gap. If safe handle-based containment is unavailable, fail closed.
+
+Also distinguish block reporting from correct block applicability. Entry 269 notes the inspected active-block filter uses `assistant_kind`, not `target_scope`; do not assume that helper proves all scope classes are evaluated. Require explicit supported scope semantics and tests for global, matching and nonmatching scoped blocks, multiple/unknown scopes, and absent target identity. This discrepancy is an independent hazard, not a proven cause of the M0A refusal.
+
+Entry 273 accepts R8 only as a provisional design baseline with these two required clarifications. Next: one focused Sonnet/Claude adversarial challenge of Entries 272–273; no broad source search, implementation, or local read. Keep `KEEP_BLOCKED`.
+
+---
+
 ## Continuity method delta — diagnostic, approval, read grant and receipt are separate contracts (2026-10-13; Entry 272)
 
 Canonical: [CHAT-ARCH-2026-10-13-272-m0b-r8-read-decision-contract.md](./CHAT-ARCH-2026-10-13-272-m0b-r8-read-decision-contract.md).
