@@ -1,3 +1,13 @@
+## Current route overlay — Entry 272: R8 contract-only
+
+Read [CHAT-ARCH-2026-10-13-272-m0b-r8-read-decision-contract.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-272-m0b-r8-read-decision-contract.md), then Entries 271–269 and follow the canonical README-first route.
+
+R8 is a proposed contract only. Separate the diagnostic, fresh interactive approval, scoped decision, independent reader verification and operation receipt. Do not treat generic approval results, automatic preapproval, `approved_by`, `VALIDATED` or observation permissions as repository-read authority. Exact MCP/workspace/checkout identity, trusted principal, issuer integrity and block-release semantics remain unproven.
+
+No local M0A read/retry/bypass, source implementation, tests, runtime or launch. Model A already selected. `KEEP_BLOCKED`.
+
+---
+
 ## Current route overlay — Entry 271: approval workflow is partial; repo-read gate stays blocked
 
 Read [CHAT-ARCH-2026-10-13-271-m0b-r7-approval-broker-chain-adjudication.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-271-m0b-r7-approval-broker-chain-adjudication.md), then Entries 270 and 269 and the canonical README-first route.
