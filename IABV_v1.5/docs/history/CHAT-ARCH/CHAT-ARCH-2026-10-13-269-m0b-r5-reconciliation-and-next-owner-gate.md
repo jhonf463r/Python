@@ -72,3 +72,43 @@ If the Owner decides to authorize the bounded scope expansion, the decision shou
 AUTORIZO una investigación estática y de solo lectura de las fuentes públicas existentes de identidad/autoridad directamente relacionadas con la emisión o verificación de una decisión de lectura de repositorio, fuera de los caminos ya examinados en RQ219/RQ220 y M0B-R5. El alcance se limita a seguir referencias y llamadas directas necesarias para identificar si ya existe un principal autenticado del propietario y una autoridad/emisor/verificador reutilizable. No autoriza lectura del checkout local M0A, reintento o elusión del lector bloqueado, consulta de secretos/credenciales, ejecución de procesos, pruebas, builds, modificación de archivos, implementación, instalación/actualización, nuevas autenticaciones ni gasto adicional. Detenerse antes de entrar en un subsistema general de identidad/autenticación, y devolver evidencia con blob SHA, líneas exactas y procedencia.
 
 Only after this authorization should Codex receive the bounded prompt. This is an Owner scope decision, not a request for the Owner to perform technical research.
+
+
+## 8. Prepared Codex prompt — dormant until the Owner authorizes the scope in §7
+
+Do not treat the presence of this prompt as authorization. Run it only after the Owner explicitly authorizes the bounded scope expansion recorded in §7. If that authorization is absent, stop without searching additional identity/authority paths.
+
+### M0B-R6 — bounded public-source discovery of an existing read-decision authority
+
+**Actor:** Codex  
+**Mode:** public GitHub source inspection only; static/read-only  
+**Purpose:** determine whether an existing identity/authority component can legitimately issue or verify the scoped read-only repository decision specified by R5. Do not implement anything.
+
+**Continuity bootstrap:** follow README → CURRENT-STATE → CONTEXT-INDEX → MEMORY-OPERATING-PROTOCOL → Entry 269. Verify live main and relevant exact blob SHAs before citing source. Entry 269's code baseline is 559f4ea20a9a9163cd9a9839b11d9991933f8c07; later changes should be distinguished from that baseline.
+
+**Already-decided boundaries:**
+- Model A is already selected for the first supervised MCP prototype; do not ask A/B again.
+- RQ219/RQ220's bounded mutator/broker/UI discovery is already closed. Do not repeat the same broad search.
+- Observation permission is not repository-read authority.
+- R5's line anchors need the corrected blob/line references in Entry 269.
+- This prompt is dormant until explicit Owner authorization of §7.
+
+**Task, after authorization only:**
+1. Start from the exact already-inspected authority/approval definitions and call sites documented in RQ219/RQ220/RQ223/RQ224.
+2. Follow only direct imports, type references, callers and callees necessary to establish whether an existing authenticated Human Domain Owner principal, authority producer, and verifiable decision/receipt issuer or consumer exists beyond the already-examined paths.
+3. Determine whether any candidate is appropriate for the distinct read-only operation; do not assume a mutation approval or Boolean approved flag transfers to repository reading.
+4. If a candidate exists, trace the smallest complete evidence chain: principal/identity source → authority decision → receipt or decision object → verifier/consumer → binding to exact operation/resource/scope. Report any missing link.
+5. Stop before a general identity/authentication subsystem, unrelated providers, private configuration, secrets or credentials. Do not expand recursively. If a boundary is reached before a complete chain is found, report that negative result and stop.
+6. Do not build a new trust root or propose implementation as if an existing authority were found.
+
+**Prohibited:** local M0A access; retrying or routing around the blocked reader; invoking MCP tools; running IABV/Codex App Server; commands, tests, builds or runtime; edits, commits or pushes to source; credential inspection; authentication; installation/update; API/model calls; extra spend.
+
+**Deliverable:**
+- Current public main SHA and exact blob SHA for every file actually relied upon.
+- Minimal source graph with line-accurate anchors and caller/callee relationship.
+- Classification of each edge as PROVEN_BY_SOURCE, OWNER_REPORTED, PROPOSED or UNPROVEN.
+- Explicit verdict: EXISTING_READ_AUTHORITY_CHAIN_FOUND / PARTIAL_CHAIN / NO_EXISTING_CHAIN_FOUND_IN_BOUNDED_SCOPE.
+- Exact reason for any stop and one next action.
+- Confirmation no local access, execution, tests or source changes occurred.
+
+Do not declare the bridge operational. Return the report to ChatGPT/coordinator for independent reconciliation and canonical writeback.
