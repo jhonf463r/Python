@@ -1,4 +1,20 @@
-## 2026-10-13 CANONICAL ROUTE — ENTRY 279: C5 DELTA ADJUDICATION / AMENDMENT 274.4
+## 2026-10-13 CANONICAL ROUTE — ENTRY 280: C6 FAIL RECONCILIATION / AMENDMENT 274.5
+
+Canonical artifact: [CHAT-ARCH-2026-10-13-280-m0b-r8-1-c6-delta-adjudication-and-amendment-274-5.md](./CHAT-ARCH-2026-10-13-280-m0b-r8-1-c6-delta-adjudication-and-amendment-274-5.md) — blob `6d7d7f4966e1224456e00410c812395e6a5c598f`, commit `0a462d66071f2d354e8a299ffaf859b3aeac61d5`.
+
+The supplied Sonnet/Claude delta review returned `FAIL` for Entry 279. Entry 280 records a bounded corrective amendment 274.5 for S1–S4, S6–S8 and S11: a complete anti-rollback epoch rule; explicit preview/open/final-gate phases and non-oracular requester outputs; separate requester/internal/lifecycle/status result fields; operation-level idempotency and status-query semantics; a fixed requester-visible 120-second approval window; the ordered R2 result taxonomy with `DECISION_NOT_APPLICABLE`; bounded detection-overhead accounting and deterministic concurrency oracles; and one physically contiguous parseable manifest in the next consolidation.
+
+Entry 278 and Entry 279 remain preserved historical documents; Entry 280 is an amendment, not a consolidated contract and not a `PASS`. Residual findings S5, S9 and S10 remain explicit acceptance blockers: compound/missing fixtures; delivery acknowledgement authority/recovery; and full precedence/time-boundary mutation coverage. They must be resolved before a new candidate is accepted.
+
+Next actor: Sonnet/Claude for one targeted delta review of Entry 279 plus Entry 280, restricted to S1–S4, S6–S8 and S11. If it passes, resolve S5/S9/S10 before constructing a new single consolidated contract and verifying it by fetch-back. No broad source archaeology.
+
+Evidence boundary: Entry 278, Entry 279 and Entry 280 are public documentary objects fetched with recorded blob SHAs. Repairs and tests are `PROPOSED`; all implementation/runtime/platform claims remain `UNPROVEN`.
+
+Operational posture: `KEEP_BLOCKED`. No local M0A access, blocked-reader retry/bypass, implementation, tests/builds/runtime, credential inspection, authentication, installation/update or launch. Contract review cannot grant read authority or release a governance block.
+
+---
+
+## Historical route — ENTRY 279: C5 delta adjudication / amendment 274.4 (superseded as current route by Entry 280)
 
 Canonical artifact: [CHAT-ARCH-2026-10-13-279-m0b-r8-1-c5-delta-adjudication-and-amendment-274-4.md](./CHAT-ARCH-2026-10-13-279-m0b-r8-1-c5-delta-adjudication-and-amendment-274-4.md) — blob `fccd67f375c265986215210b5161e684c65b7e27`, commit `5051c07c7db33390ba72ed9375e23c27782d7ef0`.
 
