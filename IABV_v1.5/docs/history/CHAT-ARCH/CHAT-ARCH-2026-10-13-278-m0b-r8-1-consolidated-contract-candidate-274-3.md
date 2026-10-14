@@ -378,7 +378,7 @@ For each request, evaluate all blocks using the authoritative scope model and re
 
 #### C3-11 — one authoritative conformance suite
 
-The effective suite uses the clean historical Entry 275 matrix (A1–A35) as the sole base matrix; it entirely replaces Entry 274's historical A1–A22 matrix rather than merging those reused IDs. This amendment adds only new IDs A36 onward. The final published manifest MUST contain one globally unique ID per case, a traceability link to the relevant historical requirement, explicit setup and expected result, and a positive/negative/boundary classification. Duplicate IDs, ambiguous outcomes or absence of positive cases fail manifest validation.
+The effective suite uses the clean historical Entry 275 matrix (A1–A35) as the sole base matrix; it entirely replaces Entry 274's historical A1–A22 matrix rather than merging those reused IDs.
 
 Add mandatory discriminating cases: unregistered Owner credential; registry/tombstone rollback; path-existence side channel across existing, missing and sensitive paths; unresolved handoff after crashes at each state boundary; retry after lost issuance response; copied session token; clock jump/suspend; 200 actual entries plus structural pseudo-entries versus 201 actual entries; simultaneous applicable and unevaluable blocks; and explicit regression cases for sensitive-path denial, non-allowlisted file, unapproved listing and diagnostic-only zero-file-read behavior. Preserve positive-path and exact-boundary cases so a deny-all implementation cannot pass.
 
@@ -528,7 +528,7 @@ At `RELEASE_AUTHORIZED`, cached revocation data is not acceptable. The verifier 
 
 All cases in this manifest are proposed and non-executed. Fixtures must be synthetic and isolated from M0A and real secrets. Filesystem race tests require the target platform's real temporary filesystem and controlled substitution points; mocked I/O alone does not establish OS race guarantees. Ledger tests must distinguish process restart, interrupted transactions and actual power-loss claims.
 
-Stable test identity is namespaced by source. Entry 275 A1–A35 is the only active base matrix, except A29 which is retired and split below. Entry 276 A36–A46 supplements it; Entry 276 A47 is retired and split below. New/rewritten cases use Entry 277 identifiers. The old Entry 274 A1–A22 matrix is historical only and is excluded from the active manifest.
+Stable test identity is namespaced by source. Entry 275 A1–A35 is the only active base matrix, except A17, A22, A26, A27, A29 and A35, which are retired where composite and split below. Entry 276 A36–A46 supplements it, except A37 and A40 which are retired/split below; A47 is also retired/split. Entry 277 A49, A55, A56 and A58 are retired/split where composite. New/rewritten cases use Entry 277 and Entry 278 identifiers. The old Entry 274 A1–A22 matrix is historical only and is excluded from the active manifest.
 
 | Qualified ID | Condition / setup | Exactly one expected result |
 |---|---|---|
@@ -568,7 +568,7 @@ Stable test identity is namespaced by source. Entry 275 A1–A35 is the only act
 | 275-A34 | Happy path with all evidence/authority available | Exact object only; durable release authorization before output; appropriate receipt status afterward |
 | 275-A35 [RETIRED] | Outside-allowlist file OR directory-prefix/wildcard OR sensitive path in a list | Composite retired; 275-A18/A19/A20/A32 and 278-A35a/b cover the distinct conditions |
 | 276-A36 | Well-formed Owner attestation signed by a credential not enrolled in the protected trust store | `APPROVAL_CHANNEL_UNTRUSTED`; no decision |
-| 276-A37 | Before Owner confirmation, compare normal existing, normal nonexistent, sensitive existing and sensitive nonexistent paths | Requester-visible status/shape do not disclose existence; sensitive-name denial before lookup |
+| 276-A37 [RETIRED] | Before Owner confirmation, compare normal existing, normal nonexistent, sensitive existing and sensitive nonexistent paths | Composite timing/oracle case retired; see 278-A82a–e |
 | 276-A38 | Server-protected destination/provider configuration changes after approval preview but before content release | Digest mismatch; staged content discarded and no delivery |
 | 276-A39 | Monotonic clock stalls or suspend semantics are unknown while wall time advances beyond tolerance | Active decisions and pending nonces expire; fail closed |
 | 276-A40 [RETIRED] | Structural pseudo-entries plus 200 actual entries OR 201 actual entries | Composite retired; see 278-A40a and 278-A40b |
@@ -590,10 +590,10 @@ Stable test identity is namespaced by source. Entry 275 A1–A35 is the only act
 | 277-A52 | Covered authority epoch changes after operation intent commit but before final release gate | `REGISTRY_ROLLBACK` primary code; durable operation state `DISCARDED`; no content, decision, nonce or budget reset |
 | 277-A53 | Retry committed issuance after process restart with same principal/session/token/digest | Return current state `EXPIRED`; no reactivation, new nonce or budget reset |
 | 277-A54 | Directory contains 199 valid actual entries and structural `.` and `..` pseudo-entries | Count/charge exactly 199 actual entries; listing may pass if all gates pass |
-| 277-A55 | Conformance manifest runs all positive, negative and exact-boundary grammar subcases; each subcase has a fixed setup/result | Manifest passes only if every required subcase has its specified result; deny-all fails |
+| 277-A55 [RETIRED] | Bundle of positive/negative/exact-boundary grammar subcases | Retired because each fixture needs a unique ID; see 278-A59–A81 |
 | 277-A56 [RETIRED] | Clock/suspend failure OR revocation freshness failure | Composite retired; see 278-A56a and 278-A56b |
 | 277-A57 | Relative path is syntactically valid and ≤240 characters, but root-plus-relative exceeds proven platform support | Uniform `PATH_SCOPE_UNAVAILABLE`; no unsupported lookup or assumed long-path mode |
-| 277-A58 | Full external state-sequence comparison for normal-existing/missing and sensitive-existing/missing targets | No existence oracle; no object-dependent `BLOCK_*` code before Owner confirmation; sensitive-name rejection precedes lookup |
+| 277-A58 [RETIRED] | Combined status-sequence comparison across four target/sensitivity cases | Retired; see 278-A82a–e |
 
 
 | 278-A17a | Authoritative revocation source unavailable/stale at a required gate while the decision has not independently expired | `REVOCATION_UNAVAILABLE`; discard staged content, deliver nothing |
@@ -614,6 +614,35 @@ Stable test identity is namespaced by source. Entry 275 A1–A35 is the only act
 | 278-A56b | Final-gate revocation response is cached, stale, missing or lacks authenticated freshness | `REVOCATION_UNAVAILABLE`; discard, deliver nothing |
 Required acceptance evidence inherited from the C2 matrix: filesystem-race claims require (a) static review proving the same verified handle is used with no post-verification name-based reopen; (b) target-platform documentation/semantics for selected primitives; and (c) controlled real-filesystem substitution stress tests across defined race points and iterations. Stress tests are evidence, not formal proof of absence of every race; if primitives cannot meet the conditions, v1 fails closed. Ledger durability/anti-rollback tests include process restart, interrupted transaction/recovery, restored older ledger and anchor mismatch. A test that cannot simulate hardware power loss MUST NOT claim to prove power-loss durability.
 
+
+| 278-A59 | A single ASCII alphanumeric path component, length one, is submitted to the isolated grammar fixture | Grammar accepts that component; no read authority is implied |
+| 278-A60 | A valid component containing exactly 128 permitted ASCII characters is submitted | Grammar accepts the component; no read authority is implied |
+| 278-A61 | A component containing 129 ASCII characters is submitted | `PATH_FORM_UNSUPPORTED` before filesystem lookup |
+| 278-A62 | A syntactically valid relative path is exactly 240 ASCII characters and within 16 components | Grammar accepts the path; target support and authorization gates still apply |
+| 278-A63 | A relative path contains 241 ASCII characters | `PATH_FORM_UNSUPPORTED` before filesystem lookup |
+| 278-A64 | A valid path uses exactly 16 components and stays within the total-length ceiling | Grammar accepts the path; target support and authorization gates still apply |
+| 278-A65 | A path uses 17 components | `PATH_FORM_UNSUPPORTED` before filesystem lookup |
+| 278-A66 | A component contains an ordinary interior space and otherwise valid characters | Grammar accepts the component; no read authority is implied |
+| 278-A67 | A component ends with a hyphen and otherwise satisfies the grammar | Grammar accepts the component; no read authority is implied |
+| 278-A68 | A component ends with an underscore and otherwise satisfies the grammar | Grammar accepts the component; no read authority is implied |
+| 278-A69 | A component ends with a dot | `PATH_FORM_UNSUPPORTED` before filesystem lookup |
+| 278-A70 | A component ends with an ASCII space | `PATH_FORM_UNSUPPORTED` before filesystem lookup |
+| 278-A71 | Reserved basename `CON` is submitted | `PATH_FORM_UNSUPPORTED` before filesystem lookup |
+| 278-A72 | Reserved basename `con.txt` is submitted | `PATH_FORM_UNSUPPORTED` before filesystem lookup |
+| 278-A73 | Reserved-name near-form `CON .txt` is submitted | Reserved-basename filter rejects it with `PATH_FORM_UNSUPPORTED` before lookup |
+| 278-A74 | Reserved-name near-form `NUL  .x` is submitted | Reserved-basename filter rejects it with `PATH_FORM_UNSUPPORTED` before lookup |
+| 278-A75 | Reserved-basename alias `COM0` is submitted | `PATH_FORM_UNSUPPORTED` before filesystem lookup |
+| 278-A76 | Reserved-basename alias `LPT0` is submitted | `PATH_FORM_UNSUPPORTED` before filesystem lookup |
+| 278-A77 | Non-reserved near-miss `CONSOLE` is tested at the reserved-name predicate | Reserved-name predicate does not reject it; later scope, allowlist and containment gates remain mandatory |
+| 278-A78 | Non-reserved near-miss `COM10` is tested at the reserved-name predicate | Reserved-name predicate does not reject it; later scope, allowlist and containment gates remain mandatory |
+| 278-A79 | Non-reserved near-miss `LPT10` is tested at the reserved-name predicate | Reserved-name predicate does not reject it; later scope, allowlist and containment gates remain mandatory |
+| 278-A80 | Non-reserved near-miss `NULL` is tested at the reserved-name predicate | Reserved-name predicate does not reject it; later scope, allowlist and containment gates remain mandatory |
+| 278-A81 | A valid-looking component is followed by a line terminator not consumed by the component validator | Genuine full-match validation rejects the full component with `PATH_FORM_UNSUPPORTED` |
+| 278-A82a | Before Owner confirmation, request a normal existing target | Requester sees only the uniform `APPROVAL_PENDING` state/shape throughout the pre-approval window; no existence detail |
+| 278-A82b | Before Owner confirmation, request a normal nonexistent target | Requester sees the same `APPROVAL_PENDING` state/shape and timing envelope as 278-A82a; no existence detail |
+| 278-A82c | Before Owner confirmation, request a target whose name is denied as sensitive and the target exists | No filesystem lookup occurs; requester-visible pre-approval sequence stays uniform and exposes no `BLOCK_*` or existence detail |
+| 278-A82d | Before Owner confirmation, request a target whose name is denied as sensitive and the target does not exist | No filesystem lookup occurs; requester-visible sequence/shape/timing matches 278-A82c and exposes no existence detail |
+| 278-A82e | Compare the complete pre-approval status sequence and response shape for 278-A82a–d | Normal existing/missing pair and sensitive existing/missing pair are equivalent before the approval window closes; no object-dependent `BLOCK_*` code appears |
 
 ## 7. Evidence, status and unresolved platform gates
 
