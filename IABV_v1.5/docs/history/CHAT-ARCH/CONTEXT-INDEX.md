@@ -1,3 +1,14 @@
+## Latest route record — Entry 272 (M0B-R8 repository-read decision contract)
+
+- Record: [CHAT-ARCH-2026-10-13-272-m0b-r8-read-decision-contract.md](./CHAT-ARCH-2026-10-13-272-m0b-r8-read-decision-contract.md)
+- Status: `M0B_R8_READ_DECISION_CONTRACT_SPECIFIED_NOT_IMPLEMENTED`; posture `KEEP_BLOCKED`.
+- The proposed contract separates diagnostic, fresh interactive approval receipt, trusted decision issuance, reader-side per-operation verification and durable operation receipt.
+- Requirements include verified Owner principal provenance; exact MCP server/workspace/repository/checkout-state binding; explicit operation/path allowlist; expiry/revocation; atomic finite budgets; sensitive-file and path-containment rules; explicit block-release semantics; fail-closed audit/accounting; and rejection of ApprovalMemory auto-resolution for a fresh-human requirement.
+- Trusted principal source, production issuer/integrity boundary, exact local target identity and supported block-release mechanism remain unproven. R8 is not an implementation grant; tests in the entry are proposed only and have not run.
+- Next: independent contract review/adoption, then Owner decision on separate prerequisites and implementation scope. No local M0A read, edits, tests/runtime or launch.
+
+---
+
 ## Latest route record — Entry 271 (M0B-R7 approval chain adjudication)
 
 - Record: [CHAT-ARCH-2026-10-13-271-m0b-r7-approval-broker-chain-adjudication.md](./CHAT-ARCH-2026-10-13-271-m0b-r7-approval-broker-chain-adjudication.md)
