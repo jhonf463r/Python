@@ -1,3 +1,9 @@
+## Latest correction — Entry 275 integrity status
+
+The corrupt Entry 275 blob is now historical; the current Entry 275 path contains a supersession notice, not the corrupted full document. The clean prior blob is linked through Entry 276. Treat Entry 276 as the current C3 adjudication and proposed amendment; do not claim a full restoration.
+
+---
+
 ## Latest continuity pointer — Entry 276
 
 See [Entry 276](CHAT-ARCH-2026-10-13-276-m0b-r8-1-c3-adjudication-and-274-2.md) for the current C3 adjudication and amendment 274.2. Entry 275's current blob is corrupted; use the clean historical blob only for provenance. The read contract still cannot release an applicable governance block. Keep `KEEP_BLOCKED`.
