@@ -1,3 +1,15 @@
+## 2026-10-13 SYMBIOSIS DELTA — ENTRY 275: AMENDMENT 274.1 AFTER C2
+
+Canonical: [CHAT-ARCH-2026-10-13-275-m0b-r8-1-contract-amendment-274-1.md](./CHAT-ARCH-2026-10-13-275-m0b-r8-1-contract-amendment-274-1.md).
+
+C2 returned `PASS_WITH_REPAIRS`; Entry 275 consolidates the eleven remaining documentary counterexamples into one amendment. Sonnet/Claude owns the next targeted contract challenge; ChatGPT/coordinator reconciles its evidence and continuity; Codex must not implement yet.
+
+Key constraints: independently verifiable Owner intent outside requester control; authority-controlled registration/lineage; existing reader denials remain mandatory; nonce/decision/budget state is atomic and durable; delivery is not inferred from a staged completion; path preview must not traverse or disclose external targets; same-object containment and restrictive v1 paths; listing counts raw entries and rejects partial/invalid results. A trustable ledger, platform primitives and implementation still require independent proof.
+
+If any governance block applies and there is no separately supported governance-owned release, v1 denies with `BLOCK_RELEASE_UNSUPPORTED`; the read contract cannot unblock M0A. Status `M0B_R8_1_AMENDMENT_274_1_PROPOSED_PENDING_TARGETED_REVIEW`; `KEEP_BLOCKED`.
+
+---
+
 ## 2026-10-13 SYMBIOSIS DELTA — ENTRY 274: CONSOLIDATED READ-AUTHORITY CONTRACT
 
 Canonical: [CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md](./CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md).
