@@ -1,30 +1,18 @@
 ## 2026-10-13 CANONICAL ROUTE — ENTRY 278: CONSOLIDATED M0B-R8.1 CONTRACT CANDIDATE
 
-Canonical artifact: [CHAT-ARCH-2026-10-13-278-m0b-r8-1-consolidated-contract-candidate-274-3.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-278-m0b-r8-1-consolidated-contract-candidate-274-3.md) — blob `046d6f509e5290d38774c6b651ae20ec56c8a1a0`, commit `635446f66e9fc386eeca7afe04e2306113686946`.
+Canonical artifact: [CHAT-ARCH-2026-10-13-278-m0b-r8-1-consolidated-contract-candidate-274-3.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-278-m0b-r8-1-consolidated-contract-candidate-274-3.md) — blob `eb8ea575ea4081fece851c3ca2c5a042e7b781b8`, commit `43a9cc982317ddbc090dcfe3dd482bd3508fa773`.
 
-Entry 278 consolidates the operative text of Entry 274, the clean historical body of Entry 275, the C3 amendment in Entry 276 and C4 repairs R1–R9 in Entry 277 into one full-text candidate plus one namespaced conformance manifest. The final fetch-back verified a single top-level heading and 78 unique manifest rows. Composite/ambiguous cases identified during reconciliation have been split; C3-10's `BLOCK_SCOPE_UNEVALUABLE` precedence is preserved. The earlier duplicated README pointer to Entry 274 has also been removed.
+Entry 278 combines Entry 274's base clauses, the clean historical Entry 275 C2 amendments, Entry 276's C3 grammar/guardrails and Entry 277's C4 R1–R9 repairs into one full-text contract candidate and a single conformance manifest. Fetch-back verified one top-level heading, 106 globally unique manifest rows, no ambiguous active A29/A47 aliases, dedicated tests for the grammar boundaries and pre-approval path-oracle cases, and no risky dollar-before-Markdown-backtick sequence. Composite cases identified during consolidation were retired and split where needed. C3-10 precedence is retained: BLOCK_SCOPE_UNEVALUABLE dominates BLOCK_RELEASE_UNSUPPORTED when scope evidence is incomplete; otherwise an applicable unreleased block returns BLOCK_RELEASE_UNSUPPORTED.
 
 Status: `M0B_R8_1_CONSOLIDATED_CANDIDATE_274_3_PENDING_TARGETED_DELTA_REVIEW`; operational posture: `KEEP_BLOCKED`. This is a proposed design artifact, not an accepted baseline or implementation evidence.
 
-Effective source provenance: Entry 274 blob `5943a87d907436fc7ecac31534cbfcd31fe7de55`; clean historical Entry 275 body at [its immutable commit](https://github.com/jhonf463r/Python/blob/1e644ee663118b6567018cd2211c107e48489d4c/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-275-m0b-r8-1-contract-amendment-274-1.md) (blob `0945248916fa4f83cc0e7d9d354e39fe3720bb5a`); Entry 276 blob `023272e14ec5c6ef26b904c47c3fed66eb93c532`; Entry 277 blob `b9e4071e0b8cbeb3354ec7218d46864419402a7b`. The current Entry 275 path remains a supersession notice and must not be treated as normative text.
+Provenance: Entry 274 blob `5943a87d907436fc7ecac31534cbfcd31fe7de55`; clean historical Entry 275 body at [its immutable commit](https://github.com/jhonf463r/Python/blob/1e644ee663118b6567018cd2211c107e48489d4c/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-275-m0b-r8-1-contract-amendment-274-1.md) (blob `0945248916fa4f83cc0e7d9d354e39fe3720bb5a`); Entry 276 blob `023272e14ec5c6ef26b904c47c3fed66eb93c532`; Entry 277 blob `b9e4071e0b8cbeb3354ec7218d46864419402a7b`. The current Entry 275 path remains a supersession notice and is not normative.
 
-Next actor: Sonnet/Claude, one targeted delta review of Entry 278 only: test the merged clause precedence, single-result denial taxonomy, namespaced manifest and all R1–R9 regressions; report `PASS`, `PASS_WITH_REPAIRS` or `FAIL` with exact counterexamples, minimal fixes and discriminating tests. No broad audit/source archaeology.
+Next actor: Sonnet/Claude — one targeted delta review of Entry 278 only. Challenge merged precedence, no-oracle states, total denial code order, per-case result determinism, test-ID uniqueness and R1–R9. Return `PASS`, `PASS_WITH_REPAIRS` or `FAIL`; for every survivor provide exact section, counterexample, minimal repair and discriminating test. No broad source archaeology.
 
-No implementation, product-source/config edits, tests/builds/runtime, local M0A access, blocked-reader retry/bypass, credential inspection, authentication, installation/update or launch. Acceptance of this design cannot release a governance block. No applicable block is lifted without independently supported governance-owned release.
+No implementation, product-source/config edits, tests/builds/runtime, local M0A access, blocked-reader retry/bypass, credential inspection, authentication, installation/update or launch. Acceptance of this candidate cannot release a governance block. Keep `KEEP_BLOCKED`.
 
----## Current route overlay — Entry 275: amendment 274.1 after C2
-
-Read [CHAT-ARCH-2026-10-13-275-m0b-r8-1-contract-amendment-274-1.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-275-m0b-r8-1-contract-amendment-274-1.md) in full. Entry 274 remains the consolidated base contract; Entry 275 is its proposed amendment and takes precedence where it changes a rule. Then recover the README-first canonical route.
-
-Next actor: Sonnet/Claude, one focused adversarial review of Entry 275 only (C2-01–C2-11). No broad audit and no Codex implementation prompt yet. The supplied report read contract documents, not code; implementation behavior stays `UNPROVEN`.
-
-A key boundary: no applicable governance block may be lifted by the read decision itself. Without a separately supported governance-owned release, v1 returns `BLOCK_RELEASE_UNSUPPORTED`; contract acceptance does not unlock M0A.
-
-No local M0A read/retry/bypass, code implementation, tests/builds/runtime, credential inspection, authentication, software installation/update or launch. Model A remains selected; do not ask A/B again. `KEEP_BLOCKED`.
-
----
-
-## Current route overlay — Entry 274: consolidated M0B-R8.1 contract
+---## Current route overlay — Entry 274: consolidated M0B-R8.1 contract
 
 Read [CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md) in full, then use the README-first canonical route. Entries 272–273 remain historical; Entry 274 is the single proposed normative contract pending a second challenge.
 
