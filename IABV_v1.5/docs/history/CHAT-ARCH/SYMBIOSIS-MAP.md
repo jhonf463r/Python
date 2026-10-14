@@ -1,3 +1,13 @@
+## 2026-10-13 SYMBIOSIS DELTA — ENTRY 274: CONSOLIDATED READ-AUTHORITY CONTRACT
+
+Canonical: [CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md](./CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md).
+
+The adversarial review found F-01–F-12 across the R8/ R8 addendum documents. Entry 274 is the single proposed normative R8.1 contract for the next challenge. Sonnet/Claude reviews the consolidated contract; ChatGPT/coordinator reconciles findings; Codex must not implement yet. A code-facing implementation or local access remains blocked pending design acceptance and independent trusted authority/target evidence.
+
+Key hard boundaries: no agent-relaxable approval policy; no request-controlled UI receipt; session-bound server-side decision and durable ledger; no read decision that releases its own governance block; fail-closed supported scope evaluation; scope-local identity that does not read unapproved paths; OS-enforced same-object containment; mandatory durable completion before content handoff; and mandatory revocation/expiry/budget checks. Entry 274 is a proposal, not proof that these organs exist or work. `KEEP_BLOCKED`.
+
+---
+
 ## 2026-10-13 SYMBIOSIS DELTA — ENTRY 273: READ-AUTHORITY CONTRACT REVIEW
 
 Canonical: [CHAT-ARCH-2026-10-13-273-m0b-r8-independent-contract-review.md](./CHAT-ARCH-2026-10-13-273-m0b-r8-independent-contract-review.md).
