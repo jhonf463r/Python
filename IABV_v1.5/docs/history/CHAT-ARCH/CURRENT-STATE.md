@@ -1,3 +1,15 @@
+## 2026-10-13 CONTINUITY UPDATE — ENTRY 270: M0B-R6 FOUND NO REPO-READ AUTHORITY CHAIN IN BOUNDED SCOPE
+
+Canonical: [CHAT-ARCH-2026-10-13-270-m0b-r6-authority-chain-reconciliation.md](./CHAT-ARCH-2026-10-13-270-m0b-r6-authority-chain-reconciliation.md).
+
+The bounded public source pass found an `ExternalActionAuthorization` model and a Devin-specific action consumer (`tool_adapters.py:1865–1904`), but no production issuer or repository-scoped permission chain. The model lacks MCP server/workspace/checkout identity, repository-read operation and path allowlist. Bootstrap helpers are guarded Devin API calls; their standard briefing call sites do not pass an authorization object. No local M0A evidence was accessed.
+
+The supplied report's `models.py:2989–3063` and `bootstrap.py:2413–2569` anchors do not match the declarations in the exact pinned blobs. Entry 270 stores corrected blob SHAs/lines; relevant pinned source blobs match current `main`. The bounded conclusion is `NO_EXISTING_REPO_READ_AUTHORITY_CHAIN_FOUND_IN_BOUNDED_SCOPE`, not a global claim about every path.
+
+Do not reuse Devin action authorization as repository permission. Do not widen into general identity/authentication without a new explicit Owner gate. Model A remains selected; do not ask A/B again. Local M0A, implementation, tests/runtime, and launch remain `KEEP_BLOCKED`.
+
+---
+
 ## 2026-10-13 CONTINUITY UPDATE — ENTRY 269: M0B-R5 SOURCE RECONCILED; OWNER SCOPE GATE PENDING
 
 Canonical: [CHAT-ARCH-2026-10-13-269-m0b-r5-reconciliation-and-next-owner-gate.md](./CHAT-ARCH-2026-10-13-269-m0b-r5-reconciliation-and-next-owner-gate.md).
