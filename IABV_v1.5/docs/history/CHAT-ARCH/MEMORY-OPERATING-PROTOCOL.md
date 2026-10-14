@@ -1,3 +1,13 @@
+## Continuity method delta — diagnostic, approval, read grant and receipt are separate contracts (2026-10-13; Entry 272)
+
+Canonical: [CHAT-ARCH-2026-10-13-272-m0b-r8-read-decision-contract.md](./CHAT-ARCH-2026-10-13-272-m0b-r8-read-decision-contract.md).
+
+Do not collapse a descriptive diagnostic, a generic approval result, a scoped read decision and a post-operation receipt into one `approved` boolean. A fresh-human-required gate must reject ApprovalMemory auto-resolution unless the Owner has explicitly chosen a different policy. Verify exact target identity, operation, path, expiry, revocation, budgets and applicable governance blocks in the reader immediately before each operation.
+
+A successful grant requires a trusted issuer/integrity boundary and verifiable principal provenance. An unverified `approved_by` string or caller-supplied grant object is not authority. Preserve path/sensitive-file/size/list caps; reserve audit and budget state before reading; do not disclose staged file content until the success receipt commits. If the final record fails after an internal read, do not claim that read was undone: discard staged output, stop subsequent reads and require reconciliation. Entry 272 is a contract proposal, not an implementation or local-access authorization.
+
+---
+
 ## Continuity method delta — approval outcome is not identity proof (2026-10-13; Entry 271)
 
 Canonical: [CHAT-ARCH-2026-10-13-271-m0b-r7-approval-broker-chain-adjudication.md](./CHAT-ARCH-2026-10-13-271-m0b-r7-approval-broker-chain-adjudication.md).
