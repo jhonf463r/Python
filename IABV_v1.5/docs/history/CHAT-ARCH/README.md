@@ -1,3 +1,17 @@
+## 2026-10-13 LATEST CLARIFICATION — MEMORY FRONT DOOR REPAIRED / M0B GOVERNANCE ROUTE RECONCILED (ENTRY 268)
+
+Canonical: [CHAT-ARCH-2026-10-13-268-m0b-memory-front-door-and-governance-route-reconciliation.md](./CHAT-ARCH-2026-10-13-268-m0b-memory-front-door-and-governance-route-reconciliation.md).
+
+The canonical entry point is this CHAT-ARCH README, not the repository-root README paths that returned 404. Entry 267 updated several routing files but missed this README, leaving it at Entry 266 while CURRENT-STATE/CONTEXT-INDEX pointed to Entry 267. Entry 268 repairs that navigation mismatch. Recover continuity in order: this README → CURRENT-STATE → CONTEXT-INDEX → MEMORY-OPERATING-PROTOCOL → exact canonical records/source.
+
+The bounded public audit found no dedicated separate audit-block diagnostic + checkout-scoped read grant in the inspected MCP/WorldModel/Control Center paths. The read/list gate has a refusal payload; observation permission grants only observation, not repository-read authority. Local M0A remains blocked.
+
+Correction: current CURRENT-STATE records Owner selection of RQ224 Model A for the first supervised prototype. Do not ask A/B again. This does not close RQ224 or authorize further identity exploration, implementation, local read, tests or launch.
+
+Next actor: Codex for a public-source-only code-facing diagnostic/scoped-read contract and non-executed test specification; no local M0A access, blocked reader retry, implementation, tests or launch. Keep KEEP_BLOCKED.
+
+---
+
 ## 2026-10-13 LATEST CLARIFICATION — OBSERVATION PERMISSION DOES NOT RELEASE AUDIT (ENTRY 266)
 
 Canonical: [CHAT-ARCH-2026-10-13-266-observation-approval-is-not-audit-release.md](./CHAT-ARCH-2026-10-13-266-observation-approval-is-not-audit-release.md).

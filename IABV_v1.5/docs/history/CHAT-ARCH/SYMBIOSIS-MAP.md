@@ -1,3 +1,15 @@
+## 2026-10-13 SYMBIOSIS DELTA — ENTRY 268: MEMORY ROUTE REPAIRED / AUDIT READ AUTHORITY SEPARATE
+
+Canonical: [CHAT-ARCH-2026-10-13-268-m0b-memory-front-door-and-governance-route-reconciliation.md](./CHAT-ARCH-2026-10-13-268-m0b-memory-front-door-and-governance-route-reconciliation.md).
+
+The cross-chat continuity failure was a routing defect, not total absence of memory: Entry 267 updated the central state/index and methods but missed CHAT-ARCH/README.md, so a README-first agent saw stale Entry 266. Entry 268 fixes the front door and route pointers.
+
+The inspected public path distinguishes observation permission from audit repository reading. The reader gate can return refusal metadata, but no separate audit-release + exact-checkout scoped read grant was found in the bounded MCP/WorldModel/Control Center surfaces. Local M0A remains blocked. RQ224 Model A is already selected for the first supervised prototype; it does not authorize broader identity research or close the separate audit-read gate.
+
+Next actor: Codex for public-source-only design of the minimal diagnostic/scoped-read contract and non-executed test spec, then ChatGPT/coordinator reconciles independently. No local read, implementation, test or launch.
+
+---
+
 ## 2026-10-13 SYMBIOSIS DELTA — M0B-R9.2/R10: CORRELATED RETURN, ELIGIBLE SUCCESS AND CAUSAL REUSE (ENTRY 267)
 
 Canonical: [CHAT-ARCH-2026-10-13-267-m0b-r9-2-r10-continuity-reconciliation.md](./CHAT-ARCH-2026-10-13-267-m0b-r9-2-r10-continuity-reconciliation.md).

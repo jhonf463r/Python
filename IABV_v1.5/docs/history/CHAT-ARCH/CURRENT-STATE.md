@@ -1,3 +1,17 @@
+## 2026-10-13 CONTINUITY UPDATE — ENTRY 268: SUPER-MEMORY FRONT DOOR AND M0B GOVERNANCE ROUTE RECONCILED
+
+Canonical: [CHAT-ARCH-2026-10-13-268-m0b-memory-front-door-and-governance-route-reconciliation.md](./CHAT-ARCH-2026-10-13-268-m0b-memory-front-door-and-governance-route-reconciliation.md).
+
+Material correction: Entry 267's previous write updated CURRENT-STATE, CONTEXT-INDEX, MEMORY-OPERATING-PROTOCOL, SYMBIOSIS-MAP, UNRESOLVED-KNOWLEDGE, ARCHIVE-REGISTRY and AGENTS, but missed the canonical `docs/history/CHAT-ARCH/README.md`. Therefore the required README-first route was stale at Entry 266. Entry 268 fixes it and aligns the top routing pointers.
+
+Focused public-source check at pinned code baseline `559f4ea20a9a9163cd9a9839b11d9991933f8c07`: existing `read_repo_file`/list paths pass through the audit gate and return refusal metadata; the inspected WorldModel/Control Center permission mutation grants observation only. No dedicated separate audit-release + checkout-scoped read-decision route was found in those inspected public paths. This is bounded negative evidence, not a global-absence claim and not evidence about local M0A.
+
+RQ224 correction: current-state records Owner-selected Model A for the first supervised MCP prototype. Do not ask A/B again. Broader identity/authority work, audit-read authorization, implementation, local M0A inspection, tests and runtime remain separate gates.
+
+**Next public-static task:** Codex produces the minimal code-facing diagnostic + separate scoped-read-decision contract and test specification after reconciling entries 219–226; no implementation, local read, runtime, tests or launch. **Primary launch posture remains KEEP_BLOCKED.**
+
+---
+
 ## 2026-10-13 CONTINUITY UPDATE — M0B-R9.2/R10 RETURN-CONTRACT RECONCILIATION (ENTRY 267)
 
 Canonical: [CHAT-ARCH-2026-10-13-267-m0b-r9-2-r10-continuity-reconciliation.md](./CHAT-ARCH-2026-10-13-267-m0b-r9-2-r10-continuity-reconciliation.md).

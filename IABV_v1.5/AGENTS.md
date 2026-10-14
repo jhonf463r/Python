@@ -1,3 +1,17 @@
+## Current route overlay — Entry 268: repair memory front door and define the next public-static task
+
+Read [CHAT-ARCH-2026-10-13-268-m0b-memory-front-door-and-governance-route-reconciliation.md](docs/history/CHAT-ARCH-2026-10-13-268-m0b-memory-front-door-and-governance-route-reconciliation.md), then Entries 267 and 266.
+
+Important continuity correction: the canonical front door is docs/history/CHAT-ARCH/README.md. It was missed in Entry 267, so new sessions could see stale Entry 266 despite CURRENT-STATE/CONTEXT-INDEX being newer. Entry 268 repairs this. Always verify that README, CURRENT-STATE, CONTEXT-INDEX, MEMORY-OPERATING-PROTOCOL, SYMBIOSIS-MAP, UNRESOLVED-KNOWLEDGE, ARCHIVE-REGISTRY and AGENTS all point to the same newest route.
+
+A bounded public-source audit checked the existing MCP gate/read/list tools, WorldModel grant/revoke APIs and Control Center observation permission route. The refusal can report applicable block metadata, but the inspected surfaces do not show a separate audit-release plus exact-checkout/path-scoped read-decision API. This is not a claim about every branch or local M0A. Do not retry/bypass blocked reader.
+
+Current-state already records RQ224 Model A for the first supervised MCP prototype. Do not ask Owner to select A/B again. This is not implementation authorization or audit-read authority.
+
+Next actor: Codex, read-only public-source contract analyst. Reconcile the bounded diagnostic/scoped-read decision with Entries 219–226 and produce the smallest code-facing contract plus unexecuted test spec. No local M0A read, MCP retry, implementation, test/build/runtime, Codex/App Server launch, installation/update, new auth or extra spend. ChatGPT/coordinator then independently reconciles and writes back material deltas. KEEP_BLOCKED.
+
+---
+
 ## Current route overlay — M0B-R9.2/R10 continuity (Entry 267)
 
 Read [CHAT-ARCH-2026-10-13-267-m0b-r9-2-r10-continuity-reconciliation.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-267-m0b-r9-2-r10-continuity-reconciliation.md), then Entry 266.

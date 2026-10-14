@@ -1,3 +1,15 @@
+## 2026-10-13 REGISTRATION — ENTRY 268: MEMORY FRONT-DOOR / GOVERNANCE ROUTE RECONCILIATION
+
+- Record: [CHAT-ARCH-2026-10-13-268-m0b-memory-front-door-and-governance-route-reconciliation.md](./CHAT-ARCH-2026-10-13-268-m0b-memory-front-door-and-governance-route-reconciliation.md)
+- Type: CONTINUITY AUDIT / SOURCE-ROUTE RECONCILIATION / GOVERNANCE CONTRACT / ROUTING
+- Baseline before the write: public main at ea2b16ae3b5d2e553897b769fee3c067e4bf29c5; public source-code audit pinned to 559f4ea20a9a9163cd9a9839b11d9991933f8c07.
+- Material continuity finding: canonical CHAT-ARCH README was missed by Entry 267 write, leaving README-first route stale at Entry 266 while other pointers said Entry 267. Entry 268 repairs it and aligns route files.
+- Material static finding: no dedicated audit-release + checkout-scoped read decision found in inspected server/WorldModel/Control Center paths; observation grant is not a repository-read grant.
+- Decision correction: Model A already selected for the first supervised MCP prototype in current-state; do not ask A/B again. Broader trust-source exploration and implementation remain gated.
+- Next actor: Codex for bounded public-source code-facing contract and non-executed test spec; ChatGPT/coordinator reviews. No source edits/tests/runtime/local M0A access. KEEP_BLOCKED.
+
+---
+
 ## 2026-10-13 REGISTRATION — ENTRY 267: M0B R9.2/R10 CONTINUITY RECONCILIATION
 
 - Record: [CHAT-ARCH-2026-10-13-267-m0b-r9-2-r10-continuity-reconciliation.md](./CHAT-ARCH-2026-10-13-267-m0b-r9-2-r10-continuity-reconciliation.md)

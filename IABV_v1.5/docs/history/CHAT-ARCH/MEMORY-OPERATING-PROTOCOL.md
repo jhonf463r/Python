@@ -1,3 +1,17 @@
+## Continuity method delta — repair the canonical memory front door and recompute the next actor (2026-10-13; Entry 268)
+
+Canonical: [CHAT-ARCH-2026-10-13-268-m0b-memory-front-door-and-governance-route-reconciliation.md](./CHAT-ARCH-2026-10-13-268-m0b-memory-front-door-and-governance-route-reconciliation.md).
+
+Before declaring continuity updated, verify the entire protocol route, especially the actual canonical `docs/history/CHAT-ARCH/README.md`; a root README 404 is not evidence that this front door is absent. An update to CURRENT-STATE and CONTEXT-INDEX is incomplete if the README-first route still points to an older episode. Verify all route pointers after writeback.
+
+Use current-state's owner decisions before asking again. Current CURRENT-STATE records RQ224 Model A selected for the first supervised MCP prototype. That supersedes the older RQ224 document's A/B question for that prototype. It does not close the underlying receipt/authority problem, authorize broader identity search, or authorize audit-read access/implementation. Do not re-ask A/B.
+
+For the audit-reader path, distinguish: (a) refusal response with reason/detail/block metadata, (b) a standalone minimal diagnostic, and (c) a separate trusted, checkout/path-scoped read decision. The existing public reader gate can report a refusal; this does not grant access. Observation grants only authorize their explicitly scoped observation action. If the exact public call paths have been checked and no supported release exists, stop generic archaeology and produce the bounded code-facing contract/test spec. Never bypass the blocked local reader or infer local M0A identity from public source.
+
+Always recompute next actor from the latest source baseline, first open edge, capability fit, authorization and expected information gain; do not inherit a stale suggestion. After writeback, independently re-fetch every route entry point and confirm the intended episode is first. Persistence is not learning; preserve the later causal-reuse requirement.
+
+---
+
 ## Continuity method delta — preserve R9.2/R10 provenance and distinguish preliminary success from adaptive completion (2026-10-13; Entry 267)
 
 Canonical: [CHAT-ARCH-2026-10-13-267-m0b-r9-2-r10-continuity-reconciliation.md](./CHAT-ARCH-2026-10-13-267-m0b-r9-2-r10-continuity-reconciliation.md).

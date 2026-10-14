@@ -1,3 +1,14 @@
+## Latest route record — Entry 268 (memory front door + M0B governance gate)
+
+- Record: [CHAT-ARCH-2026-10-13-268-m0b-memory-front-door-and-governance-route-reconciliation.md](./CHAT-ARCH-2026-10-13-268-m0b-memory-front-door-and-governance-route-reconciliation.md)
+- Continuity defect found: Entry 267 had updated CURRENT-STATE/CONTEXT-INDEX/protocol and other files, but omitted the canonical `docs/history/CHAT-ARCH/README.md`, leaving the README-first route one entry stale. Entry 268 repairs and aligns it.
+- Focused public source audit (code baseline `559f4ea20a9a9163cd9a9839b11d9991933f8c07)): existing MCP read/list refuses through `_governance_block_for_route` and can return block metadata; inspected WorldModel/Control Center permission grant path is observation-scoped. No separate explicit audit-release + checkout-scoped read-grant route found in the inspected surfaces. Bounded result only; local M0A remains UNPROVEN.
+- RQ224 correction: current CURRENT-STATE records Owner selection of Model A for the first supervised MCP prototype. Do not ask A/B again; this does not close RQ224 or authorize broader identity research, local read, implementation or runtime.
+- **Next actor:** Codex, public-source-only static code-contract analyst; deliver minimal narrow diagnostic + separate scoped-read-decision contract and non-executed test spec after reconciling Entries 219–226. No blocked reader retry, local checkout access, implementation, tests, launches or spend.
+- Posture: KEEP_BLOCKED.
+
+---
+
 ## Latest route record — Entry 267 (M0B-R9.2/R10 continuity)
 
 - Record: [CHAT-ARCH-2026-10-13-267-m0b-r9-2-r10-continuity-reconciliation.md](./CHAT-ARCH-2026-10-13-267-m0b-r9-2-r10-continuity-reconciliation.md)

@@ -1,3 +1,15 @@
+## 2026-10-13 — ENTRY 268: CONTINUITY ROUTE MISMATCH AND AUDIT-READ DECISION GAP
+
+Canonical: [CHAT-ARCH-2026-10-13-268-m0b-memory-front-door-and-governance-route-reconciliation.md](./CHAT-ARCH-2026-10-13-268-m0b-memory-front-door-and-governance-route-reconciliation.md).
+
+- PROVEN_BY_SOURCE: Entry 267 existed in CURRENT-STATE, CONTEXT-INDEX, method and agent files, but the canonical CHAT-ARCH README had stayed at Entry 266. Entry 268 now aligns the route.
+- PROVEN_BY_SOURCE, bounded: the inspected MCP reader/list path uses _governance_block_for_route; the existing WorldModel grant/revoke APIs and Control Center action are for observation. No separate supported audit release / checkout-scoped read decision was found in these inspected surfaces.
+- UNPROVEN: live M0A target and contents; actual refusal payload from the blocked session; whether an equivalent private/local mechanism exists; direct Codex runtime/return; causal learning.
+- OWNER-DECISION STATUS: current CURRENT-STATE records Model A selected for the first supervised MCP prototype. Do not ask A/B again; its scope does not imply access/implementation authority.
+- Next edge: public-source code-facing contract for minimal block diagnostic + separate scope-bound read decision, and reconciliation with Entries 219–226. Codex is the next static design actor. KEEP_BLOCKED.
+
+---
+
 ## 2026-10-13 — M0B-R9.2/R10 RETURN-CONTRACT AND METRIC-ELIGIBILITY GAPS (ENTRY 267)
 
 Canonical: [CHAT-ARCH-2026-10-13-267-m0b-r9-2-r10-continuity-reconciliation.md](./CHAT-ARCH-2026-10-13-267-m0b-r9-2-r10-continuity-reconciliation.md).
