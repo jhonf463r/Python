@@ -100,7 +100,7 @@ For every attempt, including denied attempts, the reader SHOULD emit a durable, 
 - verifier and reader version identifiers; relevant block/revocation reference;
 - result/content digest where useful and safe, without copying file contents into the audit stream.
 
-Receipts MUST NOT contain secret contents, authorization tokens, credentials, or unnecessary personal data. Receipt persistence failure must follow an explicit fail-closed policy; for this safety gate, inability to durably record a successful read receipt MUST deny the read or prevent further reads until the required audit guarantee is restored. The operation receipt is evidence of what happened, not an authorization for a later operation.
+Receipts MUST NOT contain secret contents, authorization tokens, credentials, or unnecessary personal data. Before content access, the verifier must ensure the audit sink is healthy and durably reserve an operation-intent record and the budget consumption as one fail-closed precondition. If that reservation cannot be committed, deny before reading. The reader should stage file contents internally, commit the completion receipt, and only then release content to the caller. If completion-receipt persistence fails after bytes were read internally, do not falsely claim the physical read was rolled back: discard staged output, release no content, stop all subsequent reads, preserve a non-sensitive unresolved/critical audit status through any independently available durable channel, and require explicit reconciliation before further access. The operation receipt is evidence of what happened, not an authorization for a later operation.
 
 ## 4. Scope and reader enforcement
 
