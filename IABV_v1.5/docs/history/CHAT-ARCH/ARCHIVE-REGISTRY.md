@@ -1,3 +1,15 @@
+## 2026-10-13 REGISTRATION — ENTRY 273: M0B-R8 INDEPENDENT CONTRACT REVIEW
+
+- Record: [CHAT-ARCH-2026-10-13-273-m0b-r8-independent-contract-review.md](./CHAT-ARCH-2026-10-13-273-m0b-r8-independent-contract-review.md)
+- Type: INDEPENDENT CONTRACT REVIEW / SECURITY-SEMANTICS HARDENING / NEXT-ACTOR ROUTING
+- Review baseline: `main` at `0c9d06c306064c2e0b3c7c218702e40ebd45ca98`; reviewed contract blob `5a55a9dd4ca2d7e16ee727950111a093470bf8b4`; R5 reconciliation blob `05fe1fe713e6282ba5e1e7338bec93ec92d99d53`.
+- Verdict: `M0B_R8_CONTRACT_PASS_WITH_REQUIRED_REPAIRS`; provisional design baseline only.
+- R8.1 addenda: path authorization must be tied to the actual securely opened file/directory object against TOCTOU; block applicability must be explicitly evaluated for all supported target scopes and fail closed when target/scope semantics are unknown.
+- Next: one focused Sonnet/Claude adversarial challenge of Entries 272–273, contract-only.
+- No source implementation, local M0A read, tests/runtime, or launch authorized. `KEEP_BLOCKED`.
+
+---
+
 ## 2026-10-13 REGISTRATION — ENTRY 272: M0B-R8 READ-DECISION CONTRACT
 
 - Record: [CHAT-ARCH-2026-10-13-272-m0b-r8-read-decision-contract.md](./CHAT-ARCH-2026-10-13-272-m0b-r8-read-decision-contract.md)
