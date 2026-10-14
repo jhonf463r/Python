@@ -1,3 +1,13 @@
+## Continuity method delta — approval outcome is not identity proof (2026-10-13; Entry 271)
+
+Canonical: [CHAT-ARCH-2026-10-13-271-m0b-r7-approval-broker-chain-adjudication.md](./CHAT-ARCH-2026-10-13-271-m0b-r7-approval-broker-chain-adjudication.md).
+
+When reconciling an approval flow, trace both manual and automatic paths. A generic approval outcome must not be assumed to contain an authenticated actor identity; inspect the result schema and callback inputs. If a pre-approver can resolve requests without UI, a positive result is not proof of fresh human presence. Keep this distinction separate from evidence about what the model/consumer accepts.
+
+For the IABV repo-read gate, a dedicated contract must reject memory-auto-resolved results when fresh interactive approval is required, bind identity and allowed paths to the exact server/workspace/checkout, and fail closed when actor provenance or the issuer/verifier chain is missing. Entry 271 records corrected blobs/anchors. No local M0A access or implementation is authorized.
+
+---
+
 ## Continuity method delta — M0B-R6 direct-reference pass and line-anchor correction (2026-10-13; Entry 270)
 
 Canonical: [CHAT-ARCH-2026-10-13-270-m0b-r6-authority-chain-reconciliation.md](./CHAT-ARCH-2026-10-13-270-m0b-r6-authority-chain-reconciliation.md).
