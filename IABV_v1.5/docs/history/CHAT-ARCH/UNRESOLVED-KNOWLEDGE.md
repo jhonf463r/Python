@@ -1,3 +1,16 @@
+## 2026-10-13 — ENTRY 271: HUMAN APPROVAL FLOW FOUND; TRUSTED READ AUTHORITY STILL UNPROVEN
+
+Canonical: [CHAT-ARCH-2026-10-13-271-m0b-r7-approval-broker-chain-adjudication.md](./CHAT-ARCH-2026-10-13-271-m0b-r7-approval-broker-chain-adjudication.md).
+
+- **PROVEN_BY_SOURCE:** HumanApprovalBroker's result schema has request/outcome flags but no verified actor identity; its request flow allows a pre-approver to resolve before UI prompting.
+- **PROVEN_BY_SOURCE:** ApprovalMemory may return `approved=True, auto_resolved=True` for a matching stored policy; this is not fresh human approval.
+- **PROVEN_BY_SOURCE, bounded:** direct public symbol searches returned ExternalActionAuthorization's model and two test helper constructors, without a production issuer in the searched results.
+- **UNPROVEN:** trusted Owner identity/provenance; a production bridge from broker result to ExternalActionAuthorization; a dedicated issuer/verifier bound to exact MCP server/workspace/checkout and relative-path allowlist; local M0A state.
+- **Provenance correction:** model/bootstrap line ranges in the supplied report are mismatched; Entry 271 records exact blob SHAs/corrected anchors.
+- **Next:** contract-only definition of dedicated read decision; no local M0A read, implementation, tests/runtime or launch. `KEEP_BLOCKED`.
+
+---
+
 ## 2026-10-13 — ENTRY 270: NO REPOSITORY-READ ISSUER FOUND IN BOUNDED DIRECT-REFERENCE PASS
 
 Canonical: [CHAT-ARCH-2026-10-13-270-m0b-r6-authority-chain-reconciliation.md](./CHAT-ARCH-2026-10-13-270-m0b-r6-authority-chain-reconciliation.md).
