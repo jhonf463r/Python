@@ -148,7 +148,7 @@ The protected internal code and requester result are separate fields. Apply the 
 16. `FILE_LIMIT_EXCEEDED` → `REQUEST_UNAVAILABLE`.
 17. `LIST_LIMIT_EXCEEDED` → `REQUEST_UNAVAILABLE`.
 
-The stage-specific fixed-window outputs take precedence over these ordinary mappings: while the fixed approval window remains open, every accepted syntactically valid request receives the same `APPROVAL_PENDING) envelope, without an internal gate code in requester-visible output. At the endpoint, a valid still-usable hidden decision gives `DECISION_ISSUED`; absent an eligible decision, give `REQUEST_UNAVAILABLE`. A request-specific internal code remains in the protected audit field.
+The stage-specific fixed-window outputs take precedence over these ordinary mappings: while the fixed approval window remains open, every accepted syntactically valid request receives the same `APPROVAL_PENDING` envelope, without an internal gate code in requester-visible output. At the endpoint, a valid still-usable hidden decision gives `DECISION_ISSUED`; absent an eligible decision, give `REQUEST_UNAVAILABLE`. A request-specific internal code remains in the protected audit field.
 
 A diagnostic-only probe with no decision record uses requester result `DIAGNOSTIC_COMPLETE_NO_DECISION`, internal code `NONE`, decision status `NONE`, and lifecycle `NOT_APPLICABLE`. A status query never releases content. A public result field may never contain an internal R2 code or a lifecycle token.
 
@@ -156,38 +156,38 @@ A diagnostic-only probe with no decision record uses requester result `DIAGNOSTI
 
 The 17 R2 codes do not exhaustively describe Owner/issuer stage outcomes. Use `expected_issuance_result` to record them rather than inventing a seventeenth-plus-one R2 code or overloading `NONE`.
 
-- A timely explicit Owner rejection yields issuance result `OWNER_REJECTED`, decision status `NONE`, and no decision issuance. The internal R2 code is `NONE); after the fixed endpoint the requester sees `REQUEST_UNAVAILABLE`.
-- No Owner response through the fixed endpoint yields `OWNER_NO_RESPONSE), decision status `NONE), and no decision issuance. The internal R2 code is `NONE); the requester sees `APPROVAL_PENDING` before the endpoint and `REQUEST_UNAVAILABLE` at the endpoint.
-- An approval/attestation arriving after its challenge or approval-freshness deadline yields `APPROVAL_LATE` and internal `DECISION_EXPIRED). This time-expiry result takes precedence over evaluating or exposing whether the target was bindable; the requester sees `APPROVAL_PENDING` before the fixed endpoint and `REQUEST_UNAVAILABLE` when no usable decision exists at/after it.
-- A timely valid approval with no safely established target binding yields `TARGET_UNBINDABLE), internal `PATH_SCOPE_UNAVAILABLE), and requester `REQUEST_UNAVAILABLE) at the endpoint.
-- An invalid/replayed/untrusted Owner attestation yields `OWNER_ATTESTATION_INVALID) and internal `APPROVAL_CHANNEL_UNTRUSTED).
-- Only valid fresh approval plus a safe binding and all issuance gates can yield `DECISION_ISSUED).
+- A timely explicit Owner rejection yields issuance result `OWNER_REJECTED`, decision status `NONE`, and no decision issuance. The internal R2 code is `NONE`; after the fixed endpoint the requester sees `REQUEST_UNAVAILABLE`.
+- No Owner response through the fixed endpoint yields `OWNER_NO_RESPONSE`, decision status `NONE`, and no decision issuance. The internal R2 code is `NONE`; the requester sees `APPROVAL_PENDING` before the endpoint and `REQUEST_UNAVAILABLE` at the endpoint.
+- An approval/attestation arriving after its challenge or approval-freshness deadline yields `APPROVAL_LATE` and internal `DECISION_EXPIRED`. This time-expiry result takes precedence over evaluating or exposing whether the target was bindable; the requester sees `APPROVAL_PENDING` before the fixed endpoint and `REQUEST_UNAVAILABLE` when no usable decision exists at/after it.
+- A timely valid approval with no safely established target binding yields `TARGET_UNBINDABLE`, internal `PATH_SCOPE_UNAVAILABLE`, and requester `REQUEST_UNAVAILABLE` at the endpoint.
+- An invalid/replayed/untrusted Owner attestation yields `OWNER_ATTESTATION_INVALID` and internal `APPROVAL_CHANNEL_UNTRUSTED`.
+- Only valid fresh approval plus a safe binding and all issuance gates can yield `DECISION_ISSUED`.
 
-The Owner prompt remains visible in the trusted Owner channel even for an unapprovable target; that fact is not shown to the requester. Rejection, no response, late approval, invalid attestation, and unbindable target must not be represented as one interchangeable `NONE) result in the issuance field.
+The Owner prompt remains visible in the trusted Owner channel even for an unapprovable target; that fact is not shown to the requester. Rejection, no response, late approval, invalid attestation, and unbindable target must not be represented as one interchangeable `NONE` result in the issuance field.
 
 ## 5. V3 and V5 — Unresolved status query and required-record unavailability
 
 ### 5.1 `UNRESOLVED` is not a requester result
 
-An exact authenticated `STATUS_QUERY` for an existing operation whose durable operation record is readable returns `STATUS_RETURNED), including when that operation's lifecycle is `UNRESOLVED). The protected internal code and lifecycle are both `UNRESOLVED); the requester-result field must not contain that token. The reader remains halted for new content-bearing operations. A status lookup creates no new intent/reservation, returns no content, and does not resume or reconcile the reader.
+An exact authenticated `STATUS_QUERY` for an existing operation whose durable operation record is readable returns `STATUS_RETURNED`, including when that operation's lifecycle is `UNRESOLVED`. The protected internal code and lifecycle are both `UNRESOLVED`; the requester-result field must not contain that token. The reader remains halted for new content-bearing operations. A status lookup creates no new intent/reservation, returns no content, and does not resume or reconcile the reader.
 
-A new operation, initial content request, or other content-bearing request while the reader is halted returns `REQUEST_DENIED) with internal/lifecycle `UNRESOLVED). Thus the result depends on the probe stage, not on inconsistent token vocabularies.
+A new operation, initial content request, or other content-bearing request while the reader is halted returns `REQUEST_DENIED` with internal/lifecycle `UNRESOLVED`. Thus the result depends on the probe stage, not on inconsistent token vocabularies.
 
 ### 5.2 A required decision-record read failure is not `NOT_APPLICABLE`
 
-A status query's required durable read failure returns public `REQUEST_DENIED) and internal `LEDGER_UNAVAILABLE). It must not return `STATUS_RETURNED) merely because the operation record was readable, and must not use `NOT_APPLICABLE) to mean “decision record unavailable.”
+A status query's required durable read failure returns public `REQUEST_DENIED` and internal `LEDGER_UNAVAILABLE`. It must not return `STATUS_RETURNED` merely because the operation record was readable, and must not use `NOT_APPLICABLE` to mean “decision record unavailable.”
 
 For the paired status-query fixtures:
-- If the linked decision record exists but an I/O error prevents reading it, use decision status `UNAVAILABLE), internal `LEDGER_UNAVAILABLE), public `REQUEST_DENIED), and no content redelivery.
-- If an authenticated tombstone proves that no linked decision record exists, use decision status `NONE). If the operation record is authenticated and terminal and no other required state is unavailable, the status query may return `STATUS_RETURNED) with the terminal operation state and no content redelivery.
+- If the linked decision record exists but an I/O error prevents reading it, use decision status `UNAVAILABLE`, internal `LEDGER_UNAVAILABLE`, public `REQUEST_DENIED`, and no content redelivery.
+- If an authenticated tombstone proves that no linked decision record exists, use decision status `NONE`. If the operation record is authenticated and terminal and no other required state is unavailable, the status query may return `STATUS_RETURNED` with the terminal operation state and no content redelivery.
 
-`NOT_APPLICABLE) is reserved for a field whose concept truly does not apply to that fixture. An unreadable record, missing record without a tombstone, or malformed record must never be silently converted to `NOT_APPLICABLE).
+`NOT_APPLICABLE` is reserved for a field whose concept truly does not apply to that fixture. An unreadable record, missing record without a tombstone, or malformed record must never be silently converted to `NOT_APPLICABLE`.
 
 ## 6. V6 — Define row-like IDs and repair manifest acceptance
 
 The next consolidated contract must contain exactly one authoritative, physically contiguous Markdown conformance-manifest table. Historical fixture suggestions from Entries 279–282 must be prose records, not additional pipe-delimited fixture tables.
 
-A normalized `qualified_id` must match `^[0-9]{3}-A[0-9]+[a-z]?$`. It contains the three-digit entry number, `-A`, one or more digits, and optionally one lowercase suffix. The `status` is a separate column and is exactly `ACTIVE` or `RETIRED). Do not append status text to the ID.
+A normalized `qualified_id` must match `^[0-9]{3}-A[0-9]+[a-z]?$`. It contains the three-digit entry number, `-A`, one or more digits, and optionally one lowercase suffix. The `status` is a separate column and is exactly `ACTIVE` or `RETIRED`. Do not append status text to the ID.
 
 For parser purposes, a **row-like ID** is a physical Markdown line whose first non-whitespace character is `|` and whose first cell, after trimming whitespace, matches the normalized `qualified_id` pattern. A citation such as “see 278-A17a” in ordinary prose is not row-like. A pipe-delimited row whose first cell is a qualified ID but which appears outside the sole manifest table is an orphan and invalidates the artifact.
 
@@ -202,18 +202,18 @@ Declare the total row count immediately before the manifest table. Acceptance re
 
 The 62-row table plus 44 orphan-ID fixture must fail even when the declared count says 62. The same ID active and retired must fail as a duplicate. An unescaped pipe that adds a cell must fail. An ID such as `275-A17 [RETIRED]` must fail normalization; the next consolidated artifact must represent it as `qualified_id=275-A17` and `status=RETIRED`. Do not rewrite the historical Entry 278 record merely to make it appear conformant.
 
-Required parser fixtures: a prose citation that is accepted; a qualified-ID pipe row outside the manifest that is rejected; the valid one-table positive case; and the three negative cases above. Each failure returns validator result `MANIFEST_INVALID), not a delivery or requester transport state.
+Required parser fixtures: a prose citation that is accepted; a qualified-ID pipe row outside the manifest that is rejected; the valid one-table positive case; and the three negative cases above. Each failure returns validator result `MANIFEST_INVALID`, not a delivery or requester transport state.
 
 ## 7. V8 — Authoritative anti-rollback comparison
 
 The following comparison replaces any broader wording in Entry 280/281 that treated “not anchored” or “inconsistent” as automatically equivalent to rollback:
 
-- If an authenticated anchor contains a required epoch value and a readable, authenticated store value is lower than that anchored value, select `REGISTRY_ROLLBACK).
-- If the store value is higher than the authenticated anchor value, select `LEDGER_INTEGRITY_UNPROVEN), not `REGISTRY_ROLLBACK), unless a separately specified and authenticated write-ahead/anchor-commit protocol proves exactly how that state is valid. This amendment defines no such exception.
-- If the anchor schema/coverage for a mandatory epoch category is absent, malformed, incomplete, or unauthenticated, select `LEDGER_INTEGRITY_UNPROVEN). Do not infer rollback from an anchor that does not reliably state the category.
-- If authenticated anchor evidence proves that a workspace was previously registered or establishes a committed minimum epoch, but the required current registration/tombstone is missing or below that minimum, select `REGISTRY_ROLLBACK) when the stale/missing state is demonstrable.
-- If a valid anchor explicitly proves the workspace has never been registered, but the required current scope/registration evidence is insufficient to evaluate an applicable block, select `BLOCK_SCOPE_UNEVALUABLE).
-- Current, anchor-consistent epochs do not make an unsupported or incomplete scope model evaluable; that remains `BLOCK_SCOPE_UNEVALUABLE).
+- If an authenticated anchor contains a required epoch value and a readable, authenticated store value is lower than that anchored value, select `REGISTRY_ROLLBACK`.
+- If the store value is higher than the authenticated anchor value, select `LEDGER_INTEGRITY_UNPROVEN`, not `REGISTRY_ROLLBACK`, unless a separately specified and authenticated write-ahead/anchor-commit protocol proves exactly how that state is valid. This amendment defines no such exception.
+- If the anchor schema/coverage for a mandatory epoch category is absent, malformed, incomplete, or unauthenticated, select `LEDGER_INTEGRITY_UNPROVEN`. Do not infer rollback from an anchor that does not reliably state the category.
+- If authenticated anchor evidence proves that a workspace was previously registered or establishes a committed minimum epoch, but the required current registration/tombstone is missing or below that minimum, select `REGISTRY_ROLLBACK` when the stale/missing state is demonstrable.
+- If a valid anchor explicitly proves the workspace has never been registered, but the required current scope/registration evidence is insufficient to evaluate an applicable block, select `BLOCK_SCOPE_UNEVALUABLE`.
+- Current, anchor-consistent epochs do not make an unsupported or incomplete scope model evaluable; that remains `BLOCK_SCOPE_UNEVALUABLE`.
 
 Retain all protected epoch categories already listed in Entry 280 §1, including workspace/checkout registration and lineage/tombstones, active-block set/revision, scope-model version, Owner trust/credential lifecycle, revocation-source identity/version, and protected destination/recipient configuration. The next consolidated R2 table must implement the comparison rule explicitly. It must not silently supersede the prior clause.
 
@@ -224,67 +224,67 @@ These fixtures are requirements for the next manifest; they are not evidence tha
 ### V1 — List overflow versus per-entry invalidity
 
 Assume the directory target/root is safely bound, all shared R2 gates pass, and the effective listing cap is 200.
-- 201 actual entries with a reparse point at entry 1: internal `LIST_LIMIT_EXCEEDED), public `REQUEST_UNAVAILABLE), lifecycle `DISCARDED), maximum deliverable reservation charged, one operation-local probe attempt.
+- 201 actual entries with a reparse point at entry 1: internal `LIST_LIMIT_EXCEEDED`, public `REQUEST_UNAVAILABLE`, lifecycle `DISCARDED`, maximum deliverable reservation charged, one operation-local probe attempt.
 - 201 actual entries with a reparse point at entry 201: same internal/public/state result as the preceding fixture.
-- 200 actual entries with a reparse point at entry 200: internal `PATH_SCOPE_UNAVAILABLE), public `REQUEST_UNAVAILABLE), lifecycle terminal with no delivered names, maximum reservation retained, one bounded end/probe attempt.
+- 200 actual entries with a reparse point at entry 200: internal `PATH_SCOPE_UNAVAILABLE`, public `REQUEST_UNAVAILABLE`, lifecycle terminal with no delivered names, maximum reservation retained, one bounded end/probe attempt.
 
 The equivalence group for requester observations must be identical across all three. Enumeration must count before per-entry validation and must not follow or resolve any reparse point.
 
 ### V2 — Malformed decision payload bound to another principal
 
-- Requester B presents an ID whose authenticated binding envelope belongs to A and whose readable payload lacks a mandatory cap: internal/public `DECISION_NOT_APPLICABLE); binding result `MISMATCH); no content I/O; no request-triggered halt; anomaly recorded.
-- Requester B presents an unknown ID: same requester result and observation shape; binding result `UNKNOWN_ID); no halt.
-- A presents the malformed decision bound to A: internal `LEDGER_INTEGRITY_UNPROVEN), public `REQUEST_DENIED), validator `DECISION_RECORD_SCHEMA_INVALID), decision status `SCHEMA_INVALID), reader halted pending reconciliation.
+- Requester B presents an ID whose authenticated binding envelope belongs to A and whose readable payload lacks a mandatory cap: internal/public `DECISION_NOT_APPLICABLE`; binding result `MISMATCH`; no content I/O; no request-triggered halt; anomaly recorded.
+- Requester B presents an unknown ID: same requester result and observation shape; binding result `UNKNOWN_ID`; no halt.
+- A presents the malformed decision bound to A: internal `LEDGER_INTEGRITY_UNPROVEN`, public `REQUEST_DENIED`, validator `DECISION_RECORD_SCHEMA_INVALID`, decision status `SCHEMA_INVALID`, reader halted pending reconciliation.
 
 ### V3 — Existing unresolved operation versus new operation
 
-- Exact authenticated status query for a readable unresolved operation: public `STATUS_RETURNED), internal/lifecycle `UNRESOLVED), no content, no new intent or reservation; reader remains halted for new reads.
-- New operation while that unresolved state halts the reader: public `REQUEST_DENIED), internal/lifecycle `UNRESOLVED), no second intent/reservation.
+- Exact authenticated status query for a readable unresolved operation: public `STATUS_RETURNED`, internal/lifecycle `UNRESOLVED`, no content, no new intent or reservation; reader remains halted for new reads.
+- New operation while that unresolved state halts the reader: public `REQUEST_DENIED`, internal/lifecycle `UNRESOLVED`, no second intent/reservation.
 
 ### V4 — Owner rejection, no response, and late approval
 
 Use otherwise identical fixtures and fixed trusted clock observations at T0, T0+5 seconds, T0+120 seconds, and T0+121 seconds.
-- Owner rejection at T0+5 seconds: `OWNER_REJECTED), internal code `NONE), decision status `NONE).
-- No Owner response through T0+120 seconds: `OWNER_NO_RESPONSE), internal code `NONE), decision status `NONE).
-- Approval arriving at T0+121 seconds: `APPROVAL_LATE), internal `DECISION_EXPIRED), decision status `NONE); it cannot create or reveal a usable decision.
+- Owner rejection at T0+5 seconds: `OWNER_REJECTED`, internal code `NONE`, decision status `NONE`.
+- No Owner response through T0+120 seconds: `OWNER_NO_RESPONSE`, internal code `NONE`, decision status `NONE`.
+- Approval arriving at T0+121 seconds: `APPROVAL_LATE`, internal `DECISION_EXPIRED`, decision status `NONE`; it cannot create or reveal a usable decision.
 
-All three have `APPROVAL_PENDING) before the fixed endpoint and `REQUEST_UNAVAILABLE) once the endpoint has passed without a usable hidden decision. The late approval must not be recoded as `PATH_SCOPE_UNAVAILABLE) merely because the target is unbindable.
+All three have `APPROVAL_PENDING` before the fixed endpoint and `REQUEST_UNAVAILABLE` once the endpoint has passed without a usable hidden decision. The late approval must not be recoded as `PATH_SCOPE_UNAVAILABLE` merely because the target is unbindable.
 
 ### V5 — Decision-record I/O failure versus authenticated tombstone
 
-- Terminal operation record is readable, but its required linked decision record returns an I/O error: `REQUEST_DENIED), internal `LEDGER_UNAVAILABLE), decision status `UNAVAILABLE), no content redelivery.
-- Terminal operation record is readable and an authenticated tombstone proves no linked decision record exists: decision status `NONE); `STATUS_RETURNED) may report the terminal operation state if no other required read fails. No content redelivery.
+- Terminal operation record is readable, but its required linked decision record returns an I/O error: `REQUEST_DENIED`, internal `LEDGER_UNAVAILABLE`, decision status `UNAVAILABLE`, no content redelivery.
+- Terminal operation record is readable and an authenticated tombstone proves no linked decision record exists: decision status `NONE`; `STATUS_RETURNED` may report the terminal operation state if no other required read fails. No content redelivery.
 
-These outcomes must not use `NOT_APPLICABLE) to represent a read failure or a record absence.
+These outcomes must not use `NOT_APPLICABLE` to represent a read failure or a record absence.
 
 ### V6 — Row-like manifest IDs
 
-- A prose citation to `278-A17a) outside any manifest row: valid for this parser check.
-- A pipe-delimited row outside the sole manifest whose first cell is `278-A17a): `MANIFEST_INVALID).
+- A prose citation to `278-A17a` outside any manifest row: valid for this parser check.
+- A pipe-delimited row outside the sole manifest whose first cell is `278-A17a`: `MANIFEST_INVALID`.
 - A valid single-table artifact whose parsed, row-like, and declared counts agree: accepted.
-- The 62-plus-44 orphan case, duplicate active/retired ID, malformed status-in-ID, and extra-cell unescaped-pipe cases: `MANIFEST_INVALID).
+- The 62-plus-44 orphan case, duplicate active/retired ID, malformed status-in-ID, and extra-cell unescaped-pipe cases: `MANIFEST_INVALID`.
 
 ### V7 — Field-scoped vocabulary
 
-- `expected_decision_status=PENDING): reject as `MANIFEST_INVALID).
-- `expected_decision_status=PENDING_VISIBILITY): accept if the setup states that a durable decision is hidden until T0+120 seconds.
-- `expected_result_requester=UNRESOLVED): reject; `UNRESOLVED) remains a typed internal/lifecycle state only.
-- `expected_result_requester=REQUEST_DENIED), `expected_internal_code=UNRESOLVED), and `expected_lifecycle_state=UNRESOLVED): accept only for a matching halted new-operation fixture.
-- A generic `INVALID) token in the decision-status field is invalid; use the precise validator and `SCHEMA_INVALID) decision-status value only where the present decision record is readable but malformed.
+- `expected_decision_status=PENDING`: reject as `MANIFEST_INVALID`.
+- `expected_decision_status=PENDING_VISIBILITY`: accept if the setup states that a durable decision is hidden until T0+120 seconds.
+- `expected_result_requester=UNRESOLVED`: reject; `UNRESOLVED` remains a typed internal/lifecycle state only.
+- `expected_result_requester=REQUEST_DENIED`, `expected_internal_code=UNRESOLVED`, and `expected_lifecycle_state=UNRESOLVED`: accept only for a matching halted new-operation fixture.
+- A generic `INVALID` token in the decision-status field is invalid; use the precise validator and `SCHEMA_INVALID` decision-status value only where the present decision record is readable but malformed.
 
 ### V8 — Store/anchor direction
 
-- Store epoch N+1 and authenticated anchor epoch N: `LEDGER_INTEGRITY_UNPROVEN), halt; not `REGISTRY_ROLLBACK).
-- Store epoch N−1 and authenticated anchor epoch N: `REGISTRY_ROLLBACK), halt.
-- Required epoch category missing from anchor coverage: `LEDGER_INTEGRITY_UNPROVEN).
-- Authenticated evidence of a genuinely never-registered workspace with unevaluable applicable scope: `BLOCK_SCOPE_UNEVALUABLE).
+- Store epoch N+1 and authenticated anchor epoch N: `LEDGER_INTEGRITY_UNPROVEN`, halt; not `REGISTRY_ROLLBACK`.
+- Store epoch N−1 and authenticated anchor epoch N: `REGISTRY_ROLLBACK`, halt.
+- Required epoch category missing from anchor coverage: `LEDGER_INTEGRITY_UNPROVEN`.
+- Authenticated evidence of a genuinely never-registered workspace with unevaluable applicable scope: `BLOCK_SCOPE_UNEVALUABLE`.
 
 ### V9 — Expiry, budget, reservation, and probe
 
-- Bound decision expired and aggregate budget exhausted: `DECISION_EXPIRED), no intent, operation ID, reservation, or probe attempt. Expiry is adjudicated before budget commit.
-- Decision valid but aggregate budget cannot be atomically reserved: `BUDGET_EXCEEDED), no intent or operation record and no content I/O.
-- Decision valid, reservation committed, and a later containment/revocation/final-gate check fails: retain the reservation, persist terminal denial when possible, discard any staged result, release no content, and leave `UNRESOLVED) plus halt if required durable recording fails.
-- The probe allowance is exactly one bounded attempt per operation, not a shared or cross-session budget pool. It cannot independently become “exhausted” before the operation exists. Record `probe_attempts_used` from zero to at most one in the operation audit. Only a failure to reserve the defined aggregate deliverable/call budget produces `BUDGET_EXCEEDED); do not invent an unreservable-probe branch.
+- Bound decision expired and aggregate budget exhausted: `DECISION_EXPIRED`, no intent, operation ID, reservation, or probe attempt. Expiry is adjudicated before budget commit.
+- Decision valid but aggregate budget cannot be atomically reserved: `BUDGET_EXCEEDED`, no intent or operation record and no content I/O.
+- Decision valid, reservation committed, and a later containment/revocation/final-gate check fails: retain the reservation, persist terminal denial when possible, discard any staged result, release no content, and leave `UNRESOLVED` plus halt if required durable recording fails.
+- The probe allowance is exactly one bounded attempt per operation, not a shared or cross-session budget pool. It cannot independently become “exhausted” before the operation exists. Record `probe_attempts_used` from zero to at most one in the operation audit. Only a failure to reserve the defined aggregate deliverable/call budget produces `BUDGET_EXCEEDED`; do not invent an unreservable-probe branch.
 - Force the ledger transaction order in concurrency tests. The invariant is no aggregate overspend, no duplicate intent for an idempotent key, and at most one probe attempt per operation.
 
 ## 9. Residual acceptance blockers — unchanged
@@ -292,10 +292,10 @@ These outcomes must not use `NOT_APPLICABLE) to represent a read failure or a re
 These remain mandatory blockers before accepting a consolidated contract. This delta does not claim to close them.
 
 - **S5 — Composite fixtures and lexical/race/crash boundaries:** split every remaining compound setup; enumerate each rejected lexical class; cover every crash boundary; test root replacement, path replacement, an in-place concurrent writer, and a valid sensitive-name pre-approval case; verify retired tests have adequate replacements.
-- **S9 — Trusted delivery acknowledgement:** define acknowledgement authority outside requester control and bind it to operation ID, recipient, and response digest. Specify crash recovery for both no-ack transport and trusted-ack modes. Define one rule for `DELIVERY_ACKNOWLEDGED) versus `DELIVERED).
-- **S10 — Precedence and temporal-boundary mutation coverage:** enumerate relevant adjacent-gate and final-gate precedence pairs; test every applicable limit at T−ε, T, and T+ε; test final-gate `DECISION_REVOKED) with staged content; and ensure the suite rejects a deny-all implementation. Specifically add boundary cases for challenge nonce TTL (proposed maximum 120 seconds), approval-to-issuance freshness (proposed maximum 60 seconds), fixed public endpoint (T0+120 seconds), decision expiry (proposed maximum five minutes from `not_before)), and authoritative revocation freshness. A freshness deadline is evaluated at issuance; `not_before) controls visibility and starts the usable decision lifetime. A valid hidden decision is not rejected merely because the Owner's attestation is older at T0+120 than it was at issuance, but revocation, current policy, identity, epochs, scope, and expiry are rechecked at the final gate.
+- **S9 — Trusted delivery acknowledgement:** define acknowledgement authority outside requester control and bind it to operation ID, recipient, and response digest. Specify crash recovery for both no-ack transport and trusted-ack modes. Define one rule for `DELIVERY_ACKNOWLEDGED` versus `DELIVERED`.
+- **S10 — Precedence and temporal-boundary mutation coverage:** enumerate relevant adjacent-gate and final-gate precedence pairs; test every applicable limit at T−ε, T, and T+ε; test final-gate `DECISION_REVOKED) with staged content; and ensure the suite rejects a deny-all implementation. Specifically add boundary cases for challenge nonce TTL (proposed maximum 120 seconds), approval-to-issuance freshness (proposed maximum 60 seconds), fixed public endpoint (T0+120 seconds`, decision expiry (proposed maximum five minutes from `not_before)`, and authoritative revocation freshness. A freshness deadline is evaluated at issuance; `not_before` controls visibility and starts the usable decision lifetime. A valid hidden decision is not rejected merely because the Owner's attestation is older at T0+120 than it was at issuance, but revocation, current policy, identity, epochs, scope, and expiry are rechecked at the final gate.
 
-For timing coherence, the proposed timeline is: T0 is trusted request acceptance; the public approval window ends at T0+120 seconds; valid Owner attestation must be issued into a durable hidden decision within the applicable challenge/freshness limits; the hidden decision has `not_before=T0+120s); and its lifetime starts at `not_before), with the existing proposed five-minute ceiling. The next review must test T−ε/T/T+ε at each relevant limit. Stating these limits does not close S10's mutation-coverage requirement.
+For timing coherence, the proposed timeline is: T0 is trusted request acceptance; the public approval window ends at T0+120 seconds; valid Owner attestation must be issued into a durable hidden decision within the applicable challenge/freshness limits; the hidden decision has `not_before=T0+120s`; and its lifetime starts at `not_before`, with the existing proposed five-minute ceiling. The next review must test T−ε/T/T+ε at each relevant limit. Stating these limits does not close S10's mutation-coverage requirement.
 
 ## 10. Acceptance, evidence, and next actor
 
@@ -307,6 +307,6 @@ Evidence labels:
 - `PROPOSED`: every repair rule and test requirement in this amendment.
 - `UNPROVEN`: fidelity to all original Entry 274–277 objects, any implementation/runtime/platform behavior, local M0A identity or state, actual anti-rollback enforcement, filesystem containment, Owner/requester isolation, revocation freshness, trusted delivery acknowledgement, and production block-scope/release behavior.
 
-**Next actor:** Sonnet/Claude. Review Entry 280 only where referenced as the parent baseline, Entry 281, and this Entry 282. Return exactly one `PASS`, `PASS_WITH_REPAIRS`, or `FAIL) for V1–V9. Do not perform broad repository archaeology; do not attempt S5/S9/S10 closure in this pass, but verify that all three remain visible acceptance blockers.
+**Next actor:** Sonnet/Claude. Review Entry 280 only where referenced as the parent baseline, Entry 281, and this Entry 282. Return exactly one `PASS`, `PASS_WITH_REPAIRS`, or `FAIL` for V1–V9. Do not perform broad repository archaeology; do not attempt S5/S9/S10 closure in this pass, but verify that all three remain visible acceptance blockers.
 
 No implementation, source/config changes, builds/tests/runtime, local M0A access, blocked-reader retry/bypass, credential inspection, authentication, installation/update, launch, or canonical-route rewrite is authorized by this document. It cannot grant repository-read authority or release a governance block. `KEEP_BLOCKED`.
