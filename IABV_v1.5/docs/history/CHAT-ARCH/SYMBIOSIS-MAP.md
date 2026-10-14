@@ -1,3 +1,13 @@
+## 2026-10-13 SYMBIOSIS DELTA — ENTRY 272: PROPOSED READ-DECISION AUTHORITY BOUNDARY
+
+Canonical: [CHAT-ARCH-2026-10-13-272-m0b-r8-read-decision-contract.md](./CHAT-ARCH-2026-10-13-272-m0b-r8-read-decision-contract.md).
+
+Entry 272 specifies the missing contract instead of repeating the bounded authority search. The intended chain is trusted principal + fresh interactive approval receipt → scope/target-bound decision issuance → independent verification at the existing reader → durable per-operation accounting. Diagnostic output does not grant access. Auto-approved memory, generic approval results, Devin external-action authorization and observation permission do not become repository-read authority.
+
+The intended grant is constrained to explicit read/list operations, exact or explicitly bounded relative paths, actual target/checkout state, short expiry, revocation and atomic budgets. Existing reader guardrails remain mandatory. Trusted principal source, issuer/integrity mechanism and explicit governance-block release remain unresolved. The contract has no implementation behind it; local M0A/implementation/tests/runtime/launch stay `KEEP_BLOCKED`.
+
+---
+
 ## 2026-10-13 SYMBIOSIS DELTA — ENTRY 271: BROKER APPROVAL IS NOT A REPO-READ TRUST CHAIN
 
 Canonical: [CHAT-ARCH-2026-10-13-271-m0b-r7-approval-broker-chain-adjudication.md](./CHAT-ARCH-2026-10-13-271-m0b-r7-approval-broker-chain-adjudication.md).
