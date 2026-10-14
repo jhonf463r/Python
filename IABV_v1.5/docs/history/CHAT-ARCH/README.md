@@ -1,3 +1,17 @@
+## 2026-10-13 LATEST RESULT — M0B-R8 READ-DECISION CONTRACT SPECIFIED; NOT IMPLEMENTED; KEEP_BLOCKED (ENTRY 272)
+
+Canonical: [CHAT-ARCH-2026-10-13-272-m0b-r8-read-decision-contract.md](./CHAT-ARCH-2026-10-13-272-m0b-r8-read-decision-contract.md).
+
+R8 now specifies the proposed, non-implemented contract for a narrow diagnostic, fresh-interactive approval receipt, trusted issuer, checkout/path-scoped read decision, reader-side verification before each operation, and durable read-operation receipt. It rejects auto-resolved ApprovalMemory results for fresh-human-required decisions and does not treat a generic `approved=True`, `approved_by`, `VALIDATED`, Devin action authorization or observation permission as repository-read authority.
+
+The contract requires server-side target identity, exact workspace/repository/checkout-state binding (including dirty/detached state), explicit relative-path allowlist, short expiry, revocation checks, finite atomic budgets, sensitive-file and path containment rules, and explicit supported handling of applicable governance blocks. The proposed five-minute maximum lifetime is a design default for review, not an existing code fact. Existing 1 MiB/file and 200-entry/list ceilings remain caps.
+
+Critical prerequisites remain unproven: authenticated Owner principal provenance, trusted issuer/integrity boundary, exact target identity, durable accounting and supported release semantics for the actual block. R8 includes proposed conformance tests only; none were executed. This is a design contract, not permission to implement, access local M0A, retry the blocked reader, run tests/runtime or launch IABV/Codex App Server. `KEEP_BLOCKED`.
+
+Recover continuity: this README → CURRENT-STATE → CONTEXT-INDEX → MEMORY-OPERATING-PROTOCOL → Entry 272 → Entries 271–269 and exact source blobs.
+
+---
+
 ## 2026-10-13 LATEST RESULT — M0B-R7 APPROVAL CHAIN INCOMPLETE; KEEP_BLOCKED (ENTRY 271)
 
 Canonical: [CHAT-ARCH-2026-10-13-271-m0b-r7-approval-broker-chain-adjudication.md](./CHAT-ARCH-2026-10-13-271-m0b-r7-approval-broker-chain-adjudication.md).
