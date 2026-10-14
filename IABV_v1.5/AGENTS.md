@@ -1,3 +1,15 @@
+## Current route overlay — Entry 275: amendment 274.1 after C2
+
+Read [CHAT-ARCH-2026-10-13-275-m0b-r8-1-contract-amendment-274-1.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-275-m0b-r8-1-contract-amendment-274-1.md) in full. Entry 274 remains the consolidated base contract; Entry 275 is its proposed amendment and takes precedence where it changes a rule. Then recover the README-first canonical route.
+
+Next actor: Sonnet/Claude, one focused adversarial review of Entry 275 only (C2-01–C2-11). No broad audit and no Codex implementation prompt yet. The supplied report read contract documents, not code; implementation behavior stays `UNPROVEN`.
+
+A key boundary: no applicable governance block may be lifted by the read decision itself. Without a separately supported governance-owned release, v1 returns `BLOCK_RELEASE_UNSUPPORTED`; contract acceptance does not unlock M0A.
+
+No local M0A read/retry/bypass, code implementation, tests/builds/runtime, credential inspection, authentication, software installation/update or launch. Model A remains selected; do not ask A/B again. `KEEP_BLOCKED`.
+
+---
+
 ## Current route overlay — Entry 274: consolidated M0B-R8.1 contract
 
 Read [CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md) in full, then use the README-first canonical route. Entries 272–273 remain historical; Entry 274 is the single proposed normative contract pending a second challenge.
