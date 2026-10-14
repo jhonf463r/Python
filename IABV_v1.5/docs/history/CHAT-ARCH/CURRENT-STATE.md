@@ -1,3 +1,17 @@
+## 2026-10-13 CONTINUITY UPDATE — ENTRY 276: C3 ADJUDICATION / AMENDMENT 274.2 PROPOSED
+
+Canonical: [CHAT-ARCH-2026-10-13-276-m0b-r8-1-c3-adjudication-and-274-2.md](./CHAT-ARCH-2026-10-13-276-m0b-r8-1-c3-adjudication-and-274-2.md).
+
+The owner-supplied M0B-R8.1-C3 review returned `PASS_WITH_REPAIRS` with C3-01–C3-11. Entry 276 consolidates the proposed fixes to approval trust/enrollment, registry and block-state rollback, pre-approval path oracle, handoff states, retry idempotency, configured destination/agent identity, clock behavior, listing pseudo-entries, deterministic block verdicts and conformance-matrix precedence.
+
+**Documentation integrity incident:** the current Entry 275 blob `3106d55393e0a4f3f4488decfff94ef6071c47d1` contains repeated preambles and a damaged path grammar. The last known clean historical Entry 275 blob is `0945248916fa4f83cc0e7d9d354e39fe3720bb5a` at commit `1e644ee663118b6567018cd2211c107e48489d4c`. A write to restore/recreate it was blocked by connector controls, so restoration is **not** claimed complete. Do not rely on the corrupted current blob as normative text. Entry 276 records the cause hypothesis and proposed remedies.
+
+The C3 report did not read code; source/runtime behavior remains `UNPROVEN`. A read decision still cannot release a governance block. If any applicable block lacks a separately supported governance-owned release, the outcome remains `BLOCK_RELEASE_UNSUPPORTED`. Status: `M0B_R8_1_AMENDMENT_274_2_PROPOSED_PENDING_TARGETED_REVIEW`; posture `KEEP_BLOCKED`.
+
+Next actor: Sonnet/Claude, targeted review of clean Entry 274 and Entry 276, using the historical clean Entry 275 blob only for lineage. No broad archaeology, implementation, tests/runtime, launch or local M0A access.
+
+---
+
 ## 2026-10-13 CONTINUITY UPDATE — ENTRY 275: AMENDMENT 274.1; TARGETED REVIEW PENDING
 
 Canonical: [CHAT-ARCH-2026-10-13-275-m0b-r8-1-contract-amendment-274-1.md](./CHAT-ARCH-2026-10-13-275-m0b-r8-1-contract-amendment-274-1.md).
