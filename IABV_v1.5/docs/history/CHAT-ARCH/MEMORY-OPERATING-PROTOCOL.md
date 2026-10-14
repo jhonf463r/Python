@@ -1,3 +1,15 @@
+## Continuity method delta — reconcile C3, prioritize document integrity, and apply R8.1-C3 (2026-10-13; Entry 276)
+
+Canonical: [CHAT-ARCH-2026-10-13-276-m0b-r8-1-c3-adjudication-and-274-2.md](./CHAT-ARCH-2026-10-13-276-m0b-r8-1-c3-adjudication-and-274-2.md).
+
+A review can find a true document-integrity failure caused by the coordinator's own editing method. Preserve provenance and disclose the defect; do not claim restoration until the corrected object is fetched back and validated. In this case, the attempted Entry 275 overwrite/recovery was blocked by connector controls. The current blob `3106d55393e0a4f3f4488decfff94ef6071c47d1` is corrupted; the clean historical blob is `0945248916fa4f83cc0e7d9d354e39fe3720bb5a` at commit `1e644ee663118b6567018cd2211c107e48489d4c`. Avoid JavaScript replacement strings when inserting text containing dollar signs followed by Markdown backticks: use a callback replacement or literal-safe method, then verify one header, the regex and all expected sections by fetching the written blob.
+
+C3 returned `PASS_WITH_REPAIRS`. Entry 276 proposes amendment 274.2 covering independently enrolled Owner verification, registration/block-state anti-rollback, non-oracular path preview, durable handoff states, idempotency token, server-derived destination/agent identity, clock/suspend rules, listing pseudo-entry count and deterministic block verdict precedence. These close textual gaps only; actual trust boundaries, storage, OS and runtime properties remain `UNPROVEN`.
+
+Never combine decision issuance with block release. If an applicable governance block lacks a separately supported governance-owned release, return `BLOCK_RELEASE_UNSUPPORTED`. Next actor: Sonnet/Claude, targeted review of Entry 276 and clean Entry 274 only; no broad archaeology, implementation or local read. `KEEP_BLOCKED`.
+
+---
+
 ## Continuity method delta — C2 repairs consolidated as amendment 274.1 (2026-10-13; Entry 275)
 
 Canonical: [CHAT-ARCH-2026-10-13-275-m0b-r8-1-contract-amendment-274-1.md](./CHAT-ARCH-2026-10-13-275-m0b-r8-1-contract-amendment-274-1.md).
