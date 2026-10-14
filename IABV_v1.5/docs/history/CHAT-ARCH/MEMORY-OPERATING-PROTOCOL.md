@@ -1,6 +1,6 @@
 ## Latest correction — Entry 275 path is now a supersession notice
 
-The statement below about blob `3106d55393e0a4f3f4488decfff94ef6071c47d1` refers to the corrupt historical blob, not the current content at the Entry 275 path. The current path is a warning/redirect notice. Use the clean historical blob at commit `1e644ee663118b6567018cd2211c107e48489d4c` only for lineage; Entry 276 contains the C3 repairs and corrected proposed grammar. Full-text restoration is still not claimed.
+The statement below about blob `3106d55393e0a4f3f4488decfff94ef6071c47d1` refers to the corrupt historical blob, not the current content at the Entry 275 path. The current path is a warning/redirect notice. Use the clean historical blob at commit `1e644ee663118b6567018cd2211c107e48489d4c` as the uncorrupted Entry 275 contract body; review it together with Entry 274 and Entry 276, which supplies the corrected proposed grammar and C3 amendments. Full-text restoration is still not claimed.
 
 ---
 
