@@ -88,7 +88,7 @@ The next conformance manifest MUST replace the single `expected_primary_result` 
 - `oracle_type` — `FIXED_RESULT`, `INTERLEAVING_FORCED`, or `INVARIANT`;
 - `traceability` — the clause/gate being discriminated.
 
-These fields have disjoint meanings. A requester-visible `APPROVAL_PENDING` result can coexist with a protected internal `PATH_SCOPE_UNAVAILABLE` result without ambiguity because they occupy separate, explicitly named fields. A diagnostic-only probe can return `DIAGNOSTIC_COMPLETE_NO_DECISION` with `expected_internal_code=NONE`, decision status `NOT_APPLICABLE), and lifecycle `NOT_APPLICABLE`. Nonce replay/rejection also needs an explicit result row rather than an implicit “no second decision”.
+These fields have disjoint meanings. A requester-visible `APPROVAL_PENDING` result can coexist with a protected internal `PATH_SCOPE_UNAVAILABLE` result without ambiguity because they occupy separate, explicitly named fields. A diagnostic-only probe can return `DIAGNOSTIC_COMPLETE_NO_DECISION` with `expected_internal_code=NONE`, decision status `NOT_APPLICABLE`, and lifecycle `NOT_APPLICABLE`. Nonce replay/rejection also needs an explicit result row rather than an implicit “no second decision”.
 
 The manifest validator MUST reject: missing fields; a token placed in the wrong field vocabulary; multiple or slash-separated expected values; a compound setup; duplicate IDs; a concurrency case with no forced interleaving/invariant oracle; or any active row not connected to a gate/requirement.
 
@@ -126,7 +126,7 @@ An already completed operation remains queryable after its associated decision e
 - Existing unresolved operation, response lost, then restart: return `UNRESOLVED`; halt persists; no replay.
 - New operation token after the decision expires: `DECISION_EXPIRED`; no operation record, nonce or budget reservation is created.
 - Valid authenticated requester presents an unknown decision ID or a decision bound to another requester session/workspace: use the same public result `DECISION_NOT_APPLICABLE); do not halt the reader or reveal whether the ID exists.
-- Ledger unavailable during operation-status query: `LEDGER_UNAVAILABLE), not a fabricated `EXPIRED` status.
+- Ledger unavailable during operation-status query: `LEDGER_UNAVAILABLE`, not a fabricated `EXPIRED` status.
 
 ## 5. S6 — Fixed requester-visible approval-window boundary
 
@@ -169,15 +169,15 @@ Reserve `LEDGER_INTEGRITY_UNPROVEN` for verified/inferred ledger-chain, durable-
 
 For nonce cases: an expired nonce/decision is `DECISION_EXPIRED`; a replayed, mismatched or unauthenticated approval nonce that is not merely expired is `APPROVAL_CHANNEL_UNTRUSTED`. An authenticated operation request whose referenced decision does not apply is `DECISION_NOT_APPLICABLE`. The next consolidated R2 table must place and order this result explicitly, update all shifted gate numbers/references, and map each active fixture to one result.
 
-A missing/invalid per-operation ceiling is a malformed/non-applicable decision and returns `DECISION_NOT_APPLICABLE); never silently default to a more permissive cap. An actual exhausted aggregate budget remains `BUDGET_EXCEEDED).
+A missing/invalid per-operation ceiling is a malformed/non-applicable decision and returns `DECISION_NOT_APPLICABLE); never silently default to a more permissive cap. An actual exhausted aggregate budget remains `BUDGET_EXCEEDED`.
 
 **Discriminating tests:**
 
 - Unknown decision ID vs known ID bound to another session: same requester-visible `DECISION_NOT_APPLICABLE`; subsequent valid operation is not halted.
-- Injected ledger-chain/anchor mismatch: `LEDGER_INTEGRITY_UNPROVEN); reader halts pending reconciliation.
-- Required ledger write unavailable: `LEDGER_UNAVAILABLE); no content delivery.
-- Expired approval nonce: `DECISION_EXPIRED); replayed nonce: `APPROVAL_CHANNEL_UNTRUSTED).
-- Missing per-operation ceiling: `DECISION_NOT_APPLICABLE); no read.
+- Injected ledger-chain/anchor mismatch: `LEDGER_INTEGRITY_UNPROVEN`; reader halts pending reconciliation.
+- Required ledger write unavailable: `LEDGER_UNAVAILABLE`; no content delivery.
+- Expired approval nonce: `DECISION_EXPIRED`; replayed nonce: `APPROVAL_CHANNEL_UNTRUSTED`.
+- Missing per-operation ceiling: `DECISION_NOT_APPLICABLE`; no read.
 
 ## 7. S8 — Make budget-edge and concurrency fixtures deterministic
 
@@ -194,8 +194,8 @@ For a concurrency test, the manifest MUST declare `oracle_type=INTERLEAVING_FORC
 
 **Discriminating tests:**
 
-- Remaining deliverable byte budget equals the effective cap; object is cap+1 bytes: `FILE_LIMIT_EXCEEDED), charge the cap reservation, record one bounded detection byte separately.
-- Remaining deliverable entry budget equals the effective cap; directory has cap+1 actual entries: `LIST_LIMIT_EXCEEDED), charge the cap reservation and record the sentinel entry separately.
+- Remaining deliverable byte budget equals the effective cap; object is cap+1 bytes: `FILE_LIMIT_EXCEEDED`, charge the cap reservation, record one bounded detection byte separately.
+- Remaining deliverable entry budget equals the effective cap; directory has cap+1 actual entries: `LIST_LIMIT_EXCEEDED`, charge the cap reservation and record the sentinel entry separately.
 - Two operations contend for the final budget unit. Force operation 1's ledger reservation commit first: operation 1 may pass that gate; operation 2 returns `BUDGET_EXCEEDED`; remaining budget equals zero. Also retain an invariant test over schedules proving no overspend.
 
 ## 8. S11 — One physically contiguous manifest and mechanical parse gate
