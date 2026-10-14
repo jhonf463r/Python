@@ -1,3 +1,16 @@
+## 2026-10-13 — ENTRY 276: C3 ADJUDICATION / DOCUMENT INTEGRITY AND AMENDMENT 274.2
+
+Canonical: [CHAT-ARCH-2026-10-13-276-m0b-r8-1-c3-adjudication-and-274-2.md](./CHAT-ARCH-2026-10-13-276-m0b-r8-1-c3-adjudication-and-274-2.md).
+
+- `PROVEN_BY_SOURCE` (document bytes): C3 reports that current Entry 275 has five repeated preambles and a damaged path grammar.
+- Clean historical blob: `0945248916fa4f83cc0e7d9d354e39fe3720bb5a`, commit `1e644ee663118b6567018cd2211c107e48489d4c`.
+- Current corrupt blob: `3106d55393e0a4f3f4488decfff94ef6071c47d1`. Restore/recovery writes were blocked; restoration is not claimed.
+- `PROPOSED`: C3-02–C3-11 fixes in Entry 276.
+- `UNPROVEN`: enrolled Owner identity, authoritative registry/block set and release, anti-rollback ledger, path containment, clock/revocation and runtime compliance.
+- No governance-owned block release means `BLOCK_RELEASE_UNSUPPORTED`. Next: Sonnet/Claude targeted review of Entry 276; `KEEP_BLOCKED`.
+
+---
+
 ## 2026-10-13 — ENTRY 275: AMENDMENT 274.1 PROPOSED; IMPLEMENTATION PREREQUISITES REMAIN OPEN
 
 Canonical: [CHAT-ARCH-2026-10-13-275-m0b-r8-1-contract-amendment-274-1.md](./CHAT-ARCH-2026-10-13-275-m0b-r8-1-contract-amendment-274-1.md).
