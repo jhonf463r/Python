@@ -1,3 +1,13 @@
+## Current route overlay — Entry 271: approval workflow is partial; repo-read gate stays blocked
+
+Read [CHAT-ARCH-2026-10-13-271-m0b-r7-approval-broker-chain-adjudication.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-271-m0b-r7-approval-broker-chain-adjudication.md), then Entries 270 and 269 and the canonical README-first route.
+
+The bounded search found HumanApprovalBroker + ApprovalMemory but no production bridge into a trusted ExternalActionAuthorization issuer. ApprovalResult lacks verified actor identity, and ApprovalMemory can auto-resolve to `approved=True, auto_resolved=True`. Treat neither that result nor `approved_by` / `VALIDATED` as repo-read authority. Entry 271 contains blob SHAs and correct lines; do not repeat the misaligned models/bootstrap citations.
+
+Next recommended task is contract-only design for a distinct read decision/issuer/verifier bound to exact MCP server/workspace/checkout, explicit relative paths and bounded budgets, verified actor provenance, expiry, and fresh interactive approval that rejects auto-approval memory. This does not authorize implementation, local M0A reads, general identity/auth search, tests, runtime, credential changes, installs/updates or extra spend. Model A remains selected. `KEEP_BLOCKED`.
+
+---
+
 ## Current route overlay — Entry 270: M0B-R6 authority chain adjudicated; KEEP_BLOCKED
 
 Read [CHAT-ARCH-2026-10-13-270-m0b-r6-authority-chain-reconciliation.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-270-m0b-r6-authority-chain-reconciliation.md), then Entry 269, Entry 268 and the canonical README-first route.
