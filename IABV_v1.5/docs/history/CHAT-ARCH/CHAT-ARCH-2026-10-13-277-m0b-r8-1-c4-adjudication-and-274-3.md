@@ -38,24 +38,33 @@ The issuer and reader MUST compare the epoch in the approval/intent with the cur
 
 **Tests:** (a) restore a trust-store snapshot containing a credential revoked after that snapshot while the protected anchor remains newer — `REGISTRY_ROLLBACK`; (b) change credential, block or destination epoch after intent commit but before `RELEASE_AUTHORIZED` — `DISCARDED`, no content, no active decision or nonce preserved.
 
-## 3. R2 — deterministic denial precedence (medium)
 
-Every fixed fixture MUST select exactly one primary result/status. The protected audit may record all conditions in a deterministic order, but requester-visible results must not create an object-existence oracle. An unqualified “X or Y”, duplicate ID or unassigned denial result invalidates the conformance artifact.
+## 3. R2 — deterministic denial-code precedence (medium)
 
-For simultaneous conditions, apply this ordered gate precedence and stop at the first failing gate for primary-result selection. Do not perform a lookup prohibited by an earlier gate.
+Every fixed fixture MUST select exactly one primary denial code or lifecycle status. The protected audit may record every safely detected condition in a fixed order, but requester-visible results must not create an object-existence oracle. A manifest containing “X or Y”, duplicate IDs, or an unassigned error code is invalid.
 
-1. Ledger integrity/recovery and unresolved-intent halt.
-2. Protected anchor or registry/trust/destination epoch/lineage rollback — `REGISTRY_ROLLBACK`.
-3. Owner credential, requester/session or trusted approval-channel failure — `APPROVAL_CHANNEL_UNTRUSTED`.
-4. Lexical path grammar before lookup — `PATH_FORM_UNSUPPORTED`.
-5. Uniform path/scope resolution denial at the permitted resolution stage — `PATH_SCOPE_UNAVAILABLE`.
-6. Inability to prove actual-object containment — `CONTAINMENT_UNPROVEN`.
-7. Incomplete/contradictory block scope or identity evidence — `BLOCK_SCOPE_UNEVALUABLE`.
-8. Applicable block without independent governance-owned release — `BLOCK_RELEASE_UNSUPPORTED`.
-9. Clock, expiry or revocation failure at its authorization gate — discard and deny.
-10. Byte, entry or operation-budget violation — use its specific stable code, such as `FILE_LIMIT_EXCEEDED` or `LIST_LIMIT_EXCEEDED`.
+The following total order applies when multiple conditions are present. Check gates in the listed order and select the first failing gate's primary code; do not perform a lookup prohibited by an earlier gate:
 
-After earlier integrity gates pass, `BLOCK_SCOPE_UNEVALUABLE` still dominates a simultaneously applicable-but-unreleased block; otherwise the result is `BLOCK_RELEASE_UNSUPPORTED`. A stale registry/trust/destination epoch is caught before block combination and yields `REGISTRY_ROLLBACK`. `APPROVAL_PENDING` is a public pre-approval state, not a denial code; R3 governs it. Any other named denial code must be assigned to exactly one gate before adoption; an unknown/unassigned code invalidates the artifact.
+1. Authoritative ledger cannot be read — `LEDGER_UNAVAILABLE`.
+2. Ledger integrity chain, independent anti-rollback anchor or durable-state authenticity cannot be verified — `LEDGER_INTEGRITY_UNPROVEN`.
+3. An unreconciled prior intent/handoff makes the reader unavailable — lifecycle status `UNRESOLVED`; this gate takes precedence over all later checks.
+4. A covered registry/trust/destination epoch or lifecycle lineage is stale, rolled back or inconsistent with the independent anchor — `REGISTRY_ROLLBACK`.
+5. Owner credential, requester principal/session, approval UI/attestation or agent binding is untrusted — `APPROVAL_CHANNEL_UNTRUSTED`.
+6. Caller path syntax/grammar is unsupported, checked before filesystem lookup — `PATH_FORM_UNSUPPORTED`.
+7. Target scope cannot be safely resolved in the permitted phase, or a sensitive-name rule rejects before lookup — `PATH_SCOPE_UNAVAILABLE`. The requester sees only R3's uniform pre-approval state until the permitted disclosure phase.
+8. The reader cannot prove actual-object identity/containment — `CONTAINMENT_UNPROVEN`.
+9. Block scope/identity evidence is absent, stale or contradictory — `BLOCK_SCOPE_UNEVALUABLE`.
+10. One or more blocks apply and any lacks independent governance-owned release — `BLOCK_RELEASE_UNSUPPORTED`.
+11. Decision expiry, backward-clock step, unknown suspend semantics or clock disagreement invalidates freshness — `DECISION_EXPIRED`.
+12. An authoritative current revocation check proves the decision revoked — `DECISION_REVOKED`.
+13. The revocation source is unavailable, stale, unauthenticated or unable to prove freshness — `REVOCATION_UNAVAILABLE`.
+14. The operation's pre-reserved aggregate budget is insufficient — `BUDGET_EXCEEDED`.
+15. A verified file read exceeds its hard byte ceiling — `FILE_LIMIT_EXCEEDED`.
+16. A directory has more than 200 actual entries — `LIST_LIMIT_EXCEEDED`.
+
+These are proposed stable result-code names, not claims that any implementation already emits them. The final consolidated contract and conformance manifest MUST use these names consistently; it MUST map every named denial in Entries 274–277 to exactly one row in this order. A new/unmapped code invalidates the artifact. `DISCARDED` is an operation outcome, not a competing denial code; for example, a final epoch mismatch selects `REGISTRY_ROLLBACK` and the durable operation state is `DISCARDED`. `APPROVAL_PENDING` is a pre-approval public state, not a denial code.
+
+The ordering preserves the C3-10 rule: after earlier gates pass, `BLOCK_SCOPE_UNEVALUABLE` dominates a simultaneously applicable-but-unreleased block; otherwise the result is `BLOCK_RELEASE_UNSUPPORTED`. A stale registry/trust/destination epoch is detected before block combination and yields `REGISTRY_ROLLBACK`. For a list operation, establish the target scope and containment first, then count actual entries; if the 201st actual entry is found, `LIST_LIMIT_EXCEEDED` is selected before per-entry validity checks. If there are at most 200, any invalid/sensitive/link/reparse/unsupported actual entry fails the complete list and is mapped by the above containment/path stages. Thus one fixture still has one result.
 
 Retire the ambiguous active alias `A29` and replace it with `277-A29a` and `277-A29b`. Retire `276-A47` as an ambiguous “X or Y” fixture and replace it with `277-A47a` and `277-A47b`. Each replacement has one fixed setup and one expected result.
 
