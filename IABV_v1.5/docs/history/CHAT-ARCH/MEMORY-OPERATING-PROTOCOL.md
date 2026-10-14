@@ -1,3 +1,13 @@
+## Continuity method delta — M0B-R6 direct-reference pass and line-anchor correction (2026-10-13; Entry 270)
+
+Canonical: [CHAT-ARCH-2026-10-13-270-m0b-r6-authority-chain-reconciliation.md](./CHAT-ARCH-2026-10-13-270-m0b-r6-authority-chain-reconciliation.md).
+
+When an audit names an immutable commit, fetch the complete named blobs and verify their SHA before using source line anchors. Do not infer blob identity from a web-page line link or silently carry line numbers across different source objects. In this case the supplied model/bootstrap ranges did not match the declarations at the pinned blobs; Entry 270 records corrected anchors and checks that the same relevant blobs are present on current `main`.
+
+Distinguish a schema/consumer from a trusted issuer. The Devin-specific `ExternalActionAuthorization` consumer is not a repository-read grant; a `VALIDATED` status and free-form `approved_by` field do not prove owner identity or checkout-scoped authority. The bounded direct-reference pass found no production issuer and stopped before general identity/auth exploration. Keep local M0A blocked.
+
+---
+
 ## Continuity method delta — reconcile R5 anchors before routing the next authority search (2026-10-13; Entry 269)
 
 Canonical: [CHAT-ARCH-2026-10-13-269-m0b-r5-reconciliation-and-next-owner-gate.md](./CHAT-ARCH-2026-10-13-269-m0b-r5-reconciliation-and-next-owner-gate.md).
