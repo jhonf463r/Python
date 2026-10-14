@@ -1,3 +1,13 @@
+## 2026-10-13 LATEST REVIEW — ENTRY 273: M0B-R8 DESIGN BASELINE PASS WITH REQUIRED REPAIRS
+
+Canonical: [CHAT-ARCH-2026-10-13-273-m0b-r8-independent-contract-review.md](./CHAT-ARCH-2026-10-13-273-m0b-r8-independent-contract-review.md).
+
+Independent review accepts R8's separation between diagnostic, fresh-human approval evidence, trusted read-decision issuance, reader verification and durable operation receipt as a provisional design baseline. Two normative R8.1 clarifications are required before implementation planning: (A) race-resistant binding to the actual opened file/directory object, preventing TOCTOU/link substitution; (B) explicit fail-closed evaluation of governance-block scope, including the documented `assistant_kind` vs `target_scope` hazard. Entry 269 does not establish that hazard as the cause of the M0A refusal.
+
+Next actor: Sonnet/Claude for one focused adversarial contract challenge using Entry 272 + Entry 273 only. No new broad source search, implementation, tests/runtime, local M0A access or launch. `KEEP_BLOCKED`.
+
+---
+
 ## 2026-10-13 LATEST RESULT — M0B-R8 READ-DECISION CONTRACT SPECIFIED; NOT IMPLEMENTED; KEEP_BLOCKED (ENTRY 272)
 
 Canonical: [CHAT-ARCH-2026-10-13-272-m0b-r8-read-decision-contract.md](./CHAT-ARCH-2026-10-13-272-m0b-r8-read-decision-contract.md).
