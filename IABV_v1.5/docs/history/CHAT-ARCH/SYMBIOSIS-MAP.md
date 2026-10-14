@@ -1,3 +1,9 @@
+## Latest continuity pointer — Entry 276
+
+See [Entry 276](CHAT-ARCH-2026-10-13-276-m0b-r8-1-c3-adjudication-and-274-2.md) for the current C3 adjudication and amendment 274.2. Entry 275's current blob is corrupted; use the clean historical blob only for provenance. The read contract still cannot release an applicable governance block. Keep `KEEP_BLOCKED`.
+
+---
+
 ## 2026-10-13 SYMBIOSIS DELTA — ENTRY 275: AMENDMENT 274.1 AFTER C2
 
 Canonical: [CHAT-ARCH-2026-10-13-275-m0b-r8-1-contract-amendment-274-1.md](./CHAT-ARCH-2026-10-13-275-m0b-r8-1-contract-amendment-274-1.md).
