@@ -819,3 +819,24 @@ Claude debe actuar en una sesión nueva, sin haber implementado el cambio y sin 
 Un modelo distinto no garantiza independencia por sí mismo: requiere una sesión/contexto separado, no haber implementado los cambios y una revisión anclada en el código. Si Claude necesita leer los informes anteriores para ubicar el estado, debe distinguir su contenido reportado de la evidencia fuente del checkout. No debe limitarse a aprobar la revisión previa.
 
 **Estado de partida:** `STATIC_DIFF_REVIEW_INCOMPLETE`; la revisión independiente de Claude está pendiente y no se afirma que se haya iniciado. Gobierno: `KEEP_BLOCKED`.
+
+
+## 24. Public GitHub verification of the local coordination changes
+
+**Source:** direct GitHub connector checks performed in this session on 2026-10-16. Classification: **PROVEN_BY_SOURCE for the queried public refs and file contents**; local working-tree state remains **CODEX_LOCAL_REPORTED**.
+
+The exact branch `codex/iabv-agent-coordination-20261016` was not found in the repository's branch search. Fetching commit `3926b1144bb23c1066db579da711d3cdbc1611df` returned GitHub's `No commit found for SHA` response. Comparing `main` to that branch failed because the head ref was unavailable. Searches for branch names containing `advisory`, `receipt`, `fixture`, and `ingestion` found no corresponding branch; `consult` found the separate existing branches `codex/p082-pressure-scoped-external-consultation` and `codex/p086-external-consultation-live-recovery`, which are not evidence that the 96-file local diff was published. The source-code search for this work did not return matches, and targeted PR searches for consultation/advisory and fixture/receipt recovery returned no matching PRs.
+
+Fetched public `main` file blobs:
+- `IABV_v1.5/src/iabv_v15/domain/models.py`: blob `a9033d21052c519e09f482097599c704a62ea916`; the retrieved content does not contain `CONSULTATION_ADVISORY`.
+- `IABV_v1.5/src/iabv_v15/services/adaptive/task_context_assembler.py`: blob `c5a6852a6a82a0c60886ea4bb6c236f50fe4a57c`; the retrieved content does not contain `operational_trace_ids` or `evidence_class`.
+- `IABV_v1.5/src/iabv_v15/services/evolution/autonomous_evolution_service.py`: blob `bf71757e8b90a35ce5c46cc0e6b5a781abbcd7ad`; the retrieved content does not contain `CONSULTATION_ADVISORY`.
+
+Links:
+- https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/src/iabv_v15/domain/models.py
+- https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/src/iabv_v15/services/adaptive/task_context_assembler.py
+- https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/src/iabv_v15/services/evolution/autonomous_evolution_service.py
+
+Conclusion: access to the public repository is available, but the named local branch and commit required to inspect the claimed 96-file working-tree diff are not available at the checked public refs. Do not present public `main` as equivalent to the local uncommitted changes. It remains possible that the work was published under a different branch/PR, but these checks did not identify such a ref; that possibility is **UNPROVEN**.
+
+**Next step:** continue only if a different public branch or PR can be identified, or use an authorized transfer of the diff/source files. Do not ask the user to rerun searches already performed unless new evidence appears. No local checkout was read and no code/tests/runtime were executed by ChatGPT. Governance remains `KEEP_BLOCKED`.
