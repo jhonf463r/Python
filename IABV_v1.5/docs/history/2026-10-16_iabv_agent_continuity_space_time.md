@@ -554,3 +554,74 @@ Una decisión adicional del propietario solo hace falta si el código y los cont
 `PHYSICAL_BRIDGE`: no activado.
 
 **Gobierno final:** `KEEP_BLOCKED`. Mantener diferenciadas consulta recibida, consulta evaluada, plan propuesto, adopción decidida, ejecución real y postcondición verificada.
+
+## 16. Separación de evidencia de consulta y evidencia operativa; incidente de preservación SQLite
+
+**Fuente y límites:** informe pegado por el propietario el 2026-10-16 aproximadamente a las 14:50 America/Bogota, atribuido a Codex. Clasificación: **CODEX_LOCAL_REPORTED (relayed by owner)**. ChatGPT no tuvo acceso directo a `C:\temp\IABV_coordination_20261016`, no leyó el checkpoint local ni inspeccionó el diff. Los resultados y rutas son declaraciones del informe local, no una verificación independiente de esta sesión.
+
+### 16.1 Dictamen reportado
+
+Resultado declarado: `CONSULTATION_EVIDENCE_SEPARATED_WITH_FINDINGS`.
+
+Gobierno: `KEEP_BLOCKED` para transporte externo, activación del puente y ejecución real. Se reportan una separación explícita de la evidencia de asesoramiento y las métricas operativas, además de recibos de ingestión que bloquean duplicados, identidad conflictiva e ingestiones incompletas. No se ha demostrado intercambio externo, ejecución operativa, aprendizaje validado en runtime ni efectos reales.
+
+### 16.2 Cambios de código reportados
+
+- Se añadió `CONSULTATION_ADVISORY` en `domain/models.py`. Las consultas se registran en ese dominio; los consumidores operativos de `CODE` y `LANGUAGE` excluyen este dominio y consultas históricas reconocibles. La ruta de recomendaciones de asesoramiento puede incluirlas explícitamente.
+- `AutonomousEvolutionService.ingest_consult_response` valida/correlaciona la consulta antes de reclamar un recibo, registrar asesoramiento y marcar la ingestión terminada. `candidate_id` usaría `result_id` e identidad de respuesta, no `selected_tool_id`.
+- `ToolRecordRepository` persiste reclamaciones y finalización de recibos. Duplicados, identidad conflictiva y estados `processing` incompletos se bloquean; no se informa de reintento automático.
+- `ExperimentLabRepository` filtra por defecto las consultas de recorridos operativos; `ExperimentLab` las incluye explícitamente en el recorrido de asesoramiento. `ToolTeachService` consulta ese dominio para recomendaciones.
+- La correlación conserva `query_pending_issue_id` separadamente del issue de adopción posterior; el ViewModel rechaza duplicados, conflictos e ingestiones incompletas.
+
+Una respuesta recibida/evaluada como asesoramiento no se registra como éxito de ejecución ni como postcondición verificada. Una propuesta de adopción persistida tampoco constituye prueba de ejecución.
+
+### 16.3 Identidad, idempotencia y límites residuales
+
+La identidad reportada combina tarea, resultado, correlación, issue de consulta y, si está disponible, ID del mensaje. Si no hay ID de proveedor, se usa un digest textual; por tanto, dos respuestas de texto idéntico para la misma combinación de IDs no se distinguen con certeza.
+
+El recibo se almacena localmente y no comparte transacción con los demás registros. Una caída después de reclamarlo puede dejar `processing` bloqueado: no se informó recuperación automática ni garantía de exactly-once entre almacenes. No se verificaron autenticidad del emisor, resultado del transporte, efecto operativo, postcondición o recibo durable del consumidor. La integración del ledger con la ingestión tampoco queda demostrada por esta separación de dominios.
+
+### 16.4 Pruebas y verificación reportadas
+
+- Identidad, correlación y recibos: **4 passed, 23 deselected**.
+- Suite de consumidores relacionada: **21 passed, 3 failed** inicialmente. El informe atribuye esos tres fallos a fixtures sin procedencia operativa y a una expectativa que aún usaba el dominio anterior. Después se ajustaron esos tres casos concretos y pasaron (**3 passed**); no se volvió a ejecutar la suite completa de 24.
+- Ingestión integrada de respuesta correlacionada tras corregir la preservación del issue de consulta: **1 passed**.
+- `git diff --check`: limpio, según el informe.
+- Parseo AST: aprobado para 14 archivos Python usando lectura compatible con BOM UTF-8.
+
+Estos números no equivalen a pasar la suite completa ni validan runtime, transporte, autenticación, ejecución, postcondición o recuperación transaccional.
+
+### 16.5 Estado del checkout y grave incertidumbre de preservación
+
+- Worktree reportado: `C:\temp\IABV_coordination_20261016`.
+- Rama: `codex/iabv-agent-coordination-20261016`.
+- HEAD: `3926b1144bb23c1066db579da711d3cdbc1611df` (sin commit nuevo).
+- Estado final declarado: **14 archivos Python rastreados modificados** y **dos SQLite sin seguimiento**; el informe identifica un total de 14 archivos modificados con aproximadamente `+400/-40`. No se hizo commit ni push.
+- Checkpoint local declarado: `C:/temp/IABV_consultation_operational_evidence_checkpoint_20261016.md`. No está publicado y ChatGPT no lo ha leído directamente.
+
+**Incidente de preservación que no debe borrarse del historial:** un fixture de `test_autonomous_evolution_service_ingests_codex_response_and_updates_issue` elimina y vuelve a crear su directorio de datos, que coincidía con un SQLite preexistente señalado por la misión. El archivo existe ahora, pero sus marcas de creación/escritura corresponden a la ejecución del fixture; el informe explícitamente no puede demostrar que se hayan conservado los bytes originales. Codex no abrió ni intentó reconstruirlo. El segundo SQLite permanece también sin seguimiento. La existencia del archivo no demuestra continuidad del contenido original.
+
+No leer, limpiar, reemplazar, reconstruir ni versionar ninguno de los SQLite como respuesta automática a esta incertidumbre. No repetir el fixture que limpia ese directorio. Primero establecer una captura forense de metadatos/hashes/ubicaciones y recuperar, si existe por rutas autorizadas, cualquier copia o evidencia anterior; distinguir hechos verificables de inferencias. Si no puede probarse la continuidad de bytes, dejarlo explícitamente como **NOT_RECOVERED / ORIGINAL_BYTES_UNPROVEN**, no declarar preservación exitosa.
+
+### 16.6 Próximo paso seguro — preservación antes de más ejecución
+
+1. Detener nuevas pruebas, especialmente cualquier fixture con limpieza de directorios; no ejecutar build, runtime, bridge, transportes ni servicios externos.
+2. Capturar `git status --short`, rama, HEAD, `git diff --stat`, `git diff --name-status` y el diff completo, sin descartar ni resetear cambios.
+3. Inventariar los dos SQLite por ruta, tamaños y metadatos; obtener hashes sin abrirlos ni modificar sus bytes. Buscar el origen o una copia previa únicamente mediante rutas locales/repositorios ya autorizados; nunca suponer que la copia actual es la original.
+4. Comparar el diff completo de los 14 archivos con el contrato esperado: separación `CONSULTATION_ADVISORY`, exclusión de consumidores operativos, identidad estable, recibos, manejo de `processing` bloqueado, filtros explícitos de asesoramiento y ViewModel. Examinar también cambios no relacionados o accidentales.
+5. Verificar si los ajustes de fixtures modifican solo los datos de prueba y si evitan volver a tocar el directorio SQLite de producción/prueba preexistente. No repetir la suite que no se volvió a ejecutar hasta resolver este límite.
+6. Mantener las modificaciones locales sin commit/push; no transferir el diff a GitHub ni mezclarlo con la PR documental. Después de la inspección y preservación, emitir un inventario de riesgos y propuestas acotadas.
+7. Mantener separado asesoramiento, decisión de adopción, ejecución real y postcondición verificada. No conectar aún el ledger, transporte externo ni `TaskOutcomeRecorder` a respuestas textuales.
+
+### 16.7 Estado de gobierno
+
+`CONSULTATION_EVIDENCE_SEPARATED_WITH_FINDINGS` es el resultado reportado para el cambio local, no una certificación independiente.
+
+`CONSULTATION_ADVISORY_SEPARATION`: implementada según informe local, no inspeccionada aquí.
+`IDEMPOTENCY_WITHIN_RECEIPT`: bloqueo local reportado; cobertura transaccional entre almacenes no demostrada.
+`AUTOMATIC_RECOVERY_OF_PROCESSING`: no demostrada; los estados incompletos se bloquean.
+`SQLITE_ORIGINAL_BYTES_PRESERVED`: **UNPROVEN**.
+`FULL_CONSUMER_SUITE`: no repetida tras las correcciones.
+`EXTERNAL_TRANSPORT / RUNTIME / PHYSICAL_BRIDGE`: no demostrados; no autorizados.
+
+**Gobierno final:** `KEEP_BLOCKED`. La primera tarea es preservación y revisión de diff, no más pruebas ni publicación.
