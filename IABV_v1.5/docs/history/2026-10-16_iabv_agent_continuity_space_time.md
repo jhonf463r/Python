@@ -840,3 +840,36 @@ Links:
 Conclusion: access to the public repository is available, but the named local branch and commit required to inspect the claimed 96-file working-tree diff are not available at the checked public refs. Do not present public `main` as equivalent to the local uncommitted changes. It remains possible that the work was published under a different branch/PR, but these checks did not identify such a ref; that possibility is **UNPROVEN**.
 
 **Next step:** continue only if a different public branch or PR can be identified, or use an authorized transfer of the diff/source files. Do not ask the user to rerun searches already performed unless new evidence appears. No local checkout was read and no code/tests/runtime were executed by ChatGPT. Governance remains `KEEP_BLOCKED`.
+
+
+## 25. Paquete local de auditoría exportado y verificado según Codex
+
+**Fuente:** informe del propietario compartido el 2026-10-16 a las 18:15 America/Bogota, atribuido a Codex. Clasificación: **CODEX_LOCAL_REPORTED (relayed by owner)**. ChatGPT no tuvo acceso directo al filesystem Windows ni abrió el ZIP.
+
+### Artefactos reportados
+
+- Exportación: `C:\temp\IABV_audit_export_20261016_5fe405289f0349a6b74481fe0440e957.zip`.
+- Manifiesto: `C:\temp\IABV_audit_export_20261016_5fe405289f0349a6b74481fe0440e957\00_manifest.md`.
+- Raíz fuente reportada: `C:\temp\IABV_coordination_20261016`.
+- Rama: `codex/iabv-agent-coordination-20261016`.
+- HEAD: `3926b1144bb23c1066db579da711d3cdbc1611df`.
+
+### Contenido declarado
+
+- 96 versiones actuales de archivos modificados.
+- 111 fuentes de dependencia sin modificar.
+- Diff binario contra HEAD.
+- Documentos de alcance e índice.
+- 211 archivos totales dentro del ZIP.
+- Tres pruebas de dependencia excluidas por no poder clasificar algunos valores con seguridad; no se excluyó ninguna ruta tracked modificada.
+- `data/` no se inspeccionó y no aparece en el ZIP.
+
+Codex informa haber comprobado que el ZIP abre y que sus 211 archivos son legibles, e indica que no ejecutó pruebas ni modificó el repositorio o el índice Git. Estos hechos permanecen **reportados localmente**, no verificados de manera independiente por ChatGPT.
+
+### Próxima acción
+
+Adjuntar el ZIP real en una sesión nueva de **Claude** y utilizar el prompt de auditoría de la sección 23 / última instrucción entregada al propietario. Claude debe auditar el contenido adjunto, no asumir la exactitud del manifiesto ni aceptar hallazgos previos sin contrastarlos con las fuentes. Debe registrar que tres fuentes de dependencia están excluidas y que no puede verificar el filesystem original directamente; si la ausencia impide trazar un consumidor, clasificarlo `UNPROVEN` y no fingir cobertura completa.
+
+Si el paquete es demasiado grande para adjuntarlo a Claude, usar el diff y los archivos de fuente en tandas sin cambiar el contenido, conservando el manifiesto y el inventario para demostrar qué recibió el revisor. No publicar los 96 cambios a GitHub únicamente para habilitar la revisión.
+
+**Gobierno:** `KEEP_BLOCKED`. La exportación facilita la auditoría; no supone auditoría concluida, ejecución de pruebas ni aprobación técnica.
