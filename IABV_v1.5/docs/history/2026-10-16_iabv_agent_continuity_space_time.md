@@ -419,3 +419,66 @@ No se considera cerrado el objetivo de comunicación entre agentes. En el worktr
 Objetivo autónomo: continuar con inspección/código offline y pruebas focalizadas sin preguntar por cada paso rutinario. Pedir al propietario solo la elección semántica que no pueda resolverse desde contratos existentes, una credencial/permiso realmente ausente o la autorización específica de un canal externo. No afirmar que Codex/ChatGPT/IABV se comunican hasta que un handshake real correlacionado y comprobable haya pasado.
 
 **Gobierno:** `KEEP_BLOCKED`. Prototipo local reportado, no verificado independientemente aquí; no hay evidencia de transporte autenticado, consumidor integrado, handshake real ni puente operativo.
+
+## 14. Decisión semántica: consulta externa no equivale a outcome operativo
+
+**Fuente:** informe del propietario que reproduce el análisis de Codex, 2026-10-16 aproximadamente 14:08 America/Bogota. Clasificación **CODEX_LOCAL_REPORTED (relayed by owner)**. El conector de GitHub pudo leer la fuente publicada de `AutonomousEvolutionService` en `main`; eso es una referencia remota de main y no verificación del worktree local del commit `3926b114...`.
+
+### 14.1 Decisión de diseño recomendada
+
+No conectar una respuesta textual de consulta externa directamente a `TaskOutcomeRecorder`. Ese recorder consume `AdaptiveSession` y `RunRecord` para evaluar ejecución y actualizar pesos adaptativos; una respuesta de un agente no demuestra que una operación de IABV se ejecutó correctamente ni verificó su postcondición.
+
+Clasificar la respuesta como **external consultation/advice result**, no como operational outcome. Reutilizar `AutonomousEvolutionService.ingest_consult_response` como consumidor existente de respuesta externa, condicionado a que se establezcan identidad de consulta, correlación, procedencia, deduplicación y recuperación segura. La existencia de esta ruta no significa que ya esté conectada al ledger ni que un resultado propuesto haya sido adoptado o ejecutado.
+
+Si el producto exige registrar métricas de consultas, introducir una categoría explícita no operativa y separada de las métricas de eficacia/fiabilidad operativa. No reutilizar `RunRecord`, contadores de éxito operativo ni feedback que ajuste pesos adaptativos como representación indirecta de una mera respuesta textual. La categoría y sus efectos deben derivarse del contrato existente o permanecer como propuesta hasta que el propietario resuelva la semántica.
+
+### 14.2 Evidencia y falsadores reportados
+
+El informe local declara:
+- UI → `AdaptiveTaskOrchestrator.ingest_external_response` → `AutonomousEvolutionService.ingest_consult_response`.
+- La ruta parsea/valida la respuesta, prepara un plan de adopción y registra metadatos/auditoría; también genera feedback por `ExperimentLab.record_outcome`.
+- `TaskOutcomeRecorder` se invoca en una ruta de finalización con `AdaptiveSession` y `RunRecord`; no se encontró una llamada desde `ingest_consult_response` al recorder.
+- `ToolMemory.remember_result` → `InteractionLearningService` sigue siendo una ruta de ejecución de `ToolTask`/`ToolResult`, distinta del retorno del ledger y de una respuesta textual externa.
+- En la resolución de registros reportada, proporcionar un `result_id` que no coincide puede terminar seleccionando el resultado más reciente de la tarea en lugar de rechazar la discordancia.
+- La llamada reportada a `ExperimentLab.record_outcome` crea un `ExperimentRun` con un ID nuevo. El informe no encontró una clave de idempotencia de extremo a extremo para impedir que una repetición parcial cree otra contribución.
+- `authorization_id`, `base_ref_evidence`, `sender` y `actor_id` enviados en el payload son declaraciones hasta que una autoridad confiable los verifique.
+
+Estos son hallazgos de fuente reportados desde el worktree por Codex; no son prueba de runtime ni de consumo adaptativo completo. Falsadores pendientes: otro camino de fuente que convierta la consulta en un outcome operativo legítimo, una clave idempotente existente aún no localizada, o una verificación de autoridad del emisor efectuada por una fuente confiable distinta del payload.
+
+### 14.3 Identidad y recibo de consulta propuestos
+
+Antes de enlazar el ledger a la ingestión, identificar un vínculo tipado e inequívoco entre:
+- ledger `task_id`;
+- ID estable de consulta externa;
+- correlation ID;
+- ID de mensaje/entrega del agente;
+- referencia exacta de contexto/consulta que la ruta de ingestión admite;
+- identidad de any `ToolTask`/`ToolResult` o `AdaptiveSession`/`RunRecord`, solo si la relación está demostrada y el contrato requiere dicho vínculo.
+
+No asociar un resultado por “último resultado de la tarea” cuando el `result_id` proporcionado contradice al contexto, ni inventar que un `task_id` del ledger equivale a cualquier ID del dominio.
+
+Diseñar la idempotencia usando el identificador estable que la ruta real puede garantizar, por ejemplo `consultation_id + external_message_id` o una clave equivalente definida con evidencia del contrato. El mismo evento de respuesta debe producir una sola ingestión lógica y un solo recibo durable de consumo. Un intento nuevo o una consulta nueva debe tener identidad diferenciada.
+
+Como las escrituras a ledger, artefactos de evolución y SQLite/JSON pueden no compartir una transacción, no prometer atomicidad por deduplicación sola. Elegir entre transacción de una única fuente autoritativa, inbox/outbox durable o reconciliación idempotente solo después de inspeccionar las garantías reales existentes. La operación de ingestión no debe re-ejecutar llamadas externas si el resultado del despacho es incierto.
+
+### 14.4 Próximo slice autorizado: integración offline de consulta, no ejecución
+
+En la rama local aislada de coordinación, después de reconciliar el estado de Git:
+1. Documentar el contrato real de `ingest_external_response` y `ingest_consult_response`, incluyendo efectos de `ExperimentLab.record_outcome` y cualquier posible efecto adaptativo.
+2. Diseñar e implementar una unión tipada ledger → consulta/ingestión existente, solo si puede etiquetar procedencia y evitar asociaciones ambiguas sin alterar contratos públicos de forma incompatible.
+3. Rechazar explícitamente respuesta con consulta/correlation/result ID discordante; no fallback silencioso al registro más reciente.
+4. Registrar por separado los estados de mensaje recibido, correlación verificada, ingestión procesada, plan propuesto, adopción decidida y operación realmente ejecutada/verificada.
+5. Garantizar deduplicación de la ingestión y de los artefactos de feedback usando la identidad durable de consulta/mensaje. Si el contrato de `ExperimentLab.record_outcome` no admite idempotencia, preparar una propuesta mínima o una capa durable; no simular exactly-once.
+6. Mantener la respuesta de consulta fuera de `TaskOutcomeRecorder` y del aprendizaje de eficacia operativa salvo que exista un `RunRecord` real que represente una ejecución separada y verificable.
+7. Añadir tests unitarios offline sobre respuesta correlacionada, mismatch de ID, duplicado, timeout, fallo parcial y diferencia entre recomendación, adopción y ejecución; ejecutar solo el subconjunto focalizado y reportar cualquier suite bloqueada como no aprobada.
+8. Dejar el transporte desacoplado e inactivo. No registrar tools MCP, iniciar servicios, consultar proveedores, hacer red, exponer túneles ni enviar mensajes reales.
+
+Si la semántica de `ExperimentLab.record_outcome` implica ajustar pesos o elegir estrategia como si el asesor hubiera ejecutado la tarea, inspeccionar primero ese efecto. Si no puede desacoplarse de forma acotada, detenerse y presentar la pregunta de producto precisa en vez de conectar la ruta equivocada.
+
+### 14.5 Disponibilidad de la memoria y publicación
+
+En este turno, el conector GitHub pudo recuperar el documento completo desde la rama `docs/iabv-space-time-agent-continuity-2026-10-16`, incluidas las secciones 12 y 13. Un informe de Codex indicó que una copia/ruta raw devolvía 404 y que recuperaba solo secciones 1–9. Mantener ambas observaciones con su procedencia; no inferir que el registro publicado fue truncado. Usar la URL de rama explícita y el conector de GitHub que sí recupera el contenido.
+
+PR de continuidad #467: https://github.com/jhonf463r/Python/pull/467. Sigue siendo una PR documental Draft, separada de la rama de coordinación local. No fusionar para solucionar la discrepancia de lectura.
+
+**Estado:** `KEEP_BLOCKED`. La decisión recomendada es separar consulta de ejecución. No existe todavía integración ledger→ingestión verificada ni comunicación autenticada de agentes. No hay autorización para runtime, puente MCP, M0A o efectos de producción.
