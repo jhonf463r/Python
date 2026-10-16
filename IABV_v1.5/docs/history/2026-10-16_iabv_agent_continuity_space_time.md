@@ -482,3 +482,75 @@ En este turno, el conector GitHub pudo recuperar el documento completo desde la 
 PR de continuidad #467: https://github.com/jhonf463r/Python/pull/467. Sigue siendo una PR documental Draft, separada de la rama de coordinación local. No fusionar para solucionar la discrepancia de lectura.
 
 **Estado:** `KEEP_BLOCKED`. La decisión recomendada es separar consulta de ejecución. No existe todavía integración ledger→ingestión verificada ni comunicación autenticada de agentes. No hay autorización para runtime, puente MCP, M0A o efectos de producción.
+
+## 15. Reparación de correlación de consultas externas — nuevo checkpoint local
+
+**Fuente y límites:** informe pegado por el propietario el 2026-10-16 aproximadamente a las 14:27 America/Bogota, atribuido a Codex. Clasificación: **CODEX_LOCAL_REPORTED (relayed by owner)**. Esta conversación no tuvo acceso al worktree Windows, no inspeccionó el diff local y no ejecutó las pruebas descritas. El código publicado en `main` no contiene automáticamente los cambios locales aún no publicados.
+
+### 15.1 Resultado reportado
+
+Gobierno: `KEEP_BLOCKED`. El transporte externo, el puente operativo y el runtime permanecen desactivados.
+
+Codex reporta que `AgentCoordinationLedger` se construye en bootstrap pero no está conectado como consumidor de `AutonomousEvolutionService.ingest_consult_response`. Sus mensajes contienen `message_id`, `task_id` y `correlation_id`; `sender` y `recipient` siguen siendo valores declarados por el caller, no identidad autenticada.
+
+Se aplicó una reparación de correlación en el consumidor:
+- La resolución requiere `result_id` explícito, busca esa identidad exacta y valida pertenencia a la tarea y a los identificadores de consulta presentes.
+- Si la identidad falta, contradice los datos o no puede verificarse, se devuelve `correlation_rejected` y se registran los IDs originales.
+- El rechazo sucede antes de mutar issues, resultados o feedback.
+- La UI trata el estado como rechazo.
+- El informe apunta a `AutonomousEvolutionService`, `ToolRecordRepository` y `ControlCenterViewModel`; los números de línea del informe son locales a la revisión declarada y no están verificados contra un SHA publicado desde esta conversación.
+
+### 15.2 Señales y persistencia aún problemáticas
+
+- La ingestión puede actualizar varias persistencias y llamar a `ExperimentLab.record_outcome`, sin una transacción conjunta ni un recibo común demostrado que permita recuperar fallos parciales sin duplicar efectos.
+- Las consultas externas se reportan dentro de dominios `CODE` o `LANGUAGE`; `ToolTeachService` usa esos dominios para recomendaciones. Esto puede mezclar calidad de asesoramiento/consulta con resultado operativo.
+- `candidate_id` se reporta como priorizador de `selected_tool_id` sobre `result_id`, por lo que no constituye una identidad estable de la respuesta externa.
+- `ExperimentLab.record_outcome` se reporta como productor de un `ExperimentRun` con ID nuevo por llamada. La reparación de correlación no equivale a deduplicación de todos los efectos de ingestión.
+- `TaskOutcomeRecorder` permanece reservado a su ruta de ejecución con `RunRecord`; no se conectó a respuestas de asesoramiento.
+- El ledger no se ha conectado al consumidor. No hay autenticación de mensajes ni comunicación real entre agentes demostrada.
+
+Conclusión: la reparación reportada reduce el riesgo de asociar silenciosamente un resultado equivocado, pero **no cierra** la idempotencia de la ingestión, la semántica de las señales externas ni la recuperación transaccional.
+
+### 15.3 Verificación y estado del checkout
+
+- Rama local: `codex/iabv-agent-coordination-20261016`.
+- HEAD reportado: `3926b1144bb23c1066db579da711d3cdbc1611df`.
+- Remoto: `https://github.com/jhonf463r/Python.git`.
+- Cuatro archivos de fuente/test modificados por la intervención actual según el informe; la UI reporta cinco archivos en total y `+281/-11`. El quinto artefacto aparente es un SQLite no versionado generado por pytest, en `data/test_autonomous_evolution_service_ingest_codex_workspace/data/app.sqlite`. Preservarlo; no subirlo ni borrarlo hasta determinar su procedencia y necesidad.
+- Prueba focalizada final: 3 aprobadas, 21 deseleccionadas, según Codex. Una ejecución intermedia falló por un fixture que conservaba el ID que debía faltar; se corrigió el fixture y la repetición aprobó.
+- `git diff --check` limpio, según Codex.
+- No se ejecutaron runtime ni transporte externo. El test focalizado no demuestra consumo por el ledger ni recuperación entre almacenes.
+
+El HEAD reportado es el del commit anterior; la intervención local actual parece tener modificaciones sin commit. Debe confirmarse con `git status` en el worktree; no asumir que sigue limpio.
+
+El informe de continuidad local externo al repositorio es:
+`C:/temp/IABV_coordination_20261016_continuity_ingestion_20261016.md`.
+No está publicado ni fue leído directamente por ChatGPT en este corte.
+
+### 15.4 Próximo slice recomendado
+
+No conectar todavía el ledger. Primero separar la señal de consulta externa de los dominios operativos y diseñar una identidad duradera de consulta/entrega.
+
+En el worktree local, sin cambiar otros árboles:
+1. Verificar estado de Git, diff, pruebas y la procedencia del SQLite no versionado; preservarlo.
+2. Trazar qué consume los dominios `CODE` y `LANGUAGE`, especialmente `ToolTeachService`, `ExperimentLab.record_outcome`, selección de `candidate_id`, scores/pesos y cualquier consumidor adaptativo.
+3. Diseñar un registro separado de consulta externa (o una clase de evidencia explícita no operativa dentro del contrato existente) para respuestas de agentes, planes propuestos y calidad de consulta. No mezclarla con éxito operativo de herramientas ni con pesos adaptativos de eficacia de ejecución.
+4. Definir la identidad estable de consulta, mensaje y tentativa; propagarla a los artefactos que derivan de una ingestión, sin usar `selected_tool_id` como identidad de la respuesta.
+5. Determinar si `ExperimentLab.record_outcome` puede registrar el tipo de evidencia sin cambiar la semántica de experimentos operativos. Si no, proponer un recibo de asesoramiento separado en vez de reciclar el contrato operativo.
+6. Diseñar deduplicación y recuperación de fallos parciales entre ledger y consumidores, usando mecanismos duraderos existentes cuando sea posible. No afirmar atomicidad o exactly-once si el límite de transacción no lo demuestra.
+7. Añadir pruebas unitarias offline para que una respuesta externa no actualice la señal operativa, la identidad de respuesta permanezca estable, las repeticiones no creen feedback duplicado, y los fallos parciales queden recuperables o explícitamente bloqueados.
+8. Solo después de verificar esos contratos, proponer la unión ledger → consulta. El transporte real continúa fuera del alcance.
+
+Una decisión adicional del propietario solo hace falta si el código y los contratos existentes no definen cómo puntuar la calidad del asesoramiento separada de la eficacia operativa. No hace falta preguntar otra vez si una respuesta textual prueba ejecución: ya está decidido que no.
+
+### 15.5 Estado de comunicación
+
+`DEFINED`: ledger local, según reporte.
+`CORRELATION_REPAIR_REPORTED`: rechazo por identidad discordante, no verificado independientemente aquí.
+`CONSUMER_INTEGRATION`: no conectado al ledger.
+`AUTHENTICATED_AGENT_TRANSPORT`: no demostrado.
+`IDEMPOTENT_INGESTION_AND_RECOVERY`: no demostrado.
+`RUNTIME`: no ejecutado.
+`PHYSICAL_BRIDGE`: no activado.
+
+**Gobierno final:** `KEEP_BLOCKED`. Mantener diferenciadas consulta recibida, consulta evaluada, plan propuesto, adopción decidida, ejecución real y postcondición verificada.
