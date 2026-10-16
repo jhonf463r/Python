@@ -681,3 +681,37 @@ Checkpoint local declarado: `C:/temp/IABV_coordination_20261016_static_diff_revi
 Una revisión independiente requiere un contexto separado, sin usar como propia la conclusión de los anteriores revisores y sin inspeccionar `C:\Python\IABV_v1.5`. Revisar únicamente `C:\temp\IABV_coordination_20261016` en modo de solo lectura; confirmar ruta antes de cualquier lectura del diff; no tocar `data/`; no ejecutar pruebas, builds, runtime, transporte ni puente; no editar, hacer commit o publicar. Auditar desde el código actual los 22 cambios y los flujos consultivos, fixtures y recibos. Si el revisor no puede demostrar independencia, debe declararlo y mantener `STATIC_DIFF_REVIEW_INCOMPLETE`.
 
 **Gobierno:** `KEEP_BLOCKED`. La revisión independiente sigue pendiente; esta misión no autoriza pruebas ni publicación.
+
+
+## 20. Revisión de diff reportada, aún incompleta — checkpoint posterior
+
+**Fuente:** informe local identificado por el propietario como `C:/Users/faber/.codex/visualizations/2026/10/16/01a146cd-2a68-78c3-819f-a4cc90940058/IABV_static_diff_review_2026-10-16.md`, según resumen compartido en el chat. Clasificación: **CODEX_LOCAL_REPORTED (relayed by owner)**. ChatGPT no ha leído directamente el archivo ni inspeccionado el checkout.
+
+Resultado: `STATIC_DIFF_REVIEW_INCOMPLETE`. Gobierno: `KEEP_BLOCKED`.
+
+El informe declara que el checkout coincidió con la ruta, rama y HEAD autorizados:
+- Checkout: `C:\temp\IABV_coordination_20261016`.
+- Rama: `codex/iabv-agent-coordination-20261016`.
+- HEAD: `3926b1144bb23c1066db579da711d3cdbc1611df`.
+- 22 archivos rastreados modificados revisados.
+
+El revisor declara no haber leído `data/` ni ejecutado pruebas. No pudo demostrar independencia del implementador o de revisiones previas y por ello no emitió aprobación/rechazo técnico. Esta limitación se mantiene; haber leído los 22 archivos no convierte la revisión en independiente si la procedencia del proceso de revisión no lo demuestra.
+
+Hallazgos mencionados en el resumen del propietario:
+- Hay recibos de ingestión que pueden quedar atascados en estado incompleto sin recuperación automática demostrada.
+- Todavía hay tests/helpers que limpian rutas compartidas bajo `data/`, pese al aislamiento `tmp_path` de algunos fixtures concretos.
+- La revisión recomienda `KEEP_BLOCKED`.
+
+El informe más reciente no fue leído directamente por ChatGPT; los hallazgos anteriores permanecen clasificados como reportados hasta que se inspeccione el informe o se obtenga una fuente verificable. No acceder a `data/` ni ejecutar los helpers señalados para intentar confirmarlos.
+
+### Siguiente paso seguro
+
+No intentar obtener una falsa etiqueta de independencia dentro de una cadena de contextos que hayan implementado o revisado previamente estos cambios. Si se requiere atribución independiente formal, usar un revisor separado de verdad (por ejemplo, una sesión nueva de otro agente/revisor sin acceso a los razonamientos ni conclusiones de implementación; suministrar únicamente los requisitos y el diff congelado). Si eso no está disponible, documentar explícitamente la limitación y proceder únicamente con inspección técnica no independiente.
+
+Antes de cualquier prueba:
+1. Resolver estáticamente todos los helpers/fixtures que limpian rutas compartidas, asegurando que cada uno usa un directorio temporal privado. No ejecutar esos tests mientras exista una ruta destructiva.
+2. Diseñar una transición/reconciliación segura para recibos `processing` atascados: identidad durable, estado/lease o reconciliación verificable y reglas para distinguir fallos previos de efectos parciales. No reintentar a ciegas ni prometer exactly-once entre almacenes.
+3. Mantener todos los SQLite sin inspeccionar ni modificar y no ejecutar tests, build, runtime, transporte o puente hasta autorización separada.
+4. Tras reparar estáticamente, hacer revisión de diff y proponer pruebas focalizadas que incluyan los caminos legacy destructivos, conflictos de identidad, fallos entre efectos y recuperación de recibos.
+
+**Gobierno:** `KEEP_BLOCKED`. El diff no cuenta con aprobación técnica independiente; los riesgos reportados sobre fixtures legacy y recibos atascados deben resolverse antes de ejecutar pruebas.
