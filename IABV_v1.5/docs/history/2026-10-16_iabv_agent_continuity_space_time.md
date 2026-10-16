@@ -625,3 +625,38 @@ No leer, limpiar, reemplazar, reconstruir ni versionar ninguno de los SQLite com
 `EXTERNAL_TRANSPORT / RUNTIME / PHYSICAL_BRIDGE`: no demostrados; no autorizados.
 
 **Gobierno final:** `KEEP_BLOCKED`. La primera tarea es preservación y revisión de diff, no más pruebas ni publicación.
+
+
+## 18. Reparaciones estáticas preparadas para revisión independiente — checkpoint 16:31
+
+Fuente: informe local de Codex compartido por el propietario el 2026-10-16. Clasificación: `CODEX_LOCAL_REPORTED (relayed by owner)`. Este registro no sustituye inspeccionar el worktree local.
+
+Dictamen reportado: `STATIC_REPAIRS_PREPARED_FOR_REVIEW`. Gobierno `KEEP_BLOCKED`.
+
+Estado local reportado: rama `codex/iabv-agent-coordination-20261016`, HEAD `3926b1144bb23c1066db579da711d3cdbc1611df`; 22 archivos rastreados modificados, todos unstaged; `data/` permanece untracked. No se limpiaron ni inspeccionaron sus contenidos. No se ejecutaron pruebas, build o runtime. `git diff --check` pasó.
+
+### Cambios reportados
+
+- `test_autonomous_evolution_service.py` ahora usa un workspace exclusivo bajo `tmp_path`; sus 22 usos reciben esa ruta y el cleanup cierra el bootstrap sin borrar una ruta compartida.
+- El helper de `test_experiment_lab.py` también usa `tmp_path`.
+- La evidencia de consulta se etiqueta `consultation_advisory`; no puntúa como éxito operativo y queda fuera de la selección normal del repositorio.
+- `TaskContextAssembler` emite `operational_trace_ids`. El orquestador, `TaskOutcomeRecorder` y self-teaching ya no recurren a IDs recientes o de procedencia desconocida.
+- Se agregaron casos sintéticos para los límites de procedencia, correlación e identidad de recibos, pero no están ejecutados.
+
+### Reservas y riesgos restantes
+
+- La inconsistencia previamente reportada entre `run_experiment(LANGUAGE)` y `suggest_route(CODE)` no aparece en el test actual: ambos usan `CODE`. El informe no afirma haber corregido ese caso.
+- Siguen existiendo helpers legacy de pruebas que usan workspaces dentro de `data/` fuera del alcance de este cambio.
+- La procedencia de datos históricos y la recuperación de recibos `processing` continúan sin resolver.
+- La carpeta `data/` no fue inspeccionada; no inferir el estado actual o la integridad de los SQLite a partir de este informe.
+- El checkpoint local se reporta en `C:/temp/IABV_coordination_20261016_advisory_fixture_checkpoint_20261016_2031.md`; ChatGPT no lo ha leído directamente.
+
+### Continuidad de memoria
+
+En esta sesión, el conector GitHub recuperó el documento desde la rama explícita y verificó la sección 16; la sección 17 no está presente en el blob accesible. Por ello, no afirmar que las secciones 16–17 estén ambas recuperables desde esa rama. La afirmación local de inaccesibilidad de ambas queda como `CODEX_LOCAL_REPORTED`; lo comprobado aquí es sección 16 presente y sección 17 ausente en el blob actual. La discrepancia requiere reconciliar la lectura de Codex con el archivo exacto, no reconstruir secciones sin fuente.
+
+### Siguiente paso
+
+Realizar una revisión independiente y estática del diff combinado de los 22 archivos, comparando los cambios previos con los nuevos. Verificar el aislamiento real de todos los fixtures, el recorrido completo de trazas consultivas a selección y gobernanza, los cambios de tests y cualquier ruta adaptativa residual. No ejecutar pruebas, build o runtime, no leer ni alterar `data/`, no hacer commit ni push. Proponer después un conjunto de pruebas focalizadas para autorización separada.
+
+**Estado:** `STATIC_REPAIRS_PREPARED_FOR_REVIEW` reportado; no verificado independientemente. La revisión del diff aún no está completada. Gobierno: `KEEP_BLOCKED`.
