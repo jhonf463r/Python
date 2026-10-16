@@ -923,3 +923,92 @@ La prioridad no es ejecutar las cuatro pruebas propuestas literalmente ni confia
 No ejecutar tests/build/runtime, no alterar data/, no hacer commit/push ni desbloquear el puente. Toda reparación posterior requiere revisión de diff y autorización de pruebas separada.
 
 **Gobierno:** KEEP_BLOCKED. Hallazgos F1/F4 se consideran materialmente reportados sobre los archivos que Claude declara haber leído; revisión global e independencia formal siguen incompletas.
+
+
+## 27. R10 v0.7.2 Candidate C — PASS_WITH_REPAIRS, con ambigüedades normativas abiertas
+
+**Fuente:** dictamen pegado por el propietario; clasificación **OWNER_REPORTED / report relayed by owner**. Los artefactos citados en el informe se declaran hash-verificados, pero ChatGPT no los recibió como adjuntos en este turno. Gobierno: **KEEP_BLOCKED**.
+
+### Identidad de la instantánea
+
+El informe declara que el checkout verificado tiene HEAD 14edb53e8efd5cd0523cee62646857de14ceb5f7, mientras el prompt previo citaba 1f0b114587a761509e6100b13f6ab6a14258e3b8. La diferencia debe registrarse como discrepancia temporal de identidad; el HEAD del prompt es una referencia reportada, no la revisión actual demostrada por el informe. Se indica que los 25 artefactos del paquete tenían SHA-256 coincidente con ambos manifiestos. No asumir que eso hace equivalentes los dos commits: los hashes de los artefactos acreditan esos archivos empaquetados, no que el historial Git completo sea idéntico.
+
+### Integridad de la matriz
+
+El informe declara: CSV con 74 filas únicas T123–T196, sin huecos ni duplicados; 11 columnas, todas NOT_RUN; baseline en la rama coincidente con source.csv; renombrado de las dos columnas aceptable. 53 de las 74 filas cambiaron al menos una celda.
+
+Continúa abierta la discrepancia entre los IDs/títulos T185–T196 en el cuerpo del contrato y las escenas/celdas del CSV; las 12 filas cambiaron celdas y el texto del cuerpo no fue reasignado en consonancia. El informe también señala falta de trazabilidad normativa explícita en §14 para T130, T131, T138 y T184, mientras se menciona T162. Clasificación reportada: PROVEN_BY_SOURCE según el informe, pendiente de inspección directa de los artefactos aquí.
+
+### Estado de los defectos de Candidate B
+
+- D1, reasignación T185–T196: abierto.
+- D2, oráculos que contradicen C1–C13: parcial; los oráculos “mayor seq gana” permanecen en T167/T171/T181; T183/T184 aún necesitan una regla explícita para convertir propuesta en adopción.
+- D3, correlación sin dispatch_turn_id: parcial; T141 exige in_reply_to_turn_id igual a dispatch_turn_id, pero T135/T136 no cubren el caso de in_reply_to aportado exclusivamente por el captor.
+- D4, result_lineage_id frente a lineage_id de estrategia: no resuelto.
+- D5, efecto visible tras tombstone: abierto; no hay fixture T123–T196 que pruebe atomicidad de retractación.
+
+### Hallazgos materiales adicionales reportados
+
+- H1, T141: el falsificador negativo para in_reply_to captor-only está en prosa, no como fila ejecutable separada con oráculo UNCORRELATED. Añadir una fila negativa independiente.
+- H2, T176: mezcla causas LATE_STALE y UNCORRELATED; dividir en casos con causas excluyentes y oráculos precisos.
+- H3, T162/T184: restores_event_id sigue OWNER_DECISION_REQUIRED, pero un delta positivo implica una contribución sin norma adjudicable. Mantener delta 0 o CONTRACT_GAP mientras la decisión siga pendiente.
+- H4, T130/T131 y H5, T138: crash_retry_conflict_oracle conserva una afirmación de replay/idempotencia pese a CONTRACT_GAP sobre lifecycle de STRATEGY o TTL de nonce. Cambiar a texto que declare el gap, no garantizar idempotencia.
+- H6, T152: retirar el delta no respaldado se juzga correcto; sin reparación adicional.
+- H7, T167: ACK_DUPLICATE está definido para eventos automáticos en §2.2, pero no explícitamente para evaluación idéntica en §6.1. Añadir base normativa o declarar CONTRACT_GAP en la fila.
+- H8, T194: aislamiento MANUAL separado de replay/idempotencia es considerado correcto en el informe; no prueba otros contratos.
+
+D-01 a D-10 siguen OWNER_DECISIONS_REQUIRED. D-07 requiere resolución del propietario: R10_V0_7_REFERENCE_NAMESPACED_NONNORMATIVE.md no se debe tratar como alias del artefacto cuyo identificador comienza 5babd981… sin confirmar relación.
+
+### Criterios para Candidate D
+
+1. Resolver la colisión cuerpo/CSV T185–T196 o retirar formalmente IDs obsoletos del cuerpo.
+2. Quitar promesas de idempotencia en T130/T131/T138 mientras el contrato no las defina.
+3. Añadir falsificador separado para T141.
+4. Dividir T176 por causa exclusiva y oráculo exacto.
+5. Quitar delta no sustentado de T162/T184 mientras restores_event_id quede sin decidir.
+6. Fundar ACK_DUPLICATE de T167 en §6.1 o marcar CONTRACT_GAP.
+7. Cerrar o retirar explícitamente D1–D5 de Candidate B.
+
+Permanece UNPROVEN: atestación real de plataforma, CAS, atomicidad, fencing, recuperación tras crash, aislamiento del writer legacy, ejecución del validador, clock domain, journal completeness y transporte de entrega. El dictamen de Candidate C es PASS_WITH_REPAIRS, no PASS final; las correcciones y decisiones pendientes no se deben dar por aceptadas automáticamente.
+
+## 28. M0B-R8.1 Entry 283 — continuidad W1–W11 tras Entries 284–290
+
+**Fuente:** dictamen y adjudicación pegados por el propietario. Clasificación **OWNER_REPORTED / report relayed by owner**. El texto de los artefactos se afirma leído desde checkout, pero en este turno ChatGPT no los leyó directamente. Mantener el dictamen histórico de Entry 283 como FAIL. No emitir PASS para M0B-R8.1.
+
+### Identidad y hashes reportados
+
+- Entry 280: 6d7d7f4966e1, base supersedida en partes.
+- Entry 281: 46cf60a60500, supersedida en partes.
+- Entry 282: 0fa5cc1cb8f6, supersedida en partes.
+- Entry 283: a9fcd0ca56c0, FAIL de revisión C10.
+- Entry 284: 6c80ccfa8d97, cerró únicamente R1–R4.
+- Entry 285: 778afe7ebd88, propuestas S5/S9/S10.
+- Entry 286: 912a9c0b156b, OWNER_REPORTED.
+- Entry 287: 19d2937ee0e9, OWNER_REPORTED.
+- Entry 288: 08b9b2fdf439, OWNER_REPORTED.
+- Entry 289: f958b6ab36cc, OWNER_REPORTED.
+- Entry 290: leído según el informe, hash no calculado, PENDING_C17.
+
+Los hashes de Entries 285–290 no se verificaron individualmente con git hash-object durante esa revisión; la evidencia descrita es el texto leído, mientras los SHA declarados en cabeceras siguen OWNER_REPORTED.
+
+### Estado consolidado W1–W11
+
+- W1, timing/issuance: Entries 289/290 proponen separar freshness evaluada en el momento del write y write completado después de Downer como ISSUANCE_DEADLINE_MISSED. REPARADO EN TEXTO, PENDIENTE DE ACEPTACIÓN; reloj autoritativo, punto de linearización y Tack siguen UNPROVEN.
+- W2, vocabulario expected_result_requester: casos añadidos en Entry 285; REPARADO EN TEXTO, fixtures no ejecutados.
+- W3, ciclo de vida por operación: casos DENIED/DISCARDED/NONE/UNRESOLVED propuestos; texto pendiente de aceptación.
+- W4, linked record no legible: cinco estados descritos, pero faltan fixtures CSV ejecutables separados; PARCIAL/PENDIENTE.
+- W5, cinco estados de linked record: abierto en fixtures ejecutables.
+- W6, envolvente de identidad/binding: reparado en texto, fixtures pendientes.
+- W7, lifecycle de cuatro casos: sigue abierto en fixtures ejecutables.
+- W8, precedencia por fase y V9: propuesto, no contradicho, sin fixture ejecutable.
+- W9, campos tipados/estados: tablas propuestas en Entry 290, falta consolidar un único manifiesto canónico.
+- W10, parser de filas pipe huérfanas: resuelto en texto; implementación del parser sigue PROPOSED.
+- W11, decisión oculta versus ID desconocido: cuatro casos siguen propuestos sin fixture ejecutable.
+
+S5/S9/S10 se declaran abiertos en Entries 285, 289 y 290. Entry 290 sigue PENDING_C17: la siguiente revisión requerida es C17, acotada a C16-S1–S8 y los fixtures tipados de Entry 290. Los tests propuestos no se consideran ejecutados ni validados.
+
+### Próximo paso para M0B
+
+Realizar la revisión C17 del paquete Entry 290 en alcance cerrado C16-S1–S8 y fixtures tipados de Entry 290. Comparar texto contractual, matriz CSV y fixtures ejecutables uno a uno; conservar separados PROVEN_BY_SOURCE, OWNER_REPORTED, PROPOSED y UNPROVEN. No emitir PASS mientras existan discrepancias de IDs/oráculos, fixtures requeridos ausentes o decisiones S5/S9/S10 abiertas. No ampliar alcance a ejecución runtime sin autorización explícita.
+
+**Gobierno global de esta continuidad:** KEEP_BLOCKED. Candidate C necesita Candidate D; M0B-R8.1 necesita C17 sobre Entry 290; la auditoría de código local sigue STATIC_DIFF_REVIEW_INCOMPLETE y sus hallazgos F1/F4 deben reconciliarse con el contrato vigente antes de pruebas.
