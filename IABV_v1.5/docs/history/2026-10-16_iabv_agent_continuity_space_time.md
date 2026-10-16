@@ -360,3 +360,62 @@ In parallel, design the agent-continuity control plane described above. Inspect 
 Autonomous loop policy: continue each safe, read-only or already authorized engineering step without asking the owner after every routine operation. On each iteration, update durable task status, record evidence, check remaining authorized work and either continue or stop with a specific blocker. Stop and request the owner only for the explicit gates above, a product-semantic decision, a missing credential/permission, an irreconcilable source-provenance conflict, or a risk outside this authorization.
 
 **Governance:** `KEEP_BLOCKED`. The offline code change remains reported but uncommitted/unpushed and not independently reviewed here. Runtime behavior, crash recovery, cross-agent handshake, and operational efficacy remain **UNPROVEN**. No M0A access, runtime execution or physical-bridge activation is authorized by this memory.
+
+
+## 13. Coordinación autónoma — ledger local reportado y próxima integración
+
+**Fuente/procedencia:** informe del propietario que reproduce un resultado de Codex, 2026-10-16 a las 13:58 America/Bogota. Estado: **OWNER_REPORTED / CODEX_LOCAL_REPORTED (relayed)**. No se accedió al worktree local y no se ejecutaron pruebas en esta actualización.
+
+### 13.1 Prototipo local reportado
+
+- Rama local declarada: `codex/iabv-agent-coordination-20261016`.
+- Base declarada: `9e0ce66768aedd7422e0d3551affd398f44a7532`.
+- Commit local citado: `3926b1144bb23c1066db579da711d3cdbc1611df`.
+- Ruta: `C:/temp/IABV_coordination_20261016`.
+- Archivos declarados: `IABV_v1.5/src/iabv_v15/infra/persistence/agent_coordination_ledger.py` (~709 líneas netas indicadas en el diff UI), `IABV_v1.5/src/iabv_v15/bootstrap.py` y `IABV_v1.5/tests/test_agent_coordination_ledger.py`.
+- Diseño reportado: ledger SQLite con tareas/correlación, eventos, mensajes, leases y límites de reintento; rechaza revisiones obsoletas y bloquea entregas inciertas para impedir reenvío automático.
+- Integración reportada: bootstrap crea la propiedad de ledger para uso interno; no registra herramientas MCP, no envía mensajes y no conecta el resultado a `TaskOutcomeRecorder` ni a un consumidor adaptativo.
+- Pruebas reportadas por separado: ledger 12 aprobadas; `AgentHandoffTrail` 31; `PlatformPendingQueue` 25; `ExternalWorkerTelemetry` 8. AST y `git diff --check` también reportados como exitosos. La corrida agrupada se bloqueó y se detuvo; no se declara aprobada. No hubo runtime, integración externa, handshake real ni revisión independiente.
+- La autorización/evidencia de commit se reporta como datos aportados por quien crea la tarea; el ledger aún no verifica autoridad ni integridad de esas afirmaciones.
+- El puente operativo permanece sin activar.
+
+### 13.2 Discrepancia de Git que debe resolverse antes de publicar
+
+El informe dice simultáneamente “añadí el commit local `3926b114...`”, “HEAD sigue en `d1a55897...`” y “el worktree quedó limpio”. Si el branch apunta al nuevo commit, HEAD normalmente debería resolver a ese nuevo SHA. Puede haber una explicación válida (por ejemplo, commit creado fuera de la referencia actualmente checkout), pero no debe inferirse.
+
+**Acción requerida, en solo lectura:** ejecutar en `C:/temp/IABV_coordination_20261016`:
+
+- `git status --short --branch`
+- `git branch --show-current`
+- `git rev-parse HEAD`
+- `git log -3 --oneline --decorate`
+- `git show --stat --oneline 3926b1144bb23c1066db579da711d3cdbc1611df`
+- `git branch -avv`
+- `git worktree list --porcelain`
+
+Determinar si el commit es ancestro/HEAD, si el branch name realmente está asociado al worktree citado y si el hash existe localmente. No resetear, rebasar, limpiar ni empujar hasta conciliar esta discrepancia.
+
+La verificación de la rama remota mediante el conector GitHub en este turno no devolvió la rama `codex/iabv-agent-coordination-20261016`, y la búsqueda del SHA `3926b114...` tampoco devolvió un commit público. Esto es coherente con la afirmación “no hice push”, pero no verifica los objetos Git locales.
+
+### 13.3 Corrección de ruta de memoria
+
+La sección 12 **sí existe en la rama de continuidad** `docs/iabv-space-time-agent-continuity-2026-10-16`, con blob anterior `c381a9b28c550ef354b825a4b41aaa6be6aa0d18`. No está necesariamente en `main` porque la PR #467 sigue siendo Draft y sin fusionar. Por ello, leer la copia de `main` no recupera todas las actualizaciones recientes.
+
+Para continuar, debe leerse explícitamente la URL con la rama de continuidad, no la versión en `main`:
+https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/2026-10-16_iabv_agent_continuity_space_time.md
+
+PR de memoria: https://github.com/jhonf463r/Python/pull/467 (Open, Draft, unmerged al verificar en este corte). No fusionar automáticamente para hacer visible la continuidad en `main`; su fusión es una decisión de publicación independiente.
+
+### 13.4 Siguiente paso mínimo
+
+No se considera cerrado el objetivo de comunicación entre agentes. En el worktree de coordinación, y una vez reconciliada su identidad/HEAD, el siguiente avance es conectar el resultado correlacionado a un consumer real de IABV dentro de un límite offline verificable. Prioridad:
+
+1. Probar y documentar el contrato de una salida del ledger hacia `TaskOutcomeRecorder`/pipeline existente; identificar el punto preciso donde la respuesta pasa de mensaje externo a resultado atribuible y consumible por IABV.
+2. Validar IDs y transiciones del ledger frente a las identidades/estados de los contratos existentes. No aceptar `authorization`, `actor` ni recibos solo porque estén incluidos en el payload; deben verificarse por una fuente autenticada o marcarse explícitamente como no verificados.
+3. Diseñar un adaptador de transporte con una interfaz mínima, inyectable y sin efectos por defecto. Añadir pruebas mock offline para solicitud → respuesta → correlación → persistencia → consumo y para timeout/entrega incierta/deduplicación.
+4. **No** registrar aún herramientas MCP, llamar a proveedores, activar el puente, abrir túneles, exponer servicios ni enviar mensajes reales. Esos pasos requieren una decisión de alcance/red/credenciales separada.
+5. Producir un diff y reporte para revisión adversarial independiente antes de publicar una rama o afirmar que existe comunicación real.
+
+Objetivo autónomo: continuar con inspección/código offline y pruebas focalizadas sin preguntar por cada paso rutinario. Pedir al propietario solo la elección semántica que no pueda resolverse desde contratos existentes, una credencial/permiso realmente ausente o la autorización específica de un canal externo. No afirmar que Codex/ChatGPT/IABV se comunican hasta que un handshake real correlacionado y comprobable haya pasado.
+
+**Gobierno:** `KEEP_BLOCKED`. Prototipo local reportado, no verificado independientemente aquí; no hay evidencia de transporte autenticado, consumidor integrado, handshake real ni puente operativo.
