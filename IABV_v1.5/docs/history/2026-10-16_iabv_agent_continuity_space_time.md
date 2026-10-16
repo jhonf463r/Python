@@ -715,3 +715,45 @@ Antes de cualquier prueba:
 4. Tras reparar estáticamente, hacer revisión de diff y proponer pruebas focalizadas que incluyan los caminos legacy destructivos, conflictos de identidad, fallos entre efectos y recuperación de recibos.
 
 **Gobierno:** `KEEP_BLOCKED`. El diff no cuenta con aprobación técnica independiente; los riesgos reportados sobre fixtures legacy y recibos atascados deben resolverse antes de ejecutar pruebas.
+
+
+## 21. Fixtures aislados y diseño de reconciliación de recibos — checkpoint reportado
+
+Fuente: resultado local de Codex compartido por el propietario el 2026-10-16; clasificación **CODEX_LOCAL_REPORTED (relayed by owner)**. ChatGPT no ha leído directamente el checkpoint ni ha inspeccionado el worktree local.
+
+Resultado reportado: `DESTRUCTIVE_FIXTURES_CONTAINED_WITH_RECEIPT_RECOVERY_DESIGN`. Gobierno: `KEEP_BLOCKED`.
+
+### Estado observado según el informe
+
+- Worktree autorizado: `C:\temp\IABV_coordination_20261016`.
+- Rama y HEAD reportados sin cambios: `codex/iabv-agent-coordination-20261016`, `3926b1144bb23c1066db579da711d3cdbc1611df`.
+- Se conservaron los 22 archivos modificados iniciales. El diff final reportado comprende **96 archivos tracked modificados**, incluidos **84 archivos de pruebas**. No se informa commit/push.
+- `data/` permanece untracked y no fue inspeccionado.
+- No se ejecutaron pruebas, builds ni runtime; `git diff --check` no produjo diagnósticos.
+- La revisión no se presenta como independiente. Se revisaron los cambios de recibos y pruebas sustantivas; sustituciones mecánicas se contrastaron por patrón.
+
+### Fixtures
+
+El informe declara que las raíces de fixtures bajo `data/` se sustituyeron por raíces temporales propias, que la búsqueda estática no halló referencias residuales a `data/test_runs` ni limpiezas de `data/`, y que también se aislaron las rutas fijas destructivas descubiertas en pruebas de aprobación e inventario. Estos resultados siguen siendo reportados y no equivalen a pruebas ejecutadas. El crecimiento de 22 a 96 archivos hace importante revisar el diff completo y distinguir correcciones mecánicas de cambios sustantivos.
+
+### Recibos
+
+El recibo pasa de `processing` a `completed` alrededor de escrituras independientes. No se reporta evidencia durable por efecto ni una transacción común. Ante efectos parciales inciertos, la propuesta documentada conserva el recibo bloqueado y exige reconciliación explícita: no propone reingestión automática ni afirma exactly-once.
+
+No se conectó el ledger al transporte, y no se mezcló asesoramiento con eficacia operativa ni con `TaskOutcomeRecorder`. La política conservadora de bloqueo es apropiada mientras no exista evidencia suficiente para reconciliar cada efecto secundario; la recuperación ejecutable no está demostrada por este diseño.
+
+Checkpoint local declarado: `C:\Users\faber\.codex\visualizations\2026\10\16\01a146cd-2a68-78c3-819f-a4cc90940058\IABV_fixture_receipt_recovery_checkpoint_2026-10-16.md`. No fue leído directamente por ChatGPT.
+
+### Discrepancia de continuidad
+
+El informe local etiqueta la continuidad desde la rama explícita como `NOT_RECOVERED`. En esta sesión el conector de GitHub recuperó la memoria desde `docs/iabv-space-time-agent-continuity-2026-10-16`, con blob previo `dd7331602464a8feee16070953abecf8c79fb441`, y verificó que el archivo llega a la sección 20. No se ha reconstruido contenido ausente: el hecho aquí verificado es únicamente que la ruta del conector puede recuperar la sección 20, mientras que el informe de Codex dice que su mecanismo no pudo recuperar la continuidad. Mantener ambas observaciones con su procedencia.
+
+### Siguiente paso seguro
+
+1. Revisar el diff de los 96 archivos por grupos, separando modificaciones mecánicas, cambios de comportamiento y cambios relacionados con persistencia/recibos.
+2. Hacer un inventario estático de todos los fixtures que crean/eliminan directorios; confirmar que cada limpieza está confinada a la raíz temporal propiedad del test, sin inspeccionar ni modificar `data/`.
+3. Examinar el contrato de recibos por cada efecto secundario: qué evidencia durable confirma cada efecto y qué debe permanecer bloqueado cuando esa evidencia falta. No ejecutar recuperación ni reingestión automática.
+4. Preparar los comandos y pruebas focalizadas para una autorización posterior; no ejecutarlas todavía.
+5. No publicar ni declarar independencia. Si la revisión independiente formal es necesaria, deberá hacerla un revisor/contexto separado sin haber participado en implementación ni depender de conclusiones previas.
+
+**Estado:** `DESTRUCTIVE_FIXTURES_CONTAINED_WITH_RECEIPT_RECOVERY_DESIGN` reportado, no validado en runtime ni independientemente aquí. `KEEP_BLOCKED`.
