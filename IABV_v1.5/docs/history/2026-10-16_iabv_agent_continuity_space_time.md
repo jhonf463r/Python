@@ -302,3 +302,61 @@ Riesgo de no separar señales: una práctica de preparación puede presentarse c
 El siguiente mínimo técnico es preparar un cambio offline y acotado para el modelo de procedencia, deduplicación por etapa y consumo del selector, acompañado de pruebas unitarias discriminantes. **Esta recomendación no es autorización para implementarlo**: la autorización de escritura debe ser expresa y separada de cualquier autorización runtime. Hasta entonces, continuar solo con especificación/diff propuesto, revisión adversarial y protección de `C:/Python`.
 
 **Estado final de este corte:** `GOVERNANCE = KEEP_BLOCKED`. No se editaron archivos de producto, no se ejecutaron tests/build/runtime, no se accedió a M0A y el puente físico sigue sin autorización/activación. La ruta de aprendizaje está respaldada por análisis estático reportado; persistencia viva, confinamiento efectivo y eficacia operativa verificada permanecen **UNPROVEN**.
+
+## 12. Learning provenance — implementation offline report and next objective: agent continuity loop
+
+**Source / provenance:** report pasted by the owner at approximately 13:29 America/Bogota on 2026-10-16, attributed to Codex. Preserve as **CODEX_LOCAL_REPORTED (relayed by owner)** until the worktree, diff and test artifacts are independently inspected. This section does not imply that ChatGPT inspected the local files.
+
+### 12.1 Offline implementation reported
+
+- Worktree: `C:/temp/IABV_BIO04_learning_provenance_20261016`.
+- Branch reported: `codex/iabv-learning-provenance-20261016`.
+- HEAD reported: `d1a55897bf7f758914b8237d48ae43f245f06592`; no commit and no push.
+- 21 files modified; report states +952 / -54 lines.
+- Scope reported: domain models, persistence/database, ToolRecordRepository, ToolMemory, interaction learning, selector, ToolTeachService, ToolOperationalExecutor, TaskOutcomeRecorder and direct consumers.
+- Semantics reported: separate preparation evidence (including sandbox and human teaching) from operational outcomes; selector no longer treats sandbox success as task resolution; operational outcomes that require a postcondition wait for an attributable verified receipt; identities for task, attempt and result remain distinct; contribution ledger deduplicates repeated processing; historical aggregates are retained but marked unattributable and excluded from selector operational reliability.
+- Verification reported: 35 focused tests passed with 30 deselected; 18 tests in `test_verified_operational_outcome_seams.py` passed; AST parsing of 21 affected Python files and `git diff --check` passed. No product runtime or external integration executed. The relationship between the two stated test counts must be preserved as reported rather than silently added together.
+- Residual data: after an interrupted earlier test run, the isolated worktree contains an untracked `data/` directory with 92 files. Contents and exact provenance were not inspected; none were deleted. Do not bulk-add, publish or delete them until their origin and necessity are established.
+- Source BIO-04 worktree and the dirty canonical `C:/Python` were reportedly not intentionally modified.
+
+### 12.2 Unresolved atomicity risk
+
+The contribution ledger, aggregate counters and related artifacts are not updated in one atomic transaction. A process interruption between those operations could leave a partially projected state. Deduplicating a repeated contribution does not, by itself, repair a partially completed update.
+
+**UNPROVEN:** crash consistency and recovery/reconciliation. Do not claim exactly-once semantics or recovery guarantees until the persistence boundary, transaction scope, failure injection and restart behavior are established.
+
+A valid next technical step is to define whether the contract requires crash recovery; then inspect existing SQLite transaction facilities and the JSON/SQLite dual-write pattern. Prefer an atomic authoritative ledger with rebuildable projections or another minimal design proven compatible with current repository contracts. Do not assume a cross-file/filesystem/SQLite transaction exists.
+
+### 12.3 New coordination objective: autonomous, gated agent loop
+
+The owner's goal is to reduce repeated manual prompting and have Codex keep progressing until the system genuinely needs owner authorization. Treat this as an engineering objective, not proof that ChatGPT's active conversation can call a local Codex process.
+
+Target protocol:
+1. A durable task ledger with unique task ID, objective, current phase, source/base SHA, lease/owner, attempt count, status, last artifact, last error, and explicit stop reason.
+2. Append-only agent messages with sender, recipient, task ID, timestamp, evidence refs, requested action and response correlation ID. Avoid overwrite-only shared notes that erase provenance.
+3. A shared evidence/artifact location in GitHub for reports and diffs, with status transitions such as `READY`, `IN_PROGRESS`, `NEEDS_REVIEW`, `NEEDS_OWNER`, `BLOCKED`, `DONE`; every transition records an actor and evidence.
+4. A Codex loop that reads the task ledger, claims only authorized work, performs a bounded step, verifies the result, writes an artifact/message and loops again while permitted work remains.
+5. Event-triggered independent reviews (for example, a Draft PR or explicit review request) for the second agent; do not let reviewer and implementer silently share one unreviewed conclusion.
+6. Idempotent dispatch, bounded retries/backoff, timeouts, loop/run budgets, lock/lease expiry, structured error reports, no recursive spawning without limits, and no automatic merge.
+7. Explicit human gates for secrets/credential setup, unreviewed external spend, destructive actions, runtime/physical bridge activation, access to M0A, production execution, branch protection changes, and unresolved product semantics.
+8. The active ChatGPT conversation may coordinate through the connected GitHub files when a turn is active; it must not be described as a continuously running worker. A scheduled/API-based OpenAI agent is a separate model process and credential scope, not the same identity or live hidden context as this particular ChatGPT conversation.
+
+### 12.4 What to prove before calling the agents “connected”
+
+- Verify the actual Codex CLI invocation and permissions in the local environment; do not assume it can safely modify any worktree simply because it can access the machine.
+- Establish a supported execution route for each worker: Codex CLI, Claude Code, and OpenCode/Kilo. Confirm model/provider identity, authentication source, data handling and whether unattended execution is supported.
+- Establish the bridge from the current ChatGPT conversation to the shared mailbox via the connected GitHub integration. This bridge is turn-driven; it does not provide continuous ChatGPT availability.
+- If using GitHub Actions, inspect current workflows first, then propose a least-privilege event-driven workflow. API credentials must be configured by an authorized owner in repository/environment secrets; never request the secret value in chat or commit it to the repository.
+- Perform a safe handshake test using a harmless nonce/task ID: each configured worker must acknowledge the same task ID, preserve a correlation ID, and return a verifiable artifact/commit or explicit unavailable status. No product/runtime/physical effects are permitted in this handshake.
+- Demonstrate a failure case (missing credentials, worker offline, timeout) that transitions to `NEEDS_OWNER` or `BLOCKED` rather than spinning indefinitely or fabricating success.
+- Only after all checks pass may the report claim which agents are truly connected, and through what exact channel.
+
+### 12.5 Autonomous continuation instruction
+
+Continue from Sections 10–12; do not restart BIO-04 or Candidate C. First inspect the actual 21-file diff and the 92-file untracked data directory **without deleting or bulk-adding anything**. Verify the test commands/results and the current worktree branch/HEAD/status. Resolve whether the atomicity contract is required from existing project requirements; if it is not specified, present the narrow decision to the owner rather than inventing one.
+
+In parallel, design the agent-continuity control plane described above. Inspect the repository for existing agent instructions, MCP configuration, workflows, CLI wrappers and safe task dispatch before adding new infrastructure. Do not commit the 21-file implementation until the untracked data's provenance is understood and the diff/test claims are reconciled. Do not create workflows that assume unavailable secrets or claim direct access to this live ChatGPT conversation. Prefer a small, testable proof of channel connectivity over broad speculative infrastructure.
+
+Autonomous loop policy: continue each safe, read-only or already authorized engineering step without asking the owner after every routine operation. On each iteration, update durable task status, record evidence, check remaining authorized work and either continue or stop with a specific blocker. Stop and request the owner only for the explicit gates above, a product-semantic decision, a missing credential/permission, an irreconcilable source-provenance conflict, or a risk outside this authorization.
+
+**Governance:** `KEEP_BLOCKED`. The offline code change remains reported but uncommitted/unpushed and not independently reviewed here. Runtime behavior, crash recovery, cross-agent handshake, and operational efficacy remain **UNPROVEN**. No M0A access, runtime execution or physical-bridge activation is authorized by this memory.
