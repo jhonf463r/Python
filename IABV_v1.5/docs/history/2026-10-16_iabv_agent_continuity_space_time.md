@@ -158,3 +158,85 @@ Devuelve matriz de evidencia productor → consumidor, falsadores, commit y ruta
 ---
 
 **Regla final:** esta memoria conserva tiempo, proveniencia y dependencias entre sesiones; no convierte hallazgos reportados en hechos independientemente reproducidos ni convierte propuestas en autorizaciones.
+
+
+## 10. Actualización BIO-04 y arista de aprendizaje — Codex local
+
+**Fuente:** informe de Codex entregado el 2026-10-16 aproximadamente 12:16 America/Bogota; inspección estática declarada en C:/Python/IABV_BIO04_009d, branch codex/bio04-verified-outcome-seams-20261002, HEAD d1a55897…. Esta sección es **CODEX_LOCAL_REPORTED**; los archivos públicos de GitHub consultados separadamente muestran contenido de los símbolos relevantes, pero no demuestran por sí solos el estado runtime del worktree Windows.
+
+### 10.1 Procedencia más precisa
+
+- C:/Python: Codex reporta HEAD detached 8425f03e…, 58.901 entradas de estado (git status --porcelain --untracked-files=all), incluyendo cambios/eliminaciones de wplay. Un reporte anterior registraba 511 archivos modificados. Los números no son comparables sin normalizar método y conteo; mantener el checkout intacto.
+- C:/Python/IABV_BIO04_009d: branch codex/bio04-verified-outcome-seams-20261002, HEAD d1a55897…, limpio y siguiendo el mismo commit remoto según Codex.
+- C:/CodexWorktrees/bio04-d1a55897-runtime: detached en d1a55897…, 160 entradas de estado; no se usó para el análisis según Codex.
+- C:/temp/candidate-c-inspect: detached en 1f0b1145…, limpio; solo se identificó.
+- C:/temp/candidate-inspect: no existe según Codex.
+- Remoto observado por Codex: origin/main = 9e0ce667…, BIO-04 remoto d1a55897…, continuidad remota c0d04444…; C:/Python local main f12f3bc9…. El reporte dice que 07ebffc8… y d1a55897… existen como objetos locales, pero no detectó merge-base con los comandos usados. Conservar como discrepancia de procedencia; no afirmar una historia lineal ni hacer sincronización automática.
+- Candidate B/C y memoria continúan en ramas separadas. No se fusionó ni se editó ninguna PR de R10.
+
+### 10.2 BIO-04: resultado de la investigación de señales
+
+El mismatch entre expected_signals de ScenarioRegistry y el pack canónico tiene estos hechos reportados:
+
+- El caso especial Google de browser.search declara pack:browser.generic.
+- El fallback general forma pack:{intent.intent_key}, que para browser.search es pack:browser.search.
+- StrategyPackRegistry asigna browser.search a browser.generic; el pack genérico admite esa intención.
+- ExpectationMatcher compara/produce señales; ExecutionProbeService las conserva en metadata; ScenarioAutoTestService las persiste en episodio/run; PendingIssueService puede copiar señales esperadas al texto de una sugerencia.
+- En el ResultComparator.compare() inspeccionado, las listas expected/observed no se consultan para decidir la categoría. El comparador decide usando capability readiness, incidentes, ejecutor, simulación y evidencia visual.
+
+**Conclusión acotada:** el desajuste es diagnóstico/persistido y podría degradar texto de orientación, pero no se mostró que cambie selección operativa ni categoría de comparación en las fuentes revisadas. **Falsador:** hallar un consumidor adicional de expected/observed que decida ruta, adaptador o ejecución. No convertir esta conclusión acotada en afirmación universal sobre toda la aplicación.
+
+Reparación mínima propuesta: alinear la señal esperada con la resolución canónica del pack o añadir una normalización central para esa identidad. Añadir cobertura fuente para el caso Google y el fallback no-Google; comprobar que la corrección solo cambia el diagnóstico que corresponde y no el resultado operativo. No implementar hasta revisar el consumidor completo y el contrato deseado.
+
+### 10.3 AdaptiveModelSelector → CloudReasoningPlannerService → exclude
+
+Según la inspección de Codex:
+
+- AdaptiveModelSelector.select_best_provider() admite exclude y elimina proveedores del conjunto elegible.
+- Bootstrap conecta el selector a CloudReasoningPlannerService.
+- El planner llama select_best_provider(task_type='planning') sin exclude; los call sites productivos inspeccionados tampoco lo pasan. Los usos encontrados que lo pasan pertenecen a tests.
+- Si un caller lo proporcionara, afectaría elegibilidad/fallback, no los scores del selector.
+
+**Conclusión:** exclude es una capacidad de la API del selector, pero aún no un canal de extensión operativo del planner conectado porque no hay caller productivo que lo alimente. No cablearlo hasta identificar una política real y sus invariantes.
+
+### 10.4 Cadena causal de aprendizaje inspeccionada
+
+La cadena estática reportada por Codex es:
+
+    ToolTeachService
+      → ToolSandbox.run(adapter, sandbox=True)
+      → ToolMemory.remember_result(...)
+      → InteractionLearningService.learn_from_execution(...)
+      → ToolRecordRepository (archivos JSON + índices/tablas SQLite)
+      → InteractionModeSelector en selecciones posteriores
+
+Evidencia de fuente que Codex atribuye al checkout d1a55897…:
+
+- bootstrap.py:685 y :730: se instancian los servicios y se comparte el repositorio correspondiente.
+- tool_sandbox.py:12: llama al adaptador con sandbox=True, crea un ToolResult con estado sandboxed y solicita validación con sandbox=True.
+- tool_teach_service.py:827: guarda el resultado con ToolMemory.remember_result() antes de retornar waiting_approval cuando la acción requiere aprobación y aún está pendiente.
+- tool_memory.py:31: persiste el resultado, actualiza el ToolCard, registra la ejecución y llama a learn_from_execution().
+- interaction_learning_service.py:535: _is_effective_success() acepta validation_status approved o sandbox_pass, sujeto a otras condiciones.
+- interaction_mode_selector.py:222 y el score de _assess_candidate: patrones con éxitos afectan estabilidad/learned-pattern y el score de selecciones genéricas posteriores.
+- tool_record_repository.py:227: persiste patrones en JSON e indexa su identidad/camino en SQLite.
+
+### 10.5 Hallazgo prioritario: separar procedencia del aprendizaje
+
+**Código estático confirmado en la revisión de la fuente, runtime no ejecutado:** un resultado sandbox_pass puede aumentar InteractionPattern.success_count; ese patrón se puede consultar en una selección posterior. En ToolTeachService, el aprendizaje ocurre antes del retorno waiting_approval de una tarea que todavía no ha pasado la aprobación necesaria para la ejecución fuera de sandbox.
+
+Esto significa que el sistema puede aprender que una secuencia/patrón fue eficaz **en sandbox** antes de que exista experiencia de ejecución operativa real. No demuestra automáticamente que sea un bug: el diseño puede permitir aprender patrones de preparación/forma de interacción. Sí es un riesgo semántico si el mismo contador/señal se interpreta como evidencia de eficacia operativa al puntuar selecciones futuras.
+
+**Siguiente acción propuesta (solo lectura/diseño, no editar):** construir una tabla de tipos de evidencia y consumo: sandbox_pass, approved, ejecución real verificada, rollback, bloqueado y resultado desconocido. Determinar para cada tipo qué contadores/patrones/episodios actualiza y qué selector lee esos datos. Después presentar una propuesta mínima para que éxito de sandbox y éxito operativo mantengan procedencia separada y no compartan peso semántico accidentalmente. No recomendar bloquear todo aprendizaje sandbox por defecto; distinguir aprendizaje de forma/preparación de experiencia real de eficacia.
+
+Pruebas discriminantes futuras, solo tras autorización: a) sandbox pass antes de aprobación no incrementa el contador destinado a experiencia operativa verificada; b) ejecución real aprobada y verificada sí lo incrementa; c) failure/block/rollback no crea una contribución positiva; d) una selección posterior expone por separado la fuente de su evidencia. No se ejecutaron estas pruebas en esta inspección.
+
+### 10.6 Prioridad y límites actualizados
+
+Orden recomendado:
+1. Reconciliar worktrees y procedencia; proteger C:/Python y no limpiar/resetear/sincronizar automáticamente.
+2. Documentar el flujo exacto de evidencia sandbox_pass y su impacto en InteractionPattern/InteractionModeSelector.
+3. Revisar ScenarioRegistry/expected signals y el no-uso productivo de exclude como tareas de menor riesgo.
+4. Preparar una propuesta mínima y pruebas discriminantes; revisión cruzada por OpenCode/Kilo y después Claude cuando esté disponible.
+5. Solo con autorización separada, evaluar cambios de código; la prueba runtime y el puente físico requieren gates independientes.
+
+No se accedió a M0A, no se ejecutaron tests/build/runtime en esta misión y no se modificó código de producto. **R10 permanece KEEP_BLOCKED. El puente físico sigue sin activarse.**
