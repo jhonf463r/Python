@@ -873,3 +873,53 @@ Adjuntar el ZIP real en una sesión nueva de **Claude** y utilizar el prompt de 
 Si el paquete es demasiado grande para adjuntarlo a Claude, usar el diff y los archivos de fuente en tandas sin cambiar el contenido, conservando el manifiesto y el inventario para demostrar qué recibió el revisor. No publicar los 96 cambios a GitHub únicamente para habilitar la revisión.
 
 **Gobierno:** `KEEP_BLOCKED`. La exportación facilita la auditoría; no supone auditoría concluida, ejecución de pruebas ni aprobación técnica.
+
+
+## 26. Informe de Claude sobre evidencia y persistencia — cobertura incompleta
+
+**Fuente:** informe de auditoría pegado por el propietario el 2026-10-16 por la tarde, atribuido a Claude y realizado sobre el paquete de auditoría exportado. Clasificación: **CLAUDE_REPORTED (relayed by owner)**; el archivo de informe fuente no se adjuntó a esta sesión y ChatGPT no inspeccionó directamente el ZIP ni las fuentes del paquete. Los hallazgos descritos deben contrastarse contra el código real antes de tratarlos como verificados independientemente aquí.
+
+Resultado de código reportado: STATIC_DIFF_REVIEW_INCOMPLETE. Gobierno: KEEP_BLOCKED.
+
+### Alcance real de revisión
+
+Claude declara haber leído completamente tres archivos críticos: task_context_assembler.py, task_outcome_recorder.py y adaptive_task_orchestrator.py. No leyó íntegramente los otros 93 diffs: menciona como no leídos self_teach_orchestrator.py, tool_teach_service.py, models.py, database.py, experiment_lab_repository.py, tool_record_repository.py, autonomous_evolution_service.py, experiment_lab.py, control_center_viewmodel.py y los 84 tests modificados. Para algunas fuentes de dependencia había solo nombres/manifiesto. El paquete excluyó tres tests: test_auto_load_secrets.py, test_backlog_complete.py y test_runtime_p038_web_skill_quiescence_devin_repair.py; cobertura de rutas que dependan solo de esos tests sigue UNPROVEN o NOT_RECOVERED.
+
+El informe declara no haber ejecutado tests, no haber accedido a runtime, no haber editado el repositorio y no haber inspeccionado data/. Sus hallazgos sobre el contenido inspeccionado son reclamaciones de fuente por Claude, pero la auditoría global permanece incompleta.
+
+### Hallazgos reportados de clasificación consultiva
+
+- **F1 — evidence_class ausente/falsy se promueve silenciosamente a candidato operacional.** En TaskContextAssembler._is_operational_trace(), el predicado reportado rechaza consultation_advisory y clases no vacías distintas de operational_execution, pero deja pasar una clase vacía si los demás campos legacy (success, verdict=approved, estado executed/completed) concuerdan. Un patrón análogo se reporta en TaskOutcomeRecorder._operational_experiment_insights(), donde clase vacía y dominio diferente de consultation_advisory siguen siendo elegibles. Riesgo declarado: una procedencia ausente o desconocida puede entrar en señal adaptativa.
+- El contrato de esta continuidad exige que una clase ausente o desconocida **no se convierta silenciosamente en éxito operativo**. Cualquier excepción legacy debe estar explícitamente versionada/clasificada y respaldada por validación de origen; hasta que exista ese contrato, el comportamiento seguro es excluir/neutrar la evidencia no clasificada.
+- **Importante: el informe contiene una contradicción en su prueba propuesta 1.** Sugiere construir una traza con evidence_class='' y espera que _is_operational_trace() devuelva True, diciendo luego que una diferencia frente a la clase explícita sería una promoción legacy. Esto contradice el contrato de gobierno aprobado. La prueba correcta para la política vigente debe esperar **no operacional (False)** para la clase ausente/vacía/desconocida; operational_execution solo puede admitirse al satisfacer también los predicados restantes. No adoptar literalmente la expectativa True.
+- **F2 — inferencia asimétrica de consulta desde metadata.** Se reporta que _recent_ia_trace() combina autonomous_consultation y evidence_class mediante truthiness. Si la clave existe pero su valor es vacío ({}), y la clase es operational_execution, la traza podría no marcarse como consultiva. Revisar la semántica esperada de presencia de clave versus truthiness; la clasificación de evidencia no debe depender de un marcador truthy cuando la procedencia declarada contradiga esa inferencia.
+- **F3 — fragilidad de clasificación en trazas almacenadas.** Claude considera cerrado el camino normal cuando la traza consultiva se etiqueta correctamente, pero señala dependencia de que la clasificación ocurra antes de construir/resumir la evidencia. Está reportado como riesgo bajo-medio, no como escape demostrado.
+- La cadena desde ia_trace_summary.best_assistant_kind hacia preferencias/gobernanza se describe como un riesgo potencial si la ruta de clase vacía contamina el resumen; parte de ese camino queda como UNPROVEN.
+
+### Hallazgos reportados sobre persistencia
+
+- **F4 — múltiples efectos independientes en TaskOutcomeRecorder.record().** Claude reporta el orden _record_learning, _check_intent_correction, capability_repository.save_many, approval_checkpoint_repository.save_many, adaptive_session_repository.save, propagación a Control Master y hint de reanudación. Sin transacción común ni recibo por efecto, fallos intermedios pueden dejar runs, capabilities, checkpoints, sesiones o proyecciones incompletas. El reintento superior con needs_retry podría repetir experiment_lab.record_outcome() y crear otro ExperimentRun antes de que se persista la sesión.
+- Este hallazgo concierne específicamente al ciclo de TaskOutcomeRecorder.record(); no asumir que equivale exactamente al recibo de consulta externa. Hay que modelar ambos recorridos y sus límites de persistencia por separado.
+- **F5 — consumo no atómico de pending_auto_execution.json.** Se reporta un patrón leer → comprobar ID/consumed → guardar consumed sin operación atómica o lock compartido, con posible carrera entre lectores concurrentes. Confirmar contractualmente los actores concurrentes y el soporte de persistencia antes de proponer una solución.
+- La estrategia conservadora para cualquier efecto parcial incierto sigue siendo bloquear y reconciliar explícitamente. No reintentar a ciegas ni afirmar exactly-once.
+
+### Otros hallazgos / cobertura
+
+- Trazas consultivas con success o reused_later son forzadas a falso cuando se detecta su clase consultiva, pero la robustez depende de que la detección de consulta sea correcta y la clase se conserve.
+- La ruta de decisión de adopción mediante approval_gate_service.evaluate() no pudo seguirse con los artefactos leídos por Claude; clasificada NOT_RECOVERED.
+- La postcondición de experimento no demostraría que la operación real coincide exactamente con la acción recomendada; clasificada UNPROVEN.
+- Una recomendación, evidencia de soporte, propuesta de adopción o preferencia de asistente no prueba ejecución ni postcondición verificada.
+
+### Siguiente tarea segura
+
+La prioridad no es ejecutar las cuatro pruebas propuestas literalmente ni confiar en el informe como aprobación. Primero, sobre el paquete actual:
+1. Reconciliar la expectativa de la prueba para clase ausente: debe rechazar/promover a neutral, no devolver éxito operacional.
+2. Preparar un cambio mínimo y localizado para que evidence_class ausente/vacía/desconocida quede fuera de elegibilidad operativa, con compatibilidad legacy solo si el contrato define señal verificable y explícita.
+3. Asegurar que un marcador autonomous_consultation presente como clave no se ignore solo porque su valor es vacío/falsy, o definir un contrato inequívoco de los campos.
+4. Analizar por separado la idempotencia/recuperación de TaskOutcomeRecorder.record() y el CAS del archivo pending_auto_execution.json; no confundirlos con recibos de consulta.
+5. Antes de más pruebas, volver a revisar todos los helpers de limpieza, incluidos los tests no incluidos en el paquete. No leer data/.
+6. No declarar que el diff de 96 archivos está completamente revisado: solo 3/96 diffs modificados fueron leídos íntegramente por Claude según su propio informe.
+
+No ejecutar tests/build/runtime, no alterar data/, no hacer commit/push ni desbloquear el puente. Toda reparación posterior requiere revisión de diff y autorización de pruebas separada.
+
+**Gobierno:** KEEP_BLOCKED. Hallazgos F1/F4 se consideran materialmente reportados sobre los archivos que Claude declara haber leído; revisión global e independencia formal siguen incompletas.
