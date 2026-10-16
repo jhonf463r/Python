@@ -757,3 +757,38 @@ El informe local etiqueta la continuidad desde la rama explícita como `NOT_RECO
 5. No publicar ni declarar independencia. Si la revisión independiente formal es necesaria, deberá hacerla un revisor/contexto separado sin haber participado en implementación ni depender de conclusiones previas.
 
 **Estado:** `DESTRUCTIVE_FIXTURES_CONTAINED_WITH_RECEIPT_RECOVERY_DESIGN` reportado, no validado en runtime ni independientemente aquí. `KEEP_BLOCKED`.
+
+
+## 22. Revisión de 96 archivos incompleta; dudas de clase de evidencia
+
+**Fuente:** resumen del informe local aportado por el propietario el 2026-10-16 a las 17:38 America/Bogota. Clasificación: **CODEX_LOCAL_REPORTED (relayed by owner)**. No leí directamente el informe local ni inspeccioné el checkout en esta sesión.
+
+Resultado: `STATIC_DIFF_REVIEW_INCOMPLETE`. Gobierno: `KEEP_BLOCKED`.
+
+Informe declarado: `C:\Users\faber\.codex\visualizations\2026\10\16\01a146cd-2a68-78c3-819f-a4cc90940058\IABV_static_diff_review_96_2026-10-16.md`.
+
+El resumen declara que el checkout coincide con la ruta, rama y HEAD autorizados, y que se hizo inventario de los 96 paths tracked modificados. El revisor examinó los diffs sustantivos, pero no cada cambio de los 96 archivos y no pudo identificar de forma independiente cuáles eran las 22 modificaciones originales. Por ello, no certificó revisión completa ni emitió aprobación/rechazo global. No ejecutó pruebas ni inspeccionó `data/`; el checkout no se modificó durante esta revisión, según el informe.
+
+### Hallazgos abiertos reportados
+
+- Algunos consumidores adaptativos aceptan recomendaciones sin una `evidence_class` explícita.
+- La evidencia que respalda una recomendación no prueba por sí sola que una operación se haya ejecutado con éxito y que su postcondición se haya verificado.
+- Recibos de ingestión pueden quedar en `processing` después de fallos parciales; no se ha demostrado transacción común ni reconciliación segura.
+- Las rutas de fixtures revisadas usan raíces únicas, pero la limpieza permanece inconsistente y el aislamiento no se verificó en ejecución.
+
+No convertir soporte/relevancia de recomendación, respuesta textual o persistencia de una propuesta en éxito operativo. El criterio de éxito debe requerir evidencia explícita de ejecución y verificación de postcondición por el contrato de ejecución correspondiente. Evidencia desconocida o sin clasificación no debe convertirse silenciosamente en señal operativa.
+
+### Siguiente paso y asignación de agente
+
+El próximo encargo debe dirigirse explícitamente a **OpenCode/Kilo como revisor técnico separado**, no a Codex, que ha trabajado en la implementación. La tarea deberá verificar si el entorno realmente está separado y tiene acceso de solo lectura al checkout autorizado; no debe fingir independencia ni confiar en informes previos. Si OpenCode/Kilo no puede acceder a ese checkout o no satisface la separación, debe detenerse y declarar `STATIC_DIFF_REVIEW_INCOMPLETE`.
+
+La revisión debe priorizar:
+1. Reglas de `evidence_class` y consumidores que aceptan recomendaciones sin procedencia.
+2. Separación entre evidencia de soporte, decisión de adopción, ejecución real y postcondición verificada.
+3. Estados `processing`, efectos parciales por almacén y criterio explícito de reconciliación; sin reintentos ciegos ni afirmaciones exactly-once.
+4. Todos los 96 cambios rastreados, incluidos los cambios de fixtures/cleanup, con inventario archivo por archivo y resultado completo o incompleto explícito.
+5. Las 22 modificaciones iniciales no tienen baseline independiente confirmado; no reconstruir ni asumir esa partición sin evidencia.
+
+Mantener los límites actuales: no inspeccionar `data/` ni SQLite, no ejecutar pruebas/build/runtime/transporte/puente, no editar ni publicar. El informe debe distinguir `PROVEN_BY_SOURCE`, `CODEX_LOCAL_REPORTED`, `PROPOSED`, `UNPROVEN` y `NOT_RECOVERED`.
+
+**Estado:** revisión reportada incompleta; los hallazgos son reportados y requieren verificación en el código. Gobierno `KEEP_BLOCKED`.
