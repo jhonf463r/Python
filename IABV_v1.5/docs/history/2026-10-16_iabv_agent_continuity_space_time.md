@@ -792,3 +792,30 @@ La revisión debe priorizar:
 Mantener los límites actuales: no inspeccionar `data/` ni SQLite, no ejecutar pruebas/build/runtime/transporte/puente, no editar ni publicar. El informe debe distinguir `PROVEN_BY_SOURCE`, `CODEX_LOCAL_REPORTED`, `PROPOSED`, `UNPROVEN` y `NOT_RECOVERED`.
 
 **Estado:** revisión reportada incompleta; los hallazgos son reportados y requieren verificación en el código. Gobierno `KEEP_BLOCKED`.
+
+
+## 23. Claude disponible como revisor técnico — decisión de uso
+
+**Fuente:** el propietario declara que Claude ya está disponible. Clasificación: `OWNER_REPORTED`. No se presume que Claude tenga acceso efectivo al checkout local hasta que lo verifique.
+
+### Decisión
+
+Sí, es conveniente usar Claude ahora como revisor técnico separado de Codex, antes de autorizar tests. Motivo: la revisión previa del diff de 96 archivos quedó `STATIC_DIFF_REVIEW_INCOMPLETE`; no se revisaron individualmente todos los cambios y permanecen riesgos en procedencia `evidence_class`, conversión indebida de respaldo consultivo en éxito operativo, recibos `processing` con efectos parciales y limpieza de fixtures.
+
+Claude debe actuar en una sesión nueva, sin haber implementado el cambio y sin usar como conclusiones propias los informes anteriores. Se le debe dar el contrato y el checkout/diff a revisar, pero no guiarlo a confirmar un diagnóstico predeterminado. Debe encontrar los defectos a partir de evidencia y también registrar cuando no pueda demostrar una propiedad.
+
+### Alcance seguro del encargo
+
+- Primero comprobar que el checkout efectivo es exactamente `C:\temp\IABV_coordination_20261016`, rama reportada `codex/iabv-agent-coordination-20261016`, HEAD reportado `3926b1144bb23c1066db579da711d3cdbc1611df`. Usar rutas absolutas. Si la raíz no coincide, detenerse; no abrir `C:\Python\IABV_v1.5`.
+- Modo solo lectura: no editar, no ejecutar tests/build/runtime, no limpiar fixtures, no hacer commit/push.
+- No listar ni leer `data/`, ni abrir o hashear los SQLite.
+- Inventariar y revisar cada uno de los 96 archivos rastreados modificados si son 96 en el estado real. Si no se cubren todos, mantener `STATIC_DIFF_REVIEW_INCOMPLETE`.
+- Evaluar el recorrido de `evidence_class`, la separación entre recomendación, adopción, ejecución y postcondición, la idempotencia/reconciliación de recibos y el alcance real de setup/teardown de fixtures.
+- Separar hallazgos demostrados de riesgos, propuestas y propiedades que requieren ejecución. No afirmar exactamente-once sin prueba contractual.
+- Producir un checkpoint local nuevo con inventario por archivo, referencias concretas, riesgos y pruebas propuestas no ejecutadas.
+
+### Criterio de independencia
+
+Un modelo distinto no garantiza independencia por sí mismo: requiere una sesión/contexto separado, no haber implementado los cambios y una revisión anclada en el código. Si Claude necesita leer los informes anteriores para ubicar el estado, debe distinguir su contenido reportado de la evidencia fuente del checkout. No debe limitarse a aprobar la revisión previa.
+
+**Estado de partida:** `STATIC_DIFF_REVIEW_INCOMPLETE`; la revisión independiente de Claude está pendiente y no se afirma que se haya iniciado. Gobierno: `KEEP_BLOCKED`.
