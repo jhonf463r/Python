@@ -240,3 +240,65 @@ Orden recomendado:
 5. Solo con autorización separada, evaluar cambios de código; la prueba runtime y el puente físico requieren gates independientes.
 
 No se accedió a M0A, no se ejecutaron tests/build/runtime en esta misión y no se modificó código de producto. **R10 permanece KEEP_BLOCKED. El puente físico sigue sin activarse.**
+
+
+## 11. BIO-04 — identidad de intento, doble contabilización y procedencia del éxito
+
+**Fuente:** resultado de inspección estática de Codex aportado el 2026-10-16 a las 12:23 America/Bogota. Checkout declarado: `C:/Python/IABV_BIO04_009d`, branch `codex/bio04-verified-outcome-seams-20261002`, HEAD `d1a55897bf7f758914b8237d48ae43f245f06592`, limpio y coincidente con el commit remoto según Codex. Estado de evidencia: **CODEX_LOCAL_REPORTED**. No hubo edición de código, tests, build, runtime ni acceso a M0A. Los enlaces locales `C:/...` del reporte son evidencia de ruta en el entorno declarado por Codex, no enlaces públicos verificables desde GitHub.
+
+### 11.1 Recorrido de los resultados
+
+- `ToolTeachService.execute_task()` invoca `ToolSandbox.run()`; el sandbox llama `adapter.run(..., sandbox=True)` y después a `ToolValidator`. El resultado de sandbox conserva un `task_id` y tiene `result_id` propio.
+- `ToolMemory.remember_result()` persiste el resultado, actualiza los contadores de la tarjeta, registra el evento y llama al aprendizaje de interacción. La ruta inspeccionada lo hace antes de regresar `waiting_approval` cuando falta aprobación para continuar fuera del sandbox.
+- La copia devuelta como `waiting_approval` conserva el mismo `result_id`. En el tramo inspeccionado no se vuelve a persistir esa copia modificada salvo que haya supervisor de auditoría.
+- Una ejecución posterior puede reconstruir una nueva tarea a partir de la sesión/ruta de ejecución. La construcción usa un `task_id` nuevo por defecto; conservar `session_id` o `run_id` no equivale a conservar identidad de tarea, intento ni idempotencia de etapa.
+- Sandbox y ejecución operativa pueden generar `result_id` distintos bajo un mismo `task_id` dentro de una llamada; si la operación aprobada se hace en un ciclo posterior reconstruido, los IDs de tarea pueden también diferir. No hay una identidad tipada y común de intento que una explícitamente estas etapas en el contrato inspeccionado.
+- `ToolTask.task_id`, `ToolResult.result_id`, `InteractionPattern.pattern_id`, `InteractionEpisode.interaction_episode_id` y `InteractionObservation.observation_id` son identidades distintas. El patrón también se localiza por una firma derivada del contexto/canal/herramienta/sitio/acciones.
+
+### 11.2 Contabilidad y límites de idempotencia
+
+- `ToolMemory` actualiza `ToolCard.success_count` o `failure_count` según `result.success`, sin exigir por sí mismo que el estado de validación sea aprobado o verificado.
+- `InteractionLearningService._is_effective_success()` exige `result.success` y `validation_status` en `approved` o `sandbox_pass`, además de las salvaguardas revisadas contra captura pendiente, login requerido o incoherencia. Por tanto, `sandbox_pass` puede aumentar `InteractionPattern.success_count`.
+- La persistencia por `result_id` puede reemplazar el registro de ese resultado, pero `remember_result()` invoca aprendizaje cada vez. No se identificó una clave de deduplicación que proteja las contribuciones por intento, etapa y resultado procesado; volver a recordar el mismo resultado podría incrementar contadores otra vez.
+- Los éxitos sandbox y operativo pueden aportar dos contribuciones positivas diferentes, incluso si ambos pertenecen a la misma tarea lógica. Esto es un riesgo potencial de doble peso de una secuencia, no prueba de que un escenario runtime concreto haya ocurrido.
+- Los resultados bloqueados antes de entrar al sandbox (por ejemplo, tarjeta/adaptador ausente) toman una ruta de persistencia/evento que omite `ToolMemory` y `InteractionLearningService`; los fallos de sandbox sí pasan por el camino de memoria y aprendizaje.
+- Para un fallo no bloqueado, el rollback se intenta bajo condiciones de escritura/destrucción/acciones de rollback. La señal de rollback se agrega al resultado del intento; un rollback exitoso no convierte el resultado operativo fallido en éxito.
+- `awaiting_response` no pertenece a la lista de estados de fallo efectivo mencionada por Codex; si conserva `success=True`, tampoco cuenta como éxito efectivo según el predicado descrito. Tratarlo como evidencia neutral/incompleta requiere una decisión explícita del contrato.
+
+### 11.3 Validación frente a postcondición verificada
+
+`ToolValidator` puede marcar `approved` un resultado conforme a `success` y aprobación o al alcance `read_only`. El verificador independiente de postcondición inspeccionado se ejecuta después en el flujo de ejecución y registra su veredicto en el outcome de la sesión. Codex no encontró que ese veredicto vuelva a actualizar `ToolResult`, `InteractionPattern` o `InteractionEpisode`.
+
+**Conclusión acotada:** los contadores vigentes reflejan éxito/validación del resultado del adaptador según las reglas actuales; no constituyen, por sí solos, evidencia de que una postcondición independiente haya sido verificada. Falsador: localizar otro consumidor/camino que propague de forma autoritativa el recibo de postcondición a esos registros antes de puntuar el patrón.
+
+### 11.4 Efecto reportado en selecciones futuras
+
+- `InteractionModeSelector` usa contadores de la tarjeta para estabilidad/frecuencia y patrones exitosos en la puntuación general; los episodios exitosos pueden aportar una bonificación de resolución.
+- La ruta especial `external_assistant` mantiene una puntuación fija para la herramienta preferida en el tramo inspeccionado. Aun allí, patrones/episodios afectan estado/reutilización y fallos bloqueados repetidos pueden apartar o impedir esa ruta.
+- Por eso, si una contribución `sandbox_pass` se mezcla con el mismo contador interpretado como eficacia operativa, puede cambiar decisiones futuras sin una ejecución real verificada. El efecto exacto depende de la ruta y del candidato; no se afirma que cada selección cambie.
+
+### 11.5 Contrato aditivo propuesto — no implementado
+
+1. Añadir procedencia tipada para cada contribución, por ejemplo `sandbox_preapproval`, `execution_approved`, `postcondition_verified`, `failed`, `blocked`, `rolled_back` y `legacy_unknown`.
+2. Distinguir tarea lógica, intento de ejecución, resultado y etapa de evidencia. Asignar `execution_id` al intento y aplicar idempotencia a `execution_id + evidence_stage + result_id` (o una clave estable equivalente) para que re-procesar el mismo aporte no incremente contadores otra vez.
+3. Conservar el aprendizaje de sandbox para forma/secuencia/preparación, pero mantenerlo separado de la señal que representa fiabilidad operativa. No promover registros históricos ambiguos a éxito operativo verificado: clasificarlos `legacy_unknown` hasta contar con evidencia suficiente.
+4. Requerir un recibo independiente y atribuible de postcondición antes de añadir evidencia positiva a la señal operativa verificada; `ToolValidator.approved` no debe equivaler automáticamente a `postcondition_verified`.
+5. Registrar la procedencia y los IDs de evidencia que contribuyen a cada decisión del selector, para explicar qué contador/patrón/episodio influyó realmente en el score.
+
+Riesgo de no separar señales: una práctica de preparación puede presentarse como eficacia operativa. Riesgo de separar sin compatibilidad: recalificar injustificadamente patrones históricos cuya procedencia ya no puede reconstruirse. El diseño debería ponderar ambas cuestiones y preservar compatibilidad histórica.
+
+### 11.6 Pruebas discriminantes propuestas — NO EJECUTADAS
+
+1. Un `sandbox_pass` previo a aprobación incrementa evidencia de preparación, pero deja en cero la evidencia de operación verificada.
+2. Una ejecución real con postcondición independiente atribuible incrementa una sola vez la señal operativa; aprobación del validador por sí sola no basta.
+3. Bloqueo, fallo, rollback exitoso/fallido y resultado incompleto nunca incrementan la señal operativa positiva.
+4. Recordar dos veces el mismo resultado/etapa no duplica contabilidad; sandbox y ejecución son etapas distinguibles; un intento nuevo tiene un `execution_id` nuevo.
+5. Una selección posterior expone procedencia/IDs de evidencia e identifica qué componente influyó en su puntuación.
+
+6. **Runtime separado y pendiente de autorización:** demostrar persistencia tras reinicio, observar una ejecución real con verificador independiente, confirmar la semántica de `sandbox=True` para cada adaptador y verificar qué evidencia consume una selección posterior. La mera presencia del argumento `sandbox=True` no prueba confinamiento del sistema operativo.
+
+### 11.7 Siguiente paso y gobierno
+
+El siguiente mínimo técnico es preparar un cambio offline y acotado para el modelo de procedencia, deduplicación por etapa y consumo del selector, acompañado de pruebas unitarias discriminantes. **Esta recomendación no es autorización para implementarlo**: la autorización de escritura debe ser expresa y separada de cualquier autorización runtime. Hasta entonces, continuar solo con especificación/diff propuesto, revisión adversarial y protección de `C:/Python`.
+
+**Estado final de este corte:** `GOVERNANCE = KEEP_BLOCKED`. No se editaron archivos de producto, no se ejecutaron tests/build/runtime, no se accedió a M0A y el puente físico sigue sin autorización/activación. La ruta de aprendizaje está respaldada por análisis estático reportado; persistencia viva, confinamiento efectivo y eficacia operativa verificada permanecen **UNPROVEN**.
