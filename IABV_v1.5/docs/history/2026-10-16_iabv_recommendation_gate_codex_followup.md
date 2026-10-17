@@ -147,3 +147,38 @@ Debe producir referencias de source exactas para promoción sandbox → asignaci
 El informe sigue siendo una continuación no independiente hasta que exista una revisión adversarial centrada en las mismas referencias y que documente falsadores concretos.
 
 **Gobierno:** `KEEP_BLOCKED`. Sin edición de código, tests, builds, runtime, operaciones en M0A ni activación del puente.
+
+
+## 11. Nota de configuración de modelos/agentes, contrastada con documentación oficial
+
+**Fuentes consultadas el 2026-10-16:**
+
+- Kilo, “Using Kilo for Free”: https://github.com/Kilo-Org/kilocode/blob/main/packages/kilo-docs/pages/getting-started/using-kilo-for-free.md
+- Kilo, “Auto Model”: https://kilo.ai/docs/code-with-ai/agents/auto-model
+- Kilo, selección de modelo/agente en VS Code: https://github.com/Kilo-Org/kilocode/blob/main/packages/kilo-docs/pages/code-with-ai/agents/model-selection.md
+- OpenCode, catálogo de modelos: https://dev.opencode.ai/v2/docs/console/models/
+
+### Distinciones operativas
+
+- **Herramienta/superficie:** Kilo Code como extensión de VS Code; OpenCode como entorno/agente distinto; Codex CLI como agente local que produjo los informes citados.
+- **Modo/agente:** define el rol o tipo de tarea (por ejemplo, Code o Plan en Kilo); no es el modelo ni el proveedor.
+- **Modelo/ruta:** `kilo-auto/free` es un tier de enrutamiento dinámico hacia modelos gratuitos disponibles, no un modelo base fijo. Kilo documenta que las rutas cambian según capacidad y disponibilidad del proveedor.
+- **Proveedor de inferencia:** puede cambiar bajo una ruta automática. No deducir privacidad o capacidad a partir del nombre “Auto Free”; confirmar la ruta/modelo mostrado para la sesión si la UI lo expone.
+- **Datos:** la documentación oficial de Kilo advierte que Auto Free puede usar proveedores que registran prompts y salidas y los utilizan para mejorar sus servicios, y cita en particular endpoints gratuitos de NVIDIA con restricciones de no enviar datos personales o confidenciales. Por tanto, no usar Auto Free con código privado, secretos, credenciales, `.env`, datos reales o contenido sensible sin una ruta explícitamente adecuada.
+- **OpenCode:** es un catálogo y una ruta de proveedor separados. En el listado consultado aparecen DeepSeek V4.1 Flash Free, MiMo-V2.6-Flash Free, Nemotron 3.5 Lightning Free y Muse Spark 1.3 Contributor Free. El propio catálogo advierte que varias de estas ofertas gratuitas son temporales; confirmar el identificador y las condiciones actuales en el selector al comenzar la sesión.
+- La documentación consultada indica que OpenCode declara zero-retention/no-training para la ruta específica de DeepSeek V4.1 Flash Free, mientras que varias ofertas free de otros modelos se describen como temporales destinadas a recoger feedback/mejorar el modelo. No extrapolar la política de una ruta a otro modelo ni a Kilo Auto Free.
+
+### Registro de capacidad observado hasta ahora
+
+| Superficie | Capacidad reportada/observada | Limitación conocida en esta tarea |
+|---|---|---|
+| Codex CLI local | Confirmó checkout/HEAD/status y produjo un mapa estático de la ruta gate/outcome | Su propia nota dice que la revisión follow-up no fue independiente y no abarcó los 96 diffs completos |
+| Kilo en VS Code, Auto Free reportado por propietario | Encontró el estado del checkout, respetó la restricción sobre los dos SQLite no rastreados y no inventó referencias cuando no halló el checkpoint dentro del árbol | En la respuesta compartida no llegó a entregar un mapa de llamadas completo; la búsqueda relativa no demuestra que el checkpoint fuera inexistente fuera del workspace. No se ha comprobado qué modelo/proveedor subyacente respondió a la sesión |
+| OpenCode | El propietario reportó las cuatro opciones de modelo citadas arriba como disponibles/opciones en otro contexto | No está verificado cuál está configurado o seleccionado actualmente, si usa un modo/agent específico, ni si el catálogo de la sesión coincide con la documentación consultada |
+| Claude Code/Pro | Revisor adversarial previsto cuando vuelva a estar disponible | No se ha realizado todavía esa revisión del mapa operacional |
+
+### Regla práctica
+
+Para cada tarea importante, registrar: producto/extensión, modo/agente, ID exacto del modelo o tier, proveedor conocido, acceso real al checkout, alcance de lectura, permisos de escritura, salida entregada, si la revisión fue independiente y errores/limitaciones. La palabra “agente” por sí sola no identifica esas capas.
+
+**Aplicación inmediata:** permitir a Kilo seguir con la inspección estática de los archivos relevantes del checkout identificado aunque el checkpoint esté ausente del workspace; el propio prompt autoriza la inspección del código. Mantener el checkpoint como `NOT_FOUND_IN_CHECKOUT`, no `NOT_FOUND_ON_DISK`. No enviar los archivos `data/*.sqlite` ni el repositorio indiscriminadamente al proveedor Auto Free.
