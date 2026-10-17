@@ -1,3 +1,15 @@
+## 2026-10-16 REGISTRY UPDATE — LOCAL CENSUS AND TRACE-ID RECONCILIATION ROUTE
+
+Latest source record: [2026-10-16_iabv_recommendation_gate_codex_followup.md](../2026-10-16_iabv_recommendation_gate_codex_followup.md).
+
+- Latest reported record update: commit a4f7550d02266763ed3f200ea6d3c7c7df70e5af, blob 9199a31f566b5c7452e530c06440d20fa11be4e5.
+- Current objective routing is defined at the top of README.md, CURRENT-STATE.md and CONTEXT-INDEX.md in this branch.
+- Codex local census is reported; next open edge is exact HEAD/worktree diff and type lineage for supporting_run_ids versus trace-ID metadata, followed by Claude Web challenge of the reconciled design.
+- Evidence source separation and runtime limits are preserved in the source record.
+- This registration is branch-only within PR #467 and is not yet canonical main absorption. Do not merge automatically.
+
+---
+
 ## 2026-10-16 REGISTRY — RECOMMENDATION GATE / AGENT SYMBIOSIS FOLLOW-UP
 
 - Record: [2026-10-16_iabv_recommendation_gate_codex_followup.md](../2026-10-16_iabv_recommendation_gate_codex_followup.md)
