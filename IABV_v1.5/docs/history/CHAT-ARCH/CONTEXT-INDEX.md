@@ -1,3 +1,15 @@
+## 2026-10-16 ROUTING UPDATE — RUN/TRACE ID LINEAGE BEFORE DESIGN CHALLENGE
+
+The local source census is reported complete for the declared scope. The next retrieval/action must be narrow:
+1. Ask Codex local to reconcile HEAD versus working-tree TaskOutcomeRecorder._source_trace_ids() and trace the full producer/consumer lineage for supporting_run_ids, source_trace_ids, operational_trace_ids, reusable_trace_ids, winning_trace_ids and supporting_trace_ids.
+2. Preserve identifier types/namespaces: RunRecord ID, ExperimentRun ID, IATraceEntry ID and any other trace ID must not be treated as interchangeable.
+3. After Codex returns exact source references, have Claude Web adversarially evaluate the neutral-sandbox design and the coverage of all success consumers. It can inspect public source and challenge a supplied report, but cannot attest local modified files.
+4. Use Kilo/OpenCode only if a material disagreement remains.
+
+Related record: [2026-10-16 recommendation-gate follow-up](../2026-10-16_iabv_recommendation_gate_codex_followup.md). The candidate repair remains proposed. Keep data/ and SQLite untouched; no code edit, tests or runtime. GOVERNANCE = KEEP_BLOCKED.
+
+---
+
 ## 2026-10-16 OBJECTIVE ROUTER — RECOMMENDATION GATE AND AGENT CONTINUITY
 
 For an objective concerning sandbox promotion, operational success, ranking, adaptive weights, ExperimentLab or agent-symbiosis memory, activate the following route:
