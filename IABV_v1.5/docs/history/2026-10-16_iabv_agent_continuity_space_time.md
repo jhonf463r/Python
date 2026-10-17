@@ -1360,3 +1360,20 @@ The report says `tool_evolution_monitor.py`, `tool_discovery_service.py` and `au
 Trace only the producer and schema/contract of `self_examination/latest.json.metadata.solution_proposals`. Determine whether any producer or adapter can transform a `ToolEvolutionMonitor` `validate_discovery` proposal into a sync-pulse proposal dictionary. Identify required fields and exact identity mapping. If there is no such bridge, record the exact boundary and stop; do not extend into `plan_or_execute()` internals without a demonstrated link.
 
 **Next actor:** Codex with local checkout access, read-only. Independent follow-up: Claude Web may adversarially challenge the supplied report and excerpts, but cannot certify local code unless it independently has that access. All tests remain `NOT_RUN`. No implementation/runtime/bridge authorization; `GOVERNANCE = KEEP_BLOCKED`.
+
+
+---
+
+## 2026-10-17 ROUTE UPDATE — SLICE A STATIC ACCEPTANCE WITH LIMITATIONS
+
+Claude Web returned `SLICE_A_REVIEW_ACCEPTED_WITH_REMAINING_LIMITATIONS` after reviewing the physically attached/reproduced evidence artifact. This is an artifact-scoped static disposition only: F-01/F-02/F-03 supported by reproduced snippets/assertions, tests remain `NOT_RUN`, F-04/F-09 remain `UNRESOLVED`, F-05/F-06/F-07 stay deferred/open. Claude did not inspect the local checkout.
+
+Detailed record: [CHAT-ARCH-2026-10-17-r10-slice-a-static-review-with-limitations.md](CHAT-ARCH/CHAT-ARCH-2026-10-17-r10-slice-a-static-review-with-limitations.md).
+
+Codex-reported local state: `C:/temp/IABV_coordination_20261016`, branch `codex/iabv-agent-coordination-20261016`, HEAD `3926b1144bb23c1066db579da711d3cdbc1611df`, 100 tracked modified paths, clean `git diff --check`. These are `OWNER_REPORTED`, not independently verified in this branch.
+
+**Next bounded route:** Codex local, read-only, trace producer/schema and any explicit adapter for `self_examination/latest.json.metadata.solution_proposals` versus `ToolEvolutionStatus.proposals` / `validate_discovery`. If no bridge is evidenced, record the stopping boundary and do not inspect downstream `plan_or_execute()` internals. Keep the route graphs separate until identity mapping is proved.
+
+Cross-chat rule: never refer to another chat's preceding message as evidence. Make the reviewer confirm the exact attachment/inline artifact; absent evidence means `UNRESOLVED`.
+
+`CODE_EXECUTION = NOT_RUN`; `TESTS = NOT_RUN`; `BUILD = NOT_RUN`; `RUNTIME = NOT_RUN`; no `data/`/SQLite inspection. `GOVERNANCE = KEEP_BLOCKED`.
