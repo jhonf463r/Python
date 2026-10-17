@@ -1,3 +1,10 @@
+## 2026-10-17 ACTIVE ROUTE — TRACE ACCEPTED WITH LIMITATIONS
+
+Discovery ↔ sync-pulse bounded trace: Claude Web verdict `TRACE_ACCEPTED_WITH_LIMITATIONS`, accepted only for no explicit typed per-proposal adapter in the searched/reviewed tracked `IABV_v1.5/src` and `tests` routes. The possible `evidence_refs → ExperimentRun → proposal_id/discovery_signal_id` two-hop remains `UNRESOLVED`. See [final adjudication](https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-r10-sync-pulse-trace-final-adjudication.md) and [targeted evidence](https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-r10-sync-pulse-targeted-evidence-result.md).
+
+Next action is the separate R10 v0.7.2 written audit verdict; do not restart broad bridge tracing. `GOVERNANCE = KEEP_BLOCKED`.
+
+---
 ## 2026-10-17 ROUTE UPDATE — INDIRECT OSES INFLUENCE FOUND; TYPED BRIDGE NOT FOUND
 
 Codex local reported `BRIDGE_NOT_FOUND_IN_BOUNDED_SCOPE`: no direct typed adapter was found transferring a `ToolEvolutionProposal` / `validate_discovery` result into an individual sync-pulse `solution_proposals` object. The flows are **not fully independent**: sandbox `ExperimentRun` records reportedly feed ExperimentLab/OSES aggregates grouped by assistant, which influence OSES proposal output. The individual `proposal_id` / `discovery_signal_id` lineage is reported as absent from those OSES output objects and lost again in the sync-pulse projection.
