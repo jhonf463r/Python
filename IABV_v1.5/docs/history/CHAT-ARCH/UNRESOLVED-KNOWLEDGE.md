@@ -6916,3 +6916,14 @@ Open questions:
 Do not infer real execution from `success=True`, `status='promoted'`, `VALID`, or `execution_ms`. TaskContextAssembler's reported filter is consumer-specific and does not settle all consumers.
 
 Next actor: Codex with local checkout access, read-only, one route only. Subsequent adversarial challenge by Claude Web must explicitly remain limited to supplied evidence. Tests stay `NOT_RUN`; implementation blocked. `GOVERNANCE = KEEP_BLOCKED`.
+
+
+## 2026-10-16 — R10 VALIDATE_DISCOVERY ↔ SELF-EXAMINATION SYNC-PULSE BRIDGE UNRESOLVED
+
+Codex's owner-supplied local report says the route `ToolDiscoveryService` → `ToolEvolutionMonitor.validate_discovery` → `AutonomousValidationCycle` → `SandboxExperimentService.validate_recommendation()` ends in sandbox evaluation and ExperimentLab persistence, with no dispatcher call found.
+
+A distinct route reportedly reads `self_examination/latest.json.metadata.solution_proposals`, converts proposals to dictionaries, and can pass them to `auto_execute_from_sync_pulse()` → `AutonomousEvolutionService.plan_or_execute()`. The inspected report does not identify a producer/adapter connecting the typed `validate_discovery` proposal to these sync-pulse dictionaries.
+
+Open question: does any producer or adapter make that connection? Determine schema, required fields and stable identity mapping. Until demonstrated, treat the routes as disconnected. Do not infer execution or authorization from the existence of the second route.
+
+Next actor: Codex with local checkout access, read-only, producer/adapter scope only. Follow-on challenge: Claude Web using supplied source/report without claiming local access. No implementation/test/runtime authorization, no `data/`/SQLite, M0A or bridge. `GOVERNANCE = KEEP_BLOCKED`.
