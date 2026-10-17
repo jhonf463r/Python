@@ -3579,3 +3579,20 @@ The repair stage must preserve reuse-first and anti-scope-creep:
 - distinguish a semantic necessity from a useful future extension.
 
 This protects the developmental method from ontology inflation while retaining adversarial learning.
+
+
+## 2026-10-16 METHOD AMENDMENT — PROMOTION IS NOT EXECUTION; TRACE THE DISPATCH EDGE
+
+When source analysis finds a promotion state or a persisted success result, do not infer execution, attributable outcome, postcondition verification or production activation from those values alone.
+
+For the R10 route reported by Codex:
+- baseline blockers + a ranked alternative reportedly lead to `VALID` / `promote_to_primary=True` / `status='promoted'`;
+- the promotion outcome reportedly persists `success=True` with `execution_ms=0` and no explicit operational evidence class;
+- downstream ranking/adaptive profiles may consume it;
+- an operational-context consumer reportedly rejects evidence without explicit `evidence_class='operational_execution'`, but this narrow protection does not prove every consumer filters it.
+
+**Required method:** maintain distinct causal states for proposal, selection, sandbox evaluation, authorized dispatch, attributable execution result, verified postcondition, persisted result, and downstream decision effect. Trace each transition in source and record its identifiers, guards, writer, consumer and falsifier. Treat `success=True`, `VALID` and `promoted` as local field values until their semantics are proven.
+
+**Next review discipline:** continue only along `ToolEvolutionMonitor` → `validate_discovery` → actual dispatcher, if any; identify authorization and candidate/attempt-bound postcondition gates. One route only, read-only. An independent reviewer may challenge the supplied evidence but must not claim local access.
+
+Evidence provenance: this method delta is based on an owner-supplied Codex-local report, not an independent checkout inspection. No implementation or runtime/test authorization. `GOVERNANCE = KEEP_BLOCKED`.
