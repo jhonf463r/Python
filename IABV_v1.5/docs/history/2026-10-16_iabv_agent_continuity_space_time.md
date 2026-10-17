@@ -1213,3 +1213,45 @@ Continuar con el bucle objetivo/contexto → evidencia con procedencia → grafo
 
 Prioridad técnica inmediata: aislar estáticamente los caminos del repositorio de recomendaciones, comprobar cómo se validan los IDs y los runs de soporte, trazar selección de recomendaciones → descubrimiento de herramientas/validación sandbox → cualquier decisión/efecto, y localizar dónde debe imponerse el contrato de clase de evidencia. Mantener las pruebas propuestas sin ejecución hasta autorización. Preservar los 96 archivos modificados y no inspeccionar/manipular `data/`/SQLite. No declarar el puente físico en construcción/activo; mantener `KEEP_BLOCKED`.
 
+## 34. 2026-10-16 — Mapa de gate operacional completo según Codex; éxito de sandbox sin ejecución probada
+
+**Proveniencia:** `CODEX_LOCAL_REPORTED`, resultado aportado por el propietario en este turno; no es revisión independiente del checkout local ni del checkpoint.
+**Resultado reportado:** `RECOMMENDATION_OPERATIONAL_GATE_MAP_COMPLETE`.
+**Gobierno:** `KEEP_BLOCKED`.
+
+### Identidad y alcance local declarados
+
+- Checkout: `C:\temp\IABV_coordination_20261016`.
+- Rama: `codex/iabv-agent-coordination-20261016`.
+- HEAD: `3926b1144bb23c1066db579da711d3cdbc1611df`.
+- 96 rutas rastreadas modificadas.
+- Se declara que no se inspeccionó `data/` ni SQLite, no se ejecutaron pruebas ni código y no se modificó el repositorio.
+- Checkpoint local reportado: `C:\Users\faber\.codex\visualizations\2026\10\16\01a146cd-2a68-78c3-819f-a4cc90940058\IABV_recommendation_operational_gate_map_20261016.md`. No abierto por este proceso.
+
+### Hallazgo causal reportado
+
+Codex informa que, ante determinados blockers y con una alternativa disponible en los datos de ranking, el flujo de sandbox puede promover una recomendación y persistir un nuevo run con `success=True`, aunque el código revisado no ejecute esa alternativa ni compruebe su postcondición. El run podría reingresar en el ranking para el mismo dominio y sujeto.
+
+La interpretación de riesgo es una posible realimentación de evidencia insuficiente: un estado persistido con apariencia de éxito puede afectar futuras selecciones sin ejecución atribuible ni postcondición demostrada. Este es un hallazgo del recorrido estático reportado; no demuestra que la alternativa se ejecutara realmente ni que las herramientas se activaran en runtime.
+
+### Frontera semántica y cuestiones abiertas
+
+Mantener separados:
+- recomendación promovida o hipótesis sandbox;
+- resultado de una validación sandbox, limitado a condiciones comprobadas;
+- ejecución operacional atribuible a un intento identificado;
+- postcondición verificada;
+- aprendizaje persistente que pueda alterar ranking o decisiones futuras.
+
+Los nombres anteriores describen distinciones conceptuales; no afirman que ya exista un vocabulario contractual correspondiente en el código. No corregir la brecha solo renombrando `success`: seguir el uso del campo hasta todos los rankers, consumidores de aprendizaje y decisiones posteriores.
+
+### Límite de confianza y siguiente acción
+
+Aunque Codex etiqueta el mapa como completo dentro del alcance declarado, su informe dice explícitamente que la revisión continúa en el mismo contexto y no es independiente, que no se revisaron los 96 diffs completos y que no se demostró activación real de herramientas. En consecuencia, el mapa causal localmente reportado puede darse por completo para el alcance de esa revisión, pero el hallazgo todavía requiere reproducción estática independiente, adversarial y con rutas/condiciones precisas antes de autorizar una modificación.
+
+Próximo paso: revisor independiente sobre el checkpoint y los símbolos exactos, buscando falsadores y siguiendo el run `success=True` hasta todos sus consumidores. Después, proponer un cambio mínimo que impida que una promoción sandbox se convierta en éxito operacional aprendido sin ejecución atribuible y postcondición verificada. Cualquier test de runtime requiere autorización separada. Preservar los 96 archivos y no inspeccionar/manipular `data/` ni SQLite. No activar el puente MCP/físico. `KEEP_BLOCKED`.
+
+### Discrepancia de recuperación de continuidad
+
+El reporte de Codex indica que la sección 33 no aparecía en la versión de continuidad que consultó. En una recuperación independiente posterior de la rama `docs/iabv-space-time-agent-continuity-2026-10-16`, el blob `c88e14d87d72a32635586618e2ccd09872230d14` sí contiene las secciones 31, 32 y 33. Conservar ambas observaciones: pudo haber diferencia de frescura, rama o versión leída; la causa no queda determinada solo con esta evidencia.
+
