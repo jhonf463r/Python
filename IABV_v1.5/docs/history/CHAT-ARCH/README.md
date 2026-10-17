@@ -1,3 +1,10 @@
+## 2026-10-17 ACTIVE ROUTE — BRIDGE NOT READY
+
+The source trace is accepted with limitations, not a built bridge; the possible individual run-reference chain remains unresolved. R10 v0.7.2 is `FAIL` and M0–M5 are proposed only. Next: owner decides whether to return M0–M5 for documentary repair, followed by independent delta review. [Bridge readiness assessment](https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-bridge-readiness-assessment.md).
+
+Do not begin implementation or reopen the broad trace. `GOVERNANCE = KEEP_BLOCKED`.
+
+---
 ## 2026-10-17 ACTIVE ROUTE — R10 v0.7.2 FAIL, OWNER DECISION REQUIRED
 
 The R10 v0.7.2 documentary audit is closed with `FAIL`. Six payload hashes match, but normative contradictions and matrix gaps remain. The minimum proposed repairs M0–M5 are unimplemented; no v0.7.3 exists. Read [the full closure record](https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-r10-v072-audit-closure-fail.md).
