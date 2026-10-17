@@ -1,3 +1,14 @@
+## 2026-10-17 NEXT ACTION — R10 V0.7.3 DOCUMENTARY REPAIR HANDOFF PREPARED
+
+The next proposed action is to send the ready-to-paste M0–M5 documentary repair prompt to the actual R10 package author in the conversation where the original v0.7.2 files are available. Handoff record: [https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-r10-v073-documentary-repair-handoff.md](https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-r10-v073-documentary-repair-handoff.md). This continuity update has not altered the R10 package and does not claim v0.7.3 exists.
+
+Objective: create a new immutable v0.7.3 candidate repairing M0 clause/oracle precedence; M1 T162; M2 T141/T138 and missing AUTO dispatch-turn case; M3 undefined vocabulary/status writers/error codes; M4 T130/T131 uncontracted strategy-lineage semantics; M5 21 missing explicit outcomes and T180 boundary, plus minor traceability/evidence-contract repairs. Hash a new manifest; keep all tests `NOT_RUN`; seek independent delta review. If source artifacts are unavailable, stop and request them rather than reconstructing them from audit prose.
+
+Do not confuse this with bridge implementation. Current bridge readiness remains `BRIDGE_NOT_READY`; the separate trace verdict is `TRACE_ACCEPTED_WITH_LIMITATIONS` and its two-hop identity frontier remains unresolved. Readiness gates: [https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-bridge-readiness-assessment.md](https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-bridge-readiness-assessment.md).
+
+`GOVERNANCE = KEEP_BLOCKED`: no product code, local checkout modification, tests/build/runtime/probes, dispatcher, Packages B–E, M0A, `data/` or SQLite.
+
+---
 ## 2026-10-17 ACTIVE ROUTE — BRIDGE NOT READY
 
 The source trace is accepted with limitations, not a built bridge; the possible individual run-reference chain remains unresolved. R10 v0.7.2 is `FAIL` and M0–M5 are proposed only. Next: owner decides whether to return M0–M5 for documentary repair, followed by independent delta review. [Bridge readiness assessment](https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-bridge-readiness-assessment.md).
