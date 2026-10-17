@@ -1,3 +1,21 @@
+## 2026-10-17 ACTIVE NEXT STEP — TRANSFER CODEX CANDIDATE TO CLAUDE
+
+Claude/Sonnet performed the requested attachment preflight and returned `BLOCKED` because the actual candidate ZIP is absent from that review conversation. Claude verified only the source v0.7.2 ZIP and review prompt; no semantic review of v0.7.3 was performed. It correctly treated the candidate identity as `CODEX_LOCAL_REPORTED`.
+
+Codex's completion report remains: candidate path `C:/temp/R10_v0_7_3_documentary_candidate_20261017/R10_V0_7_3_DOCUMENTARY_CANDIDATE.zip`, 86,835 bytes, SHA-256 `1ace1d9331ee943a35fc4663855a09451919ae7b0e8619c799416b48bdae4049`, reportedly 14 entries and seven historical items. This is not independently confirmed because the actual candidate bytes are not in ChatGPT's current conversation/Library search. The Windows path is not an attachment to Claude.
+
+**Next actor: Codex local, transfer-only and read-only.** Use the existing candidate file; recompute size/SHA-256, expose the exact ZIP as a downloadable/attachable file (or make a byte-for-byte copy in an accessible transfer directory if the current interface cannot expose the original), and verify the copy's identity. Do not recreate, repackage, change, commit or publish the candidate. A ready-to-paste transfer-only prompt is delivered as `R10_V0_7_3_CANDIDATE_TRANSFER_ONLY_PROMPT_2026-10-17.md` in the current ChatGPT response. If the reported path is absent or differs, return `BLOCKED` for identity reconciliation; do not repeat authoring.
+
+**Following actor: Claude/Sonnet**, after the actual candidate ZIP is attached in its own conversation with the original v0.7.2 ZIP and the independent-review prompt. Claude must verify real attachment identity, then carry out manifest/historical byte comparison and M0–M5/minor-fix/T197 semantic delta review.
+
+No semantic rejection or acceptance has occurred. R10 v0.7.2 remains `FAIL`; v0.7.3 is reported as created by Codex but has not been independently reviewed; all matrix tests remain `NOT_RUN`. No product code, tests, build, runtime, probes or local checkout inspection is authorized; no `data/`/SQLite, M0A, dispatcher, Packages B–E or GitHub publication of the candidate. PR #467 remains Draft and unmerged.
+
+See the [independent-review prompt](https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-r10-v073-corrected-agent-route.md) and downloadable transfer-only prompt attached to the coordinator response.
+
+`GOVERNANCE = KEEP_BLOCKED`; `TESTS = NOT_RUN`; `PRODUCT_CODE_EXECUTION = NOT_RUN`; `BUILD = NOT_RUN`; `RUNTIME = NOT_RUN`.
+
+---
+
 ## 2026-10-17 ACTIVE NEXT STEP — R10 v0.7.3 INDEPENDENT DELTA REVIEW
 
 **New Codex-local completion result reported by owner (not independently inspected here):** `DOCUMENTARY_CANDIDATE_CREATED_PENDING_INDEPENDENT_DELTA_REVIEW`; `GOVERNANCE = KEEP_BLOCKED`.
