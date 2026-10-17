@@ -1,3 +1,18 @@
+## 2026-10-17 METHOD DELTA — AUTHORING COMPLETE IS NOT REVIEW INPUT DELIVERY
+
+The R10 v0.7.3 authoring actor has reported a complete documentary candidate. This advances the route; it does not close semantic review. A handoff is incomplete until the next IA can access and verify the exact artifact bytes in its own conversation.
+
+New operational invariant:
+`AUTHOR_REPORTED_COMPLETION → ARTIFACT_TRANSFER → RECEIVER_IDENTITY_CHECK → INDEPENDENT_REVIEW → RECONCILIATION`.
+
+Do not substitute a Windows path, local command result, pasted completion summary, ChatGPT attachment or Library item for an actual attachment available in the intended Claude/Sonnet reviewer conversation. Mark candidate size/hash/inventory as `CODEX_LOCAL_REPORTED` until the reviewer verifies it. On missing or mismatched inputs, `BLOCKED` is a transfer state, not a semantic verdict on the candidate.
+
+**Current instance:** Codex reports candidate ZIP size 86,835 bytes and SHA-256 `1ace1d9331ee943a35fc4663855a09451919ae7b0e8619c799416b48bdae4049`; actual candidate bytes were not located in the current ChatGPT conversation/Library search. The independent reviewer prompt is provided as a separate downloadable artifact in the current ChatGPT response. Next actor: Claude/Sonnet; inputs must be the candidate ZIP, original v0.7.2 ZIP and complete delta-review prompt in Claude's own conversation.
+
+This method delta does not accept R10 v0.7.3. R10 v0.7.2 stays `FAIL`, all tests stay `NOT_RUN`, and `GOVERNANCE = KEEP_BLOCKED`.
+
+---
+
 ## 2026-10-17 ROUTE CORRECTION — ZIP VERIFIED HERE; MUST BE ATTACHED TO CODEX CHAT
 
 Codex's latest `BLOCKED` is procedurally correct: it could not find the ZIP in its own chat attachment store. The source ZIP was recovered from ChatGPT Library and verified in the ChatGPT working container at `/mnt/data/r10_recovery/R10_V0_7_2_REPAIR_PACKAGE_FOR_CLAUDE.zip`. ZIP SHA-256: `acfb468f78bebc3794b8ec7eaf81baf65d8c40cb66b3f8c7bd2065ffd07fe14e`. It contains seven files (six payload artifacts plus manifest); all six payload file sizes and hashes match the embedded manifest. This proves bytes against that manifest, not semantic acceptance.
