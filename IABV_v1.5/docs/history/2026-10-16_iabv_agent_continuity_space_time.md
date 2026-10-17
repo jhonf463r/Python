@@ -1128,3 +1128,33 @@ Dos helpers `_workspace` reportan un `tempfile.mkdtemp()` para crear un director
 6. No editar `data/`, no ejecutar pruebas, builds, runtime o transporte, no publicar ni desbloquear.
 
 **Estado:** `STATIC_DIFF_REVIEW_INCOMPLETE`. Los hallazgos de clase vacía y ausencia de reconciliación se consideran prioridades de diseño reportadas desde las secciones leídas, no validación independiente del diff completo. Gobierno `KEEP_BLOCKED`.
+
+## 31. 2026-10-16 — Resultado local reportado: parche fail-closed de `evidence_class`
+
+**Proveniencia:** `CODEX_LOCAL_REPORTED`; reporte aportado por el propietario en esta conversación. No es verificación independiente del checkout ni de los diffs.
+**Resultado reportado:** `EVIDENCE_CLASS_FAIL_CLOSED_PATCH_PREPARED`.
+**Gobierno:** `KEEP_BLOCKED`.
+**Checkout declarado:** `C:\temp\IABV_coordination_20261016`.
+**Rama declarada:** `codex/iabv-agent-coordination-20261016`.
+**HEAD declarado:** `3926b1144bb23c1066db579da711d3cdbc1611df`.
+
+### Cambio reportado
+
+- Los filtros de trazas e insights exigen `evidence_class='operational_execution'`; las clases ausente, vacía, desconocida o `consultation_advisory` quedan excluidas.
+- En self-teaching se conservaron `trace_role='guided_improvement'` y `suite_name='guided_self_improvement'`; no se introdujo una clase propia porque no se encontró un vocabulario contractual que justificara tal valor.
+- Se prepararon casos discriminantes en los cuatro archivos de pruebas previstos.
+- Se informa que `git diff --check` no detectó errores de whitespace. No se ejecutaron pruebas ni código.
+- `data/` seguía como no rastreado; el reporte declara que su contenido no fue inspeccionado.
+
+### Alcance y discrepancias que deben conservarse
+
+- El checkout ya tenía 96 archivos rastreados modificados antes de esta tarea; los archivos afectados por este parche ya estaban entre ellos. El alcance agregado no equivale a una revisión integral de esos 96 diffs.
+- Hay una discrepancia en el informe recibido: el texto afirma que los cambios de la tarea quedaron en **ocho archivos**, mientras que el indicador visual muestra **siete archivos editados** (con `+109/-10`). Reconciliar con el `git diff --stat`, `git status --short` y la lista concreta de rutas en el checkout, sin descartar ni revertir cambios.
+- Checkpoint local reportado: `C:\Users\faber.codex\visualizations\2026\10\16\01a146cd-2a68-78c3-819f-a4cc90940058\IABV_evidence_class_fail_closed_checkpoint_20261016.md`. La ruta local no fue abierta por este proceso.
+- La auditoría integral sigue `STATIC_DIFF_REVIEW_INCOMPLETE`. El parche no prueba por sí mismo procedencia completa de recomendaciones, postcondiciones verificadas ni recuperación de recibos.
+- No se afirma `exactly-once`, recuperación automática, validación funcional, autorización de merge ni habilitación operativa.
+
+### Siguiente paso recomendado
+
+Auditoría estática acotada del diff local concreto de esta tarea: reconciliar la cantidad de archivos; comprobar que cada consumidor relevante falla de forma cerrada ante clase ausente/vacía/desconocida/consultiva; comprobar coherencia entre implementación y pruebas; identificar cualquier ruta de producción de trazas que deba asignar explícitamente la clase operativa. Preservar los 96 archivos modificados, no inspeccionar ni manipular `data/`/SQLite, y no ejecutar pruebas o código hasta que exista una decisión autorizada sobre la validación. Mantener `KEEP_BLOCKED`.
+
