@@ -1,3 +1,16 @@
+## 2026-10-17 ROUTE UPDATE — INDIRECT OSES INFLUENCE FOUND; TYPED BRIDGE NOT FOUND
+
+Codex local reported `BRIDGE_NOT_FOUND_IN_BOUNDED_SCOPE`: no direct typed adapter was found transferring a `ToolEvolutionProposal` / `validate_discovery` result into an individual sync-pulse `solution_proposals` object. The flows are **not fully independent**: sandbox `ExperimentRun` records reportedly feed ExperimentLab/OSES aggregates grouped by assistant, which influence OSES proposal output. The individual `proposal_id` / `discovery_signal_id` lineage is reported as absent from those OSES output objects and lost again in the sync-pulse projection.
+
+Evidence class for this continuity record: `CODEX_LOCAL_REPORTED / OWNER_REPORTED`. The supplied report cites current local source locations and says relevant hunks were compared, but this GitHub documentation update did not inspect the Windows checkout and is not an independent source audit. See [the detailed trace](CHAT-ARCH-2026-10-17-r10-discovery-sync-pulse-bridge-trace.md).
+
+**Next actor: Claude Web**, to adversarially review the complete Codex report pasted inline into its own chat. It should challenge the scoped negative conclusion, indirect aggregate influence, identity-loss claim, and whether the call to `plan_or_execute()` is kept separate from proof of actual execution. If evidence is insufficient, require exact missing excerpts; do not restart a broad search.
+
+Slice A remains `SLICE_A_REVIEW_ACCEPTED_WITH_REMAINING_LIMITATIONS`; F-04/F-09 remain `UNRESOLVED`; F-05/F-06/F-07 stay deferred/open; tests remain `NOT_RUN`. No implementation is authorized. Do not inspect `plan_or_execute()` internals, start Packages B–E, enable dispatcher, access M0A, run code/tests/build/runtime, or inspect `data/` / SQLite.
+
+`GOVERNANCE = KEEP_BLOCKED`.
+
+---
 ## 2026-10-17 ROUTE UPDATE — SLICE A STATIC ACCEPTANCE WITH LIMITATIONS
 
 The latest Slice A disposition is recorded in [Detailed Slice A review record](CHAT-ARCH-2026-10-17-r10-slice-a-static-review-with-limitations.md): `SLICE_A_REVIEW_ACCEPTED_WITH_REMAINING_LIMITATIONS`, limited to the evidence reproduced in Claude's attachment. F-01/F-02/F-03 are statically supported; F-04/F-09 remain unresolved; tests are `NOT_RUN`. The local branch/HEAD/100-modified-path report is `OWNER_REPORTED`, not verified by Claude or this public branch.
