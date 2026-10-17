@@ -1,3 +1,13 @@
+## 2026-10-16 ROUTE REFINEMENT — RECONCILE RUN/TRACE IDENTIFIERS FIRST
+
+Codex has delivered a local census; do not repeat a broad audit. The next bounded source task is to compare TaskOutcomeRecorder._source_trace_ids() at HEAD versus the current working tree and trace the producers/consumers and types for supporting_run_ids, source_trace_ids, operational_trace_ids, reusable_trace_ids, winning_trace_ids and supporting_trace_ids.
+
+Public main at 9e0ce... shows the method reading reusable_trace_ids, winning_trace_ids or supporting_trace_ids; the local report describes operational_trace_ids. The file is modified locally, so treat this as an unresolved version delta until exact evidence is provided.
+
+No code edit is authorized. Preserve all 96 modified tracked paths and the untracked data/ entry. Do not access data/ or SQLite. After the exact identity lineage is reconciled, route the design to Claude Web for adversarial challenge; Claude Web cannot certify local files. Keep all test/runtime/M0A/physical-bridge gates unchanged. GOVERNANCE = KEEP_BLOCKED.
+
+---
+
 ## 2026-10-16 OBJECTIVE GUARDRAIL — OPERATIONAL RECOMMENDATION GATE
 
 When working on the operational recommendation gate or agent-continuity thread, first follow the repository's canonical CHAT-ARCH entry sequence and read its current objective overlay. Use IABV's existing memory and symbiosis organs; do not create a parallel coordinator or memory store.
