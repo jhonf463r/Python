@@ -1,3 +1,10 @@
+# Final disposition — Claude accepted with limitations (2026-10-17)
+
+Final verdict: `TRACE_ACCEPTED_WITH_LIMITATIONS`, from the supplied Codex writeback only. The direct typed-adapter claim is accepted in the bounded tracked source/test scope. The two-hop run-reference possibility remains `UNRESOLVED`; this verdict does not state global absence or actual execution. [Final adjudication]( https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-r10-sync-pulse-trace-final-adjudication.md ).
+
+Next route: close the separate R10 v0.7.2 audit with its own written verdict. Preserve `GOVERNANCE = KEEP_BLOCKED`.
+
+---
 # Update — Codex supplied targeted evidence (2026-10-17)
 
 The earlier `TRACE_REQUIRES_TARGETED_EVIDENCE` disposition is superseded as the next-action state: Codex returned E1–E5 in [the targeted evidence result](https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-r10-sync-pulse-targeted-evidence-result.md). The remaining adjudication is narrower, not a broad re-audit.
