@@ -1,3 +1,16 @@
+## 2026-10-17 ROUTE UPDATE — TRACE ACCEPTED WITH LIMITATIONS; R10 AUDIT NEXT
+
+Claude Web returned `TRACE_ACCEPTED_WITH_LIMITATIONS`. Acceptance is restricted to: no explicit, typed adapter was found in the reviewed tracked IABV_v1.5/src and IABV_v1.5/tests routes/methods carrying an individual ToolEvolutionProposal / validate_discovery result into an individual solution_proposals item. It is not a global absence proof and does not rule out indirect reconstruction from run references.
+
+Important residual: OSES `validated_collaboration` may carry `recommendation.supporting_run_ids`, `validation.last_experiment_id` or `best_run.run_id` into `evidence_refs`; whether these resolve to the same ExperimentRun namespace and then to a discovery `proposal_id` / `discovery_signal_id` remains `UNRESOLVED`. The sync-pulse projection reportedly drops `proposal_key` and `evidence_refs`. Read [final bounded adjudication](https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-r10-sync-pulse-trace-final-adjudication.md) and [targeted Codex evidence](https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-r10-sync-pulse-targeted-evidence-result.md).
+
+All local code claims remain `CODEX_LOCAL_REPORTED / OWNER_REPORTED`; Claude read the 134-line writeback but did not inspect source code or the Windows checkout. OSES references were classified `HEAD_SOURCE` by Codex's local hunk review; Route A/sync-pulse/orchestrator code cited from modified files is `WORKTREE_SOURCE`. Do not conflate local HEAD `3926b1144bb23c1066db579da711d3cdbc1611df` with public baseline `9e0ce66768aedd7422e0d3551affd398f44a7532`.
+
+Next project action: close the separate R10 v0.7.2 audit with its own written verdict. Six hashes reportedly match and the contract/matrix were reportedly read (`OWNER_REPORTED`); hash agreement alone is not approval. Keep the possible two-hop linkage as an unresolved frontier; do not repeat the accepted broad trace unless attribution becomes a required objective.
+
+`CODE_EXECUTION = NOT_RUN`; `TESTS = NOT_RUN`; `BUILD = NOT_RUN`; `RUNTIME = NOT_RUN`; no `data/` or SQLite inspection; `GOVERNANCE = KEEP_BLOCKED`.
+
+---
 ## 2026-10-17 ROUTE UPDATE — CODEX TARGETED EVIDENCE RETURNED; CLAUDE ADJUDICATION NEXT
 
 Codex returned the five targeted evidence groups requested by Claude. The direct typed-adapter claim remains supported within searched tracked source/tests, but the scope does not cover untracked source paths or every repository route. Key nuance: OSES `validated_collaboration` outputs may preserve `supporting_run_ids`, `last_experiment_id` or `best_run.run_id` in `evidence_refs`. Whether those resolve via `ExperimentRun` to `proposal_id` / `discovery_signal_id` remains unresolved; do not overstate that all individual linkage is lost at OSES. Sync-pulse projection reportedly drops `proposal_key` and `evidence_refs` regardless.
