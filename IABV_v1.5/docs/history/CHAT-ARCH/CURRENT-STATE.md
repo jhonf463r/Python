@@ -1,3 +1,39 @@
+## 2026-10-17 ACTIVE NEXT ACTION — R10 v0.7.5 DOCUMENTARY REPAIR AFTER CLAUDE v0.7.4 DELTA
+
+**Authoritative latest result:** Claude/Sonnet's independent review of v0.7.4, supplied by the Owner, returns semantic `REQUIRES_REPAIRS`. The ZIP identities/manifests/historic-byte preservation are reported verified by Claude. Relay tree/ref verification remains limited in Claude's report due GitHub API rate limiting; do not claim the 42-entry tree/ref were independently verified by Claude. The published content commit is `ad5c094fa3e7e4d1989079983f8f6c05f3296551`; the final index commit is `191803340e1c78c92125b871a6a41589dc874163` and only changes `RELAY_INDEX.md`. Candidate ZIP identity reported by Codex and verified by Claude: 86,703 bytes, SHA-256 `dff898c9fb7e515ffdc698992475384873995cf50469da88d769072269e1c0e9`. v0.7.3 ZIP: 86,835 bytes, SHA `1ace1d9331ee943a35fc4663855a09451919ae7b0e8619c799416b48bdae4049`. v0.7.2 source ZIP: 50,589 bytes, SHA `acfb468f78bebc3794b8ec7eaf81baf65d8c40cb66b3f8c7bd2065ffd07fe14e`.
+
+**Semantic disposition:** `R10 v0.7.4 = REQUIRES_REPAIRS / NOT_ACCEPTED`. The row-by-row result is 3 OK, 53 OK_WITH_NOTES, 43 REPAIR. None of F-01–F-14 is fully closed in the review's adjudication; F-04 and F-11 are documentarily repaired with notes, F-07 and F-10 remain open, F-12 remains unrepaired. Every matrix row remains `NOT_RUN`; this is documentary analysis, not product evidence.
+
+### Residual issues carried into v0.7.5
+
+- S-1: three added matrix columns are literal copies in all 99 rows: expected_final_state duplicates ordered_events_and_oracle; evidence_required duplicates initial_state_and_preconditions; fixture_discriminant duplicates control_or_falsifier.
+- S-2: crash/control fields are overwhelmingly generic; 90/99 use generic crash text and T198–T221 share a generic falsifier.
+- G-1/G-2: repair duplicated columns or remove them and update schema/docs. Contract §0 still calls itself a v0.7.3 artifact and names a v0.7.3 T123–T197 CSV as the only registry despite v0.7.4 T123–T221.
+- G-3/G-4: T212 says crash before commit while its crash column says no crash; rejection precedence for multiple failing guards remains undefined or fixture-dependent.
+- G-5/G-6: writers/events remain missing for CAPTURE_REJECTED, durable LATE_STALE, RESULT_ACCEPTED, infrastructure-timeout diagnostics and policy/profile registration; the canonical vocabulary does not comprehensively cover all matrix codes, while ResultState/correlation_status are undefined.
+- G-7: conflict barrier effect on TASK_SUCCESS_COUNT is undefined.
+- G-8/G-9: UTF-8 BOM and inaccurate changelog/report claims (T137/T146/T149 and dotted legacy labels) need correction.
+- G-10/G-11: duplicate scenario coverage can inflate apparent coverage; same numeric value is reused across fencing token and authorization generation in some tests.
+- Semantic row fixes: T134, T179, T184, T200, T205, T210, T212; split deterministic cases in T143/T154/T156/T158/T159/T164/T166/T170/T173/T176/T177/T178/T186/T187/T190/T192/T201–T207/T221 and any other true multi-path row. T179 must use CRITERIA_MISMATCH for a digest mismatch. T184 must explicitly model CONFLICT_RESOLVED/restores_event_id, the writer/event for fresh E2, E1's terminal state and task pointer/count effects. T200 must give a deterministic identity/serialization or a rigorously specified at-most-one invariant. T205 must specify barrier event and scope. T210's primary oracle is +1 contribution while its delta column is 0. T212 needs a consistent fault-injection setup.
+- F-12: define what RESULT_ACCEPTED belongs to, an event/writer that transitions it, and how it affects execution terminality, abandonment, supersession, evidence immutability and eligibility; add a discriminating test.
+- F-02/L levels: use one §14 invariant map with individual IDs that truly test each predicate. L1, L2 and L4 need separate negative coverage. Define the cumulative predicates concretely and ensure tests don't combine positive/negative paths in one row.
+- F-10: either define policy/score/profile/history operations normatively with writers, transitions and rejection codes, or remove unsupported semantics. Do not claim "no assumed score" while T152/T220 use score.
+- F-14: update §0, provenance and version identity. Keep original v0.6 and missing 5bab reference as NOT_RECOVERED; SC-10 authority remains UNPROVEN/NOT_RECOVERED unless sourced.
+
+### Next actor
+
+**Codex local — DOCUMENTARY AUTHORING ONLY — create a new immutable v0.7.5 candidate and preflight.** Full ready-to-paste prompt is provided in the coordinator response accompanying this checkpoint. Use the actual published input ZIPs from the fixed commit URLs rather than reconstructing them. Workspace must be isolated from the dirty IABV checkout. Do not overwrite v0.7.4. Keep branch `handoff/r10-v074-review-20261017` and its artifacts available until v0.7.5's successor relay, if one is published, has preserved and verified the needed bytes and the independent review has been reconciled. Do not delete refs as part of authoring unless the precise preservation conditions are independently met and explicitly recorded; safest default is to keep the v0.7.4 ref through review.
+
+### Independent follow-on
+
+After a v0.7.5 candidate passes a true local documentary preflight and a new relay has been published and verified, Claude/Sonnet performs an independent delta review of the exact commit and actual ZIP bytes. Do not infer acceptance from author reports. No product-code execution, tests, build, runtime, probes, data/SQLite, M0A, dispatcher, physical bridge or Packages B–E.
+
+Separate deferred track: IABV ZIP/static diff audit remains `STATIC_DIFF_REVIEW_INCOMPLETE`; C20 and remaining diffs in tool_teach_service.py, control_center_viewmodel.py and associated tests remain paused. Do not resume or mix that task into the R10 authoring route without a new explicit owner priority decision.
+
+`R10 v0.7.2 = FAIL`; `R10 v0.7.3 = REQUIRES_REPAIRS / NOT_ACCEPTED`; `R10 v0.7.4 = REQUIRES_REPAIRS / NOT_ACCEPTED`; `R10 v0.7.5 = NOT_CREATED / NOT_REVIEWED`; `T123–T221 = NOT_RUN`; `PRODUCT_CODE_EXECUTION = NOT_RUN`; `TESTS = NOT_RUN`; `BUILD = NOT_RUN`; `RUNTIME = NOT_RUN`; `GOVERNANCE = KEEP_BLOCKED`.
+
+---
+
 ## 2026-10-17 ACTIVE NEXT ACTION — CLAUDE INDEPENDENT DELTA REVIEW THROUGH PUBLISHED RELAY
 
 **Relay publication verified via GitHub API:** public repository `jhonf463r/Python`; temporary ref `handoff/r10-v073-review-20261017` points to commit `570cfd06b7c8965aba04fc3f09698185debfba3d`. The commit tree contains 17 file blobs (relay index, candidate ZIP, 14 extracted candidate files, original source ZIP); the relay commit is separate from `main` and this continuity branch. PR #467 remains open, Draft and unmerged.
