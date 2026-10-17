@@ -1,3 +1,12 @@
+# Update — Codex supplied targeted evidence (2026-10-17)
+
+The earlier `TRACE_REQUIRES_TARGETED_EVIDENCE` disposition is superseded as the next-action state: Codex returned E1–E5 in [the targeted evidence result](https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-r10-sync-pulse-targeted-evidence-result.md). The remaining adjudication is narrower, not a broad re-audit.
+
+Most important unresolved edge: some `validated_collaboration` paths can preserve `recommendation.supporting_run_ids`, `validation.last_experiment_id`, or `best_run.run_id` in OSES `evidence_refs`. The report does not prove these references resolve to the same `ExperimentRun` model namespace and then to its `proposal_id` / `discovery_signal_id`. Because sync-pulse's projection drops `evidence_refs`, any such relation may exist at OSES but not persist into the active proposal object.
+
+Ask Claude whether the direct typed-adapter claim can be accepted with limitations while the possible run-reference two-hop remains `UNRESOLVED`. Keep `GOVERNANCE = KEEP_BLOCKED`.
+
+---
 # CHAT-ARCH 2026-10-17 — Adversarial review of discovery ↔ sync-pulse trace
 
 - **Mission reviewed:** `R10_TRACE_SYNC_PULSE_PROPOSAL_BRIDGE_READ_ONLY_2026-10-17`
