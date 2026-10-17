@@ -1,3 +1,18 @@
+## 2026-10-17 ROUTE UPDATE — CODEX TARGETED EVIDENCE RETURNED; CLAUDE ADJUDICATION NEXT
+
+Codex returned the five targeted evidence groups requested by Claude. The direct typed-adapter claim remains supported within searched tracked source/tests, but the scope does not cover untracked source paths or every repository route. Key nuance: OSES `validated_collaboration` outputs may preserve `supporting_run_ids`, `last_experiment_id` or `best_run.run_id` in `evidence_refs`. Whether those resolve via `ExperimentRun` to `proposal_id` / `discovery_signal_id` remains unresolved; do not overstate that all individual linkage is lost at OSES. Sync-pulse projection reportedly drops `proposal_key` and `evidence_refs` regardless.
+
+**Next actor: Claude Web**, one narrow adjudication of the supplied targeted result: is `TRACE_ACCEPTED_WITH_LIMITATIONS` justified for the absence of a direct typed adapter while the potential two-hop evidence-reference path remains `UNRESOLVED`? Do not send back to Codex for another pass unless Claude identifies one exact missing mapping expression. Full evidence table and limitations: [targeted evidence result](https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-r10-sync-pulse-targeted-evidence-result.md).
+
+Use “may have a data dependency via recent ExperimentRun/OSES aggregates,” not “statistically dependent.” Treat local checkout facts as `CODEX_LOCAL_REPORTED / OWNER_REPORTED`; separate `HEAD_SOURCE` OSES from `WORKTREE_SOURCE` Route A and working-tree code. The local report does not establish runtime invocation or authorization from the static `plan_or_execute()` call site.
+
+Local identity reported by Codex: `C:/temp/IABV_coordination_20261016`, branch `codex/iabv-agent-coordination-20261016`, HEAD `3926b1144bb23c1066db579da711d3cdbc1611df`, 100 tracked modified paths at both ends. Untracked paths were not enumerated or inspected. Code/tests/build/runtime/probes `NOT_RUN`; `data/`/SQLite not inspected.
+
+The separate R10 v0.7.2 audit remains a distinct pending written verdict. Six hashes reportedly matched and contract/matrix were read (`OWNER_REPORTED`); do not equate that with complete audit approval.
+
+`GOVERNANCE = KEEP_BLOCKED`; no implementation, dispatcher, Packages B–E, or M0A.
+
+---
 ## 2026-10-17 ROUTE UPDATE — ADVERSARIAL TRACE REVIEW REQUIRES TARGETED EVIDENCE
 
 Claude Web returned TRACE_REQUIRES_TARGETED_EVIDENCE after reviewing the supplied report text only; no checkout or public-source inspection was performed in that review. The route graphs support a possible data dependency through recent ExperimentRun/OSES aggregates, but the negative claim BRIDGE_NOT_FOUND_IN_BOUNDED_SCOPE is not accepted yet because the search protocol, proposal_key derivation, ExperimentRun identity persistence, full sync-pulse projection/title matching, and call-site preconditions are not evidenced enough. Also determine what evidence_refs contain and whether they survive projection. Replace “statistically dependent” with “may have a data dependency”; do not imply a particular discovery run falls inside the consumed window.
