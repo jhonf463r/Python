@@ -1,3 +1,16 @@
+## 2026-10-16 UPDATE — TRACE IDENTIFIER CLAIM AWAITING LOCAL RECONCILIATION
+
+Codex reports that SandboxExperimentService copies supporting_run_ids into evidence_refs/source_trace_ids and that the modified local TaskOutcomeRecorder._source_trace_ids() consumes operational_trace_ids. The public implementation at 9e0ce... instead reads reusable_trace_ids, winning_trace_ids or supporting_trace_ids. Since task_outcome_recorder.py is one of the modified local files, this may be a real HEAD/worktree divergence. Do not yet label it a proven defect.
+
+Required evidence:
+- exact method diff from HEAD to working tree;
+- producer map for each of supporting_run_ids, source_trace_ids, operational_trace_ids, reusable_trace_ids, winning_trace_ids and supporting_trace_ids;
+- type and lineage of every referenced identifier;
+- consumers and any conversion/lookup connecting ExperimentRun, RunRecord and IATraceEntry;
+- evidence whether these IDs influence decision or are descriptive only.
+
+Disposition until then: UNRESOLVED. Do not make a patch from this claim alone. See [recommendation-gate follow-up](../2026-10-16_iabv_recommendation_gate_codex_followup.md).
+
 ## 2026-10-16 OPEN KNOWLEDGE — OPERATIONAL OUTCOME ELIGIBILITY / RUN-TRACE IDENTITY
 
 **State:** OPEN / UNPROVEN. This is not an accepted contract.
