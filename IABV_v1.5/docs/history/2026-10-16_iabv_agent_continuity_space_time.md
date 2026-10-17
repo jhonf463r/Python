@@ -1255,3 +1255,52 @@ Próximo paso: revisor independiente sobre el checkpoint y los símbolos exactos
 
 El reporte de Codex indica que la sección 33 no aparecía en la versión de continuidad que consultó. En una recuperación independiente posterior de la rama `docs/iabv-space-time-agent-continuity-2026-10-16`, el blob `c88e14d87d72a32635586618e2ccd09872230d14` sí contiene las secciones 31, 32 y 33. Conservar ambas observaciones: pudo haber diferencia de frescura, rama o versión leída; la causa no queda determinada solo con esta evidencia.
 
+
+
+## 35. 2026-10-16 — R10 local causal map: sandbox promotion can persist operational-looking success
+
+**Provenance:** report pasted by the owner and attributed to Codex with local-checkout access. Classification for this continuity writeback: **CODEX_LOCAL_REPORTED / OWNER_REPORTED**. The file/line observations below are those reported by Codex; this writer has not independently opened the local checkout. Do not elevate local claims to independently verified facts. Governance remains **KEEP_BLOCKED**.
+
+### Identity and preservation reported
+
+- Root: `C:\temp\IABV_coordination_20261016`
+- Branch: `codex/iabv-agent-coordination-20261016`
+- HEAD: `3926b1144bb23c1066db579da711d3cdbc1611df`
+- `git status --short --untracked-files=no`: 96 tracked paths modified.
+- Report states no inspection of `data/` or SQLite, no code/tests/build/runtime, and no local mutation. The status command excluded untracked paths; the untracked status of `data/` was not reconfirmed.
+
+### Reported causal chain
+
+The scoped local report traces these edges:
+
+1. `AutonomousValidationCycle._next_candidate()` reads recommendations and excludes sandbox subjects/recently sandbox-validated cases, but does not require operational evidence class or validate every support run before returning a recommendation.
+2. `ToolEvolutionMonitor` can turn detected discovery signals into `validate_discovery` proposals; recommendation construction copies ranking and `evidence_refs` as strings.
+3. `SandboxExperimentService._recommendation_blockers()` examines blockers for the existing baseline. `_best_alternative()` chooses a different ranked configuration not blocked by its limited checks.
+4. In `validate_recommendation()`, `baseline_blockers and alternative is not None` sets `verdict=VALID`, `promote_to_primary=True`, and `status='promoted'`. The inspected method reportedly has no candidate invocation or postcondition verifier.
+5. `_record_sandbox_run()` persists a sandbox outcome with `execution_ms=0`, `candidate_id=experiment_id`, and copied support references. The reported method treats `VALID` or `DOUBTFUL` as a successful sandbox outcome.
+6. When promoted, `_record_promotion()` persists a second outcome against the original subject with `success=True`, `execution_ms=0`, `candidate_id=experiment_id` and `learning_source='sandbox_promotion'`, without an explicit operational `evidence_class`.
+7. `ExperimentLab.record_outcome()` persists the run and then generates/persists a recommendation. `StrategySelector` can admit a group when any run succeeds and then include group members as support; `AdaptiveWeightLayer` consumes success/profile signals. The report therefore traces a route to ranking/weight influence, not to real execution.
+8. `ToolDiscoveryService` and `ToolEvolutionMonitor` can produce a detected signal and a `validate_discovery` proposal from the recommendation. This is a proposal/validation route, not evidence of dispatch.
+9. `TaskContextAssembler` has a narrower fail-closed path: the reported operational-insight predicate requires `evidence_class='operational_execution'` and excludes consultative domains. The examined sandbox-promotion outcome lacks that class. This local protection does not cover all direct repository, ranking, validation-cycle and discovery consumers.
+
+Codex supplied these source locations for its observations: `sandbox_experiment_service.py:28, 56-62, 115, 120, 160, 195, 237`; `autonomous_validation_cycle.py:385, 1450, 1811`; `tool_evolution_monitor.py:674, 701`; `experiment_lab.py:160`; `experiment_lab_repository.py:17, 155`; `strategy_selector.py:67`; `tool_discovery_service.py:187, 257`; `task_context_assembler.py:1097, 1400`. These are **reported local line references**, not lines independently inspected by ChatGPT.
+
+### HEAD/worktree reconciliation reported
+
+Codex reports no relevant local diff in `sandbox_experiment_service.py`, `autonomous_validation_cycle.py`, `strategy_selector.py`, `adaptive_weight_layer.py`, and `tool_discovery_service.py`. It reports relevant modifications in `experiment_lab.py`, `experiment_lab_repository.py`, `task_context_assembler.py`, and `task_outcome_recorder.py`. The latter modifications add some consultative/operational filters but do not prevent the reported `sandbox_promotion` outcome from entering the direct ranking/recommendation path. This comparison remains Codex-reported, not independently recomputed here.
+
+### Adjudication and boundaries
+
+**Supported within the reported static scope:** the promotion decision and the `success=True` outcome are not, by themselves, proof of operational invocation, attributable execution, postcondition verification, or production-path activation. The route reportedly can affect persisted ExperimentLab recommendations/ranking/adaptive profiles.
+
+**Not demonstrated:** that any tool actually executed in runtime; that the proposed discovery route dispatches; that every downstream consumer accepts this outcome; or that the entire repository lacks another protecting route. Do not generalize absence from the inspected path to the whole product.
+
+Keep identifier namespaces distinct: `ExperimentRun.run_id`, `SandboxExperiment.experiment_id`, `ExperimentRun.candidate_id`, and support/trace identifiers are not interchangeable without an explicit verified relationship. The reported copying of `supporting_run_ids` to `evidence_refs`/`source_trace_ids` does not establish referential identity.
+
+### Next bounded route
+
+Trace exactly one downstream path: `ToolEvolutionMonitor` → `validate_discovery` proposal → any consumer that can dispatch a real tool. Determine what authority, evidence class, candidate/attempt linkage and postcondition verification are required before dispatch, and whether this promotion-derived recommendation can cross that boundary. Keep the comparison read-only and narrow; do not reopen the 96-file audit.
+
+The next report must label each edge as direct source observation, interpretation, falsifier or unresolved. After that route is mapped, send the supplied evidence to an independent adversarial reviewer; that reviewer must not claim local-checkout access unless it actually has it.
+
+**No implementation, tests, builds, runtime or bridge access authorized. `GOVERNANCE = KEEP_BLOCKED`.**
