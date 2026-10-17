@@ -1,3 +1,14 @@
+## 2026-10-16 REGISTRY UPDATE — CODEX LOCAL IDENTITY AND TOOLMEMORY LINEAGE
+
+- Latest source record: [recommendation-gate follow-up, Section 23](../2026-10-16_iabv_recommendation_gate_codex_followup.md)
+- Latest record blob: 229a73291701b30790babe841aec09861f0acabc; write commit: 136fe4aa26acf49fabf0359f01efcb1857556b84
+- Codex local report confirms candidate_id is populated from RunRecord.run_id in TaskOutcomeRecorder and SandboxExperiment.experiment_id in sandbox producer; neither resolves to a canonical candidate in inspected paths.
+- ToolMemory sandbox results update ToolCard counters/status before interaction learning, and downstream scoring/capability paths consume these counters/patterns. Skipping the interaction-learning call is insufficient.
+- No adequate operational attestation or stable event idempotency/supersession rule was found in inspected paths. Contract V2.1 must address both.
+- Branch-only continuity in PR #467; Draft/unmerged. GOVERNANCE = KEEP_BLOCKED.
+
+---
+
 ## 2026-10-16 REGISTRY UPDATE — CONTRACT V2 ADJUDICATION
 
 - Latest source record: [recommendation-gate follow-up, Section 22](../2026-10-16_iabv_recommendation_gate_codex_followup.md)
