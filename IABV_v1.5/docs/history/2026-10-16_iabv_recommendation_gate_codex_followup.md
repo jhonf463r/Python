@@ -674,3 +674,41 @@ The first open edge is now a **static design-and-identity audit**, not implement
 This is a method delta within existing memory organs, not a proposal for a second coordinator or parallel memory database. The canonical route remains README → CURRENT-STATE → CONTEXT-INDEX → MEMORY-OPERATING-PROTOCOL → SYMBIOSIS-MAP → UNRESOLVED-KNOWLEDGE → ARCHIVE-REGISTRY → AGENTS → evidence record. The agent-learning notes in this addendum must be absorbed into those route surfaces. A GitHub writeback is not proof that IABV runtime automatically retrieves memory, routes agents, or changes later behavior.
 
 **State:** STATIC_DESIGN_READY_FOR_RECONCILIATION; not IMPLEMENTATION_READY. GOVERNANCE = KEEP_BLOCKED.
+
+
+## 20. 2026-10-16 — Routing correction after Codex's local census
+
+The local census has now been reported by Codex. The next edge is no longer a full census; it is a targeted reconciliation of the run-ID/trace-ID claim and then an adversarial design challenge.
+
+### Important HEAD/worktree discrepancy discovered during public cross-check
+
+At public commit 9e0ce66768aedd7422e0d3551affd398f44a7532, TaskOutcomeRecorder._source_trace_ids() reads ia_trace_summary.reusable_trace_ids, winning_trace_ids or decision_metadata.supporting_trace_ids. The owner-shared Codex report describes its local version as consuming operational_trace_ids. Since task_outcome_recorder.py is one of the 12 reported modified source files, this could be a genuine working-tree delta; it is not yet proven to be a code defect or a mistaken report.
+
+Required narrow reconciliation by Codex:
+1. Compare exact lines and diff for TaskOutcomeRecorder._source_trace_ids() in HEAD versus working tree.
+2. Find every producer of the fields it reads (operational_trace_ids, source_trace_ids, supporting_trace_ids, reusable_trace_ids and winning_trace_ids).
+3. Find all consumers of those fields and determine whether values are RunRecord IDs, ExperimentRun IDs, IATraceEntry IDs or another typed namespace.
+4. Trace source references from StrategySelector.supporting_run_ids through SandboxExperimentService evidence_refs/metadata into TaskOutcomeRecorder and ToolDiscoveryService.
+5. Mark the concern as CONFIRMED, REFUTED or UNRESOLVED; do not relabel IDs as traces from the key name alone.
+
+This is a focused follow-up, not a broad diff audit. No edits, tests, runtime or data/ access.
+
+### Updated route after the local census
+
+Codex's local report now supplies: the complete reported list of 96 modified tracked files, exact source/worktree distinctions, the corrected method name generate_training_corpus(), producers/consumers of success, the absence of a positive operational evidence producer, and the neutral-sandbox outcome proposal.
+
+The first remaining edge is therefore:
+- resolve the exact local run/trace identity lineage;
+- then send the reconciled design to Claude Web for an adversarial challenge of the neutral metric policy, the proposed A+B mitigation, historical unknowns and every decision sink.
+Claude Web should receive the Codex report and relevant public source links; it must not claim to have inspected the local dirty checkout. If a Claude objection depends on local-only code, route that exact question back to Codex rather than asking Claude to guess.
+
+OpenCode/Kilo remain fallback challengers only if a material disagreement remains after those two stages. Avoid redundant three-agent audits.
+
+### Evidence calibration
+
+- The local 96-path state and modified TaskOutcomeRecorder behavior are CODEX_LOCAL_REPORTED.
+- The public implementation of _source_trace_ids() described above is PROVEN_BY_SOURCE for commit 9e0ce...
+- The possibility that local modifications change the ID namespace is UNRESOLVED until Codex supplies the exact HEAD/worktree diff.
+- The operational effect of these metadata IDs on ranking or learned behavior remains UNPROVEN without complete consumer tracing and runtime evidence.
+
+Governance remains KEEP_BLOCKED; no implementation or runtime is approved.
