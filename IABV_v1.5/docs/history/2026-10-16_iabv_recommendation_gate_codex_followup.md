@@ -751,3 +751,60 @@ These are proposed safe defaults for review, not a claim that the owner has appr
 Do not restart the broad audit. Produce a version-2 contract that incorporates the corrections above, closes the denominator and candidate-identity holes, includes the already-publicly-confirmed training-corpus consumer, and labels any dirty-local-only coverage as UNRESOLVED pending the authorized local source record. Then seek a narrow adversarial check of those repaired invariants. Do not implement yet.
 
 Governance remains `KEEP_BLOCKED`; PR #467 remains draft/unmerged and branch-only. No local changes, product code, tests, runtime, M0A, SQLite or physical bridge are authorized by this documentation update.
+
+
+## 22. 2026-10-16 — Contract V2 adjudication and narrow local verification route
+
+### Received V2 result
+
+Claude Web returned `CONTRACT_READY_WITH_REPAIRS`. The proposal is substantially improved, but this is not implementation authorization. Independent review found material internal consistency and coverage gaps that must be corrected before any implementation plan is treated as complete.
+
+### Public-source reconciliation performed in this turn
+
+The GitHub API currently resolves public `main` to `9e0ce66768aedd7422e0d3551affd398f44a7532` (commit dated 2026-10-14), not `cbc522140`. The latter resolves to full commit `cbc5221407630fc80721619d2b2b2c45eedb50fb`, parent `d4b3ec9a24420dd9f76da9e2040e0335509422b5`. The inspected blob SHAs for `models.py`, `task_outcome_recorder.py`, `sandbox_experiment_service.py`, `tool_memory.py`, `experiment_lab.py`, `strategy_selector.py`, and `adaptive_weight_layer.py` were identical at refs `cbc522140` and `9e0ce...`. The source-tip description differs, while these checked files match between the two refs.
+
+Publicly confirmed at `9e0ce...`:
+
+- `domain/models.py::ExperimentRun` has `candidate_id: str = ""` and `evidence_refs: list[str]`; it has no first-class `evidence_class`, `execution_id` or `attested_by`. `ExperimentRecommendation.supporting_run_ids` is `list[str]`.
+- `TaskOutcomeRecorder` assigns `candidate_id=run_record.run_id`.
+- `SandboxExperimentService._record_sandbox_run()` assigns `candidate_id=experiment.experiment_id`, has `execution_ms=0), and copies `supporting_run_ids` into `evidence_refs` and metadata `source_trace_ids`. `_record_promotion()` also uses the experiment ID as candidate ID, writes `success=True`, and uses the recommendation's subject key.
+- `AdaptiveWeightLayer._profile()`, `StrategySelector.recommend()`, `ExperimentLab._reuse_bonus()` and `ExperimentLab.generate_training_corpus()` consume `run.success` without an evidence-class gate; the corpus increments both success and total.
+- `ToolMemory.remember_result()` persists the result and increments `ToolCard.success_count`/`failure_count` from `result.success` before/independently of its call to `InteractionLearningService.learn_from_execution()`. Therefore guarding only the interaction-learning call for `SANDBOX_PASS` is insufficient to establish complete sandbox neutrality.
+
+Pinned public-source links:
+- [ExperimentRun and recommendation models](https://github.com/jhonf463r/Python/blob/9e0ce66768aedd7422e0d3551affd398f44a7532/IABV_v1.5/src/iabv_v15/domain/models.py)
+- [TaskOutcomeRecorder](https://github.com/jhonf463r/Python/blob/9e0ce66768aedd7422e0d3551affd398f44a7532/IABV_v1.5/src/iabv_v15/services/adaptive/task_outcome_recorder.py)
+- [SandboxExperimentService](https://github.com/jhonf463r/Python/blob/9e0ce66768aedd7422e0d3551affd398f44a7532/IABV_v1.5/src/iabv_v15/services/self_teach/sandbox_experiment_service.py)
+- [ToolMemory](https://github.com/jhonf463r/Python/blob/9e0ce66768aedd7422e0d3551affd398f44a7532/IABV_v1.5/src/iabv_v15/services/tools/tool_memory.py)
+- [ExperimentLab/training corpus](https://github.com/jhonf463r/Python/blob/9e0ce66768aedd7422e0d3551affd398f44a7532/IABV_v1.5/src/iabv_v15/services/lab/experiment_lab.py)
+- [StrategySelector](https://github.com/jhonf463r/Python/blob/9e0ce66768aedd7422e0d3551affd398f44a7532/IABV_v1.5/src/iabv_v15/services/lab/strategy_selector.py)
+- [AdaptiveWeightLayer](https://github.com/jhonf463r/Python/blob/9e0ce66768aedd7422e0d3551affd398f44a7532/IABV_v1.5/src/iabv_v15/services/adaptive/adaptive_weight_layer.py)
+
+### Contract V2 gaps requiring repair
+
+1. **Class-set contradiction:** I-1 omits `SANDBOX_PROMOTED`, though I-8 and §2.1 require it. All normative enumerations must share the same closed class set or define a typed subtype relation.
+2. **Resolve identifier namespaces; do not compare raw strings:** U-5's rejection of `candidate_id == run_id` repeats the category of mistake corrected for Run IDs versus Trace IDs. Public producers appear to put run/experiment IDs into `candidate_id`, but the invariant should resolve `candidate_id` to an actual candidate or canonical fingerprint, not reject accidental string equality alone. The sandbox producer's `candidate_id=experiment.experiment_id` is another route to reconcile.
+3. **Attestation contract mismatch:** I-4 requires task/candidate/scope/postconditions and verifiable authorization, while §3.1 lists only `execution_id`, `attested_by`, `task_id` and `observed_state`. Non-empty strings do not prove authorization. Bind the authoritative execution record to exact candidate/fingerprint, configuration, scope/task, terminal state and required postconditions.
+4. **TypedRef is not referential integrity:** a `ref_type` does not prove that the object exists or that its relationship is valid. Define a closed allowlist for each field, typed resolution in the correct repository, and behavior for missing, mismatched or stale references. Replace the open-ended `...` with an explicit entity set after local source census.
+5. **ToolMemory neutrality is incomplete:** sandbox results must not increment operational ToolCard success/failure counters, alter last-operational validation state, or flow into operational interaction patterns. Keep result persistence/descriptive counters separate from operational learning; `validation_status` alone is not a sufficient provenance source unless bound to trusted execution provenance.
+6. **I-11 (only newest run counts) is unsubstantiated:** it could discard valid independent operational history and collapse sample statistics. Do not supersede historical evidence just because a newer run exists. Deduplicate repeated delivery by stable execution/event ID; supersede only through explicit correction/retraction semantics. If the intended metric is latest state, define it separately from aggregate reliability learning.
+7. **Candidate fingerprint is underspecified:** V2 refers to `candidate_fingerprint` without a canonical schema/versioning rule. It must distinguish meaningful candidate changes and not merge candidates merely because route/assistant/config fields coincide.
+8. **Cohort separation must be mandatory for every query:** scope prefixes are defense-in-depth, not a replacement for class filtering and consumer tests.
+9. **InteractionPattern path needs full accounting:** gating `learn_from_execution()` alone cannot neutralize counters incremented earlier in `ToolMemory.remember_result()`; the local check must trace every consumer of these counters and patterns.
+
+### Conservative adjudication
+
+Treat V2 as `CONTRACT_READY_WITH_REPAIRS` for continued documentary specification only; it is **not yet implementation-ready**. Do not begin code changes from its present wording.
+
+### Next route: targeted Codex local verification (no broad re-audit)
+
+Ask Codex local for a read-only comparison of the exact dirty working tree against its declared HEAD, limited to:
+- candidate identity fields `candidate_id`, `experiment_id`, `run_id`, and any candidate fingerprint in TaskOutcomeRecorder and SandboxExperimentService;
+- ToolMemory result persistence, ToolCard counters, validation-state updates and interaction-learning writes for sandbox versus operational results;
+- current local consumers of ToolCard counters/InteractionPattern, plus the local versions of ExperimentLab, AdaptiveWeightLayer and StrategySelector;
+- whether any changed local source provides a verified execution attestation, evidence class, or explicit supersession/idempotency semantics;
+- changed/unchanged status versus HEAD and exact source lines supporting each claim.
+
+Do not edit files, run tests/code/build/runtime, inspect `data/` or SQLite, access M0A, or alter the 96 modified tracked paths and untracked `data/`. Classify each claim as `CONFIRMED_LOCAL`, `DIFFERS_FROM_PUBLIC`, or `UNRESOLVED`. After this narrow source report, revise V2 for consistency and conduct one bounded adversarial pass. No implementation until separately authorized.
+
+Governance remains `KEEP_BLOCKED`. PR #467 remains branch-only, Draft and unmerged.
