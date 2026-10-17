@@ -145,3 +145,16 @@ The reported dirty checkout remains out of scope and must not be inspected or mo
 **Next action unchanged:** Codex local, documentary v0.7.3 authoring only, using the explicitly attached and hash-verified original ZIP; then Claude/Sonnet conducts independent delta review of the complete candidate. R10 v0.7.2 remains `FAIL`; M0–M5 remain `PROPOSED`; all matrix tests remain `NOT_RUN`.
 
 `GOVERNANCE = KEEP_BLOCKED`; `IMPLEMENTATION_AUTHORIZED = NO`; `DISPATCHER = NOT_AUTHORIZED`; `PACKAGES_B_TO_E = NOT_AUTHORIZED`; `M0A = NO_ACCESS`; `PRODUCT_CODE_EXECUTION = NOT_RUN`; `TESTS = NOT_RUN`; `BUILD = NOT_RUN`; `RUNTIME = NOT_RUN`.
+
+
+## 10. Latest Codex response — attachment still absent — 2026-10-17, America/Bogota
+
+**Observed result:** Codex local returned `BLOCKED` again because the exact ZIP was not present in the attachment store of that Codex conversation. It did not verify the archive hash or entry inventory, did not create candidate files, and did not modify the IABV checkout. This is a missing-input/transfer failure, not a new R10 contract finding and not a v0.7.3 candidate.
+
+**Independent ChatGPT-session recheck:** `/mnt/data/r10_recovery/R10_V0_7_2_REPAIR_PACKAGE_FOR_CLAUDE.zip` exists, size 50,589 bytes, SHA-256 `acfb468f78bebc3794b8ec7eaf81baf65d8c40cb66b3f8c7bd2065ffd07fe14e`; archive integrity passed and the expected seven entries are present. This does not mean the file is attached to Codex.
+
+**Immediate next action, unchanged:** download the verified ZIP from this ChatGPT response and attach the actual ZIP as a file to the same/new Codex local conversation that will perform the documentary authoring. The prompt may be pasted or attached separately, but it does not substitute for the source ZIP. Codex must verify the hash and inventory from its own attachment before editing; on any mismatch/missing entry, remain `BLOCKED`.
+
+**Routing:** Codex local — documentary-only R10 v0.7.3 author; then Claude/Sonnet — independent delta reviewer of the complete candidate. Do not restart the v0.7.2 audit.
+
+`R10_V0_7_2 = FAIL`; `M0–M5 = PROPOSED`; `V0.7.3 = NOT_CREATED`; `TESTS = NOT_RUN`; `GOVERNANCE = KEEP_BLOCKED`.
