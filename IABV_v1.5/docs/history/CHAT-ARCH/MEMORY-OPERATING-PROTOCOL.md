@@ -1,3 +1,18 @@
+## 2026-10-16 METHOD DELTA — CONTRACT V2.1 CONSISTENCY CHECK
+
+Before implementation, the contract must pass these additional checks:
+- Closed evidence class set includes every named class consistently, including `SANDBOX_PROMOTED`.
+- Type checks resolve references in declared namespaces; never reject equality of raw ID strings as a generic type rule.
+- Execution attestation is authoritative and binds execution ID, actor/attestor authorization, task/scope, exact candidate/fingerprint/configuration, observed terminal state and postconditions. Nonempty strings alone are insufficient.
+- Typed references must be resolved and relationship-checked at boundaries, not merely carry `ref_type`.
+- Sandbox neutrality includes ToolCard success/failure counters and validation status, not only InteractionPattern learning.
+- Do not discard all but the newest independent operational run unless the objective is explicitly “latest state”; idempotency should be based on stable execution/event identity.
+- A canonical candidate fingerprint must be specified if candidate_id is unavailable.
+
+Pinned public review found ToolMemory counters update before `learn_from_execution()`; guarding only that later call is incomplete. Current public main resolves to `9e0ce...`; checked file blobs match the older `cbc522140` ref, but distinguish commit tip from file content. See follow-up Section 22. No implementation; `GOVERNANCE = KEEP_BLOCKED`.
+
+---
+
 ## 2026-10-16 METHOD DELTA — CONTRACT COMPLETENESS AND EVIDENCE ATTESTATION
 
 Claude's `CONTRACT_NOT_READY` yields these method rules:
