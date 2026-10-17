@@ -127,3 +127,21 @@ Start by reading this handoff and the linked current-state, memory protocol, unr
 Before any future prompt, state the destination IA, mode, required attachments, output verdict and constraints. If any artifact or authority is missing, stop and identify the exact missing prerequisite.
 
 `GOVERNANCE = KEEP_BLOCKED`; `IMPLEMENTATION_AUTHORIZED = NO`; `DISPATCHER = NOT_AUTHORIZED`; `PACKAGES_B_TO_E = NOT_AUTHORIZED`; `M0A = NO_ACCESS`; `PRODUCT_CODE_EXECUTION = NOT_RUN`; `TESTS = NOT_RUN`; `BUILD = NOT_RUN`; `RUNTIME = NOT_RUN`.
+
+
+## 9. Current-session preflight revalidation — 2026-10-17 14:52 America/Bogota
+
+This session independently re-materialized the Library ZIP into the ChatGPT working container and verified the archive bytes and every payload hash. Evidence applies to this session's artifact only; it does not prove the ZIP is attached in Codex and does not certify semantic correctness.
+
+- Library artifact: `R10_V0_7_2_REPAIR_PACKAGE_FOR_CLAUDE(7).zip`; working copy: `/mnt/data/r10_recovery/R10_V0_7_2_REPAIR_PACKAGE_FOR_CLAUDE.zip`.
+- Size: 50,589 bytes. SHA-256 observed in this session: `acfb468f78bebc3794b8ec7eaf81baf65d8c40cb66b3f8c7bd2065ffd07fe14e`.
+- Archive contains seven entries: reconstructed v0.7.2 contract, T123–T196 CSV matrix, namespaced nonnormative reference, v0.7.1 audit report, v0.7.2 README, packaged Claude audit prompt, and SHA-256 manifest.
+- ZIP integrity check passed; all six payload byte sizes and SHA-256 hashes matched the embedded manifest. The manifest does not hash itself.
+- The current ChatGPT conversation has no directly attached upload; the ZIP was recovered from Library and materialized for this session. It still must be downloaded and explicitly attached to the actual Codex conversation.
+- GitHub API state check observed PR #467 as open, Draft, and unmerged during this revalidation. No merge was requested or performed.
+
+The reported dirty checkout remains out of scope and must not be inspected or modified. The continuity corpus contains both 100 and 96 as reported counts of modified tracked paths in different sections; retain this inconsistency as `UNRESOLVED / CODEX_LOCAL_REPORTED` rather than reconciling it during the R10 documentary task.
+
+**Next action unchanged:** Codex local, documentary v0.7.3 authoring only, using the explicitly attached and hash-verified original ZIP; then Claude/Sonnet conducts independent delta review of the complete candidate. R10 v0.7.2 remains `FAIL`; M0–M5 remain `PROPOSED`; all matrix tests remain `NOT_RUN`.
+
+`GOVERNANCE = KEEP_BLOCKED`; `IMPLEMENTATION_AUTHORIZED = NO`; `DISPATCHER = NOT_AUTHORIZED`; `PACKAGES_B_TO_E = NOT_AUTHORIZED`; `M0A = NO_ACCESS`; `PRODUCT_CODE_EXECUTION = NOT_RUN`; `TESTS = NOT_RUN`; `BUILD = NOT_RUN`; `RUNTIME = NOT_RUN`.
