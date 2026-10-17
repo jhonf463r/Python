@@ -1,3 +1,13 @@
+## 2026-10-17 ROUTE UPDATE — SLICE A STATIC ACCEPTANCE WITH LIMITATIONS
+
+For the active R10 / IABV continuity objective, load [Detailed Slice A review record](CHAT-ARCH-2026-10-17-r10-slice-a-static-review-with-limitations.md) before assigning the next actor. Slice A has a Claude static disposition `SLICE_A_REVIEW_ACCEPTED_WITH_REMAINING_LIMITATIONS` on supplied evidence only. F-01/F-02/F-03 are statically supported, not test-passed. F-04/F-09 remain unresolved; F-05/F-06/F-07 are deferred/open. Local checkout details remain `OWNER_REPORTED`.
+
+Route next to **Codex local** for a bounded, read-only source-producer/schema/adapter trace: `self_examination/latest.json.metadata.solution_proposals` ↔ `ToolEvolutionStatus.proposals` / `validate_discovery`. Keep route graphs separate unless a typed identity mapping is found. Claude Web reviews supplied evidence only; no cross-chat assumptions.
+
+`GOVERNANCE = KEEP_BLOCKED`; do not activate dispatcher or start Packages B–E.
+
+---
+
 ## 2026-10-16 ROUTE UPDATE — CONTRACT V2.1 FROM LOCAL LINEAGE
 
 Codex's scoped local report now answers the next source question. Do not repeat the audit.
