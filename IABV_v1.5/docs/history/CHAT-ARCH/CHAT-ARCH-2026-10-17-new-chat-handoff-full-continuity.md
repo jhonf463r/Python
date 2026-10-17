@@ -183,3 +183,16 @@ Required focus: M0 clause-over-oracle precedence; M1 T162 conflict/quarantine; M
 No product code, matrix tests, build, runtime or probes were executed per Codex's report. This remains reported local information, not independently verified by this handoff. R10 v0.7.2 remains `FAIL`; candidate is not PASS, baseline acceptance, runtime proof or implementation authorization. After Claude's verdict, the coordinator reconciles; if needed, return only bounded documentary defects to Codex.
 
 `TESTS = NOT_RUN`; `PRODUCT_CODE_EXECUTION = NOT_RUN`; `BUILD = NOT_RUN`; `RUNTIME = NOT_RUN`; `GOVERNANCE = KEEP_BLOCKED`.
+
+
+## 12. Claude preflight result — candidate not attached — 2026-10-17, America/Bogota
+
+Claude/Sonnet returned `BLOCKED` because `R10_V0_7_3_DOCUMENTARY_CANDIDATE.zip` was absent from its actual conversation. Claude verified the source v0.7.2 ZIP (50,589 bytes; SHA-256 `acfb468f78bebc3794b8ec7eaf81baf65d8c40cb66b3f8c7bd2065ffd07fe14e`) and the independent review prompt (10,562 bytes; SHA-256 reported by Claude `13b609b79c1ec39918500c4c5d02a8f6664ac04622f08f255e8e0d150679d36b`). It performed no semantic review of v0.7.3 and correctly did not infer a verdict from Codex's summary.
+
+The Codex-local report remains `CODEX_LOCAL_REPORTED / OWNER_REPORTED`: candidate ZIP path `C:/temp/R10_v0_7_3_documentary_candidate_20261017/R10_V0_7_3_DOCUMENTARY_CANDIDATE.zip`; 86,835 bytes; reported SHA-256 `1ace1d9331ee943a35fc4663855a09451919ae7b0e8619c799416b48bdae4049`; 14 archive entries; seven historical items. These properties have not been independently verified because the candidate ZIP itself has not been exposed to ChatGPT/Claude as an artifact. Windows paths are not cross-conversation attachments.
+
+**Next concrete action:** Codex local performs artifact transfer only, not re-authoring. It must locate the already-created ZIP at the reported path, recompute size/hash, expose the original bytes as a downloadable/attachable file, or make and verify a byte-identical copy in a transfer directory accessible to the owner. The standalone transfer-only prompt is `R10_V0_7_3_CANDIDATE_TRANSFER_ONLY_PROMPT_2026-10-17.md`. No GitHub commit or public publication of the candidate is authorized by this step. If absent/mismatched, return `BLOCKED` without reconstructing it.
+
+After transfer, the owner attaches the candidate ZIP, original v0.7.2 ZIP and independent-review prompt to Claude/Sonnet's actual conversation. Claude then verifies the attached artifact identity, manifest completeness and historical hashes before reviewing M0–M5, minor repairs and T197. Only after the semantic review should the coordinator reconcile the verdict and consider a bounded repair task.
+
+`R10_V0_7_2 = FAIL`; `V0.7.3) = CODEX_LOCAL_REPORTED, PENDING INDEPENDENT REVIEW`; `TESTS = NOT_RUN`; `PRODUCT_CODE_EXECUTION = NOT_RUN`; `GOVERNANCE = KEEP_BLOCKED`. PR #467 remains open, Draft and unmerged.
