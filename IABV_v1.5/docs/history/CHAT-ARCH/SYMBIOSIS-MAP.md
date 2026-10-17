@@ -1,3 +1,16 @@
+## 2026-10-17 ROUTE UPDATE — SLICE A STATIC ACCEPTANCE WITH LIMITATIONS
+
+### Task-specific actor routing after Slice A
+
+- **Codex local:** only actor in the current toolset with access to the reported Windows checkout; appropriate for read-only local source and diff/producer tracing. Local claims remain `OWNER_REPORTED` until independently corroborated.
+- **Claude Web:** independent adversarial/static reviewer of source snippets or a physically attached artifact actually present in its conversation. It cannot infer access to another chat or to `C:\temp\...`.
+- **ChatGPT/GitHub continuity:** preserves navigation and provenance on Draft PR #467, but public GitHub source is not the dirty local working tree.
+- **Kilo/OpenCode:** reserves/challengers only; do not route a second broad audit before the bounded next Codex trace is answered.
+
+Slice A review status and limits: [Detailed Slice A review record](CHAT-ARCH-2026-10-17-r10-slice-a-static-review-with-limitations.md). Acceptance is static, tests remain `NOT_RUN`; no actor is authorized to enable the dispatcher or start Packages B–E.
+
+---
+
 ## 2026-10-16 SYMBIOSIS UPDATE — CODEX LOCAL LINEAGE COMPLETE
 
 Codex local was the correct actor for this frontier because Claude Web cannot inspect the Windows working tree. Its report narrowed uncertainty about candidate identity and the ToolMemory path without touching SQLite or executing code.
