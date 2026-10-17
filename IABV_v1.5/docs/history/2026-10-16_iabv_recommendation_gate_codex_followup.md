@@ -712,3 +712,42 @@ OpenCode/Kilo remain fallback challengers only if a material disagreement remain
 - The operational effect of these metadata IDs on ranking or learned behavior remains UNPROVEN without complete consumer tracing and runtime evidence.
 
 Governance remains KEEP_BLOCKED; no implementation or runtime is approved.
+
+
+## 21. 2026-10-16 — Claude adversarial review of the evidence contract
+
+### Dictamen recibido
+
+Claude Web returned `CONTRACT_NOT_READY`, while preserving `GOVERNANCE = KEEP_BLOCKED`. The report identifies four genuine contract gaps: incomplete coverage of reference-propagation paths; undefined rules for mixed-support groups; sandbox neutrality not operationalized across metrics/denominators; and no safe handling policy for unclassified historical runs. This is a design gap, not evidence that the goal is infeasible.
+
+### Evidence boundary
+
+- The Codex local checkout remains owner-/agent-reported at root `C:\\temp\\IABV_coordination_20261016`, branch `codex/iabv-agent-coordination-20261016`, HEAD `3926b1144bb23c1066db579da711d3cdbc1611df`; 96 tracked modifications plus untracked `data/`. Do not inspect `data/` or SQLite, modify the checkout, or run code/tests/build/runtime without separate authorization.
+- Claude Web could not inspect that dirty local checkout. Its local-path limitations remain.
+- Public source was independently fetched at commit `9e0ce66768aedd7422e0d3551affd398f44a7532`. `IABV_v1.5/src/iabv_v15/services/lab/experiment_lab.py` contains `ExperimentLab.generate_training_corpus()`: it loads up to 500 runs, groups by domain and suite, and aggregates `int(run.success)`/total/latency. Thus corpus generation is confirmed in that public commit, even though Claude marked coverage UNRESOLVED. The exact current dirty-working-tree behavior remains a distinct question.
+- Public claims and Codex-local claims must not be merged into a single source state.
+
+### Corrections needed to Claude's proposed contract
+
+1. The proposed predicate `NOT EXISTS(ExperimentRun WHERE run_id = ref)` is not a valid general test that a trace reference is wrong: string-valued identifiers in distinct namespaces can collide. Require an explicitly typed reference and a lookup in the declared namespace; never infer entity type from string equality or inequality.
+2. `execution_ms > 0` is necessary only if demanded by the execution model; it is not sufficient proof of execution or candidate identity. Operational class must be grounded in an authorized execution attestation/record linked to the exact candidate, scope, executor, status and verified postconditions. Keep evidence class distinct from success/failure result.
+3. `candidate_id` (if the domain has one) or an equivalent stable candidate fingerprint must be part of support membership. A route/assistant/config signature alone is insufficient if candidates can differ within it. If no stable candidate identity exists, that is a blocker, not a reason to weaken membership checks.
+4. Sandbox neutrality covers all operational metrics, including both numerator and denominator, failure count, recency, trend, reuse bonus, adaptive weights, thresholds, ranking and operational training corpora. Sandbox-specific blocker/fallback metrics may exist only in a separate evaluation cohort and must not silently enter operational `blocked_count`, `fallback_count` or denominators.
+5. Transitional `suite_name`/`learning_source` filters can reduce immediate exposure but are not the durable contract. They must not be presented as complete protection.
+6. Do not change sandbox outcomes to `success=False` merely to exclude them; that can convert “not executed” into an operational failure.
+
+### Conservative design defaults (proposals, not owner approvals)
+
+- Candidate identity: require `candidate_id` or a canonical stable candidate fingerprint in support membership. Reject ambiguous cross-candidate support.
+- Metrics: only eligible operational-execution evidence enters operational numerators or denominators. Sandbox and legacy records belong to separate descriptive/evaluation cohorts.
+- Blockers/fallbacks: permit sandbox to update explicitly sandbox-scoped blocker/availability metrics only; never shared operational metrics without separate, explicit policy and names.
+- Legacy: missing/unknown evidence classification stays `LEGACY_UNATTRIBUTABLE`/unknown, descriptive-only and excluded from operational learning. Reclassification requires a separately authorized, auditable process supported by source evidence; no bulk inference from `success=True`, `suite_name` or metadata.
+- IDs: typed namespaces and explicit relation resolution at write, transform and consumer boundaries; no `run_id` alias to `trace_id`.
+
+These are proposed safe defaults for review, not a claim that the owner has approved them.
+
+### Revised next frontier
+
+Do not restart the broad audit. Produce a version-2 contract that incorporates the corrections above, closes the denominator and candidate-identity holes, includes the already-publicly-confirmed training-corpus consumer, and labels any dirty-local-only coverage as UNRESOLVED pending the authorized local source record. Then seek a narrow adversarial check of those repaired invariants. Do not implement yet.
+
+Governance remains `KEEP_BLOCKED`; PR #467 remains draft/unmerged and branch-only. No local changes, product code, tests, runtime, M0A, SQLite or physical bridge are authorized by this documentation update.
