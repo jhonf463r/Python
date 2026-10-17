@@ -1,3 +1,23 @@
+## 2026-10-16 CURRENT ROUTE — CODEX CENSUS RECEIVED; RUN/TRACE ID EDGE OPEN
+
+The broad local census has been reported by Codex. Current local state is still reported as:
+- root C:\temp\IABV_coordination_20261016
+- branch codex/iabv-agent-coordination-20261016
+- HEAD 3926b1144bb23c1066db579da711d3cdbc1611df
+- 96 tracked paths modified and one untracked data/ directory; two SQLite paths remain uninspected.
+
+Do not repeat the full audit. Preserve the dirty checkout.
+
+**First open edge:** reconcile the exact HEAD-versus-working-tree implementation of TaskOutcomeRecorder._source_trace_ids() and all producers/consumers of supporting_run_ids, source_trace_ids, operational_trace_ids, reusable_trace_ids, winning_trace_ids and supporting_trace_ids. The public code at 9e0ce... reads reusable_trace_ids/winning_trace_ids/supporting_trace_ids; Codex reports a modified local version using operational_trace_ids. Since task_outcome_recorder.py is locally modified, treat the difference as UNRESOLVED until its exact diff and field lineage are shown.
+
+Then route the reconciled design to Claude Web for a challenge of sandbox-neutral metrics, candidate/scope support linkage, historical unknown outcomes and full success-consumer coverage. Claude Web reviews the shared report/public source only; it cannot certify local changes.
+
+The design target remains: sandbox results must be neutral to operational execution success/failure metrics while preserving separate evaluation, blocker and availability signals. Do not change success to False as a lone fix; it may create a false operational failure.
+
+Keep R10/Candidate C separate. Do not access data/ or SQLite, edit this checkout, execute tests/build/runtime, access M0A or activate the bridge. GOVERNANCE = KEEP_BLOCKED.
+
+---
+
 ## 2026-10-16 OBJECTIVE OVERLAY — RECOMMENDATION GATE / AGENT SYMBIOSIS
 
 This overlay routes the current conversation's objective; it is not a replacement for unrelated M0B/R10 gates and does not confer implementation authority.
