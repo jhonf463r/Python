@@ -587,3 +587,90 @@ El supporting_run_ids copiado en la promoción también necesita validación de 
 5. Implementación: tras decidir el contrato, crear un espacio aislado que preserve los cambios actuales; revisar el diff y autorizar pruebas por separado.
 
 No se aprueban aún A/B/C para implementación. GOVERNANCE = KEEP_BLOCKED; no acceder a M0A ni activar el puente físico.
+
+
+## 19. 2026-10-16 — Codex local census and corrected neutral-outcome design
+
+**Provenance:** OWNER_REPORTED for the pasted Codex report; detailed local facts remain CODEX_LOCAL_REPORTED until inspected by another process. The report says no files were edited, staged, switched or executed, and no SQLite content was opened.
+
+### Preserved checkout
+
+- Root: C:\temp\IABV_coordination_20261016
+- Branch: codex/iabv-agent-coordination-20261016
+- HEAD: 3926b1144bb23c1066db579da711d3cdbc1611df
+- State at end: 96 tracked modified paths plus one untracked data/ entry. Keep all intact; do not reset, clean, stash, stage, switch branches or overwrite files.
+- The untracked directory contains two reported SQLite paths: data/test_autonomous_evolution_service_ingest_codex_workspace/data/app.sqlite and data/test_autonomous_evolution_service_insufficient_response_workspace/data/app.sqlite. Their contents remain uninspected and must stay untouched.
+- Codex reports that object 9e0ce66768aedd7422e0d3551affd398f44a7532 was available locally, refs/remotes/origin/main pointed to it, and eight selected source files matched HEAD. This is a reported local observation, not a new independent check here.
+- The 12 modified source files reported are:
+  IABV_v1.5/src/iabv_v15/domain/models.py;
+  IABV_v1.5/src/iabv_v15/infra/persistence/database.py;
+  IABV_v1.5/src/iabv_v15/infra/persistence/experiment_lab_repository.py;
+  IABV_v1.5/src/iabv_v15/infra/persistence/tool_record_repository.py;
+  IABV_v1.5/src/iabv_v15/services/adaptive/adaptive_task_orchestrator.py;
+  IABV_v1.5/src/iabv_v15/services/adaptive/task_context_assembler.py;
+  IABV_v1.5/src/iabv_v15/services/adaptive/task_outcome_recorder.py;
+  IABV_v1.5/src/iabv_v15/services/evolution/autonomous_evolution_service.py;
+  IABV_v1.5/src/iabv_v15/services/lab/experiment_lab.py;
+  IABV_v1.5/src/iabv_v15/services/self_teach/self_teach_orchestrator.py;
+  IABV_v1.5/src/iabv_v15/services/tools/tool_teach_service.py;
+  IABV_v1.5/src/iabv_v15/ui/viewmodels/control_center_viewmodel.py.
+- The other 84 tracked changes are test files under IABV_v1.5/tests/ as enumerated in the owner-shared report. Do not inspect/revert them broadly merely to continue this gate task.
+
+### Corrected local finding and names
+
+The method generate_training_examples() does not exist in the checkout according to Codex. The relevant method is ExperimentLab.generate_training_corpus() at experiment_lab.py:447. It processes recent runs, aggregates run.success by assistant and computes rates/latency. The adaptive threshold and per-assistant statistics also use success. Correct the earlier method-name discrepancy; do not claim the corpus path is absent.
+
+The working tree adds CONSULTATION_ADVISORY and filters for consultative evidence, plus gates that require evidence_class='operational_execution' in task_context_assembler.py and task_outcome_recorder.py. These are not in HEAD. Codex found no positive producer for operational_execution. Enforcing these gates as-is may reject all otherwise legitimate candidates; producer and contract must be designed together. strategy_selector.py, adaptive_weight_layer.py and sandbox_experiment_service.py are unchanged versus HEAD in the reported worktree.
+
+### Producers/consumers and scope details
+
+The local report identifies additional producers beyond sandbox: suite evaluation results; TaskOutcomeRecorder outcomes linked to RunRecord; SelfTeachOrchestrator diagnostic/correction outcomes; AdaptiveTaskOrchestrator parallel-comparison and shadow-parallel outcomes; consultative AutonomousEvolutionService results; and CodeAuditTrail round-completion results. These meanings differ, so success=True is not a unified fact of operational execution.
+
+Consumers include StrategySelector eligibility and composite recommendation, AdaptiveWeightLayer success/failure/recency/trend/score/reuse weighting, ExperimentLab reuse bonus, adaptive threshold, per-assistant statistics and training corpus, plus TaskContextAssembler trace/context/reusable-pattern construction. The exact runtime impact on a later mode decision remains UNPROVEN.
+
+### New identity/provenance gap
+
+StrategySelector builds supporting_run_ids from ExperimentRun IDs grouped by route/assistant/configuration. SandboxExperimentService copies these IDs into evidence_refs and source_trace_ids. TaskOutcomeRecorder._source_trace_ids() consumes operational_trace_ids as trace references. Do not silently relabel run IDs as trace IDs: these may be different identifier namespaces.
+
+The repository reportedly checks existence and some advisory exclusions for support IDs, but does not validate every ID against the exact recommendation domain, subject, scope, candidate and configuration. A support ID does not prove that the promoted alternative ran. Include run-ID/trace-ID namespace and support membership in the next static audit.
+
+### Correct neutral-outcome principle
+
+Changing sandbox promotion from success=True to success=False without eligibility filtering is unsafe: it may count an unexecuted candidate as an operational failure. AdaptiveWeightLayer currently counts false success in failure_count and uses it for negative recency; sandbox score, trend, sample denominator and reuse_score may also continue affecting the profile.
+
+Target behavior: sandbox outcome is **neutral for operational-execution metrics**, not a success and not a failed operational execution. Preserve sandbox verdicts, blockers, availability and comparison score in a distinct evaluation cohort. For operational metrics, exclude that cohort from success/failure, sample denominators, recency/trend, reuse, ranking and training corpus—or compute these in separately typed dimensions. Keep blocker/availability statistics explicitly rather than assuming they survive a general exclusion.
+
+suite_name and learning_source may support a temporary exclusion for known origins, but they are labels, not proof of execution. Historical records without a verified classification must not be retroactively labelled operational or converted into failure; keep them legacy/unknown for decision consumers while retaining descriptive visibility.
+
+The long-term contract should separate evidence provenance/class, evidence result, and eligibility for a specific consumer. Evidence class is not a result: a real operational execution can fail and remain operational evidence. No schema or implementation change is approved here.
+
+### State of the claims
+
+Corroborated statically from the reported local source and selected public-source checks:
+- sandbox promotion can persist success=True without evidence that the alternative was executed;
+- StrategySelector, AdaptiveWeightLayer and ExperimentLab use success in decision/scoring paths;
+- the reported working-tree positive evidence gates lack a demonstrated positive producer;
+- a success=False-only fix risks false negative weighting;
+- supporting IDs are not shown to bind the promoted candidate fully.
+
+Still UNPROVEN:
+- runtime changes to ranking/mode selection;
+- a universal postcondition for all task families;
+- exact effects of all 96 local diffs beyond the reported census;
+- correct resolution of run IDs vs trace IDs in every consumer;
+- CAS, fencing, atomicity, exactly-once or recovery guarantees.
+
+### Current open edge and actor route
+
+The first open edge is now a **static design-and-identity audit**, not implementation:
+1. Codex local: census every producer/consumer in the preserved checkout, including generate_training_corpus(), identity linkage and all effects of success; no broad diff review and no data/ access.
+2. Specify how sandbox remains neutral in operational metrics while preserving separate evaluation/blocker information; decide treatment of historical unknowns.
+3. Claude Web can challenge public source and the written design, but cannot certify the dirty local checkout. Use it for concrete claims/deltas only.
+4. Kilo/OpenCode are reserved for unresolved contradictions, not duplicate broad audits.
+5. If a patch later becomes justified, prepare it in a new isolated worktree after a separate authorization. Preserve the existing 96 tracked modifications and untracked data/ entry.
+
+### Relation to existing IABV memory
+
+This is a method delta within existing memory organs, not a proposal for a second coordinator or parallel memory database. The canonical route remains README → CURRENT-STATE → CONTEXT-INDEX → MEMORY-OPERATING-PROTOCOL → SYMBIOSIS-MAP → UNRESOLVED-KNOWLEDGE → ARCHIVE-REGISTRY → AGENTS → evidence record. The agent-learning notes in this addendum must be absorbed into those route surfaces. A GitHub writeback is not proof that IABV runtime automatically retrieves memory, routes agents, or changes later behavior.
+
+**State:** STATIC_DESIGN_READY_FOR_RECONCILIATION; not IMPLEMENTATION_READY. GOVERNANCE = KEEP_BLOCKED.
