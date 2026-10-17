@@ -1,3 +1,10 @@
+# Latest addendum — targeted evidence now supplied (2026-10-17)
+
+Codex supplied the five targeted evidence groups after Claude returned `TRACE_REQUIRES_TARGETED_EVIDENCE`. The direct typed-adapter claim is still bounded to searched tracked source/tests. A material nuance remains: OSES `validated_collaboration` may preserve run/experiment reference strings in `evidence_refs`; whether these resolve via `ExperimentRun` to discovery `proposal_id` / `discovery_signal_id` is `UNRESOLVED`. The sync-pulse projection then drops `evidence_refs` and `proposal_key`.
+
+Next actor: Claude Web for a single narrow adjudication of the full result: [targeted evidence report](https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-r10-sync-pulse-targeted-evidence-result.md). No broad audit. Governance remains `KEEP_BLOCKED`.
+
+---
 # CHAT-ARCH 2026-10-17 — R10 discovery / sync-pulse bridge trace
 
 - **Mission:** `R10_TRACE_SYNC_PULSE_PROPOSAL_BRIDGE_READ_ONLY_2026-10-17`
