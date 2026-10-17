@@ -1,3 +1,14 @@
+## 2026-10-17 ROUTE UPDATE — INDIRECT OSES INFLUENCE FOUND; TYPED BRIDGE NOT FOUND
+
+### Distinguish aggregate influence from individual attribution
+
+When a downstream proposal is formed from aggregate metrics over many runs, distinguish indirect causal influence from individual typed lineage. A run may influence a grouped statistic without its identity being preserved into any one output proposal. Conversely, failure to find a direct adapter does not establish total causal independence if a shared aggregate store connects the paths.
+
+Current report: [R10 discovery/sync-pulse bridge trace](CHAT-ARCH-2026-10-17-r10-discovery-sync-pulse-bridge-trace.md). Codex reports no direct typed proposal adapter but an indirect ExperimentLab → OSES aggregate → solution_proposals → sync-pulse path. The report remains `CODEX_LOCAL_REPORTED / OWNER_REPORTED` until challenged; no tests were run.
+
+**Next actor: Claude Web**, bounded adversarial review of the full report pasted inline. Do not claim local checkout access or infer actual execution from a call boundary.
+
+---
 ## 2026-10-17 ROUTE UPDATE — SLICE A STATIC ACCEPTANCE WITH LIMITATIONS
 
 ### Evidence handoff / cross-chat continuity rule
