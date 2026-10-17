@@ -1,3 +1,19 @@
+## 2026-10-16 OBJECTIVE GUARDRAIL — OPERATIONAL RECOMMENDATION GATE
+
+When working on the operational recommendation gate or agent-continuity thread, first follow the repository's canonical CHAT-ARCH entry sequence and read its current objective overlay. Use IABV's existing memory and symbiosis organs; do not create a parallel coordinator or memory store.
+
+Current open edge: reconcile all local producers/consumers of ExperimentRun.success, sandbox validation, evidence eligibility, training corpus and supporting_run_ids versus trace-ID namespaces.
+
+Local checkout reported as dirty: C:\temp\IABV_coordination_20261016, branch codex/iabv-agent-coordination-20261016, HEAD 3926b1144bb23c1066db579da711d3cdbc1611df; 96 tracked modifications plus data/ untracked. Preserve exactly. Do not inspect data/ or SQLite. Do not apply a patch to this checkout.
+
+A sandbox outcome must not be credited as operational success or treated as operational failure merely because its evaluation verdict maps to a boolean. Treat it as neutral for operational-execution statistics and preserve its evaluation/blocker metrics in a distinct cohort until the contract is defined. A helper does not replace checking every decision sink. Do not assign operational_execution without an evidence-producing source.
+
+Route by capability and access: Codex local for checkout evidence, Claude Web for public-source/design challenge only, Kilo/OpenCode for a concrete unresolved contradiction. Role history is evidence, not permanent assignment. Distinguish HEAD, working tree, public GitHub and runtime. A report label does not prove runtime.
+
+No implementation, tests, builds, runtime, M0A access or physical bridge activation without separate authorization. GOVERNANCE = KEEP_BLOCKED.
+
+---
+
 ## 2026-10-13 CANONICAL ROUTE — ENTRY 280: C6 FAIL RECONCILIATION / AMENDMENT 274.5
 
 Canonical artifact: [CHAT-ARCH-2026-10-13-280-m0b-r8-1-c6-delta-adjudication-and-amendment-274-5.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-280-m0b-r8-1-c6-delta-adjudication-and-amendment-274-5.md) — blob `6d7d7f4966e1224456e00410c812395e6a5c598f`.
