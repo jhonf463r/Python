@@ -1,3 +1,17 @@
+## 2026-10-17 ACTIVE NEXT STEP — CODEX SOURCE ZIP ATTACHMENT GATE
+
+The last Codex-local response again returned `BLOCKED` because its own conversation attachment store did not contain `R10_V0_7_2_REPAIR_PACKAGE_FOR_CLAUDE.zip`. No candidate was created and no checkout mutation occurred. This is a transfer prerequisite, not a new R10 technical verdict.
+
+ChatGPT-session verification: expected archive exists at `/mnt/data/r10_recovery/R10_V0_7_2_REPAIR_PACKAGE_FOR_CLAUDE.zip`, size 50,589 bytes, SHA-256 `acfb468f78bebc3794b8ec7eaf81baf65d8c40cb66b3f8c7bd2065ffd07fe14e`; ZIP integrity and seven-entry inventory passed. This is not evidence that Codex has the file.
+
+**Only next task:** attach that exact ZIP to Codex local's actual conversation. Codex verifies attached hash/inventory, then authors a documentary-only R10 v0.7.3 candidate outside the dirty IABV checkout. If the ZIP or a required entry is absent/mismatched, remain `BLOCKED` and stop. After a complete candidate exists, Claude/Sonnet independently reviews it.
+
+See the [full continuity handoff](https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-new-chat-handoff-full-continuity.md) and the [corrected agent route](https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-r10-v073-corrected-agent-route.md).
+
+`R10_V0_7_2 = FAIL`; `M0–M5 = PROPOSED`; `V0.7.3 = NOT_CREATED`; `TESTS = NOT_RUN`; `GOVERNANCE = KEEP_BLOCKED`.
+
+---
+
 ## 2026-10-17 NEW-CHAT HANDOFF — FULL CONTINUITY CONSOLIDATED
 
 Read this first for the current state and exact next action: [full new-chat handoff](https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-new-chat-handoff-full-continuity.md).
