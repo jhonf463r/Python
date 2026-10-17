@@ -808,3 +808,62 @@ Ask Codex local for a read-only comparison of the exact dirty working tree again
 Do not edit files, run tests/code/build/runtime, inspect `data/` or SQLite, access M0A, or alter the 96 modified tracked paths and untracked `data/`. Classify each claim as `CONFIRMED_LOCAL`, `DIFFERS_FROM_PUBLIC`, or `UNRESOLVED`. After this narrow source report, revise V2 for consistency and conduct one bounded adversarial pass. No implementation until separately authorized.
 
 Governance remains `KEEP_BLOCKED`. PR #467 remains branch-only, Draft and unmerged.
+
+
+## 23. 2026-10-16 — Codex local: candidate identity, ToolMemory fanout, attestation, idempotency
+
+### Scope and preservation
+
+Codex reports root `C:\\temp\\IABV_coordination_20261016`, branch `codex/iabv-agent-coordination-20261016`, HEAD `3926b1144bb23c1066db579da711d3cdbc1611df`, and 96 tracked paths modified. `data/` exists; its untracked status was not reconfirmed because the check used `git status --untracked-files=no`. No data/SQLite contents were inspected; no code/tests/build/runtime ran; no files were changed. The full Contract V2.1 artifact was not supplied, so this reviews the described proposals rather than every clause of a full document.
+
+### Candidate / experiment / run identity — local report
+
+- `TaskOutcomeRecorder` sets `candidate_id=run_record.run_id` (local `task_outcome_recorder.py:299-318`); `RunRecord` has a separate ID in `domain/models.py:2517`.
+- `SandboxExperimentService` sets `candidate_id=experiment.experiment_id` for sandbox and promotion (local `sandbox_experiment_service.py:120-158, 160-193`); the ID identifies a `SandboxExperiment` (local `domain/models.py:2260`).
+- Normal lab evaluation uses `candidate.candidate_id` from an `ExperimentCandidate` (local `experiment_lab.py:95`). The other two assignments do not establish that their values identify a canonical candidate. No shared typed relation/resolver or `candidate_fingerprint` was found in the inspected routes: whether one exists elsewhere remains UNRESOLVED.
+- `StrategySelector` groups by route, assistant kind and config signature, then collects all run IDs in a group when any run succeeds. It does not validate candidate, domain, subject or scope for each support member; failed runs can be included in the group and support IDs (local `strategy_selector.py:41-59, 67-70, 106-119, 189`).
+- The local worktree uses `operational_trace_ids` in `TaskOutcomeRecorder._source_trace_ids()`, unlike HEAD; `candidate_id=run_record.run_id` remains. The repository has local consultative-evidence filters but no complete support-membership verification.
+
+Keep these namespaces separate: `RunRecord.run_id`, `SandboxExperiment.experiment_id`, `ExperimentRun.run_id`, `ExperimentCandidate.candidate_id`. String shape/equality is not a type proof.
+
+### ToolMemory and interaction-learning path — local report
+
+Codex reports this route:
+
+1. `ToolTeachService` invokes `ToolSandbox.run()` then `ToolMemory.remember_result()` (local `tool_teach_service.py:821-822`).
+2. Sandbox/validator can create a result with `validation_status=SANDBOX_PASS`, sandbox-pass state and `validated` derived from a success boolean (local `tool_sandbox.py:12`, `tool_validator.py:25`).
+3. `ToolMemory.remember_result()` persists the `ToolResult`, updates/persists `ToolCard.success_count`, `failure_count`, `last_result_id`, validation status and timestamps from `result.success`, logs the execution event, then invokes `InteractionLearningService.learn_from_execution()` when configured and later saves pattern metadata on the result (local `tool_memory.py:31-59`).
+4. `InteractionLearningService._is_effective_success()` accepts `approved` or `sandbox_pass` subject to other gates; the pattern flow can increment success/reusability counters (local `interaction_learning_service.py:39-55, 535-549`).
+
+Downstream consumers reported by Codex include: `InteractionModeSelector` (ToolCard counters and pattern score, local `interaction_mode_selector.py:213-247`); `InteractionLearningService.match_patterns()` (pattern success count, `interaction_learning_service.py:392-408`); `CapabilityReadinessService` (`capability_readiness_service.py:208`); `WorldModelService` (`world_model_service.py:1496`); and `ReproducibilityValidationService` (`reproducibility_validation_service.py:93`).
+
+Therefore, skipping only `learn_from_execution()` would not ensure operational neutrality: ToolCard counters/status are already written, and downstream selectors/scorers use both card and pattern state. Sandbox results may be stored descriptively, but the descriptive/evaluation cohort must not update operational counters, last-operational state or operational patterns.
+
+An additional ambiguity: Codex reports that `ToolValidator` can emit `SANDBOX_PASS` on a route with `sandbox=False` under certain conditions (local `tool_validator.py:31`); the ToolTeach flow preserves `sandboxed=sandbox_mode` while one validator call passes `sandbox=False` (local `tool_teach_service.py:853-873, 906`). Thus status alone does not establish provenance; source provenance must be carried/verified independently.
+
+### Operational attestation — unresolved
+
+No sufficient end-to-end attestation was found in the inspected routes. Fields include `task_id`, `tool_id`, `executor_name`, `sandboxed`, `validated`, approval decision, state, duration and free-form metadata. The report found no verifiable link among an authorized executor, exact candidate/configuration/scope, terminal observation and tested postconditions. Boolean `success`, `validated`, status strings and positive duration alone are insufficient. Coverage of all other local producers remains UNRESOLVED.
+
+### Idempotency and supersession
+
+The repository saves runs by `run_id` with `INSERT OR REPLACE` behavior, but a repeat delivery that receives a new random ID is not deduplicated by this key. No stable `execution_id`, event idempotency key, ExperimentRun supersession marker or separate latest-state projection was found in inspected paths. The discovered `SUPERSEDED` enum belongs to `ControlRuleStatus`, not `ExperimentRun`.
+
+The Contract V2 proposal to count only the newest run is not established by current source and may discard independent valid operational history. Safer design proposal: deduplicate repeat deliveries by stable execution/event identity; retain distinct executions as history; allow supersession only through explicit correction/retraction semantics. A latest-state projection, if needed, must be separate from historical reliability statistics.
+
+### Required Contract V2.1 corrections
+
+1. Preserve separate entity namespaces and resolve each ID using the correct repository and explicit relationship. Do not treat a RunRecord or SandboxExperiment ID as a canonical candidate ID.
+2. Validate each support run against domain, subject, scope, candidate identity, route, assistant, configuration and its evidence role. Do not infer membership from route/assistant/config alone. Distinguish positive support, negative outcomes and contextual references.
+3. Use typed provenance-bearing references plus referential resolution and allowed-relation validation. Never copy `supporting_run_ids` into `source_trace_ids` without an explicit validated relationship.
+4. Define sandbox provenance independently of `success` and `validation_status`. Neutralize ToolCard counters/status and every downstream operational consumer, not only InteractionPattern learning.
+5. Specify an authoritative attestation bound to an execution record, authorized actor, task/scope, candidate/fingerprint/config, terminal state and verified postconditions.
+6. Resolve the ambiguity of `SANDBOX_PASS` across validator paths; status alone cannot identify source provenance.
+7. Remove or justify the “newest run only” rule. Define event-level idempotency separately from historical aggregation and corrections.
+8. Inventory consumers of ToolCard and pattern state, including interaction mode selection, capability readiness, world-model scoring and reproducibility validation.
+
+### Next route
+
+The bounded local reconciliation is complete for these topics. Draft a corrected Contract V2.1 incorporating this report, then ask Claude Web for one targeted adversarial review of class consistency, candidate identity, full ToolMemory fanout neutrality, attestation, TypedRef resolution and idempotency. Claude must treat this as a supplied Codex-local report, not claim direct access to the dirty checkout. Avoid another broad audit. Kilo/OpenCode are reserve challengers only if a material disagreement remains.
+
+No implementation or test execution is authorized. Do not inspect data/ or SQLite; do not modify the local checkout. `GOVERNANCE = KEEP_BLOCKED`.
