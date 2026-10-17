@@ -115,3 +115,35 @@ Después de acordar el diff mínimo, solicitar autorización específica para ed
 - Mantener `GOVERNANCE = KEEP_BLOCKED`.
 
 **Siguiente checkpoint esperado:** evidencia causal con líneas exactas + intento explícito de refutación por Kilo/OpenCode + reconciliación de diferencias. Detenerse antes de editar código o ejecutar pruebas.
+
+
+## 9. 2026-10-16 — Primera respuesta de Kilo Gateway en VS Code
+
+**Proveniencia:** `OWNER_REPORTED`; transcripción de la salida del agente Kilo compartida por el propietario. No constituye verificación independiente por este documento.
+
+### Entorno y conducta observados
+
+- El propietario aclara que usa Kilo Gateway como extensión de VS Code y menciona una ruta/configuración `Auto Free`. Esto se registra como configuración reportada, no como verificación del modelo o proveedor realmente seleccionado en la sesión.
+- El texto de continuidad menciona por separado opciones de OpenCode (DeepSeek V4.1 Flash Free, MiMo-V2.6-Flash Free, Nemotron 3.5 Lightning Free y Muse Spark 1.3 Free). No hay evidencia suficiente en este reporte para identificar qué agente/modelo de OpenCode está activo en otra sesión ni si estas opciones están disponibles ahora. No inferir la configuración de OpenCode a partir de la de Kilo.
+- Kilo verificó según su salida la raíz `C:/temp/IABV_coordination_20261016`, HEAD `3926b1144bb23c1066db579da711d3cdbc1611df` y rama `codex/iabv-agent-coordination-20261016`.
+- Kilo no encontró el checkpoint `IABV_recommendation_operational_gate_map_20261016_followup.md` dentro del checkout al usar búsquedas por patrones y recorrer ese árbol. La conclusión admisible es **NOT_FOUND_IN_CHECKOUT**. Esto no demuestra que el archivo no exista en otra ubicación del disco: el path citado por Codex se encuentra bajo el directorio de usuario y fuera del repositorio, y el texto de Kilo no demuestra haber leído esa ruta absoluta.
+- Kilo informó 97 rutas con estado `M`, frente a las 96 rutas rastreadas informadas antes por Codex. Confirmó además dos rutas no rastreadas bajo `data/`, ambas SQLite, y declaró no haber abierto sus contenidos ni SQLite. La variación 96/97 queda como **UNRESOLVED**: requiere comparar las salidas de `git status --short` y `git diff --name-only` antes/después y comprobar si un cambio adicional preexistía o apareció durante la sesión. No contar líneas de salida como archivos sin corroborar la lista de rutas.
+- Kilo reconoció el límite de preservación y no indicó haber editado archivos, ejecutado pruebas o leído las bases SQLite. No elevar esta afirmación a una atestación externa: es el propio informe del agente.
+
+### Evaluación del comportamiento de Kilo
+
+**Observaciones favorables reportadas:** identificó el checkpoint ausente en el workspace, mantuvo separados los dos archivos SQLite y no inventó símbolos a partir del checkpoint no recuperado; registró la identidad del checkout antes de proseguir.
+
+**Límite/procedimiento por mejorar:** el prompt ya permitía continuar el análisis del código en el HEAD declarado sin el checkpoint, marcando las referencias no recuperadas como tales. Por ello Kilo no necesita bloquear toda la investigación ni pedir al propietario que copie manualmente código. Debe continuar con el source disponible en el checkout, buscar el recorrido de forma autónoma y marcar explícitamente cada hallazgo como `HEAD_SOURCE`, `WORKTREE_SOURCE`, `NOT_FOUND` o `UNPROVEN`. Debe inspeccionar el checkpoint por su ruta absoluta fuera del repositorio solo si el acceso está autorizado y el archivo está realmente disponible; no declarar su inexistencia global basándose solo en un glob del workspace.
+
+**Configuración de agente/modelo:** una extensión/agente (Kilo en VS Code), el modo de enrutamiento (`Auto Free`), el proveedor y el modelo concreto son capas distintas. Registrar la selección observable en la UI antes de comparar su comportamiento; no asumir que `Auto Free` equivale a DeepSeek ni que Kilo y OpenCode son la misma sesión.
+
+## 10. Próxima instrucción a Kilo — continuar sin pedir datos manuales
+
+La siguiente acción es que Kilo prosiga con el análisis estático del checkout ya identificado, sin depender del checkpoint ausente. No debe inspeccionar `data/` ni SQLite, ni modificar los archivos. Para resolver 96/97, registrar solo nombres y estados de rutas sin leer los archivos no rastreados; comparar el estado al inicio y al final, sin intentar limpiar los cambios.
+
+Debe producir referencias de source exactas para promoción sandbox → asignación de `success=True` → persistencia → consumidores de ranking/aprendizaje, y buscar activamente una ruta real de ejecución atribuible y verificación de postcondición. Toda evidencia se separa por HEAD frente a working tree. Si no puede demostrar una arista, declarar `GAP`; no pedir al propietario fragmentos manuales mientras exista un camino local autorizado para la inspección.
+
+El informe sigue siendo una continuación no independiente hasta que exista una revisión adversarial centrada en las mismas referencias y que documente falsadores concretos.
+
+**Gobierno:** `KEEP_BLOCKED`. Sin edición de código, tests, builds, runtime, operaciones en M0A ni activación del puente.
