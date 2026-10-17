@@ -1,3 +1,15 @@
+## 2026-10-17 ACTIVE NEXT ACTOR — R10 v0.7.5 DOCUMENTARY REPAIR
+
+Claude/Sonnet's independent v0.7.4 review returned semantic REQUIRES_REPAIRS. Full review and findings are recorded at the top of [the current full handoff](CHAT-ARCH-2026-10-17-new-chat-handoff-full-continuity.md), added in continuity commit 780aba1d2b7d3514f0e1a85677386af37d909d1d. Current state is in [CURRENT-STATE.md](CURRENT-STATE.md).
+
+Next actor: Codex local, documentary-only author of a new immutable v0.7.5 candidate. Critical defects to carry forward include: three duplicated matrix columns across all 99 rows; generic crash/falsifier text; T134 delta mismatch; T179 wrong code for digest mismatch; T184 restoration sequence incomplete; T200 at-most-one oracle underspecified; T205 barrier scope ambiguous; T210 oracle/column delta conflict; T212 crash contradiction; T137/T146/T149/T158/T166 legacy labels; §0 stale version/registry; RESULT_ACCEPTED missing event/writer/lifecycle (F-12); undefined ResultState/correlation_status; missing writers for CAPTURE_REJECTED/LATE_STALE/diagnostic timeout/profile registration; undefined rejection precedence; weak I1–I12 mapping and L1/L2/L4 negative coverage; F-07 and F-10 still open. Full details and next-task constraints are in CURRENT-STATE and the handoff.
+
+Preserve T123–T221 and add only new sequential IDs from T222 when splitting scenarios or closing additional coverage gaps. Do not force a fixed final row count; report the actual contiguous range. Keep v0.7.4 relay and local artifact preserved through v0.7.5 independent review. Do not mix in the paused IABV static diff audit or C20 track (`STATIC_DIFF_REVIEW_INCOMPLETE`).
+
+`R10 v0.7.2 = FAIL`; `v0.7.3 = REQUIRES_REPAIRS / NOT_ACCEPTED`; `v0.7.4 = REQUIRES_REPAIRS / NOT_ACCEPTED`; `v0.7.5 = NOT_CREATED / NOT_REVIEWED`; `T123–T221 = NOT_RUN`; product execution/tests/build/runtime = `NOT_RUN`; `GOVERNANCE = KEEP_BLOCKED`.
+
+---
+
 ## 2026-10-17 ACTIVE NEXT ACTOR — R10 v0.7.4 INDEPENDENT DELTA REVIEW
 
 Current route after relay publication and static coordinator spot-check. Detailed handoff is [CHAT-ARCH-2026-10-17-new-chat-handoff-full-continuity.md](CHAT-ARCH-2026-10-17-new-chat-handoff-full-continuity.md); the latest update records commit 191803340e1c78c92125b871a6a41589dc874163 for the handoff and content commit ad5c094fa3e7e4d1989079983f8f6c05f3296551 for immutable v0.7.4 artifacts.
