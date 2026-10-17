@@ -1,3 +1,10 @@
+## 2026-10-17 — R10 v0.7.2 audit closure — FAIL
+
+Record: [CHAT-ARCH-2026-10-17-r10-v072-audit-closure-fail.md](https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-r10-v072-audit-closure-fail.md)
+
+The six payload hashes match the manifest, but contract/matrix contradictions keep D2 open and D3/D4/D6 partial; 74 matrix cases are NOT_RUN, atomicity and implementation dependencies UNPROVEN. M0–M5 remain proposed, no v0.7.3 exists, local checkout not inspected. `GOVERNANCE = KEEP_BLOCKED`.
+
+---
 ## 2026-10-17 — R10 discovery/sync-pulse final bounded adjudication
 
 Record: [CHAT-ARCH-2026-10-17-r10-sync-pulse-trace-final-adjudication.md](https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-r10-sync-pulse-trace-final-adjudication.md)
