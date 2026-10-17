@@ -1,3 +1,21 @@
+## 2026-10-17 ACTIVE NEXT STEP — R10 v0.7.3 INDEPENDENT DELTA REVIEW
+
+**New Codex-local completion result reported by owner (not independently inspected here):** `DOCUMENTARY_CANDIDATE_CREATED_PENDING_INDEPENDENT_DELTA_REVIEW`; `GOVERNANCE = KEEP_BLOCKED`.
+
+Codex reports the source v0.7.2 ZIP matched the expected SHA-256 and embedded manifest; a new candidate ZIP at `C:/temp/R10_v0_7_3_documentary_candidate_20261017/R10_V0_7_3_DOCUMENTARY_CANDIDATE.zip` is reported as 86,835 bytes with SHA-256 `1ace1d9331ee943a35fc4663855a09451919ae7b0e8619c799416b48bdae4049`. Codex reports 14 unique archive entries, no manifest discrepancies, seven preserved historical entries/payloads, and a matrix of 75 unique IDs T123–T197, all `NOT_RUN`. These remain `CODEX_LOCAL_REPORTED / OWNER_REPORTED` until the actual candidate bytes are inspected independently. Windows paths in Codex's reply are not attachments to another IA.
+
+**Next actor: Claude/Sonnet**, independent static/documentary delta reviewer. Required input in Claude's actual conversation: (1) candidate ZIP attached as a file and identity checked against the reported size/hash; (2) original v0.7.2 source ZIP as comparison input; (3) the independent-delta-review prompt. Do not rely on Codex's summary alone. If the candidate or source package cannot be read, return `BLOCKED`; do not infer review from the report. Do not ask Codex to redo authoring unless Claude identifies targeted documentary defects.
+
+Review M0–M5, minor fixes, new T197, exact contract↔matrix references, manifest coverage, historical byte preservation, changelog completeness and cross-document contradictions. No documented case is to be executed. Candidate completion is not semantic acceptance, not test PASS and not implementation authorization.
+
+After Claude's evidence-backed verdict, ChatGPT/coordinator reconciles and records the delta. If repairs are needed, route only the bounded repair list to Codex and then repeat an independent targeted review.
+
+See the [full handoff](https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-new-chat-handoff-full-continuity.md), [corrected route](https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-r10-v073-corrected-agent-route.md), and the attached independent-review prompt artifact delivered in the current ChatGPT response.
+
+`R10_V0_7_2 = FAIL`; `CANDIDATE = CODEX_LOCAL_REPORTED, PENDING INDEPENDENT REVIEW`; `TESTS = NOT_RUN`; `GOVERNANCE = KEEP_BLOCKED`.
+
+---
+
 ## 2026-10-17 ACTIVE NEXT STEP — CODEX SOURCE ZIP ATTACHMENT GATE
 
 The last Codex-local response again returned `BLOCKED` because its own conversation attachment store did not contain `R10_V0_7_2_REPAIR_PACKAGE_FOR_CLAUDE.zip`. No candidate was created and no checkout mutation occurred. This is a transfer prerequisite, not a new R10 technical verdict.
