@@ -1,3 +1,10 @@
+## 2026-10-17 UNRESOLVED FRONTIER — OSES EVIDENCE-REFERENCE TWO-HOP
+
+The direct typed-adapter claim for discovery → individual sync-pulse `solution_proposals` is accepted with limitations. Do not reopen it globally. Open only if individual attribution is required: determine whether `recommendation.supporting_run_ids`, `validation.last_experiment_id`, or `best_run.run_id` used by OSES `validated_collaboration` can resolve to an `ExperimentRun` whose `proposal_id` / `discovery_signal_id` is the discovery source, and identify the provenance of the recommendation consumed by `_validated_improvements`. This relation is `UNRESOLVED`, not confirmed or disproved.
+
+Evidence package: [final adjudication](https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-r10-sync-pulse-trace-final-adjudication.md). This must remain separate from R10 v0.7.2 audit closure. `GOVERNANCE = KEEP_BLOCKED`.
+
+---
 ## 2026-10-17 ROUTE UPDATE — INDIRECT OSES INFLUENCE FOUND; TYPED BRIDGE NOT FOUND
 
 - No typed adapter found in the bounded path from `ToolEvolutionProposal` / `validate_discovery` to an individual sync-pulse `solution_proposals` item.
