@@ -1,3 +1,13 @@
+## 2026-10-17 ROUTE UPDATE — SLICE A STATIC ACCEPTANCE WITH LIMITATIONS
+
+Before any new task, read `docs/history/CHAT-ARCH/CURRENT-STATE.md`, `CONTEXT-INDEX.md`, `MEMORY-OPERATING-PROTOCOL.md`, and docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-r10-slice-a-static-review-with-limitations.md. The latest Slice A disposition is static acceptance with limitations only. Keep packet evidence, owner-reported local state, and public GitHub source separate. Do not claim tests passed; they remain `NOT_RUN`.
+
+**Next authorized analysis route:** Codex local, read-only, trace the producer/schema and any explicit adapter connecting `self_examination/latest.json.metadata.solution_proposals` to `ToolEvolutionStatus.proposals` / `validate_discovery`. If no adapter is found, document the exact boundary and stop. No broad source re-audit, no implementation, no tests/build/runtime, no `data/`/SQLite, M0A or physical bridge.
+
+`GOVERNANCE = KEEP_BLOCKED`. Do not enable dispatcher or begin Packages B–E.
+
+---
+
 ## 2026-10-16 ROUTE — CODEX LOCAL REPORT RECEIVED
 
 Next task is contract V2.1 plus one narrow Claude Web challenge; do not run another broad source census. Incorporate the local findings: candidate/run/experiment namespaces are currently conflated by producer assignments; support membership must be candidate- and scope-specific; ToolMemory updates ToolCard counters/status before interaction learning; SANDBOX_PASS alone does not prove provenance; downstream mode selection/capability/world-model/reproducibility paths need explicit cohort gates; operational attestation is not established; stable event idempotency and supersession semantics are absent from inspected paths.
