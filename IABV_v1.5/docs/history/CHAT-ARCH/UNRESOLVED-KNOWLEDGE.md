@@ -1,3 +1,18 @@
+## 2026-10-16 OPEN KNOWLEDGE — LOCAL LINEAGE RESULTS
+
+Codex local report establishes these risks but does not prove a specific runtime misattribution:
+1. candidate_id is fed RunRecord.run_id or SandboxExperiment.experiment_id in two producer paths; no shared canonical candidate resolver/fingerprint was found in inspected paths.
+2. StrategySelector support grouping excludes candidate/domain/subject/scope from its group key and can retain failed runs in support.
+3. ToolMemory mutates ToolCard operational-looking counters/status before interaction learning; SANDBOX_PASS may be emitted under more than one validation path; status alone is not trusted provenance.
+4. ToolCard and InteractionPattern counters fan out to interaction mode selection, capability readiness, world-model scores and reproducibility assessments.
+5. A complete authoritative operational attestation was not found in inspected paths.
+6. run_id-based persistence does not deduplicate the same event delivered under a new random ID; no ExperimentRun supersession/latest-state contract was found.
+7. Do not implement “newest run only” without distinct semantics for historical reliability versus current-state projection.
+
+Next: contract V2.1 and one bounded adversarial review. Working-tree facts are Codex-reported; runtime effects remain unobserved. See follow-up Section 23. No implementation; GOVERNANCE = KEEP_BLOCKED.
+
+---
+
 ## 2026-10-16 OPEN KNOWLEDGE — CONTRACT V2 CONSISTENCY HOLES
 
 Before implementation, resolve by specification/source evidence:
