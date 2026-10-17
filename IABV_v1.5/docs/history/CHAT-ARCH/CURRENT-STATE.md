@@ -1,3 +1,25 @@
+## 2026-10-16 OBJECTIVE OVERLAY — RECOMMENDATION GATE / AGENT SYMBIOSIS
+
+This overlay routes the current conversation's objective; it is not a replacement for unrelated M0B/R10 gates and does not confer implementation authority.
+
+**Current truth supported by public source plus owner-shared local reports**
+- Public main source at the observed commit 9e0ce66768aedd7422e0d3551affd398f44a7532 contains a sandbox promotion path that can set success=True from a ranked alternative without demonstrating execution in that route. StrategySelector, AdaptiveWeightLayer and ExperimentLab consumers use success in scoring/eligibility paths.
+- Codex reports local root C:\temp\IABV_coordination_20261016, branch codex/iabv-agent-coordination-20261016, HEAD 3926b1144bb23c1066db579da711d3cdbc1611df, with 96 tracked modifications and untracked data/. These local details are CODEX_LOCAL_REPORTED, not visible to Claude Web.
+- Local working-tree gates for evidence_class='operational_execution' have no positive producer demonstrated in the reviewed path. Do not enforce an empty contract without designing producer and consumer together.
+- A change from sandbox success=True to success=False alone can create a false operational failure in adaptive weights and other denominators.
+- Codex reports a new run-ID/trace-ID namespace concern: supporting_run_ids are copied into source_trace_ids. Validate source types and candidate/scope linkage.
+
+**First open causal edge**
+Produce a read-only census from the preserved local checkout of every relevant producer and consumer, reconcile HEAD versus working tree, and define neutral sandbox/evaluation cohorts separately from operational execution outcomes. Include StrategySelector, AdaptiveWeightLayer, ExperimentLab reuse/threshold/training/statistics, TaskOutcomeRecorder, TaskContextAssembler and promotion. Preserve run-ID/trace-ID namespaces.
+
+**Actor routing**
+Codex local is next for evidence that needs the dirty Windows checkout. Claude Web has already challenged the design using public source; it cannot certify local modifications. Use Claude Web again only for specific design deltas or public-source challenges. Kilo/OpenCode are reserve challengers for contradictions, not duplicate broad audits.
+
+**Stop conditions and governance**
+Do not access data/ or SQLite, edit the dirty checkout, execute code/tests/build/runtime, enter M0A, or activate the physical bridge. An isolated implementation workspace and separate authorization are required after design reconciliation. R10/Candidate C remains separate and KEEP_BLOCKED.
+
+---
+
 ## 2026-10-13 CANONICAL ROUTE — ENTRY 280: C6 FAIL RECONCILIATION / AMENDMENT 274.5
 
 Canonical artifact: [CHAT-ARCH-2026-10-13-280-m0b-r8-1-c6-delta-adjudication-and-amendment-274-5.md](./CHAT-ARCH-2026-10-13-280-m0b-r8-1-c6-delta-adjudication-and-amendment-274-5.md) — blob `6d7d7f4966e1224456e00410c812395e6a5c598f`, commit `0a462d66071f2d354e8a299ffaf859b3aeac61d5`.
