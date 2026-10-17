@@ -213,3 +213,21 @@ After the review and a compact canonical writeback, delete only the temporary br
 The active prompt is available in the current ChatGPT response as `R10_V0_7_3_GITHUB_RELAY_PROMPT_2026-10-17.md`. This is a proposed relay instruction only; the branch has not yet been published by this coordination update.
 
 `R10_V0_7_2 = FAIL`; `V0.7.3 = CODEX_LOCAL_REPORTED / PENDING_INDEPENDENT_DELTA_REVIEW`; all matrix tests `NOT_RUN`; `GOVERNANCE = KEEP_BLOCKED`.
+
+
+## 14. Relay attempt blocked by a repository-owner typo — corrected route — 2026-10-17, America/Bogota
+
+Codex's latest relay attempt returned `BLOCKED` after `git ls-remote` against `https://github.com/jhonf463f/Python.git` returned “Repository not found.” The URL uses an incorrect owner character. The verified canonical repo is `jhonf463r/Python` — final character `r`, not `f`.
+
+Coordinator-side GitHub API checks confirm `jhonf463r/Python` exists, is public, default branch `main`; the canonical continuity branch exists and PR #467 remains open, Draft and unmerged. The incorrect URL's 404 does not establish that the intended repo is inaccessible. Do not ask the owner which repo was intended: the existing canonical repo and route are already documented.
+
+**Next actor: Codex local. Mode: minimal read-only destination preflight, then transfer-only.** Use:
+`gh repo view jhonf463r/Python --json nameWithOwner,url,isPrivate,defaultBranchRef`
+`git ls-remote https://github.com/jhonf463r/Python.git HEAD refs/heads/main refs/heads/docs/iabv-space-time-agent-continuity-2026-10-16`
+`gh api repos/jhonf463r/Python --jq '{full_name, private, default_branch, html_url}'`
+
+If successful, publish the existing candidate ZIP and extracted tree plus the original source ZIP on one ephemeral branch `handoff/r10-v073-review-20261017`; single commit, no PR/release/tag/workflow, no writes to `main` or the canonical continuity branch. Public visibility is acknowledged. Pin URLs to commit SHA, let Claude inspect via GitHub, then remove the temporary branch after reconciliation. If these exact commands fail, report exact failure and stop; no new auth and no repeated downloads/uploads. Do not recreate or modify the existing candidate.
+
+The corrected transfer-only instruction is supplied in the current ChatGPT response: `R10_V0_7_3_GITHUB_RELAY_RETRY_CORRECT_REPO_2026-10-17.md`, local SHA-256 `18538d70184a931f79234d825550f0138a683b7480039237d25f1a6c4bf4b57c`.
+
+Codex reported candidate identity stays `CODEX_LOCAL_REPORTED`: 86,835 bytes, SHA-256 `1ace1d9331ee943a35fc4663855a09451919ae7b0e8619c799416b48bdae4049`. Claude's semantic review has not started because the candidate ZIP was missing. Original v0.7.2 remains `FAIL`, tests `NOT_RUN`, and `GOVERNANCE = KEEP_BLOCKED`.

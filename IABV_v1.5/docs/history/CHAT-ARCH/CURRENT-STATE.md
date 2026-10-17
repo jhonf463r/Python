@@ -1,3 +1,23 @@
+## 2026-10-17 ACTIVE NEXT ACTION — CORRECT THE REPOSITORY OWNER TYPO
+
+Codex's relay attempt did not reach GitHub because the tested remote was `https://github.com/jhonf463f/Python.git`. The correct repository owner is **`jhonf463r`** (ends in letter `r`, not `f`): `https://github.com/jhonf463r/Python`.
+
+Coordinator-side API verification at this checkpoint:
+- `jhonf463r/Python` exists, is public, and has default branch `main`.
+- Continuity branch `docs/iabv-space-time-agent-continuity-2026-10-16` exists.
+- PR #467 remains open, Draft and unmerged.
+- A 404 for the misspelled `jhonf463f/Python` does not establish an access problem for the intended repo.
+
+**Next actor: Codex local; mode: minimal read-only preflight, then transfer-only.** Do not ask the owner to supply the repo name again. First run `gh repo view jhonf463r/Python --json nameWithOwner,url,isPrivate,defaultBranchRef`, `git ls-remote https://github.com/jhonf463r/Python.git HEAD refs/heads/main refs/heads/docs/iabv-space-time-agent-continuity-2026-10-16`, and `gh api repos/jhonf463r/Python --jq '{full_name, private, default_branch, html_url}'`. If these pass, relay the existing candidate/source ZIP on one ephemeral branch, as already specified. If they fail against this exact spelling, return the exact command and sanitized error and stop; do not log in again, ask for new credentials, recreate the candidate, or fall back to manual transfers.
+
+Full corrected transfer-only prompt supplied to user: `R10_V0_7_3_GITHUB_RELAY_RETRY_CORRECT_REPO_2026-10-17.md`. Local prompt SHA-256: `18538d70184a931f79234d825550f0138a683b7480039237d25f1a6c4bf4b57c`.
+
+The candidate identity remains `CODEX_LOCAL_REPORTED` (86,835 bytes; SHA-256 `1ace1d9331ee943a35fc4663855a09451919ae7b0e8619c799416b48bdae4049`). It has not been published and Claude has not reviewed its semantics.
+
+`GOVERNANCE = KEEP_BLOCKED`; `TESTS = NOT_RUN`; `PRODUCT_CODE_EXECUTION = NOT_RUN`.
+
+---
+
 ## 2026-10-17 ACTIVE ROUTE OVERRIDE — GitHub cloud handoff, no repeated attachments
 
 The R10 v0.7.3 candidate is reported created by Codex, but Claude/Sonnet returned `BLOCKED` because the actual ZIP was not attached in its own conversation. Stop repeating the download/upload loop. **Next actor: Codex local, transfer-only; following actor: Claude/Sonnet, independent reviewer through pinned GitHub URLs.**

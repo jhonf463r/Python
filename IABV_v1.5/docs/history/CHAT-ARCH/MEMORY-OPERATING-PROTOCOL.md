@@ -1,3 +1,17 @@
+## 2026-10-17 METHOD DELTA — VERIFY THE DESTINATION STRING BEFORE DIAGNOSING PERMISSION
+
+A repository-access failure must be localized to the exact resource name before inferring permissions/authentication are at fault. Compare the owner/repository path against a previously verified canonical URL and perform a read-only API/reachability check using that exact string before asking for new access or credentials.
+
+R10 example: Codex reported `Repository not found` for `jhonf463f/Python`, while the established public repo is `jhonf463r/Python`. The final owner character was mistyped. Coordinator-side GitHub API checks confirm `jhonf463r/Python` exists and is public; the continuity branch exists and PR #467 is open, Draft and unmerged. Do not misclassify the typo as a credential failure.
+
+Reusable routing rule: `canonical identity → exact read-only reachability check → permission diagnosis only if the correct identity fails → action`. No repeated authentication, credential requests, artifact reconstruction, or manual transfer cycles when an exact path error explains the failure.
+
+The correct destination preflight and transfer-only relay prompt is `R10_V0_7_3_GITHUB_RELAY_RETRY_CORRECT_REPO_2026-10-17.md` (current ChatGPT response). Codex then relays the already existing candidate/source bundle through a single temporary public GitHub branch; Claude/Sonnet reviews pinned links; after reconciliation, remove the temporary ref and staging directory.
+
+`GOVERNANCE = KEEP_BLOCKED`; no product code/tests/build/runtime; v0.7.3 remains pending independent review.
+
+---
+
 ## 2026-10-17 METHOD DELTA — GITHUB AS A SHORT-LIVED CROSS-IA ARTIFACT RELAY
 
 For artifact handoffs between local Codex and a web reviewer, prefer a shared, commit-pinned GitHub relay over repeated owner-managed download/upload cycles, when the repository's visibility is acceptable.
