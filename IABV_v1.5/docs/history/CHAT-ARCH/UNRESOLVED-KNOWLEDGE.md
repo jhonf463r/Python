@@ -1,3 +1,10 @@
+## 2026-10-17 UNRESOLVED — BRIDGE READINESS
+
+The bridge is not ready. Trace acceptance was only `TRACE_ACCEPTED_WITH_LIMITATIONS` for no direct typed per-proposal adapter in bounded tracked source/test routes; two-hop `evidence_refs → ExperimentRun → proposal_id/discovery_signal_id` remains unresolved. Separately, R10 v0.7.2 is `FAIL`, M0–M5 are only proposed, tests are not run, and implementation/atomicity dependencies are unproven.
+
+Next: owner decision whether to return M0–M5 to the package author; after correction, independent delta review. If individual attribution remains a required objective, one targeted namespace/provenance check for `supporting_run_ids`, `last_experiment_id`, and `best_run.run_id` may follow. Do not reopen the whole trace. See [bridge readiness gates](https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-bridge-readiness-assessment.md). `GOVERNANCE = KEEP_BLOCKED`.
+
+---
 ## 2026-10-17 UNRESOLVED — R10 v0.7.2 NORMATIVE MATRIX CONTRACT CONFLICTS
 
 Audit verdict `FAIL`; no implementation or v0.7.3 produced. Open defects: no contract clause-vs-oracle precedence; T162 contradicts §§8.3/12; T141 can report CORRELATED without parent relation and T138 adds unsupported expiry; T130/T131 add uncontracted strategy-lineage exclusivity; D6 uses undefined vocabulary and mismatched failure codes; 21 rows omit explicit expected outcomes and T180 exact t0+600s edge lacks result. Atomicity and implementation dependencies remain `UNPROVEN`.
