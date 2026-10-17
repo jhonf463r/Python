@@ -1,3 +1,15 @@
+## 2026-10-16 ROUTE UPDATE — CONTRACT V2.1 FROM LOCAL LINEAGE
+
+Codex's scoped local report now answers the next source question. Do not repeat the audit.
+
+Contract V2.1 must cover: distinct RunRecord, SandboxExperiment, ExperimentRun, ExperimentCandidate, IATraceEntry and ToolResult namespaces; validated candidate-specific support membership; separate typed/resolved trace references; sandbox neutrality across ToolCard counters and every downstream consumer; trusted provenance independent from SANDBOX_PASS/boolean success; authoritative execution attestation; stable event idempotency; and explicit correction/retraction semantics instead of assuming newest-run-only history.
+
+Known downstream ToolMemory consumers from the report: InteractionModeSelector, InteractionLearningService.match_patterns, CapabilityReadinessService, WorldModelService, ReproducibilityValidationService. Any last-operational validation state must also remain separate from descriptive sandbox state.
+
+Use Section 23 of the [recommendation-gate follow-up](../2026-10-16_iabv_recommendation_gate_codex_followup.md) as the current local evidence packet. Next ask Claude Web for one targeted adversarial review and keep local claims labelled as Codex-reported. No implementation. GOVERNANCE = KEEP_BLOCKED.
+
+---
+
 ## 2026-10-16 ROUTE UPDATE — TARGETED LOCAL CHECK BEFORE V2.1
 
 Do not repeat the broad audit. The next step is read-only Codex-local verification of a finite new frontier from Contract V2: candidate_id/run_id/experiment_id identity provenance; ToolMemory result counters and InteractionPattern writes for sandbox results; supersession/idempotency semantics; local-vs-HEAD deltas in the exact consumers. Preserve 96 modified tracked files and untracked `data/`; no SQLite, tests, code, build or runtime.
