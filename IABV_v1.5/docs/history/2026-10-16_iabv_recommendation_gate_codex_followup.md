@@ -907,3 +907,26 @@ These are Codex-reported local line references. The owner-provided report states
 Assign Codex, using the same authorized local checkout, one strictly read-only route trace: `ToolEvolutionMonitor` → `validate_discovery` → any actual dispatcher. Return exact predicates, dispatch call, authorization/attestation and postcondition gates, and whether the promotion-derived recommendation can reach it. Do not run tests/code or alter the checkout; do not inspect `data/` or SQLite. After that, request one independent adversarial review from Claude Web using the report and source excerpts, while explicitly stating Claude has no local access.
 
 No code changes or test authorization. `GOVERNANCE = KEEP_BLOCKED`.
+
+
+## 5. R10 validate_discovery dispatch trace — no bridge to auto-execution shown
+
+**Provenance:** owner-supplied report attributed to Codex local; **CODEX_LOCAL_REPORTED / OWNER_REPORTED**. This note preserves the reported static trace and does not independently inspect the dirty checkout.
+
+### Bounded conclusion
+
+The reported path runs from `ToolDiscoveryService` recommendation lookup → `detected` signal → `ToolEvolutionMonitor` `validate_discovery` proposal → persisted monitor state → `AutonomousValidationCycle` proposal selection → `_recommendation_from_proposal()` → `SandboxExperimentService.validate_recommendation()`. The inspected route stops at sandbox evaluation and ExperimentLab persistence. No dispatcher call, execution-attempt ID, candidate-bound operational attestation or postcondition verifier was found in that route.
+
+The transformation reportedly drops `discovery_signal_id`, does not carry `tool_id` as a candidate field into the derived recommendation, and does not bind an execution-attempt ID. Signal `evidence_refs` are run IDs; their presence is not proof that the proposed candidate executed.
+
+### Separate auto-execution route
+
+A distinct pathway reportedly reads `solution_proposals` from `self_examination/latest.json`, may pass proposal dictionaries to `adaptive_task_orchestrator.auto_execute_from_sync_pulse()`, and reaches `AutonomousEvolutionService.plan_or_execute()`. The local report does **not** identify an adapter from `ToolEvolutionStatus.proposals` / `validate_discovery` into those `solution_proposals` dictionaries.
+
+Therefore, the existence of the separate auto-execution pathway does not refute the scoped finding that the `validate_discovery` route ends at sandbox evaluation. Do not inspect the internal plan/execute gates in this mission absent a demonstrated bridge.
+
+### Next action
+
+Trace the producer and schema of `self_examination/latest.json.metadata.solution_proposals` in the same checkout. Search only for producers/adapters that could translate a `validate_discovery` proposal into a sync-pulse dictionary, and identify exact fields/ID mapping. If no such bridge is present in inspected source, name the exact terminus and stop.
+
+No tests/code/runtime, no checkout mutation, no `data/`/SQLite, M0A or physical bridge. `GOVERNANCE = KEEP_BLOCKED`.
