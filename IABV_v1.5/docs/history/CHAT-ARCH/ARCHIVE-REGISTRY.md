@@ -1,3 +1,14 @@
+## 2026-10-16 REGISTRY UPDATE — CONTRACT V2 ADJUDICATION
+
+- Latest source record: [recommendation-gate follow-up, Section 22](../2026-10-16_iabv_recommendation_gate_codex_followup.md)
+- Record blob SHA: ba99ecefad0299df7bfff8d61f5190b07ee2a0a0; write commit: bfbac0e9599d68ada669034944e57257b975d6b4.
+- Contract V2 remains documentary `CONTRACT_READY_WITH_REPAIRS`, not implementation-ready.
+- Next route: scoped Codex local verification of candidate/run identity, ToolMemory counters and HEAD/worktree deltas.
+- Main currently resolves to `9e0ce...`; checked blobs match the older `cbc522140` ref for files inspected.
+- PR #467 remains Draft/unmerged; `GOVERNANCE = KEEP_BLOCKED`.
+
+---
+
 ## 2026-10-16 REGISTRY UPDATE — CLAUDE CONTRACT NOT READY
 
 - Latest evidence record: [recommendation-gate follow-up, Section 21](../2026-10-16_iabv_recommendation_gate_codex_followup.md).
