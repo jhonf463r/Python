@@ -1,3 +1,19 @@
+## 2026-10-16 METHOD DELTA — CONTRACT COMPLETENESS AND EVIDENCE ATTESTATION
+
+Claude's `CONTRACT_NOT_READY` yields these method rules:
+
+- Identifier safety is a type/namespace property. Resolve a typed Run ID or Trace ID through its own repository; do not infer type from string equality or inequality.
+- Positive execution time alone does not prove that the recommended candidate ran. Operational evidence must be attested by an authorized execution record linked to candidate/scope and verified postconditions; evidence class and outcome are separate axes.
+- Recommendation support is candidate-specific. Use a stable `candidate_id` or canonical fingerprint, and reject ambiguous membership.
+- Sandbox neutrality includes operational denominators, failure counts, recency, trend, reuse, thresholds, weights, ranking and training. Keep sandbox blockers/fallbacks in a separately named cohort.
+- Missing/unknown historical provenance is descriptive-only for operational learning; no retroactive promotion from generic `success=True`.
+
+Public evidence correction: commit `9e0ce66768aedd7422e0d3551affd398f44a7532` includes `ExperimentLab.generate_training_corpus()` and aggregates `run.success`; a reviewer's UNRESOLVED label is not proof of absence. Dirty local behavior remains a separate provenance class.
+
+Keep transitional suite filters labelled incomplete, never the final contract. Never encode non-execution as operational `success=False`. See follow-up Section 21. No implementation; `GOVERNANCE = KEEP_BLOCKED`.
+
+---
+
 ## 2026-10-16 METHOD DELTA — IDENTIFIER NAMESPACE RECONCILIATION BEFORE CLAIM PROMOTION
 
 New failure-mode correction from the recommendation-gate episode: a field name or report does not establish that an identifier belongs to the expected namespace. When Run IDs, ExperimentRun IDs, trace IDs and operational trace IDs are passed through metadata, follow the producer, transformation and consumer. Compare exact HEAD and working-tree versions before calling a namespace mismatch a defect.
