@@ -1,3 +1,22 @@
+## 2026-10-16 OBJECTIVE ROUTER — RECOMMENDATION GATE AND AGENT CONTINUITY
+
+For an objective concerning sandbox promotion, operational success, ranking, adaptive weights, ExperimentLab or agent-symbiosis memory, activate the following route:
+
+1. CURRENT-STATE objective overlay at the top of this file's paired state route.
+2. Evidence addendum: [2026-10-16_iabv_recommendation_gate_codex_followup.md](../2026-10-16_iabv_recommendation_gate_codex_followup.md).
+3. Cross-IA protocol: IABV-COLLABORATION-COORDINATION-PROTOCOL-2026-10-04.md.
+4. Cumulative symbiosis method: CHAT-ARCH-2026-10-08-148-symbiosis-cumulative-developmental-control-loop.md.
+5. Memory protocol sections covering objective-conditioned retrieval, cross-IA transfer, dynamic role selection, evidence promotion, causal-edge discipline and writeback.
+6. Relevant source files: sandbox_experiment_service.py; strategy_selector.py; adaptive_weight_layer.py; experiment_lab.py; experiment_lab_repository.py; domain/models.py; task_outcome_recorder.py; task_context_assembler.py; adaptive_task_orchestrator.py; self_teach_orchestrator.py; autonomous_evolution_service.py; code_audit_trail.py; tool_discovery_service.py.
+
+**First open edge:** distinguish a sandbox evaluation result from a real operational execution, enumerate all producer/consumer effects of success, and establish run-ID versus trace-ID lineage. Do not assume a shared boolean or free-form metadata is a valid evidence contract.
+
+Actor routing is capability- and access-based: Codex local for the Windows working tree; Claude Web for public-source/design challenge; Kilo/OpenCode only when a concrete contradiction requires another perspective. Historic actor roles are not permanent and consensus does not replace evidence.
+
+Governance remains KEEP_BLOCKED; no implementation or runtime is authorized.
+
+---
+
 ## 2026-10-13 CANONICAL ROUTE — ENTRY 280: C6 FAIL RECONCILIATION / AMENDMENT 274.5
 
 Canonical artifact: [CHAT-ARCH-2026-10-13-280-m0b-r8-1-c6-delta-adjudication-and-amendment-274-5.md](./CHAT-ARCH-2026-10-13-280-m0b-r8-1-c6-delta-adjudication-and-amendment-274-5.md) — blob `6d7d7f4966e1224456e00410c812395e6a5c598f`, commit `0a462d66071f2d354e8a299ffaf859b3aeac61d5`.
