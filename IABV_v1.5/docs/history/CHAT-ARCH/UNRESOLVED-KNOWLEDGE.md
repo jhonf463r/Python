@@ -1,3 +1,19 @@
+## 2026-10-16 OPEN KNOWLEDGE — CONTRACT V2 CONSISTENCY HOLES
+
+Before implementation, resolve by specification/source evidence:
+1. Evidence class enumeration conflict: I-1 excludes `SANDBOX_PROMOTED` although later sections require it.
+2. Candidate/run/experiment ID type confusion: raw string equality is not type proof; resolve references and verify actual candidate identity or canonical fingerprint.
+3. Attestation scope mismatch: require authoritative execution provenance tied to candidate/config/scope/task, terminal state and postconditions; nonempty execution_id/attested_by strings are insufficient.
+4. TypedRef integrity: resolve referenced entities and validate allowed relations; a type label alone is not evidence.
+5. ToolMemory neutrality: ToolCard success/failure counts update before the interaction-learning call; all downstream consumers need coverage.
+6. I-11 newest-only rule may discard valid history; distinguish event deduplication, correction/retraction, and latest-state projections.
+7. Candidate fingerprint canonicalization/versioning is undefined.
+8. Local-vs-HEAD behavior of these paths must be inspected by Codex without touching `data/` or SQLite.
+
+Public main resolved by GitHub API to `9e0ce...`; `cbc522140` is an earlier commit, though checked blobs match for the targeted files. See follow-up Section 22. Keep `GOVERNANCE = KEEP_BLOCKED`.
+
+---
+
 ## 2026-10-16 OPEN QUESTIONS — CONTRACT V2
 
 Claude's review remains `CONTRACT_NOT_READY`. The following are proposals requiring explicit contract/owner review, not currently approved policy:
