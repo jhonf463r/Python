@@ -1185,3 +1185,31 @@ Auditoría estática acotada del diff local concreto de esta tarea: reconciliar 
 
 Mantener la actividad en dos carriles estáticos y separados: (a) completar las pruebas discriminantes faltantes como cambios propuestos, sin ejecutarlas hasta autorización; (b) seguir recomendaciones e identificadores desde su producción/selección hasta cualquier efecto, identificando qué filtro de evidencia controla cada transición. Conservar la procedencia de cada afirmación, no modificar ni inspeccionar `data/`/SQLite, preservar los cambios existentes y no prometer idempotencia, exactly-once o recuperación de recibos. `KEEP_BLOCKED` permanece vigente.
 
+## 33. 2026-10-16 — Trazabilidad de recomendaciones incompleta; aclaración de etapa IABV
+
+**Proveniencia:** `CODEX_LOCAL_REPORTED`, reporte compartido por el propietario en esta conversación. Los detalles locales no se verificaron independientemente por este proceso.
+**Resultado:** `RECOMMENDATION_EFFECT_TRACE_INCOMPLETE`.
+**Gobierno:** `KEEP_BLOCKED`.
+
+### Estado local reportado
+
+- Checkout: `C:\temp\IABV_coordination_20261016`.
+- Rama: `codex/iabv-agent-coordination-20261016`.
+- HEAD declarado: `3926b1144bb23c1066db579da711d3cdbc1611df`.
+- 96 rutas rastreadas modificadas.
+- No se inspeccionó `data/` ni SQLite. No se ejecutaron pruebas o código ni se modificó el repositorio.
+- Se reportan filtros fail-closed en los consumidores adaptativos citados.
+- El repositorio de recomendaciones no exige `evidence_class='operational_execution'` en cada recomendación y en cada run de soporte, lo que deja rutas hacia descubrimiento de herramientas y validación sandbox sin ese control central.
+- No se completó la verificación del efecto posterior ni del uso decisorio de todos los resúmenes propagados; la revisión no es independiente.
+- Checkpoint local reportado: `C:\Users\faber\.codex\visualizations\2026\10\16\01a146cd-2a68-78c3-819f-a4cc90940058\IABV_recommendation_effect_trace_20261016.md`. Ruta no abierta por este proceso.
+
+### Interpretación de etapa
+
+Este resultado extiende el análisis de gobernanza, procedencia y caminos de efecto en software. No demuestra activación de herramientas, ejecución del puente MCP, una conexión funcional completa entre agentes ni construcción/activación de un puente físico. El documento de continuidad mantiene la prohibición de activar el puente durante estas fases y exige una autorización aparte para runtime/puente físico.
+
+### Protocolo de coordinación y próximo paso
+
+Continuar con el bucle objetivo/contexto → evidencia con procedencia → grafo causal productor/consumidor/efecto → falsadores y revisión adversarial → decisión de cambio → validación autorizada y acotada. No asumir que la mera existencia de componentes prueba su conexión. Codex local es el agente de inspección primaria del checkout; la revisión secundaria (OpenCode/Kilo o Claude cuando esté disponible) debe comprobar el mapa y buscar falsadores, no repetir sin foco toda la auditoría. ChatGPT consolida razonamiento y continuidad, pero no afirma acceso al checkout local.
+
+Prioridad técnica inmediata: aislar estáticamente los caminos del repositorio de recomendaciones, comprobar cómo se validan los IDs y los runs de soporte, trazar selección de recomendaciones → descubrimiento de herramientas/validación sandbox → cualquier decisión/efecto, y localizar dónde debe imponerse el contrato de clase de evidencia. Mantener las pruebas propuestas sin ejecución hasta autorización. Preservar los 96 archivos modificados y no inspeccionar/manipular `data/`/SQLite. No declarar el puente físico en construcción/activo; mantener `KEEP_BLOCKED`.
+
