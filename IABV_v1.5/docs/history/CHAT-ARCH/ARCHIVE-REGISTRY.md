@@ -3521,3 +3521,23 @@ Material delta:
 - exact field placement and hard eligibility boundary remain unproven.
 
 Routing authority remains CURRENT-STATE.md.
+
+
+## 2026-10-16 REGISTRATION — R10 LOCAL GATE CAUSAL RECONSTRUCTION
+
+Canonical:
+- `IABV_v1.5/docs/history/2026-10-16_iabv_agent_continuity_space_time.md` — Section 35.
+- `IABV_v1.5/docs/history/2026-10-16_iabv_recommendation_gate_codex_followup.md` — Section 4.
+
+Type:
+SOURCE-RECONCILIATION / CAUSAL-MAP / GOVERNANCE / AGENT-ROUTING
+
+State:
+CODEX-LOCAL-REPORTED / CAUSAL PATH TO RANKING REPORTED / DISPATCH AND POSTCONDITION EDGE OPEN / KEEP_BLOCKED.
+
+Material delta:
+- sandbox promotion may persist operational-looking `success=True` and feed recommendation/ranking paths without the inspected method showing execution;
+- `TaskContextAssembler` protection is route-specific, not proof of a repository-wide evidence-class barrier;
+- next task is one-route trace from `validate_discovery` to a real dispatcher and its authorization/postcondition gates.
+
+Routing authority remains `CHAT-ARCH/CURRENT-STATE.md`. The local report was supplied by the owner; it is not independently re-inspected by this registry entry.
