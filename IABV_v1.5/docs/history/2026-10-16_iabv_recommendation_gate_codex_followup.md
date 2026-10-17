@@ -930,3 +930,19 @@ Therefore, the existence of the separate auto-execution pathway does not refute 
 Trace the producer and schema of `self_examination/latest.json.metadata.solution_proposals` in the same checkout. Search only for producers/adapters that could translate a `validate_discovery` proposal into a sync-pulse dictionary, and identify exact fields/ID mapping. If no such bridge is present in inspected source, name the exact terminus and stop.
 
 No tests/code/runtime, no checkout mutation, no `data/`/SQLite, M0A or physical bridge. `GOVERNANCE = KEEP_BLOCKED`.
+
+---
+
+## 2026-10-17 ROUTE UPDATE — INDIRECT OSES INFLUENCE FOUND; TYPED BRIDGE NOT FOUND
+
+Codex local reported `BRIDGE_NOT_FOUND_IN_BOUNDED_SCOPE`: no direct typed adapter was found transferring a `ToolEvolutionProposal` / `validate_discovery` result into an individual sync-pulse `solution_proposals` object. The flows are **not fully independent**: sandbox `ExperimentRun` records reportedly feed ExperimentLab/OSES aggregates grouped by assistant, which influence OSES proposal output. The individual `proposal_id` / `discovery_signal_id` lineage is reported as absent from those OSES output objects and lost again in the sync-pulse projection.
+
+Evidence class for this continuity record: `CODEX_LOCAL_REPORTED / OWNER_REPORTED`. The supplied report cites current local source locations and says relevant hunks were compared, but this GitHub documentation update did not inspect the Windows checkout and is not an independent source audit. See [the detailed trace](CHAT-ARCH-2026-10-17-r10-discovery-sync-pulse-bridge-trace.md).
+
+**Next actor: Claude Web**, to adversarially review the complete Codex report pasted inline into its own chat. It should challenge the scoped negative conclusion, indirect aggregate influence, identity-loss claim, and whether the call to `plan_or_execute()` is kept separate from proof of actual execution. If evidence is insufficient, require exact missing excerpts; do not restart a broad search.
+
+Slice A remains `SLICE_A_REVIEW_ACCEPTED_WITH_REMAINING_LIMITATIONS`; F-04/F-09 remain `UNRESOLVED`; F-05/F-06/F-07 stay deferred/open; tests remain `NOT_RUN`. No implementation is authorized. Do not inspect `plan_or_execute()` internals, start Packages B–E, enable dispatcher, access M0A, run code/tests/build/runtime, or inspect `data/` / SQLite.
+
+`GOVERNANCE = KEEP_BLOCKED`.
+
+---
