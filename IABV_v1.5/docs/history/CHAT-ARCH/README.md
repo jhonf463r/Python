@@ -1687,3 +1687,17 @@ The owner-supplied Codex-local report traces a static path from blockers plus a 
 Next actor: **Codex with local checkout access**, one read-only route only: `ToolEvolutionMonitor` → `validate_discovery` → any real dispatcher and its authorization/postcondition gates. Follow with Claude Web for an adversarial challenge of the supplied map; Claude cannot certify local files.
 
 `GOVERNANCE = KEEP_BLOCKED`. No implementation or test/runtime authorization. Do not inspect `data/` or SQLite.
+
+
+## 2026-10-16 ACTIVE CONTINUITY POINTER — R10 VALIDATE_DISCOVERY / SYNC-PULSE BRIDGE
+
+Current detailed records:
+- continuity §36: `IABV_v1.5/docs/history/2026-10-16_iabv_agent_continuity_space_time.md`;
+- recommendation gate addendum §5: `IABV_v1.5/docs/history/2026-10-16_iabv_recommendation_gate_codex_followup.md`;
+- routing authority: `CHAT-ARCH/CURRENT-STATE.md`.
+
+Owner-supplied Codex report: `ToolEvolutionMonitor` `validate_discovery` appears to terminate in sandbox validation/ExperimentLab persistence, with no dispatcher found in that path. A separate self-examination `solution_proposals` sync-pulse can reach `auto_execute_from_sync_pulse()` and `plan_or_execute()`, but no bridge from `validate_discovery` was found. Keep these paths distinct.
+
+Next actor: **Codex local**, read-only: trace the producer and schema of `self_examination/latest.json.metadata.solution_proposals` and any adapter from `validate_discovery`. Identify exact field/ID mapping or the stopping boundary. Then Claude Web may challenge the evidence without claiming local access.
+
+`GOVERNANCE = KEEP_BLOCKED`. No code/tests/runtime, no `data/`/SQLite, M0A or physical bridge.
