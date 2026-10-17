@@ -1,3 +1,14 @@
+## 2026-10-17 ROUTE CORRECTION — CODEX AUTHORING REQUIRES SOURCE ZIP ATTACHED
+
+Codex's `BLOCKED` was correct for its input: it received an instruction, not the source contract/matrix. The handoff omission was that no IA was named and the source ZIP was not attached. The exact source package was recovered from ChatGPT Library and its six payload hashes/sizes were rechecked against the embedded manifest. Archive: `R10_V0_7_2_REPAIR_PACKAGE_FOR_CLAUDE.zip`; SHA-256 `acfb468f78bebc3794b8ec7eaf81baf65d8c40cb66b3f8c7bd2065ffd07fe14e`.
+
+**Correct next destination: Codex local**, strictly as documentary v0.7.3 author outside the IABV checkout, with that ZIP attached to the actual Codex conversation. Codex must not modify `C:/temp/IABV_coordination_20261016`, run product code/tests/build/runtime, or infer missing content. If an artifact is missing or ZIP is inaccessible, remain `BLOCKED`.
+
+**Independent follow-up: Claude/Sonnet** reviews the completed candidate and change map only after Codex delivers the full v0.7.3 bundle. Do not have the author self-approve it. Full routing and source identity: [corrected IA route]( https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-r10-v073-corrected-agent-route.md ).
+
+`GOVERNANCE = KEEP_BLOCKED`; `IMPLEMENTATION_AUTHORIZED = NO`; all matrix tests `NOT_RUN`.
+
+---
 ## 2026-10-17 NEXT ACTION — R10 V0.7.3 DOCUMENTARY REPAIR HANDOFF PREPARED
 
 The next proposed action is to send the ready-to-paste M0–M5 documentary repair prompt to the actual R10 package author in the conversation where the original v0.7.2 files are available. Handoff record: [https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-r10-v073-documentary-repair-handoff.md](https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-r10-v073-documentary-repair-handoff.md). This continuity update has not altered the R10 package and does not claim v0.7.3 exists.
