@@ -6900,3 +6900,19 @@ Open questions:
 - reuse of ToolTaskStatus.DEFERRED for empty eligible realization propagation.
 
 Implementation remains blocked.
+
+
+## 2026-10-16 — R10 SANDBOX PROMOTION → DISPATCH / POSTCONDITION EDGE UNRESOLVED
+
+A Codex-local report supplied by the owner says a ranked alternative can be labelled `VALID`/`promoted` when baseline blockers exist, then produce a persisted `success=True` outcome with `execution_ms=0`. It reportedly can influence ExperimentLab ranking/adaptive profiles. This remains `CODEX_LOCAL_REPORTED / OWNER_REPORTED` until independent source inspection.
+
+Open questions:
+- Does a `validate_discovery` proposal from `ToolEvolutionMonitor` ever reach an actual dispatcher?
+- What authoritative authorization, provenance and candidate/attempt identity are required at that boundary?
+- If dispatch exists, where are terminal execution and postconditions verified and linked before an operationally eligible outcome is persisted?
+- Which direct consumers filter sandbox, legacy or unclassified records and validate every support member?
+- Are support/run/trace references resolved as typed relationships or merely copied strings?
+
+Do not infer real execution from `success=True`, `status='promoted'`, `VALID`, or `execution_ms`. TaskContextAssembler's reported filter is consumer-specific and does not settle all consumers.
+
+Next actor: Codex with local checkout access, read-only, one route only. Subsequent adversarial challenge by Claude Web must explicitly remain limited to supplied evidence. Tests stay `NOT_RUN`; implementation blocked. `GOVERNANCE = KEEP_BLOCKED`.
