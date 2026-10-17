@@ -1,3 +1,19 @@
+## 2026-10-16 OPEN KNOWLEDGE — OPERATIONAL OUTCOME ELIGIBILITY / RUN-TRACE IDENTITY
+
+**State:** OPEN / UNPROVEN. This is not an accepted contract.
+
+1. The public and locally reported source indicates that sandbox promotion can write success=True without demonstrating execution of the selected alternative. The downstream effect on runtime ranking/mode selection remains unmeasured.
+2. ExperimentRun.success has mixed semantics: suite evaluation, execution record status, diagnostic/self-teach outcomes and sandbox judgments. A single boolean is not enough to infer operational execution.
+3. evidence_class is free metadata in the reviewed source, and the local working tree contains filters for operational_execution without a demonstrated positive producer. Filters and producers must be designed together.
+4. A direct success=False change on sandbox promotion could turn a non-executed evaluation into a false operational failure. Desired operational-metric behavior for sandbox/unknown outcomes is neutral, while blocker/availability/validation evidence is preserved separately.
+5. A support-ID lineage issue is reported: supporting_run_ids from ExperimentRun data are copied into source_trace_ids, while other consumers expect operational_trace_ids. The run-ID and trace-ID namespaces and the recommendation-to-run scope/candidate/configuration relation need explicit verification.
+6. The working tree in C:\temp\IABV_coordination_20261016 is dirty with 96 tracked paths plus untracked data/. Do not inspect data/ or SQLite; do not reset/clean/stash/switch or apply patches there.
+7. The actual uniform operational postcondition across all task families, handling of historical unknown outcomes, all downstream effects of learned patterns, and any atomicity/recovery guarantees remain unresolved.
+
+Next discriminating source task: local static census of all constructors/producers and consumers of ExperimentRun.success, run identity, support IDs, training corpus, adaptive metrics and sandbox promotion. Keep HEAD/worktree/public-main evidence separate. Do not execute tests or runtime until separately authorized.
+
+Full episode record: [recommendation-gate follow-up](../2026-10-16_iabv_recommendation_gate_codex_followup.md). Governance: KEEP_BLOCKED.
+
 ## 2026-10-13 CANONICAL ROUTE — ENTRY 280: C6 FAIL RECONCILIATION / AMENDMENT 274.5
 
 Canonical artifact: [CHAT-ARCH-2026-10-13-280-m0b-r8-1-c6-delta-adjudication-and-amendment-274-5.md](./CHAT-ARCH-2026-10-13-280-m0b-r8-1-c6-delta-adjudication-and-amendment-274-5.md) — blob `6d7d7f4966e1224456e00410c812395e6a5c598f`, commit `0a462d66071f2d354e8a299ffaf859b3aeac61d5`.
