@@ -1,3 +1,16 @@
+## 2026-10-17 ROUTE UPDATE — SLICE A STATIC ACCEPTANCE WITH LIMITATIONS
+
+- `SLICE_A_REVIEW_ACCEPTED_WITH_REMAINING_LIMITATIONS` is a static, artifact-scoped disposition, not test success or local-checkout verification. See [Detailed Slice A review record](CHAT-ARCH-2026-10-17-r10-slice-a-static-review-with-limitations.md).
+- F-04 stays `UNRESOLVED`: current evidence does not prove global absence of indirect/dynamic signal loaders.
+- F-09 stays `UNRESOLVED`: HEAD-to-worktree diffs do not establish timing/authorship for all hunks.
+- F-05/F-06/F-07 remain deferred/open as recorded; do not imply their closure.
+- Codex's report of local checkout `3926b1144bb23c1066db579da711d3cdbc1611df` and 100 modified tracked paths remains `OWNER_REPORTED`; Claude did not inspect it.
+- The separate `validate_discovery` and sync-pulse/self-examination execution routes remain unlinked until an actual producer/adapter and typed identity mapping are demonstrated.
+
+Next bounded action: Codex local, read-only trace of the producer/schema and any adapter for `self_examination/latest.json.metadata.solution_proposals`. If no bridge, record the exact stopping boundary and preserve separate graphs.
+
+---
+
 ## 2026-10-16 OPEN KNOWLEDGE — LOCAL LINEAGE RESULTS
 
 Codex local report establishes these risks but does not prove a specific runtime misattribution:
