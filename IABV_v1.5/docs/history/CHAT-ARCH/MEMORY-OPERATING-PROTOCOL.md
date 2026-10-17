@@ -1,3 +1,20 @@
+## 2026-10-17 ROUTE UPDATE — SLICE A STATIC ACCEPTANCE WITH LIMITATIONS
+
+### Evidence handoff / cross-chat continuity rule
+
+A prompt's reference to “the previous message” does not transfer content from another chat. A path on another machine does not transfer file bytes. For every independent review, first require the reviewer to confirm the actual attached/inline artifact and a distinctive marker (and hash where available). If artifact identity/content is absent, the outcome is `UNRESOLVED`, not evidence of code failure or success.
+
+Keep these evidence categories separate:
+- `PACKET_EVIDENCE`: code/tests reproduced in the artifact; not necessarily matched to the checkout.
+- `OWNER_REPORTED`: local checkout, branch, HEAD, counts, hashes, or search claims reported by the implementer.
+- `GITHUB_API_VERIFIED` / `HEAD_SOURCE`: public GitHub source only.
+- `NOT_RUN`: a test assertion exists but has not executed.
+- `UNRESOLVED`: the evidence does not decide the claim.
+
+Slice A's current static disposition and limitations: [Detailed Slice A review record](CHAT-ARCH-2026-10-17-r10-slice-a-static-review-with-limitations.md). The accepted static review does not certify tests or local checkout state.
+
+---
+
 ## 2026-10-16 METHOD DELTA — TRACE ENTITY IDENTITY AND FULL FANOUT
 
 New rules from focused Codex local evidence:
