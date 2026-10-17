@@ -7253,3 +7253,14 @@ proposed code-facing demand/capability contract → source-aware adversarial cha
 **Next routing:** Codex (local source access) traces one open edge, `ToolEvolutionMonitor` → `validate_discovery` → actual dispatcher, and binds authorization, candidate/attempt identity and postconditions. Claude Web follows with an adversarial review of the supplied report/source excerpts only; it must not claim access to the dirty local checkout.
 
 No code/test/runtime changes authorized. `GOVERNANCE = KEEP_BLOCKED`.
+
+
+## 2026-10-16 SYMBIOSIS TRANSFER — KEEP validate_discovery AND SELF-EXAMINATION ROUTES SEPARATE
+
+**Knowledge delta:** the owner-supplied Codex trace says the `validate_discovery` proposal goes through the autonomous validation cycle to sandbox recommendation evaluation and ExperimentLab persistence, while another self-examination sync-pulse route can lead to `auto_execute_from_sync_pulse()` / `plan_or_execute()`. No direct adapter between these specific route inputs was found in the inspected modules.
+
+**Method delta:** never infer interoperability from a shared orchestrator or adjacent components. Require an explicit producer/adapter and stable field/identity mapping; otherwise document separate causal graphs and their respective endpoints.
+
+**Next route:** Codex local examines only the producer/schema of `self_examination/latest.json.metadata.solution_proposals` and any adapter from `validate_discovery`. Claude Web then challenges the supplied evidence without claiming local checkout access.
+
+Source state: `CODEX_LOCAL_REPORTED / OWNER_REPORTED`. No code/runtime/test changes. `GOVERNANCE = KEEP_BLOCKED`.
