@@ -6188,3 +6188,18 @@ No implementation/runtime/scoring change.
 **Exact question:** trace `ToolEvolutionMonitor` → `validate_discovery` → actual dispatcher, if any. Identify required authorization, evidence provenance, candidate/attempt identity, postcondition verification, and whether the promotion-derived recommendation can reach dispatch. Report the exact terminal point if there is no such path.
 
 **Method:** one route, read-only, relevant HEAD/worktree comparison; no source-wide re-audit, no code/tests/build/runtime, no `data/` or SQLite, no M0A/bridge. Then Claude Web performs one bounded adversarial challenge using supplied evidence without claiming local access.
+
+
+## 2026-10-16 LATEST ROUTING POINTER — R10 validate_discovery → sync-pulse producer bridge
+
+**Canonical evidence**
+- `IABV_v1.5/docs/history/2026-10-16_iabv_agent_continuity_space_time.md`, §36.
+- `IABV_v1.5/docs/history/2026-10-16_iabv_recommendation_gate_codex_followup.md`, §5.
+
+**State:** Codex-local report says `validate_discovery` reaches sandbox evaluation/ExperimentLab persistence, not a proven dispatcher. A separate `self_examination/latest.json` → `auto_execute_from_sync_pulse()` → `plan_or_execute()` route is reported, but no adapter between them is shown. `GOVERNANCE = KEEP_BLOCKED`.
+
+**Next actor:** Codex local checkout.
+
+**Exact question:** who produces `self_examination/latest.json.metadata.solution_proposals`, and can any producer or adapter translate a `ToolEvolutionMonitor` `validate_discovery` proposal into that sync-pulse dictionary? Identify schema, required fields and stable identity mapping. If no bridge is found, document the exact stop and do not broaden to plan/execute internals.
+
+**Method:** single read-only producer/adapter trace; relevant HEAD/worktree comparison only; no code/tests/build/runtime, `data/`/SQLite, M0A or bridge. Claude Web follows with one bounded challenge based on supplied evidence.
