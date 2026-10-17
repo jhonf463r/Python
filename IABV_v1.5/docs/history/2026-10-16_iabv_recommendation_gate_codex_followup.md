@@ -182,3 +182,56 @@ El informe sigue siendo una continuación no independiente hasta que exista una 
 Para cada tarea importante, registrar: producto/extensión, modo/agente, ID exacto del modelo o tier, proveedor conocido, acceso real al checkout, alcance de lectura, permisos de escritura, salida entregada, si la revisión fue independiente y errores/limitaciones. La palabra “agente” por sí sola no identifica esas capas.
 
 **Aplicación inmediata:** permitir a Kilo seguir con la inspección estática de los archivos relevantes del checkout identificado aunque el checkpoint esté ausente del workspace; el propio prompt autoriza la inspección del código. Mantener el checkpoint como `NOT_FOUND_IN_CHECKOUT`, no `NOT_FOUND_ON_DISK`. No enviar los archivos `data/*.sqlite` ni el repositorio indiscriminadamente al proveedor Auto Free.
+
+
+## 12. 2026-10-16 — Catálogos free observados por el propietario: OpenCode y Kilo VS Code
+
+**Proveniencia:** `OWNER_REPORTED`. Las listas siguientes se copiaron de las respuestas de OpenCode y Kilo compartidas por el propietario. No son una enumeración API verificada independientemente y su disponibilidad puede cambiar. La documentación oficial de Kilo confirma que `kilo-auto/free` enruta dinámicamente y que el catálogo subyacente cambia; además advierte que algunos proveedores pueden registrar prompts y respuestas y usarlos para mejorar sus servicios. Referencias consultadas:
+- https://kilo.ai/docs/code-with-ai/agents/auto-model
+- https://kilo.ai/docs/code-with-ai/agents/model-selection
+- https://dev.opencode.ai/v2/docs/console/models
+
+### OpenCode — modelos que el selector/respuesta compartida reportó como free
+
+| Modelo mostrado | Variantes reportadas | Uso posible en IABV (propuesta, no benchmark verificado) |
+|---|---|---|
+| `LL Alpha Free` | low / medium / high / xhigh / max | Contraste de código si el endpoint y el contexto admiten la tarea; no inferir capacidad a partir del nombre. |
+| `Nemotron 3.5 Super VL Free` | none / minimal / low / medium / high / xhigh | Tareas de texto+código y, cuando la entrada por imagen está habilitada, capturas de UI. No hace falta para la refutación puramente textual actual. |
+| `Beam Free` | low / medium / high / xhigh / max | Posible auditor de razonamiento si este ID coincide con la opción seleccionada; no asumir que es el mismo despliegue que Kilo `Reflection: Beam 1.0`. |
+| `LongCat 2.5 Preview Free` | no indicadas | Opción experimental secundaria; no prioridad para el gate crítico. |
+| `Space Bunny Free` | low / medium / high / xhigh / max | Reserva; no hay evidencia comparativa en esta sesión para preferirlo. |
+| `MiMo-V2.6-Flash Free` | no indicadas | Tarea auxiliar o segunda opinión si está habilitado; revisar su tratamiento de datos. |
+| `DeepSeek V4.1 Flash Free` | low / high / max | Candidato para una segunda revisión de código y causalidad. La página de OpenCode consultada describe esta ruta concreta como zero-retention/no-training; confirmar que el identificador seleccionado corresponda a esa ruta exacta. |
+| `Muse Spark 1.3 Free` | minimal / low / medium / high / xhigh | Redacción/documentación auxiliar; OpenCode describe la opción Contributor Free como destinada a recoger feedback y mejorar el modelo. No usar para código sensible sin evaluación de privacidad. |
+| `GLM-5.3-Flash Free` | low / high / max | Alternativa rápida si los anteriores no están disponibles; no hay comparación empírica local registrada. |
+| `Big Pickle` | no indicadas | Legacy/alternativa residual según la respuesta; no seleccionarlo para esta auditoría si hay opciones actuales mejor identificadas. |
+
+La respuesta de OpenCode mostró timestamps numéricos como fechas de disponibilidad. No interpretarlos como fechas de lanzamiento, calidad o vigencia más allá de lo que el selector explique.
+
+### Kilo Code en VS Code — opciones free que reportó Kilo
+
+| Nombre mostrado | Proveedor/variantes según la respuesta recibida | Uso propuesto |
+|---|---|---|
+| `Auto Free` | `kilo`; enrutador dinámico | Tareas rutinarias, inspección general y exploración no sensible. La ruta subyacente puede cambiar y su política depende del proveedor al que enrute. |
+| `Auto Efficient` | `kilo`; enrutador dinámico | Rutina/eficiencia si el usuario confirma que aparece como free en la cuenta actual; no asumir equivalencia con `kilo-auto/efficient`, que la documentación pública actualmente describe como tier de pago, sin comprobar el ID del selector. |
+| `NVIDIA: Nemotron 3.5 Super VL` | `instant`, `thinking` | Análisis de capturas y tareas multimodales, siempre que el modelo seleccionado acepte la modalidad de imagen. No es la primera elección para el gate de solo código. Considerar la advertencia de datos para endpoints free de NVIDIA. |
+| `Reflection: Beam 1.0` | low / medium / high / xhigh / max | Primera opción propuesta para intentar refutar la ruta causal del gate operacional porque Kilo lo muestra con variantes de razonamiento y lo recomienda para crítica adversarial. La ventaja de calidad no ha sido medida independientemente aquí. |
+| `Stealth: Glyph Cluster` | low / medium / high / xhigh | Alternativa de contraste si Beam no está disponible o alcanza límites; su supuesta menor capacidad es una valoración del agente/model picker reportada, no un benchmark independiente. |
+
+Kilo informó “331 modelos, solo 5 free”, pero la frase “4 listados arriba + Auto Efficient/Auto Free” no concuerda aritméticamente con los cinco renglones visibles (tres modelos con nombre + dos enrutadores). Registrar el detalle real de la UI y su ID de modelo, en vez de repetir ese total como hecho establecido.
+
+### Matriz vigente de selección de agentes
+
+1. **Codex CLI local — fuente primaria de evidencia de checkout.** Inspecciona los archivos en su contexto local y aporta referencias concretas. Sus conclusiones deben etiquetarse por HEAD/working tree; un resultado etiquetado `COMPLETE` no sustituye una revisión independiente.
+2. **Kilo Code + Reflection: Beam 1.0, variante `high` inicialmente o `max` si se necesita una pasada adversarial más profunda.** Para la tarea actual, continuar en la misma sesión y workspace ya identificado, con herramientas limitadas a lectura. Elegir un modelo fijo mejora la reproducibilidad frente a Auto Free, aunque no prueba mayor calidad. No configurar ni ejecutar agentes secundarios que puedan escribir al repositorio.
+3. **OpenCode + DeepSeek V4.1 Flash Free, variante `high` o `max`**, como contraste independiente enfocado en los mismos símbolos/afirmaciones una vez se cuente con referencias concretas. Si se busca minimizar el riesgo de transmitir código local sin revisar políticas, reducir el contexto a los archivos y fragmentos necesarios. No enviar el árbol entero ni secretos. El modelo `Beam Free` de OpenCode no debe considerarse idéntico a `Reflection: Beam 1.0` de Kilo únicamente por el nombre.
+4. **Nemotron 3.5 Super VL** se reserva para una pregunta que realmente dependa de screenshots/UI. El gate actual es de causalidad en código; la capacidad VL no aporta una ventaja evidente en esta iteración.
+5. **Claude Code/Pro al regresar**: revisión final de las diferencias entre Codex y Kilo/OpenCode, centrada en falsadores y en el diff mínimo propuesto.
+
+### Próxima acción recomendada
+
+No pedir a Kilo que configure un agente mediante una API inventada. El propietario debe seleccionar manualmente en el selector visible `Reflection: Beam 1.0` y variante `high` (usar `max` si hace falta), conservando la sesión/workspace actual. Dar continuidad al prompt de refutación: el checkpoint ausente no impide seguir la inspección de source. La selección exacta debe anotarse con lo que muestre la UI.
+
+Kilo debe producir referencias concretas; OpenCode debe intentar refutarlas, no rehacer la auditoría general. Si la inspección de archivos de trabajo pudiera transmitir cambios privados a un proveedor free, detener el envío de esos archivos y analizar únicamente source publicado o fragmentos mínimos autorizados.
+
+Toda recomendación anterior es una asignación de tarea basada en herramientas reportadas, no un benchmark formal ni una certificación de privacidad. Conservar `GOVERNANCE = KEEP_BLOCKED`, no editar código, no ejecutar pruebas/runtime y no activar el puente físico.
