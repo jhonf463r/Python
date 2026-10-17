@@ -1,3 +1,11 @@
+## 2026-10-16 ROUTE — CODEX LOCAL REPORT RECEIVED
+
+Next task is contract V2.1 plus one narrow Claude Web challenge; do not run another broad source census. Incorporate the local findings: candidate/run/experiment namespaces are currently conflated by producer assignments; support membership must be candidate- and scope-specific; ToolMemory updates ToolCard counters/status before interaction learning; SANDBOX_PASS alone does not prove provenance; downstream mode selection/capability/world-model/reproducibility paths need explicit cohort gates; operational attestation is not established; stable event idempotency and supersession semantics are absent from inspected paths.
+
+Preserve local checkout and the data/ / SQLite boundary. Do not implement, test, build or run runtime. Claude may only evaluate the supplied Codex evidence, not claim local access. Kilo/OpenCode are reserve challengers. PR #467 remains Draft/unmerged. GOVERNANCE = KEEP_BLOCKED.
+
+---
+
 ## 2026-10-16 ROUTE REFINEMENT — V2.1 AFTER TARGETED LOCAL VERIFY
 
 Contract V2 is not yet implementation-ready. Run a scoped, read-only Codex check of candidate/run/experiment identity and ToolMemory/InteractionPattern counter flow, with exact working-tree-vs-HEAD deltas. Do not repeat the broad audit; preserve the 96 tracked modifications plus `data/`; do not inspect `data/`/SQLite or run code/tests/build/runtime.
