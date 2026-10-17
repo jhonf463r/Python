@@ -7240,3 +7240,16 @@ Sonnet/Claude now challenges the proposed code-facing seam; Codex returns only a
 
 Current edge:
 proposed code-facing demand/capability contract → source-aware adversarial challenge.
+
+
+## 2026-10-16 SYMBIOSIS TRANSFER — R10 SANDBOX PROMOTION CAUSAL MAP
+
+**Capability/evidence contribution:** Codex supplied a local static report that connects baseline blockers and alternative ranking to sandbox promotion, a `success=True` ExperimentLab outcome, and potential ranking/adaptive-weight feedback. It also identifies a narrower `TaskContextAssembler` fail-closed filter.
+
+**Transferable learning:** distinguish decision labels from the real-world state they appear to name. A persisted promotion/outcome can causally influence future selection without proving that an alternative was dispatched or executed. A guard in one consumer cannot be generalized to all direct consumers.
+
+**Provenance boundary:** the line-by-line local report was provided by the owner; this entry preserves Codex's claimed local findings and does not certify them independently. Public continuity proves that the report was recorded, not that every local line was independently verified.
+
+**Next routing:** Codex (local source access) traces one open edge, `ToolEvolutionMonitor` → `validate_discovery` → actual dispatcher, and binds authorization, candidate/attempt identity and postconditions. Claude Web follows with an adversarial review of the supplied report/source excerpts only; it must not claim access to the dirty local checkout.
+
+No code/test/runtime changes authorized. `GOVERNANCE = KEEP_BLOCKED`.
