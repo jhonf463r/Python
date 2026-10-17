@@ -1,3 +1,19 @@
+## 2026-10-17 NEW-CHAT HANDOFF — FULL CONTINUITY CONSOLIDATED
+
+Read this first for the current state and exact next action: [full new-chat handoff](https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-new-chat-handoff-full-continuity.md).
+
+**Interaction protocol:** every prompt must explicitly name the destination IA, task mode, exact attachments needed in that IA's conversation, expected verdict, next actor, and governance constraints. Do not assume ChatGPT Library attachments transfer into Codex/Claude. Check accessible files/context before asking the user to search manually.
+
+**Active route:** Codex local authors a documentary-only v0.7.3 candidate after the source ZIP is explicitly attached; Claude/Sonnet independently reviews the complete candidate afterward. ZIP `R10_V0_7_2_REPAIR_PACKAGE_FOR_CLAUDE.zip`, 50,589 bytes, SHA-256 `acfb468f78bebc3794b8ec7eaf81baf65d8c40cb66b3f8c7bd2065ffd07fe14e`; all six payload hashes/sizes matched the embedded manifest. Codex previously blocked correctly because its conversation lacked the source artifacts. Do not reconstruct from audit prose. Detailed IA route: [corrected route](https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-r10-v073-corrected-agent-route.md).
+
+R10 v0.7.2 remains `FAIL`; M0–M5 are `PROPOSED`; v0.7.3 is not yet created. All tests `NOT_RUN`. Bridge verdict remains `TRACE_ACCEPTED_WITH_LIMITATIONS`; two-hop `evidence_refs → ExperimentRun → proposal_id/discovery_signal_id` remains `UNRESOLVED`. Slice A F-04/F-09 remain open.
+
+Local IABV checkout is dirty and must be preserved; reported identity is root `C:/temp/IABV_coordination_20261016`, branch `codex/iabv-agent-coordination-20261016`, HEAD `3926b1144bb23c1066db579da711d3cdbc1611df`, 100 tracked modified paths (CODEX_LOCAL_REPORTED only). Do not inspect `data/`, SQLite or untracked paths; no product code, tests, build, runtime, probes, dispatcher, packages B–E or M0A.
+
+`GOVERNANCE = KEEP_BLOCKED`; `IMPLEMENTATION_AUTHORIZED = NO`.
+
+---
+
 ## 2026-10-17 ROUTE CORRECTION — ZIP VERIFIED HERE; MUST BE ATTACHED TO CODEX CHAT
 
 Codex's latest `BLOCKED` is procedurally correct: it could not find the ZIP in its own chat attachment store. The source ZIP was recovered from ChatGPT Library and verified in the ChatGPT working container at `/mnt/data/r10_recovery/R10_V0_7_2_REPAIR_PACKAGE_FOR_CLAUDE.zip`. ZIP SHA-256: `acfb468f78bebc3794b8ec7eaf81baf65d8c40cb66b3f8c7bd2065ffd07fe14e`. It contains seven files (six payload artifacts plus manifest); all six payload file sizes and hashes match the embedded manifest. This proves bytes against that manifest, not semantic acceptance.
