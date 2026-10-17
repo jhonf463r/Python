@@ -1,3 +1,42 @@
+# ACTIVE ROUTE UPDATE — R10 v0.7.4 relay verified; Claude/Sonnet delta review next
+
+**Checkpoint:** 2026-10-17. This is a coordinator-side static read of the public GitHub relay and selected v0.7.4 text files, not an independent binary/package audit.
+
+## Published identity and ref reconciliation
+
+- Repository: public jhonf463r/Python.
+- Relay branch: handoff/r10-v074-review-20261017 points to final commit 191803340e1c78c92125b871a6a41589dc874163.
+- Artifact-content commit: ad5c094fa3e7e4d1989079983f8f6c05f3296551.
+- GitHub compare confirms final commit is one commit ahead of content commit and changes only RELAY_INDEX.md; the final index points immutable artifact links to the content SHA. These two commit identities are intentionally different.
+- Content tree has 42 entries: 33 blobs including the index, hence 32 artifact blobs other than the index. Candidate v0.7.4 ZIP is 86,703 bytes, SHA-256 declared as dff898c9fb7e515ffdc698992475384873995cf50469da88d769072269e1c0e9.
+- The old handoff/r10-v073-review-20261017 ref now returns 404; v0.7.3 ZIP and extracted files are preserved under history/v0.7.3/ at the new content commit.
+- v0.7.2 source ZIP remains in source/v0.7.2/. v0.7.4 contract/matrix/report/manifest links are pinned to the artifact-content commit; RELAY_INDEX.md itself is pinned to the final commit.
+
+## Preliminary coordinator spot-check — not a semantic verdict
+
+GitHub-returned text confirms the v0.7.4 matrix has 99 rows with unique contiguous IDs T123–T221, all NOT_RUN, and nonempty normative bases. The report claims local archive/manifest checks passed; those ZIP-byte claims remain author-reported to this coordinator until an independent reviewer reproduces them.
+
+Two concrete oracle concerns must be explicitly examined by Claude rather than assumed fixed:
+1. **T210 delta mismatch:** the primary oracle says contribution delta +1, while expected_active_auto_pattern_contribution_delta is 0. Resolve the contradiction against the fixture and contract.
+2. **T205 scope ambiguity:** it says “applicable barrier” and expects task-success delta 0, contribution delta −1; §8.3 distinguishes tombstone scopes, and RESULT_AND_LEARNING may decrement task success. Check that the test fixture fixes the barrier/scope and that its deltas follow from it.
+
+Also challenge whether T202–T207 encode positive and negative paths in one row instead of a single deterministic fixture per row (for example L1 exact correlation vs text/nonce-only, L2 complete vs missing outcome, L3 current vs quarantined, L5a changed vs unchanged choice). T221 uses “n=19 in one arm OR lift below 0.10”, and 24 new rows reuse a generic crash/control-falsifier string. Determine whether those are merely descriptive controls or leave F-07/oracle specificity unresolved. Do not accept F-01–F-14 as fixed just because the author's report says FIXED_DOCUMENTARILY.
+
+## Current state and next actor
+
+**Next actor: Claude/Sonnet**, independent static delta review of exact v0.7.4 commit ad5c094fa3e7e4d1989079983f8f6c05f3296551, with relay index at final commit 191803340e1c78c92125b871a6a41589dc874163. The full review prompt is supplied inline in the current ChatGPT response; the 920-byte prompt in the repository is only a short pointer and should not replace it.
+
+Required input identities:
+- v0.7.4 ZIP: 86,703 bytes, SHA-256 dff898c9fb7e515ffdc698992475384873995cf50469da88d769072269e1c0e9.
+- v0.7.3 ZIP: 86,835 bytes, SHA-256 1ace1d9331ee943a35fc4663855a09451919ae7b0e8619c799416b48bdae4049.
+- v0.7.2 source ZIP: 50,589 bytes, SHA-256 acfb468f78bebc3794b8ec7eaf81baf65d8c40cb66b3f8c7bd2065ffd07fe14e.
+
+Claude must independently download/hash each available ZIP, verify each manifest, verify the seven v0.7.2 historic artifacts byte-for-byte, inspect the complete 99-row matrix and all contract clauses, and report exact row-level repairs and residual defects. If ZIP access fails, it may perform a clearly bounded text-only audit but must not claim binary custody verification. No product code, test execution, builds, runtime, data/, SQLite, M0A, dispatcher, physical bridge or Packages B–E. No candidate edits or relay deletions.
+
+R10 v0.7.2 = FAIL; R10 v0.7.3 = REQUIRES_REPAIRS / NOT_ACCEPTED; R10 v0.7.4 = PENDING_INDEPENDENT_DELTA_REVIEW; T123–T221 = NOT_RUN; PRODUCT_CODE_EXECUTION/TESTS/BUILD/RUNTIME = NOT_RUN; GOVERNANCE = KEEP_BLOCKED.
+
+---
+
 # IABV / UAAL / R10 — Full new-chat handoff
 
 **Cut-off:** 2026-10-17, approximately 14:47 America/Bogota.  
