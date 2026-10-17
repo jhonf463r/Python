@@ -1,3 +1,13 @@
+## 2026-10-16 ROUTE UPDATE — TARGETED LOCAL CHECK BEFORE V2.1
+
+Do not repeat the broad audit. The next step is read-only Codex-local verification of a finite new frontier from Contract V2: candidate_id/run_id/experiment_id identity provenance; ToolMemory result counters and InteractionPattern writes for sandbox results; supersession/idempotency semantics; local-vs-HEAD deltas in the exact consumers. Preserve 96 modified tracked files and untracked `data/`; no SQLite, tests, code, build or runtime.
+
+V2 repair list: include `SANDBOX_PROMOTED` consistently; type-resolve IDs rather than comparing strings; require authoritative execution attestation bound to candidate/scope/postconditions; make TypedRef referential and relational checks explicit; account for ToolCard counters changed before `learn_from_execution()`; remove or justify newest-run-only scoring; define canonical candidate fingerprint.
+
+Public main currently resolves to `9e0ce...`; the referenced `cbc522140` is earlier, though checked source blobs match at both. Full evidence: [follow-up Section 22](../2026-10-16_iabv_recommendation_gate_codex_followup.md). No implementation; `GOVERNANCE = KEEP_BLOCKED`.
+
+---
+
 ## 2026-10-16 ROUTE UPDATE — CONTRACT V2, NOT ANOTHER SOURCE CENSUS
 
 The Claude challenge is complete and returned `CONTRACT_NOT_READY`. The next task is to revise the proposed specification against six concrete issues: namespace types must be declared/resolved rather than inferred from string collision; operational execution must have attested candidate-linked evidence, not merely `execution_ms > 0`; support membership must include candidate identity/fingerprint; sandbox results must be neutral across operational numerators and denominators plus all ranking/training consumers; sandbox-specific blocker metrics need their own cohort; unclassified historical runs remain descriptive-only unless audibly re-attested.
