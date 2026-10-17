@@ -11748,3 +11748,22 @@ No implementation/runtime/scoring change.
 **FOLLOW-ON VERIFIER:** Claude Web may adversarially challenge the report and supplied source excerpts after the route trace; explicitly state it has no local-checkout access and cannot certify local claims.
 
 No implementation, test execution, M0A or bridge. Keep `KEEP_BLOCKED`.
+
+
+## 2026-10-16 ACTIVE OVERLAY — R10 validate_discovery stops at sandbox; bridge to sync pulse unresolved
+
+**Detailed records:** continuity §36 and gate addendum §5:
+- `IABV_v1.5/docs/history/2026-10-16_iabv_agent_continuity_space_time.md`
+- `IABV_v1.5/docs/history/2026-10-16_iabv_recommendation_gate_codex_followup.md`
+
+**Provenance:** owner-supplied Codex-local report (`CODEX_LOCAL_REPORTED / OWNER_REPORTED`); not independently re-inspected by ChatGPT. The report says identity remains root `C:\temp\IABV_coordination_20261016`, branch `codex/iabv-agent-coordination-20261016`, HEAD `3926b1144bb23c1066db579da711d3cdbc1611df`, with 96 tracked paths modified; no code/tests/runtime or `data/`/SQLite inspection.
+
+**Current finding:** the typed `ToolEvolutionMonitor` `validate_discovery` route reportedly travels through `AutonomousValidationCycle` into `SandboxExperimentService.validate_recommendation()` and ends at sandbox evaluation / ExperimentLab persistence. No dispatcher call was found in that route.
+
+A separate auto-execution route reads `solution_proposals` from `self_examination/latest.json`, may feed `adaptive_task_orchestrator.auto_execute_from_sync_pulse()` and then `AutonomousEvolutionService.plan_or_execute()`. No source bridge from the typed `validate_discovery` proposal to those sync-pulse dictionaries was found in the inspected paths. Do not merge these routes absent a proven adapter.
+
+**FIRST OPEN EDGE:** trace the producer/schema of `self_examination/latest.json.metadata.solution_proposals`; determine whether any producer or adapter maps `ToolEvolutionStatus.proposals` / `validate_discovery` into a sync-pulse proposal dictionary, and identify exact field/ID mapping. If none is found in scope, record the exact terminus and stop; do not widen into `plan_or_execute()` internals without a demonstrated bridge.
+
+**NEXT ACTOR:** Codex with local checkout access, read-only, source-producer/adapter scope only. Preserve changes; do not inspect `data/` or SQLite, run code/tests/build/runtime, edit files, access M0A or physical bridge.
+
+**FOLLOW-ON:** Claude Web may adversarially challenge the supplied evidence without claiming local access. No implementation/test authorization. `GOVERNANCE = KEEP_BLOCKED`.
