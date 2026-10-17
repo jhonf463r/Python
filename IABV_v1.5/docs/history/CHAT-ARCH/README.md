@@ -1,3 +1,13 @@
+## 2026-10-16 ROUTE UPDATE — CONTRACT V2 NEEDS NARROW REPAIRS
+
+Claude's Contract V2 is `CONTRACT_READY_WITH_REPAIRS` for documentation only, not implementation-ready. Before proceeding, repair the omitted `SANDBOX_PROMOTED` class, raw string-based candidate/run ID test, incomplete execution attestation, TypedRef without referential resolution, underspecified candidate fingerprint, newest-run-only supersession rule, and ToolMemory counters that update before interaction learning. Public `ToolMemory.remember_result()` changes `ToolCard.success_count/failure_count` from result.success; gating only `learn_from_execution()` is not full neutrality.
+
+Public main resolved by the API is `9e0ce667...`; `cbc522140` is an earlier commit, although the checked source-file blobs match at both refs. Local dirty-tree behavior remains separate. Detailed evidence and routing: [follow-up Section 22](../2026-10-16_iabv_recommendation_gate_codex_followup.md).
+
+Next action: scoped Codex local verification of candidate identity, ToolMemory/InteractionPattern counters and local-vs-HEAD deltas. No broad audit or implementation. Preserve dirty checkout and SQLite boundary. `GOVERNANCE = KEEP_BLOCKED`.
+
+---
+
 ## 2026-10-16 ROUTE UPDATE — CLAUDE CONTRACT NOT READY; REPAIR SPEC ONLY
 
 Claude Web's adversarial review returned `CONTRACT_NOT_READY`. The remaining work is a bounded specification repair, not another broad audit: (1) typed run/trace namespaces with explicit resolution (string collisions do not prove identity); (2) candidate identity/fingerprint in support membership; (3) sandbox neutrality across operational numerators AND denominators, recency, reuse, thresholds, ranking and training; (4) legacy unknowns excluded from operational learning unless independently and audibly re-attested; (5) all producer/transform/consumer surfaces covered.
