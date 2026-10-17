@@ -1,3 +1,18 @@
+## 2026-10-16 METHOD DELTA — IDENTIFIER NAMESPACE RECONCILIATION BEFORE CLAIM PROMOTION
+
+New failure-mode correction from the recommendation-gate episode: a field name or report does not establish that an identifier belongs to the expected namespace. When Run IDs, ExperimentRun IDs, trace IDs and operational trace IDs are passed through metadata, follow the producer, transformation and consumer. Compare exact HEAD and working-tree versions before calling a namespace mismatch a defect.
+
+In this episode, public source at commit 9e0ce... shows TaskOutcomeRecorder._source_trace_ids() reading reusable_trace_ids, winning_trace_ids or supporting_trace_ids. Codex reports its modified local working tree reads operational_trace_ids. Because task_outcome_recorder.py is changed locally, the difference is UNRESOLVED until a targeted local diff and field-lineage trace are supplied.
+
+Method adjustment:
+1. Do not repeat the broad source census once it is reported complete.
+2. Ask the local source agent for the exact changed method and all producers/consumers of its accepted keys.
+3. Confirm whether values are RunRecord IDs, ExperimentRun IDs, IATraceEntry IDs or another type.
+4. Only then promote the issue to CONFIRMED or REFUTED.
+5. Route the reconciled design to a remote/public-source challenger, clearly preserving its inability to see local-only changes.
+
+This is a method delta inside the existing memory protocol, not a new memory or coordinator. Governance remains KEEP_BLOCKED.
+
 ## 2026-10-16 METHOD DELTA — SANDBOX-NEUTRAL OUTCOMES AND CONTEXTUAL AGENT ROUTING
 
 This is an objective-conditioned method delta, not a new coordinator or parallel memory system.
