@@ -235,3 +235,135 @@ No pedir a Kilo que configure un agente mediante una API inventada. El propietar
 Kilo debe producir referencias concretas; OpenCode debe intentar refutarlas, no rehacer la auditoría general. Si la inspección de archivos de trabajo pudiera transmitir cambios privados a un proveedor free, detener el envío de esos archivos y analizar únicamente source publicado o fragmentos mínimos autorizados.
 
 Toda recomendación anterior es una asignación de tarea basada en herramientas reportadas, no un benchmark formal ni una certificación de privacidad. Conservar `GOVERNANCE = KEEP_BLOCKED`, no editar código, no ejecutar pruebas/runtime y no activar el puente físico.
+
+
+## 13. 2026-10-16 — Kilo: refutación estática del gate operacional de recomendaciones
+
+**Proveniencia:** `OWNER_REPORTED` para la transcripción recibida; los detalles locales se clasifican como `KILO_LOCAL_REPORTED` hasta que otro proceso los reproduzca. Kilo recorrió source en una sesión distinta pero sobre el mismo checkout/working tree de Codex: es revisión por segundo agente, no independencia de entorno ni validación de runtime.
+
+### Checkout y preservación comunicados
+
+- Raíz: `C:\\temp\\IABV_coordination_20261016`; rama `codex/iabv-agent-coordination-20261016`; HEAD `3926b1144bb23c1066db579da711d3cdbc1611df`.
+- `git status --porcelain=v1`: 97 entradas; `git diff --name-only`: 96 rutas unstaged; `git diff --cached --name-only`: 0.
+- Reconciliación comunicada: 96 rutas modificadas más una entrada `?? data/` no rastreada, dentro de la cual aparecen dos SQLite. Kilo indica que no leyó, abrió ni hash-eó las bases.
+- El checkpoint externo `IABV_recommendation_operational_gate_map_20261016_followup.md` fue encontrado mediante su ruta absoluta de usuario y leído (61 líneas), según Kilo. La búsqueda previa dentro del checkout no lo encontró. No confundir `NOT_FOUND_IN_CHECKOUT` con `NOT_FOUND_ON_DISK`.
+- No ejecutó tests/build/runtime, según su reporte.
+
+La reconciliación 96/97 queda explicada por Kilo pero continúa local-reportada hasta reproducir las listas de rutas. Preservar todas las modificaciones; no limpiar ni inspeccionar SQLite.
+
+### Mapa causal comunicado
+
+| Etapa | Referencia local informada | Hallazgo |
+|---|---|---|
+| Recomendaciones | `experiment_lab_repository.py:155-210` | `list_recommendations` excluye ciertos casos consultivos explícitos, runs de soporte faltantes y dominios/ suites específicos; no exige clase positiva `operational_execution` en cada recomendación/run. La parte nueva existe en working tree, no en HEAD. |
+| Propuesta | `tool_evolution_monitor.py:701-748` | `_proposal_from_discovery_signal` genera una propuesta `validate_discovery` con siguiente acción sandbox; no filtra evidencia operacional. |
+| Candidato | `autonomous_validation_cycle.py:1811-1826` | Selecciona subjects con prefijo `sandbox:` y omite algunos ya validados por `learning_source='sandbox_experiment'`; no aplica clase de evidencia en la ruta descrita. |
+| Validación/promoción | `sandbox_experiment_service.py:20-118` | Con blockers en baseline y una alternativa de `ranked_configurations`, `validate_recommendation` asigna `verdict=VALID`, `promote=True`, `status='promoted'`; no se encontró llamada a ejecutor ni verificación de postcondición en esa ruta. |
+| Run sandbox | `sandbox_experiment_service.py:120-158` | `success` se deriva de `verdict in {VALID, DOUBTFUL}`; se persiste `learning_source='sandbox_experiment'` sin `evidence_class`. |
+| Run promoción | `sandbox_experiment_service.py:160-193` | `_record_promotion` fija `success=True`, `learning_source='sandbox_promotion'` y `suite_name='sandbox_promotion'`, sin `evidence_class`. |
+| Persistencia y regeneración | `experiment_lab.py:160-265` | `record_outcome` guarda metadata del run y luego llama a `strategy_selector.recommend`/`save_recommendation`. Kilo no encontró inyección positiva de clase operacional. |
+| Consumidores de éxito | `strategy_selector.py:67-71`; `adaptive_weight_layer.py:112,128`; `experiment_lab.py:270-271,417,484-485` | Se usa `run.success` para seleccionar claves exitosas, computar pesos adaptativos, bonus de reutilización y métricas, sin filtrar `evidence_class` en los fragmentos revisados. |
+
+### Controles parciales identificados
+
+- `task_outcome_recorder.py:468-479`: exige `evidence_class == 'operational_execution'` para insights operativos.
+- `task_context_assembler.py:1095-1119`: insights/trazas exigen clase operacional y predicados adicionales de verdict/estado/flags.
+- `experiment_lab_repository.py:196-200`: excluye recomendaciones sin `supporting_run_ids`.
+- `autonomous_validation_cycle.py:1823-1826`: deduplica ciertos subjects con runs sandbox existentes.
+- El working tree añade exclusión de advisory explícito, pero no modifica `sandbox_experiment_service.py` ni los consumidores de `run.success` citados.
+
+Estos controles pertenecen a fronteras distintas; no equivalen a una validación global de evidencia operacional.
+
+### Dictamen calibrado
+
+La formulación inicial de Kilo sobre “refutar parcialmente” es imprecisa. Los detalles expuestos **CORROBORAN estáticamente** el riesgo central; no lo refutan. Lo no resuelto es el comportamiento runtime y la cadena real observada de extremo a extremo. La ruta reportada puede escribir `success=True` sin demostrar ejecución atribuible ni postcondición; consumidores posteriores pueden usar `run.success` sin comprobar clase en el source revisado.
+
+Afirmaciones de Kilo:
+- A1: `list_recommendations` no exige clase operacional positiva — `CORROBORATED` por el source citado según Kilo.
+- A2: blockers + alternativa pueden promover desde ranking sin ejecutar — `CORROBORATED` estáticamente en la ruta citada.
+- A3/A4: la persistencia escribe success sin clase operacional — `CORROBORATED` según source revisado.
+- A5: existen filtros positivos en consumidores adaptivos — `CORROBORATED`, pero de cobertura local.
+- A6: esos filtros no cubren los consumidores de laboratorio citados — `CORROBORATED` en los fragmentos identificados.
+- A7: existe otra ruta llamada desde la validación sandbox que ejecute, atribuya y verifique antes de promover — `UNRESOLVED/GAP`; Kilo no encontró esa arista.
+- A8: outcome sandbox puede reentrar a ranking — `CORROBORATED` por las llamadas reportadas; efecto observado en runtime permanece `UNPROVEN`.
+- A9: reconciliación automática segura — `NOT_RECOVERED`.
+- A10: working tree ya corrige la brecha operacional — `REFUTED` para las rutas revisadas; el diff reportado añade filtro consultivo, no gate positivo.
+
+### Cuidado con la reparación sugerida por Kilo
+
+La propuesta no está aprobada y no debe implementarse literalmente todavía:
+
+1. Kilo dice “punto único de entrada” en `_record_promotion`, pero también propone cambios en `strategy_selector`, `adaptive_weight_layer` y `experiment_lab._reuse_bonus`. No es un punto único; es defensa en origen más filtros en consumidores.
+2. No inyectar `evidence_class='operational_execution'` genéricamente desde `record_outcome` porque el caller diga ser operativo. La clase debe basarse en evidencia verificable de ejecución atribuida y postcondición, no en una etiqueta.
+3. No decidir aún que outcome de sandbox debe volverse `success=False`, ni introducir `learning_source='sandbox_observed'` como vocabulario contractual sin revisar esquema, semántica y consumidores. Podría necesitar separación explícita entre veredicto sandbox y éxito operacional.
+4. El predicado propuesto con `verdict='approved'`, `state in {'executed','completed'}` y flags solo es correcto si esos campos/vocabularios están definidos y significan eso en todas las clases de run relevantes. Verificar modelo y productores primero.
+5. `VALID` puede significar que una alternativa parece válida según ranking sandbox, no que haya sido ejecutada. No cambiar la semántica por inferencia.
+
+### Siguiente paso técnico
+
+Pedir a Codex un **diseño estático, no edición**: comprobar el modelo `ExperimentRun`, semántica y productores de `verdict/state/success/evidence_class/learning_source`, y todos los usos de `run.success` en StrategySelector, AdaptiveWeightLayer y ExperimentLab. Elaborar un contrato de campos y un grafo de dependencias. Después OpenCode intenta refutar el diseño; Claude revisa la discrepancia al regresar. Nada de tests/runtime hasta una autorización separada. `KEEP_BLOCKED`.
+
+## 14. Protocolo inteligente de selección y aprendizaje de agentes — propuesta v0.1
+
+**Estado:** `PROPOSED / NOT IMPLEMENTED`. Esta sección define un protocolo de coordinación y memoria documental; no afirma que IABV ya tenga una base de rendimiento de agentes funcionando.
+
+### Registro mínimo por interacción de agente
+
+Registrar en cada tarea relevante:
+- ID de interacción, fecha, objetivo/tipo de tarea y criterio de finalización;
+- repo/worktree, HEAD, estado dirty/clean, alcance autorizado y fuente local/remota;
+- producto/superficie (Codex CLI, Kilo VS Code, OpenCode, Claude), modo/agente, proveedor, ID exacto del modelo/ruta y variante cuando se muestre;
+- herramientas/permisos realmente disponibles; no inferir acceso local por el solo nombre del modelo;
+- ID/versión/hash del prompt y artefactos de salida;
+- afirmaciones importantes, referencias, falsadores, limitaciones y clasificación de procedencia;
+- resultado revisado: cobertura, errores, controles respetados, solicitudes de confirmación innecesarias, si continuó ante artefacto auxiliar ausente y si fue independiente;
+- condiciones de privacidad/retención cuando estén documentadas; costo/latencia solo si se midieron de verdad;
+- siguiente recomendación operativa y la evidencia por la que se recomienda.
+
+Si no se conoce modelo/proveedor, registrar `UNKNOWN`; no convertir `Auto Free` en un modelo fijo por inferencia.
+
+### Clasificar objetivo y enrutar capacidades
+
+| Objetivo | Agente inicial | Prompt y validación |
+|---|---|---|
+| Estado de checkout, archivos y source local | Codex CLI | Identidad de checkout primero; separar HEAD/working tree; referencias exactas. |
+| Refutación causal y lógica | Kilo + Reflection: Beam 1.0, `high` o `max` | Intentar refutar, buscar ruta alternativa, productor→consumidor→efecto y falsador. |
+| Segunda opinión sobre el mismo conjunto de claims | OpenCode + ID fijo como DeepSeek V4.1 Flash Free reportado | Entregar claims/referencias mínimos; no un resumen que induzca a asentir. Registrar modelo/provider real. |
+| Análisis de capturas | Nemotron 3.5 Super VL | Usar solo cuando visión aporte evidencia necesaria. |
+| Continuidad/documentación | Modelo de texto con acceso a fuente | Conservar procedencia; no resolver decisiones del propietario. |
+| Revisión final cuando vuelva | Claude Code | Comparar desacuerdos concretos y el diff acotado; no repetir auditorías cerradas. |
+
+Las opciones son las reportadas por el propietario y pueden cambiar. No son benchmarks comparativos medidos. Modelos con nombres similares en distintos proveedores no se deben tratar como el mismo despliegue.
+
+### Contrato de un prompt eficaz
+
+Cada prompt de auditoría debe fijar:
+1. objetivo y afirmación falsable;
+2. identidad de checkout, HEAD y working tree;
+3. alcance y límites de herramientas;
+4. instrucción de seguir con source primario cuando falte un checkpoint auxiliar, distinguiendo `NOT_FOUND_IN_CHECKOUT` de `NOT_FOUND_ON_DISK`;
+5. salida con archivo/símbolo/línea, condiciones, argumentos, productor→transformación→consumidor→efecto y falsador;
+6. diferencias HEAD vs working tree;
+7. clases de evidencia, límites y criterios de parada;
+8. prohibición explícita de editar/ejecutar cuando no está autorizado;
+9. obligación de entregar el resultado parcial útil, no quedarse solicitando confirmación cuando la tarea ya autoriza una vía segura.
+
+### Lecciones del comportamiento observado (no generalizar desde una sola tarea)
+
+- **Kilo VS Code:** la primera respuesta se detuvo al no hallar el checkpoint dentro del workspace y pidió los símbolos. Con un prompt explícito para continuar por source, después recuperó el checkpoint por ruta absoluta y aportó referencias causales. Aprendizaje de prompt: siempre separar `NOT_FOUND_IN_CHECKOUT` de `NOT_FOUND_ON_DISK` y seguir la ruta segura disponible.
+- **Codex CLI:** produjo un mapa útil de checkout y consumidores; el propio reporte advirtió que no era independiente y que no revisaba todos los diffs. Aprendizaje: exigir identidad HEAD/working tree, procedencia por afirmación y declaración precisa de independencia.
+- **OpenCode:** generó una lista útil de modelos/opciones y tareas sugeridas, pero el mensaje compartido no identificó el modelo subyacente ni probó capacidades con benchmarks propios. Aprendizaje: registrar modelo/proveedor/variante reales y separar descripción del catálogo de calidad demostrada.
+- **Kilo Auto Free:** la ruta puede cambiar de proveedor; no es adecuada por defecto para código/artefactos sensibles. Preferir modelo fijo cuando la reproducibilidad importe y comprobar privacidad antes de transmitir.
+- **Revisión causal actual:** Kilo detectó que “punto único de entrada” no concuerda con proponer gates en cuatro zonas. Aprendizaje: pedir que el informe distinga enforcement de productor, filtro de repositorio y sinks/consumidores.
+
+### Bucle recursivo
+
+`objetivo → recuperar memoria pertinente → clasificar tarea → escoger superficie/modelo → adaptar prompt → ejecutar dentro de autorización → extraer evidencia/falsadores → contraste adversarial → evaluar calidad de esta sesión → actualizar memoria → elegir mejor ruta para la próxima tarea`.
+
+No promocionar preferencias de modelo a hechos globales a partir de una interacción. Repetir evaluaciones comparables y revisar resultados antes de generalizar. La memoria debe aprender patrones de herramienta y prompt; nunca otorgar permisos automáticamente.
+
+### Seguridad y estado
+
+No almacenar secretos, tokens, `.env`, bases locales, datos personales ni diffs privados completos en GitHub. Conservar metadatos, rutas relevantes, hashes cuando procedan, resúmenes y referencias. Los modelos gratuitos tienen políticas distintas y variables. La memoria propone el siguiente agente; no autoriza cambios, pruebas, publicación ni puente físico.
+
+**Estado:** `PROPOSED / NOT IMPLEMENTED`; permanece en la PR #467 Draft para revisión, no se ha implementado un registro automático de rendimiento de agentes. `GOVERNANCE = KEEP_BLOCKED`.
