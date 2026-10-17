@@ -1,3 +1,17 @@
+## 2026-10-17 ROUTE UPDATE — SLICE A STATIC ACCEPTANCE WITH LIMITATIONS
+
+Claude Web issued `SLICE_A_REVIEW_ACCEPTED_WITH_REMAINING_LIMITATIONS` for the supplied Slice A evidence artifact only. This is a static acceptance of the reproduced F-01/F-02/F-03 evidence, **not** checkout verification or test acceptance. F-04 (global absence of other signal loaders) and F-09 (hunk attribution) remain `UNRESOLVED`; F-05/F-06/F-07 remain deferred/open. Tests/code/build/runtime remain `NOT_RUN`.
+
+Codex's local state report is `OWNER_REPORTED`: checkout `C:/temp/IABV_coordination_20261016`, branch `codex/iabv-agent-coordination-20261016`, HEAD `3926b1144bb23c1066db579da711d3cdbc1611df`, 100 tracked modified paths, `git diff --check` clean. Claude did not inspect that checkout. Do not elevate these claims to public-source evidence.
+
+**Next actor:** Codex local, read-only, trace only the producer/schema of `self_examination/latest.json.metadata.solution_proposals` and any explicit adapter/mapping from `ToolEvolutionStatus.proposals` / `validate_discovery`. If no source-backed bridge exists, document the stopping boundary. Do not inspect `plan_or_execute()` internals without a proven bridge.
+
+Detailed adjudication, exact limits, and required labels: [Detailed Slice A review record](CHAT-ARCH-2026-10-17-r10-slice-a-static-review-with-limitations.md).
+
+`GOVERNANCE = KEEP_BLOCKED`. No dispatcher enablement, no packages B–E, no M0A/physical bridge, no code/tests/build/runtime, no `data/` or SQLite inspection.
+
+---
+
 ## 2026-10-16 CURRENT ROUTE — LOCAL LINEAGE RECONCILED; CONTRACT V2.1 NEXT
 
 Codex supplied a focused read-only report. Candidate identity remains unresolved at the data-contract level: TaskOutcomeRecorder writes RunRecord.run_id to ExperimentRun.candidate_id, sandbox writes SandboxExperiment.experiment_id, while ordinary lab evaluation uses ExperimentCandidate.candidate_id. No common resolver/fingerprint was found in the inspected paths.
