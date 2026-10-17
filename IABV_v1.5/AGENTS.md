@@ -1,3 +1,13 @@
+## 2026-10-16 OBJECTIVE ROUTE — CONTRACT V2 AFTER CLAUDE CHALLENGE
+
+Claude returned `CONTRACT_NOT_READY`. Do not repeat the broad audit. Before implementation, the contract must: (1) define typed identifier namespaces and explicit relation resolution; (2) require candidate identity/fingerprint in support membership; (3) prove execution through an authorized candidate-linked attestation rather than `execution_ms > 0`; (4) isolate sandbox metrics from all operational numerators, denominators, scoring and training; (5) preserve unknown historical data as descriptive-only unless audibly re-attested; (6) include all known alternate consumers.
+
+Public code at pinned commit `9e0ce66768aedd7422e0d3551affd398f44a7532` confirms `ExperimentLab.generate_training_corpus()` aggregates `run.success`. Do not report the public method as absent simply because a reviewer marked it unresolved. Public and dirty-local evidence remain distinct.
+
+No product code, tests, build/runtime, data/ or SQLite access, M0A or physical bridge. Preserve the local dirty state. PR #467 is documentation-only, draft/unmerged. Keep `GOVERNANCE = KEEP_BLOCKED`.
+
+---
+
 ## 2026-10-16 ROUTE REFINEMENT — RECONCILE RUN/TRACE IDENTIFIERS FIRST
 
 Codex has delivered a local census; do not repeat a broad audit. The next bounded source task is to compare TaskOutcomeRecorder._source_trace_ids() at HEAD versus the current working tree and trace the producers/consumers and types for supporting_run_ids, source_trace_ids, operational_trace_ids, reusable_trace_ids, winning_trace_ids and supporting_trace_ids.
