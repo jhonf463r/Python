@@ -3541,3 +3541,23 @@ Material delta:
 - next task is one-route trace from `validate_discovery` to a real dispatcher and its authorization/postcondition gates.
 
 Routing authority remains `CHAT-ARCH/CURRENT-STATE.md`. The local report was supplied by the owner; it is not independently re-inspected by this registry entry.
+
+
+## 2026-10-16 REGISTRATION — R10 VALIDATE_DISCOVERY DISPATCH TRACE
+
+Canonical:
+- `IABV_v1.5/docs/history/2026-10-16_iabv_agent_continuity_space_time.md` — Section 36.
+- `IABV_v1.5/docs/history/2026-10-16_iabv_recommendation_gate_codex_followup.md` — Section 5.
+
+Type:
+SOURCE-RECONCILIATION / CAUSAL-MAP / DISPATCH-BOUNDARY / AGENT-ROUTING
+
+State:
+CODEX-LOCAL-REPORTED / VALIDATE_DISCOVERY ROUTE ENDS AT SANDBOX / SYNC-PULSE BRIDGE UNRESOLVED / KEEP_BLOCKED.
+
+Material delta:
+- the proposal-to-sandbox path was traced through the reported local source;
+- a separate self-examination auto-execution path exists in the inspected scope, but no connecting adapter was identified;
+- next step is a producer/schema trace of `self_examination/latest.json.metadata.solution_proposals` and any adapter from `validate_discovery`.
+
+Routing authority remains `CHAT-ARCH/CURRENT-STATE.md`. This record carries Codex's report and is not an independent local source inspection.
