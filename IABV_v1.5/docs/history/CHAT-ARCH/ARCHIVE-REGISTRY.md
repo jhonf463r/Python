@@ -1,3 +1,14 @@
+## 2026-10-16 REGISTRY UPDATE — CLAUDE CONTRACT NOT READY
+
+- Latest evidence record: [recommendation-gate follow-up, Section 21](../2026-10-16_iabv_recommendation_gate_codex_followup.md).
+- Latest record blob SHA: 7f7fbe5fff3e07a87ef2e340225734ae8aca3f38; source write commit: 7b90bae5e7112225b92c105d3f202d11ce138b8e.
+- Claude Web returned `CONTRACT_NOT_READY`; next route is contract v2, not another broad audit.
+- Public commit `9e0ce66768aedd7422e0d3551affd398f44a7532` confirms `ExperimentLab.generate_training_corpus()` aggregates `run.success`; dirty-local behavior stays distinct.
+- Corrections required: explicit typed ID resolution (not string-collision predicates), candidate identity in support, execution attestation beyond positive duration, total operational numerator/denominator neutrality, and legacy descriptive-only handling.
+- Branch-only memory in PR #467; draft/unmerged; do not auto-merge. `GOVERNANCE = KEEP_BLOCKED`.
+
+---
+
 ## 2026-10-16 REGISTRY UPDATE — LOCAL CENSUS AND TRACE-ID RECONCILIATION ROUTE
 
 Latest source record: [2026-10-16_iabv_recommendation_gate_codex_followup.md](../2026-10-16_iabv_recommendation_gate_codex_followup.md).
