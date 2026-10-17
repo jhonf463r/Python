@@ -913,3 +913,20 @@ Before any R10 implementation, continue from the current evidence record:
 **Destination:** Codex with access to the authorized local checkout. Work read-only and only on this route; compare relevant files to observed HEAD. Preserve existing modifications. Do not inspect `data/` or SQLite, run tests/code/build/runtime, alter files, access M0A or touch the physical bridge. After the local route is documented, Claude Web may challenge the supplied evidence but must not claim local access.
 
 Candidate B remains separate from Candidate C. Candidate C's reported `PASS_WITH_REPAIRS` is not a final approval. All tests remain `NOT_RUN` until separately authorized. `GOVERNANCE = KEEP_BLOCKED`.
+
+
+## 2026-10-16 ACTIVE ROUTE — R10 SELF-EXAMINATION / SYNC-PULSE ADAPTER
+
+Continue from continuity §36 and recommendation-gate addendum §5. Do not repeat the already reported discovery-to-sandbox trace.
+
+**Destination:** Codex with access to the authorized local checkout.
+
+**First open edge:** inspect the producer and schema for `self_examination/latest.json.metadata.solution_proposals`. Determine whether any producer or adapter converts a `ToolEvolutionMonitor` `validate_discovery` proposal into a sync-pulse proposal dictionary. Identify exact fields and identity mapping; if absent, document the termination boundary and stop.
+
+The report describes two routes that must remain distinct until their bridge is demonstrated:
+1. `ToolDiscoveryService` → `ToolEvolutionMonitor` `validate_discovery` → `AutonomousValidationCycle` → sandbox evaluation/ExperimentLab persistence.
+2. `self_examination/latest.json` `solution_proposals` → `auto_execute_from_sync_pulse()` → `AutonomousEvolutionService.plan_or_execute()`.
+
+Do not inspect `plan_or_execute()` internals unless a source-backed connection from route 1 to route 2 is found. Read-only only; preserve the checkout. No code/tests/build/runtime, no `data/`/SQLite, M0A or physical bridge. Claude Web may challenge the supplied report only within its actual access.
+
+Candidate B and Candidate C remain separate. Tests remain `NOT_RUN`; `GOVERNANCE = KEEP_BLOCKED`.
