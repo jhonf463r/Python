@@ -1,3 +1,14 @@
+## 2026-10-17 ROUTE CORRECTION — ZIP VERIFIED HERE; MUST BE ATTACHED TO CODEX CHAT
+
+Codex's latest `BLOCKED` is procedurally correct: it could not find the ZIP in its own chat attachment store. The source ZIP was recovered from ChatGPT Library and verified in the ChatGPT working container at `/mnt/data/r10_recovery/R10_V0_7_2_REPAIR_PACKAGE_FOR_CLAUDE.zip`. ZIP SHA-256: `acfb468f78bebc3794b8ec7eaf81baf65d8c40cb66b3f8c7bd2065ffd07fe14e`. It contains seven files (six payload artifacts plus manifest); all six payload file sizes and hashes match the embedded manifest. This proves bytes against that manifest, not semantic acceptance.
+
+**Critical handoff distinction:** a file available to this ChatGPT session is not automatically an attachment in a separate Codex conversation. The owner must download the ZIP from the current ChatGPT response and explicitly attach it to the Codex chat that returned `BLOCKED`. Only then should Codex begin by verifying the actual attached archive hash and inventory. Do not keep asking the owner to search filenames when the verified source artifact is available here; do not claim it is already attached in Codex.
+
+**Next actor: Codex local**, documentary author only, using the attached source ZIP. If the actual attached bytes/hash do not match or a file is missing, stay `BLOCKED`. If verified, prepare a new v0.7.3 documentary candidate outside `C:/temp/IABV_coordination_20261016`, preserving v0.7.2. Do not edit the IABV checkout, code, tests, build or runtime; no data/SQLite/M0A, dispatcher or Packages B–E. After a complete bundle exists, route to Claude/Sonnet for independent delta review. See [corrected route]( https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-r10-v073-corrected-agent-route.md ) and [authoring handoff]( https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-r10-v073-documentary-repair-handoff.md ).
+
+`PRODUCT_CODE_EXECUTION = NOT_RUN`; `TESTS = NOT_RUN`; `BUILD = NOT_RUN`; `RUNTIME = NOT_RUN`; `IMPLEMENTATION_AUTHORIZED = NO`; `GOVERNANCE = KEEP_BLOCKED`.
+
+---
 ## 2026-10-17 ROUTE CORRECTION — CODEX AUTHORING REQUIRES SOURCE ZIP ATTACHED
 
 Codex's `BLOCKED` was correct for its input: it received an instruction, not the source contract/matrix. The handoff omission was that no IA was named and the source ZIP was not attached. The exact source package was recovered from ChatGPT Library and its six payload hashes/sizes were rechecked against the embedded manifest. Archive: `R10_V0_7_2_REPAIR_PACKAGE_FOR_CLAUDE.zip`; SHA-256 `acfb468f78bebc3794b8ec7eaf81baf65d8c40cb66b3f8c7bd2065ffd07fe14e`.
