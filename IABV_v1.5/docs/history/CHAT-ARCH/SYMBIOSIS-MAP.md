@@ -1,3 +1,34 @@
+## 2026-10-16 SYMBIOSIS DELTA — AGENT BEHAVIOR AND OPERATIONAL GATE
+
+### Episode and evidence boundary
+
+The current episode combined Codex local source analysis, Kilo in VS Code and Claude Web public-source review. Their sources were not identical:
+- Codex and Kilo report source from C:\temp\IABV_coordination_20261016, HEAD 3926b1144bb23c1066db579da711d3cdbc1611df, with a dirty working tree.
+- Claude Web could not access that local workspace and inspected public GitHub source. The supplied Claude report began from a historical public commit; selected claims were rechecked separately against public main observed at 9e0ce66768aedd7422e0d3551affd398f44a7532.
+- No agent ran tests/runtime in the reports covered here. Agreement among these reports is not runtime proof.
+
+### Transferable observations, conditional on this task
+
+- Codex was useful for local checkout identity, HEAD/worktree comparison, field producers and consumers, and discovering the exact training method name generate_training_corpus rather than generate_training_examples.
+- Kilo first stopped on a checkpoint missing from the workspace, then resumed after the prompt explicitly distinguished missing-in-workspace from missing-on-disk and required continued source inspection. Future prompts should preserve that recovery path.
+- Claude Web could independently inspect public source and challenge semantics, but cannot attest local dirty files. Assign it public-source/design disputes, not local checkout verification.
+- OpenCode provided a list of free models and suggested task mappings, but the exchanged response did not establish which model generated it or provide task benchmarks. Record the exact model/provider/variant from the selector before using the interaction as a model comparison.
+- Select fixed model IDs for reproducible adversarial review where possible; Auto Free is a changing router and should not be assumed to identify a fixed model.
+- A claimed “single-point fix” must be challenged against the complete set of consumers. The suggested changes around _record_promotion, StrategySelector, AdaptiveWeightLayer and ExperimentLab show that producer gating alone may be insufficient.
+
+### Current task lesson
+
+The first open causal edge is no longer only success=True. It also includes outcome neutrality and support identity:
+- sandbox evaluation must remain useful without becoming an operational success or operational failure;
+- operational profiles must not include sandbox/unclassified results in success/failure, recency, trend, reuse or training denominators unless explicitly designed as separate metrics;
+- supporting_run_ids and operational_trace_ids may be different namespaces and require a contractually correct mapping;
+- support IDs must bind to the actual recommendation scope/candidate/configuration before conveying evidence authority.
+
+Reusable loop:
+objective → relevant memory → capability-fit actor → source-grounded action → falsifier → independent challenge → reconciliation → Knowledge/Method/Routing Delta → writeback → later reuse check.
+
+This is a method observation from one episode, not a permanent benchmark of any model. The next actor must be chosen again from the active uncertainty and available access.
+
 ## 2026-10-13 CANONICAL ROUTE — ENTRY 280: C6 FAIL RECONCILIATION / AMENDMENT 274.5
 
 Canonical artifact: [CHAT-ARCH-2026-10-13-280-m0b-r8-1-c6-delta-adjudication-and-amendment-274-5.md](./CHAT-ARCH-2026-10-13-280-m0b-r8-1-c6-delta-adjudication-and-amendment-274-5.md) — blob `6d7d7f4966e1224456e00410c812395e6a5c598f`, commit `0a462d66071f2d354e8a299ffaf859b3aeac61d5`.
