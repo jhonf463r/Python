@@ -1,3 +1,16 @@
+## 2026-10-17 ROUTE UPDATE — INDIRECT OSES INFLUENCE FOUND; TYPED BRIDGE NOT FOUND
+
+- No typed adapter found in the bounded path from `ToolEvolutionProposal` / `validate_discovery` to an individual sync-pulse `solution_proposals` item.
+- Do not label the paths fully independent: Codex reports an indirect ExperimentLab/OSES aggregate influence through runs grouped by assistant.
+- The exact contribution of an individual run to a particular OSES proposal is not attributable from the reported output; typed proposal/signal identity is reported as lost at OSES aggregation/projection.
+- A call boundary to `plan_or_execute()` does not prove authorization, successful execution or postcondition verification; its internals were not inspected.
+- Next actor: Claude Web, review the full Codex trace pasted inline. Slice A F-04/F-09 remain unresolved, F-05/F-06/F-07 deferred/open, tests `NOT_RUN`.
+
+Detailed record: [R10 discovery/sync-pulse bridge trace](CHAT-ARCH-2026-10-17-r10-discovery-sync-pulse-bridge-trace.md).
+
+`GOVERNANCE = KEEP_BLOCKED`.
+
+---
 ## 2026-10-17 ROUTE UPDATE — SLICE A STATIC ACCEPTANCE WITH LIMITATIONS
 
 - `SLICE_A_REVIEW_ACCEPTED_WITH_REMAINING_LIMITATIONS` is a static, artifact-scoped disposition, not test success or local-checkout verification. See [Detailed Slice A review record](CHAT-ARCH-2026-10-17-r10-slice-a-static-review-with-limitations.md).
