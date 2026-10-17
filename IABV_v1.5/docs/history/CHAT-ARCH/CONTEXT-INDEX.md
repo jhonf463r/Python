@@ -1,3 +1,13 @@
+## 2026-10-16 ROUTE UPDATE — CONTRACT V2, NOT ANOTHER SOURCE CENSUS
+
+The Claude challenge is complete and returned `CONTRACT_NOT_READY`. The next task is to revise the proposed specification against six concrete issues: namespace types must be declared/resolved rather than inferred from string collision; operational execution must have attested candidate-linked evidence, not merely `execution_ms > 0`; support membership must include candidate identity/fingerprint; sandbox results must be neutral across operational numerators and denominators plus all ranking/training consumers; sandbox-specific blocker metrics need their own cohort; unclassified historical runs remain descriptive-only unless audibly re-attested.
+
+Public verification at pinned commit `9e0ce66768aedd7422e0d3551affd398f44a7532` confirms `ExperimentLab.generate_training_corpus()` exists and aggregates `run.success`; don't repeat the incorrect inference that it is absent because one reviewer left it unresolved. Local working-tree behavior remains unverified by Claude.
+
+Next result should be a contract v2 with invariants, all known consumers, failure cases and acceptance tests; then one narrow adversarial pass. No implementation or local tests. Use [follow-up Section 21](../2026-10-16_iabv_recommendation_gate_codex_followup.md). GOVERNANCE = KEEP_BLOCKED.
+
+---
+
 ## 2026-10-16 ROUTING UPDATE — RUN/TRACE ID LINEAGE BEFORE DESIGN CHALLENGE
 
 The local source census is reported complete for the declared scope. The next retrieval/action must be narrow:
