@@ -11727,3 +11727,24 @@ NEXT ACTOR:
 SONNET/CLAUDE — source-aware adversarial challenge of the proposed code-facing contract.
 
 No implementation/runtime/scoring change.
+
+
+## 2026-10-16 ACTIVE OVERLAY — R10 sandbox promotion causal map; dispatch edge remains open
+
+**Authority:** current routing pointer only; detailed evidence and provenance are preserved in:
+- `IABV_v1.5/docs/history/2026-10-16_iabv_agent_continuity_space_time.md`, Section 35.
+- `IABV_v1.5/docs/history/2026-10-16_iabv_recommendation_gate_codex_followup.md`, Section 4.
+
+**Current state:** `GOVERNANCE = KEEP_BLOCKED`. Owner supplied a Codex-local static report (checkout root `C:\temp\IABV_coordination_20261016`, branch `codex/iabv-agent-coordination-20261016`, HEAD `3926b1144bb23c1066db579da711d3cdbc1611df`, 96 tracked paths modified). These local claims remain `CODEX_LOCAL_REPORTED / OWNER_REPORTED` until independently re-read. The report says it did not inspect `data/` or SQLite and did not run code/tests or alter the checkout.
+
+**Material finding within the reported route:** blockers plus a ranked alternative can produce `VALID`, `promote_to_primary=True`, `status='promoted'`; a promotion outcome with `success=True` and `execution_ms=0` can be persisted for the original subject and influence ExperimentLab ranking/adaptive weighting. The inspected method reportedly does not invoke the selected candidate or verify postconditions. This establishes neither runtime execution nor production dispatch.
+
+**Protection boundary:** `TaskContextAssembler` reportedly requires explicit `evidence_class='operational_execution'` for its operational-insight route. This does not establish a common filter for direct ExperimentLab consumers, StrategySelector, AutonomousValidationCycle, ToolDiscoveryService or ToolEvolutionMonitor.
+
+**FIRST OPEN EDGE:** does a `validate_discovery` proposal from `ToolEvolutionMonitor` reach a real dispatcher, and what authorization/attestation and postcondition checks bind that dispatch to the exact candidate/attempt? If that edge is absent, record the exact termination point; do not infer dispatch from a proposal.
+
+**NEXT ACTOR:** Codex with access to the authorized local checkout, read-only, one-route scope: `ToolEvolutionMonitor` → `validate_discovery` → any actual dispatcher. Compare only relevant paths to observed HEAD. Do not inspect `data/` or SQLite, run code/tests/build/runtime, or modify files.
+
+**FOLLOW-ON VERIFIER:** Claude Web may adversarially challenge the report and supplied source excerpts after the route trace; explicitly state it has no local-checkout access and cannot certify local claims.
+
+No implementation, test execution, M0A or bridge. Keep `KEEP_BLOCKED`.
