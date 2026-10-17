@@ -1304,3 +1304,59 @@ Trace exactly one downstream path: `ToolEvolutionMonitor` → `validate_discover
 The next report must label each edge as direct source observation, interpretation, falsifier or unresolved. After that route is mapped, send the supplied evidence to an independent adversarial reviewer; that reviewer must not claim local-checkout access unless it actually has it.
 
 **No implementation, tests, builds, runtime or bridge access authorized. `GOVERNANCE = KEEP_BLOCKED`.**
+
+
+## 36. 2026-10-16 — R10 validate_discovery trace stops at sandbox; auto-execution path remains separate
+
+**Provenance:** report pasted by owner and attributed to Codex with access to the local checkout. Classification: **CODEX_LOCAL_REPORTED / OWNER_REPORTED**. This writeback records the report; it does not independently reopen the local checkout. Governance remains **KEEP_BLOCKED**.
+
+### Identity and preservation reported
+
+- Root: `C:\temp\IABV_coordination_20261016`
+- Branch: `codex/iabv-agent-coordination-20261016`
+- HEAD: `3926b1144bb23c1066db579da711d3cdbc1611df`
+- `git status --short --untracked-files=no`: 96 tracked paths modified.
+- Codex reports no file changes, code/tests/build/runtime execution, or inspection of `data/`/SQLite. The status command excluded untracked paths, so it did not reconfirm the untracked status of `data/`.
+
+### Reported route: discovery to sandbox validation
+
+Codex reports this chain in the inspected local paths:
+
+1. `ToolDiscoveryService` retrieves an ExperimentLab recommendation and can produce a `detected` signal when a route/assistant/configuration candidate differs from the baseline, is not already represented in known runs, and estimated compatibility meets its threshold. The signal uses run IDs as evidence references; it is not execution evidence.
+2. `ToolEvolutionMonitor` selects signals by domain/scope/status and creates a `validate_discovery` proposal containing route, assistant, configuration and references. The reported proposal metadata carries `discovery_signal_id`, but the proposal does not retain `tool_id` as its own candidate field.
+3. The monitor persists active/history state and `tool_evolution/latest.json`; `AutonomousValidationCycle` requests monitor status and can select a `validate_discovery` proposal.
+4. `_recommendation_from_proposal()` converts the proposal into an ExperimentLab recommendation; the report says that conversion omits `discovery_signal_id`, does not pass `tool_id` or an execution-attempt ID, and eventually calls `SandboxExperimentService.validate_recommendation()`.
+5. The examined route terminates in sandbox evaluation and ExperimentLab persistence. **No dispatcher/executor call was found in this route.** Do not claim the product has no dispatcher globally; the report only bounds the inspected path.
+
+Reported local locations include:
+- `tool_discovery_service.py:187, 257-355`;
+- `tool_evolution_monitor.py:109, 143, 168-189, 674-755`;
+- `autonomous_validation_cycle.py:314-323, 1348, 1372, 1450`;
+- `sandbox_experiment_service.py` promotion/evaluation route recorded in §35.
+
+These are source locations quoted from the owner-supplied Codex report, not independently verified local lines by ChatGPT.
+
+### Separate auto-execution route; no bridge established
+
+The report identifies a different path: `AutonomousValidationCycle` reads `solution_proposals` from `self_examination/latest.json`, builds proposal dictionaries and may call `adaptive_task_orchestrator.auto_execute_from_sync_pulse()` under availability/confidence/resource-pressure conditions; the orchestrator calls `AutonomousEvolutionService.plan_or_execute()`.
+
+Reported locations: `autonomous_validation_cycle.py:574, 608-654, 786-815`; `adaptive_task_orchestrator.py:1133, 1177-1182`.
+
+Crucially, Codex reports **no code link** that transforms the typed `validate_discovery` proposal from `ToolEvolutionStatus.proposals` into one of those `solution_proposals` sync-pulse dictionaries. These must remain two separate routes until a producer/adapter proves the bridge. The internal gates of `plan_or_execute()` were not investigated for this reason and remain out of current scope.
+
+### Relevant local-vs-HEAD reconciliation, as reported
+
+The report says `tool_evolution_monitor.py`, `tool_discovery_service.py` and `autonomous_validation_cycle.py` have no local diff for the cited fragments. It says `experiment_lab_repository.py` and `experiment_lab.py` changed to filter consultative evidence, without rejecting all `sandbox_promotion`/missing-class records; `tool_teach_service.py` changed an external consultation recommendation path, with no identified link to `validate_discovery`. It also notes `domain/models.py` is modified but the cited fields do not add dispatch linkage or attestation in the inspected route. These comparisons remain reported by Codex, not independently recomputed here.
+
+### Adjudication and unresolved boundary
+
+- The `validate_discovery` route is reported to reach sandbox validation and persisted ExperimentLab effects, not a proven real dispatch.
+- A separate self-examination/sync-pulse auto-execution route exists in inspected code, but no adapter connecting this `validate_discovery` proposal to that route was found.
+- `TaskContextAssembler` remains a route-specific fail-closed filter, not proof of a common evidence-class gate across all consumers.
+- No present data instance, runtime path, dispatch event, or postcondition was observed. `data/` and SQLite remain uninspected; no code/tests/runtime ran.
+
+### Next bounded route
+
+Trace only the producer and schema/contract of `self_examination/latest.json.metadata.solution_proposals`. Determine whether any producer or adapter can transform a `ToolEvolutionMonitor` `validate_discovery` proposal into a sync-pulse proposal dictionary. Identify required fields and exact identity mapping. If there is no such bridge, record the exact boundary and stop; do not extend into `plan_or_execute()` internals without a demonstrated link.
+
+**Next actor:** Codex with local checkout access, read-only. Independent follow-up: Claude Web may adversarially challenge the supplied report and excerpts, but cannot certify local code unless it independently has that access. All tests remain `NOT_RUN`. No implementation/runtime/bridge authorization; `GOVERNANCE = KEEP_BLOCKED`.
