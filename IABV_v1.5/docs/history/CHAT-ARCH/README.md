@@ -1,3 +1,13 @@
+## 2026-10-17 ROUTE UPDATE — SLICE A STATIC ACCEPTANCE WITH LIMITATIONS
+
+The latest Slice A disposition is recorded in [Detailed Slice A review record](CHAT-ARCH-2026-10-17-r10-slice-a-static-review-with-limitations.md): `SLICE_A_REVIEW_ACCEPTED_WITH_REMAINING_LIMITATIONS`, limited to the evidence reproduced in Claude's attachment. F-01/F-02/F-03 are statically supported; F-04/F-09 remain unresolved; tests are `NOT_RUN`. The local branch/HEAD/100-modified-path report is `OWNER_REPORTED`, not verified by Claude or this public branch.
+
+**Next actor:** Codex local, read-only, producer/schema and explicit-bridge trace for `self_examination/latest.json.metadata.solution_proposals` and any mapping from `ToolEvolutionStatus.proposals` / `validate_discovery`. Stop at the exact boundary if no bridge is evidenced. Claude Web may adversarially review only evidence actually supplied to it.
+
+Keep this Draft PR unmerged unless separately authorized; do not merge public and dirty-local evidence. `GOVERNANCE = KEEP_BLOCKED`.
+
+---
+
 ## 2026-10-16 ROUTE UPDATE — CODEX LOCAL REPORT RECEIVED
 
 The bounded local source reconciliation is complete for candidate identity, ToolMemory fanout, attestation and idempotency. Do not repeat the broad audit.
