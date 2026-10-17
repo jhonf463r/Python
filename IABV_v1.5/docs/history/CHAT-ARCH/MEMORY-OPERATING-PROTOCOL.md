@@ -3596,3 +3596,17 @@ For the R10 route reported by Codex:
 **Next review discipline:** continue only along `ToolEvolutionMonitor` → `validate_discovery` → actual dispatcher, if any; identify authorization and candidate/attempt-bound postcondition gates. One route only, read-only. An independent reviewer may challenge the supplied evidence but must not claim local access.
 
 Evidence provenance: this method delta is based on an owner-supplied Codex-local report, not an independent checkout inspection. No implementation or runtime/test authorization. `GOVERNANCE = KEEP_BLOCKED`.
+
+
+## 2026-10-16 METHOD AMENDMENT — DO NOT JOIN SEPARATE EXECUTION ROUTES WITHOUT AN ADAPTER
+
+When one route creates a typed proposal and another route supports auto-execution, do not infer that the first can reach the second merely because both exist in the same orchestrator or codebase.
+
+R10 example, based on owner-supplied Codex-local report:
+- `ToolDiscoveryService` → `ToolEvolutionMonitor` `validate_discovery` → `AutonomousValidationCycle` → `SandboxExperimentService.validate_recommendation()` reportedly ends in sandbox evaluation and ExperimentLab persistence.
+- A separate `self_examination/latest.json.metadata.solution_proposals` route reportedly may reach `auto_execute_from_sync_pulse()` → `plan_or_execute()`.
+- No producer/adapter mapping `validate_discovery` into those sync-pulse dictionaries was found in the inspected paths.
+
+Method rule: require a source-backed adapter, schema compatibility, explicit identity mapping and guards before joining route graphs. If the bridge is absent or unproven, preserve both as separate graphs and stop at each evidenced terminus. Do not widen into downstream internals without an evidenced connection.
+
+Provenance remains `CODEX_LOCAL_REPORTED / OWNER_REPORTED`, not independently reverified by this method entry. No implementation/runtime/tests authorized; `GOVERNANCE = KEEP_BLOCKED`.
