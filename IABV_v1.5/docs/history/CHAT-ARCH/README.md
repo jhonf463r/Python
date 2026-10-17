@@ -1,3 +1,21 @@
+## 2026-10-16 OBJECTIVE ROUTE — OPERATIONAL RECOMMENDATION GATE / AGENT SYMBIOSIS
+
+This is the active objective-specific route for the recommendation-gate and agent-continuity work. It does not supersede independent M0B/R10 governance routes or authorize implementation.
+
+Current evidence record: [2026-10-16_iabv_recommendation_gate_codex_followup.md](../2026-10-16_iabv_recommendation_gate_codex_followup.md).
+
+Current local context, as reported by Codex: C:\temp\IABV_coordination_20261016; branch codex/iabv-agent-coordination-20261016; HEAD 3926b1144bb23c1066db579da711d3cdbc1611df; 96 tracked paths modified plus untracked data/. Keep this workspace untouched; do not inspect data/ or SQLite.
+
+Latest finding: a sandbox recommendation can be promoted and persisted as success=True without demonstrated execution of the selected alternative; downstream success consumers may influence ranking/weights/reuse/training. The required next edge is local static reconciliation of all producers/consumers and identifier provenance, with sandbox outcomes neutral to operational-execution metrics.
+
+Routing for this objective: Codex local source/census → Claude Web challenge of public source/design claims only → Kilo/OpenCode only for remaining contradictions. Do not ask Claude Web to certify local files it cannot access. A past GitHub writeback is not evidence that IABV runtime retrieves memory or changes later behavior.
+
+Canonical sequence remains: verify main SHA → this README → top CURRENT-STATE → objective-relevant CONTEXT-INDEX → MEMORY-OPERATING-PROTOCOL → SYMBIOSIS-MAP → UNRESOLVED-KNOWLEDGE → ARCHIVE-REGISTRY → AGENTS → evidence record. See the linked addendum for full provenance and limits.
+
+Governance: KEEP_BLOCKED. No implementation, tests, builds, runtime, M0A access or physical bridge activation.
+
+---
+
 ## 2026-10-13 CANONICAL ROUTE — ENTRY 280: C6 FAIL RECONCILIATION / AMENDMENT 274.5
 
 Canonical artifact: [CHAT-ARCH-2026-10-13-280-m0b-r8-1-c6-delta-adjudication-and-amendment-274-5.md](./CHAT-ARCH-2026-10-13-280-m0b-r8-1-c6-delta-adjudication-and-amendment-274-5.md) — blob `6d7d7f4966e1224456e00410c812395e6a5c598f`, commit `0a462d66071f2d354e8a299ffaf859b3aeac61d5`.
