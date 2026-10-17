@@ -1,3 +1,17 @@
+## 2026-10-16 CURRENT ROUTE — CONTRACT REPAIR AFTER CLAUDE CHALLENGE
+
+Latest review returned `CONTRACT_NOT_READY`, confirming specific design holes rather than invalidating the objective. Do not repeat the broad audit or change the dirty local checkout.
+
+Next: draft contract v2 with explicit namespaces/resolution for run IDs vs trace IDs; candidate_id or stable fingerprint in support membership; a sandbox-only metric cohort that cannot alter any operational numerator/denominator or scoring path; and legacy/unknown evidence excluded from operational learning unless independently re-attested via an authorized audit process.
+
+Important correction: the public pinned commit `9e0ce66768aedd7422e0d3551affd398f44a7532` contains `ExperimentLab.generate_training_corpus()` aggregating `run.success`. Claude's UNRESOLVED on this surface means its review did not verify it, not that the public method is absent. Local dirty-tree behavior remains separate.
+
+Do not treat `execution_ms > 0` as sufficient execution proof. Do not use `success=False` to represent non-execution. Do not mistake equal/different identifier strings for type checking. Full record in [follow-up, Section 21](../2026-10-16_iabv_recommendation_gate_codex_followup.md).
+
+Preserve reported local state, do not inspect `data/`/SQLite or run code/tests/runtime. `GOVERNANCE = KEEP_BLOCKED`; PR #467 draft/unmerged.
+
+---
+
 ## 2026-10-16 CURRENT ROUTE — CODEX CENSUS RECEIVED; RUN/TRACE ID EDGE OPEN
 
 The broad local census has been reported by Codex. Current local state is still reported as:
