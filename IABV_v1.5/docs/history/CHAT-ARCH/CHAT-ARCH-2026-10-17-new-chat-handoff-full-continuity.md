@@ -158,3 +158,28 @@ The reported dirty checkout remains out of scope and must not be inspected or mo
 **Routing:** Codex local — documentary-only R10 v0.7.3 author; then Claude/Sonnet — independent delta reviewer of the complete candidate. Do not restart the v0.7.2 audit.
 
 `R10_V0_7_2 = FAIL`; `M0–M5 = PROPOSED`; `V0.7.3 = NOT_CREATED`; `TESTS = NOT_RUN`; `GOVERNANCE = KEEP_BLOCKED`.
+
+
+## 11. Codex reports v0.7.3 candidate created — pending independent delta review — 2026-10-17, America/Bogota
+
+**Result reported by Codex local:** `DOCUMENTARY_CANDIDATE_CREATED_PENDING_INDEPENDENT_DELTA_REVIEW`; `GOVERNANCE = KEEP_BLOCKED`. This is a completion report from the authorized local authoring actor; the candidate ZIP was not attached to this ChatGPT session at the time of handoff and its content has not yet been independently inspected by the coordinator.
+
+Reported source verification:
+- Source ZIP: 50,589 bytes, SHA-256 `acfb468f78bebc3794b8ec7eaf81baf65d8c40cb66b3f8c7bd2065ffd07fe14e`.
+- Six payload sizes and hashes matched the embedded manifest; seven original ZIP entries were present.
+- Codex reports a candidate bundle with 14 unique entries, no duplicate entries or manifest discrepancies, seven historical items, and six preserved historical payload hashes.
+
+Reported candidate:
+- Windows path: `C:/temp/R10_v0_7_3_documentary_candidate_20261017/R10_V0_7_3_DOCUMENTARY_CANDIDATE.zip`.
+- Size: 86,835 bytes.
+- SHA-256: `1ace1d9331ee943a35fc4663855a09451919ae7b0e8619c799416b48bdae4049`.
+- Contract, matrix T123–T197, README, changelog, consistency/traceability report, independent-review prompt, manifest, and historical payloads are reported present.
+- Matrix reportedly has 75 unique IDs, each `NOT_RUN`, each with a normative basis and existing clause reference. These claims are `CODEX_LOCAL_REPORTED / OWNER_REPORTED` until compared to the attached candidate itself.
+
+**Next IA: Claude/Sonnet**, independent static/documentary delta reviewer. The actual Claude conversation must receive the candidate ZIP, the source v0.7.2 ZIP and the independent delta review prompt. Claude must first verify the actual attachments' identity, manifest and historical hashes. A missing attachment is `BLOCKED`, not acceptance or rejection.
+
+Required focus: M0 clause-over-oracle precedence; M1 T162 conflict/quarantine; M2 T141 parent attestation, T138 nonce expiry and missing `dispatch_turn_id` fail-closed behavior (including new T197); M3 vocabulary/T165/T169/state writers and the 14 flagged rows; M4 T130/T131 strategy/CAS/order invariance; M5 21 explicit outcomes, exact T180 boundary and T124–T126 self-containment; minor T159/headings/I4/I10/I12/§7(7); contract-matrix-reference-changelog-manifest consistency; historical byte preservation.
+
+No product code, matrix tests, build, runtime or probes were executed per Codex's report. This remains reported local information, not independently verified by this handoff. R10 v0.7.2 remains `FAIL`; candidate is not PASS, baseline acceptance, runtime proof or implementation authorization. After Claude's verdict, the coordinator reconciles; if needed, return only bounded documentary defects to Codex.
+
+`TESTS = NOT_RUN`; `PRODUCT_CODE_EXECUTION = NOT_RUN`; `BUILD = NOT_RUN`; `RUNTIME = NOT_RUN`; `GOVERNANCE = KEEP_BLOCKED`.
