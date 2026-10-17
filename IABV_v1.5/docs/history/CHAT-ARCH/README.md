@@ -1,3 +1,15 @@
+## 2026-10-16 ROUTE UPDATE — LOCAL CENSUS RECEIVED; TRACE-ID RECONCILIATION NEXT
+
+The Codex local census has been received and recorded in the recommendation-gate follow-up. Do not repeat the broad census. The next narrow edge is to reconcile the local TaskOutcomeRecorder._source_trace_ids() against HEAD, and verify all producers/consumers of supporting_run_ids, source_trace_ids, operational_trace_ids, reusable_trace_ids, winning_trace_ids and supporting_trace_ids.
+
+A public cross-check at 9e0ce66768aedd7422e0d3551affd398f44a7532 shows _source_trace_ids() reads reusable_trace_ids, winning_trace_ids or supporting_trace_ids. Codex describes its modified working-tree version as reading operational_trace_ids. task_outcome_recorder.py is reported as modified locally, so this is an unresolved version delta, not yet a proven defect.
+
+Next after the exact local delta is resolved: Claude Web challenges the reconciled neutral-sandbox metric design and A/B mitigation, using public source and the local report as supplied evidence. Claude Web cannot verify local files.
+
+Evidence record: [recommendation-gate follow-up](../2026-10-16_iabv_recommendation_gate_codex_followup.md). Keep all 96 tracked modifications and data/ intact. No implementation, tests, runtime, M0A or bridge. GOVERNANCE = KEEP_BLOCKED.
+
+---
+
 ## 2026-10-16 OBJECTIVE ROUTE — OPERATIONAL RECOMMENDATION GATE / AGENT SYMBIOSIS
 
 This is the active objective-specific route for the recommendation-gate and agent-continuity work. It does not supersede independent M0B/R10 governance routes or authorize implementation.
