@@ -1158,3 +1158,30 @@ Dos helpers `_workspace` reportan un `tempfile.mkdtemp()` para crear un director
 
 Auditoría estática acotada del diff local concreto de esta tarea: reconciliar la cantidad de archivos; comprobar que cada consumidor relevante falla de forma cerrada ante clase ausente/vacía/desconocida/consultiva; comprobar coherencia entre implementación y pruebas; identificar cualquier ruta de producción de trazas que deba asignar explícitamente la clase operativa. Preservar los 96 archivos modificados, no inspeccionar ni manipular `data/`/SQLite, y no ejecutar pruebas o código hasta que exista una decisión autorizada sobre la validación. Mantener `KEEP_BLOCKED`.
 
+## 32. 2026-10-16 — Resultado de revisión estática fail-closed incompleta
+
+**Proveniencia:** `CODEX_LOCAL_REPORTED`, a partir del reporte entregado por el propietario en esta conversación. No constituye verificación independiente del checkout ni del checkpoint local.
+**Resultado:** `EVIDENCE_CLASS_STATIC_REVIEW_INCOMPLETE`.
+**Gobierno:** `KEEP_BLOCKED`.
+
+### Identidad y alcance reportados
+
+- Checkout declarado: `C:\temp\IABV_coordination_20261016`.
+- Rama declarada: `codex/iabv-agent-coordination-20261016`.
+- HEAD declarado: `3926b1144bb23c1066db579da711d3cdbc1611df`; el informe dice que continúa siendo el mismo.
+- Diff global reportado: 96 archivos, `+1237/-278`.
+- Ocho rutas pertinentes: `+321/-32`; siete se atribuyen a filtros y pruebas del parche. El cambio visible en self-teaching ya existía antes, por lo que la atribución del incremento mostrado anteriormente `+109/-10` continúa `UNPROVEN` al faltar un snapshot previo por archivo.
+- El reporte declara que no modificó el repositorio, no inspeccionó `data/` y no ejecutó pruebas ni código.
+- Informe/checkpoint local reportado: `C:\Users\faber.codex\visualizations\2026\10\16\01a146cd-2a68-78c3-819f-a4cc90940058\IABV_evidence_class_static_review_20261016.md`. Este proceso no abrió la ruta local.
+
+### Hallazgos y pendientes
+
+1. Los tres filtros principales revisados requieren explícitamente `evidence_class='operational_execution'` y mantienen sus predicados adicionales. Este hallazgo permanece `CODEX_LOCAL_REPORTED`, no verificado independientemente aquí.
+2. Faltan casos de prueba explícitos para `None`, valores con espacios y trazas etiquetadas `operational_execution` que incumplen predicados adicionales.
+3. No se completó el rastreo de consumidores de recomendaciones e identificadores hasta los efectos que habilitan; la cadena causal y sus controles siguen pendientes.
+4. La revisión global continúa incompleta. No se puede inferir validación funcional ni autorización de merge a partir de esta inspección.
+
+### Siguiente paso recomendado
+
+Mantener la actividad en dos carriles estáticos y separados: (a) completar las pruebas discriminantes faltantes como cambios propuestos, sin ejecutarlas hasta autorización; (b) seguir recomendaciones e identificadores desde su producción/selección hasta cualquier efecto, identificando qué filtro de evidencia controla cada transición. Conservar la procedencia de cada afirmación, no modificar ni inspeccionar `data/`/SQLite, preservar los cambios existentes y no prometer idempotencia, exactly-once o recuperación de recibos. `KEEP_BLOCKED` permanece vigente.
+
