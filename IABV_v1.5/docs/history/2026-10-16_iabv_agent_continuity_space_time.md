@@ -1068,3 +1068,63 @@ Antes de implementar cambios, usar Claude para revisar el siguiente lote puntual
 Cuando el alcance crítico esté claro, una modificación acotada posterior debe hacer fail-closed para clase ausente/desconocida en consumidores operativos, evitar que la metadata legacy de self-teaching se promueva sin procedencia, y añadir pruebas discriminantes con expectativas compatibles con el contrato. La reconciliación de escrituras cross-store y de consumo de pending signal se debe diseñar por separado y no vender como exactly-once.
 
 **Gobierno:** `KEEP_BLOCKED`. F1/F2 y la no-atomicidad reportada son hallazgos prioritarios; el diff total no ha sido revisado completamente ni validado con pruebas.
+
+
+## 30. Claude — ampliación de rutas críticas: evidencia sin clase y recibos atascados
+
+**Fuente:** informe aportado como `Markdown pegado(2).md`, atribuido a Claude, fecha de paquete 2026-10-16, HEAD reportado `3926b11`. Clasificación: **CLAUDE_REPORTED (relayed by owner)**. ChatGPT leyó el texto del informe adjunto, pero no abrió el ZIP ni inspeccionó directamente los fuentes. El informe no declara revisión completa. Gobierno `KEEP_BLOCKED`.
+
+### Cobertura declarada en esta sesión
+
+Rutas revisadas por secciones relevantes:
+- `autonomous_evolution_service.py`: `ingest_consult_response` completo, ll. 740–1060 según informe.
+- `tool_record_repository.py`: claim/complete receipt.
+- `task_context_assembler.py`: filtros de insights y traces.
+- `adaptive_task_orchestrator.py`: filtro de insight y `_read_pending_auto_execution`.
+- `task_outcome_recorder.py`: `record()` y filtro de insights.
+- `self_teach_orchestrator.py`: guided cycle, trace y learning registration.
+- `control_center_viewmodel.py`: dos funciones operativas y sus call sites.
+
+`tool_teach_service.py` solo tuvo grep estructural. `models.py` y `experiment_lab_repository.py` se inspeccionaron mediante búsquedas parciales. `database.py` y `experiment_lab.py` quedaron pendientes en esta iteración. El informe presenta una pequeña inconsistencia entre el resumen “6/12 fuentes revisadas en detalle” y las etiquetas de la tabla, que marca más fuentes como revisadas o secciones revisadas. Mantener diferenciadas las categorías FULL_DIFF_REVIEWED, RELEVANT_SECTIONS_REVIEWED, STRUCTURAL_GREP_ONLY y PENDING. Aproximadamente 73 tests siguen pendientes; no hubo ejecución de tests ni acceso a `data/`.
+
+### Evidencia operativa — hallazgos materiales reportados
+
+- `TaskContextAssembler._is_operational_trace`: una clase vacía puede pasar si `success=True`, `verdict=approved`, estado `executed/completed` y sin flags. Eso contradice el contrato actual “ausente/vacía/desconocida → no operacional por defecto”, aunque tenga un comentario de compatibilidad legacy.
+- `_is_operational_experiment_insight` en `task_context_assembler.py` y `adaptive_task_orchestrator.py`, más `TaskOutcomeRecorder._operational_experiment_insights`, aceptan explícitamente `evidence_class in {'', 'operational_execution'}`. Para clases vacías, el insight pasa si el dominio no es consultivo.
+- `self_teach_orchestrator._guided_trace_entry` y `_register_learning` reportan metadata sin `evidence_class`, usando dominios `CODE` o `LANGUAGE`. Esto forma un camino desde el self-teaching a insights no clasificados que esos consumers pueden tratar como operacionales.
+- La ingestión externa parece etiquetar explícitamente `consultation_advisory`, con `success=False` y estados de operación/postcondición no ejecutados/no verificados. Esto no corrige el camino de self-teaching sin clase.
+- `ExperimentLabRepository._recommendation_has_consultation_support` se reporta como fail-closed para recomendaciones sin IDs de runs de soporte auditable; es un comportamiento favorable en la sección leída, no prueba que todos los consumers downstream estén cerrados.
+- Los tests actuales para insights cubren `unclassified`, `consultation_advisory` y `operational_execution`, pero no la clase vacía; el hueco está reportado en dos suites. La expectativa correcta según el contrato es `False`/neutral para clase ausente, vacía o desconocida; solo una clase explícita operacional, con demás predicados satisfechos, puede ser elegible.
+- `_is_operational_teaching_prompt` se reporta como exclusión negativa dentro de `_is_learning_question`; `_is_operational_status_question` bloquea concesión automática de permiso de observación. En los call sites leídos no modifican directamente la selección de asistente. Estos hallazgos tienen cobertura de sección, no de diff completo.
+
+### Recibos de consulta — ramas reportadas
+
+La traza reportada indica que correlación e identidad se resuelven antes del claim, sin efectos de ingestión. Tras `claim_consultation_ingestion`:
+- `claimed`: corre el plan, parseo/validación, pending issue, experimento, guardado de task/result y auditoría; finalmente intenta pasar el recibo a `completed`.
+- `processing`: la ingestión retorna `ingestion_incomplete` sin repetir efectos.
+- `identity_conflict`: retorna conflicto sin efectos de ingestión.
+- `completed`: retorna duplicado sin repetir efectos.
+- Error en el claim: retorna `ingestion_blocked`.
+
+Un fallo de `complete_consultation_ingestion` puede ocurrir tras los demás efectos y generar una excepción no capturada. El recibo puede permanecer en `processing`. El mismo estado no distingue si el proceso previo falló antes de hacer efectos o después de completar la mayoría de ellos. No se ha recuperado un mecanismo externo de reconciliación. Es apropiado no reintentar ciegamente, pero el bloqueo sin reconciliación puede ser persistente. No se afirma exactly-once entre receipt SQLite, tasks/results, JSON y audit log.
+
+### Persistencia en otros recorridos
+
+`TaskOutcomeRecorder.record()` reporta escrituras secuenciales independientes a ExperimentLab/learning, capabilities, approval checkpoints, adaptive session, Control Master y resume hint. Un fallo intermedio puede dejar efectos huérfanos; un reintento superior puede crear un segundo ExperimentRun antes de persistir la sesión. Este recorrido debe tratarse separado del recibo de consulta, sin asumir que el receipt lo cubre.
+
+`_read_pending_auto_execution()` se reporta como read → re-read → write sin lock/CAS atómico demostrado. La carrera queda como **PROPOSED risk**, pues la concurrencia efectiva no está confirmada.
+
+### Fixtures
+
+Dos helpers `_workspace` reportan un `tempfile.mkdtemp()` para crear un directorio base, luego un subdirectorio retornado y borrado por el test; la base queda huérfana. Uno de los cleanups en `test_tool_record_repository_round_trip` se reporta fuera de `try/finally`. Esto indica limpieza incompleta de directorios temporales, pero no es por sí solo prueba de afectación de datos ajenos. No ejecutar tests ni inspeccionar `data/` para comprobarlo.
+
+### Siguiente paso acotado
+
+1. Preparar una reparación localizada de los tres filtros operativos para que `evidence_class` ausente/vacía/desconocida no sea elegible como operacional; añadir clasificación explícita al productor de self-teaching solo si los contratos permiten justificarla, sin fingir ejecución verificada.
+2. Añadir tests discriminantes propuestos para clase ausente, vacía, desconocida y explícita operacional, con expectativa conforme al contrato. No ejecutarlos hasta autorización separada.
+3. Antes de cambiar ingestión, documentar una máquina de estados/reconciliación que distinga efectos previos y posteriores a cada escritura; mientras no haya evidencia durable por efecto, conservar fail-closed y exigir resolución explícita.
+4. Inspeccionar `tool_teach_service.py`, `database.py`, `experiment_lab.py` y tests de recepción/procedencia pendientes antes de ampliar cambios.
+5. Corregir inventario de cobertura para que cada archivo y sección tenga una sola categoría real y conservar los archivos no leídos como pendientes.
+6. No editar `data/`, no ejecutar pruebas, builds, runtime o transporte, no publicar ni desbloquear.
+
+**Estado:** `STATIC_DIFF_REVIEW_INCOMPLETE`. Los hallazgos de clase vacía y ausencia de reconciliación se consideran prioridades de diseño reportadas desde las secciones leídas, no validación independiente del diff completo. Gobierno `KEEP_BLOCKED`.
