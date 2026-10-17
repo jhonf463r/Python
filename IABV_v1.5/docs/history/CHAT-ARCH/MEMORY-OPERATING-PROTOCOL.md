@@ -1,3 +1,13 @@
+## 2026-10-17 METHOD DELTA — READY-TO-PASTE PROMPTS ARE THE PRIMARY HANDOFF
+
+When giving the Owner a prompt for Codex, Claude/Sonnet, Kilo/OpenCode, or another IA, put the **complete usable prompt directly in the chat in one clearly delimited copy/paste block**. A downloadable file or GitHub link may be supplemental, but must never be the only delivery of a prompt the Owner must pass to the next actor. Do not make the Owner open a file and manually reconstruct the instructions from a link.
+
+Each prompt must state the exact destination IA, role/mode, current objective/frontier, commit-pinned or attached inputs, required checks, evidence/provenance labels, explicit forbidden actions/governance gate, required output/verdict, next actor and cleanup/writeback boundary. Carry forward decisions and closed edges; do not ask the Owner to repeat known repository names, constraints, or prior findings. Keep the surrounding explanation concise and operational.
+
+For the current R10 relay: next actor is Claude/Sonnet for independent static review via commit `570cfd06b7c8965aba04fc3f09698185debfba3d`; relay publication does not verify the ZIP hashes itself or accept the candidate.
+
+---
+
 ## 2026-10-17 METHOD DELTA — VERIFY THE DESTINATION STRING BEFORE DIAGNOSING PERMISSION
 
 A repository-access failure must be localized to the exact resource name before inferring permissions/authentication are at fault. Compare the owner/repository path against a previously verified canonical URL and perform a read-only API/reachability check using that exact string before asking for new access or credentials.

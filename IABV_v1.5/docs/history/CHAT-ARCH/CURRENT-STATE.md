@@ -1,3 +1,26 @@
+## 2026-10-17 ACTIVE NEXT ACTION — CLAUDE INDEPENDENT DELTA REVIEW THROUGH PUBLISHED RELAY
+
+**Relay publication verified via GitHub API:** public repository `jhonf463r/Python`; temporary ref `handoff/r10-v073-review-20261017` points to commit `570cfd06b7c8965aba04fc3f09698185debfba3d`. The commit tree contains 17 file blobs (relay index, candidate ZIP, 14 extracted candidate files, original source ZIP); the relay commit is separate from `main` and this continuity branch. PR #467 remains open, Draft and unmerged.
+
+**Evidence boundary:** `GITHUB_API_VERIFIED` covers the branch→commit identity, public tree/path inventory, and text payload access. ZIP byte/hash verification is still `CODEX_LOCAL_REPORTED`: Codex reports both binaries were downloaded again from commit-pinned raw URLs and their size/SHA-256 matched, but this coordinator's GitHub connector cannot calculate binary ZIP digests. Claude must verify both binaries itself before claiming binary verification.
+
+- Candidate ZIP (86,835 bytes; SHA-256 reported as `1ace1d9331ee943a35fc4663855a09451919ae7b0e8619c799416b48bdae4049`): https://github.com/jhonf463r/Python/raw/570cfd06b7c8965aba04fc3f09698185debfba3d/candidate/R10_V0_7_3_DOCUMENTARY_CANDIDATE.zip
+- Original v0.7.2 source ZIP (50,589 bytes; SHA-256 `acfb468f78bebc3794b8ec7eaf81baf65d8c40cb66b3f8c7bd2065ffd07fe14e`): https://github.com/jhonf463r/Python/raw/570cfd06b7c8965aba04fc3f09698185debfba3d/source/R10_V0_7_2_REPAIR_PACKAGE_FOR_CLAUDE.zip
+- Pinned relay index: https://github.com/jhonf463r/Python/blob/570cfd06b7c8965aba04fc3f09698185debfba3d/RELAY_INDEX.md
+- Contract: https://github.com/jhonf463r/Python/blob/570cfd06b7c8965aba04fc3f09698185debfba3d/candidate/extracted/R10_V0_7_3_CONTRACT.md
+- Matrix T123–T197: https://github.com/jhonf463r/Python/blob/570cfd06b7c8965aba04fc3f09698185debfba3d/candidate/extracted/R10_V0_7_3_TEST_MATRIX_T123_T197.csv
+- README / changelog / consistency report / manifest / independent-review prompt are the sibling files in `candidate/extracted/` pinned to the same SHA.
+
+**Next actor: Claude/Sonnet; mode: independent static documentary delta review only.** Use the complete ready-to-paste prompt provided by the coordinator after this checkpoint; the published review prompt is also at https://github.com/jhonf463r/Python/blob/570cfd06b7c8965aba04fc3f09698185debfba3d/candidate/extracted/R10_V0_7_3_INDEPENDENT_DELTA_REVIEW_PROMPT.md. Check candidate/source ZIP digests and inventories, compare all seven historical source artifacts byte-for-byte, read the full contract and all 75 matrix rows, audit M0–M5 and the previously flagged minor clusters (T124–T126, T130–T131 strategy lineage/CAS/order, T138/T141 correlation/nonce/parent attestation, T159 §10.1, T144/T154/T164 stray headings, T165/T169 vocabulary/writers, T175–T185 and T187–T196 explicit oracles including T180 at t0+600s, I4/I10/I12 mapping, §7(7) evidence contract, T197 fail-closed missing dispatch turn). Identify exact file/section/test ID, quoted rule, counterexample/impact, required evidence or minimum repair, and evidence classification.
+
+If binary retrieval fails, distinguish that limitation from semantic findings. A bounded review of the commit-pinned text files is permitted only with explicit disclosure that ZIP bytes and historical byte identity were not independently verified; do not imply complete package acceptance. No candidate edits or repository writes by reviewer.
+
+Current status: `R10 v0.7.2 = FAIL`; `R10 v0.7.3 = PENDING_INDEPENDENT_DELTA_REVIEW`; every T123–T197 case remains `NOT_RUN`; product execution/tests/build/runtime = `NOT_RUN`; `GOVERNANCE = KEEP_BLOCKED`. After the review is reconciled and compactly written back, remove only the temporary relay ref and its local staging directory. Do not touch `main`, inspect the dirty IABV checkout, `data/` or SQLite, or change PR #467.
+
+This section supersedes prior top-level entries below that say relay publication is still pending, candidate is unpublished, or the next step is to transfer/attach the ZIP. Those sections remain historical evidence, not current routing authority.
+
+---
+
 ## 2026-10-17 ACTIVE NEXT ACTION — CORRECT THE REPOSITORY OWNER TYPO
 
 Codex's relay attempt did not reach GitHub because the tested remote was `https://github.com/jhonf463f/Python.git`. The correct repository owner is **`jhonf463r`** (ends in letter `r`, not `f`): `https://github.com/jhonf463r/Python`.
