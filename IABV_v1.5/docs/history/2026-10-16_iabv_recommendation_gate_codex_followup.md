@@ -867,3 +867,43 @@ The Contract V2 proposal to count only the newest run is not established by curr
 The bounded local reconciliation is complete for these topics. Draft a corrected Contract V2.1 incorporating this report, then ask Claude Web for one targeted adversarial review of class consistency, candidate identity, full ToolMemory fanout neutrality, attestation, TypedRef resolution and idempotency. Claude must treat this as a supplied Codex-local report, not claim direct access to the dirty checkout. Avoid another broad audit. Kilo/OpenCode are reserve challengers only if a material disagreement remains.
 
 No implementation or test execution is authorized. Do not inspect data/ or SQLite; do not modify the local checkout. `GOVERNANCE = KEEP_BLOCKED`.
+
+
+## 4. R10 local causal reconstruction — sandbox promotion to persisted ranking influence
+
+**Source/provenance:** report pasted by the owner and attributed to Codex local. This addendum preserves the result as `CODEX_LOCAL_REPORTED / OWNER_REPORTED`, not an independent reinspection of the dirty checkout. The route-specific line references are those quoted in the report.
+
+### Current adjudication
+
+`R10_OPERATIONAL_GATE_CAUSAL_RECONSTRUCTION_WITH_EVIDENCE_AND_GAPS` is valid only for the inspected static paths. The reported implementation can assign `VALID`, `promote_to_primary=True`, and `status='promoted'` when the baseline has blockers and `_best_alternative()` returns a ranked alternative. The method examined reportedly does not invoke the candidate or verify its postconditions.
+
+When promotion is set, `SandboxExperimentService._record_promotion()` reportedly persists a second `ExperimentRun` for the original subject with `success=True`, `execution_ms=0`, `candidate_id=experiment_id`, and `learning_source='sandbox_promotion'`, with no explicit `evidence_class='operational_execution'`. The route then enters ExperimentLab recommendation generation. `StrategySelector` may include all group runs as support if at least one run succeeded; `AdaptiveWeightLayer` consumes success/profile metrics. This is a path to persisted ranking/weight influence, not proof of real execution or production dispatch.
+
+### Narrow filters are not a common barrier
+
+The reported diff adds filters in `TaskContextAssembler` for operational insights requiring explicit `operational_execution`. It also adds consultative-evidence filters to portions of `ExperimentLab` and its repository, but does not, in the inspected path, reject `learning_source='sandbox_promotion'`, `suite_name='sandbox_promotion'`, or missing class at every recommendation/ranking boundary. `AutonomousValidationCycle._next_candidate()` and the ToolDiscovery/Monitor path therefore remain material places to inspect.
+
+### Reported route map
+
+- Trigger and alternative: `sandbox_experiment_service.py:28, 195, 237`.
+- Verdict/promote decision: `sandbox_experiment_service.py:56-62`.
+- Sandbox and promoted outcome writes: `sandbox_experiment_service.py:115, 120, 160`.
+- Recommendation persistence/selection: `experiment_lab.py:160`, `experiment_lab_repository.py:17, 155`, `strategy_selector.py:67`.
+- Discovery proposal: `tool_discovery_service.py:187, 257`; `tool_evolution_monitor.py:674, 701`.
+- Bounded operational-context filter: `task_context_assembler.py:1097, 1400`.
+
+These are Codex-reported local line references. The owner-provided report states the relevant local diffs were compared against HEAD for the named files, but ChatGPT has not recomputed those diffs.
+
+### Open falsifiers and residual gaps
+
+1. Does a `validate_discovery` proposal ever reach a real dispatch boundary? Identify that path and its authorization gates; a proposal alone is not execution.
+2. If dispatch exists, can the exact candidate/attempt be linked to its outcome and independently verified postconditions before the promoted record is written or consumed?
+3. Which direct consumers of ExperimentLab recommendations/runs filter evidence class, source cohort, candidate identity and support membership individually?
+4. Is there a transactional or compensating boundary around run persistence, recommendation creation and promotion outcome? Do not infer atomicity from call order.
+5. Are support references resolved to real entities with valid relationships, or merely copied as strings across run/trace namespaces?
+
+### Next action
+
+Assign Codex, using the same authorized local checkout, one strictly read-only route trace: `ToolEvolutionMonitor` → `validate_discovery` → any actual dispatcher. Return exact predicates, dispatch call, authorization/attestation and postcondition gates, and whether the promotion-derived recommendation can reach it. Do not run tests/code or alter the checkout; do not inspect `data/` or SQLite. After that, request one independent adversarial review from Claude Web using the report and source excerpts, while explicitly stating Claude has no local access.
+
+No code changes or test authorization. `GOVERNANCE = KEEP_BLOCKED`.
