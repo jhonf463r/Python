@@ -1,3 +1,29 @@
+## 2026-10-16 METHOD DELTA — SANDBOX-NEUTRAL OUTCOMES AND CONTEXTUAL AGENT ROUTING
+
+This is an objective-conditioned method delta, not a new coordinator or parallel memory system.
+
+For the operational recommendation gate, treat the following as distinct dimensions:
+- evidence provenance/class: what kind of event was actually evidenced;
+- evidence outcome: positive, negative, partial, inconclusive;
+- consumer eligibility: whether a specific decision sink may use that evidence.
+
+Do not overload a generic success boolean to stand for all three. A real operational attempt can fail and still be operational evidence. A sandbox validation can be positive without a real execution. An unclassified historical record is not automatically a failure or operational success.
+
+Current finding: the reported local producer and consumer census identifies a sandbox promotion that writes success=True without demonstrated execution of the selected alternative. Changing it to success=False alone may misclassify a non-executed sandbox result as an operational failure because adaptive profiles include false success in failure_count and negative recency. Preserve evaluation/blocker information in a separate cohort; keep sandbox and unknown historical outcomes neutral for operational-execution denominators until a contract says otherwise.
+
+Method correction from this episode:
+- distinguish NOT_FOUND_IN_CHECKOUT from NOT_FOUND_ON_DISK;
+- continue on accessible primary source if an auxiliary checkpoint is missing;
+- separate HEAD, working tree and public GitHub evidence;
+- enumerate all producer/consumer effects before proposing a helper or one-point fix;
+- validate run-ID and trace-ID namespaces rather than copying them as if equivalent;
+- choose the next actor by required capability + access + independence + uncertainty, not by a fixed sequence;
+- write material deltas back to existing CURRENT-STATE, CONTEXT-INDEX, SYMBIOSIS-MAP, UNRESOLVED-KNOWLEDGE and ARCHIVE-REGISTRY. Do not create a second brain.
+
+Current task-specific memory and provenance: [recommendation-gate follow-up](../2026-10-16_iabv_recommendation_gate_codex_followup.md).
+
+All local checkout details remain CODEX_LOCAL_REPORTED; public-source inspection does not prove local runtime effects. Governance remains KEEP_BLOCKED.
+
 ## 2026-10-13 CANONICAL ROUTE — ENTRY 280: C6 FAIL RECONCILIATION / AMENDMENT 274.5
 
 Canonical artifact: [CHAT-ARCH-2026-10-13-280-m0b-r8-1-c6-delta-adjudication-and-amendment-274-5.md](./CHAT-ARCH-2026-10-13-280-m0b-r8-1-c6-delta-adjudication-and-amendment-274-5.md) — blob `6d7d7f4966e1224456e00410c812395e6a5c598f`, commit `0a462d66071f2d354e8a299ffaf859b3aeac61d5`.
