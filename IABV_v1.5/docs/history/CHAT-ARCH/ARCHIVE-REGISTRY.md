@@ -1,3 +1,16 @@
+## 2026-10-16 REGISTRY — RECOMMENDATION GATE / AGENT SYMBIOSIS FOLLOW-UP
+
+- Record: [2026-10-16_iabv_recommendation_gate_codex_followup.md](../2026-10-16_iabv_recommendation_gate_codex_followup.md)
+- Branch: docs/iabv-space-time-agent-continuity-2026-10-16
+- Source-record commit at registration: 70659edfe3ecd4708695c6c373502b93a8ce53be
+- Source-record blob SHA at registration: d456e0bb89f03a7aa73f41b7ace6fe04281f22ce
+- Scope: Codex local outcome census; Kilo's static causal map; Claude Web's public-source challenge; selected public-main checks; agent model/task observations; neutral sandbox outcome design; supporting-run versus trace-ID concern.
+- Evidence status: local details remain CODEX_LOCAL_REPORTED; public source observations are pinned in the source record; runtime effects remain UNPROVEN.
+- Routing: use the top objective overlay in CURRENT-STATE and CONTEXT-INDEX. Next task is local static reconciliation of all success producers/consumers and ID lineage; no implementation yet.
+- Governance: KEEP_BLOCKED. This is documentation-only continuity; no product code, tests, runtime or physical bridge is authorized.
+
+---
+
 ## 2026-10-13 CANONICAL ROUTE — ENTRY 280: C6 FAIL RECONCILIATION / AMENDMENT 274.5
 
 Canonical artifact: [CHAT-ARCH-2026-10-13-280-m0b-r8-1-c6-delta-adjudication-and-amendment-274-5.md](./CHAT-ARCH-2026-10-13-280-m0b-r8-1-c6-delta-adjudication-and-amendment-274-5.md) — blob `6d7d7f4966e1224456e00410c812395e6a5c598f`, commit `0a462d66071f2d354e8a299ffaf859b3aeac61d5`.
