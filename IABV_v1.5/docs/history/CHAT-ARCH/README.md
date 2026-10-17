@@ -1,3 +1,10 @@
+## 2026-10-17 ACTIVE ROUTE — R10 v0.7.2 FAIL, OWNER DECISION REQUIRED
+
+The R10 v0.7.2 documentary audit is closed with `FAIL`. Six payload hashes match, but normative contradictions and matrix gaps remain. The minimum proposed repairs M0–M5 are unimplemented; no v0.7.3 exists. Read [the full closure record](https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-r10-v072-audit-closure-fail.md).
+
+Next: owner decides whether to return M0–M5 to the package author, then request an independent delta review. This is distinct from the accepted-with-limitations discovery/sync-pulse trace. `GOVERNANCE = KEEP_BLOCKED`.
+
+---
 ## 2026-10-17 ACTIVE ROUTE — TRACE ACCEPTED WITH LIMITATIONS
 
 Discovery ↔ sync-pulse bounded trace: Claude Web verdict `TRACE_ACCEPTED_WITH_LIMITATIONS`, accepted only for no explicit typed per-proposal adapter in the searched/reviewed tracked `IABV_v1.5/src` and `tests` routes. The possible `evidence_refs → ExperimentRun → proposal_id/discovery_signal_id` two-hop remains `UNRESOLVED`. See [final adjudication](https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-r10-sync-pulse-trace-final-adjudication.md) and [targeted evidence](https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-r10-sync-pulse-targeted-evidence-result.md).
