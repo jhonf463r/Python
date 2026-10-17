@@ -1,3 +1,13 @@
+## 2026-10-17 ROUTE UPDATE — SLICE A STATIC ACCEPTANCE WITH LIMITATIONS
+
+- **New continuity record:** [CHAT-ARCH-2026-10-17-r10-slice-a-static-review-with-limitations.md](CHAT-ARCH-2026-10-17-r10-slice-a-static-review-with-limitations.md)
+- **Disposition:** `SLICE_A_REVIEW_ACCEPTED_WITH_REMAINING_LIMITATIONS`, static artifact-scoped review only.
+- **Unresolved:** F-04 loader exhaustiveness; F-09 hunk attribution. F-05/F-06/F-07 stay deferred/open. Tests `NOT_RUN`.
+- **Local claims:** `OWNER_REPORTED`; do not interpret as verified public HEAD or clean checkout.
+- **Next route:** Codex local, read-only producer/schema/adapter trace for `self_examination/latest.json.metadata.solution_proposals` and a typed bridge from `validate_discovery`; no expansion into `plan_or_execute()` without that bridge.
+
+---
+
 ## 2026-10-16 REGISTRY UPDATE — CODEX LOCAL IDENTITY AND TOOLMEMORY LINEAGE
 
 - Latest source record: [recommendation-gate follow-up, Section 23](../2026-10-16_iabv_recommendation_gate_codex_followup.md)
