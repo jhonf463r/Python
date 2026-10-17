@@ -195,4 +195,4 @@ The Codex-local report remains `CODEX_LOCAL_REPORTED / OWNER_REPORTED`: candidat
 
 After transfer, the owner attaches the candidate ZIP, original v0.7.2 ZIP and independent-review prompt to Claude/Sonnet's actual conversation. Claude then verifies the attached artifact identity, manifest completeness and historical hashes before reviewing M0–M5, minor repairs and T197. Only after the semantic review should the coordinator reconcile the verdict and consider a bounded repair task.
 
-`R10_V0_7_2 = FAIL`; `V0.7.3) = CODEX_LOCAL_REPORTED, PENDING INDEPENDENT REVIEW`; `TESTS = NOT_RUN`; `PRODUCT_CODE_EXECUTION = NOT_RUN`; `GOVERNANCE = KEEP_BLOCKED`. PR #467 remains open, Draft and unmerged.
+`R10_V0_7_2 = FAIL`; `V0.7.3 = CODEX_LOCAL_REPORTED / PENDING_INDEPENDENT_DELTA_REVIEW`; `TESTS = NOT_RUN`; `PRODUCT_CODE_EXECUTION = NOT_RUN`; `GOVERNANCE = KEEP_BLOCKED`. PR #467 remains open, Draft and unmerged.
