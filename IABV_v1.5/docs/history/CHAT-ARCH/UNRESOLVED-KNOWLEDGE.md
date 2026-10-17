@@ -1,3 +1,10 @@
+## 2026-10-17 UNRESOLVED — R10 v0.7.2 NORMATIVE MATRIX CONTRACT CONFLICTS
+
+Audit verdict `FAIL`; no implementation or v0.7.3 produced. Open defects: no contract clause-vs-oracle precedence; T162 contradicts §§8.3/12; T141 can report CORRELATED without parent relation and T138 adds unsupported expiry; T130/T131 add uncontracted strategy-lineage exclusivity; D6 uses undefined vocabulary and mismatched failure codes; 21 rows omit explicit expected outcomes and T180 exact t0+600s edge lacks result. Atomicity and implementation dependencies remain `UNPROVEN`.
+
+Minimal repairs M0–M5 are `PROPOSED` only. Owner decision: return these documentary repairs to package author, then obtain independent delta review. Details: [R10 v0.7.2 audit closure](https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-r10-v072-audit-closure-fail.md). `GOVERNANCE = KEEP_BLOCKED`.
+
+---
 ## 2026-10-17 UNRESOLVED FRONTIER — OSES EVIDENCE-REFERENCE TWO-HOP
 
 The direct typed-adapter claim for discovery → individual sync-pulse `solution_proposals` is accepted with limitations. Do not reopen it globally. Open only if individual attribution is required: determine whether `recommendation.supporting_run_ids`, `validation.last_experiment_id`, or `best_run.run_id` used by OSES `validated_collaboration` can resolve to an `ExperimentRun` whose `proposal_id` / `discovery_signal_id` is the discovery source, and identify the provenance of the recommendation consumed by `_validated_improvements`. This relation is `UNRESOLVED`, not confirmed or disproved.
