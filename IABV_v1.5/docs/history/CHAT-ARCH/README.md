@@ -1674,3 +1674,16 @@ Authority separation:
 historical records = evidence/history.
 
 Every material human/AI idea should be preserved as a concept or explicit revision/competing interpretation with parent, origin, derivation reason, epistemic status, evidence and next open edge.
+
+## 2026-10-16 ACTIVE CONTINUITY POINTER — R10 SANDBOX PROMOTION / DISPATCH EDGE
+
+The current IABV recommendation-gate frontier is recorded in:
+- Detailed continuity §35: `IABV_v1.5/docs/history/2026-10-16_iabv_agent_continuity_space_time.md`.
+- Gate addendum §4: `IABV_v1.5/docs/history/2026-10-16_iabv_recommendation_gate_codex_followup.md`.
+- Routing authority: `CHAT-ARCH/CURRENT-STATE.md`.
+
+The owner-supplied Codex-local report traces a static path from blockers plus a ranked alternative through sandbox promotion to an operational-looking `success=True` outcome and potential ExperimentLab ranking/adaptive-weight influence. It does **not** establish actual candidate execution, dispatch, or postconditions. `TaskContextAssembler` has a narrower operational-evidence filter; do not infer universal protection from that path.
+
+Next actor: **Codex with local checkout access**, one read-only route only: `ToolEvolutionMonitor` → `validate_discovery` → any real dispatcher and its authorization/postcondition gates. Follow with Claude Web for an adversarial challenge of the supplied map; Claude cannot certify local files.
+
+`GOVERNANCE = KEEP_BLOCKED`. No implementation or test/runtime authorization. Do not inspect `data/` or SQLite.
