@@ -1,3 +1,13 @@
+## 2026-10-16 SYMBIOSIS UPDATE — V2 REVIEW REQUIRES TARGETED CODEX DELTA
+
+Claude V2 is stronger, but not yet implementation-ready. New source-backed learning: public `ToolMemory.remember_result()` increments ToolCard success/failure counters from `result.success` before invoking InteractionLearningService, so skipping only interaction learning cannot guarantee sandbox neutrality. The sandbox producer also uses `candidate_id=experiment.experiment_id`, in addition to TaskOutcomeRecorder assigning `run_record.run_id` to candidate_id.
+
+Next actor: Codex local for narrow read-only comparison of those identity and counter paths, whether local changes alter public behavior, and whether a real authoritative execution attestation or supersession/idempotency contract already exists. Do not delegate another broad audit. Full route: follow-up Section 22.
+
+No code/testing/runtime/local mutation; do not inspect data/ or SQLite. `GOVERNANCE = KEEP_BLOCKED`.
+
+---
+
 ## 2026-10-16 SYMBIOSIS UPDATE — CLAUDE CHALLENGE → CONTRACT V2
 
 Claude Web usefully found denominator neutrality, mixed support, historical unknowns and incomplete route coverage as contract holes. Its limits remain: it cannot inspect the reported dirty Windows checkout. Public commit verification shows `ExperimentLab.generate_training_corpus()` exists and uses `run.success`; treat the report's UNRESOLVED on this method as reviewer non-verification, not source absence.
