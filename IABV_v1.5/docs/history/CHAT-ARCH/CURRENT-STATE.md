@@ -1,3 +1,16 @@
+## 2026-10-17 DECISION OVERLAY — BRIDGE NOT READY; NO TRACE DRIFT
+
+**Current assessment:** `BRIDGE_NOT_READY`. The discovery ↔ sync-pulse trace has a final `TRACE_ACCEPTED_WITH_LIMITATIONS` verdict, but this accepts only a bounded negative finding: no direct typed per-proposal adapter was found in the reviewed tracked source/test paths. It does not mean a bridge is built or operational. The possible `evidence_refs → ExperimentRun → proposal_id/discovery_signal_id` two-hop remains `UNRESOLVED`; the call site to `plan_or_execute()` does not prove execution, authorization, or postconditions. [Readiness gates]( https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-bridge-readiness-assessment.md ) · [Trace adjudication]( https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-r10-sync-pulse-trace-final-adjudication.md ).
+
+The separate R10 v0.7.2 audit is `FAIL`; M0–M5 are `PROPOSED`, the matrix tests remain `NOT_RUN`, and atomicity/implementation dependencies remain `UNPROVEN`. This is a normative-readiness blocker if that package is the contract for the bridge. [Audit closure]( https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-r10-v072-audit-closure-fail.md ).
+
+**Next route:** owner decision on returning M0–M5 to the package author; after a corrected documentary package exists, one independent delta review. Only if individual causal attribution is required, run one targeted static check of the producer/namespace of `supporting_run_ids`, `last_experiment_id`, and `best_run.run_id`. No new broad trace, no implementation, no dispatcher, no Packages B–E, no M0A, no `data/` or SQLite.
+
+Continue the causal work protocol: **objective/context → evidence/provenance → hypothesis/frontier → authorized action → observation → reconciliation → persist/reuse**. Each handoff must identify the active objective and actor, attach the evidence itself (not a cross-chat reference), state what is and is not proven, and preserve current limits. Keep public GitHub, local HEAD, dirty working tree, owner report, and runtime as separate evidence domains.
+
+`GOVERNANCE = KEEP_BLOCKED`; code/tests/build/runtime `NOT_RUN`.
+
+---
 ## 2026-10-17 ROUTE UPDATE — R10 v0.7.2 AUDIT CLOSED WITH FAIL
 
 Final verdict: `FAIL`. Six artifact payload hashes match the manifest (`PROVEN_BY_SOURCE` for the extracted bytes), but hash agreement is not semantic approval, identity/version equivalence, or implementation proof. The main blockers are normative matrix/contract contradictions: D2 open (especially T162 vs §§8.3/12, with no precedence rule), D3 partial (T141 can return CORRELATED without attested parent relation; T138 expiry is unsupported by contract), D4 partial (T130/T131 add uncontracted strategy-lineage semantics), D6 partial (undefined terms and mismatched failure codes), plus 21 rows lack explicit expected outcomes and T180's exact deadline boundary is unspecified. See [full audit closure](https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-r10-v072-audit-closure-fail.md).
