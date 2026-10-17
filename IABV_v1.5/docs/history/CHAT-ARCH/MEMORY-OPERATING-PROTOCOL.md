@@ -1,3 +1,18 @@
+## 2026-10-16 METHOD DELTA — TRACE ENTITY IDENTITY AND FULL FANOUT
+
+New rules from focused Codex local evidence:
+- Keep RunRecord.run_id, SandboxExperiment.experiment_id, ExperimentRun.run_id and ExperimentCandidate.candidate_id as distinct typed namespaces. Do not alias a run or experiment ID into candidate_id; require resolution to an actual candidate identity or a defined canonical fingerprint.
+- supporting_run_ids is not proof of support membership; validate every run against candidate/domain/subject/scope/configuration and tag positive, negative or contextual role.
+- source_trace_ids must be trace references, not copied run IDs, unless a real typed relationship is resolved.
+- ToolMemory sandbox neutrality includes the earlier ToolCard counter and validation-state writes, events/logging and downstream consumers; gating only InteractionLearningService is incomplete.
+- SANDBOX_PASS is a status, not authoritative provenance. Carry/validate sandbox source separately.
+- Operational attestation must bind an authoritative execution to actor, task/scope, candidate/configuration, terminal state and postconditions.
+- Use stable event/execution identity for idempotency. Do not discard older distinct runs merely because a newer run exists; define corrections and latest-state projection separately.
+
+Evidence and exact local locations are in follow-up Section 23. Preserve source provenance: Codex local report, no independent access by this assistant. No code or tests. GOVERNANCE = KEEP_BLOCKED.
+
+---
+
 ## 2026-10-16 METHOD DELTA — CONTRACT V2.1 CONSISTENCY CHECK
 
 Before implementation, the contract must pass these additional checks:
