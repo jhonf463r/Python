@@ -1,3 +1,15 @@
+## 2026-10-16 ROUTE UPDATE — CODEX LOCAL REPORT RECEIVED
+
+The bounded local source reconciliation is complete for candidate identity, ToolMemory fanout, attestation and idempotency. Do not repeat the broad audit.
+
+Next: contract V2.1 plus one bounded Claude Web adversarial review. Correct candidate_id aliases (RunRecord/SandboxExperiment IDs are not canonical candidate IDs); validate each supporting run against candidate/domain/subject/scope/config; separate evidence_refs from source_trace_ids; neutralize ToolCard counters/status and all downstream consumers for sandbox; define authoritative execution attestation; replace newest-run-only with event-level idempotency and explicit correction semantics.
+
+Key new route: ToolTeach → ToolSandbox/ToolValidator → ToolMemory updates ToolCard success/failure counters and validation state before InteractionLearningService. SANDBOX_PASS alone is not trusted provenance. Downstream consumers include InteractionModeSelector, CapabilityReadinessService, WorldModelService and ReproducibilityValidationService.
+
+Details: [follow-up Section 23](../2026-10-16_iabv_recommendation_gate_codex_followup.md). Preserve dirty checkout and SQLite boundary. No implementation. GOVERNANCE = KEEP_BLOCKED.
+
+---
+
 ## 2026-10-16 ROUTE UPDATE — CONTRACT V2 NEEDS NARROW REPAIRS
 
 Claude's Contract V2 is `CONTRACT_READY_WITH_REPAIRS` for documentation only, not implementation-ready. Before proceeding, repair the omitted `SANDBOX_PROMOTED` class, raw string-based candidate/run ID test, incomplete execution attestation, TypedRef without referential resolution, underspecified candidate fingerprint, newest-run-only supersession rule, and ToolMemory counters that update before interaction learning. Public `ToolMemory.remember_result()` changes `ToolCard.success_count/failure_count` from result.success; gating only `learn_from_execution()` is not full neutrality.
