@@ -139,3 +139,18 @@ After Claude's challenge, the next Codex mission (if separately authorized) shou
 `GOVERNANCE = KEEP_BLOCKED`
 
 No dispatcher enablement, no implementation authorization, no Packages B–E, no M0A access, and no physical bridge. This record is a documentary continuity update on the existing Draft PR branch; it is not a code change, test result, or operational authorization.
+
+
+---
+
+## Public baseline cross-check — 2026-10-17
+
+This check was performed against **public GitHub source at commit `9e0ce66768aedd7422e0d3551affd398f44a7532`** using the repository connector. It is evidence about the public baseline, not a replacement for the dirty Windows worktree.
+
+- [Public OSES source, pinned commit](https://github.com/jhonf463r/Python/blob/9e0ce66768aedd7422e0d3551affd398f44a7532/IABV_v1.5/src/iabv_v15/services/evolution/operational_self_examination_service.py): `_recent_experiment_runs` (around lines 1316–1324) calls `list_runs(limit=60)`. In `_solution_proposals` (around 5532 onwards), `ExperimentRun` rows are scored/grouped by route, assistant kind and config signature, while success and failure summaries are grouped by assistant kind.
+- The public proposal dictionaries for route substitution and collaborative execution (around 5580–5685) contain fields such as `type`, `proposal_key`, `title`, `description`, `action_plan`, `estimated_confidence` and `evidence_refs`, but do not include `ToolEvolutionProposal.proposal_id` or `discovery_signal_id`. Some `validated_collaboration` outputs can copy `improvement.evidence_refs`; therefore, do not overstate the finding as “no evidence references survive at all.” The narrower finding is that those fields are not a typed resolver/relationship proving that a particular discovery proposal produced a particular OSES solution proposal.
+- [Public sync-pulse projection, pinned commit](https://github.com/jhonf463r/Python/blob/9e0ce66768aedd7422e0d3551affd398f44a7532/IABV_v1.5/src/iabv_v15/services/self_teach/autonomous_validation_cycle.py): around lines 580–597 reads `metadata.solution_proposals` and builds a new `active_proposals` dictionary containing only type/title/action_plan/confidence and assistant selections. This projection would drop other typed identity fields even if they existed upstream.
+- [Public executor-call boundary, pinned commit](https://github.com/jhonf463r/Python/blob/9e0ce66768aedd7422e0d3551affd398f44a7532/IABV_v1.5/src/iabv_v15/services/adaptive/adaptive_task_orchestrator.py): around lines 1134–1185 shows `auto_execute_from_sync_pulse` choosing a proposal, constructing a payload from title/assistant and calling `plan_or_execute()`. That is a call-boundary observation, not evidence of successful execution, authorization or postcondition verification.
+- Public blobs retrieved for this check: OSES `054b1e4560b3990b691e39d2471db77f341b38bc`; public sync-pulse `cf77a69eb6db8167a49456970651cb1fe0730051`; public adaptive orchestrator `41f6f7b6157226a1c6004591ddff4e36ff6f6da5`.
+
+This public cross-check strengthens the aggregate/projection interpretation in the **public baseline**. It does not verify the local diffs to `autonomous_validation_cycle.py`, the other modified files, or any runtime causality. The latest Codex report remains local evidence and awaits Claude’s bounded challenge.
