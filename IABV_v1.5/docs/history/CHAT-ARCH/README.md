@@ -1,3 +1,13 @@
+## 2026-10-16 ROUTE UPDATE — CLAUDE CONTRACT NOT READY; REPAIR SPEC ONLY
+
+Claude Web's adversarial review returned `CONTRACT_NOT_READY`. The remaining work is a bounded specification repair, not another broad audit: (1) typed run/trace namespaces with explicit resolution (string collisions do not prove identity); (2) candidate identity/fingerprint in support membership; (3) sandbox neutrality across operational numerators AND denominators, recency, reuse, thresholds, ranking and training; (4) legacy unknowns excluded from operational learning unless independently and audibly re-attested; (5) all producer/transform/consumer surfaces covered.
+
+Correction to the review's evidence boundary: public commit `9e0ce66768aedd7422e0d3551affd398f44a7532` does contain `ExperimentLab.generate_training_corpus()` in `IABV_v1.5/src/iabv_v15/services/lab/experiment_lab.py`, aggregating `run.success`. Its local working-tree state remains unverified by Claude. `execution_ms > 0` alone is not execution attestation. Do not implement; do not mark owner decisions as approved.
+
+Detailed evidence, defaults and uncertainty: [recommendation-gate follow-up](../2026-10-16_iabv_recommendation_gate_codex_followup.md), Section 21. PR #467 remains draft/unmerged; GOVERNANCE = KEEP_BLOCKED.
+
+---
+
 ## 2026-10-16 ROUTE UPDATE — LOCAL CENSUS RECEIVED; TRACE-ID RECONCILIATION NEXT
 
 The Codex local census has been received and recorded in the recommendation-gate follow-up. Do not repeat the broad census. The next narrow edge is to reconcile the local TaskOutcomeRecorder._source_trace_ids() against HEAD, and verify all producers/consumers of supporting_run_ids, source_trace_ids, operational_trace_ids, reusable_trace_ids, winning_trace_ids and supporting_trace_ids.
