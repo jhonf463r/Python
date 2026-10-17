@@ -1,3 +1,17 @@
+## 2026-10-17 ACTIVE NEXT ACTOR — R10 v0.7.4 INDEPENDENT DELTA REVIEW
+
+Current route after relay publication and static coordinator spot-check. Detailed handoff is [CHAT-ARCH-2026-10-17-new-chat-handoff-full-continuity.md](CHAT-ARCH-2026-10-17-new-chat-handoff-full-continuity.md); the latest update records commit 191803340e1c78c92125b871a6a41589dc874163 for the handoff and content commit ad5c094fa3e7e4d1989079983f8f6c05f3296551 for immutable v0.7.4 artifacts.
+
+Relay: handoff/r10-v074-review-20261017. Candidate ZIP reported by Codex: 86,703 bytes, SHA-256 dff898c9fb7e515ffdc698992475384873995cf50469da88d769072269e1c0e9. Preserved source ZIPs: v0.7.3 86,835 bytes / SHA-256 1ace1d9331ee943a35fc4663855a09451919ae7b0e8619c799416b48bdae4049; v0.7.2 50,589 bytes / SHA-256 acfb468f78bebc3794b8ec7eaf81baf65d8c40cb66b3f8c7bd2065ffd07fe14e. Artifact content links are pinned to ad5c094fa3e7e4d1989079983f8f6c05f3296551; relay index is pinned at final tip 191803340e1c78c92125b871a6a41589dc874163. Old v0.7.3 relay ref was removed after preservation as reported and its absence was observed via a 404; archive is preserved under history/v0.7.3/ in the new relay.
+
+Coordinator-side text spot-check found residual candidate issues for Claude to examine: T210 says contribution delta +1 in the primary oracle but its expected_active_auto_pattern_contribution_delta column is 0; T205 says “applicable barrier” although §8.3 defines tombstone scopes with different task-success semantics; T202–T207 mix positive and negative conditions in individual rows; T221 uses an OR precondition and the 24 new rows reuse generic crash/falsifier descriptions. These are preliminary static observations, not an independent verdict.
+
+Next actor: Claude/Sonnet, independent documentary delta review of the entire v0.7.4 package against v0.7.3 and v0.7.2. Its short prompt in the repo is only a pointer; deliver the full review prompt directly in chat. Recompute ZIP hashes/inventories, verify internal manifests and historical bytes, audit all 99 rows T123–T221 plus F-01–F-14, and report any residual oracle ambiguity. No product code/tests/build/runtime, no IABV checkout/data/SQLite/M0A/dispatcher/physical bridge, and no further branch deletion pending reconciled review.
+
+R10 v0.7.2 = FAIL; R10 v0.7.3 = REQUIRES_REPAIRS / NOT_ACCEPTED; R10 v0.7.4 = PENDING_INDEPENDENT_DELTA_REVIEW; T123–T221 = NOT_RUN; PRODUCT_CODE_EXECUTION/TESTS/BUILD/RUNTIME = NOT_RUN; GOVERNANCE = KEEP_BLOCKED.
+
+---
+
 ## 2026-10-17 ACTIVE ROUTE OVERRIDE — GitHub cloud handoff, no repeated attachments
 
 The R10 v0.7.3 candidate is reported created by Codex, but Claude/Sonnet returned `BLOCKED` because the actual ZIP was not attached in its own conversation. Stop repeating the download/upload loop. **Next actor: Codex local, transfer-only; following actor: Claude/Sonnet, independent reviewer through pinned GitHub URLs.**
