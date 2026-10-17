@@ -899,3 +899,17 @@ La selección sigue siendo dinámica y nunca una secuencia fija, pero el resulta
 `objective → current truth → first open edge → required capability → capability-fit → IA DESTINO CONCRETA → prompt/action`.
 
 Si la IA concreta no puede determinarse con evidencia suficiente, debe declararse explícitamente `DESTINO NO DETERMINABLE` y explicar qué dato falta; no dejar un actor genérico como si fuera un handoff ejecutable.
+
+
+## 2026-10-16 ACTIVE ROUTE — R10 DISPATCH EDGE AFTER LOCAL GATE MAP
+
+Before any R10 implementation, continue from the current evidence record:
+- continuity: `docs/history/2026-10-16_iabv_agent_continuity_space_time.md`, §35;
+- gate addendum: `docs/history/2026-10-16_iabv_recommendation_gate_codex_followup.md`, §4;
+- route authority: `docs/history/CHAT-ARCH/CURRENT-STATE.md`.
+
+**First open edge:** follow `ToolEvolutionMonitor` → `validate_discovery` → any actual dispatcher. Prove or stop at the exact boundary. Identify authorization, evidence provenance, candidate/attempt linkage and postcondition checks. Do not infer execution from a recommendation, `VALID`, `promoted` or `success=True`.
+
+**Destination:** Codex with access to the authorized local checkout. Work read-only and only on this route; compare relevant files to observed HEAD. Preserve existing modifications. Do not inspect `data/` or SQLite, run tests/code/build/runtime, alter files, access M0A or touch the physical bridge. After the local route is documented, Claude Web may challenge the supplied evidence but must not claim local access.
+
+Candidate B remains separate from Candidate C. Candidate C's reported `PASS_WITH_REPAIRS` is not a final approval. All tests remain `NOT_RUN` until separately authorized. `GOVERNANCE = KEEP_BLOCKED`.
