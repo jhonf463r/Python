@@ -367,3 +367,146 @@ No promocionar preferencias de modelo a hechos globales a partir de una interacc
 No almacenar secretos, tokens, `.env`, bases locales, datos personales ni diffs privados completos en GitHub. Conservar metadatos, rutas relevantes, hashes cuando procedan, resúmenes y referencias. Los modelos gratuitos tienen políticas distintas y variables. La memoria propone el siguiente agente; no autoriza cambios, pruebas, publicación ni puente físico.
 
 **Estado:** `PROPOSED / NOT IMPLEMENTED`; permanece en la PR #467 Draft para revisión, no se ha implementado un registro automático de rendimiento de agentes. `GOVERNANCE = KEEP_BLOCKED`.
+
+
+## 15. 2026-10-16 — Diseño contractual del gate devuelto por Codex
+
+**Proveniencia:** OWNER_REPORTED para la salida compartida; los hallazgos locales se conservan como CODEX_LOCAL_REPORTED. El informe declara revisión estática local, sin tests/build/runtime y sin modificaciones. No equivale a verificación local independiente por este documento.
+
+### Identidad y frontera de trabajo
+
+- Checkout: C:\temp\IABV_coordination_20261016.
+- Rama: codex/iabv-agent-coordination-20261016.
+- HEAD declarado: 3926b1144bb23c1066db579da711d3cdbc1611df.
+- Se reportaron 96 rutas rastreadas modificadas y una entrada data/ no rastreada; no se abrieron las bases SQLite.
+- Los filtros evidence_class=operational_execution en task_context_assembler.py y task_outcome_recorder.py, así como los filtros consultivos del repositorio, están en el working tree y no en HEAD.
+- sandbox_experiment_service.py, strategy_selector.py y adaptive_weight_layer.py no tienen cambios respecto a HEAD, según el informe.
+
+El checkout debe seguir considerándose compartido y dirty. No limpiarlo ni cambiar de rama. Una futura tarea de edición requiere localizar un espacio de trabajo aislado y preservar todos los cambios existentes.
+
+### Hallazgo contractual central
+
+ExperimentRun.success es un booleano, pero el código lo utiliza para significados diferentes: resultados de suites/benchmarks, estado de ejecución real, diagnóstico guiado y veredicto heurístico de sandbox. Por tanto, success=True no demuestra por sí mismo ejecución atribuible ni postcondición.
+
+- ExperimentRun no declara campos tipados verdict o state; esos nombres aparecen en tipos diferentes como SandboxExperiment, ExecutionState o IATraceEntry.
+- evidence_class y learning_source son metadata libre, no un contrato tipado central encontrado.
+- Se encontró un productor explícito de consultation_advisory, pero no un productor positivo demostrado de operational_execution. Esa clase aparece en filtros del working tree.
+- Trasladar literalmente un predicado desde IATraceEntry a ExperimentRun puede leer campos inexistentes o rechazar todos los runs por ausencia de metadata. Verificar el esquema real y los productores antes de reutilizarlo.
+
+La distinción arquitectónica clave es que clase de evidencia y resultado son dimensiones diferentes. Una ejecución puede ser operacional y fallar; una validación sandbox puede resultar positiva sin que exista una ejecución operacional.
+
+### Productores y consumidores reportados por Codex
+
+Productores:
+- ExperimentLab.run_experiment(): usa evaluation.success derivado de una suite; similitud/calidad no necesariamente demuestra ejecución atribuible del candidato.
+- TaskOutcomeRecorder.record(): deriva éxito de RunRecord.status == SUCCESS, pero el recorrido revisado no produce explícitamente una clase operacional positiva.
+- SelfTeachOrchestrator._register_learning(): éxito derivado de diagnóstico o correcciones.
+- SandboxExperimentService.validate_recommendation(): convierte VALID/DOUBTFUL en un resultado sandbox; _record_promotion() fija success=True sin ejecución atribuible demostrada.
+- AutonomousEvolutionService: asesoría consultiva marcada explícitamente como consultation_advisory.
+- CodeAuditTrail: success=True representa el cierre de auditoría, no ejecución del candidato recomendado.
+
+Consumidores:
+- ExperimentLab._reuse_bonus().
+- StrategySelector.recommend() y _build_composite_recommendation().
+- AdaptiveWeightLayer._profile().
+- ExperimentLab.generate_training_examples().
+- Cálculos de estadísticas y tasas de éxito.
+- TaskOutcomeRecorder.update_weights().
+- TaskContextAssembler._adaptive_learning_summary() y _learned_patterns(), que según el informe no aplican el mismo filtro en todos los recorridos.
+
+Los consumidores del laboratorio citados leen run.success sin filtrar clase/origen. El efecto final de cada resumen contextual sobre decisiones posteriores sigue UNPROVEN si no se ha trazado su consumidor.
+
+### Grafo causal refinado reportado
+
+suite / RunRecord / self-teach / sandbox / advisory producers → ExperimentLab.record_outcome o run_experiment → ExperimentRun.success + metadata libre → StrategySelector / AdaptiveWeightLayer / reuse bonus / training examples → recommendation.supporting_run_ids → discovery/sandbox → blockers + alternativa rankeada → sandbox verdict/promotion → nuevo run success.
+
+Esta realimentación es plausible y está apoyada por las rutas estáticas citadas; no se ha medido ni demostrado mediante runtime.
+
+### Evaluación A/B/C
+
+- A: impedir que _record_promotion escriba éxito operacional sin ejecución atribuible. Mitigación concreta pero insuficiente por sí sola: otros runs sandbox y heurísticos siguen alimentando consumidores genéricos de success.
+- B: conservar la evaluación sandbox pero excluirla de ranking/aprendizaje operacional. Cubre más consumidores, pero obliga a revisar todas las fronteras decisorias; no basta con filtrar el repositorio o fiarse del nombre de learning_source/suite.
+- C: separar tipadamente validación de ejecución operacional. Semánticamente es la opción más sólida a largo plazo, pero requiere definir esquema y compatibilidad histórica; metadata libre no basta.
+
+Conclusión propuesta: C es la dirección conceptual a largo plazo. La mitigación cercana requeriría gates en el productor y en los consumidores decisorios de B. A sola no basta. Ninguna estrategia está aprobada para implementación.
+
+### Precauciones de diseño
+
+1. No asignar evidence_class=operational_execution desde un wrapper genérico solo por learning_source, suite o etiqueta del caller.
+2. No introducir learning_source=sandbox_observed sin contrato definido; además, “observed” tampoco debe implicar ejecución no demostrada.
+3. No usar directamente verdict=approved ni state in {executed, completed} como predicado de ExperimentRun: según el informe esos campos pertenecen a otros modelos/tipos.
+4. Mantener separadas clase de evidencia y resultado: una ejecución fallida puede ser evidencia operacional, aunque no sea éxito.
+5. Verificar que cada supporting_run_id pertenezca al scope, candidato y recomendación correcta. Soporte mixto no hereda automáticamente autoridad operacional.
+6. Un helper común ayuda a la consistencia, pero no sustituye la comprobación de cada sink: ranking, pesos adaptativos, reuse bonus, training examples y promoción sandbox.
+7. Preservar la evaluación sandbox como tal, sin convertirla automáticamente en ejecución operacional.
+
+### Próxima revisión
+
+Claude Code, ahora reportado disponible por el propietario, es el siguiente revisor recomendado. Su cometido es intentar refutar el diseño de Codex: verificar semántica de campos, compatibilidad del esquema, inventario de todos los consumidores, rutas omitidas y falsadores. No debe repetir la búsqueda general ni editar el checkout dirty.
+
+OpenCode queda como tercera opinión solo si Claude identifica objeciones sustantivas o quedan discrepancias específicas. No lanzar tres propuestas de implementación en paralelo.
+
+**Estado:** STATIC_DESIGN_READY_FOR_ADVERSARIAL_REVIEW; no IMPLEMENTATION_READY. GOVERNANCE = KEEP_BLOCKED.
+
+## 16. Actualización temporal y protocolo inteligente de selección de agentes
+
+El propietario informó que Claude vuelve a estar disponible. Este hecho se registra como OWNER_REPORTED; no se afirma conocer la cuota restante ni el modelo/plan exacto de esa sesión. La selección debe seguir la circunstancia temporal real: durante la ausencia se usaron Codex local y Kilo para avanzar; ahora Claude puede revisar el diseño ya producido.
+
+### Selección actual por tarea
+
+1. **Claude Code — siguiente:** revisión adversarial del informe contractual de Codex, focalizada en ExperimentRun, productores/consumidores de success, compatibilidad A/B/C y falsadores. Confirmar que puede inspeccionar sin escribir en la rama o worktree dirty.
+2. **Codex CLI — evidencia local:** no repetir la auditoría general; responder a objeciones concretas y, si corresponde, completar una matriz de consumidores y diseño.
+3. **Kilo / Reflection: Beam 1.0 — mapa causal existente:** el resultado recibido ya identifica promoción y consumidores. Usarlo para objeciones puntuales, no reiniciar desde cero.
+4. **OpenCode / modelo fijo reportado como DeepSeek V4.1 Flash Free:** mantener como tercera opinión, solo si Claude y Codex discrepan. Confirmar el ID/proveedor en el selector.
+5. **ChatGPT/GitHub:** mantener procedencia, continuidad documental, diferencias entre informes y coordinación. No afirmar acceso al runtime local.
+
+La preferencia por Claude para el siguiente paso obedece al tipo de tarea (revisión adversarial del diseño contractual) y a que volvió a estar disponible; no implica superioridad universal del modelo.
+
+### Unidad de memoria por interacción
+
+Para cada tarea relevante, registrar:
+- fecha/objetivo y criterio de terminación;
+- superficie (Codex CLI, Kilo VS Code, OpenCode, Claude Code), modo/agente, proveedor, ID exacto de modelo/ruta y variante cuando se muestren;
+- repositorio, worktree, HEAD, estado dirty/clean, fuente de evidencia y límites autorizados;
+- versión/hash del prompt si se conoce, fuentes y artefactos de salida;
+- afirmaciones principales, contraejemplos, falsadores, limitaciones y clasificación de procedencia;
+- si fue independiente, si continuó ante un artefacto auxiliar faltante y si respetó límites;
+- latencia/coste solo si se midieron, privacidad/retención solo si las condiciones están documentadas;
+- lección de prompt concreta para la siguiente tarea y razón de la siguiente asignación.
+
+Cuando el modelo/proveedor no se conoce, registrar UNKNOWN; nunca deducir un modelo fijo desde Auto Free. No generalizar el rendimiento de un agente por una sola interacción.
+
+### Contrato de prompt adaptativo
+
+Cada prompt de auditoría debe fijar:
+1. objetivo y afirmación falsable;
+2. identidad de checkout, HEAD y working tree;
+3. alcance y límites de las herramientas;
+4. recuperación de memoria y continuación por source cuando falte un checkpoint auxiliar;
+5. salida por archivo/símbolo/línea con productor → transformación → consumidor → efecto y falsador;
+6. comparación HEAD frente a working tree;
+7. procedencia y límites de evidencia;
+8. prohibición de escribir/ejecutar cuando no está autorizado;
+9. obligación de entregar los hallazgos parciales verificables sin quedar bloqueado por un artefacto auxiliar ausente cuando ya existe una ruta segura.
+
+### Lecciones específicas del comportamiento observado
+
+- Kilo VS Code primero detuvo el análisis porque no halló el checkpoint dentro del workspace; después lo recuperó por la ruta absoluta y produjo el mapa causal. Ajuste de prompt: distinguir NOT_FOUND_IN_CHECKOUT de NOT_FOUND_ON_DISK y continuar por source.
+- Codex aportó un mapa útil pero distinguió que su seguimiento no era independiente. Ajuste: procedencia por afirmación y separación explícita entre HEAD y working tree.
+- OpenCode presentó un catálogo útil pero sin un modelo real de sesión ni evaluación comparativa. Ajuste: registrar el ID/proveedor exacto y tratar las cualidades como hipótesis hasta contrastarlas.
+- Kilo detectó la ruta causal, pero la propuesta verbal de “punto único” incluía varios consumidores. Ajuste: pedir que distinga enforcement en productor, repositorio y sinks decisorios.
+- El informe contractual de Codex detectó que evidence_class no tiene productor positivo demostrado. Ajuste: no proponer un gate por una clase que ningún productor autorizado puede generar; primero definir evidencia, contrato y productor.
+
+### Bucle recursivo de simbiosis
+
+objetivo → recuperar memoria pertinente → clasificar la tarea → seleccionar agente/modelo/herramientas → adaptar el prompt → ejecución autorizada → extraer pruebas y falsadores → contraste adversarial → evaluar la conducta de la sesión → actualizar memoria → escoger mejor la próxima ruta.
+
+La memoria documental de esta PR permite continuidad entre conversaciones, pero no es todavía una base de datos operacional consultada automáticamente por todas las IAs. Convertirla en sistema persistente dentro de IABV requiere diseño, revisión de privacidad y autorización separados. La memoria puede recomendar herramientas; no concede permisos.
+
+### Seguridad y parada
+
+No guardar secretos, tokens, datos personales, SQLite, .env ni diffs locales completos en GitHub. Usar resúmenes, referencias y hashes solo cuando correspondan. Los catálogos y condiciones free cambian; verificar el selector en cada tarea sensible.
+
+No implementar el gate ni ejecutar pruebas/runtime en esta etapa. No acceder a M0A ni activar el puente físico. Mantener GOVERNANCE = KEEP_BLOCKED.
+
+**Siguiente checkpoint:** informe de Claude con objeciones concretas al diseño A/B/C, seguido de reconciliación con Codex. Después se decidirá si se prepara un diff aislado. No editar todavía.
