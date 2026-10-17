@@ -1,3 +1,19 @@
+## 2026-10-17 CROSS-IA TRANSFER DELTA — TEMPORARY GITHUB REVIEW SURFACE
+
+The previous repeated ZIP handoff exposed a routing defect: artifacts can exist in Codex's local directory and still be unavailable to Claude Web. A pasted path or successful local verification is not cross-agent transfer.
+
+Capability-fit update:
+- Codex local owns creation/verification of the local candidate; for this next step it becomes a transfer operator only, not a second author.
+- GitHub's public repository is the shared artifact surface; a single temporary branch and commit-SHA-pinned tree links let Claude review files without the owner manually attaching each artifact.
+- Claude/Sonnet consumes the immutable commit tree, verifies actual accessible bytes/content, and returns an independent verdict. It must declare any binary-download limitation.
+- ChatGPT/coordinator reconciles and writes only a compact durable summary to existing continuity documents.
+
+Use a fresh staging directory and temporary branch, not the dirty IABV checkout or canonical memory branch. After review, delete the temporary branch/ref and staging directory; preserve the evidence and verdict, not the large transfer bundle. Since the repository is public, everything published is publicly readable until the ref is removed; branch deletion does not guarantee immediate removal of all server-side objects/caches.
+
+Current candidate remains `CODEX_LOCAL_REPORTED`, pending transfer and independent review. `R10 v0.7.2 = FAIL`; all cases `NOT_RUN`; `GOVERNANCE = KEEP_BLOCKED`.
+
+---
+
 ## 2026-10-17 TRANSFER LESSON — THE REVIEWER MUST RECEIVE THE CANDIDATE, NOT JUST ITS REPORT
 
 **Observed collaboration episode:** Codex local reports completion of an R10 v0.7.3 documentary candidate and provides a candidate ZIP size/hash, but the candidate ZIP is not present among the current ChatGPT conversation or Library files found during preflight. This does not establish that Claude can access it, nor does it disprove the Codex report.

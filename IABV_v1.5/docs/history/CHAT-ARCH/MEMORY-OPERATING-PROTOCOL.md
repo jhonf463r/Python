@@ -1,3 +1,20 @@
+## 2026-10-17 METHOD DELTA — GITHUB AS A SHORT-LIVED CROSS-IA ARTIFACT RELAY
+
+For artifact handoffs between local Codex and a web reviewer, prefer a shared, commit-pinned GitHub relay over repeated owner-managed download/upload cycles, when the repository's visibility is acceptable.
+
+Required sequence:
+`existing_artifact → byte/hash check → isolated staging directory → dedicated temporary branch → commit-SHA-pinned links → receiver verifies exact artifact/content → independent review → compact canonical writeback → delete temporary branch/ref and staging directory`.
+
+This is **artifact exchange through a shared cloud repository**, not live agent-to-agent chat, not automatic access to another IA's attachments, and not proof of autonomous runtime communication. A path in one environment never proves that another environment can read the same file. If binary retrieval fails in the reviewer interface, it may review the exact text payloads pinned to the same commit only if it reports the binary limitation and does not claim ZIP verification.
+
+Minimize persistent GitHub clutter: one ephemeral branch, one transfer commit, no PR/release/tag/workflow, no candidate files on `main` or the canonical continuity branch; remove the temporary ref after review and retain only a concise verdict/hash/provenance record in the existing continuity organs. Branch deletion removes the ref but does not guarantee immediate erasure of unreachable Git objects or caches. Check repository visibility before publication; public repo means the relay contents are publicly readable while published. No new auth/spend. Never use the dirty IABV checkout as the staging repo.
+
+Current case: Codex reports candidate ZIP `R10_V0_7_3_DOCUMENTARY_CANDIDATE.zip`, size 86,835 bytes, SHA-256 `1ace1d9331ee943a35fc4663855a09451919ae7b0e8619c799416b48bdae4049`. Claude's review preflight was blocked because the candidate was not attached. The next actor is Codex local in transfer-only mode; then Claude/Sonnet reviews commit-pinned GitHub contents. No semantic v0.7.3 verdict yet.
+
+`GOVERNANCE = KEEP_BLOCKED`; `TESTS = NOT_RUN`; no code/build/runtime or implementation authorization.
+
+---
+
 ## 2026-10-17 METHOD DELTA — AUTHORING COMPLETE IS NOT REVIEW INPUT DELIVERY
 
 The R10 v0.7.3 authoring actor has reported a complete documentary candidate. This advances the route; it does not close semantic review. A handoff is incomplete until the next IA can access and verify the exact artifact bytes in its own conversation.

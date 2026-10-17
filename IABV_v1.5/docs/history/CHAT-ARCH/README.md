@@ -1,3 +1,19 @@
+## 2026-10-17 ACTIVE ROUTE OVERRIDE — GitHub cloud handoff, no repeated attachments
+
+The R10 v0.7.3 candidate is reported created by Codex, but Claude/Sonnet returned `BLOCKED` because the actual ZIP was not attached in its own conversation. Stop repeating the download/upload loop. **Next actor: Codex local, transfer-only; following actor: Claude/Sonnet, independent reviewer through pinned GitHub URLs.**
+
+Codex must use the existing candidate at `C:/temp/R10_v0_7_3_documentary_candidate_20261017/R10_V0_7_3_DOCUMENTARY_CANDIDATE.zip` and reported SHA-256 `1ace1d9331ee943a35fc4663855a09451919ae7b0e8619c799416b48bdae4049`, verify its real bytes, and publish the already existing bundle and extracted files to one short-lived isolated branch in `jhonf463r/Python`, such as `handoff/r10-v073-review-20261017`. Include the original v0.7.2 source ZIP and a small index. Do not re-author or repackage the candidate. Pin the handoff to a Git commit SHA; Claude should read the public GitHub files directly, not ask the owner to download/upload every artifact.
+
+Do not create a PR, release, tag, workflow, or commit to `main` or this continuity branch for the candidate. Use a fresh staging directory, never the dirty IABV checkout. Once Claude returns its verdict and the coordinator writes a compact summary here, delete only the temporary branch/ref and staging directory. Deleting the branch removes its active ref; do not promise immediate erasure of all server-side Git objects/caches.
+
+**Public visibility:** repository `jhonf463r/Python` is public; relay contents are publicly readable while published. Publish only the candidate documentary files and original source package—no secrets, credentials, `data/`, SQLite, or unrelated files. If GitHub push cannot use existing credentials, or public publication is not permissible, stop `BLOCKED`; do not request new auth or fall back to repetitive manual transfers.
+
+See the downloadable prompt `R10_V0_7_3_GITHUB_RELAY_PROMPT_2026-10-17.md`. Its local SHA-256 is `cca4977e1fa3fc89fcd05eeea5b6aa2309030e72a2475d113255095a27f6fd17`. This is a relay design, not proof that a branch has been published yet.
+
+`R10_V0_7_2 = FAIL`; `V0.7.3 = CODEX_LOCAL_REPORTED / PENDING_INDEPENDENT_DELTA_REVIEW`; `TESTS = NOT_RUN`; `GOVERNANCE = KEEP_BLOCKED`.
+
+---
+
 ## 2026-10-17 ROUTE CORRECTION — ZIP VERIFIED HERE; MUST BE ATTACHED TO CODEX CHAT
 
 Codex's latest `BLOCKED` is procedurally correct: it could not find the ZIP in its own chat attachment store. The source ZIP was recovered from ChatGPT Library and verified in the ChatGPT working container at `/mnt/data/r10_recovery/R10_V0_7_2_REPAIR_PACKAGE_FOR_CLAUDE.zip`. ZIP SHA-256: `acfb468f78bebc3794b8ec7eaf81baf65d8c40cb66b3f8c7bd2065ffd07fe14e`. It contains seven files (six payload artifacts plus manifest); all six payload file sizes and hashes match the embedded manifest. This proves bytes against that manifest, not semantic acceptance.

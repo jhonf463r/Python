@@ -196,3 +196,20 @@ The Codex-local report remains `CODEX_LOCAL_REPORTED / OWNER_REPORTED`: candidat
 After transfer, the owner attaches the candidate ZIP, original v0.7.2 ZIP and independent-review prompt to Claude/Sonnet's actual conversation. Claude then verifies the attached artifact identity, manifest completeness and historical hashes before reviewing M0–M5, minor repairs and T197. Only after the semantic review should the coordinator reconcile the verdict and consider a bounded repair task.
 
 `R10_V0_7_2 = FAIL`; `V0.7.3 = CODEX_LOCAL_REPORTED / PENDING_INDEPENDENT_DELTA_REVIEW`; `TESTS = NOT_RUN`; `PRODUCT_CODE_EXECUTION = NOT_RUN`; `GOVERNANCE = KEEP_BLOCKED`. PR #467 remains open, Draft and unmerged.
+
+
+## 13. Route correction — GitHub temporary relay for Codex ↔ Claude — 2026-10-17, America/Bogota
+
+Claude's independent-review preflight returned `BLOCKED`: candidate ZIP was missing from its conversation. Claude verified only the source ZIP and review prompt; no v0.7.3 semantic review took place.
+
+**Method correction:** the cross-AI workflow should use GitHub as a shared artifact relay rather than require the owner to download/upload the full candidate between every agent. Next actor: Codex local, transfer-only. Use the existing candidate ZIP and extracted tree, verify real bytes/hash, and publish them with the original v0.7.2 source ZIP on a dedicated short-lived branch in public repo `jhonf463r/Python`. Do not recreate/modify the candidate, touch the dirty IABV checkout, create a PR/release/tag/workflow, or commit candidate material to `main` or this continuity branch.
+
+Pin all review links to the resulting commit SHA. Provide Claude direct URLs for the candidate ZIP, source ZIP, contract, T123–T197 matrix, README, changelog, consistency/traceability report, independent-review prompt, manifest and historical files. Claude should review those GitHub files directly. If it cannot obtain the binary ZIP in its web interface, it must state that limit; it may review commit-pinned extracted payloads only with corresponding evidence boundaries.
+
+The target candidate identity remains only `CODEX_LOCAL_REPORTED`: 86,835 bytes; SHA-256 `1ace1d9331ee943a35fc4663855a09451919ae7b0e8619c799416b48bdae4049`. Source ZIP expected identity: 50,589 bytes; SHA-256 `acfb468f78bebc3794b8ec7eaf81baf65d8c40cb66b3f8c7bd2065ffd07fe14e`.
+
+After the review and a compact canonical writeback, delete only the temporary branch/ref and staging directory. The repo is public; candidate files are public while published. Branch deletion removes the active ref but is not a guarantee of immediate physical purge of every Git object/cache. If upload is unavailable using existing credentials, do not ask for new authentication and do not revert to manual file round-trips; report `BLOCKED`.
+
+The active prompt is available in the current ChatGPT response as `R10_V0_7_3_GITHUB_RELAY_PROMPT_2026-10-17.md`. This is a proposed relay instruction only; the branch has not yet been published by this coordination update.
+
+`R10_V0_7_2 = FAIL`; `V0.7.3 = CODEX_LOCAL_REPORTED / PENDING_INDEPENDENT_DELTA_REVIEW`; all matrix tests `NOT_RUN`; `GOVERNANCE = KEEP_BLOCKED`.
