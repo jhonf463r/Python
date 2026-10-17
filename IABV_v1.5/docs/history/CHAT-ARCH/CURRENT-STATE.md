@@ -1,3 +1,15 @@
+## 2026-10-16 CURRENT ROUTE — V2 DOCUMENTARY REPAIR, THEN LOCAL CHECK
+
+Contract V2 materially improves the design but contains remaining specification/coverage holes. Next edge: Codex local, read-only verification of candidate/run/experiment identity fields and ToolMemory success/failure counters plus all consumers of these counters, restricted to relevant files and HEAD/worktree deltas. Do not repeat broad census or modify local checkout.
+
+Findings requiring V2.1: (1) I-1 omits `SANDBOX_PROMOTED`; (2) avoid raw `candidate_id == run_id` as type test; (3) bind attestation to authoritative execution, exact candidate/scope and postconditions; (4) typed refs require object resolution and relation validation; (5) ToolMemory counters update before interaction-learning call; (6) newest-run-only rule may discard valid historical evidence; (7) canonical candidate fingerprint needs definition.
+
+The public API reports main at `9e0ce667...`, whereas Claude labelled `cbc522140` as HEAD; inspected file blobs match at the two refs, but the tip label must remain precise. See [follow-up Section 22](../2026-10-16_iabv_recommendation_gate_codex_followup.md).
+
+Do not edit or test code; do not access `data/`, SQLite, M0A or runtime. PR #467 is Draft/unmerged; `GOVERNANCE = KEEP_BLOCKED`.
+
+---
+
 ## 2026-10-16 CURRENT ROUTE — CONTRACT REPAIR AFTER CLAUDE CHALLENGE
 
 Latest review returned `CONTRACT_NOT_READY`, confirming specific design holes rather than invalidating the objective. Do not repeat the broad audit or change the dirty local checkout.
