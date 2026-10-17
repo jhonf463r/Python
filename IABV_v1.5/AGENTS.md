@@ -1,3 +1,13 @@
+## 2026-10-16 ROUTE REFINEMENT — V2.1 AFTER TARGETED LOCAL VERIFY
+
+Contract V2 is not yet implementation-ready. Run a scoped, read-only Codex check of candidate/run/experiment identity and ToolMemory/InteractionPattern counter flow, with exact working-tree-vs-HEAD deltas. Do not repeat the broad audit; preserve the 96 tracked modifications plus `data/`; do not inspect `data/`/SQLite or run code/tests/build/runtime.
+
+Required spec corrections: closed evidence classes include `SANDBOX_PROMOTED`; resolve typed references instead of comparing ID strings; authoritative execution attestation must bind candidate/scope/postconditions; TypedRef requires referential and relation validation; include ToolCard counters in sandbox neutrality; justify or remove newest-run-only supersession; define a canonical candidate fingerprint. See follow-up Section 22.
+
+No implementation authorized. PR #467 remains Draft/unmerged. `GOVERNANCE = KEEP_BLOCKED`.
+
+---
+
 ## 2026-10-16 OBJECTIVE ROUTE — CONTRACT V2 AFTER CLAUDE CHALLENGE
 
 Claude returned `CONTRACT_NOT_READY`. Do not repeat the broad audit. Before implementation, the contract must: (1) define typed identifier namespaces and explicit relation resolution; (2) require candidate identity/fingerprint in support membership; (3) prove execution through an authorized candidate-linked attestation rather than `execution_ms > 0`; (4) isolate sandbox metrics from all operational numerators, denominators, scoring and training; (5) preserve unknown historical data as descriptive-only unless audibly re-attested; (6) include all known alternate consumers.
