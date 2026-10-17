@@ -1,3 +1,20 @@
+## 2026-10-16 OPEN QUESTIONS — CONTRACT V2
+
+Claude's review remains `CONTRACT_NOT_READY`. The following are proposals requiring explicit contract/owner review, not currently approved policy:
+
+1. Support membership must include `candidate_id` or an equivalent stable fingerprint; if the system cannot identify a candidate unambiguously, do not allow cross-candidate support.
+2. Sandbox and legacy records should be excluded from all operational numerators/denominators, ranking, reuse, adaptive weights, thresholds and operational training; sandbox-specific blockers/fallbacks belong in separately named metrics.
+3. A run is operational evidence only with authorized execution attestation linked to the exact candidate and scope; `execution_ms > 0` by itself is insufficient.
+4. A missing evidence class maps to legacy/unattributable for operational purposes; no retroactive reclassification without auditable evidence and explicit authorization.
+5. Typed ID namespace validation must resolve the declared entity type. A raw string equality test across namespaces is not a sound type discriminator.
+6. Need reconcile all dirty-local-only paths under Codex's reported checkout without accessing `data/` or SQLite or modifying the checkout.
+
+Correction: public pinned commit `9e0ce66768aedd7422e0d3551affd398f44a7532` contains `ExperimentLab.generate_training_corpus()` in the public source; its corpus aggregates `run.success`. Dirty local code is still not inferred from public source.
+
+Record: [recommendation-gate follow-up, Section 21](../2026-10-16_iabv_recommendation_gate_codex_followup.md). `GOVERNANCE = KEEP_BLOCKED`.
+
+---
+
 ## 2026-10-16 UPDATE — TRACE IDENTIFIER CLAIM AWAITING LOCAL RECONCILIATION
 
 Codex reports that SandboxExperimentService copies supporting_run_ids into evidence_refs/source_trace_ids and that the modified local TaskOutcomeRecorder._source_trace_ids() consumes operational_trace_ids. The public implementation at 9e0ce... instead reads reusable_trace_ids, winning_trace_ids or supporting_trace_ids. Since task_outcome_recorder.py is one of the modified local files, this may be a real HEAD/worktree divergence. Do not yet label it a proven defect.
