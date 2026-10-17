@@ -510,3 +510,80 @@ No guardar secretos, tokens, datos personales, SQLite, .env ni diffs locales com
 No implementar el gate ni ejecutar pruebas/runtime en esta etapa. No acceder a M0A ni activar el puente físico. Mantener GOVERNANCE = KEEP_BLOCKED.
 
 **Siguiente checkpoint:** informe de Claude con objeciones concretas al diseño A/B/C, seguido de reconciliación con Codex. Después se decidirá si se prepara un diff aislado. No editar todavía.
+
+
+## 17. 2026-10-16 — Revisión Claude Web y reconciliación contra main público
+
+**Proveniencia:** OWNER_REPORTED para el informe Claude. Claude declara que no tiene acceso al checkout Windows C:\temp\IABV_coordination_20261016; analizó el commit público 5b1d89022ee4cdc63c1f88e050f086b40a42875c. No revisó directamente las 96 rutas locales.
+
+### Reconciliación de versiones
+
+La comparación de GitHub entre el commit de Claude y main público devolvió:
+- base: 5b1d89022ee4cdc63c1f88e050f086b40a42875c
+- head: main
+- ahead_by: 986; behind_by: 0
+- merge base igual al SHA analizado por Claude.
+
+El main público observado en ese corte es 9e0ce66768aedd7422e0d3551affd398f44a7532. Por tanto, el informe de Claude parte de un antecesor 986 commits detrás del main público observado. Sus números de línea no deben reutilizarse sin volver a verificarlos en la referencia actual.
+
+Se recuperaron directamente los siguientes archivos fijados al commit público 9e0ce...:
+
+| Archivo | Git blob SHA | Hallazgo confirmado en el commit |
+|---|---|---|
+| services/self_teach/sandbox_experiment_service.py | a6723261ce31f71a9fcd5433ce3e1e419230440c | Líneas 62–65: blockers + alternativa de ranking producen VALID/promote=True; línea 103 hereda supporting_run_ids de la recomendación original; línea 168 fija success=True en _record_promotion. |
+| services/lab/strategy_selector.py | 569a038fae979bb618eddf7a322068b7ad87c63e | Línea 70 usa run.success para successful_keys; líneas 276–280 vuelven a contar r.success en la recomendación compuesta. |
+| services/adaptive/adaptive_weight_layer.py | 1de589c1d35969a657ba894a8a0a447e7920e7c7 | Línea 112 cuenta success; línea 184 convierte cualquier run.success en outcome positivo/negativo para recency. |
+| services/lab/experiment_lab.py | 05b57d1dde101d5e7ff11955829a9e1d07d1d901 | Líneas 257–258 calculan reuse bonus desde item.success; línea 468 actualiza estadísticas con success. generate_training_examples() no aparece en el archivo público consultado y sigue UNPROVEN en el checkout local. |
+| infra/persistence/experiment_lab_repository.py | c0f1437caae9ca022296c0947dfd857c2af51187 | list_recommendations no muestra el filtro consultivo descrito para el working tree local de Codex ni un gate positivo de operational_execution. |
+| services/adaptive/task_context_assembler.py | c5a6852a6a82a0c60886ea4bb6c236f50fe4a57c | No contiene la cadena operational_execution en la copia pública; los métodos _adaptive_learning_summary y _learned_patterns transforman insights recibidos; línea 1016 contiene además un consumo de item.success. |
+| services/adaptive/task_outcome_recorder.py | fddf3f90e15b4ec74ad813441ceeac18458e0118 | No contiene la cadena operational_execution en el archivo público consultado. |
+| domain/models.py | a9033d21052c519e09f482097599c704a62ea916 | Contiene ExperimentRun, SandboxExperimentVerdict y SandboxExperiment; evidence_class no aparece como campo tipado en la definición revisada. |
+
+Fuentes fijas:
+- [SandboxExperimentService, main público 9e0ce](https://github.com/jhonf463r/Python/blob/9e0ce66768aedd7422e0d3551affd398f44a7532/IABV_v1.5/src/iabv_v15/services/self_teach/sandbox_experiment_service.py#L20-L118)
+- [StrategySelector, main público 9e0ce](https://github.com/jhonf463r/Python/blob/9e0ce66768aedd7422e0d3551affd398f44a7532/IABV_v1.5/src/iabv_v15/services/lab/strategy_selector.py#L32-L125)
+- [AdaptiveWeightLayer, main público 9e0ce](https://github.com/jhonf463r/Python/blob/9e0ce66768aedd7422e0d3551affd398f44a7532/IABV_v1.5/src/iabv_v15/services/adaptive/adaptive_weight_layer.py#L109-L194)
+- [ExperimentLab, main público 9e0ce](https://github.com/jhonf463r/Python/blob/9e0ce66768aedd7422e0d3551affd398f44a7532/IABV_v1.5/src/iabv_v15/services/lab/experiment_lab.py#L150-L258)
+
+### Evaluación de las afirmaciones de Claude
+
+- C1, evidence_class no es campo tipado en los modelos inspeccionados: CORROBORATED para el main público 9e0ce.
+- C2, learning_source es metadata libre y no aparece como gate decisorio en los consumidores inspeccionados: CORROBORATED en los archivos públicos recuperados.
+- C3, consumidores de estrategia, pesos adaptativos y reuse usan success sin el filtro de clase reportado: CORROBORATED en main público 9e0ce.
+- C4, _record_promotion persiste success=True: CORROBORATED en el main público.
+- C5, la promoción usa blockers y alternativa rankeada sin que validate_recommendation muestre ejecución en esa ruta: CORROBORATED dentro del alcance del método inspeccionado; esto no prueba que no exista ninguna ruta de ejecución en otra parte del sistema.
+- C6, supporting_run_ids se copia de la recomendación, no de una ejecución atribuible de la alternativa: CORROBORATED en la línea 103 pública.
+- C7, no aparece productor de operational_execution en la búsqueda pública comunicada y no aparece en los archivos públicos clave inspeccionados: CORROBORATED dentro de ese ámbito. No extender la afirmación más allá del árbol/patrones realmente buscados.
+- C8, sobre igualdad del working tree local con HEAD_GH: NO VERIFICABLE por Claude Web. Claude no podía acceder al checkout de Codex; solo se puede afirmar que los filtros descritos no aparecen en el main público 9e0ce. La comparación local sigue CODEX_LOCAL_REPORTED hasta que Codex la reproduzca.
+- U1/U2, HEAD local y las 96 rutas modificadas: no verificables por Claude Web.
+- U3, generate_training_examples(): ausente en el archivo del main público consultado; su existencia/comportamiento en el checkout 3926b... sigue UNPROVEN. El uso público de success en estadísticas, línea 468, sí está confirmado.
+
+**Conclusión:** aunque Claude empezó en un commit público antiguo, las piezas centrales de la ruta de promoción y los consumidores se comprobaron en el main público observado y siguen presentes. Sin embargo, el informe de Claude no puede certificar nada de los cambios locales no publicados. No se inspeccionó runtime ni el checkout Windows.
+
+### Corrección crítica al stopgap A+B propuesto por Claude
+
+Cambiar success=True a success=False en _record_promotion() es una posible mitigación, pero sin filtros de elegibilidad puede convertir una evaluación sandbox en un falso fracaso operacional. En el main público, AdaptiveWeightLayer._profile calcula failure_count = sample_count - success_count, y _recency_score asigna outcome negativo a todos los runs con success=False. Un run sandbox que nunca ejecutó la herramienta no debe contar como fracaso de una ejecución real.
+
+El filtro por suite_name in {'sandbox_experiment', 'sandbox_promotion'} es un stopgap identificable para los dos orígenes conocidos; no es un contrato probatorio. Antes de usarlo, se requiere inventario local completo de productores y consumidores, incluyendo:
+- StrategySelector.recommend y _build_composite_recommendation.
+- AdaptiveWeightLayer._profile y _recency_score.
+- ExperimentLab._reuse_bonus y estadísticas por asistente.
+- TaskContextAssembler u otros resúmenes de aprendizaje.
+- training examples si existen en la versión local.
+- promoción sandbox y cualquier consumidor adicional de los campos resultantes.
+
+No basta con excluir sandbox de success_count dejando los runs en sample_count, failure_count, score promedio o recency. Para las métricas operacionales, un outcome sandbox debe quedar neutral/no elegible, o contabilizarse en una dimensión separada; métricas de bloqueos y evaluaciones sandbox pueden preservarse explícitamente. No asumir que blocked_rate se conserva automáticamente, pues _record_promotion puede persistir una lista de flags distinta de la del experimento sandbox.
+
+Los nombres suite_name y learning_source no son prueba de ejecución. Pueden servir para un stopgap por exclusión de orígenes conocidos, pero la dirección robusta separa: clase/procedencia de evidencia, resultado de la evidencia y elegibilidad para cada consumidor. La ausencia de evidencia operacional no debe rellenarse retroactivamente en datos históricos. Para consumidores decisorios, legacy/unknown debe quedar inelegible hasta definir una regla; los reportes descriptivos pueden mostrarlo como histórico sin clase.
+
+El supporting_run_ids copiado en la promoción también necesita validación de scope, candidato y configuración: el ID por sí solo no demuestra que se ejecutara la alternativa promovida.
+
+### Fase siguiente
+
+1. Codex local, solo lectura: volver a enumerar todos los usos y productores de success en el checkout 3926b... y su working tree; reconciliar las diferencias con main público 9e0ce y resolver generate_training_examples y cualquier otro consumer local.
+2. Diseño corregido: mantener los outcomes sandbox neutrales en métricas de ejecución operativa, pero preservar por separado sus señales de evaluación/bloqueo.
+3. Claude Web: ya aportó revisión de source público; volver a utilizarlo solo ante una discrepancia concreta o para revisar un diseño que pueda observar en GitHub. No pedirle certificar los archivos locales que no puede ver.
+4. OpenCode/Kilo: tercera opinión solo para discrepancias que no se resuelvan mediante source concreto.
+5. Implementación: tras decidir el contrato, crear un espacio aislado que preserve los cambios actuales; revisar el diff y autorizar pruebas por separado.
+
+No se aprueban aún A/B/C para implementación. GOVERNANCE = KEEP_BLOCKED; no acceder a M0A ni activar el puente físico.
