@@ -1,3 +1,16 @@
+## 2026-10-16 SYMBIOSIS UPDATE — LOCAL CENSUS TO TARGETED RECONCILIATION
+
+Codex has now supplied a broader local census of the outcome pipeline and a corrected design hypothesis. The next useful intervention is not another full audit. It is the exact local reconciliation of TaskOutcomeRecorder._source_trace_ids() and the producer/consumer chain for Run IDs versus trace IDs.
+
+A public-source cross-check shows the public method uses reusable_trace_ids, winning_trace_ids and supporting_trace_ids. Codex describes its modified working tree as using operational_trace_ids. Since task_outcome_recorder.py is modified in that working tree, this disagreement may be a local edit rather than a source-reading error; it remains unresolved until exact diff and call lineage are produced.
+
+Agent routing for this frontier:
+- Codex local: inspect the modified method, diff to HEAD and field lineage; no edits or runtime.
+- Claude Web: after that, challenge the reconciled design using the report and public source, without claiming access to local code.
+- Kilo/OpenCode: reserve for a material remaining contradiction.
+
+The transfer learned is sequence-sensitive: local source census → identity namespace reconciliation → adversarial design challenge → possible isolated implementation decision. Do not skip directly from a plausible mismatch to a patch.
+
 ## 2026-10-16 SYMBIOSIS DELTA — AGENT BEHAVIOR AND OPERATIONAL GATE
 
 ### Episode and evidence boundary
