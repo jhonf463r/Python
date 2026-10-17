@@ -1,3 +1,17 @@
+## 2026-10-16 SYMBIOSIS UPDATE — CLAUDE CHALLENGE → CONTRACT V2
+
+Claude Web usefully found denominator neutrality, mixed support, historical unknowns and incomplete route coverage as contract holes. Its limits remain: it cannot inspect the reported dirty Windows checkout. Public commit verification shows `ExperimentLab.generate_training_corpus()` exists and uses `run.success`; treat the report's UNRESOLVED on this method as reviewer non-verification, not source absence.
+
+Updated capability routing:
+- Codex local remains the evidence source for dirty-tree-only behavior, only through the authorized static/no-write route.
+- Claude Web can challenge specification/public source but not attest local modifications.
+- Do not call a third broad reviewer. Use one narrow challenge only after contract v2 incorporates typed ID namespaces, candidate identity, full operational denominator neutrality, attested execution evidence and explicit legacy treatment.
+- Kilo/OpenCode remain reserved for a material disagreement.
+
+The reusable lesson is sequenced: source evidence → normative choices → complete contract → adversarial counterexamples → implementation only when separately authorized. See follow-up Section 21. GOVERNANCE = KEEP_BLOCKED.
+
+---
+
 ## 2026-10-16 SYMBIOSIS UPDATE — LOCAL CENSUS TO TARGETED RECONCILIATION
 
 Codex has now supplied a broader local census of the outcome pipeline and a corrected design hypothesis. The next useful intervention is not another full audit. It is the exact local reconciliation of TaskOutcomeRecorder._source_trace_ids() and the producer/consumer chain for Run IDs versus trace IDs.
