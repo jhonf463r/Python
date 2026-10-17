@@ -1,3 +1,15 @@
+## 2026-10-16 SYMBIOSIS UPDATE — CODEX LOCAL LINEAGE COMPLETE
+
+Codex local was the correct actor for this frontier because Claude Web cannot inspect the Windows working tree. Its report narrowed uncertainty about candidate identity and the ToolMemory path without touching SQLite or executing code.
+
+The strongest transfer: provenance has to gate the earliest side effect, not merely the last learner call. ToolMemory updates ToolCard counters/status before InteractionLearningService, and several downstream consumers use those counters or patterns. Likewise, SANDBOX_PASS does not uniquely establish source provenance.
+
+Next actor: Claude Web, but only for specification challenge against Contract V2.1 and the supplied local report; not for a broad code audit. Use one bounded pass covering entity identity, support membership, all ToolMemory effects, authoritative execution attestation, and idempotency/supersession. Kilo/OpenCode stay reserved.
+
+See follow-up Section 23. No implementation or tests, keep data/ and SQLite untouched. GOVERNANCE = KEEP_BLOCKED.
+
+---
+
 ## 2026-10-16 SYMBIOSIS UPDATE — V2 REVIEW REQUIRES TARGETED CODEX DELTA
 
 Claude V2 is stronger, but not yet implementation-ready. New source-backed learning: public `ToolMemory.remember_result()` increments ToolCard success/failure counters from `result.success` before invoking InteractionLearningService, so skipping only interaction learning cannot guarantee sandbox neutrality. The sandbox producer also uses `candidate_id=experiment.experiment_id`, in addition to TaskOutcomeRecorder assigning `run_record.run_id` to candidate_id.
