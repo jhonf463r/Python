@@ -1,3 +1,15 @@
+## 2026-10-16 CURRENT ROUTE — LOCAL LINEAGE RECONCILED; CONTRACT V2.1 NEXT
+
+Codex supplied a focused read-only report. Candidate identity remains unresolved at the data-contract level: TaskOutcomeRecorder writes RunRecord.run_id to ExperimentRun.candidate_id, sandbox writes SandboxExperiment.experiment_id, while ordinary lab evaluation uses ExperimentCandidate.candidate_id. No common resolver/fingerprint was found in the inspected paths.
+
+Sandbox contamination extends beyond InteractionPattern: ToolMemory updates ToolCard counters/status first; later selectors/scorers and capability/reproducibility services consume those values. SANDBOX_PASS status is not a reliable provenance discriminator across all validator paths.
+
+No sufficient authoritative execution attestation, stable event-level idempotency key or ExperimentRun supersession contract was found. Do not adopt “latest run only” without a separate latest-state metric. Next action is a corrected Contract V2.1, then a bounded Claude challenge, not another source census.
+
+Detailed route: [follow-up Section 23](../2026-10-16_iabv_recommendation_gate_codex_followup.md). Keep checkout/data/SQLite untouched; no code/tests/runtime. PR #467 Draft/unmerged. GOVERNANCE = KEEP_BLOCKED.
+
+---
+
 ## 2026-10-16 CURRENT ROUTE — V2 DOCUMENTARY REPAIR, THEN LOCAL CHECK
 
 Contract V2 materially improves the design but contains remaining specification/coverage holes. Next edge: Codex local, read-only verification of candidate/run/experiment identity fields and ToolMemory success/failure counters plus all consumers of these counters, restricted to relevant files and HEAD/worktree deltas. Do not repeat broad census or modify local checkout.
