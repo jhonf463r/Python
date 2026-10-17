@@ -1,3 +1,17 @@
+## 2026-10-17 TRANSFER LESSON — THE REVIEWER MUST RECEIVE THE CANDIDATE, NOT JUST ITS REPORT
+
+**Observed collaboration episode:** Codex local reports completion of an R10 v0.7.3 documentary candidate and provides a candidate ZIP size/hash, but the candidate ZIP is not present among the current ChatGPT conversation or Library files found during preflight. This does not establish that Claude can access it, nor does it disprove the Codex report.
+
+**Evidence class:** Codex completion summary is `CODEX_LOCAL_REPORTED / OWNER_REPORTED`; the absence of the exact candidate artifact from the searched current ChatGPT/Library surfaces is a bounded observation, not proof that the file is absent from the user's Windows machine or Claude conversation.
+
+**Capability/routing delta:** Next IA is Claude/Sonnet, because the task is independent adversarial documentary review rather than more authoring. Send three concrete inputs to Claude's actual conversation: candidate ZIP, original v0.7.2 ZIP, and delta-review prompt. The reviewer must confirm actual archive hash, manifest coverage, historical byte preservation and each M0–M5 semantic delta before giving a verdict. A reviewer prompt does not substitute for the candidate package.
+
+**Unresolved edge:** actual transfer of `R10_V0_7_3_DOCUMENTARY_CANDIDATE.zip` (reported size 86,835 bytes; reported SHA-256 `1ace1d9331ee943a35fc4663855a09451919ae7b0e8619c799416b48bdae4049`) to Claude/Sonnet. Until the reviewer verifies the attached artifact, candidate semantic review is not complete.
+
+Do not claim accepted baseline, tests passed, runtime behavior, exact-once, crash recovery, atomicity or dispatch from the documentary bundle. R10 v0.7.2 remains `FAIL`; tests remain `NOT_RUN`; `GOVERNANCE = KEEP_BLOCKED`.
+
+---
+
 ## 2026-10-17 ROUTE CORRECTION — ZIP VERIFIED HERE; MUST BE ATTACHED TO CODEX CHAT
 
 Codex's latest `BLOCKED` is procedurally correct: it could not find the ZIP in its own chat attachment store. The source ZIP was recovered from ChatGPT Library and verified in the ChatGPT working container at `/mnt/data/r10_recovery/R10_V0_7_2_REPAIR_PACKAGE_FOR_CLAUDE.zip`. ZIP SHA-256: `acfb468f78bebc3794b8ec7eaf81baf65d8c40cb66b3f8c7bd2065ffd07fe14e`. It contains seven files (six payload artifacts plus manifest); all six payload file sizes and hashes match the embedded manifest. This proves bytes against that manifest, not semantic acceptance.
