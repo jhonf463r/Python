@@ -6173,3 +6173,18 @@ Next actor:
 SONNET/CLAUDE.
 
 No implementation/runtime/scoring change.
+
+
+## 2026-10-16 LATEST ROUTING POINTER — R10 CAUSAL MAP → LOCAL DISPATCH EDGE
+
+**Canonical evidence**
+- `IABV_v1.5/docs/history/2026-10-16_iabv_agent_continuity_space_time.md`, §35.
+- `IABV_v1.5/docs/history/2026-10-16_iabv_recommendation_gate_codex_followup.md`, §4.
+
+**State:** static promotion-to-ranking path reported; actual dispatch/postcondition edge unproven. `GOVERNANCE = KEEP_BLOCKED`.
+
+**Next actor:** Codex local checkout.
+
+**Exact question:** trace `ToolEvolutionMonitor` → `validate_discovery` → actual dispatcher, if any. Identify required authorization, evidence provenance, candidate/attempt identity, postcondition verification, and whether the promotion-derived recommendation can reach dispatch. Report the exact terminal point if there is no such path.
+
+**Method:** one route, read-only, relevant HEAD/worktree comparison; no source-wide re-audit, no code/tests/build/runtime, no `data/` or SQLite, no M0A/bridge. Then Claude Web performs one bounded adversarial challenge using supplied evidence without claiming local access.
