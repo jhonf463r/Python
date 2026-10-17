@@ -1,3 +1,16 @@
+## 2026-10-17 ROUTE UPDATE — R10 v0.7.2 AUDIT CLOSED WITH FAIL
+
+Final verdict: `FAIL`. Six artifact payload hashes match the manifest (`PROVEN_BY_SOURCE` for the extracted bytes), but hash agreement is not semantic approval, identity/version equivalence, or implementation proof. The main blockers are normative matrix/contract contradictions: D2 open (especially T162 vs §§8.3/12, with no precedence rule), D3 partial (T141 can return CORRELATED without attested parent relation; T138 expiry is unsupported by contract), D4 partial (T130/T131 add uncontracted strategy-lineage semantics), D6 partial (undefined terms and mismatched failure codes), plus 21 rows lack explicit expected outcomes and T180's exact deadline boundary is unspecified. See [full audit closure](https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-r10-v072-audit-closure-fail.md).
+
+D1 and D5 are closed in text; atomicity remains `UNPROVEN`. D3/D4/D6 remain partial; SC2/SC5/SC10 remain partial. All 74 matrix cases T123–T196 are `NOT_RUN`; 52 rows are reconstructed from v0.7 reference and 22 are reconstructed adversarial scenarios, not historical v0.6 cases. Implementation dependencies remain unproven. Claude used shell/Python inspection tools only on temporary extracted copies to read, scan and compute hashes; product code was not run. Checkout was not inspected; tests/build/runtime were not run.
+
+All repair items M0–M5 are `PROPOSED`, not implemented: add clause-over-oracle precedence; repair/remove T162; repair T141/T138 and add missing AUTO dispatch-turn fail-closed test; normalize vocabulary/codes and define missing status writers; resolve T130/T131; add explicit expected outcomes and T180 boundary result. Owner decides whether to return these documentary repairs to the package author; any corrected version needs a new delta review, preferably by an independent reviewer. No v0.7.3 was created.
+
+Separate from the discovery/sync-pulse trace, which remains `TRACE_ACCEPTED_WITH_LIMITATIONS` with a two-hop identity question `UNRESOLVED`. Do not conflate the two verdicts.
+
+`PRODUCT_CODE_EXECUTION = NOT_RUN`; `TESTS = NOT_RUN`; `BUILD = NOT_RUN`; `RUNTIME = NOT_RUN`; `GOVERNANCE = KEEP_BLOCKED`. No implementation, dispatcher, Packages B–E, M0A, `data/` or SQLite access authorized.
+
+---
 ## 2026-10-17 ROUTE UPDATE — TRACE ACCEPTED WITH LIMITATIONS; R10 AUDIT NEXT
 
 Claude Web returned `TRACE_ACCEPTED_WITH_LIMITATIONS`. Acceptance is restricted to: no explicit, typed adapter was found in the reviewed tracked IABV_v1.5/src and IABV_v1.5/tests routes/methods carrying an individual ToolEvolutionProposal / validate_discovery result into an individual solution_proposals item. It is not a global absence proof and does not rule out indirect reconstruction from run references.
