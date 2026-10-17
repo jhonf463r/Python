@@ -1,3 +1,14 @@
+## 2026-10-17 ROUTE UPDATE — ADVERSARIAL TRACE REVIEW REQUIRES TARGETED EVIDENCE
+
+Claude Web returned TRACE_REQUIRES_TARGETED_EVIDENCE after reviewing the supplied report text only; no checkout or public-source inspection was performed in that review. The route graphs support a possible data dependency through recent ExperimentRun/OSES aggregates, but the negative claim BRIDGE_NOT_FOUND_IN_BOUNDED_SCOPE is not accepted yet because the search protocol, proposal_key derivation, ExperimentRun identity persistence, full sync-pulse projection/title matching, and call-site preconditions are not evidenced enough. Also determine what evidence_refs contain and whether they survive projection. Replace “statistically dependent” with “may have a data dependency”; do not imply a particular discovery run falls inside the consumed window.
+
+**Next actor: Codex local**, limited read-only evidence collection for those exact five groups in [the adversarial review record](CHAT-ARCH-2026-10-17-r10-sync-pulse-adversarial-review.md). No broad audit. Keep public baseline SHA 9e0ce66768aedd7422e0d3551affd398f44a7532 separate from local HEAD 3926b1144bb23c1066db579da711d3cdbc1611df; the prior public cross-check covered only Route B's OSES, sync-pulse, and orchestrator source. Route A remains local-report-only unless separately verified. Do not infer that a static call site means actual reachability or execution.
+
+The separate R10 v0.7.2 audit is pending its own bounded written verdict: six hashes reportedly match and contract/matrix were read (OWNER_REPORTED), but hash consistency alone does not equal audit approval. Close that report with passed criteria, unresolved items, and execution/test/build status explicitly stated; do not conflate it with this trace review.
+
+GOVERNANCE = KEEP_BLOCKED; code/tests/build/runtime NOT_RUN; no dispatcher, Packages B–E, M0A, data/ or SQLite.
+
+---
 ## 2026-10-17 ROUTE UPDATE — INDIRECT OSES INFLUENCE FOUND; TYPED BRIDGE NOT FOUND
 
 Codex local reported `BRIDGE_NOT_FOUND_IN_BOUNDED_SCOPE`: no direct typed adapter was found transferring a `ToolEvolutionProposal` / `validate_discovery` result into an individual sync-pulse `solution_proposals` object. The flows are **not fully independent**: sandbox `ExperimentRun` records reportedly feed ExperimentLab/OSES aggregates grouped by assistant, which influence OSES proposal output. The individual `proposal_id` / `discovery_signal_id` lineage is reported as absent from those OSES output objects and lost again in the sync-pulse projection.
