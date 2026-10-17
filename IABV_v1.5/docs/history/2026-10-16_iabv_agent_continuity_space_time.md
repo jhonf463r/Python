@@ -1012,3 +1012,59 @@ S5/S9/S10 se declaran abiertos en Entries 285, 289 y 290. Entry 290 sigue PENDIN
 Realizar la revisión C17 del paquete Entry 290 en alcance cerrado C16-S1–S8 y fixtures tipados de Entry 290. Comparar texto contractual, matriz CSV y fixtures ejecutables uno a uno; conservar separados PROVEN_BY_SOURCE, OWNER_REPORTED, PROPOSED y UNPROVEN. No emitir PASS mientras existan discrepancias de IDs/oráculos, fixtures requeridos ausentes o decisiones S5/S9/S10 abiertas. No ampliar alcance a ejecución runtime sin autorización explícita.
 
 **Gobierno global de esta continuidad:** KEEP_BLOCKED. Candidate C necesita Candidate D; M0B-R8.1 necesita C17 sobre Entry 290; la auditoría de código local sigue STATIC_DIFF_REVIEW_INCOMPLETE y sus hallazgos F1/F4 deben reconciliarse con el contrato vigente antes de pruebas.
+
+
+## 29. Claude — hallazgos materiales en evidencia operativa y persistencia; auditoría sigue incompleta
+
+**Fuente:** informe largo pegado por el propietario, atribuido a Claude y preparado con el paquete de auditoría local. Clasificación de los hallazgos aquí: **CLAUDE_REPORTED (relayed by owner)**. ChatGPT no abrió el paquete ni verificó estos fragmentos directamente en el checkout; las afirmaciones solo están demostradas por fuente para el alcance que Claude dice haber leído. Estado global: `STATIC_DIFF_REVIEW_INCOMPLETE`. Gobierno: `KEEP_BLOCKED`.
+
+### Alcance declarado y coherencia del inventario
+
+Claude declara haber leído varias secciones críticas y haber alcanzado el límite de uso de herramientas. El informe enumera:
+- Fuente/servicio revisado en detalle o secciones críticas: `models.py`, `database.py`, `experiment_lab_repository.py`, `tool_record_repository.py`, `task_context_assembler.py`, secciones de `autonomous_evolution_service.py`, `experiment_lab.py` y secciones de `self_teach_orchestrator.py`.
+- Parciales: `adaptive_task_orchestrator.py`, `task_outcome_recorder.py`, `tool_teach_service.py`, `control_center_viewmodel.py`.
+- Tests leídos en detalle: `test_task_context_assembler.py`, `test_autonomous_evolution_service.py`, `test_experiment_lab_repository.py`, `test_experiment_lab.py`, `test_tool_record_repository.py`, `test_e04_dry_run_governance_reingest.py`.
+- Los demás tests siguen pendientes; varias fuentes no pudieron leerse completas. Tres tests de dependencia continúan excluidos por clasificación de valores.
+- El informe concluye 6/12 fuentes y 6/84 tests en detalle, más 4 tests con grep estructural; las etiquetas por fila incluyen más de seis fuentes marcadas como revisadas. Reconciliar ese recuento con el inventario antes de atribuir cobertura exacta.
+
+No hay revisión completa de los 96 diffs, ni tests ejecutados, ni inspección de `data/`, ni validación de runtime.
+
+### F1/F2 — La clase de evidencia ausente se acepta como operacional
+
+Según los fragmentos citados por Claude, `TaskContextAssembler._is_operational_trace()` rechaza `consultation_advisory` y clases no vacías no reconocidas, pero deja pasar clase vacía si éxito, veredicto `approved`, estado `executed/completed` y ausencia de flags se cumplen. Una política equivalente aparece en `_is_operational_experiment_insight()` del assembler, en el orquestador adaptativo y en `TaskOutcomeRecorder._operational_experiment_insights()`, que acepta el conjunto `{'', 'operational_execution'}`.
+
+Si los fragmentos se confirman en la fuente, esto viola el contrato ya establecido: clase ausente, vacía o desconocida no se debe convertir silenciosamente en evidencia operacional. El registro de aprendizaje de `self_teach_orchestrator._register_learning` es señalado como productor de metadata sin clase, haciendo material el camino de datos sin clasificar. La ruta de consulta externa parece etiquetar explícitamente `consultation_advisory` y marcar no ejecución/no postcondición; eso no cierra la vía legacy o de self-teaching.
+
+**Expectativa de test correcta:** clase ausente/vacía o desconocida debe dar no-operacional (`False` o neutral según API); `operational_execution` explícita solo puede aceptarse si los predicados restantes se cumplen. Una prueba que espere `True` para clase vacía contradice el contrato y no debe incorporarse como aceptación.
+
+### Evidencia de soporte de recomendación
+
+Claude reporta que `ExperimentLabRepository._recommendation_has_consultation_support()` falla cerrado para recomendaciones cuyo conjunto de supporting run IDs está vacío, evitando que recomendaciones históricas sin provenance auditable conduzcan selección operacional. Mantener este hallazgo como comportamiento correcto en el alcance leído; no implica que todos los consumidores downstream estén cerrados.
+
+### Recibos y efectos parciales
+
+Según los fragmentos de `ToolRecordRepository`, reclamar un recibo crea `processing`; una segunda reclamación con igual identidad devuelve el estado `processing` y no crea una nueva reclamación; identidad conflictiva devuelve `identity_conflict`; la transición a `completed` requiere una fila en `processing`. El test del repositorio reporta cobertura para duplicado/bloqueo incompleto.
+
+Queda explícitamente sin verificar el manejo en `AutonomousEvolutionService.ingest_consult_response` cuando el caller recibe `processing`. Esa ruta es la próxima lectura prioritaria.
+
+En un recorrido adicional y distinto, Claude reporta que `TaskOutcomeRecorder.record()` efectúa escrituras secuenciales e independientes hacia learning/ExperimentLab, capabilities, approval checkpoints, adaptive session, Control Master y resume hint. Un fallo entre escrituras puede dejar efectos huérfanos; un reintento externo podría repetir `ExperimentLab.record_outcome()` sin idempotencia por efecto. No confundir este ciclo general de TaskOutcomeRecorder con el recibo de consulta externo: son dos límites de persistencia que requieren análisis separado.
+
+También se reporta que `_read_pending_auto_execution()` implementa un patrón leer-comprobar-escribir para `pending_auto_execution.json` sin CAS atómico o lock compartido evidente; la carrera concurrente es una hipótesis sólida basada en el fragmento, pero el uso concurrente efectivo debe confirmarse antes de elegir la reparación.
+
+### Fixtures
+
+Se reporta que dos helpers `_workspace()` crean una carpeta base con `tempfile.mkdtemp()`, después crean un subdirectorio y solo devuelven/eliminan ese subdirectorio; la base exterior queda huérfana. En `test_tool_record_repository_round_trip`, uno de los cleanups estaría fuera de `try/finally`. Esto difiere de rutas compartidas bajo `data/`: no necesariamente afecta datos ajenos, pero sí revela limpieza incompleta. No se debe ejecutar ni tocar `data/` para verificarlo.
+
+### Continuación prioritaria
+
+Antes de implementar cambios, usar Claude para revisar el siguiente lote puntual del mismo paquete, aún en modo solo lectura:
+1. Leer el cuerpo de `AutonomousEvolutionService.ingest_consult_response` alrededor de la reclamación de recibo; determinar exactamente qué hace con el estado `processing` y cualquier efecto lateral previo.
+2. Leer el cuerpo completo relevante de `ToolTeachService`, especialmente ejecución aprobada y cadena de evidencia.
+3. Leer la sección de `ControlCenterViewModel` relacionada con prompts de enseñanza/estado operacional, sin abrir ni inspeccionar `data/`.
+4. Leer los tests pendientes específicos de provenance: `test_self_teach_orchestrator.py`, `test_adaptive_task_orchestrator.py`, `test_task_outcome_recorder.py`; después ampliar a los tests que cubren reingesta y fixtures legacy.
+5. Resolver la coherencia del inventario: diferenciar archivo con grep, sección crítica leída, archivo completo leído y diff completo revisado.
+6. No ejecutar pruebas ni cambiar código durante esta lectura. Si Claude vuelve a alcanzar su límite, guardar checkpoint por rutas revisadas y continuar en otra sesión con los materiales restantes.
+
+Cuando el alcance crítico esté claro, una modificación acotada posterior debe hacer fail-closed para clase ausente/desconocida en consumidores operativos, evitar que la metadata legacy de self-teaching se promueva sin procedencia, y añadir pruebas discriminantes con expectativas compatibles con el contrato. La reconciliación de escrituras cross-store y de consumo de pending signal se debe diseñar por separado y no vender como exactly-once.
+
+**Gobierno:** `KEEP_BLOCKED`. F1/F2 y la no-atomicidad reportada son hallazgos prioritarios; el diff total no ha sido revisado completamente ni validado con pruebas.
