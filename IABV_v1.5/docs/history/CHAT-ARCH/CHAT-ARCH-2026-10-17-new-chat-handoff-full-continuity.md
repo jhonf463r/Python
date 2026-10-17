@@ -1,3 +1,20 @@
+## 2026-10-17 BLOCKER — R10 v0.7.5 NOT STARTED; FULL CLAUDE REVIEW REPORT REQUIRED
+
+Codex returned `BLOCKED_MISSING_REQUIRED_REVIEW_REPORT` and correctly did not start v0.7.5 authoring. The currently available prompt contains only the summarized distribution (3 `OK`, 53 `OK_WITH_NOTES`, 43 `REPAIR`), not Claude's complete independent report with exact locations, F/S/G findings, and row-by-row rationale. Do not reconstruct or invent the missing report from summaries, memory, or this continuity document.
+
+**Reconciled states:** v0.7.2 `FAIL`; v0.7.3 `REQUIRES_REPAIRS / NOT_ACCEPTED`; v0.7.4 `REQUIRES_REPAIRS / NOT_ACCEPTED`; v0.7.5 `NOT_CREATED / NOT_REVIEWED`. T123–T_final `NOT_RUN`; product execution/tests/build/runtime `NOT_RUN`; `GOVERNANCE = KEEP_BLOCKED`.
+
+**Input identities recalculated by Codex in its report (still preserve evidence provenance):**
+- v0.7.4: 86,703 bytes; SHA-256 `dff898c9fb7e515ffdc698992475384873995cf50469da88d769072269e1c0e9`.
+- v0.7.3: 86,835 bytes; SHA-256 `1ace1d9331ee943a35fc4663855a09451919ae7b0e8619c799416b48bdae4049`.
+- v0.7.2: 50,589 bytes; SHA-256 `acfb468f78bebc3794b8ec7eaf81baf65d8c40cb66b3f8c7bd2065ffd07fe14e`.
+
+No v0.7.5 candidate or relay was created/published. Preserve `handoff/r10-v074-review-20261017`; do not delete, recreate, overwrite, or replace it. No IABV checkout, code, tests, build, runtime, data/SQLite, M0A, dispatcher, or Packages B–E access/change is authorized. Keep PR #467 Draft/open/unmerged.
+
+**Next action in the new chat:** recover the *complete original Claude/Sonnet v0.7.4 independent review report* from an existing pinned relay/history/available attachment, checking exact source and commit before relying on it. If it cannot be found, stop and ask for that original report as an attachment or pasted full text. Do not start v0.7.5 until the full report and row-level findings are actually present and provenance is clear. Then reconcile every finding against v0.7.4 source artifacts before assigning Codex the documentary repair. The summary below is not a substitute for the report.
+
+---
+
 # ACTIVE ROUTE UPDATE — R10 v0.7.4 relay verified; Claude/Sonnet delta review next
 
 **Checkpoint:** 2026-10-17. This is a coordinator-side static read of the public GitHub relay and selected v0.7.4 text files, not an independent binary/package audit.
