@@ -1,3 +1,16 @@
+## 2026-10-17 ROUTE UPDATE — INDIRECT OSES INFLUENCE FOUND; TYPED BRIDGE NOT FOUND
+
+Codex local reports `BRIDGE_NOT_FOUND_IN_BOUNDED_SCOPE` for a direct typed adapter carrying a `ToolEvolutionProposal` / `validate_discovery` result into an individual `solution_proposals` item. The paths are not fully independent: sandbox `ExperimentRun` records reportedly feed ExperimentLab/OSES aggregates grouped by assistant, and those aggregate statistics influence OSES proposals. Individual typed proposal/signal identity is reported as absent from the OSES output and lost again in the sync-pulse projection.
+
+Evidence boundary: `CODEX_LOCAL_REPORTED / OWNER_REPORTED`. This record summarizes the supplied local report; it is not independent inspection of the Windows checkout. See [CHAT-ARCH-2026-10-17-r10-discovery-sync-pulse-bridge-trace.md](CHAT-ARCH-2026-10-17-r10-discovery-sync-pulse-bridge-trace.md).
+
+**Next actor: Claude Web** — adversarial static review of the full Codex report pasted inline in that chat. Challenge the narrow negative conclusion, indirect influence, individual lineage loss and the execution-call boundary. If the supplied report is insufficient, request only the exact missing source excerpts. Do not restart a broad audit or claim local access.
+
+Slice A remains `SLICE_A_REVIEW_ACCEPTED_WITH_REMAINING_LIMITATIONS`; F-04/F-09 are unresolved; F-05/F-06/F-07 remain deferred/open; all tests remain `NOT_RUN`. No implementation is authorized. Do not inspect `plan_or_execute()` internals or begin packages B–E.
+
+`GOVERNANCE = KEEP_BLOCKED`. No dispatcher enablement, code/tests/build/runtime, `data/`/SQLite, M0A or physical bridge.
+
+---
 ## 2026-10-17 ROUTE UPDATE — SLICE A STATIC ACCEPTANCE WITH LIMITATIONS
 
 ### Task-specific actor routing after Slice A
