@@ -270,3 +270,50 @@ If successful, publish the existing candidate ZIP and extracted tree plus the or
 The corrected transfer-only instruction is supplied in the current ChatGPT response: `R10_V0_7_3_GITHUB_RELAY_RETRY_CORRECT_REPO_2026-10-17.md`, local SHA-256 `18538d70184a931f79234d825550f0138a683b7480039237d25f1a6c4bf4b57c`.
 
 Codex reported candidate identity stays `CODEX_LOCAL_REPORTED`: 86,835 bytes, SHA-256 `1ace1d9331ee943a35fc4663855a09451919ae7b0e8619c799416b48bdae4049`. Claude's semantic review has not started because the candidate ZIP was missing. Original v0.7.2 remains `FAIL`, tests `NOT_RUN`, and `GOVERNANCE = KEEP_BLOCKED`.
+
+
+# 2026-10-17 — Claude v0.7.4 delta result / route v0.7.5
+
+**Owner supplied the full independent report** `R10_V0_7_4_INDEPENDENT_DELTA_REVIEW_CLAUDE.md`. Semantic verdict `REQUIRES_REPAIRS`; package is not accepted. Claude reports that all three ZIPs' downloaded bytes match declared sizes and SHA-256, the manifests match, the seven v0.7.2 historical artifacts are byte-identical through the preserved packages, and the seven v0.7.4 candidate texts match the ZIP. Relay verification remains partial: the final commit's sole parent and sole changed file (`RELAY_INDEX.md`) were checked, all 32 indexed artifacts reportedly match SHA/size, but Claude could not verify the 42-entry tree count or relay branch ref because GitHub API rate limits. Do not promote that limitation into evidence of mismatch.
+
+v0.7.4 identifiers:
+- Candidate ZIP: 86,703 bytes, SHA-256 `dff898c9fb7e515ffdc698992475384873995cf50469da88d769072269e1c0e9`.
+- v0.7.3 ZIP: 86,835 bytes, SHA-256 `1ace1d9331ee943a35fc4663855a09451919ae7b0e8619c799416b48bdae4049`.
+- v0.7.2 source ZIP: 50,589 bytes, SHA-256 `acfb468f78bebc3794b8ec7eaf81baf65d8c40cb66b3f8c7bd2065ffd07fe14e`.
+- Artifact-content commit: `ad5c094fa3e7e4d1989079983f8f6c05f3296551`.
+- Relay-index/final commit: `191803340e1c78c92125b871a6a41589dc874163`.
+- Branch: `handoff/r10-v074-review-20261017`; keep available through the next author/review cycle unless a future explicit preservation check authorizes retirement.
+
+Claude row classifications for T123–T221 (99 rows): **3 OK, 53 OK_WITH_NOTES, 43 REPAIR**. None of F-01–F-14 is fully closed; F-04 and F-11 are documentarily repaired with notes, F-12 is not repaired; F-07 and F-10 remain open.
+
+Confirmed systemic defects:
+- S-1: in all 99 rows, `expected_final_state` duplicates `ordered_events_and_oracle`, `evidence_required` duplicates `initial_state_and_preconditions`, and `fixture_discriminant` duplicates `control_or_falsifier`. Added columns supply no independent information.
+- S-2: generic crash/control text predominates (90/99); all T198–T221 repeat a generic falsifier.
+- T210: oracle says contribution delta +1 but numeric column says 0.
+- T205: “applicable barrier” does not identify event or tombstone scope; task-success effect is unresolved for conflict barriers.
+- T202–T207 combine positive and negative paths or use inadequate/non-concrete fixtures; L1/L2/L4 lack separate negative coverage; T221 uses n=19 OR lift<0.10 in one row without a fully instantiated metric/baseline/window.
+- T134: full eligible sequence but task/contribution deltas 0/0.
+- T179: digest mismatch incorrectly returns `VALIDATION_EVIDENCE_INCOMPLETE`; it should be `CRITERIA_MISMATCH` under §§5/16.1.
+- T184: restoration lacks explicit `CONFLICT_RESOLVED` and `restores_event_id`, writer/event and state/pointer/count outcomes.
+- T200: “accept at most one” does not establish a deterministic identity/serialization or sufficiently formal at-most-one invariant.
+- T212: “crash before commit” precondition contradicts “No crash injected”.
+- §0 still calls itself a v0.7.3 artifact and names the T123–T197 CSV as sole registry for T123–T221.
+- Legacy labels remain: `EXECUTION.COMPLETED`, `RESULT→REJECTED`, `EVALUATION.INVALID`, `PLAN.EXECUTING`; `ResultState` and `correlation_status` are not defined. The report/changelog inaccurately claim that affected labels/rows were normalized.
+- Missing/ambiguous writers/events: `CAPTURE_REJECTED`, durable `LATE_STALE`, `RESULT_ACCEPTED`, infrastructure-timeout diagnostics, policy/profile registration. Precedence of multiple failing guards is unspecified.
+- Duplicate or overstated coverage includes T123/T175, T165/T169/T182, T168/T180/T214, T183/T213, T161/T210, T162/T211 and T127/T186/T217.
+- CSV begins with UTF-8 BOM. It needs clean encoding and schema-level consistency.
+- F-12 specifically: `RESULT_ACCEPTED` is referred to as an execution state although §12 says it terminalizes only the capture/result decision; no event/writer transitions into it and no matrix row tests it.
+- F-14: update §0/version/registry while leaving original v0.6 and the absent 5bab reference `NOT_RECOVERED`; SC-10 remains `UNPROVEN`/ `NOT_RECOVERED` unless its source is recovered.
+
+## Next actor: Codex local — v0.7.5, documentary-only
+
+Create a new immutable candidate v0.7.5 in a fresh isolated workspace. Do not overwrite v0.7.4 and do not touch the dirty IABV checkout. Repair all 43 rows classified `REPAIR`, resolve notes where needed, and re-read all 99 rows. Add split cases with new sequential IDs beginning at T222 while preserving T123–T221; report the true final range/count—do not force the total to 99 or any predetermined number.
+
+The ready-to-paste Codex prompt is provided inline in the current ChatGPT response and is the routing authority for this turn. Key requirements: remove or populate the three duplicate fields with genuinely distinct semantics; make every row's state/evidence/discriminant meaningful; eliminate generic non-discriminating crash controls; fix §0; normalize all state labels and fully enumerate the error vocabulary/writers; define rejection precedence or isolate each fixture to one failing gate; fix T134/T179/T184/T200/T205/T210/T212; define `RESULT_ACCEPTED` lifecycle/event/writer and add coverage; make L0–L5b tests concrete with separate negative cases for L1/L2/L4; correct §14 coverage to individual IDs that prove each predicate; fix changelog/report statements and BOM.
+
+After true local static preflight, publish a new one-commit isolated relay (suggested branch `handoff/r10-v075-review-20261017`) containing the v0.7.5 ZIP/extracted tree, v0.7.4 ZIP and source texts, v0.7.3 ZIP/text history, v0.7.2 source and an index with all sizes/hashes and commit-pinned URLs. Download/hash remote ZIPs after publication. Do not remove the v0.7.4 relay or its local candidate as part of this task; keep the prior reviewed input available. Claude/Sonnet then performs a new independent review of the exact commit and actual ZIP bytes.
+
+Separate deferred track: IABV static diff audit remains `STATIC_DIFF_REVIEW_INCOMPLETE`, including remaining review of `tool_teach_service.py`, `control_center_viewmodel.py` and test files. C20 remains paused. Do not resume or mix that audit into the active R10 task.
+
+State: `R10 v0.7.2 = FAIL`; `v0.7.3 = REQUIRES_REPAIRS / NOT_ACCEPTED`; `v0.7.4 = REQUIRES_REPAIRS / NOT_ACCEPTED`; `v0.7.5 = NOT_CREATED / NOT_REVIEWED`; `T123–T221 = NOT_RUN`; product execution/tests/build/runtime all `NOT_RUN`; `GOVERNANCE = KEEP_BLOCKED`.
+
