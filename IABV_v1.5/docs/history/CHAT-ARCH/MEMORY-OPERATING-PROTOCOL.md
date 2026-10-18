@@ -1,3 +1,265 @@
+## 2026-10-18 CURRENT NEXT ACTOR — CODEX V0.7.6 DOCUMENTARY REPAIR, THEN CLAUDE REVIEW
+
+The pinned independent-review reconciliation is [here](https://github.com/jhonf463r/Python/blob/fd837b8c58633a20d585745b40f3d9dc19b8de3a/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-18-v075-independent-review-reconciliation.md); the current entrypoint is [Start Here](https://github.com/jhonf463r/Python/blob/050da8051fa4f6ab9b678ef7545d59c0856a9142/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-18-start-here-current-task.md). The supplied v0.7.5 review reports `REQUIRES_REPAIRS`. Coordinator text readback corroborates HI-01 (`Artifact ID: R10_V0_7_4_CONTRACT` in the v0.7.5 contract), HI-02 (generic T157 crash oracle), and HI-03 (T222–T233 normative basis `§17`). The reviewer reports binary ZIP hash verification, but the coordinator did not recalculate the ZIP binary hashes; keep that provenance distinction.
+
+Write a new immutable v0.7.6 documentary candidate only. Do not alter the frozen v0.7.5 artifact. Limit changes to HI-01–HI-03; verify the Artifact ID convention before changing it, align T157’s oracle with its post-commit preconditions (do not mix in a pre-marker fault under a precondition that says P2 was already committed), and validate all proposed clause references. Update manifest/archive hashes, run static documentary checks only, keep all test rows `NOT_RUN`, publish to an isolated relay, and have Claude/Sonnet independently review the exact pinned v0.7.6 artifact. Keep F-07/F-10 open, F-12 unresolved, SC-10 partial, and implementation guarantees unproven. PR #467 stays OPEN/DRAFT/UNMERGED. No code/tests/build/runtime/bridge/data/SQLite/M0A/dispatcher/Packages B–E/dirty checkout access. `GOVERNANCE = KEEP_BLOCKED`.
+
+---
+
+## 2026-10-18 CURRENT NEXT ACTOR — CLAUDE INDEPENDENT REVIEW OF V0.7.5
+
+After Codex's reported documentary candidate creation, the next actor is **Claude/Sonnet** for independent adversarial review of immutable candidate commit `db5c8788036b7d1c0ae5df9167bb3ec813da5f85`. Begin at [Start Here](https://github.com/jhonf463r/Python/blob/0a98ebad5a951b31e48394d150adf5957b937b48/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-18-start-here-current-task.md), read the [coordinator relay readback](https://github.com/jhonf463r/Python/blob/66d8926968fc44f629f655f120471d9e9f08a703/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-18-v075-relay-readback.md), and use the [corrected reviewer handoff](https://github.com/jhonf463r/Python/blob/fcecb67a1d222283795b5c0f8e8ce6b93169104b/relay/CLAUDE_REVIEW_HANDOFF.md). The previously published handoff pointed to a prior T123–T240 artifact and was corrected; never reuse its stale commit/hash/range.
+
+The coordinator's GitHub connector has read back and parsed the pinned candidate matrix text, but did not recalculate the candidate ZIP's binary SHA-256. Codex's binary claims remain `CODEX_LOCAL_REPORTED / OWNER_REPORTED` until independently checked by the reviewer. The contract's opening `Artifact ID: R10_V0_7_4_CONTRACT` is a source-confirmed inconsistency to report; do not edit the frozen candidate. Claude must review all 124 rows T123–T246 and the entire contract/change map, preserve uncertainty and evidence labels, then return a row/clause-grounded verdict.
+
+Before the next chat change, coordinator must write the full reviewer report or durable adjudication to canonical GitHub, update Start Here and current/index/protocol pointers, and read back every pinned link. Keep temporary relay artifacts until verdict reconciliation is complete. No product code/tests/build/runtime/bridge/M0A/dispatcher/Packages B–E/data/SQLite/dirty checkout access; `GOVERNANCE = KEEP_BLOCKED`.
+
+---
+
+## 2026-10-18 CURRENT ROUTE — SUBSTITUTE DOCUMENTARY BASIS ACCEPTED FOR AUTHORING ONLY
+
+Owner routing decision: [record pinned to commit 451e78a5418c96abadc6d6f01930b98497a2f801](https://github.com/jhonf463r/Python/blob/451e78a5418c96abadc6d6f01930b98497a2f801/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-18-owner-decision-r10-v074-substitute-basis.md). The regenerated coordinator reconciliation may be used as the documentary substitute basis to begin R10 v0.7.5 **documentary-only** authoring; it is not the missing original Claude report and does not accept v0.7.4. Before handoff completion, Codex must persist the new candidate plus provenance/manifest/change map to an isolated GitHub relay, read it back at a pinned commit, then Claude/Sonnet independently reviews the exact candidate. The next chat begins from [Start Here](https://github.com/jhonf463r/Python/blob/451e78a5418c96abadc6d6f01930b98497a2f801/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-18-start-here-current-task.md).
+
+No code/tests/build/runtime/physical bridge/M0A/dispatcher/Packages B–E/`data/`/SQLite or dirty checkout access is authorized. `GOVERNANCE = KEEP_BLOCKED`.
+
+---
+
+---
+
+## 2026-10-18 METHOD DELTA — CANONICAL GITHUB WRITEBACK BEFORE CHAT TRANSITION
+
+A critical review or decision is not durably handed off while it exists only in a chat, local temporary directory, or attachment that another agent/chat may not be able to access. For every material project handoff, write the full report or a sufficiently detailed, provenance-labeled decision record to the canonical GitHub continuity branch **before** closing the handoff. Record the artifact path, immutable commit SHA, source identity, available file hash/size, and explicit evidence limits; then read the committed file back from GitHub.
+
+Use [Start Here — current task (2026-10-18)](https://github.com/jhonf463r/Python/blob/1ec6fda156b50af5c8045ecb9cc23cc9deaaec2b/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-18-start-here-current-task.md) as the transition pointer and [the regenerated R10 v0.7.4 reconciliation](https://github.com/jhonf463r/Python/blob/6ccf63ad93ef4946c5fcccdc3f42951775f96e6e/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-18-r10-v074-reconciliation-regenerated.md) as the current adjudication. New chats must read these commit-pinned artifacts first, not restart search from chat memory.
+
+Never infer cross-agent access from a local path or attachment in another conversation. If an original artifact is missing, preserve the exact bounded negative search and provenance. A synthesized replacement must say that it is synthesized and must not be passed off as the original. Update the stable Start Here pointer, read it back, and explicitly distinguish `GITHUB_API_VERIFIED`, `LOCAL_FILE_VERIFIED`, `OWNER_REPORTED`, `DECLARED_HASH_NOT_RECALCULATED`, `NOT_RUN`, `UNPROVEN`, and `UNRESOLVED`.
+
+This is a documentary continuity rule, not proof of autonomous multi-agent runtime communication and not authorization for implementation, tests, build, runtime, M0A, dispatcher, Packages B–E, or `data/`/SQLite. `GOVERNANCE = KEEP_BLOCKED`.
+
+---
+
+---
+
+## 2026-10-17 METHOD DELTA — COMMUNICATION-AWARE FRONTIER SEARCH
+
+Canonical proposal: [Communication-Aware Frontier Search / temporal-causal method delta](https://github.com/jhonf463r/Python/blob/cf5307d26ab647f80f643dc5670d5c439679471f/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-communication-aware-frontier-search-method-delta.md). Status: `PROPOSED_METHOD_DELTA / NOT_RUNTIME_PROVEN`; `GOVERNANCE = KEEP_BLOCKED`.
+
+For unresolved tasks, treat failed communication, retrieval, context transfer, correlation, and downstream reuse as observations—not as proof that a resource is absent or that an agent is incapable. Reconstruct the bounded route from objective and exact identity through request/delivery, invocation, returned result, correlation, validation, consumer use, and later decision. At each edge distinguish `DEFINED`, `WIRED`, `INVOKED`, `OBSERVED`, `VERIFIED`, `CAUSALLY_ATTRIBUTED`, and `REUSED`; claim only the strongest stage supported by evidence.
+
+Default loop: `objective/context → exact target/identity → bounded evidence search → route graph → first open causal edge → alternative hypotheses/falsifiers → smallest authorized discriminating action → observation/independent verification → reconciliation → knowledge/method/routing delta → persistence → later decision reuse → outcome check`.
+
+Do not repeat a failed search blindly; retry only when evidence, hypothesis, scope, or capability changes. Record negative knowledge with the exact search boundary and the condition that would reopen it. Prefer authorized connector/tool retrieval over manual Owner investigation when an available tool can reach the source, but never infer that one agent's attachment is available to another. Distinguish `NOT_FOUND` within a bounded search from `UNRESOLVED` and `UNPROVEN`. Check confirmation bias, premature closure, stale context, scope/identity mismatch, arithmetic/schema inconsistencies, and causal overclaim before accepting a diagnosis.
+
+This adds a method rule to existing continuity; it does not add a second memory, router, or brain. Persistence alone is not learning: require a later traced decision to show reuse and an attributable outcome change before claiming operational learning. This documentary delta does not authorize code, tests, builds, runtime, dispatcher, Packages B–E, M0A, or `data/`/SQLite access, and does not alter the R10 v0.7.5 blocker.
+
+---
+
+## 2026-10-17 METHOD DELTA — READY-TO-PASTE PROMPTS ARE THE PRIMARY HANDOFF
+
+When giving the Owner a prompt for Codex, Claude/Sonnet, Kilo/OpenCode, or another IA, put the **complete usable prompt directly in the chat in one clearly delimited copy/paste block**. A downloadable file or GitHub link may be supplemental, but must never be the only delivery of a prompt the Owner must pass to the next actor. Do not make the Owner open a file and manually reconstruct the instructions from a link.
+
+Each prompt must state the exact destination IA, role/mode, current objective/frontier, commit-pinned or attached inputs, required checks, evidence/provenance labels, explicit forbidden actions/governance gate, required output/verdict, next actor and cleanup/writeback boundary. Carry forward decisions and closed edges; do not ask the Owner to repeat known repository names, constraints, or prior findings. Keep the surrounding explanation concise and operational.
+
+For the current R10 relay: next actor is Claude/Sonnet for independent static review via commit `570cfd06b7c8965aba04fc3f09698185debfba3d`; relay publication does not verify the ZIP hashes itself or accept the candidate.
+
+---
+
+## 2026-10-17 METHOD DELTA — VERIFY THE DESTINATION STRING BEFORE DIAGNOSING PERMISSION
+
+A repository-access failure must be localized to the exact resource name before inferring permissions/authentication are at fault. Compare the owner/repository path against a previously verified canonical URL and perform a read-only API/reachability check using that exact string before asking for new access or credentials.
+
+R10 example: Codex reported `Repository not found` for `jhonf463f/Python`, while the established public repo is `jhonf463r/Python`. The final owner character was mistyped. Coordinator-side GitHub API checks confirm `jhonf463r/Python` exists and is public; the continuity branch exists and PR #467 is open, Draft and unmerged. Do not misclassify the typo as a credential failure.
+
+Reusable routing rule: `canonical identity → exact read-only reachability check → permission diagnosis only if the correct identity fails → action`. No repeated authentication, credential requests, artifact reconstruction, or manual transfer cycles when an exact path error explains the failure.
+
+The correct destination preflight and transfer-only relay prompt is `R10_V0_7_3_GITHUB_RELAY_RETRY_CORRECT_REPO_2026-10-17.md` (current ChatGPT response). Codex then relays the already existing candidate/source bundle through a single temporary public GitHub branch; Claude/Sonnet reviews pinned links; after reconciliation, remove the temporary ref and staging directory.
+
+`GOVERNANCE = KEEP_BLOCKED`; no product code/tests/build/runtime; v0.7.3 remains pending independent review.
+
+---
+
+## 2026-10-17 METHOD DELTA — GITHUB AS A SHORT-LIVED CROSS-IA ARTIFACT RELAY
+
+For artifact handoffs between local Codex and a web reviewer, prefer a shared, commit-pinned GitHub relay over repeated owner-managed download/upload cycles, when the repository's visibility is acceptable.
+
+Required sequence:
+`existing_artifact → byte/hash check → isolated staging directory → dedicated temporary branch → commit-SHA-pinned links → receiver verifies exact artifact/content → independent review → compact canonical writeback → delete temporary branch/ref and staging directory`.
+
+This is **artifact exchange through a shared cloud repository**, not live agent-to-agent chat, not automatic access to another IA's attachments, and not proof of autonomous runtime communication. A path in one environment never proves that another environment can read the same file. If binary retrieval fails in the reviewer interface, it may review the exact text payloads pinned to the same commit only if it reports the binary limitation and does not claim ZIP verification.
+
+Minimize persistent GitHub clutter: one ephemeral branch, one transfer commit, no PR/release/tag/workflow, no candidate files on `main` or the canonical continuity branch; remove the temporary ref after review and retain only a concise verdict/hash/provenance record in the existing continuity organs. Branch deletion removes the ref but does not guarantee immediate erasure of unreachable Git objects or caches. Check repository visibility before publication; public repo means the relay contents are publicly readable while published. No new auth/spend. Never use the dirty IABV checkout as the staging repo.
+
+Current case: Codex reports candidate ZIP `R10_V0_7_3_DOCUMENTARY_CANDIDATE.zip`, size 86,835 bytes, SHA-256 `1ace1d9331ee943a35fc4663855a09451919ae7b0e8619c799416b48bdae4049`. Claude's review preflight was blocked because the candidate was not attached. The next actor is Codex local in transfer-only mode; then Claude/Sonnet reviews commit-pinned GitHub contents. No semantic v0.7.3 verdict yet.
+
+`GOVERNANCE = KEEP_BLOCKED`; `TESTS = NOT_RUN`; no code/build/runtime or implementation authorization.
+
+---
+
+## 2026-10-17 METHOD DELTA — AUTHORING COMPLETE IS NOT REVIEW INPUT DELIVERY
+
+The R10 v0.7.3 authoring actor has reported a complete documentary candidate. This advances the route; it does not close semantic review. A handoff is incomplete until the next IA can access and verify the exact artifact bytes in its own conversation.
+
+New operational invariant:
+`AUTHOR_REPORTED_COMPLETION → ARTIFACT_TRANSFER → RECEIVER_IDENTITY_CHECK → INDEPENDENT_REVIEW → RECONCILIATION`.
+
+Do not substitute a Windows path, local command result, pasted completion summary, ChatGPT attachment or Library item for an actual attachment available in the intended Claude/Sonnet reviewer conversation. Mark candidate size/hash/inventory as `CODEX_LOCAL_REPORTED` until the reviewer verifies it. On missing or mismatched inputs, `BLOCKED` is a transfer state, not a semantic verdict on the candidate.
+
+**Current instance:** Codex reports candidate ZIP size 86,835 bytes and SHA-256 `1ace1d9331ee943a35fc4663855a09451919ae7b0e8619c799416b48bdae4049`; actual candidate bytes were not located in the current ChatGPT conversation/Library search. The independent reviewer prompt is provided as a separate downloadable artifact in the current ChatGPT response. Next actor: Claude/Sonnet; inputs must be the candidate ZIP, original v0.7.2 ZIP and complete delta-review prompt in Claude's own conversation.
+
+This method delta does not accept R10 v0.7.3. R10 v0.7.2 stays `FAIL`, all tests stay `NOT_RUN`, and `GOVERNANCE = KEEP_BLOCKED`.
+
+---
+
+## 2026-10-17 ROUTE CORRECTION — ZIP VERIFIED HERE; MUST BE ATTACHED TO CODEX CHAT
+
+Codex's latest `BLOCKED` is procedurally correct: it could not find the ZIP in its own chat attachment store. The source ZIP was recovered from ChatGPT Library and verified in the ChatGPT working container at `/mnt/data/r10_recovery/R10_V0_7_2_REPAIR_PACKAGE_FOR_CLAUDE.zip`. ZIP SHA-256: `acfb468f78bebc3794b8ec7eaf81baf65d8c40cb66b3f8c7bd2065ffd07fe14e`. It contains seven files (six payload artifacts plus manifest); all six payload file sizes and hashes match the embedded manifest. This proves bytes against that manifest, not semantic acceptance.
+
+**Critical handoff distinction:** a file available to this ChatGPT session is not automatically an attachment in a separate Codex conversation. The owner must download the ZIP from the current ChatGPT response and explicitly attach it to the Codex chat that returned `BLOCKED`. Only then should Codex begin by verifying the actual attached archive hash and inventory. Do not keep asking the owner to search filenames when the verified source artifact is available here; do not claim it is already attached in Codex.
+
+**Next actor: Codex local**, documentary author only, using the attached source ZIP. If the actual attached bytes/hash do not match or a file is missing, stay `BLOCKED`. If verified, prepare a new v0.7.3 documentary candidate outside `C:/temp/IABV_coordination_20261016`, preserving v0.7.2. Do not edit the IABV checkout, code, tests, build or runtime; no data/SQLite/M0A, dispatcher or Packages B–E. After a complete bundle exists, route to Claude/Sonnet for independent delta review. See [corrected route]( https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-r10-v073-corrected-agent-route.md ) and [authoring handoff]( https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-r10-v073-documentary-repair-handoff.md ).
+
+`PRODUCT_CODE_EXECUTION = NOT_RUN`; `TESTS = NOT_RUN`; `BUILD = NOT_RUN`; `RUNTIME = NOT_RUN`; `IMPLEMENTATION_AUTHORIZED = NO`; `GOVERNANCE = KEEP_BLOCKED`.
+
+---
+## 2026-10-17 ROUTE CORRECTION — CODEX AUTHORING REQUIRES SOURCE ZIP ATTACHED
+
+Codex's `BLOCKED` was correct for its input: it received an instruction, not the source contract/matrix. The handoff omission was that no IA was named and the source ZIP was not attached. The exact source package was recovered from ChatGPT Library and its six payload hashes/sizes were rechecked against the embedded manifest. Archive: `R10_V0_7_2_REPAIR_PACKAGE_FOR_CLAUDE.zip`; SHA-256 `acfb468f78bebc3794b8ec7eaf81baf65d8c40cb66b3f8c7bd2065ffd07fe14e`.
+
+**Correct next destination: Codex local**, strictly as documentary v0.7.3 author outside the IABV checkout, with that ZIP attached to the actual Codex conversation. Codex must not modify `C:/temp/IABV_coordination_20261016`, run product code/tests/build/runtime, or infer missing content. If an artifact is missing or ZIP is inaccessible, remain `BLOCKED`.
+
+**Independent follow-up: Claude/Sonnet** reviews the completed candidate and change map only after Codex delivers the full v0.7.3 bundle. Do not have the author self-approve it. Full routing and source identity: [corrected IA route]( https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-r10-v073-corrected-agent-route.md ).
+
+`GOVERNANCE = KEEP_BLOCKED`; `IMPLEMENTATION_AUTHORIZED = NO`; all matrix tests `NOT_RUN`.
+
+---
+## 2026-10-17 DECISION OVERLAY — BRIDGE NOT READY; NO TRACE DRIFT
+
+**Current assessment:** `BRIDGE_NOT_READY`. The discovery ↔ sync-pulse trace has a final `TRACE_ACCEPTED_WITH_LIMITATIONS` verdict, but this accepts only a bounded negative finding: no direct typed per-proposal adapter was found in the reviewed tracked source/test paths. It does not mean a bridge is built or operational. The possible `evidence_refs → ExperimentRun → proposal_id/discovery_signal_id` two-hop remains `UNRESOLVED`; the call site to `plan_or_execute()` does not prove execution, authorization, or postconditions. [Readiness gates]( https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-bridge-readiness-assessment.md ) · [Trace adjudication]( https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-r10-sync-pulse-trace-final-adjudication.md ).
+
+The separate R10 v0.7.2 audit is `FAIL`; M0–M5 are `PROPOSED`, the matrix tests remain `NOT_RUN`, and atomicity/implementation dependencies remain `UNPROVEN`. This is a normative-readiness blocker if that package is the contract for the bridge. [Audit closure]( https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-r10-v072-audit-closure-fail.md ).
+
+**Next route:** owner decision on returning M0–M5 to the package author; after a corrected documentary package exists, one independent delta review. Only if individual causal attribution is required, run one targeted static check of the producer/namespace of `supporting_run_ids`, `last_experiment_id`, and `best_run.run_id`. No new broad trace, no implementation, no dispatcher, no Packages B–E, no M0A, no `data/` or SQLite.
+
+Continue the causal work protocol: **objective/context → evidence/provenance → hypothesis/frontier → authorized action → observation → reconciliation → persist/reuse**. Each handoff must identify the active objective and actor, attach the evidence itself (not a cross-chat reference), state what is and is not proven, and preserve current limits. Keep public GitHub, local HEAD, dirty working tree, owner report, and runtime as separate evidence domains.
+
+`GOVERNANCE = KEEP_BLOCKED`; code/tests/build/runtime `NOT_RUN`.
+
+---
+## 2026-10-17 ROUTE UPDATE — INDIRECT OSES INFLUENCE FOUND; TYPED BRIDGE NOT FOUND
+
+### Distinguish aggregate influence from individual attribution
+
+When a downstream proposal is formed from aggregate metrics over many runs, distinguish indirect causal influence from individual typed lineage. A run may influence a grouped statistic without its identity being preserved into any one output proposal. Conversely, failure to find a direct adapter does not establish total causal independence if a shared aggregate store connects the paths.
+
+Current report: [R10 discovery/sync-pulse bridge trace](CHAT-ARCH-2026-10-17-r10-discovery-sync-pulse-bridge-trace.md). Codex reports no direct typed proposal adapter but an indirect ExperimentLab → OSES aggregate → solution_proposals → sync-pulse path. The report remains `CODEX_LOCAL_REPORTED / OWNER_REPORTED` until challenged; no tests were run.
+
+**Next actor: Claude Web**, bounded adversarial review of the full report pasted inline. Do not claim local checkout access or infer actual execution from a call boundary.
+
+---
+## 2026-10-17 ROUTE UPDATE — SLICE A STATIC ACCEPTANCE WITH LIMITATIONS
+
+### Evidence handoff / cross-chat continuity rule
+
+A prompt's reference to “the previous message” does not transfer content from another chat. A path on another machine does not transfer file bytes. For every independent review, first require the reviewer to confirm the actual attached/inline artifact and a distinctive marker (and hash where available). If artifact identity/content is absent, the outcome is `UNRESOLVED`, not evidence of code failure or success.
+
+Keep these evidence categories separate:
+- `PACKET_EVIDENCE`: code/tests reproduced in the artifact; not necessarily matched to the checkout.
+- `OWNER_REPORTED`: local checkout, branch, HEAD, counts, hashes, or search claims reported by the implementer.
+- `GITHUB_API_VERIFIED` / `HEAD_SOURCE`: public GitHub source only.
+- `NOT_RUN`: a test assertion exists but has not executed.
+- `UNRESOLVED`: the evidence does not decide the claim.
+
+Slice A's current static disposition and limitations: [Detailed Slice A review record](CHAT-ARCH-2026-10-17-r10-slice-a-static-review-with-limitations.md). The accepted static review does not certify tests or local checkout state.
+
+---
+
+## 2026-10-16 METHOD DELTA — TRACE ENTITY IDENTITY AND FULL FANOUT
+
+New rules from focused Codex local evidence:
+- Keep RunRecord.run_id, SandboxExperiment.experiment_id, ExperimentRun.run_id and ExperimentCandidate.candidate_id as distinct typed namespaces. Do not alias a run or experiment ID into candidate_id; require resolution to an actual candidate identity or a defined canonical fingerprint.
+- supporting_run_ids is not proof of support membership; validate every run against candidate/domain/subject/scope/configuration and tag positive, negative or contextual role.
+- source_trace_ids must be trace references, not copied run IDs, unless a real typed relationship is resolved.
+- ToolMemory sandbox neutrality includes the earlier ToolCard counter and validation-state writes, events/logging and downstream consumers; gating only InteractionLearningService is incomplete.
+- SANDBOX_PASS is a status, not authoritative provenance. Carry/validate sandbox source separately.
+- Operational attestation must bind an authoritative execution to actor, task/scope, candidate/configuration, terminal state and postconditions.
+- Use stable event/execution identity for idempotency. Do not discard older distinct runs merely because a newer run exists; define corrections and latest-state projection separately.
+
+Evidence and exact local locations are in follow-up Section 23. Preserve source provenance: Codex local report, no independent access by this assistant. No code or tests. GOVERNANCE = KEEP_BLOCKED.
+
+---
+
+## 2026-10-16 METHOD DELTA — CONTRACT V2.1 CONSISTENCY CHECK
+
+Before implementation, the contract must pass these additional checks:
+- Closed evidence class set includes every named class consistently, including `SANDBOX_PROMOTED`.
+- Type checks resolve references in declared namespaces; never reject equality of raw ID strings as a generic type rule.
+- Execution attestation is authoritative and binds execution ID, actor/attestor authorization, task/scope, exact candidate/fingerprint/configuration, observed terminal state and postconditions. Nonempty strings alone are insufficient.
+- Typed references must be resolved and relationship-checked at boundaries, not merely carry `ref_type`.
+- Sandbox neutrality includes ToolCard success/failure counters and validation status, not only InteractionPattern learning.
+- Do not discard all but the newest independent operational run unless the objective is explicitly “latest state”; idempotency should be based on stable execution/event identity.
+- A canonical candidate fingerprint must be specified if candidate_id is unavailable.
+
+Pinned public review found ToolMemory counters update before `learn_from_execution()`; guarding only that later call is incomplete. Current public main resolves to `9e0ce...`; checked file blobs match the older `cbc522140` ref, but distinguish commit tip from file content. See follow-up Section 22. No implementation; `GOVERNANCE = KEEP_BLOCKED`.
+
+---
+
+## 2026-10-16 METHOD DELTA — CONTRACT COMPLETENESS AND EVIDENCE ATTESTATION
+
+Claude's `CONTRACT_NOT_READY` yields these method rules:
+
+- Identifier safety is a type/namespace property. Resolve a typed Run ID or Trace ID through its own repository; do not infer type from string equality or inequality.
+- Positive execution time alone does not prove that the recommended candidate ran. Operational evidence must be attested by an authorized execution record linked to candidate/scope and verified postconditions; evidence class and outcome are separate axes.
+- Recommendation support is candidate-specific. Use a stable `candidate_id` or canonical fingerprint, and reject ambiguous membership.
+- Sandbox neutrality includes operational denominators, failure counts, recency, trend, reuse, thresholds, weights, ranking and training. Keep sandbox blockers/fallbacks in a separately named cohort.
+- Missing/unknown historical provenance is descriptive-only for operational learning; no retroactive promotion from generic `success=True`.
+
+Public evidence correction: commit `9e0ce66768aedd7422e0d3551affd398f44a7532` includes `ExperimentLab.generate_training_corpus()` and aggregates `run.success`; a reviewer's UNRESOLVED label is not proof of absence. Dirty local behavior remains a separate provenance class.
+
+Keep transitional suite filters labelled incomplete, never the final contract. Never encode non-execution as operational `success=False`. See follow-up Section 21. No implementation; `GOVERNANCE = KEEP_BLOCKED`.
+
+---
+
+## 2026-10-16 METHOD DELTA — IDENTIFIER NAMESPACE RECONCILIATION BEFORE CLAIM PROMOTION
+
+New failure-mode correction from the recommendation-gate episode: a field name or report does not establish that an identifier belongs to the expected namespace. When Run IDs, ExperimentRun IDs, trace IDs and operational trace IDs are passed through metadata, follow the producer, transformation and consumer. Compare exact HEAD and working-tree versions before calling a namespace mismatch a defect.
+
+In this episode, public source at commit 9e0ce... shows TaskOutcomeRecorder._source_trace_ids() reading reusable_trace_ids, winning_trace_ids or supporting_trace_ids. Codex reports its modified local working tree reads operational_trace_ids. Because task_outcome_recorder.py is changed locally, the difference is UNRESOLVED until a targeted local diff and field-lineage trace are supplied.
+
+Method adjustment:
+1. Do not repeat the broad source census once it is reported complete.
+2. Ask the local source agent for the exact changed method and all producers/consumers of its accepted keys.
+3. Confirm whether values are RunRecord IDs, ExperimentRun IDs, IATraceEntry IDs or another type.
+4. Only then promote the issue to CONFIRMED or REFUTED.
+5. Route the reconciled design to a remote/public-source challenger, clearly preserving its inability to see local-only changes.
+
+This is a method delta inside the existing memory protocol, not a new memory or coordinator. Governance remains KEEP_BLOCKED.
+
+## 2026-10-16 METHOD DELTA — SANDBOX-NEUTRAL OUTCOMES AND CONTEXTUAL AGENT ROUTING
+
+This is an objective-conditioned method delta, not a new coordinator or parallel memory system.
+
+For the operational recommendation gate, treat the following as distinct dimensions:
+- evidence provenance/class: what kind of event was actually evidenced;
+- evidence outcome: positive, negative, partial, inconclusive;
+- consumer eligibility: whether a specific decision sink may use that evidence.
+
+Do not overload a generic success boolean to stand for all three. A real operational attempt can fail and still be operational evidence. A sandbox validation can be positive without a real execution. An unclassified historical record is not automatically a failure or operational success.
+
+Current finding: the reported local producer and consumer census identifies a sandbox promotion that writes success=True without demonstrated execution of the selected alternative. Changing it to success=False alone may misclassify a non-executed sandbox result as an operational failure because adaptive profiles include false success in failure_count and negative recency. Preserve evaluation/blocker information in a separate cohort; keep sandbox and unknown historical outcomes neutral for operational-execution denominators until a contract says otherwise.
+
+Method correction from this episode:
+- distinguish NOT_FOUND_IN_CHECKOUT from NOT_FOUND_ON_DISK;
+- continue on accessible primary source if an auxiliary checkpoint is missing;
+- separate HEAD, working tree and public GitHub evidence;
+- enumerate all producer/consumer effects before proposing a helper or one-point fix;
+- validate run-ID and trace-ID namespaces rather than copying them as if equivalent;
+- choose the next actor by required capability + access + independence + uncertainty, not by a fixed sequence;
+- write material deltas back to existing CURRENT-STATE, CONTEXT-INDEX, SYMBIOSIS-MAP, UNRESOLVED-KNOWLEDGE and ARCHIVE-REGISTRY. Do not create a second brain.
+
+Current task-specific memory and provenance: [recommendation-gate follow-up](../2026-10-16_iabv_recommendation_gate_codex_followup.md).
+
+All local checkout details remain CODEX_LOCAL_REPORTED; public-source inspection does not prove local runtime effects. Governance remains KEEP_BLOCKED.
+
 ## 2026-10-13 CANONICAL ROUTE — ENTRY 280: C6 FAIL RECONCILIATION / AMENDMENT 274.5
 
 Canonical artifact: [CHAT-ARCH-2026-10-13-280-m0b-r8-1-c6-delta-adjudication-and-amendment-274-5.md](./CHAT-ARCH-2026-10-13-280-m0b-r8-1-c6-delta-adjudication-and-amendment-274-5.md) — blob `6d7d7f4966e1224456e00410c812395e6a5c598f`, commit `0a462d66071f2d354e8a299ffaf859b3aeac61d5`.
@@ -3492,3 +3754,34 @@ The repair stage must preserve reuse-first and anti-scope-creep:
 - distinguish a semantic necessity from a useful future extension.
 
 This protects the developmental method from ontology inflation while retaining adversarial learning.
+
+
+## 2026-10-16 METHOD AMENDMENT — PROMOTION IS NOT EXECUTION; TRACE THE DISPATCH EDGE
+
+When source analysis finds a promotion state or a persisted success result, do not infer execution, attributable outcome, postcondition verification or production activation from those values alone.
+
+For the R10 route reported by Codex:
+- baseline blockers + a ranked alternative reportedly lead to `VALID` / `promote_to_primary=True` / `status='promoted'`;
+- the promotion outcome reportedly persists `success=True` with `execution_ms=0` and no explicit operational evidence class;
+- downstream ranking/adaptive profiles may consume it;
+- an operational-context consumer reportedly rejects evidence without explicit `evidence_class='operational_execution'`, but this narrow protection does not prove every consumer filters it.
+
+**Required method:** maintain distinct causal states for proposal, selection, sandbox evaluation, authorized dispatch, attributable execution result, verified postcondition, persisted result, and downstream decision effect. Trace each transition in source and record its identifiers, guards, writer, consumer and falsifier. Treat `success=True`, `VALID` and `promoted` as local field values until their semantics are proven.
+
+**Next review discipline:** continue only along `ToolEvolutionMonitor` → `validate_discovery` → actual dispatcher, if any; identify authorization and candidate/attempt-bound postcondition gates. One route only, read-only. An independent reviewer may challenge the supplied evidence but must not claim local access.
+
+Evidence provenance: this method delta is based on an owner-supplied Codex-local report, not an independent checkout inspection. No implementation or runtime/test authorization. `GOVERNANCE = KEEP_BLOCKED`.
+
+
+## 2026-10-16 METHOD AMENDMENT — DO NOT JOIN SEPARATE EXECUTION ROUTES WITHOUT AN ADAPTER
+
+When one route creates a typed proposal and another route supports auto-execution, do not infer that the first can reach the second merely because both exist in the same orchestrator or codebase.
+
+R10 example, based on owner-supplied Codex-local report:
+- `ToolDiscoveryService` → `ToolEvolutionMonitor` `validate_discovery` → `AutonomousValidationCycle` → `SandboxExperimentService.validate_recommendation()` reportedly ends in sandbox evaluation and ExperimentLab persistence.
+- A separate `self_examination/latest.json.metadata.solution_proposals` route reportedly may reach `auto_execute_from_sync_pulse()` → `plan_or_execute()`.
+- No producer/adapter mapping `validate_discovery` into those sync-pulse dictionaries was found in the inspected paths.
+
+Method rule: require a source-backed adapter, schema compatibility, explicit identity mapping and guards before joining route graphs. If the bridge is absent or unproven, preserve both as separate graphs and stop at each evidenced terminus. Do not widen into downstream internals without an evidenced connection.
+
+Provenance remains `CODEX_LOCAL_REPORTED / OWNER_REPORTED`, not independently reverified by this method entry. No implementation/runtime/tests authorized; `GOVERNANCE = KEEP_BLOCKED`.

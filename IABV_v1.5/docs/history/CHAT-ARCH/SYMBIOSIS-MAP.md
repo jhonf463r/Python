@@ -1,3 +1,174 @@
+## 2026-10-17 CROSS-IA TRANSFER DELTA — TEMPORARY GITHUB REVIEW SURFACE
+
+The previous repeated ZIP handoff exposed a routing defect: artifacts can exist in Codex's local directory and still be unavailable to Claude Web. A pasted path or successful local verification is not cross-agent transfer.
+
+Capability-fit update:
+- Codex local owns creation/verification of the local candidate; for this next step it becomes a transfer operator only, not a second author.
+- GitHub's public repository is the shared artifact surface; a single temporary branch and commit-SHA-pinned tree links let Claude review files without the owner manually attaching each artifact.
+- Claude/Sonnet consumes the immutable commit tree, verifies actual accessible bytes/content, and returns an independent verdict. It must declare any binary-download limitation.
+- ChatGPT/coordinator reconciles and writes only a compact durable summary to existing continuity documents.
+
+Use a fresh staging directory and temporary branch, not the dirty IABV checkout or canonical memory branch. After review, delete the temporary branch/ref and staging directory; preserve the evidence and verdict, not the large transfer bundle. Since the repository is public, everything published is publicly readable until the ref is removed; branch deletion does not guarantee immediate removal of all server-side objects/caches.
+
+Current candidate remains `CODEX_LOCAL_REPORTED`, pending transfer and independent review. `R10 v0.7.2 = FAIL`; all cases `NOT_RUN`; `GOVERNANCE = KEEP_BLOCKED`.
+
+---
+
+## 2026-10-17 TRANSFER LESSON — THE REVIEWER MUST RECEIVE THE CANDIDATE, NOT JUST ITS REPORT
+
+**Observed collaboration episode:** Codex local reports completion of an R10 v0.7.3 documentary candidate and provides a candidate ZIP size/hash, but the candidate ZIP is not present among the current ChatGPT conversation or Library files found during preflight. This does not establish that Claude can access it, nor does it disprove the Codex report.
+
+**Evidence class:** Codex completion summary is `CODEX_LOCAL_REPORTED / OWNER_REPORTED`; the absence of the exact candidate artifact from the searched current ChatGPT/Library surfaces is a bounded observation, not proof that the file is absent from the user's Windows machine or Claude conversation.
+
+**Capability/routing delta:** Next IA is Claude/Sonnet, because the task is independent adversarial documentary review rather than more authoring. Send three concrete inputs to Claude's actual conversation: candidate ZIP, original v0.7.2 ZIP, and delta-review prompt. The reviewer must confirm actual archive hash, manifest coverage, historical byte preservation and each M0–M5 semantic delta before giving a verdict. A reviewer prompt does not substitute for the candidate package.
+
+**Unresolved edge:** actual transfer of `R10_V0_7_3_DOCUMENTARY_CANDIDATE.zip` (reported size 86,835 bytes; reported SHA-256 `1ace1d9331ee943a35fc4663855a09451919ae7b0e8619c799416b48bdae4049`) to Claude/Sonnet. Until the reviewer verifies the attached artifact, candidate semantic review is not complete.
+
+Do not claim accepted baseline, tests passed, runtime behavior, exact-once, crash recovery, atomicity or dispatch from the documentary bundle. R10 v0.7.2 remains `FAIL`; tests remain `NOT_RUN`; `GOVERNANCE = KEEP_BLOCKED`.
+
+---
+
+## 2026-10-17 ROUTE CORRECTION — ZIP VERIFIED HERE; MUST BE ATTACHED TO CODEX CHAT
+
+Codex's latest `BLOCKED` is procedurally correct: it could not find the ZIP in its own chat attachment store. The source ZIP was recovered from ChatGPT Library and verified in the ChatGPT working container at `/mnt/data/r10_recovery/R10_V0_7_2_REPAIR_PACKAGE_FOR_CLAUDE.zip`. ZIP SHA-256: `acfb468f78bebc3794b8ec7eaf81baf65d8c40cb66b3f8c7bd2065ffd07fe14e`. It contains seven files (six payload artifacts plus manifest); all six payload file sizes and hashes match the embedded manifest. This proves bytes against that manifest, not semantic acceptance.
+
+**Critical handoff distinction:** a file available to this ChatGPT session is not automatically an attachment in a separate Codex conversation. The owner must download the ZIP from the current ChatGPT response and explicitly attach it to the Codex chat that returned `BLOCKED`. Only then should Codex begin by verifying the actual attached archive hash and inventory. Do not keep asking the owner to search filenames when the verified source artifact is available here; do not claim it is already attached in Codex.
+
+**Next actor: Codex local**, documentary author only, using the attached source ZIP. If the actual attached bytes/hash do not match or a file is missing, stay `BLOCKED`. If verified, prepare a new v0.7.3 documentary candidate outside `C:/temp/IABV_coordination_20261016`, preserving v0.7.2. Do not edit the IABV checkout, code, tests, build or runtime; no data/SQLite/M0A, dispatcher or Packages B–E. After a complete bundle exists, route to Claude/Sonnet for independent delta review. See [corrected route]( https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-r10-v073-corrected-agent-route.md ) and [authoring handoff]( https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-r10-v073-documentary-repair-handoff.md ).
+
+`PRODUCT_CODE_EXECUTION = NOT_RUN`; `TESTS = NOT_RUN`; `BUILD = NOT_RUN`; `RUNTIME = NOT_RUN`; `IMPLEMENTATION_AUTHORIZED = NO`; `GOVERNANCE = KEEP_BLOCKED`.
+
+---
+## 2026-10-17 ROUTE CORRECTION — CODEX AUTHORING REQUIRES SOURCE ZIP ATTACHED
+
+Codex's `BLOCKED` was correct for its input: it received an instruction, not the source contract/matrix. The handoff omission was that no IA was named and the source ZIP was not attached. The exact source package was recovered from ChatGPT Library and its six payload hashes/sizes were rechecked against the embedded manifest. Archive: `R10_V0_7_2_REPAIR_PACKAGE_FOR_CLAUDE.zip`; SHA-256 `acfb468f78bebc3794b8ec7eaf81baf65d8c40cb66b3f8c7bd2065ffd07fe14e`.
+
+**Correct next destination: Codex local**, strictly as documentary v0.7.3 author outside the IABV checkout, with that ZIP attached to the actual Codex conversation. Codex must not modify `C:/temp/IABV_coordination_20261016`, run product code/tests/build/runtime, or infer missing content. If an artifact is missing or ZIP is inaccessible, remain `BLOCKED`.
+
+**Independent follow-up: Claude/Sonnet** reviews the completed candidate and change map only after Codex delivers the full v0.7.3 bundle. Do not have the author self-approve it. Full routing and source identity: [corrected IA route]( https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-r10-v073-corrected-agent-route.md ).
+
+`GOVERNANCE = KEEP_BLOCKED`; `IMPLEMENTATION_AUTHORIZED = NO`; all matrix tests `NOT_RUN`.
+
+---
+## 2026-10-17 DECISION OVERLAY — BRIDGE NOT READY; NO TRACE DRIFT
+
+**Current assessment:** `BRIDGE_NOT_READY`. The discovery ↔ sync-pulse trace has a final `TRACE_ACCEPTED_WITH_LIMITATIONS` verdict, but this accepts only a bounded negative finding: no direct typed per-proposal adapter was found in the reviewed tracked source/test paths. It does not mean a bridge is built or operational. The possible `evidence_refs → ExperimentRun → proposal_id/discovery_signal_id` two-hop remains `UNRESOLVED`; the call site to `plan_or_execute()` does not prove execution, authorization, or postconditions. [Readiness gates]( https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-bridge-readiness-assessment.md ) · [Trace adjudication]( https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-r10-sync-pulse-trace-final-adjudication.md ).
+
+The separate R10 v0.7.2 audit is `FAIL`; M0–M5 are `PROPOSED`, the matrix tests remain `NOT_RUN`, and atomicity/implementation dependencies remain `UNPROVEN`. This is a normative-readiness blocker if that package is the contract for the bridge. [Audit closure]( https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-r10-v072-audit-closure-fail.md ).
+
+**Next route:** owner decision on returning M0–M5 to the package author; after a corrected documentary package exists, one independent delta review. Only if individual causal attribution is required, run one targeted static check of the producer/namespace of `supporting_run_ids`, `last_experiment_id`, and `best_run.run_id`. No new broad trace, no implementation, no dispatcher, no Packages B–E, no M0A, no `data/` or SQLite.
+
+Continue the causal work protocol: **objective/context → evidence/provenance → hypothesis/frontier → authorized action → observation → reconciliation → persist/reuse**. Each handoff must identify the active objective and actor, attach the evidence itself (not a cross-chat reference), state what is and is not proven, and preserve current limits. Keep public GitHub, local HEAD, dirty working tree, owner report, and runtime as separate evidence domains.
+
+`GOVERNANCE = KEEP_BLOCKED`; code/tests/build/runtime `NOT_RUN`.
+
+---
+## 2026-10-17 ROUTE UPDATE — INDIRECT OSES INFLUENCE FOUND; TYPED BRIDGE NOT FOUND
+
+Codex local reports `BRIDGE_NOT_FOUND_IN_BOUNDED_SCOPE` for a direct typed adapter carrying a `ToolEvolutionProposal` / `validate_discovery` result into an individual `solution_proposals` item. The paths are not fully independent: sandbox `ExperimentRun` records reportedly feed ExperimentLab/OSES aggregates grouped by assistant, and those aggregate statistics influence OSES proposals. Individual typed proposal/signal identity is reported as absent from the OSES output and lost again in the sync-pulse projection.
+
+Evidence boundary: `CODEX_LOCAL_REPORTED / OWNER_REPORTED`. This record summarizes the supplied local report; it is not independent inspection of the Windows checkout. See [CHAT-ARCH-2026-10-17-r10-discovery-sync-pulse-bridge-trace.md](CHAT-ARCH-2026-10-17-r10-discovery-sync-pulse-bridge-trace.md).
+
+**Next actor: Claude Web** — adversarial static review of the full Codex report pasted inline in that chat. Challenge the narrow negative conclusion, indirect influence, individual lineage loss and the execution-call boundary. If the supplied report is insufficient, request only the exact missing source excerpts. Do not restart a broad audit or claim local access.
+
+Slice A remains `SLICE_A_REVIEW_ACCEPTED_WITH_REMAINING_LIMITATIONS`; F-04/F-09 are unresolved; F-05/F-06/F-07 remain deferred/open; all tests remain `NOT_RUN`. No implementation is authorized. Do not inspect `plan_or_execute()` internals or begin packages B–E.
+
+`GOVERNANCE = KEEP_BLOCKED`. No dispatcher enablement, code/tests/build/runtime, `data/`/SQLite, M0A or physical bridge.
+
+---
+## 2026-10-17 ROUTE UPDATE — SLICE A STATIC ACCEPTANCE WITH LIMITATIONS
+
+### Task-specific actor routing after Slice A
+
+- **Codex local:** only actor in the current toolset with access to the reported Windows checkout; appropriate for read-only local source and diff/producer tracing. Local claims remain `OWNER_REPORTED` until independently corroborated.
+- **Claude Web:** independent adversarial/static reviewer of source snippets or a physically attached artifact actually present in its conversation. It cannot infer access to another chat or to `C:\temp\...`.
+- **ChatGPT/GitHub continuity:** preserves navigation and provenance on Draft PR #467, but public GitHub source is not the dirty local working tree.
+- **Kilo/OpenCode:** reserves/challengers only; do not route a second broad audit before the bounded next Codex trace is answered.
+
+Slice A review status and limits: [Detailed Slice A review record](CHAT-ARCH-2026-10-17-r10-slice-a-static-review-with-limitations.md). Acceptance is static, tests remain `NOT_RUN`; no actor is authorized to enable the dispatcher or start Packages B–E.
+
+---
+
+## 2026-10-16 SYMBIOSIS UPDATE — CODEX LOCAL LINEAGE COMPLETE
+
+Codex local was the correct actor for this frontier because Claude Web cannot inspect the Windows working tree. Its report narrowed uncertainty about candidate identity and the ToolMemory path without touching SQLite or executing code.
+
+The strongest transfer: provenance has to gate the earliest side effect, not merely the last learner call. ToolMemory updates ToolCard counters/status before InteractionLearningService, and several downstream consumers use those counters or patterns. Likewise, SANDBOX_PASS does not uniquely establish source provenance.
+
+Next actor: Claude Web, but only for specification challenge against Contract V2.1 and the supplied local report; not for a broad code audit. Use one bounded pass covering entity identity, support membership, all ToolMemory effects, authoritative execution attestation, and idempotency/supersession. Kilo/OpenCode stay reserved.
+
+See follow-up Section 23. No implementation or tests, keep data/ and SQLite untouched. GOVERNANCE = KEEP_BLOCKED.
+
+---
+
+## 2026-10-16 SYMBIOSIS UPDATE — V2 REVIEW REQUIRES TARGETED CODEX DELTA
+
+Claude V2 is stronger, but not yet implementation-ready. New source-backed learning: public `ToolMemory.remember_result()` increments ToolCard success/failure counters from `result.success` before invoking InteractionLearningService, so skipping only interaction learning cannot guarantee sandbox neutrality. The sandbox producer also uses `candidate_id=experiment.experiment_id`, in addition to TaskOutcomeRecorder assigning `run_record.run_id` to candidate_id.
+
+Next actor: Codex local for narrow read-only comparison of those identity and counter paths, whether local changes alter public behavior, and whether a real authoritative execution attestation or supersession/idempotency contract already exists. Do not delegate another broad audit. Full route: follow-up Section 22.
+
+No code/testing/runtime/local mutation; do not inspect data/ or SQLite. `GOVERNANCE = KEEP_BLOCKED`.
+
+---
+
+## 2026-10-16 SYMBIOSIS UPDATE — CLAUDE CHALLENGE → CONTRACT V2
+
+Claude Web usefully found denominator neutrality, mixed support, historical unknowns and incomplete route coverage as contract holes. Its limits remain: it cannot inspect the reported dirty Windows checkout. Public commit verification shows `ExperimentLab.generate_training_corpus()` exists and uses `run.success`; treat the report's UNRESOLVED on this method as reviewer non-verification, not source absence.
+
+Updated capability routing:
+- Codex local remains the evidence source for dirty-tree-only behavior, only through the authorized static/no-write route.
+- Claude Web can challenge specification/public source but not attest local modifications.
+- Do not call a third broad reviewer. Use one narrow challenge only after contract v2 incorporates typed ID namespaces, candidate identity, full operational denominator neutrality, attested execution evidence and explicit legacy treatment.
+- Kilo/OpenCode remain reserved for a material disagreement.
+
+The reusable lesson is sequenced: source evidence → normative choices → complete contract → adversarial counterexamples → implementation only when separately authorized. See follow-up Section 21. GOVERNANCE = KEEP_BLOCKED.
+
+---
+
+## 2026-10-16 SYMBIOSIS UPDATE — LOCAL CENSUS TO TARGETED RECONCILIATION
+
+Codex has now supplied a broader local census of the outcome pipeline and a corrected design hypothesis. The next useful intervention is not another full audit. It is the exact local reconciliation of TaskOutcomeRecorder._source_trace_ids() and the producer/consumer chain for Run IDs versus trace IDs.
+
+A public-source cross-check shows the public method uses reusable_trace_ids, winning_trace_ids and supporting_trace_ids. Codex describes its modified working tree as using operational_trace_ids. Since task_outcome_recorder.py is modified in that working tree, this disagreement may be a local edit rather than a source-reading error; it remains unresolved until exact diff and call lineage are produced.
+
+Agent routing for this frontier:
+- Codex local: inspect the modified method, diff to HEAD and field lineage; no edits or runtime.
+- Claude Web: after that, challenge the reconciled design using the report and public source, without claiming access to local code.
+- Kilo/OpenCode: reserve for a material remaining contradiction.
+
+The transfer learned is sequence-sensitive: local source census → identity namespace reconciliation → adversarial design challenge → possible isolated implementation decision. Do not skip directly from a plausible mismatch to a patch.
+
+## 2026-10-16 SYMBIOSIS DELTA — AGENT BEHAVIOR AND OPERATIONAL GATE
+
+### Episode and evidence boundary
+
+The current episode combined Codex local source analysis, Kilo in VS Code and Claude Web public-source review. Their sources were not identical:
+- Codex and Kilo report source from C:\temp\IABV_coordination_20261016, HEAD 3926b1144bb23c1066db579da711d3cdbc1611df, with a dirty working tree.
+- Claude Web could not access that local workspace and inspected public GitHub source. The supplied Claude report began from a historical public commit; selected claims were rechecked separately against public main observed at 9e0ce66768aedd7422e0d3551affd398f44a7532.
+- No agent ran tests/runtime in the reports covered here. Agreement among these reports is not runtime proof.
+
+### Transferable observations, conditional on this task
+
+- Codex was useful for local checkout identity, HEAD/worktree comparison, field producers and consumers, and discovering the exact training method name generate_training_corpus rather than generate_training_examples.
+- Kilo first stopped on a checkpoint missing from the workspace, then resumed after the prompt explicitly distinguished missing-in-workspace from missing-on-disk and required continued source inspection. Future prompts should preserve that recovery path.
+- Claude Web could independently inspect public source and challenge semantics, but cannot attest local dirty files. Assign it public-source/design disputes, not local checkout verification.
+- OpenCode provided a list of free models and suggested task mappings, but the exchanged response did not establish which model generated it or provide task benchmarks. Record the exact model/provider/variant from the selector before using the interaction as a model comparison.
+- Select fixed model IDs for reproducible adversarial review where possible; Auto Free is a changing router and should not be assumed to identify a fixed model.
+- A claimed “single-point fix” must be challenged against the complete set of consumers. The suggested changes around _record_promotion, StrategySelector, AdaptiveWeightLayer and ExperimentLab show that producer gating alone may be insufficient.
+
+### Current task lesson
+
+The first open causal edge is no longer only success=True. It also includes outcome neutrality and support identity:
+- sandbox evaluation must remain useful without becoming an operational success or operational failure;
+- operational profiles must not include sandbox/unclassified results in success/failure, recency, trend, reuse or training denominators unless explicitly designed as separate metrics;
+- supporting_run_ids and operational_trace_ids may be different namespaces and require a contractually correct mapping;
+- support IDs must bind to the actual recommendation scope/candidate/configuration before conveying evidence authority.
+
+Reusable loop:
+objective → relevant memory → capability-fit actor → source-grounded action → falsifier → independent challenge → reconciliation → Knowledge/Method/Routing Delta → writeback → later reuse check.
+
+This is a method observation from one episode, not a permanent benchmark of any model. The next actor must be chosen again from the active uncertainty and available access.
+
 ## 2026-10-13 CANONICAL ROUTE — ENTRY 280: C6 FAIL RECONCILIATION / AMENDMENT 274.5
 
 Canonical artifact: [CHAT-ARCH-2026-10-13-280-m0b-r8-1-c6-delta-adjudication-and-amendment-274-5.md](./CHAT-ARCH-2026-10-13-280-m0b-r8-1-c6-delta-adjudication-and-amendment-274-5.md) — blob `6d7d7f4966e1224456e00410c812395e6a5c598f`, commit `0a462d66071f2d354e8a299ffaf859b3aeac61d5`.
@@ -7160,3 +7331,27 @@ Sonnet/Claude now challenges the proposed code-facing seam; Codex returns only a
 
 Current edge:
 proposed code-facing demand/capability contract → source-aware adversarial challenge.
+
+
+## 2026-10-16 SYMBIOSIS TRANSFER — R10 SANDBOX PROMOTION CAUSAL MAP
+
+**Capability/evidence contribution:** Codex supplied a local static report that connects baseline blockers and alternative ranking to sandbox promotion, a `success=True` ExperimentLab outcome, and potential ranking/adaptive-weight feedback. It also identifies a narrower `TaskContextAssembler` fail-closed filter.
+
+**Transferable learning:** distinguish decision labels from the real-world state they appear to name. A persisted promotion/outcome can causally influence future selection without proving that an alternative was dispatched or executed. A guard in one consumer cannot be generalized to all direct consumers.
+
+**Provenance boundary:** the line-by-line local report was provided by the owner; this entry preserves Codex's claimed local findings and does not certify them independently. Public continuity proves that the report was recorded, not that every local line was independently verified.
+
+**Next routing:** Codex (local source access) traces one open edge, `ToolEvolutionMonitor` → `validate_discovery` → actual dispatcher, and binds authorization, candidate/attempt identity and postconditions. Claude Web follows with an adversarial review of the supplied report/source excerpts only; it must not claim access to the dirty local checkout.
+
+No code/test/runtime changes authorized. `GOVERNANCE = KEEP_BLOCKED`.
+
+
+## 2026-10-16 SYMBIOSIS TRANSFER — KEEP validate_discovery AND SELF-EXAMINATION ROUTES SEPARATE
+
+**Knowledge delta:** the owner-supplied Codex trace says the `validate_discovery` proposal goes through the autonomous validation cycle to sandbox recommendation evaluation and ExperimentLab persistence, while another self-examination sync-pulse route can lead to `auto_execute_from_sync_pulse()` / `plan_or_execute()`. No direct adapter between these specific route inputs was found in the inspected modules.
+
+**Method delta:** never infer interoperability from a shared orchestrator or adjacent components. Require an explicit producer/adapter and stable field/identity mapping; otherwise document separate causal graphs and their respective endpoints.
+
+**Next route:** Codex local examines only the producer/schema of `self_examination/latest.json.metadata.solution_proposals` and any adapter from `validate_discovery`. Claude Web then challenges the supplied evidence without claiming local checkout access.
+
+Source state: `CODEX_LOCAL_REPORTED / OWNER_REPORTED`. No code/runtime/test changes. `GOVERNANCE = KEEP_BLOCKED`.

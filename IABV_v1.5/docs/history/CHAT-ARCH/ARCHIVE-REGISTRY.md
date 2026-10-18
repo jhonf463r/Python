@@ -1,3 +1,98 @@
+## 2026-10-17 — R10 v0.7.2 audit closure — FAIL
+
+Record: [CHAT-ARCH-2026-10-17-r10-v072-audit-closure-fail.md](https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-r10-v072-audit-closure-fail.md)
+
+The six payload hashes match the manifest, but contract/matrix contradictions keep D2 open and D3/D4/D6 partial; 74 matrix cases are NOT_RUN, atomicity and implementation dependencies UNPROVEN. M0–M5 remain proposed, no v0.7.3 exists, local checkout not inspected. `GOVERNANCE = KEEP_BLOCKED`.
+
+---
+## 2026-10-17 — R10 discovery/sync-pulse final bounded adjudication
+
+Record: [CHAT-ARCH-2026-10-17-r10-sync-pulse-trace-final-adjudication.md](https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-r10-sync-pulse-trace-final-adjudication.md)
+
+Verdict: `TRACE_ACCEPTED_WITH_LIMITATIONS` for absence of a direct typed individual adapter within the reviewed tracked source/test scope. The potential two-hop `evidence_refs → ExperimentRun → proposal_id/discovery_signal_id` remains `UNRESOLVED`. Evidence source is Codex's reported local checkout; Claude did not inspect Windows source. No code/tests/build/runtime; `GOVERNANCE = KEEP_BLOCKED`.
+
+---
+## 2026-10-17 ROUTE UPDATE — INDIRECT OSES INFLUENCE FOUND; TYPED BRIDGE NOT FOUND
+
+Codex local reports `BRIDGE_NOT_FOUND_IN_BOUNDED_SCOPE` for a direct typed adapter carrying a `ToolEvolutionProposal` / `validate_discovery` result into an individual `solution_proposals` item. The paths are not fully independent: sandbox `ExperimentRun` records reportedly feed ExperimentLab/OSES aggregates grouped by assistant, and those aggregate statistics influence OSES proposals. Individual typed proposal/signal identity is reported as absent from the OSES output and lost again in the sync-pulse projection.
+
+Evidence boundary: `CODEX_LOCAL_REPORTED / OWNER_REPORTED`. This record summarizes the supplied local report; it is not independent inspection of the Windows checkout. See [CHAT-ARCH-2026-10-17-r10-discovery-sync-pulse-bridge-trace.md](CHAT-ARCH-2026-10-17-r10-discovery-sync-pulse-bridge-trace.md).
+
+**Next actor: Claude Web** — adversarial static review of the full Codex report pasted inline in that chat. Challenge the narrow negative conclusion, indirect influence, individual lineage loss and the execution-call boundary. If the supplied report is insufficient, request only the exact missing source excerpts. Do not restart a broad audit or claim local access.
+
+Slice A remains `SLICE_A_REVIEW_ACCEPTED_WITH_REMAINING_LIMITATIONS`; F-04/F-09 are unresolved; F-05/F-06/F-07 remain deferred/open; all tests remain `NOT_RUN`. No implementation is authorized. Do not inspect `plan_or_execute()` internals or begin packages B–E.
+
+`GOVERNANCE = KEEP_BLOCKED`. No dispatcher enablement, code/tests/build/runtime, `data/`/SQLite, M0A or physical bridge.
+
+---
+## 2026-10-17 ROUTE UPDATE — SLICE A STATIC ACCEPTANCE WITH LIMITATIONS
+
+- **New continuity record:** [CHAT-ARCH-2026-10-17-r10-slice-a-static-review-with-limitations.md](CHAT-ARCH-2026-10-17-r10-slice-a-static-review-with-limitations.md)
+- **Disposition:** `SLICE_A_REVIEW_ACCEPTED_WITH_REMAINING_LIMITATIONS`, static artifact-scoped review only.
+- **Unresolved:** F-04 loader exhaustiveness; F-09 hunk attribution. F-05/F-06/F-07 stay deferred/open. Tests `NOT_RUN`.
+- **Local claims:** `OWNER_REPORTED`; do not interpret as verified public HEAD or clean checkout.
+- **Next route:** Codex local, read-only producer/schema/adapter trace for `self_examination/latest.json.metadata.solution_proposals` and a typed bridge from `validate_discovery`; no expansion into `plan_or_execute()` without that bridge.
+
+---
+
+## 2026-10-16 REGISTRY UPDATE — CODEX LOCAL IDENTITY AND TOOLMEMORY LINEAGE
+
+- Latest source record: [recommendation-gate follow-up, Section 23](../2026-10-16_iabv_recommendation_gate_codex_followup.md)
+- Latest record blob: 229a73291701b30790babe841aec09861f0acabc; write commit: 136fe4aa26acf49fabf0359f01efcb1857556b84
+- Codex local report confirms candidate_id is populated from RunRecord.run_id in TaskOutcomeRecorder and SandboxExperiment.experiment_id in sandbox producer; neither resolves to a canonical candidate in inspected paths.
+- ToolMemory sandbox results update ToolCard counters/status before interaction learning, and downstream scoring/capability paths consume these counters/patterns. Skipping the interaction-learning call is insufficient.
+- No adequate operational attestation or stable event idempotency/supersession rule was found in inspected paths. Contract V2.1 must address both.
+- Branch-only continuity in PR #467; Draft/unmerged. GOVERNANCE = KEEP_BLOCKED.
+
+---
+
+## 2026-10-16 REGISTRY UPDATE — CONTRACT V2 ADJUDICATION
+
+- Latest source record: [recommendation-gate follow-up, Section 22](../2026-10-16_iabv_recommendation_gate_codex_followup.md)
+- Record blob SHA: ba99ecefad0299df7bfff8d61f5190b07ee2a0a0; write commit: bfbac0e9599d68ada669034944e57257b975d6b4.
+- Contract V2 remains documentary `CONTRACT_READY_WITH_REPAIRS`, not implementation-ready.
+- Next route: scoped Codex local verification of candidate/run identity, ToolMemory counters and HEAD/worktree deltas.
+- Main currently resolves to `9e0ce...`; checked blobs match the older `cbc522140` ref for files inspected.
+- PR #467 remains Draft/unmerged; `GOVERNANCE = KEEP_BLOCKED`.
+
+---
+
+## 2026-10-16 REGISTRY UPDATE — CLAUDE CONTRACT NOT READY
+
+- Latest evidence record: [recommendation-gate follow-up, Section 21](../2026-10-16_iabv_recommendation_gate_codex_followup.md).
+- Latest record blob SHA: 7f7fbe5fff3e07a87ef2e340225734ae8aca3f38; source write commit: 7b90bae5e7112225b92c105d3f202d11ce138b8e.
+- Claude Web returned `CONTRACT_NOT_READY`; next route is contract v2, not another broad audit.
+- Public commit `9e0ce66768aedd7422e0d3551affd398f44a7532` confirms `ExperimentLab.generate_training_corpus()` aggregates `run.success`; dirty-local behavior stays distinct.
+- Corrections required: explicit typed ID resolution (not string-collision predicates), candidate identity in support, execution attestation beyond positive duration, total operational numerator/denominator neutrality, and legacy descriptive-only handling.
+- Branch-only memory in PR #467; draft/unmerged; do not auto-merge. `GOVERNANCE = KEEP_BLOCKED`.
+
+---
+
+## 2026-10-16 REGISTRY UPDATE — LOCAL CENSUS AND TRACE-ID RECONCILIATION ROUTE
+
+Latest source record: [2026-10-16_iabv_recommendation_gate_codex_followup.md](../2026-10-16_iabv_recommendation_gate_codex_followup.md).
+
+- Latest reported record update: commit a4f7550d02266763ed3f200ea6d3c7c7df70e5af, blob 9199a31f566b5c7452e530c06440d20fa11be4e5.
+- Current objective routing is defined at the top of README.md, CURRENT-STATE.md and CONTEXT-INDEX.md in this branch.
+- Codex local census is reported; next open edge is exact HEAD/worktree diff and type lineage for supporting_run_ids versus trace-ID metadata, followed by Claude Web challenge of the reconciled design.
+- Evidence source separation and runtime limits are preserved in the source record.
+- This registration is branch-only within PR #467 and is not yet canonical main absorption. Do not merge automatically.
+
+---
+
+## 2026-10-16 REGISTRY — RECOMMENDATION GATE / AGENT SYMBIOSIS FOLLOW-UP
+
+- Record: [2026-10-16_iabv_recommendation_gate_codex_followup.md](../2026-10-16_iabv_recommendation_gate_codex_followup.md)
+- Branch: docs/iabv-space-time-agent-continuity-2026-10-16
+- Source-record commit at registration: 70659edfe3ecd4708695c6c373502b93a8ce53be
+- Source-record blob SHA at registration: d456e0bb89f03a7aa73f41b7ace6fe04281f22ce
+- Scope: Codex local outcome census; Kilo's static causal map; Claude Web's public-source challenge; selected public-main checks; agent model/task observations; neutral sandbox outcome design; supporting-run versus trace-ID concern.
+- Evidence status: local details remain CODEX_LOCAL_REPORTED; public source observations are pinned in the source record; runtime effects remain UNPROVEN.
+- Routing: use the top objective overlay in CURRENT-STATE and CONTEXT-INDEX. Next task is local static reconciliation of all success producers/consumers and ID lineage; no implementation yet.
+- Governance: KEEP_BLOCKED. This is documentation-only continuity; no product code, tests, runtime or physical bridge is authorized.
+
+---
+
 ## 2026-10-13 CANONICAL ROUTE — ENTRY 280: C6 FAIL RECONCILIATION / AMENDMENT 274.5
 
 Canonical artifact: [CHAT-ARCH-2026-10-13-280-m0b-r8-1-c6-delta-adjudication-and-amendment-274-5.md](./CHAT-ARCH-2026-10-13-280-m0b-r8-1-c6-delta-adjudication-and-amendment-274-5.md) — blob `6d7d7f4966e1224456e00410c812395e6a5c598f`, commit `0a462d66071f2d354e8a299ffaf859b3aeac61d5`.
@@ -3463,3 +3558,43 @@ Material delta:
 - exact field placement and hard eligibility boundary remain unproven.
 
 Routing authority remains CURRENT-STATE.md.
+
+
+## 2026-10-16 REGISTRATION — R10 LOCAL GATE CAUSAL RECONSTRUCTION
+
+Canonical:
+- `IABV_v1.5/docs/history/2026-10-16_iabv_agent_continuity_space_time.md` — Section 35.
+- `IABV_v1.5/docs/history/2026-10-16_iabv_recommendation_gate_codex_followup.md` — Section 4.
+
+Type:
+SOURCE-RECONCILIATION / CAUSAL-MAP / GOVERNANCE / AGENT-ROUTING
+
+State:
+CODEX-LOCAL-REPORTED / CAUSAL PATH TO RANKING REPORTED / DISPATCH AND POSTCONDITION EDGE OPEN / KEEP_BLOCKED.
+
+Material delta:
+- sandbox promotion may persist operational-looking `success=True` and feed recommendation/ranking paths without the inspected method showing execution;
+- `TaskContextAssembler` protection is route-specific, not proof of a repository-wide evidence-class barrier;
+- next task is one-route trace from `validate_discovery` to a real dispatcher and its authorization/postcondition gates.
+
+Routing authority remains `CHAT-ARCH/CURRENT-STATE.md`. The local report was supplied by the owner; it is not independently re-inspected by this registry entry.
+
+
+## 2026-10-16 REGISTRATION — R10 VALIDATE_DISCOVERY DISPATCH TRACE
+
+Canonical:
+- `IABV_v1.5/docs/history/2026-10-16_iabv_agent_continuity_space_time.md` — Section 36.
+- `IABV_v1.5/docs/history/2026-10-16_iabv_recommendation_gate_codex_followup.md` — Section 5.
+
+Type:
+SOURCE-RECONCILIATION / CAUSAL-MAP / DISPATCH-BOUNDARY / AGENT-ROUTING
+
+State:
+CODEX-LOCAL-REPORTED / VALIDATE_DISCOVERY ROUTE ENDS AT SANDBOX / SYNC-PULSE BRIDGE UNRESOLVED / KEEP_BLOCKED.
+
+Material delta:
+- the proposal-to-sandbox path was traced through the reported local source;
+- a separate self-examination auto-execution path exists in the inspected scope, but no connecting adapter was identified;
+- next step is a producer/schema trace of `self_examination/latest.json.metadata.solution_proposals` and any adapter from `validate_discovery`.
+
+Routing authority remains `CHAT-ARCH/CURRENT-STATE.md`. This record carries Codex's report and is not an independent local source inspection.
