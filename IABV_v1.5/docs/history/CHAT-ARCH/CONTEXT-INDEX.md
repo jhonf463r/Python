@@ -1,3 +1,11 @@
+## 2026-10-18 ACTIVE ROUTE — CLAUDE V0.7.5 INDEPENDENT REVIEW
+
+The next actor is **Claude/Sonnet**, independently reviewing the immutable candidate at `db5c8788036b7d1c0ae5df9167bb3ec813da5f85`. Start from [Start Here](https://github.com/jhonf463r/Python/blob/0a98ebad5a951b31e48394d150adf5957b937b48/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-18-start-here-current-task.md), then read [coordinator relay readback](https://github.com/jhonf463r/Python/blob/66d8926968fc44f629f655f120471d9e9f08a703/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-18-v075-relay-readback.md) and the [corrected reviewer handoff](https://github.com/jhonf463r/Python/blob/fcecb67a1d222283795b5c0f8e8ce6b93169104b/relay/CLAUDE_REVIEW_HANDOFF.md). Do not use the stale prior handoff that referenced T240/`bf41bd5...`; it has been corrected on the relay. Candidate header's `Artifact ID: R10_V0_7_4_CONTRACT` mismatch is an observed review issue.
+
+Codex reports candidate ZIP 491,529 bytes / SHA-256 `dcad3ba31415f7204b9422b39cb0342862196c7d002468bed27fef02c6f3a6a7`; binary hash has not been independently recalculated by the coordinator's text connector. All rows T123–T246 remain NOT_RUN; no semantic acceptance or runtime evidence. F-07/F-10 open, F-12 proposed/unresolved. v0.7.5 pending independent review; bridge not ready; `GOVERNANCE = KEEP_BLOCKED`.
+
+---
+
 ## 2026-10-18 ACTIVE ROUTE — CODEX V0.7.5 DOCUMENTARY AUTHORING
 
 Owner routing decision is recorded here: [decision pinned to commit 451e78a5418c96abadc6d6f01930b98497a2f801](https://github.com/jhonf463r/Python/blob/451e78a5418c96abadc6d6f01930b98497a2f801/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-18-owner-decision-r10-v074-substitute-basis.md). The next actor is **Codex local**, for documentary-only v0.7.5 authoring/static preflight based on the pinned v0.7.4/v0.7.3/v0.7.2 packages and the regenerated reconciliation. Original Claude report remains missing; do not mislabel the substitute as the original. After candidate preflight + isolated GitHub relay verification, **Claude/Sonnet** performs independent delta review. Start from [current Start Here](https://github.com/jhonf463r/Python/blob/451e78a5418c96abadc6d6f01930b98497a2f801/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-18-start-here-current-task.md).
