@@ -13,6 +13,10 @@ No v0.7.5 candidate or relay was created/published. Preserve `handoff/r10-v074-r
 
 **Next action in the new chat:** recover the *complete original Claude/Sonnet v0.7.4 independent review report* from an existing pinned relay/history/available attachment, checking exact source and commit before relying on it. If it cannot be found, stop and ask for that original report as an attachment or pasted full text. Do not start v0.7.5 until the full report and row-level findings are actually present and provenance is clear. Then reconcile every finding against v0.7.4 source artifacts before assigning Codex the documentary repair. The summary below is not a substitute for the report.
 
+## 2026-10-17 CROSS-CUTTING METHOD DELTA — COMMUNICATION-AWARE FRONTIER SEARCH
+
+New proposed method overlay: [Communication-Aware Frontier Search](https://github.com/jhonf463r/Python/blob/cf5307d26ab647f80f643dc5670d5c439679471f/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-communication-aware-frontier-search-method-delta.md). Treat failed communication/retrieval/handoff as evidence and diagnose the first open causal edge before retrying or declaring `NOT_FOUND`. Select the smallest authorized discriminating action, preserve exact provenance and uncertainty, and require later decision reuse before claiming learning. This integrates with existing metacognitive continuity; it is not a new runtime organ and does not override the active R10 blocker. `STATUS=PROPOSED_METHOD_DELTA / NOT_RUNTIME_PROVEN`; `GOVERNANCE=KEEP_BLOCKED`.
+
 ---
 
 ## 2026-10-17 ACTIVE NEXT ACTOR — R10 v0.7.5 DOCUMENTARY REPAIR
