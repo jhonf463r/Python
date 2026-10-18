@@ -1,4 +1,24 @@
-# R10 v0.7.7 corrective documentary relay index
+# R10 v0.7.8 authoring route — next actor Codex local
+
+## Coordinator reconciliation of Claude’s R10 v0.7.7 verdict
+
+The independent v0.7.7 review verdict is `REQUIRES_REPAIRS`: HI-01/HI-02/HI-03 were verified as the delta, but the complete contract is not accepted because inherited F1/F2 lifecycle/correlation contradictions remain, with smaller F3–F5 fixture/traceability repairs and the T157 scenario-label clarification.
+
+Canonical reconciliation:
+https://github.com/jhonf463r/Python/blob/handoff/r10-v077-review-20261018/relay/R10_V0_7_7_INDEPENDENT_REVIEW_RECONCILIATION_2026-10-18.md
+
+**Current next actor: Codex local**, documentary author for new immutable logical contract + package v0.7.8. Copy/paste handoff:
+https://github.com/jhonf463r/Python/blob/handoff/r10-v078-authoring-20261018/relay/CODEX_V078_AUTHORING_HANDOFF.md
+
+The next candidate must be based on v0.7.7’s verified ZIP, preserve v0.7.7/v0.7.5/v0.7.4/v0.7.3/v0.7.2 byte-for-byte, and resolve F1–F5 plus the T157 label with explicit full-field diff. Because normative contract content changes, v0.7.8 is the logical contract version too: `R10_V0_7_8_CONTRACT` and `R10_V0_7_8_TEST_MATRIX_T123_T246.csv`. v0.7.7 stays frozen; do not send it back to Claude or overwrite it.
+
+After Codex’s documentary preflight and isolated GitHub publication, ChatGPT/coordinator must independently re-read the exact candidate/matrix and remote metadata. Only then may Claude/Sonnet review v0.7.8.
+
+The reviewer’s SHA-256 verification for the v0.7.7 archive and four historical source ZIPs is attributed to the supplied Claude/Sonnet review; the coordinator independently verified the published matrix’s byte SHA-256, CSV width, IDs, statuses and expected HI-03 field-12 values. All implementation/runtime efficacy remains `UNPROVEN`.
+
+`GOVERNANCE = KEEP_BLOCKED`; `BRIDGE_NOT_READY`; tests/build/runtime `NOT_RUN`; PR #467 `OPEN / DRAFT / UNMERGED`.
+
+---
 
 ## Coordinator independent recheck — PASS WITH BINARY-HASH LIMITATION
 
