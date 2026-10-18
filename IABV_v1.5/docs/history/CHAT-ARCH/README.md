@@ -1,3 +1,11 @@
+## 2026-10-18 ACTIVE ROUTE — R10 V0.7.5 DOCUMENTARY AUTHORING ONLY
+
+The Owner decision to use the regenerated reconciliation as a documentary substitute basis is recorded in [this pinned decision record](https://github.com/jhonf463r/Python/blob/451e78a5418c96abadc6d6f01930b98497a2f801/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-18-owner-decision-r10-v074-substitute-basis.md). Read the [Start Here current-task handoff](https://github.com/jhonf463r/Python/blob/451e78a5418c96abadc6d6f01930b98497a2f801/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-18-start-here-current-task.md). Next actor is Codex local for documentary-only v0.7.5 authoring and static preflight; Claude/Sonnet independently reviews the resulting immutable candidate after commit-pinned relay verification. The original review stays `NOT_RECOVERED`; no implementation/runtime is authorized.
+
+---
+
+---
+
 ## 2026-10-18 CURRENT ENTRYPOINT — READ THIS BEFORE OLDER ROUTING NOTES
 
 For the current R10 v0.7.4 state and next action, use [Start Here — current task](https://github.com/jhonf463r/Python/blob/1ec6fda156b50af5c8045ecb9cc23cc9deaaec2b/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-18-start-here-current-task.md) and the [regenerated coordinator reconciliation](https://github.com/jhonf463r/Python/blob/6ccf63ad93ef4946c5fcccdc3f42951775f96e6e/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-18-r10-v074-reconciliation-regenerated.md). These later commit-pinned entries supersede earlier 2026-10-17 routing text that says recovery of the lost original Claude report is the only possible route. The original remains unresolved; the coordinator report is an explicit synthesis, not the original. v0.7.5 remains blocked pending explicit Owner acceptance of the substitute documentary basis. All tests/runtime remain `NOT_RUN`; `GOVERNANCE = KEEP_BLOCKED`.
