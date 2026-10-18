@@ -1,3 +1,11 @@
+## 2026-10-18 CURRENT TASK — CLAUDE/Sonnet V0.7.5 DELTA REVIEW NEXT
+
+The v0.7.5 candidate is reported created and relayed by Codex. Next actor: **Claude/Sonnet**, independent adversarial review of candidate commit `db5c8788036b7d1c0ae5df9167bb3ec813da5f85`. Start at [Start Here](https://github.com/jhonf463r/Python/blob/0a98ebad5a951b31e48394d150adf5957b937b48/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-18-start-here-current-task.md), read the [coordinator relay readback](https://github.com/jhonf463r/Python/blob/66d8926968fc44f629f655f120471d9e9f08a703/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-18-v075-relay-readback.md), and use the [corrected handoff](https://github.com/jhonf463r/Python/blob/fcecb67a1d222283795b5c0f8e8ce6b93169104b/relay/CLAUDE_REVIEW_HANDOFF.md). An earlier handoff was stale and referred to T240; the current matrix ends at T246. The contract header's stale artifact ID is an issue for independent review.
+
+Candidate ZIP SHA/size remain author-reported until independently verified. Text spot-check shows 124 rows T123–T246 all `NOT_RUN`; that is not semantic acceptance. v0.7.5 `PENDING_INDEPENDENT_DELTA_REVIEW`; F-07/F-10 open; F-12 unresolved; `BRIDGE_NOT_READY`; `GOVERNANCE = KEEP_BLOCKED`. All cross-chat artifacts and adjudications must be persisted and read back from this canonical GitHub branch before a chat switch.
+
+---
+
 ## 2026-10-18 ACTIVE ROUTE — R10 V0.7.5 DOCUMENTARY AUTHORING ONLY
 
 The Owner decision to use the regenerated reconciliation as a documentary substitute basis is recorded in [this pinned decision record](https://github.com/jhonf463r/Python/blob/451e78a5418c96abadc6d6f01930b98497a2f801/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-18-owner-decision-r10-v074-substitute-basis.md). Read the [Start Here current-task handoff](https://github.com/jhonf463r/Python/blob/451e78a5418c96abadc6d6f01930b98497a2f801/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-18-start-here-current-task.md). Next actor is Codex local for documentary-only v0.7.5 authoring and static preflight; Claude/Sonnet independently reviews the resulting immutable candidate after commit-pinned relay verification. The original review stays `NOT_RECOVERED`; no implementation/runtime is authorized.
