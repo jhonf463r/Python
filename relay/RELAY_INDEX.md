@@ -1,14 +1,20 @@
 # R10 v0.7.8 relay index
 
-Status: `COORDINATOR_READBACK_CLEARED_FOR_CLAUDE_SONNET_DOCUMENTARY_REVIEW` for R1.1. The coordinator read back the pinned Codex report and relay index and adjudicated the documented match between local and commit-pinned remote ZIP bytes as sufficient to clear the binary identity hold for bounded independent documentary review. Underlying byte calculations remain `CODEX_LOCAL_CALCULATED`, not recalculated directly by ChatGPT in this runtime. This is not R10 acceptance and does not authorize code, tests, runtime, M0A, dispatcher, or bridge activity. Original v0.7.8 and R1 artifacts remain frozen/immutable. `GOVERNANCE = KEEP_BLOCKED`.
+Status: `COORDINATOR_ADJUDICATION_READY_WITH_LIMITATIONS_PENDING_OWNER_DISPOSITION` for R1.1. The independent reviewer returned `READY_WITH_LIMITATIONS`; the coordinator adjudicates that documentary disposition with no mandatory R1.1 delta repair identified. This is not candidate acceptance. `GOVERNANCE = KEEP_BLOCKED`; `BRIDGE_NOT_READY`; T123–T246 remain `NOT_RUN`; PR #467 stays `OPEN / DRAFT / UNMERGED`.
 
-## Latest R1.1 coordinator readback — identity hold cleared for documentary review
+## Latest R1.1 coordinator adjudication — READY_WITH_LIMITATIONS
 
-The prior coordinator recheck fetched the exact R1.1 matrix, contract, manifest, current embedded preflight, matrix diff, README, changelog, change map, consistency report, independent-review prompt, external report and relay index from the pinned commits. Matrix: 124 rows; 12 fields/header and each row; T123–T246 contiguous/unique; all `NOT_RUN`; exactly two matrix-cell changes from R1 and five from the frozen original. T137/T141 `normative_basis` values are correct. Contract remains byte-identical. Text hashes were independently recalculated and match the external report. The 212 manifest paths match the 212 non-manifest payload paths in the published `candidate-r1.1/` Git tree.
+The reviewer report has been persisted at [Claude independent delta review](R10_V0_7_8_R1_1_DELTA_REVIEW_CLAUDE.md). Provenance note: the named file was not found in three expected paths during coordinator readback; this persisted record is based on the complete reviewer text supplied inline and says so explicitly. The reviewer reports all seven checks passing and no R1.1 delta defect.
 
-Codex local downloaded the exact commit-pinned ZIP bytes and independently recalculated the local and remote size/SHA-256, finding both copies equal to each other and to the declared identities. It also recalculated the Git blob SHA-1 from the downloaded bytes. Full calculations and provenance are recorded in [R1.1 automated binary identity gate](R10_V0_7_8_R1_1_BINARY_IDENTITY_GATE_2026-10-18.md).
+The reported original→R1.1 parsed-cell delta is exactly five cells: T137 `initial_state_and_preconditions`, T137 `ordered_events_and_oracle`, T137 `normative_basis`, T141 `ordered_events_and_oracle`, and T141 `normative_basis`. R1→R1.1 changes only two cells, the T137 and T141 `normative_basis` fields. The reported contract is unchanged and all matrix cases remain `NOT_RUN`.
 
-**Next actor: `CLAUDE_SONNET_INDEPENDENT_DOCUMENTARY_DELTA_REVIEW`.** Coordinator readback is complete for the binary-identity routing gate. Review the exact commit-pinned R1.1 candidate with the existing independent-delta-review prompt; report source evidence and unresolved items. This clearance is documentary only, not candidate acceptance or bridge authorization. No owner attachment is requested.
+Three non-blocking traceability notes remain recorded: N-1, explicit mapping of `VALIDATION_EVIDENCE_INCOMPLETE` to a truncated capture; N-2, pre-existing §12 wording “or terminal execution” affecting the post-`SUCCEEDED` capture reading; N-3, tangential §2.2 citation in T141. No mandatory R1.1 repair is identified. N-1/N-2 can only be addressed in a separately versioned, owner-authorized future amendment; the frozen contract must not be silently changed.
+
+**Evidence boundary:** the reviewer’s claims of direct ZIP-member, manifest-hash and historical-byte verification are retained as `CLAUDE_DIRECT_BYTES_REPORTED`. The coordinator did not independently repeat every such calculation. Prior coordinator checks of the matrix, contract, text-artifact hashes and Git-tree manifest path coverage, plus the Codex-reported binary identity gate, remain distinct evidence.
+
+**Current status:** `R1.1 = READY_WITH_LIMITATIONS / NOT_ACCEPTED`. **Next actor:** `OWNER_DISPOSITION_ON_R1_1` — decide whether to keep this candidate frozen with limitations recorded or authorize a separate future documentary amendment. No code, tests, builds, runtime, M0A, dispatcher or bridge activity is authorized.
+
+See [coordinator adjudication report](R10_V0_7_8_R1_1_COORDINATOR_ADJUDICATION_2026-10-18.md) and the [coordinator binary-gate readback](R10_V0_7_8_R1_1_COORDINATOR_READBACK_2026-10-18.md).
 
 ## Current R1.1 revision — traceability/package fixup
 
