@@ -1,3 +1,13 @@
+## 2026-10-18 CURRENT ROUTE — SUBSTITUTE DOCUMENTARY BASIS ACCEPTED FOR AUTHORING ONLY
+
+Owner routing decision: [record pinned to commit 451e78a5418c96abadc6d6f01930b98497a2f801](https://github.com/jhonf463r/Python/blob/451e78a5418c96abadc6d6f01930b98497a2f801/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-18-owner-decision-r10-v074-substitute-basis.md). The regenerated coordinator reconciliation may be used as the documentary substitute basis to begin R10 v0.7.5 **documentary-only** authoring; it is not the missing original Claude report and does not accept v0.7.4. Before handoff completion, Codex must persist the new candidate plus provenance/manifest/change map to an isolated GitHub relay, read it back at a pinned commit, then Claude/Sonnet independently reviews the exact candidate. The next chat begins from [Start Here](https://github.com/jhonf463r/Python/blob/451e78a5418c96abadc6d6f01930b98497a2f801/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-18-start-here-current-task.md).
+
+No code/tests/build/runtime/physical bridge/M0A/dispatcher/Packages B–E/`data/`/SQLite or dirty checkout access is authorized. `GOVERNANCE = KEEP_BLOCKED`.
+
+---
+
+---
+
 ## 2026-10-18 METHOD DELTA — CANONICAL GITHUB WRITEBACK BEFORE CHAT TRANSITION
 
 A critical review or decision is not durably handed off while it exists only in a chat, local temporary directory, or attachment that another agent/chat may not be able to access. For every material project handoff, write the full report or a sufficiently detailed, provenance-labeled decision record to the canonical GitHub continuity branch **before** closing the handoff. Record the artifact path, immutable commit SHA, source identity, available file hash/size, and explicit evidence limits; then read the committed file back from GitHub.
