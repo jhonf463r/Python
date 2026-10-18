@@ -1,3 +1,15 @@
+# CURRENT ROUTE UPDATE — v0.7.5 independent review requires repairs; v0.7.6 next (2026-10-18)
+
+**Latest result:** `R10 v0.7.5 = REQUIRES_REPAIRS / NOT_ACCEPTED`. Read the [coordinator’s independent-review reconciliation, pinned to commit fd837b8c58633a20d585745b40f3d9dc19b8de3a](https://github.com/jhonf463r/Python/blob/fd837b8c58633a20d585745b40f3d9dc19b8de3a/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-18-v075-independent-review-reconciliation.md) before older entries.
+
+**Next actor: Codex local**, documentary-only author and static preflight of a new immutable R10 v0.7.6 candidate. Scope is limited to the three review findings: (HI-01) change the stale contract Artifact ID only after validating the naming convention; (HI-02) replace T157’s generic crash oracle with one matching its post-commit preconditions; (HI-03, recommended) replace `§17` in T222–T233 with validated sub-clause references. No unrelated normative/oracle edits. Keep v0.7.5 frozen at candidate commit `db5c8788036b7d1c0ae5df9167bb3ec813da5f85`. After v0.7.6 is committed and isolated-relay content read back, Claude/Sonnet independently reviews the exact new artifact.
+
+The supplied reviewer report attachment was measured at 29,361 bytes / SHA-256 `7511b3348c583c8222c62b05b48d5f8d3cfbde73849dde7706fcff08807922bb`. Its claimed ZIP-byte verification is reviewer-reported; the coordinator separately verified contract/matrix text through the pinned GitHub API but did not recalculate ZIP binary SHA-256. Candidate contract and matrix source blobs are linked in the reconciliation.
+
+Keep F-07/F-10 open; F-12 proposed/unresolved; original Claude v0.7.4 report `NOT_RECOVERED / UNRESOLVED`; SC-10 `PARTIAL`; runtime/implementation dependencies `UNPROVEN`; all test rows `NOT_RUN`. PR #467 stays `OPEN / DRAFT / UNMERGED`. No implementation, tests, builds, runtime, bridge activation, dirty local checkout, `data/`, SQLite, M0A, dispatcher, Packages B–E or `relay-staging\\IABV_v1.5\\data` access. `BRIDGE_NOT_READY`; `GOVERNANCE = KEEP_BLOCKED`.
+
+---
+
 # CURRENT ROUTE UPDATE — R10 v0.7.5 candidate published; next actor Claude/Sonnet (2026-10-18)
 
 **This newest block supersedes the prior top-level statement that Codex is still the next actor. Codex reports the v0.7.5 candidate created, preflighted and relayed; the next actor is now Claude/Sonnet for independent adversarial review.**
