@@ -1,3 +1,17 @@
+## 2026-10-18 SUPERSEDING ROUTE — V0.7.5 CANDIDATE RELAYED; CLAUDE REVIEW NEXT
+
+Codex reports v0.7.5 created and preflighted. The current next actor is **Claude/Sonnet**, not Codex. Read [Start Here](https://github.com/jhonf463r/Python/blob/0a98ebad5a951b31e48394d150adf5957b937b48/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-18-start-here-current-task.md) and the [coordinator relay readback](https://github.com/jhonf463r/Python/blob/66d8926968fc44f629f655f120471d9e9f08a703/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-18-v075-relay-readback.md) before using earlier entries below.
+
+Frozen candidate commit: `db5c8788036b7d1c0ae5df9167bb3ec813da5f85`; corrected handoff commit: `fcecb67a1d222283795b5c0f8e8ce6b93169104b`; relay tip: `9c47697acff1b02d36000a3249737f698a931fc2`. Candidate ZIP (491,529 bytes; SHA-256 `dcad3ba31415f7204b9422b39cb0342862196c7d002468bed27fef02c6f3a6a7`) remains `CODEX_LOCAL_REPORTED / OWNER_REPORTED` for the coordinator because the GitHub text connector did not recalculate binary bytes. The matrix text at the pinned commit was read back and parsed: 124 contiguous unique rows T123–T246, all `NOT_RUN`, no duplicated removed columns, no BOM, no empty cells, no literal generic no-crash placeholder.
+
+The first relay handoff was stale (old T123–T240 candidate, commit `bf41bd5...`); it was replaced with a handoff tied to the correct candidate commit. The current contract header still says `Artifact ID: R10_V0_7_4_CONTRACT`; that exact metadata mismatch is to be adjudicated by Claude, not silently fixed by the coordinator. Candidate files remain frozen.
+
+Original Claude v0.7.4 report remains `NOT_RECOVERED / UNRESOLVED`; regenerated coordinator report is authorized substitute basis only. v0.7.4 remains `REQUIRES_REPAIRS / NOT_ACCEPTED`; v0.7.5 is `PENDING_INDEPENDENT_DELTA_REVIEW`; F-07/F-10 stay open, F-12 proposed/unresolved; all tests `NOT_RUN`; bridge `BRIDGE_NOT_READY`; `GOVERNANCE = KEEP_BLOCKED`. Keep relay refs and PR #467 OPEN/DRAFT/UNMERGED. No product code/tests/build/runtime/bridge, dirty checkout, data/SQLite, M0A, dispatcher or Packages B–E access.
+
+After Claude returns, coordinator reconciles and writes the verdict plus updated Start Here pointers to canonical GitHub before a chat switch.
+
+---
+
 ## 2026-10-18 OWNER DECISION — PROCEED WITH V0.7.5 DOCUMENTARY AUTHORING USING REGENERATED RECONCILIATION
 
 The Owner's “ok dime que prompt sigue y a que ia va” is recorded as routing authorization to use the regenerated coordinator reconciliation as a **documentary substitute basis** for the next authoring step. This is not recovery of the original Claude report and not acceptance of v0.7.4. See [decision record, pinned commit](https://github.com/jhonf463r/Python/blob/451e78a5418c96abadc6d6f01930b98497a2f801/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-18-owner-decision-r10-v074-substitute-basis.md).
