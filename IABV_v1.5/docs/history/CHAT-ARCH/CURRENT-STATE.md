@@ -1,3 +1,19 @@
+## 2026-10-18 OWNER DECISION — PROCEED WITH V0.7.5 DOCUMENTARY AUTHORING USING REGENERATED RECONCILIATION
+
+The Owner's “ok dime que prompt sigue y a que ia va” is recorded as routing authorization to use the regenerated coordinator reconciliation as a **documentary substitute basis** for the next authoring step. This is not recovery of the original Claude report and not acceptance of v0.7.4. See [decision record, pinned commit](https://github.com/jhonf463r/Python/blob/451e78a5418c96abadc6d6f01930b98497a2f801/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-18-owner-decision-r10-v074-substitute-basis.md).
+
+**Active next actor: Codex local**, documentary-only author of an immutable R10 v0.7.5 candidate and static preflight. Use source ZIPs from the immutable v0.7.4 relay commit `ad5c094fa3e7e4d1989079983f8f6c05f3296551`; verify actual downloaded sizes/SHA-256 against declared identities before authoring; stop if any source is inaccessible or mismatched. The exact ready-to-paste prompt is delivered in the coordinator response for 2026-10-18. After the candidate passes static preflight, relay it on a dedicated isolated temporary branch pinned to its commit and read it back through GitHub; next reviewer is Claude/Sonnet for an independent delta review.
+
+The original Claude v0.7.4 report remains `NOT_RECOVERED / UNRESOLVED`; its 42,216-byte size and `d1968df6…` prefix remain `OWNER_REPORTED / HASH_UNVERIFIED`. The regenerated coordinator report remains explicitly separate.
+
+`R10 v0.7.2 = FAIL`; `v0.7.3 = REQUIRES_REPAIRS / NOT_ACCEPTED`; `v0.7.4 = REQUIRES_REPAIRS / NOT_ACCEPTED`; `v0.7.5 = NOT_CREATED / NOT_REVIEWED`; tests/build/runtime = `NOT_RUN`; `BRIDGE_NOT_READY`; `GOVERNANCE = KEEP_BLOCKED`.
+
+Preserve the v0.7.4 relay, PR #467 (OPEN/DRAFT/UNMERGED), and all prior artifacts. No product implementation, tests, build, runtime, probes, bridge activation, dirty checkout access, `data/`, SQLite, M0A, dispatcher, or Packages B–E.
+
+---
+
+---
+
 ## 2026-10-18 SUPERSEDING CURRENT ROUTE — REGENERATED V0.7.4 RECONCILIATION IS NOW PERSISTED ON GITHUB
 
 **Read this block first. It supersedes older 2026-10-17 lines below that say the only next action is to recover the original Claude/Sonnet v0.7.4 report and otherwise stop.** The original remains `NOT_RECOVERED / UNRESOLVED`; its 42,216-byte size and `d1968df6…` prefix remain `OWNER_REPORTED / HASH_UNVERIFIED`.
