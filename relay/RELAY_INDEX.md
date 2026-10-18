@@ -1,5 +1,17 @@
 # R10 v0.7.6 documentary relay index
 
+## COORDINATOR GATE — BLOCKED; DO NOT SEND TO CLAUDE YET
+
+The commit-pinned matrix at `8ab3f72cc69a745e91450b159aa75d3b776fdeab` has a structural defect. Its header has 12 columns, but each row T222–T233 has 13 CSV fields: the `normative_basis` field (column 12) is empty and the purported basis is in an extra column 13. This contradicts the author preflight and means HI-03 is not correctly represented in the published matrix.
+
+Coordinator finding: [R10 v0.7.6 coordinator preflight blocker](https://github.com/jhonf463r/Python/blob/1e03c3e86851fa787bd346f1ac9e0906b332725d/relay/R10_V0_7_6_COORDINATOR_PREFLIGHT_BLOCKER_2026-10-18.md).
+
+Do not submit this v0.7.6 candidate to Claude/Sonnet as preflight-complete. Keep candidate commit `8ab3f72cc69a745e91450b159aa75d3b776fdeab` frozen and unchanged. Next actor: Codex local, to prepare a distinct immutable corrective package, recommended outer version v0.7.7, preserving logical contract v0.7.5 and correcting only the CSV field placement/package metadata. Coordinator must re-read the published CSV and assert every row has exactly 12 fields before independent review.
+
+Evidence boundary: coordinator confirmed the malformed matrix via the commit-pinned GitHub text. Candidate ZIP size and SHA-256 below are author-reported in this environment; coordinator did not independently recalculate the ZIP's raw-byte hash. `GOVERNANCE = KEEP_BLOCKED`.
+
+---
+
 - Repository: `jhonf463r/Python` (public).
 - Temporary branch: `handoff/r10-v076-review-20261018`.
 - Candidate artifact commit (immutable): `8ab3f72cc69a745e91450b159aa75d3b776fdeab`.
@@ -7,7 +19,7 @@
 - Candidate ZIP: `R10_V0_7_6_DOCUMENTARY_CANDIDATE.zip`; bytes and SHA-256 are given below and are also recorded by readback.
 - Full extracted tree: `relay/candidate/extracted/`.
 - ZIP entries: 93 total; 92 payloads in the embedded SHA-256 manifest. Full member reads, safe path checks and embedded-manifest byte/hash checks passed locally before publication.
-- Matrix: 124 unique contiguous cases T123–T246; 12 columns; all `NOT_RUN`; exact functional delta is T157 oracle plus T222–T233 normative_basis cells.
+- Matrix: 124 IDs T123–T246 and all `NOT_RUN`; coordinator found rows T222–T233 have 13 fields despite a 12-column header, so normative-basis repair is structurally misplaced and the candidate is blocked.
 - The logical contract remains v0.7.5 (`R10_V0_7_5_CONTRACT.md` / `R10_V0_7_5_CONTRACT`); v0.7.6 names the documentary repair package.
 
 ## Candidate ZIP identity
