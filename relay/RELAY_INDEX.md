@@ -1,6 +1,14 @@
 # R10 v0.7.8 relay index
 
-Status: `PENDING_COORDINATOR_RECHECK` for R1.1; do not send the current revision to Claude/Sonnet yet. The original v0.7.8 and R1 artifacts remain frozen/immutable. `GOVERNANCE = KEEP_BLOCKED`. This is not acceptance and does not authorize code, tests, runtime, M0A, dispatcher, or bridge activity.
+Status: `COORDINATOR_RECHECK_HOLD_BINARY_SHA256_PENDING` for R1.1; text/CSV/contract/manifest/path-inventory checks pass, but the coordinator has not independently recalculated the outer ZIP SHA-256. Do not send this revision to Claude/Sonnet yet. Original v0.7.8 and R1 artifacts remain frozen/immutable. `GOVERNANCE = KEEP_BLOCKED`. This is not acceptance and does not authorize code, tests, runtime, M0A, dispatcher, or bridge activity.
+
+## Latest coordinator recheck — R1.1 binary SHA gate pending
+
+Coordinator fetched the exact R1.1 matrix, contract, manifest, current embedded preflight, matrix diff, README, changelog, change map, consistency report, independent-review prompt, external report and relay index from the pinned commits. Matrix: 124 rows; 12 fields/header and each row; T123–T246 contiguous/unique; all `NOT_RUN`; exactly two matrix-cell changes from R1 and five from the frozen original. T137/T141 `normative_basis` values are correct. Contract remains byte-identical. Text hashes were independently recalculated and match the external report. The 212 manifest paths match the 212 non-manifest payload paths in the published `candidate-r1.1/` Git tree.
+
+The Git tree independently identifies the ZIP blob as `7b6d636cf7522936c98f5e56500d869360567e1e`, size 5,249,358 bytes. This is Git blob SHA-1, not SHA-256. The current connector/runtime does not provide the ZIP's binary bytes, so coordinator could not independently recalculate its reported SHA-256 `f4e67a512adf8afeab8d40e7cb6c134d7d53dedb6740c7f38c94151ba0920352`. The precise evidence and limit are recorded in [R1.1 coordinator recheck](R10_V0_7_8_R1_1_COORDINATOR_RECHECK_2026-10-18.md).
+
+**Next actor: provide the actual ZIP as a binary attachment or make it downloadable to a byte-capable coordinator workspace.** ChatGPT must hash the actual 5,249,358-byte file and compare with the author-reported SHA-256. Until then, do not send it to Claude/Sonnet.
 
 ## Current R1.1 revision — traceability/package fixup
 
