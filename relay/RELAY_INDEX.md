@@ -53,3 +53,9 @@ The relay also preserves each source ZIP and its full extracted tree under `cand
 The candidate manifest covers 210 payload files (self-entry omitted). The outer ZIP has 211 members: the 210 manifest payloads plus the manifest. Its internal matrix parses to 124 records, each 12 fields, IDs T123–T246, all `NOT_RUN`. The full diff lists every changed contract line and every changed parsed matrix cell.
 
 Please review commit-pinned text directly. If the binary ZIP cannot be downloaded, state that binary verification was not completed. This relay does not prove implementation, tests, runtime, exactly-once effects, operational efficacy, or acceptance. Do not send this package to Claude automatically; coordinator recheck comes first.
+
+## Next actor — Codex local, bounded T137 revision R1
+
+The current v0.7.8 artifact is not cleared for independent review: coordinator finding COORD-01 identifies T137's noncanonical state label EXECUTION.COMPLETED. Use the dedicated [Codex T137 repair handoff](CODEX_V078_T137_REPAIR_HANDOFF.md) on branch handoff/r10-v078-t137-repair-20261018. Preserve the original immutable candidate commit aa8ea71578b024c69dba446d010f0ea7b068bee3. Codex must author a new immutable revision, perform only the bounded state-vocabulary sweep and necessary packaging updates, and publish evidence. Do not send it to Claude/Sonnet until ChatGPT independently rechecks the exact candidate bytes and documents coordinator clearance.
+
+Current route state: COORDINATOR_RECHECK_IN_PROGRESS; NEXT_ACTOR=CODEX_LOCAL_T137_REPAIR; GOVERNANCE=KEEP_BLOCKED; BRIDGE_NOT_READY; all T123–T246 remain NOT_RUN.
