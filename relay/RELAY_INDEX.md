@@ -1,8 +1,22 @@
 # R10 v0.7.8 relay index
 
-Status: `COORDINATOR_RECHECK_HOLD` for R1; do not send the current revision to Claude/Sonnet yet. The original v0.7.8 and R1 artifacts remain frozen/immutable. `GOVERNANCE = KEEP_BLOCKED`. This is not acceptance and does not authorize code, tests, runtime, M0A, dispatcher, or bridge activity.
+Status: `PENDING_COORDINATOR_RECHECK` for R1.1; do not send the current revision to Claude/Sonnet yet. The original v0.7.8 and R1 artifacts remain frozen/immutable. `GOVERNANCE = KEEP_BLOCKED`. This is not acceptance and does not authorize code, tests, runtime, M0A, dispatcher, or bridge activity.
 
-## Latest coordinator recheck — R1 traceability/package hold
+## Current R1.1 revision — traceability/package fixup
+
+- Label: **R10 v0.7.8 documentary revision R1.1 — bounded traceability/package fixup**.
+- Artifact commit: `23e46401e282acd4f39083fc184fced51770f2fa` on `handoff/r10-v078-t137-repair-20261018`.
+- ZIP: 5,249,358 bytes; SHA-256 `f4e67a512adf8afeab8d40e7cb6c134d7d53dedb6740c7f38c94151ba0920352` (calculated from downloaded local binary bytes; pending independent coordinator recalculation).
+- Matrix: 77,009 bytes; SHA-256 `c33b6010c975f31204e3419e0c905eae854ce93dbbc00854ac94014e203bd667`.
+- Manifest: 32,509 bytes; SHA-256 `2fb725875cb0e5f93dc559be00f143953b586c32b2be54ffd613182358bd68e2`; 212 payload entries.
+- [R1.1 ZIP](https://github.com/jhonf463r/Python/blob/23e46401e282acd4f39083fc184fced51770f2fa/R10_V0_7_8_DOCUMENTARY_CANDIDATE_R1_1.zip) · [raw ZIP](https://raw.githubusercontent.com/jhonf463r/Python/23e46401e282acd4f39083fc184fced51770f2fa/R10_V0_7_8_DOCUMENTARY_CANDIDATE_R1_1.zip) · [R1.1 tree](https://github.com/jhonf463r/Python/tree/23e46401e282acd4f39083fc184fced51770f2fa/candidate-r1.1)
+- [Contract](https://github.com/jhonf463r/Python/blob/23e46401e282acd4f39083fc184fced51770f2fa/candidate-r1.1/R10_V0_7_8_CONTRACT.md) · [Matrix](https://github.com/jhonf463r/Python/blob/23e46401e282acd4f39083fc184fced51770f2fa/candidate-r1.1/R10_V0_7_8_TEST_MATRIX_T123_T246.csv) · [Current internal preflight](https://github.com/jhonf463r/Python/blob/23e46401e282acd4f39083fc184fced51770f2fa/candidate-r1.1/R10_V0_7_8_PREFLIGHT_REPORT.md)
+- [R1.1 matrix diff](https://github.com/jhonf463r/Python/blob/23e46401e282acd4f39083fc184fced51770f2fa/candidate-r1.1/R10_V0_7_8_R1_1_MATRIX_DIFF.md) · [Manifest](https://github.com/jhonf463r/Python/blob/23e46401e282acd4f39083fc184fced51770f2fa/candidate-r1.1/R10_V0_7_8_SHA256.txt) · [R1.1 review prompt](https://github.com/jhonf463r/Python/blob/23e46401e282acd4f39083fc184fced51770f2fa/candidate-r1.1/R10_V0_7_8_R1_INDEPENDENT_DELTA_REVIEW_PROMPT.md)
+- [Changelog](https://github.com/jhonf463r/Python/blob/23e46401e282acd4f39083fc184fced51770f2fa/candidate-r1.1/R10_V0_7_8_CHANGELOG.md) · [Change map](https://github.com/jhonf463r/Python/blob/23e46401e282acd4f39083fc184fced51770f2fa/candidate-r1.1/R10_V0_7_8_CHANGE_MAP.md) · [Consistency](https://github.com/jhonf463r/Python/blob/23e46401e282acd4f39083fc184fced51770f2fa/candidate-r1.1/R10_V0_7_8_CONSISTENCY_AND_TRACEABILITY.md)
+- The R1.1 ZIP, matrix and text artifacts were downloaded from pinned URLs and byte-compared locally; see the [R1.1 relay preflight/readback report](R10_V0_7_8_R1_PREFLIGHT_REPORT_2026-10-18.md). R1's ZIP and original v0.7.8 remain immutable.
+- State: `PENDING_COORDINATOR_RECHECK`; `NEXT_ACTOR=CHATGPT_COORDINATOR`; Claude/Sonnet pending coordinator clearance. All cases remain `NOT_RUN`; `GOVERNANCE = KEEP_BLOCKED`; `BRIDGE_NOT_READY`.
+
+## Prior coordinator recheck — R1 traceability/package hold
 
 Coordinator independently re-fetched the R1 matrix, contract, manifest, parsed-cell diff and reviewer prompt at artifact commit `541e150b478bcbf24c739860f799f8e5ef227af7`. The matrix has 124 rows, 12 fields in every row, contiguous unique IDs T123–T246, and all statuses `NOT_RUN`; the parsed delta from the original contains exactly three cells. Recomputed text-artifact SHA-256 values match the R1 report, and contract content/blob is unchanged.
 
@@ -10,24 +24,24 @@ Three bounded items remain before independent review: (COORD-02) add directly go
 
 Binary SHA limitation: GitHub's API tree verifies the R1 ZIP blob identity/size, and the author reports a successful raw-byte SHA-256/readback. This coordinator session could not download binary ZIP bytes through the available connector, so its SHA-256 has not been independently recalculated here. Do not present that specific digest as independently calculated by ChatGPT.
 
-Current route: `COORDINATOR_RECHECK_HOLD`; `NEXT_ACTOR=CODEX_LOCAL_R1_TRACEABILITY_FIXUP`; Claude/Sonnet pending coordinator clearance; `BRIDGE_NOT_READY`; `GOVERNANCE = KEEP_BLOCKED`; all tests remain `NOT_RUN`.
+Route recorded at that time: `COORDINATOR_RECHECK_HOLD`; `NEXT_ACTOR=CODEX_LOCAL_R1_TRACEABILITY_FIXUP`; Claude/Sonnet pending coordinator clearance; `BRIDGE_NOT_READY`; `GOVERNANCE = KEEP_BLOCKED`; all tests remain `NOT_RUN`.
 
-## R1 candidate — T137 consistency repair (2026-10-18)
+## Frozen R1 candidate — T137 consistency repair (superseded by R1.1)
 
 - Label: **R10 v0.7.8 documentary revision R1 — T137 consistency repair**.
 - Artifact commit: `541e150b478bcbf24c739860f799f8e5ef227af7` on `handoff/r10-v078-t137-repair-20261018`.
 - R1 ZIP: 5,248,720 bytes; SHA-256 `1b18f128ceaadce4a32abe4ec3deb7c08f330aa051c6239e4146f91af575ef1f`.
 - R1 matrix: 76,972 bytes; SHA-256 `f1d5c3e99a34f24f2e19d7426872c5512c610c2713a063de47c3139b961d56cb`.
 - R1 manifest: 32,505 bytes; SHA-256 `cc5288f22724ee02ecddf0ec869448c333779e6c43f86ee5258c364fbff910c5`; covers 212 payload files.
-- Remote ZIP, matrix, contract, manifest, cell diff and R1 review prompt were fetched at the immutable artifact commit and byte-compared to local; details are in the [R1 preflight report](R10_V0_7_8_R1_PREFLIGHT_REPORT_2026-10-18.md).
+- Remote ZIP, matrix, contract, manifest, cell diff and R1 review prompt were fetched at the immutable artifact commit and byte-compared to local; details are in the [R1 preflight report](https://github.com/jhonf463r/Python/blob/a081b152407a22b61b6fb11d1947d34e9d0d2795/relay/R10_V0_7_8_R1_PREFLIGHT_REPORT_2026-10-18.md).
 - [R1 ZIP](https://github.com/jhonf463r/Python/blob/541e150b478bcbf24c739860f799f8e5ef227af7/R10_V0_7_8_DOCUMENTARY_CANDIDATE_R1.zip) · [raw ZIP](https://raw.githubusercontent.com/jhonf463r/Python/541e150b478bcbf24c739860f799f8e5ef227af7/R10_V0_7_8_DOCUMENTARY_CANDIDATE_R1.zip) · [R1 extracted tree](https://github.com/jhonf463r/Python/tree/541e150b478bcbf24c739860f799f8e5ef227af7/candidate-r1)
 - [Contract](https://github.com/jhonf463r/Python/blob/541e150b478bcbf24c739860f799f8e5ef227af7/candidate-r1/R10_V0_7_8_CONTRACT.md) · [Matrix T123–T246](https://github.com/jhonf463r/Python/blob/541e150b478bcbf24c739860f799f8e5ef227af7/candidate-r1/R10_V0_7_8_TEST_MATRIX_T123_T246.csv) · [README](https://github.com/jhonf463r/Python/blob/541e150b478bcbf24c739860f799f8e5ef227af7/candidate-r1/README.md)
 - [Changelog](https://github.com/jhonf463r/Python/blob/541e150b478bcbf24c739860f799f8e5ef227af7/candidate-r1/R10_V0_7_8_CHANGELOG.md) · [Change map](https://github.com/jhonf463r/Python/blob/541e150b478bcbf24c739860f799f8e5ef227af7/candidate-r1/R10_V0_7_8_CHANGE_MAP.md) · [Consistency and traceability](https://github.com/jhonf463r/Python/blob/541e150b478bcbf24c739860f799f8e5ef227af7/candidate-r1/R10_V0_7_8_CONSISTENCY_AND_TRACEABILITY.md)
 - [R1 parsed cell diff](https://github.com/jhonf463r/Python/blob/541e150b478bcbf24c739860f799f8e5ef227af7/candidate-r1/R10_V0_7_8_R1_MATRIX_DIFF.md) · [SHA-256 manifest](https://github.com/jhonf463r/Python/blob/541e150b478bcbf24c739860f799f8e5ef227af7/candidate-r1/R10_V0_7_8_SHA256.txt) · [R1 independent delta review prompt](https://github.com/jhonf463r/Python/blob/541e150b478bcbf24c739860f799f8e5ef227af7/candidate-r1/R10_V0_7_8_R1_INDEPENDENT_DELTA_REVIEW_PROMPT.md)
 - Frozen original remains at `aa8ea71578b024c69dba446d010f0ea7b068bee3`; it is not overwritten. R1 preserves logical `Artifact ID: R10_V0_7_8_CONTRACT` and contract bytes.
-- State: `PENDING_COORDINATOR_RECHECK`; `NEXT_ACTOR=CHATGPT_COORDINATOR`; Claude/Sonnet is not yet authorized. All T123–T246 remain `NOT_RUN`; `GOVERNANCE = KEEP_BLOCKED`; `BRIDGE_NOT_READY`.
+- Historical state at R1: `PENDING_COORDINATOR_RECHECK`; R1 remains immutable and is superseded by R1.1 for current review. All T123–T246 remain `NOT_RUN`; `GOVERNANCE = KEEP_BLOCKED`; `BRIDGE_NOT_READY`.
 
-## Coordinator recheck — 2026-10-18
+## Earlier coordinator recheck against the frozen original — 2026-10-18
 
 A bounded coordinator recheck found a residual matrix/contract vocabulary mismatch: T137 still uses `EXECUTION.COMPLETED`, while §§3.3, 12 and 17.1 define `SUCCEEDED` as the canonical normal-completion state and do not define `EXECUTION.COMPLETED`. The exact finding and proposed narrow repair are recorded in [R10 v0.7.8 coordinator recheck](R10_V0_7_8_COORDINATOR_RECHECK_2026-10-18.md).
 
@@ -81,6 +95,6 @@ Please review commit-pinned text directly. If the binary ZIP cannot be downloade
 
 ## Next actor — ChatGPT coordinator
 
-Independently re-fetch artifact commit `541e150b478bcbf24c739860f799f8e5ef227af7`, verify the R1 ZIP hash and full matrix/contract/manifest delta, then record coordinator clearance or specific remaining findings. Do not route to Claude/Sonnet until that gate is satisfied. Do not infer runtime or operational readiness.
+Independently download R1.1 at artifact commit `23e46401e282acd4f39083fc184fced51770f2fa`, calculate its ZIP SHA-256 from binary bytes, and recheck the exact matrix delta, internal preflight, manifest and unchanged contract. Record clearance or precise remaining findings. Do not route to Claude/Sonnet until this gate is satisfied.
 
 Current route state: PENDING_COORDINATOR_RECHECK; NEXT_ACTOR=CHATGPT_COORDINATOR; GOVERNANCE=KEEP_BLOCKED; BRIDGE_NOT_READY; all T123–T246 remain NOT_RUN.
