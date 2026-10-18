@@ -5,6 +5,7 @@
 `OWNER_DISPOSITION = KEEP_R1_1_FROZEN_WITH_LIMITATIONS`; `R1.1 = READY_WITH_LIMITATIONS / NOT_ACCEPTED`. No R1.2 is authorized or required for N-1/N-2/N-3. N-1 and N-2 remain possible clarifications only in separately versioned future amendments with explicit owner authorization; N-3 requires no repair. The reviewer's, Codex local's, and coordinator's evidence remain separately attributed. The unverified provenance claim tying the R1 source to commit `541e150b…` remains a limitation.
 
 See [owner disposition](R10_V0_7_8_R1_1_OWNER_DISPOSITION_2026-10-18.md). `GOVERNANCE = KEEP_BLOCKED`; `BRIDGE_NOT_READY`; `T123–T246 = NOT_RUN`; `NEXT_ACTOR = NONE_FOR_R1_1_PENDING_NEW_OWNER_OBJECTIVE`. No new review round or amendment is proposed.
+
 Status: `OWNER_DISPOSITION_KEEP_R1_1_FROZEN_WITH_LIMITATIONS` for R1.1; documentary state `READY_WITH_LIMITATIONS / NOT_ACCEPTED`. The owner has directed that R1.1 remain frozen; no R1.2 or repair for N-1/N-2/N-3 is authorized or required. This is not candidate acceptance. `GOVERNANCE = KEEP_BLOCKED`; `BRIDGE_NOT_READY`; T123–T246 remain `NOT_RUN`; PR #467 stays `OPEN / DRAFT / UNMERGED`.
 
 ## Latest R1.1 coordinator adjudication — READY_WITH_LIMITATIONS
