@@ -1,3 +1,11 @@
+## 2026-10-18 CURRENT ENTRYPOINT — REGENERATED R10 v0.7.4 RECONCILIATION
+
+Open [Start Here — current task](https://github.com/jhonf463r/Python/blob/1ec6fda156b50af5c8045ecb9cc23cc9deaaec2b/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-18-start-here-current-task.md) before following older task-routing entries. The regenerated, provenance-labeled coordinator reconciliation is [pinned here](https://github.com/jhonf463r/Python/blob/6ccf63ad93ef4946c5fcccdc3f42951775f96e6e/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-18-r10-v074-reconciliation-regenerated.md). The original full Claude/Sonnet report remains `NOT_RECOVERED / UNRESOLVED`; the new report is not that original. v0.7.4 remains `REQUIRES_REPAIRS / NOT_ACCEPTED`; v0.7.5 remains `NOT_CREATED / NOT_REVIEWED`; all matrix tests remain `NOT_RUN`; `GOVERNANCE = KEEP_BLOCKED`. Before authoring v0.7.5, require an explicit Owner decision to use the regenerated coordinator reconciliation as documentary substitute. See the report for the verified text findings, additional T205 repair, numeric T221/T222 split, and strict GitHub cross-chat persistence rule.
+
+---
+
+---
+
 ## 2026-10-17 BLOCKER — R10 v0.7.5 NOT STARTED; FULL CLAUDE REVIEW REPORT REQUIRED
 
 Codex returned `BLOCKED_MISSING_REQUIRED_REVIEW_REPORT` and correctly did not start v0.7.5 authoring. The currently available prompt contains only the summarized distribution (3 `OK`, 53 `OK_WITH_NOTES`, 43 `REPAIR`), not Claude's complete independent report with exact locations, F/S/G findings, and row-by-row rationale. Do not reconstruct or invent the missing report from summaries, memory, or this continuity document.
