@@ -1,3 +1,14 @@
+# CURRENT ROUTE UPDATE — Owner decision recorded 2026-10-18
+
+The Owner's “ok dime que prompt sigue y a que ia va” is recorded as authorization to use the regenerated coordinator reconciliation as the **documentary substitute basis** for Codex's next v0.7.5 documentary-authoring task. The original Claude/Sonnet report itself remains `NOT_RECOVERED / UNRESOLVED`; this does not accept v0.7.4 or authorize implementation/runtime.
+
+Decision record: [Owner routing decision](https://github.com/jhonf463r/Python/blob/451e78a5418c96abadc6d6f01930b98497a2f801/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-18-owner-decision-r10-v074-substitute-basis.md).
+
+**Immediate next actor: Codex local — documentary-only authoring and static preflight of a new immutable R10 v0.7.5 candidate.** Use actual commit-pinned v0.7.4/v0.7.3/v0.7.2 ZIPs. No product code, tests, build, runtime, probes, bridge activation, local dirty checkout, data/SQLite, M0A, dispatcher, or Packages B–E. After the candidate is preflighted and published/read back on a dedicated isolated relay, Claude/Sonnet independently reviews it.
+
+---
+---
+
 # IABV / UAAL / R10 — Start here for the current task (2026-10-18)
 
 **Use this file as the current entrypoint before relying on older CHAT-ARCH routing text.** It supersedes earlier 2026-10-17 instructions that say the only possible next step is to recover the missing original Claude report. That original remains missing; a new, explicitly labeled coordinator reconciliation has now been regenerated and persisted.
