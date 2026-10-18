@@ -1,3 +1,17 @@
+## 2026-10-18 METHOD DELTA — CANONICAL GITHUB WRITEBACK BEFORE CHAT TRANSITION
+
+A critical review or decision is not durably handed off while it exists only in a chat, local temporary directory, or attachment that another agent/chat may not be able to access. For every material project handoff, write the full report or a sufficiently detailed, provenance-labeled decision record to the canonical GitHub continuity branch **before** closing the handoff. Record the artifact path, immutable commit SHA, source identity, available file hash/size, and explicit evidence limits; then read the committed file back from GitHub.
+
+Use [Start Here — current task (2026-10-18)](https://github.com/jhonf463r/Python/blob/1ec6fda156b50af5c8045ecb9cc23cc9deaaec2b/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-18-start-here-current-task.md) as the transition pointer and [the regenerated R10 v0.7.4 reconciliation](https://github.com/jhonf463r/Python/blob/6ccf63ad93ef4946c5fcccdc3f42951775f96e6e/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-18-r10-v074-reconciliation-regenerated.md) as the current adjudication. New chats must read these commit-pinned artifacts first, not restart search from chat memory.
+
+Never infer cross-agent access from a local path or attachment in another conversation. If an original artifact is missing, preserve the exact bounded negative search and provenance. A synthesized replacement must say that it is synthesized and must not be passed off as the original. Update the stable Start Here pointer, read it back, and explicitly distinguish `GITHUB_API_VERIFIED`, `LOCAL_FILE_VERIFIED`, `OWNER_REPORTED`, `DECLARED_HASH_NOT_RECALCULATED`, `NOT_RUN`, `UNPROVEN`, and `UNRESOLVED`.
+
+This is a documentary continuity rule, not proof of autonomous multi-agent runtime communication and not authorization for implementation, tests, build, runtime, M0A, dispatcher, Packages B–E, or `data/`/SQLite. `GOVERNANCE = KEEP_BLOCKED`.
+
+---
+
+---
+
 ## 2026-10-17 METHOD DELTA — COMMUNICATION-AWARE FRONTIER SEARCH
 
 Canonical proposal: [Communication-Aware Frontier Search / temporal-causal method delta](https://github.com/jhonf463r/Python/blob/cf5307d26ab647f80f643dc5670d5c439679471f/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-communication-aware-frontier-search-method-delta.md). Status: `PROPOSED_METHOD_DELTA / NOT_RUNTIME_PROVEN`; `GOVERNANCE = KEEP_BLOCKED`.
