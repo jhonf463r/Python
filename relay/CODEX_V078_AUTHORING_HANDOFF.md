@@ -55,7 +55,7 @@ Expected SHA-256: `dff898c9fb7e515ffdc698992475384873995cf50469da88d769072269e1c
 URL: https://raw.githubusercontent.com/jhonf463r/Python/5534761ac877ee2f5b1f56ba354e4b09b760b717/relay/source/R10_V0_7_3_DOCUMENTARY_CANDIDATE.zip
 
 Expected: **86,835 bytes**  
-Expected SHA-256: `1ace1d9331ee943a35fc4663855a0942862196c7d002468bed27fef02c6f3a6a7`
+Expected SHA-256: `1ace1d9331ee943a35fc4663855a09451919ae7b0e8619c799416b48bdae4049`
 
 ### v0.7.2
 
