@@ -1,3 +1,11 @@
+## 2026-10-18 SUPERSEDING ROUTE — V0.7.5 REQUIRES REPAIRS; V0.7.6 NEXT
+
+The current verdict is `R10 v0.7.5 = REQUIRES_REPAIRS / NOT_ACCEPTED`. The [pinned coordinator reconciliation](https://github.com/jhonf463r/Python/blob/fd837b8c58633a20d585745b40f3d9dc19b8de3a/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-18-v075-independent-review-reconciliation.md) is authoritative for the evidence and the next task; begin from [Start Here](https://github.com/jhonf463r/Python/blob/050da8051fa4f6ab9b678ef7545d59c0856a9142/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-18-start-here-current-task.md). The supplied reviewer reports verified candidate/source ZIP binary hashes, but the coordinator only independently read back the pinned GitHub contract and matrix text and did not recalculate binary hashes.
+
+Candidate v0.7.5 remains frozen at `db5c8788036b7d1c0ae5df9167bb3ec813da5f85`. Next actor: Codex local, documentary-only author/static preflight for v0.7.6 limited to HI-01 (Artifact ID convention), HI-02 (T157 post-marker crash oracle), and HI-03 (T222–T233 exact normative references). After isolated relay and GitHub readback, Claude/Sonnet reviews immutable v0.7.6. Keep F-07/F-10 open; F-12 proposed/unresolved; SC-10 partial; original Claude v0.7.4 report not recovered; all tests NOT_RUN; bridge not ready. PR #467 OPEN/DRAFT/UNMERGED. No implementation/code/tests/build/runtime/bridge, local dirty checkout, `data/`, SQLite, M0A, dispatcher or Packages B–E access. `GOVERNANCE = KEEP_BLOCKED`.
+
+---
+
 ## 2026-10-18 SUPERSEDING ROUTE — V0.7.5 CANDIDATE RELAYED; CLAUDE REVIEW NEXT
 
 Codex reports v0.7.5 created and preflighted. The current next actor is **Claude/Sonnet**, not Codex. Read [Start Here](https://github.com/jhonf463r/Python/blob/0a98ebad5a951b31e48394d150adf5957b937b48/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-18-start-here-current-task.md) and the [coordinator relay readback](https://github.com/jhonf463r/Python/blob/66d8926968fc44f629f655f120471d9e9f08a703/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-18-v075-relay-readback.md) before using earlier entries below.
