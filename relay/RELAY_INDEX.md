@@ -1,4 +1,16 @@
-# R10 v0.7.6 documentary relay index
+# R10 v0.7.7 authoring gate — corrected source locator
+
+**Current task / next actor:** [Codex v0.7.7 resume handoff](https://github.com/jhonf463r/Python/blob/handoff/r10-v077-authoring-20261018/relay/CODEX_V077_RESUME_HANDOFF.md).
+
+**Source URL correction:** the v0.7.4 ZIP exists at `candidate/R10_V0_7_4_DOCUMENTARY_CANDIDATE.zip` at commit `ad5c094fa3e7e4d1989079983f8f6c05f3296551`. Do not use the erroneous `history/v0.7.3/R10_V0_7_4...` path. Details and evidence classes: [source URL correction note](https://github.com/jhonf463r/Python/blob/handoff/r10-v076-review-20261018/relay/R10_V0_7_7_SOURCE_URL_CORRECTION_2026-10-18.md).
+
+**Source URL and path provenance:** GitHub's immutable recursive tree confirms the correct v0.7.4 path and its 86,703-byte size, along with the unchanged v0.7.3 and v0.7.2 paths. Codex must still download and recompute byte size/SHA-256 for all source ZIPs before editing; Git blob SHA-1 or a tree entry is not a substitute for SHA-256 verification.
+
+**Preservation gates:** v0.7.5 remains frozen as authoring base; v0.7.6 remains frozen with coordinator-confirmed malformed CSV rows T222–T233 (13 fields in a 12-column schema). Correct the CSV using a structured parser/writer in a new outer v0.7.7 package. Keep contract logic/version v0.7.5, all cases T123–T246 and all statuses `NOT_RUN`. Next independent reviewer is Claude/Sonnet only after coordinator readback confirms 12 fields on every row of the exact published matrix.
+
+`GOVERNANCE = KEEP_BLOCKED`; `BRIDGE_NOT_READY`; no product code/test/build/runtime/probe/dispatcher/bridge.
+
+---
 
 ## COORDINATOR GATE — BLOCKED; DO NOT SEND TO CLAUDE YET
 
