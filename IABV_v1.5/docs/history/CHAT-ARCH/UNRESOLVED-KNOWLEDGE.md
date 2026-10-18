@@ -1,3 +1,138 @@
+## 2026-10-17 NEXT ACTION — R10 V0.7.3 DOCUMENTARY REPAIR HANDOFF PREPARED
+
+The next proposed action is to send the ready-to-paste M0–M5 documentary repair prompt to the actual R10 package author in the conversation where the original v0.7.2 files are available. Handoff record: [https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-r10-v073-documentary-repair-handoff.md](https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-r10-v073-documentary-repair-handoff.md). This continuity update has not altered the R10 package and does not claim v0.7.3 exists.
+
+Objective: create a new immutable v0.7.3 candidate repairing M0 clause/oracle precedence; M1 T162; M2 T141/T138 and missing AUTO dispatch-turn case; M3 undefined vocabulary/status writers/error codes; M4 T130/T131 uncontracted strategy-lineage semantics; M5 21 missing explicit outcomes and T180 boundary, plus minor traceability/evidence-contract repairs. Hash a new manifest; keep all tests `NOT_RUN`; seek independent delta review. If source artifacts are unavailable, stop and request them rather than reconstructing them from audit prose.
+
+Do not confuse this with bridge implementation. Current bridge readiness remains `BRIDGE_NOT_READY`; the separate trace verdict is `TRACE_ACCEPTED_WITH_LIMITATIONS` and its two-hop identity frontier remains unresolved. Readiness gates: [https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-bridge-readiness-assessment.md](https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-bridge-readiness-assessment.md).
+
+`GOVERNANCE = KEEP_BLOCKED`: no product code, local checkout modification, tests/build/runtime/probes, dispatcher, Packages B–E, M0A, `data/` or SQLite.
+
+---
+## 2026-10-17 UNRESOLVED — BRIDGE READINESS
+
+The bridge is not ready. Trace acceptance was only `TRACE_ACCEPTED_WITH_LIMITATIONS` for no direct typed per-proposal adapter in bounded tracked source/test routes; two-hop `evidence_refs → ExperimentRun → proposal_id/discovery_signal_id` remains unresolved. Separately, R10 v0.7.2 is `FAIL`, M0–M5 are only proposed, tests are not run, and implementation/atomicity dependencies are unproven.
+
+Next: owner decision whether to return M0–M5 to the package author; after correction, independent delta review. If individual attribution remains a required objective, one targeted namespace/provenance check for `supporting_run_ids`, `last_experiment_id`, and `best_run.run_id` may follow. Do not reopen the whole trace. See [bridge readiness gates](https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-bridge-readiness-assessment.md). `GOVERNANCE = KEEP_BLOCKED`.
+
+---
+## 2026-10-17 UNRESOLVED — R10 v0.7.2 NORMATIVE MATRIX CONTRACT CONFLICTS
+
+Audit verdict `FAIL`; no implementation or v0.7.3 produced. Open defects: no contract clause-vs-oracle precedence; T162 contradicts §§8.3/12; T141 can report CORRELATED without parent relation and T138 adds unsupported expiry; T130/T131 add uncontracted strategy-lineage exclusivity; D6 uses undefined vocabulary and mismatched failure codes; 21 rows omit explicit expected outcomes and T180 exact t0+600s edge lacks result. Atomicity and implementation dependencies remain `UNPROVEN`.
+
+Minimal repairs M0–M5 are `PROPOSED` only. Owner decision: return these documentary repairs to package author, then obtain independent delta review. Details: [R10 v0.7.2 audit closure](https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-r10-v072-audit-closure-fail.md). `GOVERNANCE = KEEP_BLOCKED`.
+
+---
+## 2026-10-17 UNRESOLVED FRONTIER — OSES EVIDENCE-REFERENCE TWO-HOP
+
+The direct typed-adapter claim for discovery → individual sync-pulse `solution_proposals` is accepted with limitations. Do not reopen it globally. Open only if individual attribution is required: determine whether `recommendation.supporting_run_ids`, `validation.last_experiment_id`, or `best_run.run_id` used by OSES `validated_collaboration` can resolve to an `ExperimentRun` whose `proposal_id` / `discovery_signal_id` is the discovery source, and identify the provenance of the recommendation consumed by `_validated_improvements`. This relation is `UNRESOLVED`, not confirmed or disproved.
+
+Evidence package: [final adjudication](https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-r10-sync-pulse-trace-final-adjudication.md). This must remain separate from R10 v0.7.2 audit closure. `GOVERNANCE = KEEP_BLOCKED`.
+
+---
+## 2026-10-17 ROUTE UPDATE — INDIRECT OSES INFLUENCE FOUND; TYPED BRIDGE NOT FOUND
+
+- No typed adapter found in the bounded path from `ToolEvolutionProposal` / `validate_discovery` to an individual sync-pulse `solution_proposals` item.
+- Do not label the paths fully independent: Codex reports an indirect ExperimentLab/OSES aggregate influence through runs grouped by assistant.
+- The exact contribution of an individual run to a particular OSES proposal is not attributable from the reported output; typed proposal/signal identity is reported as lost at OSES aggregation/projection.
+- A call boundary to `plan_or_execute()` does not prove authorization, successful execution or postcondition verification; its internals were not inspected.
+- Next actor: Claude Web, review the full Codex trace pasted inline. Slice A F-04/F-09 remain unresolved, F-05/F-06/F-07 deferred/open, tests `NOT_RUN`.
+
+Detailed record: [R10 discovery/sync-pulse bridge trace](CHAT-ARCH-2026-10-17-r10-discovery-sync-pulse-bridge-trace.md).
+
+`GOVERNANCE = KEEP_BLOCKED`.
+
+---
+## 2026-10-17 ROUTE UPDATE — SLICE A STATIC ACCEPTANCE WITH LIMITATIONS
+
+- `SLICE_A_REVIEW_ACCEPTED_WITH_REMAINING_LIMITATIONS` is a static, artifact-scoped disposition, not test success or local-checkout verification. See [Detailed Slice A review record](CHAT-ARCH-2026-10-17-r10-slice-a-static-review-with-limitations.md).
+- F-04 stays `UNRESOLVED`: current evidence does not prove global absence of indirect/dynamic signal loaders.
+- F-09 stays `UNRESOLVED`: HEAD-to-worktree diffs do not establish timing/authorship for all hunks.
+- F-05/F-06/F-07 remain deferred/open as recorded; do not imply their closure.
+- Codex's report of local checkout `3926b1144bb23c1066db579da711d3cdbc1611df` and 100 modified tracked paths remains `OWNER_REPORTED`; Claude did not inspect it.
+- The separate `validate_discovery` and sync-pulse/self-examination execution routes remain unlinked until an actual producer/adapter and typed identity mapping are demonstrated.
+
+Next bounded action: Codex local, read-only trace of the producer/schema and any adapter for `self_examination/latest.json.metadata.solution_proposals`. If no bridge, record the exact stopping boundary and preserve separate graphs.
+
+---
+
+## 2026-10-16 OPEN KNOWLEDGE — LOCAL LINEAGE RESULTS
+
+Codex local report establishes these risks but does not prove a specific runtime misattribution:
+1. candidate_id is fed RunRecord.run_id or SandboxExperiment.experiment_id in two producer paths; no shared canonical candidate resolver/fingerprint was found in inspected paths.
+2. StrategySelector support grouping excludes candidate/domain/subject/scope from its group key and can retain failed runs in support.
+3. ToolMemory mutates ToolCard operational-looking counters/status before interaction learning; SANDBOX_PASS may be emitted under more than one validation path; status alone is not trusted provenance.
+4. ToolCard and InteractionPattern counters fan out to interaction mode selection, capability readiness, world-model scores and reproducibility assessments.
+5. A complete authoritative operational attestation was not found in inspected paths.
+6. run_id-based persistence does not deduplicate the same event delivered under a new random ID; no ExperimentRun supersession/latest-state contract was found.
+7. Do not implement “newest run only” without distinct semantics for historical reliability versus current-state projection.
+
+Next: contract V2.1 and one bounded adversarial review. Working-tree facts are Codex-reported; runtime effects remain unobserved. See follow-up Section 23. No implementation; GOVERNANCE = KEEP_BLOCKED.
+
+---
+
+## 2026-10-16 OPEN KNOWLEDGE — CONTRACT V2 CONSISTENCY HOLES
+
+Before implementation, resolve by specification/source evidence:
+1. Evidence class enumeration conflict: I-1 excludes `SANDBOX_PROMOTED` although later sections require it.
+2. Candidate/run/experiment ID type confusion: raw string equality is not type proof; resolve references and verify actual candidate identity or canonical fingerprint.
+3. Attestation scope mismatch: require authoritative execution provenance tied to candidate/config/scope/task, terminal state and postconditions; nonempty execution_id/attested_by strings are insufficient.
+4. TypedRef integrity: resolve referenced entities and validate allowed relations; a type label alone is not evidence.
+5. ToolMemory neutrality: ToolCard success/failure counts update before the interaction-learning call; all downstream consumers need coverage.
+6. I-11 newest-only rule may discard valid history; distinguish event deduplication, correction/retraction, and latest-state projections.
+7. Candidate fingerprint canonicalization/versioning is undefined.
+8. Local-vs-HEAD behavior of these paths must be inspected by Codex without touching `data/` or SQLite.
+
+Public main resolved by GitHub API to `9e0ce...`; `cbc522140` is an earlier commit, though checked blobs match for the targeted files. See follow-up Section 22. Keep `GOVERNANCE = KEEP_BLOCKED`.
+
+---
+
+## 2026-10-16 OPEN QUESTIONS — CONTRACT V2
+
+Claude's review remains `CONTRACT_NOT_READY`. The following are proposals requiring explicit contract/owner review, not currently approved policy:
+
+1. Support membership must include `candidate_id` or an equivalent stable fingerprint; if the system cannot identify a candidate unambiguously, do not allow cross-candidate support.
+2. Sandbox and legacy records should be excluded from all operational numerators/denominators, ranking, reuse, adaptive weights, thresholds and operational training; sandbox-specific blockers/fallbacks belong in separately named metrics.
+3. A run is operational evidence only with authorized execution attestation linked to the exact candidate and scope; `execution_ms > 0` by itself is insufficient.
+4. A missing evidence class maps to legacy/unattributable for operational purposes; no retroactive reclassification without auditable evidence and explicit authorization.
+5. Typed ID namespace validation must resolve the declared entity type. A raw string equality test across namespaces is not a sound type discriminator.
+6. Need reconcile all dirty-local-only paths under Codex's reported checkout without accessing `data/` or SQLite or modifying the checkout.
+
+Correction: public pinned commit `9e0ce66768aedd7422e0d3551affd398f44a7532` contains `ExperimentLab.generate_training_corpus()` in the public source; its corpus aggregates `run.success`. Dirty local code is still not inferred from public source.
+
+Record: [recommendation-gate follow-up, Section 21](../2026-10-16_iabv_recommendation_gate_codex_followup.md). `GOVERNANCE = KEEP_BLOCKED`.
+
+---
+
+## 2026-10-16 UPDATE — TRACE IDENTIFIER CLAIM AWAITING LOCAL RECONCILIATION
+
+Codex reports that SandboxExperimentService copies supporting_run_ids into evidence_refs/source_trace_ids and that the modified local TaskOutcomeRecorder._source_trace_ids() consumes operational_trace_ids. The public implementation at 9e0ce... instead reads reusable_trace_ids, winning_trace_ids or supporting_trace_ids. Since task_outcome_recorder.py is one of the modified local files, this may be a real HEAD/worktree divergence. Do not yet label it a proven defect.
+
+Required evidence:
+- exact method diff from HEAD to working tree;
+- producer map for each of supporting_run_ids, source_trace_ids, operational_trace_ids, reusable_trace_ids, winning_trace_ids and supporting_trace_ids;
+- type and lineage of every referenced identifier;
+- consumers and any conversion/lookup connecting ExperimentRun, RunRecord and IATraceEntry;
+- evidence whether these IDs influence decision or are descriptive only.
+
+Disposition until then: UNRESOLVED. Do not make a patch from this claim alone. See [recommendation-gate follow-up](../2026-10-16_iabv_recommendation_gate_codex_followup.md).
+
+## 2026-10-16 OPEN KNOWLEDGE — OPERATIONAL OUTCOME ELIGIBILITY / RUN-TRACE IDENTITY
+
+**State:** OPEN / UNPROVEN. This is not an accepted contract.
+
+1. The public and locally reported source indicates that sandbox promotion can write success=True without demonstrating execution of the selected alternative. The downstream effect on runtime ranking/mode selection remains unmeasured.
+2. ExperimentRun.success has mixed semantics: suite evaluation, execution record status, diagnostic/self-teach outcomes and sandbox judgments. A single boolean is not enough to infer operational execution.
+3. evidence_class is free metadata in the reviewed source, and the local working tree contains filters for operational_execution without a demonstrated positive producer. Filters and producers must be designed together.
+4. A direct success=False change on sandbox promotion could turn a non-executed evaluation into a false operational failure. Desired operational-metric behavior for sandbox/unknown outcomes is neutral, while blocker/availability/validation evidence is preserved separately.
+5. A support-ID lineage issue is reported: supporting_run_ids from ExperimentRun data are copied into source_trace_ids, while other consumers expect operational_trace_ids. The run-ID and trace-ID namespaces and the recommendation-to-run scope/candidate/configuration relation need explicit verification.
+6. The working tree in C:\temp\IABV_coordination_20261016 is dirty with 96 tracked paths plus untracked data/. Do not inspect data/ or SQLite; do not reset/clean/stash/switch or apply patches there.
+7. The actual uniform operational postcondition across all task families, handling of historical unknown outcomes, all downstream effects of learned patterns, and any atomicity/recovery guarantees remain unresolved.
+
+Next discriminating source task: local static census of all constructors/producers and consumers of ExperimentRun.success, run identity, support IDs, training corpus, adaptive metrics and sandbox promotion. Keep HEAD/worktree/public-main evidence separate. Do not execute tests or runtime until separately authorized.
+
+Full episode record: [recommendation-gate follow-up](../2026-10-16_iabv_recommendation_gate_codex_followup.md). Governance: KEEP_BLOCKED.
+
 ## 2026-10-13 CANONICAL ROUTE — ENTRY 280: C6 FAIL RECONCILIATION / AMENDMENT 274.5
 
 Canonical artifact: [CHAT-ARCH-2026-10-13-280-m0b-r8-1-c6-delta-adjudication-and-amendment-274-5.md](./CHAT-ARCH-2026-10-13-280-m0b-r8-1-c6-delta-adjudication-and-amendment-274-5.md) — blob `6d7d7f4966e1224456e00410c812395e6a5c598f`, commit `0a462d66071f2d354e8a299ffaf859b3aeac61d5`.
@@ -6823,3 +6958,30 @@ Open questions:
 - reuse of ToolTaskStatus.DEFERRED for empty eligible realization propagation.
 
 Implementation remains blocked.
+
+
+## 2026-10-16 — R10 SANDBOX PROMOTION → DISPATCH / POSTCONDITION EDGE UNRESOLVED
+
+A Codex-local report supplied by the owner says a ranked alternative can be labelled `VALID`/`promoted` when baseline blockers exist, then produce a persisted `success=True` outcome with `execution_ms=0`. It reportedly can influence ExperimentLab ranking/adaptive profiles. This remains `CODEX_LOCAL_REPORTED / OWNER_REPORTED` until independent source inspection.
+
+Open questions:
+- Does a `validate_discovery` proposal from `ToolEvolutionMonitor` ever reach an actual dispatcher?
+- What authoritative authorization, provenance and candidate/attempt identity are required at that boundary?
+- If dispatch exists, where are terminal execution and postconditions verified and linked before an operationally eligible outcome is persisted?
+- Which direct consumers filter sandbox, legacy or unclassified records and validate every support member?
+- Are support/run/trace references resolved as typed relationships or merely copied strings?
+
+Do not infer real execution from `success=True`, `status='promoted'`, `VALID`, or `execution_ms`. TaskContextAssembler's reported filter is consumer-specific and does not settle all consumers.
+
+Next actor: Codex with local checkout access, read-only, one route only. Subsequent adversarial challenge by Claude Web must explicitly remain limited to supplied evidence. Tests stay `NOT_RUN`; implementation blocked. `GOVERNANCE = KEEP_BLOCKED`.
+
+
+## 2026-10-16 — R10 VALIDATE_DISCOVERY ↔ SELF-EXAMINATION SYNC-PULSE BRIDGE UNRESOLVED
+
+Codex's owner-supplied local report says the route `ToolDiscoveryService` → `ToolEvolutionMonitor.validate_discovery` → `AutonomousValidationCycle` → `SandboxExperimentService.validate_recommendation()` ends in sandbox evaluation and ExperimentLab persistence, with no dispatcher call found.
+
+A distinct route reportedly reads `self_examination/latest.json.metadata.solution_proposals`, converts proposals to dictionaries, and can pass them to `auto_execute_from_sync_pulse()` → `AutonomousEvolutionService.plan_or_execute()`. The inspected report does not identify a producer/adapter connecting the typed `validate_discovery` proposal to these sync-pulse dictionaries.
+
+Open question: does any producer or adapter make that connection? Determine schema, required fields and stable identity mapping. Until demonstrated, treat the routes as disconnected. Do not infer execution or authorization from the existence of the second route.
+
+Next actor: Codex with local checkout access, read-only, producer/adapter scope only. Follow-on challenge: Claude Web using supplied source/report without claiming local access. No implementation/test/runtime authorization, no `data/`/SQLite, M0A or bridge. `GOVERNANCE = KEEP_BLOCKED`.

@@ -1,3 +1,126 @@
+## 2026-10-17 ROUTE CORRECTION — ZIP VERIFIED HERE; MUST BE ATTACHED TO CODEX CHAT
+
+Codex's latest `BLOCKED` is procedurally correct: it could not find the ZIP in its own chat attachment store. The source ZIP was recovered from ChatGPT Library and verified in the ChatGPT working container at `/mnt/data/r10_recovery/R10_V0_7_2_REPAIR_PACKAGE_FOR_CLAUDE.zip`. ZIP SHA-256: `acfb468f78bebc3794b8ec7eaf81baf65d8c40cb66b3f8c7bd2065ffd07fe14e`. It contains seven files (six payload artifacts plus manifest); all six payload file sizes and hashes match the embedded manifest. This proves bytes against that manifest, not semantic acceptance.
+
+**Critical handoff distinction:** a file available to this ChatGPT session is not automatically an attachment in a separate Codex conversation. The owner must download the ZIP from the current ChatGPT response and explicitly attach it to the Codex chat that returned `BLOCKED`. Only then should Codex begin by verifying the actual attached archive hash and inventory. Do not keep asking the owner to search filenames when the verified source artifact is available here; do not claim it is already attached in Codex.
+
+**Next actor: Codex local**, documentary author only, using the attached source ZIP. If the actual attached bytes/hash do not match or a file is missing, stay `BLOCKED`. If verified, prepare a new v0.7.3 documentary candidate outside `C:/temp/IABV_coordination_20261016`, preserving v0.7.2. Do not edit the IABV checkout, code, tests, build or runtime; no data/SQLite/M0A, dispatcher or Packages B–E. After a complete bundle exists, route to Claude/Sonnet for independent delta review. See [corrected route]( https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-r10-v073-corrected-agent-route.md ) and [authoring handoff]( https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-r10-v073-documentary-repair-handoff.md ).
+
+`PRODUCT_CODE_EXECUTION = NOT_RUN`; `TESTS = NOT_RUN`; `BUILD = NOT_RUN`; `RUNTIME = NOT_RUN`; `IMPLEMENTATION_AUTHORIZED = NO`; `GOVERNANCE = KEEP_BLOCKED`.
+
+---
+## 2026-10-17 ROUTE CORRECTION — CODEX AUTHORING REQUIRES SOURCE ZIP ATTACHED
+
+Codex's `BLOCKED` was correct for its input: it received an instruction, not the source contract/matrix. The handoff omission was that no IA was named and the source ZIP was not attached. The exact source package was recovered from ChatGPT Library and its six payload hashes/sizes were rechecked against the embedded manifest. Archive: `R10_V0_7_2_REPAIR_PACKAGE_FOR_CLAUDE.zip`; SHA-256 `acfb468f78bebc3794b8ec7eaf81baf65d8c40cb66b3f8c7bd2065ffd07fe14e`.
+
+**Correct next destination: Codex local**, strictly as documentary v0.7.3 author outside the IABV checkout, with that ZIP attached to the actual Codex conversation. Codex must not modify `C:/temp/IABV_coordination_20261016`, run product code/tests/build/runtime, or infer missing content. If an artifact is missing or ZIP is inaccessible, remain `BLOCKED`.
+
+**Independent follow-up: Claude/Sonnet** reviews the completed candidate and change map only after Codex delivers the full v0.7.3 bundle. Do not have the author self-approve it. Full routing and source identity: [corrected IA route]( https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-r10-v073-corrected-agent-route.md ).
+
+`GOVERNANCE = KEEP_BLOCKED`; `IMPLEMENTATION_AUTHORIZED = NO`; all matrix tests `NOT_RUN`.
+
+---
+## 2026-10-17 NEXT ACTION — R10 V0.7.3 DOCUMENTARY REPAIR HANDOFF PREPARED
+
+The next proposed action is to send the ready-to-paste M0–M5 documentary repair prompt to the actual R10 package author in the conversation where the original v0.7.2 files are available. Handoff record: [https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-r10-v073-documentary-repair-handoff.md](https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-r10-v073-documentary-repair-handoff.md). This continuity update has not altered the R10 package and does not claim v0.7.3 exists.
+
+Objective: create a new immutable v0.7.3 candidate repairing M0 clause/oracle precedence; M1 T162; M2 T141/T138 and missing AUTO dispatch-turn case; M3 undefined vocabulary/status writers/error codes; M4 T130/T131 uncontracted strategy-lineage semantics; M5 21 missing explicit outcomes and T180 boundary, plus minor traceability/evidence-contract repairs. Hash a new manifest; keep all tests `NOT_RUN`; seek independent delta review. If source artifacts are unavailable, stop and request them rather than reconstructing them from audit prose.
+
+Do not confuse this with bridge implementation. Current bridge readiness remains `BRIDGE_NOT_READY`; the separate trace verdict is `TRACE_ACCEPTED_WITH_LIMITATIONS` and its two-hop identity frontier remains unresolved. Readiness gates: [https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-bridge-readiness-assessment.md](https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-bridge-readiness-assessment.md).
+
+`GOVERNANCE = KEEP_BLOCKED`: no product code, local checkout modification, tests/build/runtime/probes, dispatcher, Packages B–E, M0A, `data/` or SQLite.
+
+---
+## 2026-10-17 DECISION OVERLAY — BRIDGE NOT READY; NO TRACE DRIFT
+
+**Current assessment:** `BRIDGE_NOT_READY`. The discovery ↔ sync-pulse trace has a final `TRACE_ACCEPTED_WITH_LIMITATIONS` verdict, but this accepts only a bounded negative finding: no direct typed per-proposal adapter was found in the reviewed tracked source/test paths. It does not mean a bridge is built or operational. The possible `evidence_refs → ExperimentRun → proposal_id/discovery_signal_id` two-hop remains `UNRESOLVED`; the call site to `plan_or_execute()` does not prove execution, authorization, or postconditions. [Readiness gates]( https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-bridge-readiness-assessment.md ) · [Trace adjudication]( https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-r10-sync-pulse-trace-final-adjudication.md ).
+
+The separate R10 v0.7.2 audit is `FAIL`; M0–M5 are `PROPOSED`, the matrix tests remain `NOT_RUN`, and atomicity/implementation dependencies remain `UNPROVEN`. This is a normative-readiness blocker if that package is the contract for the bridge. [Audit closure]( https://github.com/jhonf463r/Python/blob/docs/iabv-space-time-agent-continuity-2026-10-16/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-r10-v072-audit-closure-fail.md ).
+
+**Next route:** owner decision on returning M0–M5 to the package author; after a corrected documentary package exists, one independent delta review. Only if individual causal attribution is required, run one targeted static check of the producer/namespace of `supporting_run_ids`, `last_experiment_id`, and `best_run.run_id`. No new broad trace, no implementation, no dispatcher, no Packages B–E, no M0A, no `data/` or SQLite.
+
+Continue the causal work protocol: **objective/context → evidence/provenance → hypothesis/frontier → authorized action → observation → reconciliation → persist/reuse**. Each handoff must identify the active objective and actor, attach the evidence itself (not a cross-chat reference), state what is and is not proven, and preserve current limits. Keep public GitHub, local HEAD, dirty working tree, owner report, and runtime as separate evidence domains.
+
+`GOVERNANCE = KEEP_BLOCKED`; code/tests/build/runtime `NOT_RUN`.
+
+---
+## 2026-10-17 ROUTE UPDATE — INDIRECT OSES INFLUENCE FOUND; TYPED BRIDGE NOT FOUND
+
+Codex local reported `BRIDGE_NOT_FOUND_IN_BOUNDED_SCOPE`: no direct typed adapter was found transferring a `ToolEvolutionProposal` / `validate_discovery` result into an individual sync-pulse `solution_proposals` object. The flows are **not fully independent**: sandbox `ExperimentRun` records reportedly feed ExperimentLab/OSES aggregates grouped by assistant, which influence OSES proposal output. The individual `proposal_id` / `discovery_signal_id` lineage is reported as absent from those OSES output objects and lost again in the sync-pulse projection.
+
+Evidence class for this continuity record: `CODEX_LOCAL_REPORTED / OWNER_REPORTED`. The supplied report cites current local source locations and says relevant hunks were compared, but this GitHub documentation update did not inspect the Windows checkout and is not an independent source audit. See [the detailed trace](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-r10-discovery-sync-pulse-bridge-trace.md).
+
+**Next actor: Claude Web**, to adversarially review the complete Codex report pasted inline into its own chat. It should challenge the scoped negative conclusion, indirect aggregate influence, identity-loss claim, and whether the call to `plan_or_execute()` is kept separate from proof of actual execution. If evidence is insufficient, require exact missing excerpts; do not restart a broad search.
+
+Slice A remains `SLICE_A_REVIEW_ACCEPTED_WITH_REMAINING_LIMITATIONS`; F-04/F-09 remain `UNRESOLVED`; F-05/F-06/F-07 stay deferred/open; tests remain `NOT_RUN`. No implementation is authorized. Do not inspect `plan_or_execute()` internals, start Packages B–E, enable dispatcher, access M0A, run code/tests/build/runtime, or inspect `data/` / SQLite.
+
+`GOVERNANCE = KEEP_BLOCKED`.
+
+---
+## 2026-10-17 ROUTE UPDATE — SLICE A STATIC ACCEPTANCE WITH LIMITATIONS
+
+Before any new task, read `docs/history/CHAT-ARCH/CURRENT-STATE.md`, `CONTEXT-INDEX.md`, `MEMORY-OPERATING-PROTOCOL.md`, and docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-r10-slice-a-static-review-with-limitations.md. The latest Slice A disposition is static acceptance with limitations only. Keep packet evidence, owner-reported local state, and public GitHub source separate. Do not claim tests passed; they remain `NOT_RUN`.
+
+**Next authorized analysis route:** Codex local, read-only, trace the producer/schema and any explicit adapter connecting `self_examination/latest.json.metadata.solution_proposals` to `ToolEvolutionStatus.proposals` / `validate_discovery`. If no adapter is found, document the exact boundary and stop. No broad source re-audit, no implementation, no tests/build/runtime, no `data/`/SQLite, M0A or physical bridge.
+
+`GOVERNANCE = KEEP_BLOCKED`. Do not enable dispatcher or begin Packages B–E.
+
+---
+
+## 2026-10-16 ROUTE — CODEX LOCAL REPORT RECEIVED
+
+Next task is contract V2.1 plus one narrow Claude Web challenge; do not run another broad source census. Incorporate the local findings: candidate/run/experiment namespaces are currently conflated by producer assignments; support membership must be candidate- and scope-specific; ToolMemory updates ToolCard counters/status before interaction learning; SANDBOX_PASS alone does not prove provenance; downstream mode selection/capability/world-model/reproducibility paths need explicit cohort gates; operational attestation is not established; stable event idempotency and supersession semantics are absent from inspected paths.
+
+Preserve local checkout and the data/ / SQLite boundary. Do not implement, test, build or run runtime. Claude may only evaluate the supplied Codex evidence, not claim local access. Kilo/OpenCode are reserve challengers. PR #467 remains Draft/unmerged. GOVERNANCE = KEEP_BLOCKED.
+
+---
+
+## 2026-10-16 ROUTE REFINEMENT — V2.1 AFTER TARGETED LOCAL VERIFY
+
+Contract V2 is not yet implementation-ready. Run a scoped, read-only Codex check of candidate/run/experiment identity and ToolMemory/InteractionPattern counter flow, with exact working-tree-vs-HEAD deltas. Do not repeat the broad audit; preserve the 96 tracked modifications plus `data/`; do not inspect `data/`/SQLite or run code/tests/build/runtime.
+
+Required spec corrections: closed evidence classes include `SANDBOX_PROMOTED`; resolve typed references instead of comparing ID strings; authoritative execution attestation must bind candidate/scope/postconditions; TypedRef requires referential and relation validation; include ToolCard counters in sandbox neutrality; justify or remove newest-run-only supersession; define a canonical candidate fingerprint. See follow-up Section 22.
+
+No implementation authorized. PR #467 remains Draft/unmerged. `GOVERNANCE = KEEP_BLOCKED`.
+
+---
+
+## 2026-10-16 OBJECTIVE ROUTE — CONTRACT V2 AFTER CLAUDE CHALLENGE
+
+Claude returned `CONTRACT_NOT_READY`. Do not repeat the broad audit. Before implementation, the contract must: (1) define typed identifier namespaces and explicit relation resolution; (2) require candidate identity/fingerprint in support membership; (3) prove execution through an authorized candidate-linked attestation rather than `execution_ms > 0`; (4) isolate sandbox metrics from all operational numerators, denominators, scoring and training; (5) preserve unknown historical data as descriptive-only unless audibly re-attested; (6) include all known alternate consumers.
+
+Public code at pinned commit `9e0ce66768aedd7422e0d3551affd398f44a7532` confirms `ExperimentLab.generate_training_corpus()` aggregates `run.success`. Do not report the public method as absent simply because a reviewer marked it unresolved. Public and dirty-local evidence remain distinct.
+
+No product code, tests, build/runtime, data/ or SQLite access, M0A or physical bridge. Preserve the local dirty state. PR #467 is documentation-only, draft/unmerged. Keep `GOVERNANCE = KEEP_BLOCKED`.
+
+---
+
+## 2026-10-16 ROUTE REFINEMENT — RECONCILE RUN/TRACE IDENTIFIERS FIRST
+
+Codex has delivered a local census; do not repeat a broad audit. The next bounded source task is to compare TaskOutcomeRecorder._source_trace_ids() at HEAD versus the current working tree and trace the producers/consumers and types for supporting_run_ids, source_trace_ids, operational_trace_ids, reusable_trace_ids, winning_trace_ids and supporting_trace_ids.
+
+Public main at 9e0ce... shows the method reading reusable_trace_ids, winning_trace_ids or supporting_trace_ids; the local report describes operational_trace_ids. The file is modified locally, so treat this as an unresolved version delta until exact evidence is provided.
+
+No code edit is authorized. Preserve all 96 modified tracked paths and the untracked data/ entry. Do not access data/ or SQLite. After the exact identity lineage is reconciled, route the design to Claude Web for adversarial challenge; Claude Web cannot certify local files. Keep all test/runtime/M0A/physical-bridge gates unchanged. GOVERNANCE = KEEP_BLOCKED.
+
+---
+
+## 2026-10-16 OBJECTIVE GUARDRAIL — OPERATIONAL RECOMMENDATION GATE
+
+When working on the operational recommendation gate or agent-continuity thread, first follow the repository's canonical CHAT-ARCH entry sequence and read its current objective overlay. Use IABV's existing memory and symbiosis organs; do not create a parallel coordinator or memory store.
+
+Current open edge: reconcile all local producers/consumers of ExperimentRun.success, sandbox validation, evidence eligibility, training corpus and supporting_run_ids versus trace-ID namespaces.
+
+Local checkout reported as dirty: C:\temp\IABV_coordination_20261016, branch codex/iabv-agent-coordination-20261016, HEAD 3926b1144bb23c1066db579da711d3cdbc1611df; 96 tracked modifications plus data/ untracked. Preserve exactly. Do not inspect data/ or SQLite. Do not apply a patch to this checkout.
+
+A sandbox outcome must not be credited as operational success or treated as operational failure merely because its evaluation verdict maps to a boolean. Treat it as neutral for operational-execution statistics and preserve its evaluation/blocker metrics in a distinct cohort until the contract is defined. A helper does not replace checking every decision sink. Do not assign operational_execution without an evidence-producing source.
+
+Route by capability and access: Codex local for checkout evidence, Claude Web for public-source/design challenge only, Kilo/OpenCode for a concrete unresolved contradiction. Role history is evidence, not permanent assignment. Distinguish HEAD, working tree, public GitHub and runtime. A report label does not prove runtime.
+
+No implementation, tests, builds, runtime, M0A access or physical bridge activation without separate authorization. GOVERNANCE = KEEP_BLOCKED.
+
+---
+
 ## 2026-10-13 CANONICAL ROUTE — ENTRY 280: C6 FAIL RECONCILIATION / AMENDMENT 274.5
 
 Canonical artifact: [CHAT-ARCH-2026-10-13-280-m0b-r8-1-c6-delta-adjudication-and-amendment-274-5.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-280-m0b-r8-1-c6-delta-adjudication-and-amendment-274-5.md) — blob `6d7d7f4966e1224456e00410c812395e6a5c598f`.
@@ -845,3 +968,34 @@ La selección sigue siendo dinámica y nunca una secuencia fija, pero el resulta
 `objective → current truth → first open edge → required capability → capability-fit → IA DESTINO CONCRETA → prompt/action`.
 
 Si la IA concreta no puede determinarse con evidencia suficiente, debe declararse explícitamente `DESTINO NO DETERMINABLE` y explicar qué dato falta; no dejar un actor genérico como si fuera un handoff ejecutable.
+
+
+## 2026-10-16 ACTIVE ROUTE — R10 DISPATCH EDGE AFTER LOCAL GATE MAP
+
+Before any R10 implementation, continue from the current evidence record:
+- continuity: `docs/history/2026-10-16_iabv_agent_continuity_space_time.md`, §35;
+- gate addendum: `docs/history/2026-10-16_iabv_recommendation_gate_codex_followup.md`, §4;
+- route authority: `docs/history/CHAT-ARCH/CURRENT-STATE.md`.
+
+**First open edge:** follow `ToolEvolutionMonitor` → `validate_discovery` → any actual dispatcher. Prove or stop at the exact boundary. Identify authorization, evidence provenance, candidate/attempt linkage and postcondition checks. Do not infer execution from a recommendation, `VALID`, `promoted` or `success=True`.
+
+**Destination:** Codex with access to the authorized local checkout. Work read-only and only on this route; compare relevant files to observed HEAD. Preserve existing modifications. Do not inspect `data/` or SQLite, run tests/code/build/runtime, alter files, access M0A or touch the physical bridge. After the local route is documented, Claude Web may challenge the supplied evidence but must not claim local access.
+
+Candidate B remains separate from Candidate C. Candidate C's reported `PASS_WITH_REPAIRS` is not a final approval. All tests remain `NOT_RUN` until separately authorized. `GOVERNANCE = KEEP_BLOCKED`.
+
+
+## 2026-10-16 ACTIVE ROUTE — R10 SELF-EXAMINATION / SYNC-PULSE ADAPTER
+
+Continue from continuity §36 and recommendation-gate addendum §5. Do not repeat the already reported discovery-to-sandbox trace.
+
+**Destination:** Codex with access to the authorized local checkout.
+
+**First open edge:** inspect the producer and schema for `self_examination/latest.json.metadata.solution_proposals`. Determine whether any producer or adapter converts a `ToolEvolutionMonitor` `validate_discovery` proposal into a sync-pulse proposal dictionary. Identify exact fields and identity mapping; if absent, document the termination boundary and stop.
+
+The report describes two routes that must remain distinct until their bridge is demonstrated:
+1. `ToolDiscoveryService` → `ToolEvolutionMonitor` `validate_discovery` → `AutonomousValidationCycle` → sandbox evaluation/ExperimentLab persistence.
+2. `self_examination/latest.json` `solution_proposals` → `auto_execute_from_sync_pulse()` → `AutonomousEvolutionService.plan_or_execute()`.
+
+Do not inspect `plan_or_execute()` internals unless a source-backed connection from route 1 to route 2 is found. Read-only only; preserve the checkout. No code/tests/build/runtime, no `data/`/SQLite, M0A or physical bridge. Claude Web may challenge the supplied report only within its actual access.
+
+Candidate B and Candidate C remain separate. Tests remain `NOT_RUN`; `GOVERNANCE = KEEP_BLOCKED`.
