@@ -1,6 +1,21 @@
 # R10 v0.7.8 relay index
 
-Status: `COORDINATOR_RECHECK_IN_PROGRESS`; candidate published but not accepted. `GOVERNANCE = KEEP_BLOCKED`. This is not acceptance and does not authorize code, tests, runtime, M0A, dispatcher, or bridge activity.
+Status: `PENDING_COORDINATOR_RECHECK` for R1; original candidate remains frozen and neither candidate is accepted. `GOVERNANCE = KEEP_BLOCKED`. This is not acceptance and does not authorize code, tests, runtime, M0A, dispatcher, or bridge activity.
+
+## R1 candidate — T137 consistency repair (2026-10-18)
+
+- Label: **R10 v0.7.8 documentary revision R1 — T137 consistency repair**.
+- Artifact commit: `541e150b478bcbf24c739860f799f8e5ef227af7` on `handoff/r10-v078-t137-repair-20261018`.
+- R1 ZIP: 5,248,720 bytes; SHA-256 `1b18f128ceaadce4a32abe4ec3deb7c08f330aa051c6239e4146f91af575ef1f`.
+- R1 matrix: 76,972 bytes; SHA-256 `f1d5c3e99a34f24f2e19d7426872c5512c610c2713a063de47c3139b961d56cb`.
+- R1 manifest: 32,505 bytes; SHA-256 `cc5288f22724ee02ecddf0ec869448c333779e6c43f86ee5258c364fbff910c5`; covers 212 payload files.
+- Remote ZIP, matrix, contract, manifest, cell diff and R1 review prompt were fetched at the immutable artifact commit and byte-compared to local; details are in the [R1 preflight report](R10_V0_7_8_R1_PREFLIGHT_REPORT_2026-10-18.md).
+- [R1 ZIP](https://github.com/jhonf463r/Python/blob/541e150b478bcbf24c739860f799f8e5ef227af7/R10_V0_7_8_DOCUMENTARY_CANDIDATE_R1.zip) · [raw ZIP](https://raw.githubusercontent.com/jhonf463r/Python/541e150b478bcbf24c739860f799f8e5ef227af7/R10_V0_7_8_DOCUMENTARY_CANDIDATE_R1.zip) · [R1 extracted tree](https://github.com/jhonf463r/Python/tree/541e150b478bcbf24c739860f799f8e5ef227af7/candidate-r1)
+- [Contract](https://github.com/jhonf463r/Python/blob/541e150b478bcbf24c739860f799f8e5ef227af7/candidate-r1/R10_V0_7_8_CONTRACT.md) · [Matrix T123–T246](https://github.com/jhonf463r/Python/blob/541e150b478bcbf24c739860f799f8e5ef227af7/candidate-r1/R10_V0_7_8_TEST_MATRIX_T123_T246.csv) · [README](https://github.com/jhonf463r/Python/blob/541e150b478bcbf24c739860f799f8e5ef227af7/candidate-r1/README.md)
+- [Changelog](https://github.com/jhonf463r/Python/blob/541e150b478bcbf24c739860f799f8e5ef227af7/candidate-r1/R10_V0_7_8_CHANGELOG.md) · [Change map](https://github.com/jhonf463r/Python/blob/541e150b478bcbf24c739860f799f8e5ef227af7/candidate-r1/R10_V0_7_8_CHANGE_MAP.md) · [Consistency and traceability](https://github.com/jhonf463r/Python/blob/541e150b478bcbf24c739860f799f8e5ef227af7/candidate-r1/R10_V0_7_8_CONSISTENCY_AND_TRACEABILITY.md)
+- [R1 parsed cell diff](https://github.com/jhonf463r/Python/blob/541e150b478bcbf24c739860f799f8e5ef227af7/candidate-r1/R10_V0_7_8_R1_MATRIX_DIFF.md) · [SHA-256 manifest](https://github.com/jhonf463r/Python/blob/541e150b478bcbf24c739860f799f8e5ef227af7/candidate-r1/R10_V0_7_8_SHA256.txt) · [R1 independent delta review prompt](https://github.com/jhonf463r/Python/blob/541e150b478bcbf24c739860f799f8e5ef227af7/candidate-r1/R10_V0_7_8_R1_INDEPENDENT_DELTA_REVIEW_PROMPT.md)
+- Frozen original remains at `aa8ea71578b024c69dba446d010f0ea7b068bee3`; it is not overwritten. R1 preserves logical `Artifact ID: R10_V0_7_8_CONTRACT` and contract bytes.
+- State: `PENDING_COORDINATOR_RECHECK`; `NEXT_ACTOR=CHATGPT_COORDINATOR`; Claude/Sonnet is not yet authorized. All T123–T246 remain `NOT_RUN`; `GOVERNANCE = KEEP_BLOCKED`; `BRIDGE_NOT_READY`.
 
 ## Coordinator recheck — 2026-10-18
 
@@ -54,8 +69,8 @@ The candidate manifest covers 210 payload files (self-entry omitted). The outer 
 
 Please review commit-pinned text directly. If the binary ZIP cannot be downloaded, state that binary verification was not completed. This relay does not prove implementation, tests, runtime, exactly-once effects, operational efficacy, or acceptance. Do not send this package to Claude automatically; coordinator recheck comes first.
 
-## Next actor — Codex local, bounded T137 revision R1
+## Next actor — ChatGPT coordinator
 
-The current v0.7.8 artifact is not cleared for independent review: coordinator finding COORD-01 identifies T137's noncanonical state label EXECUTION.COMPLETED. Use the dedicated [Codex T137 repair handoff](CODEX_V078_T137_REPAIR_HANDOFF.md) on branch handoff/r10-v078-t137-repair-20261018. Preserve the original immutable candidate commit aa8ea71578b024c69dba446d010f0ea7b068bee3. Codex must author a new immutable revision, perform only the bounded state-vocabulary sweep and necessary packaging updates, and publish evidence. Do not send it to Claude/Sonnet until ChatGPT independently rechecks the exact candidate bytes and documents coordinator clearance.
+Independently re-fetch artifact commit `541e150b478bcbf24c739860f799f8e5ef227af7`, verify the R1 ZIP hash and full matrix/contract/manifest delta, then record coordinator clearance or specific remaining findings. Do not route to Claude/Sonnet until that gate is satisfied. Do not infer runtime or operational readiness.
 
-Current route state: COORDINATOR_RECHECK_IN_PROGRESS; NEXT_ACTOR=CODEX_LOCAL_T137_REPAIR; GOVERNANCE=KEEP_BLOCKED; BRIDGE_NOT_READY; all T123–T246 remain NOT_RUN.
+Current route state: PENDING_COORDINATOR_RECHECK; NEXT_ACTOR=CHATGPT_COORDINATOR; GOVERNANCE=KEEP_BLOCKED; BRIDGE_NOT_READY; all T123–T246 remain NOT_RUN.
