@@ -1,6 +1,14 @@
 # R10 v0.7.8 relay index
 
-Status: documentary candidate published; `GOVERNANCE = KEEP_BLOCKED`. This is not acceptance and does not authorize code, tests, runtime, M0A, dispatcher, or bridge activity.
+Status: `COORDINATOR_RECHECK_IN_PROGRESS`; candidate published but not accepted. `GOVERNANCE = KEEP_BLOCKED`. This is not acceptance and does not authorize code, tests, runtime, M0A, dispatcher, or bridge activity.
+
+## Coordinator recheck — 2026-10-18
+
+A bounded coordinator recheck found a residual matrix/contract vocabulary mismatch: T137 still uses `EXECUTION.COMPLETED`, while §§3.3, 12 and 17.1 define `SUCCEEDED` as the canonical normal-completion state and do not define `EXECUTION.COMPLETED`. The exact finding and proposed narrow repair are recorded in [R10 v0.7.8 coordinator recheck](R10_V0_7_8_COORDINATOR_RECHECK_2026-10-18.md).
+
+Consequently, do not send the current candidate for independent delta review yet. Preserve immutable candidate commit `aa8ea71578b024c69dba446d010f0ea7b068bee3`; correct the documentary defect in a new candidate/revision, repeat coordinator recheck, then route the exact checked artifact to Claude/Sonnet. This finding is documentary only; T137 remains `NOT_RUN`.
+
+The broader bridge remains `BRIDGE_NOT_READY`. A successful documentary review would not prove implementation, test/runtime behavior, exactly-once or cross-store atomicity, operational efficacy, or authorization to activate the bridge.
 
 ## Immutable artifact commit
 
