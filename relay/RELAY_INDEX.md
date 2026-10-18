@@ -1,3 +1,11 @@
+## 2026-10-18 coordinator readback note
+
+The candidate artifact is frozen at `db5c8788036b7d1c0ae5df9167bb3ec813da5f85` (T123–T246; candidate ZIP reported 491,529 bytes / SHA-256 `dcad3ba31415f7204b9422b39cb0342862196c7d002468bed27fef02c6f3a6a7`). The original relay handoff was found to contain stale routing metadata for an earlier T123–T240 candidate at commit `bf41bd5cae7e03c25dfa07bd54b08ea40411c6e7`; that handoff text has been replaced in [`CLAUDE_REVIEW_HANDOFF.md`](https://github.com/jhonf463r/Python/blob/fcecb67a1d222283795b5c0f8e8ce6b93169104b/relay/CLAUDE_REVIEW_HANDOFF.md). Do not use the stale earlier commit/hash/range. The updated handoff commit is `fcecb67a1d222283795b5c0f8e8ce6b93169104b`; it changes relay documentation only, not the candidate archive at `db5c878...`.
+
+A bounded coordinator text spot-check also observed that the new contract file's opening metadata still says `Artifact ID: R10_V0_7_4_CONTRACT` even though the file/candidate is v0.7.5 and the changelog says it was reidentified. This is an explicit adversarial-review issue; the frozen candidate has not been modified to conceal it.
+
+---
+
 # R10 v0.7.5 relay index
 
 Branch: `handoff/r10-v075-review-20261018` (temporary public relay).
