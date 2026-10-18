@@ -1,5 +1,20 @@
 # R10 v0.7.7 corrective documentary relay index
 
+## Coordinator independent recheck — PASS WITH BINARY-HASH LIMITATION
+
+Status: `COORDINATOR_RECHECK_PASS_WITH_BINARY_HASH_LIMITATION`. Governance remains `KEEP_BLOCKED`.
+
+The coordinator independently fetched the commit-pinned matrix's base64 bytes and recalculated SHA-256: 75,080 bytes, SHA-256 `137d99bfc2154e533bf2ddd87a54629caee52f5b138d03d7f817b7628ffa25d5`, matching the candidate manifest. A separate parse confirms 124 contiguous IDs T123–T246, 12 header columns, exactly 12 fields on all 124 records, every status `NOT_RUN`, and exact HI-03 field-12 values for T222–T233. Parsed comparison to frozen v0.7.5 shows only the expected 13 matrix cells changed (T157 plus T222–T233). The contract's only changed content line is the opening `Artifact ID`, now `R10_V0_7_5_CONTRACT`.
+
+The coordinator also checked all 57 manifest paths are present under `relay/candidate/extracted/`, unique, and match the GitHub tree's reported payload sizes; no manifest path is missing or has a tree-size mismatch. The branch tip and report/prompt pointers were read back.
+
+**Binary limitation:** the GitHub connector returned no binary ZIP contents to the coordinator, and direct binary download was unavailable. Therefore, the ZIP SHA-256 `bf4e4b19ffda50bc510bc246349b1e1e06dcfd11c40ba816430b40ee77e34baf` is reported by Codex and recorded in GitHub; it was not independently recomputed by the coordinator in this environment. GitHub tree metadata independently reports the ZIP at 1,248,405 bytes with blob SHA-1 `f9d20193d2c318fd998a5ffb2660cd5c489d450c`. Claude/Sonnet must verify the actual ZIP/source ZIP bytes where binary retrieval is possible and disclose if not.
+
+**Next actor: Claude/Sonnet** — [commit-pinned review handoff](https://github.com/jhonf463r/Python/blob/handoff/r10-v077-review-20261018/relay/CLAUDE_REVIEW_HANDOFF.md). This routing gate permits independent review with the disclosed binary limitation; it does not accept v0.7.7 semantically and does not enable execution.
+
+---
+
+
 - Repository: `jhonf463r/Python` (public).
 - Temporary branch: `handoff/r10-v077-review-20261018`.
 - Immutable candidate artifact commit: `5534761ac877ee2f5b1f56ba354e4b09b760b717`.
