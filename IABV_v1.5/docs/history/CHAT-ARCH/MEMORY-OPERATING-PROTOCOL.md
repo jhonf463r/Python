@@ -1,3 +1,17 @@
+## 2026-10-17 METHOD DELTA — COMMUNICATION-AWARE FRONTIER SEARCH
+
+Canonical proposal: [Communication-Aware Frontier Search / temporal-causal method delta](https://github.com/jhonf463r/Python/blob/cf5307d26ab647f80f643dc5670d5c439679471f/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-17-communication-aware-frontier-search-method-delta.md). Status: `PROPOSED_METHOD_DELTA / NOT_RUNTIME_PROVEN`; `GOVERNANCE = KEEP_BLOCKED`.
+
+For unresolved tasks, treat failed communication, retrieval, context transfer, correlation, and downstream reuse as observations—not as proof that a resource is absent or that an agent is incapable. Reconstruct the bounded route from objective and exact identity through request/delivery, invocation, returned result, correlation, validation, consumer use, and later decision. At each edge distinguish `DEFINED`, `WIRED`, `INVOKED`, `OBSERVED`, `VERIFIED`, `CAUSALLY_ATTRIBUTED`, and `REUSED`; claim only the strongest stage supported by evidence.
+
+Default loop: `objective/context → exact target/identity → bounded evidence search → route graph → first open causal edge → alternative hypotheses/falsifiers → smallest authorized discriminating action → observation/independent verification → reconciliation → knowledge/method/routing delta → persistence → later decision reuse → outcome check`.
+
+Do not repeat a failed search blindly; retry only when evidence, hypothesis, scope, or capability changes. Record negative knowledge with the exact search boundary and the condition that would reopen it. Prefer authorized connector/tool retrieval over manual Owner investigation when an available tool can reach the source, but never infer that one agent's attachment is available to another. Distinguish `NOT_FOUND` within a bounded search from `UNRESOLVED` and `UNPROVEN`. Check confirmation bias, premature closure, stale context, scope/identity mismatch, arithmetic/schema inconsistencies, and causal overclaim before accepting a diagnosis.
+
+This adds a method rule to existing continuity; it does not add a second memory, router, or brain. Persistence alone is not learning: require a later traced decision to show reuse and an attributable outcome change before claiming operational learning. This documentary delta does not authorize code, tests, builds, runtime, dispatcher, Packages B–E, M0A, or `data/`/SQLite access, and does not alter the R10 v0.7.5 blocker.
+
+---
+
 ## 2026-10-17 METHOD DELTA — READY-TO-PASTE PROMPTS ARE THE PRIMARY HANDOFF
 
 When giving the Owner a prompt for Codex, Claude/Sonnet, Kilo/OpenCode, or another IA, put the **complete usable prompt directly in the chat in one clearly delimited copy/paste block**. A downloadable file or GitHub link may be supplemental, but must never be the only delivery of a prompt the Owner must pass to the next actor. Do not make the Owner open a file and manually reconstruct the instructions from a link.
