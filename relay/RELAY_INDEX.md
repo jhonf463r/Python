@@ -1,6 +1,11 @@
 # R10 v0.7.8 relay index
 
-Status: `COORDINATOR_ADJUDICATION_READY_WITH_LIMITATIONS_PENDING_OWNER_DISPOSITION` for R1.1. The independent reviewer returned `READY_WITH_LIMITATIONS`; the coordinator adjudicates that documentary disposition with no mandatory R1.1 delta repair identified. This is not candidate acceptance. `GOVERNANCE = KEEP_BLOCKED`; `BRIDGE_NOT_READY`; T123–T246 remain `NOT_RUN`; PR #467 stays `OPEN / DRAFT / UNMERGED`.
+## Current owner disposition — R1.1 frozen with limitations
+
+`OWNER_DISPOSITION = KEEP_R1_1_FROZEN_WITH_LIMITATIONS`; `R1.1 = READY_WITH_LIMITATIONS / NOT_ACCEPTED`. No R1.2 is authorized or required for N-1/N-2/N-3. N-1 and N-2 remain possible clarifications only in separately versioned future amendments with explicit owner authorization; N-3 requires no repair. The reviewer's, Codex local's, and coordinator's evidence remain separately attributed. The unverified provenance claim tying the R1 source to commit `541e150b…` remains a limitation.
+
+See [owner disposition](R10_V0_7_8_R1_1_OWNER_DISPOSITION_2026-10-18.md). `GOVERNANCE = KEEP_BLOCKED`; `BRIDGE_NOT_READY`; `T123–T246 = NOT_RUN`; `NEXT_ACTOR = NONE_FOR_R1_1_PENDING_NEW_OWNER_OBJECTIVE`. No new review round or amendment is proposed.
+Status: `OWNER_DISPOSITION_KEEP_R1_1_FROZEN_WITH_LIMITATIONS` for R1.1; documentary state `READY_WITH_LIMITATIONS / NOT_ACCEPTED`. The owner has directed that R1.1 remain frozen; no R1.2 or repair for N-1/N-2/N-3 is authorized or required. This is not candidate acceptance. `GOVERNANCE = KEEP_BLOCKED`; `BRIDGE_NOT_READY`; T123–T246 remain `NOT_RUN`; PR #467 stays `OPEN / DRAFT / UNMERGED`.
 
 ## Latest R1.1 coordinator adjudication — READY_WITH_LIMITATIONS
 
@@ -28,7 +33,7 @@ See [coordinator adjudication report](R10_V0_7_8_R1_1_COORDINATOR_ADJUDICATION_2
 - [R1.1 matrix diff](https://github.com/jhonf463r/Python/blob/23e46401e282acd4f39083fc184fced51770f2fa/candidate-r1.1/R10_V0_7_8_R1_1_MATRIX_DIFF.md) · [Manifest](https://github.com/jhonf463r/Python/blob/23e46401e282acd4f39083fc184fced51770f2fa/candidate-r1.1/R10_V0_7_8_SHA256.txt) · [R1.1 review prompt](https://github.com/jhonf463r/Python/blob/23e46401e282acd4f39083fc184fced51770f2fa/candidate-r1.1/R10_V0_7_8_R1_INDEPENDENT_DELTA_REVIEW_PROMPT.md)
 - [Changelog](https://github.com/jhonf463r/Python/blob/23e46401e282acd4f39083fc184fced51770f2fa/candidate-r1.1/R10_V0_7_8_CHANGELOG.md) · [Change map](https://github.com/jhonf463r/Python/blob/23e46401e282acd4f39083fc184fced51770f2fa/candidate-r1.1/R10_V0_7_8_CHANGE_MAP.md) · [Consistency](https://github.com/jhonf463r/Python/blob/23e46401e282acd4f39083fc184fced51770f2fa/candidate-r1.1/R10_V0_7_8_CONSISTENCY_AND_TRACEABILITY.md)
 - The R1.1 ZIP, matrix and text artifacts were downloaded from pinned URLs and byte-compared locally; see the [R1.1 relay preflight/readback report](R10_V0_7_8_R1_PREFLIGHT_REPORT_2026-10-18.md). The automated ZIP identity gate is recorded in [R1.1 binary identity gate](R10_V0_7_8_R1_1_BINARY_IDENTITY_GATE_2026-10-18.md). R1's ZIP and original v0.7.8 remain immutable.
-- State: `COORDINATOR_READBACK_CLEARED_FOR_CLAUDE_SONNET_DOCUMENTARY_REVIEW`; `NEXT_ACTOR=CLAUDE_SONNET_INDEPENDENT_DOCUMENTARY_DELTA_REVIEW`. All cases remain `NOT_RUN`; `GOVERNANCE = KEEP_BLOCKED`; `BRIDGE_NOT_READY`. See [coordinator readback](R10_V0_7_8_R1_1_COORDINATOR_READBACK_2026-10-18.md).
+- Artifact review history: `COORDINATOR_READBACK_CLEARED_FOR_CLAUDE_SONNET_DOCUMENTARY_REVIEW` (historical); current owner disposition is recorded above. All cases remain `NOT_RUN`; `GOVERNANCE = KEEP_BLOCKED`; `BRIDGE_NOT_READY`. See [coordinator readback](R10_V0_7_8_R1_1_COORDINATOR_READBACK_2026-10-18.md).
 
 ## Prior coordinator recheck — R1 traceability/package hold
 
