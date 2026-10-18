@@ -1,3 +1,21 @@
+## 2026-10-18 SUPERSEDING CURRENT ROUTE — REGENERATED V0.7.4 RECONCILIATION IS NOW PERSISTED ON GITHUB
+
+**Read this block first. It supersedes older 2026-10-17 lines below that say the only next action is to recover the original Claude/Sonnet v0.7.4 report and otherwise stop.** The original remains `NOT_RECOVERED / UNRESOLVED`; its 42,216-byte size and `d1968df6…` prefix remain `OWNER_REPORTED / HASH_UNVERIFIED`.
+
+The owner supplied `R10_V074_REMOTE_RECONCILIATION_CORRECTED_2026-10-17`. A fresh coordinator reconciliation of that material and a bounded GitHub text spot-check is persisted at:
+- [Regenerated coordinator reconciliation](https://github.com/jhonf463r/Python/blob/6ccf63ad93ef4946c5fcccdc3f42951775f96e6e/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-18-r10-v074-reconciliation-regenerated.md)
+- [Start Here — current task](https://github.com/jhonf463r/Python/blob/1ec6fda156b50af5c8045ecb9cc23cc9deaaec2b/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-18-start-here-current-task.md)
+
+The upload capture `Markdown pegado(4).md` was 93,927 bytes with SHA-256 `d7a98f45056d1c9d19a021ce46aa053303ef2ac63f30d7cb1eb6a919749dc09e` in the current ChatGPT container. That is the supplied reconciliation text's hash, **not** the missing original review's hash.
+
+Read-only GitHub source-text checks at v0.7.4 content commit `ad5c094fa3e7e4d1989079983f8f6c05f3296551` reconfirmed 99 rows (T123–T221), all `NOT_RUN`; three duplicated column pairs in 99/99 rows; 90 generic no-crash entries; and the repeated generic falsifier across T198–T221. The regenerated coordinator report reopens T205 as a repair and requires numeric sequential splitting of T221 into T221/T222 as applicable. ZIP SHA-256 values remain declared in the relay and were not recalculated in this readback.
+
+**Current decision:** v0.7.4 `REQUIRES_REPAIRS / NOT_ACCEPTED`; v0.7.5 `NOT_CREATED / NOT_REVIEWED`; `BRIDGE_NOT_READY`; `GOVERNANCE = KEEP_BLOCKED`. This new synthesis is not the lost original and does not automatically waive the original-report prerequisite. Before v0.7.5 authoring, require an explicit owner decision accepting this regenerated coordinator reconciliation as the substitute documentary basis. If accepted, Codex local performs documentary-only authoring from commit-pinned inputs; Claude/Sonnet then independently reviews the exact candidate. No runtime/implementation authorization.
+
+**Cross-chat persistence rule:** every material report, verdict or handoff must be written to this canonical GitHub branch and read back before a chat transition. Store a full report or a provenance-labeled decision record, pin its commit, update the Start Here pointer, and never rely solely on an attachment or prose in a chat. New chats start at the linked Start Here file and then open the pinned decision report. Never relabel a regenerated report as the missing original.
+
+---
+
 ## 2026-10-17 BLOCKER — R10 v0.7.5 NOT STARTED; FULL CLAUDE REVIEW REPORT REQUIRED
 
 Codex returned `BLOCKED_MISSING_REQUIRED_REVIEW_REPORT` and correctly did not start v0.7.5 authoring. The currently available prompt contains only the summarized distribution (3 `OK`, 53 `OK_WITH_NOTES`, 43 `REPAIR`), not Claude's complete independent report with exact locations, F/S/G findings, and row-by-row rationale. Do not reconstruct or invent the missing report from summaries, memory, or this continuity document.
