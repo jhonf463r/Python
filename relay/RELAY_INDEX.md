@@ -1,3 +1,13 @@
+## 2026-10-18 independent review completed — v0.7.5 REQUIRES_REPAIRS
+
+The independent review result has been reconciled in canonical continuity: [coordinator record, commit `fd837b8c58633a20d585745b40f3d9dc19b8de3a`](https://github.com/jhonf463r/Python/blob/fd837b8c58633a20d585745b40f3d9dc19b8de3a/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-18-v075-independent-review-reconciliation.md). Disposition: **v0.7.5 `REQUIRES_REPAIRS / NOT_ACCEPTED`**. The frozen candidate at `db5c8788036b7d1c0ae5df9167bb3ec813da5f85` remains unchanged.
+
+Repair route is a new documentary-only v0.7.6: HI-01 stale `Artifact ID`; HI-02 T157's generic crash oracle (must match its already-committed/post-marker precondition); HI-03 recommended clause-specific `normative_basis` in T222–T233. Next actor: Codex local author/static preflight; after isolated relay and pinned readback, Claude/Sonnet reviews v0.7.6. Do not treat this as implementation approval. All tests `NOT_RUN`; `GOVERNANCE = KEEP_BLOCKED`.
+
+The coordinator corroborated the contract/matrix text through pinned GitHub reads. Binary ZIP hash verification is claimed by the reviewer report and is recorded as `REVIEWER_REPORTED`; the coordinator did not recalculate the archive bytes here.
+
+---
+
 ## 2026-10-18 coordinator readback note
 
 The candidate artifact is frozen at `db5c8788036b7d1c0ae5df9167bb3ec813da5f85` (T123–T246; candidate ZIP reported 491,529 bytes / SHA-256 `dcad3ba31415f7204b9422b39cb0342862196c7d002468bed27fef02c6f3a6a7`). The original relay handoff was found to contain stale routing metadata for an earlier T123–T240 candidate at commit `bf41bd5cae7e03c25dfa07bd54b08ea40411c6e7`; that handoff text has been replaced in [`CLAUDE_REVIEW_HANDOFF.md`](https://github.com/jhonf463r/Python/blob/fcecb67a1d222283795b5c0f8e8ce6b93169104b/relay/CLAUDE_REVIEW_HANDOFF.md). Do not use the stale earlier commit/hash/range. The updated handoff commit is `fcecb67a1d222283795b5c0f8e8ce6b93169104b`; it changes relay documentation only, not the candidate archive at `db5c878...`.
