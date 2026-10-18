@@ -1,3 +1,26 @@
+# CURRENT ROUTE UPDATE — R10 v0.7.5 candidate published; next actor Claude/Sonnet (2026-10-18)
+
+**This newest block supersedes the prior top-level statement that Codex is still the next actor. Codex reports the v0.7.5 candidate created, preflighted and relayed; the next actor is now Claude/Sonnet for independent adversarial review.**
+
+Read the coordinator's current relay readback report: [R10 v0.7.5 — coordinator relay readback and independent-review handoff](https://github.com/jhonf463r/Python/blob/66d8926968fc44f629f655f120471d9e9f08a703/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-18-v075-relay-readback.md).
+
+**Frozen candidate artifact commit:** `db5c8788036b7d1c0ae5df9167bb3ec813da5f85`  
+**Corrected relay handoff commit:** `fcecb67a1d222283795b5c0f8e8ce6b93169104b`  
+**Relay metadata tip:** `9c47697acff1b02d36000a3249737f698a931fc2`  
+**Candidate ZIP reported by Codex:** 491,529 bytes; SHA-256 `dcad3ba31415f7204b9422b39cb0342862196c7d002468bed27fef02c6f3a6a7`. This binary hash is `CODEX_LOCAL_REPORTED / OWNER_REPORTED` for the coordinator, not independently recalculated by the GitHub connector.
+
+The first relay handoff was stale: it pointed to an earlier T123–T240 candidate and a different hash. The corrected handoff expressly warns against using the prior link. I also observed that the current contract's first metadata field still says `Artifact ID: R10_V0_7_4_CONTRACT`; this is an exact, commit-pinned text inconsistency that Claude must adjudicate. The candidate has not been edited by the coordinator.
+
+**Next actor:** Claude/Sonnet independently reviews the exact candidate at `db5c878...`, all rows T123–T246, source ZIPs, manifests, historical byte preservation, F-01–F-14, unresolved F-07/F-10 and proposed F-12, and all contract/matrix/changelog consistency. Use the corrected handoff pinned to `fcecb67...`; do not trust stale T240/hash/commit fields from earlier copies. If binary retrieval fails, disclose it and review pinned text only. No code/tests/build/runtime/bridge.
+
+After Claude returns, ChatGPT/coordinator reconciles and writes the adjudication back to this canonical branch, updates the current pointers and verifies them via GitHub readback before a chat transition. Preserve both R10 review relays and the dirty IABV checkout. PR #467 stays `OPEN / DRAFT / UNMERGED`.
+
+`R10 v0.7.4 = REQUIRES_REPAIRS / NOT_ACCEPTED`; `R10 v0.7.5 = PENDING_INDEPENDENT_DELTA_REVIEW`; all 124 test rows `NOT_RUN`; `BRIDGE_NOT_READY`; `GOVERNANCE = KEEP_BLOCKED`.
+
+---
+
+---
+
 # CURRENT ROUTE UPDATE — Owner decision recorded 2026-10-18
 
 The Owner's “ok dime que prompt sigue y a que ia va” is recorded as authorization to use the regenerated coordinator reconciliation as the **documentary substitute basis** for Codex's next v0.7.5 documentary-authoring task. The original Claude/Sonnet report itself remains `NOT_RECOVERED / UNRESOLVED`; this does not accept v0.7.4 or authorize implementation/runtime.
