@@ -1,3 +1,13 @@
+## 2026-10-18 ACTIVE ROUTE — CODEX V0.7.5 DOCUMENTARY AUTHORING
+
+Owner routing decision is recorded here: [decision pinned to commit 451e78a5418c96abadc6d6f01930b98497a2f801](https://github.com/jhonf463r/Python/blob/451e78a5418c96abadc6d6f01930b98497a2f801/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-18-owner-decision-r10-v074-substitute-basis.md). The next actor is **Codex local**, for documentary-only v0.7.5 authoring/static preflight based on the pinned v0.7.4/v0.7.3/v0.7.2 packages and the regenerated reconciliation. Original Claude report remains missing; do not mislabel the substitute as the original. After candidate preflight + isolated GitHub relay verification, **Claude/Sonnet** performs independent delta review. Start from [current Start Here](https://github.com/jhonf463r/Python/blob/451e78a5418c96abadc6d6f01930b98497a2f801/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-18-start-here-current-task.md).
+
+`GOVERNANCE = KEEP_BLOCKED`; no implementation/test/build/runtime/bridge activation.
+
+---
+
+---
+
 ## 2026-10-18 CURRENT ENTRYPOINT — REGENERATED R10 v0.7.4 RECONCILIATION
 
 Open [Start Here — current task](https://github.com/jhonf463r/Python/blob/1ec6fda156b50af5c8045ecb9cc23cc9deaaec2b/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-18-start-here-current-task.md) before following older task-routing entries. The regenerated, provenance-labeled coordinator reconciliation is [pinned here](https://github.com/jhonf463r/Python/blob/6ccf63ad93ef4946c5fcccdc3f42951775f96e6e/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-18-r10-v074-reconciliation-regenerated.md). The original full Claude/Sonnet report remains `NOT_RECOVERED / UNRESOLVED`; the new report is not that original. v0.7.4 remains `REQUIRES_REPAIRS / NOT_ACCEPTED`; v0.7.5 remains `NOT_CREATED / NOT_REVIEWED`; all matrix tests remain `NOT_RUN`; `GOVERNANCE = KEEP_BLOCKED`. Before authoring v0.7.5, require an explicit Owner decision to use the regenerated coordinator reconciliation as documentary substitute. See the report for the verified text findings, additional T205 repair, numeric T221/T222 split, and strict GitHub cross-chat persistence rule.
