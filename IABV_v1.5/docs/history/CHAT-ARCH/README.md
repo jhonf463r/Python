@@ -1,3 +1,13 @@
+## 2026-10-18 CURRENT ENTRYPOINT — READ THIS BEFORE OLDER ROUTING NOTES
+
+For the current R10 v0.7.4 state and next action, use [Start Here — current task](https://github.com/jhonf463r/Python/blob/1ec6fda156b50af5c8045ecb9cc23cc9deaaec2b/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-18-start-here-current-task.md) and the [regenerated coordinator reconciliation](https://github.com/jhonf463r/Python/blob/6ccf63ad93ef4946c5fcccdc3f42951775f96e6e/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-18-r10-v074-reconciliation-regenerated.md). These later commit-pinned entries supersede earlier 2026-10-17 routing text that says recovery of the lost original Claude report is the only possible route. The original remains unresolved; the coordinator report is an explicit synthesis, not the original. v0.7.5 remains blocked pending explicit Owner acceptance of the substitute documentary basis. All tests/runtime remain `NOT_RUN`; `GOVERNANCE = KEEP_BLOCKED`.
+
+Every durable handoff must be written and read back through canonical GitHub before a chat switch; do not leave the only copy of a required report inside a chat or temporary directory.
+
+---
+
+---
+
 ## 2026-10-17 BLOCKER — R10 v0.7.5 NOT STARTED; FULL CLAUDE REVIEW REPORT REQUIRED
 
 Codex returned `BLOCKED_MISSING_REQUIRED_REVIEW_REPORT` and correctly did not start v0.7.5 authoring. The currently available prompt contains only the summarized distribution (3 `OK`, 53 `OK_WITH_NOTES`, 43 `REPAIR`), not Claude's complete independent report with exact locations, F/S/G findings, and row-by-row rationale. Do not reconstruct or invent the missing report from summaries, memory, or this continuity document.
