@@ -1,6 +1,16 @@
 # R10 v0.7.8 relay index
 
-Status: `PENDING_COORDINATOR_RECHECK` for R1; original candidate remains frozen and neither candidate is accepted. `GOVERNANCE = KEEP_BLOCKED`. This is not acceptance and does not authorize code, tests, runtime, M0A, dispatcher, or bridge activity.
+Status: `COORDINATOR_RECHECK_HOLD` for R1; do not send the current revision to Claude/Sonnet yet. The original v0.7.8 and R1 artifacts remain frozen/immutable. `GOVERNANCE = KEEP_BLOCKED`. This is not acceptance and does not authorize code, tests, runtime, M0A, dispatcher, or bridge activity.
+
+## Latest coordinator recheck — R1 traceability/package hold
+
+Coordinator independently re-fetched the R1 matrix, contract, manifest, parsed-cell diff and reviewer prompt at artifact commit `541e150b478bcbf24c739860f799f8e5ef227af7`. The matrix has 124 rows, 12 fields in every row, contiguous unique IDs T123–T246, and all statuses `NOT_RUN`; the parsed delta from the original contains exactly three cells. Recomputed text-artifact SHA-256 values match the R1 report, and contract content/blob is unchanged.
+
+Three bounded items remain before independent review: (COORD-02) add directly governing pre-allocation clauses to T137 `normative_basis`; (COORD-03) cite §17.2 in T141 `normative_basis`; (COORD-04) clearly mark or refresh the embedded pre-R1 static preflight so it is not mistaken for current R1 verification. Details are in [R1 coordinator recheck](R10_V0_7_8_R1_COORDINATOR_RECHECK_2026-10-18.md). The next actor is Codex local with the [bounded traceability fixup handoff](CODEX_V078_R1_TRACEABILITY_FIXUP_HANDOFF.md).
+
+Binary SHA limitation: GitHub's API tree verifies the R1 ZIP blob identity/size, and the author reports a successful raw-byte SHA-256/readback. This coordinator session could not download binary ZIP bytes through the available connector, so its SHA-256 has not been independently recalculated here. Do not present that specific digest as independently calculated by ChatGPT.
+
+Current route: `COORDINATOR_RECHECK_HOLD`; `NEXT_ACTOR=CODEX_LOCAL_R1_TRACEABILITY_FIXUP`; Claude/Sonnet pending coordinator clearance; `BRIDGE_NOT_READY`; `GOVERNANCE = KEEP_BLOCKED`; all tests remain `NOT_RUN`.
 
 ## R1 candidate — T137 consistency repair (2026-10-18)
 
