@@ -1,4 +1,29 @@
-## 2026-10-18 CURRENT BRIDGE ROUTE — IABV→CODEX V5 REVIEW / KEEP BLOCKED
+## CURRENT IABV→CODEX WORKSTREAM ROUTE — V9 NINTH-REVIEW RECONCILIATION / KEEP BLOCKED
+
+Canonical workstream handoff: [CHAT-ARCH-2026-10-18-codex-bridge-v9-review-reconciliation-handoff.md](./CHAT-ARCH-2026-10-18-codex-bridge-v9-review-reconciliation-handoff.md).
+
+Exact contract v9: [IABV_CODEX_contract_review_bundle_v9_2026-10-18.md](./IABV_CODEX_contract_review_bundle_v9_2026-10-18.md) — 177,272 bytes; SHA-256 `3fdfd2f6ea3ca6b38f179341b5807e70c95bdde1e8486b0a047032832d0c5e17`; Git blob SHA `17c22a4e9eef3267115816b85bf2ef398b6567b6`.
+
+Ninth-review reconciliation: [IABV_V9_NINTH_REVIEW_RECONCILIATION_2026-10-18.md](./IABV_V9_NINTH_REVIEW_RECONCILIATION_2026-10-18.md) — 6,911 bytes; SHA-256 `459de4cd6fae2ce48d4c3eee7e2211edb0d78e23850dd76c121a0a9461d45445`; Git blob SHA `8e3b456672ee01a6879898b171984d7dc513501a`.
+
+Review status: `PASS_REPORTED`, limited to documentary coherence as reported. Reviewer identity and independence remain `OWNER_REPORTED`; do not equate contract byte identity with semantic acceptance, demonstrated capabilities or operational authorization.
+
+- N-85/N-86: `ALREADY_COVERED / OPTIONAL_CLARIFICATION`.
+- N-87: documentary evidence requirement defined; capability `NOT_DEMONSTRATED`.
+- F-V8-02: not adopted as a new defect; the transition was found in exact v8.
+- No automatic v10 without a concrete counterexample or explicit Owner decision.
+- R10 v0.7.4: `OWNER_REPORTED / NOT_ASSEMBLED / NOT_PUBLISHED`.
+- Candidate C: `OWNER_REPORTED / VERDICT_NOT_EMITTED`.
+
+This pointer is scoped to the IABV→Codex bridge workstream. It does not replace or reorder other routes, including the separate M0B Entry 280 route in the memory operating protocol. The v5 handoff remains immutable historical evidence.
+
+`GOVERNANCE = KEEP_BLOCKED` · `IMPLEMENTATION = NOT_AUTHORIZED` · `BRIDGE_NOT_READY`. Owner decision C remains binding.
+
+---
+
+## HISTORICAL ROUTE — IABV→CODEX V5 REVIEW / KEEP BLOCKED (SUPERSEDED BY V9 POINTER ON THIS BRANCH)
+
+Historical record preserved from the v5-era route. Its old next-action instructions describe that point in time and are not the current routing while the v9 handoff proposal is under review.
 
 Canonical handoff: [CHAT-ARCH-2026-10-18-codex-bridge-v5-adversarial-review-handoff.md](./CHAT-ARCH-2026-10-18-codex-bridge-v5-adversarial-review-handoff.md) — blob `23b9f83e91267c3b1384f441befe9986ba80de97`, initial commit `20f7f7a0e44ed4227c1cfdf03514996e9799e2c1`. AGENTS overlay was subsequently updated in commit `ab8dbb4e4694abf49845249b5764765f789813cf`.
 
