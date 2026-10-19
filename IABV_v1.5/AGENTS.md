@@ -1,12 +1,20 @@
-## 2026-10-18 CURRENT CONTINUITY — IABV→CODEX V5 ADVERSARIAL REVIEW HANDOFF
+## 2026-10-18 CURRENT CONTINUITY — IABV→CODEX V9 REVIEW RECONCILIATION
 
-Canonical handoff: [CHAT-ARCH-2026-10-18-codex-bridge-v5-adversarial-review-handoff.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-18-codex-bridge-v5-adversarial-review-handoff.md) — published blob `23b9f83e91267c3b1384f441befe9986ba80de97`, commit `20f7f7a0e44ed4227c1cfdf03514996e9799e2c1`.
+Canonical workstream handoff: [CHAT-ARCH-2026-10-18-codex-bridge-v9-review-reconciliation-handoff.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-18-codex-bridge-v9-review-reconciliation-handoff.md).
 
-Latest owner-supplied adversarial review of IABV→Codex contract v5: `PASS_WITH_REPAIRS` for wording only; N-01–N-25 were not re-readjudicated; N-26–N-41 largely partial; N42–N64 newly reported. Priority: N42/N43 reservation-anchor and gate/resume ordering; N46/N50 trust-root and control-plane writers; N52–N55 complete disclosure/auth/egress boundary; N57/N59/N60 independent no-execution, digest and owner-view evidence; N62/N63 single-owner deadlock and joint satisfiability. See handoff for exact status/provenance and next bounded documentary action. The v5 artifact itself was not independently fetched in this continuation; review claims remain `OWNER_REPORTED`.
+Exact documentary artifacts preserved in the CHAT-ARCH route:
+- v9 contract: `docs/history/CHAT-ARCH/IABV_CODEX_contract_review_bundle_v9_2026-10-18.md`; 177,272 bytes; SHA-256 `3fdfd2f6ea3ca6b38f179341b5807e70c95bdde1e8486b0a047032832d0c5e17`.
+- Ninth-review reconciliation: `docs/history/CHAT-ARCH/IABV_V9_NINTH_REVIEW_RECONCILIATION_2026-10-18.md`; 6,911 bytes; SHA-256 `459de4cd6fae2ce48d4c3eee7e2211edb0d78e23850dd76c121a0a9461d45445`.
+- The supplied ninth-review verdict is recorded as `PASS_REPORTED`; reviewer identity and independence remain `OWNER_REPORTED`. Hash identity does not authenticate a reviewer or establish semantic acceptance.
 
-**Governance remains `KEEP_BLOCKED`; `IMPLEMENTATION = NOT_AUTHORIZED`; `BRIDGE_NOT_READY`.** No CLI/App Server launch, preflight, inventory/materialization, test/build/runtime, authentication/quota query, spend, local source/config edit, commit/push or promotion. Owner decision C remains binding. Do not inspect `data/` or SQLite, retry/bypass the governance-denied MCP reader, or conflate distinct dirty local checkouts.
+N-85/N-86 remain `ALREADY_COVERED / OPTIONAL_CLARIFICATION`. N-87 is a documented evidence requirement; the real capability remains `NOT_DEMONSTRATED`. F-V8-02 is not adopted as a new defect because the transition was found in the exact v8 artifact. Do not create v10 without a concrete counterexample or explicit Owner decision. Preserve the prior v5–v9 artifacts and reports as immutable history; do not inherit `CLOSED` without source reconciliation.
 
-Other pending owner-reported deliverables: assemble the independent R10 v0.7.4 report from 99 existing row evaluations (not yet assembled/published); emit the Candidate C verdict (analysis reportedly done, verdict not emitted). Do not infer either result.
+Separate pending work:
+- R10 v0.7.4: `OWNER_REPORTED / NOT_ASSEMBLED / NOT_PUBLISHED` until the exact 99 evaluation rows are recovered and reconciled.
+- Candidate C: `OWNER_REPORTED / VERDICT_NOT_EMITTED` until its exact evidence is recovered.
+
+`GOVERNANCE = KEEP_BLOCKED`; `IMPLEMENTATION = NOT_AUTHORIZED`; `BRIDGE_NOT_READY`. Owner decision C remains binding. No Codex/App Server, preflight, canary, tests, build, runtime, authentication, quota/usage inspection, installation, spend, local checkout/M0A access, `data/`, SQLite, secrets, blocked-reader retry/bypass, merge or promotion. This is a documentary continuity route only.
+
 
 ---
 
