@@ -12,6 +12,49 @@ Evidence boundary: Entry 278, Entry 279 and Entry 280 are public documentary obj
 
 Operational posture: `KEEP_BLOCKED`. No local M0A access, blocked-reader retry/bypass, implementation, tests/builds/runtime, credential inspection, authentication, installation/update or launch. Contract review cannot grant read authority or release a governance block.
 
+
+## Workstream-specific continuity pointer — IABV → Codex v9 (2026-10-18)
+
+**Scope:** documentary continuity for the IABV → Codex governed development bridge only. This pointer does not supersede, reorder or close the separate M0B Entry 280 route above.
+
+**Post-repair documentary review:** an Owner-supplied report records `PASS_WITH_OBSERVATIONS` for PR #469 at HEAD `5ed86c3ce7b133a0567c8a0bc5f71e668d45b697` on 2026-10-19. That report predates this wording-only transition update and does not certify the resulting HEAD. `SEMANTIC_ACCEPTANCE = NOT_ESTABLISHED_BY_THIS_REVIEW`; no formal GitHub review has been recorded. Check the live PR and `main` before relying on publication status. Until a separately authorized merge, this branch pointer remains proposed; after any merge, `CURRENT-STATE.md` remains the routing authority and must be read back before routing changes. This pointer does not supersede M0B Entry 280 or release an operational gate.
+
+**Status-label clarification:** the original ninth-review outcome remains `PASS_REPORTED`; reviewer identity and independence remain `OWNER_REPORTED`. `PENDING_NINTH_REVIEW` is an internal status retained in the v9 finding registry and does not mean the ninth-review report is absent. Separately, the Owner-supplied post-repair report records `PASS_WITH_OBSERVATIONS` for HEAD `5ed86c3ce7b133a0567c8a0bc5f71e668d45b697`; it predates this transition edit, is not a formal GitHub review and does not establish semantic acceptance.
+
+After the v9 continuity PR is independently reviewed and merged, use the workstream handoff:
+`CHAT-ARCH-2026-10-18-codex-bridge-v9-review-reconciliation-handoff.md`.
+
+Exact artefacts kept alongside that handoff:
+- `IABV_CODEX_contract_review_bundle_v9_2026-10-18.md` — 177,272 bytes; SHA-256 `3fdfd2f6ea3ca6b38f179341b5807e70c95bdde1e8486b0a047032832d0c5e17`.
+- `IABV_V9_NINTH_REVIEW_RECONCILIATION_2026-10-18.md` — 6,911 bytes; SHA-256 `459de4cd6fae2ce48d4c3eee7e2211edb0d78e23850dd76c121a0a9461d45445`.
+
+Record the ninth review as `PASS_REPORTED`; the review report did not arrive as a separately hash-verifiable artifact, so reviewer identity and independence remain `OWNER_REPORTED`. Preserve v5–v9 as immutable history. N-85/N-86: behavior text is present in the Owner-supplied artifact `IABV_CODEX_contract_review_bundle_v8_2026-10-18.md` (167,312 bytes; SHA-256 `1e7d4fa3a497d329305dba225a9b45d382d07f345e84e6b16d4d8c60c579726b`). Its bytes were hash-verified, but v8 is not in the public repository tree; this is Owner-supplied source evidence, not independently reproducible from the repository alone. N-85 is covered in §2.8 lines 354–355 and invariant N-80 at line 460; N-86 in §2.6 step 3 at line 259. Retain `OPTIONAL_CLARIFICATION / PENDING_NINTH_REVIEW` and `SEMANTIC_ACCEPTANCE = NOT_ESTABLISHED`; behavior-text presence does not by itself close semantic acceptance. N-87 is a specified evidence requirement, not proof that the capability exists. F-V8-02: the transition row `FIRST_INSTRUCTION_DEADLINE_EXPIRED → FIRST_INSTRUCTION_OBSERVED_LATE` is present in the Owner-supplied v8 artifact (§2.8 line 429) and in the v9 bundle in this PR (§2.8 line 438); it is not adopted as a new defect. The v8 provenance limitation stated above applies. Do not create v10 without a concrete counterexample or explicit Owner decision.
+
+R10 v0.7.4 remains `OWNER_REPORTED / NOT_ASSEMBLED / NOT_PUBLISHED`. Candidate C remains `OWNER_REPORTED / VERDICT_NOT_EMITTED`. Keep both separate.
+
+### Workstream-specific continuity activation — IABV → Codex v9
+
+The workstream handoff is a specialized child route, not a replacement for the global objective-conditioned experience-activation protocol above and not a new universal coordinator/memory organ. For this workstream, read the current IABV→Codex handoff after performing the mandatory entry sequence:
+
+`verify remote main SHA → README → CURRENT-STATE top routing snapshot → CONTEXT-INDEX objective-conditioned navigation → MEMORY-OPERATING-PROTOCOL → relevant source/history`.
+
+Because bridge continuity touches cross-AI coordination, longitudinal memory and the universal development objective, explicitly activate `UAAL-ROOT-001` and its relevant concept lineage before narrowing to v9. The established parent sources are `UNIVERSAL-ADAPTIVE-ALGORITHM-CONSTITUTION-2026-10-04.md`, `CHAT-ARCH-2026-10-03-037-laptop-native-free-first-cross-ai-objective.md`, `CHAT-ARCH-2026-10-03-042-unified-interaction-memory-space-time-continuity.md`, `CHAT-ARCH-2026-10-06-094-chat-full-absorption-universal-routing-reconciliation.md`, and `IABV-COLLABORATION-COORDINATION-PROTOCOL-2026-10-04.md`. See the workstream handoff for exact blob identities and the defined parent/child relationship.
+
+The bridge work must remain aligned to the existing developmental loop:
+
+`objective → current truth → activated relevant experience → first open causal/evidential edge → capability-fit actor/resource → governed action → expected/actual observation → independent verification → reconciliation → Knowledge/Method/Relation/Routing Delta → later causal reuse`.
+
+Do not treat this PR, Codex, MCP or any single provider as the universal algorithm. Reuse the existing memory organs and keep their authority boundaries: `CURRENT-STATE` = current routing authority; `CONTEXT-INDEX` = retrieval/navigation; `MEMORY-OPERATING-PROTOCOL` = method; `SYMBIOSIS-MAP` = capability/transfer evidence; `UNRESOLVED-KNOWLEDGE` = open questions; `ARCHIVE-REGISTRY` = provenance; `CHAT-ARCH` = historical evidence.
+
+Cross-agent handoffs must name `IA DESTINO`, exact source revision and artifact identities, task-bound scope, evidence/status labels, required output, stop conditions and applicable governance restrictions. Prefer connected retrieval/GitHub over asking the Owner to transport already-accessible artifacts; attempt supported attachment/Library/repository retrieval before requesting re-upload. Verify published writeback by read-back and never claim tool access or publication without evidence.
+
+When the Owner says an idea or decision has already been established, treat that as a trigger to retrieve and reconcile its existing source/lineage—not as a request to make the Owner explain it from scratch. State which prior record covers it, whether the current turn adds a genuinely new concept or only a method/routing correction, and what specific evidence remains missing. Historical actor suggestions are not authority: recompute the next actor from the current first open edge.
+
+The runtime property remains unproven: repository continuity does not establish autonomous IABV context activation, inter-IA dispatch, result ingestion or causal reuse. Keep all relevant promotion gates and governance restrictions intact.
+
+`GOVERNANCE = KEEP_BLOCKED`; `IMPLEMENTATION = NOT_AUTHORIZED`; `BRIDGE_NOT_READY`. Owner decision C remains binding. No Codex/App Server, preflight, tests, build, runtime, authentication, quota/usage inspection, spend, local checkout/M0A access, `data/`, SQLite, blocked-reader retry/bypass, implementation, merge or promotion. Documentary persistence is not implementation evidence.
+
+
 ---
 
 ## Historical route — ENTRY 279: C5 delta adjudication / amendment 274.4 (superseded as current route by Entry 280)

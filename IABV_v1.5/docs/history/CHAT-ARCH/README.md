@@ -1,4 +1,33 @@
-## 2026-10-18 CURRENT BRIDGE ROUTE — IABV→CODEX V5 REVIEW / KEEP BLOCKED
+## PROPOSED IABV→CODEX WORKSTREAM POINTER — V9 DOCUMENTARY REVIEW / KEEP BLOCKED
+
+Canonical workstream handoff: [CHAT-ARCH-2026-10-18-codex-bridge-v9-review-reconciliation-handoff.md](./CHAT-ARCH-2026-10-18-codex-bridge-v9-review-reconciliation-handoff.md).
+
+**Post-repair documentary review:** an Owner-supplied report records `PASS_WITH_OBSERVATIONS` for PR #469 at HEAD `5ed86c3ce7b133a0567c8a0bc5f71e668d45b697` on 2026-10-19. That report predates this wording-only transition update and does not certify the resulting HEAD. `SEMANTIC_ACCEPTANCE = NOT_ESTABLISHED_BY_THIS_REVIEW`; no formal GitHub review has been recorded. Check the live PR and `main` before relying on publication status. Until a separately authorized merge, this branch pointer remains proposed; after any merge, `CURRENT-STATE.md` remains the routing authority and must be read back before routing changes. This pointer does not supersede M0B Entry 280 or release an operational gate.
+
+**Status-label clarification:** the original ninth-review outcome remains `PASS_REPORTED`; reviewer identity and independence remain `OWNER_REPORTED`. `PENDING_NINTH_REVIEW` is an internal status retained in the v9 finding registry and does not mean the ninth-review report is absent. Separately, the Owner-supplied post-repair report records `PASS_WITH_OBSERVATIONS` for HEAD `5ed86c3ce7b133a0567c8a0bc5f71e668d45b697`; it predates this transition edit, is not a formal GitHub review and does not establish semantic acceptance.
+
+Exact contract v9: [IABV_CODEX_contract_review_bundle_v9_2026-10-18.md](./IABV_CODEX_contract_review_bundle_v9_2026-10-18.md) — 177,272 bytes; SHA-256 `3fdfd2f6ea3ca6b38f179341b5807e70c95bdde1e8486b0a047032832d0c5e17`; Git blob SHA `17c22a4e9eef3267115816b85bf2ef398b6567b6`.
+
+Ninth-review reconciliation: [IABV_V9_NINTH_REVIEW_RECONCILIATION_2026-10-18.md](./IABV_V9_NINTH_REVIEW_RECONCILIATION_2026-10-18.md) — 6,911 bytes; SHA-256 `459de4cd6fae2ce48d4c3eee7e2211edb0d78e23850dd76c121a0a9461d45445`; Git blob SHA `8e3b456672ee01a6879898b171984d7dc513501a`.
+
+Review status: `PASS_REPORTED`, limited to documentary coherence as reported. Reviewer identity and independence remain `OWNER_REPORTED`; do not equate contract byte identity with semantic acceptance, demonstrated capabilities or operational authorization.
+
+- N-85/N-86: behavior text is present in the Owner-supplied artifact `IABV_CODEX_contract_review_bundle_v8_2026-10-18.md` (167,312 bytes; SHA-256 `1e7d4fa3a497d329305dba225a9b45d382d07f345e84e6b16d4d8c60c579726b`). Its bytes were hash-verified, but v8 is not in the public repository tree; this is Owner-supplied source evidence, not independently reproducible from the repository alone. N-85 is covered in §2.8 lines 354–355 and invariant N-80 at line 460; N-86 in §2.6 step 3 at line 259. Retain `OPTIONAL_CLARIFICATION / PENDING_NINTH_REVIEW` and `SEMANTIC_ACCEPTANCE = NOT_ESTABLISHED`; behavior-text presence does not by itself close semantic acceptance.
+- N-87: documentary evidence requirement defined; capability `NOT_DEMONSTRATED`.
+- F-V8-02: the transition row `FIRST_INSTRUCTION_DEADLINE_EXPIRED → FIRST_INSTRUCTION_OBSERVED_LATE` is present in the Owner-supplied v8 artifact (§2.8 line 429) and in the v9 bundle in this PR (§2.8 line 438); it is not adopted as a new defect. The v8 provenance limitation stated above applies.
+- No automatic v10 without a concrete counterexample or explicit Owner decision.
+- R10 v0.7.4: `OWNER_REPORTED / NOT_ASSEMBLED / NOT_PUBLISHED`.
+- Candidate C: `OWNER_REPORTED / VERDICT_NOT_EMITTED`.
+
+This pointer is scoped to the IABV→Codex bridge workstream. It does not replace or reorder other routes, including the separate M0B Entry 280 route in the memory operating protocol. The v5 handoff remains immutable historical evidence.
+
+`GOVERNANCE = KEEP_BLOCKED` · `IMPLEMENTATION = NOT_AUTHORIZED` · `BRIDGE_NOT_READY`. Owner decision C remains binding.
+
+---
+
+## HISTORICAL ROUTE — IABV→CODEX V5 REVIEW / KEEP BLOCKED (SUPERSEDED BY V9 POINTER ON THIS BRANCH)
+
+Historical record preserved from the v5-era route. Its old next-action instructions describe that point in time and are not the current routing while the v9 handoff proposal is under review.
 
 Canonical handoff: [CHAT-ARCH-2026-10-18-codex-bridge-v5-adversarial-review-handoff.md](./CHAT-ARCH-2026-10-18-codex-bridge-v5-adversarial-review-handoff.md) — blob `23b9f83e91267c3b1384f441befe9986ba80de97`, initial commit `20f7f7a0e44ed4227c1cfdf03514996e9799e2c1`. AGENTS overlay was subsequently updated in commit `ab8dbb4e4694abf49845249b5764765f789813cf`.
 

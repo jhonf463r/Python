@@ -1,12 +1,26 @@
-## 2026-10-18 CURRENT CONTINUITY — IABV→CODEX V5 ADVERSARIAL REVIEW HANDOFF
+## PROPOSED IABV→CODEX V9 CONTINUITY POINTER — DOCUMENTARY REVIEW / KEEP BLOCKED
 
-Canonical handoff: [CHAT-ARCH-2026-10-18-codex-bridge-v5-adversarial-review-handoff.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-18-codex-bridge-v5-adversarial-review-handoff.md) — published blob `23b9f83e91267c3b1384f441befe9986ba80de97`, commit `20f7f7a0e44ed4227c1cfdf03514996e9799e2c1`.
+**Post-repair documentary review:** an Owner-supplied report records `PASS_WITH_OBSERVATIONS` for PR #469 at HEAD `5ed86c3ce7b133a0567c8a0bc5f71e668d45b697` on 2026-10-19. That report predates this wording-only transition update and does not certify the resulting HEAD. `SEMANTIC_ACCEPTANCE = NOT_ESTABLISHED_BY_THIS_REVIEW`; no formal GitHub review has been recorded. Check the live PR and `main` before relying on publication status. Until a separately authorized merge, this branch pointer remains proposed; after any merge, `CURRENT-STATE.md` remains the routing authority and must be read back before routing changes. This pointer does not supersede M0B Entry 280 or release an operational gate.
 
-Latest owner-supplied adversarial review of IABV→Codex contract v5: `PASS_WITH_REPAIRS` for wording only; N-01–N-25 were not re-readjudicated; N-26–N-41 largely partial; N42–N64 newly reported. Priority: N42/N43 reservation-anchor and gate/resume ordering; N46/N50 trust-root and control-plane writers; N52–N55 complete disclosure/auth/egress boundary; N57/N59/N60 independent no-execution, digest and owner-view evidence; N62/N63 single-owner deadlock and joint satisfiability. See handoff for exact status/provenance and next bounded documentary action. The v5 artifact itself was not independently fetched in this continuation; review claims remain `OWNER_REPORTED`.
+**Status-label clarification:** the original ninth-review outcome remains `PASS_REPORTED`; reviewer identity and independence remain `OWNER_REPORTED`. `PENDING_NINTH_REVIEW` is an internal status retained in the v9 finding registry and does not mean the ninth-review report is absent. Separately, the Owner-supplied post-repair report records `PASS_WITH_OBSERVATIONS` for HEAD `5ed86c3ce7b133a0567c8a0bc5f71e668d45b697`; it predates this transition edit, is not a formal GitHub review and does not establish semantic acceptance.
 
-**Governance remains `KEEP_BLOCKED`; `IMPLEMENTATION = NOT_AUTHORIZED`; `BRIDGE_NOT_READY`.** No CLI/App Server launch, preflight, inventory/materialization, test/build/runtime, authentication/quota query, spend, local source/config edit, commit/push or promotion. Owner decision C remains binding. Do not inspect `data/` or SQLite, retry/bypass the governance-denied MCP reader, or conflate distinct dirty local checkouts.
+**Sequence clarification:** `AGENTS.md` is a repository-instruction surface, not an additional item in the canonical experience-activation sequence. After verifying remote `main`, the sequence is `README.md → CURRENT-STATE.md top routing snapshot → CONTEXT-INDEX.md → MEMORY-OPERATING-PROTOCOL.md → relevant source/history`.
 
-Other pending owner-reported deliverables: assemble the independent R10 v0.7.4 report from 99 existing row evaluations (not yet assembled/published); emit the Candidate C verdict (analysis reportedly done, verdict not emitted). Do not infer either result.
+Canonical workstream handoff: [CHAT-ARCH-2026-10-18-codex-bridge-v9-review-reconciliation-handoff.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-18-codex-bridge-v9-review-reconciliation-handoff.md).
+
+Exact documentary artifacts preserved in the CHAT-ARCH route:
+- v9 contract: `docs/history/CHAT-ARCH/IABV_CODEX_contract_review_bundle_v9_2026-10-18.md`; 177,272 bytes; SHA-256 `3fdfd2f6ea3ca6b38f179341b5807e70c95bdde1e8486b0a047032832d0c5e17`.
+- Ninth-review reconciliation: `docs/history/CHAT-ARCH/IABV_V9_NINTH_REVIEW_RECONCILIATION_2026-10-18.md`; 6,911 bytes; SHA-256 `459de4cd6fae2ce48d4c3eee7e2211edb0d78e23850dd76c121a0a9461d45445`.
+- The supplied ninth-review verdict is recorded as `PASS_REPORTED`; reviewer identity and independence remain `OWNER_REPORTED`. Hash identity does not authenticate a reviewer or establish semantic acceptance.
+
+N-85/N-86: behavior text is present in the Owner-supplied artifact `IABV_CODEX_contract_review_bundle_v8_2026-10-18.md` (167,312 bytes; SHA-256 `1e7d4fa3a497d329305dba225a9b45d382d07f345e84e6b16d4d8c60c579726b`). Its bytes were hash-verified, but v8 is not in the public repository tree; this is Owner-supplied source evidence, not independently reproducible from the repository alone. N-85 is covered in §2.8 lines 354–355 and invariant N-80 at line 460; N-86 in §2.6 step 3 at line 259. Retain `OPTIONAL_CLARIFICATION / PENDING_NINTH_REVIEW` and `SEMANTIC_ACCEPTANCE = NOT_ESTABLISHED`; behavior-text presence does not by itself close semantic acceptance. N-87 is a documented evidence requirement; the real capability remains `NOT_DEMONSTRATED`. F-V8-02: the transition row `FIRST_INSTRUCTION_DEADLINE_EXPIRED → FIRST_INSTRUCTION_OBSERVED_LATE` is present in the Owner-supplied v8 artifact (§2.8 line 429) and in the v9 bundle in this PR (§2.8 line 438); it is not adopted as a new defect. The v8 provenance limitation stated above applies. Do not create v10 without a concrete counterexample or explicit Owner decision. Preserve the prior v5–v9 artifacts and reports as immutable history; do not inherit `CLOSED` without source reconciliation.
+
+Separate pending work:
+- R10 v0.7.4: `OWNER_REPORTED / NOT_ASSEMBLED / NOT_PUBLISHED` until the exact 99 evaluation rows are recovered and reconciled.
+- Candidate C: `OWNER_REPORTED / VERDICT_NOT_EMITTED` until its exact evidence is recovered.
+
+`GOVERNANCE = KEEP_BLOCKED`; `IMPLEMENTATION = NOT_AUTHORIZED`; `BRIDGE_NOT_READY`. Owner decision C remains binding. No Codex/App Server, preflight, canary, tests, build, runtime, authentication, quota/usage inspection, installation, spend, local checkout/M0A access, `data/`, SQLite, secrets, blocked-reader retry/bypass, merge or promotion. This is a documentary continuity route only.
+
 
 ---
 
