@@ -12,6 +12,25 @@ Evidence boundary: Entry 278, Entry 279 and Entry 280 are public documentary obj
 
 Operational posture: `KEEP_BLOCKED`. No local M0A access, blocked-reader retry/bypass, implementation, tests/builds/runtime, credential inspection, authentication, installation/update or launch. Contract review cannot grant read authority or release a governance block.
 
+
+## Workstream-specific continuity pointer — IABV → Codex v9 (2026-10-18)
+
+**Scope:** documentary continuity for the IABV → Codex governed development bridge only. This pointer does not supersede, reorder or close the separate M0B Entry 280 route above.
+
+After the v9 continuity PR is independently reviewed and merged, use the workstream handoff:
+`CHAT-ARCH-2026-10-18-codex-bridge-v9-review-reconciliation-handoff.md`.
+
+Exact artefacts kept alongside that handoff:
+- `IABV_CODEX_contract_review_bundle_v9_2026-10-18.md` — 177,272 bytes; SHA-256 `3fdfd2f6ea3ca6b38f179341b5807e70c95bdde1e8486b0a047032832d0c5e17`.
+- `IABV_V9_NINTH_REVIEW_RECONCILIATION_2026-10-18.md` — 6,911 bytes; SHA-256 `459de4cd6fae2ce48d4c3eee7e2211edb0d78e23850dd76c121a0a9461d45445`.
+
+Record the ninth review as `PASS_REPORTED`; the review report did not arrive as a separately hash-verifiable artifact, so reviewer identity and independence remain `OWNER_REPORTED`. Preserve v5–v9 as immutable history. N-85/N-86 remain `ALREADY_COVERED / OPTIONAL_CLARIFICATION`; N-87 is a specified evidence requirement, not proof that the capability exists; F-V8-02 is not a new defect. Do not create v10 without a concrete counterexample or explicit Owner decision.
+
+R10 v0.7.4 remains `OWNER_REPORTED / NOT_ASSEMBLED / NOT_PUBLISHED`. Candidate C remains `OWNER_REPORTED / VERDICT_NOT_EMITTED`. Keep both separate.
+
+`GOVERNANCE = KEEP_BLOCKED`; `IMPLEMENTATION = NOT_AUTHORIZED`; `BRIDGE_NOT_READY`. Owner decision C remains binding. No Codex/App Server, preflight, tests, build, runtime, authentication, quota/usage inspection, spend, local checkout/M0A access, `data/`, SQLite, blocked-reader retry/bypass, implementation, merge or promotion. Documentary persistence is not implementation evidence.
+
+
 ---
 
 ## Historical route — ENTRY 279: C5 delta adjudication / amendment 274.4 (superseded as current route by Entry 280)
