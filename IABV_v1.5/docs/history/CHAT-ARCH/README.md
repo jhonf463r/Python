@@ -1,8 +1,10 @@
-## PROPOSED IABV→CODEX WORKSTREAM ROUTE — V9 NINTH-REVIEW RECONCILIATION / KEEP BLOCKED
+## PROPOSED IABV→CODEX WORKSTREAM POINTER — V9 DOCUMENTARY REVIEW / KEEP BLOCKED
 
 Canonical workstream handoff: [CHAT-ARCH-2026-10-18-codex-bridge-v9-review-reconciliation-handoff.md](./CHAT-ARCH-2026-10-18-codex-bridge-v9-review-reconciliation-handoff.md).
 
-**Status: PROPOSED — PR #469 is open/draft/unmerged and pending independent review. `CURRENT-STATE.md` remains the current routing authority; this pointer applies only on this branch and does not replace M0B Entry 280 or alter `main`.**
+**Post-repair documentary review:** an Owner-supplied report records `PASS_WITH_OBSERVATIONS` for PR #469 at HEAD `5ed86c3ce7b133a0567c8a0bc5f71e668d45b697` on 2026-10-19. That report predates this wording-only transition update and does not certify the resulting HEAD. `SEMANTIC_ACCEPTANCE = NOT_ESTABLISHED_BY_THIS_REVIEW`; no formal GitHub review has been recorded. Check the live PR and `main` before relying on publication status. Until a separately authorized merge, this branch pointer remains proposed; after any merge, `CURRENT-STATE.md` remains the routing authority and must be read back before routing changes. This pointer does not supersede M0B Entry 280 or release an operational gate.
+
+**Status-label clarification:** the original ninth-review outcome remains `PASS_REPORTED`; reviewer identity and independence remain `OWNER_REPORTED`. `PENDING_NINTH_REVIEW` is an internal status retained in the v9 finding registry and does not mean the ninth-review report is absent. Separately, the Owner-supplied post-repair report records `PASS_WITH_OBSERVATIONS` for HEAD `5ed86c3ce7b133a0567c8a0bc5f71e668d45b697`; it predates this transition edit, is not a formal GitHub review and does not establish semantic acceptance.
 
 Exact contract v9: [IABV_CODEX_contract_review_bundle_v9_2026-10-18.md](./IABV_CODEX_contract_review_bundle_v9_2026-10-18.md) — 177,272 bytes; SHA-256 `3fdfd2f6ea3ca6b38f179341b5807e70c95bdde1e8486b0a047032832d0c5e17`; Git blob SHA `17c22a4e9eef3267115816b85bf2ef398b6567b6`.
 

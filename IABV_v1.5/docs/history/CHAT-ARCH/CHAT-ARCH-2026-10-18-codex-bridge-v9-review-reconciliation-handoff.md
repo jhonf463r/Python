@@ -4,7 +4,8 @@
 - Repository: `jhonf463r/Python`
 - Base snapshot for this documentary PR: `main @ d3a4212b6de36254bf45d5e655d684d0640a0706`
 - Workstream route: IABV → Codex governed development bridge
-- Status on this branch: `PROPOSED_CANONICAL_HANDOFF_PENDING_INDEPENDENT_REVIEW`
+- Status on this branch: `PROPOSED_CANONICAL_HANDOFF_PENDING_INDEPENDENT_REVIEW` (review of the resulting HEAD remains pending).
+- Prior post-repair review report: Owner-supplied report records `PASS_WITH_OBSERVATIONS` for HEAD `5ed86c3ce7b133a0567c8a0bc5f71e668d45b697` on 2026-10-19; it predates this transition wording update and does not certify the resulting HEAD. `SEMANTIC_ACCEPTANCE = NOT_ESTABLISHED_BY_THIS_REVIEW`.
 - Governance: `GOVERNANCE = KEEP_BLOCKED`
 - Implementation: `IMPLEMENTATION = NOT_AUTHORIZED`
 - Bridge: `BRIDGE_NOT_READY`
@@ -31,6 +32,8 @@ Path: `IABV_v1.5/docs/history/CHAT-ARCH/IABV_V9_NINTH_REVIEW_RECONCILIATION_2026
 - Identity verification: `BYTE_HASH_VERIFIED`; the Git blob SHA matches the locally computed Git object identity of the original artifact.
 
 The ninth-review text supplied in conversation declares `PASS`, but no separate report artifact with its own verifiable hash was available. Record the result as `PASS_REPORTED`; reviewer identity and independence remain `OWNER_REPORTED`. A contract hash establishes bytes, not reviewer identity, independence, semantic truth, capability existence or operational authorization.
+
+**Status-label clarification:** the original ninth-review outcome remains `PASS_REPORTED`; reviewer identity and independence remain `OWNER_REPORTED`. `PENDING_NINTH_REVIEW` is an internal status retained in the v9 finding registry and does not mean the ninth-review report is absent. Separately, the Owner-supplied post-repair report records `PASS_WITH_OBSERVATIONS` for HEAD `5ed86c3ce7b133a0567c8a0bc5f71e668d45b697`; it predates this transition edit, is not a formal GitHub review and does not establish semantic acceptance.
 
 ## 2. Reconciled documentary findings
 
@@ -68,7 +71,7 @@ This handoff is the proposed current route for the IABV → Codex workstream aft
 
 For every new IABV session, the acting AI must do the following before choosing an actor, drafting a prompt, or asking the Owner to restate context:
 
-1. Read `IABV_v1.5/AGENTS.md` for repository instructions and verify the current remote `main` SHA. Pin source reads to that revision; separately identify any PR branch/head being reviewed.
+1. Read `IABV_v1.5/AGENTS.md` for repository instructions and verify the current remote `main` SHA. Pin source reads to that revision; separately identify any PR branch/head being reviewed. This is a repository-instruction preflight, not an item in the canonical experience-activation sequence itself; the sequence is specified in step 2 and begins with `README.md` after the remote `main` SHA is verified.
 2. Follow the canonical experience-activation sequence in `MEMORY-OPERATING-PROTOCOL.md`: `README.md → CURRENT-STATE.md top routing snapshot → objective-conditioned records via CONTEXT-INDEX.md → MEMORY-OPERATING-PROTOCOL.md → relevant source/history`. `CURRENT-STATE.md` remains the only current routing authority; historical `NEXT ACTOR` values and task-specific handoffs do not independently override it.
 3. Classify the actual objective before retrieving history. For global vision, universal reasoning, cross-AI coordination, memory, learning or continuity, explicitly activate `UAAL-ROOT-001` and the relevant lineage listed in §7 below. Do not narrow the product objective to the current Codex/MCP subproblem merely because that subproblem is the active workstream.
 4. Reconcile the current objective, current verified truth, settled Owner decisions, negative knowledge, previous failures/false positives, closed edges, existing-organ ownership and first open causal/evidential edge. Reopen completed work only for new contradictory evidence, a source change, a missing mandatory artifact or an explicit Owner instruction.

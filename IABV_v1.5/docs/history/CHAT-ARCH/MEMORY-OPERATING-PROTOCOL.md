@@ -17,7 +17,9 @@ Operational posture: `KEEP_BLOCKED`. No local M0A access, blocked-reader retry/b
 
 **Scope:** documentary continuity for the IABV → Codex governed development bridge only. This pointer does not supersede, reorder or close the separate M0B Entry 280 route above.
 
-**Status: PROPOSED — PR #469 is open/draft/unmerged and pending independent review. `CURRENT-STATE.md` remains the current routing authority; this child pointer does not replace Entry 280 or alter `main`.**
+**Post-repair documentary review:** an Owner-supplied report records `PASS_WITH_OBSERVATIONS` for PR #469 at HEAD `5ed86c3ce7b133a0567c8a0bc5f71e668d45b697` on 2026-10-19. That report predates this wording-only transition update and does not certify the resulting HEAD. `SEMANTIC_ACCEPTANCE = NOT_ESTABLISHED_BY_THIS_REVIEW`; no formal GitHub review has been recorded. Check the live PR and `main` before relying on publication status. Until a separately authorized merge, this branch pointer remains proposed; after any merge, `CURRENT-STATE.md` remains the routing authority and must be read back before routing changes. This pointer does not supersede M0B Entry 280 or release an operational gate.
+
+**Status-label clarification:** the original ninth-review outcome remains `PASS_REPORTED`; reviewer identity and independence remain `OWNER_REPORTED`. `PENDING_NINTH_REVIEW` is an internal status retained in the v9 finding registry and does not mean the ninth-review report is absent. Separately, the Owner-supplied post-repair report records `PASS_WITH_OBSERVATIONS` for HEAD `5ed86c3ce7b133a0567c8a0bc5f71e668d45b697`; it predates this transition edit, is not a formal GitHub review and does not establish semantic acceptance.
 
 After the v9 continuity PR is independently reviewed and merged, use the workstream handoff:
 `CHAT-ARCH-2026-10-18-codex-bridge-v9-review-reconciliation-handoff.md`.

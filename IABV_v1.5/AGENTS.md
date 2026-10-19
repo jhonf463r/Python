@@ -1,6 +1,10 @@
-## 2026-10-18 PROPOSED CONTINUITY POINTER — IABV→CODEX V9 REVIEW RECONCILIATION (PR #469 OPEN / DRAFT / UNMERGED)
+## PROPOSED IABV→CODEX V9 CONTINUITY POINTER — DOCUMENTARY REVIEW / KEEP BLOCKED
 
-**Status: PROPOSED — PR #469 is open/draft/unmerged and pending independent review. `CURRENT-STATE.md` remains the current routing authority; this branch pointer does not supersede M0B Entry 280 or modify `main`.**
+**Post-repair documentary review:** an Owner-supplied report records `PASS_WITH_OBSERVATIONS` for PR #469 at HEAD `5ed86c3ce7b133a0567c8a0bc5f71e668d45b697` on 2026-10-19. That report predates this wording-only transition update and does not certify the resulting HEAD. `SEMANTIC_ACCEPTANCE = NOT_ESTABLISHED_BY_THIS_REVIEW`; no formal GitHub review has been recorded. Check the live PR and `main` before relying on publication status. Until a separately authorized merge, this branch pointer remains proposed; after any merge, `CURRENT-STATE.md` remains the routing authority and must be read back before routing changes. This pointer does not supersede M0B Entry 280 or release an operational gate.
+
+**Status-label clarification:** the original ninth-review outcome remains `PASS_REPORTED`; reviewer identity and independence remain `OWNER_REPORTED`. `PENDING_NINTH_REVIEW` is an internal status retained in the v9 finding registry and does not mean the ninth-review report is absent. Separately, the Owner-supplied post-repair report records `PASS_WITH_OBSERVATIONS` for HEAD `5ed86c3ce7b133a0567c8a0bc5f71e668d45b697`; it predates this transition edit, is not a formal GitHub review and does not establish semantic acceptance.
+
+**Sequence clarification:** `AGENTS.md` is a repository-instruction surface, not an additional item in the canonical experience-activation sequence. After verifying remote `main`, the sequence is `README.md → CURRENT-STATE.md top routing snapshot → CONTEXT-INDEX.md → MEMORY-OPERATING-PROTOCOL.md → relevant source/history`.
 
 Canonical workstream handoff: [CHAT-ARCH-2026-10-18-codex-bridge-v9-review-reconciliation-handoff.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-18-codex-bridge-v9-review-reconciliation-handoff.md).
 
