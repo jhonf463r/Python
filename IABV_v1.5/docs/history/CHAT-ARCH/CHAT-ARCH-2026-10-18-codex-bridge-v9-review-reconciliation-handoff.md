@@ -14,7 +14,7 @@
 
 ### v9 contract candidate
 
-Path: `IABV_CODEX_contract_review_bundle_v9_2026-10-18.md`
+Path: `IABV_v1.5/docs/history/CHAT-ARCH/IABV_CODEX_contract_review_bundle_v9_2026-10-18.md`
 
 - Size: 177,272 bytes.
 - SHA-256: `3fdfd2f6ea3ca6b38f179341b5807e70c95bdde1e8486b0a047032832d0c5e17`.
@@ -23,7 +23,7 @@ Path: `IABV_CODEX_contract_review_bundle_v9_2026-10-18.md`
 
 ### Ninth-review reconciliation
 
-Path: `IABV_V9_NINTH_REVIEW_RECONCILIATION_2026-10-18.md`
+Path: `IABV_v1.5/docs/history/CHAT-ARCH/IABV_V9_NINTH_REVIEW_RECONCILIATION_2026-10-18.md`
 
 - Size: 6,911 bytes.
 - SHA-256: `459de4cd6fae2ce48d4c3eee7e2211edb0d78e23850dd76c121a0a9461d45445`.
