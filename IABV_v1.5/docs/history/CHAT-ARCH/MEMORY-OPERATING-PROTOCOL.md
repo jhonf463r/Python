@@ -28,6 +28,13 @@ Record the ninth review as `PASS_REPORTED`; the review report did not arrive as 
 
 R10 v0.7.4 remains `OWNER_REPORTED / NOT_ASSEMBLED / NOT_PUBLISHED`. Candidate C remains `OWNER_REPORTED / VERDICT_NOT_EMITTED`. Keep both separate.
 
+### Cross-chat operating rules for this workstream
+
+- New sessions must first read `IABV_v1.5/AGENTS.md`, `CHAT-ARCH/README.md`, this active workstream handoff and the relevant active MOP route; check current refs/SHAs and continue from recorded findings rather than repeating completed audits without a concrete reason.
+- Before asking the Owner to upload again, search current-conversation attachments and the Files Library, then retrieve the exact repository artifact if available. Verify identity on read-back; never guess file paths or claim retrieval failed without checking the supported paths. Keep `NOT_FOUND`, `NOT_RECOVERED` and `UNRESOLVED` distinct.
+- Every cross-IA prompt must name `IA DESTINO`, task role, exact source/branch/PR and artifact identities, bounded scope, evidence labels, deliverable, stop conditions and governance restrictions. Prefer GitHub/connected retrieval over manual Owner relay when those routes are available; never claim unverified tool access or publication.
+- Turn repeatable interaction lessons into a dated, scoped protocol/handoff change, validate it by GitHub read-back and request targeted review. A chat is not persistent model training: a draft remains `PROPOSED` until merged or explicitly designated canonical. Do not claim new chats have the rule until they can read the canonical revision.
+
 `GOVERNANCE = KEEP_BLOCKED`; `IMPLEMENTATION = NOT_AUTHORIZED`; `BRIDGE_NOT_READY`. Owner decision C remains binding. No Codex/App Server, preflight, tests, build, runtime, authentication, quota/usage inspection, spend, local checkout/M0A access, `data/`, SQLite, blocked-reader retry/bypass, implementation, merge or promotion. Documentary persistence is not implementation evidence.
 
 
