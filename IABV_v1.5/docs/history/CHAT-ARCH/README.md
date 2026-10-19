@@ -1,6 +1,8 @@
-## CURRENT IABV→CODEX WORKSTREAM ROUTE — V9 NINTH-REVIEW RECONCILIATION / KEEP BLOCKED
+## PROPOSED IABV→CODEX WORKSTREAM ROUTE — V9 NINTH-REVIEW RECONCILIATION / KEEP BLOCKED
 
 Canonical workstream handoff: [CHAT-ARCH-2026-10-18-codex-bridge-v9-review-reconciliation-handoff.md](./CHAT-ARCH-2026-10-18-codex-bridge-v9-review-reconciliation-handoff.md).
+
+**Status: PROPOSED — PR #469 is open/draft/unmerged and pending independent review. `CURRENT-STATE.md` remains the current routing authority; this pointer applies only on this branch and does not replace M0B Entry 280 or alter `main`.**
 
 Exact contract v9: [IABV_CODEX_contract_review_bundle_v9_2026-10-18.md](./IABV_CODEX_contract_review_bundle_v9_2026-10-18.md) — 177,272 bytes; SHA-256 `3fdfd2f6ea3ca6b38f179341b5807e70c95bdde1e8486b0a047032832d0c5e17`; Git blob SHA `17c22a4e9eef3267115816b85bf2ef398b6567b6`.
 
@@ -8,9 +10,9 @@ Ninth-review reconciliation: [IABV_V9_NINTH_REVIEW_RECONCILIATION_2026-10-18.md]
 
 Review status: `PASS_REPORTED`, limited to documentary coherence as reported. Reviewer identity and independence remain `OWNER_REPORTED`; do not equate contract byte identity with semantic acceptance, demonstrated capabilities or operational authorization.
 
-- N-85/N-86: `ALREADY_COVERED / OPTIONAL_CLARIFICATION`.
+- N-85/N-86: behavior text is present in the Owner-supplied artifact `IABV_CODEX_contract_review_bundle_v8_2026-10-18.md` (167,312 bytes; SHA-256 `1e7d4fa3a497d329305dba225a9b45d382d07f345e84e6b16d4d8c60c579726b`). Its bytes were hash-verified, but v8 is not in the public repository tree; this is Owner-supplied source evidence, not independently reproducible from the repository alone. N-85 is covered in §2.8 lines 354–355 and invariant N-80 at line 460; N-86 in §2.6 step 3 at line 259. Retain `OPTIONAL_CLARIFICATION / PENDING_NINTH_REVIEW` and `SEMANTIC_ACCEPTANCE = NOT_ESTABLISHED`; behavior-text presence does not by itself close semantic acceptance.
 - N-87: documentary evidence requirement defined; capability `NOT_DEMONSTRATED`.
-- F-V8-02: not adopted as a new defect; the transition was found in exact v8.
+- F-V8-02: the transition row `FIRST_INSTRUCTION_DEADLINE_EXPIRED → FIRST_INSTRUCTION_OBSERVED_LATE` is present in the Owner-supplied v8 artifact (§2.8 line 429) and in the v9 bundle in this PR (§2.8 line 438); it is not adopted as a new defect. The v8 provenance limitation stated above applies.
 - No automatic v10 without a concrete counterexample or explicit Owner decision.
 - R10 v0.7.4: `OWNER_REPORTED / NOT_ASSEMBLED / NOT_PUBLISHED`.
 - Candidate C: `OWNER_REPORTED / VERDICT_NOT_EMITTED`.
