@@ -1,3 +1,15 @@
+## 2026-10-18 CURRENT CONTINUITY — IABV→CODEX V5 ADVERSARIAL REVIEW HANDOFF
+
+Canonical handoff: [CHAT-ARCH-2026-10-18-codex-bridge-v5-adversarial-review-handoff.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-18-codex-bridge-v5-adversarial-review-handoff.md) — published blob `23b9f83e91267c3b1384f441befe9986ba80de97`, commit `20f7f7a0e44ed4227c1cfdf03514996e9799e2c1`.
+
+Latest owner-supplied adversarial review of IABV→Codex contract v5: `PASS_WITH_REPAIRS` for wording only; N-01–N-25 were not re-readjudicated; N-26–N-41 largely partial; N42–N64 newly reported. Priority: N42/N43 reservation-anchor and gate/resume ordering; N46/N50 trust-root and control-plane writers; N52–N55 complete disclosure/auth/egress boundary; N57/N59/N60 independent no-execution, digest and owner-view evidence; N62/N63 single-owner deadlock and joint satisfiability. See handoff for exact status/provenance and next bounded documentary action. The v5 artifact itself was not independently fetched in this continuation; review claims remain `OWNER_REPORTED`.
+
+**Governance remains `KEEP_BLOCKED`; `IMPLEMENTATION = NOT_AUTHORIZED`; `BRIDGE_NOT_READY`.** No CLI/App Server launch, preflight, inventory/materialization, test/build/runtime, authentication/quota query, spend, local source/config edit, commit/push or promotion. Owner decision C remains binding. Do not inspect `data/` or SQLite, retry/bypass the governance-denied MCP reader, or conflate distinct dirty local checkouts.
+
+Other pending owner-reported deliverables: assemble the independent R10 v0.7.4 report from 99 existing row evaluations (not yet assembled/published); emit the Candidate C verdict (analysis reportedly done, verdict not emitted). Do not infer either result.
+
+---
+
 ## 2026-10-13 CANONICAL ROUTE — ENTRY 280: C6 FAIL RECONCILIATION / AMENDMENT 274.5
 
 Canonical artifact: [CHAT-ARCH-2026-10-13-280-m0b-r8-1-c6-delta-adjudication-and-amendment-274-5.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-280-m0b-r8-1-c6-delta-adjudication-and-amendment-274-5.md) — blob `6d7d7f4966e1224456e00410c812395e6a5c598f`.
