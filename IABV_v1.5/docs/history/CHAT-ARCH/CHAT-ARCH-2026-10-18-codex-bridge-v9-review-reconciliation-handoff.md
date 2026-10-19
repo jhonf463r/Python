@@ -59,7 +59,7 @@ The entry points updated in this proposed change are:
 
 1. `IABV_v1.5/AGENTS.md`
 2. `IABV_v1.5/docs/history/CHAT-ARCH/README.md`
-3. `IABV_v1.5/docs/history/CHAT-ARCH/MEMORY-OPERATING-PROTOCOL.md)
+3. `IABV_v1.5/docs/history/CHAT-ARCH/MEMORY-OPERATING-PROTOCOL.md`
 
 This handoff is the proposed current route for the IABV → Codex workstream after this PR is independently reviewed and merged. It does not replace or reorder the independent M0B Entry 280 route in the memory operating protocol. The v5 handoff remains byte-for-byte immutable historical evidence.
 
@@ -74,7 +74,19 @@ For every new session:
 5. Keep the next external review or action explicit, with `IA DESTINO`, required capability, scope, stop conditions and output contract.
 6. Use GitHub PRs as the cross-IA documentary channel while the runtime bridge remains unavailable; do not make the Owner manually transport artifacts that connected tools can retrieve.
 
-## 7. Non-negotiable restrictions
+## 7. Cross-chat continuity and coordination protocol
+
+This section records reusable operating lessons for future IABV → Codex sessions. It is a documentary proposal until this PR is accepted into the repository's canonical route; a chat message or draft branch alone is not persistent memory.
+
+1. **Bootstrap from the source of truth, not from recollection.** At the start of each session, read `IABV_v1.5/AGENTS.md`, `IABV_v1.5/docs/history/CHAT-ARCH/README.md`, the current workstream handoff they point to, and the relevant active section of `MEMORY-OPERATING-PROTOCOL.md`. Resolve the actual base, branch, PR and HEAD SHAs. Preserve the separate M0B Entry 280 route.
+2. **Continue; do not restart without cause.** Reuse earlier findings only to the extent supported by their exact source and evidence status. Reopen an alleged resolved finding only for a concrete counterexample, source change, missing required evidence, or explicit Owner instruction. Keep pending R10 v0.7.4 and Candidate C as independent deliverables.
+3. **Recover before asking the Owner to re-upload.** Check current-conversation attachments and the Files Library with semantic search/list as appropriate; materialize a Library file only when its bytes are needed; then use the recorded repository path/ref. Verify the exact artifact by byte hash and/or Git blob identity. Never infer a sandbox path. Distinguish `NOT_SEARCHED`, `NOT_FOUND`, `NOT_RECOVERED` and `UNRESOLVED`; request re-upload only after supported retrieval paths have actually been exhausted.
+4. **Every IA handoff is task-routed and self-contained.** State `IA DESTINO`, the actor's bounded role, exact repository/path/commit/branch/PR and input hashes, source/evidence classifications, the precise question, permitted and forbidden actions, required output/artifact, stop conditions and unchanged governance gates. Select the actor according to the task and confirmed access, not habit: use an independent adversarial reviewer for semantic review, and a source-inspection actor only for explicitly authorized static work. Do not claim an actor has access or write permission without evidence.
+5. **Use the shared repository instead of making the Owner relay artifacts.** While the runtime bridge is unavailable, prefer GitHub source/PRs and connected file retrieval for cross-IA documentary work. Have each actor cite exact paths, revisions and evidence; read back any published result before calling it published. If a tool cannot read or write, report that limitation without inventing completion or shifting avoidable manual work to the Owner.
+6. **Convert real mistakes into versioned process improvements.** Record a repeatable lesson in this handoff or the relevant canonical protocol through a narrowly scoped, reviewable change; check the exact diff, fetch the result back, and request targeted re-review when reviewable content changed. Keep the old audit history intact, repair the smallest demonstrated defect in the current workstream, and do not spawn a new version or redo a completed audit without justification.
+7. **Never overstate cross-chat learning.** The assistant is not automatically trained by each conversation. A lesson is durable for new sessions only when it is recorded in repository instructions and those sessions read the applicable canonical version. A draft PR is `PROPOSED`, not canonical; do not say the protocol is active on `main` until the change is merged or separately designated canonical by the Owner. A documentary PASS does not prove runtime capability or release a gate.
+
+## 8. Non-negotiable restrictions
 
 `GOVERNANCE = KEEP_BLOCKED`  
 `IMPLEMENTATION = NOT_AUTHORIZED`  
