@@ -63,28 +63,40 @@ The entry points updated in this proposed change are:
 
 This handoff is the proposed current route for the IABV → Codex workstream after this PR is independently reviewed and merged. It does not replace or reorder the independent M0B Entry 280 route in the memory operating protocol. The v5 handoff remains byte-for-byte immutable historical evidence.
 
-## 6. Required continuation method
+## 6. Mandatory continuation and global-frame activation
 
-For every new session:
+For every new IABV session, the acting AI must do the following before choosing an actor, drafting a prompt, or asking the Owner to restate context:
 
-1. Resolve the current commit SHA and read the canonical pointers before acting.
-2. Retrieve the exact v9 contract and reconciliation from the paths above; verify their file hashes before reviewing.
-3. Separate `PROVEN_BY_SOURCE`, `OWNER_REPORTED`, `PROPOSED`, `UNPROVEN`, `UNRESOLVED`, `NOT_RECOVERED`, and `NOT_RUN`.
-4. Cross-check every alleged missing clause against the exact artifact; do not treat a reviewer summary as a substitute for source.
-5. Keep the next external review or action explicit, with `IA DESTINO`, required capability, scope, stop conditions and output contract.
-6. Use GitHub PRs as the cross-IA documentary channel while the runtime bridge remains unavailable; do not make the Owner manually transport artifacts that connected tools can retrieve.
+1. Read `IABV_v1.5/AGENTS.md` for repository instructions and verify the current remote `main` SHA. Pin source reads to that revision; separately identify any PR branch/head being reviewed.
+2. Follow the canonical experience-activation sequence in `MEMORY-OPERATING-PROTOCOL.md`: `README.md → CURRENT-STATE.md top routing snapshot → objective-conditioned records via CONTEXT-INDEX.md → MEMORY-OPERATING-PROTOCOL.md → relevant source/history`. `CURRENT-STATE.md` remains the only current routing authority; historical `NEXT ACTOR` values and task-specific handoffs do not independently override it.
+3. Classify the actual objective before retrieving history. For global vision, universal reasoning, cross-AI coordination, memory, learning or continuity, explicitly activate `UAAL-ROOT-001` and the relevant lineage listed in §7 below. Do not narrow the product objective to the current Codex/MCP subproblem merely because that subproblem is the active workstream.
+4. Reconcile the current objective, current verified truth, settled Owner decisions, negative knowledge, previous failures/false positives, closed edges, existing-organ ownership and first open causal/evidential edge. Reopen completed work only for new contradictory evidence, a source change, a missing mandatory artifact or an explicit Owner instruction.
+5. Recover exact artifacts before asking the Owner to resend them: search current-conversation attachments and the Files Library using the supported retrieval path, then check the exact repository path/ref. Verify byte identity or blob SHA on read-back when artifact identity matters. Never guess a sandbox path. Keep `NOT_SEARCHED`, `NOT_FOUND`, `NOT_RECOVERED` and `UNRESOLVED` distinct.
+6. Recompute the actor from the first open edge using required capability, actual access, independence, intervention cost and expected information gain. Every cross-IA handoff must name `IA DESTINO`, exact source revision/paths/identities, scope, prior evidence, required result, forbidden actions, stop conditions and verifier where determinable.
+7. Turn relevant prior failures into concrete task constraints or acceptance gates; merely quoting history or paraphrasing the Owner's already-settled idea does not satisfy experience activation. If the user says the point is already established, perform the canonical retrieval and state what existing concept/record covers it before asking for additional explanation.
+8. After any material actor result, reconcile claims against the exact source, classify its evidence status, derive any justified Knowledge/Method/Relation/Routing Delta, update only the appropriate existing memory projection, and fetch the writeback back to verify it. A report/comment is not published until read-back confirms it.
 
-## 7. Cross-chat continuity and coordination protocol
+## 7. Global objective, parent lineage and architecture guardrails
 
-This section records reusable operating lessons for future IABV → Codex sessions. It is a documentary proposal until this PR is accepted into the repository's canonical route; a chat message or draft branch alone is not persistent memory.
+**This PR is a task-specific IABV → Codex bridge-continuity route. It is not the Universal Adaptive Algorithm, not the whole product objective, and not a new memory/coordinator organ.** Its place is beneath the existing universal concept hierarchy and collaboration protocol. Never let the immediate bridge work redefine the root objective.
 
-1. **Bootstrap from the source of truth, not from recollection.** At the start of each session, read `IABV_v1.5/AGENTS.md`, `IABV_v1.5/docs/history/CHAT-ARCH/README.md`, the current workstream handoff they point to, and the relevant active section of `MEMORY-OPERATING-PROTOCOL.md`. Resolve the actual base, branch, PR and HEAD SHAs. Preserve the separate M0B Entry 280 route.
-2. **Continue; do not restart without cause.** Reuse earlier findings only to the extent supported by their exact source and evidence status. Reopen an alleged resolved finding only for a concrete counterexample, source change, missing required evidence, or explicit Owner instruction. Keep pending R10 v0.7.4 and Candidate C as independent deliverables.
-3. **Recover before asking the Owner to re-upload.** Check current-conversation attachments and the Files Library with semantic search/list as appropriate; materialize a Library file only when its bytes are needed; then use the recorded repository path/ref. Verify the exact artifact by byte hash and/or Git blob identity. Never infer a sandbox path. Distinguish `NOT_SEARCHED`, `NOT_FOUND`, `NOT_RECOVERED` and `UNRESOLVED`; request re-upload only after supported retrieval paths have actually been exhausted.
-4. **Every IA handoff is task-routed and self-contained.** State `IA DESTINO`, the actor's bounded role, exact repository/path/commit/branch/PR and input hashes, source/evidence classifications, the precise question, permitted and forbidden actions, required output/artifact, stop conditions and unchanged governance gates. Select the actor according to the task and confirmed access, not habit: use an independent adversarial reviewer for semantic review, and a source-inspection actor only for explicitly authorized static work. Do not claim an actor has access or write permission without evidence.
-5. **Use the shared repository instead of making the Owner relay artifacts.** While the runtime bridge is unavailable, prefer GitHub source/PRs and connected file retrieval for cross-IA documentary work. Have each actor cite exact paths, revisions and evidence; read back any published result before calling it published. If a tool cannot read or write, report that limitation without inventing completion or shifting avoidable manual work to the Owner.
-6. **Convert real mistakes into versioned process improvements.** Record a repeatable lesson in this handoff or the relevant canonical protocol through a narrowly scoped, reviewable change; check the exact diff, fetch the result back, and request targeted re-review when reviewable content changed. Keep the old audit history intact, repair the smallest demonstrated defect in the current workstream, and do not spawn a new version or redo a completed audit without justification.
-7. **Never overstate cross-chat learning.** The assistant is not automatically trained by each conversation. A lesson is durable for new sessions only when it is recorded in repository instructions and those sessions read the applicable canonical version. A draft PR is `PROPOSED`, not canonical; do not say the protocol is active on `main` until the change is merged or separately designated canonical by the Owner. A documentary PASS does not prove runtime capability or release a gate.
+The following source artifacts were read from the canonical base snapshot `main @ d3a4212b6de36254bf45d5e655d684d0640a0706`. They are part of the established project context, not new theories introduced by this PR:
+
+- `UNIVERSAL-ADAPTIVE-ALGORITHM-CONSTITUTION-2026-10-04.md` — Git blob `2e42ce7dd1615f83cb690b226e2a27af90190751`; defines `UAAL-ROOT-001`, derived concept genealogy and promotion gates.
+- `CHAT-ARCH-2026-10-03-037-laptop-native-free-first-cross-ai-objective.md` — blob `b873bc27b5124240abffdd4002ea31bd9d0ac7d6`; defines the broader laptop-native, free-first, cross-AI objective.
+- `CHAT-ARCH-2026-10-03-042-unified-interaction-memory-space-time-continuity.md` — blob `f9eef31860d039bce5507c5b9dd795e32c580edb`; defines the time-indexed interaction-episode model and the boundary between historical record and current routing authority.
+- `CHAT-ARCH-2026-10-06-094-chat-full-absorption-universal-routing-reconciliation.md` — blob `23505c9e3a6a1bd2d1aeb08c310d2bfb9d9f16eb`; defines capability-fit routing and reserves “learning” for verified prior experience later reused to change a decision or behavior.
+- `IABV-COLLABORATION-COORDINATION-PROTOCOL-2026-10-04.md` — blob `b5f614c11ca894b80e62a03c854b539d9493209b`; defines canonical frame-entry, objective-conditioned retrieval, actor routing, frame-exit and writeback.
+
+Apply the existing model rather than inventing a parallel one:
+
+`objective → current verified truth → relevant activated experience → first open causal/evidential edge → required capability → capability-fit actor/realization → smallest discriminating action → expected observation → observation → independent verification → reconciliation → Knowledge/Method/Relation/Routing Delta → later reuse test`.
+
+Treat `CURRENT-STATE.md` as current routing authority; `CONTEXT-INDEX.md` as objective-conditioned navigation; `MEMORY-OPERATING-PROTOCOL.md` as memory/evidence method; `SYMBIOSIS-MAP.md` as cross-IA capability/transfer evidence; `UNRESOLVED-KNOWLEDGE.md` as unresolved ideas/open questions; `ARCHIVE-REGISTRY.md` as provenance/absorption index; and registered `CHAT-ARCH` records as episode/history evidence. Do not create competing authorities or indiscriminately copy the whole archive into every task.
+
+Relevant concept families already identify `UAAL-D003` (capability/resource fabric), `UAAL-D004` (adaptive realization selection), `UAAL-D006` (external AIs as capability realizations) and `UAAL-D008` (knowledge plasticity). Their source documents classify the complete causal loop as partial or not proven end-to-end. GitHub coordination currently serves as an externalized control surface; it is not proof that the IABV runtime already performs autonomous context activation, actor launch, result ingestion and causal reuse.
+
+The actual developmental success criterion is stronger than storing memory or getting an AI to agree: a later non-identical objective must retrieve verified experience, use it to change a justified decision/action, permit independent verification of that change and reduce routine Owner transport without losing provenance or governance. Until that is observed, describe the universal loop as design intent / hypothesis, not a completed capability.
 
 ## 8. Non-negotiable restrictions
 
