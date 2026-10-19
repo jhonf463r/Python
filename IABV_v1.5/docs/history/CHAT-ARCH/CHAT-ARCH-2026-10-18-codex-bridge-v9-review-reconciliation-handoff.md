@@ -34,10 +34,11 @@ The ninth-review text supplied in conversation declares `PASS`, but no separate 
 
 ## 2. Reconciled documentary findings
 
-- `N-85 = ALREADY_COVERED / OPTIONAL_CLARIFICATION`: do not promote a redundant clarification into a new semantic defect.
-- `N-86 = ALREADY_COVERED / OPTIONAL_CLARIFICATION`: the exact manual path-manifest route remains permissible without inventory where §2.6 allows it, without skipping MaterializationAuthorization or other applicable steps.
+**v8 provenance:** the cited artifact is the Owner-supplied file `IABV_CODEX_contract_review_bundle_v8_2026-10-18.md` (167,312 bytes; SHA-256 `1e7d4fa3a497d329305dba225a9b45d382d07f345e84e6b16d4d8c60c579726b`). Its bytes were hash-verified from the supplied artifact. v8 is not in the public repository tree, so a reviewer with only the repository cannot independently reproduce v8-dependent claims; the public v9 transition row remains directly checkable at §2.8 line 438.
+- `N-85 = BEHAVIOR_TEXT_PRESENT_IN_OWNER_SUPPLIED_V8 / OPTIONAL_CLARIFICATION / PENDING_NINTH_REVIEW`: the supplied v8 text addresses the behavior in §2.8 lines 354–355 and invariant N-80 at line 460. Preserve `SEMANTIC_ACCEPTANCE = NOT_ESTABLISHED`; text presence does not establish semantic acceptance.
+- `N-86 = BEHAVIOR_TEXT_PRESENT_IN_OWNER_SUPPLIED_V8 / OPTIONAL_CLARIFICATION / PENDING_NINTH_REVIEW`: the supplied v8 text permits the exact manual path-list route without inventory in §2.6 step 3 at line 259, without skipping MaterializationAuthorization or other applicable steps. Preserve `SEMANTIC_ACCEPTANCE = NOT_ESTABLISHED`.
 - `N-87 = DOCUMENTED_REQUIREMENT / CAPABILITY_NOT_DEMONSTRATED`: §2.12 specifies evidence needed for service-side exclusivity, but does not prove that such a pre-existing capability exists.
-- `F-V8-02 = CONTRADICTED_BY_V8_SOURCE / NOT_ADOPTED_AS_NEW_DEFECT`: the transition `FIRST_INSTRUCTION_DEADLINE_EXPIRED → FIRST_INSTRUCTION_OBSERVED_LATE` was present in the exact v8 source; do not add a duplicate.
+- `F-V8-02 = CONTRADICTED_BY_V8_SOURCE / NOT_ADOPTED_AS_NEW_DEFECT`: the transition `FIRST_INSTRUCTION_DEADLINE_EXPIRED → FIRST_INSTRUCTION_OBSERVED_LATE` is present in the Owner-supplied v8 artifact (§2.8 line 429) and in the public v9 bundle (§2.8 line 438). The v8 basis is subject to the provenance limitation above; do not add a duplicate defect.
 - Do not create v10 without a concrete surviving counterexample or explicit Owner decision.
 - Do not inherit historical `CLOSED` statuses without source-level reconciliation; keep unrecoverable historical counterexamples `NOT_RECOVERED`.
 
