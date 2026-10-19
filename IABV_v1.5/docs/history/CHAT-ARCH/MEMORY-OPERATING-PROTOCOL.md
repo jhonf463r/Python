@@ -17,6 +17,8 @@ Operational posture: `KEEP_BLOCKED`. No local M0A access, blocked-reader retry/b
 
 **Scope:** documentary continuity for the IABV → Codex governed development bridge only. This pointer does not supersede, reorder or close the separate M0B Entry 280 route above.
 
+**Status: PROPOSED — PR #469 is open/draft/unmerged and pending independent review. `CURRENT-STATE.md` remains the current routing authority; this child pointer does not replace Entry 280 or alter `main`.**
+
 After the v9 continuity PR is independently reviewed and merged, use the workstream handoff:
 `CHAT-ARCH-2026-10-18-codex-bridge-v9-review-reconciliation-handoff.md`.
 
@@ -24,7 +26,7 @@ Exact artefacts kept alongside that handoff:
 - `IABV_CODEX_contract_review_bundle_v9_2026-10-18.md` — 177,272 bytes; SHA-256 `3fdfd2f6ea3ca6b38f179341b5807e70c95bdde1e8486b0a047032832d0c5e17`.
 - `IABV_V9_NINTH_REVIEW_RECONCILIATION_2026-10-18.md` — 6,911 bytes; SHA-256 `459de4cd6fae2ce48d4c3eee7e2211edb0d78e23850dd76c121a0a9461d45445`.
 
-Record the ninth review as `PASS_REPORTED`; the review report did not arrive as a separately hash-verifiable artifact, so reviewer identity and independence remain `OWNER_REPORTED`. Preserve v5–v9 as immutable history. N-85/N-86 remain `ALREADY_COVERED / OPTIONAL_CLARIFICATION`; N-87 is a specified evidence requirement, not proof that the capability exists; F-V8-02 is not a new defect. Do not create v10 without a concrete counterexample or explicit Owner decision.
+Record the ninth review as `PASS_REPORTED`; the review report did not arrive as a separately hash-verifiable artifact, so reviewer identity and independence remain `OWNER_REPORTED`. Preserve v5–v9 as immutable history. N-85/N-86: behavior text is present in the Owner-supplied artifact `IABV_CODEX_contract_review_bundle_v8_2026-10-18.md` (167,312 bytes; SHA-256 `1e7d4fa3a497d329305dba225a9b45d382d07f345e84e6b16d4d8c60c579726b`). Its bytes were hash-verified, but v8 is not in the public repository tree; this is Owner-supplied source evidence, not independently reproducible from the repository alone. N-85 is covered in §2.8 lines 354–355 and invariant N-80 at line 460; N-86 in §2.6 step 3 at line 259. Retain `OPTIONAL_CLARIFICATION / PENDING_NINTH_REVIEW` and `SEMANTIC_ACCEPTANCE = NOT_ESTABLISHED`; behavior-text presence does not by itself close semantic acceptance. N-87 is a specified evidence requirement, not proof that the capability exists. F-V8-02: the transition row `FIRST_INSTRUCTION_DEADLINE_EXPIRED → FIRST_INSTRUCTION_OBSERVED_LATE` is present in the Owner-supplied v8 artifact (§2.8 line 429) and in the v9 bundle in this PR (§2.8 line 438); it is not adopted as a new defect. The v8 provenance limitation stated above applies. Do not create v10 without a concrete counterexample or explicit Owner decision.
 
 R10 v0.7.4 remains `OWNER_REPORTED / NOT_ASSEMBLED / NOT_PUBLISHED`. Candidate C remains `OWNER_REPORTED / VERDICT_NOT_EMITTED`. Keep both separate.
 
