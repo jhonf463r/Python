@@ -1,3 +1,17 @@
+## 2026-10-18 CURRENT BRIDGE ROUTE — IABV→CODEX V5 REVIEW / KEEP BLOCKED
+
+Canonical handoff: [CHAT-ARCH-2026-10-18-codex-bridge-v5-adversarial-review-handoff.md](./CHAT-ARCH-2026-10-18-codex-bridge-v5-adversarial-review-handoff.md) — blob `23b9f83e91267c3b1384f441befe9986ba80de97`, initial commit `20f7f7a0e44ed4227c1cfdf03514996e9799e2c1`. AGENTS overlay was subsequently updated in commit `ab8dbb4e4694abf49845249b5764765f789813cf`.
+
+Latest review supplied by Owner: v5 `PASS_WITH_REPAIRS` on documentary wording only; N-01–N-25 `NOT_RECOVERED`/not readjudicated; N-26–N-41 mostly `PARTIALLY_CLOSED`; new findings N42–N64. See canonical handoff for the bounded priority list and provenance limitations. The actual v5 candidate was not independently fetched here, so the review remains `OWNER_REPORTED`.
+
+Immediate next actor: ChatGPT/coordinator, documentary-only. Locate the exact v5 artifact via an authorized published source or ask for that single file; then make a focused v6 delta addressing the protocol-ordering and joint-satisfiability blockers before polishing low-severity wording. Preserve v5 immutable, fetch back the new candidate, then ask Sonnet/Claude for one bounded adversarial review. Do not repeat broad source archaeology.
+
+Pending separate deliverables: R10 v0.7.4 independent report (99 row evaluations reportedly drafted but Markdown not assembled/published) and Candidate C verdict (analysis reportedly completed but verdict not emitted). Do not infer either result.
+
+`GOVERNANCE = KEEP_BLOCKED` · `IMPLEMENTATION = NOT_AUTHORIZED` · `BRIDGE_NOT_READY`. No local preflight, CLI/App Server/model turn, tests/build/runtime, auth/quota check, spend, local edits, commit/push or promotion. Owner decision C remains binding. Never inspect `data/` or SQLite or retry/bypass the blocked governance reader.
+
+---
+
 ## 2026-10-13 CANONICAL ROUTE — ENTRY 280: C6 FAIL RECONCILIATION / AMENDMENT 274.5
 
 Canonical artifact: [CHAT-ARCH-2026-10-13-280-m0b-r8-1-c6-delta-adjudication-and-amendment-274-5.md](./CHAT-ARCH-2026-10-13-280-m0b-r8-1-c6-delta-adjudication-and-amendment-274-5.md) — blob `6d7d7f4966e1224456e00410c812395e6a5c598f`, commit `0a462d66071f2d354e8a299ffaf859b3aeac61d5`.
