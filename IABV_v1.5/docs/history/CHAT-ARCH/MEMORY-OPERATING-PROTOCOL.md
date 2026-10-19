@@ -28,12 +28,25 @@ Record the ninth review as `PASS_REPORTED`; the review report did not arrive as 
 
 R10 v0.7.4 remains `OWNER_REPORTED / NOT_ASSEMBLED / NOT_PUBLISHED`. Candidate C remains `OWNER_REPORTED / VERDICT_NOT_EMITTED`. Keep both separate.
 
-### Cross-chat operating rules for this workstream
+### Workstream-specific continuity activation — IABV → Codex v9
 
-- New sessions must first read `IABV_v1.5/AGENTS.md`, `CHAT-ARCH/README.md`, this active workstream handoff and the relevant active MOP route; check current refs/SHAs and continue from recorded findings rather than repeating completed audits without a concrete reason.
-- Before asking the Owner to upload again, search current-conversation attachments and the Files Library, then retrieve the exact repository artifact if available. Verify identity on read-back; never guess file paths or claim retrieval failed without checking the supported paths. Keep `NOT_FOUND`, `NOT_RECOVERED` and `UNRESOLVED` distinct.
-- Every cross-IA prompt must name `IA DESTINO`, task role, exact source/branch/PR and artifact identities, bounded scope, evidence labels, deliverable, stop conditions and governance restrictions. Prefer GitHub/connected retrieval over manual Owner relay when those routes are available; never claim unverified tool access or publication.
-- Turn repeatable interaction lessons into a dated, scoped protocol/handoff change, validate it by GitHub read-back and request targeted review. A chat is not persistent model training: a draft remains `PROPOSED` until merged or explicitly designated canonical. Do not claim new chats have the rule until they can read the canonical revision.
+The workstream handoff is a specialized child route, not a replacement for the global objective-conditioned experience-activation protocol above and not a new universal coordinator/memory organ. For this workstream, read the current IABV→Codex handoff after performing the mandatory entry sequence:
+
+`verify remote main SHA → README → CURRENT-STATE top routing snapshot → CONTEXT-INDEX objective-conditioned navigation → MEMORY-OPERATING-PROTOCOL → relevant source/history`.
+
+Because bridge continuity touches cross-AI coordination, longitudinal memory and the universal development objective, explicitly activate `UAAL-ROOT-001` and its relevant concept lineage before narrowing to v9. The established parent sources are `UNIVERSAL-ADAPTIVE-ALGORITHM-CONSTITUTION-2026-10-04.md`, `CHAT-ARCH-2026-10-03-037-laptop-native-free-first-cross-ai-objective.md`, `CHAT-ARCH-2026-10-03-042-unified-interaction-memory-space-time-continuity.md`, `CHAT-ARCH-2026-10-06-094-chat-full-absorption-universal-routing-reconciliation.md`, and `IABV-COLLABORATION-COORDINATION-PROTOCOL-2026-10-04.md`. See the workstream handoff for exact blob identities and the defined parent/child relationship.
+
+The bridge work must remain aligned to the existing developmental loop:
+
+`objective → current truth → activated relevant experience → first open causal/evidential edge → capability-fit actor/resource → governed action → expected/actual observation → independent verification → reconciliation → Knowledge/Method/Relation/Routing Delta → later causal reuse`.
+
+Do not treat this PR, Codex, MCP or any single provider as the universal algorithm. Reuse the existing memory organs and keep their authority boundaries: `CURRENT-STATE` = current routing authority; `CONTEXT-INDEX` = retrieval/navigation; `MEMORY-OPERATING-PROTOCOL` = method; `SYMBIOSIS-MAP` = capability/transfer evidence; `UNRESOLVED-KNOWLEDGE` = open questions; `ARCHIVE-REGISTRY` = provenance; `CHAT-ARCH` = historical evidence.
+
+Cross-agent handoffs must name `IA DESTINO`, exact source revision and artifact identities, task-bound scope, evidence/status labels, required output, stop conditions and applicable governance restrictions. Prefer connected retrieval/GitHub over asking the Owner to transport already-accessible artifacts; attempt supported attachment/Library/repository retrieval before requesting re-upload. Verify published writeback by read-back and never claim tool access or publication without evidence.
+
+When the Owner says an idea or decision has already been established, treat that as a trigger to retrieve and reconcile its existing source/lineage—not as a request to make the Owner explain it from scratch. State which prior record covers it, whether the current turn adds a genuinely new concept or only a method/routing correction, and what specific evidence remains missing. Historical actor suggestions are not authority: recompute the next actor from the current first open edge.
+
+The runtime property remains unproven: repository continuity does not establish autonomous IABV context activation, inter-IA dispatch, result ingestion or causal reuse. Keep all relevant promotion gates and governance restrictions intact.
 
 `GOVERNANCE = KEEP_BLOCKED`; `IMPLEMENTATION = NOT_AUTHORIZED`; `BRIDGE_NOT_READY`. Owner decision C remains binding. No Codex/App Server, preflight, tests, build, runtime, authentication, quota/usage inspection, spend, local checkout/M0A access, `data/`, SQLite, blocked-reader retry/bypass, implementation, merge or promotion. Documentary persistence is not implementation evidence.
 
