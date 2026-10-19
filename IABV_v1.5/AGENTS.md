@@ -1,4 +1,6 @@
-## 2026-10-18 CURRENT CONTINUITY — IABV→CODEX V9 REVIEW RECONCILIATION
+## 2026-10-18 PROPOSED CONTINUITY POINTER — IABV→CODEX V9 REVIEW RECONCILIATION (PR #469 OPEN / DRAFT / UNMERGED)
+
+**Status: PROPOSED — PR #469 is open/draft/unmerged and pending independent review. `CURRENT-STATE.md` remains the current routing authority; this branch pointer does not supersede M0B Entry 280 or modify `main`.**
 
 Canonical workstream handoff: [CHAT-ARCH-2026-10-18-codex-bridge-v9-review-reconciliation-handoff.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-18-codex-bridge-v9-review-reconciliation-handoff.md).
 
@@ -7,7 +9,7 @@ Exact documentary artifacts preserved in the CHAT-ARCH route:
 - Ninth-review reconciliation: `docs/history/CHAT-ARCH/IABV_V9_NINTH_REVIEW_RECONCILIATION_2026-10-18.md`; 6,911 bytes; SHA-256 `459de4cd6fae2ce48d4c3eee7e2211edb0d78e23850dd76c121a0a9461d45445`.
 - The supplied ninth-review verdict is recorded as `PASS_REPORTED`; reviewer identity and independence remain `OWNER_REPORTED`. Hash identity does not authenticate a reviewer or establish semantic acceptance.
 
-N-85/N-86 remain `ALREADY_COVERED / OPTIONAL_CLARIFICATION`. N-87 is a documented evidence requirement; the real capability remains `NOT_DEMONSTRATED`. F-V8-02 is not adopted as a new defect because the transition was found in the exact v8 artifact. Do not create v10 without a concrete counterexample or explicit Owner decision. Preserve the prior v5–v9 artifacts and reports as immutable history; do not inherit `CLOSED` without source reconciliation.
+N-85/N-86: behavior text is present in the Owner-supplied artifact `IABV_CODEX_contract_review_bundle_v8_2026-10-18.md` (167,312 bytes; SHA-256 `1e7d4fa3a497d329305dba225a9b45d382d07f345e84e6b16d4d8c60c579726b`). Its bytes were hash-verified, but v8 is not in the public repository tree; this is Owner-supplied source evidence, not independently reproducible from the repository alone. N-85 is covered in §2.8 lines 354–355 and invariant N-80 at line 460; N-86 in §2.6 step 3 at line 259. Retain `OPTIONAL_CLARIFICATION / PENDING_NINTH_REVIEW` and `SEMANTIC_ACCEPTANCE = NOT_ESTABLISHED`; behavior-text presence does not by itself close semantic acceptance. N-87 is a documented evidence requirement; the real capability remains `NOT_DEMONSTRATED`. F-V8-02: the transition row `FIRST_INSTRUCTION_DEADLINE_EXPIRED → FIRST_INSTRUCTION_OBSERVED_LATE` is present in the Owner-supplied v8 artifact (§2.8 line 429) and in the v9 bundle in this PR (§2.8 line 438); it is not adopted as a new defect. The v8 provenance limitation stated above applies. Do not create v10 without a concrete counterexample or explicit Owner decision. Preserve the prior v5–v9 artifacts and reports as immutable history; do not inherit `CLOSED` without source reconciliation.
 
 Separate pending work:
 - R10 v0.7.4: `OWNER_REPORTED / NOT_ASSEMBLED / NOT_PUBLISHED` until the exact 99 evaluation rows are recovered and reconciled.
