@@ -13,7 +13,7 @@ Continue only the documentary design of the IABV → Codex development bridge. T
 - SHA-256: `1672457e391a8882e0b20a855a6d834257cddf3e5f57de198ce6ed85c80db6a4`
 - Size: 147,208 bytes.
 
-The v7 candidate is an artifact generated in the preceding ChatGPT work session and was not yet published in this repository when this Entry was drafted. The reviewer must receive the file itself as an attachment, not this Entry in place of the contract. Standalone handoff: `IABV_CODEX_NEW_CHAT_HANDOFF_2026-10-18.md`, SHA-256 `95b37e8627131ff6c8c8385ea99c99d6d2bec00b0678e13744268324f2c63b30`.
+The v7 candidate is an artifact generated in the preceding ChatGPT work session and was not yet published in this repository when this Entry was drafted. The reviewer must receive the file itself as an attachment, not this Entry in place of the contract. Standalone handoff: `IABV_CODEX_NEW_CHAT_HANDOFF_2026-10-18.md`, SHA-256 `47b8e303369a1c3498ec85fb0d9316d60815f2cdabfa64afb0375d66ccfc9c19`.
 
 ## 2. Sixth adversarial review result (user-supplied)
 
@@ -69,7 +69,7 @@ After the review returns, the coordinator adjudicates against v7. Do not create 
 
 ## 7. GitHub continuity separation
 
-Read-only fetches from `jhonf463r/Python` returned `IABV_v1.5/AGENTS.md` blob `69028c4677d121fa455399a27b271c1b36c88187`, `IABV_v1.5/docs/history/CHAT-ARCH/README.md` blob `1a1a7c2f6fa82b3171da69c6f54cdb1667babf16`, with the public objects returned at commit `9e0ce66768aedd7422e0d3551affd398f44a7532`.
+Read-only fetches from `jhonf463r/Python` returned `IABV_v1.5/AGENTS.md` blob `69028c4677d121fa455399a27b271c1b36c88187`, `IABV_v1.5/docs/history/CHAT-ARCH/README.md` blob `1a1a7c2f6fa82b3171da69c6f54cdb1667babf16`, Some search-result URLs for historical source objects were pinned to commit `9e0ce66768aedd7422e0d3551affd398f44a7532`; this is distinct from PR #468's base SHA `d3a4212b6de36254bf45d5e655d684d0640a0706`.
 
 Those fetched public index files start with Entry 280 for the M0B-R8.1 read-decision track. This development-bridge contract is a separate parallel route; it must not overwrite or confuse Entry 280. PR #467 is a separate R10/space-time continuity branch `docs/iabv-space-time-agent-continuity-2026-10-16`; do not repurpose or merge it. This Entry is in separate **draft PR #468** (`https://github.com/jhonf463r/Python/pull/468`); it is open, draft and unmerged. It does not update the main canonical index and does not contain the complete v7 contract artifact.
 
