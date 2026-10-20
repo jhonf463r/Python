@@ -1,3 +1,36 @@
+# CURRENT ROUTING SNAPSHOT — 2026-10-20 (GOAL-LOCKED)
+
+**This is the only current actor-routing authority.** Older dates and “NEXT ACTOR” statements farther down this file and in archives are non-routable history unless this snapshot explicitly reactivates them.
+
+- **PRIMARY_OUTCOME:** `GOVERNED_IABV_CODEX_BRIDGE` — actual end-to-end path from IABV task through an isolated Codex candidate and independently verifiable diff/receipt to the identified IABV consumer and separate owner decision.
+- **CURRENT_MODE:** `STATIC_SOURCE_MAPPING / DOCUMENTARY_DESIGN` only.
+- **GOVERNANCE:** `KEEP_BLOCKED`.
+- **IMPLEMENTATION:** `NOT_AUTHORIZED`.
+- **BRIDGE:** `BRIDGE_NOT_READY`.
+- **Owner decision C:** keep Codex launch blocked while static design continues.
+- **Owner gate decision (2026-10-20):** `SECOND_INDEPENDENT_HUMAN = UNAVAILABLE` (`OWNER_REPORTED`, explicit decision in current conversation). Acts requiring an independent second human remain `BLOCKED_BY_CURRENT_CONSTRAINTS`; do not ask again unless the owner explicitly changes this decision. Do not infer an exception.
+- **N-88:** `PASS` on bounded documentary review (`OWNER_REPORTED; CONTRACT_TEXT_CORROBORATED`); `NOT_IMPLEMENTED / NOT_TESTED`. Do not re-review without a new contradiction or source.
+- **Consumer identity:** `IABV_CONSUMER_IDENTITY_AND_VERIFICATION_SCOPE = UNRESOLVED`.
+- **Executor identity:** `EXECUTOR_CHAIN_AND_DYNAMIC_LOADER_IDENTITY = UNRESOLVED`.
+- **Nonrollback reservation log:** `NOT_IDENTIFIED / NOT_DEMONSTRATED`.
+- **Completed and not to repeat:** v11 N-88 adversarial review; bounded gate triage; bounded read of `AGENTS.md`, CHAT-ARCH `README.md`, and handoff blob `23b9f83e91267c3b1384f441befe9986ba80de97`. Those three documents did not identify a concrete IABV consumer or verify the actual executable chain.
+- **Immediate next actor:** Claude/Sonnet — static source map, not Codex implementation.
+- **Immediate deliverable:** `IABV_CODEX_MINIMAL_BRIDGE_PATH_MAP`.
+- **Exact prompt:** [`CHAT-ARCH-2026-10-20-minimal-bridge-path-map-prompt.md`](./CHAT-ARCH-2026-10-20-minimal-bridge-path-map-prompt.md).
+- **Active protocol:** [`CHAT-ARCH-2026-10-20-protocol-anti-drift-and-bridge-goal-lock.md`](./CHAT-ARCH-2026-10-20-protocol-anti-drift-and-bridge-goal-lock.md).
+- **Decision record:** [`CHAT-ARCH-2026-10-20-owner-gate-second-human-unavailable.md`](./CHAT-ARCH-2026-10-20-owner-gate-second-human-unavailable.md).
+- **Pinned public-source baseline for the next map:** `d3a4212b6de36254bf45d5e655d684d0640a0706`. It is not evidence about private/local checkout state.
+
+## Routing rule
+
+Do not convert an unresolved prerequisite into the main task, and do not ignore the prerequisite. Record its narrow effect, then select the highest-value task that moves an independently actionable edge of the bridge within current authority. Do not ask again about the second human; do not repeat N-88; do not issue another broad satisfiability matrix. Work on actual source links between producer, executor/transport, candidate receipt and consumer.
+
+## Next task acceptance target
+
+The map must either identify a source-linked end-to-end path with exact files/blob SHAs/correlation data, or localize the missing seam precisely enough to define the minimum future engineering slice. It must distinguish source existence from connected calls and runtime proof. It does not authorize implementation or execution.
+
+---
+
 ## 2026-10-13 CANONICAL ROUTE — ENTRY 280: C6 FAIL RECONCILIATION / AMENDMENT 274.5
 
 Canonical artifact: [CHAT-ARCH-2026-10-13-280-m0b-r8-1-c6-delta-adjudication-and-amendment-274-5.md](./CHAT-ARCH-2026-10-13-280-m0b-r8-1-c6-delta-adjudication-and-amendment-274-5.md) — blob `6d7d7f4966e1224456e00410c812395e6a5c598f`, commit `0a462d66071f2d354e8a299ffaf859b3aeac61d5`.

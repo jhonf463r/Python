@@ -1,3 +1,9 @@
+## 2026-10-20 ACTIVE METHOD — GOAL-LOCKED BRIDGE ROUTING
+
+Use `CHAT-ARCH-2026-10-20-protocol-anti-drift-and-bridge-goal-lock.md` as the active anti-drift algorithm. It supersedes historical actor-routing text that conflicts with the top routing snapshot in `CURRENT-STATE.md`. The goal is the real IABV→Codex bridge; current authorization remains static-only. Never convert a completed bounded review into a new global audit, repeat an answered owner question, or substitute a prerequisite for the primary goal. Current owner decision: `SECOND_INDEPENDENT_HUMAN = UNAVAILABLE`; quorum-dependent acts stay blocked. Next static deliverable: `IABV_CODEX_MINIMAL_BRIDGE_PATH_MAP`, via the exact prompt linked in CURRENT-STATE. This method does not authorize code changes, execution, tests, builds, runtime, preflight, authentication, spend, or GitHub writes beyond this explicitly requested documentation update.
+
+---
+
 ## 2026-10-13 CANONICAL ROUTE — ENTRY 280: C6 FAIL RECONCILIATION / AMENDMENT 274.5
 
 Canonical artifact: [CHAT-ARCH-2026-10-13-280-m0b-r8-1-c6-delta-adjudication-and-amendment-274-5.md](./CHAT-ARCH-2026-10-13-280-m0b-r8-1-c6-delta-adjudication-and-amendment-274-5.md) — blob `6d7d7f4966e1224456e00410c812395e6a5c598f`, commit `0a462d66071f2d354e8a299ffaf859b3aeac61d5`.

@@ -1,3 +1,7 @@
+> **Active route (2026-10-20):** this file is a navigation front door, not an independent authority to choose a historical “next actor”. Follow `IABV_v1.5/docs/history/CHAT-ARCH/CURRENT-STATE.md` top snapshot and `CHAT-ARCH-2026-10-20-protocol-anti-drift-and-bridge-goal-lock.md`. Primary goal: governed IABV→Codex bridge. Current mode: static-only under owner decision C. `GOVERNANCE = KEEP_BLOCKED`; `IMPLEMENTATION = NOT_AUTHORIZED`; `BRIDGE_NOT_READY`. `SECOND_INDEPENDENT_HUMAN = UNAVAILABLE`; do not ask again or infer exceptions. Immediate deliverable: `IABV_CODEX_MINIMAL_BRIDGE_PATH_MAP`, Claude/Sonnet, using `CHAT-ARCH-2026-10-20-minimal-bridge-path-map-prompt.md`. Do not re-open N-88 or repeat the completed global gate triage. Historical routes below remain history unless re-promoted by CURRENT-STATE.
+
+---
+
 ## 2026-10-18 CURRENT CONTINUITY — IABV→CODEX V5 ADVERSARIAL REVIEW HANDOFF
 
 Canonical handoff: [CHAT-ARCH-2026-10-18-codex-bridge-v5-adversarial-review-handoff.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-18-codex-bridge-v5-adversarial-review-handoff.md) — published blob `23b9f83e91267c3b1384f441befe9986ba80de97`, commit `20f7f7a0e44ed4227c1cfdf03514996e9799e2c1`.

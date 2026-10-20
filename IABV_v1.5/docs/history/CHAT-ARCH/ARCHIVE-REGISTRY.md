@@ -1,3 +1,9 @@
+## 2026-10-20 CURRENT ROUTE POINTER — DO NOT ROUTE FROM HISTORICAL NEXT-ACTOR TEXT
+
+The single active actor-routing authority is the top snapshot in `CURRENT-STATE.md`. Follow `CHAT-ARCH-2026-10-20-protocol-anti-drift-and-bridge-goal-lock.md`; do not let archived route sections replace the primary goal. Current goal: governed IABV→Codex bridge; current mode: static-only; `KEEP_BLOCKED`, `IMPLEMENTATION = NOT_AUTHORIZED`, `BRIDGE_NOT_READY`. Owner decision `SECOND_INDEPENDENT_HUMAN = UNAVAILABLE` is settled. Next artifact is `IABV_CODEX_MINIMAL_BRIDGE_PATH_MAP`; use `CHAT-ARCH-2026-10-20-minimal-bridge-path-map-prompt.md`. Do not repeat N-88 or general gate triage.
+
+---
+
 ## 2026-10-13 CANONICAL ROUTE — ENTRY 280: C6 FAIL RECONCILIATION / AMENDMENT 274.5
 
 Canonical artifact: [CHAT-ARCH-2026-10-13-280-m0b-r8-1-c6-delta-adjudication-and-amendment-274-5.md](./CHAT-ARCH-2026-10-13-280-m0b-r8-1-c6-delta-adjudication-and-amendment-274-5.md) — blob `6d7d7f4966e1224456e00410c812395e6a5c598f`, commit `0a462d66071f2d354e8a299ffaf859b3aeac61d5`.
