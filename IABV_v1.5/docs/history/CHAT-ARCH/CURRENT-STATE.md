@@ -11766,8 +11766,15 @@ The owner supplied IABV's messages reporting `resource_pressure_critical`, then 
 The active next step remains `IDENTIFY_AND_USE_SUPPORTED_GOVERNANCE_OWNED_SCOPED_READ_ROUTE`; keep `GOVERNANCE=KEEP_BLOCKED`, `BRIDGE=BRIDGE_NOT_READY`, and `REAL_TRANSPORT=NOT_RUN`.
 
 
+> **Latest RAM snapshot (OWNER_REPORTED, 2026-10-21 18:22):** total 16,088 MB, 4,962 MB free (69.2% used); observed `ollama.exe` was only 18.4 MB working set / 60.7 MB private memory at that instant, while Opera and ChatGPT processes were among the larger working sets. This does not resolve model residency or startup causality. Next RAM step is a single read-only GET of `http://127.0.0.1:11434/api/ps` in the same direct Codex session, only if already listening, correlated with a contemporaneous process snapshot; never start or reload a model. See [snapshot record](./CHAT-ARCH-2026-10-21-ollama-readonly-process-snapshot-and-next-query.md).
+
 ## Latest bounded-resource request outcome (2026-10-21)
 
 The owner requested a focused Ollama RAM diagnosis before the separate Codex static audit. The supplied IABV output repeated the broad auto-update/self-diagnostic instead of returning per-process RAM evidence, baseline/after measurements, process lineage or model residency. Therefore `RAM_DIAGNOSIS=UNRESOLVED` and `SAFE_FIX=NOT_APPLIED_OR_UNVERIFIED`. The report's statement that Ollama and `qwen3:8b` are loaded conflicts with the owner's statement that Ollama was closed, but this is not sufficient to infer that IABV restarted it; actual process state is unresolved. The repeated GPU correction and token alias mapping claims are unverified and out of scope. See [incident record](./CHAT-ARCH-2026-10-21-ollama-ram-request-not-honored-repeat-autoscan.md).
 
 Owner priority for the local resource issue: do not send another broad scan prompt; do not trigger model reloads, environment/credential modifications, branch cleanup, browser login or Codex/MCP launch. Use an existing supported read-only observation path only. The bridge-specific next route remains the governance-owned scoped-read path already recorded above; `GOVERNANCE=KEEP_BLOCKED`, `BRIDGE=BRIDGE_NOT_READY`, `REAL_TRANSPORT=NOT_RUN` remain unchanged.
+
+
+## Owner-supplied Ollama/process snapshot (2026-10-21 18:22)
+
+Direct Codex/PowerShell output reported `16,088 MB` total RAM, `4,962 MB` free, `69.2%` used, and one `ollama.exe` at `18.4 MB` working set / `60.7 MB` private memory. Opera and ChatGPT processes were among the largest visible working sets. This single snapshot does not establish a root cause or model residency; IABV's separate report that `qwen3:8b` was loaded remains unreconciled. `RAM_DIAGNOSIS=PARTIAL`, `MODEL_RESIDENCY=UNRESOLVED`, `FIX=NOT_APPLIED`. The next immediate step for the resource subtask is a single read-only GET to `http://127.0.0.1:11434/api/ps` only if already listening, correlated with a contemporaneous process snapshot in the same direct Codex session. Do not start/restart Ollama or load/unload models. Details: [snapshot record](./CHAT-ARCH-2026-10-21-ollama-readonly-process-snapshot-and-next-query.md).
