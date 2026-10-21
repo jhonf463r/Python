@@ -4,8 +4,8 @@
 - **Status:** active routing/method amendment; documentary only
 - **Canonical current-state authority:** `CURRENT-STATE.md`, top routing snapshot
 - **Primary objective:** deliver a real, governed IABV→Codex→IABV bridge, not an endless sequence of contract reviews.
-- **Current mode:** static-only; implementation and Codex launch remain unauthorized.
-- **Current owner constraints:** `GOVERNANCE = KEEP_BLOCKED`; `IMPLEMENTATION = NOT_AUTHORIZED`; `BRIDGE_NOT_READY`; owner decision C remains binding.
+- **Current mode:** bounded implementation + regression-test authoring on isolated remote branch `fix/iabv-operational-block-target-scope-20261021` only. Tests are not run; local checkout adoption/merge and Codex launch remain unauthorized.
+- **Current owner constraints:** `GOVERNANCE = KEEP_BLOCKED`; `IMPLEMENTATION = AUTHORIZED_FOR_NARROW_SCOPE_ONLY_ON_ISOLATED_REMOTE_BRANCH`; `BRIDGE_NOT_READY`; owner decision C keeps Codex launch blocked.
 - **Owner gate decision:** `SECOND_INDEPENDENT_HUMAN = UNAVAILABLE`. Acts requiring a second independent human remain `BLOCKED_BY_CURRENT_CONSTRAINTS`. Do not ask this again unless the owner explicitly changes the decision.
 
 ## 1. Why this protocol changed
