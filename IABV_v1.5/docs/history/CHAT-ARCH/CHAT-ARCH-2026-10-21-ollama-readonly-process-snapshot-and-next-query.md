@@ -22,13 +22,9 @@
 4. Do not infer that IABV restarted Ollama. The reported process may have persisted, restarted earlier, or been observed at a different moment; the event sequence is not established.
 5. Root cause remains `PARTIAL/UNRESOLVED`; no fix has been applied or verified.
 
-## Immediate next step — same direct Codex session, read-only only
+## Corrected next step — determine the IABV startup caller before runtime reproduction
 
-Use a single GET to `http://127.0.0.1:11434/api/ps` only if the Ollama endpoint is already listening. Simultaneously take one current read-only RAM/process snapshot so the resident-model list and process measurements are time-correlated.
-
-Do not start the server if unavailable; do not load, unload or generate with a model; do not use an alternate API or process launch to get past an unavailable endpoint. If the GET is not available, report `OLLAMA_MODEL_SNAPSHOT=UNAVAILABLE` and stop. This read-only observation is intended to distinguish server presence from a resident model and to learn whether reported model residency aligns with the current RAM snapshot. It does not by itself prove why RAM increases on IABV startup.
-
-The separate IABV static-reasoning audit follows this resource diagnosis and must use direct Codex access to authorized public/documentary source, not IABV's unverified browser handoff. The bridge's canonical next gate remains the supported governance-owned scoped-read route for local executor identity and consumer mapping.
+The snapshot was taken by direct Codex/PowerShell without launching IABV. It therefore did not reproduce, observe or explain the event that activates Ollama when IABV opens. The immediate goal is to establish the exact IABV startup -> Ollama launch/connect -> model/provider-selection source path and determine whether local inference is mandatory for the route IABV was using. This requires a legitimate governance-owned scoped source-read route; the local reader was previously denied, and another reader must not be used to bypass it. An optional read-only /api/ps query may identify resident models if Ollama is already listening, but cannot establish startup causality. Do not start IABV or Ollama, reload models, change configuration or conduct a live reproduction in this phase.
 
 ## No authorization implied
 
