@@ -4,6 +4,10 @@
 
 The supplied `IABV_CODEX_MINIMAL_BRIDGE_PATH_MAP_2026-10-20.md` has been received and adjudicated as a work artifact, not as a GitHub-committed report or runtime evidence. The next deliverable is not another map/review. The first executor/receipt seam is `NOT_FOUND_IN_BOUNDED_SCOPE` (not global absence); local executor identity remains `UNRESOLVED`. The tool/model matrix, evidence provenance, and sole gated next step are maintained in the top of `CURRENT-STATE.md`.
 
+**Latest route delta — 2026-10-21:** the Owner-authorized local source/policy read was attempted in Codex's existing UI but returned zero source files and `governance_blocked=true`, `reason=operational_block_active`. Classify it as `ACTION_UNEXECUTABLE_NO_EVIDENCE` / `LOCAL_SOURCE_READER_BLOCKED`, not as source absence. Owner conversational authorization did not release the active runtime governance block.
+
+Do not resend the read prompt or invoke an alternate reader. The sole next action, detailed in the top of `CURRENT-STATE.md`, is `CODEX_EXISTING_REFUSAL_METADATA_AND_TOOL_TARGET_PROVENANCE`: inspect only the denial/call record and server/tool/root metadata already visible in that Codex session, without making any new tool call. If it is not retained, stop as `REFUSAL_METADATA_NOT_RETAINED`; an authorized governance-owned release remains a separate prerequisite. The local executor and effective policy remain `UNRESOLVED`.
+
 Historical next-actor text below is non-routable unless the current snapshot explicitly reactivates it. Do not repeat the completed path-map task, N-88 review, or global gate triage.
 ---
 
