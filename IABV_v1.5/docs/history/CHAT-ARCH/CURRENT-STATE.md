@@ -11757,8 +11757,17 @@ The owner supplied a Codex documentary audit of the interaction and IABV self-di
 This secondary finding does not change the active route. `NEXT_STEP` remains `IDENTIFY_AND_USE_SUPPORTED_GOVERNANCE_OWNED_SCOPED_READ_ROUTE`; `GOVERNANCE=KEEP_BLOCKED`; `BRIDGE=BRIDGE_NOT_READY`; `REAL_TRANSPORT=NOT_RUN`. No broader scan, reader retry/bypass, cleanup, further test run, candidate merge or bridge launch is authorized by this audit.
 
 
+> **Supplementary incident:** the owner-supplied Ollama/RAM prompt was answered with another broad auto-scan, without per-process RAM evidence. The output again claimed Ollama/model loaded, GPU correction and token-alias mapping; actual process state and changes remain unverified. See [Ollama/RAM scope incident](./CHAT-ARCH-2026-10-21-ollama-ram-request-not-honored-repeat-autoscan.md). Do not repeat the general scan or trigger model reloads/credential changes. The user's priority is resource diagnosis first, then a separate static Codex review.
+
 ## Latest handoff incident — resource pressure, wrong thread and browser fallback (2026-10-21)
 
 The owner supplied IABV's messages reporting `resource_pressure_critical`, then `wrong_thread`, and later a default-browser fallback without DOM/CDP confirmation. These reports are `OWNER_REPORTED`; neither consultation success nor browser-response correlation is confirmed. Rejecting a wrong-thread response is appropriate if implemented as reported, but that rejected reply is not a valid task result. The default-browser fallback is not a supported governance-owned scoped-read route and must not be used to bypass the denied reader. No login/verification, browser-result relay, alternate reader, Codex CLI/App Server launch or transport is authorized by this incident. Details: [incident record](./CHAT-ARCH-2026-10-21-codex-handoff-resource-pressure-wrong-thread-browser-fallback.md).
 
 The active next step remains `IDENTIFY_AND_USE_SUPPORTED_GOVERNANCE_OWNED_SCOPED_READ_ROUTE`; keep `GOVERNANCE=KEEP_BLOCKED`, `BRIDGE=BRIDGE_NOT_READY`, and `REAL_TRANSPORT=NOT_RUN`.
+
+
+## Latest bounded-resource request outcome (2026-10-21)
+
+The owner requested a focused Ollama RAM diagnosis before the separate Codex static audit. The supplied IABV output repeated the broad auto-update/self-diagnostic instead of returning per-process RAM evidence, baseline/after measurements, process lineage or model residency. Therefore `RAM_DIAGNOSIS=UNRESOLVED` and `SAFE_FIX=NOT_APPLIED_OR_UNVERIFIED`. The report's statement that Ollama and `qwen3:8b` are loaded conflicts with the owner's statement that Ollama was closed, but this is not sufficient to infer that IABV restarted it; actual process state is unresolved. The repeated GPU correction and token alias mapping claims are unverified and out of scope. See [incident record](./CHAT-ARCH-2026-10-21-ollama-ram-request-not-honored-repeat-autoscan.md).
+
+Owner priority for the local resource issue: do not send another broad scan prompt; do not trigger model reloads, environment/credential modifications, branch cleanup, browser login or Codex/MCP launch. Use an existing supported read-only observation path only. The bridge-specific next route remains the governance-owned scoped-read path already recorded above; `GOVERNANCE=KEEP_BLOCKED`, `BRIDGE=BRIDGE_NOT_READY`, `REAL_TRANSPORT=NOT_RUN` remain unchanged.
