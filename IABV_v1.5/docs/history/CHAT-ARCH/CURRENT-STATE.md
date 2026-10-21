@@ -1,4 +1,4 @@
-# CURRENT ROUTING SNAPSHOT — 2026-10-21 (GOAL-LOCKED; DOCUMENTARY CONTINUITY UPDATE)
+# CURRENT ROUTING SNAPSHOT — 2026-10-21 (GOAL-LOCKED; BOUNDED SCOPE-FIX CANDIDATE)
 
 **This is the only current actor-routing authority.** Historical dates and “NEXT ACTOR” text elsewhere are non-routable unless this snapshot explicitly reactivates them.
 
@@ -69,9 +69,10 @@ No mentioned model is proof that the same model is available in a different tool
 ### Sole next step
 
 - `NEXT_STEP = EXECUTE_FOCUSED_REGRESSION_TESTS_ON_ISOLATED_CANDIDATE_WITHOUT_TOUCHING_LOCAL_WORKTREE`.
-- **Actor/tool:** there is no verified GitHub Actions test workflow or directly accessible test runner in this ChatGPT session. The candidate source/tests are ready for an authorized runner but must not be described as passing.
+- **Actor/tool:** Codex in its existing UI; exact UI model identity remains `UNRESOLVED`. Run tests only from a newly created disposable clone of branch `fix/iabv-operational-block-target-scope-20261021` at exact HEAD `433d993df71e02c041b562e80110d7b46fb11bb7`. Use existing GitHub credentials only if they already work; no login/authentication or secret inspection. Keep `C:\\Python\\IABV_v1.5` and every existing checkout untouched.
 - **Acceptance:** all six new scope tests plus existing governance tests in `tests/test_mcp_server.py` pass; the RAM block remains effective for the heavy-local-model operation; explicitly global and unknown-scope cases remain fail-closed. Capture the actual runner, selected test scope, exit status and output.
-- **Stop condition:** do not execute against the dirty local checkout or use the blocked MCP reader as a workaround. Before any local adoption, bind the exact workspace/server/root/HEAD and preserve dirty state; the reported server is `iabv_v15_rsk01a5`, whose root mapping remains unresolved. Do not merge the remote candidate or claim local repair until tests and target provenance are verified.
+- **Test operation:** create a fresh disposable temporary directory outside existing checkouts; if the chosen directory already exists, do not delete or reuse it—stop and report the collision. Fetch the exact candidate branch, confirm HEAD matches, confirm the isolated clone is clean, then run `tests/test_mcp_server.py` with the already-installed project interpreter/dependencies (for example `python -m pytest -p no:cacheprovider tests/test_mcp_server.py -q`, with project source path configured). No dependency installs/updates, new auth, IABV/MCP server startup, Codex CLI/App Server launch, or real-bridge test. Capture interpreter/environment, exact command, exit status and output. If existing GitHub access or test dependencies are unavailable, report the blocker and stop.
+- **Stop condition:** do not execute against the dirty local checkout or use the blocked MCP reader to retrieve local files. Before local adoption, bind the exact workspace/server/root/HEAD and preserve dirty state; the reported server is `iabv_v15_rsk01a5`, whose root mapping remains unresolved. Do not merge the remote candidate or claim local repair until tests and target provenance are verified.
 - No further Route A/B comparison or generic governance-metadata prompt is needed. Preserve `GOVERNANCE=KEEP_BLOCKED`, `IMPLEMENTATION=AUTHORIZED_FOR_NARROW_SCOPE_ONLY` (isolated candidate), `BRIDGE=BRIDGE_NOT_READY`, `REAL_TRANSPORT=NOT_RUN`, `LOCAL_EXECUTOR_IDENTITY=UNRESOLVED`, and `SECOND_INDEPENDENT_HUMAN=UNAVAILABLE`.
 ## Routing rule
 
