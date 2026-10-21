@@ -513,6 +513,129 @@ def test_governance_ignores_blocks_scoped_to_other_assistant_kinds() -> None:
     assert runner.calls  # sí se ejecutó porque el bloqueo no aplicaba
 
 
+def test_audit_route_ignores_ram_block_scoped_to_heavy_local_model() -> None:
+    """Un bloqueo de RAM para modelos locales pesados no debe bloquear lectura de auditoría."""
+    block = OperationalBlockRecord(
+        block_type="ram_critical",
+        target_scope="heavy_local_model",
+        assistant_kind="",
+        title="Entorno bajo presion",
+        status="active",
+    )
+    wm = _FakeWorldModelService(_default_snapshot(blocks=[block]))
+    server = IABVMCPServer(_build_container(world_model_service=wm))
+
+    assert server._governance_block_for_route(
+        assistant_kind="audit",
+        requires_network=False,
+    ) is None
+
+
+def test_heavy_local_model_route_still_respects_ram_block() -> None:
+    """El mismo bloqueo debe seguir activo para la ruta de benchmark de modelos."""
+    block = OperationalBlockRecord(
+        block_type="ram_critical",
+        target_scope="heavy_local_model",
+        assistant_kind="",
+        title="Entorno bajo presion",
+        status="active",
+    )
+    wm = _FakeWorldModelService(_default_snapshot(blocks=[block]))
+    server = IABVMCPServer(_build_container(world_model_service=wm))
+
+    payload = server._governance_block_for_route(
+        assistant_kind="gpu_benchmark",
+        requires_network=False,
+    )
+
+    assert payload is not None
+    assert payload["governance_blocked"] is True
+    assert payload["reason"] == "operational_block_active"
+    assert payload["blocks"][0]["block_type"] == "ram_critical"
+
+
+def test_ui_focus_block_only_applies_to_ui_scoped_audit_operation() -> None:
+    """Un bloqueo de foco no debe globalizarse a una operación de auditoría no-UI."""
+    block = OperationalBlockRecord(
+        block_type="focus_unresolved",
+        target_scope="ui_focus_interaction",
+        assistant_kind="",
+        status="active",
+    )
+    wm = _FakeWorldModelService(_default_snapshot(blocks=[block]))
+    server = IABVMCPServer(_build_container(world_model_service=wm))
+
+    assert server._governance_block_for_route(
+        assistant_kind="audit",
+        requires_network=False,
+    ) is None
+
+    payload = server._governance_block_for_route(
+        assistant_kind="audit",
+        requires_network=False,
+        operation_scope="ui_focus_interaction",
+    )
+    assert payload is not None
+    assert payload["reason"] == "operational_block_active"
+
+
+def test_fully_unspecified_active_block_remains_global() -> None:
+    """Un bloqueo sin ningún alcance declarado sigue fallando de forma cerrada."""
+    block = OperationalBlockRecord(
+        block_type="owner_global_stop",
+        target_scope="",
+        assistant_kind="",
+        status="active",
+    )
+    wm = _FakeWorldModelService(_default_snapshot(blocks=[block]))
+    server = IABVMCPServer(_build_container(world_model_service=wm))
+
+    payload = server._governance_block_for_route(
+        assistant_kind="audit",
+        requires_network=False,
+    )
+    assert payload is not None
+    assert payload["reason"] == "operational_block_active"
+
+
+def test_unknown_operational_target_scope_fails_closed() -> None:
+    """Un alcance no clasificado nunca se ignora silenciosamente."""
+    block = OperationalBlockRecord(
+        block_type="future_policy_scope",
+        target_scope="scope_not_yet_mapped",
+        assistant_kind="",
+        status="active",
+    )
+    wm = _FakeWorldModelService(_default_snapshot(blocks=[block]))
+    server = IABVMCPServer(_build_container(world_model_service=wm))
+
+    payload = server._governance_block_for_route(
+        assistant_kind="audit",
+        requires_network=False,
+    )
+    assert payload is not None
+    assert payload["reason"] == "operational_block_active"
+
+
+def test_explicit_audit_block_still_blocks_audit_route() -> None:
+    """Un bloqueo explícito de auditoría conserva su efecto."""
+    block = OperationalBlockRecord(
+        block_type="audit_hold",
+        target_scope="audit",
+        assistant_kind="audit",
+        status="active",
+    )
+    wm = _FakeWorldModelService(_default_snapshot(blocks=[block]))
+    server = IABVMCPServer(_build_container(world_model_service=wm))
+
+    payload = server._governance_block_for_route(
+        assistant_kind="audit",
+        requires_network=False,
+    )
+    assert payload is not None
+    assert payload["reason"] == "operational_block_active"
+
+
 def test_governance_ignores_permission_gates_already_granted() -> None:
     """Un gate con granted=True no debe bloquear."""
 
