@@ -1,34 +1,55 @@
-# CURRENT ROUTING SNAPSHOT — 2026-10-20 (GOAL-LOCKED)
+# CURRENT ROUTING SNAPSHOT — 2026-10-21 (GOAL-LOCKED; DOCUMENTARY CONTINUITY UPDATE)
 
-**This is the only current actor-routing authority.** Older dates and “NEXT ACTOR” statements farther down this file and in archives are non-routable history unless this snapshot explicitly reactivates them.
+**This is the only current actor-routing authority.** Historical dates and “NEXT ACTOR” text elsewhere are non-routable unless this snapshot explicitly reactivates them.
 
-- **PRIMARY_OUTCOME:** `GOVERNED_IABV_CODEX_BRIDGE` — actual end-to-end path from IABV task through an isolated Codex candidate and independently verifiable diff/receipt to the identified IABV consumer and separate owner decision.
-- **CURRENT_MODE:** `STATIC_SOURCE_MAPPING / DOCUMENTARY_DESIGN` only.
+- **PRIMARY_OUTCOME:** `GOVERNED_IABV_CODEX_BRIDGE` — a governed end-to-end path from IABV task through an isolated Codex candidate and independently verifiable diff/receipt to an identified IABV consumer and separate owner decision.
+- **CURRENT_AUTHORIZED_MODE:** `STATIC_SOURCE_MAPPING / DOCUMENTARY_DESIGN` only.
 - **GOVERNANCE:** `KEEP_BLOCKED`.
 - **IMPLEMENTATION:** `NOT_AUTHORIZED`.
 - **BRIDGE:** `BRIDGE_NOT_READY`.
-- **Owner decision C:** keep Codex launch blocked while static design continues.
-- **Owner gate decision (2026-10-20):** `SECOND_INDEPENDENT_HUMAN = UNAVAILABLE` (`OWNER_REPORTED`, explicit decision in current conversation). Acts requiring an independent second human remain `BLOCKED_BY_CURRENT_CONSTRAINTS`; do not ask again unless the owner explicitly changes this decision. Do not infer an exception.
-- **N-88:** `PASS` on bounded documentary review (`OWNER_REPORTED; CONTRACT_TEXT_CORROBORATED`); `NOT_IMPLEMENTED / NOT_TESTED`. Do not re-review without a new contradiction or source.
-- **Consumer identity:** `IABV_CONSUMER_IDENTITY_AND_VERIFICATION_SCOPE = UNRESOLVED`.
-- **Executor identity:** `EXECUTOR_CHAIN_AND_DYNAMIC_LOADER_IDENTITY = UNRESOLVED`.
-- **Nonrollback reservation log:** `NOT_IDENTIFIED / NOT_DEMONSTRATED`.
-- **Completed and not to repeat:** v11 N-88 adversarial review; bounded gate triage; bounded read of `AGENTS.md`, CHAT-ARCH `README.md`, and handoff blob `23b9f83e91267c3b1384f441befe9986ba80de97`. Those three documents did not identify a concrete IABV consumer or verify the actual executable chain.
-- **Immediate next actor:** Claude/Sonnet — static source map, not Codex implementation.
-- **Immediate deliverable:** `IABV_CODEX_MINIMAL_BRIDGE_PATH_MAP`.
-- **Exact prompt:** [`CHAT-ARCH-2026-10-20-minimal-bridge-path-map-prompt.md`](./CHAT-ARCH-2026-10-20-minimal-bridge-path-map-prompt.md).
+- **REAL_TRANSPORT:** `NOT_RUN`.
+- **Owner decision C:** `KEEP_CODEX_LAUNCH_BLOCKED_WHILE_STATIC_DESIGN_CONTINUES`.
+- **SECOND_INDEPENDENT_HUMAN:** `UNAVAILABLE` (`OWNER_REPORTED`, decision dated 2026-10-20). Acts requiring that quorum remain `BLOCKED_BY_CURRENT_CONSTRAINTS`; do not ask again or infer an exception.
+- **N-88:** `PASS` for the bounded documentary review (`OWNER_REPORTED; CONTRACT_TEXT_CORROBORATED`); implementation `NOT_IMPLEMENTED / NOT_TESTED`. Do not repeat absent new contradiction or source.
+- **Current frontier:** identity of the development executor and the baseline-bound candidate/receipt consumer; not a general gate audit.
+- **Map status:** `IABV_CODEX_MINIMAL_BRIDGE_PATH_MAP = RECEIVED_AND_ADJUDICATED_AS_SUPPLIED_WORK_ARTIFACT`; `BRIDGE_PATH_MAP = INCOMPLETE`. The supplied `IABV_CODEX_MINIMAL_BRIDGE_PATH_MAP_2026-10-20.md` has not been established as a GitHub-committed artifact and is not a runtime receipt.
+- **Map-source provenance:** the supplied map pins the public source inspection at `d3a4212b6de36254bf45d5e655d684d0640a0706` and reports comparison with `main @ e972f211cef75c5b34929461161c9a23aa5753af`. That HEAD was independently revalidated immediately before this documentation-only update; neither statement establishes local checkout state or runtime behavior.
+- **Executor slice:** `IABV_CODEX_CANDIDATE_EXECUTOR_RECEIPT_MINIMAL_SLICE = NOT_FOUND_IN_BOUNDED_SCOPE`, not a claim of global absence. The first missing chain is `CodexTaskSpec → development executor → CodexRunResult → isolated/reversible candidate → baseline/diff-verifiable receipt → identified consumer`.
+- **Local-source boundary:** executor identity in the local/dirty checkout remains `UNRESOLVED`; the public source baseline does not prove or disprove the private/local implementation.
+- **Known separate issue:** fallback `results[0]` and `_last_adaptive_payload` are a reported correlation defect, separate from the executor-receipt seam. Do not repeat the general audit. This is not runtime verification.
+- **Evidence boundary:** supplied documentary reviews do not prove real execution or independently verify every finding against runtime.
+- **Completed and not to repeat:** the initial static map review/adjudication in its bounded scope; v11 N-88 documentary review; bounded global gate triage; and the three-document consumer/loader lookup. Do not restart these without new source or a concrete contradiction.
 - **Active protocol:** [`CHAT-ARCH-2026-10-20-protocol-anti-drift-and-bridge-goal-lock.md`](./CHAT-ARCH-2026-10-20-protocol-anti-drift-and-bridge-goal-lock.md).
-- **Decision record:** [`CHAT-ARCH-2026-10-20-owner-gate-second-human-unavailable.md`](./CHAT-ARCH-2026-10-20-owner-gate-second-human-unavailable.md).
-- **Pinned public-source baseline for the next map:** `d3a4212b6de36254bf45d5e655d684d0640a0706`. It is not evidence about private/local checkout state.
+
+## Latest adjudicated continuity delta — 2026-10-21
+
+### Tool/model availability and evidence matrix
+
+| Tool or surface | Identity / current status | Evidence and provenance boundary |
+|---|---|---|
+| ChatGPT coordinator | `GPT-6` in this session; authenticated GitHub connector successfully read the repository HEAD and requested documents on 2026-10-21. | `PROVEN_BY_TOOL` for the source reads in this turn only. Model/session identity is session-local, not a permanent availability catalogue. |
+| OpenCode independent | `opencode/deepseek-v4.1-flash-free`. | `OWNER_REPORTED / SUPPLIED_HARNESS_METADATA`; not an independent provider attestation, and future availability is not guaranteed. The reported unauthenticated HTTP attempt returned 404; this does not establish that the repository disappeared. |
+| Kilo in Visual Studio Code | `Auto Free`; underlying model `UNCONFIRMED`. | `OWNER_REPORTED`. Kilo reportedly rejected the OpenCode-specific model ID; do not send that ID to Kilo again. |
+| Claude/Sonnet | Currently unavailable. | `OWNER_REPORTED`; no availability is inferred for a future session. |
+| Codex CLI/App Server | `NOT_RUN`; launch remains `NOT_AUTHORIZED`; live executor/model availability `UNRESOLVED`. | No transport, CLI, App Server, model turn, or runtime was invoked in this work. |
+
+No mentioned model is proof that the same model is available in a different tool, account, or future session.
+
+### Sole gated next step
+
+- `NEXT_STEP = RESOLVE_LOCAL_EXECUTOR_SOURCE_IDENTITY_ONLY_AFTER_VALID_AUTHORITY`.
+- **Actor:** ChatGPT coordinator; **tool:** connected GitHub source retrieval in static/read-only use; **model:** GPT-6 for this session only.
+- **Objective:** only after legitimate authority and an accessible exact source location are established, compare the exact development-executor implementation and normal registration against the pinned public-source evidence. Do not infer local state from `main`.
+- **Stop condition:** if the exact source cannot be accessed under valid authority, or a new HEAD change prevents a bounded safe comparison, stop and keep the relevant identity `UNRESOLVED` / `NOT_FOUND_IN_BOUNDED_SCOPE`. Do not inspect local checkout, M0A, `data/`, SQLite, credentials, secrets, or private configuration; do not run anything or ask again about the second human.
+- This step does not authorize implementation, Codex launch, tests/builds/runtime, real transport, authentication, quota checks, installs/updates, spend, or code promotion.
 
 ## Routing rule
 
-Do not convert an unresolved prerequisite into the main task, and do not ignore the prerequisite. Record its narrow effect, then select the highest-value task that moves an independently actionable edge of the bridge within current authority. Do not ask again about the second human; do not repeat N-88; do not issue another broad satisfiability matrix. Work on actual source links between producer, executor/transport, candidate receipt and consumer.
+Do not convert an unresolved prerequisite into the main task, and do not ignore the prerequisite. Record its narrow effect, then select the highest-value task that advances an independently actionable bridge edge within current authority. The received path map is no longer a pending deliverable. Do not ask again about the second human; do not repeat N-88; do not issue another broad satisfiability matrix. Work only on the exact source identity / receipt-to-consumer seam when permitted.
 
 ## Next task acceptance target
 
-The map must either identify a source-linked end-to-end path with exact files/blob SHAs/correlation data, or localize the missing seam precisely enough to define the minimum future engineering slice. It must distinguish source existence from connected calls and runtime proof. It does not authorize implementation or execution.
-
+The next source-mapping step must either identify the exact authorized executor source and normal registration, or stop with the precise access/authority blocker. It must distinguish source existence from connected calls and runtime proof. It does not authorize implementation or execution.
 ---
 
 ## 2026-10-13 CANONICAL ROUTE — ENTRY 280: C6 FAIL RECONCILIATION / AMENDMENT 274.5

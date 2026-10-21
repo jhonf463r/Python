@@ -1,7 +1,10 @@
-## 2026-10-20 CURRENT ROUTE POINTER — DO NOT ROUTE FROM HISTORICAL NEXT-ACTOR TEXT
+## 2026-10-21 CURRENT ROUTE POINTER — ROUTE ONLY FROM CURRENT-STATE
 
-The single active actor-routing authority is the top snapshot in `CURRENT-STATE.md`. Follow `CHAT-ARCH-2026-10-20-protocol-anti-drift-and-bridge-goal-lock.md`; do not let archived route sections replace the primary goal. Current goal: governed IABV→Codex bridge; current mode: static-only; `KEEP_BLOCKED`, `IMPLEMENTATION = NOT_AUTHORIZED`, `BRIDGE_NOT_READY`. Owner decision `SECOND_INDEPENDENT_HUMAN = UNAVAILABLE` is settled. Next artifact is `IABV_CODEX_MINIMAL_BRIDGE_PATH_MAP`; use `CHAT-ARCH-2026-10-20-minimal-bridge-path-map-prompt.md`. Do not repeat N-88 or general gate triage.
+`CURRENT-STATE.md`, top snapshot, remains the single active actor-routing authority. Current goal: `GOVERNED_IABV_CODEX_BRIDGE`; mode: `STATIC_SOURCE_MAPPING / DOCUMENTARY_DESIGN`; `KEEP_BLOCKED`; `IMPLEMENTATION = NOT_AUTHORIZED`; `BRIDGE = BRIDGE_NOT_READY`; `REAL_TRANSPORT = NOT_RUN`. `SECOND_INDEPENDENT_HUMAN = UNAVAILABLE` is settled; do not ask again.
 
+The supplied `IABV_CODEX_MINIMAL_BRIDGE_PATH_MAP_2026-10-20.md` has been received and adjudicated as a work artifact, not as a GitHub-committed report or runtime evidence. The next deliverable is not another map/review. The first executor/receipt seam is `NOT_FOUND_IN_BOUNDED_SCOPE` (not global absence); local executor identity remains `UNRESOLVED`. The tool/model matrix, evidence provenance, and sole gated next step are maintained in the top of `CURRENT-STATE.md`.
+
+Historical next-actor text below is non-routable unless the current snapshot explicitly reactivates it. Do not repeat the completed path-map task, N-88 review, or global gate triage.
 ---
 
 ## 2026-10-13 CANONICAL ROUTE — ENTRY 280: C6 FAIL RECONCILIATION / AMENDMENT 274.5

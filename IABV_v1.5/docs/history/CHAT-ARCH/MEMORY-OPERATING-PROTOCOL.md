@@ -1,6 +1,8 @@
-## 2026-10-20 ACTIVE METHOD — GOAL-LOCKED BRIDGE ROUTING
+## 2026-10-21 ACTIVE METHOD — GOAL-LOCKED BRIDGE ROUTING
 
-Use `CHAT-ARCH-2026-10-20-protocol-anti-drift-and-bridge-goal-lock.md` as the active anti-drift algorithm. It supersedes historical actor-routing text that conflicts with the top routing snapshot in `CURRENT-STATE.md`. The goal is the real IABV→Codex bridge; current authorization remains static-only. Never convert a completed bounded review into a new global audit, repeat an answered owner question, or substitute a prerequisite for the primary goal. Current owner decision: `SECOND_INDEPENDENT_HUMAN = UNAVAILABLE`; quorum-dependent acts stay blocked. Next static deliverable: `IABV_CODEX_MINIMAL_BRIDGE_PATH_MAP`, via the exact prompt linked in CURRENT-STATE. This method does not authorize code changes, execution, tests, builds, runtime, preflight, authentication, spend, or GitHub writes beyond this explicitly requested documentation update.
+Use `CHAT-ARCH-2026-10-20-protocol-anti-drift-and-bridge-goal-lock.md` as the active anti-drift method, and route only from the top snapshot of `CURRENT-STATE.md`. The primary goal remains the governed IABV→Codex bridge; authorization remains documentary/static only, with `GOVERNANCE = KEEP_BLOCKED`, `IMPLEMENTATION = NOT_AUTHORIZED`, `BRIDGE = BRIDGE_NOT_READY`, and `REAL_TRANSPORT = NOT_RUN`. `SECOND_INDEPENDENT_HUMAN = UNAVAILABLE` is settled; do not ask again.
+
+The initial `IABV_CODEX_MINIMAL_BRIDGE_PATH_MAP` has been received and adjudicated as a supplied work artifact; it is no longer a pending deliverable and is not a runtime receipt or established GitHub-committed report. The first development-executor/receipt seam is `NOT_FOUND_IN_BOUNDED_SCOPE`, not global absence; local executor identity remains `UNRESOLVED`. The dated tool/model evidence matrix and the only gated next step reside in `CURRENT-STATE.md`. Do not repeat the map, N-88 review, or global gate triage. This update does not authorize code changes, execution, tests, builds, runtime, real transport, authentication, spend, or any write beyond the explicitly authorized documentary continuity update.
 
 ---
 

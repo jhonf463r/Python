@@ -127,22 +127,18 @@ Every completion report must state:
 
 Do not conclude with an ambiguous “what do you want to do?” where the next authorized task can be selected objectively. Ask the owner only for a decision that genuinely cannot be inferred or delegated.
 
-## 6. Current routing snapshot — 2026-10-20
+## 6. Current routing snapshot — 2026-10-21 (latest adjudication)
 
-- `PRIMARY_OUTCOME = GOVERNED_IABV_CODEX_BRIDGE`.
-- `GOVERNANCE = KEEP_BLOCKED`; `IMPLEMENTATION = NOT_AUTHORIZED`; `BRIDGE_NOT_READY`.
+- `PRIMARY_OUTCOME = GOVERNED_IABV_CODEX_BRIDGE`; `CURRENT_AUTHORIZED_MODE = STATIC_SOURCE_MAPPING / DOCUMENTARY_DESIGN`.
+- `GOVERNANCE = KEEP_BLOCKED`; `IMPLEMENTATION = NOT_AUTHORIZED`; `BRIDGE = BRIDGE_NOT_READY`; `REAL_TRANSPORT = NOT_RUN`.
 - `DECISION_C = KEEP_CODEX_LAUNCH_BLOCKED_WHILE_STATIC_DESIGN_CONTINUES`.
-- `SECOND_INDEPENDENT_HUMAN = UNAVAILABLE`; actions requiring that quorum remain blocked, without repeat prompting.
-- `N88_DOCUMENTARY_REVIEW = PASS (OWNER_REPORTED; CONTRACT_TEXT_CORROBORATED)`; `N88_IMPLEMENTATION = NOT_IMPLEMENTED / NOT_TESTED`.
-- `IABV_CONSUMER_IDENTITY_AND_VERIFICATION_SCOPE = UNRESOLVED`.
-- `EXECUTOR_CHAIN_AND_DYNAMIC_LOADER_IDENTITY = UNRESOLVED`.
-- `NONROLLBACK_RESERVATION_LOG = NOT_IDENTIFIED / NOT_DEMONSTRATED`.
-- The three-document consumer/loader lookup is complete. Do not repeat that lookup or restart global gate triage.
-- **Next deliverable:** `IABV_CODEX_MINIMAL_BRIDGE_PATH_MAP`: source-backed static mapping of actual producer/task path → Codex transport/executor resolution → candidate/diff receipt → IABV consumer/verifier. Show actual source call edges and exactly where the path is missing. This work must progress the bridge, not revisit N-88 or produce another generic satisfiability matrix.
-- **Next actor:** Claude/Sonnet, source-only review using the separate prompt `CHAT-ARCH-2026-10-20-minimal-bridge-path-map-prompt.md`.
-- **Source baseline for that task:** public repository commit `d3a4212b6de36254bf45d5e655d684d0640a0706`; this is a public-source baseline, not local checkout provenance.
-- Do not infer implementation authorization from the prompt or the objective. If the static map shows no viable existing route, give the smallest specific missing edge and the exact separate owner authorization/evidence needed. Do not substitute another governance audit.
-
+- `SECOND_INDEPENDENT_HUMAN = UNAVAILABLE` (`OWNER_REPORTED`; do not ask again).
+- `IABV_CODEX_MINIMAL_BRIDGE_PATH_MAP = RECEIVED_AND_ADJUDICATED_AS_SUPPLIED_WORK_ARTIFACT`, not a pending Claude/Sonnet deliverable and not a GitHub-verified runtime receipt.
+- `IABV_CODEX_CANDIDATE_EXECUTOR_RECEIPT_MINIMAL_SLICE = NOT_FOUND_IN_BOUNDED_SCOPE`, not global absence. The missing edge is `CodexTaskSpec → development executor → CodexRunResult → isolated/reversible candidate → baseline/diff-verifiable receipt → identified consumer`.
+- Local executor identity remains `UNRESOLVED`; the fallback `results[0]` / `_last_adaptive_payload` correlation issue is separate and not a reason to repeat its general audit.
+- Tool/model provenance is maintained in the dated matrix at the top of `CURRENT-STATE.md`. GPT-6 and the successful GitHub reads are specific to this session/turn; supplied harness and owner statements remain `OWNER_REPORTED`.
+- **Sole gated next step:** `RESOLVE_LOCAL_EXECUTOR_SOURCE_IDENTITY_ONLY_AFTER_VALID_AUTHORITY`, by ChatGPT coordinator using connected GitHub source retrieval (read-only/static use), GPT-6 for this session only. Stop if the exact source cannot be accessed under valid authority; keep status `UNRESOLVED` and do not inspect prohibited local sources.
+- No implementation, Codex launch, tests/builds/runtime, transport, authentication, quota queries, installation/update, spend, or promotion is authorized. Preserve `KEEP_BLOCKED`.
 ## 7. Anti-drift invariants
 
 - The user's primary bridge objective outranks adjacent documentation tasks.
