@@ -1,6 +1,6 @@
 ## 2026-10-21 CURRENT ROUTE POINTER — ROUTE ONLY FROM CURRENT-STATE
 
-`CURRENT-STATE.md`, top snapshot, remains the single active actor-routing authority. Current goal: `GOVERNED_IABV_CODEX_BRIDGE`; mode: `STATIC_SOURCE_MAPPING / DOCUMENTARY_DESIGN`; `KEEP_BLOCKED`; `IMPLEMENTATION = NOT_AUTHORIZED`; `BRIDGE = BRIDGE_NOT_READY`; `REAL_TRANSPORT = NOT_RUN`. `SECOND_INDEPENDENT_HUMAN = UNAVAILABLE` is settled; do not ask again.
+`CURRENT-STATE.md`, top snapshot, remains the single active actor-routing authority. Current goal: `GOVERNED_IABV_CODEX_BRIDGE`; mode: bounded implementation and regression-test authoring on isolated remote branch `fix/iabv-operational-block-target-scope-20261021` only; `GOVERNANCE = KEEP_BLOCKED`; `IMPLEMENTATION = AUTHORIZED_FOR_NARROW_SCOPE_ONLY_ON_ISOLATED_REMOTE_BRANCH`; tests `NOT_RUN`; local adoption/merge and `REAL_TRANSPORT` remain blocked. `BRIDGE = BRIDGE_NOT_READY`; `SECOND_INDEPENDENT_HUMAN = UNAVAILABLE` is settled; do not ask again.
 
 The supplied `IABV_CODEX_MINIMAL_BRIDGE_PATH_MAP_2026-10-20.md` has been received and adjudicated as a work artifact, not as a GitHub-committed report or runtime evidence. The next deliverable is not another map/review. The first executor/receipt seam is `NOT_FOUND_IN_BOUNDED_SCOPE` (not global absence); local executor identity remains `UNRESOLVED`. The tool/model matrix, evidence provenance, and sole gated next step are maintained in the top of `CURRENT-STATE.md`.
 
