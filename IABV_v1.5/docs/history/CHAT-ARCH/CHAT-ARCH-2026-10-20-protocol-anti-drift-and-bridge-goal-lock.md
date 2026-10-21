@@ -5,6 +5,7 @@
 - **Canonical current-state authority:** `CURRENT-STATE.md`, top routing snapshot
 - **Primary objective:** deliver a real, governed IABV→Codex→IABV bridge, not an endless sequence of contract reviews.
 - **Current route (updated 2026-10-21):** candidate test execution has occurred: 76 collected, 74 passed, 2 failed; overall module `FAIL`. The local executor inspection then read no source because the normal MCP reader returned `operational_block_active`. No new Codex test or source-inspection prompt is actionable until a supported governance-owned scoped read route is identified. Candidate remains unmerged, launch remains blocked, and transport is `NOT_RUN`.
+- **Supplementary human–IABV interaction audit (2026-10-21):** documentary adjudication finds request interpretation and scope discipline `FAIL`, causal-learning evidence `FAIL`, progress observability `PARTIAL`, and multi-IA readiness `NOT_READY`; the declared remote branch deletion and runtime mutations are not independently verified. See `CHAT-ARCH-2026-10-21-human-iabv-interaction-audit.md`. This finding does not supersede the sole next step in `CURRENT-STATE.md`.
 - **Current owner constraints:** `GOVERNANCE = KEEP_BLOCKED`; `IMPLEMENTATION = AUTHORIZED_FOR_NARROW_SCOPE_ONLY_ON_ISOLATED_REMOTE_BRANCH`; `BRIDGE_NOT_READY`; owner decision C keeps Codex launch blocked.
 - **Owner gate decision:** `SECOND_INDEPENDENT_HUMAN = UNAVAILABLE`. Acts requiring a second independent human remain `BLOCKED_BY_CURRENT_CONSTRAINTS`. Do not ask this again unless the owner explicitly changes the decision.
 

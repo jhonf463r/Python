@@ -4,6 +4,7 @@
 
 - **PRIMARY_OUTCOME:** `GOVERNED_IABV_CODEX_BRIDGE` — a governed end-to-end path from an IABV task through an isolated Codex candidate and independently verifiable receipt to an identified IABV consumer and a separate owner decision.
 - **CURRENT_FRONTIER:** the remote scope-fix candidate has now been tested on the existing sparse-first clone; the local executor inspection did not read any source because the normal MCP reader was denied by its governance gate.
+- **Supplementary interaction audit:** the owner-supplied Codex documentary adjudication finds request interpretation/scope discipline `FAIL`, causal-learning evidence `FAIL`, progress observability `PARTIAL`, and long-running multi-IA readiness `NOT_READY`; branch deletion and GPU/token mutations remain unverified claims. See [interaction audit](./CHAT-ARCH-2026-10-21-human-iabv-interaction-audit.md). This does not replace or reorder the sole next step below.
 - **GOVERNANCE:** `KEEP_BLOCKED`.
 - **BRIDGE:** `BRIDGE_NOT_READY`.
 - **REAL_TRANSPORT:** `NOT_RUN`.
@@ -11746,3 +11747,10 @@ NEXT ACTOR:
 SONNET/CLAUDE — source-aware adversarial challenge of the proposed code-facing contract.
 
 No implementation/runtime/scoring change.
+
+
+## Supplementary adjudication — human–IABV interaction (2026-10-21)
+
+The owner supplied a Codex documentary audit of the interaction and IABV self-diagnostic. Its primary result is `REQUEST_INTERPRETATION=FAIL`, `SCOPE_DISCIPLINE=FAIL`, `EXECUTION_PROVENANCE=FAIL`, `CAUSAL_LEARNING_EVIDENCE=FAIL`, `TASK_PROGRESS_OBSERVABILITY=PARTIAL`, `LONG_RUNNING_MULTI_AI_READINESS=NOT_READY`. These results judge the supplied evidence and action choice, not a new runtime experiment. The report's deletion of 31 remote branches, CUDA/Ollama changes, token alias mapping and 282 modified files remain `OWNER_REPORTED`; actual execution, actor and post-state are `UNRESOLVED`. Details: [CHAT-ARCH-2026-10-21-human-iabv-interaction-audit.md](./CHAT-ARCH-2026-10-21-human-iabv-interaction-audit.md).
+
+This secondary finding does not change the active route. `NEXT_STEP` remains `IDENTIFY_AND_USE_SUPPORTED_GOVERNANCE_OWNED_SCOPED_READ_ROUTE`; `GOVERNANCE=KEEP_BLOCKED`; `BRIDGE=BRIDGE_NOT_READY`; `REAL_TRANSPORT=NOT_RUN`. No broader scan, reader retry/bypass, cleanup, further test run, candidate merge or bridge launch is authorized by this audit.
