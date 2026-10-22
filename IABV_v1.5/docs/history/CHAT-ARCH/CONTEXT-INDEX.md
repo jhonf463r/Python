@@ -8,6 +8,14 @@ The normalized ledger has seven authority/policy categories (`OG-M1A-01..OG-M1A-
 
 ---
 
+## Construction algorithm completeness overlay — 2026-10-22
+
+Use [UAAL construction-completeness / traceability overlay](./CHAT-ARCH-2026-10-22-UAAL-construction-completeness-traceability-overlay.md) as a child of `UAAL-ROOT-001`, together with the [Memory Operating Protocol](./MEMORY-OPERATING-PROTOCOL.md). This is a method improvement, not a second router; `CURRENT-STATE.md` remains the sole active-task authority.
+
+Core controls: bidirectional requirement-to-rule traceability; explicit state-space/decision-table coverage including unknown and trust failures; independent accounting for derived logic, Owner/governance decisions, implementation and operational gates; reconciled IDs/counts; bounded handoffs with receipts and stop criteria; original-request-to-result reconciliation; fetch-back and later demonstrated reuse. This documentary task is complete/fetched back. It does not adopt the M1A scope policy or authorize implementation. Current active route remains the M1A bundled Owner/governance decision in the top snapshot of `CURRENT-STATE.md`.
+
+---
+
 ## Historical M1 route checkpoint — superseded by CURRENT-STATE (2026-10-22)
 
 The complete diff supplied by the Owner is statically reviewed and fails acceptance pending F-01–F-03; see [M1 static review and next-chat handoff](./CHAT-ARCH-2026-10-22-M1-scoped-read-review-and-next-chat-handoff.md). The candidate's read/list denial is fail-closed, but the governed approval route is not implemented.
