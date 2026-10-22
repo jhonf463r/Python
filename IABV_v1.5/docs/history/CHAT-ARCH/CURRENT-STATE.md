@@ -2,7 +2,7 @@
 
 ## LATEST ROUTING DELTA — independent review received; successor v0.2 awaiting review (2026-10-22)
 
-The Owner supplied an independent documentary review attributed to the existing OpenCode session. Classification: `OWNER_SUPPLIED_INDEPENDENT_REVIEW`. Its verdict is `PASS_WITH_REPAIRS) for requirements-baseline quality only, not implementation. The predecessor had eight findings: BA-01/03/04/05/06 HIGH (BA-03 partial); BA-02 MEDIUM residual, BA-07/08 MEDIUM. No implementation mechanism was source-verified. Full record: [independent review](./CHAT-ARCH-2026-10-22-independent-review-builder-grant-contract.md).
+The Owner supplied an independent documentary review attributed to the existing OpenCode session. Classification: `OWNER_SUPPLIED_INDEPENDENT_REVIEW`. Its verdict is `PASS_WITH_REPAIRS` for requirements-baseline quality only, not implementation. The predecessor had eight findings: BA-01/03/04/05/06 HIGH (BA-03 partial); BA-02 MEDIUM residual, BA-07/08 MEDIUM. No implementation mechanism was source-verified. Full record: [independent review](./CHAT-ARCH-2026-10-22-independent-review-builder-grant-contract.md).
 
 The coordinator prepared [builder-grant contract successor v0.2](./CHAT-ARCH-2026-10-22-builder-grant-contract-successor-v0.2.md). It hard-codes containment, payload, receipt-integrity, clock/revocation and session requirements, but explicitly marks BA-01/03/04/06 `NOT_IMPLEMENTABLE_WITH_CURRENT_EVIDENCE` and BA-05 `AUTHORITY_UNAVAILABLE` until real authority is verified. These are fail-closed documentary dispositions, not proof that any enforcer, issuer, ledger, clock, sandbox or file API exists.
 
@@ -14,8 +14,10 @@ M1 remains the single active task: `IDENTIFY_AND_USE_SUPPORTED_GOVERNANCE_OWNED_
 PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
 ACTIVE_TASK=M1_IDENTIFY_AND_USE_SUPPORTED_GOVERNANCE_OWNED_SCOPED_READ_ROUTE
 PREDECESSOR_REVIEW=PASS_WITH_REPAIRS
+PREDECESSOR_REVIEW_SCOPE=REQUIREMENTS_BASELINE_ONLY
 SUCCESSOR_DRAFT=READY_FOR_DOCUMENTARY_REVIEW_ONLY
 SUCCESSOR_REVIEW=NOT_RUN
+READY_FOR_IMPLEMENTATION=NO
 BUILDER_GRANT=PROPOSED_NOT_IMPLEMENTED
 GOVERNANCE=KEEP_BLOCKED
 IMPLEMENTATION=NOT_AUTHORIZED
