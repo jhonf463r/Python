@@ -3,6 +3,16 @@
 
 **Purpose:** mapa operativo global para futuros chats. Reconciliación entre intención estratégica y evidencia conocida. Requiere fresh check de branch/runtime antes de claims operativos.
 
+## 2026-10-22 ADHD-aware focus and space-time project coordination (documented method; runtime not proven)
+
+Detailed owner-directed protocol: [ADHD-aware project coordination and space-time focus](./CHAT-ARCH-2026-10-22-adhd-aware-project-coordination-and-space-time-focus-protocol.md).
+
+The Owner explicitly reports ADHD and asks for structured project coordination because useful new ideas arise rapidly and can divert attention from the primary objective. Treat this as an owner-directed interaction-design requirement, not as a limitation to infer beyond what the Owner stated. Capture new ideas in a persistent inbox/parking lot; do not switch the active task automatically. Maintain one primary outcome, one active task, one acceptance criterion and one next action. Interrupt only for immediate safety or a dependency that invalidates the active work; otherwise triage the idea as direct dependency, later, duplicate/resolved, or out of scope. Give a brief progress dashboard and distinguish queued/running/blocked/completed-unverified/verified using evidence, not narration.
+
+The existing DEVELOPMENT CONTROL TOWER and goal-lock/anti-drift protocol are the foundation; this addendum does not create a competing route or claim the runtime coordinator is implemented. The sole active task remains `IDENTIFY_AND_USE_SUPPORTED_GOVERNANCE_OWNED_SCOPED_READ_ROUTE`; preserve `GOVERNANCE=KEEP_BLOCKED`, `BRIDGE=BRIDGE_NOT_READY`, `LOCAL_SOURCE_READ=NOT_RUN`, `REAL_TRANSPORT=NOT_RUN`, `LOCAL_WORKTREE=UNTOUCHED`. The latest IABV response repeated a broad scan instead of the stop-and-report-only request; containment and all claimed mutations remain unverified. Do not repeat the scan, pull/clean/reset, alter GPU/models/credentials, or attempt improvised rollback.
+
+---
+
 ## 1. GLOBAL OBJECTIVE
 Construir IABV como un control plane cognitivo y de desarrollo artificial observable y gobernado que use progresivamente sus propios órganos para observarse, detectar déficits, seleccionar experimentos y capacidades, ejecutar/delegar, verificar, aprender y causar decisiones posteriores, reduciendo la coordinación humana rutinaria.
 
