@@ -1,6 +1,6 @@
 ## ACTIVE ROUTING — M1A design accepted; consolidated contract v1.0.0 review next (2026-10-22)
 
-**Follow [CURRENT-STATE.md](./CURRENT-STATE.md) first.** Its top routing snapshot is the only source for the active task. The Owner accepted `ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE`; the decision is recorded in the [normalized M1A ledger](./CHAT-ARCH-2026-10-22-M1A-normalized-scope-decision-ledger-and-design-amendment.md), and the adopted design is consolidated in [M1A operational-block scope contract v1.0.0](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md) (blob `ac3a45018b0313747fe0c3dfc39d6298e0786fe8`).
+**Follow [CURRENT-STATE.md](./CURRENT-STATE.md) first.** Its top routing snapshot is the only source for the active task. The Owner accepted `ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE`; the decision is recorded in the [normalized M1A ledger](./CHAT-ARCH-2026-10-22-M1A-normalized-scope-decision-ledger-and-design-amendment.md), and the adopted design is consolidated in [M1A operational-block scope contract v1.0.0](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md) (blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e`).
 
 **Existing architectural lineage — reuse, do not duplicate:**
 1. [UAAL-ROOT-001](./UNIVERSAL-ADAPTIVE-ALGORITHM-CONSTITUTION-2026-10-04.md) is the parent adaptive loop.
@@ -16,7 +16,7 @@ Copyable exact prompt: [M1A contract v1 review handoff](./CHAT-ARCH-2026-10-22-M
 OWNER_DESIGN_ACCEPTANCE=ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE
 M1A_DESIGN_BASELINE=NORMATIVE_ADOPTED
 CONTRACT_VERSION=1.0.0
-CONTRACT_BLOB=ac3a45018b0313747fe0c3dfc39d6298e0786fe8
+CONTRACT_BLOB=8181c7c0cf6036c76cf365510e8d9665cf84e57e
 ACTIVE_TASK=M1A_CONSOLIDATED_SCOPE_CONTRACT_V1_TARGETED_ADVERSARIAL_REVIEW
 CURRENT_STATUS=READY_FOR_INDEPENDENT_REVIEW; NOT_DISPATCHED
 RUNTIME_TRUST_ANCHOR=UNVERIFIED
