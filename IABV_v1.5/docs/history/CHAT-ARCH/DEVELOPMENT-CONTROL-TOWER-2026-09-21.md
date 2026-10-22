@@ -1,19 +1,21 @@
 # IABV v1.5 — DEVELOPMENT CONTROL TOWER
 ## Estado global, tracks, gates, pendientes y routing — 2026-09-21
 
-**Owner gate simplified:** use the normalized ledger's single bundled choice (`ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE`, `ACCEPT_WITH_AMENDMENTS: ...`, or `REJECT_M1A_BASELINE: ...`) rather than seven separate prompts. Implementation and real trust-anchor verification remain distinct gates.
+**Owner design decision recorded:** `ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE` adopted the seven bundled M1A design choices on 2026-10-22. The accepted contract v1.0.0 is under targeted documentary review; real trust-anchor verification, implementation and release remain distinct gates.
 
 **Purpose:** mapa operativo global para futuros chats. Reconciliación entre intención estratégica y evidencia conocida. Requiere fresh check de branch/runtime antes de claims operativos.
 
-## Current route overlay — M1A normalized design / Owner gate (2026-10-22)
+## Current route overlay — adopted M1A contract v1.0.0; targeted review next (2026-10-22)
 
-This Control Tower remains the global dependency/gate map; it does not supersede the top of [CURRENT-STATE.md](./CURRENT-STATE.md). Current task is `M1A_OWNER_GOVERNANCE_ADJUDICATION_OF_SCOPE_MODEL_POLICY_AND_DECISION_LEDGER`, status `WAITING_OWNER`.
+This Tower remains the global dependency/gate map; it does not supersede the top snapshot of [CURRENT-STATE.md](./CURRENT-STATE.md). The Owner accepted `ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE`; the [normalized ledger](./CHAT-ARCH-2026-10-22-M1A-normalized-scope-decision-ledger-and-design-amendment.md) records the decision, and the [M1A consolidated operational-block scope contract v1.0.0](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md) is the normative design baseline.
 
-The M1A work reuses the existing parent loop [UAAL-ROOT-001](./UNIVERSAL-ADAPTIVE-ALGORITHM-CONSTITUTION-2026-10-04.md), this Control Tower, the [goal-lock/anti-drift protocol](./CHAT-ARCH-2026-10-20-protocol-anti-drift-and-bridge-goal-lock.md), [Memory Operating Protocol](./MEMORY-OPERATING-PROTOCOL.md), and [Entry 274](./CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md). It must not create a parallel coordinator or duplicate a capability router.
+The contract reuses [UAAL-ROOT-001](./UNIVERSAL-ADAPTIVE-ALGORITHM-CONSTITUTION-2026-10-04.md), [Entry 274](./CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md), the Memory Operating Protocol and the [construction-completeness overlay](./CHAT-ARCH-2026-10-22-UAAL-construction-completeness-traceability-overlay.md). It defines conjunctive selectors, dimension-local `GLOBAL`, valid mismatch versus unknown/untrusted inputs, authenticated catalogue/producer/target requirements, all-block aggregation, independent release, legacy fail-closed behavior and 28 design conformance cases. No parallel coordinator is created.
 
-Completed bounded documentary output: [M1A normalized scope decision ledger/design amendment](./CHAT-ARCH-2026-10-22-M1A-normalized-scope-decision-ledger-and-design-amendment.md). Seven genuine policy/authority categories remain for the Owner/governance; other review findings are classified as derivable technical/documentary repairs. Proposed selector semantics remain non-authoritative. `GOVERNANCE=KEEP_BLOCKED`, `IMPLEMENTATION=NOT_AUTHORIZED`, `TESTS=NOT_RUN`, `READ_LIST=FAIL_CLOSED`, `BRIDGE=BRIDGE_NOT_READY`.
+**Current task:** `M1A_CONSOLIDATED_SCOPE_CONTRACT_V1_TARGETED_ADVERSARIAL_REVIEW`. Next actor is intended to be Sonnet 4.6 in the Owner-reported Antigravity session; invocation remains `NOT_DISPATCHED`. Review only the exact consolidated contract, no broad source scan.
 
-Historical routing notes below remain valuable evidence of past decisions but must not send the next actor back to M1's old source-scope investigation or the same broad review.
+Real runtime trust anchor, catalogue publisher/revocation source, producer allowlist, target resolver/call-site binding and independent block-release mechanism remain `UNVERIFIED/NOT_ESTABLISHED`. Preserve `GOVERNANCE=KEEP_BLOCKED`, `IMPLEMENTATION=NOT_AUTHORIZED`, `TESTS=NOT_RUN`, `READ_LIST=FAIL_CLOSED`, `BRIDGE=BRIDGE_NOT_READY`.
+
+Historical route statements below remain preserved for provenance. The top of CURRENT-STATE.md is the sole task-routing authority and supersedes earlier M1/M1A task pointers.
 
 ## Historical target_scope candidate checkpoint — 2026-10-22 (not current routing)
 
@@ -46,17 +48,21 @@ This block is the current operational projection of this Tower. The top snapshot
 
 ```
 PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
-CURRENT_PHASE=M1_GOVERNED_SCOPED_READ_ROUTE
-ACTIVE_TASK_ID=M1
-ACTIVE_TASK=IDENTIFY_AND_USE_SUPPORTED_GOVERNANCE_OWNED_SCOPED_READ_ROUTE
-CURRENT_STATUS=BLOCKED_WAITING_FOR_SUPPORTED_AUTHORITY_OR_ROUTE
-SESSION_EXPOSED_SUPPORTED_ADMIN_READ_TOOL=NOT_FOUND
-GLOBAL_ROUTE_EXISTENCE=UNRESOLVED
-NEXT_ACTOR=SUPPORTED_GOVERNANCE_ADMIN_SURFACE_OR_RESPONSIBLE_LIVE_SERVER_OPERATOR_IF_IDENTIFIED
-NEXT_SINGLE_ACTION=Check only for a real supported governance/admin surface or responsible live-server/checkout operator; if not exposed in this session, retain session-scoped NOT_FOUND and GLOBAL_ROUTE_EXISTENCE=UNRESOLVED; do not repeat the OpenCode v0.2 review or use IABV general chat/alternate reader
+CURRENT_PHASE=M1A_CONSOLIDATED_SCOPE_CONTRACT_REVIEW
+ACTIVE_TASK_ID=M1A-CONTRACT-V1-REVIEW
+ACTIVE_TASK=M1A_CONSOLIDATED_SCOPE_CONTRACT_V1_TARGETED_ADVERSARIAL_REVIEW
+CURRENT_STATUS=READY_FOR_INDEPENDENT_REVIEW; NOT_DISPATCHED
+OWNER_DECISION=ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE
+CONTRACT_VERSION=1.0.0
+NEXT_ACTOR=SONNET_4_6_ANTIGRAVITY_OWNER_REPORTED_NOT_DISPATCHED
+NEXT_SINGLE_ACTION=Perform a bounded adversarial review of the exact contract v1.0.0; no broad scan or implementation
+RUNTIME_TRUST_ANCHOR=UNVERIFIED
+TRUSTED_CATALOGUE_AND_RESOLVER=NOT_ESTABLISHED
 GOVERNANCE=KEEP_BLOCKED
+IMPLEMENTATION=NOT_AUTHORIZED
+TESTS=NOT_RUN
+READ_LIST=FAIL_CLOSED
 BRIDGE=BRIDGE_NOT_READY
-LOCAL_SOURCE_READ=NOT_RUN
 REAL_TRANSPORT=NOT_RUN
 LOCAL_WORKTREE=UNTOUCHED
 ```
@@ -67,12 +73,13 @@ The Owner-supplied builder-grant draft is now adjudicated DESIGN_VERDICT=PASS_WI
 
 ### Milestones
 
-- **M0 — Focus/continuity method:** the ADHD-aware idea-inbox and one-active-task protocol is documented and indexed. Runtime activation remains `NOT_PROVEN`.
-- **M1 — Active:** identify a supported governance-owned scoped-read route. The ordinary IABV general-chat responses have repeated broad auto-scans instead of supplying the required route decision; do not repeat that path as a workaround.
-- **M2 — Dependent / not run:** after M1 is verified, trace Codex executor registration, invocation, consumer and only permitted non-secret effective policy.
-- **M3 — Dependent / not run:** through the same legitimate route, trace IABV→Ollama startup/connect/model-provider selection and whether local inference is required.
-- **M4 — Pending dependencies:** reconcile one bounded bridge path/contract map from actual source edges and receipts.
-- **M5/M6 — Not authorized / not run:** implementation and end-to-end bridge validation each require separate authorization and satisfaction of their gates.
+- **M0 — Focus/continuity method:** documented; runtime activation/reuse remains `NOT_PROVEN`.
+- **M1 — Governed scoped-read route:** operational route remains blocked until real supported authority, reader identity and target scope are evidenced. A design contract alone does not open M1.
+- **M1A — Operational-block scope design:** Owner-adopted normative design contract v1.0.0 created; awaiting bounded independent adversarial review. The review invocation is not confirmed.
+- **M2 — Codex executor chain:** dependent/not run; requires M1's supported governed read path.
+- **M3 — IABV/Ollama startup/provider path:** dependent/not run; only through the same legitimate route.
+- **M4 — Bridge path reconciliation:** pending source/receipt dependencies.
+- **M5/M6 — Implementation and end-to-end proof:** not authorized/not run; each requires separate authorization and all gates.
 
 ### Idea inbox / parking lot
 
