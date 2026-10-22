@@ -4,7 +4,7 @@ Source of truth: [CURRENT-STATE.md](./CURRENT-STATE.md), top snapshot. Active ta
 
 Current bounded design: [normalized M1A scope decision ledger and proposed amendment](./CHAT-ARCH-2026-10-22-M1A-normalized-scope-decision-ledger-and-design-amendment.md). This is a child of existing [UAAL-ROOT-001](./UNIVERSAL-ADAPTIVE-ALGORITHM-CONSTITUTION-2026-10-04.md), using the Control Tower, goal-lock/anti-drift, Memory Operating Protocol, Entry 274 and existing M0 causal routing as related assets—not a new universal router. The recommendation is conjunctive selectors, with `GLOBAL` scoped to its own dimension; trusted valid exact mismatch means non-applicability, while incomplete/untrusted/ambiguous authority fails closed. This remains `PROPOSED`.
 
-The normalized ledger has seven authority/policy categories (`OG-M1A-01..OG-M1A-07`) and distinguishes them from derivable technical repairs and later implementation gates. Do not reuse the supplied review's inconsistent “7 + 4 = 11” tally. Keep `GOVERNANCE=KEEP_BLOCKED`, `IMPLEMENTATION=NOT_AUTHORIZED`, `TESTS=NOT_RUN`, `READ_LIST=FAIL_CLOSED`, `BRIDGE=BRIDGE_NOT_READY`.
+The normalized ledger has seven authority/policy categories (`OG-M1A-01..OG-M1A-07`) but offers a **single bundled Owner decision**: `ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE`, `ACCEPT_WITH_AMENDMENTS: ...`, or `REJECT_M1A_BASELINE: ...`. Acceptance adopts design only; actual trust-anchor identity and all implementation permissions remain separate gates. Do not reuse the review's inconsistent “7 + 4 = 11” tally. Keep `GOVERNANCE=KEEP_BLOCKED`, `IMPLEMENTATION=NOT_AUTHORIZED`, `TESTS=NOT_RUN`, `READ_LIST=FAIL_CLOSED`, `BRIDGE=BRIDGE_NOT_READY`.
 
 ---
 
