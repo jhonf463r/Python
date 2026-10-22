@@ -1,3 +1,11 @@
+## Latest cross-chat episode handoff — 2026-10-22
+
+Start here for the Owner's latest clarification of how the coordinator must manage bridge progress, not lose ideas, preserve a single active task, and avoid stale routing or broad-scan loops: [coordinator reality-aligned bridge continuity handoff](./CHAT-ARCH-2026-10-22-coordinator-reality-aligned-bridge-continuity-handoff.md).
+
+It preserves the distinction between documentary progress (allowed within current scope), local source inspection (blocked by the governance gate), and implementation/launch/real transport (separately gated). It does not replace `CURRENT-STATE.md` as the single routing authority. The handoff's future reuse test is still pending.
+
+---
+
 ## Owner–coordinator working agreement and anti-loop rule — 2026-10-22
 
 Canonical operating contract: [ADHD-aware project coordination and space-time focus protocol, section 11](./CHAT-ARCH-2026-10-22-adhd-aware-project-coordination-and-space-time-focus-protocol.md). Before acting in a new chat, restore the objective/active task from [CURRENT-STATE.md](./CURRENT-STATE.md), retrieve relevant prior attempts and negative findings, capture new ideas instead of switching tasks, and use evidence-backed states. The method is documented; runtime enforcement is not yet proven.
