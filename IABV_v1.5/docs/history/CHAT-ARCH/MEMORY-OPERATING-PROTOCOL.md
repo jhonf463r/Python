@@ -1,5 +1,7 @@
 ## Active M1A Knowledge Delta — normalized scope design / Owner gate (2026-10-22)
 
+**M1A Owner gate:** one bundled Owner decision: `ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE`, `ACCEPT_WITH_AMENDMENTS: ...`, or `REJECT_M1A_BASELINE: ...`. Acceptance is design-only; concrete trust-anchor identity, implementation, tests and block release remain separate gates.
+
 Active route source: [CURRENT-STATE.md](./CURRENT-STATE.md). Task: `M1A_OWNER_GOVERNANCE_ADJUDICATION_OF_SCOPE_MODEL_POLICY_AND_DECISION_LEDGER`; status `WAITING_OWNER`.
 
 This delta extends existing `UAAL-ROOT-001` and does not create a parallel algorithm. Reuse the Universal Adaptive Algorithm Constitution, Development Control Tower, goal-lock/anti-drift, progressive retrieval/provenance and Entry 274. The normalized M1A design is [here](./CHAT-ARCH-2026-10-22-M1A-normalized-scope-decision-ledger-and-design-amendment.md); the explanation of conceptual reuse is [here](./CHAT-ARCH-2026-10-22-central-space-time-coordinator-m1a-reconciliation.md).
