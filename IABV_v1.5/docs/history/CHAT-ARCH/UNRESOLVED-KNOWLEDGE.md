@@ -12,6 +12,9 @@ Current route: [CURRENT-STATE.md](./CURRENT-STATE.md). Active task: `M1A_OWNER_G
 
 Until these authority decisions are made, the scope model is non-authoritative, read/list remains fail-closed, and no implementation or release is authorized. Runtime completeness, local-checkout state, and independent block-release capability are not proven.
 
+**Construction-method gap addressed, evidence gap still open:** the [UAAL construction-completeness / traceability overlay](./CHAT-ARCH-2026-10-22-UAAL-construction-completeness-traceability-overlay.md) now makes bidirectional requirement-to-rule/source traceability, explicit decision-space coverage, separate authority planes, reconciled finding counts, bounded handoffs and fetch-back/reuse checks mandatory within the existing UAAL/MOP method. This addresses how future designs should prevent omissions; it does **not** prove that every M1A authority is available, that its proposed policy was adopted, or that runtime enforcement exists. M1A remains WAITING_OWNER; GOVERNANCE=KEEP_BLOCKED and BRIDGE=BRIDGE_NOT_READY.
+
+
 ---
 
 ## 2026-10-22 Owner-directed project focus and space-time coordination
