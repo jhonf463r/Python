@@ -201,3 +201,51 @@ This is a bounded documentary dependency selected under the already-recorded Own
 > Preserve `GOVERNANCE=KEEP_BLOCKED`, `IMPLEMENTATION=NOT_AUTHORIZED`, `LOCAL_SOURCE_READ=NOT_RUN`, `BRIDGE=BRIDGE_NOT_READY`, `REAL_TRANSPORT=NOT_RUN`.
 
 After Codex returns that draft, ChatGPT/coordinator will reconcile it against Entries 266/274 and the Owner's low-friction development requirement, then route one bounded independent review if an independent reviewer is actually available. No local access is unlocked by the draft.
+
+
+## Owner-supplied low-friction builder contract — received and reconciled (2026-10-22)
+
+### Provenance and disposition
+
+The Owner supplied the draft titled “Borrador: contrato de acceso de desarrollo amplio y gobernado”, with DESIGN_VERDICT=PASS_WITH_REPAIRS. Treat its content as OWNER_SUPPLIED_CODEX_DRAFT: the text was provided in this conversation and can be assessed as a document; this does not independently verify a local implementation, the identity of the drafting model/session, or any capability described by it.
+
+Coordinator reconciliation: PASS_WITH_REPAIRS remains appropriate. The draft correctly keeps development authorization separate from the operational governance block, requires a verified Owner/agent identity and candidate binding, denies out-of-candidate operations, separates tests/builds, treats receipts as a requirement rather than an existing feature, and fails closed when authority is unknown. It does not claim that M1 is complete.
+
+### Required repairs before any implementation proposal can be considered
+
+- BA-01 — Physical isolation and path containment [HIGH]. Do not rely only on denylisted path names such as .env, data/, or SQLite. The candidate must be a disposable, sanitized work boundary in which secrets and live/user data are absent or inaccessible by independent OS/sandbox enforcement. Define race-resistant, object/handle-based containment against symbolic links, Windows reparse points, hard links, path aliases, root substitution and time-of-check/time-of-use changes. Ambiguous containment must deny.
+- BA-02 — Separate builder grant from current M1 reader authority [HIGH]. A broad construction-session grant is a distinct proposed authorization class, not a silent expansion of Entry 274's exact-path repository-read contract and not proof of an existing supported governance-owned route. It cannot be used to retry/bypass the denied reader or authorize access to the current dirty checkout. M1 stays open until its own supported route/authority criteria are satisfied or the competent authority records a valid bounded disposition.
+- BA-03 — Make execution capabilities enforceable [HIGH]. Source read/write must not implicitly permit shells, child processes, arbitrary tools, network egress, tests, builds, system changes or runtime launches. Any future test/build grant must identify command/tool identity, argument and environment bounds, allowed output paths, resource/time limits, process/network policy and receipt requirements. Do not treat a command string emitted by the agent as an independently approved command.
+- BA-04 — Establish receipt integrity independently [HIGH]. Specify who owns and protects the durable ledger, how decision and operation receipts are correlated and authenticated, how truncation/replay/tampering is detected, and what happens when receipt persistence fails. A builder-controlled text log alone does not establish trusted evidence.
+- BA-05 — Authority remains a real blocker [HIGH]. Owner-approved policy, the authenticated grant issuer, the identity/root resolver, revocation mechanism and independent owner of each operational block remain OWNER_DECISION_REQUIRED or UNRESOLVED until source-backed evidence identifies an actual trusted mechanism. Conceptual class names are not implementation evidence. No component should be relabeled EXISTING_AND_SOURCE_VERIFIED without direct authoritative source evidence.
+
+### Evidence-state matrix
+
+- Observation permission is not repository-read authority: EXISTING_AND_SOURCE_VERIFIED as a documented distinction in Entry 266; it grants no local access.
+- Entry 274 exact-path reader decision contract: documented proposal, not a verified implementation or a wide builder grant.
+- Codex session tool inventory: OWNER_REPORTED as NOT_FOUND_IN_CODEX_SESSION_SURFACE; it does not prove global absence.
+- Broad low-friction builder grant, verifier, issuer, durable ledger, revocation and separate block-release operation: PROPOSED_NOT_IMPLEMENTED / UNRESOLVED, not available capabilities.
+- Current checkout read and independent adversarial review of this newly supplied draft: NOT_RUN.
+- Overall draft: DESIGN_VERDICT=PASS_WITH_REPAIRS; READY_FOR_IMPLEMENTATION=NO; OWNER_POLICY_DECISIONS=PENDING.
+
+### Single next action: bounded independent adversarial review
+
+The next actor is OpenCode in the Owner's already-existing configured session, if available; this ChatGPT session has no connected OpenCode action to dispatch directly. This is a prepared user-mediated handoff, not a claim that review has run. Do not send the task to IABV's ordinary general-chat route and do not repeat Codex's tool catalogue. The reviewer must use only this supplied draft and the named canonical public documents; no checkout, source/configuration, secrets, data/SQLite, tool invocation, command execution, tests, builds or runtime.
+
+Copy-ready handoff:
+
+> OPENCODE / IABV — ADVERSARIAL REVIEW OF LOW-FRICTION BUILDER GRANT (DOCUMENTARY ONLY)
+>
+> Review only the Owner-supplied draft “Borrador: contrato de acceso de desarrollo amplio y gobernado” and its coordinator reconciliation in CHAT-ARCH-2026-10-22-governance-surface-inventory-followup.md. Use CURRENT-STATE.md, Entry 266, Entry 274, and issue #470 only as documentary context. Do not rediscover the session tool catalogue or perform source archaeology.
+>
+> Objective: decide whether the proposed broad read/write grant within a sanitized disposable candidate can be specified as low-friction for ordinary source/documentation work while preserving independent authorization, candidate containment, and the IABV operational block.
+>
+> Return REVIEW_VERDICT=PASS|PASS_WITH_REPAIRS|FAIL. For each finding, give severity, exact clause, concrete abuse/failure scenario, minimal repair and a non-executed acceptance case. Explicitly test: (1) authority separation and non-self-release; (2) candidate/commit/root identity and TOCTOU/reparse/link escape; (3) secrets and live data being absent or unreachable rather than merely path-denied; (4) command/test/build/network/process capabilities remaining separately gated; (5) grant expiry/revocation; (6) independent durable receipt integrity and fail-closed behavior; (7) whether this design is improperly being used to claim the existing M1 scoped-read route has been found or the current local checkout can be read.
+>
+> Distinguish existing source-verified facts from owner reports, proposals and unresolved decisions. Do not invent an issuer, API, UI, operator or capability. Do not broaden Entry 274 silently. Do not read any local checkout/configuration or access data, secrets or credentials; do not invoke readers or other tools, run commands/tests/builds, start IABV/Codex/Ollama, change a repository, or initiate transport. Stop after the review.
+>
+> Preserve GOVERNANCE=KEEP_BLOCKED; IMPLEMENTATION=NOT_AUTHORIZED; LOCAL_SOURCE_READ=NOT_RUN; BRIDGE=BRIDGE_NOT_READY; REAL_TRANSPORT=NOT_RUN; LOCAL_WORKTREE=UNTOUCHED.
+
+### Routing state after receipt
+
+The draft advances a design dependency only. M1 acceptance, live bridge readiness, a supported read route, authority to implement, and operational block release remain unproven. After an independent review is actually supplied, the coordinator will reconcile only that review against this record and CURRENT-STATE.md. Do not treat a prepared prompt or a design verdict as execution evidence.
