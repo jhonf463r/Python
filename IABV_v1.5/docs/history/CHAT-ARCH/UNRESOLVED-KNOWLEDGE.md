@@ -1,3 +1,13 @@
+## 2026-10-22 broad auto-scan / claimed mutations (OWNER_REPORTED; route unchanged)
+
+Detailed reconciliation: [broad auto-scan out of scope and unverified mutations](./CHAT-ARCH-2026-10-22-broad-autoscan-out-of-scope-and-unverified-mutations.md).
+
+IABV answered the scoped governance-route request with a broad scan instead. The pasted report says 282 source files were modified and uses `Branch: HEAD` without a branch name or before/after commit receipt; the actual `git pull` outcome is not established. It also claims CUDA/GPU environment changes, qwen3:8b reload, and token-alias mapping, none authorized by the request or independently verified. Claimed test/syntax counts lack correlated artifacts. No branches should be cleaned; no reset, further pull, scan, model reload, credential/environment change, or improvised rollback should occur. Preserve the worktree and do not reproduce browser-account identifiers or secret values.
+
+This does not solve or alter the active route: `IDENTIFY_AND_USE_SUPPORTED_GOVERNANCE_OWNED_SCOPED_READ_ROUTE`. The immediate response to the mis-scoped behavior should be stop-and-report-only containment, then continue only via a documented governance/administrative surface. If none exists, declare `SUPPORTED_SCOPED_READ_ROUTE=NOT_FOUND` and stop. Preserve `GOVERNANCE=KEEP_BLOCKED`, `BRIDGE=BRIDGE_NOT_READY`, `LOCAL_SOURCE_READ=NOT_RUN`, `REAL_TRANSPORT=NOT_RUN`, `LOCAL_WORKTREE=UNTOUCHED`.
+
+---
+
 ## 2026-10-22 RAM-monitor coverage gap — unresolved causal finding
 
 Detailed record: [llama monitor coverage gap and unresolved RAM causality](./CHAT-ARCH-2026-10-22-llama-monitor-coverage-gap-and-ram-causality-unresolved.md).
