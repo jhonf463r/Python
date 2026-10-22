@@ -1,25 +1,14 @@
-## Active M1A Knowledge Delta — normalized scope design / Owner gate (2026-10-22)
+## ACTIVE M1A KNOWLEDGE DELTA — Owner accepted design baseline; bounded contract review next (2026-10-22)
 
-**M1A Owner gate:** one bundled Owner decision: `ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE`, `ACCEPT_WITH_AMENDMENTS: ...`, or `REJECT_M1A_BASELINE: ...`. Acceptance is design-only; concrete trust-anchor identity, implementation, tests and block release remain separate gates.
+Owner decision receipt: `ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE`. The seven M1A design choices are adopted as a normative design baseline only. The [normalized decision ledger](./CHAT-ARCH-2026-10-22-M1A-normalized-scope-decision-ledger-and-design-amendment.md) records acceptance (blob `3425144a661c713eb8898c1eacefb2d791519bc0`); the resulting [consolidated operational-block scope contract v1.0.0](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md) is fetched back and verified (blob `ac3a45018b0313747fe0c3dfc39d6298e0786fe8`).
 
-Active route source: [CURRENT-STATE.md](./CURRENT-STATE.md). Task: `M1A_OWNER_GOVERNANCE_ADJUDICATION_OF_SCOPE_MODEL_POLICY_AND_DECISION_LEDGER`; status `WAITING_OWNER`.
+The adopted model uses independent conjunctive assistant and target selectors; `GLOBAL` applies to its own dimension only; exact mismatch proves non-applicability only after every required input and authority is trusted, complete and valid. Unknown/invalid/untrusted/conflicting/revoked/unsupported state, absent target resolution, absent producer authority, or an incomplete active-block set fails closed. Receipts are evidence, never authority or block release. Legacy records are not automatically migrated.
 
-This delta extends existing `UAAL-ROOT-001` and does not create a parallel algorithm. Reuse the Universal Adaptive Algorithm Constitution, Development Control Tower, goal-lock/anti-drift, progressive retrieval/provenance and Entry 274. The normalized M1A design is [here](./CHAT-ARCH-2026-10-22-M1A-normalized-scope-decision-ledger-and-design-amendment.md); the explanation of conceptual reuse is [here](./CHAT-ARCH-2026-10-22-central-space-time-coordinator-m1a-reconciliation.md).
+**Next task:** `M1A_CONSOLIDATED_SCOPE_CONTRACT_V1_TARGETED_ADVERSARIAL_REVIEW` — bounded independent adversarial review of the exact v1.0.0 artifact. This is documentary only, not a code or runtime task. Sonnet 4.6 in Antigravity is the intended reviewer based on Owner-reported availability; the session invocation is `NOT_DISPATCHED` until a correlated review artifact exists.
 
-**Knowledge Delta:** selectors are recommended as independent conjunctive dimensions; `GLOBAL` matches one dimension only; valid trusted exact mismatch proves non-applicability; incomplete/untrusted/unknown/conflicting/revoked/unsupported data remains fail-closed. The recommendation is `PROPOSED`, not adopted policy. Seven governance decisions are normalized as OG-M1A-01..07; other review findings are technical/design acceptance repairs, not additional policy votes. The review report's “7 + 4” total was internally inconsistent and is not reused.
+Real authenticated principal/trust anchor, catalogue publisher/revocation service, producer allowlist, operation-to-target registry/call-site mappings and independent block-release mechanism remain `UNVERIFIED/NOT_ESTABLISHED`. Thus `GOVERNANCE=KEEP_BLOCKED`, `IMPLEMENTATION=NOT_AUTHORIZED`, `TESTS=NOT_RUN`, `READ_LIST=FAIL_CLOSED`, `BRIDGE=BRIDGE_NOT_READY`.
 
-**Reuse constraint:** actor prompts must derive from the current causal/evidential frontier, not copy another model's proposed continuation unchanged. Retrieve prior negative findings and pinned source baseline; trace only relevant dependencies if an authorized source question arises; avoid broad scans; preserve history and fetch back every material write. Saving the note is not proof that a runtime learned or reused it.
-
-```text
-PARENT_CONCEPT=UAAL-ROOT-001
-CURRENT_TASK=M1A_OWNER_GOVERNANCE_ADJUDICATION_OF_SCOPE_MODEL_POLICY_AND_DECISION_LEDGER
-GOVERNANCE=KEEP_BLOCKED
-IMPLEMENTATION=NOT_AUTHORIZED
-TESTS=NOT_RUN
-READ_LIST=FAIL_CLOSED
-BRIDGE=BRIDGE_NOT_READY
-```
-
+---
 ---
 
 ## Construction completeness and bidirectional traceability overlay — 2026-10-22
