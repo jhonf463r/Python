@@ -10,7 +10,7 @@ The coordinator completed the current bounded documentary reconciliation and sav
 
 ### Current active task
 
-`M1A_OWNER_GOVERNANCE_ADJUDICATION_OF_SCOPE_MODEL_POLICY_AND_DECISION_LEDGER` — review the compact recommendations in the normalized ledger and adjudicate the seven authority/policy categories there. This is the next genuine dependency, not an invitation for another broad AI review. The coordinator has already performed the documentary deductions; the remaining decisions concern the authorized catalogue/publisher and producer trust, resolver ownership, revocation/version lifecycle, independent block release, legacy migration, and formal adoption of selector semantics.
+`M1A_OWNER_GOVERNANCE_ADJUDICATION_OF_SCOPE_MODEL_POLICY_AND_DECISION_LEDGER` — one consolidated Owner decision on the recommended design baseline, not seven disconnected questions. The ledger now provides a one-response protocol: `ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE`, `ACCEPT_WITH_AMENDMENTS: ...`, or `REJECT_M1A_BASELINE: ...`. Accepting the package adopts design rules only; concrete runtime identity/trust-anchor verification and all implementation permissions remain separate gates. The coordinator has already derived the ordinary technical logic. Do not send another broad review or implementation prompt before this decision.
 
 ```text
 PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
