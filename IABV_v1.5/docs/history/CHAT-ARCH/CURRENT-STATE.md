@@ -1,5 +1,27 @@
 # CURRENT ROUTING SNAPSHOT — 2026-10-22 (M1 ISOLATED IMPLEMENTATION AUTHORIZED; LIVE ACCESS STILL BLOCKED)
 
+## LATEST ROUTING DELTA — M1 stopped: authoritative scope model unavailable (2026-10-22)
+
+Bounded review of the permitted pinned source paths and Entry 274 found no authoritative/versioned operational-block scope model, resolver, or complete trusted operation-to-target map. The terminal result is `BLOCKED_AUTHORITY_SCOPE_MODEL_UNAVAILABLE`; do not invent a registry, dimension-combination semantics or call-site labels. Full provenance and limitations: [M1 authority scope-model check](./CHAT-ARCH-2026-10-22-M1-authority-scope-model-blocked.md).
+
+The relevant source blobs are `domain/models.py` (`a9033d21...`), `world_model_service.py` (`ba0b5f5d...`) and `server.py` (`17b87a15...`) at base `cb2f2b02ade297660431e7bbd5d0dce75d10e39c`. Model fields are plain strings; WorldModel creates example values from literals and producer fields; registered read/list tools do not wire `operation_scope`. Entry 274 requires authoritative, versioned dimensions and explicit combination semantics, with unknown/conflicting cases failing closed.
+
+Important provenance limit: this ChatGPT coordinator did not access the reported local Windows candidate directory. Local candidate identity remains `OWNER_REPORTED`; source-level results do not authenticate that directory or the live server. No candidate changes or tests/runtime/transport occurred. Keep the interim denial and all governance blocks.
+
+```text
+ACTIVE_TASK=M1_IDENTIFY_AND_USE_SUPPORTED_GOVERNANCE_OWNED_SCOPED_READ_ROUTE
+M1_STATUS=BLOCKED_AUTHORITY_SCOPE_MODEL_UNAVAILABLE
+AUTHORITY_SCOPE_MODEL=NOT_FOUND_IN_PERMITTED_PINNED_SOURCE_SET
+CANDIDATE_LOCAL_IDENTITY=OWNER_REPORTED
+CANDIDATE_DIRECT_FILESYSTEM_INSPECTION=NOT_PERFORMED_BY_CHATGPT_COORDINATOR
+TESTS=NOT_RUN
+GOVERNANCE=KEEP_BLOCKED
+CANDIDATE_MERGED=NO
+BRIDGE=BRIDGE_NOT_READY
+```
+
+---
+
 ## LATEST ROUTING DELTA — M1 review consolidated into next-chat handoff (2026-10-22)
 
 Full episode, diff provenance, source-grounded deductions, F-01–F-03, a bounded Codex prompt and process lessons: [M1 static review and next-chat continuity handoff](./CHAT-ARCH-2026-10-22-M1-scoped-read-review-and-next-chat-handoff.md).
