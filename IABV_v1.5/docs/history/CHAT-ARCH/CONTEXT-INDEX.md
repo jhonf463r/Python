@@ -1,16 +1,19 @@
-## LATEST ROUTING DELTA — target_scope PASS; new-chat continuity checkpoint (2026-10-22)
+## LATEST ROUTING DELTA — M1 minimum governed scoped-read design proposed (2026-10-22)
 
-The Owner supplied Sonnet 4.6's static review verdict PASS for the remote target_scope candidate. F-TS-1 is closed for the candidate fragment only: open consult_-prefix acceptance is gone and the code uses explicit known_target_scopes. The two discriminating cases behave as expected in the reviewed fragment: registered consult_codex does not block unrelated audit; unknown consult_unmapped_scope remains fail-closed. The reviewer explicitly states that this does not replace acceptance-test execution or validate a running server.
+Owner-authorized documentary design: [M1 governance-route minimal design](./CHAT-ARCH-2026-10-22-M1-governance-route-minimal-design.md). It reuses Entry 266, Entry 274 and the already-reviewed builder-grant successor v0.2; it does not claim implementation or an existing route. `M1_DESIGN=PROPOSED_FOR_OWNER_AUTHORITY_REVIEW`, while `SUPPORTED_SCOPED_READ_ROUTE=UNRESOLVED` and `GLOBAL_ROUTE_EXISTENCE=UNRESOLVED`. The current snapshot [CURRENT-STATE.md](./CURRENT-STATE.md) remains the sole routing authority.
 
-Full handoff, provenance, exact candidate identity, current compare snapshot, risk boundaries and next-chat instructions: [post-Sonnet target_scope next-chat handoff](./CHAT-ARCH-2026-10-22-post-sonnet-target-scope-next-chat-handoff.md). Source review record: [candidate target_scope repaired review](./CHAT-ARCH-2026-10-22-candidate-target-scope-repaired-review.md).
+Bounded negative results: ChatGPT callable-tool catalogue `NOT_FOUND_IN_CHECKED_SESSION_SURFACE` (directly examined); Codex 176-tool session inventory `NOT_FOUND_IN_CODEX_SESSION_SURFACE` (Owner-reported); Antigravity/Opus 4.6 session inventory `NOT_FOUND_IN_ANTIGRAVITY_SESSION_SURFACE` (Owner-supplied); current Issue #470 identifies no verified route/operator. Do not generalize these to global absence or repeat inventories. Next dependency: authoritative evidence from the Owner/competent governance authority for a real supported issuer, authenticated principal, MCP server/checkout identity, operation/path scope, and independent block-release authority.
 
-Candidate remains branch fix/iabv-operational-block-target-scope-repair-20261022 at b7c3fffaec4ff3b78b1ca03ae64ead949236f504. The pre-handoff comparison found main at f93b513f7d12c321a65077335d677c998373c764, candidate status diverged with ahead_by=1, behind_by=3, merge base e61c5043bbdd8ea536ed5c9e642d80ff228ee897. The main-side commits after that base were documentation-only; no source merge/rebase occurred. This pre-write snapshot is historical after the handoff commit: refresh before any integration decision.
-
-Do not interpret the static PASS as test success, live-server adoption, block release or a supported local-read route. TESTS=NOT_RUN; LIVE_SERVER_IDENTITY=UNVERIFIED; LOCAL_SOURCE_READ=NOT_RUN; CANDIDATE_MERGED=NO.
-
-The one active task remains M1: IDENTIFY_AND_USE_SUPPORTED_GOVERNANCE_OWNED_SCOPED_READ_ROUTE. The next action is still the actual supported governance/administrative surface or responsible operator for the live server and checkout. A supported route was NOT_FOUND only in the previously examined ChatGPT tool surface; GLOBAL_ROUTE_EXISTENCE remains UNRESOLVED. Do not repeat the OpenCode successor v0.2 review, broad IABV auto-scan, local reader attempts, alternate-reader bypass, or old ahead_by=1/behind_by=0 claims.
-
-GOVERNANCE=KEEP_BLOCKED; IMPLEMENTATION=NOT_AUTHORIZED; LOCAL_SOURCE_READ=NOT_RUN; TESTS=NOT_RUN; CANDIDATE_MERGED=NO; BRIDGE=BRIDGE_NOT_READY; REAL_TRANSPORT=NOT_RUN; LOCAL_WORKTREE=UNTOUCHED
+```
+GOVERNANCE=KEEP_BLOCKED
+IMPLEMENTATION=NOT_AUTHORIZED
+LOCAL_SOURCE_READ=NOT_RUN
+TESTS=NOT_RUN
+BRIDGE=BRIDGE_NOT_READY
+REAL_TRANSPORT=NOT_RUN
+CANDIDATE_MERGED=NO
+LOCAL_WORKTREE=UNTOUCHED
+```
 
 ---
 
