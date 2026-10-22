@@ -1,26 +1,44 @@
-# CURRENT ROUTING SNAPSHOT — 2026-10-22 (M1 BLOCKED; M1A DESIGN RECONCILED; OWNER/GOVERNANCE ADJUDICATION NEXT)
+# CURRENT ROUTING SNAPSHOT — 2026-10-22 (M1A DESIGN ADOPTED; CONTRACT V1 READY FOR TARGETED REVIEW; OPERATIONAL BLOCKS REMAIN)
 
-## LATEST METHOD DELTA — construction completeness / traceability overlay (2026-10-22)
+## LATEST ROUTING DELTA — Owner accepted M1A design; consolidated contract v1.0.0 created and fetched back (2026-10-22)
 
-The requested documentary improvement to the existing construction algorithm has been created and fetched back: [UAAL construction-completeness overlay](./CHAT-ARCH-2026-10-22-UAAL-construction-completeness-traceability-overlay.md), blob `788732f2908f63bae13be42a8359b069d42db633`. The [Memory Operating Protocol](./MEMORY-OPERATING-PROTOCOL.md) now points to its mandatory pre-construction and handoff checks; its update was fetched back with blob `b4798d9b6912650034dbe0b6bd74b625dcf6d30e`.
+The Owner supplied the exact token `ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE`. The decision is recorded in the [normalized M1A decision ledger](./CHAT-ARCH-2026-10-22-M1A-normalized-scope-decision-ledger-and-design-amendment.md), blob `3425144a661c713eb8898c1eacefb2d791519bc0`. The accepted design is now consolidated into [M1A operational-block scope contract v1.0.0](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md), blob `ac3a45018b0313747fe0c3dfc39d6298e0786fe8`.
 
-The overlay extends `UAAL-ROOT-001`; it does not create another coordinator and does not change the active task. It requires bidirectional requirement/rule traceability, explicit state-space and decision-table coverage, separation of derivation from governance authority and implementation permissions, unique-ID/count reconciliation, bounded evidence-backed handoffs, direct comparison of returned work to the original request, fetch-back verification, and later demonstrated reuse.
+The contract is traceable to `UAAL-ROOT-001`, Entry 274 and the construction-completeness overlay. It defines the adopted conjunctive selector model, `GLOBAL` as dimension-local, valid exact mismatch versus unevaluable/unknown inputs, catalogue/publisher/producer trust requirements, a server-side target resolver, deterministic all-block accounting, non-bearer receipt semantics, no automatic legacy migration, and 28 design conformance cases. The original proposal and owner-supplied review remain preserved as historical input; their contents were not overwritten.
 
-**Active routing remains unchanged:** `M1A_OWNER_GOVERNANCE_ADJUDICATION_OF_SCOPE_MODEL_POLICY_AND_DECISION_LEDGER`, `WAITING_OWNER`. The construction-method task is complete as a documentation change, but the M1A design has **not** been accepted: `OG-M1A-01..OG-M1A-07=PENDING`; its exact bundled response remains in the [normalized decision ledger](./CHAT-ARCH-2026-10-22-M1A-normalized-scope-decision-ledger-and-design-amendment.md). The phrase “proceed” authorized this bounded method improvement, not policy adoption. No implementation, tests, runtime, transport, merge or block release was authorized or performed.
+**Adoption boundary:** the exact Owner decision adopts normative design only. The actual authenticated runtime principal/trust anchor, catalogue publisher and revocation service, producer allowlist, real operation-to-target registry/call-site bindings and independent block-release mechanism remain `UNVERIFIED/NOT_ESTABLISHED`. Therefore this is not a code-read permission, implementation authorization or block release.
+
+### Current active task
+
+`M1A_CONSOLIDATED_SCOPE_CONTRACT_V1_TARGETED_ADVERSARIAL_REVIEW` — bounded independent review of the exact contract v1.0.0, not a broad source scan and not an implementation task.
+
+- **Next actor:** Sonnet 4.6 in the Owner-reported Antigravity session, if that session can receive the exact artifact. Availability is `OWNER_REPORTED`; no review invocation is claimed by this coordinator.
+- **Review mode:** documentary / static contract review only.
+- **Review target:** [M1A contract v1.0.0](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md), blob `ac3a45018b0313747fe0c3dfc39d6298e0786fe8`.
+- **Review scope:** challenge selector truth-table completeness; valid mismatch versus invalid/unknown states; trust-root/publisher/producer/revocation requirements; caller-supplied target handling; every-active-block aggregation and denial reasons; independent release; legacy/schema versions; Entry 274 boundaries; and traceability matrix.
+- **Acceptance criterion:** findings refer to exact contract sections and give concrete counterexamples; no broad repo scan; output one of `PASS`, `PASS_WITH_REPAIRS`, or `FAIL`, with each finding's severity, section, counterexample, minimal repair and discriminating case. PASS must not claim implementation/runtime verification.
+- **Stop conditions:** do not inspect local checkout or `data/`/SQLite/secrets; do not edit source, run tests/build/runtime/transport, merge or release a block; do not restart a general review of the previous proposal.
 
 ```text
-LAST_COMPLETED_DOCUMENTARY_TASK=UAAL_CONSTRUCTION_COMPLETENESS_TRACEABILITY_OVERLAY
-OVERLAY=DOCUMENTED_AND_FETCHED_BACK
-M1A_POLICY=PROPOSED_NON_AUTHORITATIVE
-OWNER_GOVERNANCE_DECISIONS=OG-M1A-01..OG-M1A-07_PENDING
-ACTIVE_TASK=M1A_OWNER_GOVERNANCE_ADJUDICATION_OF_SCOPE_MODEL_POLICY_AND_DECISION_LEDGER
-CURRENT_STATUS=WAITING_OWNER
-GOVERNANCE=KEEP_BLOCKED
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+PARENT_CONCEPT=UAAL-ROOT-001
+LAST_OWNER_DECISION=ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE
+M1A_DESIGN_BASELINE=NORMATIVE_ADOPTED
+M1A_CONTRACT=IABV-OPERATIONAL-BLOCK-SCOPE v1.0.0
+CONTRACT_BLOB=ac3a45018b0313747fe0c3dfc39d6298e0786fe8
+ACTIVE_TASK=M1A_CONSOLIDATED_SCOPE_CONTRACT_V1_TARGETED_ADVERSARIAL_REVIEW
+CURRENT_STATUS=READY_FOR_INDEPENDENT_REVIEW; NOT_DISPATCHED
+RUNTIME_TRUST_ANCHOR=UNVERIFIED
+TRUSTED_CATALOGUE_AND_RESOLVER=NOT_ESTABLISHED
+INDEPENDENT_BLOCK_RELEASE_MECHANISM=NOT_ESTABLISHED
 IMPLEMENTATION=NOT_AUTHORIZED
 TESTS=NOT_RUN
+GOVERNANCE=KEEP_BLOCKED
 READ_LIST=FAIL_CLOSED
 BRIDGE=BRIDGE_NOT_READY
 ```
+
+**Completed this transition:** exact owner decision recorded; normalized ledger updated; one consolidated versioned design contract created; contract and ledger fetched back from GitHub. Older M1A routing paragraphs below are historical and must not be interpreted as reopening the accepted design decision or superseding this active review task.
 
 ---
 
