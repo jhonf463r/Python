@@ -1,27 +1,23 @@
-# CURRENT ROUTING SNAPSHOT — 2026-10-22 (M1 BLOCKED; M1A REVIEW RECEIVED; POLICY NOT ADJUDICATED)
+# CURRENT ROUTING SNAPSHOT — 2026-10-22 (M1 BLOCKED; M1A CENTRAL DESIGN RECONCILIATION ACTIVE)
 
-## LATEST ROUTING DELTA — Independent review received; repair and decision ledger next (2026-10-22)
+## LATEST ROUTING DELTA — Central coordinator derives the design path before Owner escalation (2026-10-22)
 
-The Owner supplied a Claude/Sonnet-attributed independent review of the Codex M1A scope-model proposal. Reported verdict: `PASS_WITH_REPAIRS`; actual reviewer invocation remains `OWNER_REPORTED`, not independently authenticated. The review has been archived at [M1A independent adversarial review](./CHAT-ARCH-2026-10-22-M1A-independent-adversarial-review-claude.md).
+The Owner clarified that the expected “space-time brain” is the central architectural coordinator: restore the north star and prior evidence, maintain the dependency graph, infer the next justified construction step, coordinate the proper actor, reconcile the returned evidence, persist the causal delta, and reuse it. Do not treat each local defect as an isolated prompt or ask the Owner to decide ordinary technical logic that can be derived from the existing contract.
 
-Three high-severity findings block policy adjudication: F-M1A-01 (selector/global-mismatch semantics undefined), F-M1A-02 (decision-table gaps: absent selector, alias conflict, mixed policy versions), and F-M1A-03 (catalogue trust chain, producer authorization, revocation absent from the proposal). F-M1A-04..07 and four bypass vectors add non-bearer receipt, legacy parsing, conformance-matrix, acceptance-dependency, caller-supplied scope, and multi-block evaluation clarifications.
+The coordination-method correction and bounded M1A recommendation are recorded in [central space-time coordinator — M1A reconciliation](./CHAT-ARCH-2026-10-22-central-space-time-coordinator-m1a-reconciliation.md). That document recommends formal conjunctive selectors: `GLOBAL` matches every value of its own dimension only; if selector metadata and trusted target are complete, valid, and consistent, an exact mismatch in either dimension proves non-applicability. Missing, malformed, unknown, untrusted, contradictory or unsupported metadata remains fail-closed and cannot be reclassified as non-applicable. This is a `PROPOSED` technical recommendation, not adopted policy or implementation.
 
-Coordinator reconciliation found an internal inconsistency in the supplied review's final count: it classifies caller-scope handling and short-circuit prohibition as not requiring Owner decisions in the body, but includes them among four additional `OWNER_DECISION_REQUIRED` items in the final summary. Do not record “7 + 4 = 11 decisions” as authoritative. The review record separates explicit policy choices, existing §G decisions implicated by trust findings, and design repairs that appear derivable from Entry 274/fail-closed intent.
+**Active task:** `M1A_COORDINATOR_DERIVE_SCOPE_SEMANTICS_AND_NORMALIZE_DECISION_LEDGER`. The coordinator should first normalize the proposal's decision table and existing §G list into (a) derivable technical repairs, (b) genuine Owner/governance authority choices, and (c) implementation acceptance gates. Do not repeat the same general adversarial review and do not return ordinary formal-model deductions to the Owner as open-ended questions. Only after this reconciliation should the remaining authority choices be surfaced explicitly. The Owner's request authorizes documentary reasoning/continuity correction only; it does not authorize source edits, implementation, tests, runtime, transport, merge or block release.
 
-**Immediate next gate:** explicit Owner/governance adjudication of the unresolved scope-policy and catalogue/producer trust decisions, while reconciling the existing §G decision ledger. Do not send another AI to revise the proposal until those decisions are recorded or a separate bounded design-repair task is explicitly authorized. Any later revision is design-only; implementation requires its own authorization. Use [M1A review record](./CHAT-ARCH-2026-10-22-M1A-independent-adversarial-review-claude.md) as the detailed handoff. Do not repeat the same adversarial review or return to code implementation.
-
-The model remains `PROPOSED`, non-authoritative. Keep active blocks, reads/listings fail-closed, and all previous hard constraints.
+The previous Sonnet-attributed report's `PASS_WITH_REPAIRS` is `OWNER_SUPPLIED`; actual reviewer invocation is unverified. Its body and final count disagree about which items require Owner decisions. Do not repeat a “7 + 4 = 11 decisions” tally. The detailed review remains [M1A independent adversarial review](./CHAT-ARCH-2026-10-22-M1A-independent-adversarial-review-claude.md).
 
 ```text
 PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
-ACTIVE_TASK=M1A_OWNER_GOVERNANCE_ADJUDICATION_OF_SCOPE_MODEL_POLICY_AND_DECISION_LEDGER
+ACTIVE_TASK=M1A_COORDINATOR_DERIVE_SCOPE_SEMANTICS_AND_NORMALIZE_DECISION_LEDGER
 PRIOR_M1_STATUS=BLOCKED_AUTHORITY_SCOPE_MODEL_UNAVAILABLE
-SCOPE_MODEL_PROPOSAL=OWNER_SUPPLIED; PROPOSED
-CODEX_DESIGN_VERDICT=PASS_WITH_REPAIRS (OWNER_REPORTED)
-INDEPENDENT_REVIEW_VERDICT=PASS_WITH_REPAIRS (OWNER_SUPPLIED; INVOCATION_UNVERIFIED)
-CRITICAL_FINDINGS=F-M1A-01;F-M1A-02;F-M1A-03
-OWNER_GOVERNANCE_ADJUDICATION=PENDING
-SCOPE_MODEL_AUTHORITY=NOT_ESTABLISHED
+SCOPE_MODEL=PROPOSED; NON_AUTHORITATIVE
+COORDINATOR_METHOD=DOCUMENTED; RUNTIME_NOT_PROVEN
+SELECTOR_SEMANTICS=CONJUNCTIVE_RECOMMENDATION; NOT_ADOPTED
+OWNER_GOVERNANCE_AUTHORITY_DECISIONS=PENDING_NORMALIZED_LEDGER
 IMPLEMENTATION=NOT_AUTHORIZED
 TESTS=NOT_RUN
 GOVERNANCE=KEEP_BLOCKED
