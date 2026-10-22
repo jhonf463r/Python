@@ -1,6 +1,8 @@
 # IABV v1.5 — DEVELOPMENT CONTROL TOWER
 ## Estado global, tracks, gates, pendientes y routing — 2026-09-21
 
+**Owner gate simplified:** use the normalized ledger's single bundled choice (`ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE`, `ACCEPT_WITH_AMENDMENTS: ...`, or `REJECT_M1A_BASELINE: ...`) rather than seven separate prompts. Implementation and real trust-anchor verification remain distinct gates.
+
 **Purpose:** mapa operativo global para futuros chats. Reconciliación entre intención estratégica y evidencia conocida. Requiere fresh check de branch/runtime antes de claims operativos.
 
 ## Current route overlay — M1A normalized design / Owner gate (2026-10-22)
