@@ -1,3 +1,9 @@
+## Latest bounded M1 surface inventory — 2026-10-22
+
+[Governance-surface inventory follow-up](./CHAT-ARCH-2026-10-22-governance-surface-inventory-followup.md): callable tools in this ChatGPT session expose no IABV-local governance-owned scoped-read operation; current issue #470 content does not identify one or name its responsible operator. Result is `NOT_FOUND` for those examined surfaces, while `GLOBAL_ROUTE_EXISTENCE=UNRESOLVED`. Current task remains M1, governance remains `KEEP_BLOCKED`, and no local read or transport was run. This supplements but does not replace [CURRENT-STATE.md](./CURRENT-STATE.md).
+
+---
+
 ## Latest cross-chat episode handoff — 2026-10-22
 
 Start here for the Owner's latest clarification of how the coordinator must manage bridge progress, not lose ideas, preserve a single active task, and avoid stale routing or broad-scan loops: [coordinator reality-aligned bridge continuity handoff](./CHAT-ARCH-2026-10-22-coordinator-reality-aligned-bridge-continuity-handoff.md).
