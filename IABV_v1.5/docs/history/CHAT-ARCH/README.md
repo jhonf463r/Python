@@ -1,5 +1,12 @@
 ## LATEST ROUTING DELTA — M1 isolated implementation authorized; operational access remains blocked (2026-10-22)
 
+## Latest M1 status — partial candidate result; not a pass (2026-10-22)
+
+The Owner supplied a Codex-attributed report of a partial isolated candidate: target-scope applicability fix plus fail-closed behavior when scoped-read authority is absent. The request/approval/issuer/receipt flow remains unimplemented, tests were not run, and the local candidate diff has not yet been independently inspected. See [the M1 partial implementation result](./CHAT-ARCH-2026-10-22-M1-partial-implementation-Codex-result.md). The active task stays M1 and `GOVERNANCE=KEEP_BLOCKED`; obtain the exact diff for independent static review before any additional step. No live-server causality, M1 PASS, or bridge readiness is claimed.
+
+---
+
+
 Owner explicitly authorized source implementation by Codex **in an isolated candidate only**. The exact task, evidence, exclusions and implementation prompt are in [M1 Codex implementation handoff](./CHAT-ARCH-2026-10-22-M1-governed-scoped-read-route-CODEX-implementation-handoff.md). The [CURRENT-STATE.md](./CURRENT-STATE.md) top snapshot remains the sole routing authority.
 
 This does **not** authorize reading/modifying the actual dirty checkout, accessing `data/`/SQLite/secrets/credentials/`.env, test execution, builds, runtime/process launch, live MCP use, real transport, merge/deployment, or release of an operational block. ChatGPT's current tool surface cannot dispatch the existing Codex UI session; `CODEX_EXECUTION=NOT_DISPATCHED` until a verifiable Codex receipt exists.
