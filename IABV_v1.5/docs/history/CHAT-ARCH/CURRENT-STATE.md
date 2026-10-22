@@ -1,5 +1,10 @@
 # CURRENT ROUTING SNAPSHOT — 2026-10-21 (GOAL-LOCKED; LOCAL EXECUTOR READ BLOCKED)
 
+
+## Mandatory coordination contract — 2026-10-22
+
+Before continuing any chat/agent work, apply section 11 of the [Owner-directed coordination protocol](./CHAT-ARCH-2026-10-22-adhd-aware-project-coordination-and-space-time-focus-protocol.md). It defines the working agreement for preserving every meaningful idea without changing tasks implicitly, avoiding repeated/unproductive routes, coordinating Codex/other actors with exact scope and permissions, recording evidence and verifying persistence. This is a method rule, not proof of runtime automation. This file's top routing snapshot remains the sole authority for the active task and next actor; the active route and governance state below are not changed by this pointer.
+
 ## 2026-10-22 ADHD-aware focus and space-time project coordination (documented method; runtime not proven)
 
 Detailed owner-directed protocol: [ADHD-aware project coordination and space-time focus](./CHAT-ARCH-2026-10-22-adhd-aware-project-coordination-and-space-time-focus-protocol.md).
