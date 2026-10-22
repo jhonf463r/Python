@@ -1,19 +1,19 @@
-## Active unresolved knowledge — M1A authoritative scope policy/trust (2026-10-22)
+## Active unresolved knowledge — M1A runtime trust and implementation prerequisites (2026-10-22)
 
-**M1A adjudication path:** do not ask seven disconnected questions. The normalized ledger bundles the defaults behind `ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE`, with amendment/rejection tokens available. Even after design acceptance, exact principal/trust-anchor bindings remain evidence prerequisites and operations stay blocked.
+**Policy/design status:** `ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE` received. The seven M1A design choices are accepted as a normative design baseline and consolidated in [M1A operational-block scope contract v1.0.0](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md), blob `ac3a45018b0313747fe0c3dfc39d6298e0786fe8`. The old policy-adoption question is closed; do not ask it again unless new contradictory higher-authority evidence appears.
 
-Current route: [CURRENT-STATE.md](./CURRENT-STATE.md). Active task: `M1A_OWNER_GOVERNANCE_ADJUDICATION_OF_SCOPE_MODEL_POLICY_AND_DECISION_LEDGER`, status `WAITING_OWNER`.
+**Current task:** [CURRENT-STATE.md](./CURRENT-STATE.md), top snapshot. `M1A_CONSOLIDATED_SCOPE_CONTRACT_V1_TARGETED_ADVERSARIAL_REVIEW`, status `READY_FOR_INDEPENDENT_REVIEW; NOT_DISPATCHED`. The intended reviewer is Sonnet 4.6 in the Owner-reported Antigravity session; invocation is not confirmed.
 
-**Established documentary facts:** Codex's typed/versioned scope proposal and a Sonnet/Claude-attributed review report exist as public documents; the latter is owner-supplied and its execution is not independently authenticated. The bounded public-source checks for `domain/models.py`, `world_model_service.py`, and `server.py` recorded no authoritative versioned scope registry or trusted operation-to-target resolver in those paths. Entry 274 already requires authoritative scope semantics, fail-closed uncertainty, separate reader verification/receipt, and an independent block-release artifact.
+**Remaining evidence gaps (not additional policy ballots):**
+- `REAL_TRUST_ANCHOR=UNVERIFIED`: actual authenticated runtime governance/publisher principal and root material.
+- `TRUSTED_CATALOGUE=NOT_ESTABLISHED`: integrity/authorization verification, published catalogue revision and revocation source.
+- `PRODUCER_ALLOWLIST=NOT_ESTABLISHED`: authenticated producer identities and per-class authority.
+- `TRUSTED_OPERATION_TARGET_RESOLVER=NOT_ESTABLISHED`: versioned server-side mapping tied to real registered operations/call sites.
+- `INDEPENDENT_BLOCK_RELEASE_MECHANISM=NOT_ESTABLISHED`: independently authenticated release authority and block-bound artifact.
 
-**Derived recommendation, still PROPOSED:** use independent conjunctive assistant/target constraints; `GLOBAL` covers its own dimension only; complete/trusted/valid exact mismatch proves non-applicability; missing, malformed, ambiguous, unauthenticated, revoked or unsupported metadata must not prove non-applicability. See the [normalized M1A ledger](./CHAT-ARCH-2026-10-22-M1A-normalized-scope-decision-ledger-and-design-amendment.md).
+The previous bounded public-source checks found no authoritative versioned scope registry or trusted operation-to-target resolver in inspected `models.py`, `world_model_service.py` and `server.py`; this does not prove global absence. Do not repeat the broad source scan. Entry 274 remains normative for separate diagnostic, fresh approval, read decision, reader verification, receipt, and independent block release.
 
-**What remains genuinely unresolved (OG-M1A-01..07):** adoption of the selector policy; accountable catalogue/publisher/root; authorization of block producers; trusted operation-to-target resolver/owner; publication/versioning/revocation/audit lifecycle; independent authority for block release; and rules for legacy records/migration. Do not convert the review's inconsistent “7 + 4” total into new decisions. Technical repairs (required fields, caller-scope ignored for authority, non-bearer receipts, complete multi-block accounting and expanded conformance cases) are tracked separately in the normalized ledger.
-
-Until these authority decisions are made, the scope model is non-authoritative, read/list remains fail-closed, and no implementation or release is authorized. Runtime completeness, local-checkout state, and independent block-release capability are not proven.
-
-**Construction-method gap addressed, evidence gap still open:** the [UAAL construction-completeness / traceability overlay](./CHAT-ARCH-2026-10-22-UAAL-construction-completeness-traceability-overlay.md) now makes bidirectional requirement-to-rule/source traceability, explicit decision-space coverage, separate authority planes, reconciled finding counts, bounded handoffs and fetch-back/reuse checks mandatory within the existing UAAL/MOP method. This addresses how future designs should prevent omissions; it does **not** prove that every M1A authority is available, that its proposed policy was adopted, or that runtime enforcement exists. M1A remains WAITING_OWNER; GOVERNANCE=KEEP_BLOCKED and BRIDGE=BRIDGE_NOT_READY.
-
+The accepted design does not supply runtime credentials or authorize code, tests, runtime, transport, merge or release. Maintain `GOVERNANCE=KEEP_BLOCKED`, `IMPLEMENTATION=NOT_AUTHORIZED`, `TESTS=NOT_RUN`, `READ_LIST=FAIL_CLOSED`, `BRIDGE=BRIDGE_NOT_READY`.
 
 ---
 
