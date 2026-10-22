@@ -19,7 +19,6 @@ TESTS=NOT_RUN
 BRIDGE=BRIDGE_NOT_READY
 ```
 ---
----
 
 Authoritative route: [CURRENT-STATE.md](docs/history/CHAT-ARCH/CURRENT-STATE.md). Exact Codex task: [M1 governed scoped-read route implementation handoff](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1-governed-scoped-read-route-CODEX-implementation-handoff.md).
 
