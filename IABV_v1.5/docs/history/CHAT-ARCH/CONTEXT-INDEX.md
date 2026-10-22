@@ -1,5 +1,12 @@
 ## LATEST ROUTING DELTA — M1 isolated implementation authorized; operational access remains blocked (2026-10-22)
 
+## M1 — static diff review requires repairs (2026-10-22)
+
+Static review of the Owner-supplied candidate diff found three HIGH findings: no evidenced authoritative/versioned scope model for non-applicability, no production call-site wiring for the new `operation_scope`, and silent exclusion of unknown/malformed `assistant_kind`. Details and acceptance criteria: [M1 scoped-read diff static review](./CHAT-ARCH-2026-10-22-M1-scoped-read-diff-static-review.md). The read/list denial path remains fail-closed but M1 is not complete. Next: source-grounded minimal repairs or stop if authoritative semantics do not exist; no tests/build/runtime/publish/merge.
+
+---
+
+
 ## LATEST M1 result — partial isolated implementation reported (2026-10-22)
 
 Codex's reported local candidate corrects the `assistant_kind`/`target_scope` gate and leaves read/list denied without a verifiable scoped-read decision, but did not build the Owner approval/issuer/receipt route. The report and evidence limitations are documented in [M1 partial implementation result](./CHAT-ARCH-2026-10-22-M1-partial-implementation-Codex-result.md). The diff is not yet available for independent source confirmation; tests were authored but not run. Keep `GOVERNANCE=KEEP_BLOCKED`, `BRIDGE=BRIDGE_NOT_READY`. Next: obtain and review the exact two-file unified diff; do not run tests or publish/merge.
