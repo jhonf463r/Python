@@ -1,3 +1,9 @@
+## Mandatory Owner–coordinator working agreement (2026-10-22)
+
+Before assigning or performing a project task, restore the current route from [CURRENT-STATE.md](docs/history/CHAT-ARCH/CURRENT-STATE.md) and apply section 11 of the [coordination protocol](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-adhd-aware-project-coordination-and-space-time-focus-protocol.md). The protocol is the owner-directed operating contract: one North Star and one active task; capture all substantive ideas in a durable, triaged inbox; do not ask the Owner to repeat known decisions; do not repeat a route without a changed precondition; specify each Codex/agent handoff's destination, scope, authority, exclusions, expected receipt and stop condition; distinguish reports from verified outcomes; and fetch back canonical documentation after writing. If a task is blocked, explain what can still proceed and identify the exact dependency; do not compensate with a broad scan. Documentation of this method is not proof of runtime enforcement. No section here overrides authorization boundaries or the current-state routing authority.
+
+---
+
 ## 2026-10-22 ADHD-aware focus and space-time project coordination (documented method; runtime not proven)
 
 Detailed owner-directed protocol: [ADHD-aware project coordination and space-time focus](./CHAT-ARCH-2026-10-22-adhd-aware-project-coordination-and-space-time-focus-protocol.md).
