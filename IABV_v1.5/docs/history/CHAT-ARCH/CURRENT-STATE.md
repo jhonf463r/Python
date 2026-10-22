@@ -1,6 +1,49 @@
-# CURRENT ROUTING SNAPSHOT — 2026-10-22 (M1 DOCUMENTARY DESIGN; OPERATIONAL ACCESS STILL BLOCKED)
+# CURRENT ROUTING SNAPSHOT — 2026-10-22 (M1 ISOLATED IMPLEMENTATION AUTHORIZED; LIVE ACCESS STILL BLOCKED)
 
-## LATEST ROUTING DELTA — Owner authorized Option 2; minimal M1 design persisted (2026-10-22)
+## LATEST ROUTING DELTA — Owner authorized isolated-candidate implementation (2026-10-22)
+
+The Owner explicitly said **“ok procede”** after being asked whether to authorize Codex to build the M1 governed-read route in an isolated candidate. This supersedes the earlier **Option 2: documentary-only** restriction for source implementation in a disposable candidate only. It does not grant access to the Owner's actual dirty checkout, authorize any local read of that checkout, run tests/builds/processes, launch IABV/MCP/Codex/Ollama, expose or use transport, merge or deploy, or release a live block.
+
+**Mandatory next actor:** Codex in the Owner's existing UI session, as bounded in [M1 Codex implementation handoff](./CHAT-ARCH-2026-10-22-M1-governed-scoped-read-route-CODEX-implementation-handoff.md). This ChatGPT session has no callable action to dispatch or control that Codex UI session. Therefore the handoff is prepared and persisted, but **Codex execution has not been dispatched or confirmed**. Do not claim the implementation has started.
+
+### Source-grounded reasons for M1
+
+- In the latest public source snapshot observed before this documentation writeback, `main` was `7fb9c8bc9febbaa5e83e3c81959775ec1d3afcf8`.
+- The public MCP server already registers `read_repo_file` and `list_repo_directory`; they are protected by `_governance_block_for_route(assistant_kind="audit")`.
+- Current public-main gate logic considers `assistant_kind` but does not discriminate the independent `target_scope` dimension. The reviewed but unmerged candidate `b7c3fffaec4ff3b78b1ca03ae64ead949236f504` contains an explicit known-scope repair with Sonnet static PASS only. Transplant/reconcile this targeted repair into the new candidate; do not merge that candidate wholesale or infer live adoption.
+- The current public Control Center grant is specifically `observe_window_content:<assistant>`; it is not repository-read authority. No dedicated scoped-read request → local Owner decision → per-operation server-side decision flow was identified in the inspected sources.
+- MCP HTTP setup includes wildcard host/origin settings and disables DNS-rebinding protection for tunnel compatibility; active transport authentication has not been verified. The local approval/issuer/block-decision path must not be exposed as a remotely callable MCP write tool.
+
+### States now in force
+
+```
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+ACTIVE_TASK=M1_IDENTIFY_AND_USE_SUPPORTED_GOVERNANCE_OWNED_SCOPED_READ_ROUTE
+M1_STATUS=IMPLEMENTATION_HANDOFF_PREPARED; CODEX_EXECUTION_NOT_DISPATCHED
+IMPLEMENTATION=AUTHORIZED_FOR_ISOLATED_CANDIDATE_ONLY
+CODEX_HANDOFF=PERSISTED_IN_GITHUB; NOT_YET_CONSUMED
+GOVERNANCE=KEEP_BLOCKED
+OWNER_DIRTY_CHECKOUT=DO_NOT_ACCESS_OR_MODIFY
+ISOLATED_CANDIDATE_SOURCE_READ=AUTHORIZED_FOR_IMPLEMENTATION
+LOCAL_DIRTY_CHECKOUT_READ=NOT_AUTHORIZED
+TESTS_BUILDS_LAUNCHES_RUNTIME=NOT_AUTHORIZED
+REAL_TRANSPORT=NOT_AUTHORIZED
+LIVE_MCP_IDENTITY=UNVERIFIED
+LIVE_CHECKOUT_IDENTITY=UNVERIFIED
+ACTIVE_BLOCK_RELEASE_AUTHORITY=UNRESOLVED
+SUPPORTED_SCOPED_READ_ROUTE=NOT_IMPLEMENTED_OR_VERIFIED
+CANDIDATE_MERGED=NO
+BRIDGE=BRIDGE_NOT_READY
+```
+
+### Single next action / acceptance criterion
+
+Codex must create an isolated candidate from the refreshed public `main`, using the handoff's exact scope; it must never touch the Owner's dirty checkout. The candidate is not acceptable merely because an approval button or tool exists. Required invariants: local UI only can approve; every read matches a server-side, short-lived, exact-path request; unknown/stale/revoked/mismatched state denies; `assistant_kind` and `target_scope` are handled as separate dimensions; a read grant cannot release a block; real applicable blocks stay denied absent a separately verified decision; receipts and filesystem containment are not overclaimed. Test code may be authored but test execution is not authorized. Independent source review and separate verification/operation authorization remain required before any real local read.
+
+**Historical text below is retained for provenance. Any older statement in it that implementation remains wholly unauthorized is superseded only by this bounded isolated-candidate authorization. All other gates and exclusions remain binding.**
+
+
+### HISTORICAL DECISION — Option 2 documentary-only (superseded only for isolated candidate implementation by the Owner's later explicit authorization)
 
 The Owner explicitly authorized **Option 2: documentary design only** in this coordination session. The proposed minimum route design is now recorded at [M1 governance-route minimal design](./CHAT-ARCH-2026-10-22-M1-governance-route-minimal-design.md). This authorization does not authorize implementation, local reads, tests/builds, process launches, or transport; it does not grant access or release an operational block.
 
