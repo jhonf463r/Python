@@ -1,5 +1,15 @@
 # CURRENT ROUTING SNAPSHOT — 2026-10-21 (GOAL-LOCKED; LOCAL EXECUTOR READ BLOCKED)
 
+## 2026-10-22 RAM-monitor coverage reconciliation (supplementary; no routing change)
+
+Detailed evidence record: [llama monitor coverage gap and unresolved RAM causality](./CHAT-ARCH-2026-10-22-llama-monitor-coverage-gap-and-ram-causality-unresolved.md).
+
+The supplied terminal report observed `llama-server.exe` absent only in visible samples from 2026-10-21 22:25:46–22:28:51. No visible samples cover the interval to the reported end at 2026-10-22 09:14:51, so continuous two-second/15-minute coverage is unverified. Total RAM was not captured in these waiting samples; Ollama metrics were not captured and `/api/ps` was not queried. The reported 70.14–72.98% RAM-used range does not attribute cause. `MONITOR_COVERAGE=INCOMPLETE_OR_UNVERIFIABLE`, `RAM_DIAGNOSIS=INCOMPLETE`, `OLLAMA_RAM_CAUSALITY=UNRESOLVED`, `FIX=NOT_APPLIED_OR_VERIFIED`; configuration unchanged and no process actions reported.
+
+Do not extend monitoring automatically or infer the process was absent throughout the gap. This note does not change the sole active route in `CURRENT-STATE.md`: `IDENTIFY_AND_USE_SUPPORTED_GOVERNANCE_OWNED_SCOPED_READ_ROUTE`. Preserve `GOVERNANCE=KEEP_BLOCKED`, `BRIDGE=BRIDGE_NOT_READY`, `REAL_TRANSPORT=NOT_RUN`, and `LOCAL_WORKTREE=UNTOUCHED`. No bridge launch, reader bypass, process/configuration changes, or runtime tests.
+
+---
+
 ## Supplementary continuity delta — resource metacognition + cross-chat learning (2026-10-21)
 
 Detailed immutable record: [resource-metacognition-cross-chat-learning-and-bridge-continuity](./CHAT-ARCH-2026-10-21-resource-metacognition-cross-chat-learning-and-bridge-continuity.md). It reconciles the 22:15 owner-reported RAM capture (zero `llama-server.exe`, no models listed by the existing Ollama API, `ollama.exe` 26.47 MB working set / 61.79 MB private; global RAM use 75.58–76.07%) with the earlier un-reproduced report of ~60% attributed to `llama-server.exe`. Historical cause and IABV startup path remain unresolved; no fix is verified.
