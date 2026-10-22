@@ -32,7 +32,7 @@ CURRENT_STATUS=BLOCKED_WAITING_FOR_SUPPORTED_AUTHORITY_OR_ROUTE
 SESSION_EXPOSED_SUPPORTED_ADMIN_READ_TOOL=NOT_FOUND
 GLOBAL_ROUTE_EXISTENCE=UNRESOLVED
 NEXT_ACTOR=OPENCODE_EXISTING_CONFIGURED_SESSION_IF_AVAILABLE
-NEXT_SINGLE_ACTION=Prepare and send a self-contained inline builder-contract review packet to the same OpenCode session after 404-reported document retrieval failure; no local read, alternate reader, implementation, tests, builds or launch
+NEXT_SINGLE_ACTION=Send complete successor v0.2 text inline to the same OpenCode session for one bounded documentary review; no local read, alternate reader, implementation, tests, builds or launch
 GOVERNANCE=KEEP_BLOCKED
 BRIDGE=BRIDGE_NOT_READY
 LOCAL_SOURCE_READ=NOT_RUN
@@ -42,7 +42,7 @@ LOCAL_WORKTREE=UNTOUCHED
 
 ### Latest bounded M1 surface-check delta — 2026-10-22
 
-The Owner-supplied builder-grant draft is now adjudicated DESIGN_VERDICT=PASS_WITH_REPAIRS; see the M1 follow-up for required repairs and the exact OpenCode review prompt. The first review attempt returned REVIEW_BLOCKED_INPUT_UNAVAILABLE after all named GitHub inputs reportedly returned 404; no verdict was issued. Do not switch readers. A same-session inline packet is the only prepared recovery. This grant remains PROPOSED_NOT_IMPLEMENTED and is not a substitute for M1's supported scoped-read route. The current ChatGPT callable-tool catalogue exposes no IABV-local governance/read-decision action, and the current content of issue [#470](https://github.com/jhonf463r/Python/issues/470) identifies no executable route or responsible operator. Full evidence: [governance-surface inventory follow-up](./CHAT-ARCH-2026-10-22-governance-surface-inventory-followup.md). Record `NOT_FOUND` only for the surfaces actually examined; keep `GLOBAL_ROUTE_EXISTENCE=UNRESOLVED`. The task, governance gate and no-bypass constraints do not change.
+The Owner-supplied builder-grant draft is now adjudicated DESIGN_VERDICT=PASS_WITH_REPAIRS; see the M1 follow-up for required repairs and the exact OpenCode review prompt. The Owner has supplied the predecessor review PASS_WITH_REPAIRS for requirements-baseline quality only; its five HIGH blockers plus BA-07/BA-08 MEDIUM additions are preserved in the independent-review record. Successor v0.2 explicitly marks critical mechanisms not implementable on current evidence and BA-05 AUTHORITY_UNAVAILABLE. The earlier 404 attempt is historical. Next is a review of the complete successor text inline to the same OpenCode session, not a different reader or URL probe. This grant remains PROPOSED_NOT_IMPLEMENTED and is not a substitute for M1's supported scoped-read route. The current ChatGPT callable-tool catalogue exposes no IABV-local governance/read-decision action, and the current content of issue [#470](https://github.com/jhonf463r/Python/issues/470) identifies no executable route or responsible operator. Full evidence: [governance-surface inventory follow-up](./CHAT-ARCH-2026-10-22-governance-surface-inventory-followup.md). Record `NOT_FOUND` only for the surfaces actually examined; keep `GLOBAL_ROUTE_EXISTENCE=UNRESOLVED`. The task, governance gate and no-bypass constraints do not change.
 
 ### Milestones
 
