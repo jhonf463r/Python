@@ -1,5 +1,32 @@
 # CURRENT ROUTING SNAPSHOT — 2026-10-22 (M1 ISOLATED IMPLEMENTATION AUTHORIZED; LIVE ACCESS STILL BLOCKED)
 
+## LATEST ROUTING DELTA — M1 review consolidated into next-chat handoff (2026-10-22)
+
+Full episode, diff provenance, source-grounded deductions, F-01–F-03, a bounded Codex prompt and process lessons: [M1 static review and next-chat continuity handoff](./CHAT-ARCH-2026-10-22-M1-scoped-read-review-and-next-chat-handoff.md).
+
+The complete diff was pasted by the Owner and reviewed statically. Base blob prefixes match pinned public-main blobs; this does not authenticate the local candidate/new blobs or the live server. Review remains STATIC_REVIEW=FAIL_REPAIRS_REQUIRED.
+
+Critical refinement: the code checks assistant_kind first and can continue before inspecting target_scope, so unknown/malformed target metadata can be silently hidden when the other dimension mismatches. F-01 needs an authoritative, versioned scope model/resolver and explicit combination semantics; F-02 needs real call-site wiring for operation_scope; F-03 must handle unknown/conflicting dimensions fail-closed.
+
+**One next action:** in the same isolated candidate, inspect only the narrowly relevant registered tool paths, domain/models.py, world_model_service.py and Entry 274 to determine whether an authoritative scope model exists. Reuse it if proven. If absent, stop with BLOCKED_AUTHORITY_SCOPE_MODEL_UNAVAILABLE; do not invent policy. No tests/build/runtime, local/live checkout access, transport, commit, publication or merge.
+
+~~~text
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+ACTIVE_TASK=M1_IDENTIFY_AND_USE_SUPPORTED_GOVERNANCE_OWNED_SCOPED_READ_ROUTE
+M1_STATUS=STATIC_REVIEW_FAIL_REPAIRS_REQUIRED
+FINDINGS=F01_AUTHORITATIVE_SCOPE_MODEL;F02_OPERATION_SCOPE_NOT_WIRED;F03_UNKNOWN_DIMENSION_MAY_BE_SKIPPED
+SCOPED_READ_REQUEST_APPROVAL_FLOW=NOT_IMPLEMENTED
+TESTS=NOT_RUN
+LIVE_MCP_IDENTITY=UNVERIFIED
+LIVE_CHECKOUT_IDENTITY=UNVERIFIED
+GOVERNANCE=KEEP_BLOCKED
+CANDIDATE_MERGED=NO
+BRIDGE=BRIDGE_NOT_READY
+~~~
+
+---
+
+
 ## LATEST ROUTING DELTA — M1 candidate diff reviewed; repairs required (2026-10-22)
 
 The Owner supplied the complete two-file diff. Independent static review of that pasted diff is recorded in [M1 scoped-read diff static review](./CHAT-ARCH-2026-10-22-M1-scoped-read-diff-static-review.md). The patch appears to fail-closed for `read_repo_file`/directory listing when no scoped authority is available, but the target-scope repair is **not ready to accept**.
