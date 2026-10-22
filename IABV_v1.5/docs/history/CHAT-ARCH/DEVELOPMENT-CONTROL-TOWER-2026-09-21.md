@@ -13,6 +13,55 @@ The existing DEVELOPMENT CONTROL TOWER and goal-lock/anti-drift protocol are the
 
 ---
 
+## 0. LIVE PROJECT FOCUS DASHBOARD — 2026-10-22
+
+This block is the current operational projection of this Tower. The top snapshot in `CURRENT-STATE.md` remains the sole actor-routing authority.
+
+```
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+CURRENT_PHASE=M1_GOVERNED_SCOPED_READ_ROUTE
+ACTIVE_TASK_ID=M1
+ACTIVE_TASK=IDENTIFY_AND_USE_SUPPORTED_GOVERNANCE_OWNED_SCOPED_READ_ROUTE
+CURRENT_STATUS=BLOCKED_UNRESOLVED
+NEXT_ACTOR=SUPPORTED_GOVERNANCE_SURFACE_OR_RESPONSIBLE_GOVERNANCE_OPERATOR
+NEXT_SINGLE_ACTION=Identify the existing supported route/issuer and its applicable-block release authority; otherwise record NOT_FOUND and stop
+GOVERNANCE=KEEP_BLOCKED
+BRIDGE=BRIDGE_NOT_READY
+LOCAL_SOURCE_READ=NOT_RUN
+REAL_TRANSPORT=NOT_RUN
+LOCAL_WORKTREE=UNTOUCHED
+```
+
+### Milestones
+
+- **M0 — Focus/continuity method:** the ADHD-aware idea-inbox and one-active-task protocol is documented and indexed. Runtime activation remains `NOT_PROVEN`.
+- **M1 — Active:** identify a supported governance-owned scoped-read route. The ordinary IABV general-chat responses have repeated broad auto-scans instead of supplying the required route decision; do not repeat that path as a workaround.
+- **M2 — Dependent / not run:** after M1 is verified, trace Codex executor registration, invocation, consumer and only permitted non-secret effective policy.
+- **M3 — Dependent / not run:** through the same legitimate route, trace IABV→Ollama startup/connect/model-provider selection and whether local inference is required.
+- **M4 — Pending dependencies:** reconcile one bounded bridge path/contract map from actual source edges and receipts.
+- **M5/M6 — Not authorized / not run:** implementation and end-to-end bridge validation each require separate authorization and satisfaction of their gates.
+
+### Idea inbox / parking lot
+
+Ideas are captured here rather than silently replacing M1. This is a triage lane, not an execution queue.
+
+| ID | Idea / observation | Disposition | Re-entry condition |
+|---|---|---|---|
+| IDEA-001 | ADHD-aware space-time coordinator: persist ideas, focus one active task and expose verifiable progress | `DOCUMENTED_METHOD`; runtime capability not proven | Revisit implementation only through a separately authorized scope |
+| IDEA-002 | Reduce unnecessary Ollama/model startup, RAM footprint and investigate lazy/local-vs-remote inference | `PARKED` | M1 opens legitimate static source trace; use existing evidence first |
+| IDEA-003 | Validate the inferred claim that Ollama is winning for `general` and clarify `probe_consumed` | `PARKED` | Existing correlated IDs, metrics and receipts are available through an authorized path; no broad scan |
+| IDEA-004 | Reconcile the broad auto-scan's claimed GPU/model/credential mutations and the reported 282 dirty source files | `OWNER_REPORTED / UNVERIFIED`; preserve worktree | A safe, separately authorized recovery/verification plan; no blind pull/reset/cleanup/reload |
+
+### Progress rules for this human–AI project
+
+The Owner has explicitly asked for support managing frequent new ideas without losing the north star. Acknowledge and capture an idea, classify it as immediate safety/dependency, direct dependency, parked, duplicate/resolved, or out of scope, then return to M1 unless the Owner explicitly changes priorities. Do not treat the Owner's new idea as a failure or imply the Owner should suppress ideas.
+
+Every work checkpoint must report: objective, task ID, status, actual delta since last checkpoint, evidence/provenance, blocker, one next action and actor, acceptance criterion, and pointer to parked ideas. Use `QUEUED`, `RUNNING`, `BLOCKED`, `WAITING_OWNER`, `COMPLETED_UNVERIFIED`, `VERIFIED`, `FAILED`, or `PARKED`; do not declare running/completed/verified from model narration alone. Do not invent percentage progress.
+
+This Dashboard supplements the history below and does not replace or reorder the active route in `CURRENT-STATE.md`.
+
+---
+
 ## 1. GLOBAL OBJECTIVE
 Construir IABV como un control plane cognitivo y de desarrollo artificial observable y gobernado que use progresivamente sus propios órganos para observarse, detectar déficits, seleccionar experimentos y capacidades, ejecutar/delegar, verificar, aprender y causar decisiones posteriores, reduciendo la coordinación humana rutinaria.
 
