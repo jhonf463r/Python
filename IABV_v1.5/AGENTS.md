@@ -1,13 +1,23 @@
-## ACTIVE M1A KNOWLEDGE DELTA — Owner accepted design baseline; bounded contract review next (2026-10-22)
+## CURRENT ROUTING — M1A design adopted; contract v1.0.0 targeted review next (2026-10-22)
 
-Owner decision receipt: `ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE`. The seven M1A design choices are adopted as a normative design baseline only. The [normalized decision ledger](./CHAT-ARCH-2026-10-22-M1A-normalized-scope-decision-ledger-and-design-amendment.md) records acceptance (blob `3425144a661c713eb8898c1eacefb2d791519bc0`); the resulting [consolidated operational-block scope contract v1.0.0](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md) is fetched back and verified (blob `ac3a45018b0313747fe0c3dfc39d6298e0786fe8`).
+Before any M1A continuation, read the top snapshot of [CURRENT-STATE.md](docs/history/CHAT-ARCH/CURRENT-STATE.md). The Owner's exact `ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE` is recorded in the [normalized ledger](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1A-normalized-scope-decision-ledger-and-design-amendment.md); the resulting [scope contract v1.0.0](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md) (blob `ac3a45018b0313747fe0c3dfc39d6298e0786fe8`) is now the normative design baseline.
 
-The adopted model uses independent conjunctive assistant and target selectors; `GLOBAL` applies to its own dimension only; exact mismatch proves non-applicability only after every required input and authority is trusted, complete and valid. Unknown/invalid/untrusted/conflicting/revoked/unsupported state, absent target resolution, absent producer authority, or an incomplete active-block set fails closed. Receipts are evidence, never authority or block release. Legacy records are not automatically migrated.
+**Active task:** `M1A_CONSOLIDATED_SCOPE_CONTRACT_V1_TARGETED_ADVERSARIAL_REVIEW`, documentary/static adversarial review only. Intended actor: Sonnet 4.6 in the Owner-reported Antigravity session, if the exact artifact can be supplied. Do not report invocation until a correlated review receipt exists. Review the contract against the construction-completeness overlay and Entry 274; report exact section, counterexample, severity, minimal repair and discriminating case. Do not repeat a broad review or scan.
 
-**Next task:** `M1A_CONSOLIDATED_SCOPE_CONTRACT_V1_TARGETED_ADVERSARIAL_REVIEW` — bounded independent adversarial review of the exact v1.0.0 artifact. This is documentary only, not a code or runtime task. Sonnet 4.6 in Antigravity is the intended reviewer based on Owner-reported availability; the session invocation is `NOT_DISPATCHED` until a correlated review artifact exists.
+The adopted design does not prove a runtime principal/trust anchor, trusted catalogue or resolver, producer allowlist, or independent block-release mechanism. Preserve `GOVERNANCE=KEEP_BLOCKED`, `IMPLEMENTATION=NOT_AUTHORIZED`, `TESTS=NOT_RUN`, `READ_LIST=FAIL_CLOSED` and `BRIDGE=BRIDGE_NOT_READY`. Do not inspect the dirty local checkout, `data/`, SQLite, secrets or `.env`; do not modify product source, run tests/build/runtime/transport, merge, deploy or release a block. Historical route instructions below are retained for provenance and are superseded by this top routing block.
 
-Real authenticated principal/trust anchor, catalogue publisher/revocation service, producer allowlist, operation-to-target registry/call-site mappings and independent block-release mechanism remain `UNVERIFIED/NOT_ESTABLISHED`. Thus `GOVERNANCE=KEEP_BLOCKED`, `IMPLEMENTATION=NOT_AUTHORIZED`, `TESTS=NOT_RUN`, `READ_LIST=FAIL_CLOSED`, `BRIDGE=BRIDGE_NOT_READY`.
-
+```text
+ACTIVE_TASK=M1A_CONSOLIDATED_SCOPE_CONTRACT_V1_TARGETED_ADVERSARIAL_REVIEW
+CURRENT_STATUS=READY_FOR_INDEPENDENT_REVIEW; NOT_DISPATCHED
+OWNER_DESIGN_ACCEPTANCE=ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE
+CONTRACT_VERSION=1.0.0
+CONTRACT_BLOB=ac3a45018b0313747fe0c3dfc39d6298e0786fe8
+RUNTIME_TRUST_ANCHOR=UNVERIFIED
+GOVERNANCE=KEEP_BLOCKED
+IMPLEMENTATION=NOT_AUTHORIZED
+TESTS=NOT_RUN
+BRIDGE=BRIDGE_NOT_READY
+```
 ---
 ---
 
