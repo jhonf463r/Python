@@ -1,5 +1,14 @@
 # CURRENT ROUTING SNAPSHOT — 2026-10-21 (GOAL-LOCKED; LOCAL EXECUTOR READ BLOCKED)
 
+## Supplementary continuity delta — resource metacognition + cross-chat learning (2026-10-21)
+
+Detailed immutable record: [resource-metacognition-cross-chat-learning-and-bridge-continuity](./CHAT-ARCH-2026-10-21-resource-metacognition-cross-chat-learning-and-bridge-continuity.md). It reconciles the 22:15 owner-reported RAM capture (zero `llama-server.exe`, no models listed by the existing Ollama API, `ollama.exe` 26.47 MB working set / 61.79 MB private; global RAM use 75.58–76.07%) with the earlier un-reproduced report of ~60% attributed to `llama-server.exe`. Historical cause and IABV startup path remain unresolved; no fix is verified.
+
+Learning: a resource-pressure label/confidence is not an auditable decision receipt. Future resource gating must correlate measured observation → exact threshold/policy → defer decision → authorized action (if any) → post-measurement → verified outcome → reusable experience. A bounded process monitor is diagnostic, not self-stabilization. Lighter/lazy/alternative inference tooling is a proposed research track only, requiring a governed source trace and comparative quality/latency/RAM/VRAM tests before any change. Human-interaction lessons, scope/provenance discipline and read-back verification are retained in the detailed record.
+
+This note is supplementary and does not supersede the sole route below. Preserve `GOVERNANCE=KEEP_BLOCKED`, `BRIDGE=BRIDGE_NOT_READY`, `REAL_TRANSPORT=NOT_RUN`, `LOCAL_WORKTREE=UNTOUCHED`; the only active next step remains `IDENTIFY_AND_USE_SUPPORTED_GOVERNANCE_OWNED_SCOPED_READ_ROUTE`. No reader bypass, process changes, local launch or real transport.
+
+
 **This is the sole current actor-routing authority.** Historical next-actor instructions are not active unless this snapshot reactivates them.
 
 - **PRIMARY_OUTCOME:** `GOVERNED_IABV_CODEX_BRIDGE` — a governed end-to-end path from an IABV task through an isolated Codex candidate and independently verifiable receipt to an identified IABV consumer and a separate owner decision.
