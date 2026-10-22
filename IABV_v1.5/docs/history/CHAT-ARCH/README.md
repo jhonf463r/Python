@@ -4,7 +4,7 @@ The current session's full callable-tool catalogue contains no IABV-local govern
 
 ## Latest response and next AI action — 2026-10-22
 
-Codex's supplied `NOT_FOUND_IN_CODEX_SESSION_SURFACE` is recorded as `OWNER_REPORTED`; ChatGPT's own session surface was directly checked. Do not repeat either catalogue inventory. The Owner's low-friction development-access requirement is now the next documentary dependency: Codex in its existing UI/session drafts a build-time authorization contract from the canonical documents only, without local reads or implementation. Use [the full M1 follow-up and copy-ready prompt](./CHAT-ARCH-2026-10-22-governance-surface-inventory-followup.md). This does not change `GOVERNANCE=KEEP_BLOCKED` or claim a supported route exists.
+The Owner supplied the Codex-attributed low-friction builder-grant draft. Coordinator adjudication is `DESIGN_VERDICT=PASS_WITH_REPAIRS`; the contract is `PROPOSED_NOT_IMPLEMENTED`, not an active permission. The next bounded documentary action is one adversarial review by OpenCode in the Owner's existing configured session if available. The handoff is user-mediated; this ChatGPT session has no connected OpenCode action. Use [the M1 follow-up with repair findings and exact review prompt](./CHAT-ARCH-2026-10-22-governance-surface-inventory-followup.md). Do not repeat Codex's tool catalogue, use IABV general chat, or select another reader. M1 remains open: this design does not identify a supported scoped-read route or release the operational block. Preserve `GOVERNANCE=KEEP_BLOCKED`, `IMPLEMENTATION=NOT_AUTHORIZED`, `LOCAL_SOURCE_READ=NOT_RUN`, `BRIDGE=BRIDGE_NOT_READY`, `REAL_TRANSPORT=NOT_RUN`, `LOCAL_WORKTREE=UNTOUCHED`.
 
 ---
 
