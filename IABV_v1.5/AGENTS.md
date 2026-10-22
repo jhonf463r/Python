@@ -1,5 +1,25 @@
 ## LATEST ROUTING DELTA — Owner authorized isolated M1 implementation; do not access dirty checkout (2026-10-22)
 
+## LATEST ROUTING DELTA — M1 partial implementation reported; independent diff review pending (2026-10-22)
+
+The Owner supplied a Codex-attributed report of a partial implementation in the isolated candidate. It claims a finite `target_scope` applicability fix and fail-closed read/list behavior without scoped authority, with nine added/four adjusted tests left unrun. The local tree has no reported commit; its two file blob IDs and code changes are not published or independently verified. Record: [M1 partial implementation result](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1-partial-implementation-Codex-result.md). Do not call it M1 PASS or infer live-server causality.
+
+The administrative approval route was not implemented because trusted Owner principal/issuer, correlated UI↔server IPC, independently verifiable receipts, and race-resistant file-object containment are not proven. No remote grant/release action is permitted. The immediate next action is independent static review of the exact two-file diff; do not run tests/builds/runtime or publish/merge without separate authorization.
+
+```
+M1_STATUS=IMPLEMENTATION_STATIC_PARTIAL
+DIFF_REVIEW=PENDING
+SCOPED_READ_REQUEST_APPROVAL_FLOW=NOT_IMPLEMENTED
+GOVERNANCE=KEEP_BLOCKED
+TESTS=NOT_RUN
+REAL_LOCAL_READ=NOT_RUN
+CANDIDATE_MERGED=NO
+BRIDGE=BRIDGE_NOT_READY
+```
+
+---
+
+
 Authoritative route: [CURRENT-STATE.md](docs/history/CHAT-ARCH/CURRENT-STATE.md). Exact Codex task: [M1 governed scoped-read route implementation handoff](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1-governed-scoped-read-route-CODEX-implementation-handoff.md).
 
 Owner authorized code implementation in an **isolated candidate only**. Do not access or modify the Owner's dirty checkout, `data/`, SQLite, credentials, secrets or `.env`. Do not run tests/builds/scripts, start IABV/MCP/Codex/Ollama, use real transport, merge or deploy. The ChatGPT session has no callable Codex dispatch surface, so the handoff is persisted but Codex execution is not confirmed.
