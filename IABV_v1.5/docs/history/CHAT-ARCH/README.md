@@ -1,5 +1,12 @@
 ## LATEST ROUTING DELTA — M1 isolated implementation authorized; operational access remains blocked (2026-10-22)
 
+## Latest M1 review — repairs required, no acceptance (2026-10-22)
+
+The supplied two-file diff is fail-closed for content reads without scoped authority but does not yet establish safe block applicability. Static review raised F-01–F-03: missing authoritative/versioned scope semantics, an unwired `operation_scope`, and unsupported `assistant_kind` values being silently skipped. See [the review record](./CHAT-ARCH-2026-10-22-M1-scoped-read-diff-static-review.md). The next step is a minimal source-grounded repair in the isolated candidate; preserve `GOVERNANCE=KEEP_BLOCKED`, `TESTS=NOT_RUN`, and `BRIDGE=BRIDGE_NOT_READY`.
+
+---
+
+
 ## Latest M1 status — partial candidate result; not a pass (2026-10-22)
 
 The Owner supplied a Codex-attributed report of a partial isolated candidate: target-scope applicability fix plus fail-closed behavior when scoped-read authority is absent. The request/approval/issuer/receipt flow remains unimplemented, tests were not run, and the local candidate diff has not yet been independently inspected. See [the M1 partial implementation result](./CHAT-ARCH-2026-10-22-M1-partial-implementation-Codex-result.md). The active task stays M1 and `GOVERNANCE=KEEP_BLOCKED`; obtain the exact diff for independent static review before any additional step. No live-server causality, M1 PASS, or bridge readiness is claimed.
