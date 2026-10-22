@@ -379,6 +379,7 @@ class IABVMCPServer:
         *,
         assistant_kind: str,
         requires_network: bool,
+        operation_scope: str | None = None,
         allow_offline_refresh: bool = False,
     ) -> dict[str, Any] | None:
         """Devuelve dict de bloqueo si la ruta no es viable, o None si lo es.
@@ -387,6 +388,8 @@ class IABVMCPServer:
             assistant_kind: etiqueta de ruta (`chatgpt_web`, `site_crawler`, etc.).
                 Se usa para filtrar gates/bloqueos específicos.
             requires_network: si True, exige `network_status.connected`.
+            operation_scope: alcance de la operación concreta cuando difiere de la
+                ruta del asistente (por ejemplo, `ui_focus_interaction`).
             allow_offline_refresh: si True y no hay snapshot, intenta refresh.
         """
 
@@ -439,17 +442,71 @@ class IABVMCPServer:
                 "network_status": _to_jsonable(network),
             }
 
-        # 2) bloqueos operativos activos que apliquen a este assistant_kind
-        #    o sean globales ("*" / vacío).
+        # 2) bloqueos operativos activos: assistant_kind y target_scope son
+        #    dimensiones distintas. Un campo assistant vacío NO convierte en
+        #    global un bloqueo que declara un target_scope específico.
+        route_kind = str(assistant_kind or "").strip().lower()
+        route_scopes = {route_kind, f"consult_{route_kind}"}
+        if requires_network:
+            route_scopes.add("consult_external")
+        # El benchmark de GPU puede cargar/ejecutar modelos locales; conserva
+        # el bloqueo de recursos para esa operación concreta.
+        if route_kind == "gpu_benchmark":
+            route_scopes.add("heavy_local_model")
+        normalized_operation_scope = str(operation_scope or "").strip().lower()
+        if normalized_operation_scope:
+            route_scopes.add(normalized_operation_scope)
+
+        known_target_scopes = {
+            "audit",
+            "site_crawler",
+            "gpu_benchmark",
+            "chatgpt_web",
+            "self_modify",
+            "self_update",
+            "self_auto_merge",
+            "consult_external",
+            "heavy_local_model",
+            "ui_focus_interaction",
+            "codex",
+            "chatgpt",
+            "claude",
+            "devin",
+            "windsurf",
+            "ollama",
+            "aider",
+            "gemini",
+            "local_model",
+            "local_llm",
+        }
+        known_target_scopes.update(f"consult_{kind}" for kind in (
+            "audit", "site_crawler", "gpu_benchmark", "chatgpt_web",
+            "self_modify", "self_update", "self_auto_merge", "codex",
+            "chatgpt", "claude", "devin", "windsurf", "ollama",
+            "aider", "gemini", "local_model", "local_llm",
+        ))
+
         blockers: list[dict[str, Any]] = []
         for record in getattr(snapshot, "block_records", []) or []:
             if getattr(record, "status", "active") != "active":
                 continue
-            scope = getattr(record, "assistant_kind", "") or ""
-            if scope in ("", "*", assistant_kind):
-                payload = _to_jsonable(record)
-                if isinstance(payload, dict):
-                    blockers.append(payload)
+
+            block_assistant = str(getattr(record, "assistant_kind", "") or "").strip().lower()
+            if block_assistant not in ("", "*", route_kind):
+                continue
+
+            block_target = str(getattr(record, "target_scope", "") or "").strip().lower()
+            if block_target not in ("", "*") and block_target not in route_scopes:
+                # A known but different target scope does not apply to this
+                # operation. Unknown scopes fail closed rather than silently
+                # weakening the governance gate.
+                is_known_scoped_target = block_target in known_target_scopes
+                if is_known_scoped_target:
+                    continue
+
+            payload = _to_jsonable(record)
+            if isinstance(payload, dict):
+                blockers.append(payload)
         if blockers:
             return {
                 "governance_blocked": True,
