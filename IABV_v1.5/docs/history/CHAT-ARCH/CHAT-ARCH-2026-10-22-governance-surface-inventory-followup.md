@@ -207,6 +207,8 @@ After Codex returns that draft, ChatGPT/coordinator will reconcile it against En
 
 ### Provenance and disposition
 
+Original source artifact preserved verbatim for reproducible review: [Owner-supplied low-friction builder-grant draft](./CHAT-ARCH-2026-10-22-owner-supplied-low-friction-builder-grant-contract-draft.md). Reviewers should read that artifact rather than relying on this coordinator summary alone.
+
 The Owner supplied the draft titled “Borrador: contrato de acceso de desarrollo amplio y gobernado”, with DESIGN_VERDICT=PASS_WITH_REPAIRS. Treat its content as OWNER_SUPPLIED_CODEX_DRAFT: the text was provided in this conversation and can be assessed as a document; this does not independently verify a local implementation, the identity of the drafting model/session, or any capability described by it.
 
 Coordinator reconciliation: PASS_WITH_REPAIRS remains appropriate. The draft correctly keeps development authorization separate from the operational governance block, requires a verified Owner/agent identity and candidate binding, denies out-of-candidate operations, separates tests/builds, treats receipts as a requirement rather than an existing feature, and fails closed when authority is unknown. It does not claim that M1 is complete.
@@ -236,7 +238,7 @@ Copy-ready handoff:
 
 > OPENCODE / IABV — ADVERSARIAL REVIEW OF LOW-FRICTION BUILDER GRANT (DOCUMENTARY ONLY)
 >
-> Review only the Owner-supplied draft “Borrador: contrato de acceso de desarrollo amplio y gobernado” and its coordinator reconciliation in CHAT-ARCH-2026-10-22-governance-surface-inventory-followup.md. Use CURRENT-STATE.md, Entry 266, Entry 274, and issue #470 only as documentary context. Do not rediscover the session tool catalogue or perform source archaeology.
+> Review the full source artifact [CHAT-ARCH-2026-10-22-owner-supplied-low-friction-builder-grant-contract-draft.md](./CHAT-ARCH-2026-10-22-owner-supplied-low-friction-builder-grant-contract-draft.md) and this coordinator reconciliation. Use CURRENT-STATE.md, Entry 266, Entry 274, and issue #470 only as documentary context. Do not rediscover the session tool catalogue or perform source archaeology.
 >
 > Objective: decide whether the proposed broad read/write grant within a sanitized disposable candidate can be specified as low-friction for ordinary source/documentation work while preserving independent authorization, candidate containment, and the IABV operational block.
 >
