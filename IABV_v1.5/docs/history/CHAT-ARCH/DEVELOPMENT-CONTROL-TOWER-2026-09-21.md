@@ -42,9 +42,9 @@ The full operating rules are maintained in [the canonical ADHD-aware project coo
 
 Episode-level handoff for the 2026-10-22 chat: [reality-aligned bridge continuity handoff](./CHAT-ARCH-2026-10-22-coordinator-reality-aligned-bridge-continuity-handoff.md). It records the Owner's explicit expectation that every idea be persisted, that documentary progress is distinguished from operational readiness, and that a new chat continue from evidence rather than restart.
 
-## 0. LIVE PROJECT FOCUS DASHBOARD — 2026-10-22
+## 0. Historical focus dashboard snapshot — superseded by CURRENT-STATE post-acceptance (2026-10-22)
 
-This block is the current operational projection of this Tower. The top snapshot in `CURRENT-STATE.md` remains the sole actor-routing authority.
+This dashboard preserves the pre-acceptance M1 snapshot as historical evidence only. It is superseded for routing by the top snapshot in `CURRENT-STATE.md`; do not use its old M1 next-actor fields as current.
 
 ```
 PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
