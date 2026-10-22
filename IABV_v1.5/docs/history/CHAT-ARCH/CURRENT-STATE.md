@@ -1,9 +1,20 @@
-# CURRENT ROUTING SNAPSHOT — 2026-10-21 (GOAL-LOCKED; LOCAL EXECUTOR READ BLOCKED)
+# CURRENT ROUTING SNAPSHOT — 2026-10-22 (GOAL-LOCKED; LOCAL EXECUTOR READ BLOCKED)
 
 
 ## Mandatory coordination contract — 2026-10-22
 
 Before continuing any chat/agent work, apply section 11 of the [Owner-directed coordination protocol](./CHAT-ARCH-2026-10-22-adhd-aware-project-coordination-and-space-time-focus-protocol.md). It defines the working agreement for preserving every meaningful idea without changing tasks implicitly, avoiding repeated/unproductive routes, coordinating Codex/other actors with exact scope and permissions, recording evidence and verifying persistence. This is a method rule, not proof of runtime automation. This file's top routing snapshot remains the sole authority for the active task and next actor; the active route and governance state below are not changed by this pointer.
+
+## Latest chat-closing continuity checkpoint — 2026-10-22 (route unchanged)
+
+Use the [reality-aligned bridge continuity handoff](./CHAT-ARCH-2026-10-22-coordinator-reality-aligned-bridge-continuity-handoff.md) for the full episode, the Owner's clarified collaboration requirements, exact next-chat sequence, evidence boundaries and parked ideas.
+
+This conversation made the Owner-facing state explicit: **bounded documentary design/continuity can advance; the operational bridge is not yet proven ready**. The authorized local read remains blocked: the normal reader returned `governance_blocked=true` / `operational_block_active` and read zero source files. The current ChatGPT session exposed no callable governance/local-read operation (`SESSION_EXPOSED_SUPPORTED_ADMIN_READ_TOOL=NOT_FOUND`); whether an external administrative route exists remains `GLOBAL_ROUTE_EXISTENCE=UNRESOLVED`. Do not infer global absence from this session-local search.
+
+No active-task change: M1 remains `IDENTIFY_AND_USE_SUPPORTED_GOVERNANCE_OWNED_SCOPED_READ_ROUTE`. Maintain `GOVERNANCE=KEEP_BLOCKED`, `BRIDGE=BRIDGE_NOT_READY`, `LOCAL_SOURCE_READ=NOT_RUN`, `REAL_TRANSPORT=NOT_RUN`, `LOCAL_WORKTREE=UNTOUCHED`. Do not repeat the same ordinary IABV general-chat request that triggered a broad auto-scan, bypass the reader, or blindly pull/reset/clean/reload models/change GPU or credentials. The existing coordination method is documented, but runtime enforcement and causal cross-chat reuse remain `NOT_PROVEN`.
+
+---
+
 
 ## 2026-10-22 ADHD-aware focus and space-time project coordination (documented method; runtime not proven)
 
