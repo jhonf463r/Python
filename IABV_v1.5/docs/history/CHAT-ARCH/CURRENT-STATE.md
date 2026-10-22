@@ -1,6 +1,14 @@
 # CURRENT ROUTING SNAPSHOT — 2026-10-22 (GOAL-LOCKED; LOCAL EXECUTOR READ BLOCKED)
 
 
+## Independent review attempt — input retrieval blocked (2026-10-22)
+
+The Owner supplied an attempted OpenCode review response: every named GitHub input returned 404 in that reviewer session, so the reviewer returned `REVIEW_BLOCKED_INPUT_UNAVAILABLE`, issued no verdict, and stopped. Status is `OWNER_REPORTED`; the 404s are not proof that the records do not exist or of global repository absence.
+
+The failure is in the documented-input delivery precondition, not a finding on the contract. Keep the reviewer stopped; do not use a local checkout, alternate reader, additional retrieval probes, or IABV general chat. The only prepared recovery is to send the **same existing OpenCode session** a self-contained inline packet containing the original contract text already supplied by the Owner, the bounded CURRENT-STATE context, BA-01–BA-05 repair criteria, and the exact adversarial questions. This remains a manual handoff, not a dispatched action. If it cannot be delivered to that session, leave the independent review blocked.
+
+
+
 
 
 ## CURRENT M1 ROUTING SNAPSHOT — 2026-10-22 (builder-contract draft received; no access unlocked)
@@ -9,7 +17,7 @@ The Owner has supplied the draft “Borrador: contrato de acceso de desarrollo a
 
 The draft is a future **builder-session grant** design, not a supported route currently available. It must remain distinct from Entry 274's proposed exact-path reader contract. It must not be used to bypass the denied reader, read the present dirty checkout, release its own operational block, or infer permission for implementation, tests, builds, launches or transport. Required repair themes: physical isolation of a sanitized disposable candidate and race-resistant filesystem containment; separately enforceable command/test/build/network/process policies; independently protected, verifiable operation receipts; and explicit trust-anchor/authority decisions.
 
-The independent adversarial review has NOT_RUN. **Next bounded action:** OpenCode in the Owner's already-configured session, if available, reviews only this supplied contract plus the named public canonical documents using the exact prompt in the M1 follow-up. This is a user-mediated handoff: the current ChatGPT session has no connected OpenCode action to dispatch it directly. Do not repeat Codex's 176-tool inventory, invoke IABV's ordinary general-chat route, or substitute an alternative reader. If that OpenCode session is unavailable, keep the review pending and report the missing handoff surface; do not silently choose another route.
+The attempted independent adversarial review is now `BLOCKED_INPUT_UNAVAILABLE` (`OWNER_REPORTED`): the reviewer session reported 404 for every named canonical GitHub input and, per the explicit stop rule, issued no verdict. This does not prove the records do not exist. **Next bounded action:** prepare a self-contained inline packet for OpenCode in the Owner's same existing configured session, including the contract text already supplied in this conversation, the relevant current-state facts, repair criteria BA-01–BA-05 and review questions. This changes input delivery only; do not use a local or alternate reader, repeat URL probes, invoke IABV general chat, or repeat Codex's 176-tool inventory. If that inline packet cannot be delivered to the same session, keep the review blocked; do not silently choose another route.
 
 M1 remains the sole active task: IDENTIFY_AND_USE_SUPPORTED_GOVERNANCE_OWNED_SCOPED_READ_ROUTE. This documentary dependency does not satisfy M1: supported route existence, trusted issuer/principal, direct server/root identity, verifiable read receipt and independent block-release authority are still unresolved.
 
@@ -18,7 +26,8 @@ PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
 ACTIVE_TASK=M1_IDENTIFY_AND_USE_SUPPORTED_GOVERNANCE_OWNED_SCOPED_READ_ROUTE
 BUILDER_CONTRACT=DESIGN_PASS_WITH_REPAIRS
 BUILDER_GRANT=PROPOSED_NOT_IMPLEMENTED
-INDEPENDENT_REVIEW=NOT_RUN
+INDEPENDENT_REVIEW=BLOCKED_INPUT_UNAVAILABLE
+REVIEW_VERDICT=NOT_ISSUED
 GOVERNANCE=KEEP_BLOCKED
 IMPLEMENTATION=NOT_AUTHORIZED
 LOCAL_SOURCE_READ=NOT_RUN
