@@ -1,5 +1,31 @@
 # CURRENT ROUTING SNAPSHOT — 2026-10-22 (GOAL-LOCKED; LOCAL EXECUTOR READ BLOCKED)
 
+## LATEST ROUTING DELTA — independent review received; successor v0.2 awaiting review (2026-10-22)
+
+The Owner supplied an independent documentary review attributed to the existing OpenCode session. Classification: `OWNER_SUPPLIED_INDEPENDENT_REVIEW`. Its verdict is `PASS_WITH_REPAIRS) for requirements-baseline quality only, not implementation. The predecessor had eight findings: BA-01/03/04/05/06 HIGH (BA-03 partial); BA-02 MEDIUM residual, BA-07/08 MEDIUM. No implementation mechanism was source-verified. Full record: [independent review](./CHAT-ARCH-2026-10-22-independent-review-builder-grant-contract.md).
+
+The coordinator prepared [builder-grant contract successor v0.2](./CHAT-ARCH-2026-10-22-builder-grant-contract-successor-v0.2.md). It hard-codes containment, payload, receipt-integrity, clock/revocation and session requirements, but explicitly marks BA-01/03/04/06 `NOT_IMPLEMENTABLE_WITH_CURRENT_EVIDENCE` and BA-05 `AUTHORITY_UNAVAILABLE` until real authority is verified. These are fail-closed documentary dispositions, not proof that any enforcer, issuer, ledger, clock, sandbox or file API exists.
+
+**Next single bounded action:** have OpenCode in the Owner's same existing configured session review successor v0.2 from a complete inline packet. Because the prior attempt reported 404 for linked documents, do not depend on URLs: the next prompt must carry the full successor text and exact questions. This is user-mediated; no connected OpenCode action is available in this ChatGPT session. Do not repeat URL probes, the Codex tool inventory, IABV general chat, or use a local/alternate reader. If the inline text cannot be provided completely to that same session, retain `SUCCESSOR_REVIEW=BLOCKED_INPUT_UNAVAILABLE`.
+
+M1 remains the single active task: `IDENTIFY_AND_USE_SUPPORTED_GOVERNANCE_OWNED_SCOPED_READ_ROUTE`. The builder-grant design does not close M1, release `operational_block_active`, or authorize access to the current dirty checkout.
+
+```
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+ACTIVE_TASK=M1_IDENTIFY_AND_USE_SUPPORTED_GOVERNANCE_OWNED_SCOPED_READ_ROUTE
+PREDECESSOR_REVIEW=PASS_WITH_REPAIRS
+SUCCESSOR_DRAFT=READY_FOR_DOCUMENTARY_REVIEW_ONLY
+SUCCESSOR_REVIEW=NOT_RUN
+BUILDER_GRANT=PROPOSED_NOT_IMPLEMENTED
+GOVERNANCE=KEEP_BLOCKED
+IMPLEMENTATION=NOT_AUTHORIZED
+LOCAL_SOURCE_READ=NOT_RUN
+BRIDGE=BRIDGE_NOT_READY
+REAL_TRANSPORT=NOT_RUN
+LOCAL_WORKTREE=UNTOUCHED
+```
+
+
 
 ## Independent review attempt — input retrieval blocked (2026-10-22)
 
@@ -17,7 +43,7 @@ The Owner has supplied the draft “Borrador: contrato de acceso de desarrollo a
 
 The draft is a future **builder-session grant** design, not a supported route currently available. It must remain distinct from Entry 274's proposed exact-path reader contract. It must not be used to bypass the denied reader, read the present dirty checkout, release its own operational block, or infer permission for implementation, tests, builds, launches or transport. Required repair themes: physical isolation of a sanitized disposable candidate and race-resistant filesystem containment; separately enforceable command/test/build/network/process policies; independently protected, verifiable operation receipts; and explicit trust-anchor/authority decisions.
 
-The attempted independent adversarial review is now `BLOCKED_INPUT_UNAVAILABLE` (`OWNER_REPORTED`): the reviewer session reported 404 for every named canonical GitHub input and, per the explicit stop rule, issued no verdict. This does not prove the records do not exist. **Next bounded action:** prepare a self-contained inline packet for OpenCode in the Owner's same existing configured session, including the contract text already supplied in this conversation, the relevant current-state facts, repair criteria BA-01–BA-05 and review questions. This changes input delivery only; do not use a local or alternate reader, repeat URL probes, invoke IABV general chat, or repeat Codex's 176-tool inventory. If that inline packet cannot be delivered to the same session, keep the review blocked; do not silently choose another route.
+Historical state before review receipt: the first independent-review attempt was `BLOCKED_INPUT_UNAVAILABLE` (`OWNER_REPORTED`) after the reviewer session reported 404 for every named canonical GitHub input. That attempt issued no verdict and did not establish that the records were absent. It has now been superseded by the Owner-supplied review of the inline packet and the successor v0.2 draft. The current next action is governed only by the latest routing delta at the top of this file.
 
 M1 remains the sole active task: IDENTIFY_AND_USE_SUPPORTED_GOVERNANCE_OWNED_SCOPED_READ_ROUTE. This documentary dependency does not satisfy M1: supported route existence, trusted issuer/principal, direct server/root identity, verifiable read receipt and independent block-release authority are still unresolved.
 
