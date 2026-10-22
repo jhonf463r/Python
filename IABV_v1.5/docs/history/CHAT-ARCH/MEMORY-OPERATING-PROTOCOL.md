@@ -9,7 +9,6 @@ The adopted model uses independent conjunctive assistant and target selectors; `
 Real authenticated principal/trust anchor, catalogue publisher/revocation service, producer allowlist, operation-to-target registry/call-site mappings and independent block-release mechanism remain `UNVERIFIED/NOT_ESTABLISHED`. Therefore `GOVERNANCE=KEEP_BLOCKED`, `IMPLEMENTATION=NOT_AUTHORIZED`, `TESTS=NOT_RUN`, `READ_LIST=FAIL_CLOSED`, `BRIDGE=BRIDGE_NOT_READY`.
 
 ---
----
 
 ## Construction completeness and bidirectional traceability overlay — 2026-10-22
 
