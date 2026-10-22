@@ -147,3 +147,38 @@ BRIDGE=BRIDGE_NOT_READY
 ```
 
 Next transition: carry this normalized decision ledger and technical recommendation into the canonical front door. Present the Owner with the recommended semantic baseline and the genuinely unresolved authority decisions as one consolidated governance decision point. Do not send Codex another implementation task; do not repeat the same general Sonnet review; do not perform a broad source scan. Any future source implementation, tests, runtime, transport or block release requires separate authorization.
+
+
+## 8. Owner decision made practical — one bundled design-baseline choice
+
+To avoid burdening the Owner with seven disconnected policy questions, the coordinator recommends one consolidated design decision. The Owner may accept this complete *design baseline* or name only the clause(s) to change. Accepting this package does **not** authorize implementation, reads, tests, runtime, transport, merging, or block release.
+
+### Recommended defaults bundled for approval
+
+1. **Selector semantics:** adopt the conjunctive model and §2 table; `GLOBAL` applies only to its own dimension; exact mismatch proves non-applicability only after complete trusted resolution.
+2. **Accountability:** the human IABV Project Owner/governance authority is the accountable owner of this scope policy and catalogue lifecycle. The actual authenticated runtime principal / trust anchor remains a separate evidence requirement and must not be guessed.
+3. **Producer authorization:** no producer gains authority from a string ID or schema validity. Only an authenticated, explicitly allowlisted producer may issue a defined block class. Until the allowlist and credential/provenance verification are established, newly supplied untrusted records cannot authorize any permissive result; existing blocks remain active.
+4. **Target resolver:** the authoritative operation-to-target registry belongs under the Owner/governance-controlled policy, is versioned, and is resolved server-side from the registered operation/implementation. Caller-supplied `operation_scope` is ignored for the authoritative decision. Until the actual registry and call-site bindings are evidenced, target identity is not established and protected reads remain denied.
+5. **Catalogue integrity and revocation:** require a versioned integrity-protected publication plus verifiable authorization/trust anchor, explicit retirement/revocation, and deterministic rejection of unsupported or revoked versions. A digest alone is insufficient. The cryptographic mechanism and real trust-root material must be selected/verified in a future authorized engineering design; none is claimed implemented here.
+6. **Independent block release:** only a separately authenticated governance authority designated for the specific block may issue an independently verifiable block-bound release artifact. The reader, read issuer, requesting agent, block producer or diagnostic receipt cannot release the block. If the real authority/mechanism is not available, release remains unsupported and denial continues.
+7. **Legacy records:** no automatic migration. Preserve all existing blocks as blocking until a separately approved migration maps their provenance/scope or an independent valid release is supplied. Empty, missing, wildcard or free-form values must never be silently reinterpreted as `GLOBAL` or `NONE`.
+
+### One-response acceptance protocol
+
+The Owner can respond with exactly one of these:
+
+- `ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE` — adopt the seven defaults above **as the normative design baseline only**. Exact runtime principal IDs, trust anchors, producer bindings, resolver mappings, implementation and tests remain unverified/unimplemented and gated.
+- `ACCEPT_WITH_AMENDMENTS: ...` — accept the package except for the explicitly named clauses and replacement rules.
+- `REJECT_M1A_BASELINE: ...` — preserve the current proposed state and provide the reason or alternative contract.
+
+Silence, “proceed,” a model's review verdict, or saving this document is not policy adoption. On acceptance, the coordinator must update the decision ledger and write one consolidated versioned contract that traces directly to UAAL-ROOT-001 and Entry 274; only then should any implementation-specific authorization be considered separately.
+
+```text
+BUNDLED_OWNER_DECISION=NOT_RECEIVED
+DESIGN_BASELINE_ADOPTION=PENDING
+IMPLEMENTATION_AUTHORITY=NOT_GRANTED
+TRUST_ANCHOR_VERIFICATION=REQUIRED_BEFORE_IMPLEMENTATION
+READ_LIST=FAIL_CLOSED
+GOVERNANCE=KEEP_BLOCKED
+BRIDGE=BRIDGE_NOT_READY
+```
