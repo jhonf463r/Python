@@ -70,10 +70,10 @@ For a fully authenticated, supported and internally consistent block (b), define
 - (A(b,r)): its assistant selector matches the trusted assistant identity for request (r).
 - (T(b,r)): its target selector matches the trusted canonical target identity for request (r).
 
-The block applies if and only if (A(b,r) land T(b,r)).
+The block applies if and only if both predicates match: `A(b,r) AND T(b,r)`. 
 
 - `GLOBAL` makes its own predicate true for any valid identity in that dimension; it does not broaden the other predicate.
-- `EXACT(x)` is true only when the trusted canonical identity in that same dimension equals the catalogue's canonical ID (x).
+- `EXACT(x)` is true only when the trusted canonical identity in that same dimension equals the catalogue's canonical ID `x`.
 - A valid exact mismatch in either independent dimension proves the request falls outside the intersection, but only when the entire block, producer, catalogue/version, identities and resolver result have first passed validation.
 - A mismatch is **not** proof of non-applicability when any mandatory input is absent, malformed, unauthenticated, unsupported, conflicting, stale, revoked or unresolved.
 
@@ -103,7 +103,7 @@ No invalid or unknown state may be converted into non-applicability, permission 
 |---|---|
 | Missing required selector, empty or malformed selector, unknown canonical ID | `BLOCK_SCOPE_UNEVALUABLE`; deny |
 | Recognized schema with mandatory fields missing | `BLOCK_SCOPE_UNEVALUABLE`; deny |
-| Absent or unrecognized schema/catalogue that cannot be authenticated | `SCOPE_MODEL_UNAVAILABLE`; deny |
+| Absent or unrecognized schema/catalogue that cannot be authenticated, without trusted evidence identifying a supported legacy schema | `SCOPE_MODEL_UNAVAILABLE`; deny |
 | Unsupported schema or policy version | `SCOPE_VERSION_UNSUPPORTED`; deny |
 | Catalogue signature/integrity/trust validation fails | `CATALOGUE_INTEGRITY_INVALID`; deny |
 | Catalogue or producer is revoked | `CATALOGUE_REVOKED` or `PRODUCER_UNAUTHORIZED`; deny |
@@ -111,7 +111,8 @@ No invalid or unknown state may be converted into non-applicability, permission 
 | Producer principal not authenticated or not allowlisted for the block class | `PRODUCER_UNAUTHORIZED`; deny; producer's string ID is not proof |
 | Target identity only supplied by caller or operation mapping unavailable | `TARGET_IDENTITY_UNTRUSTED`; deny |
 | Duplicate canonical IDs, conflicting provenance or incompatible selector semantics | `BLOCK_SCOPE_UNEVALUABLE` or `SCOPE_MODEL_UNAVAILABLE` according to the specific failure; deny |
-| Versionless/legacy record or empty/wildcard field of unclear meaning | `LEGACY_SCOPE_UNEVALUABLE`; deny; no automatic migration |
+| Authenticated, identifiable legacy record whose prior selector semantics are ambiguous | `LEGACY_SCOPE_UNEVALUABLE`; deny; no automatic migration |
+| Empty/wildcard selector in a recognized schema with known selector semantics | `BLOCK_SCOPE_UNEVALUABLE`; deny |
 | Complete valid exact mismatch with all trust checks satisfied | `PROVEN_NOT_APPLICABLE` for that block only |
 
 A block-supplied `consistent=true` flag has no authority. Consistency is independently derived from field/schema validation, canonical identifiers, version compatibility, producer authorization, catalogue integrity and trusted identity resolution. Missing trust infrastructure means the protected operation stays denied; it does not mean all arbitrary incoming records become authoritative.
@@ -152,7 +153,7 @@ The evaluation algorithm is:
 3. Resolve assistant and operation/target identity from trusted server-side sources; ignore caller-supplied target metadata as authority.
 4. Evaluate every active block against the two conjunctive selector dimensions. Preserve the outcome and reason evidence for every block; no ordering-dependent short-circuit may hide an unevaluable or applicable block.
 5. If any block applies without its own valid independent release artifact, deny. If any block cannot be evaluated safely, deny. If the active set, catalogue, producer state or target identity is unavailable, deny.
-6. Only when all active blocks were safely evaluated and none applies may this gate emit `NO_APPLICABLE_BLOCKS_PROVEN`.
+6. If all active blocks are safely evaluated and none applies, emit `SCOPE_GATE_PASSED_TO_NEXT_GATE` with `gate_reason=NO_APPLICABLE_BLOCKS_PROVEN`. If one or more blocks apply but every applicable block has its own valid independent release and no block is unevaluable, the gate may emit the same non-authorizing `SCOPE_GATE_PASSED_TO_NEXT_GATE` with `gate_reason=ALL_APPLICABLE_BLOCKS_INDEPENDENTLY_RELEASED`. An absent/unverifiable release is denial. Neither gate result is read permission; Entry 274's independent reader and approval checks still apply.
 
 For any denial, preserve all reason codes and per-block results. Use deterministic ordering for serialization (canonical block ID, then stable reason-code order); do not silently discard secondary denials. This contract does not require a single primary denial code: consumers MUST use `decision=DENY` and the complete reason list, not infer precedence from one representative code. The `NO_APPLICABLE_BLOCKS_PROVEN` result is only a scope-gate result and is never read authorization.
 
@@ -169,7 +170,7 @@ For any denial, preserve all reason codes and per-block results. Use determinist
 - `TARGET_IDENTITY_UNTRUSTED`
 - `LEGACY_SCOPE_UNEVALUABLE`
 
-Overall operation results include `DENY` and the gate-only `NO_APPLICABLE_BLOCKS_PROVEN`. A missing/unverifiable required release is denial reason `BLOCK_RELEASE_UNSUPPORTED`. These labels are design vocabulary, not claims about codes already present in source.
+The overall scope-gate decision is `DENY` or `SCOPE_GATE_PASSED_TO_NEXT_GATE`. The latter is never authorization; its required `gate_reason` is either `NO_APPLICABLE_BLOCKS_PROVEN` or `ALL_APPLICABLE_BLOCKS_INDEPENDENTLY_RELEASED`, with all per-block results preserved. A missing/unverifiable required release is denial reason `BLOCK_RELEASE_UNSUPPORTED`. These labels are design vocabulary, not claims about codes already present in source.
 
 ## 7. Independent block release and Entry 274 boundary
 
@@ -191,7 +192,7 @@ Even `NO_APPLICABLE_BLOCKS_PROVEN` cannot bypass Entry 274's other requirements:
 
 This design is schema/policy version `1.0.0`. A live implementation must bind the exact schema, policy and catalogue revisions used for each evaluation, and reject unsupported or revoked versions.
 
-No automatic legacy migration is permitted. Existing blocks remain blocking unless a separately authorized migration establishes authenticated provenance and unambiguous typed selectors, or the independent authorized block owner issues a valid release. Empty, missing, wildcard or free-form values MUST NOT be rewritten or interpreted as `GLOBAL` or `NONE` by default. A recognized schema missing mandatory fields is malformed/incomplete; an absent/unrecognized schema is a distinct schema-unavailable state. Both fail closed, but the reason must remain distinguishable.
+No automatic legacy migration is permitted. Existing blocks remain blocking unless a separately authorized migration establishes authenticated provenance and unambiguous typed selectors, or the independent authorized block owner issues a valid release. Empty, missing, wildcard or free-form values MUST NOT be rewritten or interpreted as `GLOBAL` or `NONE` by default. A recognized schema missing mandatory fields is malformed/incomplete and returns `BLOCK_SCOPE_UNEVALUABLE`. An absent/unrecognized schema without authenticated legacy classification returns `SCOPE_MODEL_UNAVAILABLE`. An authenticated, identifiable legacy record with ambiguous prior selector semantics returns `LEGACY_SCOPE_UNEVALUABLE`. All fail closed, but the reason remains distinguishable.
 
 Migration work, if proposed later, needs its own bounded design, data-integrity plan, authority, evidence and explicit authorization. It is not included in this design acceptance.
 
@@ -229,6 +230,8 @@ These cases are **required design acceptance cases; none has been executed**. So
 | M1A-C26 | All blocks validly non-applicable, but Entry 274 fresh approval/session/reader gate absent | Scope gate may report `NO_APPLICABLE_BLOCKS_PROVEN`; overall read still denied |
 | M1A-C27 | Legacy record has ambiguous empty/wildcard semantics | `LEGACY_SCOPE_UNEVALUABLE`, deny; do not auto-migrate |
 | M1A-C28 | Independent release absent/unverifiable for an applicable block | `BLOCK_RELEASE_UNSUPPORTED`, deny |
+| M1A-C29 | No applicable blocks; complete trusted active-block set evaluated | `SCOPE_GATE_PASSED_TO_NEXT_GATE` with `gate_reason=NO_APPLICABLE_BLOCKS_PROVEN`; still no read permission |
+| M1A-C30 | One or more blocks apply, each has a valid independent release, and no block is unevaluable | `SCOPE_GATE_PASSED_TO_NEXT_GATE` with `gate_reason=ALL_APPLICABLE_BLOCKS_INDEPENDENTLY_RELEASED`; still no read permission |
 
 A proposed implementation is not conformant if it omits any applicable case, silently converts unknown to non-applicable, lets caller-provided scope control the result, trusts producer fields, short-circuits accounting of active blocks, or allows a diagnostic/receipt to grant or release authority.
 
