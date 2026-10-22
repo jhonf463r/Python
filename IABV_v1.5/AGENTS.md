@@ -1,22 +1,24 @@
-## CURRENT ROUTING — M1A proposal received; independent adversarial review next (2026-10-22)
+## CURRENT ROUTING — M1A independent review received; design remains blocked (2026-10-22)
 
-Codex's M1A versioned scope-model proposal was supplied by the Owner and archived at [M1A proposal](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1A-Codex-scope-model-proposal.md). It remains `OWNER_SUPPLIED` / `PROPOSED`; the author's `PASS_WITH_REPAIRS` is not an independent verdict or approved policy.
+The Owner supplied a Claude/Sonnet-attributed independent review report; its actual model execution remains `OWNER_REPORTED`, not independently authenticated. Reported result is `PASS_WITH_REPAIRS`; canonical record: [M1A independent adversarial review](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1A-independent-adversarial-review-claude.md). The Codex proposal remains `PROPOSED`, not adopted policy.
 
-Next task: `M1A_INDEPENDENT_ADVERSARIAL_REVIEW_OF_SCOPE_MODEL`. Use [the bounded independent-review handoff](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1A-independent-adversarial-review-handoff.md). Prefer Sonnet 4.6 in Antigravity only if invocability is confirmed; otherwise another independently invoked reviewer. Key review target: formal semantics for two selectors and the inconsistent-looking table entries for both dimensions mismatching versus one matching and one mismatching.
+Critical findings: F-M1A-01 selector semantics and `GLOBAL`+exact mismatch unresolved; F-M1A-02 decision table lacks absent-selector, conflicting-alias and incompatible-policy-version cases; F-M1A-03 no complete catalogue trust chain, authorized producer model, or revocation mechanism is defined. The review's own body/final summary disagree about the number of new Owner decisions; do not treat its “four additional decisions” tally as authoritative. See the review record §4 for the reconciliation.
 
-No code edits, tests/runtime/transport, local checkout access, candidate publication or block release. Keep `GOVERNANCE=KEEP_BLOCKED`, `IMPLEMENTATION=NOT_AUTHORIZED`, readers/listings closed and `BRIDGE=BRIDGE_NOT_READY`. Owner/governance adjudication follows independent review.
+Next bounded route: `M1A_RECONCILE_REVIEW_AND_PREPARE_REVISED_DESIGN_ONLY_AMENDMENT`. Design/documentation only; revise the proposal only after the Owner has separately authorized that task. No code edits, tests, builds, scripts, runtime, transport, local checkout access, candidate publication, merge or block release. The Owner/governance must adjudicate the ambiguous policy and catalogue/producer trust authority before any later implementation request.
 
 ```text
-ACTIVE_TASK=M1A_INDEPENDENT_ADVERSARIAL_REVIEW_OF_SCOPE_MODEL
-SCOPE_MODEL_PROPOSAL=OWNER_SUPPLIED; PROPOSED
-INDEPENDENT_REVIEW=PENDING
+ACTIVE_TASK=M1A_RECONCILE_REVIEW_AND_PREPARE_REVISED_DESIGN_ONLY_AMENDMENT
+SCOPE_MODEL=PROPOSED; NON_AUTHORITATIVE
+INDEPENDENT_REVIEW=PASS_WITH_REPAIRS (OWNER_SUPPLIED)
 OWNER_GOVERNANCE_ADJUDICATION=PENDING
-SCOPE_MODEL_AUTHORITY=NOT_ESTABLISHED
 IMPLEMENTATION=NOT_AUTHORIZED
 TESTS=NOT_RUN
 GOVERNANCE=KEEP_BLOCKED
+READ_LIST=FAIL_CLOSED
 BRIDGE=BRIDGE_NOT_READY
 ```
+
+Historical M1 implementation notes below are not current routing and must not be interpreted as authorization to implement the scope model. [CURRENT-STATE.md](docs/history/CHAT-ARCH/CURRENT-STATE.md) is the current route authority.
 
 ---
 
