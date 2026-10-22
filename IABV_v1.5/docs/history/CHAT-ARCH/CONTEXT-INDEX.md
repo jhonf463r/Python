@@ -1,3 +1,10 @@
+## Latest M1 reconciliation — Codex surface absent; design low-friction builder access (2026-10-22)
+
+The Owner supplied Codex's result `NOT_FOUND_IN_CODEX_SESSION_SURFACE` (176 tools checked; no IABV MCP namespace or repo-read grant/issuer). Provenance is `OWNER_REPORTED`; ChatGPT session route absence is `PROVEN_BY_TOOL`. Global existence remains `UNRESOLVED`. The Owner's build-access requirement is now recorded as `LOW_FRICTION_BROAD_DEVELOPMENT_ACCESS`: a trusted development session should enable broad source work inside a designated disposable candidate without per-file nuisance gates, while keeping runtime self-authorization, secrets, live data and machine side effects separate. This is a design requirement, not an activated permission.
+
+**Next actor/action:** Codex in the existing UI/session, documentary contract author only; do not repeat the tool inventory. Draft the minimal build-time authorization contract using existing canonical documents, with implementation/tests/builds/local reads still unauthorized. Exact prompt and access matrix: [M1 governance surface and builder-access follow-up](./CHAT-ARCH-2026-10-22-governance-surface-inventory-followup.md). `CURRENT-STATE.md` remains the sole router.
+
+---
 ## Latest bounded M1 surface inventory — 2026-10-22
 
 [Governance-surface inventory follow-up](./CHAT-ARCH-2026-10-22-governance-surface-inventory-followup.md): callable tools in this ChatGPT session expose no IABV-local governance-owned scoped-read operation; current issue #470 content does not identify one or name its responsible operator. Result is `NOT_FOUND` for those examined surfaces, while `GLOBAL_ROUTE_EXISTENCE=UNRESOLVED`. Current task remains M1, governance remains `KEEP_BLOCKED`, and no local read or transport was run. This supplements but does not replace [CURRENT-STATE.md](./CURRENT-STATE.md).
