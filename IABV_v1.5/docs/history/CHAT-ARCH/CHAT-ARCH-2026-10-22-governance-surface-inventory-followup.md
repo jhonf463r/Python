@@ -252,23 +252,24 @@ Copy-ready handoff:
 
 The draft advances a design dependency only. M1 acceptance, live bridge readiness, a supported read route, authority to implement, and operational block release remain unproven. After an independent review is actually supplied, the coordinator will reconcile only that review against this record and CURRENT-STATE.md. Do not treat a prepared prompt or a design verdict as execution evidence.
 
-## Independent-review handoff blocked by input retrieval — 2026-10-22
+## Historical independent-review handoff failure — input retrieval blocked (superseded 2026-10-22)
 
 ### Reported result and evidence boundary
 
 The Owner supplied the result of the attempted independent documentary review. Treat this as `OWNER_REPORTED`, not as a tool result independently observed by this coordinator:
 
 ```
-REVIEW_ATTEMPT=BLOCKED_INPUT_UNAVAILABLE
-REVIEW_VERDICT=NOT_ISSUED
+PREDECESSOR_REVIEW_ATTEMPT=BLOCKED_INPUT_UNAVAILABLE
+PREDECESSOR_REVIEW_VERDICT=NOT_ISSUED
 REVIEW_SESSION_GITHUB_INPUTS=404_REPORTED
 LOCAL_SOURCE_READ=NOT_RUN
 ALTERNATE_READER=NOT_USED
+SUPERSEDED_BY=OWNER_SUPPLIED_INLINE_REVIEW
 ```
 
 The reviewer reports that the original builder-grant draft link pinned at `0893bb7f0984c5ad996d313eb9f69955f13424be`, the coordinator criteria pinned at `18a0fd08268098b775987baff09cecc4118d3955`, the CURRENT-STATE link and the related Entry 266 / Entry 274 / issue #470 inputs were not retrievable from that session (404). Per the review instruction, it issued no `PASS`, `PASS_WITH_REPAIRS`, or `FAIL` and stopped. It reports no local checkout access, alternative reader, source archaeology, commands, tests, builds, writes, or process launches.
 
-This establishes only the reported retrieval failure in that review session. It does not establish that the records do not exist or identify the global cause of the 404. `REVIEW_VERDICT=NOT_ISSUED` is the only justified state; do not infer findings against clauses the reviewer could not read.
+This establishes only the reported retrieval failure in that review session. It does not establish that the records do not exist or identify the global cause of the 404. `PREDECESSOR_REVIEW_VERDICT=NOT_ISSUED` was the only justified state for that failed attempt. It is now historical: the Owner has supplied a subsequent inline review of the predecessor contract, recorded below. Do not confuse the two attempts or infer that the earlier 404 established global absence.
 
 ### Corrective lesson and next bounded action
 
@@ -279,12 +280,9 @@ The prior handoff depended on that session retrieving canonical GitHub links. Th
 The source contract is preserved at [Owner-supplied draft](./CHAT-ARCH-2026-10-22-owner-supplied-low-friction-builder-grant-contract-draft.md); this record preserves the repair criteria and handoff. The review remains a documentary dependency only.
 
 ```
-PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
-ACTIVE_TASK=M1_IDENTIFY_AND_USE_SUPPORTED_GOVERNANCE_OWNED_SCOPED_READ_ROUTE
-BUILDER_CONTRACT=DESIGN_PASS_WITH_REPAIRS
-BUILDER_GRANT=PROPOSED_NOT_IMPLEMENTED
-INDEPENDENT_REVIEW=BLOCKED_INPUT_UNAVAILABLE
-REVIEW_VERDICT=NOT_ISSUED
+PREDECESSOR_REVIEW_ATTEMPT=BLOCKED_INPUT_UNAVAILABLE
+PREDECESSOR_REVIEW_VERDICT=NOT_ISSUED
+SUPERSEDED_BY=OWNER_SUPPLIED_INLINE_REVIEW
 GOVERNANCE=KEEP_BLOCKED
 IMPLEMENTATION=NOT_AUTHORIZED
 LOCAL_SOURCE_READ=NOT_RUN
