@@ -1,13 +1,26 @@
-## ACTIVE M1A KNOWLEDGE DELTA — Owner accepted design baseline; bounded contract review next (2026-10-22)
+## ACTIVE ROUTING — M1A contract v1.0.0 targeted review (2026-10-22)
 
-Owner decision receipt: `ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE`. The seven M1A design choices are adopted as a normative design baseline only. The [normalized decision ledger](./CHAT-ARCH-2026-10-22-M1A-normalized-scope-decision-ledger-and-design-amendment.md) records acceptance (blob `3425144a661c713eb8898c1eacefb2d791519bc0`); the resulting [consolidated operational-block scope contract v1.0.0](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md) is fetched back and verified (blob `ac3a45018b0313747fe0c3dfc39d6298e0786fe8`).
+Source of truth: [CURRENT-STATE.md](./CURRENT-STATE.md), top snapshot. Active task: `M1A_CONSOLIDATED_SCOPE_CONTRACT_V1_TARGETED_ADVERSARIAL_REVIEW`; status `READY_FOR_INDEPENDENT_REVIEW; NOT_DISPATCHED`.
 
-The adopted model uses independent conjunctive assistant and target selectors; `GLOBAL` applies to its own dimension only; exact mismatch proves non-applicability only after every required input and authority is trusted, complete and valid. Unknown/invalid/untrusted/conflicting/revoked/unsupported state, absent target resolution, absent producer authority, or an incomplete active-block set fails closed. Receipts are evidence, never authority or block release. Legacy records are not automatically migrated.
+Canonical current artifacts:
+- [M1A consolidated operational-block scope contract v1.0.0](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md) — blob `ac3a45018b0313747fe0c3dfc39d6298e0786fe8`; Owner-adopted normative design, implementation unverified.
+- [Normalized M1A decision ledger](./CHAT-ARCH-2026-10-22-M1A-normalized-scope-decision-ledger-and-design-amendment.md) — blob `3425144a661c713eb8898c1eacefb2d791519bc0`; exact acceptance token and residual evidence gates.
+- [UAAL construction-completeness / traceability overlay](./CHAT-ARCH-2026-10-22-UAAL-construction-completeness-traceability-overlay.md) — mandatory method checks embedded in existing UAAL/MOP.
+- [UAAL-ROOT-001](./UNIVERSAL-ADAPTIVE-ALGORITHM-CONSTITUTION-2026-10-04.md), [Entry 274](./CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md), and [Memory Operating Protocol](./MEMORY-OPERATING-PROTOCOL.md) — parent algorithm, security-boundary contract and construction/reconciliation method.
 
-**Next task:** `M1A_CONSOLIDATED_SCOPE_CONTRACT_V1_TARGETED_ADVERSARIAL_REVIEW` — bounded independent adversarial review of the exact v1.0.0 artifact. This is documentary only, not a code or runtime task. Sonnet 4.6 in Antigravity is the intended reviewer based on Owner-reported availability; the session invocation is `NOT_DISPATCHED` until a correlated review artifact exists.
+Owner acceptance settles OG-M1A-01..07 as design choices only. The real authenticated trust anchor, catalogue publisher/revocation service, producer allowlist, target resolver/call-site bindings and independent release mechanism remain `UNVERIFIED/NOT_ESTABLISHED`. Review the exact v1.0.0 contract only; do not rerun the previous broad review or source scans.
 
-Real authenticated principal/trust anchor, catalogue publisher/revocation service, producer allowlist, operation-to-target registry/call-site mappings and independent block-release mechanism remain `UNVERIFIED/NOT_ESTABLISHED`. Thus `GOVERNANCE=KEEP_BLOCKED`, `IMPLEMENTATION=NOT_AUTHORIZED`, `TESTS=NOT_RUN`, `READ_LIST=FAIL_CLOSED`, `BRIDGE=BRIDGE_NOT_READY`.
-
+```text
+OWNER_DESIGN_ACCEPTANCE=ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE
+ACTIVE_TASK=M1A_CONSOLIDATED_SCOPE_CONTRACT_V1_TARGETED_ADVERSARIAL_REVIEW
+CONTRACT_VERSION=1.0.0
+CURRENT_STATUS=READY_FOR_INDEPENDENT_REVIEW; NOT_DISPATCHED
+GOVERNANCE=KEEP_BLOCKED
+IMPLEMENTATION=NOT_AUTHORIZED
+TESTS=NOT_RUN
+READ_LIST=FAIL_CLOSED
+BRIDGE=BRIDGE_NOT_READY
+```
 ---
 ---
 
