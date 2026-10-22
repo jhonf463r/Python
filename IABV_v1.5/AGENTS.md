@@ -1,6 +1,6 @@
 ## CURRENT ROUTING — M1A design adopted; contract v1.0.0 targeted review next (2026-10-22)
 
-Before any M1A continuation, read the top snapshot of [CURRENT-STATE.md](docs/history/CHAT-ARCH/CURRENT-STATE.md). The Owner's exact `ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE` is recorded in the [normalized ledger](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1A-normalized-scope-decision-ledger-and-design-amendment.md); the resulting [scope contract v1.0.0](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md) (blob `ac3a45018b0313747fe0c3dfc39d6298e0786fe8`) is now the normative design baseline.
+Before any M1A continuation, read the top snapshot of [CURRENT-STATE.md](docs/history/CHAT-ARCH/CURRENT-STATE.md). The Owner's exact `ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE` is recorded in the [normalized ledger](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1A-normalized-scope-decision-ledger-and-design-amendment.md); the resulting [scope contract v1.0.0](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md) (blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e`) is now the normative design baseline.
 
 **Active task:** `M1A_CONSOLIDATED_SCOPE_CONTRACT_V1_TARGETED_ADVERSARIAL_REVIEW`, documentary/static adversarial review only. Intended actor: Sonnet 4.6 in the Owner-reported Antigravity session, if the exact artifact can be supplied. Do not report invocation until a correlated review receipt exists. Review the contract against the construction-completeness overlay and Entry 274; report exact section, counterexample, severity, minimal repair and discriminating case. Do not repeat a broad review or scan.
 Use the exact bounded prompt in [the review handoff](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1A-contract-v1-targeted-adversarial-review-handoff.md), blob `446dc7e789336e7a3bd718904c3f480902ee96ff`.
@@ -12,7 +12,7 @@ ACTIVE_TASK=M1A_CONSOLIDATED_SCOPE_CONTRACT_V1_TARGETED_ADVERSARIAL_REVIEW
 CURRENT_STATUS=READY_FOR_INDEPENDENT_REVIEW; NOT_DISPATCHED
 OWNER_DESIGN_ACCEPTANCE=ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE
 CONTRACT_VERSION=1.0.0
-CONTRACT_BLOB=ac3a45018b0313747fe0c3dfc39d6298e0786fe8
+CONTRACT_BLOB=8181c7c0cf6036c76cf365510e8d9665cf84e57e
 RUNTIME_TRUST_ANCHOR=UNVERIFIED
 GOVERNANCE=KEEP_BLOCKED
 IMPLEMENTATION=NOT_AUTHORIZED
