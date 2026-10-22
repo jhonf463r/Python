@@ -1,15 +1,16 @@
-## CURRENT ROUTING — Codex confirms authority-scope blocker (2026-10-22)
+## CURRENT ROUTING — M1A scope-model design proposal authorized only (2026-10-22)
 
-The Codex receipt confirms `BLOCKED_AUTHORITY_SCOPE_MODEL_UNAVAILABLE` for the reported isolated candidate. Keep this result `OWNER_REPORTED`; this coordinator did not directly inspect its Windows directory. Reconciliation and public-source evidence: [M1 Codex authority-check receipt](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1-Codex-authority-check-receipt.md).
+The Owner authorized the next step as a **design-only proposal**, not implementation. Active task: `M1A_DESIGN_PROPOSED_VERSIONED_OPERATIONAL_BLOCK_SCOPE_MODEL`. Use the bounded prompt in [M1A handoff](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1A-versioned-scope-model-design-handoff.md).
 
-Entry 274 is absent from the reported sparse candidate, but the canonical document exists on public GitHub main and was separately retrieved. Do not claim Codex read it. No authoritative/versioned scope model or complete target resolver was established; do not invent mapping, combination semantics or `operation_scope` call-site labels. Stop the current repair task. A newly commissioned scope model requires a separate explicit Owner/governance decision. Preserve `GOVERNANCE=KEEP_BLOCKED`, no tests, no code promotion and `BRIDGE=BRIDGE_NOT_READY`.
+Prior M1 implementation remains `BLOCKED_AUTHORITY_SCOPE_MODEL_UNAVAILABLE`. Codex is the first design author in the existing session; then an independent adversarial review is required. The model remains `PROPOSED`, not authoritative, until the Owner/governance decision is explicit. No code/test/candidate changes, no runtime/transport, no local checkout/data/SQLite/secrets access, no publication. Preserve `GOVERNANCE=KEEP_BLOCKED`, reader/list denial and `BRIDGE=BRIDGE_NOT_READY`.
 
 ```text
-M1_STATUS=BLOCKED_AUTHORITY_SCOPE_MODEL_UNAVAILABLE
-CODEX_RECEIPT=OWNER_REPORTED
-ENTRY_274=PUBLIC_GITHUB_SOURCE_VERIFIED; ABSENT_FROM_CANDIDATE_REPORTED
-TESTS=NOT_RUN
+ACTIVE_TASK=M1A_DESIGN_PROPOSED_VERSIONED_OPERATIONAL_BLOCK_SCOPE_MODEL
+SCOPE_MODEL_DESIGN=AUTHORIZED_PROPOSAL_ONLY
+SCOPE_MODEL_STATUS=PROPOSED_PENDING_INDEPENDENT_REVIEW_AND_OWNER_ADJUDICATION
+IMPLEMENTATION_OF_SCOPE_MODEL=NOT_AUTHORIZED
 GOVERNANCE=KEEP_BLOCKED
+TESTS=NOT_RUN
 CANDIDATE_MERGED=NO
 BRIDGE=BRIDGE_NOT_READY
 ```
