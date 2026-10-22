@@ -144,3 +144,60 @@ REAL_TRANSPORT=NOT_RUN
 ChatGPT/coordinator must fetch/reconcile the response against the R8 read-decision contract and current M1 record. A tool name in a schema is not proof it can authorize this operation. If a legitimate issuer/route is substantiated, prepare the next separately scoped, already-authorized read-decision step and verify its receipt before reading anything. If not, record `NOT_FOUND_IN_CODEX_SESSION_SURFACE` or `CODEX_SESSION_SURFACE_UNAVAILABLE` and keep the global existence unresolved; the later dependency is the actual supported governance authority/operator. Do not return to the ordinary IABV general-chat broad scan.
 
 This routing correction supersedes the earlier implication that no AI-specific step can proceed. It does **not** supersede the governance gate or identify the actual block-release authority.
+
+## Owner requirement and Codex surface result — access ownership reconciled (2026-10-22)
+
+The Owner states that development must avoid needless blockers and that ChatGPT/Codex must coordinate with the persistent GitHub project state. Codex's supplied result is `NOT_FOUND_IN_CODEX_SESSION_SURFACE`: it enumerated 176 exposed tools, found no `mcp__iabv_v15_rsk01a5` namespace and no declared tool for a repository-read grant or issuer. Provenance: `OWNER_REPORTED` (the output was supplied by the Owner; this coordinator did not execute the Codex session inventory). Together with the coordinator's direct inspection, the bounded findings are `CHATGPT_SESSION_ROUTE=NOT_FOUND` (`PROVEN_BY_TOOL`) and `CODEX_SESSION_ROUTE=NOT_FOUND_IN_CODEX_SESSION_SURFACE` (`OWNER_REPORTED`). `GLOBAL_ROUTE_EXISTENCE=UNRESOLVED` remains correct.
+
+### Who currently has what access — do not conflate planes
+
+- **Owner / GitHub account `jhonf463r`:** the authenticated GitHub connector identifies this login. The connector reports `admin` permission on private repository `jhonf463r/Python`; remote documentation writes through that connection succeeded. This proves remote repository administration through that integration, not access to the local checkout or runtime.
+- **ChatGPT coordinator through the connected GitHub integration:** can fetch remote repository documents and has made verified documentation commits. It is presently the coordinating/reconciliation actor for remote continuity. The integration's repository permission does not authorize a local IABV/MCP read, process launch or runtime action.
+- **Codex UI session:** the supplied inventory shows no IABV-specific governance grant operation among its exposed 176 tools. The prior record describes native local capability as documented but governance authorization as `NO`. `exec_command` or filesystem capability is an execution/read capability, not an authorization issuer. Codex's actual GitHub credentials/permissions and current local effective policy remain unverified here.
+- **IABV local MCP reader/runtime:** the supplied denial reports `governance_blocked=true` / `operational_block_active` and zero source files read. The independently supported issuer and authority able to release this block remain unidentified.
+- **Other GitHub collaborators / local Windows principals:** no complete access roster is established by this check; do not infer one.
+
+### Owner's build-access requirement — design principle, not a current permission token
+
+`OWNER_REQUIREMENT=LOW_FRICTION_BROAD_DEVELOPMENT_ACCESS`.
+
+During construction, the intended developer workflow should not require a new approval for every ordinary source file once a trusted, session-scoped development authorization has been issued. The design should bind a builder identity to the designated repository/checkout and disposable candidate/worktree, and explicitly enumerate broad source read/write and any separately authorized test/build capabilities for a finite session. Keep the live IABV runtime and its governance controls separate: the running system cannot self-grant privileges or release its own block. Do not silently extend builder access to secrets, credentials, `.env`, production/user data, SQLite/ `data/`, machine security settings, GPU/model/credential changes, arbitrary process launch, network egress, merge/deploy or real transport. Such exclusions and any elevated capability need explicit policy decisions rather than per-file nuisance gates.
+
+This is the intended access-control architecture to design: a trusted developer authorization with broad scope *inside the approved build boundary*, durable operation receipts and clear expiry/revocation; separate authority for live operational blocks. It does not activate new permissions, supersede the existing no-launch decision, or authorize implementation/tests/build/runtime in this session.
+
+### Correct next actor and task
+
+```
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+ACTIVE_TASK=M1_IDENTIFY_AND_USE_SUPPORTED_GOVERNANCE_OWNED_SCOPED_READ_ROUTE
+CODEX_SESSION_ROUTE=NOT_FOUND_IN_CODEX_SESSION_SURFACE
+CHATGPT_SESSION_ROUTE=NOT_FOUND
+GLOBAL_ROUTE_EXISTENCE=UNRESOLVED
+NEXT_ACTOR=CODEX_EXISTING_UI_SESSION_DOCUMENTARY_CONTRACT_AUTHOR
+NEXT_ACTION=DRAFT_A_BOUNDED_LOW_FRICTION_BUILDER_AUTHORIZATION_CONTRACT_USING_CANONICAL_DOCUMENTS_ONLY
+TASK_MODE=DOCUMENTARY_ONLY
+GOVERNANCE=KEEP_BLOCKED
+IMPLEMENTATION=NOT_AUTHORIZED
+LOCAL_SOURCE_READ=NOT_RUN
+REAL_TRANSPORT=NOT_RUN
+```
+
+This is a bounded documentary dependency selected under the already-recorded Owner choice of path A (design only). It does **not** complete M1 or prove a route exists. The purpose is to define how builder access can be broad and low-friction once authorized, without granting the runtime self-authorization. The prompt below is the next Codex handoff; it replaces the now-completed Codex tool-catalogue inventory request.
+
+### Next prompt — Codex in its existing UI, contract author only
+
+> **CODEX / IABV — DESIGN THE LOW-FRICTION BUILD-TIME ACCESS CONTRACT (DOCUMENTARY ONLY)**
+>
+> Canonical goal: `GOVERNED_IABV_CODEX_BRIDGE`. Active blocker remains M1; ChatGPT's exposed tool surface was directly checked and returned no IABV governance operation. The Owner supplied your result `NOT_FOUND_IN_CODEX_SESSION_SURFACE` for your 176-tool catalogue. Do not repeat that inventory or another general scan.
+>
+> Use only the existing canonical documents named below and the evidence already supplied in this handoff: `AGENTS.md`, the top snapshot of `CURRENT-STATE.md`, coordination protocol section 11, the reality-aligned handoff, this M1 record, issue #470, and Entries 266/274. Do not read the local checkout or configuration, invoke readers, inspect `data/`/SQLite/secrets, run commands, start processes, or modify product source/configuration.
+>
+> Produce one **proposed documentary contract**, not code, for a trusted, low-friction developer authorization that lets the named construction agent work broadly on source within a designated disposable repository/checkout during an explicitly authorized development session, without repeated per-file permission friction. Specify: (1) trusted Owner/developer principals; (2) repository/root/checkout and candidate identity; (3) permitted read/write and separately gated test/build capabilities; (4) exclusions for secrets, credentials, `.env`, live/user data, runtime/system/GPU/model changes, arbitrary processes, external egress, merge/deploy and real transport unless separately authorized; (5) bounded lifetime, revocation and operation receipts; (6) separation from the IABV runtime governance gate and an independently controlled live-block release; (7) fail-closed behavior and a recovery path that does not require the builder to grant itself access; (8) acceptance criteria and non-executed conformance cases.
+>
+> Do not assume any named issuer, API, UI, local policy or mechanism already exists. Mark each component as `EXISTING_AND_SOURCE_VERIFIED`, `OWNER_DECISION_REQUIRED`, `PROPOSED_NOT_IMPLEMENTED`, or `UNRESOLVED`, with provenance. Broad builder access must operate only after a real trusted authorization is established; do not interpret this prompt as authority to perform a local read, implementation, tests, builds or launch.
+>
+> Return: `DESIGN_VERDICT=PASS|PASS_WITH_REPAIRS|FAIL`, proposed clauses, unresolved Owner/authority decisions, concrete abuse/failure scenarios, and non-executed acceptance cases. Stop after the document draft; make no repository writes or additional investigations.
+>
+> Preserve `GOVERNANCE=KEEP_BLOCKED`, `IMPLEMENTATION=NOT_AUTHORIZED`, `LOCAL_SOURCE_READ=NOT_RUN`, `BRIDGE=BRIDGE_NOT_READY`, `REAL_TRANSPORT=NOT_RUN`.
+
+After Codex returns that draft, ChatGPT/coordinator will reconcile it against Entries 266/274 and the Owner's low-friction development requirement, then route one bounded independent review if an independent reviewer is actually available. No local access is unlocked by the draft.
