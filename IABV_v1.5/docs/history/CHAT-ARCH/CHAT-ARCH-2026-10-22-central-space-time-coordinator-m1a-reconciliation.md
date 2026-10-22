@@ -25,6 +25,23 @@ This is a causal coordination process:
 
 A documentary note alone does not prove that a persistent autonomous runtime brain exists. The coordination protocol already distinguishes `DOCUMENTED` from `COORDINATOR_RUNTIME=NOT_PROVEN` and `CAUSAL_SPACE_TIME_REUSE=NOT_PROVEN`. The coordinator must embody the documented method in its own available workflow now, and must not pretend background autonomous execution or cross-model dispatch exists where no tool proves it.
 
+## Existing IABV algorithms and organs to reuse — not duplicate
+
+This M1A work is a bounded child of the existing canonical architecture. It must reuse the following assets instead of inventing a parallel coordinator or repeating closed archaeology:
+
+| Existing asset | Reusable function in this task | Boundary |
+|---|---|---|
+| [UAAL-ROOT-001 — Universal Adaptive Algorithm Constitution](./UNIVERSAL-ADAPTIVE-ALGORITHM-CONSTITUTION-2026-10-04.md) | Parent loop: objective → perceive/represent/interpret → uncertainty → infer capability → discover/select realization under constraints → govern/act → observe → verify → update reusable knowledge → reuse/adapt → next decision. | Conceptual root; not proof that the whole loop is implemented at runtime. |
+| [Development Control Tower](./DEVELOPMENT-CONTROL-TOWER-2026-09-21.md) | Global objective, dependency/gate map, active frontier, next actor and parked tracks. | Does not override the top snapshot of CURRENT-STATE. |
+| [Goal-lock / anti-drift protocol](./CHAT-ARCH-2026-10-20-protocol-anti-drift-and-bridge-goal-lock.md) | Keep the bridge north star; do not turn a prerequisite or adjacent review into a replacement goal. | Constraints still apply; no authority elevation. |
+| [Memory Operating Protocol](./MEMORY-OPERATING-PROTOCOL.md) | Progressive context retrieval, source provenance, prior negative knowledge, causal frontier, bounded actor handoff, reconciliation, durable Knowledge Delta and fetch-back. | Saving text is not proof that runtime learned or reused it. |
+| [CHAT-ARCH README and CONTEXT-INDEX](./README.md) / [index](./CONTEXT-INDEX.md) | Canonical entry into relevant history; objective-relevant projection rather than full unfiltered memory. | They guide retrieval; CURRENT-STATE alone routes the active task. |
+| [Entry 274 — consolidated read-decision contract](./CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md) | Existing normative authority separation, fail-closed handling and independent block-release requirement for M1A. | Must not be replaced by a new local policy list or used to claim implementation. |
+| [M0 causal-routing reconciliation, Entry 128](./CHAT-ARCH-2026-10-07-128-m0-causal-routing-reconciliation.md) | Existing path model and distinction between mediated handoff and selective capability routing; illustrates source-backed edge-by-edge reconciliation. | Historical findings apply to their named source baseline; do not blindly assume current runtime behavior. |
+| [Artificial-development inflection](./BIOSOFIA-ARTIFICIAL-DEVELOPMENT-INFLECTION-2026-09-20.md) | Capability fabric and epistemic ladder: idea/design/code/wired/invoked/observed/verified/causal/reused. | Does not justify claims of learning or development without evidence. |
+
+**Reuse rule:** extend the existing parent concept and memory/route records. Do not create a new “space-time mega-organ,” duplicate a capability router, repeat a broad repository scan, or re-open a closed finding absent new contradictory evidence. For the current bounded source gap, the already-pinned `models.py`, `world_model_service.py`, and `server.py` findings remain the bounded baseline; this documentary pass does not widen to another source audit. If new implementation-relevant source evidence becomes authorized later, follow explicit imports/call sites and update only the affected dependency edges.
+
 ## 2. Correction to the preceding M1A interaction
 
 The recent handling treated selector semantics too much as a ballot to send back to the Owner. That was the wrong order. The coordinator should first derive and state the coherent candidate semantics from the existing Entry 274 contract, test the decision table against them, and expose only any genuinely irreducible governance decision.
