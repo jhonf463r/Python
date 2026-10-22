@@ -1,4 +1,27 @@
-# CURRENT ROUTING SNAPSHOT — 2026-10-22 (M1 ISOLATED IMPLEMENTATION AUTHORIZED; LIVE ACCESS STILL BLOCKED)
+# CURRENT ROUTING SNAPSHOT — 2026-10-22 (M1 BLOCKED; SCOPE-MODEL DESIGN PROPOSAL AUTHORIZED ONLY)
+
+## LATEST ROUTING DELTA — Owner authorized scope-model proposal (design-only) (2026-10-22)
+
+The Owner explicitly asked to proceed toward a solution and requested the next AI prompt. This authorizes a **separate design-only task** to propose a versioned operational-block scope model; it does not authorize implementation, runtime, tests, transport, or activation of a new policy.
+
+Prior M1 implementation remains stopped at `BLOCKED_AUTHORITY_SCOPE_MODEL_UNAVAILABLE`. New active task: `M1A_DESIGN_PROPOSED_VERSIONED_OPERATIONAL_BLOCK_SCOPE_MODEL`. First actor: Codex in the existing session, design author only, using the bounded public sources in [M1A handoff](./CHAT-ARCH-2026-10-22-M1A-versioned-scope-model-design-handoff.md). After Codex returns the complete proposal, route it to an independent adversarial reviewer (Sonnet 4.6 in Antigravity if actually available; otherwise a separately configured reviewer). Do not claim reviewer availability until verified.
+
+The proposal must distinguish `HEAD_SOURCE`, `OWNER_REPORTED`, `PROPOSED` and `UNRESOLVED`, enumerate Owner/governance decisions, and remain non-authoritative until independently reviewed and explicitly adjudicated. No candidate edits or broad scan. Keep read/list access fail-closed.
+
+```text
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+ACTIVE_TASK=M1A_DESIGN_PROPOSED_VERSIONED_OPERATIONAL_BLOCK_SCOPE_MODEL
+PRIOR_M1_STATUS=BLOCKED_AUTHORITY_SCOPE_MODEL_UNAVAILABLE
+SCOPE_MODEL_DESIGN=AUTHORIZED_PROPOSAL_ONLY
+SCOPE_MODEL_STATUS=PROPOSED_PENDING_INDEPENDENT_REVIEW_AND_OWNER_ADJUDICATION
+IMPLEMENTATION_OF_SCOPE_MODEL=NOT_AUTHORIZED
+TESTS=NOT_RUN
+GOVERNANCE=KEEP_BLOCKED
+CANDIDATE_MERGED=NO
+BRIDGE=BRIDGE_NOT_READY
+```
+
+---
 
 ## LATEST ROUTING DELTA — Codex confirms authority-scope blocker (2026-10-22)
 
