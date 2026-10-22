@@ -1,18 +1,42 @@
-# CURRENT ROUTING SNAPSHOT — 2026-10-22 (GOAL-LOCKED; LOCAL EXECUTOR READ BLOCKED)
+# CURRENT ROUTING SNAPSHOT — 2026-10-22 (M1 DOCUMENTARY DESIGN; OPERATIONAL ACCESS STILL BLOCKED)
 
-## LATEST ROUTING DELTA — target_scope PASS; new-chat continuity checkpoint (2026-10-22)
+## LATEST ROUTING DELTA — Owner authorized Option 2; minimal M1 design persisted (2026-10-22)
 
-The Owner supplied Sonnet 4.6's static review verdict PASS for the remote target_scope candidate. F-TS-1 is closed for the candidate fragment only: open consult_-prefix acceptance is gone and the code uses explicit known_target_scopes. The two discriminating cases behave as expected in the reviewed fragment: registered consult_codex does not block unrelated audit; unknown consult_unmapped_scope remains fail-closed. The reviewer explicitly states that this does not replace acceptance-test execution or validate a running server.
+The Owner explicitly authorized **Option 2: documentary design only** in this coordination session. The proposed minimum route design is now recorded at [M1 governance-route minimal design](./CHAT-ARCH-2026-10-22-M1-governance-route-minimal-design.md). This authorization does not authorize implementation, local reads, tests/builds, process launches, or transport; it does not grant access or release an operational block.
 
-Full handoff, provenance, exact candidate identity, current compare snapshot, risk boundaries and next-chat instructions: [post-Sonnet target_scope next-chat handoff](./CHAT-ARCH-2026-10-22-post-sonnet-target-scope-next-chat-handoff.md). Source review record: [candidate target_scope repaired review](./CHAT-ARCH-2026-10-22-candidate-target-scope-repaired-review.md).
+The design reuses [Entry 274 — consolidated repository-read decision contract](./CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md), [Entry 266 — observation approval is not audit release](./CHAT-ARCH-2026-10-13-266-observation-approval-is-not-audit-release.md), and the already-reviewed [builder-grant successor v0.2](./CHAT-ARCH-2026-10-22-builder-grant-contract-successor-v0.2.md). It does not redraft/re-review v0.2, invent APIs, or claim conceptual roles are implemented. Design status is proposed for Owner/competent-authority review only.
 
-Candidate remains branch fix/iabv-operational-block-target-scope-repair-20261022 at b7c3fffaec4ff3b78b1ca03ae64ead949236f504. The pre-handoff comparison found main at f93b513f7d12c321a65077335d677c998373c764, candidate status diverged with ahead_by=1, behind_by=3, merge base e61c5043bbdd8ea536ed5c9e642d80ff228ee897. The main-side commits after that base were documentation-only; no source merge/rebase occurred. This pre-write snapshot is historical after the handoff commit: refresh before any integration decision.
+### Bounded evidence status
 
-Do not interpret the static PASS as test success, live-server adoption, block release or a supported local-read route. TESTS=NOT_RUN; LIVE_SERVER_IDENTITY=UNVERIFIED; LOCAL_SOURCE_READ=NOT_RUN; CANDIDATE_MERGED=NO.
+- ChatGPT callable-tool catalogue: `NOT_FOUND_IN_CHECKED_SESSION_SURFACE` — directly examined in this session; no exposed IABV governance-owned scoped-read or block-release action.
+- Existing Codex session: `NOT_FOUND_IN_CODEX_SESSION_SURFACE` — Owner-reported result from the supplied 176-tool inventory; not independently executed here.
+- Antigravity / Opus 4.6 session: `NOT_FOUND_IN_ANTIGRAVITY_SESSION_SURFACE` — Owner-supplied result from the session inventory; the supplied account reports no command/file/MCP execution.
+- Issue [#470](https://github.com/jhonf463r/Python/issues/470) does not identify a verified issuer, callable administrative operation, or independent block-release authority.
 
-The one active task remains M1: IDENTIFY_AND_USE_SUPPORTED_GOVERNANCE_OWNED_SCOPED_READ_ROUTE. The next action is still the actual supported governance/administrative surface or responsible operator for the live server and checkout. A supported route was NOT_FOUND only in the previously examined ChatGPT tool surface; GLOBAL_ROUTE_EXISTENCE remains UNRESOLVED. Do not repeat the OpenCode successor v0.2 review, broad IABV auto-scan, local reader attempts, alternate-reader bypass, or old ahead_by=1/behind_by=0 claims.
+These are bounded negative results for the named session surfaces and current issue content, not proof that no route exists globally. `GLOBAL_ROUTE_EXISTENCE=UNRESOLVED`. The design's unresolved Owner/authority decisions are listed in the design artifact; do not repeat inventories or send another broad general-chat request.
 
-GOVERNANCE=KEEP_BLOCKED; IMPLEMENTATION=NOT_AUTHORIZED; LOCAL_SOURCE_READ=NOT_RUN; TESTS=NOT_RUN; CANDIDATE_MERGED=NO; BRIDGE=BRIDGE_NOT_READY; REAL_TRANSPORT=NOT_RUN; LOCAL_WORKTREE=UNTOUCHED
+### Active route and states
+
+```
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+ACTIVE_TASK=M1_IDENTIFY_AND_USE_SUPPORTED_GOVERNANCE_OWNED_SCOPED_READ_ROUTE
+CURRENT_STATUS=DOCUMENTARY_DESIGN_PROPOSED; AUTHORITY_AND_SUPPORTED_ROUTE_UNRESOLVED
+M1_DESIGN=PROPOSED_FOR_OWNER_AUTHORITY_REVIEW
+SUPPORTED_SCOPED_READ_ROUTE=UNRESOLVED
+GLOBAL_ROUTE_EXISTENCE=UNRESOLVED
+GOVERNANCE=KEEP_BLOCKED
+IMPLEMENTATION=NOT_AUTHORIZED
+LOCAL_SOURCE_READ=NOT_RUN
+TESTS=NOT_RUN
+BRIDGE=BRIDGE_NOT_READY
+REAL_TRANSPORT=NOT_RUN
+CANDIDATE_MERGED=NO
+LOCAL_WORKTREE=UNTOUCHED
+```
+
+The Sonnet `target_scope` static PASS remains limited to the remote candidate fragment and does not change M1. Candidate remains unmerged; live MCP server identity/version is unverified. Do not repeat the builder-grant successor v0.2 review, broad IABV auto-scan, local reader attempts, alternative-reader bypass, subagent/MCP probing, or old branch-divergence claims. The required next dependency is verifiable evidence from the Owner/competent governance authority identifying the existing supported route, authenticated issuer/principal, real server/checkout identity and independent block-release authority—or an explicit decision to preserve the stop.
+
+Refresh the remote `main` SHA before any subsequent write/integration decision. Current design commit was created directly on the documentation branch `main`; it does not modify source, configuration, tests or a candidate branch.
 
 ---
 
