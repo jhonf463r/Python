@@ -1,5 +1,24 @@
 # CURRENT ROUTING SNAPSHOT — 2026-10-22 (M1 ISOLATED IMPLEMENTATION AUTHORIZED; LIVE ACCESS STILL BLOCKED)
 
+## LATEST ROUTING DELTA — Codex confirms authority-scope blocker (2026-10-22)
+
+Codex supplied a bounded receipt for the reported isolated candidate. Result remains `BLOCKED_AUTHORITY_SCOPE_MODEL_UNAVAILABLE`: its candidate inspection reports no authoritative/versioned scope contract or trusted target resolver. The candidate receipt is `OWNER_REPORTED`; the coordinator did not directly access the Windows directory. Reconciliation, including the distinction that Entry 274 is absent from the reported sparse candidate but verified on public GitHub, is in [M1 Codex authority-check receipt](./CHAT-ARCH-2026-10-22-M1-Codex-authority-check-receipt.md).
+
+No further code repair should occur under this task. Do not invent a scope registry, dimension-combination rules or call-site scopes. A future continuation requires an independently established existing authority, or a separate explicit Owner/governance decision to create and review a new scope model. Keep reads fail-closed.
+
+```text
+ACTIVE_TASK=M1_IDENTIFY_AND_USE_SUPPORTED_GOVERNANCE_OWNED_SCOPED_READ_ROUTE
+M1_STATUS=BLOCKED_AUTHORITY_SCOPE_MODEL_UNAVAILABLE
+CODEX_RECEIPT=OWNER_REPORTED
+ENTRY_274=PUBLIC_GITHUB_SOURCE_VERIFIED; ABSENT_FROM_CANDIDATE_REPORTED
+TESTS=NOT_RUN
+GOVERNANCE=KEEP_BLOCKED
+CANDIDATE_MERGED=NO
+BRIDGE=BRIDGE_NOT_READY
+```
+
+---
+
 ## LATEST ROUTING DELTA — M1 stopped: authoritative scope model unavailable (2026-10-22)
 
 Bounded review of the permitted pinned source paths and Entry 274 found no authoritative/versioned operational-block scope model, resolver, or complete trusted operation-to-target map. The terminal result is `BLOCKED_AUTHORITY_SCOPE_MODEL_UNAVAILABLE`; do not invent a registry, dimension-combination semantics or call-site labels. Full provenance and limitations: [M1 authority scope-model check](./CHAT-ARCH-2026-10-22-M1-authority-scope-model-blocked.md).
