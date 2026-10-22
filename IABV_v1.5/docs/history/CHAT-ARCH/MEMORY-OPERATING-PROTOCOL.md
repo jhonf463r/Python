@@ -1,3 +1,25 @@
+## Active M1A Knowledge Delta — normalized scope design / Owner gate (2026-10-22)
+
+Active route source: [CURRENT-STATE.md](./CURRENT-STATE.md). Task: `M1A_OWNER_GOVERNANCE_ADJUDICATION_OF_SCOPE_MODEL_POLICY_AND_DECISION_LEDGER`; status `WAITING_OWNER`.
+
+This delta extends existing `UAAL-ROOT-001` and does not create a parallel algorithm. Reuse the Universal Adaptive Algorithm Constitution, Development Control Tower, goal-lock/anti-drift, progressive retrieval/provenance and Entry 274. The normalized M1A design is [here](./CHAT-ARCH-2026-10-22-M1A-normalized-scope-decision-ledger-and-design-amendment.md); the explanation of conceptual reuse is [here](./CHAT-ARCH-2026-10-22-central-space-time-coordinator-m1a-reconciliation.md).
+
+**Knowledge Delta:** selectors are recommended as independent conjunctive dimensions; `GLOBAL` matches one dimension only; valid trusted exact mismatch proves non-applicability; incomplete/untrusted/unknown/conflicting/revoked/unsupported data remains fail-closed. The recommendation is `PROPOSED`, not adopted policy. Seven governance decisions are normalized as OG-M1A-01..07; other review findings are technical/design acceptance repairs, not additional policy votes. The review report's “7 + 4” total was internally inconsistent and is not reused.
+
+**Reuse constraint:** actor prompts must derive from the current causal/evidential frontier, not copy another model's proposed continuation unchanged. Retrieve prior negative findings and pinned source baseline; trace only relevant dependencies if an authorized source question arises; avoid broad scans; preserve history and fetch back every material write. Saving the note is not proof that a runtime learned or reused it.
+
+```text
+PARENT_CONCEPT=UAAL-ROOT-001
+CURRENT_TASK=M1A_OWNER_GOVERNANCE_ADJUDICATION_OF_SCOPE_MODEL_POLICY_AND_DECISION_LEDGER
+GOVERNANCE=KEEP_BLOCKED
+IMPLEMENTATION=NOT_AUTHORIZED
+TESTS=NOT_RUN
+READ_LIST=FAIL_CLOSED
+BRIDGE=BRIDGE_NOT_READY
+```
+
+---
+
 ## Cross-chat owner–coordinator operating agreement — 2026-10-22
 
 For project continuity, apply section 11 of the [ADHD-aware coordination protocol](./CHAT-ARCH-2026-10-22-adhd-aware-project-coordination-and-space-time-focus-protocol.md) together with the active route in [CURRENT-STATE.md](./CURRENT-STATE.md). Persistent memory must preserve both ideas and task focus: every substantive idea receives a status, provenance and re-entry/closure condition; only one task is active; closed decisions are not reopened without new evidence; previous failed routes are not repeated unchanged; and every material update is fetched back and linked. Never claim causal learning merely because text was saved—the next applicable decision must demonstrate reuse.
@@ -8,7 +30,7 @@ For project continuity, apply section 11 of the [ADHD-aware coordination protoco
 
 Protocol: [ADHD-aware project coordination and space-time focus](./CHAT-ARCH-2026-10-22-adhd-aware-project-coordination-and-space-time-focus-protocol.md).
 
-The Owner asks for structured longitudinal coordination because new ideas arrive rapidly and can pull work away from the project north star. Capture ideas without losing them; park them in an inbox; keep a single active task and next action unless immediate safety or an invalidated dependency requires interruption. Show evidence-based progress states and restore the active objective at each new chat. Existing DEVELOPMENT CONTROL TOWER + goal-lock/anti-drift remain the foundation; this is a method amendment, not proof that a runtime coordinator is already implemented. Canonical active task remains `IDENTIFY_AND_USE_SUPPORTED_GOVERNANCE_OWNED_SCOPED_READ_ROUTE`; governance remains `KEEP_BLOCKED`.
+The Owner asks for structured longitudinal coordination because new ideas arrive rapidly and can pull work away from the project north star. Capture ideas without losing them; park them in an inbox; keep a single active task and next action unless immediate safety or an invalidated dependency requires interruption. Show evidence-based progress states and restore the active objective at each new chat. Existing DEVELOPMENT CONTROL TOWER + goal-lock/anti-drift remain the foundation; this is a method amendment, not proof that a runtime coordinator is already implemented. That paragraph is a historical coordination checkpoint, superseded for actor routing by the top snapshot of [CURRENT-STATE.md](./CURRENT-STATE.md); do not follow its old active-task label.
 
 ---
 
