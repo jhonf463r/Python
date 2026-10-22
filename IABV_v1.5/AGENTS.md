@@ -1,17 +1,20 @@
-## CURRENT ROUTING — M1A scope-model design proposal authorized only (2026-10-22)
+## CURRENT ROUTING — M1A proposal received; independent adversarial review next (2026-10-22)
 
-The Owner authorized the next step as a **design-only proposal**, not implementation. Active task: `M1A_DESIGN_PROPOSED_VERSIONED_OPERATIONAL_BLOCK_SCOPE_MODEL`. Use the bounded prompt in [M1A handoff](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1A-versioned-scope-model-design-handoff.md).
+Codex's M1A versioned scope-model proposal was supplied by the Owner and archived at [M1A proposal](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1A-Codex-scope-model-proposal.md). It remains `OWNER_SUPPLIED` / `PROPOSED`; the author's `PASS_WITH_REPAIRS` is not an independent verdict or approved policy.
 
-Prior M1 implementation remains `BLOCKED_AUTHORITY_SCOPE_MODEL_UNAVAILABLE`. Codex is the first design author in the existing session; then an independent adversarial review is required. The model remains `PROPOSED`, not authoritative, until the Owner/governance decision is explicit. No code/test/candidate changes, no runtime/transport, no local checkout/data/SQLite/secrets access, no publication. Preserve `GOVERNANCE=KEEP_BLOCKED`, reader/list denial and `BRIDGE=BRIDGE_NOT_READY`.
+Next task: `M1A_INDEPENDENT_ADVERSARIAL_REVIEW_OF_SCOPE_MODEL`. Use [the bounded independent-review handoff](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1A-independent-adversarial-review-handoff.md). Prefer Sonnet 4.6 in Antigravity only if invocability is confirmed; otherwise another independently invoked reviewer. Key review target: formal semantics for two selectors and the inconsistent-looking table entries for both dimensions mismatching versus one matching and one mismatching.
+
+No code edits, tests/runtime/transport, local checkout access, candidate publication or block release. Keep `GOVERNANCE=KEEP_BLOCKED`, `IMPLEMENTATION=NOT_AUTHORIZED`, readers/listings closed and `BRIDGE=BRIDGE_NOT_READY`. Owner/governance adjudication follows independent review.
 
 ```text
-ACTIVE_TASK=M1A_DESIGN_PROPOSED_VERSIONED_OPERATIONAL_BLOCK_SCOPE_MODEL
-SCOPE_MODEL_DESIGN=AUTHORIZED_PROPOSAL_ONLY
-SCOPE_MODEL_STATUS=PROPOSED_PENDING_INDEPENDENT_REVIEW_AND_OWNER_ADJUDICATION
-IMPLEMENTATION_OF_SCOPE_MODEL=NOT_AUTHORIZED
-GOVERNANCE=KEEP_BLOCKED
+ACTIVE_TASK=M1A_INDEPENDENT_ADVERSARIAL_REVIEW_OF_SCOPE_MODEL
+SCOPE_MODEL_PROPOSAL=OWNER_SUPPLIED; PROPOSED
+INDEPENDENT_REVIEW=PENDING
+OWNER_GOVERNANCE_ADJUDICATION=PENDING
+SCOPE_MODEL_AUTHORITY=NOT_ESTABLISHED
+IMPLEMENTATION=NOT_AUTHORIZED
 TESTS=NOT_RUN
-CANDIDATE_MERGED=NO
+GOVERNANCE=KEEP_BLOCKED
 BRIDGE=BRIDGE_NOT_READY
 ```
 
