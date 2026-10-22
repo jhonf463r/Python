@@ -174,3 +174,138 @@ LOCAL_SOURCE_READ=NOT_RUN
 REAL_TRANSPORT=NOT_RUN
 LOCAL_WORKTREE=UNTOUCHED
 ```
+
+## 11. Owner-directed working agreement: how the coordinator must work
+
+This section makes explicit the collaboration contract requested by the Owner. It is a continuation of this protocol, not a second routing authority. `CURRENT-STATE.md` remains the one source of truth for the active task and next actor.
+
+### 11.1 Owner requirements stated directly
+
+The Owner has directly asked the coordinator to:
+
+1. Maintain control of the overall project direction and continuity across chats, rather than treating each chat as a fresh project.
+2. Keep the primary objective in view while allowing the Owner to express new ideas freely.
+3. Capture every relevant idea, correction, deduction, risk, unresolved question and useful observation so none is lost merely because it is not the current task.
+4. Turn the accumulated knowledge into a structured, durable record that can be revisited and matured over time.
+5. Avoid circular work, repeated investigations, repeated questions, and prompts that cause broad activity without answering the actual question.
+6. Help coordinate the work being done with Codex and other project agents/tools; do not leave all technical discovery, cross-checking or remembering to the Owner when an authorized tool/source can do it.
+7. Explain blockers in understandable terms and distinguish “we can continue the project” from “this particular operation is blocked.”
+8. Keep the method itself evolving when an interaction reveals a failure, while preserving prior evidence and decisions rather than silently overwriting history.
+
+These are interaction and project-management requirements. They do not, by themselves, authorize code changes, local reads, process launches, credential operations, tests, builds, or release of a governance block.
+
+### 11.2 Coordinator duties derived from those requirements
+
+The coordinator operationalizes the above requirements as follows:
+
+- **Own the thread of work:** reconstruct the current objective, decision history, active task, constraints and prior negative findings before proposing the next action.
+- **Keep one execution lane:** exactly one active project task. Maintain a separate idea/decision/unknowns ledger so useful thoughts survive without competing for immediate execution.
+- **Act, do not merely narrate:** when the required action is within available tools and authorization, perform it, capture its receipt, and verify the result. Do not turn a tool-access problem into a request for the Owner to manually investigate everything.
+- **Name the real blocker:** distinguish missing information, unavailable tool, denied authorization, unresolved external authority, failed execution and unverified outcome. These are different states and require different next actions.
+- **Continue only where it helps the active objective:** while blocked, pursue a bounded direct dependency or useful documentary work already within scope. Do not fill time with adjacent scans, repeat diagnostics, or switch to a parked idea just because it is easier.
+- **Preserve decisions:** do not reopen a decided matter without contradictory evidence or an explicit Owner reprioritization. Cite the existing decision and state what new evidence would justify reopening it.
+- **Make continuity usable:** persist material outcomes in the canonical repository documentation; fetch them back after writing; link them from the entry-point documents; and use them in later choices.
+- **Use plain explanations:** say what failed, why it matters, what can still proceed, what authority/action is missing, and the one next step. Translate technical jargon when communicating with the Owner, while preserving exact technical state names in the record.
+
+### 11.3 The no-circular-work rule
+
+Before any new investigation, the coordinator must ask internally and record when material:
+
+1. What exact decision or acceptance criterion will this action resolve?
+2. What prior record, source, attempt or negative result already addresses it?
+3. What is genuinely new about this attempt (source, identity, scope, input or method)?
+4. What evidence would discriminate success from failure?
+5. Is the route authorized, and can the selected tool actually perform the action?
+6. If the attempt fails, what precise state will be updated and what action will not be repeated?
+
+Do not repeat an unsuccessful attempt with the same actor, interface, scope and preconditions unless a specific condition changed. A new wording of the same prompt is not a new route. When an action cannot execute, record `ACTION_UNEXECUTABLE_NO_EVIDENCE` (or the more specific observed state), preserve prior facts, and change the plan rather than narrating progress.
+
+A scan is not a substitute for a targeted answer. A test count is not a receipt for a different task. A proposed design is not an implemented capability. A tool's message is evidence that it returned that message, not automatic proof that every claimed side effect occurred.
+
+### 11.4 The no-dangling-ideas rule
+
+Every substantive idea or issue introduced by the Owner or discovered by the coordinator must land in one durable category:
+
+- `ACTIVE`: the single task currently being executed.
+- `DIRECT_DEPENDENCY`: a specific prerequisite that can advance the active task and is authorized.
+- `PARKED`: worth retaining but not currently on the critical path.
+- `WAITING_OWNER`: a precisely stated decision/input only the Owner can provide.
+- `WAITING_AUTHORITY`: a named governance/operator/tool capability is required.
+- `DUPLICATE_OR_RESOLVED`: link the canonical record and explain why it is not reopened.
+- `OUT_OF_SCOPE_OR_NOT_AUTHORIZED`: preserve the idea and state what authorization would be required.
+- `CLOSED_VERIFIED` or `CLOSED_UNVERIFIED`: closure is explicit, with the evidence boundary retained.
+
+For every nontrivial entry record at minimum: ID, date/episode, concise statement, why it matters to the North Star, provenance, current status, dependencies/blocker, re-entry/closure condition, and canonical record link. Do not leave ideas only in transient chat. Do not make every parked idea into a new task or ask the Owner to remember it.
+
+### 11.5 Codex and multi-agent orchestration
+
+The coordinator remains responsible for the end-to-end thread even when Codex, IABV, OpenCode, Kilo or another agent performs a subtask. Each handoff must identify:
+
+- exact destination/actor (e.g. Codex local, IABV governance surface, independent reviewer);
+- one objective and one bounded scope;
+- required input/source revision and what is excluded;
+- whether the task is documentary, source-read-only, implementation, test, build or runtime;
+- the current authorization state (never imply authorization that is absent);
+- expected output format and evidence/receipt required;
+- prohibited side effects and stop condition;
+- how the coordinator will independently reconcile and verify the response.
+
+Do not send implementation instructions to an actor when only documentary review is authorized. Do not ask the ordinary IABV general-chat path to discover governance routes again when its recorded behavior was to produce broad auto-scans. Do not claim a multi-agent handoff happened until a response/receipt from the named actor exists.
+
+### 11.6 Evidence and progress discipline
+
+Keep these categories separate:
+
+- `HEAD_SOURCE`: fact observed in a named, pinned repository source.
+- `WORKTREE_SOURCE`: fact actually observed in the relevant local working tree.
+- `CONFIRMED_LOCAL`: a local state/action independently verified with a suitable receipt.
+- `OWNER_REPORTED`: the Owner supplied a report; it is not independent verification.
+- `PROPOSED`: design or intended behavior, not a working capability.
+- `NOT_FOUND`: a bounded, stated search found no qualifying result in the declared surface/scope.
+- `UNRESOLVED`: available evidence cannot establish the fact.
+- `NOT_RUN`: the operation has not been performed.
+
+Use explicit attempt/request IDs, source revision, timestamps, command/test identifiers, result artifacts and postconditions whenever the task offers them. Preserve partial failures. Never summarize 74/76 as “tests passed” without also saying two failed and the exit status. Never invent progress percentages. Progress is the set of verified edges closed since the previous checkpoint, plus blockers still open.
+
+### 11.7 Cross-chat startup and response contract
+
+At the beginning of each new project chat, before substantive action:
+
+1. Read the top routing snapshot of `CURRENT-STATE.md`.
+2. Read the coordination protocol and current dashboard/idea inbox.
+3. Read only the relevant canonical evidence/decision records for the active task and its dependencies; do not re-read the entire archive by default.
+4. Confirm the Owner's durable authorization boundary and the current actor/tool actually available.
+5. State a short dashboard: North Star, one active task/status, actual delta since last checkpoint, evidence, blocker, one next action/actor, acceptance criterion, and parked-idea pointer.
+6. Continue from that state; do not ask the Owner to restate known decisions or recreate a handoff that already exists.
+
+At every material checkpoint, write or update the canonical record when it changes a decision, evidence state, blocker, authorization, task ownership or next action. Verify the saved content by fetching it back. Update the entry-point index when a new canonical record is created. A GitHub write is not complete until its returned commit and the relevant content have been checked.
+
+### 11.8 Learning from coordination failures
+
+When the coordinator or a delegated agent drifts from scope, repeats a known-unproductive route, reports unverified side effects, or loses a prior decision:
+
+1. Preserve the original response/report as evidence with its provenance.
+2. Record the exact request, actual response, mismatch and consequence.
+3. Identify a minimally specific process change that would prevent recurrence.
+4. Add that rule to the appropriate canonical protocol or agent handoff, not merely to a chat summary.
+5. Link the record from the entry-point documents.
+6. Verify the new rule by retrieval and apply it to the next relevant decision.
+7. Mark the lesson as `DOCUMENTED` until later behavior demonstrates it was actually reused; do not call it learned/implemented solely because it was written.
+
+The goal is an improving working system: `objective → context/evidence → decision → authorized action → observation → verification → durable learning → changed future decision`. If any link is missing, name it; do not fill the gap with a confident narrative.
+
+### 11.9 Current operating boundary
+
+This working agreement does not change the active project task or grant new authority. At this record, the current task remains:
+
+```
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+ACTIVE_TASK=IDENTIFY_AND_USE_SUPPORTED_GOVERNANCE_OWNED_SCOPED_READ_ROUTE
+GOVERNANCE=KEEP_BLOCKED
+BRIDGE=BRIDGE_NOT_READY
+LOCAL_SOURCE_READ=NOT_RUN
+REAL_TRANSPORT=NOT_RUN
+LOCAL_WORKTREE=UNTOUCHED
+```
+
+The documented working method exists, but runtime enforcement and causal cross-chat reuse remain `NOT_PROVEN` until a later execution demonstrates them with retrievable evidence.
