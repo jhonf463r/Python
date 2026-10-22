@@ -8,13 +8,13 @@ Three high-severity findings block policy adjudication: F-M1A-01 (selector/globa
 
 Coordinator reconciliation found an internal inconsistency in the supplied review's final count: it classifies caller-scope handling and short-circuit prohibition as not requiring Owner decisions in the body, but includes them among four additional `OWNER_DECISION_REQUIRED` items in the final summary. Do not record “7 + 4 = 11 decisions” as authoritative. The review record separates explicit policy choices, existing §G decisions implicated by trust findings, and design repairs that appear derivable from Entry 274/fail-closed intent.
 
-**Next task:** document reconciliation and prepare a revised **design-only** amendment under a separately authorized design task; do not implement. The Owner/governance must resolve the global-plus-exact-mismatch policy and the existing authority/trust decisions before any later implementation authorization. Use [M1A review record](./CHAT-ARCH-2026-10-22-M1A-independent-adversarial-review-claude.md) as the detailed handoff. Do not repeat the same adversarial review or return to code implementation.
+**Immediate next gate:** explicit Owner/governance adjudication of the unresolved scope-policy and catalogue/producer trust decisions, while reconciling the existing §G decision ledger. Do not send another AI to revise the proposal until those decisions are recorded or a separate bounded design-repair task is explicitly authorized. Any later revision is design-only; implementation requires its own authorization. Use [M1A review record](./CHAT-ARCH-2026-10-22-M1A-independent-adversarial-review-claude.md) as the detailed handoff. Do not repeat the same adversarial review or return to code implementation.
 
 The model remains `PROPOSED`, non-authoritative. Keep active blocks, reads/listings fail-closed, and all previous hard constraints.
 
 ```text
 PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
-ACTIVE_TASK=M1A_RECONCILE_REVIEW_AND_PREPARE_REVISED_DESIGN_ONLY_AMENDMENT
+ACTIVE_TASK=M1A_OWNER_GOVERNANCE_ADJUDICATION_OF_SCOPE_MODEL_POLICY_AND_DECISION_LEDGER
 PRIOR_M1_STATUS=BLOCKED_AUTHORITY_SCOPE_MODEL_UNAVAILABLE
 SCOPE_MODEL_PROPOSAL=OWNER_SUPPLIED; PROPOSED
 CODEX_DESIGN_VERDICT=PASS_WITH_REPAIRS (OWNER_REPORTED)
