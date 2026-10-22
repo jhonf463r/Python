@@ -1,5 +1,7 @@
 ## Active collaboration/Knowledge Transfer delta — M1A normalized design (2026-10-22)
 
+**M1A Owner gate:** one bundled Owner decision: `ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE`, `ACCEPT_WITH_AMENDMENTS: ...`, or `REJECT_M1A_BASELINE: ...`. Acceptance is design-only; concrete trust-anchor identity, implementation, tests and block release remain separate gates.
+
 Current routing: [CURRENT-STATE.md](./CURRENT-STATE.md). Active task: `M1A_OWNER_GOVERNANCE_ADJUDICATION_OF_SCOPE_MODEL_POLICY_AND_DECISION_LEDGER`, status `WAITING_OWNER`.
 
 This is a bounded capability-transfer chain under [UAAL-ROOT-001](./UNIVERSAL-ADAPTIVE-ALGORITHM-CONSTITUTION-2026-10-04.md), not a new IA or coordinator organ:
