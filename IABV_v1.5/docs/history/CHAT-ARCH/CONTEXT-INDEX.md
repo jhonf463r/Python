@@ -1,4 +1,14 @@
-## M1 — current next-chat route (2026-10-22)
+## ACTIVE ROUTING — M1A normalized design complete; Owner/governance adjudication next (2026-10-22)
+
+Source of truth: [CURRENT-STATE.md](./CURRENT-STATE.md), top snapshot. Active task: `M1A_OWNER_GOVERNANCE_ADJUDICATION_OF_SCOPE_MODEL_POLICY_AND_DECISION_LEDGER`, status `WAITING_OWNER`. Do not follow older M1/M1A next-actor instructions below as active routing.
+
+Current bounded design: [normalized M1A scope decision ledger and proposed amendment](./CHAT-ARCH-2026-10-22-M1A-normalized-scope-decision-ledger-and-design-amendment.md). This is a child of existing [UAAL-ROOT-001](./UNIVERSAL-ADAPTIVE-ALGORITHM-CONSTITUTION-2026-10-04.md), using the Control Tower, goal-lock/anti-drift, Memory Operating Protocol, Entry 274 and existing M0 causal routing as related assets—not a new universal router. The recommendation is conjunctive selectors, with `GLOBAL` scoped to its own dimension; trusted valid exact mismatch means non-applicability, while incomplete/untrusted/ambiguous authority fails closed. This remains `PROPOSED`.
+
+The normalized ledger has seven authority/policy categories (`OG-M1A-01..OG-M1A-07`) and distinguishes them from derivable technical repairs and later implementation gates. Do not reuse the supplied review's inconsistent “7 + 4 = 11” tally. Keep `GOVERNANCE=KEEP_BLOCKED`, `IMPLEMENTATION=NOT_AUTHORIZED`, `TESTS=NOT_RUN`, `READ_LIST=FAIL_CLOSED`, `BRIDGE=BRIDGE_NOT_READY`.
+
+---
+
+## Historical M1 route checkpoint — superseded by CURRENT-STATE (2026-10-22)
 
 The complete diff supplied by the Owner is statically reviewed and fails acceptance pending F-01–F-03; see [M1 static review and next-chat handoff](./CHAT-ARCH-2026-10-22-M1-scoped-read-review-and-next-chat-handoff.md). The candidate's read/list denial is fail-closed, but the governed approval route is not implemented.
 
