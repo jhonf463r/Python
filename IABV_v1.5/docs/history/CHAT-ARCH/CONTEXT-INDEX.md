@@ -4,7 +4,7 @@ Source of truth: [CURRENT-STATE.md](./CURRENT-STATE.md), top snapshot. Active ta
 
 Canonical current artifacts:
 - [M1A consolidated operational-block scope contract v1.0.0](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md) — blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e`; Owner-adopted normative design, implementation unverified.
-- [Bounded Sonnet review handoff](./CHAT-ARCH-2026-10-22-M1A-contract-v1-targeted-adversarial-review-handoff.md) — blob `446dc7e789336e7a3bd718904c3f480902ee96ff`; exact inputs, prompt, acceptance criteria and stop conditions.
+- [Bounded Sonnet review handoff](./CHAT-ARCH-2026-10-22-M1A-contract-v1-targeted-adversarial-review-handoff.md) — blob `6a20f983b72c6baddf9870a1c3a02ef7f94dbfba`; exact inputs, prompt, acceptance criteria and stop conditions.
 - [Normalized M1A decision ledger](./CHAT-ARCH-2026-10-22-M1A-normalized-scope-decision-ledger-and-design-amendment.md) — blob `3425144a661c713eb8898c1eacefb2d791519bc0`; exact acceptance token and residual evidence gates.
 - [UAAL construction-completeness / traceability overlay](./CHAT-ARCH-2026-10-22-UAAL-construction-completeness-traceability-overlay.md) — mandatory method checks embedded in existing UAAL/MOP.
 - [UAAL-ROOT-001](./UNIVERSAL-ADAPTIVE-ALGORITHM-CONSTITUTION-2026-10-04.md), [Entry 274](./CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md), and [Memory Operating Protocol](./MEMORY-OPERATING-PROTOCOL.md) — parent algorithm, security-boundary contract and construction/reconciliation method.
