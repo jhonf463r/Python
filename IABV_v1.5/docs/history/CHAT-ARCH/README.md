@@ -1,13 +1,30 @@
-## ACTIVE M1A KNOWLEDGE DELTA — Owner accepted design baseline; bounded contract review next (2026-10-22)
+## ACTIVE ROUTING — M1A design accepted; consolidated contract v1.0.0 review next (2026-10-22)
 
-Owner decision receipt: `ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE`. The seven M1A design choices are adopted as a normative design baseline only. The [normalized decision ledger](./CHAT-ARCH-2026-10-22-M1A-normalized-scope-decision-ledger-and-design-amendment.md) records acceptance (blob `3425144a661c713eb8898c1eacefb2d791519bc0`); the resulting [consolidated operational-block scope contract v1.0.0](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md) is fetched back and verified (blob `ac3a45018b0313747fe0c3dfc39d6298e0786fe8`).
+**Follow [CURRENT-STATE.md](./CURRENT-STATE.md) first.** Its top routing snapshot is the only source for the active task. The Owner accepted `ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE`; the decision is recorded in the [normalized M1A ledger](./CHAT-ARCH-2026-10-22-M1A-normalized-scope-decision-ledger-and-design-amendment.md), and the adopted design is consolidated in [M1A operational-block scope contract v1.0.0](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md) (blob `ac3a45018b0313747fe0c3dfc39d6298e0786fe8`).
 
-The adopted model uses independent conjunctive assistant and target selectors; `GLOBAL` applies to its own dimension only; exact mismatch proves non-applicability only after every required input and authority is trusted, complete and valid. Unknown/invalid/untrusted/conflicting/revoked/unsupported state, absent target resolution, absent producer authority, or an incomplete active-block set fails closed. Receipts are evidence, never authority or block release. Legacy records are not automatically migrated.
+**Existing architectural lineage — reuse, do not duplicate:**
+1. [UAAL-ROOT-001](./UNIVERSAL-ADAPTIVE-ALGORITHM-CONSTITUTION-2026-10-04.md) is the parent adaptive loop.
+2. [Memory Operating Protocol](./MEMORY-OPERATING-PROTOCOL.md) owns retrieval/provenance, task selection, bounded handoffs, reconciliation, Knowledge Delta and fetch-back.
+3. [Development Control Tower](./DEVELOPMENT-CONTROL-TOWER-2026-09-21.md) plus [goal-lock/anti-drift](./CHAT-ARCH-2026-10-20-protocol-anti-drift-and-bridge-goal-lock.md) preserve the North Star and one active task.
+4. [Entry 274](./CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md) maintains separate diagnostic, fresh approval, server-side read decision, reader verification, receipt and independent block-release authority.
+5. [Construction-completeness overlay](./CHAT-ARCH-2026-10-22-UAAL-construction-completeness-traceability-overlay.md) makes bidirectional traceability, decision-space coverage and evidence-backed closure mandatory.
 
-**Next task:** `M1A_CONSOLIDATED_SCOPE_CONTRACT_V1_TARGETED_ADVERSARIAL_REVIEW` — bounded independent adversarial review of the exact v1.0.0 artifact. This is documentary only, not a code or runtime task. Sonnet 4.6 in Antigravity is the intended reviewer based on Owner-reported availability; the session invocation is `NOT_DISPATCHED` until a correlated review artifact exists.
+**Current next step:** `M1A_CONSOLIDATED_SCOPE_CONTRACT_V1_TARGETED_ADVERSARIAL_REVIEW`, a bounded documentary/static review of the exact consolidated v1.0.0 contract. Intended actor: Sonnet 4.6 in the Owner-reported Antigravity session; invocation remains `NOT_DISPATCHED`. No broad repo scan, local checkout access, code change, tests, runtime, transport, merge or block release.
 
-Real authenticated principal/trust anchor, catalogue publisher/revocation service, producer allowlist, operation-to-target registry/call-site mappings and independent block-release mechanism remain `UNVERIFIED/NOT_ESTABLISHED`. Thus `GOVERNANCE=KEEP_BLOCKED`, `IMPLEMENTATION=NOT_AUTHORIZED`, `TESTS=NOT_RUN`, `READ_LIST=FAIL_CLOSED`, `BRIDGE=BRIDGE_NOT_READY`.
-
+```text
+OWNER_DESIGN_ACCEPTANCE=ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE
+M1A_DESIGN_BASELINE=NORMATIVE_ADOPTED
+CONTRACT_VERSION=1.0.0
+CONTRACT_BLOB=ac3a45018b0313747fe0c3dfc39d6298e0786fe8
+ACTIVE_TASK=M1A_CONSOLIDATED_SCOPE_CONTRACT_V1_TARGETED_ADVERSARIAL_REVIEW
+CURRENT_STATUS=READY_FOR_INDEPENDENT_REVIEW; NOT_DISPATCHED
+RUNTIME_TRUST_ANCHOR=UNVERIFIED
+GOVERNANCE=KEEP_BLOCKED
+IMPLEMENTATION=NOT_AUTHORIZED
+TESTS=NOT_RUN
+READ_LIST=FAIL_CLOSED
+BRIDGE=BRIDGE_NOT_READY
+```
 ---
 ---
 
