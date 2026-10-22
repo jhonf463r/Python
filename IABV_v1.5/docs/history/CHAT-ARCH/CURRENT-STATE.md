@@ -2,9 +2,9 @@
 
 ## LATEST ROUTING DELTA — Owner accepted M1A design; consolidated contract v1.0.0 created and fetched back (2026-10-22)
 
-The Owner supplied the exact token `ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE`. The decision is recorded in the [normalized M1A decision ledger](./CHAT-ARCH-2026-10-22-M1A-normalized-scope-decision-ledger-and-design-amendment.md), blob `3425144a661c713eb8898c1eacefb2d791519bc0`. The accepted design is now consolidated into [M1A operational-block scope contract v1.0.0](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md), blob `ac3a45018b0313747fe0c3dfc39d6298e0786fe8`.
+The Owner supplied the exact token `ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE`. The decision is recorded in the [normalized M1A decision ledger](./CHAT-ARCH-2026-10-22-M1A-normalized-scope-decision-ledger-and-design-amendment.md), blob `3425144a661c713eb8898c1eacefb2d791519bc0`. The accepted design is now consolidated into [M1A operational-block scope contract v1.0.0](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md), blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e`.
 
-The contract is traceable to `UAAL-ROOT-001`, Entry 274 and the construction-completeness overlay. It defines the adopted conjunctive selector model, `GLOBAL` as dimension-local, valid exact mismatch versus unevaluable/unknown inputs, catalogue/publisher/producer trust requirements, a server-side target resolver, deterministic all-block accounting, non-bearer receipt semantics, no automatic legacy migration, and 28 design conformance cases. The original proposal and owner-supplied review remain preserved as historical input; their contents were not overwritten.
+The contract is traceable to `UAAL-ROOT-001`, Entry 274 and the construction-completeness overlay. It defines the adopted conjunctive selector model, `GLOBAL` as dimension-local, valid exact mismatch versus unevaluable/unknown inputs, catalogue/publisher/producer trust requirements, a server-side target resolver, deterministic all-block accounting, non-bearer receipt semantics, no automatic legacy migration, and 30 design conformance cases. The original proposal and owner-supplied review remain preserved as historical input; their contents were not overwritten.
 
 **Adoption boundary:** the exact Owner decision adopts normative design only. The actual authenticated runtime principal/trust anchor, catalogue publisher and revocation service, producer allowlist, real operation-to-target registry/call-site bindings and independent block-release mechanism remain `UNVERIFIED/NOT_ESTABLISHED`. Therefore this is not a code-read permission, implementation authorization or block release.
 
@@ -14,7 +14,7 @@ The contract is traceable to `UAAL-ROOT-001`, Entry 274 and the construction-com
 
 - **Next actor:** Sonnet 4.6 in the Owner-reported Antigravity session, if that session can receive the exact artifact. Availability is `OWNER_REPORTED`; no review invocation is claimed by this coordinator.
 - **Review mode:** documentary / static contract review only.
-- **Review target:** [M1A contract v1.0.0](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md), blob `ac3a45018b0313747fe0c3dfc39d6298e0786fe8`.
+- **Review target:** [M1A contract v1.0.0](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md), blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e`.
 - **Copyable handoff:** [targeted adversarial review prompt](./CHAT-ARCH-2026-10-22-M1A-contract-v1-targeted-adversarial-review-handoff.md), blob `446dc7e789336e7a3bd718904c3f480902ee96ff`.
 - **Review scope:** challenge selector truth-table completeness; valid mismatch versus invalid/unknown states; trust-root/publisher/producer/revocation requirements; caller-supplied target handling; every-active-block aggregation and denial reasons; independent release; legacy/schema versions; Entry 274 boundaries; and traceability matrix.
 - **Acceptance criterion:** findings refer to exact contract sections and give concrete counterexamples; no broad repo scan; output one of `PASS`, `PASS_WITH_REPAIRS`, or `FAIL`, with each finding's severity, section, counterexample, minimal repair and discriminating case. PASS must not claim implementation/runtime verification.
@@ -26,7 +26,7 @@ PARENT_CONCEPT=UAAL-ROOT-001
 LAST_OWNER_DECISION=ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE
 M1A_DESIGN_BASELINE=NORMATIVE_ADOPTED
 M1A_CONTRACT=IABV-OPERATIONAL-BLOCK-SCOPE v1.0.0
-CONTRACT_BLOB=ac3a45018b0313747fe0c3dfc39d6298e0786fe8
+CONTRACT_BLOB=8181c7c0cf6036c76cf365510e8d9665cf84e57e
 ACTIVE_TASK=M1A_CONSOLIDATED_SCOPE_CONTRACT_V1_TARGETED_ADVERSARIAL_REVIEW
 CURRENT_STATUS=READY_FOR_INDEPENDENT_REVIEW; NOT_DISPATCHED
 RUNTIME_TRUST_ANCHOR=UNVERIFIED
