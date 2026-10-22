@@ -1,4 +1,4 @@
-# M1A — Normalized scope decision ledger and proposed design amendment
+# M1A — Normalized scope decision ledger and design-adoption record
 
 - Date: 2026-10-22, America/Bogota.
 - Task: `M1A_COORDINATOR_DERIVE_SCOPE_SEMANTICS_AND_NORMALIZE_DECISION_LEDGER`.
@@ -6,7 +6,7 @@
 - Normative dependency: [Entry 274 — consolidated repository-read decision contract](./CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md).
 - Source proposal (preserved unchanged): [Codex M1A proposal](./CHAT-ARCH-2026-10-22-M1A-Codex-scope-model-proposal.md), blob `b30b9167302c3ad35ec09e9097a6062545a96ad4`.
 - Independent review report (preserved unchanged): [Claude/Sonnet-attributed review](./CHAT-ARCH-2026-10-22-M1A-independent-adversarial-review-claude.md), blob currently recorded in GitHub history; execution attribution stays `OWNER_SUPPLIED`.
-- Design-authority status: `PROPOSED`; not policy, code or implementation.
+- Design-authority status: `NORMATIVE_DESIGN_BASELINE_ADOPTED` by the Owner's exact response `ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE` on 2026-10-22. This is design adoption only; no implementation or runtime capability is implied.
 - Operational posture: `GOVERNANCE=KEEP_BLOCKED`; `IMPLEMENTATION=NOT_AUTHORIZED`; `TESTS=NOT_RUN`; `READ_LIST=FAIL_CLOSED`; `BRIDGE=BRIDGE_NOT_READY`.
 
 ## 1. Why this is an amendment, not a parallel algorithm
@@ -23,9 +23,9 @@ The evidence trail remains layered:
 - Public GitHub artifacts: re-fetched and verified as documents; they do not prove local checkout or runtime state.
 - Pinned M1 source baseline: the previously bounded checks found only string fields/producers and no authoritative versioned scope model or trusted operation-to-target resolver in the named source paths. Do not repeat a broad source scan; reopen source mapping only when an authorized scope or new contradictory evidence requires it.
 
-## 2. Recommended selector semantics (derived candidate; adoption pending)
+## 2. Owner-adopted selector semantics (normative design baseline; implementation unverified)
 
-**Recommendation:** treat the two selectors as independent, conjunctive constraints over two separate dimensions. This is the clearest formal model for a block that names both an assistant and an operation/target scope. Since it changes a governance-sensitive decision rule, it remains `PROPOSED` until explicitly adopted by the authorized Owner/governance authority or superseded by a proven existing authoritative contract.
+**Adopted normative design:** the Owner explicitly adopted the two selectors as independent, conjunctive constraints over two separate dimensions using `ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE`. `GLOBAL` matches every valid value in its own dimension only; it does not broaden the other predicate. This adoption resolves the normative-design choice; it does not prove an authenticated runtime principal, trust root, producer allowlist, catalogue, resolver or release mechanism. If later evidence establishes a contradictory pre-existing authoritative contract, stop and reconcile it through governance before implementation.
 
 Definitions:
 - `GLOBAL` matches every valid value in **its own dimension only**.
@@ -95,13 +95,13 @@ The supplied review's “7 existing + 4 additional = 11 decisions” summary is 
 
 | ID | Genuine Owner/governance decision | Coordinator recommendation | Dependency / current status |
 |---|---|---|---|
-| OG-M1A-01 | Adopt or replace the two-dimensional selector semantics. | Adopt independent conjunctive selectors and the table in §2, unless an existing authoritative contract proves a different policy. | `PENDING`; policy choice cannot be inferred from code or test names. |
-| OG-M1A-02 | Designate the accountable catalogue/policy owner and authorized publisher/root identity. | A named, verifiable governance principal owns the catalogue, not a caller, generic AI, or the producer being evaluated. | `PENDING`; no trust root evidenced in the bounded sources. |
-| OG-M1A-03 | Define which identities may issue each class of operational block and how producer identity/permission is verified. | Explicit allowlisted producer authorization bound to authenticated provenance; schema validity alone is insufficient. | `PENDING`; must be separate from `producer_id` text. |
-| OG-M1A-04 | Designate the trusted operation-to-target registry/resolver owner and the binding source for real registered implementations. | Server-side resolution; ignore caller-supplied target for the decision; no locally guessed route labels. | `PENDING`; existing source review found no authoritative versioned resolver in the bounded paths. |
-| OG-M1A-05 | Approve catalogue versioning, distribution, retirement/revocation and audit responsibility. | Versioned, integrity-verified publication and explicit revocation; revoked/unsupported versions fail closed. | `PENDING`; a digest by itself is not an authority chain. |
-| OG-M1A-06 | Designate who can independently release a particular governance block and the proof required. | Release is a separate block-bound artifact issued by the trusted owner of that block; the reader/read approval cannot release it. | `PENDING`; Entry 274 forbids a read decision from releasing a block. |
-| OG-M1A-07 | Approve treatment/migration of versionless legacy records. | Preserve legacy blocks as blocking; no automatic migration or wildcard/empty-to-GLOBAL coercion. | `PENDING` for any future migration; interim behavior is fail-closed. |
+| OG-M1A-01 | Adopt or replace the two-dimensional selector semantics. | Adopt independent conjunctive selectors and the table in §2, unless a later verified higher-authority contract contradicts it. | `ACCEPTED_DESIGN_BASELINE`; no source implementation implied. |
+| OG-M1A-02 | Designate the accountable catalogue/policy owner and authorized publisher/root identity. | The IABV human Project Owner/governance authority is accountable for catalogue/policy lifecycle; the real authenticated runtime principal and trust anchor must be separately evidenced. | `DESIGN_CHOICE_ACCEPTED`; runtime principal/trust anchor `UNVERIFIED`. |
+| OG-M1A-03 | Define which identities may issue each class of operational block and how producer identity/permission is verified. | Only authenticated, explicitly allowlisted producers may issue their authorized block classes; schema validity or `producer_id` text alone is insufficient. | `DESIGN_CHOICE_ACCEPTED`; real principals/credentials/allowlist `NOT_ESTABLISHED`. |
+| OG-M1A-04 | Designate the trusted operation-to-target registry/resolver owner and the binding source for real registered implementations. | Owner/governance-controlled versioned registry; server-side resolution from actual registered implementation; caller-supplied target is ignored for authority. | `DESIGN_CHOICE_ACCEPTED`; actual registry/call-site bindings `NOT_ESTABLISHED_IN_BOUNDED_SOURCE_SET`. |
+| OG-M1A-05 | Approve catalogue versioning, distribution, retirement/revocation and audit responsibility. | Versioned, integrity-protected publication with verifiable publisher authority and explicit lifecycle/revocation; revoked/unsupported versions fail closed. | `DESIGN_CHOICE_ACCEPTED`; publisher/trust root/revocation service `NOT_ESTABLISHED`. |
+| OG-M1A-06 | Designate who can independently release a particular governance block and the proof required. | A separate, independently authenticated block-bound artifact from the authority designated for that block; read approval/evaluation/receipt cannot release it. | `DESIGN_CHOICE_ACCEPTED`; actual release authority/mechanism `NOT_ESTABLISHED`; denial remains terminal. |
+| OG-M1A-07 | Approve treatment/migration of versionless legacy records. | No automatic migration; legacy blocks remain blocking; no implicit wildcard/empty-to-GLOBAL/NONE coercion. | `DESIGN_CHOICE_ACCEPTED`; any migration remains a separate future authorized task. |
 
 ### Not new Owner decisions
 
@@ -121,7 +121,7 @@ These repairs may still require independent review of the revised document; that
 ## 6. Implementation acceptance gates — not authorized now
 
 No implementation work follows from this amendment. If separately authorized in the future, minimum documentary gates are:
-1. Owner/governance adjudicates OG-M1A-01..07 or explicitly delegates named decisions.
+1. The Owner's design-baseline acceptance is recorded. Real principal/trust-anchor bindings and the other runtime authority evidence remain required before implementation may be separately considered.
 2. Catalogue and producer trust root, authorization checks, version lifecycle and revocation are demonstrable from an authorized source.
 3. Trusted operation-to-target mappings are tied to real registered call sites/implementation identity; caller input cannot choose the target.
 4. Selector evaluator consumes only authenticated typed records and has a complete deterministic decision table.
@@ -134,9 +134,9 @@ No implementation work follows from this amendment. If separately authorized in 
 
 ```text
 PARENT_CONCEPT=UAAL-ROOT-001
-M1A_SCOPE_MODEL=PROPOSED; NON_AUTHORITATIVE
-SELECTOR_SEMANTICS=CONJUNCTIVE_RECOMMENDATION; PENDING_ADOPTION
-OWNER_GOVERNANCE_DECISIONS=OG-M1A-01..OG-M1A-07; PENDING
+M1A_SCOPE_MODEL=NORMATIVE_DESIGN_BASELINE_ADOPTED; IMPLEMENTATION_UNVERIFIED
+SELECTOR_SEMANTICS=CONJUNCTIVE; ADOPTED_BY_OWNER
+OWNER_GOVERNANCE_DECISIONS=OG-M1A-01..OG-M1A-07; DESIGN_ACCEPTED; RUNTIME_BINDINGS_UNVERIFIED
 TECHNICAL_REPAIRS=DERIVED_AND_DOCUMENTED; NOT_IMPLEMENTED
 TRUSTED_CATALOGUE_AND_RESOLVER=NOT_ESTABLISHED_IN_BOUNDED_SOURCE_SET
 GOVERNANCE=KEEP_BLOCKED
@@ -146,14 +146,14 @@ READ_LIST=FAIL_CLOSED
 BRIDGE=BRIDGE_NOT_READY
 ```
 
-Next transition: carry this normalized decision ledger and technical recommendation into the canonical front door. Present the Owner with the recommended semantic baseline and the genuinely unresolved authority decisions as one consolidated governance decision point. Do not send Codex another implementation task; do not repeat the same general Sonnet review; do not perform a broad source scan. Any future source implementation, tests, runtime, transport or block release requires separate authorization.
+Next transition: use [the consolidated operational-block scope contract v1.0.0](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md) as the adopted design baseline. The next single task is a bounded independent adversarial review of that exact contract and blob, focused only on M1A clauses, decision-table completeness, trust/authority boundaries, contradictory outputs and traceability. Do not repeat the prior general review or perform a broad source scan. Do not start implementation. Real trust infrastructure must be evidenced; implementation, tests, runtime, transport, merge and block release remain separately gated.
 
 
-## 8. Owner decision made practical — one bundled design-baseline choice
+## 8. Owner decision receipt — bundled design-baseline acceptance
 
-To avoid burdening the Owner with seven disconnected policy questions, the coordinator recommends one consolidated design decision. The Owner may accept this complete *design baseline* or name only the clause(s) to change. Accepting this package does **not** authorize implementation, reads, tests, runtime, transport, merging, or block release.
+The Owner supplied the exact acceptance token `ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE`. The following seven defaults are therefore adopted as the normative design baseline only. This does **not** authorize implementation, protected reads, tests, runtime, transport, merge or block release.
 
-### Recommended defaults bundled for approval
+### Adopted defaults (design policy only)
 
 1. **Selector semantics:** adopt the conjunctive model and §2 table; `GLOBAL` applies only to its own dimension; exact mismatch proves non-applicability only after complete trusted resolution.
 2. **Accountability:** the human IABV Project Owner/governance authority is the accountable owner of this scope policy and catalogue lifecycle. The actual authenticated runtime principal / trust anchor remains a separate evidence requirement and must not be guessed.
@@ -163,19 +163,15 @@ To avoid burdening the Owner with seven disconnected policy questions, the coord
 6. **Independent block release:** only a separately authenticated governance authority designated for the specific block may issue an independently verifiable block-bound release artifact. The reader, read issuer, requesting agent, block producer or diagnostic receipt cannot release the block. If the real authority/mechanism is not available, release remains unsupported and denial continues.
 7. **Legacy records:** no automatic migration. Preserve all existing blocks as blocking until a separately approved migration maps their provenance/scope or an independent valid release is supplied. Empty, missing, wildcard or free-form values must never be silently reinterpreted as `GLOBAL` or `NONE`.
 
-### One-response acceptance protocol
+### Recorded Owner decision and residual evidence gates
 
-The Owner can respond with exactly one of these:
+Recorded decision: `ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE` — received from the Owner in chat on 2026-10-22. The design-baseline acceptance is the policy-decision receipt for these seven design choices; it is not a credential, runtime principal, catalogue signature, implementation authorization, or block-release artifact. The consolidated contract is [M1A operational-block scope contract v1.0.0](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md).
 
-- `ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE` — adopt the seven defaults above **as the normative design baseline only**. Exact runtime principal IDs, trust anchors, producer bindings, resolver mappings, implementation and tests remain unverified/unimplemented and gated.
-- `ACCEPT_WITH_AMENDMENTS: ...` — accept the package except for the explicitly named clauses and replacement rules.
-- `REJECT_M1A_BASELINE: ...` — preserve the current proposed state and provide the reason or alternative contract.
-
-Silence, “proceed,” a model's review verdict, or saving this document is not policy adoption. On acceptance, the coordinator must update the decision ledger and write one consolidated versioned contract that traces directly to UAAL-ROOT-001 and Entry 274; only then should any implementation-specific authorization be considered separately.
+`ACCEPT_WITH_AMENDMENTS: ...` and `REJECT_M1A_BASELINE: ...` remain available only if the Owner later explicitly changes or supersedes this accepted decision. Any such change must preserve this decision's history and be recorded as a new traceable decision, not inferred from generic feedback.
 
 ```text
-BUNDLED_OWNER_DECISION=NOT_RECEIVED
-DESIGN_BASELINE_ADOPTION=PENDING
+BUNDLED_OWNER_DECISION=ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE
+DESIGN_BASELINE_ADOPTION=ACCEPTED_NORMATIVE_DESIGN_ONLY
 IMPLEMENTATION_AUTHORITY=NOT_GRANTED
 TRUST_ANCHOR_VERIFICATION=REQUIRED_BEFORE_IMPLEMENTATION
 READ_LIST=FAIL_CLOSED
