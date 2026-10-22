@@ -26,7 +26,6 @@ READ_LIST=FAIL_CLOSED
 BRIDGE=BRIDGE_NOT_READY
 ```
 ---
----
 
 ## Historical M1 checkpoint — superseded by CURRENT-STATE routing (2026-10-22)
 
