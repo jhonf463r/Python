@@ -40,6 +40,10 @@ REAL_TRANSPORT=NOT_RUN
 LOCAL_WORKTREE=UNTOUCHED
 ```
 
+### Latest bounded M1 surface-check delta — 2026-10-22
+
+The current ChatGPT callable-tool catalogue exposes no IABV-local governance/read-decision action, and the current content of issue [#470](https://github.com/jhonf463r/Python/issues/470) identifies no executable route or responsible operator. Full evidence: [governance-surface inventory follow-up](./CHAT-ARCH-2026-10-22-governance-surface-inventory-followup.md). Record `NOT_FOUND` only for the surfaces actually examined; keep `GLOBAL_ROUTE_EXISTENCE=UNRESOLVED`. The task, governance gate and no-bypass constraints do not change.
+
 ### Milestones
 
 - **M0 — Focus/continuity method:** the ADHD-aware idea-inbox and one-active-task protocol is documented and indexed. Runtime activation remains `NOT_PROVEN`.
