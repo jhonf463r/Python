@@ -6,6 +6,7 @@ The Owner accepted `ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE`. The accepted decisi
 
 Latest related records:
 - [M1A consolidated operational-block scope contract v1.0.0](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md) — adopted selector/trust/aggregation/legacy design, traceability matrix and 28 design cases; not implemented.
+- [Bounded review handoff for M1A contract v1.0.0](./CHAT-ARCH-2026-10-22-M1A-contract-v1-targeted-adversarial-review-handoff.md) — exact Sonnet review prompt, immutable target identity, evidence requirements and stop conditions.
 - [M1A normalized scope decision ledger](./CHAT-ARCH-2026-10-22-M1A-normalized-scope-decision-ledger-and-design-amendment.md) — records acceptance and the seven decision categories.
 - [UAAL construction-completeness / traceability overlay](./CHAT-ARCH-2026-10-22-UAAL-construction-completeness-traceability-overlay.md) — extension to UAAL/MOP; no parallel coordinator.
 - [Central space-time coordinator M1A reconciliation](./CHAT-ARCH-2026-10-22-central-space-time-coordinator-m1a-reconciliation.md) — derivation lineage and reuse of existing organs.
