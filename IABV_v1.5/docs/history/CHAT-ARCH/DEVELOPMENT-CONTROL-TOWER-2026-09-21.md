@@ -17,6 +17,8 @@ The existing DEVELOPMENT CONTROL TOWER and goal-lock/anti-drift protocol are the
 
 The full operating rules are maintained in [the canonical ADHD-aware project coordination protocol, section 11](./CHAT-ARCH-2026-10-22-adhd-aware-project-coordination-and-space-time-focus-protocol.md). Use this Tower as the global dashboard and idea parking lot; use [CURRENT-STATE.md](./CURRENT-STATE.md) for the one active task and next actor. Never create a competing active-task source. New ideas must be captured and triaged, not dropped or automatically promoted. Progress is evidence-backed state change, not narration or invented percentages. Known failed routes must not be repeated unless a named precondition changes.
 
+Episode-level handoff for the 2026-10-22 chat: [reality-aligned bridge continuity handoff](./CHAT-ARCH-2026-10-22-coordinator-reality-aligned-bridge-continuity-handoff.md). It records the Owner's explicit expectation that every idea be persisted, that documentary progress is distinguished from operational readiness, and that a new chat continue from evidence rather than restart.
+
 ## 0. LIVE PROJECT FOCUS DASHBOARD — 2026-10-22
 
 This block is the current operational projection of this Tower. The top snapshot in `CURRENT-STATE.md` remains the sole actor-routing authority.
@@ -26,9 +28,11 @@ PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
 CURRENT_PHASE=M1_GOVERNED_SCOPED_READ_ROUTE
 ACTIVE_TASK_ID=M1
 ACTIVE_TASK=IDENTIFY_AND_USE_SUPPORTED_GOVERNANCE_OWNED_SCOPED_READ_ROUTE
-CURRENT_STATUS=BLOCKED_UNRESOLVED
-NEXT_ACTOR=SUPPORTED_GOVERNANCE_SURFACE_OR_RESPONSIBLE_GOVERNANCE_OPERATOR
-NEXT_SINGLE_ACTION=Identify the existing supported route/issuer and its applicable-block release authority; otherwise record NOT_FOUND and stop
+CURRENT_STATUS=BLOCKED_WAITING_FOR_SUPPORTED_AUTHORITY_OR_ROUTE
+SESSION_EXPOSED_SUPPORTED_ADMIN_READ_TOOL=NOT_FOUND
+GLOBAL_ROUTE_EXISTENCE=UNRESOLVED
+NEXT_ACTOR=OWNER_CONTROLLED_IABV_GOVERNANCE_SURFACE_OR_RESPONSIBLE_GOVERNANCE_OPERATOR
+NEXT_SINGLE_ACTION=Identify the real supported read-decision route, trusted issuer, target binding and independent block-release authority; do not repeat ordinary IABV general-chat scan
 GOVERNANCE=KEEP_BLOCKED
 BRIDGE=BRIDGE_NOT_READY
 LOCAL_SOURCE_READ=NOT_RUN
@@ -55,6 +59,7 @@ Ideas are captured here rather than silently replacing M1. This is a triage lane
 | IDEA-002 | Reduce unnecessary Ollama/model startup, RAM footprint and investigate lazy/local-vs-remote inference | `PARKED` | M1 opens legitimate static source trace; use existing evidence first |
 | IDEA-003 | Validate the inferred claim that Ollama is winning for `general` and clarify `probe_consumed` | `PARKED` | Existing correlated IDs, metrics and receipts are available through an authorized path; no broad scan |
 | IDEA-004 | Reconcile the broad auto-scan's claimed GPU/model/credential mutations and the reported 282 dirty source files | `OWNER_REPORTED / UNVERIFIED`; preserve worktree | A safe, separately authorized recovery/verification plan; no blind pull/reset/cleanup/reload |
+| IDEA-005 | Reality-aligned coordination: keep moving on authorized documentary edges without implying operational readiness; repair stale next-actor pointers and verify cross-chat reuse | `DOCUMENTED_PROCESS_CORRECTION`; runtime reuse unproven | At next chat startup, verify CURRENT-STATE is restored, stale routing is not acted on, the same broad IABV route is not repeated, and parked ideas remain parked |
 
 ### Progress rules for this human–AI project
 
@@ -187,15 +192,34 @@ ChatGPT = reconciliation, evidence-boundary definition, smallest discriminating 
 
 Routing is dynamic: `objective → uncertainty → capability required → actor fit → evidence cost`.
 
-## 11. CURRENT NEXT ACTION
-**NEXT ACTOR: SONNET**.
+## 11. CURRENT ROUTING — CURRENT-STATE IS AUTHORITATIVE
 
-Reason: the most recent scientific-organ audit has identified a specific static uncertainty that can be reduced without implementation: whether ExperimentRun/ExperimentRecommendation has an existing downstream reader that generates/selects the next scientific/developmental experiment.
+**Do not execute a stale actor route from the historical scientific-organ audit below.** The only current actor-routing authority is [CURRENT-STATE.md](./CURRENT-STATE.md), whose top snapshot keeps M1 active.
 
-Sonnet must perform an exhaustive repository-wide reader/consumer sweep and return:
+Current task:
+```
+ACTIVE_TASK_ID=M1
+ACTIVE_TASK=IDENTIFY_AND_USE_SUPPORTED_GOVERNANCE_OWNED_SCOPED_READ_ROUTE
+STATUS=BLOCKED_WAITING_FOR_SUPPORTED_AUTHORITY_OR_ROUTE
+NEXT_ACTOR=OWNER_CONTROLLED_IABV_GOVERNANCE_SURFACE_OR_RESPONSIBLE_GOVERNANCE_OPERATOR
+GOVERNANCE=KEEP_BLOCKED
+BRIDGE=BRIDGE_NOT_READY
+LOCAL_SOURCE_READ=NOT_RUN
+REAL_TRANSPORT=NOT_RUN
+LOCAL_WORKTREE=UNTOUCHED
+```
+
+The current ChatGPT session exposed no callable governance/local-read operation. This bounded result does not prove no administrative route exists outside the session. The next action is to identify the actual supported governance surface/operator and the independent authority required for the applicable block-release decision. Do not repeat the same generic question in the ordinary IABV chat; prior attempts produced broad scans rather than the required decision. Do not bypass the denied reader.
+
+After M1, only through the supported route, the next bounded source trace is (a) Codex executor registration/caller/consumer and whitelisted non-secret effective policy and (b) IABV startup→Ollama lifecycle→provider/model selection. M1 unlocks only that static read; implementation, launches, tests/builds/runtime, candidate merge/adoption and real transport remain separately gated.
+
+See [the reality-aligned chat handoff](./CHAT-ARCH-2026-10-22-coordinator-reality-aligned-bridge-continuity-handoff.md) for provenance, the acceptance criterion, all parked ideas and new-chat startup sequence.
+
+### Historical route — scientific-organ audit (superseded; retain for lineage, do not execute automatically)
+
+The previous version of this Tower assigned **SONNET** an exhaustive repository-wide reader/consumer sweep concerning whether ExperimentRun/ExperimentRecommendation has a downstream consumer that generates/selects the next scientific/developmental experiment. That route is not the active route at this checkpoint. It must not overrule CURRENT-STATE or replace M1 unless CURRENT-STATE explicitly reactivates it. Its old proposed output was:
 `producer → representation → all readers → semantic owner → decision consumer → next-experiment path → evidence state`.
-
-Do not implement anything in this audit. If the sweep finds a bounded defect, route implementation to Devin. If it finds a genuine architecture/ownership contradiction, route to Opus 5. If it finds an existing consumer and closes the edge, return to ChatGPT for the next discriminating experiment.
+The historical handoff is retained to avoid losing work lineage; no new execution of it is authorized by this Tower update.
 
 ## 12. PROGRAM SUCCESS CONDITION
 Repeated cycles must show:
