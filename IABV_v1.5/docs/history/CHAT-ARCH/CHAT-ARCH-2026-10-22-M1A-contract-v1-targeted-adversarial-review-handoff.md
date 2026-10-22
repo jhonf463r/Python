@@ -9,6 +9,15 @@
 - **Adoption receipt:** Owner's exact `ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE`, recorded in the [normalized ledger](./CHAT-ARCH-2026-10-22-M1A-normalized-scope-decision-ledger-and-design-amendment.md).
 - **Routing authority:** [CURRENT-STATE.md](./CURRENT-STATE.md), top snapshot.
 
+## New-chat restoration protocol
+
+For a new ChatGPT coordination chat, restore state in this order:
+1. Read the opening routing snapshot of [CURRENT-STATE.md](./CURRENT-STATE.md); it is the sole active-task authority.
+2. Read the current routing block of [AGENTS.md](../../AGENTS.md) and confirm it points to the same task and contract blob.
+3. Use this handoff as the bounded task contract. Do not replay old M1/M1A history as active work, re-ask the accepted design question, or initiate broad source archaeology.
+
+The first response in the new chat should state the North Star, adopted decision, exact contract/blob, current task and single next action. If a reviewer result is not attached or received, state `REVIEW_DISPATCH=NOT_DISPATCHED`; do not claim work happened in the prior session or in the background.
+
 ## Why this review is next
 
 The Owner adopted the seven normative design choices and the coordinator consolidated them into one versioned contract. This review is a quality gate on that exact consolidated artifact. It is **not** another vote on the already-adopted baseline, a source archaeology task, or permission to implement. If a real contradiction with a higher-authority existing contract is found, cite the exact source and stop that clause for reconciliation rather than silently changing adopted policy.
@@ -41,7 +50,7 @@ The preserved Codex proposal and Claude/Sonnet-attributed prior review are histo
 > 5. Whether every active block and every relevant denial reason is accounted for deterministically; an unevaluable block, an applicable unreleased block or an unverifiable active-block set must not be hidden by ordering or short-circuit.
 > 6. Whether a block-specific release is independently authorized and distinct from Entry 274's fresh approval, server-side read decision, reader verifier and durable receipt.
 > 7. Whether the Owner acceptance is accurately limited to normative design and does not imply a verified runtime principal, trust anchor, implementation, tests, real read permission or release.
-> 8. Whether the contract's traceability matrix and 28 conformance cases actually discriminate all material rules/failure states and agree with its prose.
+> 8. Whether the contract's traceability matrix and 30 conformance cases actually discriminate all material rules/failure states and agree with its prose.
 >
 > Return exactly one verdict: `PASS`, `PASS_WITH_REPAIRS`, or `FAIL`. For each finding provide `finding_id`, severity, exact contract section, violated invariant, concrete counterexample, minimal repair, and a discriminating conformance case. Mark any unverified claim as such. If there are no findings, explicitly state that your review is documentary-only and does not validate source/runtime behavior. Reconcile findings with the existing M1A-01..07 decisions; do not inflate the total by counting engineering acceptance cases as new governance decisions.
 >
