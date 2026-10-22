@@ -1,5 +1,24 @@
 ## LATEST ROUTING DELTA — Owner authorized isolated M1 implementation; do not access dirty checkout (2026-10-22)
 
+## LATEST ROUTING DELTA — M1 source-backed authority prerequisite (2026-10-22)
+
+Use the complete next-chat packet: [M1 static review and next-chat continuity handoff](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1-scoped-read-review-and-next-chat-handoff.md). Do not request the supplied diff again. Review input is OWNER_SUPPLIED_COMPLETE_DIFF; static verdict is FAIL_REPAIRS_REQUIRED.
+
+The key order-dependent flaw: assistant_kind mismatches are skipped before target_scope is evaluated, allowing unknown/conflicting target metadata to disappear. Existing world_model_service.py demonstrates producers of values such as consult_external, heavy_local_model, ui_focus_interaction, gate.required_for[0] and tool/route scope; those producers do not prove an authoritative, versioned registry or complete combination semantics.
+
+Single next action: Codex, in the same isolated candidate, checks only the bounded relevant source/docs for an existing authoritative scope model. Reuse it only if proven. If absent, stop with BLOCKED_AUTHORITY_SCOPE_MODEL_UNAVAILABLE; do not invent mappings. Fix F-01–F-03 only if evidence supports it. No tests/build/runtime, Owner checkout/data/secrets access, publication/merge or live access.
+
+~~~text
+M1_STATUS=STATIC_REVIEW_FAIL_REPAIRS_REQUIRED
+GOVERNANCE=KEEP_BLOCKED
+TESTS=NOT_RUN
+CANDIDATE_MERGED=NO
+BRIDGE=BRIDGE_NOT_READY
+~~~
+
+---
+
+
 ## LATEST ROUTING DELTA — M1 diff review: F-01–F-03 require repair (2026-10-22)
 
 The complete diff pasted by the Owner has received an independent static review. Record: [M1 scoped-read diff static review](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1-scoped-read-diff-static-review.md). Do not accept or merge this candidate yet.
