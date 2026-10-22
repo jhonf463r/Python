@@ -22,7 +22,6 @@ READ_LIST=FAIL_CLOSED
 BRIDGE=BRIDGE_NOT_READY
 ```
 ---
----
 
 ## Construction algorithm completeness overlay — 2026-10-22
 
