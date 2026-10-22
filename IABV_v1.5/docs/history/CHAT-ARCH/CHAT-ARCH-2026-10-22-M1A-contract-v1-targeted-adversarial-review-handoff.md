@@ -5,7 +5,7 @@
 - **Intended destination:** Sonnet 4.6 in the Owner-reported Antigravity session.
 - **Dispatch state:** `NOT_DISPATCHED`; an intended destination is not evidence of invocation.
 - **Mode:** documentary/static contract review only.
-- **Primary artifact:** [M1A contract v1.0.0](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md), blob `ac3a45018b0313747fe0c3dfc39d6298e0786fe8`.
+- **Primary artifact:** [M1A contract v1.0.0](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md), blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e`.
 - **Adoption receipt:** Owner's exact `ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE`, recorded in the [normalized ledger](./CHAT-ARCH-2026-10-22-M1A-normalized-scope-decision-ledger-and-design-amendment.md).
 - **Routing authority:** [CURRENT-STATE.md](./CURRENT-STATE.md), top snapshot.
 
@@ -16,7 +16,7 @@ The Owner adopted the seven normative design choices and the coordinator consoli
 ## Bounded inputs
 
 Read only these five documentary inputs:
-1. [Contract v1.0.0](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md), blob `ac3a45018b0313747fe0c3dfc39d6298e0786fe8`.
+1. [Contract v1.0.0](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md), blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e`.
 2. [Normalized M1A decision ledger](./CHAT-ARCH-2026-10-22-M1A-normalized-scope-decision-ledger-and-design-amendment.md), which records the Owner's adoption and residual evidence gaps.
 3. [UAAL-ROOT-001](./UNIVERSAL-ADAPTIVE-ALGORITHM-CONSTITUTION-2026-10-04.md), parent loop and epistemic distinctions.
 4. [Entry 274](./CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md), authority separation and fail-closed read boundary.
@@ -28,7 +28,7 @@ The preserved Codex proposal and Claude/Sonnet-attributed prior review are histo
 
 > **Destination:** Sonnet 4.6 in Antigravity. If this exact session is unavailable, report `NOT_DISPATCHED`; do not claim the review happened.
 >
-> **Task:** Perform one bounded independent adversarial review of the exact document `CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md`, blob `ac3a45018b0313747fe0c3dfc39d6298e0786fe8`. The Owner has already accepted `ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE`. Do not re-ask for that decision and do not replace it with an unapproved new policy.
+> **Task:** Perform one bounded independent adversarial review of the exact document `CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md`, blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e`. The Owner has already accepted `ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE`. Do not re-ask for that decision and do not replace it with an unapproved new policy.
 >
 > Read the five bounded inputs listed in the handoff. Do not browse the full repository, search unrelated source, inspect any local checkout, inspect `data/`, SQLite, secrets, credentials or `.env`, invoke another agent, modify files, run tests/build/runtime/transport, merge, deploy or release any block.
 >
@@ -51,7 +51,7 @@ The preserved Codex proposal and Claude/Sonnet-attributed prior review are histo
 
 Expected receipt: the complete reviewer report, exact target artifact identity/hash, reviewer/model/session attribution as actually available, timestamp, verdict, itemized finding IDs and the exact input scope. If the reviewer cannot confirm the artifact blob or the intended session, do not report the review as completed.
 
-A useful report is accepted only after the coordinator verifies the target is blob `ac3a45018b0313747fe0c3dfc39d6298e0786fe8`; checks each finding against the construction-completeness overlay; records it as fixed, justified/no-change, higher-authority conflict, or unresolved; fetches back any documentary repair; and preserves the original report. Do not claim source/runtime proof.
+A useful report is accepted only after the coordinator verifies the target is blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e`; checks each finding against the construction-completeness overlay; records it as fixed, justified/no-change, higher-authority conflict, or unresolved; fetches back any documentary repair; and preserves the original report. Do not claim source/runtime proof.
 
 ## Exclusions and truth state
 
