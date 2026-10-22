@@ -1,3 +1,17 @@
+## Active unresolved knowledge — M1A authoritative scope policy/trust (2026-10-22)
+
+Current route: [CURRENT-STATE.md](./CURRENT-STATE.md). Active task: `M1A_OWNER_GOVERNANCE_ADJUDICATION_OF_SCOPE_MODEL_POLICY_AND_DECISION_LEDGER`, status `WAITING_OWNER`.
+
+**Established documentary facts:** Codex's typed/versioned scope proposal and a Sonnet/Claude-attributed review report exist as public documents; the latter is owner-supplied and its execution is not independently authenticated. The bounded public-source checks for `domain/models.py`, `world_model_service.py`, and `server.py` recorded no authoritative versioned scope registry or trusted operation-to-target resolver in those paths. Entry 274 already requires authoritative scope semantics, fail-closed uncertainty, separate reader verification/receipt, and an independent block-release artifact.
+
+**Derived recommendation, still PROPOSED:** use independent conjunctive assistant/target constraints; `GLOBAL` covers its own dimension only; complete/trusted/valid exact mismatch proves non-applicability; missing, malformed, ambiguous, unauthenticated, revoked or unsupported metadata must not prove non-applicability. See the [normalized M1A ledger](./CHAT-ARCH-2026-10-22-M1A-normalized-scope-decision-ledger-and-design-amendment.md).
+
+**What remains genuinely unresolved (OG-M1A-01..07):** adoption of the selector policy; accountable catalogue/publisher/root; authorization of block producers; trusted operation-to-target resolver/owner; publication/versioning/revocation/audit lifecycle; independent authority for block release; and rules for legacy records/migration. Do not convert the review's inconsistent “7 + 4” total into new decisions. Technical repairs (required fields, caller-scope ignored for authority, non-bearer receipts, complete multi-block accounting and expanded conformance cases) are tracked separately in the normalized ledger.
+
+Until these authority decisions are made, the scope model is non-authoritative, read/list remains fail-closed, and no implementation or release is authorized. Runtime completeness, local-checkout state, and independent block-release capability are not proven.
+
+---
+
 ## 2026-10-22 Owner-directed project focus and space-time coordination
 
 Protocol: [ADHD-aware project coordination and space-time focus](./CHAT-ARCH-2026-10-22-adhd-aware-project-coordination-and-space-time-focus-protocol.md).
