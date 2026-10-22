@@ -1,3 +1,11 @@
+## 2026-10-22 Owner-directed project focus and space-time coordination
+
+Protocol: [ADHD-aware project coordination and space-time focus](./CHAT-ARCH-2026-10-22-adhd-aware-project-coordination-and-space-time-focus-protocol.md).
+
+The Owner asks for structured longitudinal coordination because new ideas arrive rapidly and can pull work away from the project north star. Capture ideas without losing them; park them in an inbox; keep a single active task and next action unless immediate safety or an invalidated dependency requires interruption. Show evidence-based progress states and restore the active objective at each new chat. Existing DEVELOPMENT CONTROL TOWER + goal-lock/anti-drift remain the foundation; this is a method amendment, not proof that a runtime coordinator is already implemented. Canonical active task remains `IDENTIFY_AND_USE_SUPPORTED_GOVERNANCE_OWNED_SCOPED_READ_ROUTE`; governance remains `KEEP_BLOCKED`.
+
+---
+
 ## 2026-10-22 `inferido` evolution summary and `probe_consumed` semantics (supplementary; route unchanged)
 
 Detailed adjudication: [inferred evolution summary and probe semantics](./CHAT-ARCH-2026-10-22-inferred-evolution-summary-and-probe-consumed-semantics.md).
