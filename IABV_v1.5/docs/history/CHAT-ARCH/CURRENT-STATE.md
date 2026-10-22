@@ -1,11 +1,37 @@
 # CURRENT ROUTING SNAPSHOT — 2026-10-22 (GOAL-LOCKED; LOCAL EXECUTOR READ BLOCKED)
 
 
+
+
+## CURRENT M1 ROUTING SNAPSHOT — 2026-10-22 (builder-contract draft received; no access unlocked)
+
+The Owner has supplied the draft “Borrador: contrato de acceso de desarrollo amplio y gobernado”, attributed to the Codex session. Evidence label: OWNER_SUPPLIED_CODEX_DRAFT; the text is reviewable, but the drafting session and every proposed runtime capability remain unverified. Coordinator disposition is DESIGN_VERDICT=PASS_WITH_REPAIRS. The adjudication, concrete repairs, and copy-ready independent-review prompt are recorded in [the M1 governance-surface follow-up](./CHAT-ARCH-2026-10-22-governance-surface-inventory-followup.md) and [issue comment #6346834137](https://github.com/jhonf463r/Python/issues/470#issuecomment-6346834137).
+
+The draft is a future **builder-session grant** design, not a supported route currently available. It must remain distinct from Entry 274's proposed exact-path reader contract. It must not be used to bypass the denied reader, read the present dirty checkout, release its own operational block, or infer permission for implementation, tests, builds, launches or transport. Required repair themes: physical isolation of a sanitized disposable candidate and race-resistant filesystem containment; separately enforceable command/test/build/network/process policies; independently protected, verifiable operation receipts; and explicit trust-anchor/authority decisions.
+
+The independent adversarial review has NOT_RUN. **Next bounded action:** OpenCode in the Owner's already-configured session, if available, reviews only this supplied contract plus the named public canonical documents using the exact prompt in the M1 follow-up. This is a user-mediated handoff: the current ChatGPT session has no connected OpenCode action to dispatch it directly. Do not repeat Codex's 176-tool inventory, invoke IABV's ordinary general-chat route, or substitute an alternative reader. If that OpenCode session is unavailable, keep the review pending and report the missing handoff surface; do not silently choose another route.
+
+M1 remains the sole active task: IDENTIFY_AND_USE_SUPPORTED_GOVERNANCE_OWNED_SCOPED_READ_ROUTE. This documentary dependency does not satisfy M1: supported route existence, trusted issuer/principal, direct server/root identity, verifiable read receipt and independent block-release authority are still unresolved.
+
+```
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+ACTIVE_TASK=M1_IDENTIFY_AND_USE_SUPPORTED_GOVERNANCE_OWNED_SCOPED_READ_ROUTE
+BUILDER_CONTRACT=DESIGN_PASS_WITH_REPAIRS
+BUILDER_GRANT=PROPOSED_NOT_IMPLEMENTED
+INDEPENDENT_REVIEW=NOT_RUN
+GOVERNANCE=KEEP_BLOCKED
+IMPLEMENTATION=NOT_AUTHORIZED
+LOCAL_SOURCE_READ=NOT_RUN
+BRIDGE=BRIDGE_NOT_READY
+REAL_TRANSPORT=NOT_RUN
+LOCAL_WORKTREE=UNTOUCHED
+```
+
 ## Latest verified M1 surface check — 2026-10-22 (documentary only; route unchanged)
 
 The current-session callable-tool catalogue was enumerated and exposes no IABV-local/MCP governance operation capable of issuing/verifying a scoped repository-read decision or independently releasing a block. The exact bounded result is recorded in [the governance-surface inventory follow-up](./CHAT-ARCH-2026-10-22-governance-surface-inventory-followup.md). At the time of inspection, remote `main` was `f891810b4daf00bf7440e438f0afbc832ccb326e`; that is the evidence snapshot for the tool inventory, not a claim about the current post-documentation HEAD.
 
-Issue [#470](https://github.com/jhonf463r/Python/issues/470) remains open with five comments. Its fetched body/comments still do not identify a callable supported interface, trusted issuer, responsible operator, verifiable read receipt or independent block-release authority. Therefore `SESSION_EXPOSED_SUPPORTED_ADMIN_READ_TOOL=NOT_FOUND` and `ISSUE_470_EXECUTABLE_ROUTE_OR_OPERATOR=NOT_FOUND_IN_CURRENT_ISSUE_CONTENT`; both are surface-bounded negative findings only. `GLOBAL_ROUTE_EXISTENCE=UNRESOLVED` remains mandatory.
+Issue [#470](https://github.com/jhonf463r/Python/issues/470) remains open. After the earlier five-comment surface snapshot, comment [#6346834137](https://github.com/jhonf463r/Python/issues/470#issuecomment-6346834137) records the received builder-contract draft adjudication; this later comment still does not identify or create an executable read route. Its fetched body/comments still do not identify a callable supported interface, trusted issuer, responsible operator, verifiable read receipt or independent block-release authority. Therefore `SESSION_EXPOSED_SUPPORTED_ADMIN_READ_TOOL=NOT_FOUND` and `ISSUE_470_EXECUTABLE_ROUTE_OR_OPERATOR=NOT_FOUND_IN_CURRENT_ISSUE_CONTENT`; both are surface-bounded negative findings only. `GLOBAL_ROUTE_EXISTENCE=UNRESOLVED` remains mandatory.
 
 No local reader or alternative reader was invoked; no local source/configuration was read; no IABV, Codex CLI/App Server or Ollama process was started; no tests/builds/transport or local changes occurred. The single task remains M1. Do not repeat the ordinary IABV general-chat scan or bypass the denied reader.
 
@@ -13,7 +39,7 @@ No local reader or alternative reader was invoked; no local source/configuration
 
 **Owner build-access requirement:** `OWNER_REQUIREMENT=LOW_FRICTION_BROAD_DEVELOPMENT_ACCESS`. This is to be designed as broad, pre-authorized read/write access to source within a named disposable development candidate after a trusted session grant, without needless per-file interruptions; separately gate tests/builds and exclude secrets, live data and machine/runtime side effects unless specifically authorized. This must not turn into unrestricted self-authorization by the running IABV or grant the reader authority to release its own block. This new design requirement does not itself activate access or supersede the recorded no-launch/implementation gate.
 
-**Next bounded documentary action:** `NEXT_ACTOR=CODEX_EXISTING_UI_SESSION_DOCUMENTARY_CONTRACT_AUTHOR`; draft the proposed low-friction build-time authorization contract using only the canonical documents and supplied evidence, with no local reads, command execution, implementation or repository writes. The exact copy-ready prompt and status taxonomy are in [the M1 inventory follow-up](./CHAT-ARCH-2026-10-22-governance-surface-inventory-followup.md). M1 remains the sole active task; the contract draft is documentary dependency work, not M1 acceptance and not evidence that a supported route exists.
+**Completed prior action:** Codex's low-friction build-time authorization contract draft has now been supplied by the Owner and reconciled above; do not repeat the prompt or tool inventory. **Current next bounded documentary action:** one adversarial review of the supplied builder-contract draft by OpenCode in the Owner's existing configured session if available, using the exact prompt in the M1 follow-up. The review is user-mediated because this ChatGPT session has no connected OpenCode action. This remains documentary dependency work, not M1 acceptance and not evidence that a supported route exists.
 
 
 
