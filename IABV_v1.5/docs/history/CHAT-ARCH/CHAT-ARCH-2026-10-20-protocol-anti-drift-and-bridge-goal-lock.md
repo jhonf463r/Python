@@ -13,6 +13,16 @@
 - **Current owner constraints:** `GOVERNANCE = KEEP_BLOCKED`; `IMPLEMENTATION = AUTHORIZED_FOR_NARROW_SCOPE_ONLY_ON_ISOLATED_REMOTE_BRANCH`; `BRIDGE_NOT_READY`; owner decision C keeps Codex launch blocked.
 - **Owner gate decision:** `SECOND_INDEPENDENT_HUMAN = UNAVAILABLE`. Acts requiring a second independent human remain `BLOCKED_BY_CURRENT_CONSTRAINTS`. Do not ask this again unless the owner explicitly changes the decision.
 
+## 2026-10-22 ADHD-aware focus and space-time project coordination (documented method; runtime not proven)
+
+Detailed owner-directed protocol: [ADHD-aware project coordination and space-time focus](./CHAT-ARCH-2026-10-22-adhd-aware-project-coordination-and-space-time-focus-protocol.md).
+
+The Owner explicitly reports ADHD and asks for structured project coordination because useful new ideas arise rapidly and can divert attention from the primary objective. Treat this as an owner-directed interaction-design requirement, not as a limitation to infer beyond what the Owner stated. Capture new ideas in a persistent inbox/parking lot; do not switch the active task automatically. Maintain one primary outcome, one active task, one acceptance criterion and one next action. Interrupt only for immediate safety or a dependency that invalidates the active work; otherwise triage the idea as direct dependency, later, duplicate/resolved, or out of scope. Give a brief progress dashboard and distinguish queued/running/blocked/completed-unverified/verified using evidence, not narration.
+
+The existing DEVELOPMENT CONTROL TOWER and goal-lock/anti-drift protocol are the foundation; this addendum does not create a competing route or claim the runtime coordinator is implemented. The sole active task remains `IDENTIFY_AND_USE_SUPPORTED_GOVERNANCE_OWNED_SCOPED_READ_ROUTE`; preserve `GOVERNANCE=KEEP_BLOCKED`, `BRIDGE=BRIDGE_NOT_READY`, `LOCAL_SOURCE_READ=NOT_RUN`, `REAL_TRANSPORT=NOT_RUN`, `LOCAL_WORKTREE=UNTOUCHED`. The latest IABV response repeated a broad scan instead of the stop-and-report-only request; containment and all claimed mutations remain unverified. Do not repeat the scan, pull/clean/reset, alter GPU/models/credentials, or attempt improvised rollback.
+
+---
+
 ## 1. Why this protocol changed
 
 The recent continuation repeatedly allowed a nearby prerequisite or a completed review to replace the primary goal. After N-88 passed a bounded documentary review, the workflow moved into a broad gate triage and then asked the owner to decide the same quorum question. These actions preserved safety language but did not progress the bridge's technical path.
