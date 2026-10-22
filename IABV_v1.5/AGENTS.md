@@ -1,65 +1,22 @@
-## LATEST ROUTING DELTA — Owner authorized isolated M1 implementation; do not access dirty checkout (2026-10-22)
+## CURRENT ROUTING — M1 authority prerequisite and static-review repairs (2026-10-22)
 
-## LATEST ROUTING DELTA — M1 source-backed authority prerequisite (2026-10-22)
+Current route and evidence: [CURRENT-STATE.md](docs/history/CHAT-ARCH/CURRENT-STATE.md). Full review, provenance, extra order-dependent risk and exact Codex follow-up prompt: [M1 next-chat handoff](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1-scoped-read-review-and-next-chat-handoff.md).
 
-Use the complete next-chat packet: [M1 static review and next-chat continuity handoff](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1-scoped-read-review-and-next-chat-handoff.md). Do not request the supplied diff again. Review input is OWNER_SUPPLIED_COMPLETE_DIFF; static verdict is FAIL_REPAIRS_REQUIRED.
+Static verdict on the Owner-supplied complete diff: FAIL_REPAIRS_REQUIRED. F-01: no demonstrated authoritative/versioned scope model or explicit dimension-combination semantics. F-02: operation_scope is tested only at helper level and wired to no real registered operation. F-03: assistant_kind-first continue can hide unknown/malformed/conflicting target_scope.
 
-The key order-dependent flaw: assistant_kind mismatches are skipped before target_scope is evaluated, allowing unknown/conflicting target metadata to disappear. Existing world_model_service.py demonstrates producers of values such as consult_external, heavy_local_model, ui_focus_interaction, gate.required_for[0] and tool/route scope; those producers do not prove an authoritative, versioned registry or complete combination semantics.
-
-Single next action: Codex, in the same isolated candidate, checks only the bounded relevant source/docs for an existing authoritative scope model. Reuse it only if proven. If absent, stop with BLOCKED_AUTHORITY_SCOPE_MODEL_UNAVAILABLE; do not invent mappings. Fix F-01–F-03 only if evidence supports it. No tests/build/runtime, Owner checkout/data/secrets access, publication/merge or live access.
+Next step: Codex checks only the already relevant source/docs inside the same isolated candidate for an existing authoritative scope model/resolver. Reuse it only if proven. If absent, stop with BLOCKED_AUTHORITY_SCOPE_MODEL_UNAVAILABLE; do not invent mappings. Do not ask for the diff again or run another broad scan.
 
 ~~~text
 M1_STATUS=STATIC_REVIEW_FAIL_REPAIRS_REQUIRED
+SCOPED_READ_REQUEST_APPROVAL_FLOW=NOT_IMPLEMENTED
 GOVERNANCE=KEEP_BLOCKED
 TESTS=NOT_RUN
+OWNER_DIRTY_CHECKOUT=DO_NOT_ACCESS_OR_MODIFY
 CANDIDATE_MERGED=NO
 BRIDGE=BRIDGE_NOT_READY
 ~~~
 
 ---
-
-
-## LATEST ROUTING DELTA — M1 diff review: F-01–F-03 require repair (2026-10-22)
-
-The complete diff pasted by the Owner has received an independent static review. Record: [M1 scoped-read diff static review](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1-scoped-read-diff-static-review.md). Do not accept or merge this candidate yet.
-
-- F-01 HIGH: the hand-coded `known_target_scopes`/route mapping has no demonstrated authoritative, versioned registry/resolver. Entry 274 requires a source-backed proof before treating a block as non-applicable.
-- F-02 HIGH: the new optional `operation_scope` is exercised only in a helper-level test; the diff wires it into no registered production tool call.
-- F-03 HIGH: unsupported/malformed `assistant_kind` silently continues rather than failing closed under Entry 274's scope rules.
-- Positive interim property: read/list remain denied without verified scoped authority. That is not M1 completion.
-
-Next step: Codex makes the minimal source-grounded repair in the same isolated candidate. Do not invent missing authority/scope semantics, run tests/build/runtime, access the Owner's dirty checkout/data, or publish/merge. If the canonical scope resolver/registry cannot be found in the permitted relevant source/docs, stop and report it.
-
-```
-M1_STATUS=STATIC_REVIEW_FAIL_REPAIRS_REQUIRED
-GOVERNANCE=KEEP_BLOCKED
-TESTS=NOT_RUN
-CANDIDATE_MERGED=NO
-BRIDGE=BRIDGE_NOT_READY
-```
-
----
-
-
-## LATEST ROUTING DELTA — M1 partial implementation reported; independent diff review pending (2026-10-22)
-
-The Owner supplied a Codex-attributed report of a partial implementation in the isolated candidate. It claims a finite `target_scope` applicability fix and fail-closed read/list behavior without scoped authority, with nine added/four adjusted tests left unrun. The local tree has no reported commit; its two file blob IDs and code changes are not published or independently verified. Record: [M1 partial implementation result](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1-partial-implementation-Codex-result.md). Do not call it M1 PASS or infer live-server causality.
-
-The administrative approval route was not implemented because trusted Owner principal/issuer, correlated UI↔server IPC, independently verifiable receipts, and race-resistant file-object containment are not proven. No remote grant/release action is permitted. The immediate next action is independent static review of the exact two-file diff; do not run tests/builds/runtime or publish/merge without separate authorization.
-
-```
-M1_STATUS=IMPLEMENTATION_STATIC_PARTIAL
-DIFF_REVIEW=PENDING
-SCOPED_READ_REQUEST_APPROVAL_FLOW=NOT_IMPLEMENTED
-GOVERNANCE=KEEP_BLOCKED
-TESTS=NOT_RUN
-REAL_LOCAL_READ=NOT_RUN
-CANDIDATE_MERGED=NO
-BRIDGE=BRIDGE_NOT_READY
-```
-
----
-
 
 Authoritative route: [CURRENT-STATE.md](docs/history/CHAT-ARCH/CURRENT-STATE.md). Exact Codex task: [M1 governed scoped-read route implementation handoff](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1-governed-scoped-read-route-CODEX-implementation-handoff.md).
 
