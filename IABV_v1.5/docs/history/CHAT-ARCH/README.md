@@ -1,30 +1,14 @@
-## ACTIVE ROUTING — M1A normalized design; Owner governance decision is next (2026-10-22)
+## ACTIVE M1A KNOWLEDGE DELTA — Owner accepted design baseline; bounded contract review next (2026-10-22)
 
-**Follow CURRENT-STATE.md first.** This README is the canonical retrieval front door, but only the top snapshot of [CURRENT-STATE.md](./CURRENT-STATE.md) selects the active route. The current bounded documentary task has produced the [normalized M1A scope decision ledger and design amendment](./CHAT-ARCH-2026-10-22-M1A-normalized-scope-decision-ledger-and-design-amendment.md) from the preserved [Codex proposal](./CHAT-ARCH-2026-10-22-M1A-Codex-scope-model-proposal.md) and [independent-review report](./CHAT-ARCH-2026-10-22-M1A-independent-adversarial-review-claude.md). The amendment is `PROPOSED`, not current policy.
+Owner decision receipt: `ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE`. The seven M1A design choices are adopted as a normative design baseline only. The [normalized decision ledger](./CHAT-ARCH-2026-10-22-M1A-normalized-scope-decision-ledger-and-design-amendment.md) records acceptance (blob `3425144a661c713eb8898c1eacefb2d791519bc0`); the resulting [consolidated operational-block scope contract v1.0.0](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md) is fetched back and verified (blob `ac3a45018b0313747fe0c3dfc39d6298e0786fe8`).
 
-**Existing algorithm lineage to activate, not duplicate:**
-1. [UAAL-ROOT-001 — Universal Adaptive Algorithm Constitution](./UNIVERSAL-ADAPTIVE-ALGORITHM-CONSTITUTION-2026-10-04.md): the parent objective→perception/representation→uncertainty→capability/realization selection under constraints→governed action→observation→verification→reusable knowledge→adaptation loop.
-2. [Memory Operating Protocol](./MEMORY-OPERATING-PROTOCOL.md): progressive retrieval, evidence/provenance, prior negative findings, current causal frontier, bounded actor handoff, reconciliation, Knowledge Delta and fetch-back.
-3. [Development Control Tower](./DEVELOPMENT-CONTROL-TOWER-2026-09-21.md) plus [goal-lock/anti-drift](./CHAT-ARCH-2026-10-20-protocol-anti-drift-and-bridge-goal-lock.md): global objective, dependency graph, one active task, no route drift.
-4. [Entry 274](./CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md): trusted approval, server-side reader decision, receipt-is-evidence, and separate block release.
-5. [Central M1A reconciliation](./CHAT-ARCH-2026-10-22-central-space-time-coordinator-m1a-reconciliation.md): explains how the current scope gap derives from the existing parent model, and why no second “mega-organ” or repeated broad scan is needed.
-6. [UAAL construction-completeness / traceability overlay](./CHAT-ARCH-2026-10-22-UAAL-construction-completeness-traceability-overlay.md): strengthens the existing construction loop with bidirectional requirement-to-rule traceability, explicit decision-state coverage, authority-plane separation, bounded receipt-backed handoffs, request/result reconciliation and fetch-back. It is a method amendment only; runtime enforcement remains unproven.
+The adopted model uses independent conjunctive assistant and target selectors; `GLOBAL` applies to its own dimension only; exact mismatch proves non-applicability only after every required input and authority is trusted, complete and valid. Unknown/invalid/untrusted/conflicting/revoked/unsupported state, absent target resolution, absent producer authority, or an incomplete active-block set fails closed. Receipts are evidence, never authority or block release. Legacy records are not automatically migrated.
 
-The latest normalized recommendation uses conjunctive selectors: `GLOBAL` covers its own dimension only; a fully trusted, complete and valid `EXACT` mismatch proves non-applicability; incomplete, untrusted, conflicting or unsupported metadata remains fail-closed. The normalized ledger offers one bundled decision token (`ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE`, `ACCEPT_WITH_AMENDMENTS: ...`, or `REJECT_M1A_BASELINE: ...`) instead of seven separate prompts. Acceptance is design-only; runtime trust identity and implementation remain gated.
+**Next task:** `M1A_CONSOLIDATED_SCOPE_CONTRACT_V1_TARGETED_ADVERSARIAL_REVIEW` — bounded independent adversarial review of the exact v1.0.0 artifact. This is documentary only, not a code or runtime task. Sonnet 4.6 in Antigravity is the intended reviewer based on Owner-reported availability; the session invocation is `NOT_DISPATCHED` until a correlated review artifact exists.
 
-```text
-ACTIVE_TASK=M1A_OWNER_GOVERNANCE_ADJUDICATION_OF_SCOPE_MODEL_POLICY_AND_DECISION_LEDGER
-DESIGN_RECONCILIATION=DOCUMENTED_AND_FETCHED_BACK
-SCOPE_MODEL=PROPOSED; NON_AUTHORITATIVE
-GOVERNANCE=KEEP_BLOCKED
-IMPLEMENTATION=NOT_AUTHORIZED
-TESTS=NOT_RUN
-READ_LIST=FAIL_CLOSED
-BRIDGE=BRIDGE_NOT_READY
-```
+Real authenticated principal/trust anchor, catalogue publisher/revocation service, producer allowlist, operation-to-target registry/call-site mappings and independent block-release mechanism remain `UNVERIFIED/NOT_ESTABLISHED`. Thus `GOVERNANCE=KEEP_BLOCKED`, `IMPLEMENTATION=NOT_AUTHORIZED`, `TESTS=NOT_RUN`, `READ_LIST=FAIL_CLOSED`, `BRIDGE=BRIDGE_NOT_READY`.
 
-**Historical-route rule:** sections and actor instructions below are preserved as evidence of earlier states. They must not be followed as current routing where they conflict with CURRENT-STATE.md. No prior source candidate, static review or old next-actor pointer establishes a live route or authorizes implementation.
-
+---
 ---
 
 ## Historical M1 checkpoint — superseded by CURRENT-STATE routing (2026-10-22)
