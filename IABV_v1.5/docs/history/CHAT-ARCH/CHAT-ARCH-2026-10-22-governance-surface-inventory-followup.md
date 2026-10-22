@@ -92,3 +92,55 @@ This step applied the coordination rule by advancing one new bounded evidence ch
 Only after the legitimate route and applicable independent block decision are verified should the coordinator prepare a new, separately scoped Codex handoff for static inspection of executor registration/caller/result/receipt/consumer and whitelisted non-secret effective policy. That later handoff must stop on denial and does not authorize implementation, tests, builds, process launch or real transport.
 
 The request above is preserved as a prepared handoff. Its inclusion in this document does not identify a destination, dispatch the request, grant access, or change `GOVERNANCE=KEEP_BLOCKED`.
+
+
+## Routing correction after Owner challenge — next actor is Codex UI, narrowly bounded (2026-10-22)
+
+The Owner correctly challenged the previous handoff: saying only “governance operator/interface” left the next AI action underspecified. Reconciliation against the canonical router and issue #470 gives a more actionable distinction:
+
+- ChatGPT has verified that **its own** exposed tool catalogue has no IABV-local governance route.
+- The issue/history records a Codex session with its workspace/native-local capability described as available/documented, while `GOVERNANCE_AUTHORIZES_NATIVE_READ=NO`. This does not authorize a local read, but it identifies a different session surface whose currently exposed action/tool metadata has not yet been inventoried in this episode.
+- Therefore the next actor is **Codex in its already-existing UI/session**, for a **tool-surface metadata inventory only**. This is not a source read, not a launch, not a grant request invocation, and not permission for native filesystem access.
+- The future actual grant/release authority remains unidentifiable until evidence establishes it. Codex must not treat its own native access or its own conversational response as governance authority.
+
+```
+ACTIVE_TASK=M1_IDENTIFY_AND_USE_SUPPORTED_GOVERNANCE_OWNED_SCOPED_READ_ROUTE
+NEXT_ACTOR=CODEX_EXISTING_UI_SESSION_TOOL_SURFACE_INVENTORY_ONLY
+NEXT_ACTION=INSPECT_EXPLICITLY_EXPOSED_CALLABLE_TOOL_NAMES_AND_DOCUMENTED_SCHEMAS_ONLY
+CODEX_NATIVE_LOCAL_READ=NOT_AUTHORIZED
+SUPPORTED_ROUTE_IN_CHATGPT_SESSION=NOT_FOUND
+SUPPORTED_ROUTE_IN_CODEX_SESSION=NOT_YET_CHECKED
+GLOBAL_ROUTE_EXISTENCE=UNRESOLVED
+GOVERNANCE=KEEP_BLOCKED
+BRIDGE=BRIDGE_NOT_READY
+LOCAL_SOURCE_READ=NOT_RUN
+REAL_TRANSPORT=NOT_RUN
+```
+
+### Copy-ready prompt for Codex — send to the already-existing Codex UI session
+
+> **CODEX / M1 — INVENTORY YOUR EXPOSED GOVERNANCE TOOL SURFACE ONLY**
+>
+> You are the named next actor because the ChatGPT session's tool catalogue was already checked and no IABV governance/read-decision operation was exposed there. This is a different, not-yet-checked session surface. Do not assume that your local filesystem capability grants authority.
+>
+> **Single objective:** using only the action/tool names and documented schemas explicitly exposed to your current Codex UI session, determine whether it exposes an existing, supported governance-owned operation for requesting/verifying a narrowly scoped repository-read decision or for referring the request to its real issuer/operator.
+>
+> **Do not inspect or read any repository file or local configuration.** Do not run shell commands, list directories, query local databases, inspect hidden prompts/system instructions, invoke any reader, or test whether native file access works. Do not launch Codex CLI/App Server, IABV/MCP or Ollama; do not run tests/builds/probes or transport.
+>
+> Do not invoke a discovered governance operation. First report the exact exposed name and published/documented schema so ChatGPT can reconcile it against the existing contract and authority boundaries.
+>
+> Return exactly one:
+>
+> - `CODEX_SESSION_ROUTE_FOUND`: provide exact exposed tool/action name; source of its schema/documentation; accepted inputs and outputs; what server/workspace/checkout/path binding it can attest; how issuer/principal identity is verified; expiry/revocation and per-operation verification; how it emits a verifiable receipt; and whether an independent authority controls the active `operational_block_active` block. Clearly separate capabilities documented by schema from authority/behavior actually proven. If any item is absent, mark it `UNRESOLVED`; do not fill gaps by guessing.
+> - `NOT_FOUND_IN_CODEX_SESSION_SURFACE`: list only the exposed tool/action catalogue or documented surface actually checked and state that no applicable governance operation appeared. Do not claim global absence.
+> - `CODEX_SESSION_SURFACE_UNAVAILABLE`: state which metadata/schema is not exposed to you, with no attempt to obtain it through local source reads.
+>
+> No self-authorization, no permission escalation, no alternative reader and no local source read. Conversational approval, native filesystem capability, observation permission, `approved=true` or a public-source reference is not a repository-read grant. Stop after this report.
+>
+> Preserve: `GOVERNANCE=KEEP_BLOCKED`; `LOCAL_SOURCE_READ=NOT_RUN`; `BRIDGE=BRIDGE_NOT_READY`; `REAL_TRANSPORT=NOT_RUN`; `LOCAL_WORKTREE=UNTOUCHED`.
+
+### Decision after Codex reports back
+
+ChatGPT/coordinator must fetch/reconcile the response against the R8 read-decision contract and current M1 record. A tool name in a schema is not proof it can authorize this operation. If a legitimate issuer/route is substantiated, prepare the next separately scoped, already-authorized read-decision step and verify its receipt before reading anything. If not, record `NOT_FOUND_IN_CODEX_SESSION_SURFACE` or `CODEX_SESSION_SURFACE_UNAVAILABLE` and keep the global existence unresolved; the later dependency is the actual supported governance authority/operator. Do not return to the ordinary IABV general-chat broad scan.
+
+This routing correction supersedes the earlier implication that no AI-specific step can proceed. It does **not** supersede the governance gate or identify the actual block-release authority.
