@@ -1,3 +1,9 @@
+## Owner–coordinator working agreement and anti-loop rule — 2026-10-22
+
+Canonical operating contract: [ADHD-aware project coordination and space-time focus protocol, section 11](./CHAT-ARCH-2026-10-22-adhd-aware-project-coordination-and-space-time-focus-protocol.md). It captures the Owner's requirements and the coordinator's derived duties: preserve every substantive idea, keep one active task, recover context across chats, avoid repeating unsuccessful routes, orchestrate Codex/other agents with bounded handoffs, verify evidence and saved records, and improve the process after failures. The top of [CURRENT-STATE.md](./CURRENT-STATE.md) remains the sole routing authority; the method being documented does not prove runtime enforcement.
+
+---
+
 ## 2026-10-22 Owner-directed project focus and space-time coordination
 
 Protocol: [ADHD-aware project coordination and space-time focus](./CHAT-ARCH-2026-10-22-adhd-aware-project-coordination-and-space-time-focus-protocol.md).
