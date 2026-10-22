@@ -5,8 +5,8 @@ Routing authority: [CURRENT-STATE.md](./CURRENT-STATE.md). Active task: `M1A_CON
 The Owner accepted `ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE`. The accepted decision is in the [normalized ledger](./CHAT-ARCH-2026-10-22-M1A-normalized-scope-decision-ledger-and-design-amendment.md) (blob `3425144a661c713eb8898c1eacefb2d791519bc0`); the complete [operational-block scope contract v1.0.0](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md) is fetched back (blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e`). This is normative design adoption only.
 
 Latest related records:
-- [M1A consolidated operational-block scope contract v1.0.0](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md) — adopted selector/trust/aggregation/legacy design, traceability matrix and 28 design cases; not implemented.
-- [Bounded review handoff for M1A contract v1.0.0](./CHAT-ARCH-2026-10-22-M1A-contract-v1-targeted-adversarial-review-handoff.md) — exact Sonnet review prompt, immutable target identity, evidence requirements and stop conditions.
+- [M1A consolidated operational-block scope contract v1.0.0](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md) — adopted selector/trust/aggregation/legacy design, traceability matrix and 30 design cases; not implemented.
+- [Bounded review handoff for M1A contract v1.0.0](./CHAT-ARCH-2026-10-22-M1A-contract-v1-targeted-adversarial-review-handoff.md) — blob `6a20f983b72c6baddf9870a1c3a02ef7f94dbfba`; exact Sonnet review prompt, immutable target identity, evidence requirements and stop conditions.
 - [M1A normalized scope decision ledger](./CHAT-ARCH-2026-10-22-M1A-normalized-scope-decision-ledger-and-design-amendment.md) — records acceptance and the seven decision categories.
 - [UAAL construction-completeness / traceability overlay](./CHAT-ARCH-2026-10-22-UAAL-construction-completeness-traceability-overlay.md) — extension to UAAL/MOP; no parallel coordinator.
 - [Central space-time coordinator M1A reconciliation](./CHAT-ARCH-2026-10-22-central-space-time-coordinator-m1a-reconciliation.md) — derivation lineage and reuse of existing organs.
