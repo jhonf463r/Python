@@ -61,3 +61,34 @@ This is a negative result for the named session tool surface and current issue c
 This step applied the coordination rule by advancing one new bounded evidence check, not repeating the prior general scan. The single active task remains M1. Parked items remain: (1) Ollama startup/RAM and lazy-versus-eager inference; (2) the inferred “Ollama wins for general” claim, eight-proposal count, three discarded-candidate count and `probe_consumed` semantics; (3) IABV's unverified claims about source/GPU/model/credential changes and 282 modified files; and (4) implementation of a project coordinator/runtime, which remains documentation-only until separately authorized. None replaces M1.
 
 `COORDINATION_METHOD=DOCUMENTED` · `COORDINATOR_RUNTIME=NOT_PROVEN` · `CAUSAL_CROSS_CHAT_REUSE=NOT_PROVEN`.
+
+
+## Prepared next handoff — NOT DISPATCHED (destination must first be identified)
+
+- **Routing status:** `PREPARED_NOT_SENT`.
+- **Actor required now:** actual owner-controlled IABV governance/administrative surface or its responsible operator.
+- **AI destination:** `DESTINO_NO_DETERMINABLE` from current evidence. Do not send this to IABV's ordinary general-chat route, Codex, Kilo or OpenCode as though any of them could self-authorize the blocked read.
+- **Why this is the next edge:** M1 is not a source-analysis task until its trusted access route and independent block authority are established. More public-source review of the same proposal, or a reworded general prompt, would not change the failed precondition.
+- **After M1 acceptance only:** Codex in its already-existing authorized interface may receive the separately bounded static-inspection handoff. Do not launch Codex CLI/App Server or any runtime.
+
+### Exact request for the real governance surface/operator
+
+> **IABV GOVERNANCE — IDENTIFY THE SUPPORTED SCOPED-READ ROUTE (M1; NO GENERAL SCAN)**
+>
+> Objective: identify the actual, already-supported administrative operation and responsible authority for the previously authorized, strictly read-only local source inspection. Do not infer or invent an API, permission, operator, issuer, receipt, or route.
+>
+> Return one of:
+>
+> - `SUPPORTED_ROUTE_IDENTIFIED`: name the existing interface/operation and its authoritative documentation; identify the trusted issuer/principal and how that identity is verified; bind it to the real MCP server and actual root/checkout; state the exact allowed read operation and path allowlist; specify expiry/revocation and verification on every operation; show the format and verification method of a durable receipt; and identify the independent authority and decision needed for the active `operational_block_active` block. The read decision must not release its own block.
+> - `NOT_FOUND_IN_NAMED_SURFACE`: state exactly which administrative surface was examined, who was responsible for that surface, the bounded method/evidence used, and what capability was absent. This only supports a surface-bounded `NOT_FOUND`; leave `GLOBAL_ROUTE_EXISTENCE=UNRESOLVED` unless the competent authority establishes global non-existence.
+> - `BLOCKED_OR_UNRESOLVED`: name the exact missing authority, identity, evidence or capability and stop.
+>
+> Restrictions: no broad source scan; no invocation of a local or alternative reader; no access to `data/`, SQLite, secrets, credentials or `.env`; no source/configuration changes, tests, builds, probes, process launches, Codex CLI/App Server, IABV/MCP or Ollama launch, model/GPU/credential changes, branch cleanup, merge, rollback or real transport. Do not treat conversational approval, observation permission, `approved=true`, or public source as repository-read authority.
+>
+> Required acceptance: an existing supported route and authority chain are documented with verifiable evidence, or a bounded negative result is returned for the named surface. Do not claim M1 complete from a proposed design or a promise to investigate later. Stop after this response and do not perform additional work.
+
+### Handoff after acceptance — not authorized to execute yet
+
+Only after the legitimate route and applicable independent block decision are verified should the coordinator prepare a new, separately scoped Codex handoff for static inspection of executor registration/caller/result/receipt/consumer and whitelisted non-secret effective policy. That later handoff must stop on denial and does not authorize implementation, tests, builds, process launch or real transport.
+
+The request above is preserved as a prepared handoff. Its inclusion in this document does not identify a destination, dispatch the request, grant access, or change `GOVERNANCE=KEEP_BLOCKED`.
