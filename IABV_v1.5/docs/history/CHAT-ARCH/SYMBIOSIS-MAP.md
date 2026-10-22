@@ -1,8 +1,22 @@
+## Active collaboration/Knowledge Transfer delta — M1A normalized design (2026-10-22)
+
+Current routing: [CURRENT-STATE.md](./CURRENT-STATE.md). Active task: `M1A_OWNER_GOVERNANCE_ADJUDICATION_OF_SCOPE_MODEL_POLICY_AND_DECISION_LEDGER`, status `WAITING_OWNER`.
+
+This is a bounded capability-transfer chain under [UAAL-ROOT-001](./UNIVERSAL-ADAPTIVE-ALGORITHM-CONSTITUTION-2026-10-04.md), not a new IA or coordinator organ:
+- **Codex:** owner-supplied design proposal, preserved as `PROPOSED`.
+- **Claude/Sonnet-attributed reviewer:** owner-supplied `PASS_WITH_REPAIRS` report; actual invocation is not independently authenticated.
+- **ChatGPT coordinator:** fetched the public documents, reconciled the contradictory review tally, derived the candidate selector semantics, mapped existing IABV algorithms to reuse, created the normalized ledger and verified the canonical write-back.
+- **Owner/governance:** next actor only for the remaining authority/policy decisions OG-M1A-01..07; not for ordinary formal logic or another broad review.
+
+The reusable result is the [normalized design/decision ledger](./CHAT-ARCH-2026-10-22-M1A-normalized-scope-decision-ledger-and-design-amendment.md). The report and source proposal remain separate evidence objects. No new AI turn, source code change, test, runtime, transport, local-checkout read, merge or block release was performed. Preserve `GOVERNANCE=KEEP_BLOCKED`, `IMPLEMENTATION=NOT_AUTHORIZED`, and `BRIDGE=BRIDGE_NOT_READY`.
+
+---
+
 ## 2026-10-22 Owner-directed project focus and space-time coordination
 
 Protocol: [ADHD-aware project coordination and space-time focus](./CHAT-ARCH-2026-10-22-adhd-aware-project-coordination-and-space-time-focus-protocol.md).
 
-The Owner requests structured longitudinal coordination because new ideas arrive rapidly and can divert work from the project north star. Capture ideas without losing them; park them; keep one active task/next action except immediate safety or invalidated dependencies. Use evidence-backed progress states and restore the current objective at every new chat. This supplements the existing DEVELOPMENT CONTROL TOWER and goal-lock/anti-drift method; it does not prove runtime implementation. Active route remains `IDENTIFY_AND_USE_SUPPORTED_GOVERNANCE_OWNED_SCOPED_READ_ROUTE`; `GOVERNANCE=KEEP_BLOCKED`.
+The Owner requests structured longitudinal coordination because new ideas arrive rapidly and can divert work from the project north star. Capture ideas without losing them; park them; keep one active task/next action except immediate safety or invalidated dependencies. Use evidence-backed progress states and restore the current objective at every new chat. This supplements the existing DEVELOPMENT CONTROL TOWER and goal-lock/anti-drift method; it does not prove runtime implementation. The active route from that earlier note is historical; use the top snapshot of [CURRENT-STATE.md](./CURRENT-STATE.md) for current actor routing. Governance remains `KEEP_BLOCKED`.
 
 ---
 
