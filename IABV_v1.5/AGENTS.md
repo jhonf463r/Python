@@ -1,3 +1,21 @@
+## LATEST ROUTING DELTA — Owner authorized isolated M1 implementation; do not access dirty checkout (2026-10-22)
+
+Authoritative route: [CURRENT-STATE.md](docs/history/CHAT-ARCH/CURRENT-STATE.md). Exact Codex task: [M1 governed scoped-read route implementation handoff](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1-governed-scoped-read-route-CODEX-implementation-handoff.md).
+
+Owner authorized code implementation in an **isolated candidate only**. Do not access or modify the Owner's dirty checkout, `data/`, SQLite, credentials, secrets or `.env`. Do not run tests/builds/scripts, start IABV/MCP/Codex/Ollama, use real transport, merge or deploy. The ChatGPT session has no callable Codex dispatch surface, so the handoff is persisted but Codex execution is not confirmed.
+
+Static main source still needs two distinct repairs: (1) the audit gate must distinguish `assistant_kind` from `target_scope`; (2) there is no verified scoped-read request/local approval/per-operation decision workflow in the inspected public paths. The unmerged `b7c3fffaec4ff3b78b1ca03ae64ead949236f504` candidate has a static Sonnet PASS only; transplant/reconcile relevant scope logic, do not treat it as live. Control Center observation permission does not authorize checkout reads. Never expose a local grant issuer or block-release action through the externally reachable MCP tunnel; active transport authentication has not been verified.
+
+```
+IMPLEMENTATION=AUTHORIZED_FOR_ISOLATED_CANDIDATE_ONLY
+GOVERNANCE=KEEP_BLOCKED
+OWNER_DIRTY_CHECKOUT=DO_NOT_ACCESS_OR_MODIFY
+LOCAL_DIRTY_CHECKOUT_READ=NOT_AUTHORIZED
+TESTS_BUILDS_RUNTIME_TRANSPORT=NOT_AUTHORIZED
+CANDIDATE_MERGED=NO
+BRIDGE=BRIDGE_NOT_READY
+```
+
 ## LATEST ROUTING DELTA — target_scope PASS; new-chat continuity checkpoint (2026-10-22)
 
 The Owner supplied Sonnet 4.6's static review verdict PASS for the remote target_scope candidate. F-TS-1 is closed for the candidate fragment only: open consult_-prefix acceptance is gone and the code uses explicit known_target_scopes. The two discriminating cases behave as expected in the reviewed fragment: registered consult_codex does not block unrelated audit; unknown consult_unmapped_scope remains fail-closed. The reviewer explicitly states that this does not replace acceptance-test execution or validate a running server.
