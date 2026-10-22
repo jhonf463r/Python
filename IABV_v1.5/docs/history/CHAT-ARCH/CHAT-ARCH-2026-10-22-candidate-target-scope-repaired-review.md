@@ -12,7 +12,7 @@
 - Candidate commit: `b7c3fffaec4ff3b78b1ca03ae64ead949236f504`
 - Exact base / current main at comparison: `e61c5043bbdd8ea536ed5c9e642d80ff228ee897`
 - Compare result: `ahead_by=1`, `behind_by=0`, status `ahead`.
-- Subsequent continuity-doc commit: `4f1584dea9b7e357f06b6946924216d152d34b05` (documentation only). The current comparison to `main` is `status=diverged`, `ahead_by=1`, `behind_by=1`; merge base remains `e61c5043bbdd8ea536ed5c9e642d80ff228ee897`. No merge or rebase was performed.
+- Subsequent continuity-doc commits `4f1584dea9b7e357f06b6946924216d152d34b05` and `7ef7518d8f257a7788451808d89dc896a6fc1404` advanced `main` after the original comparison. The candidate source commit remains a separate child of `e61c5043bbdd8ea536ed5c9e642d80ff228ee897`; `main` and the candidate diverge from that common base. Those main-side commits changed only continuity documents. No merge or rebase occurred; refresh exact ahead/behind counts before any integration decision.
 - Changed paths only:
   - `IABV_v1.5/src/iabv_v15/infra/mcp/server.py`, blob `1d3861dedd2734ca74e51d06647aa888d54ceed4`.
   - `IABV_v1.5/tests/test_mcp_server.py`, blob `943e05657a2b193d26806a5176a93957249b2d7f`.
