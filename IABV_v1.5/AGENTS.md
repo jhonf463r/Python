@@ -1,18 +1,24 @@
-## CURRENT ROUTING — Central space-time coordinator reconciles M1A design (2026-10-22)
+## CURRENT ROUTING — M1A normalized design ready; Owner/governance gate next (2026-10-22)
 
-The Owner clarified the expected coordinator behavior: maintain the whole-project causal/dependency view, derive the next justified construction step, route the right actor, reconcile evidence, persist the delta and reuse prior lessons. Do not handle each technical gap as an isolated prompt or ask the Owner to resolve logic that can be derived from the current contract.
+Canonical parent algorithm: `UAAL-ROOT-001` in [the Universal Adaptive Algorithm Constitution](docs/history/CHAT-ARCH/UNIVERSAL-ADAPTIVE-ALGORITHM-CONSTITUTION-2026-10-04.md). Reuse the existing Development Control Tower, goal-lock/anti-drift protocol, Memory Operating Protocol, README/CONTEXT-INDEX, Entry 274 and historical M0 causal-routing reconciliation. Do not build a parallel “space-time brain,” duplicate a capability router, repeat a broad scan, or ignore an existing organ. These are conceptual/design contracts; they do not prove full runtime coordination or causal learning.
 
-Current bounded task: `M1A_COORDINATOR_DERIVE_SCOPE_SEMANTICS_AND_NORMALIZE_DECISION_LEDGER`. Technical recommendation and rationale: [central space-time coordinator — M1A reconciliation](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-central-space-time-coordinator-m1a-reconciliation.md). Suggested model: independent conjunctive selectors; `GLOBAL` matches all values in its own dimension only; a trusted, complete, valid exact mismatch in either dimension proves non-applicability. Missing, unknown, malformed, untrusted, contradictory, or unsupported metadata remains fail-closed. This is `PROPOSED`, not accepted policy or implementation.
+The bounded M1A coordinator reconciliation is complete as a public documentary artifact: [normalized scope decision ledger and proposed design amendment](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1A-normalized-scope-decision-ledger-and-design-amendment.md). It derives a recommended conjunctive model: `GLOBAL` covers only its own dimension; a complete, valid, trusted exact mismatch proves non-applicability; missing/unknown/malformed/untrusted/conflicting/revoked/unsupported metadata remains fail-closed. This recommendation is `PROPOSED`, not policy, and does not authorize source implementation.
 
-The coordinator must distinguish derivable technical repairs from genuine Owner/governance authority decisions and implementation acceptance gates. Do not reuse the review's inconsistent “7 + 4” decision count or send another general review of settled facts. The Claude/Sonnet-attributed `PASS_WITH_REPAIRS` report remains Owner-supplied and its actual invocation unverified; detailed reconciliation is in [the review record](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1A-independent-adversarial-review-claude.md).
+**Active task:** `M1A_OWNER_GOVERNANCE_ADJUDICATION_OF_SCOPE_MODEL_POLICY_AND_DECISION_LEDGER` (`WAITING_OWNER`). Adjudicate the seven consolidated authority/policy categories `OG-M1A-01..OG-M1A-07` in the normalized ledger. Do not ask again about the review's contradictory “7 + 4 = 11” total. Technical repairs derived from the existing Entry 274 / fail-closed intent are separated from the genuinely unresolved Owner/governance authority choices.
 
-This route is documentary reasoning and continuity only. No code edits, tests, builds, scripts, runtime, transport, local checkout access, candidate publication, merge or block release. Preserve `GOVERNANCE=KEEP_BLOCKED`, `IMPLEMENTATION=NOT_AUTHORIZED`, `READ_LIST=FAIL_CLOSED`, and `BRIDGE=BRIDGE_NOT_READY`.
+Evidence and hard constraints:
+- Original proposal and review report remain preserved separately; the review's model invocation is `OWNER_SUPPLIED`, not independently verified.
+- Previously pinned public-source inspection remains bounded to `models.py`, `world_model_service.py` and `server.py`; do not repeat broad source archaeology absent a changed precondition/new evidence.
+- No local checkout, `data/`, SQLite, secrets or `.env` access.
+- No source edits, tests/builds/scripts/runtime, MCP calls or transport, candidate publication, merge or block release.
+- Keep `GOVERNANCE=KEEP_BLOCKED`, `IMPLEMENTATION=NOT_AUTHORIZED`, `READ_LIST=FAIL_CLOSED`, `TESTS=NOT_RUN`, `BRIDGE=BRIDGE_NOT_READY`.
 
 ```text
-ACTIVE_TASK=M1A_COORDINATOR_DERIVE_SCOPE_SEMANTICS_AND_NORMALIZE_DECISION_LEDGER
+ACTIVE_TASK=M1A_OWNER_GOVERNANCE_ADJUDICATION_OF_SCOPE_MODEL_POLICY_AND_DECISION_LEDGER
+CURRENT_STATUS=WAITING_OWNER
+PARENT_CONCEPT=UAAL-ROOT-001
 SCOPE_MODEL=PROPOSED; NON_AUTHORITATIVE
-COORDINATOR_METHOD=DOCUMENTED; RUNTIME_NOT_PROVEN
-OWNER_GOVERNANCE_AUTHORITY_DECISIONS=PENDING_NORMALIZED_LEDGER
+OWNER_GOVERNANCE_DECISIONS=OG-M1A-01..OG-M1A-07; PENDING
 IMPLEMENTATION=NOT_AUTHORIZED
 TESTS=NOT_RUN
 GOVERNANCE=KEEP_BLOCKED
