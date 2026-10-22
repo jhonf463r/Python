@@ -1,5 +1,14 @@
 ## LATEST ROUTING DELTA — M1 isolated implementation authorized; operational access remains blocked (2026-10-22)
 
+## M1 — complete next-chat packet (2026-10-22)
+
+The Owner-supplied diff has been statically reviewed; verdict is FAIL_REPAIRS_REQUIRED. F-01: no evidenced authoritative/versioned scope model/resolver or explicit dimension semantics; F-02: operation_scope has no production call-site wiring; F-03: assistant-kind-first continue can hide unknown/conflicting target metadata. Positive interim property: read/list remain denied without scoped authority. See [complete M1 review and handoff](./CHAT-ARCH-2026-10-22-M1-scoped-read-review-and-next-chat-handoff.md), which includes exact evidence, the bounded next Codex prompt, non-repetition rules and continuity states.
+
+Next action: bounded source/docs check for an existing authoritative scope model in the same isolated candidate. If absent, stop and report BLOCKED_AUTHORITY_SCOPE_MODEL_UNAVAILABLE. Do not invent policy. GOVERNANCE=KEEP_BLOCKED; tests not run; bridge not ready.
+
+---
+
+
 ## M1 — static diff review requires repairs (2026-10-22)
 
 Static review of the Owner-supplied candidate diff found three HIGH findings: no evidenced authoritative/versioned scope model for non-applicability, no production call-site wiring for the new `operation_scope`, and silent exclusion of unknown/malformed `assistant_kind`. Details and acceptance criteria: [M1 scoped-read diff static review](./CHAT-ARCH-2026-10-22-M1-scoped-read-diff-static-review.md). The read/list denial path remains fail-closed but M1 is not complete. Next: source-grounded minimal repairs or stop if authoritative semantics do not exist; no tests/build/runtime/publish/merge.
