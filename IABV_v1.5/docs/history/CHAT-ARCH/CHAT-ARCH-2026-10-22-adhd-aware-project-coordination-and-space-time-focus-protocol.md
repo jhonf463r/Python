@@ -309,3 +309,46 @@ LOCAL_WORKTREE=UNTOUCHED
 ```
 
 The documented working method exists, but runtime enforcement and causal cross-chat reuse remain `NOT_PROVEN` until a later execution demonstrates them with retrievable evidence.
+
+## 12. Episode amendment — reality-aligned progress and bridge readiness (2026-10-22)
+
+Canonical episode/handoff: [coordinator reality-aligned bridge continuity handoff](./CHAT-ARCH-2026-10-22-coordinator-reality-aligned-bridge-continuity-handoff.md).
+
+This amendment responds to the Owner's explicit correction in the 2026-10-22 conversation: the coordinator must state clearly what was learned and inferred about the joint working method, persist every substantive idea, keep the project state grounded in reality, and leave the next chat ready to continue without asking the Owner to reconstruct context. It refines the method; it does not change CURRENT-STATE routing or grant authority.
+
+### 12.1 Never turn a blocked operation into a false total stop
+
+State separately what can progress and what is blocked:
+
+1. **Documentary design/continuity:** continue only within the already-authorized documentary scope; capture rules, acceptance criteria, unresolved edges and handoffs.
+2. **Public-source evidence:** valid only for the exact public repository revision read. Never use it as proof of a different or dirty local checkout.
+3. **Local read:** the latest normal IABV/MCP read was denied with `governance_blocked=true` and `reason=operational_block_active`; it read zero source files. It requires a real supported governance-owned decision and any independently required block-release authority.
+4. **Implementation/launch/transport:** separate later gates. Read authorization does not imply permission to modify, test, build, launch IABV/Codex/Ollama, merge a candidate or execute real transport.
+
+Therefore the correct answer to “can the bridge advance?” is: **yes, bounded design and continuity can advance; no, the operational bridge is not ready or proven end-to-end.** Do not describe a blocked local edge as proof that every project activity must stop; equally, do not describe documentation as a working bridge.
+
+### 12.2 Evidence precision about route discovery
+
+The coordinator searched the tools exposed in the current ChatGPT session and found no callable governance/local-read operation. Record this as `SESSION_EXPOSED_SUPPORTED_ADMIN_READ_TOOL=NOT_FOUND`. The existence of an administrative route outside this session remains `GLOBAL_ROUTE_EXISTENCE=UNRESOLVED` until the actual owner-controlled administrative surface or responsible operator is identified. Do not overgeneralize a bounded negative result.
+
+The ordinary IABV general-chat path previously responded to a scoped governance-route request with a broad scan instead of answering the question. Do not repeat the same request to the same interface as a new attempt. A new attempt requires a changed, named precondition: an actual governance surface/operator, verified authority, or supported route. Do not use another reader to bypass a block.
+
+### 12.3 New-chat readiness and routing consistency
+
+The canonical [handoff](./CHAT-ARCH-2026-10-22-coordinator-reality-aligned-bridge-continuity-handoff.md) is the episode-level detail. At the next chat startup:
+
+- restore M1 from CURRENT-STATE; do not ask the Owner to repeat known decisions or static-scope authorization;
+- use the handoff and dashboard to retrieve prior negative findings, active task, blocker, acceptance criteria and parked ideas;
+- synchronize dashboard “next action” pointers with CURRENT-STATE and label obsolete actor routes historical rather than allowing a stale section to compete with current routing;
+- make one evidence-backed step, record any new idea and its disposition, and fetch back material changes;
+- continue the active track after explaining its blocker. Do not drift into a parked RAM/GPU/model investigation to create the appearance of progress.
+
+### 12.4 Causal reuse acceptance
+
+This amendment and the linked episode are currently `DOCUMENTED`. Do not call the coordinator runtime implemented, learned or causally effective solely because the documents were saved. Evidence of successful reuse requires a later relevant chat to (a) retrieve the correct M1 state, (b) not repeat the unproductive general-chat scan, (c) separate documentary progress from operational readiness, (d) preserve and triage new ideas, (e) route one authorized next action, and (f) verify the outcome and persistence. Until that occurs:
+
+```
+COORDINATION_METHOD=DOCUMENTED
+COORDINATOR_RUNTIME=NOT_PROVEN
+CAUSAL_CROSS_CHAT_REUSE=NOT_PROVEN
+```
