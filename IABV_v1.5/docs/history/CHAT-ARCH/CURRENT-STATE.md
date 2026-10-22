@@ -1,5 +1,34 @@
 # CURRENT ROUTING SNAPSHOT — 2026-10-22 (M1 ISOLATED IMPLEMENTATION AUTHORIZED; LIVE ACCESS STILL BLOCKED)
 
+## LATEST ROUTING DELTA — M1 candidate diff reviewed; repairs required (2026-10-22)
+
+The Owner supplied the complete two-file diff. Independent static review of that pasted diff is recorded in [M1 scoped-read diff static review](./CHAT-ARCH-2026-10-22-M1-scoped-read-diff-static-review.md). The patch appears to fail-closed for `read_repo_file`/directory listing when no scoped authority is available, but the target-scope repair is **not ready to accept**.
+
+```
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+ACTIVE_TASK=M1_IDENTIFY_AND_USE_SUPPORTED_GOVERNANCE_OWNED_SCOPED_READ_ROUTE
+M1_STATUS=STATIC_REVIEW_FAIL_REPAIRS_REQUIRED
+REVIEW_INPUT=OWNER_SUPPLIED_COMPLETE_DIFF
+FINDINGS=F01_AUTHORITATIVE_SCOPE_MODEL;F02_OPERATION_SCOPE_NOT_WIRED;F03_UNKNOWN_ASSISTANT_KIND
+SCOPED_READ_REQUEST_APPROVAL_FLOW=NOT_IMPLEMENTED
+READ_AND_LIST_ACCESS=FAIL_CLOSED_IN_SUPPLIED_DIFF
+CANDIDATE_COMMIT=NONE_REPORTED
+TESTS=NOT_RUN
+LIVE_MCP_IDENTITY=UNVERIFIED
+LIVE_CHECKOUT_IDENTITY=UNVERIFIED
+GOVERNANCE=KEEP_BLOCKED
+OWNER_DIRTY_CHECKOUT=DO_NOT_ACCESS_OR_MODIFY
+CANDIDATE_MERGED=NO
+BRIDGE=BRIDGE_NOT_READY
+```
+
+Blocking findings: (F-01 HIGH) the patch locally invents a finite `known_target_scopes` mapping and skips recognized nonmatching scopes without showing an authoritative/versioned scope model or trusted target-identity resolver; Entry 274 says such a mismatch must be proven, never inferred from a test matrix. (F-02 HIGH) `operation_scope` is only exercised in a direct helper test; no production tool call passes it in the supplied diff, so operation-scope wiring is not verified. (F-03 HIGH) unknown/malformed `assistant_kind` is silently skipped before target evaluation, although Entry 274 requires unsupported/partially evaluable scope to fail closed. Full counterexamples and acceptance criteria are in the review record.
+
+**Single next action:** Codex repairs only F-01–F-03 within the same isolated candidate by locating/reusing existing authoritative source semantics. It must not invent the missing registry or mapping; if the authoritative semantics do not exist in the permitted source/docs, stop and report that blocker. No tests/builds/runtime, Owner-checkout/data access, publication or merge. Keep M1 incomplete and governance blocked.
+
+---
+
+
 ## LATEST ROUTING DELTA — Codex reports partial M1 implementation; diff unverified (2026-10-22)
 
 The Owner supplied a Codex-attributed report of a two-file dirty working-tree candidate on local branch `codex/m1-governed-scoped-read-route-20261022`, base/current HEAD `cb2f2b02ade297660431e7bbd5d0dce75d10e39c`, no commit. The report says `server.py` separates `assistant_kind` and `target_scope` with finite recognized scopes, and that the MCP read/list tools deny when no verifiable scoped-read decision exists. It also reports nine added and four adjusted tests, not run. Full provenance, reported paths/blobs and adjudication: [M1 partial implementation result](./CHAT-ARCH-2026-10-22-M1-partial-implementation-Codex-result.md).
