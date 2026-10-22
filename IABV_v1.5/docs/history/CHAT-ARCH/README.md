@@ -1,3 +1,11 @@
+## New-chat handoff — latest Owner–coordinator clarification (2026-10-22)
+
+For the next chat, first retrieve [the reality-aligned bridge continuity handoff](./CHAT-ARCH-2026-10-22-coordinator-reality-aligned-bridge-continuity-handoff.md), then follow `CURRENT-STATE.md` for the only active task. The handoff captures this conversation's requirements: no ideas left transient, no repeated failed routes, one active task with evidence-backed progress, simple explanations of what is and is not blocked, and explicit separation of documentary progress from local execution/readiness. It also records the next-chat startup sequence and all parked ideas.
+
+This handoff is supplementary; `CURRENT-STATE.md` remains the sole routing authority. The documented coordination method is not evidence of runtime enforcement or causal reuse.
+
+---
+
 ## Owner–coordinator working agreement and anti-loop rule — 2026-10-22
 
 Canonical operating contract: [ADHD-aware project coordination and space-time focus protocol, section 11](./CHAT-ARCH-2026-10-22-adhd-aware-project-coordination-and-space-time-focus-protocol.md). It captures the Owner's requirements and the coordinator's derived duties: preserve every substantive idea, keep one active task, recover context across chats, avoid repeating unsuccessful routes, orchestrate Codex/other agents with bounded handoffs, verify evidence and saved records, and improve the process after failures. The top of [CURRENT-STATE.md](./CURRENT-STATE.md) remains the sole routing authority; the method being documented does not prove runtime enforcement.
