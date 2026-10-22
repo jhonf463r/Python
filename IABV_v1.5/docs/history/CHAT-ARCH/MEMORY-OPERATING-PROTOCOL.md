@@ -22,6 +22,16 @@ BRIDGE=BRIDGE_NOT_READY
 
 ---
 
+## Construction completeness and bidirectional traceability overlay — 2026-10-22
+
+Apply [the UAAL construction-completeness overlay](./CHAT-ARCH-2026-10-22-UAAL-construction-completeness-traceability-overlay.md) inside `UAAL-ROOT-001`; it is not a competing algorithm or task-routing source.
+
+Before closing a design or preparing a handoff, require bidirectional traceability from source/requirement through assumption, rule or explicit authority decision, decision-table row, conformance case, evidence/receipt and canonical Knowledge Delta—and reverse-link every rule/claim to its authority and provenance. Enumerate independent dimensions and meaningful invalid/unknown/conflicting/revoked/untrusted states; distinguish derived technical logic from normative Owner/governance decisions and implementation/runtime/release permissions. Reconcile finding IDs and counts by category. If a mandatory row or authority is missing, report `DESIGN_INCOMPLETE` with the exact gap, not a soft PASS.
+
+Each handoff must name exact destination/session, task/mode/authority, pinned source baseline, bounded paths, exclusions, expected artifact/receipt, acceptance and stop conditions. Fetch back every material write and later demonstrate reuse before claiming causal learning. This amendment does not alter the top route in `CURRENT-STATE.md`, adopt the M1A policy, authorize implementation, or prove runtime enforcement.
+
+---
+
 ## Cross-chat owner–coordinator operating agreement — 2026-10-22
 
 For project continuity, apply section 11 of the [ADHD-aware coordination protocol](./CHAT-ARCH-2026-10-22-adhd-aware-project-coordination-and-space-time-focus-protocol.md) together with the active route in [CURRENT-STATE.md](./CURRENT-STATE.md). Persistent memory must preserve both ideas and task focus: every substantive idea receives a status, provenance and re-entry/closure condition; only one task is active; closed decisions are not reopened without new evidence; previous failed routes are not repeated unchanged; and every material update is fetched back and linked. Never claim causal learning merely because text was saved—the next applicable decision must demonstrate reuse.
