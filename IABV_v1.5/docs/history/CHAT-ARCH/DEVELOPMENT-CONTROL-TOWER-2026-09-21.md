@@ -31,8 +31,8 @@ ACTIVE_TASK=IDENTIFY_AND_USE_SUPPORTED_GOVERNANCE_OWNED_SCOPED_READ_ROUTE
 CURRENT_STATUS=BLOCKED_WAITING_FOR_SUPPORTED_AUTHORITY_OR_ROUTE
 SESSION_EXPOSED_SUPPORTED_ADMIN_READ_TOOL=NOT_FOUND
 GLOBAL_ROUTE_EXISTENCE=UNRESOLVED
-NEXT_ACTOR=CODEX_EXISTING_UI_SESSION_DOCUMENTARY_CONTRACT_AUTHOR
-NEXT_SINGLE_ACTION=Draft the low-friction build-time authorization contract from canonical documents only; no local read, implementation, tests, builds or launch
+NEXT_ACTOR=OPENCODE_EXISTING_CONFIGURED_SESSION_IF_AVAILABLE
+NEXT_SINGLE_ACTION=One documentary adversarial review of the supplied builder-grant contract; user-mediated handoff; no local read, implementation, tests, builds or launch
 GOVERNANCE=KEEP_BLOCKED
 BRIDGE=BRIDGE_NOT_READY
 LOCAL_SOURCE_READ=NOT_RUN
@@ -42,7 +42,7 @@ LOCAL_WORKTREE=UNTOUCHED
 
 ### Latest bounded M1 surface-check delta — 2026-10-22
 
-The current ChatGPT callable-tool catalogue exposes no IABV-local governance/read-decision action, and the current content of issue [#470](https://github.com/jhonf463r/Python/issues/470) identifies no executable route or responsible operator. Full evidence: [governance-surface inventory follow-up](./CHAT-ARCH-2026-10-22-governance-surface-inventory-followup.md). Record `NOT_FOUND` only for the surfaces actually examined; keep `GLOBAL_ROUTE_EXISTENCE=UNRESOLVED`. The task, governance gate and no-bypass constraints do not change.
+The Owner-supplied builder-grant draft is now adjudicated DESIGN_VERDICT=PASS_WITH_REPAIRS; see the M1 follow-up for required repairs and the exact OpenCode review prompt. This grant remains PROPOSED_NOT_IMPLEMENTED and is not a substitute for M1's supported scoped-read route. The current ChatGPT callable-tool catalogue exposes no IABV-local governance/read-decision action, and the current content of issue [#470](https://github.com/jhonf463r/Python/issues/470) identifies no executable route or responsible operator. Full evidence: [governance-surface inventory follow-up](./CHAT-ARCH-2026-10-22-governance-surface-inventory-followup.md). Record `NOT_FOUND` only for the surfaces actually examined; keep `GLOBAL_ROUTE_EXISTENCE=UNRESOLVED`. The task, governance gate and no-bypass constraints do not change.
 
 ### Milestones
 
