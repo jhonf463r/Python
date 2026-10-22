@@ -9,6 +9,10 @@ Issue [#470](https://github.com/jhonf463r/Python/issues/470) remains open with f
 
 No local reader or alternative reader was invoked; no local source/configuration was read; no IABV, Codex CLI/App Server or Ollama process was started; no tests/builds/transport or local changes occurred. The single task remains M1. Do not repeat the ordinary IABV general-chat scan or bypass the denied reader.
 
+**Corrected next actor/action (Owner challenge reconciled):** the next AI handoff is now **Codex in its already-existing UI/session, tool-surface metadata inventory only**. The ChatGPT session surface was checked; Codex's own currently exposed tool/action catalogue has not been checked in this episode. This does not authorize or attempt a native local read. Use the exact prompt in [the M1 inventory follow-up](./CHAT-ARCH-2026-10-22-governance-surface-inventory-followup.md). The actual grant/release authority remains `UNRESOLVED`; do not treat Codex or IABV conversational output as self-authorizing. If Codex exposes no supported route, record that bounded negative and retain `GLOBAL_ROUTE_EXISTENCE=UNRESOLVED`.
+
+
+
 ---
 
 
