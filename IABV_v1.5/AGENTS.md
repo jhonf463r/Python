@@ -1,5 +1,27 @@
 ## LATEST ROUTING DELTA — Owner authorized isolated M1 implementation; do not access dirty checkout (2026-10-22)
 
+## LATEST ROUTING DELTA — M1 diff review: F-01–F-03 require repair (2026-10-22)
+
+The complete diff pasted by the Owner has received an independent static review. Record: [M1 scoped-read diff static review](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1-scoped-read-diff-static-review.md). Do not accept or merge this candidate yet.
+
+- F-01 HIGH: the hand-coded `known_target_scopes`/route mapping has no demonstrated authoritative, versioned registry/resolver. Entry 274 requires a source-backed proof before treating a block as non-applicable.
+- F-02 HIGH: the new optional `operation_scope` is exercised only in a helper-level test; the diff wires it into no registered production tool call.
+- F-03 HIGH: unsupported/malformed `assistant_kind` silently continues rather than failing closed under Entry 274's scope rules.
+- Positive interim property: read/list remain denied without verified scoped authority. That is not M1 completion.
+
+Next step: Codex makes the minimal source-grounded repair in the same isolated candidate. Do not invent missing authority/scope semantics, run tests/build/runtime, access the Owner's dirty checkout/data, or publish/merge. If the canonical scope resolver/registry cannot be found in the permitted relevant source/docs, stop and report it.
+
+```
+M1_STATUS=STATIC_REVIEW_FAIL_REPAIRS_REQUIRED
+GOVERNANCE=KEEP_BLOCKED
+TESTS=NOT_RUN
+CANDIDATE_MERGED=NO
+BRIDGE=BRIDGE_NOT_READY
+```
+
+---
+
+
 ## LATEST ROUTING DELTA — M1 partial implementation reported; independent diff review pending (2026-10-22)
 
 The Owner supplied a Codex-attributed report of a partial implementation in the isolated candidate. It claims a finite `target_scope` applicability fix and fail-closed read/list behavior without scoped authority, with nine added/four adjusted tests left unrun. The local tree has no reported commit; its two file blob IDs and code changes are not published or independently verified. Record: [M1 partial implementation result](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1-partial-implementation-Codex-result.md). Do not call it M1 PASS or infer live-server causality.
