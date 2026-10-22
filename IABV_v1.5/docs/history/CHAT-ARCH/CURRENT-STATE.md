@@ -29,17 +29,15 @@ LOCAL_WORKTREE=UNTOUCHED
 
 
 
-## Independent review attempt — input retrieval blocked (2026-10-22)
+## Historical failed OpenCode handoff — input retrieval blocked (superseded by inline predecessor review)
 
-The Owner supplied an attempted OpenCode review response: every named GitHub input returned 404 in that reviewer session, so the reviewer returned `REVIEW_BLOCKED_INPUT_UNAVAILABLE`, issued no verdict, and stopped. Status is `OWNER_REPORTED`; the 404s are not proof that the records do not exist or of global repository absence.
-
-The failure is in the documented-input delivery precondition, not a finding on the contract. Keep the reviewer stopped; do not use a local checkout, alternate reader, additional retrieval probes, or IABV general chat. The only prepared recovery is to send the **same existing OpenCode session** a self-contained inline packet containing the original contract text already supplied by the Owner, the bounded CURRENT-STATE context, BA-01–BA-05 repair criteria, and the exact adversarial questions. This remains a manual handoff, not a dispatched action. If it cannot be delivered to that session, leave the independent review blocked.
+The Owner-reported 404 result was the first failed attempt to deliver the predecessor contract review. That attempt correctly stopped with `REVIEW_BLOCKED_INPUT_UNAVAILABLE` and no verdict. It has since been superseded by the Owner-supplied independent inline review recorded in [the review artifact](./CHAT-ARCH-2026-10-22-independent-review-builder-grant-contract.md). This history is retained to prevent repetition; do not infer that the records do not exist globally. The current task is to review successor v0.2 using its complete text inline, as specified by the latest routing delta at the top of this file.
 
 
 
 
 
-## CURRENT M1 ROUTING SNAPSHOT — 2026-10-22 (builder-contract draft received; no access unlocked)
+## Historical M1 snapshot before predecessor review — 2026-10-22 (superseded; no access unlocked)
 
 The Owner has supplied the draft “Borrador: contrato de acceso de desarrollo amplio y gobernado”, attributed to the Codex session. Evidence label: OWNER_SUPPLIED_CODEX_DRAFT; the text is reviewable, but the drafting session and every proposed runtime capability remain unverified. Coordinator disposition is DESIGN_VERDICT=PASS_WITH_REPAIRS. The adjudication, concrete repairs, and copy-ready independent-review prompt are recorded in [the M1 governance-surface follow-up](./CHAT-ARCH-2026-10-22-governance-surface-inventory-followup.md) and [issue comment #6346834137](https://github.com/jhonf463r/Python/issues/470#issuecomment-6346834137).
 
