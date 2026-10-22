@@ -17,13 +17,13 @@ GOVERNANCE=KEEP_BLOCKED; IMPLEMENTATION=NOT_AUTHORIZED; LOCAL_SOURCE_READ=NOT_RU
 ---
 
 
-## LATEST ROUTING DELTA — independent review received; successor v0.2 awaiting review (2026-10-22)
+## HISTORICAL ROUTING SNAPSHOT — independent review received; successor v0.2 awaiting review at that checkpoint (superseded by the top target_scope delta, 2026-10-22)
 
 The Owner supplied an independent documentary review attributed to the existing OpenCode session. Classification: `OWNER_SUPPLIED_INDEPENDENT_REVIEW`. Its verdict is `PASS_WITH_REPAIRS` for requirements-baseline quality only, not implementation. The predecessor had eight findings: BA-01/03/04/05/06 HIGH (BA-03 partial); BA-02 MEDIUM residual, BA-07/08 MEDIUM. No implementation mechanism was source-verified. Full record: [independent review](./CHAT-ARCH-2026-10-22-independent-review-builder-grant-contract.md).
 
 The coordinator prepared [builder-grant contract successor v0.2](./CHAT-ARCH-2026-10-22-builder-grant-contract-successor-v0.2.md). It hard-codes containment, payload, receipt-integrity, clock/revocation and session requirements, but explicitly marks BA-01/03/04/06 `NOT_IMPLEMENTABLE_WITH_CURRENT_EVIDENCE` and BA-05 `AUTHORITY_UNAVAILABLE` until real authority is verified. These are fail-closed documentary dispositions, not proof that any enforcer, issuer, ledger, clock, sandbox or file API exists.
 
-**Next single bounded action:** have OpenCode in the Owner's same existing configured session review successor v0.2 from a complete inline packet. Because the prior attempt reported 404 for linked documents, do not depend on URLs: the next prompt must carry the full successor text and exact questions. This is user-mediated; no connected OpenCode action is available in this ChatGPT session. Do not repeat URL probes, the Codex tool inventory, IABV general chat, or use a local/alternate reader. If the inline text cannot be provided completely to that same session, retain `SUCCESSOR_REVIEW=BLOCKED_INPUT_UNAVAILABLE`.
+**Historical next-action instruction (superseded by the top target_scope delta and post-Sonnet handoff; do not execute):** the earlier checkpoint directed a successor v0.2 review by OpenCode after the predecessor review. That review route was subsequently completed and documented, and must not be repeated. M1 remains the sole active task; follow only the top routing snapshot for its next action. The builder-grant design remains `PROPOSED_NOT_IMPLEMENTED` and does not satisfy M1 or release any operational block. If the inline text cannot be provided completely to that same session, retain `SUCCESSOR_REVIEW=BLOCKED_INPUT_UNAVAILABLE`.
 
 M1 remains the single active task: `IDENTIFY_AND_USE_SUPPORTED_GOVERNANCE_OWNED_SCOPED_READ_ROUTE`. The builder-grant design does not close M1, release `operational_block_active`, or authorize access to the current dirty checkout.
 
@@ -79,7 +79,7 @@ REAL_TRANSPORT=NOT_RUN
 LOCAL_WORKTREE=UNTOUCHED
 ```
 
-## Latest verified M1 surface check — 2026-10-22 (documentary only; route unchanged)
+## Historical M1 surface-check snapshot — 2026-10-22 (superseded for routing by the top target_scope delta)
 
 The current-session callable-tool catalogue was enumerated and exposes no IABV-local/MCP governance operation capable of issuing/verifying a scoped repository-read decision or independently releasing a block. The exact bounded result is recorded in [the governance-surface inventory follow-up](./CHAT-ARCH-2026-10-22-governance-surface-inventory-followup.md). At the time of inspection, remote `main` was `f891810b4daf00bf7440e438f0afbc832ccb326e`; that is the evidence snapshot for the tool inventory, not a claim about the current post-documentation HEAD.
 
@@ -91,7 +91,7 @@ No local reader or alternative reader was invoked; no local source/configuration
 
 **Owner build-access requirement:** `OWNER_REQUIREMENT=LOW_FRICTION_BROAD_DEVELOPMENT_ACCESS`. This is to be designed as broad, pre-authorized read/write access to source within a named disposable development candidate after a trusted session grant, without needless per-file interruptions; separately gate tests/builds and exclude secrets, live data and machine/runtime side effects unless specifically authorized. This must not turn into unrestricted self-authorization by the running IABV or grant the reader authority to release its own block. This new design requirement does not itself activate access or supersede the recorded no-launch/implementation gate.
 
-**Completed prior action:** Codex's low-friction build-time authorization contract draft has now been supplied by the Owner and reconciled above; do not repeat the prompt or tool inventory. **Current next bounded documentary action:** one adversarial review of the supplied builder-contract draft by OpenCode in the Owner's existing configured session if available, using the exact prompt in the M1 follow-up. The review is user-mediated because this ChatGPT session has no connected OpenCode action. This remains documentary dependency work, not M1 acceptance and not evidence that a supported route exists.
+**Completed prior action:** Codex's low-friction build-time authorization contract draft has now been supplied by the Owner and reconciled above; do not repeat the prompt or tool inventory. **Historical pointer, now superseded:** the OpenCode review route for successor v0.2 has been received/documented and must not be repeated. The only active next action is the top routing snapshot's M1 dependency: find an actual supported governance/admin surface or responsible operator for the live MCP server and checkout. If not exposed, record `NOT_FOUND` for the examined session and preserve `GLOBAL_ROUTE_EXISTENCE=UNRESOLVED`.
 
 
 
