@@ -1,4 +1,12 @@
-## LATEST ROUTING DELTA — M1 minimum governed scoped-read design proposed (2026-10-22)
+## LATEST ROUTING DELTA — M1 isolated implementation authorized; operational access remains blocked (2026-10-22)
+
+Owner explicitly authorized source implementation by Codex **in an isolated candidate only**. The exact task, evidence, exclusions and implementation prompt are in [M1 Codex implementation handoff](./CHAT-ARCH-2026-10-22-M1-governed-scoped-read-route-CODEX-implementation-handoff.md). The [CURRENT-STATE.md](./CURRENT-STATE.md) top snapshot remains the sole routing authority.
+
+This does **not** authorize reading/modifying the actual dirty checkout, accessing `data/`/SQLite/secrets/credentials/`.env, test execution, builds, runtime/process launch, live MCP use, real transport, merge/deployment, or release of an operational block. ChatGPT's current tool surface cannot dispatch the existing Codex UI session; `CODEX_EXECUTION=NOT_DISPATCHED` until a verifiable Codex receipt exists.
+
+Static source findings anchoring the handoff: main `7fb9c8bc9febbaa5e83e3c81959775ec1d3afcf8`; `server.py` already exposes read/list tools but gates them via `_governance_block_for_route`; public-main gate does not account for `target_scope` as a distinct scope dimension; the reviewed fix candidate `b7c3fffaec4ff3b78b1ca03ae64ead949236f504` is unmerged/static-review-only; Control Center observation permission is not repository-read permission; the actual issuer/block-release identity and live server/checkout remain unresolved. The HTTP tunnel's wildcard host/origin/DNS-rebinding configuration also means no approval/grant/block-release method may be exposed as a remote MCP write tool without a verified transport/security design.
+
+### HISTORICAL ROUTING DELTA — M1 documentary-only design proposed before explicit isolated implementation authorization (2026-10-22)
 
 Owner-authorized documentary design: [M1 governance-route minimal design](./CHAT-ARCH-2026-10-22-M1-governance-route-minimal-design.md). It reuses Entry 266, Entry 274 and the already-reviewed builder-grant successor v0.2; it does not claim implementation or an existing route. `M1_DESIGN=PROPOSED_FOR_OWNER_AUTHORITY_REVIEW`, while `SUPPORTED_SCOPED_READ_ROUTE=UNRESOLVED` and `GLOBAL_ROUTE_EXISTENCE=UNRESOLVED`. The current snapshot [CURRENT-STATE.md](./CURRENT-STATE.md) remains the sole routing authority.
 
