@@ -5,7 +5,7 @@ Owner decision receipt: `ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE`. The seven M1A 
 The adopted model uses independent conjunctive assistant and target selectors; `GLOBAL` applies to its own dimension only; exact mismatch proves non-applicability only after all required inputs and authority are trusted, complete and valid. Unknown/invalid/untrusted/conflicting/revoked/unsupported state, absent target resolution, absent producer authority or an incomplete active-block set fails closed. Receipts are evidence, never authority or block release. Legacy records are not automatically migrated.
 
 **Next task:** `M1A_CONSOLIDATED_SCOPE_CONTRACT_V1_TARGETED_ADVERSARIAL_REVIEW` — bounded independent adversarial review of the exact v1.0.0 artifact. This is documentary only, not a code or runtime task. Sonnet 4.6 in Antigravity is the intended reviewer based on Owner-reported availability; invocation remains `NOT_DISPATCHED` until a correlated review artifact exists.
-Exact prompt and bounded inputs are preserved in the [review handoff](./CHAT-ARCH-2026-10-22-M1A-contract-v1-targeted-adversarial-review-handoff.md), blob `ec93819c222528b718a2102543c1d85c01ae9aed`.
+Exact prompt and bounded inputs are preserved in the [review handoff](./CHAT-ARCH-2026-10-22-M1A-contract-v1-targeted-adversarial-review-handoff.md), blob `446dc7e789336e7a3bd718904c3f480902ee96ff`.
 
 Real authenticated principal/trust anchor, catalogue publisher/revocation service, producer allowlist, operation-to-target registry/call-site mappings and independent block-release mechanism remain `UNVERIFIED/NOT_ESTABLISHED`. Therefore `GOVERNANCE=KEEP_BLOCKED`, `IMPLEMENTATION=NOT_AUTHORIZED`, `TESTS=NOT_RUN`, `READ_LIST=FAIL_CLOSED`, `BRIDGE=BRIDGE_NOT_READY`.
 
