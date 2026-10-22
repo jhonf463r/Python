@@ -1,20 +1,20 @@
-## CURRENT ROUTING — M1 authority prerequisite and static-review repairs (2026-10-22)
+## CURRENT ROUTING — M1 stopped: authoritative scope model unavailable (2026-10-22)
 
-Current route and evidence: [CURRENT-STATE.md](docs/history/CHAT-ARCH/CURRENT-STATE.md). Full review, provenance, extra order-dependent risk and exact Codex follow-up prompt: [M1 next-chat handoff](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1-scoped-read-review-and-next-chat-handoff.md).
+Current route and evidence: [CURRENT-STATE.md](docs/history/CHAT-ARCH/CURRENT-STATE.md). Source-level result and provenance: [M1 authority scope-model check](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1-authority-scope-model-blocked.md).
 
-Static verdict on the Owner-supplied complete diff: FAIL_REPAIRS_REQUIRED. F-01: no demonstrated authoritative/versioned scope model or explicit dimension-combination semantics. F-02: operation_scope is tested only at helper level and wired to no real registered operation. F-03: assistant_kind-first continue can hide unknown/malformed/conflicting target_scope.
+The permitted pinned sources do not demonstrate an authoritative/versioned scope vocabulary, resolver, explicit combination semantics or complete operation-to-target map. Stop with `BLOCKED_AUTHORITY_SCOPE_MODEL_UNAVAILABLE`; do not invent mappings or wire `operation_scope` by guesswork. F-01 is blocked; F-02/F-03 cannot be repaired safely absent that authority.
 
-Next step: Codex checks only the already relevant source/docs inside the same isolated candidate for an existing authoritative scope model/resolver. Reuse it only if proven. If absent, stop with BLOCKED_AUTHORITY_SCOPE_MODEL_UNAVAILABLE; do not invent mappings. Do not ask for the diff again or run another broad scan.
+The Owner-reported Windows candidate was not directly accessible to this ChatGPT coordinator. Candidate identity remains `OWNER_REPORTED`; do not represent this source-level result as a local-candidate or live-server verification. Preserve `GOVERNANCE=KEEP_BLOCKED`, fail-closed reads, `TESTS=NOT_RUN`, no code promotion and `BRIDGE=BRIDGE_NOT_READY`.
 
-~~~text
-M1_STATUS=STATIC_REVIEW_FAIL_REPAIRS_REQUIRED
-SCOPED_READ_REQUEST_APPROVAL_FLOW=NOT_IMPLEMENTED
-GOVERNANCE=KEEP_BLOCKED
+```text
+M1_STATUS=BLOCKED_AUTHORITY_SCOPE_MODEL_UNAVAILABLE
+AUTHORITY_SCOPE_MODEL=NOT_FOUND_IN_PERMITTED_PINNED_SOURCE_SET
+CANDIDATE_LOCAL_IDENTITY=OWNER_REPORTED
 TESTS=NOT_RUN
-OWNER_DIRTY_CHECKOUT=DO_NOT_ACCESS_OR_MODIFY
+GOVERNANCE=KEEP_BLOCKED
 CANDIDATE_MERGED=NO
 BRIDGE=BRIDGE_NOT_READY
-~~~
+```
 
 ---
 
