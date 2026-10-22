@@ -2,7 +2,7 @@
 
 Routing authority: [CURRENT-STATE.md](./CURRENT-STATE.md). Active task: `M1A_CONSOLIDATED_SCOPE_CONTRACT_V1_TARGETED_ADVERSARIAL_REVIEW`; status `READY_FOR_INDEPENDENT_REVIEW; NOT_DISPATCHED`.
 
-The Owner accepted `ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE`. The accepted decision is in the [normalized ledger](./CHAT-ARCH-2026-10-22-M1A-normalized-scope-decision-ledger-and-design-amendment.md) (blob `3425144a661c713eb8898c1eacefb2d791519bc0`); the complete [operational-block scope contract v1.0.0](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md) is fetched back (blob `ac3a45018b0313747fe0c3dfc39d6298e0786fe8`). This is normative design adoption only.
+The Owner accepted `ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE`. The accepted decision is in the [normalized ledger](./CHAT-ARCH-2026-10-22-M1A-normalized-scope-decision-ledger-and-design-amendment.md) (blob `3425144a661c713eb8898c1eacefb2d791519bc0`); the complete [operational-block scope contract v1.0.0](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md) is fetched back (blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e`). This is normative design adoption only.
 
 Latest related records:
 - [M1A consolidated operational-block scope contract v1.0.0](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md) — adopted selector/trust/aggregation/legacy design, traceability matrix and 28 design cases; not implemented.
