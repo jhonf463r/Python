@@ -1,4 +1,32 @@
-# CURRENT ROUTING SNAPSHOT — 2026-10-22 (M1 BLOCKED; SCOPE-MODEL DESIGN PROPOSAL AUTHORIZED ONLY)
+# CURRENT ROUTING SNAPSHOT — 2026-10-22 (M1 BLOCKED; M1A PROPOSAL AWAITING INDEPENDENT REVIEW)
+
+## LATEST ROUTING DELTA — Codex proposal received; adversarial review is next (2026-10-22)
+
+The Owner pasted Codex's proposed versioned operational-block scope model, self-reported `DESIGN_VERDICT=PASS_WITH_REPAIRS`. The proposal is archived as [M1A Codex scope-model proposal](./CHAT-ARCH-2026-10-22-M1A-Codex-scope-model-proposal.md). It is `OWNER_SUPPLIED` / `PROPOSED`, not accepted policy.
+
+Preliminary coordination observation: the combination table needs independent scrutiny, especially the rule that both exact selectors differing is `PROVEN_NOT_APPLICABLE` while one match plus one mismatch is `BLOCK_SCOPE_UNEVALUABLE`. The proposal must define whether selectors are conjunctive or otherwise; no semantics should be adopted implicitly.
+
+**Next actor:** independent adversarial reviewer, preferably Sonnet 4.6 in Antigravity if its availability can be confirmed; else a separately configured OpenCode/other reviewer. Exact bounded handoff: [M1A independent adversarial review](./CHAT-ARCH-2026-10-22-M1A-independent-adversarial-review-handoff.md). Do not send implementation back to Codex yet.
+
+After independent review, the next state transition requires explicit Owner/governance adjudication. Model authority and implementation remain unauthorized. No tests/runtime/transport or candidate edits; keep readers/listings fail-closed.
+
+```text
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+ACTIVE_TASK=M1A_INDEPENDENT_ADVERSARIAL_REVIEW_OF_SCOPE_MODEL
+PRIOR_M1_STATUS=BLOCKED_AUTHORITY_SCOPE_MODEL_UNAVAILABLE
+SCOPE_MODEL_PROPOSAL=OWNER_SUPPLIED; PROPOSED
+DESIGN_AUTHOR_VERDICT=PASS_WITH_REPAIRS (OWNER_REPORTED)
+INDEPENDENT_REVIEW=PENDING
+OWNER_GOVERNANCE_ADJUDICATION=PENDING
+SCOPE_MODEL_AUTHORITY=NOT_ESTABLISHED
+IMPLEMENTATION=NOT_AUTHORIZED
+TESTS=NOT_RUN
+GOVERNANCE=KEEP_BLOCKED
+CANDIDATE_MERGED=NO
+BRIDGE=BRIDGE_NOT_READY
+```
+
+---
 
 ## LATEST ROUTING DELTA — Owner authorized scope-model proposal (design-only) (2026-10-22)
 
