@@ -10,6 +10,7 @@
 5. [Construction-completeness overlay](./CHAT-ARCH-2026-10-22-UAAL-construction-completeness-traceability-overlay.md) makes bidirectional traceability, decision-space coverage and evidence-backed closure mandatory.
 
 **Current next step:** `M1A_CONSOLIDATED_SCOPE_CONTRACT_V1_TARGETED_ADVERSARIAL_REVIEW`, a bounded documentary/static review of the exact consolidated v1.0.0 contract. Intended actor: Sonnet 4.6 in the Owner-reported Antigravity session; invocation remains `NOT_DISPATCHED`. No broad repo scan, local checkout access, code change, tests, runtime, transport, merge or block release.
+Copyable exact prompt: [M1A contract v1 review handoff](./CHAT-ARCH-2026-10-22-M1A-contract-v1-targeted-adversarial-review-handoff.md), blob `ec93819c222528b718a2102543c1d85c01ae9aed`.
 
 ```text
 OWNER_DESIGN_ACCEPTANCE=ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE
