@@ -5,6 +5,7 @@
 Routing authority: [CURRENT-STATE.md](./CURRENT-STATE.md). Active task: `M1A_OWNER_GOVERNANCE_ADJUDICATION_OF_SCOPE_MODEL_POLICY_AND_DECISION_LEDGER`; status `WAITING_OWNER`.
 
 Latest related records:
+- [UAAL construction-completeness / traceability overlay](./CHAT-ARCH-2026-10-22-UAAL-construction-completeness-traceability-overlay.md) — method amendment under `UAAL-ROOT-001`; adds bidirectional requirement/rule traceability, decision-space completeness, explicit authority planes, bounded handoffs, reconciliation, fetch-back and reuse criteria. Documentary method only; runtime enforcement and causal reuse remain unproven.
 - [M1A normalized scope decision ledger and design amendment](./CHAT-ARCH-2026-10-22-M1A-normalized-scope-decision-ledger-and-design-amendment.md) — consolidated formal selector recommendation, seven genuine Owner/governance decision categories, fail-closed requirements and future acceptance gates. `PROPOSED`, not policy.
 - [Central space-time coordinator M1A reconciliation](./CHAT-ARCH-2026-10-22-central-space-time-coordinator-m1a-reconciliation.md) — maps this child task to existing UAAL-ROOT-001, Control Tower, goal-lock, Memory Operating Protocol, Entry 274 and prior M0 causal routing; no parallel coordinator should be created.
 - [Codex M1A scope-model proposal](./CHAT-ARCH-2026-10-22-M1A-Codex-scope-model-proposal.md) — preserved owner-supplied input.
