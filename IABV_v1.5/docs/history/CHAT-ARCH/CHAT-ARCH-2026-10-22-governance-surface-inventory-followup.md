@@ -292,3 +292,54 @@ BRIDGE=BRIDGE_NOT_READY
 REAL_TRANSPORT=NOT_RUN
 LOCAL_WORKTREE=UNTOUCHED
 ```
+
+
+## Independent review received and successor contract drafted — 2026-10-22
+
+### Provenance and verdict
+
+The Owner supplied an independent documentary review attributed to the existing OpenCode session. Preserve it as `OWNER_SUPPLIED_INDEPENDENT_REVIEW`; the content is received, but reviewer-session identity/actions are not independently instrument-verified.
+
+Full record: [independent builder-grant contract review](./CHAT-ARCH-2026-10-22-independent-review-builder-grant-contract.md).
+
+```
+REVIEW_VERDICT=PASS_WITH_REPAIRS
+CONTRACT_BASELINE=DEFENSIBLE_REQUIREMENTS_ONLY
+READY_FOR_IMPLEMENTATION=NO
+SUCCESSOR_REVIEW=NOT_RUN
+M1=OPEN
+GOVERNANCE=KEEP_BLOCKED
+IMPLEMENTATION=NOT_AUTHORIZED
+LOCAL_SOURCE_READ=NOT_RUN
+BRIDGE=BRIDGE_NOT_READY
+REAL_TRANSPORT=NOT_RUN
+LOCAL_WORKTREE=UNTOUCHED
+```
+
+The reviewer explicitly conditions the verdict: this is a defensible requirements baseline, not an implementation approval. If any HIGH finding remains unresolved in the successor, the verdict decays to FAIL. The review may not be repeated until the successor resolves the gaps or explicitly declares the critical mechanisms not implementable under current evidence.
+
+### Review findings preserved
+
+- **BA-01 — HIGH, confirmed:** candidate isolation and race-resistant filesystem object/handle containment are not specified. Name filters alone cannot stop hard links, reparse points/junctions, alternate checkout paths, root substitution or TOCTOU.
+- **BA-02 — MEDIUM residual:** the draft itself preserves the M1 boundary; the repair is to make the non-implication explicit in the successor's verdict/status line and never cite a builder-grant verdict as M1 evidence.
+- **BA-03 — HIGH, partially confirmed:** operation separation does not constrain executable payloads or auto-loaded test/build configuration. Ordinary file grant must not provide shell/process access; separate test/build grants need bound entrypoints/configuration hashes and an isolated environment with no inherited secrets.
+- **BA-04 — HIGH, confirmed:** ledger custody, append-only/integrity controls, anti-truncation/replay, pre-effect durable reservation and effect ordering are unspecified.
+- **BA-05 — HIGH, confirmed:** no trusted issuer/principal, enforcer, ledger custodian or independent block authority is verified. Owner/competent authority must identify a real authenticated authority or the result remains `AUTHORITY_UNAVAILABLE`; no provisional issuer.
+- **BA-06 — HIGH, new:** authoritative time, bounded revocation freshness and in-flight-operation semantics are unspecified.
+- **BA-07 — MEDIUM, new:** effective work scope must be the intersection of the candidate root and work areas expressed relative to that root.
+- **BA-08 — MEDIUM, new:** grants must be bound to a live session and invalidated at session closure.
+
+No finding proves that a proposed mechanism currently exists. The review's suggested minimum slice (grant schema, always-deny enforcer skeleton and receipt verifier) is only a proposal; it is not authorized to implement and must not be treated as a runtime path.
+
+### Documentary successor v0.2
+
+The coordinator prepared [builder-grant contract successor v0.2](./CHAT-ARCH-2026-10-22-builder-grant-contract-successor-v0.2.md). It adds explicit requirements and fail-closed dispositions for BA-01–BA-08. It explicitly marks BA-01, BA-03, BA-04 and BA-06 as `NOT_IMPLEMENTABLE_WITH_CURRENT_EVIDENCE`, BA-05 as `AUTHORITY_UNAVAILABLE` until a trusted existing authority is verified, BA-02 as a labeling repair, BA-07 as scope intersection, and BA-08 as session binding. This status wording describes the evidence boundary; it does not claim global impossibility or source-verifies any mechanism.
+
+`SUCCESSOR_DRAFT=READY_FOR_DOCUMENTARY_REVIEW_ONLY`; `READY_FOR_IMPLEMENTATION=NO`.
+
+### Next single action: review the successor, inline, with the same OpenCode session
+
+The next actor remains **OpenCode in the Owner's existing configured session, if available**. The previous 404 delivery problem means that the follow-up must be delivered as a self-contained inline packet: include the complete successor v0.2 text in the prompt, then the bounded review questions. Do not rely on GitHub links being retrievable in that session. This is an input-delivery correction, not an alternate reader, and does not authorize local access.
+
+Review only whether successor v0.2 normatively closes all HIGH textual gaps while correctly classifying unresolved real mechanisms as not implementable under current evidence. Do not rediscover tools, inspect source, run commands, build/test, invoke IABV/Codex/Ollama, write repositories, release the operational block, or infer that its named mechanisms exist. Return `REVIEW_VERDICT=PASS|PASS_WITH_REPAIRS|FAIL`, or `REVIEW_BLOCKED_INPUT_UNAVAILABLE` if the inline successor text itself is absent or truncated. No review has yet been performed on v0.2.
+
