@@ -2,7 +2,7 @@
 
 **Policy/design status:** `ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE` received. The seven M1A design choices are accepted as a normative design baseline and consolidated in [M1A operational-block scope contract v1.0.0](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md), blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e`. The old policy-adoption question is closed; do not ask it again unless new contradictory higher-authority evidence appears.
 
-**Current task:** [CURRENT-STATE.md](./CURRENT-STATE.md), top snapshot. `M1A_CONSOLIDATED_SCOPE_CONTRACT_V1_TARGETED_ADVERSARIAL_REVIEW`, status `READY_FOR_INDEPENDENT_REVIEW; NOT_DISPATCHED`. The intended reviewer is Sonnet 4.6 in the Owner-reported Antigravity session; invocation is not confirmed.
+**Current task:** [CURRENT-STATE.md](./CURRENT-STATE.md), top snapshot. `M1A_CONSOLIDATED_SCOPE_CONTRACT_V1_TARGETED_ADVERSARIAL_REVIEW`, status `READY_FOR_INDEPENDENT_REVIEW; NOT_DISPATCHED`. The intended reviewer is Sonnet 4.6 in the Owner-reported Antigravity session; invocation is not confirmed. Exact prompt and bounded inputs: [review handoff](./CHAT-ARCH-2026-10-22-M1A-contract-v1-targeted-adversarial-review-handoff.md), blob `26616d4244c218654fe37d31aed240e518cb94a0`.
 
 **Remaining evidence gaps (not additional policy ballots):**
 - `REAL_TRUST_ANCHOR=UNVERIFIED`: actual authenticated runtime governance/publisher principal and root material.
