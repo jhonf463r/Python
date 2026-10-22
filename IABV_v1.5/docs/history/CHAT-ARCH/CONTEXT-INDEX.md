@@ -3,7 +3,7 @@
 Source of truth: [CURRENT-STATE.md](./CURRENT-STATE.md), top snapshot. Active task: `M1A_CONSOLIDATED_SCOPE_CONTRACT_V1_TARGETED_ADVERSARIAL_REVIEW`; status `READY_FOR_INDEPENDENT_REVIEW; NOT_DISPATCHED`.
 
 Canonical current artifacts:
-- [M1A consolidated operational-block scope contract v1.0.0](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md) — blob `ac3a45018b0313747fe0c3dfc39d6298e0786fe8`; Owner-adopted normative design, implementation unverified.
+- [M1A consolidated operational-block scope contract v1.0.0](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md) — blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e`; Owner-adopted normative design, implementation unverified.
 - [Bounded Sonnet review handoff](./CHAT-ARCH-2026-10-22-M1A-contract-v1-targeted-adversarial-review-handoff.md) — blob `446dc7e789336e7a3bd718904c3f480902ee96ff`; exact inputs, prompt, acceptance criteria and stop conditions.
 - [Normalized M1A decision ledger](./CHAT-ARCH-2026-10-22-M1A-normalized-scope-decision-ledger-and-design-amendment.md) — blob `3425144a661c713eb8898c1eacefb2d791519bc0`; exact acceptance token and residual evidence gates.
 - [UAAL construction-completeness / traceability overlay](./CHAT-ARCH-2026-10-22-UAAL-construction-completeness-traceability-overlay.md) — mandatory method checks embedded in existing UAAL/MOP.
