@@ -1,27 +1,18 @@
 # CURRENT ROUTING SNAPSHOT — 2026-10-22 (GOAL-LOCKED; LOCAL EXECUTOR READ BLOCKED)
 
-## LATEST ROUTING DELTA — target_scope candidate static review PASS (2026-10-22; owner-supplied Sonnet 4.6)
+## LATEST ROUTING DELTA — target_scope PASS; new-chat continuity checkpoint (2026-10-22)
 
-This entry supersedes older routing text below that names the OpenCode review of builder-grant successor v0.2 as the next action; that review has since been received and recorded. Do not repeat it.
+The Owner supplied Sonnet 4.6's static review verdict PASS for the remote target_scope candidate. F-TS-1 is closed for the candidate fragment only: open consult_-prefix acceptance is gone and the code uses explicit known_target_scopes. The two discriminating cases behave as expected in the reviewed fragment: registered consult_codex does not block unrelated audit; unknown consult_unmapped_scope remains fail-closed. The reviewer explicitly states that this does not replace acceptance-test execution or validate a running server.
 
-The Owner supplied Sonnet 4.6's `PASS` for the static review of candidate `fix/iabv-operational-block-target-scope-repair-20261022`, commit `b7c3fffaec4ff3b78b1ca03ae64ead949236f504`, based on `main` `e61c5043bbdd8ea536ed5c9e642d80ff228ee897`. At the original comparison, the candidate was based on then-current `main` `e61c5043bbdd8ea536ed5c9e642d80ff228ee897` and was `ahead_by=1`, `behind_by=0`; the candidate-code paths are only `server.py` and `test_mcp_server.py`. Since this original comparison, `main` has advanced with documentation-only continuity commits `4f1584dea9b7e357f06b6946924216d152d34b05` and `7ef7518d8f257a7788451808d89dc896a6fc1404`. The candidate source commit remains `b7c3fffaec4ff3b78b1ca03ae64ead949236f504`, based on `e61c5043bbdd8ea536ed5c9e642d80ff228ee897`; `main` and the candidate diverge from that common base. The main-side deltas are documentation only. No code merge or rebase has occurred. Do not carry forward a fixed ahead/behind count in routing text; refresh the comparison before any integration decision. The unregistered `consult_*` prefix exception is absent and the explicit known-scope set is present. Record: [candidate target_scope repaired review](./CHAT-ARCH-2026-10-22-candidate-target-scope-repaired-review.md).
+Full handoff, provenance, exact candidate identity, current compare snapshot, risk boundaries and next-chat instructions: [post-Sonnet target_scope next-chat handoff](./CHAT-ARCH-2026-10-22-post-sonnet-target-scope-next-chat-handoff.md). Source review record: [candidate target_scope repaired review](./CHAT-ARCH-2026-10-22-candidate-target-scope-repaired-review.md).
 
-**Boundary:** this is static review only. Tests were not run. The result does not establish that the live MCP server uses this revision, release a block, make a supported read route available, or authorize merge/deployment, local inspection, builds, test execution, process launch or transport. Candidate-specific tests remain gated behind separate authorization.
+Candidate remains branch fix/iabv-operational-block-target-scope-repair-20261022 at b7c3fffaec4ff3b78b1ca03ae64ead949236f504. The pre-handoff comparison found main at f93b513f7d12c321a65077335d677c998373c764, candidate status diverged with ahead_by=1, behind_by=3, merge base e61c5043bbdd8ea536ed5c9e642d80ff228ee897. The main-side commits after that base were documentation-only; no source merge/rebase occurred. This pre-write snapshot is historical after the handoff commit: refresh before any integration decision.
 
-M1 remains the sole active task: `IDENTIFY_AND_USE_SUPPORTED_GOVERNANCE_OWNED_SCOPED_READ_ROUTE`. The next route is still the actual supported governance/administrative interface or responsible operator for the live server and checkout; its identity/existence is unresolved in this ChatGPT session. Do not use the candidate branch as evidence of live adoption and do not repeat the completed successor v0.2 review.
+Do not interpret the static PASS as test success, live-server adoption, block release or a supported local-read route. TESTS=NOT_RUN; LIVE_SERVER_IDENTITY=UNVERIFIED; LOCAL_SOURCE_READ=NOT_RUN; CANDIDATE_MERGED=NO.
 
-```
-PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
-ACTIVE_TASK=M1_IDENTIFY_AND_USE_SUPPORTED_GOVERNANCE_OWNED_SCOPED_READ_ROUTE
-GOVERNANCE=KEEP_BLOCKED
-IMPLEMENTATION=NOT_AUTHORIZED
-LOCAL_SOURCE_READ=NOT_RUN
-TESTS=NOT_RUN
-CANDIDATE_MERGED=NO
-BRIDGE=BRIDGE_NOT_READY
-REAL_TRANSPORT=NOT_RUN
-LOCAL_WORKTREE=UNTOUCHED
-```
+The one active task remains M1: IDENTIFY_AND_USE_SUPPORTED_GOVERNANCE_OWNED_SCOPED_READ_ROUTE. The next action is still the actual supported governance/administrative surface or responsible operator for the live server and checkout. A supported route was NOT_FOUND only in the previously examined ChatGPT tool surface; GLOBAL_ROUTE_EXISTENCE remains UNRESOLVED. Do not repeat the OpenCode successor v0.2 review, broad IABV auto-scan, local reader attempts, alternate-reader bypass, or old ahead_by=1/behind_by=0 claims.
+
+GOVERNANCE=KEEP_BLOCKED; IMPLEMENTATION=NOT_AUTHORIZED; LOCAL_SOURCE_READ=NOT_RUN; TESTS=NOT_RUN; CANDIDATE_MERGED=NO; BRIDGE=BRIDGE_NOT_READY; REAL_TRANSPORT=NOT_RUN; LOCAL_WORKTREE=UNTOUCHED
 
 ---
 
