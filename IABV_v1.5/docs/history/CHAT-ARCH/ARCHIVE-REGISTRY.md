@@ -1,19 +1,18 @@
-## ACTIVE ARCHIVE / ROUTE POINTER — M1A normalized ledger (2026-10-22)
+## ACTIVE ARCHIVE / ROUTE POINTER — adopted M1A contract v1.0.0; targeted review next (2026-10-22)
 
-**Owner decision simplification:** the M1A ledger now offers one bundled baseline acceptance, amendment, or rejection token; design adoption does not itself authorize runtime/implementation.
+Routing authority: [CURRENT-STATE.md](./CURRENT-STATE.md). Active task: `M1A_CONSOLIDATED_SCOPE_CONTRACT_V1_TARGETED_ADVERSARIAL_REVIEW`; status `READY_FOR_INDEPENDENT_REVIEW; NOT_DISPATCHED`.
 
-Routing authority: [CURRENT-STATE.md](./CURRENT-STATE.md). Active task: `M1A_OWNER_GOVERNANCE_ADJUDICATION_OF_SCOPE_MODEL_POLICY_AND_DECISION_LEDGER`; status `WAITING_OWNER`.
+The Owner accepted `ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE`. The accepted decision is in the [normalized ledger](./CHAT-ARCH-2026-10-22-M1A-normalized-scope-decision-ledger-and-design-amendment.md) (blob `3425144a661c713eb8898c1eacefb2d791519bc0`); the complete [operational-block scope contract v1.0.0](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md) is fetched back (blob `ac3a45018b0313747fe0c3dfc39d6298e0786fe8`). This is normative design adoption only.
 
 Latest related records:
-- [UAAL construction-completeness / traceability overlay](./CHAT-ARCH-2026-10-22-UAAL-construction-completeness-traceability-overlay.md) — method amendment under `UAAL-ROOT-001`; adds bidirectional requirement/rule traceability, decision-space completeness, explicit authority planes, bounded handoffs, reconciliation, fetch-back and reuse criteria. Documentary method only; runtime enforcement and causal reuse remain unproven.
-- [M1A normalized scope decision ledger and design amendment](./CHAT-ARCH-2026-10-22-M1A-normalized-scope-decision-ledger-and-design-amendment.md) — consolidated formal selector recommendation, seven genuine Owner/governance decision categories, fail-closed requirements and future acceptance gates. `PROPOSED`, not policy.
-- [Central space-time coordinator M1A reconciliation](./CHAT-ARCH-2026-10-22-central-space-time-coordinator-m1a-reconciliation.md) — maps this child task to existing UAAL-ROOT-001, Control Tower, goal-lock, Memory Operating Protocol, Entry 274 and prior M0 causal routing; no parallel coordinator should be created.
-- [Codex M1A scope-model proposal](./CHAT-ARCH-2026-10-22-M1A-Codex-scope-model-proposal.md) — preserved owner-supplied input.
-- [Claude/Sonnet-attributed independent review](./CHAT-ARCH-2026-10-22-M1A-independent-adversarial-review-claude.md) — preserved review report, invocation unverified.
-- [Universal Adaptive Algorithm Constitution](./UNIVERSAL-ADAPTIVE-ALGORITHM-CONSTITUTION-2026-10-04.md) — conceptual parent UAAL-ROOT-001.
-- [Entry 274](./CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md) — existing governing contract for authority separation and fail-closed read behavior.
+- [M1A consolidated operational-block scope contract v1.0.0](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md) — adopted selector/trust/aggregation/legacy design, traceability matrix and 28 design cases; not implemented.
+- [M1A normalized scope decision ledger](./CHAT-ARCH-2026-10-22-M1A-normalized-scope-decision-ledger-and-design-amendment.md) — records acceptance and the seven decision categories.
+- [UAAL construction-completeness / traceability overlay](./CHAT-ARCH-2026-10-22-UAAL-construction-completeness-traceability-overlay.md) — extension to UAAL/MOP; no parallel coordinator.
+- [Central space-time coordinator M1A reconciliation](./CHAT-ARCH-2026-10-22-central-space-time-coordinator-m1a-reconciliation.md) — derivation lineage and reuse of existing organs.
+- [Codex M1A scope-model proposal](./CHAT-ARCH-2026-10-22-M1A-Codex-scope-model-proposal.md) and [Claude/Sonnet-attributed review](./CHAT-ARCH-2026-10-22-M1A-independent-adversarial-review-claude.md) — immutable historical inputs; attribution of review invocation remains unverified.
+- [UAAL-ROOT-001](./UNIVERSAL-ADAPTIVE-ALGORITHM-CONSTITUTION-2026-10-04.md) and [Entry 274](./CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md) — parent algorithm and read/authority boundary.
 
-The old route note below is historical. Do not use its October 21 M1 next-actor instruction as current routing. The active M1A route is documentary and waits for the seven consolidated policy/authority choices. Keep `GOVERNANCE=KEEP_BLOCKED`, `IMPLEMENTATION=NOT_AUTHORIZED`, `TESTS=NOT_RUN`, `READ_LIST=FAIL_CLOSED`, and `BRIDGE=BRIDGE_NOT_READY`.
+**Residual blockers:** actual authenticated trust anchor/principal, catalogue publisher/revocation source, producer allowlist, target registry and actual call-site bindings, and independent block-release mechanism remain `UNVERIFIED/NOT_ESTABLISHED`. Keep `GOVERNANCE=KEEP_BLOCKED`, `IMPLEMENTATION=NOT_AUTHORIZED`, `TESTS=NOT_RUN`, `READ_LIST=FAIL_CLOSED`, `BRIDGE=BRIDGE_NOT_READY`.
 
 ---
 
