@@ -1,8 +1,3 @@
-
-
-## Working agreement: owner–coordinator operating contract — 2026-10-22
-
-The full operating rules are maintained in [the canonical ADHD-aware project coordination protocol, section 11](./CHAT-ARCH-2026-10-22-adhd-aware-project-coordination-and-space-time-focus-protocol.md). Use this Tower as the global dashboard and idea parking lot; use [CURRENT-STATE.md](./CURRENT-STATE.md) for the one active task and next actor. Never create a competing active-task source. New ideas must be captured and triaged, not dropped or automatically promoted. Progress is evidence-backed state change, not narration or invented percentages. Known failed routes must not be repeated unless a named precondition changes.
 # IABV v1.5 — DEVELOPMENT CONTROL TOWER
 ## Estado global, tracks, gates, pendientes y routing — 2026-09-21
 
@@ -17,6 +12,10 @@ The Owner explicitly reports ADHD and asks for structured project coordination b
 The existing DEVELOPMENT CONTROL TOWER and goal-lock/anti-drift protocol are the foundation; this addendum does not create a competing route or claim the runtime coordinator is implemented. The sole active task remains `IDENTIFY_AND_USE_SUPPORTED_GOVERNANCE_OWNED_SCOPED_READ_ROUTE`; preserve `GOVERNANCE=KEEP_BLOCKED`, `BRIDGE=BRIDGE_NOT_READY`, `LOCAL_SOURCE_READ=NOT_RUN`, `REAL_TRANSPORT=NOT_RUN`, `LOCAL_WORKTREE=UNTOUCHED`. The latest IABV response repeated a broad scan instead of the stop-and-report-only request; containment and all claimed mutations remain unverified. Do not repeat the scan, pull/clean/reset, alter GPU/models/credentials, or attempt improvised rollback.
 
 ---
+
+## Working agreement: owner–coordinator operating contract — 2026-10-22
+
+The full operating rules are maintained in [the canonical ADHD-aware project coordination protocol, section 11](./CHAT-ARCH-2026-10-22-adhd-aware-project-coordination-and-space-time-focus-protocol.md). Use this Tower as the global dashboard and idea parking lot; use [CURRENT-STATE.md](./CURRENT-STATE.md) for the one active task and next actor. Never create a competing active-task source. New ideas must be captured and triaged, not dropped or automatically promoted. Progress is evidence-backed state change, not narration or invented percentages. Known failed routes must not be repeated unless a named precondition changes.
 
 ## 0. LIVE PROJECT FOCUS DASHBOARD — 2026-10-22
 
