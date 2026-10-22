@@ -1,15 +1,13 @@
-## CURRENT ROUTING — M1 stopped: authoritative scope model unavailable (2026-10-22)
+## CURRENT ROUTING — Codex confirms authority-scope blocker (2026-10-22)
 
-Current route and evidence: [CURRENT-STATE.md](docs/history/CHAT-ARCH/CURRENT-STATE.md). Source-level result and provenance: [M1 authority scope-model check](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1-authority-scope-model-blocked.md).
+The Codex receipt confirms `BLOCKED_AUTHORITY_SCOPE_MODEL_UNAVAILABLE` for the reported isolated candidate. Keep this result `OWNER_REPORTED`; this coordinator did not directly inspect its Windows directory. Reconciliation and public-source evidence: [M1 Codex authority-check receipt](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1-Codex-authority-check-receipt.md).
 
-The permitted pinned sources do not demonstrate an authoritative/versioned scope vocabulary, resolver, explicit combination semantics or complete operation-to-target map. Stop with `BLOCKED_AUTHORITY_SCOPE_MODEL_UNAVAILABLE`; do not invent mappings or wire `operation_scope` by guesswork. F-01 is blocked; F-02/F-03 cannot be repaired safely absent that authority.
-
-The Owner-reported Windows candidate was not directly accessible to this ChatGPT coordinator. Candidate identity remains `OWNER_REPORTED`; do not represent this source-level result as a local-candidate or live-server verification. Preserve `GOVERNANCE=KEEP_BLOCKED`, fail-closed reads, `TESTS=NOT_RUN`, no code promotion and `BRIDGE=BRIDGE_NOT_READY`.
+Entry 274 is absent from the reported sparse candidate, but the canonical document exists on public GitHub main and was separately retrieved. Do not claim Codex read it. No authoritative/versioned scope model or complete target resolver was established; do not invent mapping, combination semantics or `operation_scope` call-site labels. Stop the current repair task. A newly commissioned scope model requires a separate explicit Owner/governance decision. Preserve `GOVERNANCE=KEEP_BLOCKED`, no tests, no code promotion and `BRIDGE=BRIDGE_NOT_READY`.
 
 ```text
 M1_STATUS=BLOCKED_AUTHORITY_SCOPE_MODEL_UNAVAILABLE
-AUTHORITY_SCOPE_MODEL=NOT_FOUND_IN_PERMITTED_PINNED_SOURCE_SET
-CANDIDATE_LOCAL_IDENTITY=OWNER_REPORTED
+CODEX_RECEIPT=OWNER_REPORTED
+ENTRY_274=PUBLIC_GITHUB_SOURCE_VERIFIED; ABSENT_FROM_CANDIDATE_REPORTED
 TESTS=NOT_RUN
 GOVERNANCE=KEEP_BLOCKED
 CANDIDATE_MERGED=NO
