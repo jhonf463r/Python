@@ -1,3 +1,9 @@
+## Cross-chat owner–coordinator operating agreement — 2026-10-22
+
+For project continuity, apply section 11 of the [ADHD-aware coordination protocol](./CHAT-ARCH-2026-10-22-adhd-aware-project-coordination-and-space-time-focus-protocol.md) together with the active route in [CURRENT-STATE.md](./CURRENT-STATE.md). Persistent memory must preserve both ideas and task focus: every substantive idea receives a status, provenance and re-entry/closure condition; only one task is active; closed decisions are not reopened without new evidence; previous failed routes are not repeated unchanged; and every material update is fetched back and linked. Never claim causal learning merely because text was saved—the next applicable decision must demonstrate reuse.
+
+---
+
 ## 2026-10-22 Owner-directed project focus and space-time coordination
 
 Protocol: [ADHD-aware project coordination and space-time focus](./CHAT-ARCH-2026-10-22-adhd-aware-project-coordination-and-space-time-focus-protocol.md).
