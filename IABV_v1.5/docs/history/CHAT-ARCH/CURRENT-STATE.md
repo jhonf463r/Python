@@ -1,29 +1,36 @@
-# CURRENT ROUTING SNAPSHOT — 2026-10-22 (M1 BLOCKED; M1A CENTRAL DESIGN RECONCILIATION ACTIVE)
+# CURRENT ROUTING SNAPSHOT — 2026-10-22 (M1 BLOCKED; M1A DESIGN RECONCILED; OWNER/GOVERNANCE ADJUDICATION NEXT)
 
-## LATEST ROUTING DELTA — Central coordinator derives the design path before Owner escalation (2026-10-22)
+## LATEST ROUTING DELTA — Existing UAAL algorithm applied to M1A; normalized ledger ready (2026-10-22)
 
-The Owner clarified that the expected “space-time brain” is the central architectural coordinator: restore the north star and prior evidence, maintain the dependency graph, infer the next justified construction step, coordinate the proper actor, reconcile the returned evidence, persist the causal delta, and reuse it. Do not treat each local defect as an isolated prompt or ask the Owner to decide ordinary technical logic that can be derived from the existing contract.
+The Owner explicitly requested that coordination apply algorithms and conceptual assets already documented in IABV, avoid duplicate components/source archaeology, preserve past deductions and ensure each step follows the whole construction. The canonical parent is `UAAL-ROOT-001` in [the Universal Adaptive Algorithm Constitution](./UNIVERSAL-ADAPTIVE-ALGORITHM-CONSTITUTION-2026-10-04.md). Its general loop is objective → perception/representation/interpretation → uncertainty → capability/realization selection under constraints → governed action → observation → verification → reusable knowledge → reuse/adaptation → next decision. Existing Control Tower, goal-lock, Memory Operating Protocol, CONTEXT-INDEX and Entry 274 remain the relevant organs; this task must extend them, not create a parallel “space-time brain.”
 
-The coordination-method correction and bounded M1A recommendation are recorded in [central space-time coordinator — M1A reconciliation](./CHAT-ARCH-2026-10-22-central-space-time-coordinator-m1a-reconciliation.md). That document recommends formal conjunctive selectors: `GLOBAL` matches every value of its own dimension only; if selector metadata and trusted target are complete, valid, and consistent, an exact mismatch in either dimension proves non-applicability. Missing, malformed, unknown, untrusted, contradictory or unsupported metadata remains fail-closed and cannot be reclassified as non-applicable. This is a `PROPOSED` technical recommendation, not adopted policy or implementation.
+The coordinator completed the current bounded documentary reconciliation and saved the [M1A normalized scope decision ledger and proposed design amendment](./CHAT-ARCH-2026-10-22-M1A-normalized-scope-decision-ledger-and-design-amendment.md). The proposal and review remain immutable input records. This new amendment separates a derived technical recommendation, genuine Owner/governance authority decisions, and future implementation acceptance gates.
 
-**Active task:** `M1A_COORDINATOR_DERIVE_SCOPE_SEMANTICS_AND_NORMALIZE_DECISION_LEDGER`. The coordinator should first normalize the proposal's decision table and existing §G list into (a) derivable technical repairs, (b) genuine Owner/governance authority choices, and (c) implementation acceptance gates. Do not repeat the same general adversarial review and do not return ordinary formal-model deductions to the Owner as open-ended questions. Only after this reconciliation should the remaining authority choices be surfaced explicitly. The Owner's request authorizes documentary reasoning/continuity correction only; it does not authorize source edits, implementation, tests, runtime, transport, merge or block release.
+**Technical recommendation (PROPOSED, not adopted policy):** the assistant and target selectors are independent conjunctive constraints; `GLOBAL` matches every value in its own dimension only; a complete, valid and trusted exact mismatch in either dimension proves non-applicability for that block; missing, malformed, untrusted, conflicting, unknown, revoked or unsupported data never proves non-applicability and must fail closed. All active blocks must be accounted for; diagnostic evaluations/receipts never grant permission or release a block. The normalized ledger corrects the review report's inconsistent “7 + 4 = 11 decisions” tally; it carries seven coherent governance decision categories and classifies the other findings as derivable design/acceptance repairs.
 
-The previous Sonnet-attributed report's `PASS_WITH_REPAIRS` is `OWNER_SUPPLIED`; actual reviewer invocation is unverified. Its body and final count disagree about which items require Owner decisions. Do not repeat a “7 + 4 = 11 decisions” tally. The detailed review remains [M1A independent adversarial review](./CHAT-ARCH-2026-10-22-M1A-independent-adversarial-review-claude.md).
+### Current active task
+
+`M1A_OWNER_GOVERNANCE_ADJUDICATION_OF_SCOPE_MODEL_POLICY_AND_DECISION_LEDGER` — review the compact recommendations in the normalized ledger and adjudicate the seven authority/policy categories there. This is the next genuine dependency, not an invitation for another broad AI review. The coordinator has already performed the documentary deductions; the remaining decisions concern the authorized catalogue/publisher and producer trust, resolver ownership, revocation/version lifecycle, independent block release, legacy migration, and formal adoption of selector semantics.
 
 ```text
 PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
-ACTIVE_TASK=M1A_COORDINATOR_DERIVE_SCOPE_SEMANTICS_AND_NORMALIZE_DECISION_LEDGER
+ACTIVE_TASK=M1A_OWNER_GOVERNANCE_ADJUDICATION_OF_SCOPE_MODEL_POLICY_AND_DECISION_LEDGER
+CURRENT_STATUS=WAITING_OWNER
 PRIOR_M1_STATUS=BLOCKED_AUTHORITY_SCOPE_MODEL_UNAVAILABLE
-SCOPE_MODEL=PROPOSED; NON_AUTHORITATIVE
-COORDINATOR_METHOD=DOCUMENTED; RUNTIME_NOT_PROVEN
-SELECTOR_SEMANTICS=CONJUNCTIVE_RECOMMENDATION; NOT_ADOPTED
-OWNER_GOVERNANCE_AUTHORITY_DECISIONS=PENDING_NORMALIZED_LEDGER
+PARENT_CONCEPT=UAAL-ROOT-001
+M1A_SCOPE_DESIGN=PROPOSED; NORMALIZED; NON_AUTHORITATIVE
+DESIGN_RECONCILIATION=PUBLIC_DOCUMENT_CREATED_AND_FETCHED_BACK
+OWNER_GOVERNANCE_DECISIONS=OG-M1A-01..OG-M1A-07; PENDING
+SCOPE_MODEL_AUTHORITY=NOT_ESTABLISHED
 IMPLEMENTATION=NOT_AUTHORIZED
 TESTS=NOT_RUN
 GOVERNANCE=KEEP_BLOCKED
+READ_LIST=FAIL_CLOSED
 CANDIDATE_MERGED=NO
 BRIDGE=BRIDGE_NOT_READY
 ```
+
+**No source code was added or modified; no tests, build, runtime, local checkout read, transport, merge or block release occurred.** The scope model remains proposed. After the Owner/governance decisions are recorded, the next design step must use the normalized ledger rather than replaying the same review or starting another broad inventory. Any implementation, testing, runtime, transport or release requires separate authorization.
 
 ---
 
