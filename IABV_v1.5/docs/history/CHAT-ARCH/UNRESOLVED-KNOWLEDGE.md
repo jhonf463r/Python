@@ -1,3 +1,13 @@
+## 2026-10-22 RAM-monitor coverage gap — unresolved causal finding
+
+Detailed record: [llama monitor coverage gap and unresolved RAM causality](./CHAT-ARCH-2026-10-22-llama-monitor-coverage-gap-and-ram-causality-unresolved.md).
+
+The owner-supplied `llama-server.exe` negative result applies only to visible samples from 2026-10-21 22:25:46–22:28:51. The interval until the reported monitor end at 2026-10-22 09:14:51 has no visible samples, so continuous coverage is `INCOMPLETE_OR_UNVERIFIABLE`. RAM total was not captured; Ollama metrics were not captured; `/api/ps` was not queried. RAM causality, Ollama causality, and startup causality remain `UNRESOLVED`. No process/configuration actions occurred; no fix was applied or verified.
+
+This is supplementary evidence, not a route change. The sole active next step remains `IDENTIFY_AND_USE_SUPPORTED_GOVERNANCE_OWNED_SCOPED_READ_ROUTE`. Do not extend monitoring automatically, fill the sample gap by inference, or bypass governance gates. Preserve `GOVERNANCE=KEEP_BLOCKED`.
+
+---
+
 ## Supplementary continuity delta — resource metacognition + cross-chat learning (2026-10-21)
 
 Detailed immutable record: [resource-metacognition-cross-chat-learning-and-bridge-continuity](./CHAT-ARCH-2026-10-21-resource-metacognition-cross-chat-learning-and-bridge-continuity.md). It reconciles the 22:15 owner-reported RAM capture (zero `llama-server.exe`, no models listed by the existing Ollama API, `ollama.exe` 26.47 MB working set / 61.79 MB private; global RAM use 75.58–76.07%) with the earlier un-reproduced report of ~60% attributed to `llama-server.exe`. Historical cause and IABV startup path remain unresolved; no fix is verified.
