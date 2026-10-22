@@ -1,5 +1,30 @@
 # CURRENT ROUTING SNAPSHOT — 2026-10-22 (M1 BLOCKED; M1A DESIGN RECONCILED; OWNER/GOVERNANCE ADJUDICATION NEXT)
 
+## LATEST METHOD DELTA — construction completeness / traceability overlay (2026-10-22)
+
+The requested documentary improvement to the existing construction algorithm has been created and fetched back: [UAAL construction-completeness overlay](./CHAT-ARCH-2026-10-22-UAAL-construction-completeness-traceability-overlay.md), blob `788732f2908f63bae13be42a8359b069d42db633`. The [Memory Operating Protocol](./MEMORY-OPERATING-PROTOCOL.md) now points to its mandatory pre-construction and handoff checks; its update was fetched back with blob `b4798d9b6912650034dbe0b6bd74b625dcf6d30e`.
+
+The overlay extends `UAAL-ROOT-001`; it does not create another coordinator and does not change the active task. It requires bidirectional requirement/rule traceability, explicit state-space and decision-table coverage, separation of derivation from governance authority and implementation permissions, unique-ID/count reconciliation, bounded evidence-backed handoffs, direct comparison of returned work to the original request, fetch-back verification, and later demonstrated reuse.
+
+**Active routing remains unchanged:** `M1A_OWNER_GOVERNANCE_ADJUDICATION_OF_SCOPE_MODEL_POLICY_AND_DECISION_LEDGER`, `WAITING_OWNER`. The construction-method task is complete as a documentation change, but the M1A design has **not** been accepted: `OG-M1A-01..OG-M1A-07=PENDING`; its exact bundled response remains in the [normalized decision ledger](./CHAT-ARCH-2026-10-22-M1A-normalized-scope-decision-ledger-and-design-amendment.md). The phrase “proceed” authorized this bounded method improvement, not policy adoption. No implementation, tests, runtime, transport, merge or block release was authorized or performed.
+
+```text
+LAST_COMPLETED_DOCUMENTARY_TASK=UAAL_CONSTRUCTION_COMPLETENESS_TRACEABILITY_OVERLAY
+OVERLAY=DOCUMENTED_AND_FETCHED_BACK
+M1A_POLICY=PROPOSED_NON_AUTHORITATIVE
+OWNER_GOVERNANCE_DECISIONS=OG-M1A-01..OG-M1A-07_PENDING
+ACTIVE_TASK=M1A_OWNER_GOVERNANCE_ADJUDICATION_OF_SCOPE_MODEL_POLICY_AND_DECISION_LEDGER
+CURRENT_STATUS=WAITING_OWNER
+GOVERNANCE=KEEP_BLOCKED
+IMPLEMENTATION=NOT_AUTHORIZED
+TESTS=NOT_RUN
+READ_LIST=FAIL_CLOSED
+BRIDGE=BRIDGE_NOT_READY
+```
+
+---
+
+
 ## LATEST ROUTING DELTA — Existing UAAL algorithm applied to M1A; normalized ledger ready (2026-10-22)
 
 The Owner explicitly requested that coordination apply algorithms and conceptual assets already documented in IABV, avoid duplicate components/source archaeology, preserve past deductions and ensure each step follows the whole construction. The canonical parent is `UAAL-ROOT-001` in [the Universal Adaptive Algorithm Constitution](./UNIVERSAL-ADAPTIVE-ALGORITHM-CONSTITUTION-2026-10-04.md). Its general loop is objective → perception/representation/interpretation → uncertainty → capability/realization selection under constraints → governed action → observation → verification → reusable knowledge → reuse/adaptation → next decision. Existing Control Tower, goal-lock, Memory Operating Protocol, CONTEXT-INDEX and Entry 274 remain the relevant organs; this task must extend them, not create a parallel “space-time brain.”
