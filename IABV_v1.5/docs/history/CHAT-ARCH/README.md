@@ -9,7 +9,7 @@
 4. [Entry 274](./CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md): trusted approval, server-side reader decision, receipt-is-evidence, and separate block release.
 5. [Central M1A reconciliation](./CHAT-ARCH-2026-10-22-central-space-time-coordinator-m1a-reconciliation.md): explains how the current scope gap derives from the existing parent model, and why no second “mega-organ” or repeated broad scan is needed.
 
-The latest normalized recommendation uses conjunctive selectors: `GLOBAL` covers its own dimension only; a fully trusted, complete and valid `EXACT` mismatch proves non-applicability; incomplete, untrusted, conflicting or unsupported metadata remains fail-closed. This remains a design recommendation pending the explicit governance decisions listed in the normalized ledger.
+The latest normalized recommendation uses conjunctive selectors: `GLOBAL` covers its own dimension only; a fully trusted, complete and valid `EXACT` mismatch proves non-applicability; incomplete, untrusted, conflicting or unsupported metadata remains fail-closed. The normalized ledger offers one bundled decision token (`ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE`, `ACCEPT_WITH_AMENDMENTS: ...`, or `REJECT_M1A_BASELINE: ...`) instead of seven separate prompts. Acceptance is design-only; runtime trust identity and implementation remain gated.
 
 ```text
 ACTIVE_TASK=M1A_OWNER_GOVERNANCE_ADJUDICATION_OF_SCOPE_MODEL_POLICY_AND_DECISION_LEDGER
