@@ -1,5 +1,7 @@
 ## Active unresolved knowledge — M1A authoritative scope policy/trust (2026-10-22)
 
+**M1A adjudication path:** do not ask seven disconnected questions. The normalized ledger bundles the defaults behind `ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE`, with amendment/rejection tokens available. Even after design acceptance, exact principal/trust-anchor bindings remain evidence prerequisites and operations stay blocked.
+
 Current route: [CURRENT-STATE.md](./CURRENT-STATE.md). Active task: `M1A_OWNER_GOVERNANCE_ADJUDICATION_OF_SCOPE_MODEL_POLICY_AND_DECISION_LEDGER`, status `WAITING_OWNER`.
 
 **Established documentary facts:** Codex's typed/versioned scope proposal and a Sonnet/Claude-attributed review report exist as public documents; the latter is owner-supplied and its execution is not independently authenticated. The bounded public-source checks for `domain/models.py`, `world_model_service.py`, and `server.py` recorded no authoritative versioned scope registry or trusted operation-to-target resolver in those paths. Entry 274 already requires authoritative scope semantics, fail-closed uncertainty, separate reader verification/receipt, and an independent block-release artifact.
