@@ -1,5 +1,38 @@
 # CURRENT ROUTING SNAPSHOT — 2026-10-22 (M1 ISOLATED IMPLEMENTATION AUTHORIZED; LIVE ACCESS STILL BLOCKED)
 
+## LATEST ROUTING DELTA — Codex reports partial M1 implementation; diff unverified (2026-10-22)
+
+The Owner supplied a Codex-attributed report of a two-file dirty working-tree candidate on local branch `codex/m1-governed-scoped-read-route-20261022`, base/current HEAD `cb2f2b02ade297660431e7bbd5d0dce75d10e39c`, no commit. The report says `server.py` separates `assistant_kind` and `target_scope` with finite recognized scopes, and that the MCP read/list tools deny when no verifiable scoped-read decision exists. It also reports nine added and four adjusted tests, not run. Full provenance, reported paths/blobs and adjudication: [M1 partial implementation result](./CHAT-ARCH-2026-10-22-M1-partial-implementation-Codex-result.md).
+
+Evidence rule: the diff is not published or available to this coordinator from the supplied report. Its semantics, test changes, candidate isolation and reported blob IDs remain `OWNER_REPORTED`, not `CONFIRMED_SOURCE`. `git diff --check PASS` is also reported, not independently reproduced. Do not mark M1 PASS or infer any live-server causal link from this candidate.
+
+The report deliberately did not implement the request → trusted local Owner approval → per-operation decision/receipt route because the issuer/principal, IPC correlation, independent receipt integrity and race-resistant opened-object containment are not evidenced. No remote MCP grant/block-release tool was added. The active-server transport and server/checkout identities remain unverified.
+
+```
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+ACTIVE_TASK=M1_IDENTIFY_AND_USE_SUPPORTED_GOVERNANCE_OWNED_SCOPED_READ_ROUTE
+M1_STATUS=IMPLEMENTATION_STATIC_PARTIAL; DIFF_REVIEW_PENDING
+IMPLEMENTATION=PARTIAL_IN_ISOLATED_CANDIDATE_REPORTED
+CANDIDATE_BRANCH=codex/m1-governed-scoped-read-route-20261022
+CANDIDATE_BASE_AND_HEAD=cb2f2b02ade297660431e7bbd5d0dce75d10e39c
+CANDIDATE_COMMIT=NONE_REPORTED
+SCOPED_READ_REQUEST_APPROVAL_FLOW=NOT_IMPLEMENTED
+READ_AND_LIST_AUTHORITY_CHECK=FAIL_CLOSED_REPORTED
+TESTS=NOT_RUN
+LIVE_MCP_IDENTITY=UNVERIFIED
+LIVE_CHECKOUT_IDENTITY=UNVERIFIED
+REAL_LOCAL_READ=NOT_RUN
+GOVERNANCE=KEEP_BLOCKED
+OWNER_DIRTY_CHECKOUT=DO_NOT_ACCESS_OR_MODIFY
+CANDIDATE_MERGED=NO
+BRIDGE=BRIDGE_NOT_READY
+```
+
+**Single next action:** obtain the full unified diff for exactly `server.py` and `test_mcp_server.py` from the isolated candidate and perform independent static review; no tests, builds, runtime, publication or merge. Keep M1 open until the supported trusted read/approval route and its security controls are implemented and independently verified.
+
+---
+
+
 ## LATEST ROUTING DELTA — Owner authorized isolated-candidate implementation (2026-10-22)
 
 The Owner explicitly said **“ok procede”** after being asked whether to authorize Codex to build the M1 governed-read route in an isolated candidate. This supersedes the earlier **Option 2: documentary-only** restriction for source implementation in a disposable candidate only. It does not grant access to the Owner's actual dirty checkout, authorize any local read of that checkout, run tests/builds/processes, launch IABV/MCP/Codex/Ollama, expose or use transport, merge or deploy, or release a live block.
