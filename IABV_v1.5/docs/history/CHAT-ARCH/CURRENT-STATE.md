@@ -1,5 +1,14 @@
 # CURRENT ROUTING SNAPSHOT — 2026-10-21 (GOAL-LOCKED; LOCAL EXECUTOR READ BLOCKED)
 
+## 2026-10-22 `inferido` evolution summary and `probe_consumed` semantics (supplementary; route unchanged)
+
+Detailed adjudication: [inferred evolution summary and probe semantics](./CHAT-ARCH-2026-10-22-inferred-evolution-summary-and-probe-consumed-semantics.md).
+
+The owner-reported chat message says Ollama is winning for `general`, eight proposals are in sandbox/validation, Ollama local appeared as a discovery, three candidates were discarded, and the latest “strong decision” was `probe_consumed`. Public main source supports a more limited reading: `probe_consumed` logs a structured self-examination signal; the documented method says it does not execute the actual probe or change real state. The evolution summary builds its `in_validation` list from `deferred` decision-log entries and caps it at eight, without verifying that each has an active sandbox run. A detected discovery is a candidate signal, not proof of promotion or measured superiority. The UI maps `evidenceTag=inferred` to “inferido”; this marks the message as inferred, not confirmed.
+
+No local runtime, current decision log, or local `data/`/SQLite state was inspected, and no tests/probes/runtime/tool calls or mutations were performed. Treat Ollama's claimed win and the proposal/discord counts as `INFERRED / OWNER_REPORTED` until backed by existing correlated IDs, metrics, run/verdict receipts and a verified promotion. Do not run another broad scan. The active route stays `IDENTIFY_AND_USE_SUPPORTED_GOVERNANCE_OWNED_SCOPED_READ_ROUTE`; preserve `GOVERNANCE=KEEP_BLOCKED`, `BRIDGE=BRIDGE_NOT_READY`, `LOCAL_SOURCE_READ=NOT_RUN`, and `REAL_TRANSPORT=NOT_RUN`.
+
+---
 ## 2026-10-22 broad auto-scan / claimed mutations (OWNER_REPORTED; route unchanged)
 
 Detailed reconciliation: [broad auto-scan out of scope and unverified mutations](./CHAT-ARCH-2026-10-22-broad-autoscan-out-of-scope-and-unverified-mutations.md).
