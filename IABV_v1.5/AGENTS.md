@@ -4,10 +4,10 @@ The Owner supplied a Claude/Sonnet-attributed independent review report; its act
 
 Critical findings: F-M1A-01 selector semantics and `GLOBAL`+exact mismatch unresolved; F-M1A-02 decision table lacks absent-selector, conflicting-alias and incompatible-policy-version cases; F-M1A-03 no complete catalogue trust chain, authorized producer model, or revocation mechanism is defined. The review's own body/final summary disagree about the number of new Owner decisions; do not treat its “four additional decisions” tally as authoritative. See the review record §4 for the reconciliation.
 
-Next bounded route: `M1A_RECONCILE_REVIEW_AND_PREPARE_REVISED_DESIGN_ONLY_AMENDMENT`. Design/documentation only; revise the proposal only after the Owner has separately authorized that task. No code edits, tests, builds, scripts, runtime, transport, local checkout access, candidate publication, merge or block release. The Owner/governance must adjudicate the ambiguous policy and catalogue/producer trust authority before any later implementation request.
+Next gate: `M1A_OWNER_GOVERNANCE_ADJUDICATION_OF_SCOPE_MODEL_POLICY_AND_DECISION_LEDGER`. Explicitly adjudicate the ambiguous policy and catalogue/producer trust authority, and reconcile the existing §G decision list. Do not send another AI to revise the proposal until those decisions are recorded or a separate bounded design-repair task is explicitly authorized. Any later design amendment is documentary only; implementation requires separate authorization. No code edits, tests, builds, scripts, runtime, transport, local checkout access, candidate publication, merge or block release.
 
 ```text
-ACTIVE_TASK=M1A_RECONCILE_REVIEW_AND_PREPARE_REVISED_DESIGN_ONLY_AMENDMENT
+ACTIVE_TASK=M1A_OWNER_GOVERNANCE_ADJUDICATION_OF_SCOPE_MODEL_POLICY_AND_DECISION_LEDGER
 SCOPE_MODEL=PROPOSED; NON_AUTHORITATIVE
 INDEPENDENT_REVIEW=PASS_WITH_REPAIRS (OWNER_SUPPLIED)
 OWNER_GOVERNANCE_ADJUDICATION=PENDING
