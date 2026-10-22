@@ -1,3 +1,19 @@
+## ACTIVE ARCHIVE / ROUTE POINTER — M1A normalized ledger (2026-10-22)
+
+Routing authority: [CURRENT-STATE.md](./CURRENT-STATE.md). Active task: `M1A_OWNER_GOVERNANCE_ADJUDICATION_OF_SCOPE_MODEL_POLICY_AND_DECISION_LEDGER`; status `WAITING_OWNER`.
+
+Latest related records:
+- [M1A normalized scope decision ledger and design amendment](./CHAT-ARCH-2026-10-22-M1A-normalized-scope-decision-ledger-and-design-amendment.md) — consolidated formal selector recommendation, seven genuine Owner/governance decision categories, fail-closed requirements and future acceptance gates. `PROPOSED`, not policy.
+- [Central space-time coordinator M1A reconciliation](./CHAT-ARCH-2026-10-22-central-space-time-coordinator-m1a-reconciliation.md) — maps this child task to existing UAAL-ROOT-001, Control Tower, goal-lock, Memory Operating Protocol, Entry 274 and prior M0 causal routing; no parallel coordinator should be created.
+- [Codex M1A scope-model proposal](./CHAT-ARCH-2026-10-22-M1A-Codex-scope-model-proposal.md) — preserved owner-supplied input.
+- [Claude/Sonnet-attributed independent review](./CHAT-ARCH-2026-10-22-M1A-independent-adversarial-review-claude.md) — preserved review report, invocation unverified.
+- [Universal Adaptive Algorithm Constitution](./UNIVERSAL-ADAPTIVE-ALGORITHM-CONSTITUTION-2026-10-04.md) — conceptual parent UAAL-ROOT-001.
+- [Entry 274](./CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md) — existing governing contract for authority separation and fail-closed read behavior.
+
+The old route note below is historical. Do not use its October 21 M1 next-actor instruction as current routing. The active M1A route is documentary and waits for the seven consolidated policy/authority choices. Keep `GOVERNANCE=KEEP_BLOCKED`, `IMPLEMENTATION=NOT_AUTHORIZED`, `TESTS=NOT_RUN`, `READ_LIST=FAIL_CLOSED`, and `BRIDGE=BRIDGE_NOT_READY`.
+
+---
+
 ## 2026-10-21 CURRENT ROUTE POINTER — POST-TEST RECONCILIATION
 
 The sole actor-routing authority is the top snapshot of `CURRENT-STATE.md`. Latest route update: candidate test run completed on the existing sparse-first clone (76 collected, 74 passed, 2 failed; exit 1). The six new target-scope tests were collected and are not among the two failures. The failures are the existing `_FakeWorldModelService.scan_stats` test-fixture mismatch, outside the authorized target-scope fix; candidate remains unchanged and unmerged. The latest local executor inspection read zero source files because the normal MCP reader denied the operation with `governance_blocked=true` / `operational_block_active`. Do not rerun the test prompt, retry the reader, use another reader to bypass the gate, or launch the bridge. The next required edge is a supported governance-owned scoped read route for the already-authorized static inspection; the exact mechanism remains `UNRESOLVED`. See `CHAT-ARCH-2026-10-21-local-executor-read-denied-and-scopefix-test-result.md` and the current snapshot. Keep `GOVERNANCE=KEEP_BLOCKED`, `BRIDGE=BRIDGE_NOT_READY`, `REAL_TRANSPORT=NOT_RUN`, `LOCAL_WORKTREE=UNTOUCHED`, `CANDIDATE_MERGED=NO`; executor identity and effective policy remain `UNRESOLVED`.
