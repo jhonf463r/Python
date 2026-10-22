@@ -3,6 +3,15 @@
 
 **Purpose:** mapa operativo global para futuros chats. Reconciliación entre intención estratégica y evidencia conocida. Requiere fresh check de branch/runtime antes de claims operativos.
 
+## Latest target_scope candidate checkpoint — 2026-10-22
+
+Sonnet 4.6 returned an Owner-supplied static-review PASS for the candidate fragment: the open consult_-prefix exception was removed and unknown consult scopes remain fail-closed. This does not mean tests passed or the live server adopted the candidate. Current routing, findings, exact refs and start-of-next-chat instructions are captured in [post-Sonnet target_scope next-chat handoff](./CHAT-ARCH-2026-10-22-post-sonnet-target-scope-next-chat-handoff.md) and [candidate review record](./CHAT-ARCH-2026-10-22-candidate-target-scope-repaired-review.md).
+
+At the pre-Tower-update checkpoint, main was 262461e5b35aa1aeae3441e9be33434c96a21589; compare against fix/iabv-operational-block-target-scope-repair-20261022 returned diverged, ahead_by=1, behind_by=4, merge base e61c5043bbdd8ea536ed5c9e642d80ff228ee897. The branch has not been merged or rebased. Treat these counts as a snapshot before this document-only update and refresh before any integration decision.
+
+CURRENT-STATE.md remains the sole routing authority. The one active task is M1 — IDENTIFY_AND_USE_SUPPORTED_GOVERNANCE_OWNED_SCOPED_READ_ROUTE. Tests=NOT_RUN; local source read=NOT_RUN; governance=KEEP_BLOCKED; implementation=NOT_AUTHORIZED; bridge=BRIDGE_NOT_READY; real transport=NOT_RUN; local worktree=UNTOUCHED.
+
+
 ## 2026-10-22 ADHD-aware focus and space-time project coordination (documented method; runtime not proven)
 
 Detailed owner-directed protocol: [ADHD-aware project coordination and space-time focus](./CHAT-ARCH-2026-10-22-adhd-aware-project-coordination-and-space-time-focus-protocol.md).
