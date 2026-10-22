@@ -21,7 +21,7 @@ The accepted design does not supply runtime credentials or authorize code, tests
 
 Protocol: [ADHD-aware project coordination and space-time focus](./CHAT-ARCH-2026-10-22-adhd-aware-project-coordination-and-space-time-focus-protocol.md).
 
-The Owner requests structured longitudinal coordination because new ideas arrive rapidly and can divert work from the project north star. Capture ideas without losing them; park them; keep one active task/next action except immediate safety or invalidated dependencies. Use evidence-backed progress states and restore the current objective at every new chat. This supplements the existing DEVELOPMENT CONTROL TOWER and goal-lock/anti-drift method; it does not prove runtime implementation. Active route remains `IDENTIFY_AND_USE_SUPPORTED_GOVERNANCE_OWNED_SCOPED_READ_ROUTE`; `GOVERNANCE=KEEP_BLOCKED`.
+The Owner requests structured longitudinal coordination because new ideas arrive rapidly and can divert work from the project north star. Capture ideas without losing them; park them; keep one active task/next action except immediate safety or invalidated dependencies. Use evidence-backed progress states and restore the current objective at every new chat. This supplements the existing DEVELOPMENT CONTROL TOWER and goal-lock/anti-drift method; it does not prove runtime implementation. This paragraph is a historical routing snapshot and is superseded by the top of `CURRENT-STATE.md`; the active task is now `M1A_CONSOLIDATED_SCOPE_CONTRACT_V1_TARGETED_ADVERSARIAL_REVIEW`. `GOVERNANCE=KEEP_BLOCKED`.
 
 ---
 
