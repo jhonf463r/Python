@@ -11,7 +11,7 @@ This Tower remains the global dependency/gate map; it does not supersede the top
 
 The contract reuses [UAAL-ROOT-001](./UNIVERSAL-ADAPTIVE-ALGORITHM-CONSTITUTION-2026-10-04.md), [Entry 274](./CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md), the Memory Operating Protocol and the [construction-completeness overlay](./CHAT-ARCH-2026-10-22-UAAL-construction-completeness-traceability-overlay.md). It defines conjunctive selectors, dimension-local `GLOBAL`, valid mismatch versus unknown/untrusted inputs, authenticated catalogue/producer/target requirements, all-block aggregation, independent release, legacy fail-closed behavior and 30 design conformance cases. No parallel coordinator is created.
 
-**Current task:** `M1A_CONSOLIDATED_SCOPE_CONTRACT_V1_TARGETED_ADVERSARIAL_REVIEW`. Next actor is intended to be Sonnet 4.6 in the Owner-reported Antigravity session; invocation remains `NOT_DISPATCHED`. Review only the exact consolidated contract, no broad source scan.
+**Current task:** `M1A_CONSOLIDATED_SCOPE_CONTRACT_V1_TARGETED_ADVERSARIAL_REVIEW`. Next actor is intended to be Sonnet 4.6 in the Owner-reported Antigravity session; invocation remains `NOT_DISPATCHED`. Review only the exact consolidated contract, no broad source scan. Exact prompt: [review handoff](./CHAT-ARCH-2026-10-22-M1A-contract-v1-targeted-adversarial-review-handoff.md), blob `26616d4244c218654fe37d31aed240e518cb94a0`.
 
 Real runtime trust anchor, catalogue publisher/revocation source, producer allowlist, target resolver/call-site binding and independent block-release mechanism remain `UNVERIFIED/NOT_ESTABLISHED`. Preserve `GOVERNANCE=KEEP_BLOCKED`, `IMPLEMENTATION=NOT_AUTHORIZED`, `TESTS=NOT_RUN`, `READ_LIST=FAIL_CLOSED`, `BRIDGE=BRIDGE_NOT_READY`.
 
