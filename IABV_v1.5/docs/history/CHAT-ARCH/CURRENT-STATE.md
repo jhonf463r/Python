@@ -1,22 +1,25 @@
-# CURRENT ROUTING SNAPSHOT — 2026-10-22 (M1 BLOCKED; M1A PROPOSAL AWAITING INDEPENDENT REVIEW)
+# CURRENT ROUTING SNAPSHOT — 2026-10-22 (M1 BLOCKED; M1A REVIEW RECEIVED; POLICY NOT ADJUDICATED)
 
-## LATEST ROUTING DELTA — Codex proposal received; adversarial review is next (2026-10-22)
+## LATEST ROUTING DELTA — Independent review received; repair and decision ledger next (2026-10-22)
 
-The Owner pasted Codex's proposed versioned operational-block scope model, self-reported `DESIGN_VERDICT=PASS_WITH_REPAIRS`. The proposal is archived as [M1A Codex scope-model proposal](./CHAT-ARCH-2026-10-22-M1A-Codex-scope-model-proposal.md). It is `OWNER_SUPPLIED` / `PROPOSED`, not accepted policy.
+The Owner supplied a Claude/Sonnet-attributed independent review of the Codex M1A scope-model proposal. Reported verdict: `PASS_WITH_REPAIRS`; actual reviewer invocation remains `OWNER_REPORTED`, not independently authenticated. The review has been archived at [M1A independent adversarial review](./CHAT-ARCH-2026-10-22-M1A-independent-adversarial-review-claude.md).
 
-Preliminary coordination observation: the combination table needs independent scrutiny, especially the rule that both exact selectors differing is `PROVEN_NOT_APPLICABLE` while one match plus one mismatch is `BLOCK_SCOPE_UNEVALUABLE`. The proposal must define whether selectors are conjunctive or otherwise; no semantics should be adopted implicitly.
+Three high-severity findings block policy adjudication: F-M1A-01 (selector/global-mismatch semantics undefined), F-M1A-02 (decision-table gaps: absent selector, alias conflict, mixed policy versions), and F-M1A-03 (catalogue trust chain, producer authorization, revocation absent from the proposal). F-M1A-04..07 and four bypass vectors add non-bearer receipt, legacy parsing, conformance-matrix, acceptance-dependency, caller-supplied scope, and multi-block evaluation clarifications.
 
-**Next actor:** independent adversarial reviewer, preferably Sonnet 4.6 in Antigravity if its availability can be confirmed; else a separately configured OpenCode/other reviewer. Exact bounded handoff: [M1A independent adversarial review](./CHAT-ARCH-2026-10-22-M1A-independent-adversarial-review-handoff.md). Do not send implementation back to Codex yet.
+Coordinator reconciliation found an internal inconsistency in the supplied review's final count: it classifies caller-scope handling and short-circuit prohibition as not requiring Owner decisions in the body, but includes them among four additional `OWNER_DECISION_REQUIRED` items in the final summary. Do not record “7 + 4 = 11 decisions” as authoritative. The review record separates explicit policy choices, existing §G decisions implicated by trust findings, and design repairs that appear derivable from Entry 274/fail-closed intent.
 
-After independent review, the next state transition requires explicit Owner/governance adjudication. Model authority and implementation remain unauthorized. No tests/runtime/transport or candidate edits; keep readers/listings fail-closed.
+**Next task:** document reconciliation and prepare a revised **design-only** amendment under a separately authorized design task; do not implement. The Owner/governance must resolve the global-plus-exact-mismatch policy and the existing authority/trust decisions before any later implementation authorization. Use [M1A review record](./CHAT-ARCH-2026-10-22-M1A-independent-adversarial-review-claude.md) as the detailed handoff. Do not repeat the same adversarial review or return to code implementation.
+
+The model remains `PROPOSED`, non-authoritative. Keep active blocks, reads/listings fail-closed, and all previous hard constraints.
 
 ```text
 PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
-ACTIVE_TASK=M1A_INDEPENDENT_ADVERSARIAL_REVIEW_OF_SCOPE_MODEL
+ACTIVE_TASK=M1A_RECONCILE_REVIEW_AND_PREPARE_REVISED_DESIGN_ONLY_AMENDMENT
 PRIOR_M1_STATUS=BLOCKED_AUTHORITY_SCOPE_MODEL_UNAVAILABLE
 SCOPE_MODEL_PROPOSAL=OWNER_SUPPLIED; PROPOSED
-DESIGN_AUTHOR_VERDICT=PASS_WITH_REPAIRS (OWNER_REPORTED)
-INDEPENDENT_REVIEW=PENDING
+CODEX_DESIGN_VERDICT=PASS_WITH_REPAIRS (OWNER_REPORTED)
+INDEPENDENT_REVIEW_VERDICT=PASS_WITH_REPAIRS (OWNER_SUPPLIED; INVOCATION_UNVERIFIED)
+CRITICAL_FINDINGS=F-M1A-01;F-M1A-02;F-M1A-03
 OWNER_GOVERNANCE_ADJUDICATION=PENDING
 SCOPE_MODEL_AUTHORITY=NOT_ESTABLISHED
 IMPLEMENTATION=NOT_AUTHORIZED
