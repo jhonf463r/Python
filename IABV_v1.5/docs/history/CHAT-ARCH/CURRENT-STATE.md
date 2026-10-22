@@ -1,6 +1,18 @@
 # CURRENT ROUTING SNAPSHOT — 2026-10-22 (GOAL-LOCKED; LOCAL EXECUTOR READ BLOCKED)
 
 
+## Latest verified M1 surface check — 2026-10-22 (documentary only; route unchanged)
+
+The current-session callable-tool catalogue was enumerated and exposes no IABV-local/MCP governance operation capable of issuing/verifying a scoped repository-read decision or independently releasing a block. The exact bounded result is recorded in [the governance-surface inventory follow-up](./CHAT-ARCH-2026-10-22-governance-surface-inventory-followup.md). At the time of inspection, remote `main` was `f891810b4daf00bf7440e438f0afbc832ccb326e`; that is the evidence snapshot for the tool inventory, not a claim about the current post-documentation HEAD.
+
+Issue [#470](https://github.com/jhonf463r/Python/issues/470) remains open with five comments. Its fetched body/comments still do not identify a callable supported interface, trusted issuer, responsible operator, verifiable read receipt or independent block-release authority. Therefore `SESSION_EXPOSED_SUPPORTED_ADMIN_READ_TOOL=NOT_FOUND` and `ISSUE_470_EXECUTABLE_ROUTE_OR_OPERATOR=NOT_FOUND_IN_CURRENT_ISSUE_CONTENT`; both are surface-bounded negative findings only. `GLOBAL_ROUTE_EXISTENCE=UNRESOLVED` remains mandatory.
+
+No local reader or alternative reader was invoked; no local source/configuration was read; no IABV, Codex CLI/App Server or Ollama process was started; no tests/builds/transport or local changes occurred. The single task remains M1. Do not repeat the ordinary IABV general-chat scan or bypass the denied reader.
+
+---
+
+
+
 ## Mandatory coordination contract — 2026-10-22
 
 Before continuing any chat/agent work, apply section 11 of the [Owner-directed coordination protocol](./CHAT-ARCH-2026-10-22-adhd-aware-project-coordination-and-space-time-focus-protocol.md). It defines the working agreement for preserving every meaningful idea without changing tasks implicitly, avoiding repeated/unproductive routes, coordinating Codex/other actors with exact scope and permissions, recording evidence and verifying persistence. This is a method rule, not proof of runtime automation. This file's top routing snapshot remains the sole authority for the active task and next actor; the active route and governance state below are not changed by this pointer.
