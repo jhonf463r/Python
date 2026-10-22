@@ -1,4 +1,32 @@
-## Current M1 status — static review fails pending source-backed scope authority (2026-10-22)
+## ACTIVE ROUTING — M1A normalized design; Owner governance decision is next (2026-10-22)
+
+**Follow CURRENT-STATE.md first.** This README is the canonical retrieval front door, but only the top snapshot of [CURRENT-STATE.md](./CURRENT-STATE.md) selects the active route. The current bounded documentary task has produced the [normalized M1A scope decision ledger and design amendment](./CHAT-ARCH-2026-10-22-M1A-normalized-scope-decision-ledger-and-design-amendment.md) from the preserved [Codex proposal](./CHAT-ARCH-2026-10-22-M1A-Codex-scope-model-proposal.md) and [independent-review report](./CHAT-ARCH-2026-10-22-M1A-independent-adversarial-review-claude.md). The amendment is `PROPOSED`, not current policy.
+
+**Existing algorithm lineage to activate, not duplicate:**
+1. [UAAL-ROOT-001 — Universal Adaptive Algorithm Constitution](./UNIVERSAL-ADAPTIVE-ALGORITHM-CONSTITUTION-2026-10-04.md): the parent objective→perception/representation→uncertainty→capability/realization selection under constraints→governed action→observation→verification→reusable knowledge→adaptation loop.
+2. [Memory Operating Protocol](./MEMORY-OPERATING-PROTOCOL.md): progressive retrieval, evidence/provenance, prior negative findings, current causal frontier, bounded actor handoff, reconciliation, Knowledge Delta and fetch-back.
+3. [Development Control Tower](./DEVELOPMENT-CONTROL-TOWER-2026-09-21.md) plus [goal-lock/anti-drift](./CHAT-ARCH-2026-10-20-protocol-anti-drift-and-bridge-goal-lock.md): global objective, dependency graph, one active task, no route drift.
+4. [Entry 274](./CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md): trusted approval, server-side reader decision, receipt-is-evidence, and separate block release.
+5. [Central M1A reconciliation](./CHAT-ARCH-2026-10-22-central-space-time-coordinator-m1a-reconciliation.md): explains how the current scope gap derives from the existing parent model, and why no second “mega-organ” or repeated broad scan is needed.
+
+The latest normalized recommendation uses conjunctive selectors: `GLOBAL` covers its own dimension only; a fully trusted, complete and valid `EXACT` mismatch proves non-applicability; incomplete, untrusted, conflicting or unsupported metadata remains fail-closed. This remains a design recommendation pending the explicit governance decisions listed in the normalized ledger.
+
+```text
+ACTIVE_TASK=M1A_OWNER_GOVERNANCE_ADJUDICATION_OF_SCOPE_MODEL_POLICY_AND_DECISION_LEDGER
+DESIGN_RECONCILIATION=DOCUMENTED_AND_FETCHED_BACK
+SCOPE_MODEL=PROPOSED; NON_AUTHORITATIVE
+GOVERNANCE=KEEP_BLOCKED
+IMPLEMENTATION=NOT_AUTHORIZED
+TESTS=NOT_RUN
+READ_LIST=FAIL_CLOSED
+BRIDGE=BRIDGE_NOT_READY
+```
+
+**Historical-route rule:** sections and actor instructions below are preserved as evidence of earlier states. They must not be followed as current routing where they conflict with CURRENT-STATE.md. No prior source candidate, static review or old next-actor pointer establishes a live route or authorizes implementation.
+
+---
+
+## Historical M1 checkpoint — superseded by CURRENT-STATE routing (2026-10-22)
 
 Review and complete handoff: [M1 scoped-read review and next-chat continuity](./CHAT-ARCH-2026-10-22-M1-scoped-read-review-and-next-chat-handoff.md). The diff has F-01 (no proven authoritative scope model), F-02 (operation_scope unwired at real tool call sites) and F-03 (assistant-first filter may hide unknown target data). Read/list remains denied without authority; M1 is open.
 
