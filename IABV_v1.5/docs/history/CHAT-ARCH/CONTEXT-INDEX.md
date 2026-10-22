@@ -1,3 +1,28 @@
+## LATEST ROUTING DELTA — target_scope candidate static review PASS (2026-10-22; owner-supplied Sonnet 4.6)
+
+This entry supersedes older routing text below that names the OpenCode review of builder-grant successor v0.2 as the next action; that review has since been received and recorded. Do not repeat it.
+
+The Owner supplied Sonnet 4.6's `PASS` for the static review of candidate `fix/iabv-operational-block-target-scope-repair-20261022`, commit `b7c3fffaec4ff3b78b1ca03ae64ead949236f504`, based on `main` `e61c5043bbdd8ea536ed5c9e642d80ff228ee897`. The coordinator's GitHub readback confirms the branch is one commit ahead and zero behind; only `server.py` and `test_mcp_server.py` are changed. The unregistered `consult_*` prefix exception is absent and the explicit known-scope set is present. Record: [candidate target_scope repaired review](./CHAT-ARCH-2026-10-22-candidate-target-scope-repaired-review.md).
+
+**Boundary:** this is static review only. Tests were not run. The result does not establish that the live MCP server uses this revision, release a block, make a supported read route available, or authorize merge/deployment, local inspection, builds, test execution, process launch or transport. Candidate-specific tests remain gated behind separate authorization.
+
+M1 remains the sole active task: `IDENTIFY_AND_USE_SUPPORTED_GOVERNANCE_OWNED_SCOPED_READ_ROUTE`. The next route is still the actual supported governance/administrative interface or responsible operator for the live server and checkout; its identity/existence is unresolved in this ChatGPT session. Do not use the candidate branch as evidence of live adoption and do not repeat the completed successor v0.2 review.
+
+```
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+ACTIVE_TASK=M1_IDENTIFY_AND_USE_SUPPORTED_GOVERNANCE_OWNED_SCOPED_READ_ROUTE
+GOVERNANCE=KEEP_BLOCKED
+IMPLEMENTATION=NOT_AUTHORIZED
+LOCAL_SOURCE_READ=NOT_RUN
+TESTS=NOT_RUN
+CANDIDATE_MERGED=NO
+BRIDGE=BRIDGE_NOT_READY
+REAL_TRANSPORT=NOT_RUN
+LOCAL_WORKTREE=UNTOUCHED
+```
+
+---
+
 ## Latest M1 reconciliation — predecessor reviewed; successor v0.2 awaits review (2026-10-22)
 
 The Owner supplied the Codex-attributed draft “Borrador: contrato de acceso de desarrollo amplio y gobernado”. Evidence is OWNER_SUPPLIED_CODEX_DRAFT; coordinator verdict DESIGN_VERDICT=PASS_WITH_REPAIRS. This is a future grant design, not a verified capability, implementation permission, or an existing supported local-read route. Key repairs: a sanitized disposable candidate with real filesystem isolation and race-resistant containment; separate enforcement for tests/builds/processes/network; independent durable receipt integrity; and explicit trusted-issuer/block-release decisions. Full reconciliation and copy-ready prompt: [M1 governance-surface follow-up](./CHAT-ARCH-2026-10-22-governance-surface-inventory-followup.md). The Owner has now supplied an independent review of the inline predecessor packet: `REVIEW_VERDICT=PASS_WITH_REPAIRS` for requirements baseline only, with five HIGH blockers and two new MEDIUM gaps. The coordinator preserved the findings and created successor v0.2, which explicitly marks the unverified critical mechanisms not implementable on current evidence and BA-05 `AUTHORITY_UNAVAILABLE`. The first 404 attempt remains history only; no URL recovery or alternate reader. Successor review is the next bounded task.

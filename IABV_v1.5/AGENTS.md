@@ -1,3 +1,28 @@
+## LATEST ROUTING DELTA — target_scope candidate static review PASS (2026-10-22; owner-supplied Sonnet 4.6)
+
+This entry supersedes older routing text below that names the OpenCode review of builder-grant successor v0.2 as the next action; that review has since been received and recorded. Do not repeat it.
+
+The Owner supplied Sonnet 4.6's `PASS` for the static review of candidate `fix/iabv-operational-block-target-scope-repair-20261022`, commit `b7c3fffaec4ff3b78b1ca03ae64ead949236f504`, based on `main` `e61c5043bbdd8ea536ed5c9e642d80ff228ee897`. The coordinator's GitHub readback confirms the branch is one commit ahead and zero behind; only `server.py` and `test_mcp_server.py` are changed. The unregistered `consult_*` prefix exception is absent and the explicit known-scope set is present. Record: [candidate target_scope repaired review](./CHAT-ARCH-2026-10-22-candidate-target-scope-repaired-review.md).
+
+**Boundary:** this is static review only. Tests were not run. The result does not establish that the live MCP server uses this revision, release a block, make a supported read route available, or authorize merge/deployment, local inspection, builds, test execution, process launch or transport. Candidate-specific tests remain gated behind separate authorization.
+
+M1 remains the sole active task: `IDENTIFY_AND_USE_SUPPORTED_GOVERNANCE_OWNED_SCOPED_READ_ROUTE`. The next route is still the actual supported governance/administrative interface or responsible operator for the live server and checkout; its identity/existence is unresolved in this ChatGPT session. Do not use the candidate branch as evidence of live adoption and do not repeat the completed successor v0.2 review.
+
+```
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+ACTIVE_TASK=M1_IDENTIFY_AND_USE_SUPPORTED_GOVERNANCE_OWNED_SCOPED_READ_ROUTE
+GOVERNANCE=KEEP_BLOCKED
+IMPLEMENTATION=NOT_AUTHORIZED
+LOCAL_SOURCE_READ=NOT_RUN
+TESTS=NOT_RUN
+CANDIDATE_MERGED=NO
+BRIDGE=BRIDGE_NOT_READY
+REAL_TRANSPORT=NOT_RUN
+LOCAL_WORKTREE=UNTOUCHED
+```
+
+---
+
 ## Mandatory Owner–coordinator working agreement (2026-10-22)
 
 Before assigning or performing a project task, restore the current route from [CURRENT-STATE.md](docs/history/CHAT-ARCH/CURRENT-STATE.md) and apply section 11 of the [coordination protocol](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-adhd-aware-project-coordination-and-space-time-focus-protocol.md). The protocol is the owner-directed operating contract: one North Star and one active task; capture all substantive ideas in a durable, triaged inbox; do not ask the Owner to repeat known decisions; do not repeat a route without a changed precondition; specify each Codex/agent handoff's destination, scope, authority, exclusions, expected receipt and stop condition; distinguish reports from verified outcomes; and fetch back canonical documentation after writing. If a task is blocked, explain what can still proceed and identify the exact dependency; do not compensate with a broad scan. Documentation of this method is not proof of runtime enforcement. No section here overrides authorization boundaries or the current-state routing authority.
