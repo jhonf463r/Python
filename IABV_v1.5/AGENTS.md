@@ -1,24 +1,23 @@
-## CURRENT ROUTING — M1A independent review received; design remains blocked (2026-10-22)
+## CURRENT ROUTING — Central space-time coordinator reconciles M1A design (2026-10-22)
 
-The Owner supplied a Claude/Sonnet-attributed independent review report; its actual model execution remains `OWNER_REPORTED`, not independently authenticated. Reported result is `PASS_WITH_REPAIRS`; canonical record: [M1A independent adversarial review](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1A-independent-adversarial-review-claude.md). The Codex proposal remains `PROPOSED`, not adopted policy.
+The Owner clarified the expected coordinator behavior: maintain the whole-project causal/dependency view, derive the next justified construction step, route the right actor, reconcile evidence, persist the delta and reuse prior lessons. Do not handle each technical gap as an isolated prompt or ask the Owner to resolve logic that can be derived from the current contract.
 
-Critical findings: F-M1A-01 selector semantics and `GLOBAL`+exact mismatch unresolved; F-M1A-02 decision table lacks absent-selector, conflicting-alias and incompatible-policy-version cases; F-M1A-03 no complete catalogue trust chain, authorized producer model, or revocation mechanism is defined. The review's own body/final summary disagree about the number of new Owner decisions; do not treat its “four additional decisions” tally as authoritative. See the review record §4 for the reconciliation.
+Current bounded task: `M1A_COORDINATOR_DERIVE_SCOPE_SEMANTICS_AND_NORMALIZE_DECISION_LEDGER`. Technical recommendation and rationale: [central space-time coordinator — M1A reconciliation](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-central-space-time-coordinator-m1a-reconciliation.md). Suggested model: independent conjunctive selectors; `GLOBAL` matches all values in its own dimension only; a trusted, complete, valid exact mismatch in either dimension proves non-applicability. Missing, unknown, malformed, untrusted, contradictory, or unsupported metadata remains fail-closed. This is `PROPOSED`, not accepted policy or implementation.
 
-Next gate: `M1A_OWNER_GOVERNANCE_ADJUDICATION_OF_SCOPE_MODEL_POLICY_AND_DECISION_LEDGER`. Explicitly adjudicate the ambiguous policy and catalogue/producer trust authority, and reconcile the existing §G decision list. Do not send another AI to revise the proposal until those decisions are recorded or a separate bounded design-repair task is explicitly authorized. Any later design amendment is documentary only; implementation requires separate authorization. No code edits, tests, builds, scripts, runtime, transport, local checkout access, candidate publication, merge or block release.
+The coordinator must distinguish derivable technical repairs from genuine Owner/governance authority decisions and implementation acceptance gates. Do not reuse the review's inconsistent “7 + 4” decision count or send another general review of settled facts. The Claude/Sonnet-attributed `PASS_WITH_REPAIRS` report remains Owner-supplied and its actual invocation unverified; detailed reconciliation is in [the review record](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1A-independent-adversarial-review-claude.md).
+
+This route is documentary reasoning and continuity only. No code edits, tests, builds, scripts, runtime, transport, local checkout access, candidate publication, merge or block release. Preserve `GOVERNANCE=KEEP_BLOCKED`, `IMPLEMENTATION=NOT_AUTHORIZED`, `READ_LIST=FAIL_CLOSED`, and `BRIDGE=BRIDGE_NOT_READY`.
 
 ```text
-ACTIVE_TASK=M1A_OWNER_GOVERNANCE_ADJUDICATION_OF_SCOPE_MODEL_POLICY_AND_DECISION_LEDGER
+ACTIVE_TASK=M1A_COORDINATOR_DERIVE_SCOPE_SEMANTICS_AND_NORMALIZE_DECISION_LEDGER
 SCOPE_MODEL=PROPOSED; NON_AUTHORITATIVE
-INDEPENDENT_REVIEW=PASS_WITH_REPAIRS (OWNER_SUPPLIED)
-OWNER_GOVERNANCE_ADJUDICATION=PENDING
+COORDINATOR_METHOD=DOCUMENTED; RUNTIME_NOT_PROVEN
+OWNER_GOVERNANCE_AUTHORITY_DECISIONS=PENDING_NORMALIZED_LEDGER
 IMPLEMENTATION=NOT_AUTHORIZED
 TESTS=NOT_RUN
 GOVERNANCE=KEEP_BLOCKED
-READ_LIST=FAIL_CLOSED
 BRIDGE=BRIDGE_NOT_READY
 ```
-
-Historical M1 implementation notes below are not current routing and must not be interpreted as authorization to implement the scope model. [CURRENT-STATE.md](docs/history/CHAT-ARCH/CURRENT-STATE.md) is the current route authority.
 
 ---
 
