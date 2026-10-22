@@ -1,5 +1,7 @@
 ## ACTIVE ARCHIVE / ROUTE POINTER — M1A normalized ledger (2026-10-22)
 
+**Owner decision simplification:** the M1A ledger now offers one bundled baseline acceptance, amendment, or rejection token; design adoption does not itself authorize runtime/implementation.
+
 Routing authority: [CURRENT-STATE.md](./CURRENT-STATE.md). Active task: `M1A_OWNER_GOVERNANCE_ADJUDICATION_OF_SCOPE_MODEL_POLICY_AND_DECISION_LEDGER`; status `WAITING_OWNER`.
 
 Latest related records:
