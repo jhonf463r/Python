@@ -1,3 +1,9 @@
+## Owner–coordinator working agreement and anti-loop rule — 2026-10-22
+
+Canonical operating contract: [ADHD-aware project coordination and space-time focus protocol, section 11](./CHAT-ARCH-2026-10-22-adhd-aware-project-coordination-and-space-time-focus-protocol.md). Before acting in a new chat, restore the objective/active task from [CURRENT-STATE.md](./CURRENT-STATE.md), retrieve relevant prior attempts and negative findings, capture new ideas instead of switching tasks, and use evidence-backed states. The method is documented; runtime enforcement is not yet proven.
+
+---
+
 ## 2026-10-22 Owner-directed project focus and space-time coordination
 
 Protocol: [ADHD-aware project coordination and space-time focus](./CHAT-ARCH-2026-10-22-adhd-aware-project-coordination-and-space-time-focus-protocol.md).
