@@ -3,13 +3,23 @@
 
 **Purpose:** mapa operativo global para futuros chats. Reconciliación entre intención estratégica y evidencia conocida. Requiere fresh check de branch/runtime antes de claims operativos.
 
-## Latest target_scope candidate checkpoint — 2026-10-22
+## Current route overlay — M1A normalized design / Owner gate (2026-10-22)
+
+This Control Tower remains the global dependency/gate map; it does not supersede the top of [CURRENT-STATE.md](./CURRENT-STATE.md). Current task is `M1A_OWNER_GOVERNANCE_ADJUDICATION_OF_SCOPE_MODEL_POLICY_AND_DECISION_LEDGER`, status `WAITING_OWNER`.
+
+The M1A work reuses the existing parent loop [UAAL-ROOT-001](./UNIVERSAL-ADAPTIVE-ALGORITHM-CONSTITUTION-2026-10-04.md), this Control Tower, the [goal-lock/anti-drift protocol](./CHAT-ARCH-2026-10-20-protocol-anti-drift-and-bridge-goal-lock.md), [Memory Operating Protocol](./MEMORY-OPERATING-PROTOCOL.md), and [Entry 274](./CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md). It must not create a parallel coordinator or duplicate a capability router.
+
+Completed bounded documentary output: [M1A normalized scope decision ledger/design amendment](./CHAT-ARCH-2026-10-22-M1A-normalized-scope-decision-ledger-and-design-amendment.md). Seven genuine policy/authority categories remain for the Owner/governance; other review findings are classified as derivable technical/documentary repairs. Proposed selector semantics remain non-authoritative. `GOVERNANCE=KEEP_BLOCKED`, `IMPLEMENTATION=NOT_AUTHORIZED`, `TESTS=NOT_RUN`, `READ_LIST=FAIL_CLOSED`, `BRIDGE=BRIDGE_NOT_READY`.
+
+Historical routing notes below remain valuable evidence of past decisions but must not send the next actor back to M1's old source-scope investigation or the same broad review.
+
+## Historical target_scope candidate checkpoint — 2026-10-22 (not current routing)
 
 Sonnet 4.6 returned an Owner-supplied static-review PASS for the candidate fragment: the open consult_-prefix exception was removed and unknown consult scopes remain fail-closed. This does not mean tests passed or the live server adopted the candidate. Current routing, findings, exact refs and start-of-next-chat instructions are captured in [post-Sonnet target_scope next-chat handoff](./CHAT-ARCH-2026-10-22-post-sonnet-target-scope-next-chat-handoff.md) and [candidate review record](./CHAT-ARCH-2026-10-22-candidate-target-scope-repaired-review.md).
 
 At the pre-Tower-update checkpoint, main was 262461e5b35aa1aeae3441e9be33434c96a21589; compare against fix/iabv-operational-block-target-scope-repair-20261022 returned diverged, ahead_by=1, behind_by=4, merge base e61c5043bbdd8ea536ed5c9e642d80ff228ee897. The branch has not been merged or rebased. Treat these counts as a snapshot before this document-only update and refresh before any integration decision.
 
-CURRENT-STATE.md remains the sole routing authority. The one active task is M1 — IDENTIFY_AND_USE_SUPPORTED_GOVERNANCE_OWNED_SCOPED_READ_ROUTE. Tests=NOT_RUN; local source read=NOT_RUN; governance=KEEP_BLOCKED; implementation=NOT_AUTHORIZED; bridge=BRIDGE_NOT_READY; real transport=NOT_RUN; local worktree=UNTOUCHED.
+CURRENT-STATE.md remains the sole routing authority. The M1 task statement in this historical checkpoint is superseded; current task is M1A_OWNER_GOVERNANCE_ADJUDICATION_OF_SCOPE_MODEL_POLICY_AND_DECISION_LEDGER. Tests=NOT_RUN; local source read=NOT_RUN; governance=KEEP_BLOCKED; implementation=NOT_AUTHORIZED; bridge=BRIDGE_NOT_READY; real transport=NOT_RUN; local worktree=UNTOUCHED.
 
 
 ## 2026-10-22 ADHD-aware focus and space-time project coordination (documented method; runtime not proven)
