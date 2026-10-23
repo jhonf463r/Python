@@ -1,3 +1,55 @@
+## OVERRIDING LATEST ROUTING — G1 candidate implementation attempt terminated at missing trusted enrollment authority (2026-10-22)
+
+The Owner supplied Codex's terminal result `BLOCKED_MISSING_G1_TRUST_ANCHOR`. The result is now recorded in the [terminal implementation receipt](./CHAT-ARCH-2026-10-22-M1A-G1-trust-bootstrap-candidate-implementation-result.md), blob `33ba4562c3753a053b92176061d0258a1c35e77d`. This was an actual bounded candidate attempt, not a policy-feasibility-only report; it ended without product edits or a commit because the candidate contains no evidenced independent bootstrap authority and enforceable issuer/requester/reader separation.
+
+The coordinator independently re-fetched GitHub metadata for `jhonf463r/Python`: candidate `m1a-g1-g3-governance-route-candidate-20261022` still points to `60c8ac6e7ff425c815d9bdc7194bf20ef8d134db`; compare against the pinned base is `identical`, `ahead_by=0`, `behind_by=0`, no changed files; tree `ca963f8013809d4efcf56133a37d2efe148517e9`. No local checkout was accessed.
+
+The unresolved authority edge is a verifiably authenticated Owner principal bound to a protected issuer credential and the exact server instance, backed by an independent enrollment authority and an OS/process boundary that the requester and reader cannot alter or use to mint their own authority. Windows Hello/WebAuthn remains only a possible factor; no configured local capability or project integration is demonstrated. Do not repeat the source inventory or feasibility review, add a self-enrollment stub, or automatically start another implementation attempt.
+
+The current implementation attempt is terminal. The single unresolved frontier remains `M1A_G1_TRUST_BOOTSTRAP_AUTHORITY_BOUNDARY`, status `BLOCKED_MISSING_G1_TRUST_ANCHOR`; no further implementation is authorized by this receipt alone. All G1–G8 implementation gates remain open. Preserve `GOVERNANCE=KEEP_BLOCKED` and `BRIDGE=BRIDGE_NOT_READY`.
+
+```text
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+ACTIVE_TASK=M1A_G1_TRUST_BOOTSTRAP_AUTHORITY_BOUNDARY
+STATUS=BLOCKED_MISSING_G1_TRUST_ANCHOR; CURRENT_IMPLEMENTATION_ATTEMPT_TERMINAL
+LAST_TERMINAL_TASK=M1A_G1_TRUST_BOOTSTRAP_CANDIDATE_IMPLEMENTATION
+LAST_TERMINAL_RESULT=BLOCKED_MISSING_G1_TRUST_ANCHOR
+RESULT_SOURCE=OWNER_SUPPLIED_CODEX_TERMINAL_OUTPUT; GITHUB_BRANCH_STATE_INDEPENDENTLY_RECHECKED
+RESULT_RECEIPT_BLOB=33ba4562c3753a053b92176061d0258a1c35e77d
+CANDIDATE_BRANCH=m1a-g1-g3-governance-route-candidate-20261022
+CANDIDATE_BASE=60c8ac6e7ff425c815d9bdc7194bf20ef8d134db
+CANDIDATE_HEAD=60c8ac6e7ff425c815d9bdc7194bf20ef8d134db
+CANDIDATE_COMPARE=IDENTICAL; AHEAD_BY=0; BEHIND_BY=0; CHANGED_FILES=0
+CANDIDATE_SOURCE_CHANGES=NONE
+COMMIT_CREATED=NO
+TRUSTED_ENROLLMENT_AUTHORITY=NOT_ESTABLISHED
+OWNER_TO_ISSUER_BINDING=NOT_ESTABLISHED
+ISSUER_TO_SERVER_BINDING=NOT_ESTABLISHED
+ENFORCED_ISSUER_REQUESTER_READER_SEPARATION=NOT_ESTABLISHED
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3_VERSIONED_TARGET_RESOLVER=NOT_ESTABLISHED
+DURABLE_OPERATION_RECEIPT=NOT_ESTABLISHED
+IMPLEMENTATION=TERMINAL; NO_AUTOMATIC_FOLLOW_ON
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+GOVERNANCE=KEEP_BLOCKED
+TESTS=NOT_RUN
+BUILD=NOT_RUN
+RUNTIME=NOT_RUN
+REAL_TRANSPORT=NOT_RUN
+LOCAL_CHECKOUT=NOT_ACCESSED
+PROTECTED_LOCAL_READ=NOT_AUTHORIZED
+MERGE_DEPLOY=NOT_AUTHORIZED
+BLOCK_RELEASE=NOT_AUTHORIZED
+BRIDGE=BRIDGE_NOT_READY
+```
+
+---
+
+**Anti-repeat:** the current Codex result and candidate tip have already been checked and recorded. The next step is not another candidate edit attempt; preserve the exact authority blocker until a real external/independent bootstrap boundary can be demonstrated.
+
+---
+
 ## OVERRIDING LATEST ROUTING — Owner authorized bounded G1 bootstrap implementation attempt (2026-10-22)
 
 The Owner accepted `ACCEPT_G1_TRUST_BOOTSTRAP_POLICY_AND_AUTHORIZE_CANDIDATE_ONLY` and has now directed the coordinator to proceed with solving the remaining prerequisite. The prior attempt ended before code edits with `BLOCKED_MISSING_G1_TRUST_ANCHOR`; its result remains historical and accurate for that attempt. The new active task is `M1A_G1_TRUST_BOOTSTRAP_CANDIDATE_IMPLEMENTATION`, on the exact isolated public branch `m1a-g1-g3-governance-route-candidate-20261022`, pinned base `60c8ac6e7ff425c815d9bdc7194bf20ef8d134db`.
