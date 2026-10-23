@@ -373,3 +373,24 @@ The first inflection does **not** require unrestricted autonomous mutation of pr
 The strongest developmental evidence begins only when a later non-identical objective measurably changes because a prior verified development state was reused.
 
 Nonclaims remain unchanged: this does not establish consciousness, sentience, open-ended evolution or human-equivalent general intelligence.
+
+
+## 20D. EXECUTION-TO-EVIDENCE STAGE SEPARATION / OBSERVABILITY (UAAL-D018)
+
+- `CONCEPT_ID=UAAL-D018`
+- `PARENT_CONCEPT_ID=UAAL-D014` (Meta-Method Plasticity / Failure-to-Evolution Loop)
+- `ROOT=UAAL-ROOT-001`
+- `STATUS=DOCUMENTED_METHOD_NOT_RUNTIME_PROVEN`
+- `SOURCE_RECORD=CHAT-ARCH-2026-10-23-UAAL-D018-execution-to-evidence-stage-separation.md`
+
+The parent loop remains:
+
+`OBJECTIVE → PERCEIVE/REPRESENT/INTERPRET → MAINTAIN UNCERTAINTY → INFER CAPABILITY → DISCOVER/SELECT REALIZATION → CHECK CONSTRAINTS/ACCESS/RESOURCES → GOVERN → ACT → OBSERVE → VERIFY → UPDATE REUSABLE KNOWLEDGE → REUSE/ADAPT → NEXT DECISION`.
+
+UAAL-D018 strengthens its observe/verify/store/reuse edges: consequential actions must separately evidence invocation, source result, output shape, safe projection, serialization/transport, coordinator reconciliation, canonical persistence/fetch-back, and later causal reuse. No stage inherits success from a previous stage.
+
+`source success ≠ observation success ≠ projection success ≠ receipt correlation ≠ persistence ≠ causal reuse`.
+
+This refines the existing meta-method plasticity concept and does not create a separate algorithm, memory organ, agent, or router. It reuses the Memory Operating Protocol, Development Control Tower, evidence receipts, and `CURRENT-STATE.md` routing authority. Unknown handling remains fail-closed; structured observations require field-level capture states; retries require an explicit changed precondition and valid authorization.
+
+The method is documentary only. It does not prove runtime implementation, invocation, TPM state, automatic coordination, or learned behavior. Details and acceptance cases are in the canonical UAAL-D018 receipt.

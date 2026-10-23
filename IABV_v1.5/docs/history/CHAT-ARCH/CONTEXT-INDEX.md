@@ -1,3 +1,29 @@
+## OVERRIDING LATEST ROUTING — UAAL-D018 execution-to-evidence-stage separation method refinement (2026-10-23)
+
+Method receipt: [UAAL-D018 — Execution-to-Evidence Stage Separation and Projection Observability](./CHAT-ARCH-2026-10-23-UAAL-D018-execution-to-evidence-stage-separation.md), blob `6eeeb84c4ee4fc1d22e477f32f42f4c6fbe5b5bb`.
+
+The Owner authorized documentary protocol improvement, not another TPM invocation. Each action must separately evidence its route/authority, destination, exact input, invocation, source result, output shape, safe projection, serialization/transport, reconciliation, canonical fetch-back and later causal reuse. A `SUCCESS` at one stage does not close the next; a task name or prose-only “fix” is not evidence that the mechanism changed.
+
+TPM preflight remains terminal at `BLOCKED_TPM_FIELDS_NOT_CAPTURED`; the reported command result is `OWNER_REPORTED`, TPM presence and root cause remain unknown. Do not repeat `Get-Tpm`, query EK information, or invoke a new executor through this route without separately explicit, bounded authorization.
+
+```text
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+LAST_TERMINAL_TASK=UAAL_D018_EXECUTION_TO_EVIDENCE_STAGE_SEPARATION_METHOD_REFINEMENT
+ACTIVE_TASK=M1A_G1_TRUST_BOOTSTRAP_AUTHORITY_BOUNDARY
+METHOD_DELTA=UAAL-D018_DOCUMENTED_ONLY
+CAPTURE_ROOT_CAUSE=UNRESOLVED
+TPM_AVAILABILITY=UNVERIFIED
+GOVERNANCE=KEEP_BLOCKED
+G1=NOT_ESTABLISHED
+BRIDGE=BRIDGE_NOT_READY
+NEXT_ACTION=OWNER_DECISION_ONLY; AUTHORIZE_ONE_FIXED_TPM_CAPTURE_RUN_OR_CLOSE_TPM_PREFLIGHT_BRANCH
+AUTOMATIC_FOLLOW_ON=FALSE
+COORDINATOR_RUNTIME=NOT_PROVEN
+CAUSAL_SPACE_TIME_REUSE=NOT_PROVEN
+```
+
+---
+
 ## OVERRIDING LATEST ROUTING — TPM projection-capture mechanism static review completed (2026-10-23)
 
 The Owner authorized a bounded static review. Receipt: [TPM projection-capture mechanism static review](./CHAT-ARCH-2026-10-23-M1A-G1-TPM-projection-capture-mechanism-static-review.md), blob `25336d97408169f2d3d8f453c14d644002b433ab`.

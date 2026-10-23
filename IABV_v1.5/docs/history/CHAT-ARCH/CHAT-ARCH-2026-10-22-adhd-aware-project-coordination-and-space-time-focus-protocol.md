@@ -386,3 +386,40 @@ The latest task remains governed by `CURRENT-STATE.md`. This interaction contrac
 ### 13.4 Durable incident record and next-chat verification
 
 The exact incident, consequence, corrective rule and current authorized task are preserved in [the inline-prompt delivery/new-chat continuity correction](./CHAT-ARCH-2026-10-22-inline-prompt-delivery-and-new-chat-continuity-correction.md). The corrective rule is not satisfied merely by linking this file: the coordinator must actually place the complete actionable prompt in the answer that instructs the Owner to hand it to another AI. On the next new project chat, verify this behavior by delivering the full destination prompt inline without external retrieval. Until that happens, keep `COORDINATION_RULE=DOCUMENTED; CAUSAL_REUSE_NOT_PROVEN`.
+
+
+## 14. Execution-to-evidence stage separation — UAAL-D018 (2026-10-23)
+
+This amendment extends the existing Section 11 working agreement and construction-completeness overlay. It creates no second routing authority: `CURRENT-STATE.md` remains the sole active-task/next-action source.
+
+### 14.1 Failure converted to method
+
+Repeated TPM preflight receipts reported `Get-Tpm=SUCCESS` while all projected Boolean fields remained `UNKNOWN`. A recovery check found only the sanitized projection. The previous “corrected capture” prompt still described the intended behavior in prose without a reproducible executable artifact or field-level capture diagnostics. Neither the task name nor command success identifies where observation was lost. Canonical record: [UAAL-D018 receipt](./CHAT-ARCH-2026-10-23-UAAL-D018-execution-to-evidence-stage-separation.md), blob `6eeeb84c4ee4fc1d22e477f32f42f4c6fbe5b5bb`.
+
+### 14.2 Required evidence stages
+
+For consequential operations, preserve separate evidence for:
+
+`objective/route → action authority → destination capability → exact input/artifact → actual invocation → source result → output shape → field projection → serialization/transport → coordinator reconciliation → canonical persistence/fetch-back → later causal reuse`.
+
+Each stage has its own state. A successful stage does not imply that the next succeeded. Prompt drafted ≠ dispatched; command success ≠ correct extraction; projection created ≠ receipt delivered; commit created ≠ fetched-back persistence; method documented ≠ runtime learning.
+
+### 14.3 Reproducible correction, not prose-only repair
+
+If the preceding attempt failed because a required artifact or observation was missing, the next attempt must identify the exact changed precondition and contain the bounded executable artifact/input or a pinned source link and revision. For structured output, the receipt must separately expose output count/type, property presence, actual value type, field capture status, projection status, serialization/transport status, and invocation correlation when available. Do not invent correlation IDs or expose raw secret-bearing objects.
+
+### 14.4 No-repeat and authority budget
+
+Retry the same route only when (1) a named precondition or corrective artifact changed, (2) the attempt can distinguish prior explanations, (3) authority still covers this exact action, (4) call/side-effect budgets and stop conditions are explicit, and (5) a correlated receipt schema and fetch-back plan exist. If any condition fails, stop at the earliest unproven edge. Never use another reader/channel to bypass a denied route. Protocol-edit authority does not imply permission to rerun the TPM query.
+
+### 14.5 Fail-closed stage-local statuses
+
+Use distinct states such as `NOT_RUN`, `ATTEMPTED`, `SOURCE_SUCCESS`, `OUTPUT_SHAPE_UNKNOWN`, `PROJECTION_PARTIAL`, `SERIALIZATION_ERROR`, `RECEIPT_NOT_CORRELATED`, `PERSISTED_FETCH_BACK_VERIFIED`, and `CAUSAL_REUSE_NOT_PROVEN`. Never silently convert missing/null/type-mismatched data to false or true. Do not invoke downstream work after an unclosed prerequisite stage.
+
+### 14.6 Multi-perspective method, not a parallel brain
+
+Use only perspectives that can change the decision: project dependency, action authority, executor capability, source/output shape, projection/serialization, return-channel correlation, persistent routing, and future reuse. These are lenses within `UAAL-ROOT-001` and the existing Development Control Tower, not additional services/agents or a competing router. Sparse activation applies: broaden scope only when the added observation can discriminate the open cause.
+
+### 14.7 Acceptance and epistemic limit
+
+The documentary method is complete when state transitions, failure cases, retry preconditions, authority limits, the single next edge, and a durable receipt are linked. It remains `DOCUMENTED` until a later correlated invocation shows the schema working. This update does not prove coordinator runtime, automatic dispatch, independent observation, causal learning, or consciousness. TPM preflight remains stopped; the current next action still comes from `CURRENT-STATE.md`.

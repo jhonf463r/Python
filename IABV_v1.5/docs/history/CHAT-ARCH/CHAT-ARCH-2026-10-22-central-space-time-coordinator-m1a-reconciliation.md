@@ -122,3 +122,12 @@ The correct next action is coordinator-led documentary reconciliation of M1A:
 6. Do not implement, run tests/build/runtime, inspect the local checkout, use real transport, merge or release any block under this task.
 
 The operational posture remains `GOVERNANCE=KEEP_BLOCKED`, `IMPLEMENTATION=NOT_AUTHORIZED`, `TESTS=NOT_RUN`, `READ_LIST=FAIL_CLOSED`, `BRIDGE=BRIDGE_NOT_READY`.
+
+
+## 7. Execution-to-evidence observability refinement (UAAL-D018, 2026-10-23)
+
+The repeated TPM capture failure illustrates why the control tower routes by the earliest unproven dependency, not merely by the newest conversational symptom. The method receipt [UAAL-D018](./CHAT-ARCH-2026-10-23-UAAL-D018-execution-to-evidence-stage-separation.md) requires independent evidence for:
+
+`authority → destination capability → exact input → invocation → source result → output shape → safe projection → serialization/transport → reconciliation → fetch-back → later causal reuse`.
+
+The current receipts contain an Owner-reported `Get-Tpm` success with unusable `UNKNOWN` fields; they do not establish TPM presence, absence, or a root cause. Do not repeat the query or reopen the completed broad trust-bootstrap investigations. A future attempt needs a concrete corrected capture artifact and separate explicit authorization. The North Star remains `GOVERNED_IABV_CODEX_BRIDGE`; G1 is a dependency. This method refinement neither implements the bridge nor releases a gate.

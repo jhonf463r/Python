@@ -269,6 +269,52 @@
       ],
       "falsifier": "New source evidence proves an already available independent TPM identity source and a separate, defensible exact-instance/reader-verification path without an unapproved trust root or excluded infrastructure.",
       "next_open_edge": "Owner decision on a distinct, bounded read-only assessment of existing trust assets; not authorized by the static design task."
+    },
+    {
+      "id": "UAAL-D018",
+      "parent": "UAAL-D014",
+      "type": "DESIGN",
+      "origin_type": "EVIDENCE_DERIVED_COORDINATION",
+      "status": "DOCUMENTED_METHOD_NOT_RUNTIME_PROVEN",
+      "title": "Execution-to-Evidence Stage Separation and Projection Observability",
+      "source_records": [
+        "CHAT-ARCH-2026-10-23-UAAL-D018-execution-to-evidence-stage-separation.md",
+        "CHAT-ARCH-2026-10-23-M1A-G1-TPM-projection-capture-mechanism-static-review.md",
+        "CHAT-ARCH-2026-10-23-M1A-G1-TPM-EKCert-corrected-capture-failure.md",
+        "CHAT-ARCH-2026-10-22-UAAL-construction-completeness-traceability-overlay.md",
+        "CHAT-ARCH-2026-10-22-adhd-aware-project-coordination-and-space-time-focus-protocol.md",
+        "UNIVERSAL-ADAPTIVE-ALGORITHM-CONSTITUTION-2026-10-04.md"
+      ],
+      "derivation_reason": "Repeated command receipts reported source success while the sanitized projection remained UNKNOWN; earlier corrective prompts did not contain a reproducible executable artifact or stage-specific capture diagnostics. The method must locate the earliest unproven evidence transition and prevent same-route repetition without a changed precondition.",
+      "problem_or_objective": "Make cross-tool/OS actions causally observable without inferring success across execution, projection, transport, persistence or later reuse stages.",
+      "new_mechanism_or_distinction": "Track objective/authority, destination, exact input, invocation, source result, output shape, field-level projection, serialization/transport, reconciliation, fetch-back and causal reuse independently; use bounded retry conditions and stage-local statuses.",
+      "dependencies_on_existing_organs": [
+        "UAAL-ROOT-001",
+        "UAAL-D014 Meta-Method Plasticity / Failure-to-Evolution Loop",
+        "Memory Operating Protocol",
+        "Development Control Tower",
+        "CURRENT-STATE.md as sole routing authority",
+        "UAAL construction-completeness overlay"
+      ],
+      "affected_layer": "coordination method, external-AI/tool handoff, OS command observation, evidence receipt, persistent memory",
+      "epistemic_status": "DOCUMENTED_METHOD_NOT_RUNTIME_PROVEN; TPM root cause remains UNRESOLVED",
+      "evidence": "Owner-supplied preflight receipts; source-grounded Microsoft Get-Tpm/Get-TpmEndorsementKeyInfo documentation; canonical TPM projection-capture static review",
+      "falsifier": "A future correlated receipt proves a complete typed source result and safe projection existed but a downstream transport/sanitization stage changed it; revise causal localization to that stage while retaining stage separation.",
+      "implementation_refs": [],
+      "experiment_refs": [
+        "M1A_G1_TPM_EKCERT_READ_ONLY_PREFLIGHT",
+        "M1A_G1_TPM_EKCERT_READ_ONLY_PREFLIGHT_RECOVERY",
+        "M1A_G1_TPM_CAPTURE_PROJECTION_DIAGNOSTIC"
+      ],
+      "verification_refs": [
+        "CHAT-ARCH-2026-10-23-M1A-G1-TPM-projection-capture-mechanism-static-review.md"
+      ],
+      "knowledge_delta": "A successful operation does not imply successful observation/projection; the missing stage determines one discriminating next action instead of a same-route repeat.",
+      "method_delta": "Stage-specific receipt schema; per-field typed capture states; explicit corrective-artifact and authorization gates; no-repeat rule without a changed precondition.",
+      "routing_delta": "Keep one active task; TPM preflight remains stopped; next action is Owner decision on one fixed capture run or closure of the branch.",
+      "next_open_edge": "Owner decision followed, only if authorized, by one execution of the exact candidate capture with correlated receipt; later demonstrate reuse by a changed subsequent decision.",
+      "timestamp": "2026-10-23T10:23:00-05:00",
+      "branch_or_sha": "9746f70f2fd330e9632c80630a844cdd08eb2bed"
     }
   ],
   "protocol_version": "UAAL-TRACE-1",
