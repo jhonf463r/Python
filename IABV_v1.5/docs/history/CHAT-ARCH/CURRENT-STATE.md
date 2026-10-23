@@ -1,36 +1,38 @@
 # CURRENT ROUTING SNAPSHOT — 2026-10-22 (V1.0.0 REMAINS ADOPTED; V1.0.1 REVIEWED CANDIDATE NOT ADOPTED; OPERATIONAL BLOCKS REMAIN)
 
-## LATEST ROUTING DELTA — correct the attempted adoption; continue the bounded documentary task only
+## LATEST ROUTING DELTA — prior adoption interpretation withdrawn; prerequisite matrix completed
 
-The Owner's exact message was `ok procede`. Although the coordinator initially interpreted it as assent to adopting v1.0.1, the existing UAAL construction-completeness overlay C1 explicitly distinguishes permission to continue bounded documentary work from adoption of a separate pending policy. The required explicit successor acceptance token was not supplied. Therefore **no effective v1.0.1 adoption occurred**. The prior interpretation has been withdrawn and recorded in the [adoption correction record](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-owner-adoption-correction.md), blob `bc1e7e97c85671753f79cf9916e640e02f6b642d`.
+The Owner's exact message was `ok procede`. The coordinator initially misinterpreted it as adoption of v1.0.1. The existing UAAL construction-completeness overlay C1 states that a general “proceed” can authorize bounded documentary work without adopting a separate pending policy. The exact successor acceptance token was not supplied. Therefore **no effective v1.0.1 adoption occurred**. The incorrect interpretation has been withdrawn in the [adoption correction record](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-owner-adoption-correction.md), blob `bc1e7e97c85671753f79cf9916e640e02f6b642d`.
 
-The former [Owner adoption receipt path](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-owner-adoption-receipt.md), now blob `7655b8599a8eabb0dd3d62817f8e591ab8d64555`, is a correction notice with status `NO_EFFECTIVE_ADOPTION`. The attempted adopted-contract copy at [this path](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1_0_1.md), blob `954b5dc6cd5ba496fc9342c2c1def6448fe353dc`, is a non-effective tombstone; its prior contents remain in Git history only. Neither is normative authority.
+The old [adoption-receipt path](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-owner-adoption-receipt.md), current blob `7655b8599a8eabb0dd3d62817f8e591ab8d64555`, is a correction notice with status `NO_EFFECTIVE_ADOPTION`. The attempted adopted-contract path (current blob `954b5dc6cd5ba496fc9342c2c1def6448fe353dc`) is a non-effective tombstone; its previous contents remain in Git history only. Neither is normative authority.
 
 ### Effective design artifacts and review provenance
 
-- **Only currently adopted normative design baseline:** [M1A v1.0.0 contract](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md), blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e`.
-- **Reviewed successor candidate, not adopted:** [v1.0.1 candidate](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1_0_1-candidate.md), blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f`.
-- **Review receipt:** [v1.0.1 receipt and reconciliation](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-receipt-and-reconciliation.md), blob `000b81b079c5febd8d78afebedf782d1d1e263fa`. The reviewer-reported verdict is `PASS_WITH_REPAIRS`; F-M1A-01..08 are reported passing but not independently re-performed by the coordinator. The reviewer says a fresh clone plus `git rev-parse HEAD:<path>` matched the exact candidate blob. The prior review date was retracted; `REVIEW_TIMESTAMP=UNVERIFIABLE`; session/invocation attribution remains `OWNER_REPORTED`.
+- **Only currently adopted normative baseline:** [M1A v1.0.0 contract](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md), blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e`.
+- **Reviewed successor candidate, not adopted:** [v1.0.1 candidate contract](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1_0_1-candidate.md), blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f`.
+- **Review receipt:** [v1.0.1 review receipt and reconciliation](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-receipt-and-reconciliation.md), blob `372b00239617175841ccbc51a8787415f563c496`. Reviewer-reported verdict is `PASS_WITH_REPAIRS`; F-M1A-01..08 are reported passing but were not independently re-performed by the coordinator. The reviewer says a fresh clone/hash matched the exact candidate; the actual review timestamp remains `UNVERIFIABLE`; session/invocation attribution remains `OWNER_REPORTED`.
 - FN-M1A-V101-01 is a nonblocking traceability clarification tied to F-M1A-05. FN-M1A-V101-02 was checked against the pinned overlay and is not confirmed as a defect. OG-M1A-01..07 remain unchanged.
+
+### Completed bounded documentary task
+
+The [implementation-prerequisite evidence gate matrix](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-implementation-prerequisite-evidence-gate-matrix.md), blob `608a5c7f3c2be8ad794b21bfcb66657217584a58`, maps all eight §10 prerequisites against the candidate, Entry 274, UAAL-ROOT-001, the construction-completeness overlay and current known evidence. It was fetched back and reconciled. The matrix records `IMPLEMENTATION_PREREQUISITES=8; CLOSED=0`. This is documentary mapping only.
 
 ### Current active task
 
-`M1A_V1_0_1_IMPLEMENTATION_PREREQUISITE_EVIDENCE_RECONCILIATION`
+`M1A_V1_0_1_OWNER_ADOPTION_DECISION`
 
-- **Mode:** bounded documentary analysis of the eight requirements in §10 of the v1.0.1 candidate, not adoption of those requirements as current policy.
-- **Next actor:** ChatGPT coordinator.
-- **Objective:** create one traceable evidence-gate matrix distinguishing candidate design requirements, governing sources, currently known state, exact closure evidence, and the actor/authority that could supply it. Reuse only already-pinned documents; no source scan.
-- **Authorization:** the Owner's `ok procede` authorizes continuation of this bounded documentary work only; it does not adopt v1.0.1.
-- **Next adoption gate after the matrix:** the Owner must explicitly provide `ACCEPT_M1A_V1_0_1_SUCCESSOR_BASELINE` or `RETAIN_M1A_V1_0_0_BASELINE`. Until then, v1.0.0 remains the adopted baseline.
-- **Exclusions:** no local checkout, `data/`, SQLite, secrets or `.env`; no product-source edits, code, tests, build, runtime, transport, protected read, merge, deployment or block release.
-- **Status:** `READY_FOR_BOUNDED_DOCUMENTARY_WORK`.
+- **Next actor / authority:** Owner.
+- **Open decision:** adopt the v1.0.1 successor design or retain v1.0.0.
+- **Required input:** reply with exactly `ACCEPT_M1A_V1_0_1_SUCCESSOR_BASELINE` or `RETAIN_M1A_V1_0_0_BASELINE`. A general “proceed” authorizes bounded documentary continuation only; it will not be silently converted into a pending normative policy decision.
+- **Status:** `AWAITING_EXPLICIT_OWNER_TOKEN`.
+- **Boundary:** even if v1.0.1 is adopted, that would be normative-design adoption only. It would not authorize implementation, code, tests, builds, runtime, transport, protected reads, merge, deployment or release of any governance block.
 
 ```text
 PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
 PARENT_CONCEPT=UAAL-ROOT-001
 OWNER_DESIGN_ACCEPTANCE=ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE
 V1_0_0_BASELINE=NORMATIVE_DESIGN_BASELINE_ADOPTED; IMMUTABLE
-V1_0_0_BLOB=8181c7c0cf6036c76cf365510e8d9665cf84e
+V1_0_0_BLOB=8181c7c0cf6036c76cf365510e8d9665cf84e57e
 V1_0_1_REVIEWED_CANDIDATE_BLOB=7c72474a5f7c114c02320c177d6ea2aea68ad28f
 V1_0_1_STATUS=NOT_ADOPTED_PENDING_EXPLICIT_OWNER_DECISION
 V1_0_1_REVIEW_VERDICT=OWNER_REPORTED_PASS_WITH_REPAIRS
@@ -39,8 +41,11 @@ REVIEW_SESSION_ATTRIBUTION=OWNER_REPORTED
 OWNER_MESSAGE="ok procede"; AUTHORITY=BOUNDED_DOCUMENTARY_CONTINUATION_ONLY
 V1_0_1_ADOPTION=NOT_RECORDED
 FALSE_ADOPTION_INTERPRETATION=WITHDRAWN; HISTORY_PRESERVED
-ACTIVE_TASK=M1A_V1_0_1_IMPLEMENTATION_PREREQUISITE_EVIDENCE_RECONCILIATION
-CURRENT_STATUS=READY_FOR_BOUNDED_DOCUMENTARY_WORK
+PREREQUISITE_MATRIX_BLOB=608a5c7f3c2be8ad794b21bfcb66657217584a58
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+SUPPORTED_RUNTIME_AUTHORITY_ROUTE=UNRESOLVED
+ACTIVE_TASK=M1A_V1_0_1_OWNER_ADOPTION_DECISION
+CURRENT_STATUS=AWAITING_EXPLICIT_OWNER_TOKEN
 RUNTIME_TRUST_ANCHOR=UNVERIFIED
 TRUSTED_CATALOGUE_AND_ACTIVE_SET_ATTESTATION=NOT_ESTABLISHED
 TRUSTED_OPERATION_TARGET_RESOLVER=NOT_ESTABLISHED
