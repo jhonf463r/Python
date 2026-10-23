@@ -1,12 +1,13 @@
-## ACTIVE M1A KNOWLEDGE DELTA — review receipt reconciled; Owner adoption is the next authority gate (2026-10-22)
+## ACTIVE M1A KNOWLEDGE DELTA — v1.0.1 adopted as design; runtime evidence gates remain open (2026-10-22)
 
-The Owner supplied a Sonnet 4.6-attributed `PASS_WITH_REPAIRS` report for v1.0.1 blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f`. The reviewer now says a fresh clone and `git rev-parse HEAD:<path>` confirmed that exact blob. The previously stated date `2026-10-20` was an unverified mistake; the corrected state is `REVIEW_TIMESTAMP=UNVERIFIABLE`. This resolves the date contradiction but does not authenticate the external session/invocation, which remains `OWNER_REPORTED`.
+The Owner replied `ok procede` directly after the recommendation to adopt v1.0.1 as the successor normative design baseline. This is recorded as contextual assent, not a verbatim machine token. The adopted contract is [M1A v1.0.1](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1_0_1.md), blob `baa39a09b97117df1dbe46804affdcebc7159f30`; the [adoption receipt](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-owner-adoption-receipt.md), blob `80646b73b35f6a3f4807f6f59800a45aca51503e`, preserves the exact provenance. The reviewed source candidate at blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f` and v1.0.0 predecessor at `8181c7c0cf6036c76cf365510e8d9665cf84e57e` remain immutable.
 
-Receipt: [v1.0.1 review receipt and reconciliation](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-receipt-and-reconciliation.md), blob `45190a512e93211a85e23be74fa75741be5227f6`. The reviewer reports F-M1A-01..08 pass. FN-M1A-V101-01 is recorded as a nonblocking traceability clarification for the stronger C30 wording implied by F-M1A-05. FN-M1A-V101-02 is not confirmed as a defect after the coordinator cross-checked overlay C2/C3/C5/C7.
+The review report is `OWNER_REPORTED_PASS_WITH_REPAIRS`: the reviewer reports F-M1A-01..08 pass. The earlier date was retracted as unsupported; `REVIEW_TIMESTAMP=UNVERIFIABLE`; the invocation/session remains `OWNER_REPORTED`. FN-M1A-V101-01 is a nonblocking C30 traceability clarification; FN-M1A-V101-02 was cross-checked by the coordinator and no defect confirmed. See [review receipt](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-receipt-and-reconciliation.md), blob `000b81b079c5febd8d78afebedf782d1d1e263fa`.
 
-**Active task:** `M1A_V1_0_1_OWNER_ADOPTION_DECISION`. v1.0.0 remains adopted and unchanged; v1.0.1 remains `NOT_ADOPTED` until the Owner explicitly accepts it. The coordinator recommends adoption of the normative design only, with the timestamp limitation preserved. This does not authorize implementation, runtime, protected reads or block release.
+**Active task:** `M1A_V1_0_1_IMPLEMENTATION_PREREQUISITE_EVIDENCE_RECONCILIATION`. Reconcile the eight prerequisites in v1.0.1 §10 into a compact, bidirectionally traceable matrix using only already-pinned documentary inputs. Do not inspect source, checkout or local data. This is not implementation authorization.
 
 `GOVERNANCE=KEEP_BLOCKED`; `IMPLEMENTATION=NOT_AUTHORIZED`; `TESTS=NOT_RUN`; `READ_LIST=FAIL_CLOSED`; `BRIDGE=BRIDGE_NOT_READY`.
+
 
 ---
 
