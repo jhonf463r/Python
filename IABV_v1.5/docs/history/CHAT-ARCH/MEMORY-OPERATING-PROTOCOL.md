@@ -1,12 +1,25 @@
-## ACTIVE M1A KNOWLEDGE DELTA — general “proceed” is not policy adoption (2026-10-22)
+## ACTIVE ROUTING — M1A v1.0.1 adopted for normative design; G1–G3 authority route unresolved (2026-10-22)
 
-The Owner's message was `ok procede`. The construction-completeness overlay C1 distinguishes continuing a bounded documentary step from adopting a separate pending policy. Therefore v1.0.1 was **not** adopted: the coordinator's earlier contrary interpretation has been withdrawn in [the correction record](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-owner-adoption-correction.md), blob `bc1e7e97c85671753f79cf9916e640e02f6b642d`. The previous attempted adoption receipt and contract copy remain non-effective historical artifacts only.
+**Read [CURRENT-STATE.md](./CURRENT-STATE.md) first.** It remains the sole active-task and next-actor authority.
 
-The effective baseline remains v1.0.0 blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e`; v1.0.1 candidate blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f` remains pending an exact Owner token. Review verdict `OWNER_REPORTED_PASS_WITH_REPAIRS`; F-M1A-01..08 reported passing but not independently re-performed; `REVIEW_TIMESTAMP=UNVERIFIABLE`; the invocation/session remains `OWNER_REPORTED`. See [review receipt](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-receipt-and-reconciliation.md), blob `ffd96aa031ff4e2460352e7f840e720fa9429dfc`.
+**Current normative design:** M1A v1.0.1, blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f`, adopted with the exact Owner token `ACCEPT_M1A_V1_0_1_SUCCESSOR_BASELINE`; see [explicit adoption receipt](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-explicit-owner-adoption-receipt.md), blob `34bee2ad8b3b4beeb468e8d563b99f511f0b352d`. The immutable predecessor v1.0.0 is blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e`.
 
-The bounded [implementation-prerequisite matrix](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-implementation-prerequisite-evidence-gate-matrix.md), blob `608a5c7f3c2be8ad794b21bfcb66657217584a58`, has been fetched back; all eight runtime/implementation gates remain open. **Active task:** `M1A_V1_0_1_OWNER_ADOPTION_DECISION`; exact token required: `ACCEPT_M1A_V1_0_1_SUCCESSOR_BASELINE` or `RETAIN_M1A_V1_0_0_BASELINE`.
+Review provenance remains `OWNER_REPORTED_PASS_WITH_REPAIRS`, with `REVIEW_TIMESTAMP=UNVERIFIABLE` and session attribution `OWNER_REPORTED`. The eight implementation prerequisite gates remain open (`CLOSED=0`). Design adoption does not authorize implementation, tests, local/protected reads, runtime or release.
 
-`GOVERNANCE=KEEP_BLOCKED`; `IMPLEMENTATION=NOT_AUTHORIZED`; `TESTS=NOT_RUN`; `READ_LIST=FAIL_CLOSED`; `BRIDGE=BRIDGE_NOT_READY`.
+**Active task:** `M1A_V1_0_1_G1_G3_AUTHORITY_EVIDENCE_ROUTE`; status `WAITING_AUTHORITY`. The missing dependency is a supported governance-owned evidence route and accountable producer for G1–G3. Do not repeat the contract review or prior broad route scan. The next investigation is a metadata-only inventory of tools explicitly exposed in the existing Codex UI session, not a local source read. The prompt is not dispatched from this ChatGPT session.
+
+```text
+ACTIVE_TASK=M1A_V1_0_1_G1_G3_AUTHORITY_EVIDENCE_ROUTE
+STATUS=WAITING_AUTHORITY
+V1_0_1_NORMATIVE_DESIGN=ADOPTED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+SUPPORTED_RUNTIME_AUTHORITY_ROUTE=UNRESOLVED
+GOVERNANCE=KEEP_BLOCKED
+IMPLEMENTATION=NOT_AUTHORIZED
+TESTS=NOT_RUN
+READ_LIST=FAIL_CLOSED
+BRIDGE=BRIDGE_NOT_READY
+```
 
 **Historical-scope notice:** all routing text retained below the divider is preserved for provenance only. It does not supersede `CURRENT-STATE.md` or any current task pointer.
 
