@@ -1,5 +1,30 @@
 # CURRENT ROUTING SNAPSHOT — 2026-10-22 (M1A V1.0.1 NORMATIVE DESIGN ADOPTED; OPERATIONAL BLOCKS REMAIN)
 
+## LATEST ROUTING DELTA — Codex tool metadata found; governance route still unresolved (2026-10-22)
+
+The Owner supplied a metadata-only report from the Codex UI session. It is recorded in [the bounded Codex tool-surface result](./CHAT-ARCH-2026-10-22-Codex-session-tool-surface-G1-G3-result.md), blob `8d75749cbd5dd8bb60e071d76058e4ddab4b10c4`. Its reported verdict is `RELEVANT_TOOL_METADATA_FOUND`: metadata was visible for `mcp__iabv_v15_rsk01a5__read_repo_file`, `mcp__iabv_v15_rsk01a5__list_repo_directory`, `mcp__iabv_v15_rsk01a5__world_model_snapshot`, `mcp__iabv_v15_rsk01a5__git_status_and_log`, and `mcp__codex_apps__github_fetch_file`. No listed tool was invoked; these names/schemas are `OWNER_REPORTED`, not direct observation by this coordinator.
+
+The reported metadata describes file/directory readers and World Model observation, but does not document a trusted issuer/principal, per-operation scoped-read decision, revocation verification, verifiable decision/operation receipt, authoritative versioned operation-to-target resolver, or independent block-release authority. The `mcp__iabv_v15_rsk01a5__` prefix alone does not authenticate the running server, effective configuration, root/checkout, or authority. Therefore this result does not establish G1, G2 or G3; the eight implementation gates remain open.
+
+A prior continuity record reports a Codex inventory without that namespace. No shared session/capture identity proves the inventories describe the same snapshot. Preserve `CODEX_SESSION_CATALOGUE_VARIANCE=UNRESOLVED`; do not collapse these bounded reports into a global claim. The new report does not change the active task or authorize tool invocation, local/protected reads, implementation, tests, runtime, transport, or block release. The next dependency remains the actual Owner/governance authority or named operator who can identify the supported route and accountable G1–G3 evidence producers.
+
+```text
+CODEX_SESSION_TOOL_METADATA=RELEVANT_TOOL_METADATA_FOUND; OWNER_REPORTED
+CODEX_SESSION_GOVERNANCE_DECISION_ROUTE=NOT_EXPOSED_IN_REPORTED_METADATA
+CODEX_SESSION_CATALOGUE_VARIANCE=UNRESOLVED
+SUPPORTED_RUNTIME_AUTHORITY_ROUTE=UNRESOLVED
+GLOBAL_ROUTE_EXISTENCE=UNRESOLVED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+GOVERNANCE=KEEP_BLOCKED
+IMPLEMENTATION=NOT_AUTHORIZED
+TESTS=NOT_RUN
+LOCAL_SOURCE_READ=NOT_RUN
+READ_LIST=FAIL_CLOSED
+BRIDGE=BRIDGE_NOT_READY
+REAL_TRANSPORT=NOT_RUN
+LOCAL_WORKTREE=UNTOUCHED
+```
+
 ## LATEST ROUTING DELTA — explicit Owner adoption recorded; G1–G3 authority frontier remains open
 
 The Owner supplied the exact token `ACCEPT_M1A_V1_0_1_SUCCESSOR_BASELINE`. v1.0.1 is now adopted as the **current normative design baseline only**. The exact reviewed artifact is unchanged at blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f`; the adoption event is recorded in [the explicit adoption receipt](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-explicit-owner-adoption-receipt.md), blob `34bee2ad8b3b4beeb468e8d563b99f511f0b352d`. The earlier `ok procede` was not treated as adoption; that earlier correction remains valid and its history is preserved.
@@ -18,7 +43,7 @@ The Owner supplied the exact token `ACCEPT_M1A_V1_0_1_SUCCESSOR_BASELINE`. v1.0.
 - **Status:** `WAITING_AUTHORITY`.
 - **Next actor:** the Owner/governance authority or the named operator of the actual runtime authority surface.
 - **Missing dependency:** identify a supported governance-owned evidence route and accountable producer for G1–G3: runtime principal/trust anchor; catalogue, producer and revocation authority; and a versioned operation-to-target resolver.
-- **Evidence state:** `SUPPORTED_RUNTIME_AUTHORITY_ROUTE=UNRESOLVED`; the session has not established that route or a verified evidence producer.
+- **Evidence state:** `SUPPORTED_RUNTIME_AUTHORITY_ROUTE=UNRESOLVED`. The latest Owner-supplied Codex report found relevant reader/list/snapshot metadata but no governance decision route; see the linked bounded result at the top. No verified G1–G3 evidence producer is established.
 - **Stop condition:** do not repeat broad scans, bypass a denied reader, infer authority from a blob digest, invent an operator, or send another agent to repeat the same contract review. No IA prompt is dispatched until a real supported route and its responsible actor are identified.
 - **Acceptance criterion:** identify the exact supported governance-owned route and accountable evidence producers for G1–G3, with verifiable provenance; if no route is exposed in the named surface, record only a bounded `NOT_FOUND` for that surface and keep global existence `UNRESOLVED`.
 
@@ -37,6 +62,10 @@ REVIEW_TIMESTAMP=UNVERIFIABLE
 REVIEW_SESSION_ATTRIBUTION=OWNER_REPORTED
 IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
 SUPPORTED_RUNTIME_AUTHORITY_ROUTE=UNRESOLVED
+CODEX_SESSION_TOOL_METADATA=RELEVANT_TOOL_METADATA_FOUND; OWNER_REPORTED
+CODEX_SESSION_GOVERNANCE_DECISION_ROUTE=NOT_EXPOSED_IN_REPORTED_METADATA
+CODEX_SESSION_CATALOGUE_VARIANCE=UNRESOLVED
+CODEX_SESSION_TOOL_SURFACE_RESULT_BLOB=8d75749cbd5dd8bb60e071d76058e4ddab4b10c4
 ACTIVE_TASK=M1A_V1_0_1_G1_G3_AUTHORITY_EVIDENCE_ROUTE
 CURRENT_STATUS=WAITING_AUTHORITY
 NEXT_ACTOR=OWNER_OR_NAMED_GOVERNANCE_OPERATOR
