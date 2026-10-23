@@ -7,7 +7,7 @@
 - Reported verdict: `PASS_WITH_REPAIRS` — retained as the report's verdict, not upgraded to independently authenticated review evidence.
 - Initial review date in the supplied report: `2026-10-20`; the reviewer later explicitly retracted it as unverified. Corrected state: `REVIEW_TIMESTAMP=UNVERIFIABLE`; do not infer a date/time.
 - Chronology disposition: `INITIAL_DATE_RETRACTED; REVIEW_TIMESTAMP=UNVERIFIABLE; EXACT_BLOB_IDENTITY=REVIEWER_REPORTED_CONFIRMED`.
-- At initial receipt creation, candidate adoption was `NOT_ADOPTED`. Subsequent Owner contextual assent adopted v1.0.1 for normative design only; see the [Owner adoption receipt](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-owner-adoption-receipt.md).
+- At initial receipt creation, candidate adoption was `NOT_ADOPTED`. A later provisional interpretation that `ok procede` adopted v1.0.1 was withdrawn because overlay C1 requires an explicit token for policy adoption; no effective successor adoption is recorded. See the [adoption correction](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-owner-adoption-correction.md).
 - Operational posture unchanged: `GOVERNANCE=KEEP_BLOCKED`; `IMPLEMENTATION=NOT_AUTHORIZED`; `TESTS=NOT_RUN`; `READ_LIST=FAIL_CLOSED`; `BRIDGE=BRIDGE_NOT_READY`.
 
 ## 1. Report content received
