@@ -2512,7 +2512,7 @@ IABV has substantial substrate organs and causal selector-level learning evidenc
 - Record: `CHAT-ARCH-2026-10-22-adhd-aware-project-coordination-and-space-time-focus-protocol.md`
 - Purpose: encode the Owner-requested idea inbox, one-active-task rule, evidence-based progress states, space-time episode reconstruction, and ADHD-aware interaction design.
 - Status: documented method; runtime coordinator/cross-chat causal reuse remain `NOT_PROVEN`.
-- Current route is unchanged: `IDENTIFY_AND_USE_SUPPORTED_GOVERNANCE_OWNED_SCOPED_READ_ROUTE`; `GOVERNANCE=KEEP_BLOCKED`.
+- Historical route recorded at the time of this entry: `IDENTIFY_AND_USE_SUPPORTED_GOVERNANCE_OWNED_SCOPED_READ_ROUTE`. It is not the active task; use the top snapshot of `CURRENT-STATE.md`. `GOVERNANCE=KEEP_BLOCKED`.
 
 ## DEVELOPMENT CONTROL TOWER — 2026-09-21
 
