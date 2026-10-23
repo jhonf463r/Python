@@ -4,8 +4,8 @@ Routing authority: [CURRENT-STATE.md](./CURRENT-STATE.md). Active task: `M1A_CON
 
 - Adopted, unchanged predecessor: [v1.0.0 contract](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md), blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e`.
 - Review finding register: [v1.0.0 `PASS_WITH_REPAIRS` receipt](./CHAT-ARCH-2026-10-22-M1A-contract-v1-sonnet-review-receipt-and-finding-register.md), blob `396606e5744f0b3d0332f8ee9f02ec14cdcea588`; 8 findings, all dispositions recorded, reviewer/session attribution `OWNER_REPORTED`.
-- Non-adopted successor: [v1.0.1 candidate](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1_0_1-candidate.md), blob `a92224fbc3168eb64df395f3f25aa5e797cdb043`; 38 proposed cases, `TESTS=NOT_RUN`.
-- Next bounded prompt: [v1.0.1 candidate review handoff](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-candidate-targeted-review-handoff.md), blob `c03cf2c160864a73d4d2dd352765cc26fd2c65fd`.
+- Non-adopted successor: [v1.0.1 candidate](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1_0_1-candidate.md), blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f`; 38 proposed cases, `TESTS=NOT_RUN`.
+- Next bounded prompt: [v1.0.1 candidate review handoff](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-candidate-targeted-review-handoff.md), blob `5612ada32a145d23cc836792cdf02608f4a706a3`.
 
 This is a documentation-only chain. It adds no runtime authority. The actual active-block-set attestation, trust anchor, catalogue publisher/revocation source, producer allowlist, operation-target resolver and independent block-release mechanism remain unverified/not established. Keep the exact operational state in CURRENT-STATE.md; do not treat old pointers below as the active task.
 
