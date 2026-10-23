@@ -1,13 +1,13 @@
-## Active unresolved knowledge — v1.0.1 review reconciled; Owner adoption decision pending (2026-10-22)
+## Active unresolved knowledge — v1.0.1 design adopted; operational implementation gates remain open (2026-10-22)
 
-The Owner-adopted normative baseline remains M1A contract v1.0.0, blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e`, under `ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE`. The Owner supplied a Sonnet 4.6-attributed `PASS_WITH_REPAIRS` report for successor v1.0.1 blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f`; the reviewer says a fresh clone and `git rev-parse HEAD:<path>` confirmed this exact blob. The prior date `2026-10-20` was an unsupported mistake; `REVIEW_TIMESTAMP=UNVERIFIABLE`. The report's external session/invocation attribution remains `OWNER_REPORTED`.
+The adopted normative design baseline is M1A v1.0.1, blob `baa39a09b97117df1dbe46804affdcebc7159f30`, after the Owner's contextual assent `ok procede` to the direct recommendation to adopt the reviewed successor. See [Owner adoption receipt](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-owner-adoption-receipt.md), blob `80646b73b35f6a3f4807f6f59800a45aca51503e`. The exact reviewed source candidate `7c72474a5f7c114c02320c177d6ea2aea68ad28f` and v1.0.0 predecessor `8181c7c0cf6036c76cf365510e8d9665cf84e57e` remain immutable.
 
-See [v1.0.1 review receipt/reconciliation](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-receipt-and-reconciliation.md), blob `45190a512e93211a85e23be74fa75741be5227f6`. F-M1A-01..08 are reported passing by the reviewer; the coordinator has not independently repeated all adversarial tests. FN-M1A-V101-01 is a nonblocking C30 traceability clarification. FN-M1A-V101-02 is not confirmed as a contract defect after cross-checking the overlay's C2/C3/C5/C7.
+The report verdict is `OWNER_REPORTED_PASS_WITH_REPAIRS`; F-M1A-01..08 are reported passing, not independently re-performed by the coordinator. The prior date `2026-10-20` was retracted as unsupported; `REVIEW_TIMESTAMP=UNVERIFIABLE`; review session/invocation remains `OWNER_REPORTED`. FN-M1A-V101-01 is a nonblocking C30 traceability clarification; FN-M1A-V101-02 is not confirmed as a defect after the overlay cross-check. See [review receipt](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-receipt-and-reconciliation.md), blob `000b81b079c5febd8d78afebedf782d1d1e263fa`.
 
-**Active task:** `M1A_V1_0_1_OWNER_ADOPTION_DECISION`. The successor remains `NOT_ADOPTED` until an explicit Owner decision; v1.0.0 remains the adopted and unchanged baseline.
+**Active task:** `M1A_V1_0_1_IMPLEMENTATION_PREREQUISITE_EVIDENCE_RECONCILIATION`. Reconcile v1.0.1 §10's eight prerequisites into a traceable documentary matrix. No implementation authorization follows.
 
 **Unresolved evidence/authority facts — not extra governance ballots:**
-- `REVIEW_TIMESTAMP=UNVERIFIABLE`; the external reviewer/session invocation is `OWNER_REPORTED`.
+- `REVIEW_TIMESTAMP=UNVERIFIABLE`; reviewer/session invocation remains `OWNER_REPORTED`.
 - `ACTIVE_BLOCK_SET_ATTESTATION=NOT_ESTABLISHED`.
 - `PRE_SELECTOR_VALIDATION_EVIDENCE=NOT_IMPLEMENTED/UNVERIFIED`.
 - `REAL_TRUST_ANCHOR=UNVERIFIED`; `TRUSTED_CATALOGUE_AND_PUBLISHER=NOT_ESTABLISHED`.
@@ -16,7 +16,7 @@ See [v1.0.1 review receipt/reconciliation](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-rev
 - `AUTHORITATIVE_REVOCATION_SOURCE=NOT_ESTABLISHED`.
 - `INDEPENDENT_BLOCK_RELEASE_MECHANISM=NOT_ESTABLISHED`.
 
-Until separately authorized, maintain `GOVERNANCE=KEEP_BLOCKED`, `IMPLEMENTATION=NOT_AUTHORIZED`, `TESTS=NOT_RUN`, `READ_LIST=FAIL_CLOSED`, `BRIDGE=BRIDGE_NOT_READY`.
+Maintain `GOVERNANCE=KEEP_BLOCKED`, `IMPLEMENTATION=NOT_AUTHORIZED`, `TESTS=NOT_RUN`, `READ_LIST=FAIL_CLOSED`, `BRIDGE=BRIDGE_NOT_READY`.
 
 ---
 
