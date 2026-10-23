@@ -1,3 +1,30 @@
+## OVERRIDING LATEST ROUTING — M1A G1 trust policy decision pending (2026-10-22)
+
+The latest active task is `M1A_G1_TRUST_BOOTSTRAP_POLICY_ADJUDICATION`, status `WAITING_OWNER`, as recorded in [CURRENT-STATE.md](docs/history/CHAT-ARCH/CURRENT-STATE.md). The Owner supplied a Codex feasibility report with `G1_FEASIBILITY=CONDITIONAL_NOT_DEMONSTRATED`; see the [durable reconciliation receipt](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1A-G1-trust-bootstrap-feasibility-reconciliation.md). Do not repeat tool inventory or the earlier G1–G3 source inspection.
+
+The coordinator directly verified that public candidate branch `m1a-g1-g3-governance-route-candidate-20261022` still points to pinned base `60c8ac6e7ff425c815d9bdc7194bf20ef8d134db`; no candidate code was changed. Next step is an explicit Owner decision on the proposed conditional trust-bootstrap policy. Windows Hello/WebAuthn is only a possible authentication factor pending validation, not an established root or live IABV capability. The Owner has not adopted the proposal yet, so do not implement new trust bootstrap until the decision is recorded.
+
+Taxonomy note: M1A G3 is the authoritative versioned operation-to-target resolver; request/approval/decision/operation/result ledger correlation is a separate Entry 274 requirement. G1, G2 and G3 remain unestablished. All eight implementation gates remain open.
+
+```text
+ACTIVE_TASK=M1A_G1_TRUST_BOOTSTRAP_POLICY_ADJUDICATION
+STATUS=WAITING_OWNER
+OWNER_TRUST_BOOTSTRAP_POLICY=PROPOSED_NOT_ADOPTED
+IMPLEMENTATION=NOT_AUTHORIZED_FOR_NEW_TRUST_BOOTSTRAP
+GOVERNANCE=KEEP_BLOCKED
+TESTS=NOT_RUN
+BUILD=NOT_RUN
+RUNTIME=NOT_RUN
+REAL_TRANSPORT=NOT_RUN
+LOCAL_CHECKOUT=DO_NOT_ACCESS
+PROTECTED_LOCAL_READ=NOT_AUTHORIZED
+MERGE_DEPLOY=NOT_AUTHORIZED
+BLOCK_RELEASE=NOT_AUTHORIZED
+BRIDGE=BRIDGE_NOT_READY
+```
+
+---
+
 ## LATEST ROUTING — Owner authorized isolated G1–G3 candidate (2026-10-22)
 
 Read [CURRENT-STATE.md](docs/history/CHAT-ARCH/CURRENT-STATE.md) for the authoritative active-task state. The Owner explicitly authorized a bounded candidate implementation attempt. The isolated branch `m1a-g1-g3-governance-route-candidate-20261022` was created from pinned public `main` SHA `60c8ac6e7ff425c815d9bdc7194bf20ef8d134db`. Candidate source work is authorized only inside that separate candidate; the existing Codex UI has not received the prompt yet (`CODEX_PROMPT_DISPATCHED=NO`).
