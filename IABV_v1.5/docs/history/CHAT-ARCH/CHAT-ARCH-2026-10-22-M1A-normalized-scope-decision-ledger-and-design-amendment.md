@@ -130,7 +130,7 @@ No implementation work follows from this amendment. If separately authorized in 
 7. Synthetic conformance cases cover the decision table, cross-product failures, legacy formats, trust/version errors, multiple blocks and result-code precedence. Tests are only proposed here and must be separately authorized before execution.
 8. Full source/runtime/testing state is independently verified against the exact candidate and revision; no claims derived solely from owner reports or proposal text.
 
-## 7. Current state and next transition
+## 7. Historical creation-time state and next transition (superseded by later review and adoption records)
 
 ```text
 PARENT_CONCEPT=UAAL-ROOT-001
@@ -180,7 +180,7 @@ BRIDGE=BRIDGE_NOT_READY
 ```
 
 
-## 9. Post-adoption adversarial review supplement — v1.0.0 findings and successor route (2026-10-22)
+## 9. Historical post-adoption adversarial review supplement — v1.0.0 findings and v1.0.1 review route (superseded by §10)
 
 The transition described in §7 as the next step at ledger creation time is historical. A later owner-pasted Sonnet 4.6-attributed static report for v1.0.0 blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e` returned `PASS_WITH_REPAIRS` (2 HIGH, 3 MEDIUM, 3 LOW). Reviewer/session attribution remains `OWNER_REPORTED`, not an authenticated dispatch receipt. The normalized finding register is [here](./CHAT-ARCH-2026-10-22-M1A-contract-v1-sonnet-review-receipt-and-finding-register.md), blob `396606e5744f0b3d0332f8ee9f02ec14cdcea588`; all eight findings are dispositioned and none changes OG-M1A-01..07.
 
