@@ -1,4 +1,32 @@
+## OVERRIDING LATEST ROUTING — M1A G1 owner-approved manifest / TPM-bound issuer review terminal (2026-10-22)
 
+The bounded `M1A_G1_OWNER_APPROVED_MANIFEST_TPM_BOUND_ISSUER_REVIEW` is terminal at `BLOCKED_NO_INDEPENDENT_ENROLLMENT_PATH`. See [the complete review receipt](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1A-G1-Owner-approved-manifest-TPM-bound-issuer-review.md), blob `c91a67a348ba6ee7c821e4b9fcf1b75524eb2fbd`. The coordinator revalidated remote `main` as `bf3174025bd1eee97cd345bd2deaf0ae76fea2fe` immediately before this documentation-only writeback; Sonnet's original review reported its own main verification as rate-limited/unverified. The initial documentation commit placed the receipt/pointers at repository-root paths; follow-up commit `2abc6f7c049a551ef158caba4b460c38626d6644` corrected the paths under `IABV_v1.5/` and removed the misplaced copies. No product code, runtime behavior, credentials, or gates were changed.
+
+The review found: GitHub approval is an audit/control-plane component, not proof of machine claims; TPM-backed non-migratable keys can improve key custody but do not identify the exact server process/installation; TPM attestation still needs independently trusted EK/AIK provenance (or a justified trust chain); a hash allowlist only helps if its initial population and protection are independently established. Account ID `28608338` remains unadopted. Google OIDC is not worth external setup for G1. No IABV passkey/recovery credential was created.
+
+Anti-repeat: do not repeat the broad G1 inventory, phone/passkey review or Google OIDC review. Do not automatically begin implementation. The only remaining design decision worth considering is whether the Owner explicitly adopts a TPM identity pin through a genuinely independent channel and whether a separate, defensible exact-instance binding can be specified. Reading a fingerprint from the same potentially compromised Windows display is not automatically independent.
+
+```text
+ACTIVE_TASK=M1A_G1_TRUST_BOOTSTRAP_AUTHORITY_BOUNDARY
+LAST_TERMINAL_TASK=M1A_G1_OWNER_APPROVED_MANIFEST_TPM_BOUND_ISSUER_REVIEW
+STATUS=BLOCKED_MISSING_G1_TRUST_ANCHOR
+RESULT=BLOCKED_NO_INDEPENDENT_ENROLLMENT_PATH
+OWNER_DECISION_REQUIRED=MANUAL_TPM_IDENTITY_PIN_AND_EXACT_INSTANCE_BINDING
+GITHUB_ACCOUNT_ID_28608338=NOT_ADOPTED
+TPM_ATTESTATION_TRUST=NOT_ESTABLISHED
+OWNER_TO_WINDOWS_PRINCIPAL=NOT_ESTABLISHED
+OWNER_TO_ISSUER=NOT_ESTABLISHED
+ISSUER_TO_EXACT_SERVER=NOT_ESTABLISHED
+READER_VERIFICATION=NOT_ESTABLISHED_END_TO_END
+GOVERNANCE=KEEP_BLOCKED
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3_VERSIONED_TARGET_RESOLVER=NOT_ESTABLISHED
+BRIDGE=BRIDGE_NOT_READY
+NEXT_ACTION=OWNER_DECISION_ONLY; NO_AUTOMATIC_FOLLOW_ON
+```
+
+---
 
 ## OVERRIDING LATEST ROUTING — M1A G1 owner-approved manifest / TPM-bound issuer review terminal (2026-10-22)
 
