@@ -4,9 +4,12 @@ The single active task is now `M1A_G1_G3_AUTHORITY_ROUTE_CANDIDATE_IMPLEMENTATIO
 
 The goal is not to bypass the current denial. The goal is to implement only evidence-backed G1 trust principal/root, G2 authorized catalogue/producer/revocation authority, and G3 versioned operation-to-target resolution. Missing real authority means stop and report the exact dependency, not invent a key, issuer, allowlist, resolver or independent block-release principal.
 
+**Mandatory handoff format:** the full prompt must be included in the current ChatGPT answer addressed to `Codex — existing UI/session`; this GitHub record is supplemental durable storage. The only requested manual action is to copy the inline prompt and paste it into Codex. No external page retrieval, prompt reconstruction, admin terminal, or claim of dispatch without a receipt. See [coordination protocol §13](./CHAT-ARCH-2026-10-22-adhd-aware-project-coordination-and-space-time-focus-protocol.md).
+
 ```text
 ACTIVE_TASK=M1A_G1_G3_AUTHORITY_ROUTE_CANDIDATE_IMPLEMENTATION
 CODEX_PROMPT_DISPATCHED=NO
+PROMPT_DELIVERY_MODE=INLINE_IN_CHAT; NO_EXTERNAL_RETRIEVAL_REQUIRED
 IMPLEMENTATION=AUTHORIZED_FOR_ISOLATED_CANDIDATE_ONLY
 GOVERNANCE=KEEP_BLOCKED
 IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
