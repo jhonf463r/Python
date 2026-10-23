@@ -6,7 +6,7 @@
 
 The Owner's `ok procede` permits bounded documentary continuation only under overlay C1; it did not supply the explicit policy-adoption token. The earlier adoption interpretation was withdrawn. [Correction record](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-owner-adoption-correction.md), blob `bc1e7e97c85671753f79cf9916e640e02f6b642d`. Prior adoption-receipt and adopted-contract paths are now correction/tombstone artifacts, not normative authority (current blobs `7655b8599a8eabb0dd3d62817f8e591ab8d64555` and `954b5dc6cd5ba496fc9342c2c1def6448fe353dc`).
 
-[Review receipt](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-receipt-and-reconciliation.md), blob `372b00239617175841ccbc51a8787415f563c496`: report `OWNER_REPORTED_PASS_WITH_REPAIRS`; actual timestamp `UNVERIFIABLE`; session attribution `OWNER_REPORTED`. [Implementation prerequisite matrix](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-implementation-prerequisite-evidence-gate-matrix.md), blob `608a5c7f3c2be8ad794b21bfcb66657217584a58`, maps eight gates, none closed.
+[Review receipt](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-receipt-and-reconciliation.md), blob `ffd96aa031ff4e2460352e7f840e720fa9429dfc`: report `OWNER_REPORTED_PASS_WITH_REPAIRS`; actual timestamp `UNVERIFIABLE`; session attribution `OWNER_REPORTED`. [Implementation prerequisite matrix](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-implementation-prerequisite-evidence-gate-matrix.md), blob `608a5c7f3c2be8ad794b21bfcb66657217584a58`, maps eight gates, none closed.
 
 **Active task:** `M1A_V1_0_1_OWNER_ADOPTION_DECISION`. Reply with exactly `ACCEPT_M1A_V1_0_1_SUCCESSOR_BASELINE` or `RETAIN_M1A_V1_0_0_BASELINE`. No implementation work is authorized.
 
