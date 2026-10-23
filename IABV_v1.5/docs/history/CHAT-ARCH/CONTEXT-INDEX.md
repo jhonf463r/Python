@@ -1,14 +1,15 @@
-## ACTIVE ROUTING — M1A v1.0.0 findings reconciled; v1.0.1 candidate review next (2026-10-22)
+## ACTIVE ROUTING — M1A v1.0.1 review report received; timestamp correction next (2026-10-22)
 
-Source of truth: [CURRENT-STATE.md](./CURRENT-STATE.md), opening routing snapshot. Active task: `M1A_CONTRACT_V1_0_1_CANDIDATE_TARGETED_ADVERSARIAL_REVIEW`; state `READY_FOR_INDEPENDENT_REVIEW; NOT_DISPATCHED`.
+Source of truth: [CURRENT-STATE.md](./CURRENT-STATE.md), opening routing snapshot. Active task: `M1A_V1_0_1_REVIEW_REPORT_METADATA_CORRECTION`; state `CORRECTION_HANDOFF_READY; NOT_DISPATCHED`.
 
-- Adopted baseline, unchanged: [M1A contract v1.0.0](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md), blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e`.
-- Received review verdict: `PASS_WITH_REPAIRS`, eight findings (2 HIGH, 3 MEDIUM, 3 LOW); reviewer/session attribution is `OWNER_REPORTED`. See [finding register](./CHAT-ARCH-2026-10-22-M1A-contract-v1-sonnet-review-receipt-and-finding-register.md), blob `396606e5744f0b3d0332f8ee9f02ec14cdcea588`.
-- Successor candidate, not adopted: [M1A contract v1.0.1 candidate](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1_0_1-candidate.md), blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f`; 38 proposed, unexecuted conformance cases.
-- Exact next handoff: [v1.0.1 targeted review](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-candidate-targeted-review-handoff.md), blob `5612ada32a145d23cc836792cdf02608f4a706a3`.
-- Parent/method inputs: [UAAL-ROOT-001](./UNIVERSAL-ADAPTIVE-ALGORITHM-CONSTITUTION-2026-10-04.md), [Entry 274](./CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md), [construction-completeness overlay](./CHAT-ARCH-2026-10-22-UAAL-construction-completeness-traceability-overlay.md), normalized M1A ledger and Memory Operating Protocol.
+- Accepted baseline, unchanged: [M1A v1.0.0](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md), blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e`.
+- v1.0.1 report receipt and findings reconciliation: [review receipt](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-receipt-and-reconciliation.md), blob `1b0685fa273329513254a0b10180f1513edfc67b`.
+- Candidate, still not adopted: [M1A v1.0.1](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1_0_1-candidate.md), blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f`.
+- Review report states 2026-10-20, inconsistent with the GitHub history for the exact final candidate, committed on 2026-10-22 at 19:36:28 America/Bogota. Require a metadata correction; do not rerun the substantive review.
+- Exact next prompt: [review metadata-correction handoff](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-metadata-correction-handoff.md), blob `58d0e2acb2c63bf08dd5725fd278f67bad9ac4b9`.
+- The coordinator verified C2/C3/C5/C7 in the fetched overlay: traceability ledger, state-space definition, authority-plane separation, and pre-construction gate. FN-M1A-V101-02 is not a confirmed contract defect. C30's stricter wording is a nonblocking traceability clarification tied to F-M1A-05.
 
-The candidate's repairs do not change OG-M1A-01..07. Actual runtime principal/trust anchor, authenticated active-block-set registry/attestation, catalogue publisher/revocation source, producer allowlist, target resolver/call-site bindings and independent block release remain unverified/not established. No implementation, test, runtime, protected read or release is authorized. Keep `GOVERNANCE=KEEP_BLOCKED`, `IMPLEMENTATION=NOT_AUTHORIZED`, `TESTS=NOT_RUN`, `READ_LIST=FAIL_CLOSED`, `BRIDGE=BRIDGE_NOT_READY`.
+No runtime authority has been established; no implementation, tests, protected read or block release is authorized. Preserve `GOVERNANCE=KEEP_BLOCKED`, `IMPLEMENTATION=NOT_AUTHORIZED`, `TESTS=NOT_RUN`, `READ_LIST=FAIL_CLOSED`, `BRIDGE=BRIDGE_NOT_READY`.
 
 ---
 
