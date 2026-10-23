@@ -4,7 +4,7 @@ Source of truth: [CURRENT-STATE.md](./CURRENT-STATE.md), opening routing snapsho
 
 - Effective normative baseline, unchanged: [M1A v1.0.0](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md), blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e`.
 - Reviewed successor candidate, not adopted: [M1A v1.0.1 candidate](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1_0_1-candidate.md), blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f`.
-- Review receipt/reconciliation: [v1.0.1 review receipt](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-receipt-and-reconciliation.md), blob `372b00239617175841ccbc51a8787415f563c496`; `OWNER_REPORTED_PASS_WITH_REPAIRS`, `REVIEW_TIMESTAMP=UNVERIFIABLE`, session `OWNER_REPORTED`.
+- Review receipt/reconciliation: [v1.0.1 review receipt](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-receipt-and-reconciliation.md), blob `ffd96aa031ff4e2460352e7f840e720fa9429dfc`; `OWNER_REPORTED_PASS_WITH_REPAIRS`, `REVIEW_TIMESTAMP=UNVERIFIABLE`, session `OWNER_REPORTED`.
 - The Owner's `ok procede` is documentary continuation only under overlay C1. The prior attempted adoption is withdrawn; see [correction](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-owner-adoption-correction.md), blob `bc1e7e97c85671753f79cf9916e640e02f6b642d`.
 - [Prerequisite evidence matrix](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-implementation-prerequisite-evidence-gate-matrix.md), blob `608a5c7f3c2be8ad794b21bfcb66657217584a58`: all eight future implementation gates mapped; none closed.
 
