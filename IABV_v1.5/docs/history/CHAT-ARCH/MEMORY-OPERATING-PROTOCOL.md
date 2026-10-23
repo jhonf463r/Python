@@ -1,3 +1,28 @@
+## OVERRIDING LATEST MEMORY ROUTE — M1A G1 trust bootstrap authority boundary (2026-10-22)
+
+Restore the sole active task from [CURRENT-STATE.md](./CURRENT-STATE.md): `M1A_G1_TRUST_BOOTSTRAP_AUTHORITY_BOUNDARY`, status `BLOCKED_MISSING_G1_TRUST_ANCHOR`. The Owner accepted the trust-bootstrap policy and candidate-only scope. The attempt ended before edits because an independently trusted enrollment/registration path tying Owner → issuer → exact server instance and separating issuer from requester/reader is not evidenced in the current candidate. See [the terminal result receipt](./CHAT-ARCH-2026-10-22-M1A-G1-trust-bootstrap-candidate-attempt-result.md), blob `3c120ed84d1c19f6f205f3f7ed9b4dc620fcbf24`.
+
+Anti-repeat: do not redo the G1 feasibility review, tool inventory or broad scan. The remote candidate `m1a-g1-g3-governance-route-candidate-20261022` remains at `60c8ac6e7ff425c815d9bdc7194bf20ef8d134db`, unchanged. Windows Hello/WebAuthn is a possible authentication factor, not a demonstrated trust root or configured capability. Do not add a first-run self-enrollment stub, generated trust record, issuer key, or reader self-authorization. The unresolved edge is the real trust bootstrap authority boundary and its enforced separation; if no existing supported route can be grounded, preserve the block and report the exact missing authority.
+
+```text
+ACTIVE_TASK=M1A_G1_TRUST_BOOTSTRAP_AUTHORITY_BOUNDARY
+STATUS=BLOCKED_MISSING_G1_TRUST_ANCHOR
+OWNER_TRUST_BOOTSTRAP_POLICY=ACCEPTED_FOR_CANDIDATE_ATTEMPT
+IMPLEMENTATION=AUTHORIZED_FOR_ISOLATED_CANDIDATE_ONLY; ATTEMPT_BLOCKED_BEFORE_EDITS
+GOVERNANCE=KEEP_BLOCKED
+TESTS=NOT_RUN
+BUILD=NOT_RUN
+RUNTIME=NOT_RUN
+REAL_TRANSPORT=NOT_RUN
+LOCAL_CHECKOUT=DO_NOT_ACCESS
+PROTECTED_LOCAL_READ=NOT_AUTHORIZED
+MERGE_DEPLOY=NOT_AUTHORIZED
+BLOCK_RELEASE=NOT_AUTHORIZED
+BRIDGE=BRIDGE_NOT_READY
+```
+
+---
+
 ## OVERRIDING LATEST MEMORY ROUTE — M1A G1 trust-bootstrap policy decision (2026-10-22)
 
 Restore the active route from [CURRENT-STATE.md](./CURRENT-STATE.md). Task: `M1A_G1_TRUST_BOOTSTRAP_POLICY_ADJUDICATION`; status `WAITING_OWNER`. Reconciled report: [M1A G1 trust-bootstrap feasibility receipt](./CHAT-ARCH-2026-10-22-M1A-G1-trust-bootstrap-feasibility-reconciliation.md).
