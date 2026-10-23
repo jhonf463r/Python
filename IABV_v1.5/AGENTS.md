@@ -1,3 +1,29 @@
+## OVERRIDING LATEST ROUTING — TPM preflight branch closed (2026-10-23)
+
+Canonical closure receipt: [M1A G1 — TPM preflight branch closure](./CHAT-ARCH-2026-10-23-M1A-G1-TPM-preflight-branch-closure.md), blob `d75537dac4115fc280f92b0c2f9acc6ba75acd2b`.
+
+The Owner's "ok procede" accepted the bounded recommendation `CLOSE_TPM_PREFLIGHT_BRANCH`. The TPM diagnostic branch is now `CLOSED_FOR_NOW`, not technically resolved. Preserve `TPM_AVAILABILITY=UNVERIFIED` and `CAPTURE_ROOT_CAUSE=UNRESOLVED`. Do not repeat `Get-Tpm`, the recovery lookup, EK inspection, or certificate-chain construction.
+
+The North Star remains `GOVERNED_IABV_CODEX_BRIDGE`; active frontier remains `M1A_G1_TRUST_BOOTSTRAP_AUTHORITY_BOUNDARY`; `GOVERNANCE=KEEP_BLOCKED`, `G1=NOT_ESTABLISHED`, and `BRIDGE=BRIDGE_NOT_READY`. The next candidate is `M1A_G1_EXISTING_TRUST_ASSETS_BOUNDED_READ_ONLY_ASSESSMENT`, but it is **not authorized by closure**. Require separate explicit Owner authorization and an exact supported source/route. Never bypass a denied reader or treat public `main` as evidence of a dirty local checkout. If the legitimate route is unavailable, return `NOT_RUN` / `SUPPORTED_ROUTE_NOT_FOUND` and stop.
+
+```text
+ACTIVE_TASK=M1A_G1_TRUST_BOOTSTRAP_AUTHORITY_BOUNDARY
+LAST_TERMINAL_TASK=M1A_G1_TPM_PREFLIGHT_BRANCH_CLOSURE
+TPM_PREFLIGHT_BRANCH=CLOSED_FOR_NOW
+TPM_AVAILABILITY=UNVERIFIED
+CAPTURE_ROOT_CAUSE=UNRESOLVED
+NEXT_ACTION=OWNER_DECISION_ONLY
+NEXT_CANDIDATE=M1A_G1_EXISTING_TRUST_ASSETS_BOUNDED_READ_ONLY_ASSESSMENT
+GOVERNANCE=KEEP_BLOCKED
+G1=NOT_ESTABLISHED
+BRIDGE=BRIDGE_NOT_READY
+AUTOMATIC_FOLLOW_ON=FALSE
+COORDINATOR_RUNTIME=NOT_PROVEN
+CAUSAL_SPACE_TIME_REUSE=NOT_PROVEN
+```
+
+---
+
 ## OVERRIDING LATEST ROUTING — New-chat continuity handoff after UAAL-D018 (2026-10-23)
 
 The canonical startup handoff is [here](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-23-new-chat-continuity-handoff-after-UAAL-D018.md), blob `71f0ef6911bf6f67f7fb8f6249bf7ce5b4963589`. Current baseline at preparation: `8c453dbdd0b3bb0b606fb46f6b243df525ac10f8`. Verify remote `main` again before executing any action.
