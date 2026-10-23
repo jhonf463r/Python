@@ -1,18 +1,22 @@
-# CURRENT ROUTING SNAPSHOT — 2026-10-22 (M1A v1.0.1 REVIEW REPORT RECEIVED; TIMESTAMP RECONCILIATION REQUIRED; OPERATIONAL BLOCKS REMAIN)
+# CURRENT ROUTING SNAPSHOT — 2026-10-22 (M1A v1.0.1 REVIEW RECONCILED; OWNER ADOPTION DECISION PENDING; OPERATIONAL BLOCKS REMAIN)
 
-## LATEST ROUTING DELTA — owner-supplied v1.0.1 review received; metadata discrepancy to resolve (2026-10-22)
+## LATEST ROUTING DELTA — metadata corrected; exact candidate identity reported confirmed; awaiting explicit Owner adoption decision
 
-The Owner supplied a Sonnet 4.6 / Antigravity-attributed report for exact M1A candidate v1.0.1 blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f`. The report's stated verdict is `PASS_WITH_REPAIRS`; the invocation and its result remain `OWNER_REPORTED`, not a cryptographically authenticated session receipt.
+The Owner supplied a Sonnet 4.6 / Antigravity-attributed report for exact M1A candidate v1.0.1 blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f`. The report verdict remains `PASS_WITH_REPAIRS`, with all eight original findings reported as passing and two additional LOW observations. The external session/invocation remains `OWNER_REPORTED`; this is not a cryptographically authenticated session receipt.
 
-The report states review date `2026-10-20`, but GitHub commit history for the exact final target shows the candidate's final wording committed at `2026-10-23T00:36:28Z` = `2026-10-22 19:36:28 America/Bogota` (commit `eddada4453ff86a2928ddb1cd06923018f9e4da1`). This chronology is inconsistent with the report's stated date and with the request to review the exact final blob. Do not allege misconduct or discard the technical observations; do require a correction grounded in the actual reviewer session before treating the timestamp and claimed remote fetch as verified.
+The reviewer has now explicitly corrected the prior date. They state that `2026-10-20` was written without a time query or timestamp evidence and was not a reference to another artifact. They report a fresh clone and `git rev-parse HEAD:<path>` returning the exact target blob. Their corrected metadata is `REVIEW_TIMESTAMP=UNVERIFIABLE`. The unsupported date is retracted; target identity is confirmed by the reviewer report, while exact invocation/session provenance stays `OWNER_REPORTED`.
 
-The coordinator has independently fetched all seven named inputs and confirmed their current blob SHAs. FN-M1A-V101-01 is a real C30 wording delta, consistent with F-M1A-05's freshness/revocation repair; it is accepted as a nonblocking traceability clarification in the receipt. FN-M1A-V101-02 was not demonstrated as a defect: coordinator cross-check of the named overlay verified C2 (traceability ledger), C3 (state-space definition), C5 (separation of authority planes), and C7 (pre-construction gate) and the v1.0.1 §11 mappings. No contract defect is confirmed for FN-M1A-V101-02.
+The coordinator independently fetched back all seven bounded inputs and confirmed their current Git blob identities. FN-M1A-V101-01 is adjudicated as a nonblocking traceability clarification: v1.0.1 C30's stronger current-revocation wording follows F-M1A-05 and §7; the receipt records that relationship. FN-M1A-V101-02 is not a confirmed contract defect: the coordinator cross-checked overlay C2 (traceability ledger), C3 (state-space definition), C5 (authority-plane separation) and C7 (pre-construction gate), and the references map to those sections. The complete corrected receipt is [here](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-receipt-and-reconciliation.md), blob `45190a512e93211a85e23be74fa75741be5227f6`.
 
-- **Review receipt/reconciliation:** [v1.0.1 review receipt](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-receipt-and-reconciliation.md), blob `1b0685fa273329513254a0b10180f1513edfc67b`.
-- **Single active task:** `M1A_V1_0_1_REVIEW_REPORT_METADATA_CORRECTION`.
-- **Next actor:** Sonnet 4.6 in the same Owner-reported Antigravity session; ask only to correct/qualify review date and confirm whether the exact final blob was retrieved after it existed. Do not rerun the substantive review.
-- **Exact handoff:** [review metadata-correction prompt](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-metadata-correction-handoff.md), blob `58d0e2acb2c63bf08dd5725fd278f67bad9ac4b9`. Current dispatch state: `NOT_DISPATCHED`; the prompt is ready for the Owner to paste.
-- **Successor contract:** v1.0.1 remains `NOT_ADOPTED`. v1.0.0 (`8181c7c0cf6036c76cf365510e8d9665cf84e57e`) remains the adopted baseline. Do not infer Owner adoption from a review verdict.
+### Current active task
+
+`M1A_V1_0_1_OWNER_ADOPTION_DECISION` — the report metadata is reconciled. No substantive review rerun is needed. The one remaining gate is the Owner's explicit choice whether v1.0.1 becomes the successor normative design baseline.
+
+- **Adopted baseline, unchanged:** [M1A v1.0.0](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md), blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e`.
+- **Reviewed successor, not adopted:** [M1A v1.0.1 candidate](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1_0_1-candidate.md), blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f`.
+- **Coordinator recommendation:** accept v1.0.1 as the new normative design baseline, while preserving `REVIEW_TIMESTAMP=UNVERIFIABLE`, the report's `OWNER_REPORTED` attribution, and FN-M1A-V101-01 as a nonblocking traceability clarification. FN-M1A-V101-02 is not confirmed as a defect. This is a recommendation, not an adoption event.
+- **Next actor / authority:** Owner. Choose the explicit token `ACCEPT_M1A_V1_0_1_SUCCESSOR_BASELINE` to adopt the v1.0.1 normative design, or `RETAIN_M1A_V1_0_0_BASELINE` to retain v1.0.0. No token has been supplied yet; the current baseline therefore remains v1.0.0.
+- **Evidence/limitations:** review verdict and fresh-clone SHA operation are reviewer-reported. GitHub independently confirms the candidate blob exists. The review's actual wall-clock timestamp remains unknown; no tests or runtime were run.
 
 ```text
 PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
@@ -20,15 +24,18 @@ PARENT_CONCEPT=UAAL-ROOT-001
 OWNER_DESIGN_ACCEPTANCE=ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE
 ADOPTED_BASELINE_VERSION=1.0.0
 ADOPTED_BASELINE_BLOB=8181c7c0cf6036c76cf365510e8d9665cf84e57e
-V1_0_0_REVIEW_VERDICT=PASS_WITH_REPAIRS
+V1_0_0_REVIEW_VERDICT=OWNER_REPORTED_PASS_WITH_REPAIRS
 V1_0_1_REVIEW_VERDICT=OWNER_REPORTED_PASS_WITH_REPAIRS
 V1_0_1_CANDIDATE_BLOB=7c72474a5f7c114c02320c177d6ea2aea68ad28f
-V1_0_1_STATUS=NOT_ADOPTED
-REVIEW_PROVENANCE=OWNER_REPORTED; TIMESTAMP_INCONSISTENCY_OPEN
+V1_0_1_STATUS=REVIEWED; NOT_ADOPTED_PENDING_OWNER_DECISION
+REVIEWER_BLOB_IDENTITY=OWNER_REPORTED_CONFIRMED_EXACT_BLOB
+REVIEW_TIMESTAMP=UNVERIFIABLE
+REVIEW_SESSION_ATTRIBUTION=OWNER_REPORTED
+F_M1A_01_08=REPORTED_PASS; NOT_INDEPENDENTLY_REPERFORMED
 FN_M1A_V101_01=NONBLOCKING_TRACEABILITY_CLARIFICATION_RECORDED
 FN_M1A_V101_02=COORDINATOR_CROSS_CHECKED; NO_DEFECT_CONFIRMED
-ACTIVE_TASK=M1A_V1_0_1_REVIEW_REPORT_METADATA_CORRECTION
-CURRENT_STATUS=CORRECTION_HANDOFF_READY; NOT_DISPATCHED
+ACTIVE_TASK=M1A_V1_0_1_OWNER_ADOPTION_DECISION
+CURRENT_STATUS=READY_FOR_OWNER_DECISION; NOT_ADOPTED
 RUNTIME_TRUST_ANCHOR=UNVERIFIED
 TRUSTED_CATALOGUE_AND_ACTIVE_SET_ATTESTATION=NOT_ESTABLISHED
 TRUSTED_OPERATION_TARGET_RESOLVER=NOT_ESTABLISHED
