@@ -1,14 +1,15 @@
-## ACTIVE ARCHIVE / ROUTE POINTER — M1A v1.0.0 review received; v1.0.1 candidate review next (2026-10-22)
+## ACTIVE ARCHIVE / ROUTE POINTER — M1A v1.0.1 report received; chronology correction pending (2026-10-22)
 
-Routing authority: [CURRENT-STATE.md](./CURRENT-STATE.md). Active task: `M1A_CONTRACT_V1_0_1_CANDIDATE_TARGETED_ADVERSARIAL_REVIEW`; `READY_FOR_INDEPENDENT_REVIEW; NOT_DISPATCHED`.
+Routing authority: [CURRENT-STATE.md](./CURRENT-STATE.md). Active task: `M1A_V1_0_1_REVIEW_REPORT_METADATA_CORRECTION`; `CORRECTION_HANDOFF_READY; NOT_DISPATCHED`.
 
-- Adopted, unchanged predecessor: [v1.0.0 contract](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md), blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e`.
-- Review finding register: [v1.0.0 `PASS_WITH_REPAIRS` receipt](./CHAT-ARCH-2026-10-22-M1A-contract-v1-sonnet-review-receipt-and-finding-register.md), blob `396606e5744f0b3d0332f8ee9f02ec14cdcea588`; 8 findings, all dispositions recorded, reviewer/session attribution `OWNER_REPORTED`.
-- Non-adopted successor: [v1.0.1 candidate](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1_0_1-candidate.md), blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f`; 38 proposed cases, `TESTS=NOT_RUN`.
-- Next bounded prompt: [v1.0.1 candidate review handoff](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-candidate-targeted-review-handoff.md), blob `5612ada32a145d23cc836792cdf02608f4a706a3`.
+- Adopted baseline, unchanged: [v1.0.0 contract](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md), blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e`.
+- Successor candidate, not adopted: [v1.0.1 candidate](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1_0_1-candidate.md), blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f`.
+- Owner-supplied report receipt: [review receipt and reconciliation](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-receipt-and-reconciliation.md), blob `1b0685fa273329513254a0b10180f1513edfc67b`.
+- The stated review date is inconsistent with the final candidate's GitHub history. Exact bounded next prompt: [metadata-correction handoff](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-metadata-correction-handoff.md), blob `58d0e2acb2c63bf08dd5725fd278f67bad9ac4b9`.
+- FN-M1A-V101-01: nonblocking traceability clarification recorded. FN-M1A-V101-02: coordinator cross-checked overlay mapping; no defect confirmed.
+- The candidate has 38 proposed cases, none executed. Actual trust anchor, active-set attestation, resolver, producer allowlist, revocation source and independent release mechanism remain unverified/not established.
 
-This is a documentation-only chain. It adds no runtime authority. The actual active-block-set attestation, trust anchor, catalogue publisher/revocation source, producer allowlist, operation-target resolver and independent block-release mechanism remain unverified/not established. Keep the exact operational state in CURRENT-STATE.md; do not treat old pointers below as the active task.
-
+Keep `GOVERNANCE=KEEP_BLOCKED`, `IMPLEMENTATION=NOT_AUTHORIZED`, `TESTS=NOT_RUN`, `READ_LIST=FAIL_CLOSED`, `BRIDGE=BRIDGE_NOT_READY`. Do not treat any historical route below as active.
 
 ---
 
