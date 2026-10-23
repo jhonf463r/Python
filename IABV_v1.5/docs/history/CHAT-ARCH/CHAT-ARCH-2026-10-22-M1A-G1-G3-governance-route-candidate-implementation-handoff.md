@@ -26,7 +26,7 @@ The purpose of this candidate is to determine whether the public source and exis
 >
 > **Authorization and exact target**
 >
-> The Owner explicitly authorized in this conversation a bounded implementation attempt for G1–G3, on an isolated candidate based on public `main`, subject to the restrictions below. Use repository `jhonf463r/Python`, base SHA `60c8ac6e7ff425c815d9bdc7194bf20ef8d134db`, branch `codex/m1a-g1-g3-governance-route-candidate-implementation`. First verify the current session is operating in a separate candidate created from that exact base. If you are in the Owner's existing/dirty checkout, an unrelated local worktree, or cannot prove candidate identity, stop with `ISOLATED_CANDIDATE_IDENTITY_UNVERIFIED`; do not inspect or alter that workspace.
+> The Owner explicitly authorized in this conversation a bounded implementation attempt for G1–G3, on an isolated candidate based on public `main`, subject to the restrictions below. Use repository `jhonf463r/Python`, base SHA `60c8ac6e7ff425c815d9bdc7194bf20ef8d134db`, branch `m1a-g1-g3-governance-route-candidate-20261022`. First verify the current session is operating in a separate candidate created from that exact base. If you are in the Owner's existing/dirty checkout, an unrelated local worktree, or cannot prove candidate identity, stop with `ISOLATED_CANDIDATE_IDENTITY_UNVERIFIED`; do not inspect or alter that workspace.
 >
 > **Single objective**
 >
@@ -105,7 +105,7 @@ TASK=M1A_G1_G3_AUTHORITY_ROUTE_CANDIDATE_IMPLEMENTATION
 OWNER_AUTHORIZATION=EXPLICIT_CHAT_AUTHORIZATION_RECEIVED
 DESTINATION=CODEX_EXISTING_UI_SESSION
 BASE_MAIN_SHA=60c8ac6e7ff425c815d9bdc7194bf20ef8d134db
-CANDIDATE_BRANCH=codex/m1a-g1-g3-governance-route-candidate-implementation
+CANDIDATE_BRANCH=m1a-g1-g3-governance-route-candidate-20261022
 CANDIDATE_BRANCH_CREATED=YES
 CODEX_PROMPT_DISPATCHED=NO
 CANDIDATE_CODE_CHANGES=NONE_BY_COORDINATOR
