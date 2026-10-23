@@ -1,3 +1,29 @@
+## OVERRIDING LATEST ROUTING — Owner accepted G1 policy; candidate attempt remains blocked (2026-10-22)
+
+Use [CURRENT-STATE.md](./CURRENT-STATE.md) as the sole active-task router. The Owner accepted the bounded G1 trust-bootstrap policy and candidate-only authorization. The attempt stopped before source edits because the existing candidate provides no evidenced independently trusted enrollment/registration boundary for Owner → issuer → server binding. Result: [G1 trust-bootstrap candidate attempt](./CHAT-ARCH-2026-10-22-M1A-G1-trust-bootstrap-candidate-attempt-result.md), blob `3c120ed84d1c19f6f205f3f7ed9b4dc620fcbf24`.
+
+The candidate branch remains at `60c8ac6e7ff425c815d9bdc7194bf20ef8d134db`; no product source changes. Do not re-run the feasibility review or broad source inventory. Windows Hello/WebAuthn remains a possible factor, not an established IABV trust root. Next active task is `M1A_G1_TRUST_BOOTSTRAP_AUTHORITY_BOUNDARY`, blocked until a real trust bootstrap path and enforced issuer/requester/reader separation can be grounded in evidence. Do not fabricate auto-enrollment or issuer material.
+
+```text
+ACTIVE_TASK=M1A_G1_TRUST_BOOTSTRAP_AUTHORITY_BOUNDARY
+STATUS=BLOCKED_MISSING_G1_TRUST_ANCHOR
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3_VERSIONED_TARGET_RESOLVER=NOT_ESTABLISHED
+GOVERNANCE=KEEP_BLOCKED
+IMPLEMENTATION=AUTHORIZED_FOR_ISOLATED_CANDIDATE_ONLY; ATTEMPT_BLOCKED_BEFORE_EDITS
+TESTS=NOT_RUN
+BUILD=NOT_RUN
+RUNTIME=NOT_RUN
+REAL_TRANSPORT=NOT_RUN
+PROTECTED_LOCAL_READ=NOT_AUTHORIZED
+MERGE_DEPLOY=NOT_AUTHORIZED
+BLOCK_RELEASE=NOT_AUTHORIZED
+BRIDGE=BRIDGE_NOT_READY
+```
+
+---
+
 ## OVERRIDING LATEST ROUTING — M1A G1 trust policy decision pending (2026-10-22)
 
 Use [CURRENT-STATE.md](./CURRENT-STATE.md) as the sole active-task router. The active task is `M1A_G1_TRUST_BOOTSTRAP_POLICY_ADJUDICATION`, status `WAITING_OWNER`. The Owner supplied a conditional G1 feasibility result; see [the reconciliation receipt](./CHAT-ARCH-2026-10-22-M1A-G1-trust-bootstrap-feasibility-reconciliation.md).
