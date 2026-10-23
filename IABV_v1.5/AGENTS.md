@@ -1,14 +1,25 @@
-## CURRENT ROUTING — v1.0.0 remains adopted; v1.0.1 candidate awaits explicit Owner token (2026-10-22)
+## ACTIVE ROUTING — M1A v1.0.1 adopted for normative design; G1–G3 authority route unresolved (2026-10-22)
 
-Before any M1A continuation, read the top snapshot of [CURRENT-STATE.md](docs/history/CHAT-ARCH/CURRENT-STATE.md); it is the sole active-task authority. The Owner's original `ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE` remains the accepted v1.0.0 design baseline.
+**Read [CURRENT-STATE.md](docs/history/CHAT-ARCH/CURRENT-STATE.md) first.** It remains the sole active-task and next-actor authority.
 
-The Owner's `ok procede` authorizes continuation of bounded documentary work only. Under UAAL construction-completeness overlay C1, it is not the explicit acceptance token for a pending policy. The coordinator's former interpretation as v1.0.1 adoption has been withdrawn; see [the adoption correction](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1A-v1_0_1-owner-adoption-correction.md), blob `bc1e7e97c85671753f79cf9916e640e02f6b642d`.
+**Current normative design:** M1A v1.0.1, blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f`, adopted with the exact Owner token `ACCEPT_M1A_V1_0_1_SUCCESSOR_BASELINE`; see [explicit adoption receipt](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1A-v1_0_1-explicit-owner-adoption-receipt.md), blob `34bee2ad8b3b4beeb468e8d563b99f511f0b352d`. The immutable predecessor v1.0.0 is blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e`.
 
-**Effective baseline:** v1.0.0, blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e`. **Successor proposal:** v1.0.1 candidate blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f`, still `NOT_ADOPTED_PENDING_EXPLICIT_OWNER_DECISION`. [Review receipt](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-receipt-and-reconciliation.md), blob `ffd96aa031ff4e2460352e7f840e720fa9429dfc`: report `OWNER_REPORTED_PASS_WITH_REPAIRS`, timestamp `UNVERIFIABLE`, session attribution `OWNER_REPORTED`. [Prerequisite gate matrix](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1A-v1_0_1-implementation-prerequisite-evidence-gate-matrix.md), blob `608a5c7f3c2be8ad794b21bfcb66657217584a58`; it is documentary and maps eight future implementation gates, with zero closed.
+Review provenance stays `OWNER_REPORTED_PASS_WITH_REPAIRS`; `REVIEW_TIMESTAMP=UNVERIFIABLE`; session attribution `OWNER_REPORTED`. The eight implementation prerequisite gates remain open (`CLOSED=0`). Adoption is normative design only, not permission for implementation, protected reads, tests, runtime or release.
 
-**Active task:** `M1A_V1_0_1_OWNER_ADOPTION_DECISION`, `AWAITING_EXPLICIT_OWNER_TOKEN`. The Owner must respond with exactly `ACCEPT_M1A_V1_0_1_SUCCESSOR_BASELINE` or `RETAIN_M1A_V1_0_0_BASELINE`. General “proceed” does not adopt pending policy.
+**Active task:** `M1A_V1_0_1_G1_G3_AUTHORITY_EVIDENCE_ROUTE`; status `WAITING_AUTHORITY`. Identify the supported governance-owned evidence route and accountable producers for G1–G3. Do not repeat the contract review or broad route scan; no agent prompt is dispatched until the actual authority surface and responsible actor are grounded in evidence.
 
-Preserve `GOVERNANCE=KEEP_BLOCKED`, `IMPLEMENTATION=NOT_AUTHORIZED`, `TESTS=NOT_RUN`, `READ_LIST=FAIL_CLOSED`, `BRIDGE=BRIDGE_NOT_READY`. No local checkout, `data/`, SQLite, secrets or `.env`; no product-source edits, tests/build/runtime/transport, protected reads, merge/deploy or block release.
+```text
+ACTIVE_TASK=M1A_V1_0_1_G1_G3_AUTHORITY_EVIDENCE_ROUTE
+STATUS=WAITING_AUTHORITY
+V1_0_1_NORMATIVE_DESIGN=ADOPTED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+SUPPORTED_RUNTIME_AUTHORITY_ROUTE=UNRESOLVED
+GOVERNANCE=KEEP_BLOCKED
+IMPLEMENTATION=NOT_AUTHORIZED
+TESTS=NOT_RUN
+READ_LIST=FAIL_CLOSED
+BRIDGE=BRIDGE_NOT_READY
+```
 
 **Historical-scope notice:** all routing text retained below the divider is preserved for provenance only. It does not supersede `CURRENT-STATE.md` or any current task pointer.
 
