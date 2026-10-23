@@ -65,7 +65,7 @@ Every per-block evaluation and overall request evaluation must bind, at minimum:
 - evaluation result, all reason codes and relevant timestamps;
 - independent block-release artifact reference, if one exists and verifies.
 
-The conceptual model ID is `iabv.operational_block_scope`; schema and policy version `1.0.0` describe this **design contract** only. They do not assert that a live catalogue carrying those versions has been published or authenticated. Catalogue revision, publisher signature/attestation, trust anchor and revocation state must be separate explicit evidence.
+The conceptual model ID is `iabv.operational_block_scope`; schema and policy version `1.0.1` are **proposed for this non-adopted successor candidate only**. They do not assert that a live catalogue carrying those versions has been published or authenticated, or that v1.0.1 has superseded the Owner-adopted v1.0.0 baseline. Catalogue revision, publisher signature/attestation, trust anchor and revocation state must be separate explicit evidence.
 
 ## 3. Selector semantics
 
@@ -123,7 +123,6 @@ No invalid or unknown state may be converted into non-applicability, permission 
 | Authenticated, identifiable legacy record whose prior selector semantics are ambiguous | `LEGACY_SCOPE_UNEVALUABLE`; deny; no automatic migration |
 | Empty/wildcard selector in a recognized schema with known selector semantics | `BLOCK_SCOPE_UNEVALUABLE`; deny |
 | Active-block set absent, partial, stale, unauthenticated or lacking a verifiable completeness attestation | `ACTIVE_BLOCK_SET_UNVERIFIABLE`; deny |
-| Complete valid exact mismatch concurrent with any pre-selector validation failure/unknown | Preserve the validation denial code(s); deny; never `PROVEN_NOT_APPLICABLE` |
 | Complete valid exact mismatch with all trust checks satisfied and per-stage status `PASSED` | `PROVEN_NOT_APPLICABLE` for that block only |
 | Any selector mismatch concurrent with failed/unknown/missing pre-selector validation | Applicable validation denial code(s); `DENY`; never `PROVEN_NOT_APPLICABLE` |
 
@@ -188,7 +187,7 @@ For any denial, preserve all reason codes and per-block results. Use determinist
 - `ACTIVE_BLOCK_SET_UNVERIFIABLE`
 - `BLOCK_RELEASE_UNSUPPORTED`
 
-Only `BLOCK_APPLIES` and `PROVEN_NOT_APPLICABLE` are non-denial per-block states. All other vocabulary values require denial; an applicable block with an absent/unverifiable release also carries `BLOCK_RELEASE_UNSUPPORTED`. The overall scope-gate decision is `DENY` or `SCOPE_GATE_PASSED_TO_NEXT_GATE`. The latter is never authorization; its required `gate_reason` is either `NO_APPLICABLE_BLOCKS_PROVEN` or `ALL_APPLICABLE_BLOCKS_INDEPENDENTLY_RELEASED`, with all per-block results preserved. These labels are design vocabulary, not claims about codes already present in source.
+Only `BLOCK_APPLIES` and `PROVEN_NOT_APPLICABLE` avoid an intrinsic per-block unevaluable/validation denial. `BLOCK_APPLIES` still forces overall `DENY` unless that specific block has its own valid independent release. All other vocabulary values require denial; an applicable block with an absent/unverifiable release also carries `BLOCK_RELEASE_UNSUPPORTED`. The overall scope-gate decision is `DENY` or `SCOPE_GATE_PASSED_TO_NEXT_GATE`. The latter is never authorization; its required `gate_reason` is either `NO_APPLICABLE_BLOCKS_PROVEN` or `ALL_APPLICABLE_BLOCKS_INDEPENDENTLY_RELEASED`, with all per-block results preserved. These labels are design vocabulary, not claims about codes already present in source.
 
 ## 7. Independent block release and Entry 274 boundary
 
@@ -210,7 +209,7 @@ Even `NO_APPLICABLE_BLOCKS_PROVEN` cannot bypass Entry 274's other requirements:
 
 ## 8. Versioning, legacy treatment and migration
 
-This design is schema/policy version `1.0.0`. A live implementation must bind the exact schema, policy and catalogue revisions used for each evaluation, and reject unsupported or revoked versions.
+This non-adopted successor candidate proposes schema/policy version `1.0.1`; the currently accepted baseline remains v1.0.0 until a separate canonical routing update accepts a reviewed successor. A live implementation must bind the exact schema, policy and catalogue revisions used for each evaluation, and reject unsupported or revoked versions.
 
 No automatic legacy migration is permitted. Existing blocks remain blocking unless a separately authorized migration establishes authenticated provenance and unambiguous typed selectors, or the independent authorized block owner issues a valid release. Empty, missing, wildcard or free-form values MUST NOT be rewritten or interpreted as `GLOBAL` or `NONE` by default. A recognized schema missing mandatory fields is malformed/incomplete and returns `BLOCK_SCOPE_UNEVALUABLE`. An absent/unrecognized schema without authenticated legacy classification returns `SCOPE_MODEL_UNAVAILABLE`. An authenticated, identifiable legacy record with ambiguous prior selector semantics returns `LEGACY_SCOPE_UNEVALUABLE`. All fail closed, but the reason remains distinguishable.
 
@@ -302,13 +301,14 @@ This v1.0.1 document is a **successor candidate, not yet adopted**. Its intended
 
 ```text
 CONTRACT=IABV-OPERATIONAL-BLOCK-SCOPE
-CONTRACT_VERSION=1.0.1-CANDIDATE
+CONTRACT_VERSION=1.0.1
 PREDECESSOR_CONTRACT_VERSION=1.0.0
 PREDECESSOR_CONTRACT_BLOB=8181c7c0cf6036c76cf365510e8d9665cf84e57e
 SCHEMA_ID=iabv.operational_block_scope
-SCHEMA_VERSION=1.0.1-PROPOSED
-POLICY_VERSION=1.0.1-PROPOSED
+SCHEMA_VERSION=1.0.1
+POLICY_VERSION=1.0.1
 OWNER_DESIGN_ACCEPTANCE=ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE (v1.0.0 baseline; choices unchanged)
+CANDIDATE_STATUS=NOT_ADOPTED_PENDING_TARGETED_REVIEW
 SUCCESSOR_STATUS=NOT_ADOPTED_PENDING_TARGETED_REVIEW
 DESIGN_BASELINE=NORMATIVE_DESIGN_BASELINE_ADOPTED_V1.0.0
 REAL_TRUST_ANCHOR=UNVERIFIED
