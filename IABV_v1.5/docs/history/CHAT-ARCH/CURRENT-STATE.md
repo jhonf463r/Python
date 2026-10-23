@@ -7,8 +7,8 @@ The Owner explicitly authorized bounded implementation work for G1–G3 in an is
 - **Task:** `M1A_G1_G3_AUTHORITY_ROUTE_CANDIDATE_IMPLEMENTATION` (child of `M1A_V1_0_1_G1_G3_AUTHORITY_EVIDENCE_ROUTE`).
 - **Exact pinned base:** public `main` commit `60c8ac6e7ff425c815d9bdc7194bf20ef8d134db`, observed immediately before candidate branch creation.
 - **Isolated candidate branch:** `m1a-g1-g3-governance-route-candidate-20261022`, created from that exact SHA. No product source was changed by the coordinator.
-- **Codex handoff:** [bounded G1–G3 candidate implementation handoff](./CHAT-ARCH-2026-10-22-M1A-G1-G3-governance-route-candidate-implementation-handoff.md), blob `23707a08c8dd9ebf6e2dc956a90ba4ea5877a611`.
-- **Destination:** Codex in the already-existing UI/session, by Owner-mediated handoff. `CODEX_PROMPT_DISPATCHED=NO`; no Codex result/receipt has been received.
+- **Codex handoff:** [bounded G1–G3 candidate implementation handoff](./CHAT-ARCH-2026-10-22-M1A-G1-G3-governance-route-candidate-implementation-handoff.md), blob `a871498da285f2436632ce07d193dd3e2d6e0059`.
+- **Destination:** Codex in the already-existing UI/session. `CODEX_PROMPT_DISPATCHED=NO`; no Codex result/receipt has been received. Per [coordination protocol §13](./CHAT-ARCH-2026-10-22-adhd-aware-project-coordination-and-space-time-focus-protocol.md), the complete prompt must be delivered inline in the current ChatGPT response; GitHub links are supplemental storage, never the sole place to retrieve instructions. The Owner's only manual handoff is copy from this chat → paste in the named Codex session.
 - **Allowed:** inspect relevant source and documents within a newly verified, separate candidate; implement only primitives actually supported by evidence and explicit adopted decisions; edit/commit candidate branch only.
 - **Mandatory stop:** if the real G1 trusted principal/root, G2 authorized catalogue/producer/revocation source, or G3 versioned server-side operation-to-target resolver is missing, do not fabricate placeholders and do not claim operability. Return exact missing dependency. If current Codex workspace cannot be proven separate from the Owner's existing worktree, stop without accessing it.
 - **Strictly not authorized:** any read of the Owner's existing/dirty checkout, `data/`, SQLite, secrets, credentials or `.env`; tests/builds/runtime/process launches/transport; live reader invocation; merge/deploy; live protected-read grant or operational block release.
@@ -21,6 +21,9 @@ STATUS=OWNER_AUTHORIZED; CANDIDATE_HANDOFF_READY_NOT_DISPATCHED
 BASE_MAIN_SHA=60c8ac6e7ff425c815d9bdc7194bf20ef8d134db
 CANDIDATE_BRANCH=m1a-g1-g3-governance-route-candidate-20261022
 CODEX_PROMPT_DISPATCHED=NO
+PROMPT_DELIVERY_MODE=INLINE_IN_CHAT; NO_EXTERNAL_RETRIEVAL_REQUIRED
+NEXT_USER_ACTION=COPY_INLINE_CODEX_PROMPT_AND_PASTE_IN_EXISTING_UI_SESSION
+COORDINATION_RULE=PROTOCOL_SECTION_13; DOCUMENTED_NOT_YET_PROVEN_BY_REUSE
 CODEX_EXECUTION=NOT_CONFIRMED
 CANDIDATE_WORKSPACE_IDENTITY=NOT_YET_VERIFIED_BY_CODEX
 G1_G2_G3_RUNTIME_AUTHORITY=NOT_ESTABLISHED
