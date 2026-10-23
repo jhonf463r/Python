@@ -1,31 +1,27 @@
-## ACTIVE ROUTING — M1A design accepted; consolidated contract v1.0.0 review next (2026-10-22)
+## ACTIVE ROUTING — M1A review repairs reconciled; v1.0.1 candidate review next (2026-10-22)
 
-**Follow [CURRENT-STATE.md](./CURRENT-STATE.md) first.** Its top routing snapshot is the only source for the active task. The Owner accepted `ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE`; the decision is recorded in the [normalized M1A ledger](./CHAT-ARCH-2026-10-22-M1A-normalized-scope-decision-ledger-and-design-amendment.md), and the adopted design is consolidated in [M1A operational-block scope contract v1.0.0](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md) (blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e`).
+**Read [CURRENT-STATE.md](./CURRENT-STATE.md) first.** Its top snapshot is the sole active-task authority. The Owner's exact `ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE` remains the accepted decision for v1.0.0; the review findings do not reopen it.
 
-**Existing architectural lineage — reuse, do not duplicate:**
-1. [UAAL-ROOT-001](./UNIVERSAL-ADAPTIVE-ALGORITHM-CONSTITUTION-2026-10-04.md) is the parent adaptive loop.
-2. [Memory Operating Protocol](./MEMORY-OPERATING-PROTOCOL.md) owns retrieval/provenance, task selection, bounded handoffs, reconciliation, Knowledge Delta and fetch-back.
-3. [Development Control Tower](./DEVELOPMENT-CONTROL-TOWER-2026-09-21.md) plus [goal-lock/anti-drift](./CHAT-ARCH-2026-10-20-protocol-anti-drift-and-bridge-goal-lock.md) preserve the North Star and one active task.
-4. [Entry 274](./CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md) maintains separate diagnostic, fresh approval, server-side read decision, reader verification, receipt and independent block-release authority.
-5. [Construction-completeness overlay](./CHAT-ARCH-2026-10-22-UAAL-construction-completeness-traceability-overlay.md) makes bidirectional traceability, decision-space coverage and evidence-backed closure mandatory.
+**Review receipt:** v1.0.0 received `PASS_WITH_REPAIRS` (2 HIGH, 3 MEDIUM, 3 LOW) from an Owner-pasted report attributed to Sonnet 4.6; execution attribution remains `OWNER_REPORTED`. [Finding register](./CHAT-ARCH-2026-10-22-M1A-contract-v1-sonnet-review-receipt-and-finding-register.md) blob `396606e5744f0b3d0332f8ee9f02ec14cdcea588`.
 
-**Current next step:** `M1A_CONSOLIDATED_SCOPE_CONTRACT_V1_TARGETED_ADVERSARIAL_REVIEW`, a bounded documentary/static review of the exact consolidated v1.0.0 contract. Intended actor: Sonnet 4.6 in the Owner-reported Antigravity session; invocation remains `NOT_DISPATCHED`. No broad repo scan, local checkout access, code change, tests, runtime, transport, merge or block release.
-Copyable exact prompt: [M1A contract v1 review handoff](./CHAT-ARCH-2026-10-22-M1A-contract-v1-targeted-adversarial-review-handoff.md), blob `26616d4244c218654fe37d31aed240e518cb94a0`.
+**Successor candidate:** [M1A scope contract v1.0.1 candidate](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1_0_1-candidate.md) blob `4befbbb352bed35f813b9ada2d3b672cf91e328a`, currently `NOT_ADOPTED`. v1.0.0 remains the immutable accepted baseline until the successor review and canonical routing are complete. The candidate does not assert working runtime trust/registry/resolver/revocation/release capabilities.
+
+**Single active task:** `M1A_CONTRACT_V1_0_1_CANDIDATE_TARGETED_ADVERSARIAL_REVIEW`. **IA DESTINO:** Sonnet 4.6 in the Owner-reported existing Antigravity session, only if it can receive/verify the exact inputs. **Prompt/handoff:** [bounded v1.0.1 review handoff](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-candidate-targeted-review-handoff.md), blob `bd50b9766c475035f9e3a1e55433254910430156`. `REVIEW_DISPATCH=NOT_DISPATCHED` until a correlated report arrives.
+
+Architectural lineage remains unchanged: UAAL-ROOT-001 is the parent adaptive loop; Memory Operating Protocol owns retrieval/provenance/reconciliation/reuse; Development Control Tower and goal-lock/anti-drift preserve the North Star and one active task; Entry 274 keeps diagnostics, fresh approval, server-side decision, reader verification, durable receipt and block release separate; the construction-completeness overlay supplies bidirectional traceability, coverage and fetch-back gates.
 
 ```text
-OWNER_DESIGN_ACCEPTANCE=ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE
-M1A_DESIGN_BASELINE=NORMATIVE_ADOPTED
-CONTRACT_VERSION=1.0.0
-CONTRACT_BLOB=8181c7c0cf6036c76cf365510e8d9665cf84e57e
-ACTIVE_TASK=M1A_CONSOLIDATED_SCOPE_CONTRACT_V1_TARGETED_ADVERSARIAL_REVIEW
-CURRENT_STATUS=READY_FOR_INDEPENDENT_REVIEW; NOT_DISPATCHED
-RUNTIME_TRUST_ANCHOR=UNVERIFIED
+ACTIVE_TASK=M1A_CONTRACT_V1_0_1_CANDIDATE_TARGETED_ADVERSARIAL_REVIEW
+CANDIDATE_BLOB=4befbbb352bed35f813b9ada2d3b672cf91e328a
+CANDIDATE_STATUS=NOT_ADOPTED_PENDING_TARGETED_REVIEW
 GOVERNANCE=KEEP_BLOCKED
 IMPLEMENTATION=NOT_AUTHORIZED
 TESTS=NOT_RUN
 READ_LIST=FAIL_CLOSED
 BRIDGE=BRIDGE_NOT_READY
 ```
+
+No broad repository scan, local checkout/data/SQLite/secrets inspection, source changes, tests, build, runtime, transport, merge, deployment, protected read or block release.
 ---
 
 ## Historical M1 checkpoint — superseded by CURRENT-STATE routing (2026-10-22)
