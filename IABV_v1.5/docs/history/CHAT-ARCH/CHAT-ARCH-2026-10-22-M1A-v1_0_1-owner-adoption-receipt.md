@@ -9,7 +9,7 @@
 - Exact reviewed v1.0.1 source candidate, preserved unchanged: `7c72474a5f7c114c02320c177d6ea2aea68ad28f`.
 - Adopted successor contract artifact: [M1A v1.0.1 normative contract](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1_0_1.md), blob `baa39a09b97117df1dbe46804affdcebc7159f30`.
 - Review verdict: `OWNER_REPORTED_PASS_WITH_REPAIRS`; review timestamp `UNVERIFIABLE`; external session attribution `OWNER_REPORTED`.
-- Review receipt: [v1.0.1 review receipt and reconciliation](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-receipt-and-reconciliation.md), blob `45190a512e93211a85e23be74fa75741be5227f6`.
+- Review receipt: [v1.0.1 review receipt and reconciliation](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-receipt-and-reconciliation.md), blob `000b81b079c5febd8d78afebedf782d1d1e263fa`.
 
 ## 1. Decision
 
