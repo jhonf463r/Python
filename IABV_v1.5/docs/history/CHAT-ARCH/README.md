@@ -1,3 +1,29 @@
+## OVERRIDING LATEST ROUTING — M1A G1 trust policy decision pending (2026-10-22)
+
+Use [CURRENT-STATE.md](./CURRENT-STATE.md) as the sole active-task router. The active task is `M1A_G1_TRUST_BOOTSTRAP_POLICY_ADJUDICATION`, status `WAITING_OWNER`. The Owner supplied a conditional G1 feasibility result; see [the reconciliation receipt](./CHAT-ARCH-2026-10-22-M1A-G1-trust-bootstrap-feasibility-reconciliation.md).
+
+The candidate `m1a-g1-g3-governance-route-candidate-20261022` has been directly rechecked through GitHub and remains at base `60c8ac6e7ff425c815d9bdc7194bf20ef8d134db`, with no code changes from this review. Do not repeat the source inventory. Windows Hello/WebAuthn remains a candidate authentication factor, not a demonstrated trust root or configured capability. The Owner's trust-bootstrap policy decision is pending; no new trust bootstrap implementation is authorized yet.
+
+Correction: M1A G3 denotes the authoritative versioned server-side operation-to-target resolver. Durable request/approval/decision/operation/result receipts are a separate Entry 274 ledger requirement. G1, G2 and G3 remain NOT_ESTABLISHED; all eight implementation gates remain open.
+
+```text
+ACTIVE_TASK=M1A_G1_TRUST_BOOTSTRAP_POLICY_ADJUDICATION
+STATUS=WAITING_OWNER
+OWNER_TRUST_BOOTSTRAP_POLICY=PROPOSED_NOT_ADOPTED
+GOVERNANCE=KEEP_BLOCKED
+IMPLEMENTATION=NOT_AUTHORIZED_FOR_NEW_TRUST_BOOTSTRAP
+TESTS=NOT_RUN
+BUILD=NOT_RUN
+RUNTIME=NOT_RUN
+REAL_TRANSPORT=NOT_RUN
+PROTECTED_LOCAL_READ=NOT_AUTHORIZED
+MERGE_DEPLOY=NOT_AUTHORIZED
+BLOCK_RELEASE=NOT_AUTHORIZED
+BRIDGE=BRIDGE_NOT_READY
+```
+
+---
+
 ## LATEST ROUTING — Owner authorized isolated G1–G3 candidate (2026-10-22)
 
 The Owner authorized a bounded candidate implementation attempt. The canonical router is [CURRENT-STATE.md](./CURRENT-STATE.md). The remote branch `m1a-g1-g3-governance-route-candidate-20261022` was created from exact public-main SHA `60c8ac6e7ff425c815d9bdc7194bf20ef8d134db`. The copy-ready prompt is in [the G1–G3 candidate handoff](./CHAT-ARCH-2026-10-22-M1A-G1-G3-governance-route-candidate-implementation-handoff.md). It is prepared but not dispatched to Codex (`CODEX_PROMPT_DISPATCHED=NO`).
