@@ -1,3 +1,36 @@
+## OVERRIDING LATEST ROUTING — M1A G1 new-chat continuity handoff (2026-10-23)
+
+The latest bounded review `M1A_G1_OWNER_APPROVED_MANIFEST_TPM_BOUND_ISSUER_REVIEW` remains terminal at `BLOCKED_NO_INDEPENDENT_ENROLLMENT_PATH`; no trust gate has closed. Read [the complete new-chat continuity handoff](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-23-M1A-G1-new-chat-continuity-handoff.md), blob `949f47a32c6f3fa303cdcb6d493784ffb7dccbd1`, after verifying the current remote main and reading the canonical five-file preflight. Parent main at writeback was `76708568d441b6172425367ae287b69a280cec38`; the review receipt captures the prior Windows, GitHub, phone/passkey, Google OIDC and TPM conclusions, including provenance, anti-repeat routing and the path-writeback correction lesson.
+
+Do not repeat the G1 inventory, Windows feasibility review, phone/passkey review, Google OIDC review or GitHub-manifest/TPM review. The Owner's priority is to unblock IABV and continue the bridge, not more phone configuration. Google OIDC was rejected as unnecessary external setup. A syncable personal passkey with offline recovery is only a future human-authorization candidate, not an IABV trust anchor. GitHub account ID `28608338` is not adopted. TPM presence/attestation and exact-instance binding are not established.
+
+A TPM identity pin from a genuinely independent channel remains a possible design question, not a proven solution. The precise instance binding, Owner-to-Windows principal binding, issuer-key trust and reader-side verification remain open. Follow the receipt's Owner-decision-only next action; no automatic implementation or new review.
+
+```text
+ACTIVE_TASK=M1A_G1_TRUST_BOOTSTRAP_AUTHORITY_BOUNDARY
+LAST_TERMINAL_TASK=M1A_G1_OWNER_APPROVED_MANIFEST_TPM_BOUND_ISSUER_REVIEW
+CONTINUITY_TASK=M1A_G1_NEW_CHAT_CONTINUITY_HANDOFF
+STATUS=BLOCKED_MISSING_G1_TRUST_ANCHOR
+LAST_REVIEW_RESULT=BLOCKED_NO_INDEPENDENT_ENROLLMENT_PATH
+GITHUB_ACCOUNT_ID_28608338=NOT_ADOPTED
+GOOGLE_OIDC=NOT_WORTH_EXTERNAL_SETUP
+TPM_AVAILABILITY=UNVERIFIED
+TPM_ATTESTATION_TRUST=NOT_ESTABLISHED
+OWNER_TO_WINDOWS_PRINCIPAL=NOT_ESTABLISHED
+OWNER_TO_ISSUER=NOT_ESTABLISHED
+ISSUER_TO_EXACT_SERVER=NOT_ESTABLISHED
+READER_VERIFICATION=NOT_ESTABLISHED_END_TO_END
+GOVERNANCE=KEEP_BLOCKED
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3_VERSIONED_TARGET_RESOLVER=NOT_ESTABLISHED
+BRIDGE=BRIDGE_NOT_READY
+NEXT_ACTION=OWNER_DECISION_ONLY
+AUTOMATIC_FOLLOW_ON=FALSE
+```
+
+---
+
 ## OVERRIDING LATEST ROUTING — M1A G1 owner-approved manifest / TPM-bound issuer review terminal (2026-10-22)
 
 The bounded `M1A_G1_OWNER_APPROVED_MANIFEST_TPM_BOUND_ISSUER_REVIEW` is terminal at `BLOCKED_NO_INDEPENDENT_ENROLLMENT_PATH`. See [the complete review receipt](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1A-G1-Owner-approved-manifest-TPM-bound-issuer-review.md), blob `c91a67a348ba6ee7c821e4b9fcf1b75524eb2fbd`. The coordinator revalidated remote `main` as `bf3174025bd1eee97cd345bd2deaf0ae76fea2fe` immediately before this documentation-only writeback; Sonnet's original review reported its own main verification as rate-limited/unverified. The initial documentation commit placed the receipt/pointers at repository-root paths; follow-up commit `2abc6f7c049a551ef158caba4b460c38626d6644` corrected the paths under `IABV_v1.5/` and removed the misplaced copies. No product code, runtime behavior, credentials, or gates were changed.
