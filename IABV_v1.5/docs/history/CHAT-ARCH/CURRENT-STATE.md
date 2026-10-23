@@ -6,8 +6,8 @@ The Owner explicitly authorized bounded implementation work for G1–G3 in an is
 
 - **Task:** `M1A_G1_G3_AUTHORITY_ROUTE_CANDIDATE_IMPLEMENTATION` (child of `M1A_V1_0_1_G1_G3_AUTHORITY_EVIDENCE_ROUTE`).
 - **Exact pinned base:** public `main` commit `60c8ac6e7ff425c815d9bdc7194bf20ef8d134db`, observed immediately before candidate branch creation.
-- **Isolated candidate branch:** `codex/m1a-g1-g3-governance-route-candidate-implementation`, created from that exact SHA. No product source was changed by the coordinator.
-- **Codex handoff:** [bounded G1–G3 candidate implementation handoff](./CHAT-ARCH-2026-10-22-M1A-G1-G3-governance-route-candidate-implementation-handoff.md), blob `1c62da53cb78913af16cb8cb2ca7560a923ef8f8`.
+- **Isolated candidate branch:** `m1a-g1-g3-governance-route-candidate-20261022`, created from that exact SHA. No product source was changed by the coordinator.
+- **Codex handoff:** [bounded G1–G3 candidate implementation handoff](./CHAT-ARCH-2026-10-22-M1A-G1-G3-governance-route-candidate-implementation-handoff.md), blob `40d9054864b52247482bc6264b49067e8a49b455`.
 - **Destination:** Codex in the already-existing UI/session, by Owner-mediated handoff. `CODEX_PROMPT_DISPATCHED=NO`; no Codex result/receipt has been received.
 - **Allowed:** inspect relevant source and documents within a newly verified, separate candidate; implement only primitives actually supported by evidence and explicit adopted decisions; edit/commit candidate branch only.
 - **Mandatory stop:** if the real G1 trusted principal/root, G2 authorized catalogue/producer/revocation source, or G3 versioned server-side operation-to-target resolver is missing, do not fabricate placeholders and do not claim operability. Return exact missing dependency. If current Codex workspace cannot be proven separate from the Owner's existing worktree, stop without accessing it.
@@ -19,7 +19,7 @@ ACTIVE_TASK=M1A_G1_G3_AUTHORITY_ROUTE_CANDIDATE_IMPLEMENTATION
 PARENT_TASK=M1A_V1_0_1_G1_G3_AUTHORITY_EVIDENCE_ROUTE
 STATUS=OWNER_AUTHORIZED; CANDIDATE_HANDOFF_READY_NOT_DISPATCHED
 BASE_MAIN_SHA=60c8ac6e7ff425c815d9bdc7194bf20ef8d134db
-CANDIDATE_BRANCH=codex/m1a-g1-g3-governance-route-candidate-implementation
+CANDIDATE_BRANCH=m1a-g1-g3-governance-route-candidate-20261022
 CODEX_PROMPT_DISPATCHED=NO
 CODEX_EXECUTION=NOT_CONFIRMED
 CANDIDATE_WORKSPACE_IDENTITY=NOT_YET_VERIFIED_BY_CODEX
@@ -79,7 +79,7 @@ The Owner supplied the exact token `ACCEPT_M1A_V1_0_1_SUCCESSOR_BASELINE`. v1.0.
 - **Parent task:** `M1A_V1_0_1_G1_G3_AUTHORITY_EVIDENCE_ROUTE`.
 - **Status:** `OWNER_AUTHORIZED; CANDIDATE_HANDOFF_READY_NOT_DISPATCHED`.
 - **Next actor:** Codex in the already-existing UI/session; Owner-mediated delivery of the [bounded handoff](./CHAT-ARCH-2026-10-22-M1A-G1-G3-governance-route-candidate-implementation-handoff.md).
-- **Candidate:** `codex/m1a-g1-g3-governance-route-candidate-implementation`, base `60c8ac6e7ff425c815d9bdc7194bf20ef8d134db`.
+- **Candidate:** `m1a-g1-g3-governance-route-candidate-20261022`, base `60c8ac6e7ff425c815d9bdc7194bf20ef8d134db`.
 - **Current dependency:** Codex must verify a fresh isolated candidate and determine if actual G1 trust, G2 publisher/catalogue/producer/revocation, and G3 versioned target-resolver primitives are evidenced in the pinned source. Do not invent them.
 - **Stop conditions:** stop if candidate workspace identity is unverified or any indispensable trust/authority primitive is absent; do not access Owner's existing checkout, use a reader to bypass the live block, or execute tests/builds/runtime/processes/transport. No merge, deploy or block release.
 - **Acceptance criterion:** exact candidate base/head and changed paths; evidence-linked G1–G3 implementation or exact unresolved authority dependencies; honest list of activities not performed. No claim of operational readiness.
@@ -92,7 +92,7 @@ PARENT_TASK=M1A_V1_0_1_G1_G3_AUTHORITY_EVIDENCE_ROUTE
 STATUS=OWNER_AUTHORIZED; CANDIDATE_HANDOFF_READY_NOT_DISPATCHED
 V1_0_1_NORMATIVE_DESIGN=ADOPTED
 BASE_MAIN_SHA=60c8ac6e7ff425c815d9bdc7194bf20ef8d134db
-CANDIDATE_BRANCH=codex/m1a-g1-g3-governance-route-candidate-implementation
+CANDIDATE_BRANCH=m1a-g1-g3-governance-route-candidate-20261022
 CODEX_PROMPT_DISPATCHED=NO
 CODEX_EXECUTION=NOT_CONFIRMED
 CANDIDATE_WORKSPACE_IDENTITY=NOT_YET_VERIFIED_BY_CODEX
