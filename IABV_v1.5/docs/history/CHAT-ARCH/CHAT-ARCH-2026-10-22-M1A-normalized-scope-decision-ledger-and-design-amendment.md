@@ -197,3 +197,12 @@ TESTS=NOT_RUN
 READ_LIST=FAIL_CLOSED
 BRIDGE=BRIDGE_NOT_READY
 ```
+
+
+## 10. v1.0.1 review receipt, finding reconciliation and chronology discrepancy (2026-10-22)
+
+The Owner supplied an attributed `PASS_WITH_REPAIRS` report for candidate blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f`. The full normalized receipt is [here](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-receipt-and-reconciliation.md), blob `1b0685fa273329513254a0b10180f1513edfc67b`. The report's review date is stated as 2026-10-20, but GitHub history shows the final candidate was committed on 2026-10-22 at 19:36:28 America/Bogota; therefore the reported time and exact-blob retrieval provenance require correction.
+
+The report says F-M1A-01..08 pass; the coordinator preserves these as `OWNER_REPORTED` results until the chronology is resolved. The coordinator independently verified all seven document blobs as present/current. FN-M1A-V101-01 is accepted as a nonblocking traceability clarification: C30's stricter wording follows F-M1A-05's current freshness/revocation requirement. FN-M1A-V101-02 is not a confirmed defect: direct overlay check validates C2 (traceability ledger), C3 (state space), C5 (authority planes), and C7 (pre-construction gate) against the cited matrix rows.
+
+Active task is now `M1A_V1_0_1_REVIEW_REPORT_METADATA_CORRECTION`; the exact bounded handoff is [here](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-metadata-correction-handoff.md), blob `58d0e2acb2c63bf08dd5725fd278f67bad9ac4b9`. v1.0.0 remains the only Owner-adopted baseline; v1.0.1 remains not adopted. No runtime, implementation, permission or block-release claim is implied.
