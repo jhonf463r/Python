@@ -1,3 +1,49 @@
+## LATEST ROUTING DELTA — Owner accepted G1 trust policy; isolated attempt stopped at missing bootstrap trust authority (2026-10-22)
+
+The Owner supplied the exact authorization `ACCEPT_G1_TRUST_BOOTSTRAP_POLICY_AND_AUTHORIZE_CANDIDATE_ONLY`. The bounded G1 attempt is therefore authorized in the isolated candidate, but the attempt terminated before source edits with `BLOCKED_MISSING_G1_TRUST_ANCHOR`: the pinned public code does not establish an independently trusted enrollment/registration path binding the real Owner principal to an issuer credential and exact server instance, nor an effective issuer/requester/reader separation boundary. No key, issuer, trust record or permission was fabricated.
+
+Terminal result and exact source evidence: [M1A G1 trust-bootstrap candidate attempt result](./CHAT-ARCH-2026-10-22-M1A-G1-trust-bootstrap-candidate-attempt-result.md), blob `3c120ed84d1c19f6f205f3f7ed9b4dc620fcbf24`. The public candidate branch was rechecked via GitHub and remains at pinned base/head `60c8ac6e7ff425c815d9bdc7194bf20ef8d134db`, tree `ca963f8013809d4efcf56133a37d2efe148517e9`; source changes = none. This is a remote public-source finding, not a claim about the live local MCP process.
+
+The accepted policy allows Windows Hello/WebAuthn to be evaluated as an Owner-authentication factor, but does not prove that the relevant local capability is configured, integrated, or able to bind the Owner, issuer and server. `SecretVault` is an optional credential-storage abstraction, not the needed issuer-key/root-of-trust route. The precise remaining dependency is an externally/independently trusted enrollment authority and a demonstrable, enforced boundary that keeps the requester and reader from enrolling or changing their own root, paired with verifiable server-instance binding. Do not re-run the prior inventory or re-review the feasibility report.
+
+**Next authority frontier:** `M1A_G1_TRUST_BOOTSTRAP_AUTHORITY_BOUNDARY`, `BLOCKED`. Identify a real supported bootstrap/registration trust boundary that can establish the Owner-to-issuer-to-server binding without self-authorization. This is not a request to choose algorithms or manually configure the machine. If no such authoritative boundary can be grounded in existing platform/project evidence, preserve the blocker rather than adding an auto-enrollment stub.
+
+The accepted policy and bounded candidate authorization do not close G1 or G2–G8; all eight implementation gates remain open. No protected read, tests, build, runtime, real transport, merge, deploy or operational block release is authorized.
+
+```text
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+ACTIVE_TASK=M1A_G1_TRUST_BOOTSTRAP_AUTHORITY_BOUNDARY
+STATUS=BLOCKED_MISSING_G1_TRUST_ANCHOR
+OWNER_DECISION=ACCEPT_G1_TRUST_BOOTSTRAP_POLICY_AND_AUTHORIZE_CANDIDATE_ONLY
+OWNER_TRUST_BOOTSTRAP_POLICY=ACCEPTED_FOR_CANDIDATE_ATTEMPT
+CANDIDATE_BRANCH=m1a-g1-g3-governance-route-candidate-20261022
+CANDIDATE_BASE=60c8ac6e7ff425c815d9bdc7194bf20ef8d134db
+CANDIDATE_HEAD=60c8ac6e7ff425c815d9bdc7194bf20ef8d134db; DIRECT_GITHUB_FETCH_CONFIRMED
+CANDIDATE_SOURCE_CHANGES=NONE
+TRUSTED_ENROLLMENT_AUTHORITY=NOT_ESTABLISHED
+OWNER_TO_ISSUER_BINDING=NOT_ESTABLISHED
+ISSUER_TO_SERVER_BINDING=NOT_ESTABLISHED
+ENFORCED_ISSUER_REQUESTER_READER_SEPARATION=NOT_ESTABLISHED
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3_VERSIONED_TARGET_RESOLVER=NOT_ESTABLISHED
+DURABLE_OPERATION_RECEIPT=NOT_ESTABLISHED
+IMPLEMENTATION=AUTHORIZED_FOR_ISOLATED_CANDIDATE_ONLY; ATTEMPT_BLOCKED_BEFORE_EDITS
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+GOVERNANCE=KEEP_BLOCKED
+TESTS=NOT_RUN
+BUILD=NOT_RUN
+RUNTIME=NOT_RUN
+REAL_TRANSPORT=NOT_RUN
+LOCAL_SOURCE_READ=NOT_RUN
+PROTECTED_LOCAL_READ=NOT_AUTHORIZED
+MERGE_DEPLOY=NOT_AUTHORIZED
+BLOCK_RELEASE=NOT_AUTHORIZED
+BRIDGE=BRIDGE_NOT_READY
+```
+
+---
+
 # CURRENT ROUTING SNAPSHOT — 2026-10-22 (M1A V1.0.1 NORMATIVE DESIGN ADOPTED; OPERATIONAL BLOCKS REMAIN)
 
 ## LATEST ROUTING DELTA — G1 trust-bootstrap feasibility reconciled; Owner policy decision pending (2026-10-22)
