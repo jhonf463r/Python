@@ -1,3 +1,34 @@
+## OVERRIDING LATEST ROUTING — G1 trust-bootstrap attempt stopped at exact authority gap (2026-10-22)
+
+The top snapshot in [CURRENT-STATE.md](docs/history/CHAT-ARCH/CURRENT-STATE.md) is the only active-task router. The Owner accepted `ACCEPT_G1_TRUST_BOOTSTRAP_POLICY_AND_AUTHORIZE_CANDIDATE_ONLY`; the bounded isolated-candidate G1 attempt stopped before edits with `BLOCKED_MISSING_G1_TRUST_ANCHOR`. Full result: [G1 trust-bootstrap candidate attempt receipt](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1A-G1-trust-bootstrap-candidate-attempt-result.md), blob `3c120ed84d1c19f6f205f3f7ed9b4dc620fcbf24`.
+
+The public candidate `m1a-g1-g3-governance-route-candidate-20261022` was directly rechecked and is still at base/head `60c8ac6e7ff425c815d9bdc7194bf20ef8d134db`; no product source was changed. The missing prerequisite is a real independently trusted enrollment/registration path binding Owner principal → issuer credential → server instance, with enforced separation from requester and reader. Windows Hello/WebAuthn may be evaluated as an authentication factor but is not established as configured or integrated in IABV. Do not repeat the previous source inventory or feasibility review, and do not add auto-enrollment, generated trust records, keys or placeholder issuers.
+
+Next task: `M1A_G1_TRUST_BOOTSTRAP_AUTHORITY_BOUNDARY`, blocked pending a supported, independently trusted bootstrap boundary. Keep G1–G8 open; no protected read, tests, build, runtime, real transport, merge, deploy or block release.
+
+```text
+ACTIVE_TASK=M1A_G1_TRUST_BOOTSTRAP_AUTHORITY_BOUNDARY
+STATUS=BLOCKED_MISSING_G1_TRUST_ANCHOR
+OWNER_TRUST_BOOTSTRAP_POLICY=ACCEPTED_FOR_CANDIDATE_ATTEMPT
+CANDIDATE_BRANCH=m1a-g1-g3-governance-route-candidate-20261022
+CANDIDATE_HEAD=60c8ac6e7ff425c815d9bdc7194bf20ef8d134db
+CANDIDATE_SOURCE_CHANGES=NONE
+G1=NOT_ESTABLISHED
+GOVERNANCE=KEEP_BLOCKED
+IMPLEMENTATION=AUTHORIZED_FOR_ISOLATED_CANDIDATE_ONLY; ATTEMPT_BLOCKED_BEFORE_EDITS
+TESTS=NOT_RUN
+BUILD=NOT_RUN
+RUNTIME=NOT_RUN
+REAL_TRANSPORT=NOT_RUN
+LOCAL_CHECKOUT=DO_NOT_ACCESS
+PROTECTED_LOCAL_READ=NOT_AUTHORIZED
+MERGE_DEPLOY=NOT_AUTHORIZED
+BLOCK_RELEASE=NOT_AUTHORIZED
+BRIDGE=BRIDGE_NOT_READY
+```
+
+---
+
 ## OVERRIDING LATEST ROUTING — M1A G1 trust policy decision pending (2026-10-22)
 
 The latest active task is `M1A_G1_TRUST_BOOTSTRAP_POLICY_ADJUDICATION`, status `WAITING_OWNER`, as recorded in [CURRENT-STATE.md](docs/history/CHAT-ARCH/CURRENT-STATE.md). The Owner supplied a Codex feasibility report with `G1_FEASIBILITY=CONDITIONAL_NOT_DEMONSTRATED`; see the [durable reconciliation receipt](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1A-G1-trust-bootstrap-feasibility-reconciliation.md). Do not repeat tool inventory or the earlier G1–G3 source inspection.
