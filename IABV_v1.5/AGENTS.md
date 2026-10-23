@@ -1,3 +1,53 @@
+## OVERRIDING LATEST ROUTING — M1A G1 Windows candidate attempt terminal (2026-10-22)
+
+The Owner supplied the terminal Codex result for `M1A_G1_WINDOWS_OS_TRUST_BOOTSTRAP_CANDIDATE`: `BLOCKED_MISSING_G1_TRUST_ANCHOR`. The complete reconciliation receipt is [here](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1A-G1-Windows-OS-trust-bootstrap-candidate-result.md), blob to be verified after the canonical commit.
+
+Independent GitHub verification immediately before writeback confirmed candidate `m1a-g1-g3-governance-route-candidate-20261022` at `60c8ac6e7ff425c815d9bdc7194bf20ef8d134db`, with tree `ca963f8013809d4efcf56133a37d2efe148517e9`. The Git commit object directly confirms the tree SHA. Comparison against pinned base `60c8ac6e7ff425c815d9bdc7194bf20ef8d134db` is `identical`, `ahead_by=0`, `behind_by=0`, zero changed files. Comparison against `main` at reconciliation start (`5879ad3f66a9899ecbfa80c4028fe5429d34868b`) was `behind`, `ahead_by=0`, `behind_by=72`. No product files, blobs or commit were added to the candidate. This is an Owner-supplied Codex result plus independent remote-state verification; ChatGPT did not directly dispatch the prompt.
+
+The terminal authority gap remains an independently trusted path binding IABV Owner responsibility to an authenticated local Windows principal, a protected issuer credential and the exact server instance. Windows service SID, CNG key ACL and explicit named-pipe DACL are documented primitives only; they do not prove that this chain exists or is integrated. The previous source evidence and the absence of a candidate diff do not establish G1.
+
+Anti-repeat: do not rerun the general G1 inventory or the earlier feasibility review. Do not create auto-enrollment, a self-issued trust root, a fictitious issuer, keys or placeholder verifiers. Wait for new, verifiable evidence of the independent enrollment authority before revisiting this frontier. Do not automatically start another implementation.
+
+```text
+ACTIVE_TASK=M1A_G1_TRUST_BOOTSTRAP_AUTHORITY_BOUNDARY
+STATUS=BLOCKED_MISSING_G1_TRUST_ANCHOR; LAST_CANDIDATE_ATTEMPT_TERMINAL
+LAST_TERMINAL_TASK=M1A_G1_WINDOWS_OS_TRUST_BOOTSTRAP_CANDIDATE
+RESULT=BLOCKED_MISSING_G1_TRUST_ANCHOR
+RESULT_PROVENANCE=OWNER_SUPPLIED_CODEX_OUTPUT; CANDIDATE_STATE_INDEPENDENTLY_VERIFIED
+CANDIDATE_BRANCH=m1a-g1-g3-governance-route-candidate-20261022
+CANDIDATE_BASE=60c8ac6e7ff425c815d9bdc7194bf20ef8d134db
+CANDIDATE_HEAD=60c8ac6e7ff425c815d9bdc7194bf20ef8d134db
+CANDIDATE_TREE=ca963f8013809d4efcf56133a37d2efe148517e9
+CANDIDATE_COMPARE=IDENTICAL; AHEAD_BY=0; BEHIND_BY=0; CHANGED_FILES=0
+CANDIDATE_PRODUCT_CHANGES=NONE
+NEW_CANDIDATE_BLOBS=NONE
+CODEX_RESULT_RECEIVED=YES
+CHATGPT_DIRECT_DISPATCH=NO
+OWNER_TO_WINDOWS_PRINCIPAL_BINDING=NOT_ESTABLISHED
+OWNER_TO_ISSUER_BINDING=NOT_ESTABLISHED
+ISSUER_TO_EXACT_SERVER_BINDING=NOT_ESTABLISHED
+ENFORCED_ISSUER_REQUESTER_READER_SEPARATION=NOT_ESTABLISHED
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3_VERSIONED_TARGET_RESOLVER=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+GOVERNANCE=KEEP_BLOCKED
+TESTS=NOT_RUN
+BUILD=NOT_RUN
+RUNTIME=NOT_RUN
+LOCAL_CHECKOUT=NOT_ACCESSED
+LOCAL_OS_PROBE=NOT_AUTHORIZED
+SERVICE_INSTALLATION=NOT_PERFORMED
+CREDENTIAL_ENROLLMENT=NOT_PERFORMED
+REAL_TRANSPORT=NOT_RUN
+MERGE_DEPLOY=NOT_AUTHORIZED
+BLOCK_RELEASE=NOT_AUTHORIZED
+BRIDGE=BRIDGE_NOT_READY
+NEXT_ACTION=NO_AUTOMATIC_FOLLOW_ON
+```
+
+---
+
 ## OVERRIDING LATEST ROUTING — New-chat continuity receipt for the Windows G1 route (2026-10-22)
 
 The Owner requested a clean new-chat handoff after authorizing `M1A_G1_WINDOWS_OS_TRUST_BOOTSTRAP_CANDIDATE` with “ok procede”. Read the [new-chat continuity receipt](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1A-G1-Windows-OS-trust-bootstrap-new-chat-continuity.md), blob `b8833d29dae572265509a2367987722e08a0a735`, after the normal canonical preflight. It records the active task, evidence boundaries, remote candidate identity, and exact next-actor protocol.
