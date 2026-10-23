@@ -4,11 +4,15 @@ Read [CURRENT-STATE.md](docs/history/CHAT-ARCH/CURRENT-STATE.md) for the authori
 
 Copy-ready handoff: [M1A G1–G3 candidate implementation](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1A-G1-G3-governance-route-candidate-implementation-handoff.md). If Codex cannot prove it has a fresh isolated candidate, or if actual trusted G1 principal/root, G2 authorized catalogue/producer/revocation source, or G3 versioned target resolver are absent, it must stop and report the exact dependency rather than invent it.
 
+**Interaction rule:** do not make the Owner navigate to that link to get the instructions. In the current chat response, provide the entire copy-ready Codex prompt inline, explicitly name `Codex — existing UI/session`, and ask only for the unavoidable copy-from-chat/paste-into-Codex action. GitHub is durable supplemental storage, not the only prompt delivery. Protocol: [§13 inline handoff contract](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-adhd-aware-project-coordination-and-space-time-focus-protocol.md). A prompt saved on GitHub is not dispatched; claim dispatch only with actual invocation/receipt.
+
 ```text
 ACTIVE_TASK=M1A_G1_G3_AUTHORITY_ROUTE_CANDIDATE_IMPLEMENTATION
 BASE_MAIN_SHA=60c8ac6e7ff425c815d9bdc7194bf20ef8d134db
 CANDIDATE_BRANCH=m1a-g1-g3-governance-route-candidate-20261022
 CODEX_PROMPT_DISPATCHED=NO
+PROMPT_DELIVERY_MODE=INLINE_IN_CHAT; NO_EXTERNAL_RETRIEVAL_REQUIRED
+NEXT_USER_ACTION=COPY_INLINE_PROMPT_AND_PASTE_IN_EXISTING_CODEX_UI
 IMPLEMENTATION=AUTHORIZED_FOR_ISOLATED_CANDIDATE_ONLY
 GOVERNANCE=KEEP_BLOCKED
 TESTS=NOT_RUN
