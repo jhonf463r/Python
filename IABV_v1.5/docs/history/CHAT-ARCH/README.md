@@ -48,7 +48,7 @@ Candidate remains branch fix/iabv-operational-block-target-scope-repair-20261022
 
 Do not interpret the static PASS as test success, live-server adoption, block release or a supported local-read route. TESTS=NOT_RUN; LIVE_SERVER_IDENTITY=UNVERIFIED; LOCAL_SOURCE_READ=NOT_RUN; CANDIDATE_MERGED=NO.
 
-The one active task remains M1: IDENTIFY_AND_USE_SUPPORTED_GOVERNANCE_OWNED_SCOPED_READ_ROUTE. The next action is still the actual supported governance/administrative surface or responsible operator for the live server and checkout. A supported route was NOT_FOUND only in the previously examined ChatGPT tool surface; GLOBAL_ROUTE_EXISTENCE remains UNRESOLVED. Do not repeat the OpenCode successor v0.2 review, broad IABV auto-scan, local reader attempts, alternate-reader bypass, or old ahead_by=1/behind_by=0 claims.
+Historical route at the time of this record: M1 / IDENTIFY_AND_USE_SUPPORTED_GOVERNANCE_OWNED_SCOPED_READ_ROUTE. This is superseded for current routing by the top snapshot of CURRENT-STATE.md, whose active task is now `M1A_V1_0_1_REVIEW_REPORT_METADATA_CORRECTION`. The historical stop conditions remain relevant for that older route; do not treat it as the active task.
 
 GOVERNANCE=KEEP_BLOCKED; IMPLEMENTATION=NOT_AUTHORIZED; LOCAL_SOURCE_READ=NOT_RUN; TESTS=NOT_RUN; CANDIDATE_MERGED=NO; BRIDGE=BRIDGE_NOT_READY; REAL_TRANSPORT=NOT_RUN; LOCAL_WORKTREE=UNTOUCHED
 
@@ -81,7 +81,7 @@ Canonical operating contract: [ADHD-aware project coordination and space-time fo
 
 Protocol: [ADHD-aware project coordination and space-time focus](./CHAT-ARCH-2026-10-22-adhd-aware-project-coordination-and-space-time-focus-protocol.md).
 
-The Owner asks for structured longitudinal coordination because new ideas arrive rapidly and can pull work away from the project north star. Capture ideas without losing them; park them in an inbox; keep a single active task and next action unless immediate safety or an invalidated dependency requires interruption. Show evidence-based progress states and restore the active objective at each new chat. Existing DEVELOPMENT CONTROL TOWER + goal-lock/anti-drift remain the foundation; this is a method amendment, not proof that a runtime coordinator is already implemented. Canonical active task remains `IDENTIFY_AND_USE_SUPPORTED_GOVERNANCE_OWNED_SCOPED_READ_ROUTE`; governance remains `KEEP_BLOCKED`.
+The Owner asks for structured longitudinal coordination because new ideas arrive rapidly and can pull work away from the project north star. Capture ideas without losing them; park them in an inbox; keep a single active task and next action unless immediate safety or an invalidated dependency requires interruption. Show evidence-based progress states and restore the active objective at each new chat. Existing DEVELOPMENT CONTROL TOWER + goal-lock/anti-drift remain the foundation; this is a method amendment, not proof that a runtime coordinator is already implemented. At the time this historical entry was written, the recorded task was `IDENTIFY_AND_USE_SUPPORTED_GOVERNANCE_OWNED_SCOPED_READ_ROUTE`; that route is superseded by the active task at the top of `CURRENT-STATE.md`. Governance remains `KEEP_BLOCKED`.
 
 ---
 
