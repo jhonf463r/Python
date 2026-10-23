@@ -1,25 +1,27 @@
-## ACTIVE ROUTING — v1.0.1 review reconciled; Owner adoption decision next (2026-10-22)
+## ACTIVE ROUTING — v1.0.1 normative design baseline adopted (2026-10-22)
 
-**Read [CURRENT-STATE.md](./CURRENT-STATE.md) first.** It remains the sole active-task authority. The Owner's `ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE` remains adopted for v1.0.0 only.
+**Read [CURRENT-STATE.md](./CURRENT-STATE.md) first.** It remains the sole active-task authority.
 
-**Review receipt:** the Owner supplied a Sonnet 4.6-attributed `PASS_WITH_REPAIRS` report for v1.0.1 blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f`. The reviewer confirms that exact blob identity by reported fresh-clone Git hashing and retracts the unsupported 2026-10-20 date; `REVIEW_TIMESTAMP=UNVERIFIABLE`. Invocation attribution remains `OWNER_REPORTED`. [Receipt and reconciliation](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-receipt-and-reconciliation.md), blob `45190a512e93211a85e23be74fa75741be5227f6`.
+**Adopted successor:** [M1A v1.0.1 normative contract](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1_0_1.md), blob `baa39a09b97117df1dbe46804affdcebc7159f30`. The exact reviewed candidate remains immutable at `7c72474a5f7c114c02320c177d6ea2aea68ad28f`; v1.0.0 remains preserved as an immutable predecessor at `8181c7c0cf6036c76cf365510e8d9665cf84e57e`.
 
-**Single active task:** `M1A_V1_0_1_OWNER_ADOPTION_DECISION`. The reviewer reports F-M1A-01..08 passed; FN-M1A-V101-01 is a nonblocking traceability clarification, and coordinator verification found no defect for FN-M1A-V101-02. The candidate remains `NOT_ADOPTED` until the Owner explicitly accepts it. Recommended decision: accept v1.0.1 as normative design only, with timestamp uncertainty preserved.
+**Adoption provenance:** the Owner replied `ok procede` directly in response to the recommendation to adopt v1.0.1 as normative design only. This is recorded as contextual assent, not a verbatim token. [Adoption receipt](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-owner-adoption-receipt.md), blob `80646b73b35f6a3f4807f6f59800a45aca51503e`.
+
+**Review receipt:** `OWNER_REPORTED_PASS_WITH_REPAIRS`; the reviewer reports F-M1A-01..08 passing. The initial review date was retracted as unverified; `REVIEW_TIMESTAMP=UNVERIFIABLE`; session attribution remains `OWNER_REPORTED`. [Review reconciliation](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-receipt-and-reconciliation.md), blob `000b81b079c5febd8d78afebedf782d1d1e263fa`.
+
+**Single active task:** `M1A_V1_0_1_IMPLEMENTATION_PREREQUISITE_EVIDENCE_RECONCILIATION`. Produce a traceable documentary matrix of the eight prerequisites in §10 using only pinned docs. Implementation remains unauthorized.
 
 ```text
-ACTIVE_TASK=M1A_V1_0_1_OWNER_ADOPTION_DECISION
-V1_0_0_BASELINE=ADOPTED_UNCHANGED
-V1_0_1_CANDIDATE_BLOB=7c72474a5f7c114c02320c177d6ea2aea68ad28f
-V1_0_1_REVIEW=OWNER_REPORTED_PASS_WITH_REPAIRS
+ACTIVE_TASK=M1A_V1_0_1_IMPLEMENTATION_PREREQUISITE_EVIDENCE_RECONCILIATION
+V1_0_1_BASELINE=NORMATIVE_DESIGN_BASELINE_ADOPTED
+V1_0_1_ADOPTED_BLOB=baa39a09b97117df1dbe46804affdcebc7159f30
 REVIEW_TIMESTAMP=UNVERIFIABLE
-V1_0_1_STATUS=NOT_ADOPTED_PENDING_OWNER_DECISION
 GOVERNANCE=KEEP_BLOCKED
 IMPLEMENTATION=NOT_AUTHORIZED
 TESTS=NOT_RUN
 READ_LIST=FAIL_CLOSED
 BRIDGE=BRIDGE_NOT_READY
 ```
-No broad repository scan, local checkout/data/SQLite/secrets inspection, source changes, tests, build, runtime, transport, merge, deployment, protected read or block release.
+No local checkout/data/SQLite/secrets inspection, product-source changes, tests, build, runtime, transport, merge, deployment, protected read or block release.
 
 ---
 
