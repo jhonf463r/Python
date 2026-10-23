@@ -377,6 +377,10 @@ When the next task belongs to Codex, Sonnet/Claude, OpenCode, Kilo, or another A
 - If the prompt is too long for a platform limit, state the exact limitation and provide the smallest self-contained usable chunks in the current conversation, each clearly labeled and ordered; do not silently omit required context.
 - Keep the durable handoff and `CURRENT-STATE.md` consistent with the prompt delivered inline. Fetch back every material write. Treat this as a workflow rule that is `DOCUMENTED`; do not claim runtime enforcement or learned behavior until later use demonstrates it.
 
+### 13.4 Durable incident record and next-chat verification
+
+The exact incident, consequence, corrective rule and current authorized task are preserved in [the inline-prompt delivery/new-chat continuity correction](./CHAT-ARCH-2026-10-22-inline-prompt-delivery-and-new-chat-continuity-correction.md). The corrective rule is not satisfied merely by linking this file: the coordinator must actually place the complete actionable prompt in the answer that instructs the Owner to hand it to another AI. On the next new project chat, verify this behavior by delivering the full destination prompt inline without external retrieval. Until that happens, keep `COORDINATION_RULE=DOCUMENTED; CAUSAL_REUSE_NOT_PROVEN`.
+
 ### 13.3 The concrete correction now applied
 
 For the current task, the Owner has authorized `M1A_G1_G3_AUTHORITY_ROUTE_CANDIDATE_IMPLEMENTATION`. The coordinator must give the full prompt in the current ChatGPT answer, addressed to **Codex in the existing UI/session**, and require work only on the verified isolated candidate branch `m1a-g1-g3-governance-route-candidate-20261022`, pinned to base `60c8ac6e7ff425c815d9bdc7194bf20ef8d134db`. If Codex cannot safely reach/edit that remote candidate and cannot establish a separate candidate, it must return that capability limitation; it must not touch the Owner's existing checkout or request an Administrator terminal as a workaround.
