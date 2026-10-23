@@ -4,15 +4,15 @@
 
 **Review receipt:** v1.0.0 received `PASS_WITH_REPAIRS` (2 HIGH, 3 MEDIUM, 3 LOW) from an Owner-pasted report attributed to Sonnet 4.6; execution attribution remains `OWNER_REPORTED`. [Finding register](./CHAT-ARCH-2026-10-22-M1A-contract-v1-sonnet-review-receipt-and-finding-register.md) blob `396606e5744f0b3d0332f8ee9f02ec14cdcea588`.
 
-**Successor candidate:** [M1A scope contract v1.0.1 candidate](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1_0_1-candidate.md) blob `4befbbb352bed35f813b9ada2d3b672cf91e328a`, currently `NOT_ADOPTED`. v1.0.0 remains the immutable accepted baseline until the successor review and canonical routing are complete. The candidate does not assert working runtime trust/registry/resolver/revocation/release capabilities.
+**Successor candidate:** [M1A scope contract v1.0.1 candidate](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1_0_1-candidate.md) blob `a92224fbc3168eb64df395f3f25aa5e797cdb043`, currently `NOT_ADOPTED`. v1.0.0 remains the immutable accepted baseline until the successor review and canonical routing are complete. The candidate does not assert working runtime trust/registry/resolver/revocation/release capabilities.
 
-**Single active task:** `M1A_CONTRACT_V1_0_1_CANDIDATE_TARGETED_ADVERSARIAL_REVIEW`. **IA DESTINO:** Sonnet 4.6 in the Owner-reported existing Antigravity session, only if it can receive/verify the exact inputs. **Prompt/handoff:** [bounded v1.0.1 review handoff](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-candidate-targeted-review-handoff.md), blob `bd50b9766c475035f9e3a1e55433254910430156`. `REVIEW_DISPATCH=NOT_DISPATCHED` until a correlated report arrives.
+**Single active task:** `M1A_CONTRACT_V1_0_1_CANDIDATE_TARGETED_ADVERSARIAL_REVIEW`. **IA DESTINO:** Sonnet 4.6 in the Owner-reported existing Antigravity session, only if it can receive/verify the exact inputs. **Prompt/handoff:** [bounded v1.0.1 review handoff](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-candidate-targeted-review-handoff.md), blob `c03cf2c160864a73d4d2dd352765cc26fd2c65fd`. `REVIEW_DISPATCH=NOT_DISPATCHED` until a correlated report arrives.
 
 Architectural lineage remains unchanged: UAAL-ROOT-001 is the parent adaptive loop; Memory Operating Protocol owns retrieval/provenance/reconciliation/reuse; Development Control Tower and goal-lock/anti-drift preserve the North Star and one active task; Entry 274 keeps diagnostics, fresh approval, server-side decision, reader verification, durable receipt and block release separate; the construction-completeness overlay supplies bidirectional traceability, coverage and fetch-back gates.
 
 ```text
 ACTIVE_TASK=M1A_CONTRACT_V1_0_1_CANDIDATE_TARGETED_ADVERSARIAL_REVIEW
-CANDIDATE_BLOB=4befbbb352bed35f813b9ada2d3b672cf91e328a
+CANDIDATE_BLOB=a92224fbc3168eb64df395f3f25aa5e797cdb043
 CANDIDATE_STATUS=NOT_ADOPTED_PENDING_TARGETED_REVIEW
 GOVERNANCE=KEEP_BLOCKED
 IMPLEMENTATION=NOT_AUTHORIZED
