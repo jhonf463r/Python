@@ -178,3 +178,22 @@ READ_LIST=FAIL_CLOSED
 GOVERNANCE=KEEP_BLOCKED
 BRIDGE=BRIDGE_NOT_READY
 ```
+
+
+## 9. Post-adoption adversarial review supplement — v1.0.0 findings and successor route (2026-10-22)
+
+The transition described in §7 as the next step at ledger creation time is historical. A later owner-pasted Sonnet 4.6-attributed static report for v1.0.0 blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e` returned `PASS_WITH_REPAIRS` (2 HIGH, 3 MEDIUM, 3 LOW). Reviewer/session attribution remains `OWNER_REPORTED`, not an authenticated dispatch receipt. The normalized finding register is [here](./CHAT-ARCH-2026-10-22-M1A-contract-v1-sonnet-review-receipt-and-finding-register.md), blob `396606e5744f0b3d0332f8ee9f02ec14cdcea588`; all eight findings are dispositioned and none changes OG-M1A-01..07.
+
+A non-adopted [v1.0.1 successor candidate](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1_0_1-candidate.md), blob `4befbbb352bed35f813b9ada2d3b672cf91e328a`, applies the derived repairs and adds cases C31–C38 (38 proposed cases total). v1.0.0 remains the immutable adopted baseline until the successor is independently reviewed and the sole routing authority, CURRENT-STATE.md, is updated. Next task: `M1A_CONTRACT_V1_0_1_CANDIDATE_TARGETED_ADVERSARIAL_REVIEW`; handoff blob `bd50b9766c475035f9e3a1e55433254910430156`. This supplement records the disposition; it does not grant implementation or operational permission.
+
+```text
+V1_0_0_REVIEW=PASS_WITH_REPAIRS
+FINDINGS=8; DISPOSITIONED=8
+OWNER_DECISIONS=OG-M1A-01..OG-M1A-07; UNCHANGED
+V1_0_1_CANDIDATE=NOT_ADOPTED_PENDING_TARGETED_REVIEW
+GOVERNANCE=KEEP_BLOCKED
+IMPLEMENTATION=NOT_AUTHORIZED
+TESTS=NOT_RUN
+READ_LIST=FAIL_CLOSED
+BRIDGE=BRIDGE_NOT_READY
+```
