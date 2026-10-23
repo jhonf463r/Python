@@ -1,3 +1,30 @@
+## OVERRIDING LATEST CONTEXT — M1A G1 bootstrap authority boundary blocked (2026-10-22)
+
+The top of [CURRENT-STATE.md](./CURRENT-STATE.md) remains the sole active-task router. The Owner accepted the bounded G1 trust-bootstrap policy and authorized candidate-only work. The candidate inspection stopped before code edits with `BLOCKED_MISSING_G1_TRUST_ANCHOR`; receipt: [G1 trust-bootstrap candidate attempt result](./CHAT-ARCH-2026-10-22-M1A-G1-trust-bootstrap-candidate-attempt-result.md), blob `3c120ed84d1c19f6f205f3f7ed9b4dc620fcbf24`.
+
+Direct GitHub verification confirms branch `m1a-g1-g3-governance-route-candidate-20261022` still points to `60c8ac6e7ff425c815d9bdc7194bf20ef8d134db`; candidate source is unchanged. Anti-repeat: do not repeat the G1 feasibility review or general source/tool inventory. The missing item is a real independent enrollment authority tying the Owner principal, issuer key and server instance, with enforced requester/issuer/reader separation. The current source and optional SecretVault do not provide that. Windows Hello/WebAuthn is only a candidate factor.
+
+Next active task: `M1A_G1_TRUST_BOOTSTRAP_AUTHORITY_BOUNDARY`, blocked. No G1–G8 gate is closed. No tests/build/runtime/transport/protected read/merge/deploy/block release.
+
+```text
+ACTIVE_TASK=M1A_G1_TRUST_BOOTSTRAP_AUTHORITY_BOUNDARY
+STATUS=BLOCKED_MISSING_G1_TRUST_ANCHOR
+OWNER_TRUST_BOOTSTRAP_POLICY=ACCEPTED_FOR_CANDIDATE_ATTEMPT
+CANDIDATE_HEAD=60c8ac6e7ff425c815d9bdc7194bf20ef8d134db
+CANDIDATE_SOURCE_CHANGES=NONE
+GOVERNANCE=KEEP_BLOCKED
+TESTS=NOT_RUN
+BUILD=NOT_RUN
+RUNTIME=NOT_RUN
+REAL_TRANSPORT=NOT_RUN
+PROTECTED_LOCAL_READ=NOT_AUTHORIZED
+MERGE_DEPLOY=NOT_AUTHORIZED
+BLOCK_RELEASE=NOT_AUTHORIZED
+BRIDGE=BRIDGE_NOT_READY
+```
+
+---
+
 ## OVERRIDING LATEST CONTEXT — M1A G1 trust-bootstrap policy adjudication (2026-10-22)
 
 The top of [CURRENT-STATE.md](./CURRENT-STATE.md) is the sole actor-routing authority. Active task: `M1A_G1_TRUST_BOOTSTRAP_POLICY_ADJUDICATION`; status: `WAITING_OWNER`. The Owner supplied Codex's conditional G1 feasibility report; canonical reconciliation: [M1A G1 trust-bootstrap feasibility receipt](./CHAT-ARCH-2026-10-22-M1A-G1-trust-bootstrap-feasibility-reconciliation.md).
