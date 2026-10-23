@@ -1,10 +1,15 @@
-## Active unresolved knowledge — v1.0.0 review dispositioned; v1.0.1 candidate awaits review (2026-10-22)
+## Active unresolved knowledge — v1.0.1 report received; review timestamp correction pending (2026-10-22)
 
-The Owner-adopted normative baseline is still contract v1.0.0, blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e`, under `ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE`. A Sonnet 4.6-attributed static report was pasted by the Owner with verdict `PASS_WITH_REPAIRS`; attribution remains `OWNER_REPORTED`. The 8 finding dispositions are recorded in [the finding register](./CHAT-ARCH-2026-10-22-M1A-contract-v1-sonnet-review-receipt-and-finding-register.md), blob `396606e5744f0b3d0332f8ee9f02ec14cdcea588`.
+The Owner-adopted normative baseline remains M1A contract v1.0.0, blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e`, under `ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE`. The Owner supplied a Sonnet 4.6-attributed `PASS_WITH_REPAIRS` report for v1.0.1 candidate blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f`; report/session attribution remains `OWNER_REPORTED`.
 
-The [v1.0.1 candidate](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1_0_1-candidate.md), blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f`, drafts technical repairs without changing OG-M1A-01..07. It is `NOT_ADOPTED_PENDING_TARGETED_REVIEW`. The sole current task is `M1A_CONTRACT_V1_0_1_CANDIDATE_TARGETED_ADVERSARIAL_REVIEW`; exact handoff [here](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-candidate-targeted-review-handoff.md), blob `5612ada32a145d23cc836792cdf02608f4a706a3`. Dispatch is `NOT_DISPATCHED`.
+The report states its review date was 2026-10-20. GitHub history for the exact final candidate puts the final wording commit at 2026-10-22 19:36:28 America/Bogota. This chronology needs correction before the claimed exact-blob remote retrieval can be treated as verified. See [v1.0.1 review receipt/reconciliation](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-receipt-and-reconciliation.md) and [metadata-correction handoff](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-metadata-correction-handoff.md).
+
+The reviewer reports F-M1A-01..08 passing; the coordinator has not independently repeated all adversarial tests. FN-M1A-V101-01 is recorded as a nonblocking traceability clarification for the strengthened C30 wording derived from F-M1A-05. FN-M1A-V101-02 is not confirmed as a contract defect: the coordinator cross-checked C2/C3/C5/C7 against the exact overlay.
+
+The sole active task is `M1A_V1_0_1_REVIEW_REPORT_METADATA_CORRECTION`; the correction prompt is ready but `NOT_DISPATCHED`. The successor remains `NOT_ADOPTED`; the v1.0.0 baseline remains unchanged. All route statements in the historical sections below are archival and do not supersede the top snapshot of `CURRENT-STATE.md`.
 
 **Unresolved evidence/authority facts — not extra governance ballots:**
+- `REVIEW_TIMESTAMP=INCONSISTENT_WITH_TARGET_HISTORY; CORRECTION_PENDING`; review invocation/session remains `OWNER_REPORTED`.
 - `ACTIVE_BLOCK_SET_ATTESTATION=NOT_ESTABLISHED`: the candidate requires an authenticated, versioned, complete active-set snapshot, including an explicit authenticated empty-set distinction. No actual registry/snapshot service is claimed to exist.
 - `PRE_SELECTOR_VALIDATION_EVIDENCE=NOT_IMPLEMENTED/UNVERIFIED`: the candidate requires auditable stage results and evidence references before a mismatch can prove non-applicability.
 - `REAL_TRUST_ANCHOR=UNVERIFIED`; `TRUSTED_CATALOGUE_AND_PUBLISHER=NOT_ESTABLISHED`.
@@ -13,7 +18,7 @@ The [v1.0.1 candidate](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block
 - `AUTHORITATIVE_REVOCATION_SOURCE=NOT_ESTABLISHED`.
 - `INDEPENDENT_BLOCK_RELEASE_MECHANISM=NOT_ESTABLISHED`.
 
-The next review must challenge the candidate's repairs, not start a broad scan or infer implementation from normative design. Until a verified successor route exists, maintain `GOVERNANCE=KEEP_BLOCKED`, `IMPLEMENTATION=NOT_AUTHORIZED`, `TESTS=NOT_RUN`, `READ_LIST=FAIL_CLOSED`, `BRIDGE=BRIDGE_NOT_READY`.
+Until the report metadata is reconciled and a subsequent Owner decision changes the canonical route, maintain `GOVERNANCE=KEEP_BLOCKED`, `IMPLEMENTATION=NOT_AUTHORIZED`, `TESTS=NOT_RUN`, `READ_LIST=FAIL_CLOSED`, `BRIDGE=BRIDGE_NOT_READY`.
 
 
 ---
