@@ -1,15 +1,14 @@
-## ACTIVE ARCHIVE / ROUTE POINTER — v1.0.1 review reconciled; Owner adoption decision next (2026-10-22)
+## ACTIVE ARCHIVE / ROUTE POINTER — M1A v1.0.1 design adopted; prerequisite gate next (2026-10-22)
 
-Routing authority: [CURRENT-STATE.md](./CURRENT-STATE.md). Active task: `M1A_V1_0_1_OWNER_ADOPTION_DECISION`; `READY_FOR_OWNER_ADOPTION_DECISION; NOT_ADOPTED`.
+Routing authority: [CURRENT-STATE.md](./CURRENT-STATE.md). Active task: `M1A_V1_0_1_IMPLEMENTATION_PREREQUISITE_EVIDENCE_RECONCILIATION`; `READY_FOR_BOUNDED_DOCUMENTARY_WORK`.
 
-- Adopted baseline, unchanged: [v1.0.0 contract](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md), blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e`.
-- Successor candidate under review: [v1.0.1 candidate](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1_0_1-candidate.md), blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f`.
-- Review/reconciliation receipt: [v1.0.1 review receipt](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-receipt-and-reconciliation.md), blob `45190a512e93211a85e23be74fa75741be5227f6`.
-- Reviewer confirms exact candidate blob identity as `OWNER_REPORTED`; timestamp is `UNVERIFIABLE` after retraction of the unverified 2026-10-20 date.
-- FN-M1A-V101-01: nonblocking traceability clarification accepted and recorded. FN-M1A-V101-02: coordinator cross-checked overlay; no defect confirmed.
-- All 38 candidate cases remain proposed, not executed. Actual trust anchor, active-set attestation, target resolver, producer allowlist, revocation source and independent block-release mechanism remain unverified/not established.
+- Adopted normative design: [v1.0.1 contract](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1_0_1.md), blob `baa39a09b97117df1dbe46804affdcebc7159f30`.
+- Adoption receipt: [Owner decision](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-owner-adoption-receipt.md), blob `80646b73b35f6a3f4807f6f59800a45aca51503e`; interpreted from the Owner's contextual assent `ok procede`.
+- Review receipt: [v1.0.1 review reconciliation](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-receipt-and-reconciliation.md), blob `000b81b079c5febd8d78afebedf782d1d1e263fa`. Reported verdict `PASS_WITH_REPAIRS`; timestamp unknown; session attribution `OWNER_REPORTED`.
+- Reviewed source candidate `7c72474a5f7c114c02320c177d6ea2aea68ad28f` and v1.0.0 predecessor `8181c7c0cf6036c76cf365510e8d9665cf84e57e` remain immutable.
+- Next task is strictly documentary: reconcile the eight implementation prerequisites in v1.0.1 §10. All 38 conformance cases remain unexecuted; real authority mechanisms remain unverified/not established.
 
-The only next action is an explicit Owner decision on v1.0.1 adoption. Keep `GOVERNANCE=KEEP_BLOCKED`, `IMPLEMENTATION=NOT_AUTHORIZED`, `TESTS=NOT_RUN`, `READ_LIST=FAIL_CLOSED`, `BRIDGE=BRIDGE_NOT_READY`.
+Keep `GOVERNANCE=KEEP_BLOCKED`, `IMPLEMENTATION=NOT_AUTHORIZED`, `TESTS=NOT_RUN`, `READ_LIST=FAIL_CLOSED`, `BRIDGE=BRIDGE_NOT_READY`.
 
 ---
 
