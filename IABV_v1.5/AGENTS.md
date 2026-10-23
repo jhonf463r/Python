@@ -1,3 +1,39 @@
+## OVERRIDING LATEST ROUTING — TPM projection-capture mechanism static review completed (2026-10-23)
+
+The Owner authorized a bounded static review. Receipt: [TPM projection-capture mechanism static review](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-23-M1A-G1-TPM-projection-capture-mechanism-static-review.md), blob `25336d97408169f2d3d8f453c14d644002b433ab`.
+
+The previous `RETRY_CAPTURE_FIX` was not a reproducible fix: its prompt described extraction in prose but supplied no executable field-capture implementation or per-field capture-state evidence. The latest Owner-supplied JSON reports one `Get-Tpm` call as successful while all key fields remain `UNKNOWN`. Microsoft's documented cmdlet returns a `TpmObject` with properties including `TpmPresent` and `TpmReady`; the symptom is a capture/projection/transport ambiguity, not proof that the TPM is absent. The actual local script and safe execution trace are unavailable, so root cause remains `UNRESOLVED`.
+
+The receipt proposes an explicit allowlisted, one-call capture method recording output count/type and each field's property-existence/type/result without serializing the raw object. This is a static proposal only; it was not executed or added to product code. Do not run `Get-Tpm` again, query EK info, or validate a chain unless separately authorized after this review.
+
+```text
+ACTIVE_TASK=M1A_G1_TRUST_BOOTSTRAP_AUTHORITY_BOUNDARY
+LAST_TERMINAL_TASK=M1A_G1_TPM_PROJECTION_CAPTURE_MECHANISM_STATIC_REVIEW
+LAST_PREFLIGHT_RESULT=BLOCKED_TPM_FIELDS_NOT_CAPTURED
+CAPTURE_MECHANISM_REVIEW=STATIC_REVIEW_COMPLETE_WITH_EXPLICIT_CAPTURE_REPAIR
+CAPTURE_IMPLEMENTATION=PROPOSED_NOT_EXECUTED
+CAPTURE_ROOT_CAUSE=UNRESOLVED
+TPM_AVAILABILITY=UNVERIFIED
+EKCERT_AVAILABILITY=UNVERIFIED
+TPM_ATTESTATION_TRUST=NOT_ESTABLISHED
+OWNER_TO_WINDOWS_PRINCIPAL=NOT_ESTABLISHED
+OWNER_TO_ISSUER=NOT_ESTABLISHED
+ISSUER_TO_EXACT_SERVER=NOT_ESTABLISHED
+READER_VERIFICATION=NOT_ESTABLISHED_END_TO_END
+REVOCATION_AUTHORITY_AND_CONSISTENCY=NOT_ESTABLISHED
+GOVERNANCE=KEEP_BLOCKED
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3_VERSIONED_TARGET_RESOLVER=NOT_ESTABLISHED
+BRIDGE=BRIDGE_NOT_READY
+NEXT_ACTION=OWNER_DECISION_ONLY; AUTHORIZE_ONE_FIXED_TPM_CAPTURE_RUN_OR_CLOSE_TPM_PREFLIGHT_BRANCH
+AUTOMATIC_FOLLOW_ON=FALSE
+COORDINATOR_RUNTIME=NOT_PROVEN
+CAUSAL_SPACE_TIME_REUSE=NOT_PROVEN
+```
+
+---
+
 ## OVERRIDING LATEST ROUTING — TPM/EKCert corrected-capture preflight terminal (2026-10-23)
 
 The Owner-supplied receipt `M1A_G1_TPM_EKCERT_READ_ONLY_PREFLIGHT_RETRY_CAPTURE_FIX` is terminal at `BLOCKED_TPM_FIELDS_NOT_CAPTURED`. Full provenance and stop conditions: [TPM/EKCert corrected-capture preflight failure](./CHAT-ARCH-2026-10-23-M1A-G1-TPM-EKCert-corrected-capture-failure.md), blob `d1b0bb55dd950c7fa30312f023a5c14bfa798d73`.
