@@ -1,3 +1,48 @@
+## OVERRIDING LATEST ROUTING — M1A G1 trust-bootstrap design candidate reconciled (2026-10-23)
+
+Static reconciliation receipt: [M1A G1 local trust-bootstrap boundary design — static reconciliation](./CHAT-ARCH-2026-10-23-M1A-G1-local-trust-bootstrap-boundary-design-static-reconciliation.md), blob to verify from current main after write. The candidate design is [here](./CHAT-ARCH-2026-10-23-M1A-G1-local-trust-bootstrap-boundary-design-candidate.md), immutable blob `ecbbdc0504fe4e337c40859472805fb2e08796d2`, commit `35fc8f2cb72d0394b85d34f9b6aa5157a834efc6`, isolated branch `codex/m1a-g1-local-trust-bootstrap-design-20261023`. GitHub independently confirms its parent is the reviewed baseline `30554c56e36101638fb24513a7a1590f88e41ad7` and its only change is the new 302-line design document.
+
+Static result: `CONDITIONAL_DESIGN_REVIEW; RECEIPT_SEMANTICS_REPAIR_REQUIRED`. The design correctly refuses self-enrollment and keeps the path fail-closed, but it does not establish an independent initial root or the real Owner-to-Windows-principal binding. Section 8's “completion receipt before delivery” wording also needs to distinguish durable pre-release record from actual delivery/result receipt and subsequent reconciliation. Exact runtime-instance binding, revocation, versioned target resolver, complete active-block-set authority, independent block release, durable ledger and race-resistant containment remain unestablished. The document remains an unaccepted design candidate, not implementation authorization.
+
+**Normative-design version reconciliation:** the earlier front-door override referred to v1.0.0 as adopted, but the exact existing Owner decision `ACCEPT_M1A_V1_0_1_SUCCESSOR_BASELINE` and adoption receipt blob `34bee2ad8b3b4beeb468e8d563b99f511f0b352d` identify `IABV-OPERATIONAL-BLOCK-SCOPE v1.0.1`, blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f`, as the adopted normative **design-only** baseline. This override corrects current routing according to that already recorded decision; it does not modify the immutable contract or claim operational effect. Earlier contradictory text remains historical.
+
+```text
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+ACTIVE_TASK=M1A_G1_TRUST_BOOTSTRAP_AUTHORITY_BOUNDARY
+LAST_TERMINAL_TASK=M1A_G1_LOCAL_TRUST_BOOTSTRAP_BOUNDARY_DESIGN_ONLY
+DESIGN_RESULT=CONDITIONAL_DESIGN_REVIEW; RECEIPT_SEMANTICS_REPAIR_REQUIRED
+DESIGN_STATUS=DOCUMENTARY_CANDIDATE_NOT_ACCEPTED
+CANDIDATE_BRANCH=codex/m1a-g1-local-trust-bootstrap-design-20261023
+CANDIDATE_HEAD=35fc8f2cb72d0394b85d34f9b6aa5157a834efc6
+CANDIDATE_PARENT=30554c56e36101638fb24513a7a1590f88e41ad7
+CANDIDATE_BLOB=ecbbdc0504fe4e337c40859472805fb2e08796d2
+M1A_NORMATIVE_DESIGN=v1.0.1; ADOPTED_DESIGN_ONLY
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+INDEPENDENT_TRUST_ROOT=NOT_ESTABLISHED
+OWNER_TO_WINDOWS_PRINCIPAL=NOT_ESTABLISHED
+SCOPED_READ_ROUTE=NOT_IMPLEMENTED
+GOVERNANCE=KEEP_BLOCKED
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3_VERSIONED_TARGET_RESOLVER=NOT_ESTABLISHED
+BRIDGE=BRIDGE_NOT_READY
+READ_LIST=FAIL_CLOSED
+TESTS=NOT_RUN
+BUILD=NOT_RUN
+RUNTIME=NOT_RUN
+REAL_TRANSPORT=NOT_RUN
+TPM_PREFLIGHT_BRANCH=CLOSED_FOR_NOW
+AUTOMATIC_FOLLOW_ON=FALSE
+NEXT_ACTION=OWNER_DECISION_ONLY
+NEXT_OWNER_DECISION=IDENTIFY_OR_DEFINE_AN_INDEPENDENT_ROOT_AND_VERIFIABLE_OWNER_TO_WINDOWS_PRINCIPAL_BINDING; PRESERVE_RECEIPT_STAGE_REPAIR
+COORDINATOR_RUNTIME=NOT_PROVEN
+CAUSAL_SPACE_TIME_REUSE=NOT_PROVEN
+```
+
+No product code, tests, runtime, real transport, credentials, services, merge, deployment or block release is authorized by this routing update.
+
+---
+
 ## OVERRIDING LATEST ROUTING — M1 scoped-read candidate reconciled (2026-10-23)
 
 Static review receipt: [M1 — Scoped-read candidate static reconciliation](./CHAT-ARCH-2026-10-23-M1-scoped-read-candidate-static-reconciliation.md), blob `ec6ef86fd926db97d911a8b26dc39fb681ba70af`.
