@@ -1,3 +1,42 @@
+## OVERRIDING LATEST ROUTING — M1 scoped-read candidate reconciled (2026-10-23)
+
+Static review receipt: [M1 — Scoped-read candidate static reconciliation](./CHAT-ARCH-2026-10-23-M1-scoped-read-candidate-static-reconciliation.md), blob `ec6ef86fd926db97d911a8b26dc39fb681ba70af`.
+
+The Owner supplied Codex's terminal JSON for `M1_GOVERNED_SCOPED_READ_ROUTE_CANDIDATE_IMPLEMENTATION`. The coordinator independently verified candidate branch `codex/m1-governed-scoped-read-route-20261023`, HEAD `ea794a0490fe463e4d13f05e7279ebb3219f34ad`, parent exactly public-main baseline `4a29585d93c3f784258711543a605b698baf21e1`, and a one-commit diff with exactly two changed paths. Fetched blobs: `server.py=700f6d50acdb9752ad9d6f2ce3d4272aafd7b8d4`; `test_mcp_server.py=eeaef24bfba3bb33505f385e22f27609457afa04`.
+
+Static verdict: `PARTIAL_FAIL_CLOSED_GUARD_ONLY`. The candidate's `read_repo_file` and `list_repo_directory` now deny with `scoped_read_authority_unavailable` rather than invoking underlying content readers, and candidate tests assert no content is returned. This is a bounded safety guard, not a working scoped-read route; both tools remain denied because no verifiable decision/issuer is implemented. Tests/build/runtime/transport were not run. The candidate is not merged or deployed.
+
+The canonical archive already records a prior terminal G1 candidate attempt `BLOCKED_MISSING_G1_TRUST_ANCHOR`: no independently trusted enrollment authority binding the real Owner principal, issuer credential, exact server instance and issuer/requester/reader separation was evidenced. Do not repeat that inventory/feasibility attempt, TPM, or the failed local-read prompt. Do not fabricate an issuer, trust root, catalogue, revocation source, block-release authority, resolver or receipt store. The adopted M1A v1.0.0 contract remains design authority only, not runtime trust.
+
+**Next authority frontier:** an explicit Owner/governance decision to commission a new local trust-bootstrap boundary design/implementation, or new independently verifiable evidence for an already existing authority. The next candidate cannot become an authorized reader until that boundary and its enforcement are source-backed and independently verifiable. This routing note does not grant permission to create credentials/services, inspect local protected state, execute tests/runtime, merge, deploy, transport or release a block.
+
+```text
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+ACTIVE_TASK=M1A_G1_TRUST_BOOTSTRAP_AUTHORITY_BOUNDARY
+LAST_TERMINAL_TASK=M1_GOVERNED_SCOPED_READ_ROUTE_CANDIDATE_IMPLEMENTATION
+CANDIDATE_RESULT=PARTIAL_FAIL_CLOSED_GUARD_ONLY
+CANDIDATE_BRANCH=codex/m1-governed-scoped-read-route-20261023
+CANDIDATE_HEAD=ea794a0490fe463e4d13f05e7279ebb3219f34ad
+SCOPED_READ_ROUTE=NOT_IMPLEMENTED
+NEXT_ACTION=OWNER_DECISION_ONLY
+NEXT_AUTHORITY_FRONTIER=NEW_TRUST_BOOTSTRAP_BOUNDARY_DESIGN_OR_VERIFIABLE_EXISTING_AUTHORITY
+TPM_PREFLIGHT_BRANCH=CLOSED_FOR_NOW
+GOVERNANCE=KEEP_BLOCKED
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3_VERSIONED_TARGET_RESOLVER=NOT_ESTABLISHED
+BRIDGE=BRIDGE_NOT_READY
+TESTS=NOT_RUN
+BUILD=NOT_RUN
+RUNTIME=NOT_RUN
+REAL_TRANSPORT=NOT_RUN
+AUTOMATIC_FOLLOW_ON=FALSE
+COORDINATOR_RUNTIME=NOT_PROVEN
+CAUSAL_SPACE_TIME_REUSE=NOT_PROVEN
+```
+
+---
+
 ## OVERRIDING LATEST ROUTING — TPM preflight branch closed (2026-10-23)
 
 Canonical closure receipt: [M1A G1 — TPM preflight branch closure](./CHAT-ARCH-2026-10-23-M1A-G1-TPM-preflight-branch-closure.md), blob `d75537dac4115fc280f92b0c2f9acc6ba75acd2b`.
