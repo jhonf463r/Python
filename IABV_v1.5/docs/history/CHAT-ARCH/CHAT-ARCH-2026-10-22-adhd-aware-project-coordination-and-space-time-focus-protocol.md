@@ -352,3 +352,33 @@ COORDINATION_METHOD=DOCUMENTED
 COORDINATOR_RUNTIME=NOT_PROVEN
 CAUSAL_CROSS_CHAT_REUSE=NOT_PROVEN
 ```
+
+
+## 13. Owner interaction contract — inline prompts and minimum manual handoff (2026-10-22)
+
+This section records a direct Owner correction after the coordinator pointed the Owner to a GitHub handoff page instead of placing the complete prompt in the conversation. The Owner's design intent is to reduce manual coordination and make AI-to-AI delegation faster and easier to understand. The prior response imposed an unnecessary copy/navigation step and repeated the very friction the IABV→Codex bridge is intended to remove.
+
+### 13.1 Required behavior in every relevant chat
+
+When the next task belongs to Codex, Sonnet/Claude, OpenCode, Kilo, or another AI session that cannot be directly invoked from the current assistant session:
+
+1. **Name the actual destination plainly** (for example: “Codex — existing UI session”), along with the single task and its purpose.
+2. **Put the complete, self-contained, copy-ready prompt directly in the assistant message.** Do not make the Owner open GitHub or another page to retrieve, reconstruct, or copy the prompt. A canonical GitHub handoff may be linked as supplementary durable storage, but it must never be the only place where the actionable instructions are provided.
+3. Include the necessary task ID, pinned source/base, candidate/branch, current decision and evidence provenance, authorization boundary, exclusions, acceptance criteria, stop conditions, expected receipt/result format, and state that the prompt has not been dispatched unless a real dispatch and receipt exist.
+4. Keep the Owner's manual step to the minimum unavoidable action: copy the prompt from the current conversation and paste it into the named existing AI session. Do not require the Owner to navigate elsewhere simply to obtain instructions, reconstruct context, repeat known decisions, manually investigate a problem that the AI tools can inspect within authorization, or run an elevated/admin terminal as a workaround for a governance design problem.
+5. If the current assistant has a genuine direct tool/action to invoke the destination, use it only when that tool is actually available and authorized; verify the returned result/receipt. Do not pretend a prompt was sent merely because it was saved to GitHub.
+6. Deliver the prompt and explain its purpose in plain language in the same answer. Make clear what the Owner should do next, what result to return, and what will happen after that. Avoid telling the Owner to “go find the prompt” in a document link.
+
+### 13.2 Prompt packaging and evidence discipline
+
+- Prefer one complete prompt, not a chain of prompts or multiple choices, unless a real dependency requires branching.
+- The prompt must instruct the destination AI to use existing canonical context and prior decisions, not repeat completed inventory/review steps.
+- Never put a user-required authorization, important exclusion, base SHA, branch name, or stop condition only in another link.
+- If the prompt is too long for a platform limit, state the exact limitation and provide the smallest self-contained usable chunks in the current conversation, each clearly labeled and ordered; do not silently omit required context.
+- Keep the durable handoff and `CURRENT-STATE.md` consistent with the prompt delivered inline. Fetch back every material write. Treat this as a workflow rule that is `DOCUMENTED`; do not claim runtime enforcement or learned behavior until later use demonstrates it.
+
+### 13.3 The concrete correction now applied
+
+For the current task, the Owner has authorized `M1A_G1_G3_AUTHORITY_ROUTE_CANDIDATE_IMPLEMENTATION`. The coordinator must give the full prompt in the current ChatGPT answer, addressed to **Codex in the existing UI/session**, and require work only on the verified isolated candidate branch `m1a-g1-g3-governance-route-candidate-20261022`, pinned to base `60c8ac6e7ff425c815d9bdc7194bf20ef8d134db`. If Codex cannot safely reach/edit that remote candidate and cannot establish a separate candidate, it must return that capability limitation; it must not touch the Owner's existing checkout or request an Administrator terminal as a workaround.
+
+The latest task remains governed by `CURRENT-STATE.md`. This interaction contract does not itself dispatch the prompt, execute candidate work, close any implementation prerequisite, authorize protected reads, or release any operational block.
