@@ -1,19 +1,20 @@
-## Active unresolved knowledge — M1A runtime trust and implementation prerequisites (2026-10-22)
+## Active unresolved knowledge — v1.0.0 review dispositioned; v1.0.1 candidate awaits review (2026-10-22)
 
-**Policy/design status:** `ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE` received. The seven M1A design choices are accepted as a normative design baseline and consolidated in [M1A operational-block scope contract v1.0.0](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md), blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e`. The old policy-adoption question is closed; do not ask it again unless new contradictory higher-authority evidence appears.
+The Owner-adopted normative baseline is still contract v1.0.0, blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e`, under `ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE`. A Sonnet 4.6-attributed static report was pasted by the Owner with verdict `PASS_WITH_REPAIRS`; attribution remains `OWNER_REPORTED`. The 8 finding dispositions are recorded in [the finding register](./CHAT-ARCH-2026-10-22-M1A-contract-v1-sonnet-review-receipt-and-finding-register.md), blob `396606e5744f0b3d0332f8ee9f02ec14cdcea588`.
 
-**Current task:** [CURRENT-STATE.md](./CURRENT-STATE.md), top snapshot. `M1A_CONSOLIDATED_SCOPE_CONTRACT_V1_TARGETED_ADVERSARIAL_REVIEW`, status `READY_FOR_INDEPENDENT_REVIEW; NOT_DISPATCHED`. The intended reviewer is Sonnet 4.6 in the Owner-reported Antigravity session; invocation is not confirmed. Exact prompt and bounded inputs: [review handoff](./CHAT-ARCH-2026-10-22-M1A-contract-v1-targeted-adversarial-review-handoff.md), blob `26616d4244c218654fe37d31aed240e518cb94a0`.
+The [v1.0.1 candidate](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1_0_1-candidate.md), blob `4befbbb352bed35f813b9ada2d3b672cf91e328a`, drafts technical repairs without changing OG-M1A-01..07. It is `NOT_ADOPTED_PENDING_TARGETED_REVIEW`. The sole current task is `M1A_CONTRACT_V1_0_1_CANDIDATE_TARGETED_ADVERSARIAL_REVIEW`; exact handoff [here](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-candidate-targeted-review-handoff.md), blob `bd50b9766c475035f9e3a1e55433254910430156`. Dispatch is `NOT_DISPATCHED`.
 
-**Remaining evidence gaps (not additional policy ballots):**
-- `REAL_TRUST_ANCHOR=UNVERIFIED`: actual authenticated runtime governance/publisher principal and root material.
-- `TRUSTED_CATALOGUE=NOT_ESTABLISHED`: integrity/authorization verification, published catalogue revision and revocation source.
-- `PRODUCER_ALLOWLIST=NOT_ESTABLISHED`: authenticated producer identities and per-class authority.
-- `TRUSTED_OPERATION_TARGET_RESOLVER=NOT_ESTABLISHED`: versioned server-side mapping tied to real registered operations/call sites.
-- `INDEPENDENT_BLOCK_RELEASE_MECHANISM=NOT_ESTABLISHED`: independently authenticated release authority and block-bound artifact.
+**Unresolved evidence/authority facts — not extra governance ballots:**
+- `ACTIVE_BLOCK_SET_ATTESTATION=NOT_ESTABLISHED`: the candidate requires an authenticated, versioned, complete active-set snapshot, including an explicit authenticated empty-set distinction. No actual registry/snapshot service is claimed to exist.
+- `PRE_SELECTOR_VALIDATION_EVIDENCE=NOT_IMPLEMENTED/UNVERIFIED`: the candidate requires auditable stage results and evidence references before a mismatch can prove non-applicability.
+- `REAL_TRUST_ANCHOR=UNVERIFIED`; `TRUSTED_CATALOGUE_AND_PUBLISHER=NOT_ESTABLISHED`.
+- `PRODUCER_ALLOWLIST=NOT_ESTABLISHED`.
+- `TRUSTED_OPERATION_TARGET_RESOLVER_AND_CALL_SITE_BINDINGS=NOT_ESTABLISHED`.
+- `AUTHORITATIVE_REVOCATION_SOURCE=NOT_ESTABLISHED`.
+- `INDEPENDENT_BLOCK_RELEASE_MECHANISM=NOT_ESTABLISHED`.
 
-The previous bounded public-source checks found no authoritative versioned scope registry or trusted operation-to-target resolver in inspected `models.py`, `world_model_service.py` and `server.py`; this does not prove global absence. Do not repeat the broad source scan. Entry 274 remains normative for separate diagnostic, fresh approval, read decision, reader verification, receipt, and independent block release.
+The next review must challenge the candidate's repairs, not start a broad scan or infer implementation from normative design. Until a verified successor route exists, maintain `GOVERNANCE=KEEP_BLOCKED`, `IMPLEMENTATION=NOT_AUTHORIZED`, `TESTS=NOT_RUN`, `READ_LIST=FAIL_CLOSED`, `BRIDGE=BRIDGE_NOT_READY`.
 
-The accepted design does not supply runtime credentials or authorize code, tests, runtime, transport, merge or release. Maintain `GOVERNANCE=KEEP_BLOCKED`, `IMPLEMENTATION=NOT_AUTHORIZED`, `TESTS=NOT_RUN`, `READ_LIST=FAIL_CLOSED`, `BRIDGE=BRIDGE_NOT_READY`.
 
 ---
 
