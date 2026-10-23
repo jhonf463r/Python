@@ -5,6 +5,7 @@ The Owner authorized a bounded candidate implementation attempt. The canonical r
 The candidate must not use the Owner's pre-existing checkout, `data/`, SQLite, secrets or `.env`; no tests/build/runtime/process launch/real transport/merge/deploy/block release are authorized. If real trust or authority primitives for G1–G3 are missing, Codex must stop and report them; no stubs or self-issued trust may masquerade as authorization.
 
 **Owner interaction contract:** give the complete Codex prompt directly in the assistant message, not merely a link. Destination: `Codex — existing UI/session`. The Owner should only copy the inline prompt and paste it into that session; no external page retrieval or manual reconstruction. Do not claim sent/consumed without a real receipt. See [protocol §13](./CHAT-ARCH-2026-10-22-adhd-aware-project-coordination-and-space-time-focus-protocol.md).
+**Coordination incident/lesson:** [inline-prompt delivery and new-chat continuity correction](./CHAT-ARCH-2026-10-22-inline-prompt-delivery-and-new-chat-continuity-correction.md), blob `07182ca1254e631ffa396c118af3184cb90dc7d3`. The prompt-link-only response was recorded as avoidable manual friction; future replies must contain the full prompt inline.
 
 ```text
 ACTIVE_TASK=M1A_G1_G3_AUTHORITY_ROUTE_CANDIDATE_IMPLEMENTATION
