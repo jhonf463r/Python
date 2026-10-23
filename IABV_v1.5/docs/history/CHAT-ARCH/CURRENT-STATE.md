@@ -1,67 +1,63 @@
-# CURRENT ROUTING SNAPSHOT — 2026-10-22 (V1.0.0 REMAINS ADOPTED; V1.0.1 REVIEWED CANDIDATE NOT ADOPTED; OPERATIONAL BLOCKS REMAIN)
+# CURRENT ROUTING SNAPSHOT — 2026-10-22 (M1A V1.0.1 NORMATIVE DESIGN ADOPTED; OPERATIONAL BLOCKS REMAIN)
 
-## LATEST ROUTING DELTA — prior adoption interpretation withdrawn; prerequisite matrix completed
+## LATEST ROUTING DELTA — explicit Owner adoption recorded; G1–G3 authority frontier remains open
 
-The Owner's exact message was `ok procede`. The coordinator initially misinterpreted it as adoption of v1.0.1. The existing UAAL construction-completeness overlay C1 states that a general “proceed” can authorize bounded documentary work without adopting a separate pending policy. The exact successor acceptance token was not supplied. Therefore **no effective v1.0.1 adoption occurred**. The incorrect interpretation has been withdrawn in the [adoption correction record](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-owner-adoption-correction.md), blob `bc1e7e97c85671753f79cf9916e640e02f6b642d`.
+The Owner supplied the exact token `ACCEPT_M1A_V1_0_1_SUCCESSOR_BASELINE`. v1.0.1 is now adopted as the **current normative design baseline only**. The exact reviewed artifact is unchanged at blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f`; the adoption event is recorded in [the explicit adoption receipt](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-explicit-owner-adoption-receipt.md), blob `34bee2ad8b3b4beeb468e8d563b99f511f0b352d`. The earlier `ok procede` was not treated as adoption; that earlier correction remains valid and its history is preserved.
 
-The old [adoption-receipt path](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-owner-adoption-receipt.md), current blob `7655b8599a8eabb0dd3d62817f8e591ab8d64555`, is a correction notice with status `NO_EFFECTIVE_ADOPTION`. The attempted adopted-contract path (current blob `954b5dc6cd5ba496fc9342c2c1def6448fe353dc`) is a non-effective tombstone; its previous contents remain in Git history only. Neither is normative authority.
+- **Current normative design:** v1.0.1, blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f`.
+- **Immutable predecessor:** v1.0.0, blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e`.
+- **Review provenance:** `OWNER_REPORTED_PASS_WITH_REPAIRS`; F-M1A-01..08 passing is the report's claim, not coordinator-reperformed proof. The actual review timestamp remains `UNVERIFIABLE`; reviewer/session attribution remains `OWNER_REPORTED`.
+- **Review notes:** FN-M1A-V101-01 remains a nonblocking C30 traceability clarification; FN-M1A-V101-02 was not confirmed as a contract defect after the bounded overlay cross-check. OG-M1A-01..07 remain unchanged.
+- **Implementation prerequisite matrix:** [eight-gate matrix](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-implementation-prerequisite-evidence-gate-matrix.md), current blob `608a5c7f3c2be8ad794b21bfcb66657217584a58`; zero gates closed for implementation acceptance.
+- **Adoption effect:** design policy only. No implementation, code changes, local reads, protected reads, tests, builds, runtime, transport, merge/deployment, or operational block release is authorized.
 
-### Effective design artifacts and review provenance
+## Current active task
 
-- **Only currently adopted normative baseline:** [M1A v1.0.0 contract](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md), blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e`.
-- **Reviewed successor candidate, not adopted:** [v1.0.1 candidate contract](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1_0_1-candidate.md), blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f`.
-- **Review receipt:** [v1.0.1 review receipt and reconciliation](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-receipt-and-reconciliation.md), blob `ffd96aa031ff4e2460352e7f840e720fa9429dfc`. Reviewer-reported verdict is `PASS_WITH_REPAIRS`; F-M1A-01..08 are reported passing but were not independently re-performed by the coordinator. The reviewer says a fresh clone/hash matched the exact candidate; the actual review timestamp remains `UNVERIFIABLE`; session/invocation attribution remains `OWNER_REPORTED`.
-- FN-M1A-V101-01 is a nonblocking traceability clarification tied to F-M1A-05. FN-M1A-V101-02 was checked against the pinned overlay and is not confirmed as a defect. OG-M1A-01..07 remain unchanged.
+`M1A_V1_0_1_G1_G3_AUTHORITY_EVIDENCE_ROUTE`
 
-### Completed bounded documentary task
-
-The [implementation-prerequisite evidence gate matrix](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-implementation-prerequisite-evidence-gate-matrix.md), blob `608a5c7f3c2be8ad794b21bfcb66657217584a58`, maps all eight §10 prerequisites against the candidate, Entry 274, UAAL-ROOT-001, the construction-completeness overlay and current known evidence. It was fetched back and reconciled. The matrix records `IMPLEMENTATION_PREREQUISITES=8; CLOSED=0`. This is documentary mapping only.
-
-### Current active task
-
-`M1A_V1_0_1_OWNER_ADOPTION_DECISION`
-
-- **Next actor / authority:** Owner.
-- **Open decision:** adopt the v1.0.1 successor design or retain v1.0.0.
-- **Required input:** reply with exactly `ACCEPT_M1A_V1_0_1_SUCCESSOR_BASELINE` or `RETAIN_M1A_V1_0_0_BASELINE`. A general “proceed” authorizes bounded documentary continuation only; it will not be silently converted into a pending normative policy decision.
-- **Status:** `AWAITING_EXPLICIT_OWNER_TOKEN`.
-- **Boundary:** even if v1.0.1 is adopted, that would be normative-design adoption only. It would not authorize implementation, code, tests, builds, runtime, transport, protected reads, merge, deployment or release of any governance block.
+- **Status:** `WAITING_AUTHORITY`.
+- **Next actor:** the Owner/governance authority or the named operator of the actual runtime authority surface.
+- **Missing dependency:** identify a supported governance-owned evidence route and accountable producer for G1–G3: runtime principal/trust anchor; catalogue, producer and revocation authority; and a versioned operation-to-target resolver.
+- **Evidence state:** `SUPPORTED_RUNTIME_AUTHORITY_ROUTE=UNRESOLVED`; the session has not established that route or a verified evidence producer.
+- **Stop condition:** do not repeat broad scans, bypass a denied reader, infer authority from a blob digest, invent an operator, or send another agent to repeat the same contract review. No IA prompt is dispatched until a real supported route and its responsible actor are identified.
+- **Acceptance criterion:** identify the exact supported governance-owned route and accountable evidence producers for G1–G3, with verifiable provenance; if no route is exposed in the named surface, record only a bounded `NOT_FOUND` for that surface and keep global existence `UNRESOLVED`.
 
 ```text
 PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
 PARENT_CONCEPT=UAAL-ROOT-001
-OWNER_DESIGN_ACCEPTANCE=ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE
-V1_0_0_BASELINE=NORMATIVE_DESIGN_BASELINE_ADOPTED; IMMUTABLE
+V1_0_0_PREDECESSOR=IMMUTABLE; SUPERSEDED_FOR_CURRENT_DESIGN
 V1_0_0_BLOB=8181c7c0cf6036c76cf365510e8d9665cf84e57e
-V1_0_1_REVIEWED_CANDIDATE_BLOB=7c72474a5f7c114c02320c177d6ea2aea68ad28f
-V1_0_1_STATUS=NOT_ADOPTED_PENDING_EXPLICIT_OWNER_DECISION
+V1_0_1_NORMATIVE_DESIGN=ADOPTED_EXPLICIT_OWNER_TOKEN
+V1_0_1_BLOB=7c72474a5f7c114c02320c177d6ea2aea68ad28f
+V1_0_1_ADOPTION_TOKEN=ACCEPT_M1A_V1_0_1_SUCCESSOR_BASELINE
+V1_0_1_ADOPTION_RECEIPT=CHAT-ARCH-2026-10-22-M1A-v1_0_1-explicit-owner-adoption-receipt.md
+V1_0_1_ADOPTION_RECEIPT_BLOB=34bee2ad8b3b4beeb468e8d563b99f511f0b352d
 V1_0_1_REVIEW_VERDICT=OWNER_REPORTED_PASS_WITH_REPAIRS
 REVIEW_TIMESTAMP=UNVERIFIABLE
 REVIEW_SESSION_ATTRIBUTION=OWNER_REPORTED
-OWNER_MESSAGE="ok procede"; AUTHORITY=BOUNDED_DOCUMENTARY_CONTINUATION_ONLY
-V1_0_1_ADOPTION=NOT_RECORDED
-FALSE_ADOPTION_INTERPRETATION=WITHDRAWN; HISTORY_PRESERVED
-PREREQUISITE_MATRIX_BLOB=608a5c7f3c2be8ad794b21bfcb66657217584a58
 IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
 SUPPORTED_RUNTIME_AUTHORITY_ROUTE=UNRESOLVED
-ACTIVE_TASK=M1A_V1_0_1_OWNER_ADOPTION_DECISION
-CURRENT_STATUS=AWAITING_EXPLICIT_OWNER_TOKEN
+ACTIVE_TASK=M1A_V1_0_1_G1_G3_AUTHORITY_EVIDENCE_ROUTE
+CURRENT_STATUS=WAITING_AUTHORITY
+NEXT_ACTOR=OWNER_OR_NAMED_GOVERNANCE_OPERATOR
+NEXT_ACTION=IDENTIFY_SUPPORTED_GOVERNANCE_OWNED_EVIDENCE_ROUTE_AND_ACCOUNTABLE_PRODUCER_FOR_G1_G3
+AI_PROMPT=NOT_DISPATCHED_ROUTE_AND_PRODUCER_UNRESOLVED
 RUNTIME_TRUST_ANCHOR=UNVERIFIED
 TRUSTED_CATALOGUE_AND_ACTIVE_SET_ATTESTATION=NOT_ESTABLISHED
 TRUSTED_OPERATION_TARGET_RESOLVER=NOT_ESTABLISHED
 PRODUCER_ALLOWLIST=NOT_ESTABLISHED
 REVOCATION_SOURCE=NOT_ESTABLISHED
 INDEPENDENT_BLOCK_RELEASE_MECHANISM=NOT_ESTABLISHED
+GOVERNANCE=KEEP_BLOCKED
 IMPLEMENTATION=NOT_AUTHORIZED
 TESTS=NOT_RUN
-GOVERNANCE=KEEP_BLOCKED
 READ_LIST=FAIL_CLOSED
 BRIDGE=BRIDGE_NOT_READY
 ```
 
 **Historical routing sections below remain for provenance only and do not supersede this snapshot.**
 
-## HISTORICAL ROUTING DELTA — Owner accepted M1A design; contract v1.0.0 created (superseded after targeted review)
+## HISTORICAL ROUTING DELTA — original v1.0.0 design adoption (superseded by explicit v1.0.1 adoption)
 
 The Owner supplied the exact token `ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE`. The decision is recorded in the [normalized M1A decision ledger](./CHAT-ARCH-2026-10-22-M1A-normalized-scope-decision-ledger-and-design-amendment.md), blob `3425144a661c713eb8898c1eacefb2d791519bc0`. The accepted design is now consolidated into [M1A operational-block scope contract v1.0.0](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md), blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e`.
 
@@ -12304,3 +12300,4 @@ Direct Codex/PowerShell output reported `16,088 MB` total RAM, `4,962 MB` free, 
 ## Ollama startup-causality task framing (2026-10-21)
 
 The owner clarified that direct Codex only sampled processes through PowerShell and did not start IABV. That observation cannot answer why opening IABV activates Ollama or whether Ollama is required by the active reasoning route. The next source question is the call chain from IABV startup through service/provider initialization to Ollama process launch or endpoint connection, and whether its trigger is eager startup, lazy inference, warm-up/readiness, a background loop, or provider fallback. Then identify whether the selected IABV features require local inference or can use another existing route. These are hypotheses, not source findings. Local source access remains governance-blocked; do not use another reader, public main as a proxy for dirty local code, or live launch/reproduction. The sole next operation is still to identify/use the supported governance-owned scoped-read route. See [startup-causality record](./CHAT-ARCH-2026-10-21-ollama-startup-causality-not-tested-by-codex-snapshot.md).
+
