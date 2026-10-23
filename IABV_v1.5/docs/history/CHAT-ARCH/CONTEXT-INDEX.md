@@ -1,3 +1,54 @@
+## OVERRIDING LATEST ROUTING — New Windows OS trust-boundary route researched; bounded candidate handoff ready (2026-10-22)
+
+The prior task `M1A_G1_TRUST_BOOTSTRAP_CANDIDATE_IMPLEMENTATION` terminated with `BLOCKED_MISSING_G1_TRUST_ANCHOR`; terminal receipt: [prior candidate result](./CHAT-ARCH-2026-10-22-M1A-G1-trust-bootstrap-candidate-implementation-result.md), blob `33ba4562c3753a053b92176061d0258a1c35e77d`. The Owner has now said `ok procede`, authorizing continuation into a distinct, bounded route attempt. This does not close any gate.
+
+New official evidence supports a concrete Windows boundary architecture worth attempting statically: a separate Windows issuer service with a restricted service SID, persisted CNG signing key with an explicit DACL, protected installation/state ACLs, and a named pipe with a restrictive explicit DACL. A distinct Owner-initiated enrollment ceremony would bind the authenticated Windows local principal, issuer public key, policy revision, and exact server instance. WebAuthn may be used only if its real RP/challenge and identity binding can be implemented; credential creation alone is not proof that the first registrant is the Owner. Research receipt: [Windows OS trust-bootstrap route research](./CHAT-ARCH-2026-10-22-M1A-G1-Windows-OS-trust-bootstrap-route-research.md), blob `0316f3b897ed5db98e185bf55db1ba482b7dcaf5`.
+
+This is **new platform evidence, not evidence of installed/configured capabilities or operational success**. Windows Hello for Business is not intended for local Windows accounts; do not assume Entra/AD FS, TPM, WebAuthn integration, or any local service configuration. The candidate attempt must still stop if it cannot make a real authority/identity boundary and reader-side gate verifiable from source without invention.
+
+The prepared next-task handoff is [M1A G1 Windows OS trust-bootstrap candidate](./CHAT-ARCH-2026-10-22-M1A-G1-Windows-OS-trust-bootstrap-candidate-handoff.md), blob `0f9be4908d63dd525e572519c1e1891c894fea0a`. The full prompt must also be given inline in the current chat for `Codex — existing UI/session`; GitHub is supplemental storage only. `CODEX_PROMPT_DISPATCHED=NO` until a correlated Codex result is supplied. Do not claim dispatch or source changes now.
+
+Verified previous remote candidate state: branch `m1a-g1-g3-governance-route-candidate-20261022`, base/head `60c8ac6e7ff425c815d9bdc7194bf20ef8d134db`, tree `ca963f8013809d4efcf56133a37d2efe148517e9`; no product code changed at the research/handoff preparation stage. Re-fetch and validate the branch before the candidate attempt. Do not access the Owner's pre-existing or dirty checkout, `data/`, SQLite, secrets, credentials, or `.env`.
+
+Only source/document edits in the exact isolated candidate may be attempted. No local shell/PowerShell, local OS probing, service installation, configuration changes, real key creation/enrollment, tests, builds, runtime, processes, MCP calls, protected reads, live transport, merge/deploy, or operational block release. All G1–G8 remain open pending evidence; keep `GOVERNANCE=KEEP_BLOCKED`, `BRIDGE=BRIDGE_NOT_READY`.
+
+```text
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+ACTIVE_TASK=M1A_G1_WINDOWS_OS_TRUST_BOOTSTRAP_CANDIDATE
+PARENT_TASK=M1A_G1_TRUST_BOOTSTRAP_AUTHORITY_BOUNDARY
+STATUS=OWNER_AUTHORIZED_FOR_CANDIDATE_ONLY; HANDOFF_READY_NOT_DISPATCHED
+PRIOR_TASK=M1A_G1_TRUST_BOOTSTRAP_CANDIDATE_IMPLEMENTATION
+PRIOR_RESULT=BLOCKED_MISSING_G1_TRUST_ANCHOR; SOURCE_CHANGES_NONE
+NEW_EVIDENCE=WINDOWS_SERVICE_SID_RESTRICTED; CNG_KEY_DACL; EXPLICIT_NAMED_PIPE_DACL; OS_ACCOUNT_TOKENS
+RESEARCH_RESULT=ARCHITECTURE_CANDIDATE_ONLY; NOT_OPERATIONALLY_VERIFIED
+RESEARCH_BLOB=0316f3b897ed5db98e185bf55db1ba482b7dcaf5
+HANDOFF_BLOB=0f9be4908d63dd525e572519c1e1891c894fea0a
+CANDIDATE_BRANCH=m1a-g1-g3-governance-route-candidate-20261022
+CANDIDATE_BASE=60c8ac6e7ff425c815d9bdc7194bf20ef8d134db
+CANDIDATE_HEAD=60c8ac6e7ff425c815d9bdc7194bf20ef8d134db; MUST_RECHECK_BEFORE_EDIT
+CODEX_PROMPT_DISPATCHED=NO
+PROMPT_DELIVERY_MODE=INLINE_IN_CHAT
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3_VERSIONED_TARGET_RESOLVER=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+GOVERNANCE=KEEP_BLOCKED
+TESTS=NOT_RUN
+BUILD=NOT_RUN
+RUNTIME=NOT_RUN
+REAL_TRANSPORT=NOT_RUN
+LOCAL_CHECKOUT=DO_NOT_ACCESS
+LOCAL_OS_PROBE=NOT_AUTHORIZED
+SERVICE_INSTALLATION=NOT_AUTHORIZED
+CREDENTIAL_ENROLLMENT=NOT_AUTHORIZED
+PROTECTED_READ=NOT_AUTHORIZED
+MERGE_DEPLOY=NOT_AUTHORIZED
+BLOCK_RELEASE=NOT_AUTHORIZED
+BRIDGE=BRIDGE_NOT_READY
+```
+
+---
+
 ## OVERRIDING LATEST ROUTING — G1 candidate implementation attempt terminated at missing trusted enrollment authority (2026-10-22)
 
 The Owner supplied Codex's terminal result `BLOCKED_MISSING_G1_TRUST_ANCHOR`. The result is now recorded in the [terminal implementation receipt](./CHAT-ARCH-2026-10-22-M1A-G1-trust-bootstrap-candidate-implementation-result.md), blob `33ba4562c3753a053b92176061d0258a1c35e77d`. This was an actual bounded candidate attempt, not a policy-feasibility-only report; it ended without product edits or a commit because the candidate contains no evidenced independent bootstrap authority and enforceable issuer/requester/reader separation.
