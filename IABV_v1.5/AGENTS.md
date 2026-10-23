@@ -8,6 +8,8 @@ Review result remains `OWNER_REPORTED_PASS_WITH_REPAIRS`; F-M1A-01..08 were repo
 
 **Active task:** `M1A_V1_0_1_IMPLEMENTATION_PREREQUISITE_EVIDENCE_RECONCILIATION`, documentary only. Reconcile the eight §10 prerequisite gates into one traceable matrix using already-pinned documents. No source scans or implementation work. Preserve `GOVERNANCE=KEEP_BLOCKED`, `IMPLEMENTATION=NOT_AUTHORIZED`, `TESTS=NOT_RUN`, `READ_LIST=FAIL_CLOSED`, `BRIDGE=BRIDGE_NOT_READY`; do not access local checkout/data/SQLite/secrets, modify product source, run code/tests/build/runtime/transport, merge/deploy, access protected content or release a block.
 
+
+**Historical-scope notice:** all routing text retained below the divider is preserved for provenance only. It does not supersede the current active task in `CURRENT-STATE.md`, and any older task pointers or implementation-authority statements are historical.
 ---
 
 Authoritative route: [CURRENT-STATE.md](docs/history/CHAT-ARCH/CURRENT-STATE.md). Exact Codex task: [M1 governed scoped-read route implementation handoff](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1-governed-scoped-read-route-CODEX-implementation-handoff.md).
