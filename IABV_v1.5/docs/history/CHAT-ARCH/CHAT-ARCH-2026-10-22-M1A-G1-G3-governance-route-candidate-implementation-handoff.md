@@ -35,7 +35,7 @@ The purpose of this candidate is to determine whether the public source and exis
 >
 > **Bounded evidence set**
 >
-> Start with the canonical public documents: `IABV_v1.5/AGENTS.md`, `IABV_v1.5/docs/history/CHAT-ARCH/README.md`, `CURRENT-STATE.md`, `CONTEXT-INDEX.md`, `MEMORY-OPERATING-PROTOCOL.md`, M1A v1.0.1 blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f`, its prerequisite matrix, Entry 274 blob `5943a87d907436fc7ecac31534cbfcd31fe7de55`, and exact relevant source files only as needed to assess or implement G1–G3. Do not repeat broad tool inventories or restart the old contract review.
+> First read the latest public-`main` routing documents `IABV_v1.5/AGENTS.md`, `IABV_v1.5/docs/history/CHAT-ARCH/README.md`, `CURRENT-STATE.md`, `CONTEXT-INDEX.md`, and `MEMORY-OPERATING-PROTOCOL.md` to restore the latest authorization and this task. Those five files have documentation-only routing changes after pinned source base `60c8ac6e7ff425c815d9bdc7194bf20ef8d134db`; use their latest-main versions for routing/authority, not stale routing paragraphs embedded in the candidate snapshot. For product-source evidence and source edits, use candidate branch `m1a-g1-g3-governance-route-candidate-20261022`, which starts exactly at the pinned base. Also read M1A v1.0.1 blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f`, its prerequisite matrix, Entry 274 blob `5943a87d907436fc7ecac31534cbfcd31fe7de55`, and exact relevant source files only as needed to assess or implement G1–G3. Do not repeat broad tool inventories or restart the old contract review.
 >
 > **G1 — authenticated governance principal / trust anchor**
 >
