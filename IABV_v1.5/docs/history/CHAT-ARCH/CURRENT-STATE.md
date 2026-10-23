@@ -33,7 +33,7 @@ The Owner supplied the exact token `ACCEPT_M1A_V1_0_1_SUCCESSOR_BASELINE`. v1.0.
 - **Immutable predecessor:** v1.0.0, blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e`.
 - **Review provenance:** `OWNER_REPORTED_PASS_WITH_REPAIRS`; F-M1A-01..08 passing is the report's claim, not coordinator-reperformed proof. The actual review timestamp remains `UNVERIFIABLE`; reviewer/session attribution remains `OWNER_REPORTED`.
 - **Review notes:** FN-M1A-V101-01 remains a nonblocking C30 traceability clarification; FN-M1A-V101-02 was not confirmed as a contract defect after the bounded overlay cross-check. OG-M1A-01..07 remain unchanged.
-- **Implementation prerequisite matrix:** [eight-gate matrix](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-implementation-prerequisite-evidence-gate-matrix.md), current blob `a2c24f540da2c4bf8ceaeccacd123a2f561d982a`; zero gates closed for implementation acceptance.
+- **Implementation prerequisite matrix:** [eight-gate matrix](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-implementation-prerequisite-evidence-gate-matrix.md), current blob `1322fdfb26770bcf5bdfab9fd85a7ffcee5d9f37`; zero gates closed for implementation acceptance.
 - **Adoption effect:** design policy only. No implementation, code changes, local reads, protected reads, tests, builds, runtime, transport, merge/deployment, or operational block release is authorized.
 
 ## Current active task
