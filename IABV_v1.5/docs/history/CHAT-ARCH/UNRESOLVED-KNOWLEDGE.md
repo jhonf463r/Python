@@ -1,25 +1,22 @@
-## Active unresolved knowledge — v1.0.1 report received; review timestamp correction pending (2026-10-22)
+## Active unresolved knowledge — v1.0.1 review reconciled; Owner adoption decision pending (2026-10-22)
 
-The Owner-adopted normative baseline remains M1A contract v1.0.0, blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e`, under `ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE`. The Owner supplied a Sonnet 4.6-attributed `PASS_WITH_REPAIRS` report for v1.0.1 candidate blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f`; report/session attribution remains `OWNER_REPORTED`.
+The Owner-adopted normative baseline remains M1A contract v1.0.0, blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e`, under `ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE`. The Owner supplied a Sonnet 4.6-attributed `PASS_WITH_REPAIRS` report for successor v1.0.1 blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f`; the reviewer says a fresh clone and `git rev-parse HEAD:<path>` confirmed this exact blob. The prior date `2026-10-20` was an unsupported mistake; `REVIEW_TIMESTAMP=UNVERIFIABLE`. The report's external session/invocation attribution remains `OWNER_REPORTED`.
 
-The report states its review date was 2026-10-20. GitHub history for the exact final candidate puts the final wording commit at 2026-10-22 19:36:28 America/Bogota. This chronology needs correction before the claimed exact-blob remote retrieval can be treated as verified. See [v1.0.1 review receipt/reconciliation](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-receipt-and-reconciliation.md) and [metadata-correction handoff](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-metadata-correction-handoff.md).
+See [v1.0.1 review receipt/reconciliation](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-receipt-and-reconciliation.md), blob `45190a512e93211a85e23be74fa75741be5227f6`. F-M1A-01..08 are reported passing by the reviewer; the coordinator has not independently repeated all adversarial tests. FN-M1A-V101-01 is a nonblocking C30 traceability clarification. FN-M1A-V101-02 is not confirmed as a contract defect after cross-checking the overlay's C2/C3/C5/C7.
 
-The reviewer reports F-M1A-01..08 passing; the coordinator has not independently repeated all adversarial tests. FN-M1A-V101-01 is recorded as a nonblocking traceability clarification for the strengthened C30 wording derived from F-M1A-05. FN-M1A-V101-02 is not confirmed as a contract defect: the coordinator cross-checked C2/C3/C5/C7 against the exact overlay.
-
-The sole active task is `M1A_V1_0_1_REVIEW_REPORT_METADATA_CORRECTION`; the correction prompt is ready but `NOT_DISPATCHED`. The successor remains `NOT_ADOPTED`; the v1.0.0 baseline remains unchanged. All route statements in the historical sections below are archival and do not supersede the top snapshot of `CURRENT-STATE.md`.
+**Active task:** `M1A_V1_0_1_OWNER_ADOPTION_DECISION`. The successor remains `NOT_ADOPTED` until an explicit Owner decision; v1.0.0 remains the adopted and unchanged baseline.
 
 **Unresolved evidence/authority facts — not extra governance ballots:**
-- `REVIEW_TIMESTAMP=INCONSISTENT_WITH_TARGET_HISTORY; CORRECTION_PENDING`; review invocation/session remains `OWNER_REPORTED`.
-- `ACTIVE_BLOCK_SET_ATTESTATION=NOT_ESTABLISHED`: the candidate requires an authenticated, versioned, complete active-set snapshot, including an explicit authenticated empty-set distinction. No actual registry/snapshot service is claimed to exist.
-- `PRE_SELECTOR_VALIDATION_EVIDENCE=NOT_IMPLEMENTED/UNVERIFIED`: the candidate requires auditable stage results and evidence references before a mismatch can prove non-applicability.
+- `REVIEW_TIMESTAMP=UNVERIFIABLE`; the external reviewer/session invocation is `OWNER_REPORTED`.
+- `ACTIVE_BLOCK_SET_ATTESTATION=NOT_ESTABLISHED`.
+- `PRE_SELECTOR_VALIDATION_EVIDENCE=NOT_IMPLEMENTED/UNVERIFIED`.
 - `REAL_TRUST_ANCHOR=UNVERIFIED`; `TRUSTED_CATALOGUE_AND_PUBLISHER=NOT_ESTABLISHED`.
 - `PRODUCER_ALLOWLIST=NOT_ESTABLISHED`.
 - `TRUSTED_OPERATION_TARGET_RESOLVER_AND_CALL_SITE_BINDINGS=NOT_ESTABLISHED`.
 - `AUTHORITATIVE_REVOCATION_SOURCE=NOT_ESTABLISHED`.
 - `INDEPENDENT_BLOCK_RELEASE_MECHANISM=NOT_ESTABLISHED`.
 
-Until the report metadata is reconciled and a subsequent Owner decision changes the canonical route, maintain `GOVERNANCE=KEEP_BLOCKED`, `IMPLEMENTATION=NOT_AUTHORIZED`, `TESTS=NOT_RUN`, `READ_LIST=FAIL_CLOSED`, `BRIDGE=BRIDGE_NOT_READY`.
-
+Until separately authorized, maintain `GOVERNANCE=KEEP_BLOCKED`, `IMPLEMENTATION=NOT_AUTHORIZED`, `TESTS=NOT_RUN`, `READ_LIST=FAIL_CLOSED`, `BRIDGE=BRIDGE_NOT_READY`.
 
 ---
 
