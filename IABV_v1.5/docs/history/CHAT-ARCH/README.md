@@ -1,3 +1,48 @@
+## OVERRIDING LATEST ROUTING — Entra identity prepared; no-cost bridge-security review completed (2026-10-23)
+
+Latest new-chat handoff: [M1A G1 Entra identity and bridge-security continuity handoff](./CHAT-ARCH-2026-10-23-M1A-G1-new-chat-continuity-handoff-entra.md), blob `38405887fd8188c58f69ea37d94e55e8dd15806e`.
+Bounded static assessment: [M1A G1 Microsoft Entra no-cost integration](./CHAT-ARCH-2026-10-23-M1A-G1-Entra-no-cost-integration-static-assessment.md), blob `025a126f8848cab4ac0e6b33f8bd9f2e4740dda6`.
+
+The Owner reports that a new Microsoft Entra directory and dedicated IABV Owner user were created and Microsoft Authenticator sign-in succeeded. This is `OWNER_REPORTED`; identifiers are intentionally excluded from public history. Entra is a candidate for human authentication only and is not yet trusted by IABV. Azure billing/spending-limit state remains unverified; budget is zero and no paid resources are authorized.
+
+The public MCP bridge documentation says HTTP token authentication is absent and warns of public-tunnel exposure; inspected server source disables DNS-rebinding protection and permits wildcard hosts/origins in a constructor path. Actual local runtime/exposure is `UNVERIFIED`. Do not launch/reconnect a public tunnel. Keep HTTP non-public until transport authentication and separate operation-level authorization are implemented and independently tested.
+
+```text
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+ACTIVE_TASK=M1A_G1_TRUST_BOOTSTRAP_AUTHORITY_BOUNDARY
+LAST_TERMINAL_TASK=M1A_G1_ENTRA_SINGLE_TENANT_AUTH_INTEGRATION_DESIGN_REVIEW
+LATEST_HANDOFF_BLOB=38405887fd8188c58f69ea37d94e55e8dd15806e
+ENTRA_DIRECTORY_AND_AUTHENTICATOR=OWNER_REPORTED_READY
+IDENTITY_PROVIDER_CANDIDATE=MICROSOFT_ENTRA_ID; NOT_YET_TRUSTED_BY_IABV
+MCP_HTTP_TOKEN_AUTH=ABSENT_IN_DOCUMENTED_DESIGN
+MCP_PUBLIC_TUNNEL_ACTIVE=UNVERIFIED
+DNS_REBINDING_PROTECTION=DISABLED_IN_INSPECTED_CONSTRUCTOR_PATH; EFFECTIVE_RUNTIME_UNVERIFIED
+AZURE_BILLING_STATE=NOT_VERIFIED
+COST_POLICY=NO_PAID_SERVICES; NO_RESOURCE_DEPLOYMENT
+OWNER_TO_WINDOWS_PRINCIPAL=NOT_ESTABLISHED
+ISSUER_TO_EXACT_SERVER=NOT_ESTABLISHED
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3_VERSIONED_TARGET_RESOLVER=NOT_ESTABLISHED
+M1A_NORMATIVE_DESIGN=V1.0.1; ADOPTED_DESIGN_ONLY
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+GOVERNANCE=KEEP_BLOCKED
+READ_LIST=FAIL_CLOSED
+IMPLEMENTATION=NOT_AUTHORIZED
+TESTS=NOT_RUN
+BUILD=NOT_RUN
+RUNTIME=NOT_RUN
+REAL_TRANSPORT=NOT_RUN
+BRIDGE=BRIDGE_NOT_READY
+TPM_PREFLIGHT_BRANCH=CLOSED_FOR_NOW
+AUTOMATIC_FOLLOW_ON=FALSE
+NEXT_ACTION=OWNER_DECISION_ON_BOUNDED_IMPLEMENTATION_AUTHORIZATION_AFTER_DESIGN
+```
+
+This routing override supersedes older active routing while preserving the full archived history below. It records documentary/static findings only; it does not establish an active exposure, trust Entra in IABV, authorize an app registration or code changes, close any gate, or release any block.
+
+---
+
 ## OVERRIDING LATEST ROUTING — Entra no-cost path assessed; MCP endpoint auth is an open security gate (2026-10-23)
 
 Static assessment receipt: [M1A G1 Microsoft Entra no-cost integration — bounded static assessment](./CHAT-ARCH-2026-10-23-M1A-G1-Entra-no-cost-integration-static-assessment.md), blob `025a126f8848cab4ac0e6b33f8bd9f2e4740dda6`.
