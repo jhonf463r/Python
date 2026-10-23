@@ -1,3 +1,54 @@
+## OVERRIDING LATEST ROUTING — Governance-owned bootstrap authority design reconciled (2026-10-23)
+
+Static reconciliation receipt: [M1A G1 governance-owned bootstrap authority design — static reconciliation](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-23-M1A-G1-governance-owned-bootstrap-authority-design-static-reconciliation.md), blob `b3a138f4fcf521071e6d0374a81523b78dc66dda`. Candidate: [governance-owned bootstrap authority design](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-23-M1A-G1-governance-owned-bootstrap-authority-design-candidate.md), blob `feb61c72e44ec61179fba7827515ab58348f4890`, commit `675c3bdd046de04e4e7d6bb70d616dbce1354e06`, branch `codex/m1a-g1-governance-owned-bootstrap-authority-design-20261023`. Public GitHub confirms the commit parent is baseline `af5fc7e7b10ac9941406f67bdf2a0cf2aa5b6b68`; compare shows exactly one new 256-line document, with no deletions.
+
+Static disposition: `CONDITIONAL_DESIGN_REVIEW; OPTION_D_REQUIRED_WITH_CURRENT_EVIDENCE`. The candidate's four-option analysis rejects circular/self-issued trust and correctly recommends no bootstrap absent a demonstrated independent root. Its receipt section separates durable pre-release record, attempt, observed operation result, delivery outcome, correlated receipt, canonical persistence/fetch-back, and later causal reuse. This repairs the previous document-level receipt-semantics finding; none of these runtime mechanisms is thereby verified.
+
+**Authority boundary:** no independent root, custodian, external verification channel, root mandate over IABV, or Owner-to-Windows-principal binding is established. The Governance Bootstrap Authority (GBA) remains a proposed role, not an existing service or authority. Option D is required by current evidence; it has not been recorded as an Owner ratification. The Owner/governance must either provide independently verifiable authority evidence or ratify no-bootstrap/fail-closed. Do not invent an authority, revisit broad Windows/TPM/OIDC/WebAuthn feasibility, repeat previous scans, or run automatic follow-on work.
+
+```text
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+ACTIVE_TASK=M1A_G1_TRUST_BOOTSTRAP_AUTHORITY_BOUNDARY
+LAST_TERMINAL_TASK=M1A_G1_GOVERNANCE_OWNED_BOOTSTRAP_AUTHORITY_DESIGN_ONLY
+DESIGN_RESULT=CONDITIONAL_DESIGN_REVIEW; OPTION_D_REQUIRED_WITH_CURRENT_EVIDENCE
+DESIGN_STATUS=DOCUMENTARY_CANDIDATE_NOT_ACCEPTED
+CANDIDATE_BRANCH=codex/m1a-g1-governance-owned-bootstrap-authority-design-20261023
+CANDIDATE_HEAD=675c3bdd046de04e4e7d6bb70d616dbce1354e06
+CANDIDATE_PARENT=af5fc7e7b10ac9941406f67bdf2a0cf2aa5b6b68
+CANDIDATE_BLOB=feb61c72e44ec61179fba7827515ab58348f4890
+ROOT_BOOTSTRAP_OPTION=D_REQUIRED_WITH_CURRENT_EVIDENCE
+EXISTING_TRUST_ROOT=NOT_ESTABLISHED
+ROOT_AUTHORITY_CUSTODIAN=UNRESOLVED
+ROOT_VERIFICATION_CHANNEL=UNRESOLVED
+OWNER_TO_BOOTSTRAP_AUTHORITY=NOT_ESTABLISHED
+OWNER_TO_WINDOWS_PRINCIPAL=NOT_ESTABLISHED
+BOOTSTRAP_AUTHORITY_TO_ISSUER=NOT_ESTABLISHED
+ISSUER_TO_EXACT_SERVER=NOT_ESTABLISHED
+RECEIPT_STAGE_SEMANTICS=DESIGN_DEFINED; NOT_RUNTIME_VERIFIED
+M1A_NORMATIVE_DESIGN=V1.0.1; ADOPTED_DESIGN_ONLY
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+GOVERNANCE=KEEP_BLOCKED
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3_VERSIONED_TARGET_RESOLVER=NOT_ESTABLISHED
+BRIDGE=BRIDGE_NOT_READY
+READ_LIST=FAIL_CLOSED
+TESTS=NOT_RUN
+BUILD=NOT_RUN
+RUNTIME=NOT_RUN
+REAL_TRANSPORT=NOT_RUN
+TPM_PREFLIGHT_BRANCH=CLOSED_FOR_NOW
+AUTOMATIC_FOLLOW_ON=FALSE
+NEXT_ACTION=OWNER_DECISION_ONLY
+NEXT_OWNER_DECISION=PROVIDE_VERIFIABLE_INDEPENDENT_AUTHORITY_EVIDENCE_OR_RATIFY_OPTION_D
+COORDINATOR_RUNTIME=NOT_PROVEN
+CAUSAL_SPACE_TIME_REUSE=NOT_PROVEN
+```
+
+This routing update is documentary only. It does not authorize credentials, services, protected reads, product implementation, tests, build, runtime, real transport, merge, deployment or block release.
+
+---
+
 ## OVERRIDING LATEST ROUTING — M1A G1 trust-bootstrap design candidate reconciled (2026-10-23)
 
 Static reconciliation receipt: [M1A G1 local trust-bootstrap boundary design — static reconciliation](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-23-M1A-G1-local-trust-bootstrap-boundary-design-static-reconciliation.md), blob `e9cdfb62c79f71aa7646a6f9ba5a74f80e65f736`. The candidate design is [here](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-23-M1A-G1-local-trust-bootstrap-boundary-design-candidate.md), immutable blob `ecbbdc0504fe4e337c40859472805fb2e08796d2`, commit `35fc8f2cb72d0394b85d34f9b6aa5157a834efc6`, isolated branch `codex/m1a-g1-local-trust-bootstrap-design-20261023`. GitHub independently confirms its parent is the reviewed baseline `30554c56e36101638fb24513a7a1590f88e41ad7` and its only change is the new 302-line design document.
