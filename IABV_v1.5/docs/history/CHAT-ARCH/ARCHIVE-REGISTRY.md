@@ -1,19 +1,14 @@
-## ACTIVE ARCHIVE / ROUTE POINTER — adopted M1A contract v1.0.0; targeted review next (2026-10-22)
+## ACTIVE ARCHIVE / ROUTE POINTER — M1A v1.0.0 review received; v1.0.1 candidate review next (2026-10-22)
 
-Routing authority: [CURRENT-STATE.md](./CURRENT-STATE.md). Active task: `M1A_CONSOLIDATED_SCOPE_CONTRACT_V1_TARGETED_ADVERSARIAL_REVIEW`; status `READY_FOR_INDEPENDENT_REVIEW; NOT_DISPATCHED`.
+Routing authority: [CURRENT-STATE.md](./CURRENT-STATE.md). Active task: `M1A_CONTRACT_V1_0_1_CANDIDATE_TARGETED_ADVERSARIAL_REVIEW`; `READY_FOR_INDEPENDENT_REVIEW; NOT_DISPATCHED`.
 
-The Owner accepted `ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE`. The accepted decision is in the [normalized ledger](./CHAT-ARCH-2026-10-22-M1A-normalized-scope-decision-ledger-and-design-amendment.md) (blob `3425144a661c713eb8898c1eacefb2d791519bc0`); the complete [operational-block scope contract v1.0.0](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md) is fetched back (blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e`). This is normative design adoption only.
+- Adopted, unchanged predecessor: [v1.0.0 contract](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md), blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e`.
+- Review finding register: [v1.0.0 `PASS_WITH_REPAIRS` receipt](./CHAT-ARCH-2026-10-22-M1A-contract-v1-sonnet-review-receipt-and-finding-register.md), blob `396606e5744f0b3d0332f8ee9f02ec14cdcea588`; 8 findings, all dispositions recorded, reviewer/session attribution `OWNER_REPORTED`.
+- Non-adopted successor: [v1.0.1 candidate](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1_0_1-candidate.md), blob `4befbbb352bed35f813b9ada2d3b672cf91e328a`; 38 proposed cases, `TESTS=NOT_RUN`.
+- Next bounded prompt: [v1.0.1 candidate review handoff](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-candidate-targeted-review-handoff.md), blob `bd50b9766c475035f9e3a1e55433254910430156`.
 
-Latest related records:
-- [M1A consolidated operational-block scope contract v1.0.0](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md) — adopted selector/trust/aggregation/legacy design, traceability matrix and 30 design cases; not implemented.
-- [Bounded review handoff for M1A contract v1.0.0](./CHAT-ARCH-2026-10-22-M1A-contract-v1-targeted-adversarial-review-handoff.md) — blob `26616d4244c218654fe37d31aed240e518cb94a0`; exact Sonnet review prompt, immutable target identity, evidence requirements and stop conditions.
-- [M1A normalized scope decision ledger](./CHAT-ARCH-2026-10-22-M1A-normalized-scope-decision-ledger-and-design-amendment.md) — records acceptance and the seven decision categories.
-- [UAAL construction-completeness / traceability overlay](./CHAT-ARCH-2026-10-22-UAAL-construction-completeness-traceability-overlay.md) — extension to UAAL/MOP; no parallel coordinator.
-- [Central space-time coordinator M1A reconciliation](./CHAT-ARCH-2026-10-22-central-space-time-coordinator-m1a-reconciliation.md) — derivation lineage and reuse of existing organs.
-- [Codex M1A scope-model proposal](./CHAT-ARCH-2026-10-22-M1A-Codex-scope-model-proposal.md) and [Claude/Sonnet-attributed review](./CHAT-ARCH-2026-10-22-M1A-independent-adversarial-review-claude.md) — immutable historical inputs; attribution of review invocation remains unverified.
-- [UAAL-ROOT-001](./UNIVERSAL-ADAPTIVE-ALGORITHM-CONSTITUTION-2026-10-04.md) and [Entry 274](./CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md) — parent algorithm and read/authority boundary.
+This is a documentation-only chain. It adds no runtime authority. The actual active-block-set attestation, trust anchor, catalogue publisher/revocation source, producer allowlist, operation-target resolver and independent block-release mechanism remain unverified/not established. Keep the exact operational state in CURRENT-STATE.md; do not treat old pointers below as the active task.
 
-**Residual blockers:** actual authenticated trust anchor/principal, catalogue publisher/revocation source, producer allowlist, target registry and actual call-site bindings, and independent block-release mechanism remain `UNVERIFIED/NOT_ESTABLISHED`. Keep `GOVERNANCE=KEEP_BLOCKED`, `IMPLEMENTATION=NOT_AUTHORIZED`, `TESTS=NOT_RUN`, `READ_LIST=FAIL_CLOSED`, `BRIDGE=BRIDGE_NOT_READY`.
 
 ---
 
