@@ -1,3 +1,26 @@
+## LATEST ROUTING — Owner authorized isolated G1–G3 candidate (2026-10-22)
+
+The single active task is now `M1A_G1_G3_AUTHORITY_ROUTE_CANDIDATE_IMPLEMENTATION`, authorized by the Owner for candidate-only work. See authoritative [CURRENT-STATE](./CURRENT-STATE.md) and the [copy-ready Codex handoff](./CHAT-ARCH-2026-10-22-M1A-G1-G3-governance-route-candidate-implementation-handoff.md). The isolated candidate branch is `codex/m1a-g1-g3-governance-route-candidate-implementation`, created from pinned public `main` SHA `60c8ac6e7ff425c815d9bdc7194bf20ef8d134db`. The handoff is prepared but has not been dispatched.
+
+The goal is not to bypass the current denial. The goal is to implement only evidence-backed G1 trust principal/root, G2 authorized catalogue/producer/revocation authority, and G3 versioned operation-to-target resolution. Missing real authority means stop and report the exact dependency, not invent a key, issuer, allowlist, resolver or independent block-release principal.
+
+```text
+ACTIVE_TASK=M1A_G1_G3_AUTHORITY_ROUTE_CANDIDATE_IMPLEMENTATION
+CODEX_PROMPT_DISPATCHED=NO
+IMPLEMENTATION=AUTHORIZED_FOR_ISOLATED_CANDIDATE_ONLY
+GOVERNANCE=KEEP_BLOCKED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+TESTS=NOT_RUN
+BUILD=NOT_RUN
+RUNTIME=NOT_RUN
+REAL_TRANSPORT=NOT_RUN
+BRIDGE=BRIDGE_NOT_READY
+```
+
+Historical entries below remain for provenance; use CURRENT-STATE for the active task.
+
+---
+
 ## ACTIVE ROUTING — M1A v1.0.1 adopted for normative design; G1–G3 authority route unresolved (2026-10-22)
 
 **Read [CURRENT-STATE.md](docs/history/CHAT-ARCH/CURRENT-STATE.md) first.** It remains the sole active-task and next-actor authority.
