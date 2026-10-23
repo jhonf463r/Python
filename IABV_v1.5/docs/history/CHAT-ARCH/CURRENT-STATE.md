@@ -1,47 +1,44 @@
-# CURRENT ROUTING SNAPSHOT — 2026-10-22 (M1A v1.0.1 NORMATIVE DESIGN ADOPTED; OPERATIONAL BLOCKS REMAIN)
+# CURRENT ROUTING SNAPSHOT — 2026-10-22 (V1.0.0 REMAINS ADOPTED; V1.0.1 REVIEWED CANDIDATE NOT ADOPTED; OPERATIONAL BLOCKS REMAIN)
 
-## LATEST ROUTING DELTA — Owner adopted successor design; next gate is documentary prerequisite reconciliation
+## LATEST ROUTING DELTA — correct the attempted adoption; continue the bounded documentary task only
 
-The Owner replied `ok procede` immediately after the coordinator recommended accepting M1A v1.0.1 as the new normative design baseline only and presented two explicit choices. This is recorded as contextual assent to the recommendation, not as a verbatim machine token. The [Owner adoption receipt](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-owner-adoption-receipt.md), blob `80646b73b35f6a3f4807f6f59800a45aca51503e`, documents the wording and its interpretation transparently.
+The Owner's exact message was `ok procede`. Although the coordinator initially interpreted it as assent to adopting v1.0.1, the existing UAAL construction-completeness overlay C1 explicitly distinguishes permission to continue bounded documentary work from adoption of a separate pending policy. The required explicit successor acceptance token was not supplied. Therefore **no effective v1.0.1 adoption occurred**. The prior interpretation has been withdrawn and recorded in the [adoption correction record](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-owner-adoption-correction.md), blob `bc1e7e97c85671753f79cf9916e640e02f6b642d`.
 
-### Adopted design artifacts and review provenance
+The former [Owner adoption receipt path](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-owner-adoption-receipt.md), now blob `7655b8599a8eabb0dd3d62817f8e591ab8d64555`, is a correction notice with status `NO_EFFECTIVE_ADOPTION`. The attempted adopted-contract copy at [this path](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1_0_1.md), blob `954b5dc6cd5ba496fc9342c2c1def6448fe353dc`, is a non-effective tombstone; its prior contents remain in Git history only. Neither is normative authority.
 
-- **Current normative design baseline:** [M1A contract v1.0.1](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1_0_1.md), blob `baa39a09b97117df1dbe46804affdcebc7159f30`.
-- **Reviewed source candidate, immutable:** blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f`; it remains preserved to bind the report to exactly what was reviewed.
-- **Superseded predecessor, immutable:** v1.0.0 blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e`.
-- **Review receipt / metadata correction:** [v1.0.1 receipt](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-receipt-and-reconciliation.md), blob `000b81b079c5febd8d78afebedf782d1d1e263fa`. Reviewer-reported verdict is `PASS_WITH_REPAIRS`; F-M1A-01..08 are reported passing but were not independently re-performed by the coordinator. The reviewer confirms the exact blob identity via a reported fresh-clone Git hash check. The prior unverified date was retracted; `REVIEW_TIMESTAMP=UNVERIFIABLE`; review-session attribution remains `OWNER_REPORTED`.
-- **Finding disposition:** FN-M1A-V101-01 is a nonblocking traceability clarification tied to F-M1A-05. FN-M1A-V101-02 was cross-checked against the pinned overlay and is not confirmed as a defect. All seven adopted choices OG-M1A-01..07 remain unchanged.
+### Effective design artifacts and review provenance
 
-### Design-adoption boundary
-
-v1.0.1 is adopted as the **normative design baseline only**. This does not imply implementation, test, runtime, transport, protected-read or block-release readiness. The trusted runtime principal/anchor, authenticated complete active-block-set attestation, trusted catalogue publisher/revocation source, producer allowlist, real operation-to-target resolver/call-site bindings and independent block-release mechanism remain unverified or not established.
+- **Only currently adopted normative design baseline:** [M1A v1.0.0 contract](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md), blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e`.
+- **Reviewed successor candidate, not adopted:** [v1.0.1 candidate](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1_0_1-candidate.md), blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f`.
+- **Review receipt:** [v1.0.1 receipt and reconciliation](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-receipt-and-reconciliation.md), blob `000b81b079c5febd8d78afebedf782d1d1e263fa`. The reviewer-reported verdict is `PASS_WITH_REPAIRS`; F-M1A-01..08 are reported passing but not independently re-performed by the coordinator. The reviewer says a fresh clone plus `git rev-parse HEAD:<path>` matched the exact candidate blob. The prior review date was retracted; `REVIEW_TIMESTAMP=UNVERIFIABLE`; session/invocation attribution remains `OWNER_REPORTED`.
+- FN-M1A-V101-01 is a nonblocking traceability clarification tied to F-M1A-05. FN-M1A-V101-02 was checked against the pinned overlay and is not confirmed as a defect. OG-M1A-01..07 remain unchanged.
 
 ### Current active task
 
 `M1A_V1_0_1_IMPLEMENTATION_PREREQUISITE_EVIDENCE_RECONCILIATION`
 
-- **Mode:** documentary only, bounded to the already-pinned normative contract, Entry 274, UAAL-ROOT-001, the construction-completeness overlay, the review receipt and this route.
+- **Mode:** bounded documentary analysis of the eight requirements in §10 of the v1.0.1 candidate, not adoption of those requirements as current policy.
 - **Next actor:** ChatGPT coordinator.
-- **Objective:** produce one traceable gate matrix for the v1.0.1 contract's eight future implementation prerequisites (§10), distinguishing design requirement, required authority/evidence, canonical source, currently known status, and exact closure receipt needed. Reuse the existing documents; do not create parallel governance or scan source.
-- **Exclusions:** no local checkout, `data/`, SQLite, secrets or `.env`; no product-source edits, code, tests, build, runtime, transport, protected read, merge, deployment or block release. Any later implementation would require separate explicit authorization after the matrix is reconciled.
-- **Status:** `READY_FOR_BOUNDED_DOCUMENTARY_WORK`; implementation remains unauthorized.
+- **Objective:** create one traceable evidence-gate matrix distinguishing candidate design requirements, governing sources, currently known state, exact closure evidence, and the actor/authority that could supply it. Reuse only already-pinned documents; no source scan.
+- **Authorization:** the Owner's `ok procede` authorizes continuation of this bounded documentary work only; it does not adopt v1.0.1.
+- **Next adoption gate after the matrix:** the Owner must explicitly provide `ACCEPT_M1A_V1_0_1_SUCCESSOR_BASELINE` or `RETAIN_M1A_V1_0_0_BASELINE`. Until then, v1.0.0 remains the adopted baseline.
+- **Exclusions:** no local checkout, `data/`, SQLite, secrets or `.env`; no product-source edits, code, tests, build, runtime, transport, protected read, merge, deployment or block release.
+- **Status:** `READY_FOR_BOUNDED_DOCUMENTARY_WORK`.
 
 ```text
 PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
 PARENT_CONCEPT=UAAL-ROOT-001
 OWNER_DESIGN_ACCEPTANCE=ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE
-V1_0_0_PREDECESSOR_BLOB=8181c7c0cf6036c76cf365510e8d9665cf84e57e
-V1_0_0_STATUS=SUPERSEDED_DESIGN_PREDECESSOR; IMMUTABLE
-V1_0_1_BASELINE=NORMATIVE_DESIGN_BASELINE_ADOPTED
-V1_0_1_ADOPTED_BLOB=baa39a09b97117df1dbe46804affdcebc7159f30
-V1_0_1_REVIEWED_SOURCE_BLOB=7c72474a5f7c114c02320c177d6ea2aea68ad28f
+V1_0_0_BASELINE=NORMATIVE_DESIGN_BASELINE_ADOPTED; IMMUTABLE
+V1_0_0_BLOB=8181c7c0cf6036c76cf365510e8d9665cf84e
+V1_0_1_REVIEWED_CANDIDATE_BLOB=7c72474a5f7c114c02320c177d6ea2aea68ad28f
+V1_0_1_STATUS=NOT_ADOPTED_PENDING_EXPLICIT_OWNER_DECISION
 V1_0_1_REVIEW_VERDICT=OWNER_REPORTED_PASS_WITH_REPAIRS
 REVIEW_TIMESTAMP=UNVERIFIABLE
 REVIEW_SESSION_ATTRIBUTION=OWNER_REPORTED
-OWNER_ADOPTION_PROVENANCE=CONTEXTUAL_ASSENT: "ok procede"
-F_M1A_01_08=REPORTED_PASS; NOT_INDEPENDENTLY_REPERFORMED
-FN_M1A_V101_01=NONBLOCKING_TRACEABILITY_CLARIFICATION_RECORDED
-FN_M1A_V101_02=COORDINATOR_CROSS_CHECKED; NO_DEFECT_CONFIRMED
+OWNER_MESSAGE="ok procede"; AUTHORITY=BOUNDED_DOCUMENTARY_CONTINUATION_ONLY
+V1_0_1_ADOPTION=NOT_RECORDED
+FALSE_ADOPTION_INTERPRETATION=WITHDRAWN; HISTORY_PRESERVED
 ACTIVE_TASK=M1A_V1_0_1_IMPLEMENTATION_PREREQUISITE_EVIDENCE_RECONCILIATION
 CURRENT_STATUS=READY_FOR_BOUNDED_DOCUMENTARY_WORK
 RUNTIME_TRUST_ANCHOR=UNVERIFIED
