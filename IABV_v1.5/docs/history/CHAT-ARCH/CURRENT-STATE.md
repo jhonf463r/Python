@@ -1,3 +1,44 @@
+## OVERRIDING LATEST ROUTING — Owner authorized bounded G1 bootstrap implementation attempt (2026-10-22)
+
+The Owner accepted `ACCEPT_G1_TRUST_BOOTSTRAP_POLICY_AND_AUTHORIZE_CANDIDATE_ONLY` and has now directed the coordinator to proceed with solving the remaining prerequisite. The prior attempt ended before code edits with `BLOCKED_MISSING_G1_TRUST_ANCHOR`; its result remains historical and accurate for that attempt. The new active task is `M1A_G1_TRUST_BOOTSTRAP_CANDIDATE_IMPLEMENTATION`, on the exact isolated public branch `m1a-g1-g3-governance-route-candidate-20261022`, pinned base `60c8ac6e7ff425c815d9bdc7194bf20ef8d134db`.
+
+The new bounded Codex handoff is [G1 trust-bootstrap candidate implementation](./CHAT-ARCH-2026-10-22-M1A-G1-trust-bootstrap-candidate-implementation-handoff.md), blob `90d7640c5da3a5c71e205de61121da1d42998f97`. In this response the complete prompt must also be provided inline for `Codex — existing UI/session`; the GitHub copy is supplemental. `CODEX_PROMPT_DISPATCHED=NO` until Codex supplies a correlated result.
+
+The scope is now to attempt a concrete, explicit Owner-controlled bootstrap/enrollment boundary inside the isolated candidate, not to repeat the prior feasibility report or broad source inventory. Windows WebAuthn/Hello remains only a candidate Owner-authentication factor; implement no assumed local capability or implicit root. A real issuer credential, Owner-to-issuer-to-server binding, and enforced OS/process separation must be demonstrated. If a real, independently trusted bootstrap cannot be implemented without fabricated trust or unsupported platform assumptions, stop with the exact gap. No self-enrollment stub or class-name-only separation.
+
+The candidate branch was independently fetched from GitHub on this turn and still points to base/head `60c8ac6e7ff425c815d9bdc7194bf20ef8d134db`, tree `ca963f8013809d4efcf56133a37d2efe148517e9`. No product source changes have been made. The new authorization remains candidate-only and does not authorize local checkout access, platform probing/configuration, credential enrollment, tests, builds, runtime, service installation, real transport, protected reads, merge, deploy or block release. G1 and all other implementation gates remain open until evidence supports their closure.
+
+```text
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+ACTIVE_TASK=M1A_G1_TRUST_BOOTSTRAP_CANDIDATE_IMPLEMENTATION
+PARENT_TASK=M1A_G1_TRUST_BOOTSTRAP_AUTHORITY_BOUNDARY
+STATUS=OWNER_AUTHORIZED; HANDOFF_READY_NOT_DISPATCHED
+PRIOR_ATTEMPT=BLOCKED_MISSING_G1_TRUST_ANCHOR; SOURCE_CHANGES_NONE
+OWNER_TRUST_BOOTSTRAP_POLICY=ACCEPTED_FOR_CANDIDATE_ATTEMPT
+CANDIDATE_BRANCH=m1a-g1-g3-governance-route-candidate-20261022
+CANDIDATE_BASE=60c8ac6e7ff425c815d9bdc7194bf20ef8d134db
+CANDIDATE_HEAD=60c8ac6e7ff425c815d9bdc7194bf20ef8d134db; DIRECT_GITHUB_FETCH_CONFIRMED
+CODEX_PROMPT_DISPATCHED=NO
+PROMPT_DELIVERY_MODE=INLINE_IN_CHAT; NO_EXTERNAL_RETRIEVAL_REQUIRED
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3_VERSIONED_TARGET_RESOLVER=NOT_ESTABLISHED
+IMPLEMENTATION=AUTHORIZED_FOR_ISOLATED_CANDIDATE_ONLY
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+GOVERNANCE=KEEP_BLOCKED
+TESTS=NOT_RUN
+BUILD=NOT_RUN
+RUNTIME=NOT_RUN
+REAL_TRANSPORT=NOT_RUN
+LOCAL_SOURCE_READ=NOT_RUN
+PROTECTED_LOCAL_READ=NOT_AUTHORIZED
+MERGE_DEPLOY=NOT_AUTHORIZED
+BLOCK_RELEASE=NOT_AUTHORIZED
+BRIDGE=BRIDGE_NOT_READY
+```
+
+---
+
 ## LATEST ROUTING DELTA — Owner accepted G1 trust policy; isolated attempt stopped at missing bootstrap trust authority (2026-10-22)
 
 The Owner supplied the exact authorization `ACCEPT_G1_TRUST_BOOTSTRAP_POLICY_AND_AUTHORIZE_CANDIDATE_ONLY`. The bounded G1 attempt is therefore authorized in the isolated candidate, but the attempt terminated before source edits with `BLOCKED_MISSING_G1_TRUST_ANCHOR`: the pinned public code does not establish an independently trusted enrollment/registration path binding the real Owner principal to an issuer credential and exact server instance, nor an effective issuer/requester/reader separation boundary. No key, issuer, trust record or permission was fabricated.
