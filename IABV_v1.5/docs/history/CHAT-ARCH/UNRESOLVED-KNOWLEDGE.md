@@ -1,5 +1,18 @@
 ## Active unresolved knowledge — v1.0.1 adoption pending; implementation gates open (2026-10-22)
 
+### M1A_G1_INDEPENDENT_TPM_PIN_DESIGN — unresolved authority evidence (2026-10-23)
+
+- **Concept:** `UAAL-D017`, child of `UAAL-ROOT-001`.
+- **Canonical receipt:** [Independent TPM identity-pin design](./CHAT-ARCH-2026-10-23-M1A-G1-independent-TPM-pin-design.md), blob `7ff1580af2f45c0606f21daf2f966b76ead7e7ac`.
+- **Status:** `BLOCKED_NO_INDEPENDENT_ENROLLMENT_PATH`; static design only.
+- **Verified negative knowledge:** GitHub approval is not machine-claim verification; a target-displayed EK fingerprint is not an independent pin; TPM key non-exportability does not bind a key to the exact live server process; measured-boot evidence is not arbitrary process attestation.
+- **Unverified:** TPM availability, EKCert/chain existence, independent mapping to the Owner's intended device, exact-server binding, reader verification and revocation.
+- **Falsifier/reopening condition:** verifiable evidence of an already-existing independent TPM identity source plus a separate exact-instance and reader-verification mechanism, or a separately adopted and authorized trust source. This does not claim global impossibility.
+- **Do not repeat:** Windows trust bootstrap candidate, GitHub manifest/TPM review, Google OIDC review, personal phone/passkey setup.
+- **Next open edge:** Owner decision on a distinct bounded read-only assessment of existing trust assets; that assessment is not authorized by this entry alone.
+- **Governance:** `KEEP_BLOCKED`; no local probe, authentication, key/credential creation, tests/build/runtime, implementation or block release.
+
+
 The effective normative baseline remains v1.0.0, blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e`. The v1.0.1 successor candidate, blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f`, is not adopted until an exact Owner token is received. The Owner's `ok procede` means bounded documentary continuation only under overlay C1; the earlier coordinator adoption interpretation was withdrawn in [the correction record](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-owner-adoption-correction.md), blob `bc1e7e97c85671753f79cf9916e640e02f6b642d`.
 
 The [review receipt](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-receipt-and-reconciliation.md), blob `ffd96aa031ff4e2460352e7f840e720fa9429dfc`, preserves the reported `PASS_WITH_REPAIRS`, `REVIEW_TIMESTAMP=UNVERIFIABLE`, and `OWNER_REPORTED` session attribution. F-M1A-01..08 were reported passing, not independently re-performed by the coordinator. FN-M1A-V101-01 is a nonblocking C30 traceability clarification; FN-M1A-V101-02 is not confirmed as a defect after the overlay cross-check.

@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "concept_root_id": "UAAL-ROOT-001",
-  "updated_at": "2026-10-05",
+  "updated_at": "2026-10-23",
   "authority": {
     "conceptual": "docs/history/CHAT-ARCH/UNIVERSAL-ADAPTIVE-ALGORITHM-CONSTITUTION-2026-10-04.md",
     "routing": "docs/history/CHAT-ARCH/CURRENT-STATE.md",
@@ -245,6 +245,30 @@
         "ROLLBACK"
       ],
       "next_open_edge": "verified improvement proposal → isolated executable code variant → baseline/candidate comparison → independent verification → governed production-code promotion"
+    },
+    {
+      "id": "UAAL-D017",
+      "parent": "UAAL-ROOT-001",
+      "type": "DESIGN",
+      "origin_type": "EVIDENCE_DERIVED_COORDINATION",
+      "status": "DESIGN_CANDIDATE_BLOCKED_NO_INDEPENDENT_ENROLLMENT_PATH",
+      "title": "Independent Trust Bootstrap and Exact-Instance Evidence Boundary",
+      "source_records": [
+        "CHAT-ARCH-2026-10-23-M1A-G1-independent-TPM-pin-design.md",
+        "UNIVERSAL-ADAPTIVE-ALGORITHM-CONSTITUTION-2026-10-04.md",
+        "CHAT-ARCH-2026-10-22-UAAL-construction-completeness-traceability-overlay.md"
+      ],
+      "derivation_reason": "A trust-bootstrap route must establish independent evidence provenance, Owner authority, TPM/issuer binding, exact server-instance binding, independent reader verification and revocation as separate edges. A plausible local mechanism is not enough.",
+      "universal_invariant": "claim → provenance → independent identity verification → transaction-specific authority → protected credential binding → exact-instance binding → independent reader/revocation check → governed action",
+      "negative_knowledge": [
+        "GitHub approval is not machine-claim verification.",
+        "A target-displayed EKPub fingerprint is not an independent identity source.",
+        "TPM key non-exportability is not exact running process identity.",
+        "Measured boot is not by itself arbitrary live-process attestation.",
+        "An allowlist without independently established initial contents relocates rather than solves bootstrap trust."
+      ],
+      "falsifier": "New source evidence proves an already available independent TPM identity source and a separate, defensible exact-instance/reader-verification path without an unapproved trust root or excluded infrastructure.",
+      "next_open_edge": "Owner decision on a distinct, bounded read-only assessment of existing trust assets; not authorized by the static design task."
     }
   ],
   "protocol_version": "UAAL-TRACE-1",

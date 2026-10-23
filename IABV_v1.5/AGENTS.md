@@ -1,3 +1,35 @@
+## OVERRIDING LATEST ROUTING — Independent TPM identity-pin design terminal (2026-10-23)
+
+The bounded task `M1A_G1_INDEPENDENT_TPM_PIN_DESIGN` is terminal with `BLOCKED_NO_INDEPENDENT_ENROLLMENT_PATH`. The source-grounded report is [here](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-23-M1A-G1-independent-TPM-pin-design.md), blob `7ff1580af2f45c0606f21daf2f966b76ead7e7ac`. Design-only; it does not create a trust root or release a gate.
+
+The review found no currently evidenced independent TPM identity source plus exact-server-instance binding that satisfies current constraints. Microsoft's documented trust methods require an already trusted EKPub allowlist or a validated manufacturer certificate chain; trusting the target client's own assertion is not independent. EKCert presence is not universal. A TPM-backed non-exportable key and measured-boot evidence do not, alone, prove the exact live IABV server process. No local or runtime evidence was gathered.
+
+Do not repeat the Windows candidate, GitHub-manifest/TPM, Google OIDC or phone/passkey feasibility investigations. GitHub account ID `28608338` remains unadopted. The Owner's priority remains unblocking IABV with minimal friction and no unapproved service or spend.
+
+```text
+ACTIVE_TASK=M1A_G1_TRUST_BOOTSTRAP_AUTHORITY_BOUNDARY
+LAST_TERMINAL_TASK=M1A_G1_INDEPENDENT_TPM_PIN_DESIGN
+STATUS=BLOCKED_MISSING_G1_TRUST_ANCHOR
+LAST_REVIEW_RESULT=BLOCKED_NO_INDEPENDENT_ENROLLMENT_PATH
+INDEPENDENT_TPM_IDENTITY_SOURCE=NOT_ESTABLISHED
+TPM_AVAILABILITY=UNVERIFIED
+TPM_ATTESTATION_TRUST=NOT_ESTABLISHED
+OWNER_TO_WINDOWS_PRINCIPAL=NOT_ESTABLISHED
+OWNER_TO_ISSUER=NOT_ESTABLISHED
+ISSUER_TO_EXACT_SERVER=NOT_ESTABLISHED
+READER_VERIFICATION=NOT_ESTABLISHED_END_TO_END
+REVOCATION_AUTHORITY_AND_CONSISTENCY=NOT_ESTABLISHED
+GOVERNANCE=KEEP_BLOCKED
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3_VERSIONED_TARGET_RESOLVER=NOT_ESTABLISHED
+BRIDGE=BRIDGE_NOT_READY
+NEXT_ACTION=OWNER_DECISION_ONLY; DISTINCT_READ_ONLY_ASSESSMENT_NOT_AUTHORIZED
+AUTOMATIC_FOLLOW_ON=FALSE
+```
+
+---
+
 ## OVERRIDING LATEST ROUTING — M1A G1 new-chat continuity handoff (2026-10-23)
 
 The latest bounded review `M1A_G1_OWNER_APPROVED_MANIFEST_TPM_BOUND_ISSUER_REVIEW` remains terminal at `BLOCKED_NO_INDEPENDENT_ENROLLMENT_PATH`; no trust gate has closed. Read [the complete new-chat continuity handoff](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-23-M1A-G1-new-chat-continuity-handoff.md), blob `949f47a32c6f3fa303cdcb6d493784ffb7dccbd1`, after verifying the current remote main and reading the canonical five-file preflight. Parent main at writeback was `76708568d441b6172425367ae287b69a280cec38`; the review receipt captures the prior Windows, GitHub, phone/passkey, Google OIDC and TPM conclusions, including provenance, anti-repeat routing and the path-writeback correction lesson.
