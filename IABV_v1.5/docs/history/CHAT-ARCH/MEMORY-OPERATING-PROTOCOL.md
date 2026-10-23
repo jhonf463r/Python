@@ -7,6 +7,7 @@ A separate candidate branch was created from public-main SHA `60c8ac6e7ff425c815
 The Owner's authorization is limited to this candidate. No access to the pre-existing checkout/data/SQLite/secrets, no tests/build/runtime/process launch/real transport, no merge/deploy, and no protected read or block release. The eight implementation gates remain open.
 
 **Cross-chat interaction rule:** on every relevant turn, deliver the complete, self-contained destination-AI prompt inline in the ChatGPT response, with the recipient UI/session named. Do not direct the Owner to GitHub or another page just to fetch the prompt. GitHub is for persistence and verification, not a substitute for copy-ready delivery. The only manual step should be copying from this chat into the named AI session. Never claim dispatch without a real invocation/receipt. See [coordination protocol §13](./CHAT-ARCH-2026-10-22-adhd-aware-project-coordination-and-space-time-focus-protocol.md).
+**Incident record for new-chat restoration:** [inline-prompt delivery and new-chat continuity correction](./CHAT-ARCH-2026-10-22-inline-prompt-delivery-and-new-chat-continuity-correction.md), blob `07182ca1254e631ffa396c118af3184cb90dc7d3`. The previous external-link-only handoff caused avoidable manual work; the correction is documented, but cross-chat reuse remains unproven until future behavior follows the rule.
 
 ```text
 ACTIVE_TASK=M1A_G1_G3_AUTHORITY_ROUTE_CANDIDATE_IMPLEMENTATION
