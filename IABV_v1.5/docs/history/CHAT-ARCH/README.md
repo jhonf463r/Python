@@ -23,6 +23,8 @@ BRIDGE=BRIDGE_NOT_READY
 ```
 No local checkout/data/SQLite/secrets inspection, product-source changes, tests, build, runtime, transport, merge, deployment, protected read or block release.
 
+
+**Historical-scope notice:** all routing text retained below the divider is preserved for provenance only. It does not supersede the current active task in `CURRENT-STATE.md`, and any older task pointers or implementation-authority statements are historical.
 ---
 
 ## Historical M1 checkpoint — superseded by CURRENT-STATE routing (2026-10-22)
