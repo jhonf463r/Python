@@ -1,27 +1,27 @@
-## ACTIVE ROUTING — M1A review repairs reconciled; v1.0.1 candidate review next (2026-10-22)
+## ACTIVE ROUTING — M1A v1.0.1 report received; metadata correction next (2026-10-22)
 
-**Read [CURRENT-STATE.md](./CURRENT-STATE.md) first.** Its top snapshot is the sole active-task authority. The Owner's exact `ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE` remains the accepted decision for v1.0.0; the review findings do not reopen it.
+**Read [CURRENT-STATE.md](./CURRENT-STATE.md) first.** It remains the sole active-task authority. The Owner's `ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE` remains adopted for v1.0.0 only.
 
-**Review receipt:** v1.0.0 received `PASS_WITH_REPAIRS` (2 HIGH, 3 MEDIUM, 3 LOW) from an Owner-pasted report attributed to Sonnet 4.6; execution attribution remains `OWNER_REPORTED`. [Finding register](./CHAT-ARCH-2026-10-22-M1A-contract-v1-sonnet-review-receipt-and-finding-register.md) blob `396606e5744f0b3d0332f8ee9f02ec14cdcea588`.
+**Received report:** the Owner pasted a Sonnet 4.6-attributed `PASS_WITH_REPAIRS` report for v1.0.1 blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f`. Its stated date 2026-10-20 conflicts with GitHub history showing the final candidate committed at 2026-10-22 19:36:28 America/Bogota. Attribution stays `OWNER_REPORTED`; correct the timestamp before treating remote retrieval provenance as verified. [Receipt/reconciliation](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-receipt-and-reconciliation.md), blob `1b0685fa273329513254a0b10180f1513edfc67b`.
 
-**Successor candidate:** [M1A scope contract v1.0.1 candidate](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1_0_1-candidate.md) blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f`, currently `NOT_ADOPTED`. v1.0.0 remains the immutable accepted baseline until the successor review and canonical routing are complete. The candidate does not assert working runtime trust/registry/resolver/revocation/release capabilities.
+**Single active task:** `M1A_V1_0_1_REVIEW_REPORT_METADATA_CORRECTION`. **IA DESTINO:** Sonnet 4.6 in the same Owner-reported Antigravity session. **Prompt:** [metadata-correction handoff](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-metadata-correction-handoff.md), blob `58d0e2acb2c63bf08dd5725fd278f67bad9ac4b9`. `NOT_DISPATCHED` until the Owner pastes the prompt and a correction/report is returned.
 
-**Single active task:** `M1A_CONTRACT_V1_0_1_CANDIDATE_TARGETED_ADVERSARIAL_REVIEW`. **IA DESTINO:** Sonnet 4.6 in the Owner-reported existing Antigravity session, only if it can receive/verify the exact inputs. **Prompt/handoff:** [bounded v1.0.1 review handoff](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-candidate-targeted-review-handoff.md), blob `5612ada32a145d23cc836792cdf02608f4a706a3`. `REVIEW_DISPATCH=NOT_DISPATCHED` until a correlated report arrives.
-
-Architectural lineage remains unchanged: UAAL-ROOT-001 is the parent adaptive loop; Memory Operating Protocol owns retrieval/provenance/reconciliation/reuse; Development Control Tower and goal-lock/anti-drift preserve the North Star and one active task; Entry 274 keeps diagnostics, fresh approval, server-side decision, reader verification, durable receipt and block release separate; the construction-completeness overlay supplies bidirectional traceability, coverage and fetch-back gates.
+The v1.0.1 successor remains `NOT_ADOPTED`; v1.0.0 remains the adopted baseline. The C30 wording delta is documented as nonblocking; overlay cross-reference IDs C2/C3/C5/C7 were independently checked by the coordinator, with no defect confirmed for FN-M1A-V101-02.
 
 ```text
-ACTIVE_TASK=M1A_CONTRACT_V1_0_1_CANDIDATE_TARGETED_ADVERSARIAL_REVIEW
+ACTIVE_TASK=M1A_V1_0_1_REVIEW_REPORT_METADATA_CORRECTION
 CANDIDATE_BLOB=7c72474a5f7c114c02320c177d6ea2aea68ad28f
-CANDIDATE_STATUS=NOT_ADOPTED_PENDING_TARGETED_REVIEW
+CANDIDATE_STATUS=NOT_ADOPTED
+REVIEW_VERDICT=OWNER_REPORTED_PASS_WITH_REPAIRS
+REVIEW_TIMESTAMP=INCONSISTENT; CORRECTION_PENDING
 GOVERNANCE=KEEP_BLOCKED
 IMPLEMENTATION=NOT_AUTHORIZED
 TESTS=NOT_RUN
 READ_LIST=FAIL_CLOSED
 BRIDGE=BRIDGE_NOT_READY
 ```
-
 No broad repository scan, local checkout/data/SQLite/secrets inspection, source changes, tests, build, runtime, transport, merge, deployment, protected read or block release.
+
 ---
 
 ## Historical M1 checkpoint — superseded by CURRENT-STATE routing (2026-10-22)
