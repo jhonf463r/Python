@@ -3,7 +3,7 @@
 - Date: 2026-10-22, America/Bogota.
 - Task: `M1A_V1_0_1_IMPLEMENTATION_PREREQUISITE_EVIDENCE_RECONCILIATION`.
 - Mode: bounded documentary reconciliation only.
-- Normative baseline currently in force: M1A v1.0.0, blob `8181c7c0cf6036c76cf365510e8d9665cf84e`.
+- Normative baseline currently in force: M1A v1.0.0, blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e`.
 - Examined successor proposal: v1.0.1 review candidate blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f`; `NOT_ADOPTED_PENDING_EXPLICIT_OWNER_DECISION`.
 - Review report: `OWNER_REPORTED_PASS_WITH_REPAIRS`; actual review timestamp `UNVERIFIABLE`; reviewer/session attribution `OWNER_REPORTED`.
 - Governing sources: [v1.0.1 candidate §10](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1_0_1-candidate.md), [Entry 274](./CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md), [UAAL-ROOT-001](./UNIVERSAL-ADAPTIVE-ALGORITHM-CONSTITUTION-2026-10-04.md), [construction-completeness overlay](./CHAT-ARCH-2026-10-22-UAAL-construction-completeness-traceability-overlay.md), and [CURRENT-STATE](./CURRENT-STATE.md).
@@ -57,7 +57,7 @@ The immediate missing dependency is **a supported, governance-owned route and na
 After the matrix is fetched back and reconciled, the separate pending design-policy question remains the explicit v1.0.1 adoption choice. Until the Owner sends the exact token, v1.0.0 remains the only adopted normative baseline.
 
 ```text
-MATRIX_STATUS=DOCUMENTED; FETCH_BACK_REQUIRED
+MATRIX_STATUS=DOCUMENTED; FETCH_BACK_VERIFIED; IDS_RECONCILED
 V1_0_0_BASELINE=ADOPTED; IMMUTABLE
 V1_0_1_CANDIDATE=NOT_ADOPTED_PENDING_EXPLICIT_OWNER_DECISION
 IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
