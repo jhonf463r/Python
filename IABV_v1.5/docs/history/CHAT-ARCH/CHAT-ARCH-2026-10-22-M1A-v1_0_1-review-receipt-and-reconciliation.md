@@ -5,8 +5,8 @@
 - Receipt class: `OWNER_SUPPLIED_REVIEW_REPORT; SESSION_ATTRIBUTION_NOT_AUTHENTICATED`.
 - Candidate target: `7c72474a5f7c114c02320c177d6ea2aea68ad28f`.
 - Reported verdict: `PASS_WITH_REPAIRS` — retained as the report's verdict, not upgraded to independently authenticated review evidence.
-- Review date stated in the supplied report: `2026-10-20`; timestamp absent; report says its environment timezone was UTC and the project timezone is `America/Bogota`.
-- Chronology disposition: `REVIEW_TIMESTAMP_INCONSISTENT_NEEDS_CORRECTION`.
+- Initial review date in the supplied report: `2026-10-20`; the reviewer later explicitly retracted it as unverified. Corrected state: `REVIEW_TIMESTAMP=UNVERIFIABLE`; do not infer a date/time.
+- Chronology disposition: `INITIAL_DATE_RETRACTED; REVIEW_TIMESTAMP=UNVERIFIABLE; EXACT_BLOB_IDENTITY=REVIEWER_REPORTED_CONFIRMED`.
 - Candidate adoption: `NOT_ADOPTED`; v1.0.0 remains the Owner-adopted baseline.
 - Operational posture unchanged: `GOVERNANCE=KEEP_BLOCKED`; `IMPLEMENTATION=NOT_AUTHORIZED`; `TESTS=NOT_RUN`; `READ_LIST=FAIL_CLOSED`; `BRIDGE=BRIDGE_NOT_READY`.
 
@@ -21,7 +21,7 @@ The Owner supplied a report attributed to Sonnet 4.6 / Antigravity. It states th
 - raised FN-M1A-V101-01 (LOW), a traceability clarification for the stronger C30 wording, and FN-M1A-V101-02 (LOW), an unverified cross-reference mapping in the construction-completeness overlay;
 - explicitly denied any implementation/runtime/test/permission claim.
 
-The submitted report is the evidence for those reported findings. Its reviewer identity, exact invocation, timestamps and hash-check operation remain Owner-reported unless the reviewer corrects the chronology and confirms the exact target retrieval.
+The submitted report and the reviewer's subsequent metadata correction are Owner-supplied evidence. Reviewer/session identity and invocation remain `OWNER_REPORTED`; the reviewer explicitly confirms the exact blob identity by reporting `git rev-parse HEAD:<path>` from a fresh clone. The correction retracts the unsupported date and leaves the actual review timestamp unverified.
 
 ## 2. Independent GitHub identity check performed by the coordinator
 
@@ -39,14 +39,14 @@ Current GitHub fetch-back returned the following exact blobs:
 
 This table records the coordinator's present fetch-back, not independent proof that the external reviewer performed the same fetch at the time claimed.
 
-## 3. Chronology discrepancy
+## 3. Chronology discrepancy and reviewer correction
 
 GitHub's candidate-path commit history shows:
 - `8aa08b2ad05106d1addd50b8127db518a37bb0c4`, candidate drafted at `2026-10-23T00:30:02Z` = `2026-10-22 19:30:02 America/Bogota`;
 - `04f2cfa455ede1901e0b18eccd618aedf80e1127`, candidate wording reconciled at `2026-10-23T00:32:52Z` = `2026-10-22 19:32:52 America/Bogota`;
 - `eddada4453ff86a2928ddb1cd06923018f9e4da1`, final active-set/per-block vocabulary correction at `2026-10-23T00:36:28Z` = `2026-10-22 19:36:28 America/Bogota`. This commit's diff is what yields the presently verified candidate blob in the route.
 
-The supplied report instead dates its review to 2026-10-20. This does not line up with the final GitHub candidate and the review prompt/target issued in this conversation. The coordinator does not infer dishonesty or discard the technical analysis, but cannot treat the report's timestamp or its claimed remote retrieval as verified. Request a metadata correction only; do not repeat the substantive adversarial review unless the reviewer discovers that the actual target differed.
+The reviewer subsequently clarified that `2026-10-20` was an unverified date entered without a clock query or timestamp evidence, not a claim based on an earlier candidate. The reviewer states they freshly cloned the repository, ran `git rev-parse HEAD:<path>`, and obtained the exact final candidate blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f`; they assert that the reviewed content was that exact blob. This identity attestation remains `OWNER_REPORTED` rather than an independently authenticated session event. The reviewer explicitly sets `REVIEW_TIMESTAMP=UNVERIFIABLE`. The chronology issue is closed as a false/unverified date correction; the actual time remains unknown.
 
 ## 4. Coordinator disposition of new low findings
 
@@ -70,26 +70,22 @@ The v1.0.1 §11 rows use C2/C3/C7 for explicit validation/evidence and gate comp
 
 ## 5. Original finding disposition and scope
 
-F-M1A-01 through F-M1A-08 remain reported as passing in the supplied review. This receipt does not relabel the external model invocation as authenticated and does not claim independent re-performance of all adversarial tests. The candidate remains non-adopted until its canonical route is reconciled and the Owner makes any required explicit adoption decision.
+F-M1A-01 through F-M1A-08 remain reported as passing in the supplied review. This receipt does not relabel the external model invocation as authenticated and does not claim independent re-performance of all adversarial tests. The candidate remains non-adopted until the Owner makes an explicit adoption decision after canonical route reconciliation.
 
 No test, source inspection, runtime operation, protected read, release or implementation was performed or authorized.
 
-## 6. Next bounded action
+## 6. Metadata-correction handoff — completed
 
-Use [the metadata-correction handoff](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-metadata-correction-handoff.md). Ask the same reviewer only to:
-1. correct the claimed date/time and timezone in light of the final candidate blob's GitHub history;
-2. state whether the exact final blob was actually retrieved after it existed;
-3. if a precise time cannot be established, say `REVIEW_TIMESTAMP=UNVERIFIABLE` rather than inventing one.
-
-Do not rerun the review just to repair metadata. Until that receipt is resolved, the review outcome remains `OWNER_REPORTED_PASS_WITH_REPAIRS; PROVENANCE_RECONCILIATION_PENDING`.
+The correction request is documented in [the metadata-correction handoff](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-metadata-correction-handoff.md). The Owner returned the requested correction: exact candidate blob identity is affirmed by the reviewer, the prior date is admitted to have been unverified, and the actual review timestamp is `UNVERIFIABLE`. The substantive review was not rerun.
 
 ```text
 V1_0_0_BASELINE=ADOPTED; UNCHANGED
 V1_0_1_CANDIDATE_BLOB=7c72474a5f7c114c02320c177d6ea2aea68ad28f
 V1_0_1_STATUS=NOT_ADOPTED
 REVIEW_VERDICT=OWNER_REPORTED_PASS_WITH_REPAIRS
-REVIEW_DATE=REPORTED_2026-10-20
-REVIEW_TIMESTAMP=INCONSISTENT_WITH_TARGET_HISTORY; CORRECTION_PENDING
+REVIEW_DATE=INITIAL_2026-10-20_VALUE_RETRACTED_AS_UNVERIFIED
+REVIEW_TIMESTAMP=UNVERIFIABLE
+CANDIDATE_BLOB_IDENTITY=REVIEWER_REPORTED_CONFIRMED
 F_M1A_01_08=REPORTED_PASS; NOT_INDEPENDENTLY_REPERFORMED
 FN_M1A_V101_01=NONBLOCKING_TRACEABILITY_CLARIFICATION_RECORDED
 FN_M1A_V101_02=CROSS_CHECKED; NO_CONTRACT_DEFECT_CONFIRMED
@@ -99,3 +95,17 @@ TESTS=NOT_RUN
 READ_LIST=FAIL_CLOSED
 BRIDGE=BRIDGE_NOT_READY
 ```
+
+
+## 7. Corrected metadata receipt (Owner supplied, after the initial report)
+
+The reviewer answered the four metadata questions as follows:
+
+- Exact candidate retrieval: **YES, as reported by the reviewer**. The reviewer says a fresh clone was performed and `git rev-parse HEAD:<path>` returned `7c72474a5f7c114c02320c177d6ea2aea68ad28f`, matching the expected target.
+- Actual review timestamp: `REVIEW_TIMESTAMP=UNVERIFIABLE`. No reliable wall clock, command output or other session timestamp was available to cite.
+- The prior `2026-10-20` value was an unsupported date, not evidence of a different artifact; the reviewer expressly retracts it.
+- The reviewer affirms that `PASS_WITH_REPAIRS` and the two LOW finding observations apply to the exact blob above because the analysis was based on the blob identity, not its date.
+
+Coordinator adjudication: the repository independently confirms that the named candidate blob exists and matches the route's exact target. The external session's actual git invocation and model/session identity remain `OWNER_REPORTED`, not independently authenticated. This distinction is preserved; there is no remaining timestamp contradiction because the unsupported date is retracted and the timestamp is declared unknown.
+
+The next task is not another review. It is the explicit Owner adoption decision for v1.0.1. The candidate remains `NOT_ADOPTED` until the Owner explicitly accepts it.
