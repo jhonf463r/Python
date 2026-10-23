@@ -10,7 +10,7 @@ The old [adoption-receipt path](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-owner-adoption
 
 - **Only currently adopted normative baseline:** [M1A v1.0.0 contract](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md), blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e`.
 - **Reviewed successor candidate, not adopted:** [v1.0.1 candidate contract](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1_0_1-candidate.md), blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f`.
-- **Review receipt:** [v1.0.1 review receipt and reconciliation](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-receipt-and-reconciliation.md), blob `372b00239617175841ccbc51a8787415f563c496`. Reviewer-reported verdict is `PASS_WITH_REPAIRS`; F-M1A-01..08 are reported passing but were not independently re-performed by the coordinator. The reviewer says a fresh clone/hash matched the exact candidate; the actual review timestamp remains `UNVERIFIABLE`; session/invocation attribution remains `OWNER_REPORTED`.
+- **Review receipt:** [v1.0.1 review receipt and reconciliation](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-receipt-and-reconciliation.md), blob `ffd96aa031ff4e2460352e7f840e720fa9429dfc`. Reviewer-reported verdict is `PASS_WITH_REPAIRS`; F-M1A-01..08 are reported passing but were not independently re-performed by the coordinator. The reviewer says a fresh clone/hash matched the exact candidate; the actual review timestamp remains `UNVERIFIABLE`; session/invocation attribution remains `OWNER_REPORTED`.
 - FN-M1A-V101-01 is a nonblocking traceability clarification tied to F-M1A-05. FN-M1A-V101-02 was checked against the pinned overlay and is not confirmed as a defect. OG-M1A-01..07 remain unchanged.
 
 ### Completed bounded documentary task
