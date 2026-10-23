@@ -1,3 +1,30 @@
+## OVERRIDING LATEST MEMORY ROUTE — M1A G1 trust-bootstrap policy decision (2026-10-22)
+
+Restore the active route from [CURRENT-STATE.md](./CURRENT-STATE.md). Task: `M1A_G1_TRUST_BOOTSTRAP_POLICY_ADJUDICATION`; status `WAITING_OWNER`. Reconciled report: [M1A G1 trust-bootstrap feasibility receipt](./CHAT-ARCH-2026-10-22-M1A-G1-trust-bootstrap-feasibility-reconciliation.md).
+
+Anti-repeat: the tool inventory and bounded G1–G3 source inspection have already occurred; do not repeat them. The supplied Codex feasibility report says `G1_FEASIBILITY=CONDITIONAL_NOT_DEMONSTRATED`. The coordinator directly verified via GitHub that candidate branch `m1a-g1-g3-governance-route-candidate-20261022` remains at pinned base `60c8ac6e7ff425c815d9bdc7194bf20ef8d134db`; no candidate code changes resulted. Windows Hello/WebAuthn is a proposed factor only, subject to verified enrollment, Owner binding and issuer/reader isolation. The Owner has not adopted the trust-bootstrap policy, so new trust bootstrap implementation remains unauthorized.
+
+Taxonomy correction to preserve: M1A G3 is the authoritative versioned operation-to-target resolver. Durable request/approval/decision/operation/result correlation is a distinct Entry 274 receipt/ledger requirement. G1/G2/G3 remain unestablished; all eight implementation gates remain open.
+
+```text
+ACTIVE_TASK=M1A_G1_TRUST_BOOTSTRAP_POLICY_ADJUDICATION
+STATUS=WAITING_OWNER
+OWNER_TRUST_BOOTSTRAP_POLICY=PROPOSED_NOT_ADOPTED
+GOVERNANCE=KEEP_BLOCKED
+IMPLEMENTATION=NOT_AUTHORIZED_FOR_NEW_TRUST_BOOTSTRAP
+TESTS=NOT_RUN
+BUILD=NOT_RUN
+RUNTIME=NOT_RUN
+REAL_TRANSPORT=NOT_RUN
+LOCAL_CHECKOUT=DO_NOT_ACCESS
+PROTECTED_LOCAL_READ=NOT_AUTHORIZED
+MERGE_DEPLOY=NOT_AUTHORIZED
+BLOCK_RELEASE=NOT_AUTHORIZED
+BRIDGE=BRIDGE_NOT_READY
+```
+
+---
+
 ## LATEST ROUTING — Owner-authorized G1–G3 candidate task (2026-10-22)
 
 Apply the anti-repeat and causal-continuity protocol to the authorized next step: `M1A_G1_G3_AUTHORITY_ROUTE_CANDIDATE_IMPLEMENTATION`. The authoritative task record is [CURRENT-STATE.md](./CURRENT-STATE.md); exact Codex prompt is [the G1–G3 candidate implementation handoff](./CHAT-ARCH-2026-10-22-M1A-G1-G3-governance-route-candidate-implementation-handoff.md).
