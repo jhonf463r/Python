@@ -8,7 +8,7 @@
 - **Destination:** Codex, in the already-existing UI/session, user-mediated handoff. This document is prepared for that session; it is **not** a claim that the prompt has been dispatched or consumed.
 - **Repository:** `jhonf463r/Python`.
 - **Pinned public `main` base:** `60c8ac6e7ff425c815d9bdc7194bf20ef8d134db` (observed remote main immediately before creating the candidate branch).
-- **Isolated candidate branch created at that exact base:** `codex/m1a-g1-g3-governance-route-candidate-20261022`.
+- **Isolated candidate branch created at that exact base:** `m1a-g1-g3-governance-route-candidate-20261022`.
 - **Normative contract:** M1A v1.0.1, blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f`.
 - **Routing/source distinction:** the candidate source branch is pinned at `60c8ac6e7ff425c815d9bdc7194bf20ef8d134db`. After that commit, the coordinator updated six documentation-only paths on public `main` to record the explicit Owner authorization and this handoff; the bounded GitHub comparison found no product-source path among those changes. For task routing and the Owner's latest authorization, read the latest public-main `CURRENT-STATE.md` and this handoff, not older routing prose embedded in the pinned candidate snapshot. For product-source edits, use the isolated candidate branch only. Keep these two provenance tracks distinct.
 - **Evidence matrix:** eight prerequisite gates, zero closed; G1–G3 are the target of this handoff, while G4–G8 remain separate and must not be silently claimed closed.
@@ -27,7 +27,7 @@ The purpose of this candidate is to determine whether the public source and exis
 >
 > **Authorization and exact target**
 >
-> The Owner explicitly authorized in this conversation a bounded implementation attempt for G1–G3, on an isolated candidate based on public `main`, subject to the restrictions below. Use repository `jhonf463r/Python`, base SHA `60c8ac6e7ff425c815d9bdc7194bf20ef8d134db`, branch `m1a-g1-g3-governance-route-candidate-20261022`. First verify the current session is operating in a separate candidate created from that exact base. If you are in the Owner's existing/dirty checkout, an unrelated local worktree, or cannot prove candidate identity, stop with `ISOLATED_CANDIDATE_IDENTITY_UNVERIFIED`; do not inspect or alter that workspace.
+> The Owner explicitly authorized in this conversation a bounded implementation attempt for G1–G3, on an isolated candidate based on public `main`, subject to the restrictions below. Use repository `jhonf463r/Python`, base SHA `60c8ac6e7ff425c815d9bdc7194bf20ef8d134db`, remote candidate branch `m1a-g1-g3-governance-route-candidate-20261022` (the branch exists and initially equals that base). Prefer the existing remote GitHub editing capability scoped to that exact branch. If local isolation is required and is permitted by the environment, create a genuinely separate disposable candidate from the exact pinned base without inspecting the Owner's existing checkout; do not use an administrator terminal. First prove that the working root/branch is this isolated candidate. If you are in the Owner's existing/dirty checkout, an unrelated local worktree, or cannot prove candidate identity, stop with `ISOLATED_CANDIDATE_IDENTITY_UNVERIFIED`; do not inspect or alter that workspace. If the current session cannot edit the remote candidate safely and cannot create an isolated candidate within the authorization, return the precise capability limitation instead of asking the Owner to perform manual repository setup.
 >
 > **Single objective**
 >
