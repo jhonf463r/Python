@@ -1,3 +1,28 @@
+## LATEST ROUTING — Owner authorized isolated G1–G3 candidate (2026-10-22)
+
+Read [CURRENT-STATE.md](docs/history/CHAT-ARCH/CURRENT-STATE.md) for the authoritative active-task state. The Owner explicitly authorized a bounded candidate implementation attempt. The isolated branch `codex/m1a-g1-g3-governance-route-candidate-implementation` was created from pinned public `main` SHA `60c8ac6e7ff425c815d9bdc7194bf20ef8d134db`. Candidate source work is authorized only inside that separate candidate; the existing Codex UI has not received the prompt yet (`CODEX_PROMPT_DISPATCHED=NO`).
+
+Copy-ready handoff: [M1A G1–G3 candidate implementation](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1A-G1-G3-governance-route-candidate-implementation-handoff.md). If Codex cannot prove it has a fresh isolated candidate, or if actual trusted G1 principal/root, G2 authorized catalogue/producer/revocation source, or G3 versioned target resolver are absent, it must stop and report the exact dependency rather than invent it.
+
+```text
+ACTIVE_TASK=M1A_G1_G3_AUTHORITY_ROUTE_CANDIDATE_IMPLEMENTATION
+BASE_MAIN_SHA=60c8ac6e7ff425c815d9bdc7194bf20ef8d134db
+CANDIDATE_BRANCH=codex/m1a-g1-g3-governance-route-candidate-implementation
+CODEX_PROMPT_DISPATCHED=NO
+IMPLEMENTATION=AUTHORIZED_FOR_ISOLATED_CANDIDATE_ONLY
+GOVERNANCE=KEEP_BLOCKED
+TESTS=NOT_RUN
+BUILD=NOT_RUN
+RUNTIME=NOT_RUN
+REAL_TRANSPORT=NOT_RUN
+OWNER_PREEXISTING_CHECKOUT=DO_NOT_ACCESS
+BRIDGE=BRIDGE_NOT_READY
+```
+
+Historical routing below this front-matter is preserved for provenance only. It does not supersede CURRENT-STATE.
+
+---
+
 ## ACTIVE ROUTING — M1A v1.0.1 adopted for normative design; G1–G3 authority route unresolved (2026-10-22)
 
 **Read [CURRENT-STATE.md](docs/history/CHAT-ARCH/CURRENT-STATE.md) first.** It remains the sole active-task and next-actor authority.
