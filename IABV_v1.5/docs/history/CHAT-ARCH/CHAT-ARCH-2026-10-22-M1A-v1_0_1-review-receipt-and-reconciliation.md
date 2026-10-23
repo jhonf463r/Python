@@ -112,10 +112,26 @@ Coordinator adjudication: the repository independently confirms that the named c
 At the time of this metadata correction, the next task was to obtain the Owner's adoption decision. That dependency is now closed by the contextual assent `ok procede`; see §8 and the separate adoption receipt. The v1.0.1 normative design is adopted, with implementation/runtime boundaries unchanged.
 
 
-## 8. Owner adoption decision recorded after metadata correction
+## 8. Adoption gate status — no effective adoption occurred
 
-Following the corrected provenance, the coordinator recommended adopting v1.0.1 as the successor normative design baseline only and presented the choices `ACCEPT_M1A_V1_0_1_SUCCESSOR_BASELINE` or `RETAIN_M1A_V1_0_0_BASELINE`. The Owner replied `ok procede`. This is interpreted as contextual assent to the sole recommended option; the literal token was not repeated and must not be misrepresented as verbatim. The formal record is [M1A v1.0.1 Owner adoption receipt](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-owner-adoption-receipt.md).
+The Owner's message was `ok procede`. In light of overlay C1, the coordinator's former interpretation as v1.0.1 adoption was incorrect: general permission to continue a bounded documentary step does not adopt a separate pending policy when the exact policy token was requested but not supplied. The interpretation is withdrawn. See the [adoption correction record](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-owner-adoption-correction.md), blob `bc1e7e97c85671753f79cf9916e640e02f6b642d`.
 
-The adopted artifact is [v1.0.1 normative contract](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1_0_1.md), blob `baa39a09b97117df1dbe46804affdcebc7159f30`. The exact reviewed source candidate remains unchanged at blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f`; v1.0.0 is preserved unchanged as the predecessor.
+The [implementation-prerequisite evidence matrix](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-implementation-prerequisite-evidence-gate-matrix.md), blob `608a5c7f3c2be8ad794b21bfcb66657217584a58`, completed the bounded documentary continuation. It maps all eight future gates and leaves them open for implementation acceptance.
 
-This supersedes the initial receipt's pending-adoption status only. All operational boundaries remain unchanged: `GOVERNANCE=KEEP_BLOCKED`, `IMPLEMENTATION=NOT_AUTHORIZED`, `TESTS=NOT_RUN`, `READ_LIST=FAIL_CLOSED`, `BRIDGE=BRIDGE_NOT_READY`.
+The effective normative baseline remains v1.0.0 blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e`. The v1.0.1 candidate blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f` remains `NOT_ADOPTED_PENDING_EXPLICIT_OWNER_DECISION`. Adoption requires the exact token `ACCEPT_M1A_V1_0_1_SUCCESSOR_BASELINE` or `RETAIN_M1A_V1_0_0_BASELINE`.
+
+```text
+V1_0_0_STATUS=ADOPTED_NORMATIVE_DESIGN_BASELINE; IMMUTABLE
+V1_0_1_STATUS=NOT_ADOPTED_PENDING_EXPLICIT_OWNER_DECISION
+OWNER_MESSAGE="ok procede"; AUTHORITY=BOUNDED_DOCUMENTARY_CONTINUATION_ONLY
+FALSE_ADOPTION_INTERPRETATION=WITHDRAWN; HISTORY_PRESERVED
+REVIEW_VERDICT=OWNER_REPORTED_PASS_WITH_REPAIRS
+REVIEW_TIMESTAMP=UNVERIFIABLE
+REVIEW_SESSION_ATTRIBUTION=OWNER_REPORTED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+GOVERNANCE=KEEP_BLOCKED
+IMPLEMENTATION=NOT_AUTHORIZED
+TESTS=NOT_RUN
+READ_LIST=FAIL_CLOSED
+BRIDGE=BRIDGE_NOT_READY
+```
