@@ -1,6 +1,6 @@
 ## OVERRIDING LATEST ROUTING — M1A G1 Windows candidate attempt terminal (2026-10-22)
 
-The Owner supplied the terminal Codex result for `M1A_G1_WINDOWS_OS_TRUST_BOOTSTRAP_CANDIDATE`: `BLOCKED_MISSING_G1_TRUST_ANCHOR`. The complete reconciliation receipt is [here](./CHAT-ARCH-2026-10-22-M1A-G1-Windows-OS-trust-bootstrap-candidate-result.md), blob to be verified after the canonical commit.
+The Owner supplied the terminal Codex result for `M1A_G1_WINDOWS_OS_TRUST_BOOTSTRAP_CANDIDATE`: `BLOCKED_MISSING_G1_TRUST_ANCHOR`. The complete reconciliation receipt is [here](./CHAT-ARCH-2026-10-22-M1A-G1-Windows-OS-trust-bootstrap-candidate-result.md), blob `fa9a0d217b4e01e2f496d4e2cc9a31c548b5de9c`.
 
 Independent GitHub verification immediately before writeback confirmed candidate `m1a-g1-g3-governance-route-candidate-20261022` at `60c8ac6e7ff425c815d9bdc7194bf20ef8d134db`, with tree `ca963f8013809d4efcf56133a37d2efe148517e9`. The Git commit object directly confirms the tree SHA. Comparison against pinned base `60c8ac6e7ff425c815d9bdc7194bf20ef8d134db` is `identical`, `ahead_by=0`, `behind_by=0`, zero changed files. Comparison against `main` at reconciliation start (`5879ad3f66a9899ecbfa80c4028fe5429d34868b`) was `behind`, `ahead_by=0`, `behind_by=72`. No product files, blobs or commit were added to the candidate. This is an Owner-supplied Codex result plus independent remote-state verification; ChatGPT did not directly dispatch the prompt.
 
