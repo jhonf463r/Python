@@ -9,6 +9,8 @@ The review report is `OWNER_REPORTED_PASS_WITH_REPAIRS`: the reviewer reports F-
 `GOVERNANCE=KEEP_BLOCKED`; `IMPLEMENTATION=NOT_AUTHORIZED`; `TESTS=NOT_RUN`; `READ_LIST=FAIL_CLOSED`; `BRIDGE=BRIDGE_NOT_READY`.
 
 
+
+**Historical-scope notice:** all routing text retained below the divider is preserved for provenance only. It does not supersede the current active task in `CURRENT-STATE.md`, and any older task pointers or implementation-authority statements are historical.
 ---
 
 ## Construction completeness and bidirectional traceability overlay — 2026-10-22
