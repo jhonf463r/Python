@@ -1,15 +1,15 @@
-## ACTIVE ROUTING — M1A v1.0.1 review report received; timestamp correction next (2026-10-22)
+## ACTIVE ROUTING — v1.0.1 report reconciled; explicit Owner adoption decision next (2026-10-22)
 
-Source of truth: [CURRENT-STATE.md](./CURRENT-STATE.md), opening routing snapshot. Active task: `M1A_V1_0_1_REVIEW_REPORT_METADATA_CORRECTION`; state `CORRECTION_HANDOFF_READY; NOT_DISPATCHED`.
+Source of truth: [CURRENT-STATE.md](./CURRENT-STATE.md), opening routing snapshot. Active task: `M1A_V1_0_1_OWNER_ADOPTION_DECISION`; state `READY_FOR_OWNER_ADOPTION_DECISION; NOT_ADOPTED`.
 
 - Accepted baseline, unchanged: [M1A v1.0.0](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md), blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e`.
-- v1.0.1 report receipt and findings reconciliation: [review receipt](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-receipt-and-reconciliation.md), blob `1b0685fa273329513254a0b10180f1513edfc67b`.
-- Candidate, still not adopted: [M1A v1.0.1](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1_0_1-candidate.md), blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f`.
-- Review report states 2026-10-20, inconsistent with the GitHub history for the exact final candidate, committed on 2026-10-22 at 19:36:28 America/Bogota. Require a metadata correction; do not rerun the substantive review.
-- Exact next prompt: [review metadata-correction handoff](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-metadata-correction-handoff.md), blob `58d0e2acb2c63bf08dd5725fd278f67bad9ac4b9`.
-- The coordinator verified C2/C3/C5/C7 in the fetched overlay: traceability ledger, state-space definition, authority-plane separation, and pre-construction gate. FN-M1A-V101-02 is not a confirmed contract defect. C30's stricter wording is a nonblocking traceability clarification tied to F-M1A-05.
+- Reviewed successor candidate: [M1A v1.0.1](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1_0_1-candidate.md), blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f`, remains `NOT_ADOPTED`.
+- Review receipt/reconciliation: [v1.0.1 review receipt](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-receipt-and-reconciliation.md), blob `45190a512e93211a85e23be74fa75741be5227f6`.
+- The reviewer says the exact final blob was fetched in a fresh clone and matched, retracts the unsupported 2026-10-20 date, and sets `REVIEW_TIMESTAMP=UNVERIFIABLE`. The claimed invocation/session remains `OWNER_REPORTED`.
+- F-M1A-01..08 are reported passing. FN-M1A-V101-01 is a nonblocking C30 traceability clarification. The coordinator cross-checked overlay C2/C3/C5/C7; FN-M1A-V101-02 is not a confirmed contract defect.
+- **Single next action:** explicit Owner choice to adopt v1.0.1 or retain v1.0.0. No implementation or operational permission follows from this review.
 
-No runtime authority has been established; no implementation, tests, protected read or block release is authorized. Preserve `GOVERNANCE=KEEP_BLOCKED`, `IMPLEMENTATION=NOT_AUTHORIZED`, `TESTS=NOT_RUN`, `READ_LIST=FAIL_CLOSED`, `BRIDGE=BRIDGE_NOT_READY`.
+No runtime authority is established. Preserve `GOVERNANCE=KEEP_BLOCKED`, `IMPLEMENTATION=NOT_AUTHORIZED`, `TESTS=NOT_RUN`, `READ_LIST=FAIL_CLOSED`, `BRIDGE=BRIDGE_NOT_READY`.
 
 ---
 
