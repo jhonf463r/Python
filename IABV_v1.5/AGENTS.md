@@ -1,3 +1,24 @@
+## OVERRIDING LATEST ROUTING — New-chat continuity handoff after UAAL-D018 (2026-10-23)
+
+The canonical startup handoff is [here](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-23-new-chat-continuity-handoff-after-UAAL-D018.md), blob `71f0ef6911bf6f67f7fb8f6249bf7ce5b4963589`. Current baseline at preparation: `8c453dbdd0b3bb0b606fb46f6b243df525ac10f8`. Verify remote `main` again before executing any action.
+
+The North Star is `GOVERNED_IABV_CODEX_BRIDGE`; the active frontier is `M1A_G1_TRUST_BOOTSTRAP_AUTHORITY_BOUNDARY`. UAAL-D018 is persisted as a documented method refinement, not a runtime implementation. It separates action authority, input, invocation, source result, output shape, field projection, serialization/transport, receipt reconciliation, canonical fetch-back and later causal reuse. `COORDINATOR_RUNTIME=NOT_PROVEN`; `CAUSAL_SPACE_TIME_REUSE=NOT_PROVEN`.
+
+The TPM preflight remains terminal at `BLOCKED_TPM_FIELDS_NOT_CAPTURED`; source output is unavailable, TPM presence and root cause are unresolved, and EK inspection was not run. Do not repeat the query or recovery lookup. A new TPM execution requires a separate explicit bounded Owner decision and the concrete corrected capture artifact.
+
+```text
+ACTIVE_TASK=M1A_G1_TRUST_BOOTSTRAP_AUTHORITY_BOUNDARY
+LAST_TERMINAL_TASK=UAAL_D018_EXECUTION_TO_EVIDENCE_STAGE_SEPARATION_METHOD_REFINEMENT
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+GOVERNANCE=KEEP_BLOCKED
+G1=NOT_ESTABLISHED
+BRIDGE=BRIDGE_NOT_READY
+NEXT_ACTION=OWNER_DECISION_ONLY
+AUTOMATIC_FOLLOW_ON=FALSE
+```
+
+---
+
 ## OVERRIDING LATEST ROUTING — UAAL-D018 execution-to-evidence-stage separation method refinement (2026-10-23)
 
 Method receipt: [UAAL-D018 — Execution-to-Evidence Stage Separation and Projection Observability](docs/history/CHAT-ARCH-2026-10-23-UAAL-D018-execution-to-evidence-stage-separation.md), blob `6eeeb84c4ee4fc1d22e477f32f42f4c6fbe5b5bb`.
