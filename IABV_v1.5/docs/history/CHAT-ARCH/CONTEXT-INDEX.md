@@ -1,6 +1,6 @@
 ## LATEST ROUTING — Owner authorized isolated G1–G3 candidate (2026-10-22)
 
-The single active task is now `M1A_G1_G3_AUTHORITY_ROUTE_CANDIDATE_IMPLEMENTATION`, authorized by the Owner for candidate-only work. See authoritative [CURRENT-STATE](./CURRENT-STATE.md) and the [copy-ready Codex handoff](./CHAT-ARCH-2026-10-22-M1A-G1-G3-governance-route-candidate-implementation-handoff.md). The isolated candidate branch is `codex/m1a-g1-g3-governance-route-candidate-implementation`, created from pinned public `main` SHA `60c8ac6e7ff425c815d9bdc7194bf20ef8d134db`. The handoff is prepared but has not been dispatched.
+The single active task is now `M1A_G1_G3_AUTHORITY_ROUTE_CANDIDATE_IMPLEMENTATION`, authorized by the Owner for candidate-only work. See authoritative [CURRENT-STATE](./CURRENT-STATE.md) and the [copy-ready Codex handoff](./CHAT-ARCH-2026-10-22-M1A-G1-G3-governance-route-candidate-implementation-handoff.md). The isolated candidate branch is `m1a-g1-g3-governance-route-candidate-20261022`, created from pinned public `main` SHA `60c8ac6e7ff425c815d9bdc7194bf20ef8d134db`. The handoff is prepared but has not been dispatched.
 
 The goal is not to bypass the current denial. The goal is to implement only evidence-backed G1 trust principal/root, G2 authorized catalogue/producer/revocation authority, and G3 versioned operation-to-target resolution. Missing real authority means stop and report the exact dependency, not invent a key, issuer, allowlist, resolver or independent block-release principal.
 
