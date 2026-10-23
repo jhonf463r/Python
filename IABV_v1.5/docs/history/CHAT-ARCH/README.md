@@ -1,19 +1,18 @@
-## ACTIVE ROUTING — M1A v1.0.1 report received; metadata correction next (2026-10-22)
+## ACTIVE ROUTING — v1.0.1 review reconciled; Owner adoption decision next (2026-10-22)
 
 **Read [CURRENT-STATE.md](./CURRENT-STATE.md) first.** It remains the sole active-task authority. The Owner's `ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE` remains adopted for v1.0.0 only.
 
-**Received report:** the Owner pasted a Sonnet 4.6-attributed `PASS_WITH_REPAIRS` report for v1.0.1 blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f`. Its stated date 2026-10-20 conflicts with GitHub history showing the final candidate committed at 2026-10-22 19:36:28 America/Bogota. Attribution stays `OWNER_REPORTED`; correct the timestamp before treating remote retrieval provenance as verified. [Receipt/reconciliation](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-receipt-and-reconciliation.md), blob `1b0685fa273329513254a0b10180f1513edfc67b`.
+**Review receipt:** the Owner supplied a Sonnet 4.6-attributed `PASS_WITH_REPAIRS` report for v1.0.1 blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f`. The reviewer confirms that exact blob identity by reported fresh-clone Git hashing and retracts the unsupported 2026-10-20 date; `REVIEW_TIMESTAMP=UNVERIFIABLE`. Invocation attribution remains `OWNER_REPORTED`. [Receipt and reconciliation](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-receipt-and-reconciliation.md), blob `45190a512e93211a85e23be74fa75741be5227f6`.
 
-**Single active task:** `M1A_V1_0_1_REVIEW_REPORT_METADATA_CORRECTION`. **IA DESTINO:** Sonnet 4.6 in the same Owner-reported Antigravity session. **Prompt:** [metadata-correction handoff](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-metadata-correction-handoff.md), blob `58d0e2acb2c63bf08dd5725fd278f67bad9ac4b9`. `NOT_DISPATCHED` until the Owner pastes the prompt and a correction/report is returned.
-
-The v1.0.1 successor remains `NOT_ADOPTED`; v1.0.0 remains the adopted baseline. The C30 wording delta is documented as nonblocking; overlay cross-reference IDs C2/C3/C5/C7 were independently checked by the coordinator, with no defect confirmed for FN-M1A-V101-02.
+**Single active task:** `M1A_V1_0_1_OWNER_ADOPTION_DECISION`. The reviewer reports F-M1A-01..08 passed; FN-M1A-V101-01 is a nonblocking traceability clarification, and coordinator verification found no defect for FN-M1A-V101-02. The candidate remains `NOT_ADOPTED` until the Owner explicitly accepts it. Recommended decision: accept v1.0.1 as normative design only, with timestamp uncertainty preserved.
 
 ```text
-ACTIVE_TASK=M1A_V1_0_1_REVIEW_REPORT_METADATA_CORRECTION
-CANDIDATE_BLOB=7c72474a5f7c114c02320c177d6ea2aea68ad28f
-CANDIDATE_STATUS=NOT_ADOPTED
-REVIEW_VERDICT=OWNER_REPORTED_PASS_WITH_REPAIRS
-REVIEW_TIMESTAMP=INCONSISTENT; CORRECTION_PENDING
+ACTIVE_TASK=M1A_V1_0_1_OWNER_ADOPTION_DECISION
+V1_0_0_BASELINE=ADOPTED_UNCHANGED
+V1_0_1_CANDIDATE_BLOB=7c72474a5f7c114c02320c177d6ea2aea68ad28f
+V1_0_1_REVIEW=OWNER_REPORTED_PASS_WITH_REPAIRS
+REVIEW_TIMESTAMP=UNVERIFIABLE
+V1_0_1_STATUS=NOT_ADOPTED_PENDING_OWNER_DECISION
 GOVERNANCE=KEEP_BLOCKED
 IMPLEMENTATION=NOT_AUTHORIZED
 TESTS=NOT_RUN
