@@ -1,24 +1,14 @@
-## CURRENT ROUTING — M1A design adopted; contract v1.0.0 targeted review next (2026-10-22)
+## CURRENT ROUTING — v1.0.0 review reconciled; v1.0.1 candidate targeted review next (2026-10-22)
 
-Before any M1A continuation, read the top snapshot of [CURRENT-STATE.md](docs/history/CHAT-ARCH/CURRENT-STATE.md). The Owner's exact `ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE` is recorded in the [normalized ledger](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1A-normalized-scope-decision-ledger-and-design-amendment.md); the resulting [scope contract v1.0.0](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md) (blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e`) is now the normative design baseline.
+Before any M1A continuation, read the top snapshot of [CURRENT-STATE.md](docs/history/CHAT-ARCH/CURRENT-STATE.md); it is the sole active-task authority. The Owner's `ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE` remains adopted for the immutable v1.0.0 design baseline; none of the eight review findings reopens OG-M1A-01..07.
 
-**Active task:** `M1A_CONSOLIDATED_SCOPE_CONTRACT_V1_TARGETED_ADVERSARIAL_REVIEW`, documentary/static adversarial review only. Intended actor: Sonnet 4.6 in the Owner-reported Antigravity session, if the exact artifact can be supplied. Do not report invocation until a correlated review receipt exists. Review the contract against the construction-completeness overlay and Entry 274; report exact section, counterexample, severity, minimal repair and discriminating case. Do not repeat a broad review or scan.
-Use the exact bounded prompt in [the review handoff](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1A-contract-v1-targeted-adversarial-review-handoff.md), blob `26616d4244c218654fe37d31aed240e518cb94a0`.
+**Current review result:** `PASS_WITH_REPAIRS` for v1.0.0 blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e`, from an Owner-pasted Sonnet 4.6-attributed report (attribution `OWNER_REPORTED`). Finding dispositions are recorded in [the v1.0.0 review register](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1A-contract-v1-sonnet-review-receipt-and-finding-register.md), blob `396606e5744f0b3d0332f8ee9f02ec14cdcea588`.
 
-The adopted design does not prove a runtime principal/trust anchor, trusted catalogue or resolver, producer allowlist, or independent block-release mechanism. Preserve `GOVERNANCE=KEEP_BLOCKED`, `IMPLEMENTATION=NOT_AUTHORIZED`, `TESTS=NOT_RUN`, `READ_LIST=FAIL_CLOSED` and `BRIDGE=BRIDGE_NOT_READY`. Do not inspect the dirty local checkout, `data/`, SQLite, secrets or `.env`; do not modify product source, run tests/build/runtime/transport, merge, deploy or release a block. Historical route instructions below are retained for provenance and are superseded by this top routing block.
+**Successor candidate:** [M1A contract v1.0.1 candidate](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1_0_1-candidate.md), blob `4befbbb352bed35f813b9ada2d3b672cf91e328a`. It is `NOT_ADOPTED`; v1.0.0 remains the accepted baseline pending completion of the bounded independent review. The candidate proposes eight additional discriminating conformance cases (38 total) and closes the eight findings without changing the seven adopted design choices.
 
-```text
-ACTIVE_TASK=M1A_CONSOLIDATED_SCOPE_CONTRACT_V1_TARGETED_ADVERSARIAL_REVIEW
-CURRENT_STATUS=READY_FOR_INDEPENDENT_REVIEW; NOT_DISPATCHED
-OWNER_DESIGN_ACCEPTANCE=ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE
-CONTRACT_VERSION=1.0.0
-CONTRACT_BLOB=8181c7c0cf6036c76cf365510e8d9665cf84e57e
-RUNTIME_TRUST_ANCHOR=UNVERIFIED
-GOVERNANCE=KEEP_BLOCKED
-IMPLEMENTATION=NOT_AUTHORIZED
-TESTS=NOT_RUN
-BRIDGE=BRIDGE_NOT_READY
-```
+**Active task:** `M1A_CONTRACT_V1_0_1_CANDIDATE_TARGETED_ADVERSARIAL_REVIEW`, documentary/static review only. Intended reviewer: Sonnet 4.6 in the Owner-reported Antigravity session if the exact inputs can be received. No invocation may be claimed without a correlated review report. Use the exact bounded [handoff](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1A-v1_0_1-candidate-targeted-review-handoff.md), blob `bd50b9766c475035f9e3a1e55433254910430156`.
+
+Preserve `GOVERNANCE=KEEP_BLOCKED`, `IMPLEMENTATION=NOT_AUTHORIZED`, `TESTS=NOT_RUN`, `READ_LIST=FAIL_CLOSED`, `BRIDGE=BRIDGE_NOT_READY`. Do not inspect local checkout, `data/`, SQLite, secrets or `.env`; do not modify product source, run tests/build/runtime/transport, merge, deploy, access protected content or release any block. Existing lower routing sections are historical provenance and are superseded by this top block.
 ---
 
 Authoritative route: [CURRENT-STATE.md](docs/history/CHAT-ARCH/CURRENT-STATE.md). Exact Codex task: [M1 governed scoped-read route implementation handoff](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1-governed-scoped-read-route-CODEX-implementation-handoff.md).
