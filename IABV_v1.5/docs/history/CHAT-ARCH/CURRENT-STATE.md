@@ -1,6 +1,52 @@
-# CURRENT ROUTING SNAPSHOT — 2026-10-22 (M1A DESIGN ADOPTED; CONTRACT V1 READY FOR TARGETED REVIEW; OPERATIONAL BLOCKS REMAIN)
+# CURRENT ROUTING SNAPSHOT — 2026-10-22 (M1A v1.0.0 REVIEW PASS_WITH_REPAIRS; v1.0.1 CANDIDATE AWAITS TARGETED REVIEW; OPERATIONAL BLOCKS REMAIN)
 
-## LATEST ROUTING DELTA — Owner accepted M1A design; consolidated contract v1.0.0 created and fetched back (2026-10-22)
+## LATEST ROUTING DELTA — v1.0.0 review received; findings reconciled; v1.0.1 candidate awaits targeted review (2026-10-22)
+
+The Owner supplied a Claude/Sonnet 4.6-attributed documentary report for the exact `IABV-OPERATIONAL-BLOCK-SCOPE v1.0.0` blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e`. Reported verdict: `PASS_WITH_REPAIRS`, with eight findings (2 HIGH, 3 MEDIUM, 3 LOW). This coordinator treats reviewer/session attribution and the report's claimed local hash operation as `OWNER_REPORTED`; this is not a cryptographically authenticated session receipt. The consolidated [finding register and reconciliation receipt](./CHAT-ARCH-2026-10-22-M1A-contract-v1-sonnet-review-receipt-and-finding-register.md) is blob `396606e5744f0b3d0332f8ee9f02ec14cdcea588`.
+
+All findings F-M1A-01..08 have explicit dispositions in that register. None challenges the accepted choices OG-M1A-01..07. F-M1A-01..05 require normative completeness repairs; F-M1A-06..08 require traceability/granularity repairs. The candidate [M1A contract v1.0.1](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1_0_1-candidate.md) is blob `4befbbb352bed35f813b9ada2d3b672cf91e328a`; it adds pre-selector validation evidence, fail-closed handling of unverified active-block sets, unambiguous aggregation of legacy/unknown states, current release-revocation verification, a context-only boundary for the extra reconciliation link, a revised traceability matrix, and 8 discriminating cases (38 total). It is explicitly `NOT_ADOPTED`; the unchanged v1.0.0 artifact remains the Owner-adopted baseline while the successor is reviewed.
+
+The original v1.0.0 contract, the accepted design, the proposal and prior historical review are not overwritten. The finding register is a coordinator-normalized receipt of the report pasted by the Owner; its reviewer attribution remains reported, not independently authenticated. The candidate does not assert that any active-block registry, trust anchor, stage validator, revocation source, or release mechanism currently exists.
+
+### Current active task
+
+`M1A_CONTRACT_V1_0_1_CANDIDATE_TARGETED_ADVERSARIAL_REVIEW` — one bounded independent static review of the exact non-adopted v1.0.1 candidate against its immutable predecessor, all eight dispositions, the normalized ledger, UAAL-ROOT-001, Entry 274, and the construction-completeness overlay.
+
+- **Next actor:** Sonnet 4.6 in the Owner-reported Antigravity session, if it can receive the exact documents. No direct invocation surface is available to this coordinator; current dispatch state is `NOT_DISPATCHED`.
+- **Exact handoff:** [v1.0.1 targeted review prompt](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-candidate-targeted-review-handoff.md), blob `bd50b9766c475035f9e3a1e55433254910430156`.
+- **Stop conditions:** documentary review only; no unrelated source scan, checkout/local data/SQLite/secrets access, edits to product source, tests/build/runtime/transport, merge/deploy, real read, or block release. The reviewer must verify the target and input identities, test all F-M1A-01..08 repairs and any new counterexamples, and return `PASS`, `PASS_WITH_REPAIRS`, or `FAIL`.
+
+```text
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+PARENT_CONCEPT=UAAL-ROOT-001
+OWNER_DESIGN_ACCEPTANCE=ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE
+ADOPTED_BASELINE_VERSION=1.0.0
+ADOPTED_BASELINE_BLOB=8181c7c0cf6036c76cf365510e8d9665cf84e57e
+V1_0_0_REVIEW_VERDICT=PASS_WITH_REPAIRS
+REVIEW_ATTRIBUTION=OWNER_REPORTED
+FINDINGS_RECONCILED=8_OF_8
+SUCCESSOR_CANDIDATE_VERSION=1.0.1
+SUCCESSOR_CANDIDATE_BLOB=4befbbb352bed35f813b9ada2d3b672cf91e328a
+SUCCESSOR_STATUS=NOT_ADOPTED_PENDING_TARGETED_REVIEW
+ACTIVE_TASK=M1A_CONTRACT_V1_0_1_CANDIDATE_TARGETED_ADVERSARIAL_REVIEW
+CURRENT_STATUS=READY_FOR_INDEPENDENT_REVIEW; NOT_DISPATCHED
+RUNTIME_TRUST_ANCHOR=UNVERIFIED
+TRUSTED_CATALOGUE_AND_ACTIVE_SET_ATTESTATION=NOT_ESTABLISHED
+TRUSTED_OPERATION_TARGET_RESOLVER=NOT_ESTABLISHED
+PRODUCER_ALLOWLIST=NOT_ESTABLISHED
+REVOCATION_SOURCE=NOT_ESTABLISHED
+INDEPENDENT_BLOCK_RELEASE_MECHANISM=NOT_ESTABLISHED
+IMPLEMENTATION=NOT_AUTHORIZED
+TESTS=NOT_RUN
+GOVERNANCE=KEEP_BLOCKED
+READ_LIST=FAIL_CLOSED
+BRIDGE=BRIDGE_NOT_READY
+```
+
+**Historical routing blocks below remain for provenance and do not reopen the adopted design or supersede this active-task block.**
+
+
+## HISTORICAL ROUTING DELTA — Owner accepted M1A design; contract v1.0.0 created (superseded after targeted review)
 
 The Owner supplied the exact token `ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE`. The decision is recorded in the [normalized M1A decision ledger](./CHAT-ARCH-2026-10-22-M1A-normalized-scope-decision-ledger-and-design-amendment.md), blob `3425144a661c713eb8898c1eacefb2d791519bc0`. The accepted design is now consolidated into [M1A operational-block scope contract v1.0.0](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md), blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e`.
 
