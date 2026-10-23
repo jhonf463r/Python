@@ -1,13 +1,13 @@
 ## LATEST ROUTING — Owner authorized isolated G1–G3 candidate (2026-10-22)
 
-The Owner authorized a bounded candidate implementation attempt. The canonical router is [CURRENT-STATE.md](./CURRENT-STATE.md). The remote branch `codex/m1a-g1-g3-governance-route-candidate-implementation` was created from exact public-main SHA `60c8ac6e7ff425c815d9bdc7194bf20ef8d134db`. The copy-ready prompt is in [the G1–G3 candidate handoff](./CHAT-ARCH-2026-10-22-M1A-G1-G3-governance-route-candidate-implementation-handoff.md). It is prepared but not dispatched to Codex (`CODEX_PROMPT_DISPATCHED=NO`).
+The Owner authorized a bounded candidate implementation attempt. The canonical router is [CURRENT-STATE.md](./CURRENT-STATE.md). The remote branch `m1a-g1-g3-governance-route-candidate-20261022` was created from exact public-main SHA `60c8ac6e7ff425c815d9bdc7194bf20ef8d134db`. The copy-ready prompt is in [the G1–G3 candidate handoff](./CHAT-ARCH-2026-10-22-M1A-G1-G3-governance-route-candidate-implementation-handoff.md). It is prepared but not dispatched to Codex (`CODEX_PROMPT_DISPATCHED=NO`).
 
 The candidate must not use the Owner's pre-existing checkout, `data/`, SQLite, secrets or `.env`; no tests/build/runtime/process launch/real transport/merge/deploy/block release are authorized. If real trust or authority primitives for G1–G3 are missing, Codex must stop and report them; no stubs or self-issued trust may masquerade as authorization.
 
 ```text
 ACTIVE_TASK=M1A_G1_G3_AUTHORITY_ROUTE_CANDIDATE_IMPLEMENTATION
 BASE_MAIN_SHA=60c8ac6e7ff425c815d9bdc7194bf20ef8d134db
-CANDIDATE_BRANCH=codex/m1a-g1-g3-governance-route-candidate-implementation
+CANDIDATE_BRANCH=m1a-g1-g3-governance-route-candidate-20261022
 CODEX_PROMPT_DISPATCHED=NO
 IMPLEMENTATION=AUTHORIZED_FOR_ISOLATED_CANDIDATE_ONLY
 GOVERNANCE=KEEP_BLOCKED
