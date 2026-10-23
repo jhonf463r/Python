@@ -109,7 +109,7 @@ The reviewer answered the four metadata questions as follows:
 
 Coordinator adjudication: the repository independently confirms that the named candidate blob exists and matches the route's exact target. The external session's actual git invocation and model/session identity remain `OWNER_REPORTED`, not independently authenticated. This distinction is preserved; there is no remaining timestamp contradiction because the unsupported date is retracted and the timestamp is declared unknown.
 
-The next task is not another review. It is the explicit Owner adoption decision for v1.0.1. The candidate remains `NOT_ADOPTED` until the Owner explicitly accepts it.
+At the time of this metadata correction, the next task was to obtain the Owner's adoption decision. That dependency is now closed by the contextual assent `ok procede`; see §8 and the separate adoption receipt. The v1.0.1 normative design is adopted, with implementation/runtime boundaries unchanged.
 
 
 ## 8. Owner adoption decision recorded after metadata correction
