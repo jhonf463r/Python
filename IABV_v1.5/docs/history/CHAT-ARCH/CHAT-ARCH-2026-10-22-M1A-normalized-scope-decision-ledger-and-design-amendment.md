@@ -199,14 +199,31 @@ BRIDGE=BRIDGE_NOT_READY
 ```
 
 
-## 10. v1.0.1 review receipt, finding reconciliation and corrected provenance (2026-10-22)
+## 10. v1.0.1 review receipt, provenance correction and Owner adoption (2026-10-22)
 
-The Owner supplied a Sonnet 4.6-attributed report for candidate blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f`, with verdict `PASS_WITH_REPAIRS`. The reviewer then corrected its metadata: the previously stated 2026-10-20 date was unverified and should be retracted; `REVIEW_TIMESTAMP=UNVERIFIABLE`. The reviewer says a fresh clone plus `git rev-parse HEAD:<path>` returned the exact target blob. The content identity assertion is `OWNER_REPORTED`; reviewer/session invocation remains unauthenticated by this coordinator.
+The Owner supplied a Sonnet 4.6-attributed report for candidate blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f`, with verdict `PASS_WITH_REPAIRS`. The reviewer corrected its metadata: the previously stated 2026-10-20 date was unverified and is retracted; `REVIEW_TIMESTAMP=UNVERIFIABLE`. The reviewer reports a fresh clone plus `git rev-parse HEAD:<path>` returned the exact target. The content identity assertion is `OWNER_REPORTED`; reviewer/session invocation remains unauthenticated by this coordinator.
 
-The complete receipt and correction is [here](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-receipt-and-reconciliation.md), blob `45190a512e93211a85e23be74fa75741be5227f6`. The coordinator's own fetch-back independently confirms the seven named document blobs.
+The complete receipt is [here](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-receipt-and-reconciliation.md), blob `000b81b079c5febd8d78afebedf782d1d1e263fa`. The coordinator independently fetches and verifies all seven bounded input blobs.
 
-The reviewer reports F-M1A-01..08 pass. FN-M1A-V101-01 is accepted as a nonblocking traceability clarification: v1.0.1 C30's stricter current-revocation wording follows F-M1A-05 and §7. FN-M1A-V101-02 is not confirmed as a defect; a direct cross-check of the named overlay verifies the cited C2/C3/C5/C7 mappings.
+The reviewer reports F-M1A-01..08 pass. FN-M1A-V101-01 is a nonblocking traceability clarification: v1.0.1 C30's stricter current-revocation wording follows F-M1A-05 and §7. FN-M1A-V101-02 is not confirmed as a defect; a direct cross-check of the named overlay verifies the cited C2/C3/C5/C7 mappings.
 
-The timestamp discrepancy is closed as `INITIAL_DATE_RETRACTED; REVIEW_TIMESTAMP=UNVERIFIABLE`. This corrects provenance without changing the technical review report, but it does not independently authenticate the invocation or imply that adversarial cases were executed as software tests.
+The Owner then replied `ok procede` directly to the coordinator's recommendation to adopt v1.0.1 as the successor normative design baseline, after being given the alternatives `ACCEPT_M1A_V1_0_1_SUCCESSOR_BASELINE` and `RETAIN_M1A_V1_0_0_BASELINE`. This is recorded as contextual assent to the sole recommendation, not as a verbatim token. See [Owner adoption receipt](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-owner-adoption-receipt.md). The coordinator created an adopted contract artifact at [v1.0.1](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1_0_1.md), blob `baa39a09b97117df1dbe46804affdcebc7159f30`. The reviewed source candidate blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f` and v1.0.0 predecessor remain unchanged.
 
-**Active task:** `M1A_V1_0_1_OWNER_ADOPTION_DECISION`. v1.0.0 remains the adopted baseline. v1.0.1 remains `NOT_ADOPTED` until an explicit Owner decision. Coordinator recommendation: accept v1.0.1 as the successor normative design baseline, retaining the documented nonblocking C30 traceability clarification and the unknown review timestamp. No implementation or runtime authority is created by adoption of the design text.
+**Adoption boundary:** v1.0.1 is now the normative design baseline. Adoption does not authorize implementation or establish runtime authority. Real trust anchor, active-set attestation, target resolver, producer allowlist, revocation source and independent block-release mechanism remain not established. No tests/runtime were run.
+
+```text
+V1_0_0_BASELINE=SUPERSEDED_DESIGN_PREDECESSOR; IMMUTABLE
+V1_0_1_BASELINE=NORMATIVE_DESIGN_BASELINE_ADOPTED
+V1_0_1_ADOPTION_PROVENANCE=CONTEXTUAL_OWNER_ASSENT: "ok procede"
+V1_0_1_REVIEW=OWNER_REPORTED_PASS_WITH_REPAIRS
+REVIEW_TIMESTAMP=UNVERIFIABLE
+REVIEW_SESSION_ATTRIBUTION=OWNER_REPORTED
+F-M1A-01..08=REPORTED_PASS; NOT_INDEPENDENTLY_REPERFORMED
+FN-M1A-V101-01=NONBLOCKING_TRACEABILITY_CLARIFICATION_RECORDED
+FN-M1A-V101-02=CROSS_CHECKED; NO_DEFECT_CONFIRMED
+GOVERNANCE=KEEP_BLOCKED
+IMPLEMENTATION=NOT_AUTHORIZED
+TESTS=NOT_RUN
+READ_LIST=FAIL_CLOSED
+BRIDGE=BRIDGE_NOT_READY
+```
