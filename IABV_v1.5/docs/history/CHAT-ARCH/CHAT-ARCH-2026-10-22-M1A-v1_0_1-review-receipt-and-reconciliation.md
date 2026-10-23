@@ -7,7 +7,7 @@
 - Reported verdict: `PASS_WITH_REPAIRS` — retained as the report's verdict, not upgraded to independently authenticated review evidence.
 - Initial review date in the supplied report: `2026-10-20`; the reviewer later explicitly retracted it as unverified. Corrected state: `REVIEW_TIMESTAMP=UNVERIFIABLE`; do not infer a date/time.
 - Chronology disposition: `INITIAL_DATE_RETRACTED; REVIEW_TIMESTAMP=UNVERIFIABLE; EXACT_BLOB_IDENTITY=REVIEWER_REPORTED_CONFIRMED`.
-- Candidate adoption: `NOT_ADOPTED`; v1.0.0 remains the Owner-adopted baseline.
+- At initial receipt creation, candidate adoption was `NOT_ADOPTED`. Subsequent Owner contextual assent adopted v1.0.1 for normative design only; see the [Owner adoption receipt](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-owner-adoption-receipt.md).
 - Operational posture unchanged: `GOVERNANCE=KEEP_BLOCKED`; `IMPLEMENTATION=NOT_AUTHORIZED`; `TESTS=NOT_RUN`; `READ_LIST=FAIL_CLOSED`; `BRIDGE=BRIDGE_NOT_READY`.
 
 ## 1. Report content received
@@ -70,7 +70,7 @@ The v1.0.1 §11 rows use C2/C3/C7 for explicit validation/evidence and gate comp
 
 ## 5. Original finding disposition and scope
 
-F-M1A-01 through F-M1A-08 remain reported as passing in the supplied review. This receipt does not relabel the external model invocation as authenticated and does not claim independent re-performance of all adversarial tests. The candidate remains non-adopted until the Owner makes an explicit adoption decision after canonical route reconciliation.
+F-M1A-01 through F-M1A-08 remain reported as passing in the supplied review. This receipt does not relabel the external model invocation as authenticated and does not claim independent re-performance of all adversarial tests. At initial receipt creation, the successor was pending the Owner's adoption decision. The Owner later replied `ok procede` to the direct recommendation to adopt v1.0.1; that contextual assent is recorded in the separate adoption receipt. v1.0.1 is now the normative design baseline, with the review provenance limits preserved.
 
 No test, source inspection, runtime operation, protected read, release or implementation was performed or authorized.
 
@@ -81,8 +81,9 @@ The correction request is documented in [the metadata-correction handoff](./CHAT
 ```text
 V1_0_0_BASELINE=ADOPTED; UNCHANGED
 V1_0_1_CANDIDATE_BLOB=7c72474a5f7c114c02320c177d6ea2aea68ad28f
-V1_0_1_STATUS=NOT_ADOPTED
+V1_0_1_STATUS=NORMATIVE_DESIGN_BASELINE_ADOPTED
 REVIEW_VERDICT=OWNER_REPORTED_PASS_WITH_REPAIRS
+OWNER_ADOPTION_PROVENANCE=CONTEXTUAL_ASSENT: "ok procede"
 REVIEW_DATE=INITIAL_2026-10-20_VALUE_RETRACTED_AS_UNVERIFIED
 REVIEW_TIMESTAMP=UNVERIFIABLE
 CANDIDATE_BLOB_IDENTITY=REVIEWER_REPORTED_CONFIRMED
@@ -109,3 +110,12 @@ The reviewer answered the four metadata questions as follows:
 Coordinator adjudication: the repository independently confirms that the named candidate blob exists and matches the route's exact target. The external session's actual git invocation and model/session identity remain `OWNER_REPORTED`, not independently authenticated. This distinction is preserved; there is no remaining timestamp contradiction because the unsupported date is retracted and the timestamp is declared unknown.
 
 The next task is not another review. It is the explicit Owner adoption decision for v1.0.1. The candidate remains `NOT_ADOPTED` until the Owner explicitly accepts it.
+
+
+## 8. Owner adoption decision recorded after metadata correction
+
+Following the corrected provenance, the coordinator recommended adopting v1.0.1 as the successor normative design baseline only and presented the choices `ACCEPT_M1A_V1_0_1_SUCCESSOR_BASELINE` or `RETAIN_M1A_V1_0_0_BASELINE`. The Owner replied `ok procede`. This is interpreted as contextual assent to the sole recommended option; the literal token was not repeated and must not be misrepresented as verbatim. The formal record is [M1A v1.0.1 Owner adoption receipt](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-owner-adoption-receipt.md).
+
+The adopted artifact is [v1.0.1 normative contract](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1_0_1.md), blob `baa39a09b97117df1dbe46804affdcebc7159f30`. The exact reviewed source candidate remains unchanged at blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f`; v1.0.0 is preserved unchanged as the predecessor.
+
+This supersedes the initial receipt's pending-adoption status only. All operational boundaries remain unchanged: `GOVERNANCE=KEEP_BLOCKED`, `IMPLEMENTATION=NOT_AUTHORIZED`, `TESTS=NOT_RUN`, `READ_LIST=FAIL_CLOSED`, `BRIDGE=BRIDGE_NOT_READY`.
