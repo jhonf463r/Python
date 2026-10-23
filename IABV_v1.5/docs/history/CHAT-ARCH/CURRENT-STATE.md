@@ -7,7 +7,7 @@ The Owner explicitly authorized bounded implementation work for G1–G3 in an is
 - **Task:** `M1A_G1_G3_AUTHORITY_ROUTE_CANDIDATE_IMPLEMENTATION` (child of `M1A_V1_0_1_G1_G3_AUTHORITY_EVIDENCE_ROUTE`).
 - **Exact pinned base:** public `main` commit `60c8ac6e7ff425c815d9bdc7194bf20ef8d134db`, observed immediately before candidate branch creation.
 - **Isolated candidate branch:** `m1a-g1-g3-governance-route-candidate-20261022`, created from that exact SHA. No product source was changed by the coordinator.
-- **Codex handoff:** [bounded G1–G3 candidate implementation handoff](./CHAT-ARCH-2026-10-22-M1A-G1-G3-governance-route-candidate-implementation-handoff.md), blob `40d9054864b52247482bc6264b49067e8a49b455`.
+- **Codex handoff:** [bounded G1–G3 candidate implementation handoff](./CHAT-ARCH-2026-10-22-M1A-G1-G3-governance-route-candidate-implementation-handoff.md), blob `23707a08c8dd9ebf6e2dc956a90ba4ea5877a611`.
 - **Destination:** Codex in the already-existing UI/session, by Owner-mediated handoff. `CODEX_PROMPT_DISPATCHED=NO`; no Codex result/receipt has been received.
 - **Allowed:** inspect relevant source and documents within a newly verified, separate candidate; implement only primitives actually supported by evidence and explicit adopted decisions; edit/commit candidate branch only.
 - **Mandatory stop:** if the real G1 trusted principal/root, G2 authorized catalogue/producer/revocation source, or G3 versioned server-side operation-to-target resolver is missing, do not fabricate placeholders and do not claim operability. Return exact missing dependency. If current Codex workspace cannot be proven separate from the Owner's existing worktree, stop without accessing it.
