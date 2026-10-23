@@ -18,6 +18,8 @@ The report verdict is `OWNER_REPORTED_PASS_WITH_REPAIRS`; F-M1A-01..08 are repor
 
 Maintain `GOVERNANCE=KEEP_BLOCKED`, `IMPLEMENTATION=NOT_AUTHORIZED`, `TESTS=NOT_RUN`, `READ_LIST=FAIL_CLOSED`, `BRIDGE=BRIDGE_NOT_READY`.
 
+
+**Historical-scope notice:** all routing text retained below the divider is preserved for provenance only. It does not supersede the current active task in `CURRENT-STATE.md`, and any older task pointers or implementation-authority statements are historical.
 ---
 
 ## 2026-10-22 Owner-directed project focus and space-time coordination
