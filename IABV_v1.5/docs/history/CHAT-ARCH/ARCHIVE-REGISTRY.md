@@ -10,6 +10,8 @@ Routing authority: [CURRENT-STATE.md](./CURRENT-STATE.md). Active task: `M1A_V1_
 
 Keep `GOVERNANCE=KEEP_BLOCKED`, `IMPLEMENTATION=NOT_AUTHORIZED`, `TESTS=NOT_RUN`, `READ_LIST=FAIL_CLOSED`, `BRIDGE=BRIDGE_NOT_READY`.
 
+
+**Historical-scope notice:** all routing text retained below the divider is preserved for provenance only. It does not supersede the current active task in `CURRENT-STATE.md`, and any older task pointers or implementation-authority statements are historical.
 ---
 
 ## 2026-10-21 CURRENT ROUTE POINTER — POST-TEST RECONCILIATION
