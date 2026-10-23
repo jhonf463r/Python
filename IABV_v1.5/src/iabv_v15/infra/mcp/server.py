@@ -941,10 +941,14 @@ class IABVMCPServer:
             )
             if block is not None:
                 return block
-            try:
-                return audit_tools.read_repo_file(self._workspace_root(), relative_path)
-            except audit_tools.AuditToolError as exc:
-                return exc.to_payload()
+            return {
+                "governance_blocked": True,
+                "reason": "scoped_read_authority_unavailable",
+                "detail": (
+                    "No hay una decisión de lectura acotada verificable para "
+                    "esta operación; no se inspeccionó el contenido."
+                ),
+            }
 
         @mcp.tool()
         def list_repo_directory(
@@ -963,14 +967,14 @@ class IABVMCPServer:
             )
             if block is not None:
                 return block
-            try:
-                return audit_tools.list_repo_directory(
-                    self._workspace_root(),
-                    relative_path,
-                    max_entries=int(max_entries),
-                )
-            except audit_tools.AuditToolError as exc:
-                return exc.to_payload()
+            return {
+                "governance_blocked": True,
+                "reason": "scoped_read_authority_unavailable",
+                "detail": (
+                    "No hay una decisión de lectura acotada verificable para "
+                    "esta operación; no se listaron entradas."
+                ),
+            }
 
         @mcp.tool()
         def capture_ui_screenshot(region: str = "control_center") -> dict[str, Any]:

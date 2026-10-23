@@ -549,28 +549,49 @@ def test_server_registers_audit_tools() -> None:
     assert audit <= registered, f"faltan audit tools: {audit - registered}"
 
 
-def test_read_repo_file_happy_path_via_server(tmp_path) -> None:  # type: ignore[no-untyped-def]
+def test_read_repo_file_denied_without_scoped_authority(tmp_path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
     (tmp_path / "docs").mkdir()
     (tmp_path / "docs" / "hello.md").write_text("hola", encoding="utf-8")
     server = IABVMCPServer(_build_container(workspace_root=str(tmp_path)))
+
+    def unexpected_read(*args, **kwargs):  # type: ignore[no-untyped-def]
+        pytest.fail("reader must not run without a scoped-read decision")
+
+    monkeypatch.setattr("iabv_v15.infra.mcp.server.audit_tools.read_repo_file", unexpected_read)
     payload = _call_tool(server, "read_repo_file", relative_path="docs/hello.md")
-    assert payload["content"] == "hola"
-    assert payload["path"] == "docs/hello.md"
+    assert payload["governance_blocked"] is True
+    assert payload["reason"] == "scoped_read_authority_unavailable"
+    assert "content" not in payload
+    assert "hola" not in str(payload)
 
 
-def test_read_repo_file_returns_error_payload_on_invalid(tmp_path) -> None:  # type: ignore[no-untyped-def]
+def test_read_repo_file_denies_before_path_processing_without_authority(tmp_path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
     server = IABVMCPServer(_build_container(workspace_root=str(tmp_path)))
+
+    def unexpected_read(*args, **kwargs):  # type: ignore[no-untyped-def]
+        pytest.fail("reader must not run without a scoped-read decision")
+
+    monkeypatch.setattr("iabv_v15.infra.mcp.server.audit_tools.read_repo_file", unexpected_read)
     payload = _call_tool(server, "read_repo_file", relative_path="/etc/passwd")
-    assert payload["error"] == "absolute_path_forbidden"
+    assert payload["governance_blocked"] is True
+    assert payload["reason"] == "scoped_read_authority_unavailable"
+    assert "content" not in payload
 
 
-def test_list_repo_directory_via_server(tmp_path) -> None:  # type: ignore[no-untyped-def]
+def test_list_repo_directory_denied_without_scoped_authority(tmp_path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
     (tmp_path / "a.txt").write_text("x")
     (tmp_path / ".env").write_text("S")
     server = IABVMCPServer(_build_container(workspace_root=str(tmp_path)))
+
+    def unexpected_list(*args, **kwargs):  # type: ignore[no-untyped-def]
+        pytest.fail("directory listing must not run without a scoped-read decision")
+
+    monkeypatch.setattr("iabv_v15.infra.mcp.server.audit_tools.list_repo_directory", unexpected_list)
     payload = _call_tool(server, "list_repo_directory", relative_path="")
-    names = {entry["name"]: entry for entry in payload["entries"]}
-    assert ".env" in names and names[".env"]["sensitive"] is True
+    assert payload["governance_blocked"] is True
+    assert payload["reason"] == "scoped_read_authority_unavailable"
+    assert "entries" not in payload
+    assert ".env" not in str(payload)
 
 
 def test_capture_ui_screenshot_without_provider_degrades_via_server() -> None:
@@ -623,8 +644,8 @@ def test_audit_tools_blocked_when_global_wildcard_block_active(tmp_path) -> None
     assert payload["reason"] == "operational_block_active"
 
 
-def test_audit_tools_allow_when_only_unrelated_block(tmp_path) -> None:  # type: ignore[no-untyped-def]
-    """Si el block es para otra ruta (ej. chatgpt_web), audit debe pasar."""
+def test_read_repo_file_denied_when_only_unrelated_block_and_no_scope_authority(tmp_path) -> None:  # type: ignore[no-untyped-def]
+    """Un block ajeno no libera el lector si falta autoridad de lectura."""
 
     (tmp_path / "file.md").write_text("contenido")
     unrelated = OperationalBlockRecord(
@@ -637,8 +658,10 @@ def test_audit_tools_allow_when_only_unrelated_block(tmp_path) -> None:  # type:
         _build_container(world_model_service=wm, workspace_root=str(tmp_path)),
     )
     payload = _call_tool(server, "read_repo_file", relative_path="file.md")
-    assert "governance_blocked" not in payload
-    assert payload["content"] == "contenido"
+    assert payload["governance_blocked"] is True
+    assert payload["reason"] == "scoped_read_authority_unavailable"
+    assert "content" not in payload
+    assert "contenido" not in str(payload)
 
 
 def test_run_pytest_tool_signature_rejects_python_executable() -> None:
