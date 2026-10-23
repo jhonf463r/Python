@@ -1,3 +1,29 @@
+## OVERRIDING LATEST CONTEXT — M1A G1 trust-bootstrap policy adjudication (2026-10-22)
+
+The top of [CURRENT-STATE.md](./CURRENT-STATE.md) is the sole actor-routing authority. Active task: `M1A_G1_TRUST_BOOTSTRAP_POLICY_ADJUDICATION`; status: `WAITING_OWNER`. The Owner supplied Codex's conditional G1 feasibility report; canonical reconciliation: [M1A G1 trust-bootstrap feasibility receipt](./CHAT-ARCH-2026-10-22-M1A-G1-trust-bootstrap-feasibility-reconciliation.md).
+
+Do not repeat the tool metadata inventory or the bounded source review. The public candidate branch `m1a-g1-g3-governance-route-candidate-20261022` was independently re-fetched by the coordinator and remains at `60c8ac6e7ff425c815d9bdc7194bf20ef8d134db`; the candidate was not modified. The next step is the Owner's explicit decision on the proposed trust-bootstrap policy; Windows Hello/WebAuthn is only a candidate factor, not a demonstrated local capability or root of trust.
+
+Taxonomy guard: G3 is the versioned server-side operation-to-target resolver. Durable request/approval/decision/operation/result receipt integration is a separate Entry 274 requirement. G1/G2/G3 remain unestablished; all eight implementation gates remain open. No implementation, protected read, tests, runtime, transport, merge, deploy or block release follows from a feasibility review.
+
+```text
+ACTIVE_TASK=M1A_G1_TRUST_BOOTSTRAP_POLICY_ADJUDICATION
+STATUS=WAITING_OWNER
+OWNER_TRUST_BOOTSTRAP_POLICY=PROPOSED_NOT_ADOPTED
+GOVERNANCE=KEEP_BLOCKED
+IMPLEMENTATION=NOT_AUTHORIZED_FOR_NEW_TRUST_BOOTSTRAP
+TESTS=NOT_RUN
+BUILD=NOT_RUN
+RUNTIME=NOT_RUN
+REAL_TRANSPORT=NOT_RUN
+PROTECTED_LOCAL_READ=NOT_AUTHORIZED
+MERGE_DEPLOY=NOT_AUTHORIZED
+BLOCK_RELEASE=NOT_AUTHORIZED
+BRIDGE=BRIDGE_NOT_READY
+```
+
+---
+
 ## LATEST ROUTING — Owner authorized isolated G1–G3 candidate (2026-10-22)
 
 The single active task is now `M1A_G1_G3_AUTHORITY_ROUTE_CANDIDATE_IMPLEMENTATION`, authorized by the Owner for candidate-only work. See authoritative [CURRENT-STATE](./CURRENT-STATE.md) and the [copy-ready Codex handoff](./CHAT-ARCH-2026-10-22-M1A-G1-G3-governance-route-candidate-implementation-handoff.md). The isolated candidate branch is `m1a-g1-g3-governance-route-candidate-20261022`, created from pinned public `main` SHA `60c8ac6e7ff425c815d9bdc7194bf20ef8d134db`. The handoff is prepared but has not been dispatched.
