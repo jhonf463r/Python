@@ -10,6 +10,8 @@ Source of truth: [CURRENT-STATE.md](./CURRENT-STATE.md), opening routing snapsho
 
 Adoption is normative design only; all runtime authority and implementation gates remain unverified/not established. Preserve `GOVERNANCE=KEEP_BLOCKED`, `IMPLEMENTATION=NOT_AUTHORIZED`, `TESTS=NOT_RUN`, `READ_LIST=FAIL_CLOSED`, `BRIDGE=BRIDGE_NOT_READY`.
 
+
+**Historical-scope notice:** all routing text retained below the divider is preserved for provenance only. It does not supersede the current active task in `CURRENT-STATE.md`, and any older task pointers or implementation-authority statements are historical.
 ---
 
 ## Construction algorithm completeness overlay — 2026-10-22
