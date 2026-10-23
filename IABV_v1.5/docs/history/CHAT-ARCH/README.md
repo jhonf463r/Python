@@ -1,3 +1,28 @@
+## OVERRIDING LATEST ROUTING — New-chat continuity receipt for the Windows G1 route (2026-10-22)
+
+The Owner requested a clean new-chat handoff after authorizing `M1A_G1_WINDOWS_OS_TRUST_BOOTSTRAP_CANDIDATE` with “ok procede”. Read the [new-chat continuity receipt](./CHAT-ARCH-2026-10-22-M1A-G1-Windows-OS-trust-bootstrap-new-chat-continuity.md), blob `b8833d29dae572265509a2367987722e08a0a735`, after the canonical preflight. It records the active task, evidence boundaries, remote candidate identity, and exact next-actor protocol.
+
+The prior implementation attempt is terminal with `BLOCKED_MISSING_G1_TRUST_ANCHOR`; receipt blob `33ba4562c3753a053b92176061d0258a1c35e77d`. New public Windows evidence grounds only a static design hypothesis (restricted service SID, CNG key DACL, protected service/configuration state, restrictive named-pipe DACL, explicit Owner-initiated enrollment). It does not prove machine configuration, IABV integration, Owner/server binding, or G1 closure. Research blob `0316f3b897ed5db98e185bf55db1ba482b7dcaf5`.
+
+Last verified candidate: `m1a-g1-g3-governance-route-candidate-20261022`, base/head `60c8ac6e7ff425c815d9bdc7194bf20ef8d134db`, tree `ca963f8013809d4efcf56133a37d2efe148517e9`, identical to base with no changed files. The Windows candidate handoff is prepared (blob `0f9be4908d63dd525e572519c1e1891c894fea0a`) but `CODEX_PROMPT_DISPATCHED=NO`. The next assistant must revalidate current canonical docs and branch state, then deliver the entire Codex prompt inline for `Codex — existing UI/session`; never make the Owner open GitHub just to fetch the prompt. No dispatch claim without a correlated Codex result.
+
+Anti-repeat and exclusions: no repeated broad source inventory; no local checkout, local OS probe, service install, key/credential enrollment, tests/build/runtime, real transport, protected read, merge/deploy or block release. Keep G1–G8 open, `GOVERNANCE=KEEP_BLOCKED`, `BRIDGE=BRIDGE_NOT_READY`; no automatic follow-on.
+
+```text
+ACTIVE_TASK=M1A_G1_WINDOWS_OS_TRUST_BOOTSTRAP_CANDIDATE
+STATUS=OWNER_AUTHORIZED_FOR_CANDIDATE_ONLY; HANDOFF_READY_NOT_DISPATCHED
+CANDIDATE_PRODUCT_CHANGES=NONE
+CODEX_PROMPT_DISPATCHED=NO
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3_VERSIONED_TARGET_RESOLVER=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+GOVERNANCE=KEEP_BLOCKED
+BRIDGE=BRIDGE_NOT_READY
+```
+
+---
+
 ## OVERRIDING LATEST ROUTING — New Windows OS trust-boundary route researched; bounded candidate handoff ready (2026-10-22)
 
 The prior task `M1A_G1_TRUST_BOOTSTRAP_CANDIDATE_IMPLEMENTATION` terminated with `BLOCKED_MISSING_G1_TRUST_ANCHOR`; terminal receipt: [prior candidate result](./CHAT-ARCH-2026-10-22-M1A-G1-trust-bootstrap-candidate-implementation-result.md), blob `33ba4562c3753a053b92176061d0258a1c35e77d`. The Owner has now said `ok procede`, authorizing continuation into a distinct, bounded route attempt. This does not close any gate.
