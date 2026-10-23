@@ -1,17 +1,17 @@
-## ACTIVE ROUTING — v1.0.1 report reconciled; explicit Owner adoption decision next (2026-10-22)
+## ACTIVE ROUTING — v1.0.0 remains baseline; v1.0.1 adoption token pending (2026-10-22)
 
-Source of truth: [CURRENT-STATE.md](./CURRENT-STATE.md), opening routing snapshot. Active task: `M1A_V1_0_1_IMPLEMENTATION_PREREQUISITE_EVIDENCE_RECONCILIATION`; state `READY_FOR_BOUNDED_DOCUMENTARY_WORK`.
+Source of truth: [CURRENT-STATE.md](./CURRENT-STATE.md), opening routing snapshot. Active task: `M1A_V1_0_1_OWNER_ADOPTION_DECISION`; state `AWAITING_EXPLICIT_OWNER_TOKEN`.
 
-- Adopted normative contract: [M1A v1.0.1](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1_0_1.md), blob `baa39a09b97117df1dbe46804affdcebc7159f30`.
-- Immutable reviewed source candidate: `7c72474a5f7c114c02320c177d6ea2aea68ad28f`. Immutable predecessor: v1.0.0 blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e`.
-- Owner decision: `ok procede`, recorded as contextual assent to adopting the recommended v1.0.1 normative design only; see [adoption receipt](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-owner-adoption-receipt.md), blob `80646b73b35f6a3f4807f6f59800a45aca51503e`.
-- Review receipt: [v1.0.1 receipt/reconciliation](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-receipt-and-reconciliation.md), blob `000b81b079c5febd8d78afebedf782d1d1e263fa`. `PASS_WITH_REPAIRS` remains reviewer-reported; `REVIEW_TIMESTAMP=UNVERIFIABLE`; `OWNER_REPORTED` attribution.
-- **Next task:** map the eight §10 implementation prerequisites into one evidence gate matrix, using only already-pinned documents. No source scan, implementation, tests or runtime.
+- Effective normative baseline, unchanged: [M1A v1.0.0](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md), blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e`.
+- Reviewed successor candidate, not adopted: [M1A v1.0.1 candidate](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1_0_1-candidate.md), blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f`.
+- Review receipt/reconciliation: [v1.0.1 review receipt](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-receipt-and-reconciliation.md), blob `000b81b079c5febd8d78afebedf782d1d1e263fa`; `OWNER_REPORTED_PASS_WITH_REPAIRS`, `REVIEW_TIMESTAMP=UNVERIFIABLE`, session `OWNER_REPORTED`.
+- The Owner's `ok procede` is documentary continuation only under overlay C1. The prior attempted adoption is withdrawn; see [correction](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-owner-adoption-correction.md), blob `bc1e7e97c85671753f79cf9916e640e02f6b642d`.
+- [Prerequisite evidence matrix](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-implementation-prerequisite-evidence-gate-matrix.md), blob `608a5c7f3c2be8ad794b21bfcb66657217584a58`: all eight future implementation gates mapped; none closed.
 
-Adoption is normative design only; all runtime authority and implementation gates remain unverified/not established. Preserve `GOVERNANCE=KEEP_BLOCKED`, `IMPLEMENTATION=NOT_AUTHORIZED`, `TESTS=NOT_RUN`, `READ_LIST=FAIL_CLOSED`, `BRIDGE=BRIDGE_NOT_READY`.
+Next gate: Owner must choose exactly `ACCEPT_M1A_V1_0_1_SUCCESSOR_BASELINE` or `RETAIN_M1A_V1_0_0_BASELINE`. No implementation or operational permission follows from adoption of design text.
 
+**Historical-scope notice:** all routing text retained below the divider is preserved for provenance only. It does not supersede `CURRENT-STATE.md` or any current task pointer.
 
-**Historical-scope notice:** all routing text retained below the divider is preserved for provenance only. It does not supersede the current active task in `CURRENT-STATE.md`, and any older task pointers or implementation-authority statements are historical.
 ---
 
 ## Construction algorithm completeness overlay — 2026-10-22
