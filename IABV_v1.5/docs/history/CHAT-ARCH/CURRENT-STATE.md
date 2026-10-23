@@ -1,5 +1,41 @@
 # CURRENT ROUTING SNAPSHOT — 2026-10-22 (M1A V1.0.1 NORMATIVE DESIGN ADOPTED; OPERATIONAL BLOCKS REMAIN)
 
+## LATEST ROUTING DELTA — Owner authorized isolated G1–G3 candidate attempt (2026-10-22)
+
+The Owner explicitly authorized bounded implementation work for G1–G3 in an isolated candidate from a pinned public `main`. This changes the next action from repeated route discovery to a bounded candidate implementation attempt; it does **not** authorize the live/local protected read or release any operational block.
+
+- **Task:** `M1A_G1_G3_AUTHORITY_ROUTE_CANDIDATE_IMPLEMENTATION` (child of `M1A_V1_0_1_G1_G3_AUTHORITY_EVIDENCE_ROUTE`).
+- **Exact pinned base:** public `main` commit `60c8ac6e7ff425c815d9bdc7194bf20ef8d134db`, observed immediately before candidate branch creation.
+- **Isolated candidate branch:** `codex/m1a-g1-g3-governance-route-candidate-implementation`, created from that exact SHA. No product source was changed by the coordinator.
+- **Codex handoff:** [bounded G1–G3 candidate implementation handoff](./CHAT-ARCH-2026-10-22-M1A-G1-G3-governance-route-candidate-implementation-handoff.md), blob `1c62da53cb78913af16cb8cb2ca7560a923ef8f8`.
+- **Destination:** Codex in the already-existing UI/session, by Owner-mediated handoff. `CODEX_PROMPT_DISPATCHED=NO`; no Codex result/receipt has been received.
+- **Allowed:** inspect relevant source and documents within a newly verified, separate candidate; implement only primitives actually supported by evidence and explicit adopted decisions; edit/commit candidate branch only.
+- **Mandatory stop:** if the real G1 trusted principal/root, G2 authorized catalogue/producer/revocation source, or G3 versioned server-side operation-to-target resolver is missing, do not fabricate placeholders and do not claim operability. Return exact missing dependency. If current Codex workspace cannot be proven separate from the Owner's existing worktree, stop without accessing it.
+- **Strictly not authorized:** any read of the Owner's existing/dirty checkout, `data/`, SQLite, secrets, credentials or `.env`; tests/builds/runtime/process launches/transport; live reader invocation; merge/deploy; live protected-read grant or operational block release.
+- **Implementation gate:** v1.0.1 stays the normative design baseline; all eight implementation gates remain open until separately supported by evidence. No test, runtime, or live authorization follows from candidate work.
+
+```text
+ACTIVE_TASK=M1A_G1_G3_AUTHORITY_ROUTE_CANDIDATE_IMPLEMENTATION
+PARENT_TASK=M1A_V1_0_1_G1_G3_AUTHORITY_EVIDENCE_ROUTE
+STATUS=OWNER_AUTHORIZED; CANDIDATE_HANDOFF_READY_NOT_DISPATCHED
+BASE_MAIN_SHA=60c8ac6e7ff425c815d9bdc7194bf20ef8d134db
+CANDIDATE_BRANCH=codex/m1a-g1-g3-governance-route-candidate-implementation
+CODEX_PROMPT_DISPATCHED=NO
+CODEX_EXECUTION=NOT_CONFIRMED
+CANDIDATE_WORKSPACE_IDENTITY=NOT_YET_VERIFIED_BY_CODEX
+G1_G2_G3_RUNTIME_AUTHORITY=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+GOVERNANCE=KEEP_BLOCKED
+IMPLEMENTATION=AUTHORIZED_FOR_ISOLATED_CANDIDATE_ONLY
+TESTS=NOT_RUN
+BUILD=NOT_RUN
+RUNTIME=NOT_RUN
+REAL_TRANSPORT=NOT_RUN
+LOCAL_SOURCE_READ=NOT_RUN
+READ_LIST=FAIL_CLOSED
+BRIDGE=BRIDGE_NOT_READY
+```
+
 ## LATEST ROUTING DELTA — Codex tool metadata found; governance route still unresolved (2026-10-22)
 
 The Owner supplied a metadata-only report from the Codex UI session. It is recorded in [the bounded Codex tool-surface result](./CHAT-ARCH-2026-10-22-Codex-session-tool-surface-G1-G3-result.md), blob `8d75749cbd5dd8bb60e071d76058e4ddab4b10c4`. Its reported verdict is `RELEVANT_TOOL_METADATA_FOUND`: metadata was visible for `mcp__iabv_v15_rsk01a5__read_repo_file`, `mcp__iabv_v15_rsk01a5__list_repo_directory`, `mcp__iabv_v15_rsk01a5__world_model_snapshot`, `mcp__iabv_v15_rsk01a5__git_status_and_log`, and `mcp__codex_apps__github_fetch_file`. No listed tool was invoked; these names/schemas are `OWNER_REPORTED`, not direct observation by this coordinator.
@@ -38,48 +74,40 @@ The Owner supplied the exact token `ACCEPT_M1A_V1_0_1_SUCCESSOR_BASELINE`. v1.0.
 
 ## Current active task
 
-`M1A_V1_0_1_G1_G3_AUTHORITY_EVIDENCE_ROUTE`
+`M1A_G1_G3_AUTHORITY_ROUTE_CANDIDATE_IMPLEMENTATION`
 
-- **Status:** `WAITING_AUTHORITY`.
-- **Next actor:** the Owner/governance authority or the named operator of the actual runtime authority surface.
-- **Missing dependency:** identify a supported governance-owned evidence route and accountable producer for G1–G3: runtime principal/trust anchor; catalogue, producer and revocation authority; and a versioned operation-to-target resolver.
-- **Evidence state:** `SUPPORTED_RUNTIME_AUTHORITY_ROUTE=UNRESOLVED`. The latest Owner-supplied Codex report found relevant reader/list/snapshot metadata but no governance decision route; see the linked bounded result at the top. No verified G1–G3 evidence producer is established.
-- **Stop condition:** do not repeat broad scans, bypass a denied reader, infer authority from a blob digest, invent an operator, or send another agent to repeat the same contract review. No IA prompt is dispatched until a real supported route and its responsible actor are identified.
-- **Acceptance criterion:** identify the exact supported governance-owned route and accountable evidence producers for G1–G3, with verifiable provenance; if no route is exposed in the named surface, record only a bounded `NOT_FOUND` for that surface and keep global existence `UNRESOLVED`.
+- **Parent task:** `M1A_V1_0_1_G1_G3_AUTHORITY_EVIDENCE_ROUTE`.
+- **Status:** `OWNER_AUTHORIZED; CANDIDATE_HANDOFF_READY_NOT_DISPATCHED`.
+- **Next actor:** Codex in the already-existing UI/session; Owner-mediated delivery of the [bounded handoff](./CHAT-ARCH-2026-10-22-M1A-G1-G3-governance-route-candidate-implementation-handoff.md).
+- **Candidate:** `codex/m1a-g1-g3-governance-route-candidate-implementation`, base `60c8ac6e7ff425c815d9bdc7194bf20ef8d134db`.
+- **Current dependency:** Codex must verify a fresh isolated candidate and determine if actual G1 trust, G2 publisher/catalogue/producer/revocation, and G3 versioned target-resolver primitives are evidenced in the pinned source. Do not invent them.
+- **Stop conditions:** stop if candidate workspace identity is unverified or any indispensable trust/authority primitive is absent; do not access Owner's existing checkout, use a reader to bypass the live block, or execute tests/builds/runtime/processes/transport. No merge, deploy or block release.
+- **Acceptance criterion:** exact candidate base/head and changed paths; evidence-linked G1–G3 implementation or exact unresolved authority dependencies; honest list of activities not performed. No claim of operational readiness.
+- **No implied closure:** M1A v1.0.1 is normative design only; eight implementation gates remain open.
 
 ```text
 PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
-PARENT_CONCEPT=UAAL-ROOT-001
-V1_0_0_PREDECESSOR=IMMUTABLE; SUPERSEDED_FOR_CURRENT_DESIGN
-V1_0_0_BLOB=8181c7c0cf6036c76cf365510e8d9665cf84e57e
-V1_0_1_NORMATIVE_DESIGN=ADOPTED_EXPLICIT_OWNER_TOKEN
-V1_0_1_BLOB=7c72474a5f7c114c02320c177d6ea2aea68ad28f
-V1_0_1_ADOPTION_TOKEN=ACCEPT_M1A_V1_0_1_SUCCESSOR_BASELINE
-V1_0_1_ADOPTION_RECEIPT=CHAT-ARCH-2026-10-22-M1A-v1_0_1-explicit-owner-adoption-receipt.md
-V1_0_1_ADOPTION_RECEIPT_BLOB=34bee2ad8b3b4beeb468e8d563b99f511f0b352d
-V1_0_1_REVIEW_VERDICT=OWNER_REPORTED_PASS_WITH_REPAIRS
-REVIEW_TIMESTAMP=UNVERIFIABLE
-REVIEW_SESSION_ATTRIBUTION=OWNER_REPORTED
+ACTIVE_TASK=M1A_G1_G3_AUTHORITY_ROUTE_CANDIDATE_IMPLEMENTATION
+PARENT_TASK=M1A_V1_0_1_G1_G3_AUTHORITY_EVIDENCE_ROUTE
+STATUS=OWNER_AUTHORIZED; CANDIDATE_HANDOFF_READY_NOT_DISPATCHED
+V1_0_1_NORMATIVE_DESIGN=ADOPTED
+BASE_MAIN_SHA=60c8ac6e7ff425c815d9bdc7194bf20ef8d134db
+CANDIDATE_BRANCH=codex/m1a-g1-g3-governance-route-candidate-implementation
+CODEX_PROMPT_DISPATCHED=NO
+CODEX_EXECUTION=NOT_CONFIRMED
+CANDIDATE_WORKSPACE_IDENTITY=NOT_YET_VERIFIED_BY_CODEX
 IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
-SUPPORTED_RUNTIME_AUTHORITY_ROUTE=UNRESOLVED
-CODEX_SESSION_TOOL_METADATA=RELEVANT_TOOL_METADATA_FOUND; OWNER_REPORTED
-CODEX_SESSION_GOVERNANCE_DECISION_ROUTE=NOT_EXPOSED_IN_REPORTED_METADATA
-CODEX_SESSION_CATALOGUE_VARIANCE=UNRESOLVED
-CODEX_SESSION_TOOL_SURFACE_RESULT_BLOB=8d75749cbd5dd8bb60e071d76058e4ddab4b10c4
-ACTIVE_TASK=M1A_V1_0_1_G1_G3_AUTHORITY_EVIDENCE_ROUTE
-CURRENT_STATUS=WAITING_AUTHORITY
-NEXT_ACTOR=OWNER_OR_NAMED_GOVERNANCE_OPERATOR
-NEXT_ACTION=IDENTIFY_SUPPORTED_GOVERNANCE_OWNED_EVIDENCE_ROUTE_AND_ACCOUNTABLE_PRODUCER_FOR_G1_G3
-NEXT_AGENT_PROMPT=NOT_NEEDED_UNTIL_SUPPORTED_ROUTE_AND_PRODUCER_IDENTIFIED
 RUNTIME_TRUST_ANCHOR=UNVERIFIED
 TRUSTED_CATALOGUE_AND_ACTIVE_SET_ATTESTATION=NOT_ESTABLISHED
 TRUSTED_OPERATION_TARGET_RESOLVER=NOT_ESTABLISHED
-PRODUCER_ALLOWLIST=NOT_ESTABLISHED
-REVOCATION_SOURCE=NOT_ESTABLISHED
-INDEPENDENT_BLOCK_RELEASE_MECHANISM=NOT_ESTABLISHED
+SUPPORTED_RUNTIME_AUTHORITY_ROUTE=UNRESOLVED
 GOVERNANCE=KEEP_BLOCKED
-IMPLEMENTATION=NOT_AUTHORIZED
+IMPLEMENTATION=AUTHORIZED_FOR_ISOLATED_CANDIDATE_ONLY
 TESTS=NOT_RUN
+BUILD=NOT_RUN
+RUNTIME=NOT_RUN
+REAL_TRANSPORT=NOT_RUN
+LOCAL_SOURCE_READ=NOT_RUN
 READ_LIST=FAIL_CLOSED
 BRIDGE=BRIDGE_NOT_READY
 ```
