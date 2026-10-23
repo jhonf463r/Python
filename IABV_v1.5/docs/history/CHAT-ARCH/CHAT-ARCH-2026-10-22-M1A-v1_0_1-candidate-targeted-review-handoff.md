@@ -6,7 +6,7 @@
 - Dispatch state: `NOT_DISPATCHED`; the handoff being persisted is not evidence of invocation.
 - Mode: documentary/static adversarial review only.
 - Current authority: opening snapshot of [CURRENT-STATE.md](./CURRENT-STATE.md), which remains the only active-task authority.
-- Review target: [M1A consolidated scope contract v1.0.1 candidate](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1_0_1-candidate.md), blob `4befbbb352bed35f813b9ada2d3b672cf91e328a`.
+- Review target: [M1A consolidated scope contract v1.0.1 candidate](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1_0_1-candidate.md), blob `a92224fbc3168eb64df395f3f25aa5e797cdb043`.
 - Predecessor retained unchanged: v1.0.0 blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e`.
 - Finding register: [v1.0.0 review receipt/register](./CHAT-ARCH-2026-10-22-M1A-contract-v1-sonnet-review-receipt-and-finding-register.md), blob `396606e5744f0b3d0332f8ee9f02ec14cdcea588`.
 
@@ -14,11 +14,11 @@
 
 > **Destination:** Sonnet 4.6 in the existing Antigravity session. If the exact artifact or required inputs cannot be retrieved and identity-checked, return `NOT_DISPATCHED` or `INPUTS_INCOMPLETE`; do not claim review completion.
 >
-> **Task:** Perform one bounded independent adversarial review of the exact candidate `IABV-OPERATIONAL-BLOCK-SCOPE v1.0.1`, blob `4befbbb352bed35f813b9ada2d3b672cf91e328a`. This is a successor candidate derived from the `PASS_WITH_REPAIRS` report on v1.0.0. Do not treat this candidate as adopted policy; v1.0.0 remains the Owner-adopted baseline unless the canonical route is updated after review.
+> **Task:** Perform one bounded independent adversarial review of the exact candidate `IABV-OPERATIONAL-BLOCK-SCOPE v1.0.1`, blob `a92224fbc3168eb64df395f3f25aa5e797cdb043`. This is a successor candidate derived from the `PASS_WITH_REPAIRS` report on v1.0.0. Do not treat this candidate as adopted policy; v1.0.0 remains the Owner-adopted baseline unless the canonical route is updated after review.
 >
 > **Bounded documentary inputs — verify the actual retrieved Git blob for each:**
 >
-> 1. Candidate v1.0.1 — `4befbbb352bed35f813b9ada2d3b672cf91e328a`: https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1_0_1-candidate.md
+> 1. Candidate v1.0.1 — `a92224fbc3168eb64df395f3f25aa5e797cdb043`: https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1_0_1-candidate.md
 > 2. Immutable predecessor v1.0.0 — `8181c7c0cf6036c76cf365510e8d9665cf84e57e`: https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md
 > 3. M1A v1.0.0 review finding register — `396606e5744f0b3d0332f8ee9f02ec14cdcea588`: https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1A-contract-v1-sonnet-review-receipt-and-finding-register.md
 > 4. Normalized Owner design ledger — `3425144a661c713eb8898c1eacefb2d791519bc0`: https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1A-normalized-scope-decision-ledger-and-design-amendment.md
