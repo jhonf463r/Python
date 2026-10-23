@@ -8,7 +8,8 @@ The Owner explicitly authorized bounded implementation work for G1–G3 in an is
 - **Exact pinned base:** public `main` commit `60c8ac6e7ff425c815d9bdc7194bf20ef8d134db`, observed immediately before candidate branch creation.
 - **Isolated candidate branch:** `m1a-g1-g3-governance-route-candidate-20261022`, created from that exact SHA. No product source was changed by the coordinator.
 - **Codex handoff:** [bounded G1–G3 candidate implementation handoff](./CHAT-ARCH-2026-10-22-M1A-G1-G3-governance-route-candidate-implementation-handoff.md), current blob `1728353cdd845bc219b8171af18a56adcf6f1620`. The complete prompt is to be supplied inline in the assistant response, not retrieved from this link.
-- **Coordination rule:** [Owner interaction contract, §13](./CHAT-ARCH-2026-10-22-adhd-aware-project-coordination-and-space-time-focus-protocol.md), blob `ad1feb5b260f9cbe74426aa33fff3322e74c4c1b`, requires inline copy-ready prompts and forbids making the Owner navigate elsewhere to retrieve them. This rule is documented; actual cross-chat reuse must still be demonstrated.
+- **Coordination rule:** [Owner interaction contract, §13](./CHAT-ARCH-2026-10-22-adhd-aware-project-coordination-and-space-time-focus-protocol.md), blob `e08b95f7e7ecc12348486a4ce49dc086eeda7c2e`, requires inline copy-ready prompts and forbids making the Owner navigate elsewhere to retrieve them. This rule is documented; actual cross-chat reuse must still be demonstrated.
+- **Incident/lesson record:** [inline-prompt delivery and new-chat continuity correction](./CHAT-ARCH-2026-10-22-inline-prompt-delivery-and-new-chat-continuity-correction.md), blob `07182ca1254e631ffa396c118af3184cb90dc7d3`. The previous handoff sent the Owner to an external page for the prompt; this is recorded as a workflow failure, not Owner error.
 - **Destination:** Codex in the already-existing UI/session. `CODEX_PROMPT_DISPATCHED=NO`; no Codex result/receipt has been received. Per [coordination protocol §13](./CHAT-ARCH-2026-10-22-adhd-aware-project-coordination-and-space-time-focus-protocol.md), the complete prompt must be delivered inline in the current ChatGPT response; GitHub links are supplemental storage, never the sole place to retrieve instructions. The Owner's only manual handoff is copy from this chat → paste in the named Codex session.
 - **Allowed:** inspect relevant source and documents within a newly verified, separate candidate; implement only primitives actually supported by evidence and explicit adopted decisions; edit/commit candidate branch only.
 - **Mandatory stop:** if the real G1 trusted principal/root, G2 authorized catalogue/producer/revocation source, or G3 versioned server-side operation-to-target resolver is missing, do not fabricate placeholders and do not claim operability. Return exact missing dependency. If current Codex workspace cannot be proven separate from the Owner's existing worktree, stop without accessing it.
@@ -25,6 +26,8 @@ CODEX_PROMPT_DISPATCHED=NO
 PROMPT_DELIVERY_MODE=INLINE_IN_CHAT; NO_EXTERNAL_RETRIEVAL_REQUIRED
 NEXT_USER_ACTION=COPY_INLINE_CODEX_PROMPT_AND_PASTE_IN_EXISTING_UI_SESSION
 COORDINATION_RULE=PROTOCOL_SECTION_13; DOCUMENTED_NOT_YET_PROVEN_BY_REUSE
+COORDINATION_INCIDENT_RECORD=CHAT-ARCH-2026-10-22-inline-prompt-delivery-and-new-chat-continuity-correction.md
+COORDINATION_INCIDENT_BLOB=07182ca1254e631ffa396c118af3184cb90dc7d3
 CODEX_EXECUTION=NOT_CONFIRMED
 CANDIDATE_WORKSPACE_IDENTITY=NOT_YET_VERIFIED_BY_CODEX
 G1_G2_G3_RUNTIME_AUTHORITY=NOT_ESTABLISHED
