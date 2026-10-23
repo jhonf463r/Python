@@ -1,3 +1,28 @@
+## LATEST ROUTING — Owner-authorized G1–G3 candidate task (2026-10-22)
+
+Apply the anti-repeat and causal-continuity protocol to the authorized next step: `M1A_G1_G3_AUTHORITY_ROUTE_CANDIDATE_IMPLEMENTATION`. The authoritative task record is [CURRENT-STATE.md](./CURRENT-STATE.md); exact Codex prompt is [the G1–G3 candidate implementation handoff](./CHAT-ARCH-2026-10-22-M1A-G1-G3-governance-route-candidate-implementation-handoff.md).
+
+A separate candidate branch was created from public-main SHA `60c8ac6e7ff425c815d9bdc7194bf20ef8d134db`; branch `codex/m1a-g1-g3-governance-route-candidate-implementation`. The prompt is ready but not sent to the Codex UI session. Do not repeat metadata inventory or the contract review. Codex must verify its candidate workspace is separate; then inspect only relevant pinned source/docs and implement only evidence-backed primitives. Missing G1 trust root/principal, G2 publisher/catalogue/producer/revocation authority, or G3 versioned resolver is an exact stop condition, not an invitation to invent machinery.
+
+The Owner's authorization is limited to this candidate. No access to the pre-existing checkout/data/SQLite/secrets, no tests/build/runtime/process launch/real transport, no merge/deploy, and no protected read or block release. The eight implementation gates remain open.
+
+```text
+ACTIVE_TASK=M1A_G1_G3_AUTHORITY_ROUTE_CANDIDATE_IMPLEMENTATION
+CODEX_PROMPT_DISPATCHED=NO
+IMPLEMENTATION=AUTHORIZED_FOR_ISOLATED_CANDIDATE_ONLY
+GOVERNANCE=KEEP_BLOCKED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+TESTS=NOT_RUN
+BUILD=NOT_RUN
+RUNTIME=NOT_RUN
+REAL_TRANSPORT=NOT_RUN
+BRIDGE=BRIDGE_NOT_READY
+```
+
+Historical material below remains provenance only; CURRENT-STATE is the sole current-task authority.
+
+---
+
 ## ACTIVE ROUTING — M1A v1.0.1 adopted for normative design; G1–G3 authority route unresolved (2026-10-22)
 
 **Read [CURRENT-STATE.md](./CURRENT-STATE.md) first.** It remains the sole active-task and next-actor authority.
