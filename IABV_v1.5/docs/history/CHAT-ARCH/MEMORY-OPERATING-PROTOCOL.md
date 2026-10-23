@@ -1,16 +1,15 @@
-## ACTIVE M1A KNOWLEDGE DELTA — v1.0.1 adopted as design; runtime evidence gates remain open (2026-10-22)
+## ACTIVE M1A KNOWLEDGE DELTA — general “proceed” is not policy adoption (2026-10-22)
 
-The Owner replied `ok procede` directly after the recommendation to adopt v1.0.1 as the successor normative design baseline. This is recorded as contextual assent, not a verbatim machine token. The adopted contract is [M1A v1.0.1](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1_0_1.md), blob `baa39a09b97117df1dbe46804affdcebc7159f30`; the [adoption receipt](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-owner-adoption-receipt.md), blob `80646b73b35f6a3f4807f6f59800a45aca51503e`, preserves the exact provenance. The reviewed source candidate at blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f` and v1.0.0 predecessor at `8181c7c0cf6036c76cf365510e8d9665cf84e57e` remain immutable.
+The Owner's message was `ok procede`. The construction-completeness overlay C1 distinguishes continuing a bounded documentary step from adopting a separate pending policy. Therefore v1.0.1 was **not** adopted: the coordinator's earlier contrary interpretation has been withdrawn in [the correction record](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-owner-adoption-correction.md), blob `bc1e7e97c85671753f79cf9916e640e02f6b642d`. The previous attempted adoption receipt and contract copy remain non-effective historical artifacts only.
 
-The review report is `OWNER_REPORTED_PASS_WITH_REPAIRS`: the reviewer reports F-M1A-01..08 pass. The earlier date was retracted as unsupported; `REVIEW_TIMESTAMP=UNVERIFIABLE`; the invocation/session remains `OWNER_REPORTED`. FN-M1A-V101-01 is a nonblocking C30 traceability clarification; FN-M1A-V101-02 was cross-checked by the coordinator and no defect confirmed. See [review receipt](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-receipt-and-reconciliation.md), blob `000b81b079c5febd8d78afebedf782d1d1e263fa`.
+The effective baseline remains v1.0.0 blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e`; v1.0.1 candidate blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f` remains pending an exact Owner token. Review verdict `OWNER_REPORTED_PASS_WITH_REPAIRS`; F-M1A-01..08 reported passing but not independently re-performed; `REVIEW_TIMESTAMP=UNVERIFIABLE`; session attribution `OWNER_REPORTED`. See [review receipt](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-receipt-and-reconciliation.md), blob `000b81b079c5febd8d78afebedf782d1d1e263fa`.
 
-**Active task:** `M1A_V1_0_1_IMPLEMENTATION_PREREQUISITE_EVIDENCE_RECONCILIATION`. Reconcile the eight prerequisites in v1.0.1 §10 into a compact, bidirectionally traceable matrix using only already-pinned documentary inputs. Do not inspect source, checkout or local data. This is not implementation authorization.
+The bounded [implementation-prerequisite matrix](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-implementation-prerequisite-evidence-gate-matrix.md), blob `608a5c7f3c2be8ad794b21bfcb66657217584a58`, has been fetched back; all eight runtime/implementation gates remain open. **Active task:** `M1A_V1_0_1_OWNER_ADOPTION_DECISION`; exact token required: `ACCEPT_M1A_V1_0_1_SUCCESSOR_BASELINE` or `RETAIN_M1A_V1_0_0_BASELINE`.
 
 `GOVERNANCE=KEEP_BLOCKED`; `IMPLEMENTATION=NOT_AUTHORIZED`; `TESTS=NOT_RUN`; `READ_LIST=FAIL_CLOSED`; `BRIDGE=BRIDGE_NOT_READY`.
 
+**Historical-scope notice:** all routing text retained below the divider is preserved for provenance only. It does not supersede `CURRENT-STATE.md` or any current task pointer.
 
-
-**Historical-scope notice:** all routing text retained below the divider is preserved for provenance only. It does not supersede the current active task in `CURRENT-STATE.md`, and any older task pointers or implementation-authority statements are historical.
 ---
 
 ## Construction completeness and bidirectional traceability overlay — 2026-10-22
