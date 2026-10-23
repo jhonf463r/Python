@@ -1,41 +1,49 @@
-# CURRENT ROUTING SNAPSHOT — 2026-10-22 (M1A v1.0.1 REVIEW RECONCILED; OWNER ADOPTION DECISION PENDING; OPERATIONAL BLOCKS REMAIN)
+# CURRENT ROUTING SNAPSHOT — 2026-10-22 (M1A v1.0.1 NORMATIVE DESIGN ADOPTED; OPERATIONAL BLOCKS REMAIN)
 
-## LATEST ROUTING DELTA — metadata corrected; exact candidate identity reported confirmed; awaiting explicit Owner adoption decision
+## LATEST ROUTING DELTA — Owner adopted successor design; next gate is documentary prerequisite reconciliation
 
-The Owner supplied a Sonnet 4.6 / Antigravity-attributed report for exact M1A candidate v1.0.1 blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f`. The report verdict remains `PASS_WITH_REPAIRS`, with all eight original findings reported as passing and two additional LOW observations. The external session/invocation remains `OWNER_REPORTED`; this is not a cryptographically authenticated session receipt.
+The Owner replied `ok procede` immediately after the coordinator recommended accepting M1A v1.0.1 as the new normative design baseline only and presented two explicit choices. This is recorded as contextual assent to the recommendation, not as a verbatim machine token. The [Owner adoption receipt](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-owner-adoption-receipt.md), blob `80646b73b35f6a3f4807f6f59800a45aca51503e`, documents the wording and its interpretation transparently.
 
-The reviewer has now explicitly corrected the prior date. They state that `2026-10-20` was written without a time query or timestamp evidence and was not a reference to another artifact. They report a fresh clone and `git rev-parse HEAD:<path>` returning the exact target blob. Their corrected metadata is `REVIEW_TIMESTAMP=UNVERIFIABLE`. The unsupported date is retracted; target identity is confirmed by the reviewer report, while exact invocation/session provenance stays `OWNER_REPORTED`.
+### Adopted design artifacts and review provenance
 
-The coordinator independently fetched back all seven bounded inputs and confirmed their current Git blob identities. FN-M1A-V101-01 is adjudicated as a nonblocking traceability clarification: v1.0.1 C30's stronger current-revocation wording follows F-M1A-05 and §7; the receipt records that relationship. FN-M1A-V101-02 is not a confirmed contract defect: the coordinator cross-checked overlay C2 (traceability ledger), C3 (state-space definition), C5 (authority-plane separation) and C7 (pre-construction gate), and the references map to those sections. The complete corrected receipt is [here](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-receipt-and-reconciliation.md), blob `45190a512e93211a85e23be74fa75741be5227f6`.
+- **Current normative design baseline:** [M1A contract v1.0.1](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1_0_1.md), blob `baa39a09b97117df1dbe46804affdcebc7159f30`.
+- **Reviewed source candidate, immutable:** blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f`; it remains preserved to bind the report to exactly what was reviewed.
+- **Superseded predecessor, immutable:** v1.0.0 blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e`.
+- **Review receipt / metadata correction:** [v1.0.1 receipt](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-receipt-and-reconciliation.md), blob `000b81b079c5febd8d78afebedf782d1d1e263fa`. Reviewer-reported verdict is `PASS_WITH_REPAIRS`; F-M1A-01..08 are reported passing but were not independently re-performed by the coordinator. The reviewer confirms the exact blob identity via a reported fresh-clone Git hash check. The prior unverified date was retracted; `REVIEW_TIMESTAMP=UNVERIFIABLE`; review-session attribution remains `OWNER_REPORTED`.
+- **Finding disposition:** FN-M1A-V101-01 is a nonblocking traceability clarification tied to F-M1A-05. FN-M1A-V101-02 was cross-checked against the pinned overlay and is not confirmed as a defect. All seven adopted choices OG-M1A-01..07 remain unchanged.
+
+### Design-adoption boundary
+
+v1.0.1 is adopted as the **normative design baseline only**. This does not imply implementation, test, runtime, transport, protected-read or block-release readiness. The trusted runtime principal/anchor, authenticated complete active-block-set attestation, trusted catalogue publisher/revocation source, producer allowlist, real operation-to-target resolver/call-site bindings and independent block-release mechanism remain unverified or not established.
 
 ### Current active task
 
-`M1A_V1_0_1_OWNER_ADOPTION_DECISION` — the report metadata is reconciled. No substantive review rerun is needed. The one remaining gate is the Owner's explicit choice whether v1.0.1 becomes the successor normative design baseline.
+`M1A_V1_0_1_IMPLEMENTATION_PREREQUISITE_EVIDENCE_RECONCILIATION`
 
-- **Adopted baseline, unchanged:** [M1A v1.0.0](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md), blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e`.
-- **Reviewed successor, not adopted:** [M1A v1.0.1 candidate](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1_0_1-candidate.md), blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f`.
-- **Coordinator recommendation:** accept v1.0.1 as the new normative design baseline, while preserving `REVIEW_TIMESTAMP=UNVERIFIABLE`, the report's `OWNER_REPORTED` attribution, and FN-M1A-V101-01 as a nonblocking traceability clarification. FN-M1A-V101-02 is not confirmed as a defect. This is a recommendation, not an adoption event.
-- **Next actor / authority:** Owner. Choose the explicit token `ACCEPT_M1A_V1_0_1_SUCCESSOR_BASELINE` to adopt the v1.0.1 normative design, or `RETAIN_M1A_V1_0_0_BASELINE` to retain v1.0.0. No token has been supplied yet; the current baseline therefore remains v1.0.0.
-- **Evidence/limitations:** review verdict and fresh-clone SHA operation are reviewer-reported. GitHub independently confirms the candidate blob exists. The review's actual wall-clock timestamp remains unknown; no tests or runtime were run.
+- **Mode:** documentary only, bounded to the already-pinned normative contract, Entry 274, UAAL-ROOT-001, the construction-completeness overlay, the review receipt and this route.
+- **Next actor:** ChatGPT coordinator.
+- **Objective:** produce one traceable gate matrix for the v1.0.1 contract's eight future implementation prerequisites (§10), distinguishing design requirement, required authority/evidence, canonical source, currently known status, and exact closure receipt needed. Reuse the existing documents; do not create parallel governance or scan source.
+- **Exclusions:** no local checkout, `data/`, SQLite, secrets or `.env`; no product-source edits, code, tests, build, runtime, transport, protected read, merge, deployment or block release. Any later implementation would require separate explicit authorization after the matrix is reconciled.
+- **Status:** `READY_FOR_BOUNDED_DOCUMENTARY_WORK`; implementation remains unauthorized.
 
 ```text
 PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
 PARENT_CONCEPT=UAAL-ROOT-001
 OWNER_DESIGN_ACCEPTANCE=ACCEPT_M1A_RECOMMENDED_DESIGN_BASELINE
-ADOPTED_BASELINE_VERSION=1.0.0
-ADOPTED_BASELINE_BLOB=8181c7c0cf6036c76cf365510e8d9665cf84e57e
-V1_0_0_REVIEW_VERDICT=OWNER_REPORTED_PASS_WITH_REPAIRS
+V1_0_0_PREDECESSOR_BLOB=8181c7c0cf6036c76cf365510e8d9665cf84e57e
+V1_0_0_STATUS=SUPERSEDED_DESIGN_PREDECESSOR; IMMUTABLE
+V1_0_1_BASELINE=NORMATIVE_DESIGN_BASELINE_ADOPTED
+V1_0_1_ADOPTED_BLOB=baa39a09b97117df1dbe46804affdcebc7159f30
+V1_0_1_REVIEWED_SOURCE_BLOB=7c72474a5f7c114c02320c177d6ea2aea68ad28f
 V1_0_1_REVIEW_VERDICT=OWNER_REPORTED_PASS_WITH_REPAIRS
-V1_0_1_CANDIDATE_BLOB=7c72474a5f7c114c02320c177d6ea2aea68ad28f
-V1_0_1_STATUS=REVIEWED; NOT_ADOPTED_PENDING_OWNER_DECISION
-REVIEWER_BLOB_IDENTITY=OWNER_REPORTED_CONFIRMED_EXACT_BLOB
 REVIEW_TIMESTAMP=UNVERIFIABLE
 REVIEW_SESSION_ATTRIBUTION=OWNER_REPORTED
+OWNER_ADOPTION_PROVENANCE=CONTEXTUAL_ASSENT: "ok procede"
 F_M1A_01_08=REPORTED_PASS; NOT_INDEPENDENTLY_REPERFORMED
 FN_M1A_V101_01=NONBLOCKING_TRACEABILITY_CLARIFICATION_RECORDED
 FN_M1A_V101_02=COORDINATOR_CROSS_CHECKED; NO_DEFECT_CONFIRMED
-ACTIVE_TASK=M1A_V1_0_1_OWNER_ADOPTION_DECISION
-CURRENT_STATUS=READY_FOR_OWNER_DECISION; NOT_ADOPTED
+ACTIVE_TASK=M1A_V1_0_1_IMPLEMENTATION_PREREQUISITE_EVIDENCE_RECONCILIATION
+CURRENT_STATUS=READY_FOR_BOUNDED_DOCUMENTARY_WORK
 RUNTIME_TRUST_ANCHOR=UNVERIFIED
 TRUSTED_CATALOGUE_AND_ACTIVE_SET_ATTESTATION=NOT_ESTABLISHED
 TRUSTED_OPERATION_TARGET_RESOLVER=NOT_ESTABLISHED
@@ -49,7 +57,7 @@ READ_LIST=FAIL_CLOSED
 BRIDGE=BRIDGE_NOT_READY
 ```
 
-**Historical routing sections below remain for provenance only; they do not supersede this active-task block.**
+**Historical routing sections below remain for provenance only and do not supersede this snapshot.**
 
 ## HISTORICAL ROUTING DELTA — Owner accepted M1A design; contract v1.0.0 created (superseded after targeted review)
 
