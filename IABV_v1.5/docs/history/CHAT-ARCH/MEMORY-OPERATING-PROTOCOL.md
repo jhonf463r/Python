@@ -1,12 +1,12 @@
-## ACTIVE M1A KNOWLEDGE DELTA — review report received; chronology becomes the active uncertainty (2026-10-22)
+## ACTIVE M1A KNOWLEDGE DELTA — review receipt reconciled; Owner adoption is the next authority gate (2026-10-22)
 
-The Owner supplied an external Sonnet 4.6-attributed report for candidate v1.0.1, exact blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f`, reporting `PASS_WITH_REPAIRS`. Preserve the report as `OWNER_REPORTED`, not as an authenticated invocation receipt. GitHub's history for the exact final blob places it at 2026-10-22 19:36:28 America/Bogota, whereas the report says 2026-10-20. This is a provenance/time contradiction requiring correction, not grounds to allege misconduct or automatically discard the technical observations.
+The Owner supplied a Sonnet 4.6-attributed `PASS_WITH_REPAIRS` report for v1.0.1 blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f`. The reviewer now says a fresh clone and `git rev-parse HEAD:<path>` confirmed that exact blob. The previously stated date `2026-10-20` was an unverified mistake; the corrected state is `REVIEW_TIMESTAMP=UNVERIFIABLE`. This resolves the date contradiction but does not authenticate the external session/invocation, which remains `OWNER_REPORTED`.
 
-Receipt: [v1.0.1 review receipt and reconciliation](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-receipt-and-reconciliation.md). Active task: `M1A_V1_0_1_REVIEW_REPORT_METADATA_CORRECTION`. Use [the bounded metadata-correction handoff](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-metadata-correction-handoff.md); do not rerun the adversarial review merely to fix metadata.
+Receipt: [v1.0.1 review receipt and reconciliation](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-receipt-and-reconciliation.md), blob `45190a512e93211a85e23be74fa75741be5227f6`. The reviewer reports F-M1A-01..08 pass. FN-M1A-V101-01 is recorded as a nonblocking traceability clarification for the stronger C30 wording implied by F-M1A-05. FN-M1A-V101-02 is not confirmed as a defect after the coordinator cross-checked overlay C2/C3/C5/C7.
 
-New finding dispositions: FN-M1A-V101-01 is accepted as a nonblocking traceability clarification because v1.0.1 C30's stronger current-revocation wording derives from F-M1A-05. FN-M1A-V101-02 is not confirmed as a contract defect: the coordinator fetched the exact overlay and verified C2/C3/C5/C7 correspond to traceability, state-space, authority-plane separation and the pre-construction gate. The report's review date and its claim that the exact final blob was retrieved remain unresolved until corrected.
+**Active task:** `M1A_V1_0_1_OWNER_ADOPTION_DECISION`. v1.0.0 remains adopted and unchanged; v1.0.1 remains `NOT_ADOPTED` until the Owner explicitly accepts it. The coordinator recommends adoption of the normative design only, with the timestamp limitation preserved. This does not authorize implementation, runtime, protected reads or block release.
 
-`V1_0_0_BASELINE=ADOPTED_UNCHANGED`; `V1_0_1=NOT_ADOPTED`; `GOVERNANCE=KEEP_BLOCKED`; `IMPLEMENTATION=NOT_AUTHORIZED`; `TESTS=NOT_RUN`; `READ_LIST=FAIL_CLOSED`; `BRIDGE=BRIDGE_NOT_READY`. This review remains documentary; no runtime/implementation or causal-learning claim is inferred.
+`GOVERNANCE=KEEP_BLOCKED`; `IMPLEMENTATION=NOT_AUTHORIZED`; `TESTS=NOT_RUN`; `READ_LIST=FAIL_CLOSED`; `BRIDGE=BRIDGE_NOT_READY`.
 
 ---
 
