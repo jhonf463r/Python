@@ -1,3 +1,46 @@
+## OVERRIDING LATEST ROUTING — Owner Entra identity prepared; IABV trust remains unestablished (2026-10-23)
+
+Owner-reported continuity receipt: [M1A G1 Owner identity preparation and no-cost route](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-23-M1A-G1-owner-identity-preparation-no-cost-route.md), blob `1cbf32702089f12ed0a455a7f7ffc2d160e4a620`.
+
+The Owner reports that an organizational Microsoft Entra directory and a dedicated IABV Owner user were created, Microsoft Authenticator was enrolled, and sign-in verification succeeded. Identifiers and credentials are deliberately not copied into this public repository. These facts are Owner-reported, not independently verified by this coordinator. Entra is only a candidate identity provider; successful MFA does not authorize IABV reads or establish an independent trust root. Azure billing/spending-limit state is not verified. No paid services, Azure deployment, app registration, secrets, or code changes are authorized.
+
+```text
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+ACTIVE_TASK=M1A_G1_TRUST_BOOTSTRAP_AUTHORITY_BOUNDARY
+LATEST_PROGRESS=OWNER_REPORTED_ENTRA_DIRECTORY_AND_IABV_OWNER_IDENTITY_WITH_AUTHENTICATOR_SIGN_IN
+IDENTITY_PROVIDER_CANDIDATE=MICROSOFT_ENTRA_ID; NOT_YET_TRUSTED_BY_IABV
+TENANT_AND_USER_IDS=NOT_STORED_IN_PUBLIC_REPOSITORY
+AUTHENTICATOR_SIGN_IN=OWNER_REPORTED_SUCCESS
+AZURE_BILLING_STATE=NOT_VERIFIED
+COST_POLICY=NO_PAID_SERVICES; BILLING_GUARDS_NOT_VERIFIED
+OWNER_TO_WINDOWS_PRINCIPAL=NOT_ESTABLISHED
+ISSUER_TO_EXACT_SERVER=NOT_ESTABLISHED
+ROOT_AUTHORITY_AND_BOOTSTRAP_BINDING=NOT_ESTABLISHED
+M1A_NORMATIVE_DESIGN=V1.0.1; ADOPTED_DESIGN_ONLY
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+GOVERNANCE=KEEP_BLOCKED
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3_VERSIONED_TARGET_RESOLVER=NOT_ESTABLISHED
+BRIDGE=BRIDGE_NOT_READY
+READ_LIST=FAIL_CLOSED
+IMPLEMENTATION=NOT_AUTHORIZED
+TESTS=NOT_RUN
+BUILD=NOT_RUN
+RUNTIME=NOT_RUN
+REAL_TRANSPORT=NOT_RUN
+TPM_PREFLIGHT_BRANCH=CLOSED_FOR_NOW
+AUTOMATIC_FOLLOW_ON=FALSE
+NEXT_ACTION=BOUNDED_NO_COST_ENTRA_IDENTITY_INTEGRATION_DESIGN_ONLY
+NEXT_ACCEPTANCE=IDENTIFY_MINIMUM_GOVERNED_TRUST_BINDING_AND_COST_REQUIREMENTS; NO_RUNTIME_OR_APP_REGISTRATION
+COORDINATOR_RUNTIME=NOT_PROVEN
+CAUSAL_SPACE_TIME_REUSE=NOT_PROVEN
+```
+
+This override records owner-reported preparation only. It does not close G1, establish Entra as a trusted IABV issuer, authorize app registration or deployment, change the normative contract, run tests, or release any block. Prior canonical history is preserved below.
+
+---
+
 ## OVERRIDING LATEST ROUTING — Governance-owned bootstrap authority design reconciled (2026-10-23)
 
 Static reconciliation receipt: [M1A G1 governance-owned bootstrap authority design — static reconciliation](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-23-M1A-G1-governance-owned-bootstrap-authority-design-static-reconciliation.md), blob `b3a138f4fcf521071e6d0374a81523b78dc66dda`. Candidate: [governance-owned bootstrap authority design](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-23-M1A-G1-governance-owned-bootstrap-authority-design-candidate.md), blob `feb61c72e44ec61179fba7827515ab58348f4890`, commit `675c3bdd046de04e4e7d6bb70d616dbce1354e06`, branch `codex/m1a-g1-governance-owned-bootstrap-authority-design-20261023`. Public GitHub confirms the commit parent is baseline `af5fc7e7b10ac9941406f67bdf2a0cf2aa5b6b68`; compare shows exactly one new 256-line document, with no deletions.
