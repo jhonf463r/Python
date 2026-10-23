@@ -1,5 +1,46 @@
 # CURRENT ROUTING SNAPSHOT — 2026-10-22 (M1A V1.0.1 NORMATIVE DESIGN ADOPTED; OPERATIONAL BLOCKS REMAIN)
 
+## LATEST ROUTING DELTA — G1 trust-bootstrap feasibility reconciled; Owner policy decision pending (2026-10-22)
+
+The bounded Codex report supplied by the Owner concludes `G1_FEASIBILITY=CONDITIONAL_NOT_DEMONSTRATED`. Windows Hello/WebAuthn may be considered as an Owner-authentication factor only after the enrollment, Owner-to-credential binding, instance identity and issuer/reader separation guarantees are verified. Platform documentation does not establish that these guarantees are present or integrated in IABV. No code was modified by that feasibility review.
+
+A reconciliation receipt is recorded at [M1A G1 trust-bootstrap feasibility reconciliation](./CHAT-ARCH-2026-10-22-M1A-G1-trust-bootstrap-feasibility-reconciliation.md). This coordinator independently fetched the public GitHub references: current `main` before this routing update was `14fd0976b1cc747fb568b93e6faafb0409bb08a1`; candidate branch `m1a-g1-g3-governance-route-candidate-20261022` remained exactly at `60c8ac6e7ff425c815d9bdc7194bf20ef8d134db`, tree `ca963f8013809d4efcf56133a37d2efe148517e9`. Candidate code remains unchanged. The Codex report's `HEAD=OWNER_REPORTED` describes its own capture limitation; this separate coordinator fetch verified the public branch tip, not any live local server or checkout.
+
+**Terminology correction:** M1A G3 is the authoritative versioned server-side operation-to-canonical-target resolver. A durable ledger correlating request, approval, decision, operation and result is a separate Entry 274 receipt/ledger requirement; it does not replace G3. G2 remains the authorized catalogue publisher, producer-class policy, integrity/version lifecycle and authoritative revocation source.
+
+The next task is now `M1A_G1_TRUST_BOOTSTRAP_POLICY_ADJUDICATION`, `WAITING_OWNER`. The coordinator recommends a conditional policy direction: explicit Owner-controlled initial enrollment; evaluate Windows Hello/WebAuthn only as an authentication factor after platform and integration guarantees are established; keep issuer and reader responsibilities independently enforced; and require scoped, expiring, revocable decisions verified at the reader. This proposal is NOT adopted yet, and no technology or local capability is presumed available. The Owner must accept or reject the trust-bootstrap policy direction before any new trust-bootstrap implementation begins.
+
+No protected read, test, build, runtime, real transport, merge, deploy or block release is authorized. All eight implementation gates remain open. Preserve `GOVERNANCE=KEEP_BLOCKED` and `BRIDGE=BRIDGE_NOT_READY`.
+
+```text
+ACTIVE_TASK=M1A_G1_TRUST_BOOTSTRAP_POLICY_ADJUDICATION
+PARENT_TASK=M1A_G1_TRUST_BOOTSTRAP_DECISION
+STATUS=WAITING_OWNER
+PRIOR_RESULT=G1_FEASIBILITY_CONDITIONAL_NOT_DEMONSTRATED; OWNER_SUPPLIED_CODEX_REPORT
+CANDIDATE_BRANCH=m1a-g1-g3-governance-route-candidate-20261022
+CANDIDATE_HEAD=60c8ac6e7ff425c815d9bdc7194bf20ef8d134db; DIRECT_GITHUB_FETCH_CONFIRMED
+CANDIDATE_SOURCE_CHANGES=NONE
+OWNER_TRUST_BOOTSTRAP_POLICY=PROPOSED_NOT_ADOPTED
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3_VERSIONED_TARGET_RESOLVER=NOT_ESTABLISHED
+DURABLE_OPERATION_RECEIPT=NOT_ESTABLISHED
+IMPLEMENTATION=NOT_AUTHORIZED_FOR_NEW_TRUST_BOOTSTRAP
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+GOVERNANCE=KEEP_BLOCKED
+TESTS=NOT_RUN
+BUILD=NOT_RUN
+RUNTIME=NOT_RUN
+REAL_TRANSPORT=NOT_RUN
+LOCAL_SOURCE_READ=NOT_RUN
+PROTECTED_LOCAL_READ=NOT_AUTHORIZED
+MERGE_DEPLOY=NOT_AUTHORIZED
+BLOCK_RELEASE=NOT_AUTHORIZED
+BRIDGE=BRIDGE_NOT_READY
+```
+
+---
+
 ## LATEST ROUTING DELTA — Owner authorized isolated G1–G3 candidate attempt (2026-10-22)
 
 The Owner explicitly authorized bounded implementation work for G1–G3 in an isolated candidate from a pinned public `main`. This changes the next action from repeated route discovery to a bounded candidate implementation attempt; it does **not** authorize the live/local protected read or release any operational block.
