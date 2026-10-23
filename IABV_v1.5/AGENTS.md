@@ -1,3 +1,36 @@
+## OVERRIDING LATEST ROUTING — TPM/EKCert corrected-capture preflight terminal (2026-10-23)
+
+The Owner-supplied receipt `M1A_G1_TPM_EKCERT_READ_ONLY_PREFLIGHT_RETRY_CAPTURE_FIX` is terminal at `BLOCKED_TPM_FIELDS_NOT_CAPTURED`. Full provenance and stop conditions: [TPM/EKCert corrected-capture preflight failure](./CHAT-ARCH-2026-10-23-M1A-G1-TPM-EKCert-corrected-capture-failure.md), blob `d1b0bb55dd950c7fa30312f023a5c14bfa798d73`.
+
+The retry reported one successful `Get-Tpm` invocation, but `TPM_PRESENT`, `TPM_READY`, `TPM_ENABLED`, `TPM_ACTIVATED`, and `TPM_OWNED` all remained `UNKNOWN`. The preceding recoverability check found only the sanitized projection, not the original output/object. EK info and certificate-chain validation were not run. Treat this as a capture/projection failure; neither TPM presence nor absence is established. The coordinator did not independently execute the command on the Owner's Windows host.
+
+**Anti-repeat:** this TPM preflight branch is terminal for now. Do not repeat `Get-Tpm`, run another output-recovery query, or execute EK queries under the same failing capture path. Any future attempt requires a demonstrably corrected capture mechanism and separate explicit authorization. The receipt does not authorize product implementation or other tests.
+
+```text
+ACTIVE_TASK=M1A_G1_TRUST_BOOTSTRAP_AUTHORITY_BOUNDARY
+LAST_TERMINAL_TASK=M1A_G1_TPM_EKCERT_READ_ONLY_PREFLIGHT_RETRY_CAPTURE_FIX
+LAST_PREFLIGHT_RESULT=BLOCKED_TPM_FIELDS_NOT_CAPTURED
+TPM_AVAILABILITY=UNVERIFIED
+TPM_ATTESTATION_TRUST=NOT_ESTABLISHED
+EKCERT_AVAILABILITY=UNVERIFIED
+EKCERT_CHAIN_VALIDITY=NOT_EVALUATED
+OWNER_TO_WINDOWS_PRINCIPAL=NOT_ESTABLISHED
+OWNER_TO_ISSUER=NOT_ESTABLISHED
+ISSUER_TO_EXACT_SERVER=NOT_ESTABLISHED
+READER_VERIFICATION=NOT_ESTABLISHED_END_TO_END
+REVOCATION_AUTHORITY_AND_CONSISTENCY=NOT_ESTABLISHED
+STATUS=BLOCKED_MISSING_G1_TRUST_ANCHOR
+GOVERNANCE=KEEP_BLOCKED
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3_VERSIONED_TARGET_RESOLVER=NOT_ESTABLISHED
+BRIDGE=BRIDGE_NOT_READY
+NEXT_ACTION=OWNER_DECISION_ONLY; NO_REPEAT_WITHOUT_CORRECTED_CAPTURE_MECHANISM_AND_SEPARATE_AUTHORIZATION
+AUTOMATIC_FOLLOW_ON=FALSE
+```
+
+---
+
 ## OVERRIDING LATEST ROUTING — Independent TPM identity-pin design terminal (2026-10-23)
 
 The bounded task `M1A_G1_INDEPENDENT_TPM_PIN_DESIGN` is terminal with `BLOCKED_NO_INDEPENDENT_ENROLLMENT_PATH`. The source-grounded report is [here](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-23-M1A-G1-independent-TPM-pin-design.md), blob `7ff1580af2f45c0606f21daf2f966b76ead7e7ac`. Design-only; it does not create a trust root or release a gate.
