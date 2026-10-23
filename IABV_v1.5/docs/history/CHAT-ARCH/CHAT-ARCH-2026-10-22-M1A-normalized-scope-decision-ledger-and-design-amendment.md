@@ -199,28 +199,30 @@ BRIDGE=BRIDGE_NOT_READY
 ```
 
 
-## 10. v1.0.1 review receipt, provenance correction and Owner adoption (2026-10-22)
+## 10. v1.0.1 review receipt, provenance correction and adoption gate (2026-10-22)
 
-The Owner supplied a Sonnet 4.6-attributed report for candidate blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f`, with verdict `PASS_WITH_REPAIRS`. The reviewer corrected its metadata: the previously stated 2026-10-20 date was unverified and is retracted; `REVIEW_TIMESTAMP=UNVERIFIABLE`. The reviewer reports a fresh clone plus `git rev-parse HEAD:<path>` returned the exact target. The content identity assertion is `OWNER_REPORTED`; reviewer/session invocation remains unauthenticated by this coordinator.
+The Owner supplied a Sonnet 4.6-attributed report for v1.0.1 review candidate blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f`, with reported verdict `PASS_WITH_REPAIRS`. The reviewer retracted the unsupported 2026-10-20 date and declared `REVIEW_TIMESTAMP=UNVERIFIABLE`; the reviewer says a fresh clone plus `git rev-parse HEAD:<path>` confirmed the exact candidate blob. The candidate's existence/hash is also independently verified by coordinator fetch-back, while external invocation/session attribution remains `OWNER_REPORTED`.
 
-The complete receipt is [here](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-receipt-and-reconciliation.md), blob `000b81b079c5febd8d78afebedf782d1d1e263fa`. The coordinator independently fetches and verifies all seven bounded input blobs.
+The review receipt is [here](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-receipt-and-reconciliation.md), blob `000b81b079c5febd8d78afebedf782d1d1e263fa`. F-M1A-01..08 are reported passing, but the coordinator did not independently repeat the adversarial tests. FN-M1A-V101-01 is recorded as a nonblocking traceability clarification; FN-M1A-V101-02 was checked against the exact overlay C2/C3/C5/C7 mappings and no contract defect was confirmed.
 
-The reviewer reports F-M1A-01..08 pass. FN-M1A-V101-01 is a nonblocking traceability clarification: v1.0.1 C30's stricter current-revocation wording follows F-M1A-05 and §7. FN-M1A-V101-02 is not confirmed as a defect; a direct cross-check of the named overlay verifies the cited C2/C3/C5/C7 mappings.
+The Owner later replied `ok procede`. Under overlay C1, this is permission to continue bounded documentary work; it is not adoption of a pending policy when the requested explicit token was not supplied. The initial coordinator interpretation as adoption is withdrawn. See [the correction record](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-owner-adoption-correction.md), blob `bc1e7e97c85671753f79cf9916e640e02f6b642d`. The prior adoption-receipt contents and attempted adopted-contract copy remain in Git history as non-effective artifacts; their current paths have been converted to correction notices/tombstones.
 
-The Owner then replied `ok procede` directly to the coordinator's recommendation to adopt v1.0.1 as the successor normative design baseline, after being given the alternatives `ACCEPT_M1A_V1_0_1_SUCCESSOR_BASELINE` and `RETAIN_M1A_V1_0_0_BASELINE`. This is recorded as contextual assent to the sole recommendation, not as a verbatim token. See [Owner adoption receipt](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-owner-adoption-receipt.md). The coordinator created an adopted contract artifact at [v1.0.1](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1_0_1.md), blob `baa39a09b97117df1dbe46804affdcebc7159f30`. The reviewed source candidate blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f` and v1.0.0 predecessor remain unchanged.
+The documentary implementation prerequisite matrix is [here](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-implementation-prerequisite-evidence-gate-matrix.md), blob `608a5c7f3c2be8ad794b21bfcb66657217584a58`. It maps all eight future implementation gates; zero are closed for implementation acceptance. It does not adopt the candidate or authorize source inspection, implementation, tests or runtime.
 
-**Adoption boundary:** v1.0.1 is now the normative design baseline. Adoption does not authorize implementation or establish runtime authority. Real trust anchor, active-set attestation, target resolver, producer allowlist, revocation source and independent block-release mechanism remain not established. No tests/runtime were run.
+**Effective decision state:** v1.0.0 remains the only adopted normative baseline. v1.0.1 remains `NOT_ADOPTED_PENDING_EXPLICIT_OWNER_DECISION`. The next owner decision requires the exact token `ACCEPT_M1A_V1_0_1_SUCCESSOR_BASELINE` or `RETAIN_M1A_V1_0_0_BASELINE`; a general “proceed” is not a policy-adoption token.
 
 ```text
-V1_0_0_BASELINE=SUPERSEDED_DESIGN_PREDECESSOR; IMMUTABLE
-V1_0_1_BASELINE=NORMATIVE_DESIGN_BASELINE_ADOPTED
-V1_0_1_ADOPTION_PROVENANCE=CONTEXTUAL_OWNER_ASSENT: "ok procede"
+V1_0_0_BASELINE=NORMATIVE_DESIGN_BASELINE_ADOPTED; IMMUTABLE
+V1_0_1_STATUS=NOT_ADOPTED_PENDING_EXPLICIT_OWNER_DECISION
+OWNER_MESSAGE="ok procede"; AUTHORITY=BOUNDED_DOCUMENTARY_CONTINUATION_ONLY
+FALSE_ADOPTION_INTERPRETATION=WITHDRAWN; HISTORY_PRESERVED
 V1_0_1_REVIEW=OWNER_REPORTED_PASS_WITH_REPAIRS
 REVIEW_TIMESTAMP=UNVERIFIABLE
 REVIEW_SESSION_ATTRIBUTION=OWNER_REPORTED
 F-M1A-01..08=REPORTED_PASS; NOT_INDEPENDENTLY_REPERFORMED
 FN-M1A-V101-01=NONBLOCKING_TRACEABILITY_CLARIFICATION_RECORDED
 FN-M1A-V101-02=CROSS_CHECKED; NO_DEFECT_CONFIRMED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
 GOVERNANCE=KEEP_BLOCKED
 IMPLEMENTATION=NOT_AUTHORIZED
 TESTS=NOT_RUN
