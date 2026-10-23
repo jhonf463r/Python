@@ -199,10 +199,14 @@ BRIDGE=BRIDGE_NOT_READY
 ```
 
 
-## 10. v1.0.1 review receipt, finding reconciliation and chronology discrepancy (2026-10-22)
+## 10. v1.0.1 review receipt, finding reconciliation and corrected provenance (2026-10-22)
 
-The Owner supplied an attributed `PASS_WITH_REPAIRS` report for candidate blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f`. The full normalized receipt is [here](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-receipt-and-reconciliation.md), blob `1b0685fa273329513254a0b10180f1513edfc67b`. The report's review date is stated as 2026-10-20, but GitHub history shows the final candidate was committed on 2026-10-22 at 19:36:28 America/Bogota; therefore the reported time and exact-blob retrieval provenance require correction.
+The Owner supplied a Sonnet 4.6-attributed report for candidate blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f`, with verdict `PASS_WITH_REPAIRS`. The reviewer then corrected its metadata: the previously stated 2026-10-20 date was unverified and should be retracted; `REVIEW_TIMESTAMP=UNVERIFIABLE`. The reviewer says a fresh clone plus `git rev-parse HEAD:<path>` returned the exact target blob. The content identity assertion is `OWNER_REPORTED`; reviewer/session invocation remains unauthenticated by this coordinator.
 
-The report says F-M1A-01..08 pass; the coordinator preserves these as `OWNER_REPORTED` results until the chronology is resolved. The coordinator independently verified all seven document blobs as present/current. FN-M1A-V101-01 is accepted as a nonblocking traceability clarification: C30's stricter wording follows F-M1A-05's current freshness/revocation requirement. FN-M1A-V101-02 is not a confirmed defect: direct overlay check validates C2 (traceability ledger), C3 (state space), C5 (authority planes), and C7 (pre-construction gate) against the cited matrix rows.
+The complete receipt and correction is [here](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-receipt-and-reconciliation.md), blob `45190a512e93211a85e23be74fa75741be5227f6`. The coordinator's own fetch-back independently confirms the seven named document blobs.
 
-Active task is now `M1A_V1_0_1_REVIEW_REPORT_METADATA_CORRECTION`; the exact bounded handoff is [here](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-metadata-correction-handoff.md), blob `58d0e2acb2c63bf08dd5725fd278f67bad9ac4b9`. v1.0.0 remains the only Owner-adopted baseline; v1.0.1 remains not adopted. No runtime, implementation, permission or block-release claim is implied.
+The reviewer reports F-M1A-01..08 pass. FN-M1A-V101-01 is accepted as a nonblocking traceability clarification: v1.0.1 C30's stricter current-revocation wording follows F-M1A-05 and §7. FN-M1A-V101-02 is not confirmed as a defect; a direct cross-check of the named overlay verifies the cited C2/C3/C5/C7 mappings.
+
+The timestamp discrepancy is closed as `INITIAL_DATE_RETRACTED; REVIEW_TIMESTAMP=UNVERIFIABLE`. This corrects provenance without changing the technical review report, but it does not independently authenticate the invocation or imply that adversarial cases were executed as software tests.
+
+**Active task:** `M1A_V1_0_1_OWNER_ADOPTION_DECISION`. v1.0.0 remains the adopted baseline. v1.0.1 remains `NOT_ADOPTED` until an explicit Owner decision. Coordinator recommendation: accept v1.0.1 as the successor normative design baseline, retaining the documented nonblocking C30 traceability clarification and the unknown review timestamp. No implementation or runtime authority is created by adoption of the design text.
