@@ -1,19 +1,20 @@
-## ACTIVE ROUTING — v1.0.1 normative design baseline adopted (2026-10-22)
+## ACTIVE ROUTING — v1.0.0 remains adopted; v1.0.1 awaits explicit decision (2026-10-22)
 
 **Read [CURRENT-STATE.md](./CURRENT-STATE.md) first.** It remains the sole active-task authority.
 
-**Adopted successor:** [M1A v1.0.1 normative contract](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1_0_1.md), blob `baa39a09b97117df1dbe46804affdcebc7159f30`. The exact reviewed candidate remains immutable at `7c72474a5f7c114c02320c177d6ea2aea68ad28f`; v1.0.0 remains preserved as an immutable predecessor at `8181c7c0cf6036c76cf365510e8d9665cf84e57e`.
+**Effective baseline:** [M1A v1.0.0 contract](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1.md), blob `8181c7c0cf6036c76cf365510e8d9665cf84e57e`. **Reviewed successor candidate, not adopted:** [M1A v1.0.1 candidate](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1_0_1-candidate.md), blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f`.
 
-**Adoption provenance:** the Owner replied `ok procede` directly in response to the recommendation to adopt v1.0.1 as normative design only. This is recorded as contextual assent, not a verbatim token. [Adoption receipt](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-owner-adoption-receipt.md), blob `80646b73b35f6a3f4807f6f59800a45aca51503e`.
+The Owner's `ok procede` permits bounded documentary continuation only under overlay C1; it did not supply the explicit policy-adoption token. The earlier adoption interpretation was withdrawn. [Correction record](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-owner-adoption-correction.md), blob `bc1e7e97c85671753f79cf9916e640e02f6b642d`. Prior adoption-receipt and adopted-contract paths are now correction/tombstone artifacts, not normative authority (current blobs `7655b8599a8eabb0dd3d62817f8e591ab8d64555` and `954b5dc6cd5ba496fc9342c2c1def6448fe353dc`).
 
-**Review receipt:** `OWNER_REPORTED_PASS_WITH_REPAIRS`; the reviewer reports F-M1A-01..08 passing. The initial review date was retracted as unverified; `REVIEW_TIMESTAMP=UNVERIFIABLE`; session attribution remains `OWNER_REPORTED`. [Review reconciliation](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-receipt-and-reconciliation.md), blob `000b81b079c5febd8d78afebedf782d1d1e263fa`.
+[Review receipt](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-review-receipt-and-reconciliation.md), blob `000b81b079c5febd8d78afebedf782d1d1e263fa`: report `OWNER_REPORTED_PASS_WITH_REPAIRS`; actual timestamp `UNVERIFIABLE`; session attribution `OWNER_REPORTED`. [Implementation prerequisite matrix](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-implementation-prerequisite-evidence-gate-matrix.md), blob `608a5c7f3c2be8ad794b21bfcb66657217584a58`, maps eight gates, none closed.
 
-**Single active task:** `M1A_V1_0_1_IMPLEMENTATION_PREREQUISITE_EVIDENCE_RECONCILIATION`. Produce a traceable documentary matrix of the eight prerequisites in §10 using only pinned docs. Implementation remains unauthorized.
+**Active task:** `M1A_V1_0_1_OWNER_ADOPTION_DECISION`. Reply with exactly `ACCEPT_M1A_V1_0_1_SUCCESSOR_BASELINE` or `RETAIN_M1A_V1_0_0_BASELINE`. No implementation work is authorized.
 
 ```text
-ACTIVE_TASK=M1A_V1_0_1_IMPLEMENTATION_PREREQUISITE_EVIDENCE_RECONCILIATION
-V1_0_1_BASELINE=NORMATIVE_DESIGN_BASELINE_ADOPTED
-V1_0_1_ADOPTED_BLOB=baa39a09b97117df1dbe46804affdcebc7159f30
+ACTIVE_TASK=M1A_V1_0_1_OWNER_ADOPTION_DECISION
+V1_0_0_BASELINE=ADOPTED_IMMUTABLE
+V1_0_1_STATUS=NOT_ADOPTED_PENDING_EXPLICIT_OWNER_DECISION
+PREREQUISITE_MATRIX=608a5c7f3c2be8ad794b21bfcb66657217584a58
 REVIEW_TIMESTAMP=UNVERIFIABLE
 GOVERNANCE=KEEP_BLOCKED
 IMPLEMENTATION=NOT_AUTHORIZED
@@ -21,10 +22,9 @@ TESTS=NOT_RUN
 READ_LIST=FAIL_CLOSED
 BRIDGE=BRIDGE_NOT_READY
 ```
-No local checkout/data/SQLite/secrets inspection, product-source changes, tests, build, runtime, transport, merge, deployment, protected read or block release.
 
+**Historical-scope notice:** all routing text retained below the divider is preserved for provenance only. It does not supersede `CURRENT-STATE.md` or any current task pointer.
 
-**Historical-scope notice:** all routing text retained below the divider is preserved for provenance only. It does not supersede the current active task in `CURRENT-STATE.md`, and any older task pointers or implementation-authority statements are historical.
 ---
 
 ## Historical M1 checkpoint — superseded by CURRENT-STATE routing (2026-10-22)
