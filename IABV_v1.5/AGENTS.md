@@ -1,3 +1,18 @@
+## LATEST OWNER AUTHORIZATION — bounded Phase 1 transport hardening (2026-10-23)
+
+The Owner authorized `AUTHORIZE_PHASE1_STATIC_PRESCAN_SUBSTITUTE_AND_RESUME`
+for the isolated candidate only; see
+[`CHAT-ARCH-2026-10-23-phase1-transport-hardening-owner-resumption.md`](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-23-phase1-transport-hardening-owner-resumption.md)
+and the sole routing authority [`CURRENT-STATE.md`](docs/history/CHAT-ARCH/CURRENT-STATE.md).
+`RATIFIED_OPTION_D_NO_BOOTSTRAP` remains in force. This authorization covers
+bounded transport hardening and focused unit tests only. It does not authorize
+Entra/bootstrap, protected reads, data access, application/server startup, real
+transport, tunnels, deployment, spend or governance-block release. The static
+pre-scan substitute is authorized for this slice; dynamic/persisted adaptive
+state is `NOT_INSPECTED` and remains unresolved.
+
+---
+
 ## ChatGPT continuity and anti-loop protocol — Owner decision recorded (2026-10-23)
 
 Current decision receipt: [Owner ratification of Option D — no bootstrap](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-23-M1A-G1-owner-option-d-no-bootstrap-ratification-receipt.md), blob `cac492006c51c56ea4abc4dff822785e19c65d93`, authored on isolated docs-only branch `codex/iabv-option-d-ratification-20261023` from verified `main` `439d9604037f156160a970dd33d1b3ad76009bdf`. The receipt and synchronized routing originated on that isolated branch and were submitted through PR #472. Revalidate the live `main` ref and `CURRENT-STATE.md` before treating any branch-only text as canonical.
@@ -1693,7 +1708,22 @@ que la UI esta corriendo, **todo pasa por la ventana**.
 
 ## Contrato De Pre-Scan Metacognitivo
 
-**OBLIGATORIO antes de modificar, planificar o evolucionar codigo.**
+**OBLIGATORIO antes de modificar, planificar o evolucionar codigo.** El pre-scan
+tiene dos modos y el agente debe elegir el que la autorización y las fuentes
+disponibles permiten:
+
+- **Modo completo:** consultar órganos y estado persistido solo cuando la
+  operación concreta esté autorizada y no atraviese un bloqueo o recurso
+  protegido.
+- **Modo estático limitado:** si el estado dinámico requiere acceso protegido
+  o actividad prohibida, y existe autorización explícita para este sustituto,
+  revisar únicamente fuentes, contratos, configuración y pruebas pertinentes.
+  Marcar el estado adaptativo/persistido como `NOT_INSPECTED`; no inferir que es
+  inexistente, vacío, sano o seguro. Este modo no concede permisos ni cierra
+  requisitos que dependan de evidencia dinámica.
+
+Una excepción de modo estático se limita al slice y alcance autorizados. No
+permite usar lectores alternativos para eludir una denegación.
 
 Cualquier agente (Devin, Codex, Claude, ChatGPT, o el propio IABV) debe
 leer el panorama completo antes de tocar el codigo. Esto previene:
@@ -1741,7 +1771,7 @@ proveedores cloud:
 
 ## Forma De Trabajo En Sesiones Nuevas
 1. lee este archivo primero
-2. **ejecuta el pre-scan metacognitivo** (ver seccion anterior) para entender el estado actual del sistema antes de planificar cambios
+2. selecciona y ejecuta el modo de pre-scan metacognitivo autorizado (ver sección anterior); si se usa el modo estático limitado, registra el estado dinámico como `NOT_INSPECTED`
 3. inspecciona `bootstrap.py` y los archivos del slice relevante
 4. identifica contratos involucrados
 5. busca el cambio minimo que preserve arquitectura
@@ -1752,7 +1782,7 @@ proveedores cloud:
 ## Prompt De Arranque
 Al empezar una sesion nueva:
 - lee `AGENTS.md`
-- ejecuta el pre-scan metacognitivo: lee audit trail, OSES findings, contexto portable y estado de validacion
+- ejecuta el pre-scan metacognitivo autorizado: usa el modo completo solo si tiene acceso autorizado; en caso contrario, el modo estático limitado requiere autorización expresa y no representa estado persistido
 - despues inspecciona los archivos relevantes del repo
 - usa primero estado vivo y contratos reales
 - evita releer todo el historial si `PortableContextService` o `OperationalSelfExaminationService` ya condensan lo necesario

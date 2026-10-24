@@ -1,24 +1,10 @@
-"""MCPBridgeService: ciclo de vida del puente MCP + cloudflared.
+"""MCP bridge status/preferences with fail-closed, non-starting UI runners.
 
-Capa 1 del plan de autonomía bidireccional Devin ↔ IABV:
-
-- arranca / detiene el MCP server (`iabv_v15.infra.mcp.server`) en un hilo
-  dedicado, sin bloquear el UI principal.
-- arranca / detiene el proceso `cloudflared` (quick tunnel por defecto, o
-  named tunnel si el usuario configuró uno).
-- publica el estado vivo (`MCPBridgeStatus`) para que el `ControlCenterViewModel`
-  muestre un toggle + URL visible + botón copiar.
-- persiste la preferencia del usuario en `data/evolution/config/mcp_bridge.json`
-  así el programa recuerda entre sesiones si el bridge debe auto-arrancar.
-
-Contratos respetados (AGENTS.md):
-  - No decide rutas: sólo opera la infra de transporte.
-  - `AutonomyGovernancePolicy` sigue siendo la fuente de verdad. Antes de
-    arrancar consulta `WorldModelSnapshot` via `_governance_gate_ok()` para
-    no exponer el puente cuando governance lo bloquea.
-  - No crea otro cerebro. Reusa `IABVMCPServer` del PR #26.
-  - Fail-closed: si falta `mcp` SDK o falla el subproceso de cloudflared,
-    publica `status=failed` con razón; no tira excepción al UI.
+The UI-owned service cannot supply a client-managed stdio pipe. Network
+transports remain disabled until transport authentication and independent
+operation-level authorization are implemented and verified. This service
+therefore preserves preference/status reporting but never launches a server
+or tunnel. A local MCP client may start the server explicitly through stdio.
 """
 
 from __future__ import annotations
@@ -26,10 +12,6 @@ from __future__ import annotations
 import json
 import logging
 import os
-import re
-import shutil
-import subprocess
-import sys
 import threading
 import time
 from dataclasses import dataclass, field
@@ -41,11 +23,8 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_BIND_HOST = "127.0.0.1"
 DEFAULT_BIND_PORT = 8765
-DEFAULT_TRANSPORT = "streamable-http"
+DEFAULT_TRANSPORT = "stdio"
 DEFAULT_TUNNEL_TIMEOUT_S = 30.0
-QUICK_TUNNEL_URL_PATTERN = re.compile(r"https://[a-zA-Z0-9\-]+\.trycloudflare\.com")
-NAMED_TUNNEL_URL_PATTERN = re.compile(r"https://[a-zA-Z0-9\-\.]+\.cfargotunnel\.com")
-CUSTOM_HTTPS_PATTERN = re.compile(r"https?://[a-zA-Z0-9\-\.]+(?:/[^\s]*)?")
 
 
 # ----------------------------------------------------------------------
@@ -112,53 +91,23 @@ class _TunnelRunner:
 
 
 class FastMCPServerRunner:
-    """Corre `IABVMCPServer.run(transport)` dentro de un hilo daemon."""
+    """Compatibility shim that refuses UI-owned server startup."""
 
     def __init__(self, container: Any) -> None:
         self._container = container
-        self._thread: threading.Thread | None = None
-        self._server: Any = None
-        self._stopped = threading.Event()
 
     def run_threaded(self, transport: str, host: str, port: int) -> threading.Thread:
-        from iabv_v15.infra.mcp.server import IABVMCPServer  # lazy
-
-        # FastMCP lee host/port de su config / env. Seteamos via env por compatibilidad
-        # con distintos clientes.
-        os.environ["FASTMCP_HOST"] = str(host)
-        os.environ["FASTMCP_PORT"] = str(port)
-
-        self._server = IABVMCPServer(self._container)
-        self._stopped.clear()
-
-        def _target() -> None:
-            try:
-                self._server.run(transport=transport)
-            except Exception:  # pragma: no cover - loguea y sale
-                logger.exception("MCP server hilo terminó con excepción")
-            finally:
-                self._stopped.set()
-
-        thread = threading.Thread(
-            target=_target,
-            name="iabv-mcp-server",
-            daemon=True,
+        raise RuntimeError(
+            "MCPBridgeService cannot own an MCP process; use an explicitly "
+            "client-managed local stdio connection"
         )
-        thread.start()
-        self._thread = thread
-        return thread
 
     def stop(self) -> None:
-        # FastMCP no tiene stop() sincrónico público; el hilo daemon muere
-        # cuando el proceso Python se apaga. Para detener en caliente dependemos
-        # de que el cliente cierre las conexiones. Aquí sólo marcamos intención.
-        self._stopped.set()
-        self._server = None
-        self._thread = None
+        return None
 
 
 class CloudflaredTunnelRunner:
-    """Lanza `cloudflared tunnel --url http://HOST:PORT --no-autoupdate` y lee la URL pública."""
+    """Compatibility shim that refuses to start a public tunnel."""
 
     def __init__(
         self,
@@ -167,124 +116,24 @@ class CloudflaredTunnelRunner:
         named_tunnel: str | None = None,
         extra_args: list[str] | None = None,
     ) -> None:
-        self._bin = cloudflared_bin or os.environ.get("CLOUDFLARED_BIN", "cloudflared")
-        self._named_tunnel = named_tunnel or os.environ.get("IABV_MCP_NAMED_TUNNEL") or None
-        self._extra_args = list(extra_args or [])
-        self._proc: subprocess.Popen[str] | None = None
-        self._reader_thread: threading.Thread | None = None
-        self._url: str | None = None
-        self._url_event = threading.Event()
-        self._last_error: str | None = None
-        self._lock = threading.Lock()
+        self._last_error = "Public tunnels are disabled pending transport authorization."
 
     @property
     def url(self) -> str | None:
-        return self._url
+        return None
 
     @property
     def last_error(self) -> str | None:
         return self._last_error
 
-    def _binary_available(self) -> bool:
-        return shutil.which(self._bin) is not None
-
     def start(self, bind_host: str, bind_port: int) -> None:
-        with self._lock:
-            if self._proc is not None:
-                return
-            if not self._binary_available():
-                self._last_error = (
-                    f"No se encontró binario '{self._bin}' en PATH. "
-                    "Instalar Cloudflare tunnel (winget install --id Cloudflare.cloudflared)."
-                )
-                return
-
-            if self._named_tunnel:
-                # Named tunnel: el usuario ya corrió `cloudflared tunnel login` y
-                # `cloudflared tunnel create <name>`. Acá sólo lo arrancamos por nombre.
-                argv = [self._bin, "tunnel", "--no-autoupdate", "run", self._named_tunnel]
-            else:
-                # Quick tunnel: URL efímera *.trycloudflare.com; no requiere login.
-                target_url = f"http://{bind_host}:{bind_port}"
-                argv = [
-                    self._bin,
-                    "tunnel",
-                    "--no-autoupdate",
-                    "--loglevel",
-                    "info",
-                    "--url",
-                    target_url,
-                ]
-            argv.extend(self._extra_args)
-
-            try:
-                self._proc = subprocess.Popen(
-                    argv,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT,
-                    text=True,
-                    bufsize=1,
-                )
-            except Exception as exc:
-                self._last_error = f"No se pudo arrancar cloudflared: {exc!r}"
-                self._proc = None
-                return
-
-            self._url = None
-            self._url_event.clear()
-            self._last_error = None
-            self._reader_thread = threading.Thread(
-                target=self._drain_output,
-                name="iabv-cloudflared-reader",
-                daemon=True,
-            )
-            self._reader_thread.start()
-
-    def _drain_output(self) -> None:
-        proc = self._proc
-        if proc is None or proc.stdout is None:
-            return
-        try:
-            for line in proc.stdout:
-                if self._url is None:
-                    self._maybe_extract_url(line)
-                # No acumulamos log completo en memoria; el service puede leer
-                # errores vía last_error si hace falta.
-        except Exception as exc:  # pragma: no cover - defensa
-            self._last_error = f"Error leyendo output de cloudflared: {exc!r}"
-
-    def _maybe_extract_url(self, line: str) -> None:
-        if self._named_tunnel:
-            match = NAMED_TUNNEL_URL_PATTERN.search(line) or CUSTOM_HTTPS_PATTERN.search(line)
-        else:
-            match = QUICK_TUNNEL_URL_PATTERN.search(line)
-        if match:
-            url = match.group(0).rstrip("/.")
-            self._url = url
-            self._url_event.set()
+        raise RuntimeError(self._last_error)
 
     def wait_for_url(self, timeout_s: float) -> str | None:
-        self._url_event.wait(timeout=timeout_s)
-        return self._url
+        return None
 
     def stop(self) -> None:
-        with self._lock:
-            proc = self._proc
-            if proc is None:
-                return
-            try:
-                proc.terminate()
-                try:
-                    proc.wait(timeout=5.0)
-                except subprocess.TimeoutExpired:
-                    proc.kill()
-                    proc.wait(timeout=2.0)
-            except Exception as exc:  # pragma: no cover - defensa
-                self._last_error = f"Error deteniendo cloudflared: {exc!r}"
-            finally:
-                self._proc = None
-                self._url = None
-                self._url_event.clear()
+        return None
 
 
 # ----------------------------------------------------------------------
@@ -292,14 +141,13 @@ class CloudflaredTunnelRunner:
 
 
 class MCPBridgeService:
-    """Orquesta start/stop del MCP server + tunnel y publica el estado.
+    """Expose bridge preference/status while refusing unsafe auto-start.
 
     Ciclo de vida:
       - __init__: carga preferencia persistida; no arranca nada.
       - attach_listener(callback): suscribe un observador (p.ej. ViewModel) al
         cambio de estado. Recibe un dict via `MCPBridgeStatus.to_dict()`.
-      - ensure_started(): idempotente; si el usuario lo habilitó y governance
-        lo permite, arranca server + tunnel.
+      - ensure_started(): if enabled, fails closed before invoking a runner.
       - set_enabled(enabled: bool): cambia preferencia persistida y refleja
         el estado (arranca o detiene según valor).
       - stop(): detiene en caliente sin tocar preferencia.
@@ -444,80 +292,19 @@ class MCPBridgeService:
                 self._update_state("failed")
                 return self.status()
 
-            self._status.governance_blocked = False
-            self._status.governance_reason = None
-            self._update_state("starting")
-
-        # Arranca MCP server fuera del lock (no bloquea).
-        try:
-            self._server_runner.run_threaded(
-                transport=self._transport,
-                host=self._bind_host,
-                port=self._bind_port,
+            # This UI-owned service cannot provide a client-managed stdio
+            # channel, and unauthenticated network transports are not
+            # authorized. Refuse before starting either runner.
+            self._status.running = False
+            self._status.tunnel_url = None
+            self._status.last_error = (
+                "MCPBridgeService no puede iniciar un canal stdio propiedad "
+                "del cliente; sse/streamable-http permanecen deshabilitados "
+                "hasta verificar autenticación de transporte y autorización "
+                "independiente por operación"
             )
-        except Exception as exc:
-            with self._lock:
-                self._status.last_error = f"No se pudo arrancar MCP server: {exc!r}"
-                self._status.running = False
-                self._update_state("failed")
+            self._update_state("failed")
             return self.status()
-
-        # Arranca tunnel y espera URL.
-        try:
-            self._tunnel_runner.start(self._bind_host, self._bind_port)
-        except Exception as exc:
-            with self._lock:
-                self._status.last_error = f"No se pudo arrancar cloudflared: {exc!r}"
-                self._status.running = False
-                self._update_state("failed")
-            # no dejamos el server corriendo sin tunnel expuesto: si preferís
-            # server local puro, usá transport=stdio y no el bridge.
-            try:
-                self._server_runner.stop()
-            except Exception:  # pragma: no cover
-                pass
-            return self.status()
-
-        url = self._tunnel_runner.wait_for_url(timeout_s=self._tunnel_timeout_s)
-        tunnel_error = getattr(self._tunnel_runner, "last_error", None)
-        teardown = False
-        with self._lock:
-            # Defensa en profundidad: aunque `_operation_lock` serialice start/stop,
-            # `set_enabled(False)` pudo haber persistido `enabled_pref=False` antes
-            # de quedarse esperando el lock. Si ese es el caso, tiramos abajo el
-            # bridge ahora en vez de publicar `running=True` y que el stop posterior
-            # tenga que revertirlo.
-            if url and not self._status.enabled_pref:
-                self._status.tunnel_url = None
-                self._status.running = False
-                self._status.last_error = None
-                self._update_state("stopped")
-                teardown = True
-            elif url:
-                self._status.tunnel_url = url
-                self._status.running = True
-                self._status.last_error = None
-                self._update_state("running")
-            else:
-                self._status.tunnel_url = None
-                self._status.running = False
-                self._status.last_error = tunnel_error or "Timeout esperando URL del tunnel"
-                self._update_state("failed")
-                teardown = True
-        # Si el tunnel no publicó URL a tiempo, o la preferencia cambió durante
-        # el start, liberamos recursos: dejar el server MCP y el proceso
-        # cloudflared vivos llevaría a puerto ocupado en el próximo intento y
-        # a un estado irrecuperable sin reiniciar la app.
-        if teardown:
-            try:
-                self._tunnel_runner.stop()
-            except Exception:  # pragma: no cover - defensa
-                pass
-            try:
-                self._server_runner.stop()
-            except Exception:  # pragma: no cover - defensa
-                pass
-        return self.status()
 
     def _governance_gate_block(self) -> str | None:
         """Consulta WorldModelSnapshot antes de exponer el puente.

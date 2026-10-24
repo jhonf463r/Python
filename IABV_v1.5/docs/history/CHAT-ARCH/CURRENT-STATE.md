@@ -1,3 +1,37 @@
+## CURRENT-STATE ROUTING — Owner authorizes bounded Phase 1 transport hardening (2026-10-23)
+
+Decision and scope receipt: [Phase 1 Owner resumption](./CHAT-ARCH-2026-10-23-phase1-transport-hardening-owner-resumption.md). This is a new, explicit, bounded Owner authorization to resume local candidate changes using a static pre-scan substitute. It does not revoke `RATIFIED_OPTION_D_NO_BOOTSTRAP`, establish trust, authorize protected reads, or release a governance block. The receipt records the inspected source scope and final verification when available.
+
+```text
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+ACTIVE_TASK=PHASE1_MCP_TRANSPORT_HARDENING
+OWNER_DECISION=AUTHORIZE_PHASE1_STATIC_PRESCAN_SUBSTITUTE_AND_RESUME
+RATIFIED_OPTION_D_NO_BOOTSTRAP=REMAINS_IN_FORCE
+AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3_VERSIONED_TARGET_RESOLVER=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+READ_LIST=FAIL_CLOSED
+PROTECTED_READS=NOT_AUTHORIZED
+STATIC_PRESCAN=AUTHORIZED_FOR_PHASE1_SLICE_ONLY
+DYNAMIC_ADAPTIVE_STATE=NOT_INSPECTED
+PUBLIC_TUNNEL=PROHIBITED
+FOCUSED_TESTS=19_PASSED
+BROADER_MCP_MODULE_RUN=86_PASSED; 2_UNRELATED_WORLD_MODEL_FIXTURE_FAILURES
+TESTS=FOCUSED_PASS_WITH_UNRELATED_MODULE_FAILURES
+BUILD=NOT_RUN
+RUNTIME=NOT_RUN
+REAL_TRANSPORT=NOT_RUN
+GOVERNANCE=KEEP_BLOCKED
+BRIDGE=BRIDGE_NOT_READY
+NEXT_ACTION=SUBMIT_REVIEW_PR_WITHOUT_MERGE; THEN_REQUEST_INDEPENDENT_REVIEW
+```
+
+The authorized slice is limited to fail-closed transport routing in the isolated candidate, focused unit tests, and synchronized documentation. `stdio` remains the server's only accepted transport; the UI-owned service and its default runner shims refuse startup, and HTTP/SSE authorization is absent. The PowerShell launcher permits direct local stdio only and starts no tunnel. The `start_iabv.ps1` wrapper no longer invokes that launcher or kills a process by bridge port. `AppBootstrap` may still schedule `MCPBridgeService.ensure_started()`, but that path now fails before either runner. Focused tests passed 19/19; a broader run of the three affected test modules had two unrelated world-model fake-fixture failures (86 passed, 2 failed). No application, MCP server, tunnel, protected reader, dynamic metacognitive organ, data contents, SQLite, real transport, build, deployment, or paid resource was used. A broad `rg --files` command did inadvertently enumerate some data-path names; no contents were opened, and no data file was modified. This branch-level update is not yet canonical on `main`; no gate is closed by this work.
+
+---
+
 ## CURRENT-STATE ROUTING — Owner ratified Option D; no bootstrap (2026-10-23)
 
 Receipt: [M1A G1 Owner Option D ratification](./CHAT-ARCH-2026-10-23-M1A-G1-owner-option-d-no-bootstrap-ratification-receipt.md), blob `cac492006c51c56ea4abc4dff822785e19c65d93`. This routing update originated on isolated branch `codex/iabv-option-d-ratification-20261023`, based on verified `main` commit `439d9604037f156160a970dd33d1b3ad76009bdf`, and was submitted for review via PR #472. Revalidate live `main` to determine whether it is currently canonical. `CURRENT-STATE.md` remains the sole routing authority. The previous `OWNER_DECISION_NOT_CAPTURED` snapshot is superseded by the explicit Owner decision below.

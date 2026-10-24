@@ -1,3 +1,13 @@
+## Current route — bounded Phase 1 MCP transport hardening (2026-10-23)
+
+The latest Owner authorization and candidate-scope receipt is
+[here](./CHAT-ARCH-2026-10-23-phase1-transport-hardening-owner-resumption.md).
+The authoritative active-task snapshot is [CURRENT-STATE.md](./CURRENT-STATE.md).
+This branch-level Phase 1 work leaves `GOVERNANCE=KEEP_BLOCKED`, G1–G3 open,
+protected reads unauthorized, and real transport/tunnels prohibited.
+
+---
+
 ## ChatGPT continuity — explicit Owner Option D ratification recorded (2026-10-23)
 
 Owner decision receipt: [Owner ratification of Option D — no bootstrap](./CHAT-ARCH-2026-10-23-M1A-G1-owner-option-d-no-bootstrap-ratification-receipt.md), blob `cac492006c51c56ea4abc4dff822785e19c65d93`, authored on branch `codex/iabv-option-d-ratification-20261023` from `439d9604037f156160a970dd33d1b3ad76009bdf`. Confirm its presence on live `main` whenever validating current state; this navigation file does not independently determine merge/adoption status.

@@ -1,9 +1,9 @@
 # start_iabv.ps1
 #
-# Un solo comando para arrancar IABV v1.5 end-to-end:
+# Helper de inicio de IABV v1.5:
 #   1. Carga secretos desde $HOME\.iabv_secrets.ps1 si existe.
 #   2. Corre validaciones rapidas (token shapes, API reachability opcional).
-#   3. Delega en scripts\run_mcp_bridge.ps1 (MCP + Cloudflare tunnel).
+#   3. No inicia MCP ni túneles. La UI puede iniciarse solo con -StartUI.
 #
 # Goal: el usuario no tiene que recordar 6 comandos distintos ni re-exportar
 # tokens cada sesion. Simplemente:
@@ -13,9 +13,9 @@
 #
 # Opciones:
 #   -SkipHealthChecks       No pega a GitHub/Devin API antes de arrancar.
-#   -HotReload              Exporta IABV_MCP_HOT_RELOAD=1 para el server.
+#   -HotReload              Compatibilidad histórica; no inicia MCP.
 #   -Quiet                  Menos output en consola.
-#   -StartUI                Ademas de MCP+tunel, lanza ControlCenter
+#   -StartUI                Lanza ControlCenter
 #                           (python -m iabv_v15 app) en proceso aparte.
 #   -AutoPull               Corre 'git pull --rebase=false' en el workspace
 #                           antes de cualquier otra cosa (default ON). Si hubo
@@ -28,22 +28,19 @@
 #                           corriste a mano o estas en una rama intencional).
 #
 # Si falta algun secreto, el script te dice exactamente cual y sale sin
-# arrancar el MCP, para no confundir con un 401/403 en los logs runtime.
+# iniciar la UI. El transporte MCP permanece deshabilitado en este wrapper.
 
 <#
 .SYNOPSIS
-    Arranca IABV v1.5 end-to-end (MCP + tunel + opcionalmente la UI).
+    Ejecuta comprobaciones de inicio; no arranca MCP ni túneles.
 .PARAMETER SkipHealthChecks
     Omite los pings HTTP rapidos contra GitHub/Devin API antes de arrancar.
 .PARAMETER HotReload
-    Exporta IABV_MCP_HOT_RELOAD=1 para que el server se reinicie ante cambios
-    en src/iabv_v15/*.py.
+    Parámetro histórico sin efecto; MCP auto-start está deshabilitado.
 .PARAMETER Quiet
     Menos output en consola.
 .PARAMETER StartUI
-    Ademas de MCP+tunel, lanza la ventana ControlCenter (python -m iabv_v15 app)
-    en un proceso aparte no bloqueante. Si la UI falla en arrancar, se loguea
-    el error pero NO se mata el MCP (el MCP sigue vivo).
+    Lanza la ventana ControlCenter (python -m iabv_v15 app) en un proceso aparte.
 #>
 [CmdletBinding()]
 param(
@@ -108,10 +105,6 @@ function Show-StaleRuntimePopup($msg) {
         # Console may be hidden; logging still captures the warning.
     }
 }
-
-# Capa 2.1.1: libera el puerto del MCP antes de arrancar si quedo un zombi.
-# Importamos la utilidad compartida con iabv_bootstrap.ps1.
-. (Join-Path $PSScriptRoot '_mcp_port_utils.ps1')
 
 $secretsPath = Join-Path $HOME '.iabv_secrets.ps1'
 
@@ -293,15 +286,7 @@ if (-not $SkipHealthChecks) {
 }
 
 if ($HotReload) {
-    $env:IABV_MCP_HOT_RELOAD = '1'
-    Write-Info "Hot-reload : ON (IABV_MCP_HOT_RELOAD=1)"
-}
-
-# Delegar en el bridge ya existente. No duplicamos su logica.
-$bridge = Join-Path $PSScriptRoot 'run_mcp_bridge.ps1'
-if (-not (Test-Path $bridge)) {
-    Write-Err "No encontre $bridge. Abortando."
-    exit 1
+    Write-Info "Hot-reload MCP ignorado: el auto-start del transporte está deshabilitado."
 }
 
 # --- P0.71: UI Presence Contract + Single UI Instance Sovereignty ----------
@@ -473,7 +458,7 @@ if ($StartUI) {
             }
         } catch {
             Write-Warn "[warn] No se pudo lanzar la UI con -StartUI: $_"
-            Write-Warn "       El MCP sigue vivo. Podes lanzar la UI manual con:"
+            Write-Warn "       Podes lanzar la UI manual con:"
             Write-Warn "         python -m iabv_v15 app"
             Write-StartupTrace 'ui_launch_failed' @{ error = "$_" }
         }
@@ -499,9 +484,5 @@ if ($pytestCacheDirs) {
 }
 
 Write-Info ""
-Write-Info "Libera puerto :$McpPort (kill MCP zombi) ..."
-Stop-McpZombies -Port $McpPort
-
-Write-Info ""
-Write-Info "Arrancando MCP + Cloudflare tunnel via $bridge ..."
-& powershell -ExecutionPolicy Bypass -File $bridge
+Write-Info "MCP/tunnel auto-start deshabilitado por seguridad; no se inició ningún transporte."
+Write-Info "El servidor stdio requiere un cliente local explícito y no forma parte del arranque de la UI."
