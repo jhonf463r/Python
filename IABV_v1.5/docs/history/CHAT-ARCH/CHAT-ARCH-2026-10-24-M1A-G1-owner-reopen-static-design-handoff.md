@@ -2,7 +2,7 @@
 
 - Fecha: 2026-10-24 (America/Bogota).
 - Task: `M1A_G1_REOPENED_GBA_ROOT_CEREMONY_ADVERSARIAL_STATIC_REVIEW`.
-- Resultado de esta actualización: writeback documental en rama aislada; no canónico hasta merge/fetch-back.
+- Resultado de esta actualización: writeback documental adoptado en live main mediante PR #482 y verificado por fetch-back el 2026-10-24.
 - Base remota fijada antes de crear la rama: `main=c3bc9d8b4f727483081cf24650d4e7209687024c`.
 - Rama: `codex/m1a-g1-reopen-static-design-20261024`.
 - Alcance autorizado por el Owner en esta conversación: diseño y revisión estática únicamente.
@@ -18,7 +18,7 @@ El Owner dijo explícitamente:
 
 Provenance: explicit Owner message in ChatGPT on 2026-10-24. This records the communicated Owner decision; it is not an independently authenticated identity event or runtime authority credential.
 
-This explicitly supersedes the previously ratified Option D for **the current design/static-analysis decision**. It does not prove that an independent root exists, instantiate one, establish G1, authorize protected reads, or relax any implementation/runtime/cost/security gate. Fail closed where required.
+This explicitly supersedes the previously ratified Option D for **the current design/static-analysis decision**. The documentary route was adopted via PR #482 and fetched back from live main. This does not prove that an independent root exists, instantiate one, establish G1, authorize protected reads, or relax any implementation/runtime/cost/security gate. Fail closed where required.
 
 ## 2. Canonical baseline and adoption status
 
@@ -30,8 +30,8 @@ This explicitly supersedes the previously ratified Option D for **the current de
   3. `IABV_v1.5/docs/history/CHAT-ARCH/CURRENT-STATE.md`
   4. `IABV_v1.5/docs/history/CHAT-ARCH/CONTEXT-INDEX.md`
   5. `IABV_v1.5/docs/history/CHAT-ARCH/MEMORY-OPERATING-PROTOCOL.md`
-- Before this candidate writeback, the live `CURRENT-STATE.md` still said `OWNER_DECISION=RATIFIED_OPTION_D_NO_BOOTSTRAP` and `NEXT_ACTION=MAINTAIN_NO_BOOTSTRAP_FAIL_CLOSED`. This branch proposes the updated routing; until accepted into live `main` and fetched back, the proposed routing is `CANDIDATE_ONLY`.
-- This branch must not be treated as product approval, source implementation, or an operational gate release.
+- Before the writeback, live `CURRENT-STATE.md` still said `OWNER_DECISION=RATIFIED_OPTION_D_NO_BOOTSTRAP` and `NEXT_ACTION=MAINTAIN_NO_BOOTSTRAP_FAIL_CLOSED`. The update was adopted by documentation PR #482, squash merge `62f488cef9e3defbb56304a4d8ae646f4f6b30ef`, and the updated current-state plus four other front doors and handoff were fetched back from live `main`.
+- The adopted writeback is documentation-only: it is not product approval, source implementation, or an operational gate release.
 
 ## 3. Time-aware evidence graph: what is already known
 
@@ -64,7 +64,7 @@ PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
 ACTIVE_TASK=M1A_G1_REOPENED_GBA_ROOT_CEREMONY_ADVERSARIAL_STATIC_REVIEW
 OWNER_DECISION=REOPENED_G1_DESIGN_AND_STATIC_REVIEW_ONLY
 OWNER_DECISION_PROVENANCE=EXPLICIT_OWNER_CHAT_MESSAGE_2026-10-24
-OWNER_DECISION_CANONICAL_STATUS=CANDIDATE_ONLY_UNTIL_MAIN_ADOPTION
+OWNER_DECISION_CANONICAL_STATUS=ADOPTED_ON_LIVE_MAIN_VIA_PR_482; FETCH_BACK_CONFIRMED_2026-10-24
 AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
 QUALIFYING_INDEPENDENT_ROOT=NOT_ESTABLISHED
 ROOT_CUSTODIAN_AND_INDEPENDENT_VERIFICATION_CHANNEL=NOT_ESTABLISHED
@@ -164,7 +164,7 @@ Destino recomendado: **Claude Opus 4.6 en Antigravity**, como revisor adversaria
 TAREA: M1A_G1_REOPENED_GBA_ROOT_CEREMONY_ADVERSARIAL_STATIC_REVIEW
 ROL: revisor independiente, adversarial y source-grounded de seguridad/arquitectura.
 REPOSITORIO: https://github.com/jhonf463r/Python
-PR documental candidato de continuidad: #482
+PR documental de continuidad ya fusionado: #482
 BASE FIJADA: c3bc9d8b4f727483081cf24650d4e7209687024c
 DISEÑO GBA CANDIDATO: commit 675c3bdd046de04e4e7d6bb70d616dbce1354e06
 BLOB DEL DISEÑO: feb61c72e44ec61179fba7827515ab58348f4890
@@ -183,7 +183,7 @@ LECTURA DIRIGIDA:
    - IABV_v1.5/docs/history/CHAT-ARCH/CURRENT-STATE.md
    - IABV_v1.5/docs/history/CHAT-ARCH/CONTEXT-INDEX.md
    - IABV_v1.5/docs/history/CHAT-ARCH/MEMORY-OPERATING-PROTOCOL.md
-2. Lee el handoff de esta tarea en la rama de PR #482 como CANDIDATE_ONLY; no lo trates como canon hasta que se adopte en main.
+2. Lee este handoff ya adoptado en main por PR #482 como contexto de continuidad canónico. El diseño GBA del commit/blob fijado sigue siendo una propuesta documental histórica, no una autoridad runtime ni un diseño operacional adoptado.
 3. Lee el diseño GBA en el commit/blob fijados, su reconciliación estática, M1A v1.0.1, la matriz de ocho prerrequisitos, Entry 274, el resultado terminal del bootstrap G1 previo, la investigación OS/Windows y el diseño TPM pin citados en el handoff.
 4. No repitas inventarios amplios ya cerrados. Usa historial existente y solo búsquedas dirigidas para resolver una pregunta concreta.
 
