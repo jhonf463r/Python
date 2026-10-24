@@ -31,6 +31,7 @@ if (-not (Test-Path -LiteralPath $workspaceRoot -PathType Container)) {
 $env:PYTHONPATH = Join-Path $workspaceRoot 'src'
 $env:IABV_WORKSPACE_ROOT = $workspaceRoot
 $env:IABV_MCP_TRANSPORT = 'stdio'
+$env:IABV_MCP_PROFILE = 'local_restricted'
 $env:IABV_MCP_NAME = $serverName
 $env:IABV_STARTUP_TIMELINE = '0'
 

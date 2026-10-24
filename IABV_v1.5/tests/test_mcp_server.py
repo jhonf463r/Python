@@ -27,7 +27,12 @@ from iabv_v15.domain.models import (  # noqa: E402
     WorldModelSnapshot,
     IATraceEntry,
 )
-from iabv_v15.infra.mcp.server import IABVMCPServer, _to_jsonable  # noqa: E402
+from iabv_v15.infra.mcp.server import (  # noqa: E402
+    IABVMCPServer,
+    PROFILE_LOCAL_RESTRICTED,
+    _to_jsonable,
+    main as mcp_main,
+)
 from iabv_v15.services.tools.site_exploration_service import (  # noqa: E402
     SiteExplorationResult,
     SitePageSnapshot,
@@ -265,6 +270,79 @@ def test_server_registers_core_tools() -> None:
         "consensus_fuse",
     }
     assert expected <= registered, f"faltan tools: {expected - registered}"
+
+
+def test_local_restricted_profile_registers_only_static_health_tool() -> None:
+    server = IABVMCPServer(None, profile=PROFILE_LOCAL_RESTRICTED)
+    registry = server.mcp._tool_manager._tools
+
+    assert set(registry) == {"bridge_health"}
+    assert _call_tool(server, "bridge_health") == {"status": "ok"}
+    for forbidden in ("read_repo_file", "list_repo_directory", "run_pytest", "self_update"):
+        assert forbidden not in registry
+
+
+def test_local_restricted_profile_rejects_injected_mcp_registry() -> None:
+    with pytest.raises(ValueError, match="registro MCP nuevo"):
+        IABVMCPServer(None, profile=PROFILE_LOCAL_RESTRICTED, mcp=object())
+
+
+def test_local_restricted_profile_run_skips_dynamic_write_tools(monkeypatch: pytest.MonkeyPatch) -> None:
+    server = IABVMCPServer(None, profile=PROFILE_LOCAL_RESTRICTED)
+    captured: list[str] = []
+    monkeypatch.setattr(server.mcp, "run", lambda *, transport: captured.append(transport))
+
+    server.run(transport="stdio")
+
+    assert captured == ["stdio"]
+    assert set(server.mcp._tool_manager._tools) == {"bridge_health"}
+
+
+def test_main_local_restricted_profile_does_not_construct_appbootstrap(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import sys
+
+    from types import ModuleType
+
+    bootstrap = ModuleType("iabv_v15.bootstrap")
+
+    def forbidden_bootstrap(*_: object, **__: object) -> None:
+        raise AssertionError("AppBootstrap must not be imported or constructed")
+
+    bootstrap.AppBootstrap = forbidden_bootstrap  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "iabv_v15.bootstrap", bootstrap)
+    monkeypatch.setenv("IABV_MCP_TRANSPORT", "stdio")
+    monkeypatch.setenv("IABV_MCP_PROFILE", PROFILE_LOCAL_RESTRICTED)
+    captured: list[tuple[str, set[str]]] = []
+
+    def capture_run(server: IABVMCPServer, *, transport: str) -> None:
+        captured.append((transport, set(server.mcp._tool_manager._tools)))
+
+    monkeypatch.setattr(IABVMCPServer, "run", capture_run)
+    mcp_main()
+
+    assert captured == [("stdio", {"bridge_health"})]
+
+
+@pytest.mark.parametrize("transport", ["sse", "streamable-http"])
+def test_main_rejects_network_transport_before_appbootstrap(
+    monkeypatch: pytest.MonkeyPatch, transport: str,
+) -> None:
+    import sys
+
+    from types import ModuleType
+
+    bootstrap = ModuleType("iabv_v15.bootstrap")
+    bootstrap.AppBootstrap = lambda **_: pytest.fail(  # type: ignore[attr-defined]
+        "network transport must be rejected before AppBootstrap"
+    )
+    monkeypatch.setitem(sys.modules, "iabv_v15.bootstrap", bootstrap)
+    monkeypatch.setenv("IABV_MCP_TRANSPORT", transport)
+    monkeypatch.setenv("IABV_MCP_PROFILE", "full")
+
+    with pytest.raises(ValueError, match="solo stdio local"):
+        mcp_main()
 
 
 def test_consensus_fuse_loads_candidate_traces_from_experiment_lab_scope() -> None:

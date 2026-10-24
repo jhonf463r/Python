@@ -77,6 +77,9 @@ DEFAULT_SERVER_NAME = "iabv-v15"
 # Network transports remain disabled until transport authentication and
 # operation-level authorization are implemented and independently verified.
 SUPPORTED_TRANSPORTS = {"stdio"}
+PROFILE_FULL = "full"
+PROFILE_LOCAL_RESTRICTED = "local_restricted"
+SUPPORTED_PROFILES = frozenset({PROFILE_FULL, PROFILE_LOCAL_RESTRICTED})
 
 
 def _to_jsonable(value: Any) -> Any:
@@ -121,15 +124,21 @@ class IABVMCPServer:
 
     def __init__(
         self,
-        container: Any,
+        container: Any | None,
         *,
         name: str = DEFAULT_SERVER_NAME,
         mcp: Any | None = None,
+        profile: str = PROFILE_FULL,
     ) -> None:
-        if container is None:
-            raise ValueError("container no puede ser None")
+        if profile not in SUPPORTED_PROFILES:
+            raise ValueError(f"perfil MCP no soportado: {profile}")
+        if container is None and profile != PROFILE_LOCAL_RESTRICTED:
+            raise ValueError("container no puede ser None fuera del perfil local restringido")
+        if profile == PROFILE_LOCAL_RESTRICTED and mcp is not None:
+            raise ValueError("el perfil local restringido requiere un registro MCP nuevo")
         self.container = container
         self.name = name
+        self.profile = profile
         if mcp is None:
             from mcp.server.fastmcp import FastMCP  # lazy import
 
@@ -466,6 +475,14 @@ class IABVMCPServer:
 
     def _register_tools(self) -> None:
         mcp = self.mcp
+
+        if self.profile == PROFILE_LOCAL_RESTRICTED:
+            @mcp.tool()
+            def bridge_health() -> dict[str, str]:
+                """Estado estático del perfil MCP local restringido."""
+                return {"status": "ok"}
+
+            return
 
         @mcp.tool()
         def world_model_snapshot(refresh: bool = False, full: bool = False) -> dict[str, Any]:
@@ -3154,6 +3171,12 @@ class IABVMCPServer:
                 "está permitido hasta verificar autenticación de transporte "
                 "y autorización independiente por operación"
             )
+
+        if self.profile == PROFILE_LOCAL_RESTRICTED:
+            # This profile intentionally has no container-backed or write-capable
+            # tools, including the dynamic self-update registration below.
+            self.mcp.run(transport=transport)
+            return
         
         # Register self-update (write) tools for autonomous self-modification
         try:
@@ -3250,13 +3273,20 @@ class IABVMCPServer:
         )
 
 
-def create_server(container: Any | None = None, *, name: str = DEFAULT_SERVER_NAME) -> IABVMCPServer:
-    """Fabrica un IABVMCPServer. Si container es None, construye AppBootstrap."""
+def create_server(
+    container: Any | None = None,
+    *,
+    name: str = DEFAULT_SERVER_NAME,
+    profile: str = PROFILE_FULL,
+) -> IABVMCPServer:
+    """Fabrica un IABVMCPServer, sin bootstrap para el perfil restringido."""
 
-    if container is None:
+    if profile not in SUPPORTED_PROFILES:
+        raise ValueError(f"perfil MCP no soportado: {profile}")
+    if container is None and profile != PROFILE_LOCAL_RESTRICTED:
         from iabv_v15.bootstrap import AppBootstrap
         container = AppBootstrap()
-    return IABVMCPServer(container, name=name)
+    return IABVMCPServer(container, name=name, profile=profile)
 
 
 def main() -> None:
@@ -3264,9 +3294,21 @@ def main() -> None:
 
     Configurable vía variables de entorno:
       - IABV_MCP_TRANSPORT: stdio (default) | sse | streamable-http
+      - IABV_MCP_PROFILE: full | local_restricted (solo bridge_health, sin bootstrap)
       - IABV_MCP_NAME: nombre visible del server
       - IABV_WORKSPACE_ROOT: raíz del workspace para AppBootstrap
     """
+    transport = os.environ.get("IABV_MCP_TRANSPORT", "stdio")
+    if transport not in SUPPORTED_TRANSPORTS:
+        raise ValueError(
+            f"transport '{transport}' está deshabilitado; solo stdio local "
+            "está permitido hasta verificar autenticación de transporte "
+            "y autorización independiente por operación"
+        )
+    profile = os.environ.get("IABV_MCP_PROFILE", PROFILE_FULL)
+    if profile not in SUPPORTED_PROFILES:
+        raise ValueError(f"perfil MCP no soportado: {profile}")
+
     logging.basicConfig(
         level=os.environ.get("IABV_MCP_LOG_LEVEL", "INFO"),
         format="%(asctime)s %(levelname)s %(name)s - %(message)s",
@@ -3279,13 +3321,15 @@ def main() -> None:
     # httpx/httpcore handled by shared suppress_noisy_http_loggers().
     from iabv_v15.infra.logging import suppress_noisy_http_loggers
     suppress_noisy_http_loggers()
-    transport = os.environ.get("IABV_MCP_TRANSPORT", "stdio")
     name = os.environ.get("IABV_MCP_NAME", DEFAULT_SERVER_NAME)
     workspace_root = os.environ.get("IABV_WORKSPACE_ROOT")
 
-    from iabv_v15.bootstrap import AppBootstrap
-    container = AppBootstrap(workspace_root=workspace_root)
-    server = IABVMCPServer(container, name=name)
+    if profile == PROFILE_LOCAL_RESTRICTED:
+        server = IABVMCPServer(None, name=name, profile=profile)
+    else:
+        from iabv_v15.bootstrap import AppBootstrap
+        container = AppBootstrap(workspace_root=workspace_root)
+        server = IABVMCPServer(container, name=name, profile=profile)
     server.run(transport=transport)
 
 
