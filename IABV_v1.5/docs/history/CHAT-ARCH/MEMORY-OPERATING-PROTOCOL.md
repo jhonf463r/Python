@@ -1,3 +1,13 @@
+<!-- M1A-PR477-STATIC-REVIEW-HANDOFF: begin; documentary pointer only; CURRENT-STATE routing remains authoritative. -->
+## Supplementary terminal review receipt — M1A PR #477 static readiness (2026-10-24)
+
+Receipt: [M1A PR #477 bounded static readiness review](./CHAT-ARCH-2026-10-24-M1A-PR477-static-readiness-review.md); candidate HEAD `47e9458836369a67d4629398b62a93d99e18cc74`, compared with base/main `c3bc9d8b4f727483081cf24650d4e7209687024c`.
+
+Disposition: `STATIC_REVIEW=PASS_WITH_LIMITATIONS`; **do not mark PR #477 ready or merge yet**. The Owner supplied a passing isolated local STDIO test (`1 passed in 2.69s`) showing only `bridge_health`; this is not CI. The review found a raw FastMCP-instance encapsulation gap (no active product bypass demonstrated), a latent fail-open governance helper (not called by current fail-closed start path), and incomplete formal CI/review evidence in the queried GitHub surfaces. The exact finding boundaries and file/line refs are in the receipt.
+
+This is a documentation-only continuity proposal on an isolated branch. It does not edit product code, change PR #477, promote a test report to CI, change Option D, inspect trust assets, authorize implementation/tests/runtime/transport/protected reads, close gates, or alter the canonical `NEXT_ACTION`. Do not treat this pointer as canonical until adopted into live `main` and fetched back.
+<!-- M1A-PR477-STATIC-REVIEW-HANDOFF: end -->
+
 <!-- CONTINUITY-PROTOCOL-OVERRIDE: begin; documentation/governance process only; current technical routing remains in CURRENT-STATE.md. -->
 ## Mandatory continuity upgrade — objective-first, time-aware, anti-loop operation (2026-10-23)
 
