@@ -1,3 +1,34 @@
+## CURRENT-STATE ROUTING — PR #473 generic shell path closed fail-closed (2026-10-23)
+
+Latest candidate-only implementation receipt: [PR #473 — generic shell execution fail-closed closure](./CHAT-ARCH-2026-10-23-phase1-generic-shell-execution-closure.md), implementation commit `e4bef794e336a84d538b99dcac3d959cf0c81573`, based on candidate `795a44ae90ac5ebe8735ac804f52c969d0fb9c49`. The generic `shell_command` route is rejected in `ToolTeachService.execute_task()` before adapter availability, sandbox execution, approval evaluation, or adapter invocation; `ShellToolAdapter.run()` also denies every command unconditionally. This avoids treating arbitrary `shell=True` syntax as safely constrainable by a text denylist. Benign generic shell commands are disabled too. The Common Sense and fixed `cloudflared_cli` subcommand guards remain in place; the 11 narrowly selected tests passed with mocked process boundaries. This closes the identified generic-shell path only and does not prove application-wide absence of all tunnel launch routes or runtime process state.
+
+```text
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+ACTIVE_TASK=PHASE1_MCP_TRANSPORT_HARDENING
+PR=473; STATE=OPEN_DRAFT_UNMERGED
+BASE_SHA=2a5ac42fabbd7c6a66591d127e379432495ad3bc
+PREVIOUS_CANDIDATE_HEAD=795a44ae90ac5ebe8735ac804f52c969d0fb9c49
+GENERIC_SHELL_PATH=FAIL_CLOSED
+FOCUSED_TESTS=11_PASSED
+BUILD=NOT_RUN
+RUNTIME=NOT_RUN
+REAL_TRANSPORT=NOT_RUN
+RATIFIED_OPTION_D_NO_BOOTSTRAP=REMAINS_IN_FORCE
+AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+G1/G2/G3=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+GOVERNANCE=KEEP_BLOCKED
+READ_LIST=FAIL_CLOSED
+PUBLIC_TUNNEL=PROHIBITED
+AZURE_BILLING_STATE=NOT_VERIFIED
+COST_POLICY=NO_PAID_SERVICES; NO_RESOURCE_DEPLOYMENT
+BRIDGE=BRIDGE_NOT_READY
+NEXT_ACTION=INDEPENDENTLY_REVIEW_THE_NEW_PR_HEAD; KEEP_DRAFT_AND_UNMERGED
+```
+
+Do not merge, mark ready, deploy, launch the application/MCP/Cloudflare, run shell commands for reproduction, use network transport, inspect protected data/SQLite/secrets, release a governance block, or start a later phase automatically. Live `main` remains governed exclusively by its own current-state routing.
+---
+
 ## CURRENT-STATE ROUTING — Independent review found generic shell tunnel path (2026-10-23)
 
 Latest candidate-only review receipt: [PR #473 — independent review of residual tunnel-route closures](./CHAT-ARCH-2026-10-23-independent-review-residual-tunnel-closures.md). The published commit `003124a7aea63765aafc7915b193a4a9fb79e2d3` closes the two specifically targeted routes in static code: Common Sense no longer registers `start_tunnel`; the `cloudflared_cli` ToolCard's fixed adapter guard allows only `tunnel list` and `tunnel info`. The eight focused tests and the two-revision World Model comparison are documented in the Owner's closure receipt; they were not rerun independently in this review.
