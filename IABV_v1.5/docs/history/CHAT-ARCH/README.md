@@ -1,3 +1,11 @@
+## Latest candidate-only result — Cloudflared focused tests (2026-10-23)
+
+Result receipt: [PR #473 — Cloudflared focused-test result and evidence reconciliation](./CHAT-ARCH-2026-10-23-pr473-cloudflared-focused-test-result-reconciliation.md). Codex reports the authorized eight-node pytest selection completed with 16 parametrized cases passing (2.30s, exit 0; Python 3.14.4). This is reported execution, not an independent coordinator rerun. The report says only the local Python/pytest process ran and process cases used mocks.
+
+GitHub was revalidated: live `main` `2a5ac42fabbd7c6a66591d127e379432495ad3bc`; the candidate HEAD at the test run was `d09b514116bcb8867004d3327a7fc5cdb3810e75`; PR #473 remains OPEN / DRAFT / UNMERGED. The focused result does not establish a global public-tunnel prohibition, close any implementation prerequisite, or alter the live-main route. Preserve `GOVERNANCE=KEEP_BLOCKED`, `G1/G2/G3=NOT_ESTABLISHED`, `IMPLEMENTATION_PREREQUISITES=8; CLOSED=0`, `PUBLIC_TUNNEL=PROHIBITED`, `REAL_TRANSPORT=NOT_RUN`, and `BRIDGE=BRIDGE_NOT_READY`. Stop after this reconciliation; no automatic follow-on.
+
+---
+
 ## New-chat handoff — PR #473 verification preflight and governance boundary (2026-10-23)
 
 Start here: [New-chat handoff — PR #473 and verification preflight](./CHAT-ARCH-2026-10-23-new-chat-handoff-pr473.md). Live main remains 2a5ac42fabbd7c6a66591d127e379432495ad3bc; its CURRENT-STATE is authoritative and retains Option D/no-bootstrap, IMPLEMENTATION=NOT_AUTHORIZED, TESTS=NOT_RUN, and fail-closed routing. PR #473 is OPEN / DRAFT / UNMERGED. Codex's local worktree was clean but stale at cb1a8b545bc29b13b6da1ada0f0204601805f7dc; preserve it. The candidate's current target blobs are recorded in the handoff. New detached worktree identity preflight only; no test execution until a genuinely new explicit Owner decision reopens the exact test scope. The latest Cloudflared access/sandbox tests remain unrun; previous Owner-reported 11 tests refer to earlier generic-shell changes.

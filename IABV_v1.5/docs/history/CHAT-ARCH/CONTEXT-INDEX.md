@@ -1,3 +1,13 @@
+## Latest candidate evidence — PR #473 focused Cloudflared tests (2026-10-23)
+
+- Receipt: [PR #473 — Cloudflared focused-test result and evidence reconciliation](./CHAT-ARCH-2026-10-23-pr473-cloudflared-focused-test-result-reconciliation.md).
+- Provenance: the Owner supplied Codex's test result; coordinator execution is `NOT_RUN`.
+- Reported outcome: 8 node selectors, 16 parametrized cases passed, 2.30s, exit code 0, Python 3.14.4, no pytest cache.
+- Remote GitHub references were revalidated: `main=2a5ac42fabbd7c6a66591d127e379432495ad3bc`; PR #473 HEAD at test run `d09b514116bcb8867004d3327a7fc5cdb3810e75`, OPEN / DRAFT / UNMERGED.
+- This result is bounded candidate test evidence, not runtime or global-tunnel proof. The sole canonical route remains live `main/CURRENT-STATE.md`: maintain no-bootstrap/fail-closed unless new authority evidence or a separate explicit Owner decision changes it. No automatic follow-on.
+
+---
+
 ## New-chat handoff — PR #473 verification blocked on stale local worktree (2026-10-23)
 
 Start here: [New-chat handoff — PR #473 and verification preflight](./CHAT-ARCH-2026-10-23-new-chat-handoff-pr473.md). Live main remains 2a5ac42fabbd7c6a66591d127e379432495ad3bc and its CURRENT-STATE owns the route: M1A_G1_TRUST_BOOTSTRAP_AUTHORITY_BOUNDARY; MAINTAIN_NO_BOOTSTRAP_FAIL_CLOSED; IMPLEMENTATION=NOT_AUTHORIZED; TESTS=NOT_RUN. Candidate PR #473 remains OPEN / DRAFT / UNMERGED. The old local worktree cb1a8b545bc29b13b6da1ada0f0204601805f7dc is clean but stale and must be preserved. Current candidate blob targets: tool_adapters.py 5217b8deae01f34ec4402b82c651e9995ae94514; tool_registry.py 0599ae4ecd77d85cdee05a04fadcccaad2d5bea2; test_local_cli_adapter.py fe53c660fd723ab82bde96b3077b25ca07cc24c2. Set up a new detached sibling worktree and verify identity only; do not run pytest without a new explicit Owner decision reopening that exact test scope. Newest Cloudflared access/sandbox regression tests are unrun; earlier Owner-reported 11 passing tests belong to the earlier generic-shell stage.

@@ -1,3 +1,30 @@
+## CANDIDATE ROUTING — Cloudflared focused tests reported passing (2026-10-23)
+
+Focused-result receipt: [PR #473 — Cloudflared focused-test result and evidence reconciliation](./CHAT-ARCH-2026-10-23-pr473-cloudflared-focused-test-result-reconciliation.md).
+
+This candidate-only routing note records a narrowly authorized test run reported by Codex. It does not replace live `main/CURRENT-STATE.md`, which remains the sole canonical router, and it does not authorize implementation or a subsequent phase.
+
+Remote GitHub state was revalidated before this documentation writeback: live `main` was `2a5ac42fabbd7c6a66591d127e379432495ad3bc`; the PR HEAD at the reported test run was `d09b514116bcb8867004d3327a7fc5cdb3810e75`; PR #473 was OPEN / DRAFT / UNMERGED. The source/test blobs used for identity reconciliation are listed in the receipt.
+
+```text
+CANDIDATE_FOCUSED_TESTS=16_PASSED_REPORTED_BY_CODEX
+TEST_SELECTION_NODES=8
+REPORTED_EXIT_CODE=0
+REPORTED_DURATION=2.30s
+INDEPENDENT_COORDINATOR_EXECUTION=NOT_RUN
+GLOBAL_PUBLIC_TUNNEL_PROHIBITION=NOT_ESTABLISHED
+LIVE_MAIN_NEXT_ACTION=MAINTAIN_NO_BOOTSTRAP_FAIL_CLOSED; REOPEN_ONLY_ON_GENUINELY_NEW_AUTHORITY_EVIDENCE_OR_EXPLICIT_OWNER_DECISION
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+GOVERNANCE=KEEP_BLOCKED
+BRIDGE=BRIDGE_NOT_READY
+AUTOMATIC_FOLLOW_ON=FALSE
+NEXT_ACTION=STOP_AFTER_RESULT_RECONCILIATION; NO_AUTOMATIC_FOLLOW_ON
+```
+
+Do not interpret the reported synthetic/mocked test pass as application/runtime/transport evidence or as proof that every tunnel-launch path is absent. Keep all restrictions in the canonical live-main route. Prior candidate snapshots below are retained as historical provenance.
+
+---
+
 ## CURRENT-STATE ROUTING — New-chat handoff prepared; stale local test worktree preserved (2026-10-23)
 
 Primary continuity handoff: [New-chat handoff — PR #473 and verification preflight](./CHAT-ARCH-2026-10-23-new-chat-handoff-pr473.md). This candidate-only update follows canonical main preflight. It does not supersede live main/CURRENT-STATE.md, whose active task is M1A_G1_TRUST_BOOTSTRAP_AUTHORITY_BOUNDARY and whose NEXT_ACTION remains MAINTAIN_NO_BOOTSTRAP_FAIL_CLOSED.
