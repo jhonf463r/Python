@@ -99,7 +99,7 @@ The only valid outcomes are:
 - **The Owner explicitly ratifies Option D:** record no-bootstrap/fail-closed as an Owner decision; do not infer that ratification from confusion, silence, or an "I don't know why you're asking" response.
 - **The Owner says they do not know, or no admissible route is available:** keep authority assets `UNKNOWN/NOT_INSPECTED`, preserve all gates as blocked, and stop authority-investigation attempts. Do not interpret uncertainty as proof of absence and do not re-ask the same question repeatedly. Resume this decision only when genuinely new evidence or a new explicit decision context exists.
 
-A bounded question may be asked once only if a decision from the Owner is strictly required after the preflight and the assistant has stated the already-completed Entra work, the precise distinction between authentication and trust authority, the safe default, and the consequences. Track the response. Never restate the same unresolved question on every turn.
+The previous assistant question was insufficiently contextualized: the Owner's confusion is not an answer and is not Option D ratification. Once this protocol correction is adopted, ChatGPT may present one corrected, concise G1 decision if the Owner is asking to advance the project beyond the protocol fix. That single presentation must first acknowledge the completed Entra/Authenticator work, explain the difference between human authentication and IABV bootstrap authority, and state the evidence/Option D outcomes with the safe default. Record the reply and provenance. After the Owner says unknown or gives a decision, do not ask the same question again unless genuinely new evidence materially changes the decision.
 
 ## 6. Anti-loop and route-denial protocol
 
@@ -164,7 +164,7 @@ RUNTIME=NOT_RUN
 REAL_TRANSPORT=NOT_RUN
 BRIDGE=BRIDGE_NOT_READY
 AUTOMATIC_FOLLOW_ON=FALSE
-NEXT_ACTION=REVIEW_THE_AUTHORITY_DECISION_ONLY_WHEN_NEW_EVIDENCE_OR_NEW_CONTEXT_EXISTS
+NEXT_ACTION=ONE_CONTEXTUALIZED_OWNER_DECISION_ON_VERIFIABLE_AUTHORITY_OR_EXPLICIT_OPTION_D_RATIFICATION; PRESENT_ONCE_AFTER_PROTOCOL_ADOPTION; DO_NOT_REPEAT_UNLESS_NEW_EVIDENCE_CHANGES_THE_DECISION
 ```
 
 This document changes operating/documentation guidance only. It does not close a gate, create trust, authorize implementation, or ratify Option D on the Owner's behalf.
