@@ -1,21 +1,25 @@
-## CURRENT-STATE ROUTING — PR #473 residual tunnel-route closure (2026-10-23)
+## CURRENT-STATE ROUTING — Independent review found generic shell tunnel path (2026-10-23)
 
-Latest candidate-branch receipt: [PR #473 residual tunnel launch paths closed](./CHAT-ARCH-2026-10-23-phase1-residual-tunnel-closures.md). The same PR branch now removes the Common Sense `cloudflared tunnel run` executor and constrains the `cloudflared_cli` adapter to the fixed inspection subcommands `tunnel list` and `tunnel info`. Focused mocked tests passed 8/8. The two named World Model snapshot tests were run separately on base and the pre-change candidate; both fail on both revisions because the test fake lacks `scan_stats`. This comparison does not repair those tests or change the code under test.
+Latest candidate-only review receipt: [PR #473 — independent review of residual tunnel-route closures](./CHAT-ARCH-2026-10-23-independent-review-residual-tunnel-closures.md). The published commit `003124a7aea63765aafc7915b193a4a9fb79e2d3` closes the two specifically targeted routes in static code: Common Sense no longer registers `start_tunnel`; the `cloudflared_cli` ToolCard's fixed adapter guard allows only `tunnel list` and `tunnel info`. The eight focused tests and the two-revision World Model comparison are documented in the Owner's closure receipt; they were not rerun independently in this review.
 
-This candidate-only routing does not supersede live `main` while PR #473 is unmerged. Revalidate the branch, PR head, and PR state before further action. Do not infer a running tunnel or effective runtime behavior from the static changes or mocked tests.
+The review found a separate, pre-existing local application route: the generic `shell_command` ToolCard reaches `ShellToolAdapter.run()`, which executes arbitrary commands with `shell=True` and ignores `sandbox=True`. `ToolTeachService.execute_task()` calls that adapter through `ToolSandbox` before its approval gate. Therefore, if a local task routes `cloudflared tunnel run` through the generic shell card, the shell adapter can execute it; no such command was run, and this route was not shown to be a direct MCP tool dispatch. The target closures pass static inspection, but the global application-wide `PUBLIC_TUNNEL=PROHIBITED` invariant is not established. Keep this gap bounded and fail closed.
+
+This candidate-only routing does not supersede live `main` while PR #473 is unmerged. At the time of review the PR was `OPEN/DRAFT/UNMERGED` on base `2a5ac42fabbd7c6a66591d127e379432495ad3bc`, reviewed head `686c7ad9c4be5b86b757e2b9da68e1df97e3d337`; revalidate branch/PR refs after this documentation commit before next action.
 
 ```text
 PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
 ACTIVE_TASK=PHASE1_MCP_TRANSPORT_HARDENING
 PR=473; STATE=OPEN_DRAFT_UNMERGED
 BASE_SHA=2a5ac42fabbd7c6a66591d127e379432495ad3bc
-PRE_CHANGE_HEAD=fe83a99ed8115d5c034b33cb21e3573769925920
-IMPLEMENTATION_COMMIT=003124a7aea63765aafc7915b193a4a9fb79e2d3
-COMMON_SENSE_TUNNEL_START=REMOVED; FOCUSED_MOCKED_TEST=PASS
-CLOUDFLARED_TUNNEL_SUBCOMMANDS=LIST_INFO_ONLY; RUN_REJECTED_BEFORE_SUBPROCESS
-FOCUSED_TESTS=8_PASSED
-WORLD_MODEL_TESTS=2_FAILED_ON_BASE_AND_CANDIDATE; SAME_SCAN_STATS_ATTRIBUTEERROR
-BASELINE_COMPARISON=CONFIRMED_PRESENT_ON_BASE_AND_CANDIDATE
+REVIEWED_IMPLEMENTATION_COMMIT=003124a7aea63765aafc7915b193a4a9fb79e2d3
+REVIEWED_PR_HEAD_BEFORE_REVIEW_RECEIPT=686c7ad9c4be5b86b757e2b9da68e1df97e3d337
+TARGETED_COMMON_SENSE_TUNNEL_CLOSURE=STATIC_PASS
+TARGETED_CLOUDFLARED_CLI_SUBCOMMAND_GUARD=STATIC_PASS_FOR_CLOUDFLARED_CLI_ID
+TARGETED_PATCH_REVIEW=PASS_WITH_LIMITATIONS
+GENERIC_SHELL_COMMAND_LAUNCH_SURFACE=OPEN_IN_SOURCE; NOT_EXECUTED
+GLOBAL_PUBLIC_TUNNEL_PROHIBITION=NOT_ESTABLISHED
+OWNER_REPORTED_FOCUSED_TESTS=8_PASSED; NOT_INDEPENDENTLY_EXECUTED
+WORLD_MODEL_BASELINE_COMPARISON=OWNER_REPORTED_IN_RECEIPT; NOT_RERUN
 BUILD=NOT_RUN
 RUNTIME=NOT_RUN
 REAL_TRANSPORT=NOT_RUN
@@ -29,9 +33,10 @@ PUBLIC_TUNNEL=PROHIBITED
 AZURE_BILLING_STATE=NOT_VERIFIED
 COST_POLICY=NO_PAID_SERVICES; NO_RESOURCE_DEPLOYMENT
 BRIDGE=BRIDGE_NOT_READY
-NEXT_ACTION=PUBLISH_ON_SAME_PR_BRANCH_AND_REVALIDATE_PR; DO_NOT_MERGE
+NEXT_ACTION=GUARD_GENERIC_SHELL_SANDBOX_AND_CLOUDFLARED_TUNNEL_LAUNCH_BEFORE_ANY_SUBPROCESS; ADD_NARROW_MOCKED_TESTS; THEN_REVIEW_NEW_HEAD
 ```
 
+Do not merge, mark ready, deploy, launch application/MCP/Cloudflare, execute a shell command for reproduction, use network transport, inspect protected data/SQLite/secrets, repeat Entra setup, or release a governance block. Keep all prior routing and receipts as history. Live `main` remains governed exclusively by its own `CURRENT-STATE.md` and its no-bootstrap/fail-closed NEXT_ACTION.
 ---
 
 ## CURRENT-STATE ROUTING — Full PR #473 review found a remaining tunnel-start path (2026-10-23)
