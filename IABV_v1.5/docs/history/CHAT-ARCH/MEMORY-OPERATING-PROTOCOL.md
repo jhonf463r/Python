@@ -1,6 +1,6 @@
 ## ChatGPT continuity — explicit Owner decision supersedes prior pending state (2026-10-23)
 
-Current decision receipt: [M1A G1 Owner Option D ratification](./CHAT-ARCH-2026-10-23-M1A-G1-owner-option-d-no-bootstrap-ratification-receipt.md), blob `408229370babd4b53da3247d3aaef6392be5b268`, on proposed branch `codex/iabv-option-d-ratification-20261023`, base `439d9604037f156160a970dd33d1b3ad76009bdf`. The Owner explicitly ratified no-bootstrap/fail-closed in a new chat message. Older routing text saying ratification was pending remains historical only and is superseded by the new receipt once the proposal is merged.
+Current decision receipt: [M1A G1 Owner Option D ratification](./CHAT-ARCH-2026-10-23-M1A-G1-owner-option-d-no-bootstrap-ratification-receipt.md), blob `408229370babd4b53da3247d3aaef6392be5b268`, authored on branch `codex/iabv-option-d-ratification-20261023` from base `439d9604037f156160a970dd33d1b3ad76009bdf`. The Owner explicitly ratified no-bootstrap/fail-closed in a new chat message. Older routing text saying ratification was pending is historical and superseded by this receipt; determine current adoption by checking live `main`.
 
 Keep provenance exact: the receipt records an explicit Owner statement, not an independently authenticated identity event. The Owner's report means no qualifying independent authority is known to them; it does not prove authority assets are absent. Preserve `AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED`, never retry a denied reader or use another tool to bypass a denial, and do not ask the same decision again. Entra/Authenticator setup remains completed Owner-reported progress and must not be repeated. `CURRENT-STATE.md` is the sole current route/`NEXT_ACTION` authority. All gates remain fail-closed.
 
@@ -983,7 +983,9 @@ Next actor: Sonnet/Claude — one targeted delta review of Entry 278 only. Chall
 
 No implementation, product-source/config edits, tests/builds/runtime, local M0A access, blocked-reader retry/bypass, credential inspection, authentication, installation/update or launch. Acceptance of this candidate cannot release a governance block. Keep `KEEP_BLOCKED`.
 
----## Continuity method delta — C2 repairs consolidated as amendment 274.1 (2026-10-13; Entry 275)
+---
+
+## Continuity method delta — C2 repairs consolidated as amendment 274.1 (2026-10-13; Entry 275)
 
 Canonical: [CHAT-ARCH-2026-10-13-275-m0b-r8-1-contract-amendment-274-1.md](./CHAT-ARCH-2026-10-13-275-m0b-r8-1-contract-amendment-274-1.md).
 
