@@ -1,6 +1,7 @@
-## Latest candidate-only continuity — PR #473 residual tunnel routes (2026-10-23)
+## Latest candidate-only continuity — PR #473 independent review (2026-10-23)
 
-New receipt: [PR #473 residual tunnel launch paths closed](./CHAT-ARCH-2026-10-23-phase1-residual-tunnel-closures.md). The receipt records the pinned base/candidate comparison for the two World Model snapshot tests, the bounded Common Sense and Cloudflared CLI changes, and the focused mocked-test results. PR #473 remains candidate-only; revalidate its head and Draft/unmerged state after publication. `CURRENT-STATE.md` remains the routing authority.
+Review receipt: [PR #473 — independent review of residual tunnel-route closures](./CHAT-ARCH-2026-10-23-independent-review-residual-tunnel-closures.md). The two targeted tunnel-start paths statically pass their focused checks. The independent review found a broader local `shell_command`/sandbox execution route not guarded by the current Cloudflare-specific adapter patch, so the global no-tunnel invariant is not established. Owner-reported 8/8 tests and the two-test World Model base comparison were recorded in the closure receipt; they were not re-executed by this reviewer. PR #473 stays Draft and unmerged; revalidate its head after continuity writeback.
+
 
 ---
 
