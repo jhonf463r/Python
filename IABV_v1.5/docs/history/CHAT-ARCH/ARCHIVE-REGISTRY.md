@@ -1,5 +1,14 @@
 ## OVERRIDING LATEST ROUTING — New-chat continuity handoff after UAAL-D018 (2026-10-23)
 
+## Documentary checkpoint — local restricted stdio health check (2026-10-24)
+
+- Record: [Codex local restricted stdio health check](./CHAT-ARCH-2026-10-24-local-restricted-stdio-health-check.md).
+- Evidence provenance: `CODEX_SESSION_RESULT_SUPPLIED_BY_OWNER; NOT_INDEPENDENTLY_REPRODUCED_BY_CHATGPT`.
+- Scope: one client-reported `bridge_health` result from the local restricted `stdio` profile; not full IABV health or trust evidence.
+- Source baseline: `main` `c3bc9d8b4f727483081cf24650d4e7209687024c`.
+- Candidate docs branch: `codex/iabv-local-stdio-health-checkpoint-20261024`; branch-only pending Draft PR review; no governance state or `NEXT_ACTION` change.
+
+
 The canonical startup handoff is [here](./CHAT-ARCH-2026-10-23-new-chat-continuity-handoff-after-UAAL-D018.md), blob `71f0ef6911bf6f67f7fb8f6249bf7ce5b4963589`. Current baseline at preparation: `8c453dbdd0b3bb0b606fb46f6b243df525ac10f8`. Verify remote `main` again before executing any action.
 
 The North Star is `GOVERNED_IABV_CODEX_BRIDGE`; the active frontier is `M1A_G1_TRUST_BOOTSTRAP_AUTHORITY_BOUNDARY`. UAAL-D018 is persisted as a documented method refinement, not a runtime implementation. It separates action authority, input, invocation, source result, output shape, field projection, serialization/transport, receipt reconciliation, canonical fetch-back and later causal reuse. `COORDINATOR_RUNTIME=NOT_PROVEN`; `CAUSAL_SPACE_TIME_REUSE=NOT_PROVEN`.
