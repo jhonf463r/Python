@@ -4371,274 +4371,30 @@ class AppBootstrap:
         return app, engine
 
     # ------------------------------------------------------------------
-    # Integrated MCP server + Cloudflare tunnel auto-start
-    # ------------------------------------------------------------------
-    # When the user launches ``python -m iabv_v15``, the full stack must
-    # come alive autonomously: secrets, MCP server, tunnel (if internet
-    # is available), and the PySide6 UI — all from a single invocation.
-    # The MCP server and tunnel run as daemon subprocesses so they die
-    # automatically when the UI (main process) exits.
+    # Legacy MCP / Cloudflare launch hooks (disabled for Phase 1)
     # ------------------------------------------------------------------
 
     def _start_mcp_subprocess(self) -> 'subprocess.Popen[bytes] | None':
-        """Launch the MCP server as a background subprocess."""
-        import shutil
-        import subprocess
-
-        python_exe = sys.executable
-        if os.name == 'nt' and python_exe.lower().endswith('pythonw.exe'):
-            python_candidate = Path(python_exe).with_name('python.exe')
-            if python_candidate.is_file():
-                python_exe = str(python_candidate)
-        workspace = str(self.config.workspace_root)
-        src_dir = str(Path(workspace) / 'src')
-
-        env = {**os.environ}
-        if 'PYTHONPATH' not in env or src_dir not in env.get('PYTHONPATH', ''):
-            env['PYTHONPATH'] = src_dir + os.pathsep + env.get('PYTHONPATH', '')
-        env.setdefault('IABV_MCP_TRANSPORT', 'streamable-http')
-        env.setdefault('IABV_MCP_NAME', 'iabv-v15')
-        env.setdefault('FASTMCP_HOST', '127.0.0.1')
-        env.setdefault('FASTMCP_PORT', '8000')
-        env.setdefault('PYTHONUNBUFFERED', '1')
-        env['IABV_WORKSPACE_ROOT'] = workspace
-        # Signal that this bootstrap runs inside the MCP subprocess so it
-        # can reduce redundant scans and log noise.
-        env['IABV_MCP_SUBPROCESS'] = '1'
-        # The startup timeline audits visible UI boot. If the MCP child writes
-        # into the same JSONL, it contaminates phase ordering and breaks the
-        # metacognitive snapshot for splash -> shell timings.
-        env['IABV_STARTUP_TIMELINE'] = '0'
-
-        # Inject portable CLI tools into PATH (same as run_mcp_bridge.ps1)
-        iabv_tools = Path.home() / '.iabv' / 'tools'
-        if iabv_tools.is_dir():
-            extra_paths = []
-            for candidate in ['gh/bin', 'cloudflared']:
-                p = iabv_tools / candidate
-                if p.is_dir():
-                    extra_paths.append(str(p))
-            if extra_paths:
-                env['PATH'] = os.pathsep.join(extra_paths) + os.pathsep + env.get('PATH', '')
-
-        creationflags = 0
-        startupinfo = None
-        if os.name == 'nt':
-            creationflags = getattr(subprocess, 'CREATE_NO_WINDOW', 0)
-            startupinfo = subprocess.STARTUPINFO()
-            startupinfo.dwFlags |= getattr(subprocess, 'STARTF_USESHOWWINDOW', 0)
-            startupinfo.wShowWindow = 0
-
-        previous_handle = getattr(self, '_mcp_runtime_log_handle', None)
-        if previous_handle is not None:
-            try:
-                previous_handle.close()
-            except Exception:
-                pass
-            self._mcp_runtime_log_handle = None
-        log_handle = None
-        try:
-            log_path = Path(self.config.logs_dir) / 'mcp_server_runtime.log'
-            log_path.parent.mkdir(parents=True, exist_ok=True)
-            log_handle = log_path.open('ab')
-            proc = subprocess.Popen(
-                [python_exe, '-m', 'iabv_v15.infra.mcp.server'],
-                cwd=workspace,
-                env=env,
-                stdin=subprocess.DEVNULL,
-                stdout=log_handle,
-                stderr=subprocess.STDOUT,
-                creationflags=creationflags,
-                startupinfo=startupinfo,
-            )
-            self._mcp_runtime_log_handle = log_handle
-            logger.info('mcp_autostart: MCP server launched (PID %d)', proc.pid)
-            return proc
-        except Exception as exc:
-            if log_handle is not None:
-                try:
-                    log_handle.close()
-                except Exception:
-                    pass
-            logger.warning('mcp_autostart: failed to launch MCP server: %s', exc)
-            return None
+        """Refuse the legacy background MCP launch unconditionally."""
+        logger.info('mcp_autostart: legacy MCP subprocess launch is disabled')
+        return None
 
     def _start_tunnel_subprocess(self) -> 'subprocess.Popen[bytes] | None':
-        """Launch Cloudflare tunnel as a background subprocess if available."""
-        import shutil
-        import subprocess
-
-        cloudflared = shutil.which('cloudflared')
-        if not cloudflared:
-            # Check portable install
-            portable = Path.home() / '.iabv' / 'tools' / 'cloudflared'
-            if portable.is_dir():
-                for name in ('cloudflared.exe', 'cloudflared'):
-                    candidate = portable / name
-                    if candidate.is_file():
-                        cloudflared = str(candidate)
-                        break
-        if not cloudflared:
-            logger.info('mcp_autostart: cloudflared not found, skipping tunnel')
-            return None
-
-        bind_host = os.environ.get('FASTMCP_HOST', '127.0.0.1')
-        bind_port = os.environ.get('FASTMCP_PORT', '8000')
-        origin = f'http://{bind_host}:{bind_port}'
-        host_header = f'{bind_host}:{bind_port}'
-
-        creationflags = 0
-        startupinfo = None
-        if os.name == 'nt':
-            creationflags = getattr(subprocess, 'CREATE_NO_WINDOW', 0)
-            startupinfo = subprocess.STARTUPINFO()
-            startupinfo.dwFlags |= getattr(subprocess, 'STARTF_USESHOWWINDOW', 0)
-            startupinfo.wShowWindow = 0
-
-        previous_handle = getattr(self, '_tunnel_runtime_log_handle', None)
-        if previous_handle is not None:
-            try:
-                previous_handle.close()
-            except Exception:
-                pass
-            self._tunnel_runtime_log_handle = None
-        log_handle = None
-        try:
-            log_path = Path(self.config.logs_dir) / 'cloudflared_runtime.log'
-            log_path.parent.mkdir(parents=True, exist_ok=True)
-            log_handle = log_path.open('ab')
-            proc = subprocess.Popen(
-                [
-                    cloudflared, 'tunnel',
-                    '--url', origin,
-                    '--no-autoupdate',
-                    '--loglevel', 'info',
-                    '--http-host-header', host_header,
-                ],
-                stdin=subprocess.DEVNULL,
-                stdout=log_handle,
-                stderr=subprocess.STDOUT,
-                creationflags=creationflags,
-                startupinfo=startupinfo,
-            )
-            self._tunnel_runtime_log_handle = log_handle
-            logger.info('mcp_autostart: Cloudflare tunnel launched (PID %d)', proc.pid)
-            return proc
-        except Exception as exc:
-            if log_handle is not None:
-                try:
-                    log_handle.close()
-                except Exception:
-                    pass
-            logger.warning('mcp_autostart: failed to launch tunnel: %s', exc)
-            return None
-
-    # ------------------------------------------------------------------
-    # Task 8: MCP supervision — heartbeat + auto-restart
-    # ------------------------------------------------------------------
-
-    _MCP_HEARTBEAT_INTERVAL_S: float = 15.0
-    _MCP_MAX_RESTART_ATTEMPTS: int = 3
-    _MCP_RESTART_COOLDOWN_S: float = 10.0
+        """Refuse the legacy public tunnel launch unconditionally."""
+        logger.info('mcp_autostart: legacy Cloudflare tunnel launch is disabled')
+        return None
 
     def _mcp_supervision_loop(self) -> None:
-        """Background daemon that monitors MCP + tunnel subprocesses.
-
-        Periodically checks if the processes are alive.  When a crash is
-        detected, attempts a controlled restart (up to
-        ``_MCP_MAX_RESTART_ATTEMPTS``).  Status is logged so UI can
-        surface dead-session detection.
-        """
-        import time as _time
-
-        mcp_restarts = 0
-        tunnel_restarts = 0
-        last_mcp_restart: float = 0
-        last_tunnel_restart: float = 0
-
-        while getattr(self, '_mcp_supervisor_running', True):
-            _time.sleep(self._MCP_HEARTBEAT_INTERVAL_S)
-
-            if not getattr(self, '_mcp_supervisor_running', True):
-                break
-
-            now = _time.monotonic()
-
-            # --- Check MCP subprocess ---
-            mcp = getattr(self, '_mcp_proc', None)
-            if mcp is not None and mcp.poll() is not None:
-                exit_code = mcp.returncode
-                logger.warning(
-                    'mcp_supervisor: MCP server died (exit=%s, restarts=%d/%d)',
-                    exit_code, mcp_restarts, self._MCP_MAX_RESTART_ATTEMPTS,
-                )
-                if (
-                    mcp_restarts < self._MCP_MAX_RESTART_ATTEMPTS
-                    and (now - last_mcp_restart) > self._MCP_RESTART_COOLDOWN_S
-                ):
-                    mcp_restarts += 1
-                    last_mcp_restart = now
-                    logger.info('mcp_supervisor: restarting MCP server (attempt %d)', mcp_restarts)
-                    self._mcp_proc = self._start_mcp_subprocess()
-                    if self._mcp_proc is not None:
-                        logger.info(
-                            'mcp_supervisor: MCP server restarted (PID %d)',
-                            self._mcp_proc.pid,
-                        )
-                    else:
-                        logger.error('mcp_supervisor: MCP server restart failed')
-                elif mcp_restarts >= self._MCP_MAX_RESTART_ATTEMPTS:
-                    logger.error(
-                        'mcp_supervisor: MCP server max restarts (%d) reached, giving up',
-                        self._MCP_MAX_RESTART_ATTEMPTS,
-                    )
-
-            # --- Check tunnel subprocess ---
-            tunnel = getattr(self, '_tunnel_proc', None)
-            if tunnel is not None and tunnel.poll() is not None:
-                exit_code = tunnel.returncode
-                logger.warning(
-                    'mcp_supervisor: tunnel died (exit=%s, restarts=%d/%d)',
-                    exit_code, tunnel_restarts, self._MCP_MAX_RESTART_ATTEMPTS,
-                )
-                if (
-                    tunnel_restarts < self._MCP_MAX_RESTART_ATTEMPTS
-                    and (now - last_tunnel_restart) > self._MCP_RESTART_COOLDOWN_S
-                ):
-                    tunnel_restarts += 1
-                    last_tunnel_restart = now
-                    logger.info('mcp_supervisor: restarting tunnel (attempt %d)', tunnel_restarts)
-                    self._tunnel_proc = self._start_tunnel_subprocess()
-                    if self._tunnel_proc is not None:
-                        logger.info(
-                            'mcp_supervisor: tunnel restarted (PID %d)',
-                            self._tunnel_proc.pid,
-                        )
-                    else:
-                        logger.error('mcp_supervisor: tunnel restart failed')
-                elif tunnel_restarts >= self._MCP_MAX_RESTART_ATTEMPTS:
-                    logger.error(
-                        'mcp_supervisor: tunnel max restarts (%d) reached, giving up',
-                        self._MCP_MAX_RESTART_ATTEMPTS,
-                    )
-
-            # Update supervision status for UI visibility
-            self._mcp_supervision_status = {
-                'mcp_alive': (
-                    getattr(self, '_mcp_proc', None) is not None
-                    and getattr(self, '_mcp_proc').poll() is None
-                ),
-                'tunnel_alive': (
-                    getattr(self, '_tunnel_proc', None) is not None
-                    and getattr(self, '_tunnel_proc').poll() is None
-                ),
-                'mcp_restarts': mcp_restarts,
-                'tunnel_restarts': tunnel_restarts,
-                'mcp_max_restarts_reached': mcp_restarts >= self._MCP_MAX_RESTART_ATTEMPTS,
-                'tunnel_max_restarts_reached': tunnel_restarts >= self._MCP_MAX_RESTART_ATTEMPTS,
-            }
-
-        logger.info('mcp_supervisor: supervision loop exited')
+        """Keep legacy supervision inert so it cannot restart either process."""
+        self._mcp_supervisor_running = False
+        self._mcp_supervision_status = {
+            'mcp_alive': False,
+            'tunnel_alive': False,
+            'mcp_restarts': 0,
+            'tunnel_restarts': 0,
+            'mcp_max_restarts_reached': False,
+            'tunnel_max_restarts_reached': False,
+        }
 
     def mcp_supervision_status(self) -> dict[str, Any]:
         """Return the current MCP supervision status for UI display."""
@@ -4652,21 +4408,13 @@ class AppBootstrap:
         })
 
     def _start_mcp_supervisor(self) -> None:
-        """Start the MCP supervision daemon thread."""
-        self._mcp_supervisor_running = True
-        self._mcp_supervision_status: dict[str, Any] = {}
-        self._mcp_supervisor_thread = threading.Thread(
-            target=self._mcp_supervision_loop,
-            name='mcp-supervisor',
-            daemon=True,
-        )
-        self._mcp_supervisor_thread.start()
-        logger.info('mcp_supervisor: supervision daemon started')
+        """Keep the legacy MCP/tunnel supervisor disabled unconditionally."""
+        self._mcp_supervisor_running = False
+        self._mcp_supervision_loop()
 
     def _stop_mcp_supervisor(self) -> None:
-        """Signal the MCP supervision loop to stop."""
+        """Signal the disabled MCP supervision loop to remain stopped."""
         self._mcp_supervisor_running = False
-
     def _auto_optimize_brain(self) -> None:
         """Auto-optimize the reasoning brain on startup.
 
@@ -5114,13 +4862,6 @@ class AppBootstrap:
         except Exception as exc:
             logger.debug('startup_evolution: startup log analysis failed: %s', exc)
 
-    def _is_mcp_port_in_use(self, port: int = 8000) -> bool:
-        """Check if the MCP port is already in use (another instance running)."""
-        import socket
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.settimeout(0.5)
-            return s.connect_ex(('127.0.0.1', port)) == 0
-
     def run(self) -> int:
         self._timeline.mark('run_start')
         # Holder for subprocesses; written from background thread.
@@ -5196,41 +4937,12 @@ class AppBootstrap:
                     except Exception:
                         pass
 
-            # --- MCP autostart ---
-            if self._splash:
-                self._splash.set_status('Verificando servicios MCP...')
-                try:
-                    QGuiApplication.instance().processEvents()
-                except Exception:
-                    pass
-
-            skip_mcp = os.environ.get('IABV_SKIP_MCP_AUTOSTART', '') == '1'
-            mcp_port = int(os.environ.get('FASTMCP_PORT', '8000'))
-            if skip_mcp:
-                logger.info('mcp_autostart: skipped (IABV_SKIP_MCP_AUTOSTART=1)')
-            elif not self._is_mcp_port_in_use(mcp_port):
-                if self._splash:
-                    self._splash.set_status('Iniciando servidor MCP...')
-                    try:
-                        QGuiApplication.instance().processEvents()
-                    except Exception:
-                        pass
-                def _deferred_mcp_start() -> None:
-                    self._mcp_proc = self._start_mcp_subprocess()
-                    if self._mcp_proc:
-                        import time
-                        time.sleep(2)
-                        self._tunnel_proc = self._start_tunnel_subprocess()
-                    # Task 8: start supervision after initial launch
-                    self._start_mcp_supervisor()
-                threading.Thread(
-                    target=_deferred_mcp_start,
-                    name='mcp-deferred-start',
-                    daemon=True,
-                ).start()
-            else:
-                logger.info('mcp_autostart: port %d already in use, skipping MCP launch', mcp_port)
-
+            # Legacy MCP/server and public tunnel auto-start are disabled for
+            # this Phase 1 slice. Do not inspect or clear ports here: an
+            # explicitly client-managed local stdio server is independent.
+            logger.info(
+                'mcp_autostart: disabled unconditionally; no server or tunnel launch attempted'
+            )
             # --- Startup evolution: defer until the main event loop is alive ---
             if self._splash:
                 self._splash.set_status('Preparando ciclo evolutivo...')

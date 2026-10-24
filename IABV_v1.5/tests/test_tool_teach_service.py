@@ -3,7 +3,10 @@ from __future__ import annotations
 import shutil
 from pathlib import Path
 from typing import Any
+from unittest.mock import MagicMock, patch
 from uuid import uuid4
+
+import pytest
 
 from iabv_v15.domain.models import EvaluationRoute, ExecutionState, ExperimentDomain, ExperimentRecommendation, InferenceRequest, InteractionMode, ModeSelectionDecision, TaskRole, ToolAction, ToolActionType, ToolCard, ToolResult, ToolTask, ToolType, ToolValidationStatus
 from iabv_v15.infra.persistence.database import AppDatabase
@@ -307,6 +310,76 @@ def test_tool_teach_service_blocks_destructive_shell_commands_and_keeps_audit_tr
         assert any(item['state'] == 'blocked' and item['action_type'] == 'task_result' for item in log)
     finally:
         shutil.rmtree(root, ignore_errors=True)
+
+
+@pytest.mark.parametrize('approved', [False, True])
+def test_generic_shell_tunnel_is_blocked_before_sandbox_or_approval(tmp_path: Path, approved: bool) -> None:
+    card = ToolCard(
+        tool_id='shell_command',
+        title='Generic shell',
+        tool_type=ToolType.SHELL,
+        adapter_key='shell',
+        supports_sandbox=True,
+    )
+    registry = MagicMock()
+    registry.pick_card_for_task.return_value = card
+    memory = MagicMock()
+    adapter = MagicMock()
+    sandbox = MagicMock()
+    approval_policy = MagicMock()
+    service = ToolTeachService(
+        registry=registry,
+        memory=memory,
+        sandbox=sandbox,
+        validator=MagicMock(),
+        approval_policy=approval_policy,
+        rollback_manager=MagicMock(),
+        adapters={'shell': adapter},
+        workspace_root=str(tmp_path),
+    )
+    task = ToolTask(
+        task_id=str(uuid4()),
+        tool_id='shell_command',
+        title='Forbidden tunnel command',
+        objective='cloudflared tunnel run example',
+        actions=[ToolAction(action_type=ToolActionType.RUN_COMMAND, label='run', value='cloudflared tunnel run example')],
+    )
+
+    with patch('iabv_v15.services.tools.tool_adapters.subprocess.run') as process:
+        result = service.execute_task(task, approved=approved)
+
+    assert result.success is False
+    assert result.validation_status == ToolValidationStatus.BLOCKED
+    assert result.execution_state.state == 'blocked'
+    assert result.error_message == 'generic_shell_execution_disabled'
+    adapter.is_available.assert_not_called()
+    adapter.run.assert_not_called()
+    sandbox.run.assert_not_called()
+    approval_policy.evaluate.assert_not_called()
+    process.assert_not_called()
+    memory.audit_event.assert_called_once()
+    memory.repository.save_result.assert_called_once_with(result)
+
+
+def test_shell_adapter_rejects_commands_in_sandbox_without_subprocess() -> None:
+    from iabv_v15.services.tools.tool_adapters import ShellToolAdapter
+
+    card = ToolCard(tool_id='shell_command', title='Generic shell', tool_type=ToolType.SHELL, adapter_key='shell')
+    task = ToolTask(
+        tool_id='shell_command',
+        title='Sandbox shell request',
+        objective='read-only command',
+        actions=[ToolAction(action_type=ToolActionType.RUN_COMMAND, label='run', value='Get-Location')],
+    )
+    adapter = ShellToolAdapter()
+
+    with patch('iabv_v15.services.tools.tool_adapters.subprocess.run') as process:
+        result = adapter.run(card, task, sandbox=True)
+
+    assert result['success'] is False
+    assert result['metadata']['blocked'] is True
+    assert result['metadata']['reason'] == 'generic_shell_execution_disabled'
+    process.assert_not_called()
 
 
 
