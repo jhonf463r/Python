@@ -4,7 +4,9 @@ Decision receipt: [M1A G1 Owner Option D ratification](./CHAT-ARCH-2026-10-23-M1
 
 Current interpretation: `OWNER_DECISION=RATIFIED_OPTION_D_NO_BOOTSTRAP`; `AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED`; `G1=G2=G3=NOT_ESTABLISHED`; all eight implementation prerequisites remain open. Ratification is not proof of absence, implementation authorization, permission for protected reads or block release. `CURRENT-STATE.md` alone governs current routing; do not repeat the decision question or retry denied readers.
 
----## OVERRIDING LATEST ROUTING — Entra identity prepared; no-cost bridge-security review completed (2026-10-23)
+---
+
+## OVERRIDING LATEST ROUTING — Entra identity prepared; no-cost bridge-security review completed (2026-10-23)
 
 Latest new-chat handoff: [M1A G1 Entra identity and bridge-security continuity handoff](./CHAT-ARCH-2026-10-23-M1A-G1-new-chat-continuity-handoff-entra.md), blob `38405887fd8188c58f69ea37d94e55e8dd15806e`.
 Bounded static assessment: [M1A G1 Microsoft Entra no-cost integration](./CHAT-ARCH-2026-10-23-M1A-G1-Entra-no-cost-integration-static-assessment.md), blob `025a126f8848cab4ac0e6b33f8bd9f2e4740dda6`.
