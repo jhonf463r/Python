@@ -2,7 +2,7 @@
 
 ## Latest terminal G1 review result — BLOCKED_NO_NONCIRCULAR_ROOT (2026-10-24)
 
-The owner-supplied report is archived at [report](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-24-M1A-G1-gemini-adversarial-static-review-report.txt) and reconciled in [receipt](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-24-M1A-G1-adversarial-review-result-receipt.md). Its Gemini 3.8 / Antigravity attribution is stated by the report and is not independently authenticated. Hash verification establishes byte identity only. The review did not establish a qualifying independent root; it does not prove that authority assets are absent.
+The owner-supplied report is archived at [report](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-24-M1A-G1-gemini-adversarial-static-review-report.txt) and reconciled in [receipt](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-24-M1A-G1-adversarial-review-result-receipt.md). Its Gemini 3.8 / Antigravity attribution is stated by the report and is not independently authenticated. Hash verification establishes byte identity only. The review did not establish a qualifying independent root; it does not prove that authority assets are absent. The new-chat [terminal-review handoff](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-24-M1A-G1-terminal-review-new-chat-continuity-handoff.md) records chronology, source-custody lessons and a copy/paste prompt.
 
 ```text
 PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
