@@ -1,3 +1,45 @@
+## CURRENT-STATE ROUTING — local verification worktree mismatch recorded (2026-10-23)
+
+Preflight receipt: [Local verification worktree mismatch and safe reselection](./CHAT-ARCH-2026-10-23-local-verification-worktree-mismatch.md). Codex correctly stopped: the reported local worktree was clean but at HEAD cb1a8b545bc29b13b6da1ada0f0204601805f7dc, with old blobs for the adapter and its test file. It did not run tests or modify files. Live main remains 2a5ac42fabbd7c6a66591d127e379432495ad3bc; PR #473 and its candidate branch were verified at 52ceb9d362d15191147da5d44de4d3d4ee9a518d before this receipt and routing writeback.
+
+At the verified candidate HEAD, the exact blobs are:
+- IABV_v1.5/src/iabv_v15/services/tools/tool_adapters.py: 5217b8deae01f34ec4402b82c651e9995ae94514
+- IABV_v1.5/tests/test_local_cli_adapter.py: fe53c660fd723ab82bde96b3077b25ca07cc24c2
+
+Do not reset, rebase, clean, overwrite or reuse the stale worktree for this test attempt. After revalidating live refs and reading the canonical five files in order from main, create a new, empty sibling worktree detached at the current exact PR HEAD, verify both blobs and a clean tree, and repeat the authorization check. Run the narrow focused tests only if the canonical preflight confirms the bounded test authorization remains applicable. Reconcile again if any ref, blob, PR state or authority route changed.
+
+```text
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+ACTIVE_TASK=PHASE1_MCP_TRANSPORT_HARDENING; LOCAL_PREflight_BLOCK_RECORDED
+PR=473; STATE=OPEN_DRAFT_UNMERGED
+BASE_SHA=2a5ac42fabbd7c6a66591d127e379432495ad3bc
+REMOTE_CANDIDATE_AT_PREFLIGHT=52ceb9d362d15191147da5d44de4d3d4ee9a518d
+LOCAL_WORKTREE=cb1a8b545bc29b13b6da1ada0f0204601805f7dc; CLEAN_BUT_STALE; PRESERVE
+EXPECTED_TOOL_ADAPTERS_BLOB=5217b8deae01f34ec4402b82c651e9995ae94514
+EXPECTED_TEST_LOCAL_CLI_ADAPTER_BLOB=fe53c660fd723ab82bde96b3077b25ca07cc24c2
+TESTS=NOT_RUN
+BUILD=NOT_RUN
+RUNTIME=NOT_RUN
+REAL_TRANSPORT=NOT_RUN
+PROCESS_OR_TUNNEL_STATE=NOT_INSPECTED
+GLOBAL_PUBLIC_TUNNEL_PROHIBITION=NOT_ESTABLISHED
+RATIFIED_OPTION_D_NO_BOOTSTRAP=REMAINS_IN_FORCE
+AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+G1/G2/G3=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+GOVERNANCE=KEEP_BLOCKED
+READ_LIST=FAIL_CLOSED
+PUBLIC_TUNNEL=PROHIBITED
+AZURE_BILLING_STATE=NOT_VERIFIED
+COST_POLICY=NO_PAID_SERVICES; NO_RESOURCE_DEPLOYMENT
+BRIDGE=BRIDGE_NOT_READY
+NEXT_ACTION=REVALIDATE_MAIN_AND_PR; READ_CANONICAL_PREFLIGHT; CREATE_NEW_DETACHED_WORKTREE_AT_CURRENT_PR_HEAD; VERIFY_BLOBS; RUN_FOCUSED_TESTS_ONLY_IF_AUTHORIZATION_REMAINS_IN_FORCE
+```
+
+This candidate-only routing does not supersede live main. Live main still requires no-bootstrap/fail-closed and has NEXT_ACTION=MAINTAIN_NO_BOOTSTRAP_FAIL_CLOSED; REOPEN_ONLY_ON_GENUINELY_NEW_AUTHORITY_EVIDENCE_OR_EXPLICIT_OWNER_DECISION. No test result, authority gate, or block status changes from the reported local mismatch.
+
+---
+
 ## CURRENT-STATE ROUTING — Cloudflared CLI access verbs closed by a fixed adapter guard (2026-10-23)
 
 Latest bounded review receipt: [PR #473 — Cloudflared CLI access-path closure review](./CHAT-ARCH-2026-10-23-independent-review-cloudflared-access-closure.md). Candidate source/test changes were made after the generic-shell review because the `cloudflared_cli` metadata still admitted `access`, while the earlier guard only constrained `tunnel` subcommands. `access tcp/login/token` could therefore reach the local CLI adapter, and `ToolSandbox` called the adapter with `sandbox=True` before returning to the approval gate.
