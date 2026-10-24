@@ -2578,9 +2578,9 @@ class SiteExplorerToolAdapter:
 class LocalCliToolAdapter:
     """Adapter read-only para CLIs locales (gh, cloudflared, git, winget).
 
-    Complementa a ``ShellToolAdapter`` sin reemplazarlo: ese corre comandos
-    libres con ``shell=True``; este conoce herramientas concretas, busca su
-    ejecutable en PATH o rutas Windows tipicas, restringe los verbos permitidos
+    Complementa a ``ShellToolAdapter``, que permanece deshabilitado en
+    esta fase: este conoce herramientas concretas, busca su ejecutable en PATH
+    o rutas Windows tipicas y ejecuta con ``shell=False`.
     y ejecuta con ``shell=False`` para no exponer inyeccion. Es la base que
     consume ``ToolRegistry`` para ``gh_cli``, ``cloudflared_cli``, ``git_cli``
     y ``winget_cli``.
@@ -2597,6 +2597,9 @@ class LocalCliToolAdapter:
     """
 
     tool_type = ToolType.SHELL
+    # No confiar en ToolCard.allowed_verbs para cloudflared: ese metadata puede
+    # ampliarse. Solo se admite version/help y las dos operaciones de inspeccion.
+    CLOUDFLARED_ALLOWED_VERBS = frozenset({'--version', 'version', 'help', 'tunnel'})
     CLOUDFLARED_TUNNEL_INSPECTION_SUBCOMMANDS = frozenset({'list', 'info'})
 
     # Failsafe sobre la allowlist declarada por cada tool: aunque un operador
@@ -2691,19 +2694,31 @@ class LocalCliToolAdapter:
                 blocked=True,
             )
 
-        if card.tool_id == 'cloudflared_cli' and tokens and tokens[0].lower() == 'tunnel':
-            subcommand = tokens[1].lower() if len(tokens) > 1 else ''
-            if subcommand not in self.CLOUDFLARED_TUNNEL_INSPECTION_SUBCOMMANDS:
+        if card.tool_id == 'cloudflared_cli':
+            verb = tokens[0].lower() if tokens else ''
+            if verb not in self.CLOUDFLARED_ALLOWED_VERBS:
                 return self._fail(
                     start,
-                    f"tunnel subcommand '{subcommand or '<missing>'}' is not allowed; "
-                    'allowed inspection subcommands are '
-                    f'{sorted(self.CLOUDFLARED_TUNNEL_INSPECTION_SUBCOMMANDS)}',
+                    f"cloudflared verb '{verb or '<missing>'}' is not permitted; "
+                    f'allowed first tokens are {sorted(self.CLOUDFLARED_ALLOWED_VERBS)}',
                     sandbox=sandbox,
                     executable=executable,
                     args=args_text,
                     blocked=True,
                 )
+            if verb == 'tunnel':
+                subcommand = tokens[1].lower() if len(tokens) > 1 else ''
+                if subcommand not in self.CLOUDFLARED_TUNNEL_INSPECTION_SUBCOMMANDS:
+                    return self._fail(
+                        start,
+                        f"tunnel subcommand '{subcommand or '<missing>'}' is not allowed; "
+                        'allowed inspection subcommands are '
+                        f'{sorted(self.CLOUDFLARED_TUNNEL_INSPECTION_SUBCOMMANDS)}',
+                        sandbox=sandbox,
+                        executable=executable,
+                        args=args_text,
+                        blocked=True,
+                    )
 
         cmd_list = [executable, *tokens]
         try:
