@@ -18,7 +18,21 @@ PR #473 remains `OPEN`, `DRAFT`, `UNMERGED`, base `main`, with 21 changed files.
 
 The current PR diff includes changes to the startup scripts, `bootstrap.py`, `infra/mcp/server.py`, `MCPBridgeService`, ViewModel/QML, focused tests, and candidate continuity. The later four commits from `18feeb0` to `846c597` are documentation-only; the source-level conclusions below therefore apply to the same code source revision, with the candidate HEAD revalidated.
 
-## 2. Confirmed blocker — Common Sense can still start a public tunnel
+## 2. Canonical continuity and normative inputs reconciled
+
+These records were fetched and reconciled during this review; they remain distinct evidence sources and authority boundaries:
+
+- [Prior Phase 1 targeted-review handoff](./CHAT-ARCH-2026-10-23-phase1-transport-hardening-independent-review-handoff.md) — reviewed code SHA `18feeb0`, prior targeted scope, Owner-reported test provenance, and the exact requested full-review/baseline-comparison next action.
+- [Original Phase 1 Owner resumption receipt](./CHAT-ARCH-2026-10-23-phase1-transport-hardening-owner-resumption.md) — bounded authorization and static pre-scan exception; no authority gate closes.
+- [M1A G1 Entra no-cost static assessment](./CHAT-ARCH-2026-10-23-M1A-G1-Entra-no-cost-integration-static-assessment.md) — identity provider is only a candidate; IABV authority and HTTP endpoint protection are not implemented/proven.
+- [M1A v1.0.1 eight-prerequisite evidence-gate matrix](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-implementation-prerequisite-evidence-gate-matrix.md) — eight implementation gates remain open.
+- [Adopted M1A v1.0.1 operational-block scope contract](./CHAT-ARCH-2026-10-22-M1A-consolidated-operational-block-scope-contract-v1_0_1-candidate.md) — normative design artifact blob `7c72474a5f7c114c02320c177d6ea2aea68ad28f`; its historical candidate wording is preserved and interpreted with the later adoption receipt.
+- [M1A v1.0.1 explicit Owner adoption receipt](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-explicit-owner-adoption-receipt.md) — adoption is normative design only, not implementation permission or runtime proof.
+- [Entry 274 consolidated repository-read decision contract](./CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md) — unknown, malformed, unsupported or partially evaluable scope fails closed; trusted server-side target identity and independent authority cannot be fabricated from a test matrix or caller input.
+
+Canonical `main` preflight files were read in required order. Candidate Phase 1 documents do not override `main` while PR #473 is unmerged. This review does not retry denied readers, inspect protected state, or reinterpret `SUPPORTED_ROUTE_NOT_FOUND` as a global claim that no route/assets exist.
+
+## 3. Confirmed blocker — Common Sense can still start a public tunnel
 
 The PR disables its direct bootstrap/service tunnel paths, but does not change `IABV_v1.5/src/iabv_v15/services/common_sense_engine.py`.
 
