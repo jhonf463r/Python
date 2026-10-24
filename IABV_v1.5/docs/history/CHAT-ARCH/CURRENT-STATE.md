@@ -1,3 +1,9 @@
+<!-- CONTINUITY-PROTOCOL-OVERRIDE: begin; process/navigation only; does not supersede current-state routing below. -->
+## Mandatory objective-first continuity protocol — navigation rule, not a new technical route (2026-10-23)
+
+Apply the [Canonical continuity, space-time reasoning and anti-loop protocol](./CHAT-ARCH-2026-10-23-CONTINUITY-SPACE-TIME-OPERATING-PROTOCOL-v1.md) for every new chat. It governs how the archive is reconstructed and how a next action is chosen; it does not replace this file's canonical state fields. The technical checkpoint and NEXT_ACTION below are unchanged by this documentation change. New chats must read the five front doors in the required order, then use targeted receipts and dependency evidence instead of asking the Owner to repeat archive research. Do not reopen closed paths without genuinely new evidence or an explicit Owner decision that changes the specific scope. This protocol does not authorize protected reads, implementation, tests, runtime, tunnel use, spending, merge of product work, deployment or gate release.
+<!-- CONTINUITY-PROTOCOL-OVERRIDE: end -->
+
 ## CURRENT-STATE ROUTING — Owner ratified Option D; no bootstrap (2026-10-23)
 
 Receipt: [M1A G1 Owner Option D ratification](./CHAT-ARCH-2026-10-23-M1A-G1-owner-option-d-no-bootstrap-ratification-receipt.md), blob `cac492006c51c56ea4abc4dff822785e19c65d93`. This routing update originated on isolated branch `codex/iabv-option-d-ratification-20261023`, based on verified `main` commit `439d9604037f156160a970dd33d1b3ad76009bdf`, and was submitted for review via PR #472. Revalidate live `main` to determine whether it is currently canonical. `CURRENT-STATE.md` remains the sole routing authority. The previous `OWNER_DECISION_NOT_CAPTURED` snapshot is superseded by the explicit Owner decision below.
