@@ -293,6 +293,31 @@ def test_cloudflared_access_verbs_are_blocked_even_if_card_metadata_lists_them(
     assert 'cloudflared verb' in result['error_message']
 
 
+def test_cloudflared_guard_uses_executable_identity_not_only_tool_id(monkeypatch) -> None:
+    card = _card(
+        tool_id='custom_cli_alias',
+        title='Custom CLI alias',
+        metadata={
+            'command_name': 'cloudflared.exe',
+            'tool_family': 'cloudflared',
+            # Metadata tries to allow the access verb; the adapter-level guard must win.
+            'allowed_verbs': ['access'],
+        },
+    )
+    adapter = LocalCliToolAdapter()
+    monkeypatch.setattr(adapter, '_resolve_executable', lambda _card: r'C:\\tools\\cloudflared.exe')
+    monkeypatch.setattr(
+        'iabv_v15.services.tools.tool_adapters.subprocess.run',
+        lambda *_args, **_kwargs: pytest.fail('subprocess.run must not be reached'),
+    )
+
+    result = adapter.run(card, _task('access tcp --hostname service.example.test --url localhost:1234'))
+
+    assert result['success'] is False
+    assert result['metadata']['blocked'] is True
+    assert 'cloudflared verb' in result['error_message']
+
+
 @pytest.mark.parametrize('subcommand', ['list', 'info'])
 def test_cloudflared_declared_tunnel_inspection_subcommands_reach_mocked_process(
     monkeypatch, subcommand: str,
