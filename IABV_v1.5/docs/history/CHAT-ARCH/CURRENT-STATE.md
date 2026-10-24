@@ -1,3 +1,41 @@
+## CURRENT-STATE ROUTING — Independent review of generic shell closure (2026-10-23)
+
+Latest bounded review receipt: [PR #473 — independent review of generic shell execution closure](./CHAT-ARCH-2026-10-23-independent-review-generic-shell-closure.md), reviewed candidate HEAD `cb1a8b545bc29b13b6da1ada0f0204601805f7dc`. The implementation change `e4bef794e336a84d538b99dcac3d959cf0c81573` disables `ShellToolAdapter.run()` unconditionally and rejects `shell_command` in `ToolTeachService.execute_task()` before availability, sandbox, approval, or adapter invocation. Static review passes for these bounded paths. The Owner reports 11 focused tests passing; they were not independently executed, and GitHub returned no workflow runs or status checks for this head.
+
+The review did not establish absence of every other tunnel launch route across the application and did not inspect live process/tunnel state. A non-blocking stale `LocalCliToolAdapter` docstring still says generic shell uses `shell=True`. No source changes were made by this review.
+
+```text
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+ACTIVE_TASK=PHASE1_MCP_TRANSPORT_HARDENING; BOUNDED REVIEW RECORDED
+PR=473; STATE=OPEN_DRAFT_UNMERGED
+BASE_SHA=2a5ac42fabbd7c6a66591d127e379432495ad3bc
+REVIEWED_HEAD=cb1a8b545bc29b13b6da1ada0f0204601805f7dc
+GENERIC_SHELL_TOOLTEACH_GATE=STATIC_PASS
+SHELL_ADAPTER_DIRECT_EXECUTION=STATIC_PASS
+GLOBAL_PUBLIC_TUNNEL_PROHIBITION=NOT_ESTABLISHED
+FOCUSED_TESTS=OWNER_REPORTED_11_PASSED; NOT_INDEPENDENTLY_EXECUTED
+CI=NO_WORKFLOW_RUNS_OR_STATUS_CHECKS_RETURNED
+BUILD=NOT_RUN
+RUNTIME=NOT_RUN
+REAL_TRANSPORT=NOT_RUN
+PROCESS_OR_TUNNEL_STATE=NOT_INSPECTED
+RATIFIED_OPTION_D_NO_BOOTSTRAP=REMAINS_IN_FORCE
+AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+G1/G2/G3=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+GOVERNANCE=KEEP_BLOCKED
+READ_LIST=FAIL_CLOSED
+PUBLIC_TUNNEL=PROHIBITED
+AZURE_BILLING_STATE=NOT_VERIFIED
+COST_POLICY=NO_PAID_SERVICES; NO_RESOURCE_DEPLOYMENT
+BRIDGE=BRIDGE_NOT_READY
+NEXT_ACTION=MAINTAIN_PR_OPEN_DRAFT_UNMERGED; NO_AUTOMATIC_FOLLOW_ON; REQUIRE_EXPLICIT_OWNER_DECISION_BEFORE_FURTHER_PRODUCT_CODE_OR_RUNTIME_ACTION
+```
+
+This candidate-only routing records the review; it does not supersede live `main` routing. Do not merge, mark ready, deploy, launch the application/MCP/Cloudflare, execute shell commands for reproduction, access protected data/SQLite/credentials, release governance blocks, or treat this receipt as authority evidence. Live `main` remains at `2a5ac42fabbd7c6a66591d127e379432495ad3bc` and retains its no-bootstrap/fail-closed `NEXT_ACTION`.
+
+---
+
 ## CURRENT-STATE ROUTING — PR #473 generic shell path closed fail-closed (2026-10-23)
 
 Latest candidate-only implementation receipt: [PR #473 — generic shell execution fail-closed closure](./CHAT-ARCH-2026-10-23-phase1-generic-shell-execution-closure.md), implementation commit `e4bef794e336a84d538b99dcac3d959cf0c81573`, based on candidate `795a44ae90ac5ebe8735ac804f52c969d0fb9c49`. The generic `shell_command` route is rejected in `ToolTeachService.execute_task()` before adapter availability, sandbox execution, approval evaluation, or adapter invocation; `ShellToolAdapter.run()` also denies every command unconditionally. This avoids treating arbitrary `shell=True` syntax as safely constrainable by a text denylist. Benign generic shell commands are disabled too. The Common Sense and fixed `cloudflared_cli` subcommand guards remain in place; the 11 narrowly selected tests passed with mocked process boundaries. This closes the identified generic-shell path only and does not prove application-wide absence of all tunnel launch routes or runtime process state.
