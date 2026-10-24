@@ -1,20 +1,25 @@
-## CURRENT-STATE ROUTING — Phase 1 targeted static review recorded; full PR review remains open (2026-10-23)
+## CURRENT-STATE ROUTING — Full PR #473 review found a remaining tunnel-start path (2026-10-23)
 
-Latest continuity record: [Phase 1 MCP transport hardening — targeted static review and new-chat handoff](./CHAT-ARCH-2026-10-23-phase1-transport-hardening-independent-review-handoff.md). This candidate-branch receipt is source-grounded at reviewed source commit `18feeb0872dfebd583fc1cf70674506277ced09a`; it is not merged-main state and must not be treated as proof of runtime behavior. PR [#473](https://github.com/jhonf463r/Python/pull/473) must be re-fetched for its current head before any further decision.
+Latest candidate-only review receipt: [PR #473 full static review — residual tunnel executor and World Model baseline handoff](./CHAT-ARCH-2026-10-23-phase1-full-pr-review-blocker-and-baseline-handoff.md). This routing is on the isolated candidate branch only; it does **not** replace live `main` routing while PR #473 is unmerged. Revalidated live `main` remains `2a5ac42fabbd7c6a66591d127e379432495ad3bc`; PR #473 remains open, Draft, and unmerged at candidate HEAD `846c597b604bb1bd19b4cd18e58c5a7e119b0081` before this documentation-only update. The code diff from `18feeb0872dfebd583fc1cf70674506277ced09a` to `846c597b604bb1bd19b4cd18e58c5a7e119b0081` contains documentation changes only.
 
-The two previously identified amendment findings have no surviving counterexample in the bounded static source check: `iabv_bootstrap.ps1` no longer kills processes by MCP port or launches MCP/tunnel; `MCPBridgeStatus.governance_blocked` preserves `True/False/None`, and the refusal path leaves it `None` without consulting World Model or runners. This was a targeted static review only, not full PR acceptance. Owner-reported focused tests are 48 passed; coordinator test execution is `NOT_RUN`. The prior two World Model snapshot failures remain `UNRESOLVED` pending a base comparison.
+The full static review disposition is FAIL because `common_sense_engine.py` still has a `safe=True` `start_tunnel` rule/anomaly mapped to an executor which launches `cloudflared tunnel run`; the MCP-exposed Common Sense tool uses `run_common_sense_reasoning(execute=True)` by default. A separate Cloudflared CLI ToolCard also permits the broad first token `tunnel` despite describing only inspection subcommands; its exact approval behavior was not exercised. Neither finding proves a tunnel is active. No local runtime/process state was inspected.
+
+The two World Model snapshot tests were not run here because the environment has no repository checkout and cannot resolve GitHub from the execution shell. They remain UNRESOLVED; do not call either pre-existing until the exact tests are executed on the pinned base and the pre-repair candidate. Static similarity is not a substitute for a baseline run.
 
 ```text
 PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
 ACTIVE_TASK=PHASE1_MCP_TRANSPORT_HARDENING
 PR=473; STATE=OPEN_DRAFT_UNMERGED
-LIVE_MAIN_SHA_AT_LAST_PREFLIGHT=2a5ac42fabbd7c6a66591d127e379432495ad3bc
-SOURCE_HEAD_TARGETED_REVIEWED=18feeb0872dfebd583fc1cf70674506277ced09a
-TARGETED_STATIC_REVIEW=PASS_WITH_LIMITATIONS
-FULL_PR_INDEPENDENT_REVIEW=NOT_DONE
-OWNER_REPORTED_FOCUSED_TESTS=48_PASSED
-COORDINATOR_TEST_EXECUTION=NOT_RUN
+BASE_SHA=2a5ac42fabbd7c6a66591d127e379432495ad3bc
+PRE_REPAIR_CANDIDATE_SHA=846c597b604bb1bd19b4cd18e58c5a7e119b0081
+FULL_PR_STATIC_REVIEW=FAIL
+COMMON_SENSE_TUNNEL_LAUNCH_PATH=OPEN_IN_SOURCE; NOT_EXECUTED
+CLOUDFLARED_CLI_TUNNEL_SUBCOMMAND=LATENT_ROUTE; APPROVAL_ENFORCEMENT_NOT_VERIFIED
 WORLD_MODEL_SNAPSHOT_FAILURES=2; BASELINE_COMPARISON=UNRESOLVED
+COORDINATOR_TEST_EXECUTION=NOT_RUN; NO_CHECKOUT_AND_GITHUB_DNS_UNAVAILABLE
+OWNER_REPORTED_FOCUSED_TESTS=48_PASSED; NOT_INDEPENDENTLY_REPRODUCED
+CI_STATUS_CHECKS=NONE_RETURNED_FOR_REVIEWED_HEAD
+PR_REVIEW_SUBMISSIONS=NONE_RETURNED
 RATIFIED_OPTION_D_NO_BOOTSTRAP=REMAINS_IN_FORCE
 AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
 G1/G2/G3=NOT_ESTABLISHED
@@ -22,16 +27,14 @@ IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
 GOVERNANCE=KEEP_BLOCKED
 READ_LIST=FAIL_CLOSED
 PUBLIC_TUNNEL=PROHIBITED
-MCP_PUBLIC_TUNNEL_ACTIVE=UNVERIFIED
-BUILD=NOT_RUN
-RUNTIME=NOT_RUN
 REAL_TRANSPORT=NOT_RUN
+AZURE_BILLING_STATE=NOT_VERIFIED
+COST_POLICY=NO_PAID_SERVICES; NO_RESOURCE_DEPLOYMENT
 BRIDGE=BRIDGE_NOT_READY
-NEXT_ACTION=FULL_REVIEW_OF_PR_473_DIFF_AND_BASELINE_COMPARE_TWO_WORLD_MODEL_SNAPSHOT_FAILURES
+NEXT_ACTION=RUN_ONLY_THE_TWO_WORLD_MODEL_TESTS_ON_PINNED_BASE_AND_PRE_REPAIR_CANDIDATE_BEFORE_SOURCE_EDITS; THEN_DISABLE_TUNNEL_START_ROUTES_WITH_REGRESSION_TESTS_IN_THE_SAME_PR
 ```
 
-Do not merge, deploy, launch Cloudflare, run application/MCP/real transport, inspect protected data or secrets, repeat Entra setup, or reinterpret the bounded Phase 1 permission as authority to close G1–G3. Preserve all previous receipt/history content below. The exact next-action checklist is in the linked handoff.
-
+Do not merge, mark ready, deploy, launch application/MCP/Cloudflare, use network transport, access protected data, SQLite, credentials or `.env`, repeat Entra setup, or treat bounded Phase 1 authorization as closing G1–G3. Keep the older routing blocks below as history; only this opening block routes the candidate task. The sole routing authority on live `main` remains its own `CURRENT-STATE.md` and its no-bootstrap/fail-closed NEXT_ACTION.
 ---
 
 ## CURRENT-STATE ROUTING — PR #473: bootstrap seguro y gobernanza no inspeccionada (2026-10-23)
