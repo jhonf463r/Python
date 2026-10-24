@@ -1,8 +1,8 @@
-## ChatGPT continuity protocol and anti-loop controls — routing notice (2026-10-23)
+## ChatGPT continuity — Owner Option D ratification now recorded (2026-10-23)
 
-Protocol reference: [ChatGPT operational continuity protocol](./CHAT-ARCH-2026-10-23-CHATGPT-operational-continuity-protocol-correction.md), authored on isolated branch `codex/iabv-chatgpt-protocol-correction-20261023` from `c95fb23c8ae5f7b6fdd1f94b4dba253347bb89cd`. Verify presence on live `main` before treating it as adopted.
+Decision receipt: [M1A G1 Owner Option D ratification](./CHAT-ARCH-2026-10-23-M1A-G1-owner-option-d-no-bootstrap-ratification-receipt.md), blob `cac492006c51c56ea4abc4dff822785e19c65d93`, authored on branch `codex/iabv-option-d-ratification-20261023` from baseline `439d9604037f156160a970dd33d1b3ad76009bdf`. The previous statement that Option D had not yet been explicitly ratified is superseded by this receipt; confirm the receipt's presence on live `main` when validating current state.
 
-This index points to evidence rather than creating another route. Canonical current routing belongs only to `CURRENT-STATE.md`. The evidence at authoring says Entra/Authenticator setup is `OWNER_REPORTED_READY`; independent bootstrap authority is `UNKNOWN; NOT_INSPECTED`; the reported Codex session returned `SUPPORTED_ROUTE_NOT_FOUND`; G1–G3 are `NOT_ESTABLISHED`; all eight implementation prerequisites remain open. Option D is required by current evidence but has **not** been explicitly ratified. Do not repeat setup, rerun denied readers, infer absence from no route, or auto-follow into implementation.
+Current interpretation: `OWNER_DECISION=RATIFIED_OPTION_D_NO_BOOTSTRAP`; `AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED`; `G1=G2=G3=NOT_ESTABLISHED`; all eight implementation prerequisites remain open. Ratification is not proof of absence, implementation authorization, permission for protected reads or block release. `CURRENT-STATE.md` alone governs current routing; do not repeat the decision question or retry denied readers.
 
 ---
 
@@ -1022,7 +1022,9 @@ Next actor: Sonnet/Claude — one targeted delta review of Entry 278 only. Chall
 
 No implementation, product-source/config edits, tests/builds/runtime, local M0A access, blocked-reader retry/bypass, credential inspection, authentication, installation/update or launch. Acceptance of this candidate cannot release a governance block. Keep `KEEP_BLOCKED`.
 
----## Latest route record — Entry 274 (M0B-R8.1 consolidated read-decision contract)
+---
+
+## Latest route record — Entry 274 (M0B-R8.1 consolidated read-decision contract)
 
 - Record: [CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md](./CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md)
 - Status: `M0B_R8_1_CONSOLIDATED_CONTRACT_PROPOSED_PENDING_SECOND_CHALLENGE`; `KEEP_BLOCKED`.

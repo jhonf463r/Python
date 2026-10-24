@@ -8,11 +8,19 @@
 - Project outcome: `GOVERNED_IABV_CODEX_BRIDGE`.
 - Active technical frontier: `M1A_G1_TRUST_BOOTSTRAP_AUTHORITY_BOUNDARY`.
 
+## Subsequent Owner decision supersedes the original pending-decision snapshot (2026-10-23)
+
+The Owner subsequently supplied the explicit decision `IABV: RATIFICO_OPCION_D_SIN_BOOTSTRAP`. Its receipt is [M1A G1 Owner Option D ratification](./CHAT-ARCH-2026-10-23-M1A-G1-owner-option-d-no-bootstrap-ratification-receipt.md), blob `cac492006c51c56ea4abc4dff822785e19c65d93`, authored on isolated branch `codex/iabv-option-d-ratification-20261023` from baseline `439d9604037f156160a970dd33d1b3ad76009bdf`.
+
+This explicit decision supersedes the prior status in this protocol that said Option D had not yet been ratified. It does not establish that authority assets are absent: `AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED`. At the time this section was authored, the routing amendment and receipt were a separate review proposal. Their current adoption status is determined by live `main`, not by this text or the existence of a branch. All gates remain open, and no protected read, implementation, test, build, runtime, transport, tunnel, paid resource, deployment or block release is authorized.
+
+---
+
 ## 1. Purpose and precedence
 
 This document corrects a recurring continuity failure: the assistant has preserved the user's Entra setup but still asked a poorly contextualized authority question because multiple long routing overlays repeated and contradicted one another.
 
-When this proposal is merged, apply these rules:
+Apply these rules whenever this protocol is present on live `main`. The continuity protocol itself was merged in commit `439d9604037f156160a970dd33d1b3ad76009bdf`; the subsequent Option D decision receipt and routing amendment in branch `codex/iabv-option-d-ratification-20261023` remain a separate documentation proposal until reviewed and merged:
 
 1. `CURRENT-STATE.md` is the **single source of current routing and the single owner of `NEXT_ACTION`**. Other front-door files state rules, provenance, or navigation; they must not establish a competing next action.
 2. `AGENTS.md` defines repository-work behavior. `README.md` is navigation. `CONTEXT-INDEX.md` points to evidence and history. `MEMORY-OPERATING-PROTOCOL.md` defines continuity, provenance and conflict resolution. None overrides the newest valid routing in `CURRENT-STATE.md`.
@@ -142,7 +150,7 @@ Do not say the coordinator is a conscious or autonomous "supermind." Treat that 
 
 ## 9. Required routing snapshot after adoption
 
-When this correction is merged, the latest current-state block should preserve:
+The canonical current-state block must preserve the following values after the separate Option D receipt and routing amendment is reviewed and merged:
 
 ```text
 PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
@@ -150,7 +158,7 @@ ACTIVE_TASK=M1A_G1_TRUST_BOOTSTRAP_AUTHORITY_BOUNDARY
 ENTRA_DIRECTORY_AND_AUTHENTICATOR=OWNER_REPORTED_READY; DO_NOT_REPEAT_SETUP
 EXISTING_INDEPENDENT_AUTHORITY=UNKNOWN_UNLESS_NEW_EVIDENCE
 AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
-OWNER_DECISION_ON_OPTION_D=NOT_EXPLICITLY_RATIFIED
+OWNER_DECISION_ON_OPTION_D=RATIFIED_OPTION_D_NO_BOOTSTRAP; RECEIPT=CHAT-ARCH-2026-10-23-M1A-G1-owner-option-d-no-bootstrap-ratification-receipt.md
 G1=NOT_ESTABLISHED
 G2=NOT_ESTABLISHED
 G3_VERSIONED_TARGET_RESOLVER=NOT_ESTABLISHED
@@ -164,7 +172,7 @@ RUNTIME=NOT_RUN
 REAL_TRANSPORT=NOT_RUN
 BRIDGE=BRIDGE_NOT_READY
 AUTOMATIC_FOLLOW_ON=FALSE
-NEXT_ACTION=ONE_CONTEXTUALIZED_OWNER_DECISION_ON_VERIFIABLE_AUTHORITY_OR_EXPLICIT_OPTION_D_RATIFICATION; PRESENT_ONCE_AFTER_PROTOCOL_ADOPTION; DO_NOT_REPEAT_UNLESS_NEW_EVIDENCE_CHANGES_THE_DECISION
+NEXT_ACTION=MAINTAIN_NO_BOOTSTRAP_FAIL_CLOSED; REOPEN_ONLY_ON_GENUINELY_NEW_AUTHORITY_EVIDENCE_OR_EXPLICIT_OWNER_DECISION
 ```
 
 This document changes operating/documentation guidance only. It does not close a gate, create trust, authorize implementation, or ratify Option D on the Owner's behalf.

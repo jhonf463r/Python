@@ -1,10 +1,8 @@
-## ChatGPT continuity and anti-loop protocol — routing notice (2026-10-23)
+## ChatGPT continuity and anti-loop protocol — Owner decision recorded (2026-10-23)
 
-Protocol reference: [ChatGPT operational continuity protocol](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-23-CHATGPT-operational-continuity-protocol-correction.md). This documentary correction was authored on isolated branch `codex/iabv-chatgpt-protocol-correction-20261023` from `c95fb23c8ae5f7b6fdd1f94b4dba253347bb89cd`. On every startup, verify live `main` and confirm the file's presence there before treating this proposal as adopted; a branch or PR alone is not canonical authority.
+Current decision receipt: [Owner ratification of Option D — no bootstrap](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-23-M1A-G1-owner-option-d-no-bootstrap-ratification-receipt.md), blob `cac492006c51c56ea4abc4dff822785e19c65d93`, authored on isolated docs-only branch `codex/iabv-option-d-ratification-20261023` from verified `main` `439d9604037f156160a970dd33d1b3ad76009bdf`. The receipt and synchronized routing originated on that isolated branch and were submitted through PR #472. Revalidate the live `main` ref and `CURRENT-STATE.md` before treating any branch-only text as canonical.
 
-**Execution rules for ChatGPT:** fetch the live remote `main` and complete the five-file preflight in the mandated order; treat `CURRENT-STATE.md` as the sole routing authority and sole owner of `NEXT_ACTION`; acknowledge the already-recorded Entra/Authenticator success without asking the Owner to repeat it; never infer IABV trust from MFA; distinguish `UNKNOWN`, `NOT_INSPECTED`, `SUPPORTED_ROUTE_NOT_FOUND`, `NOT_ESTABLISHED`, and `NOT_AUTHORIZED`; never retry a denied reader or bypass a denial through another tool; do not treat the Owner's confusion as Option D ratification; and do not repeat a decision question after it has been clearly presented and answered/left unknown unless new evidence changes the decision. Preserve fail-closed state and no-cost/no-runtime boundaries.
-
-Do not add another competing routing block here. Detailed protocol and current task decision belong in the linked protocol and live canonical `CURRENT-STATE.md`.
+ChatGPT must acknowledge that the Owner explicitly ratified `RATIFICO_OPCION_D_SIN_BOOTSTRAP`. Do not ask that decision again, do not repeat Entra/Authenticator setup, and do not treat this governance decision as proof that assets are absent or as permission to inspect them. Preserve `AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED`, `G1=NOT_ESTABLISHED`, `G2=NOT_ESTABLISHED`, `G3=NOT_ESTABLISHED`, `GOVERNANCE=KEEP_BLOCKED`, `READ_LIST=FAIL_CLOSED`, `IMPLEMENTATION=NOT_AUTHORIZED`, and `AUTOMATIC_FOLLOW_ON=FALSE`. Never retry the denied reader or bypass it through another route. `CURRENT-STATE.md` is the sole owner of current routing and `NEXT_ACTION`.
 
 ---
 
@@ -1025,7 +1023,9 @@ Next actor: Sonnet/Claude — one targeted delta review of Entry 278 only. Chall
 
 No implementation, product-source/config edits, tests/builds/runtime, local M0A access, blocked-reader retry/bypass, credential inspection, authentication, installation/update or launch. Acceptance of this candidate cannot release a governance block. Keep `KEEP_BLOCKED`.
 
----## Current route overlay — Entry 274: consolidated M0B-R8.1 contract
+---
+
+## Current route overlay — Entry 274: consolidated M0B-R8.1 contract
 
 Read [CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md) in full, then use the README-first canonical route. Entries 272–273 remain historical; Entry 274 is the single proposed normative contract pending a second challenge.
 

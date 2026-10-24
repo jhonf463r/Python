@@ -1,21 +1,23 @@
-## CURRENT-STATE ROUTING — ChatGPT continuity protocol correction (authored 2026-10-23)
+## CURRENT-STATE ROUTING — Owner ratified Option D; no bootstrap (2026-10-23)
 
-Protocol reference: [ChatGPT operational continuity protocol](./CHAT-ARCH-2026-10-23-CHATGPT-operational-continuity-protocol-correction.md). This corrected routing was authored on isolated branch `codex/iabv-chatgpt-protocol-correction-20261023` from `c95fb23c8ae5f7b6fdd1f94b4dba253347bb89cd`; verify live `main` before treating it as adopted. The status labels below record the state at this correction; newer authenticated Owner decisions or evidence must supersede it in a new canonical routing update.
+Receipt: [M1A G1 Owner Option D ratification](./CHAT-ARCH-2026-10-23-M1A-G1-owner-option-d-no-bootstrap-ratification-receipt.md), blob `cac492006c51c56ea4abc4dff822785e19c65d93`. This routing update originated on isolated branch `codex/iabv-option-d-ratification-20261023`, based on verified `main` commit `439d9604037f156160a970dd33d1b3ad76009bdf`, and was submitted for review via PR #472. Revalidate live `main` to determine whether it is currently canonical. `CURRENT-STATE.md` remains the sole routing authority. The previous `OWNER_DECISION_NOT_CAPTURED` snapshot is superseded by the explicit Owner decision below.
 
 ```text
 PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
 ACTIVE_TASK=M1A_G1_TRUST_BOOTSTRAP_AUTHORITY_BOUNDARY
-PROTOCOL_CORRECTION_SCOPE=DOCS_ONLY; NO_GATE_CLOSED
+OWNER_DECISION=RATIFIED_OPTION_D_NO_BOOTSTRAP
+OWNER_DECISION_PROVENANCE=EXPLICIT_OWNER_CHAT_MESSAGE
+OWNER_RATIFICATION_RECEIPT=CHAT-ARCH-2026-10-23-M1A-G1-owner-option-d-no-bootstrap-ratification-receipt.md
+OWNER_RATIFICATION_RECEIPT_BLOB=cac492006c51c56ea4abc4dff822785e19c65d93
 ENTRA_DIRECTORY_AND_AUTHENTICATOR=OWNER_REPORTED_READY; DO_NOT_REPEAT_SETUP
 IDENTITY_PROVIDER_CANDIDATE=MICROSOFT_ENTRA_ID; NOT_YET_TRUSTED_BY_IABV
 AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+QUALIFYING_INDEPENDENT_AUTHORITY=NOT_IDENTIFIED_BY_OWNER; EXISTENCE_NOT_PROVEN_ABSENT
 AUTHORIZED_PROTECTED_READ_ROUTE=SUPPORTED_ROUTE_NOT_FOUND_IN_REPORTED_CODEX_SESSION
 OWNER_TO_BOOTSTRAP_AUTHORITY=NOT_ESTABLISHED
 OWNER_TO_WINDOWS_PRINCIPAL=NOT_ESTABLISHED
 BOOTSTRAP_AUTHORITY_TO_ISSUER=NOT_ESTABLISHED
 ISSUER_TO_EXACT_SERVER=NOT_ESTABLISHED
-OWNER_DECISION_ON_BOOTSTRAP_AUTHORITY=NOT_CAPTURED_AS_OF_2026-10-23
-PREVIOUS_AUTHORITY_QUESTION=INSUFFICIENTLY_CONTEXTUALIZED; DO_NOT_TREAT_OWNER_CONFUSION_AS_ANSWER_OR_OPTION_D_RATIFICATION
 G1=NOT_ESTABLISHED
 G2=NOT_ESTABLISHED
 G3_VERSIONED_TARGET_RESOLVER=NOT_ESTABLISHED
@@ -32,12 +34,12 @@ AZURE_BILLING_STATE=NOT_VERIFIED
 COST_POLICY=NO_PAID_SERVICES; NO_RESOURCE_DEPLOYMENT
 BRIDGE=BRIDGE_NOT_READY
 AUTOMATIC_FOLLOW_ON=FALSE
-NEXT_ACTION=ONE_CONTEXTUALIZED_OWNER_DECISION_ON_VERIFIABLE_AUTHORITY_OR_EXPLICIT_OPTION_D_RATIFICATION; PRESENT_ONCE_AFTER_PROTOCOL_ADOPTION; DO_NOT_REPEAT_UNLESS_NEW_EVIDENCE_CHANGES_THE_DECISION
+NEXT_ACTION=MAINTAIN_NO_BOOTSTRAP_FAIL_CLOSED; REOPEN_ONLY_ON_GENUINELY_NEW_AUTHORITY_EVIDENCE_OR_EXPLICIT_OWNER_DECISION
 ```
 
-The reported Entra/Authenticator setup is completed human-authentication progress. Existing independent authority remains `UNKNOWN; NOT_INSPECTED`; the Codex result `SUPPORTED_ROUTE_NOT_FOUND` is not proof that such assets do not exist. The Owner has not explicitly ratified Option D in the evidence available at the time of this correction. Do not re-open account setup, retry the denied reader, use an alternate tool to bypass the denial, register an app, alter product code, run tests/build/runtime/transport, launch a tunnel, incur costs, deploy, or release a block under this docs-only correction.
+The Owner's explicit decision is ratified. It states that the Owner does not know of a qualifying pre-existing independent authority; it does **not** establish that trust assets do not exist. The prior reported Codex result `SUPPORTED_ROUTE_NOT_FOUND` means that the bounded route was unavailable and assets were not inspected.
 
-When this route is active, make the single decision request contextual: acknowledge Entra as completed, explain authentication versus bootstrap authority, offer the two legitimate outcomes (independently verifiable pre-existing authority evidence, or explicit Option D ratification), and preserve fail-closed if the Owner is unsure. Record the answer/provenance. Do not ask the same question again unless new evidence materially changes the decision.
+This is a documentation-only routing update. Do not retry the denied reader, circumvent its denial, repeat Entra setup or the Option D question, create an authority/credential/app, incur costs, modify product code, run tests/build/runtime/transport, launch a tunnel, deploy, close a gate or release a block. Under the ratified Option D, maintain no-bootstrap/fail-closed; resume reconsideration only when genuinely new authority evidence or a new explicit Owner decision changes the basis.
 
 ---
 
@@ -1601,7 +1603,9 @@ Next actor: Sonnet/Claude — one targeted delta review of Entry 278 only. Chall
 
 No implementation, product-source/config edits, tests/builds/runtime, local M0A access, blocked-reader retry/bypass, credential inspection, authentication, installation/update or launch. Acceptance of this candidate cannot release a governance block. Keep `KEEP_BLOCKED`.
 
----## 2026-10-13 CONTINUITY UPDATE — ENTRY 274: CONSOLIDATED R8.1 CONTRACT; SECOND CHALLENGE PENDING
+---
+
+## 2026-10-13 CONTINUITY UPDATE — ENTRY 274: CONSOLIDATED R8.1 CONTRACT; SECOND CHALLENGE PENDING
 
 Canonical: [CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md](./CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md).
 

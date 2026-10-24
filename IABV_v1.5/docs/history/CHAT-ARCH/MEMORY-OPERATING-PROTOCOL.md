@@ -1,10 +1,8 @@
-## ChatGPT continuity, provenance, and anti-loop execution — routing notice (2026-10-23)
+## ChatGPT continuity — explicit Owner decision supersedes prior pending state (2026-10-23)
 
-Protocol reference: [ChatGPT operational continuity protocol](./CHAT-ARCH-2026-10-23-CHATGPT-operational-continuity-protocol-correction.md), authored on isolated branch `codex/iabv-chatgpt-protocol-correction-20261023` from `c95fb23c8ae5f7b6fdd1f94b4dba253347bb89cd`. Verify presence on live `main` before treating it as adopted.
+Current decision receipt: [M1A G1 Owner Option D ratification](./CHAT-ARCH-2026-10-23-M1A-G1-owner-option-d-no-bootstrap-ratification-receipt.md), blob `cac492006c51c56ea4abc4dff822785e19c65d93`, authored on branch `codex/iabv-option-d-ratification-20261023` from base `439d9604037f156160a970dd33d1b3ad76009bdf`. The Owner explicitly ratified no-bootstrap/fail-closed in a new chat message. Older routing text saying ratification was pending is historical and superseded by this receipt; determine current adoption by checking live `main`.
 
-Mandatory behavior: verify live `main` and read the five canonical front doors in their ordered preflight; treat `CURRENT-STATE.md` as the sole owner of current routing and `NEXT_ACTION`; cite provenance; acknowledge previously completed Owner-reported work; never make the user repeat Entra/Authenticator setup; never treat successful MFA as IABV authority; distinguish unknown from absent; and do not retry a denied operation or route around its refusal. The previous question about independent authority was insufficiently contextualized; the user's confusion is not a decision or an Option D ratification. Once this correction is adopted, present one properly contextualized G1 decision only once if still needed, record the response, and do not repeat unless genuinely new evidence changes the decision. Preserve fail-closed and all cost/runtime/implementation boundaries.
-
-The linked proposal documents the full rules. This file must not introduce a competing next action; consult the live canonical `CURRENT-STATE.md`.
+Keep provenance exact: the receipt records an explicit Owner statement, not an independently authenticated identity event. The Owner's report means no qualifying independent authority is known to them; it does not prove authority assets are absent. Preserve `AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED`, never retry a denied reader or use another tool to bypass a denial, and do not ask the same decision again. Entra/Authenticator setup remains completed Owner-reported progress and must not be repeated. `CURRENT-STATE.md` is the sole current route/`NEXT_ACTION` authority. All gates remain fail-closed.
 
 ---
 
@@ -985,7 +983,9 @@ Next actor: Sonnet/Claude — one targeted delta review of Entry 278 only. Chall
 
 No implementation, product-source/config edits, tests/builds/runtime, local M0A access, blocked-reader retry/bypass, credential inspection, authentication, installation/update or launch. Acceptance of this candidate cannot release a governance block. Keep `KEEP_BLOCKED`.
 
----## Continuity method delta — C2 repairs consolidated as amendment 274.1 (2026-10-13; Entry 275)
+---
+
+## Continuity method delta — C2 repairs consolidated as amendment 274.1 (2026-10-13; Entry 275)
 
 Canonical: [CHAT-ARCH-2026-10-13-275-m0b-r8-1-contract-amendment-274-1.md](./CHAT-ARCH-2026-10-13-275-m0b-r8-1-contract-amendment-274-1.md).
 
