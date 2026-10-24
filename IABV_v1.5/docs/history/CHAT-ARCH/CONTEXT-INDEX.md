@@ -1,3 +1,58 @@
+## Latest candidate evidence — PR #473 focused Cloudflared tests (2026-10-23)
+
+- Receipt: [PR #473 — Cloudflared focused-test result and evidence reconciliation](./CHAT-ARCH-2026-10-23-pr473-cloudflared-focused-test-result-reconciliation.md).
+- Provenance: the Owner supplied Codex's test result; coordinator execution is `NOT_RUN`.
+- Reported outcome: 8 node selectors, 16 parametrized cases passed, 2.30s, exit code 0, Python 3.14.4, no pytest cache.
+- Remote GitHub references were revalidated: `main=2a5ac42fabbd7c6a66591d127e379432495ad3bc`; PR #473 HEAD at test run `d09b514116bcb8867004d3327a7fc5cdb3810e75`, OPEN / DRAFT / UNMERGED.
+- This result is bounded candidate test evidence, not runtime or global-tunnel proof. The sole canonical route remains live `main/CURRENT-STATE.md`: maintain no-bootstrap/fail-closed unless new authority evidence or a separate explicit Owner decision changes it. No automatic follow-on.
+
+---
+
+## New-chat handoff — PR #473 verification blocked on stale local worktree (2026-10-23)
+
+Start here: [New-chat handoff — PR #473 and verification preflight](./CHAT-ARCH-2026-10-23-new-chat-handoff-pr473.md). Live main remains 2a5ac42fabbd7c6a66591d127e379432495ad3bc and its CURRENT-STATE owns the route: M1A_G1_TRUST_BOOTSTRAP_AUTHORITY_BOUNDARY; MAINTAIN_NO_BOOTSTRAP_FAIL_CLOSED; IMPLEMENTATION=NOT_AUTHORIZED; TESTS=NOT_RUN. Candidate PR #473 remains OPEN / DRAFT / UNMERGED. The old local worktree cb1a8b545bc29b13b6da1ada0f0204601805f7dc is clean but stale and must be preserved. Current candidate blob targets: tool_adapters.py 5217b8deae01f34ec4402b82c651e9995ae94514; tool_registry.py 0599ae4ecd77d85cdee05a04fadcccaad2d5bea2; test_local_cli_adapter.py fe53c660fd723ab82bde96b3077b25ca07cc24c2. Set up a new detached sibling worktree and verify identity only; do not run pytest without a new explicit Owner decision reopening that exact test scope. Newest Cloudflared access/sandbox regression tests are unrun; earlier Owner-reported 11 passing tests belong to the earlier generic-shell stage.
+
+---
+
+## ChatGPT continuity — local verification worktree mismatch recorded (2026-10-23)
+
+Preflight receipt: [Local verification worktree mismatch and safe reselection](./CHAT-ARCH-2026-10-23-local-verification-worktree-mismatch.md). The Codex attempt preserved a clean but stale worktree at cb1a8b545bc29b13b6da1ada0f0204601805f7dc and correctly did not run tests. Live main was 2a5ac42fabbd7c6a66591d127e379432495ad3bc; remote PR #473 HEAD was 52ceb9d362d15191147da5d44de4d3d4ee9a518d at preflight. Expected blobs at that candidate HEAD: tool_adapters.py 5217b8deae01f34ec4402b82c651e9995ae94514; test_local_cli_adapter.py fe53c660fd723ab82bde96b3077b25ca07cc24c2. Preserve the old worktree; make a new detached worktree at the revalidated current PR HEAD, then verify refs/blobs and reread canonical routing. Live main CURRENT-STATE currently prohibits tests and requires no-bootstrap/fail-closed; stop after preflight unless a new explicit Owner decision reopens the test scope. PR #473 remains OPEN / DRAFT / UNMERGED.
+
+---
+
+## ChatGPT continuity — bounded Cloudflared access-path fix recorded (2026-10-23)
+
+Review receipt: [PR #473 — Cloudflared CLI access-path closure review](./CHAT-ARCH-2026-10-23-independent-review-cloudflared-access-closure.md). The candidate adapter now rejects Cloudflared verbs outside fixed version/help/tunnel-inspection scope, detects Cloudflared by resolved executable identity as well as ToolCard metadata, and simulates sandbox inspection without starting a process. Tests for access verbs and sandbox process refusal were added but have not been run by this coordinator. PR #473 remains OPEN / DRAFT / UNMERGED; main's no-bootstrap/fail-closed routing is unchanged. Next: create a new detached worktree and revalidate only; do not run tests under current main routing unless a new explicit Owner decision reopens that scope.
+
+---
+
+## ChatGPT continuity — independent generic-shell closure review recorded (2026-10-23)
+
+Review receipt: [PR #473 — independent review of generic shell execution closure](./CHAT-ARCH-2026-10-23-independent-review-generic-shell-closure.md). Reviewed candidate HEAD `cb1a8b545bc29b13b6da1ada0f0204601805f7dc`; static review passes for the generic shell service gate and direct `ShellToolAdapter` denial. Owner-reported 11 focused tests were not independently executed. Application-wide tunnel absence and live process state remain unestablished. PR #473 stays OPEN / DRAFT / UNMERGED; main's no-bootstrap/fail-closed routing is unchanged.
+
+---
+
+## Latest candidate-only continuity — PR #473 independent review (2026-10-23)
+
+- Review receipt: [PR #473 — independent review of residual tunnel-route closures](./CHAT-ARCH-2026-10-23-independent-review-residual-tunnel-closures.md).
+- Reviewed implementation commit: `003124a7aea63765aafc7915b193a4a9fb79e2d3`; reviewed branch head before receipt writeback: `686c7ad9c4be5b86b757e2b9da68e1df97e3d337`; base/live `main`: `2a5ac42fabbd7c6a66591d127e379432495ad3bc`.
+- The two targeted fixes statically pass: Common Sense no longer has a `start_tunnel` executor; `cloudflared_cli` denies tunnel subcommands except `list` and `info` before `subprocess.run`.
+- Additional bounded finding: generic `shell_command` → `ShellToolAdapter` can run arbitrary `shell=True` commands and ignores the sandbox flag; `ToolTeachService` invokes it during sandbox preflight before the approval gate. This is a local-app execution path, not a direct MCP dispatch demonstrated here, but means the application-wide tunnel prohibition is not established.
+- Owner-reported focused tests: 8 passed; not independently executed here. The two World Model tests' base/candidate comparison is recorded by the Owner receipt and was not rerun.
+- Next: guard generic shell/sandbox launch before any subprocess and add narrow mocked regression tests; then review the new PR head. Keep Draft/unmerged, no runtime, transport, or tunnel.
+- Candidate-only index; live `main` routing remains determined solely by `CURRENT-STATE.md` on live `main`.
+
+
+---
+
+## Latest bounded route — Phase 1 MCP transport hardening
+
+- Current routing authority: [CURRENT-STATE.md](./CURRENT-STATE.md).
+- Owner authorization and static pre-scan substitute: [Phase 1 resumption receipt](./CHAT-ARCH-2026-10-23-phase1-transport-hardening-owner-resumption.md).
+- Scope is isolated-candidate transport hardening only; no authority gate closes and no runtime/real transport is authorized.
+
+---
+
 ## ChatGPT continuity — Owner Option D ratification now recorded (2026-10-23)
 
 Decision receipt: [M1A G1 Owner Option D ratification](./CHAT-ARCH-2026-10-23-M1A-G1-owner-option-d-no-bootstrap-ratification-receipt.md), blob `cac492006c51c56ea4abc4dff822785e19c65d93`, authored on branch `codex/iabv-option-d-ratification-20261023` from baseline `439d9604037f156160a970dd33d1b3ad76009bdf`. The previous statement that Option D had not yet been explicitly ratified is superseded by this receipt; confirm the receipt's presence on live `main` when validating current state.

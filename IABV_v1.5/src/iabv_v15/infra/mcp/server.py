@@ -74,7 +74,9 @@ def _run_sync_off_event_loop(
 
 
 DEFAULT_SERVER_NAME = "iabv-v15"
-SUPPORTED_TRANSPORTS = {"stdio", "sse", "streamable-http"}
+# Network transports remain disabled until transport authentication and
+# operation-level authorization are implemented and independently verified.
+SUPPORTED_TRANSPORTS = {"stdio"}
 
 
 def _to_jsonable(value: Any) -> Any:
@@ -131,36 +133,12 @@ class IABVMCPServer:
         if mcp is None:
             from mcp.server.fastmcp import FastMCP  # lazy import
 
-            fastmcp_kwargs: dict[str, Any] = {
-                'log_level': 'WARNING',
-            }
-            # MCP Python SDK >= 1.x introdujo DNS rebinding protection en
-            # ``streamable-http`` que rechaza cualquier Host distinto a
-            # localhost con ``HTTP/2 421 Invalid Host header`` (issue
-            # modelcontextprotocol/python-sdk#1798). En nuestro flujo de
-            # audit live el MCP se expone detras de un quick-tunnel de
-            # cloudflared, asi que el Host llega como
-            # ``*.trycloudflare.com`` y el server devolveria 421. Para
-            # permitir el audit real desde afuera, inyectamos
-            # ``TransportSecuritySettings`` con hosts/origenes abiertos
-            # cuando la proteccion esta disponible en la version
-            # instalada. Si la dependencia no expone el simbolo (versiones
-            # viejas) seguimos con el constructor por defecto.
-            try:
-                from mcp.server.transport_security import TransportSecuritySettings
-
-                fastmcp_kwargs["transport_security"] = TransportSecuritySettings(
-                    enable_dns_rebinding_protection=False,
-                    allowed_hosts=["*"],
-                    allowed_origins=["*"],
-                )
-            except Exception:
-                # Compatibilidad hacia atras: versiones sin
-                # ``TransportSecuritySettings`` tampoco aplican la
-                # proteccion, asi que no hace falta configurar nada.
-                pass
-
-            mcp = FastMCP(name, **fastmcp_kwargs)
+            # Retain the SDK's default security behavior. In particular, do
+            # not disable DNS-rebinding protection or install wildcard host /
+            # origin allowlists. IABVMCPServer.run() permits stdio only until
+            # network transport authentication and operation authorization
+            # have been implemented and independently verified.
+            mcp = FastMCP(name, log_level="WARNING")
         self.mcp = mcp
         self._register_tools()
 
@@ -3171,7 +3149,11 @@ class IABVMCPServer:
 
     def run(self, transport: str = "stdio") -> None:
         if transport not in SUPPORTED_TRANSPORTS:
-            raise ValueError(f"transport '{transport}' no soportado. Usa {sorted(SUPPORTED_TRANSPORTS)}")
+            raise ValueError(
+                f"transport '{transport}' está deshabilitado; solo stdio local "
+                "está permitido hasta verificar autenticación de transporte "
+                "y autorización independiente por operación"
+            )
         
         # Register self-update (write) tools for autonomous self-modification
         try:

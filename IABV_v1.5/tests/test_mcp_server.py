@@ -429,6 +429,13 @@ def test_server_rejects_unknown_transport() -> None:
         server.run(transport="does-not-exist")
 
 
+@pytest.mark.parametrize("transport", ["sse", "streamable-http"])
+def test_server_rejects_network_transports_before_run(transport: str) -> None:
+    server = IABVMCPServer(_build_container())
+    with pytest.raises(ValueError, match="deshabilitado"):
+        server.run(transport=transport)
+
+
 def test_server_requires_container() -> None:
     with pytest.raises(ValueError, match="container"):
         IABVMCPServer(container=None)

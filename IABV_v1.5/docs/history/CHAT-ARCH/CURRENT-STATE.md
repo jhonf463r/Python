@@ -1,3 +1,392 @@
+## CANDIDATE ROUTING — Cloudflared focused tests reported passing (2026-10-23)
+
+Focused-result receipt: [PR #473 — Cloudflared focused-test result and evidence reconciliation](./CHAT-ARCH-2026-10-23-pr473-cloudflared-focused-test-result-reconciliation.md).
+
+This candidate-only routing note records a narrowly authorized test run reported by Codex. It does not replace live `main/CURRENT-STATE.md`, which remains the sole canonical router, and it does not authorize implementation or a subsequent phase.
+
+Remote GitHub state was revalidated before this documentation writeback: live `main` was `2a5ac42fabbd7c6a66591d127e379432495ad3bc`; the PR HEAD at the reported test run was `d09b514116bcb8867004d3327a7fc5cdb3810e75`; PR #473 was OPEN / DRAFT / UNMERGED. The source/test blobs used for identity reconciliation are listed in the receipt.
+
+```text
+CANDIDATE_FOCUSED_TESTS=16_PASSED_REPORTED_BY_CODEX
+TEST_SELECTION_NODES=8
+REPORTED_EXIT_CODE=0
+REPORTED_DURATION=2.30s
+INDEPENDENT_COORDINATOR_EXECUTION=NOT_RUN
+GLOBAL_PUBLIC_TUNNEL_PROHIBITION=NOT_ESTABLISHED
+LIVE_MAIN_NEXT_ACTION=MAINTAIN_NO_BOOTSTRAP_FAIL_CLOSED; REOPEN_ONLY_ON_GENUINELY_NEW_AUTHORITY_EVIDENCE_OR_EXPLICIT_OWNER_DECISION
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+GOVERNANCE=KEEP_BLOCKED
+BRIDGE=BRIDGE_NOT_READY
+AUTOMATIC_FOLLOW_ON=FALSE
+NEXT_ACTION=STOP_AFTER_RESULT_RECONCILIATION; NO_AUTOMATIC_FOLLOW_ON
+```
+
+Do not interpret the reported synthetic/mocked test pass as application/runtime/transport evidence or as proof that every tunnel-launch path is absent. Keep all restrictions in the canonical live-main route. Prior candidate snapshots below are retained as historical provenance.
+
+---
+
+## CURRENT-STATE ROUTING — New-chat handoff prepared; stale local test worktree preserved (2026-10-23)
+
+Primary continuity handoff: [New-chat handoff — PR #473 and verification preflight](./CHAT-ARCH-2026-10-23-new-chat-handoff-pr473.md). This candidate-only update follows canonical main preflight. It does not supersede live main/CURRENT-STATE.md, whose active task is M1A_G1_TRUST_BOOTSTRAP_AUTHORITY_BOUNDARY and whose NEXT_ACTION remains MAINTAIN_NO_BOOTSTRAP_FAIL_CLOSED.
+
+Live main at preflight: 2a5ac42fabbd7c6a66591d127e379432495ad3bc. Candidate branch at handoff prewrite: ee3e921e6f2c9496ef0d9f9bea14a3cc8189e67a; documentation commits advance the branch, so revalidate HEAD. PR #473 remains OPEN / DRAFT / UNMERGED against live main. Source/test blobs verified at candidate precheck: tool_adapters.py 5217b8deae01f34ec4402b82c651e9995ae94514; tool_registry.py 0599ae4ecd77d85cdee05a04fadcccaad2d5bea2; test_local_cli_adapter.py fe53c660fd723ab82bde96b3077b25ca07cc24c2.
+
+Codex correctly reported a clean but stale local worktree at cb1a8b545bc29b13b6da1ada0f0204601805f7dc; its tool adapter/test blobs did not match the remote candidate. No tests ran and that attempt did not modify files. Preserve that worktree; do not reset/rebase/clean/overwrite. A new detached sibling worktree may be prepared for identity preflight, but current live main explicitly says IMPLEMENTATION=NOT_AUTHORIZED and TESTS=NOT_RUN. Stop before pytest unless a genuinely new explicit Owner decision reopens the exact test scope. Prior owner-reported 11 focused passes belong to the earlier generic-shell stage; later Cloudflared access/sandbox regression tests remain unrun.
+
+```text
+CANDIDATE_CONTINUITY=NEW_CHAT_HANDOFF_READY
+LIVE_MAIN=2a5ac42fabbd7c6a66591d127e379432495ad3bc
+LIVE_MAIN_ACTIVE_TASK=M1A_G1_TRUST_BOOTSTRAP_AUTHORITY_BOUNDARY
+LIVE_MAIN_NEXT_ACTION=MAINTAIN_NO_BOOTSTRAP_FAIL_CLOSED; REOPEN_ONLY_ON_GENUINELY_NEW_AUTHORITY_EVIDENCE_OR_EXPLICIT_OWNER_DECISION
+PR=473; OPEN_DRAFT_UNMERGED
+LOCAL_WORKTREE=cb1a8b545bc29b13b6da1ada0f0204601805f7dc; CLEAN_BUT_STALE; PRESERVE
+TESTS=NOT_RUN
+BUILD=NOT_RUN
+RUNTIME=NOT_RUN
+REAL_TRANSPORT=NOT_RUN
+GLOBAL_PUBLIC_TUNNEL_PROHIBITION=NOT_ESTABLISHED
+RATIFIED_OPTION_D_NO_BOOTSTRAP=REMAINS_IN_FORCE
+AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+G1/G2/G3=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+GOVERNANCE=KEEP_BLOCKED
+READ_LIST=FAIL_CLOSED
+PUBLIC_TUNNEL=PROHIBITED
+AZURE_BILLING_STATE=NOT_VERIFIED
+COST_POLICY=NO_PAID_SERVICES; NO_RESOURCE_DEPLOYMENT
+BRIDGE=BRIDGE_NOT_READY
+NEXT_ACTION=NEW_CHAT_REVALIDATE_MAIN_PR_BRANCH_BLOBS; READ_CANONICAL_PREFLIGHT; PREPARE_NEW_DETACHED_WORKTREE_FOR_IDENTITY_CHECK_ONLY; STOP_BEFORE_TESTS_UNLESS_NEW_EXPLICIT_OWNER_DECISION_REOPENS_SCOPE
+```
+
+This routing documents candidate continuity only. It does not authorize tests, product changes, runtime, tunnel use, real transport, merge, deployment, protected reads, spend or governance-block release.
+
+---
+
+## CURRENT-STATE ROUTING — local verification worktree mismatch recorded (2026-10-23)
+
+Preflight receipt: [Local verification worktree mismatch and safe reselection](./CHAT-ARCH-2026-10-23-local-verification-worktree-mismatch.md). Codex correctly stopped: the reported local worktree was clean but at HEAD cb1a8b545bc29b13b6da1ada0f0204601805f7dc, with old blobs for the adapter and its test file. It did not run tests or modify files. Live main remains 2a5ac42fabbd7c6a66591d127e379432495ad3bc; PR #473 and its candidate branch were verified at 52ceb9d362d15191147da5d44de4d3d4ee9a518d before this receipt and routing writeback.
+
+At the verified candidate HEAD, the exact blobs are:
+- IABV_v1.5/src/iabv_v15/services/tools/tool_adapters.py: 5217b8deae01f34ec4402b82c651e9995ae94514
+- IABV_v1.5/tests/test_local_cli_adapter.py: fe53c660fd723ab82bde96b3077b25ca07cc24c2
+
+Do not reset, rebase, clean, overwrite or reuse the stale worktree for this attempt. After revalidating live refs and reading the canonical five files in order from main, create a new, empty sibling worktree detached at the current exact PR HEAD and verify both blobs and a clean tree. The current main CURRENT-STATE explicitly retains no-bootstrap/fail-closed routing and TESTS=NOT_RUN; this candidate-only worktree recovery does not override that route. Stop after the new-copy preflight and do not run pytest until a genuinely new explicit Owner decision reopens that test scope. Reconcile again if any ref, blob, PR state or authority route changed.
+
+```text
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+ACTIVE_TASK=PHASE1_MCP_TRANSPORT_HARDENING; LOCAL_PREflight_BLOCK_RECORDED
+PR=473; STATE=OPEN_DRAFT_UNMERGED
+BASE_SHA=2a5ac42fabbd7c6a66591d127e379432495ad3bc
+REMOTE_CANDIDATE_AT_PREFLIGHT=52ceb9d362d15191147da5d44de4d3d4ee9a518d
+LOCAL_WORKTREE=cb1a8b545bc29b13b6da1ada0f0204601805f7dc; CLEAN_BUT_STALE; PRESERVE
+EXPECTED_TOOL_ADAPTERS_BLOB=5217b8deae01f34ec4402b82c651e9995ae94514
+EXPECTED_TEST_LOCAL_CLI_ADAPTER_BLOB=fe53c660fd723ab82bde96b3077b25ca07cc24c2
+TESTS=NOT_RUN
+BUILD=NOT_RUN
+RUNTIME=NOT_RUN
+REAL_TRANSPORT=NOT_RUN
+PROCESS_OR_TUNNEL_STATE=NOT_INSPECTED
+GLOBAL_PUBLIC_TUNNEL_PROHIBITION=NOT_ESTABLISHED
+RATIFIED_OPTION_D_NO_BOOTSTRAP=REMAINS_IN_FORCE
+AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+G1/G2/G3=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+GOVERNANCE=KEEP_BLOCKED
+READ_LIST=FAIL_CLOSED
+PUBLIC_TUNNEL=PROHIBITED
+AZURE_BILLING_STATE=NOT_VERIFIED
+COST_POLICY=NO_PAID_SERVICES; NO_RESOURCE_DEPLOYMENT
+BRIDGE=BRIDGE_NOT_READY
+NEXT_ACTION=REVALIDATE_MAIN_AND_PR; READ_CANONICAL_PREFLIGHT; CREATE_NEW_DETACHED_WORKTREE_AT_CURRENT_PR_HEAD; VERIFY_BLOBS; STOP_BEFORE_TESTS_UNLESS_NEW_EXPLICIT_OWNER_DECISION_REOPENS_TEST_SCOPE
+```
+
+This candidate-only routing does not supersede live main. Live main still requires no-bootstrap/fail-closed and has NEXT_ACTION=MAINTAIN_NO_BOOTSTRAP_FAIL_CLOSED; REOPEN_ONLY_ON_GENUINELY_NEW_AUTHORITY_EVIDENCE_OR_EXPLICIT_OWNER_DECISION. No test result, authority gate, or block status changes from the reported local mismatch.
+
+---
+
+## CURRENT-STATE ROUTING — Cloudflared CLI access verbs closed by a fixed adapter guard (2026-10-23)
+
+Latest bounded review receipt: [PR #473 — Cloudflared CLI access-path closure review](./CHAT-ARCH-2026-10-23-independent-review-cloudflared-access-closure.md). Candidate source/test changes were made after the generic-shell review because the `cloudflared_cli` metadata still admitted `access`, while the earlier guard only constrained `tunnel` subcommands. `access tcp/login/token` could therefore reach the local CLI adapter, and `ToolSandbox` called the adapter with `sandbox=True` before returning to the approval gate.
+
+The candidate now applies a fixed Cloudflared verb allowlist, identifies the executable as Cloudflared even behind an alternate ToolCard ID, removes `access` from the default ToolCard metadata, and simulates the Cloudflared sandbox phase without starting a process. Regression tests were added for access verbs, an alternate ToolCard ID with a Cloudflared executable, and sandbox-mode `tunnel list/info` with no subprocess. **These new tests have not been run by this coordinator**; focused execution in the existing isolated Windows worktree remains next.
+
+```text
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+ACTIVE_TASK=PHASE1_MCP_TRANSPORT_HARDENING; BOUNDED_REVIEW_AND_FIX_RECORDED
+PR=473; STATE=OPEN_DRAFT_UNMERGED
+BASE_SHA=2a5ac42fabbd7c6a66591d127e379432495ad3bc
+SOURCE_FIX_HEAD=bf89dc954cce37240b6e392f7ba2f5f681e2610a
+REVIEW_RECEIPT_COMMIT=50926f3584ded86a422fee8b55a6983219c2acff
+CLOUDFLARED_ACCESS_VERBS=STATIC_GUARD_ADDED
+CLOUDFLARED_SANDBOX=SIMULATION_NO_PROCESS
+GENERIC_SHELL_PATH=FAIL_CLOSED
+FOCUSED_TESTS=ADDED; NOT_RUN_BY_COORDINATOR
+CI=NO_WORKFLOW_RUNS_OR_STATUS_CHECKS_RETURNED
+BUILD=NOT_RUN
+RUNTIME=NOT_RUN
+REAL_TRANSPORT=NOT_RUN
+PROCESS_OR_TUNNEL_STATE=NOT_INSPECTED
+GLOBAL_PUBLIC_TUNNEL_PROHIBITION=NOT_ESTABLISHED
+RATIFIED_OPTION_D_NO_BOOTSTRAP=REMAINS_IN_FORCE
+AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+G1/G2/G3=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+GOVERNANCE=KEEP_BLOCKED
+READ_LIST=FAIL_CLOSED
+PUBLIC_TUNNEL=PROHIBITED
+AZURE_BILLING_STATE=NOT_VERIFIED
+COST_POLICY=NO_PAID_SERVICES; NO_RESOURCE_DEPLOYMENT
+BRIDGE=BRIDGE_NOT_READY
+NEXT_ACTION=RUN_FOCUSED_UNIT_TESTS_IN_EXISTING_ISOLATED_WINDOWS_WORKTREE; REPORT_RESULTS; THEN_REVIEW_NEW_HEAD
+```
+
+This routing is candidate-only and does not supersede live `main`. It does not establish application-wide absence of other launch routes or inspect process state. Keep PR #473 Draft/unmerged; no application, MCP, Cloudflare, shell, real transport, build, deployment, protected data, SQLite, secrets, or governance-block release. Live `main` stays at `2a5ac42fabbd7c6a66591d127e379432495ad3bc` with its own no-bootstrap/fail-closed `NEXT_ACTION`.
+
+---
+
+## CURRENT-STATE ROUTING — Independent review of generic shell closure (2026-10-23)
+
+Latest bounded review receipt: [PR #473 — independent review of generic shell execution closure](./CHAT-ARCH-2026-10-23-independent-review-generic-shell-closure.md), reviewed candidate HEAD `cb1a8b545bc29b13b6da1ada0f0204601805f7dc`. The implementation change `e4bef794e336a84d538b99dcac3d959cf0c81573` disables `ShellToolAdapter.run()` unconditionally and rejects `shell_command` in `ToolTeachService.execute_task()` before availability, sandbox, approval, or adapter invocation. Static review passes for these bounded paths. The Owner reports 11 focused tests passing; they were not independently executed, and GitHub returned no workflow runs or status checks for this head.
+
+The review did not establish absence of every other tunnel launch route across the application and did not inspect live process/tunnel state. A non-blocking stale `LocalCliToolAdapter` docstring still says generic shell uses `shell=True`. No source changes were made by this review.
+
+```text
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+ACTIVE_TASK=PHASE1_MCP_TRANSPORT_HARDENING; BOUNDED REVIEW RECORDED
+PR=473; STATE=OPEN_DRAFT_UNMERGED
+BASE_SHA=2a5ac42fabbd7c6a66591d127e379432495ad3bc
+REVIEWED_HEAD=cb1a8b545bc29b13b6da1ada0f0204601805f7dc
+GENERIC_SHELL_TOOLTEACH_GATE=STATIC_PASS
+SHELL_ADAPTER_DIRECT_EXECUTION=STATIC_PASS
+GLOBAL_PUBLIC_TUNNEL_PROHIBITION=NOT_ESTABLISHED
+FOCUSED_TESTS=OWNER_REPORTED_11_PASSED; NOT_INDEPENDENTLY_EXECUTED
+CI=NO_WORKFLOW_RUNS_OR_STATUS_CHECKS_RETURNED
+BUILD=NOT_RUN
+RUNTIME=NOT_RUN
+REAL_TRANSPORT=NOT_RUN
+PROCESS_OR_TUNNEL_STATE=NOT_INSPECTED
+RATIFIED_OPTION_D_NO_BOOTSTRAP=REMAINS_IN_FORCE
+AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+G1/G2/G3=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+GOVERNANCE=KEEP_BLOCKED
+READ_LIST=FAIL_CLOSED
+PUBLIC_TUNNEL=PROHIBITED
+AZURE_BILLING_STATE=NOT_VERIFIED
+COST_POLICY=NO_PAID_SERVICES; NO_RESOURCE_DEPLOYMENT
+BRIDGE=BRIDGE_NOT_READY
+NEXT_ACTION=MAINTAIN_PR_OPEN_DRAFT_UNMERGED; NO_AUTOMATIC_FOLLOW_ON; REQUIRE_EXPLICIT_OWNER_DECISION_BEFORE_FURTHER_PRODUCT_CODE_OR_RUNTIME_ACTION
+```
+
+This candidate-only routing records the review; it does not supersede live `main` routing. Do not merge, mark ready, deploy, launch the application/MCP/Cloudflare, execute shell commands for reproduction, access protected data/SQLite/credentials, release governance blocks, or treat this receipt as authority evidence. Live `main` remains at `2a5ac42fabbd7c6a66591d127e379432495ad3bc` and retains its no-bootstrap/fail-closed `NEXT_ACTION`.
+
+---
+
+## CURRENT-STATE ROUTING — PR #473 generic shell path closed fail-closed (2026-10-23)
+
+Latest candidate-only implementation receipt: [PR #473 — generic shell execution fail-closed closure](./CHAT-ARCH-2026-10-23-phase1-generic-shell-execution-closure.md), implementation commit `e4bef794e336a84d538b99dcac3d959cf0c81573`, based on candidate `795a44ae90ac5ebe8735ac804f52c969d0fb9c49`. The generic `shell_command` route is rejected in `ToolTeachService.execute_task()` before adapter availability, sandbox execution, approval evaluation, or adapter invocation; `ShellToolAdapter.run()` also denies every command unconditionally. This avoids treating arbitrary `shell=True` syntax as safely constrainable by a text denylist. Benign generic shell commands are disabled too. The Common Sense and fixed `cloudflared_cli` subcommand guards remain in place; the 11 narrowly selected tests passed with mocked process boundaries. This closes the identified generic-shell path only and does not prove application-wide absence of all tunnel launch routes or runtime process state.
+
+```text
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+ACTIVE_TASK=PHASE1_MCP_TRANSPORT_HARDENING
+PR=473; STATE=OPEN_DRAFT_UNMERGED
+BASE_SHA=2a5ac42fabbd7c6a66591d127e379432495ad3bc
+PREVIOUS_CANDIDATE_HEAD=795a44ae90ac5ebe8735ac804f52c969d0fb9c49
+GENERIC_SHELL_PATH=FAIL_CLOSED
+FOCUSED_TESTS=11_PASSED
+BUILD=NOT_RUN
+RUNTIME=NOT_RUN
+REAL_TRANSPORT=NOT_RUN
+RATIFIED_OPTION_D_NO_BOOTSTRAP=REMAINS_IN_FORCE
+AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+G1/G2/G3=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+GOVERNANCE=KEEP_BLOCKED
+READ_LIST=FAIL_CLOSED
+PUBLIC_TUNNEL=PROHIBITED
+AZURE_BILLING_STATE=NOT_VERIFIED
+COST_POLICY=NO_PAID_SERVICES; NO_RESOURCE_DEPLOYMENT
+BRIDGE=BRIDGE_NOT_READY
+NEXT_ACTION=INDEPENDENTLY_REVIEW_THE_NEW_PR_HEAD; KEEP_DRAFT_AND_UNMERGED
+```
+
+Do not merge, mark ready, deploy, launch the application/MCP/Cloudflare, run shell commands for reproduction, use network transport, inspect protected data/SQLite/secrets, release a governance block, or start a later phase automatically. Live `main` remains governed exclusively by its own current-state routing.
+---
+
+## CURRENT-STATE ROUTING — Independent review found generic shell tunnel path (2026-10-23)
+
+Latest candidate-only review receipt: [PR #473 — independent review of residual tunnel-route closures](./CHAT-ARCH-2026-10-23-independent-review-residual-tunnel-closures.md). The published commit `003124a7aea63765aafc7915b193a4a9fb79e2d3` closes the two specifically targeted routes in static code: Common Sense no longer registers `start_tunnel`; the `cloudflared_cli` ToolCard's fixed adapter guard allows only `tunnel list` and `tunnel info`. The eight focused tests and the two-revision World Model comparison are documented in the Owner's closure receipt; they were not rerun independently in this review.
+
+The review found a separate, pre-existing local application route: the generic `shell_command` ToolCard reaches `ShellToolAdapter.run()`, which executes arbitrary commands with `shell=True` and ignores `sandbox=True`. `ToolTeachService.execute_task()` calls that adapter through `ToolSandbox` before its approval gate. Therefore, if a local task routes `cloudflared tunnel run` through the generic shell card, the shell adapter can execute it; no such command was run, and this route was not shown to be a direct MCP tool dispatch. The target closures pass static inspection, but the global application-wide `PUBLIC_TUNNEL=PROHIBITED` invariant is not established. Keep this gap bounded and fail closed.
+
+This candidate-only routing does not supersede live `main` while PR #473 is unmerged. At the time of review the PR was `OPEN/DRAFT/UNMERGED` on base `2a5ac42fabbd7c6a66591d127e379432495ad3bc`, reviewed head `686c7ad9c4be5b86b757e2b9da68e1df97e3d337`; revalidate branch/PR refs after this documentation commit before next action.
+
+```text
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+ACTIVE_TASK=PHASE1_MCP_TRANSPORT_HARDENING
+PR=473; STATE=OPEN_DRAFT_UNMERGED
+BASE_SHA=2a5ac42fabbd7c6a66591d127e379432495ad3bc
+REVIEWED_IMPLEMENTATION_COMMIT=003124a7aea63765aafc7915b193a4a9fb79e2d3
+REVIEWED_PR_HEAD_BEFORE_REVIEW_RECEIPT=686c7ad9c4be5b86b757e2b9da68e1df97e3d337
+TARGETED_COMMON_SENSE_TUNNEL_CLOSURE=STATIC_PASS
+TARGETED_CLOUDFLARED_CLI_SUBCOMMAND_GUARD=STATIC_PASS_FOR_CLOUDFLARED_CLI_ID
+TARGETED_PATCH_REVIEW=PASS_WITH_LIMITATIONS
+GENERIC_SHELL_COMMAND_LAUNCH_SURFACE=OPEN_IN_SOURCE; NOT_EXECUTED
+GLOBAL_PUBLIC_TUNNEL_PROHIBITION=NOT_ESTABLISHED
+OWNER_REPORTED_FOCUSED_TESTS=8_PASSED; NOT_INDEPENDENTLY_EXECUTED
+WORLD_MODEL_BASELINE_COMPARISON=OWNER_REPORTED_IN_RECEIPT; NOT_RERUN
+BUILD=NOT_RUN
+RUNTIME=NOT_RUN
+REAL_TRANSPORT=NOT_RUN
+RATIFIED_OPTION_D_NO_BOOTSTRAP=REMAINS_IN_FORCE
+AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+G1/G2/G3=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+GOVERNANCE=KEEP_BLOCKED
+READ_LIST=FAIL_CLOSED
+PUBLIC_TUNNEL=PROHIBITED
+AZURE_BILLING_STATE=NOT_VERIFIED
+COST_POLICY=NO_PAID_SERVICES; NO_RESOURCE_DEPLOYMENT
+BRIDGE=BRIDGE_NOT_READY
+NEXT_ACTION=GUARD_GENERIC_SHELL_SANDBOX_AND_CLOUDFLARED_TUNNEL_LAUNCH_BEFORE_ANY_SUBPROCESS; ADD_NARROW_MOCKED_TESTS; THEN_REVIEW_NEW_HEAD
+```
+
+Do not merge, mark ready, deploy, launch application/MCP/Cloudflare, execute a shell command for reproduction, use network transport, inspect protected data/SQLite/secrets, repeat Entra setup, or release a governance block. Keep all prior routing and receipts as history. Live `main` remains governed exclusively by its own `CURRENT-STATE.md` and its no-bootstrap/fail-closed NEXT_ACTION.
+---
+
+## CURRENT-STATE ROUTING — Full PR #473 review found a remaining tunnel-start path (2026-10-23)
+
+Latest candidate-only review receipt: [PR #473 full static review — residual tunnel executor and World Model baseline handoff](./CHAT-ARCH-2026-10-23-phase1-full-pr-review-blocker-and-baseline-handoff.md). This routing is on the isolated candidate branch only; it does **not** replace live `main` routing while PR #473 is unmerged. Live `main` was revalidated as `2a5ac42fabbd7c6a66591d127e379432495ad3bc`. The full source revision reviewed is `18feeb0872dfebd583fc1cf70674506277ced09a`; all PR-head commits after that source revision inspected here change continuity/documentation only. The branch head is intentionally not self-referenced in this file; refetch the branch and PR before any next action.
+
+The full static review disposition is FAIL because `common_sense_engine.py` still has a `safe=True` `start_tunnel` rule/anomaly mapped to an executor that launches `cloudflared tunnel run`; the MCP-exposed Common Sense tool calls `run_common_sense_reasoning` with `execute=True` by default. A separate Cloudflared CLI ToolCard permits the broad first token `tunnel` despite describing inspection subcommands; its approval behavior for `tunnel run` was not exercised. These are source-level launch paths, not evidence that a tunnel is currently active. Runtime/process state remains `UNVERIFIED`.
+
+The two World Model snapshot tests were not run in this coordinator environment because no repository checkout is available and the execution shell could not resolve GitHub. They remain `UNRESOLVED`; do not call either pre-existing until the exact tests are executed on the pinned base and the pre-repair candidate. Static similarity is not a substitute for a baseline run.
+
+```text
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+ACTIVE_TASK=PHASE1_MCP_TRANSPORT_HARDENING
+PR=473; STATE=OPEN_DRAFT_UNMERGED
+BASE_SHA=2a5ac42fabbd7c6a66591d127e379432495ad3bc
+LAST_FULL_REVIEW_PR_HEAD=846c597b604bb1bd19b4cd18e58c5a7e119b0081
+LAST_REVIEWED_SOURCE_CODE_SHA=18feeb0872dfebd583fc1cf70674506277ced09a
+BRANCH_HEAD_REVALIDATION_REQUIRED=TRUE
+FULL_PR_STATIC_REVIEW=FAIL
+COMMON_SENSE_TUNNEL_LAUNCH_PATH=OPEN_IN_SOURCE; NOT_EXECUTED
+CLOUDFLARED_CLI_TUNNEL_SUBCOMMAND=LATENT_ROUTE; APPROVAL_ENFORCEMENT_NOT_VERIFIED
+WORLD_MODEL_SNAPSHOT_FAILURES=2; BASELINE_COMPARISON=UNRESOLVED
+COORDINATOR_TEST_EXECUTION=NOT_RUN; NO_CHECKOUT_AND_GITHUB_DNS_UNAVAILABLE
+OWNER_REPORTED_FOCUSED_TESTS=48_PASSED; NOT_INDEPENDENTLY_REPRODUCED
+CI_STATUS_CHECKS=NONE_RETURNED_FOR_REVIEWED_HEAD
+PR_REVIEW_SUBMISSIONS=NONE_RETURNED
+RATIFIED_OPTION_D_NO_BOOTSTRAP=REMAINS_IN_FORCE
+AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+G1/G2/G3=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+GOVERNANCE=KEEP_BLOCKED
+READ_LIST=FAIL_CLOSED
+PUBLIC_TUNNEL=PROHIBITED
+REAL_TRANSPORT=NOT_RUN
+AZURE_BILLING_STATE=NOT_VERIFIED
+COST_POLICY=NO_PAID_SERVICES; NO_RESOURCE_DEPLOYMENT
+BRIDGE=BRIDGE_NOT_READY
+NEXT_ACTION=RUN_ONLY_THE_TWO_WORLD_MODEL_TESTS_ON_PINNED_BASE_AND_PRE_REPAIR_CANDIDATE_BEFORE_SOURCE_EDITS; THEN_DISABLE_TUNNEL_START_ROUTES_WITH_REGRESSION_TESTS_IN_THE_SAME_PR
+```
+
+Do not merge, mark ready, deploy, launch application/MCP/Cloudflare, use network transport, access protected data, SQLite, credentials or `.env`, repeat Entra setup, or treat bounded Phase 1 authorization as closing G1–G3. Keep the older routing blocks below as history; only this opening block routes the candidate task. Live `main` retains its own no-bootstrap/fail-closed NEXT_ACTION.
+---
+
+## CURRENT-STATE ROUTING — PR #473: bootstrap seguro y gobernanza no inspeccionada (2026-10-23)
+
+Amendment receipt: [Phase 1 transport hardening owner resumption](./CHAT-ARCH-2026-10-23-phase1-transport-hardening-owner-resumption.md), sección “Amendment — no port cleanup and tri-state governance”. El bootstrap de PowerShell prepara herramientas/perfil pero ya no termina procesos por puerto, invoca `start_iabv.ps1`, inicia MCP/túneles ni presenta una URL de túnel como resultado normal. La instalación de `cloudflared` se distingue de su ejecución. El helper `_mcp_port_utils.ps1` permanece intacto; no se importa desde los entry points revisados.
+
+`MCPBridgeStatus.governance_blocked` distingue `True` (bloqueo confirmado), `False` (evaluación realizada y sin bloqueo) y `None` (no inspeccionado). La negativa del transporte sigue ocurriendo antes de consultar `WorldModelService` y antes de invocar runners; `None` no autoriza la ruta. El ViewModel conserva el valor opcional y QML presenta explícitamente el estado no inspeccionado. No se habilitó HTTP/SSE ni túnel.
+
+```text
+ACTIVE_TASK=PHASE1_MCP_BOOTSTRAP_AUTOSTART_CLOSURE
+PR=473; STATE=OPEN_DRAFT_UNMERGED
+BASE_SHA=2a5ac42fabbd7c6a66591d127e379432495ad3bc
+RATIFIED_OPTION_D_NO_BOOTSTRAP=REMAINS_IN_FORCE
+AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+G1/G2/G3=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+READ_LIST=FAIL_CLOSED
+PUBLIC_TUNNEL=PROHIBITED
+FOCUSED_TESTS=48_PASSED
+PRIOR_BROAD_RUN=86_PASSED; 2_FAILURES_OBSERVED; BASELINE_STATUS=UNRESOLVED
+BUILD=NOT_RUN
+RUNTIME=NOT_RUN
+REAL_TRANSPORT=NOT_RUN
+GOVERNANCE=KEEP_BLOCKED
+BRIDGE=BRIDGE_NOT_READY
+NEXT_ACTION=INDEPENDENT_REVIEW_OF_PR_473_AMENDMENT
+```
+
+Las 48 pruebas focalizadas son unitarias, con dobles/directorios temporales y comprobaciones estáticas de scripts/QML. La primera ejecución de esta selección produjo 46 aprobadas y 2 fallidas por aserciones estáticas demasiado exactas; tras ajustar esas aserciones, la misma selección pasó 48/48. No se ejecutó la suite amplia. Los dos fallos World Model del run amplio anterior siguen sin comparación contra la base y permanecen `UNRESOLVED`; no se atribuyen a esta modificación ni se declaran preexistentes. No se inició la aplicación, AppBootstrap, servidor MCP, Cloudflare, red o transporte real. No se accedió a datos/SQLite ni a credenciales. Ningún gate se cierra con este cambio.
+
+---
+
+## CURRENT-STATE ROUTING — PR #473 legacy AppBootstrap launch closed (2026-10-23)
+
+Amendment receipt: the Phase 1 resumption receipt below now records the bounded static correction for the separate `AppBootstrap` launch path. The ordinary `AppBootstrap.run()` path no longer checks `IABV_SKIP_MCP_AUTOSTART` or probes the MCP port to decide whether to launch; it does not schedule MCP, Cloudflare, or supervisor work. The legacy process hooks return without calling `Popen`, and the supervisor is inert. `MCPBridgeService` now rejects at the start of `_start_locked()`, before a World Model lookup or runner call. Local client-managed stdio remains the only supported server transport; HTTP/SSE and public tunnels remain disabled.
+
+```text
+ACTIVE_TASK=PHASE1_MCP_BOOTSTRAP_AUTOSTART_CLOSURE
+PR=473; STATE=OPEN_DRAFT_UNMERGED
+BASE_SHA=2a5ac42fabbd7c6a66591d127e379432495ad3bc
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+RATIFIED_OPTION_D_NO_BOOTSTRAP=REMAINS_IN_FORCE
+G1/G2/G3=NOT_ESTABLISHED
+READ_LIST=FAIL_CLOSED
+PROTECTED_READS=NOT_AUTHORIZED
+PUBLIC_TUNNEL=PROHIBITED
+FOCUSED_TESTS=27_PASSED
+PRIOR_BROAD_RUN=86_PASSED; 2_FAILURES_OBSERVED; BASELINE_STATUS=UNRESOLVED
+BUILD=NOT_RUN
+RUNTIME=NOT_RUN
+REAL_TRANSPORT=NOT_RUN
+GOVERNANCE=KEEP_BLOCKED
+BRIDGE=BRIDGE_NOT_READY
+NEXT_ACTION=INDEPENDENT_REVIEW_OF_PR_473_AMENDMENT
+```
+
+The prior broad run's two World Model fixture failures were observed on the earlier PR candidate. They were not compared against the base in a reference run, so this overlay does not label them pre-existing. Only the focused tests listed in the amendment receipt were run for this correction. No gate is closed.
+
+---
+
+## CURRENT-STATE ROUTING — Owner authorizes bounded Phase 1 transport hardening (2026-10-23)
+
+Decision and scope receipt: [Phase 1 Owner resumption](./CHAT-ARCH-2026-10-23-phase1-transport-hardening-owner-resumption.md). This is a new, explicit, bounded Owner authorization to resume local candidate changes using a static pre-scan substitute. It does not revoke `RATIFIED_OPTION_D_NO_BOOTSTRAP`, establish trust, authorize protected reads, or release a governance block. The receipt records the inspected source scope and final verification when available.
+
+```text
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+ACTIVE_TASK=PHASE1_MCP_TRANSPORT_HARDENING
+OWNER_DECISION=AUTHORIZE_PHASE1_STATIC_PRESCAN_SUBSTITUTE_AND_RESUME
+RATIFIED_OPTION_D_NO_BOOTSTRAP=REMAINS_IN_FORCE
+AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3_VERSIONED_TARGET_RESOLVER=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+READ_LIST=FAIL_CLOSED
+PROTECTED_READS=NOT_AUTHORIZED
+STATIC_PRESCAN=AUTHORIZED_FOR_PHASE1_SLICE_ONLY
+DYNAMIC_ADAPTIVE_STATE=NOT_INSPECTED
+PUBLIC_TUNNEL=PROHIBITED
+FOCUSED_TESTS=19_PASSED
+BROADER_MCP_MODULE_RUN=86_PASSED; 2_UNRELATED_WORLD_MODEL_FIXTURE_FAILURES
+TESTS=FOCUSED_PASS_WITH_UNRELATED_MODULE_FAILURES
+BUILD=NOT_RUN
+RUNTIME=NOT_RUN
+REAL_TRANSPORT=NOT_RUN
+GOVERNANCE=KEEP_BLOCKED
+BRIDGE=BRIDGE_NOT_READY
+NEXT_ACTION=SUBMIT_REVIEW_PR_WITHOUT_MERGE; THEN_REQUEST_INDEPENDENT_REVIEW
+```
+
+The authorized slice is limited to fail-closed transport routing in the isolated candidate, focused unit tests, and synchronized documentation. `stdio` remains the server's only accepted transport; the UI-owned service and its default runner shims refuse startup, and HTTP/SSE authorization is absent. The PowerShell launcher permits direct local stdio only and starts no tunnel. The `start_iabv.ps1` wrapper no longer invokes that launcher or kills a process by bridge port. `AppBootstrap` may still schedule `MCPBridgeService.ensure_started()`, but that path now fails before either runner. Focused tests passed 19/19; a broader run of the three affected test modules had two unrelated world-model fake-fixture failures (86 passed, 2 failed). No application, MCP server, tunnel, protected reader, dynamic metacognitive organ, data contents, SQLite, real transport, build, deployment, or paid resource was used. A broad `rg --files` command did inadvertently enumerate some data-path names; no contents were opened, and no data file was modified. This branch-level update is not yet canonical on `main`; no gate is closed by this work.
+
+---
+
 ## CURRENT-STATE ROUTING — Owner ratified Option D; no bootstrap (2026-10-23)
 
 Receipt: [M1A G1 Owner Option D ratification](./CHAT-ARCH-2026-10-23-M1A-G1-owner-option-d-no-bootstrap-ratification-receipt.md), blob `cac492006c51c56ea4abc4dff822785e19c65d93`. This routing update originated on isolated branch `codex/iabv-option-d-ratification-20261023`, based on verified `main` commit `439d9604037f156160a970dd33d1b3ad76009bdf`, and was submitted for review via PR #472. Revalidate live `main` to determine whether it is currently canonical. `CURRENT-STATE.md` remains the sole routing authority. The previous `OWNER_DECISION_NOT_CAPTURED` snapshot is superseded by the explicit Owner decision below.
