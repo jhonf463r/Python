@@ -27,6 +27,7 @@ from iabv_v15.services.evolution.mcp_bridge_service import (
     MCPBridgeService,
     MCPBridgeStatus,
 )
+from iabv_v15.ui.viewmodels.control_center_viewmodel import ControlCenterViewModel
 
 
 class _FakeServerRunner:
@@ -201,7 +202,7 @@ def test_active_bridge_block_does_not_trigger_world_model_lookup_or_runner(tmp_p
     )])
     svc, server, tunnel = _build_service(tmp_path, snapshot=snapshot)
     status = svc.set_enabled(True)
-    assert status.governance_blocked is False
+    assert status.governance_blocked is None
     assert status.governance_reason is None
     assert "autorización independiente" in (status.last_error or "")
     assert svc._container.world_model_service.current_model_calls == 0
@@ -217,7 +218,7 @@ def test_global_block_does_not_trigger_world_model_lookup_or_runner(tmp_path: Pa
     )])
     svc, server, tunnel = _build_service(tmp_path, snapshot=snapshot)
     status = svc.set_enabled(True)
-    assert status.governance_blocked is False
+    assert status.governance_blocked is None
     assert status.governance_reason is None
     assert "autorización independiente" in (status.last_error or "")
     assert svc._container.world_model_service.current_model_calls == 0
@@ -235,7 +236,7 @@ def test_unrelated_or_inactive_block_does_not_release_or_start_bridge(tmp_path: 
     ])
     svc, server, tunnel = _build_service(tmp_path, snapshot=snapshot)
     status = svc.set_enabled(True)
-    assert status.governance_blocked is False
+    assert status.governance_blocked is None
     _assert_no_dispatch(status, server, tunnel)
 
 
@@ -257,3 +258,28 @@ def test_status_dict_is_serializable_and_copy_isolated(tmp_path: Path) -> None:
     status = svc.status()
     status.state = "MUTATED"
     assert svc.status().state == "stopped"
+
+
+@pytest.mark.parametrize("blocked", [True, False, None])
+def test_status_serialization_preserves_governance_tristate(blocked: bool | None) -> None:
+    payload = json.loads(json.dumps(MCPBridgeStatus(governance_blocked=blocked).to_dict()))
+    assert payload["governance_blocked"] is blocked
+
+
+@pytest.mark.parametrize("blocked", [True, False, None])
+def test_viewmodel_preserves_governance_tristate(blocked: bool | None) -> None:
+    from types import SimpleNamespace
+
+    viewmodel = SimpleNamespace(_mcp_bridge_status={"governance_blocked": blocked})
+    assert ControlCenterViewModel.get_mcp_bridge_blocked(viewmodel) is blocked
+
+
+def test_qml_renders_uninspected_governance_separately() -> None:
+    qml_path = Path(__file__).resolve().parents[1] / "src" / "iabv_v15" / "ui" / "qml" / "pages" / "ControlCenterPage.qml"
+    qml = qml_path.read_text(encoding="utf-8")
+    assert "blocked === true" in qml
+    assert 'var governancePrefix = "Gobernanza comprobada: sin bloqueo. "' in qml
+    assert "blocked === null || blocked === undefined" in qml
+    assert "Gobernanza no inspeccionada" in qml
+    assert "Iniciando servidor MCP y tunnel" not in qml
+    assert "Activar para exponer el programa" not in qml

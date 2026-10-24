@@ -44,7 +44,9 @@ class MCPBridgeStatus:
     bind_port: int = DEFAULT_BIND_PORT
     last_error: str | None = None
     last_updated: float = field(default_factory=time.time)
-    governance_blocked: bool = False
+    # True = block confirmed; False = governance checked and clear;
+    # None = governance was not inspected for this status.
+    governance_blocked: bool | None = None
     governance_reason: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
@@ -287,7 +289,9 @@ class MCPBridgeService:
             # authorized. Refuse before even consulting WorldModel or runners.
             self._status.running = False
             self._status.tunnel_url = None
-            self._status.governance_blocked = False
+            # This transport refusal intentionally happens before World Model
+            # evaluation. Do not report an uninspected block state as clear.
+            self._status.governance_blocked = None
             self._status.governance_reason = None
             self._status.last_error = (
                 "MCPBridgeService no puede iniciar un canal stdio propiedad "

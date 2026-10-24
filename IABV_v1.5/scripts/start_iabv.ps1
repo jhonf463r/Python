@@ -48,7 +48,6 @@ param(
     [switch]$HotReload,
     [switch]$Quiet,
     [switch]$StartUI,
-    [int]$McpPort = 8000,
     [switch]$AutoPull = $true,
     [switch]$NoAutoPull,
     [switch]$AllowNonMain
@@ -112,12 +111,12 @@ Write-Info "=== IABV v1.5 start ==="
 Write-Info "Secrets : $secretsPath"
 
 # Runtime hygiene: the repo currently tracks historical __pycache__ files.
-# Writing bytecode during normal UI/MCP startup dirties the worktree, pollutes
+# Writing bytecode during normal UI startup dirties the worktree, pollutes
 # runtime_build_fingerprint, and adds avoidable IO on low-disk systems.
 $env:PYTHONDONTWRITEBYTECODE = '1'
 
 # --- Auto pull (default ON) -------------------------------------------------
-# Mantiene el workspace sincronizado con origin/main antes de arrancar el MCP,
+# Mantiene el workspace sincronizado con origin/main antes de arrancar la UI,
 # para que el usuario no termine corriendo una version vieja despues de que
 # Devin mergeo fixes automaticos. Usa --rebase=false para tolerar divergencia
 # local (e.g. auto-merge commits). Si falla, abortamos con mensaje claro.
@@ -234,7 +233,7 @@ if (Test-Path $secretsPath) {
 } else {
     Write-Warn "[warn] No existe $secretsPath."
     Write-Warn "       Ejecuta una sola vez: scripts\setup_iabv_profile.ps1"
-    Write-Warn "       Seguimos igual; si faltan env vars el MCP lo avisa al arrancar."
+    Write-Warn "       Seguimos igual; las integraciones que requieran esos valores no estarán disponibles."
 }
 
 # Validaciones de shape (no hacen HTTP; solo longitud/formato basico).
@@ -290,9 +289,9 @@ if ($HotReload) {
 }
 
 # --- P0.71: UI Presence Contract + Single UI Instance Sovereignty ----------
-# When -StartUI is requested, startup_bridge_reused is NOT sufficient.
-# We must verify that a real UI process is alive and its bridge port belongs
-# to it.  If MCP exists but UI doesn't, we start/focus the UI.
+# When -StartUI is requested, a prior bridge status is NOT sufficient.
+# Verify that a real UI process is alive and that its UI bridge port belongs
+# to it; this check does not start MCP or a tunnel.
 # Traces emitted: ui_presence_check_started, ui_presence_check_result,
 #   ui_launch_started, ui_launch_result, ui_launch_skipped_existing_ui,
 #   ui_launch_failed, ui_duplicate_prevented, ui_bridge_port_conflict,
@@ -424,7 +423,6 @@ if ($StartUI) {
         Write-Info "Lanzando ControlCenter UI (python -m iabv_v15 app) en proceso aparte..."
         Write-StartupTrace 'ui_launch_started' @{ bridge_port = 18921 }
 
-        $env:IABV_SKIP_MCP_AUTOSTART = '1'
         $uiSrcPath = Join-Path $iabvRoot 'src'
         if (-not $env:PYTHONPATH -or $env:PYTHONPATH -notlike "*$uiSrcPath*") {
             if ($env:PYTHONPATH) {
@@ -449,7 +447,6 @@ if ($StartUI) {
             # Python has an editable install pointing at an older IABV clone.
             $psi.EnvironmentVariables['PYTHONPATH'] = $env:PYTHONPATH
             $psi.EnvironmentVariables['IABV_WORKSPACE_ROOT'] = $iabvRoot
-            $psi.EnvironmentVariables['IABV_SKIP_MCP_AUTOSTART'] = '1'
             $uiProc = [System.Diagnostics.Process]::Start($psi)
             Write-Info "  UI PID     : $($uiProc.Id)"
             Write-Info "  PYTHONPATH : $env:PYTHONPATH"

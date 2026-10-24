@@ -115,9 +115,16 @@ def test_supervisor_cannot_restart_processes_or_start_a_thread(monkeypatch) -> N
 def test_startup_scripts_do_not_restore_public_launch_path() -> None:
     launcher = (PROJECT_ROOT / "scripts" / "run_mcp_bridge.ps1").read_text(encoding="utf-8")
     start = (PROJECT_ROOT / "scripts" / "start_iabv.ps1").read_text(encoding="utf-8")
+    bootstrap = (PROJECT_ROOT / "scripts" / "iabv_bootstrap.ps1").read_text(encoding="utf-8")
 
     assert "cloudflared tunnel" not in launcher.lower()
     assert "Start-Process" not in launcher
     assert "run_mcp_bridge.ps1" not in start
     assert "Stop-McpZombies -Port" not in start
     assert "MCP/tunnel auto-start deshabilitado" in start
+    assert "IABV_SKIP_MCP_AUTOSTART" not in start
+    assert "Stop-McpZombies" not in bootstrap
+    assert "_mcp_port_utils.ps1" not in bootstrap
+    assert "start_iabv.ps1" not in bootstrap
+    assert "Arrancando MCP" not in bootstrap
+    assert "trycloudflare.com" not in bootstrap

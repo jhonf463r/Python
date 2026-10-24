@@ -1,3 +1,33 @@
+## CURRENT-STATE ROUTING — PR #473: bootstrap seguro y gobernanza no inspeccionada (2026-10-23)
+
+Amendment receipt: [Phase 1 transport hardening owner resumption](./CHAT-ARCH-2026-10-23-phase1-transport-hardening-owner-resumption.md), sección “Amendment — no port cleanup and tri-state governance”. El bootstrap de PowerShell prepara herramientas/perfil pero ya no termina procesos por puerto, invoca `start_iabv.ps1`, inicia MCP/túneles ni presenta una URL de túnel como resultado normal. La instalación de `cloudflared` se distingue de su ejecución. El helper `_mcp_port_utils.ps1` permanece intacto; no se importa desde los entry points revisados.
+
+`MCPBridgeStatus.governance_blocked` distingue `True` (bloqueo confirmado), `False` (evaluación realizada y sin bloqueo) y `None` (no inspeccionado). La negativa del transporte sigue ocurriendo antes de consultar `WorldModelService` y antes de invocar runners; `None` no autoriza la ruta. El ViewModel conserva el valor opcional y QML presenta explícitamente el estado no inspeccionado. No se habilitó HTTP/SSE ni túnel.
+
+```text
+ACTIVE_TASK=PHASE1_MCP_BOOTSTRAP_AUTOSTART_CLOSURE
+PR=473; STATE=OPEN_DRAFT_UNMERGED
+BASE_SHA=2a5ac42fabbd7c6a66591d127e379432495ad3bc
+RATIFIED_OPTION_D_NO_BOOTSTRAP=REMAINS_IN_FORCE
+AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+G1/G2/G3=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+READ_LIST=FAIL_CLOSED
+PUBLIC_TUNNEL=PROHIBITED
+FOCUSED_TESTS=48_PASSED
+PRIOR_BROAD_RUN=86_PASSED; 2_FAILURES_OBSERVED; BASELINE_STATUS=UNRESOLVED
+BUILD=NOT_RUN
+RUNTIME=NOT_RUN
+REAL_TRANSPORT=NOT_RUN
+GOVERNANCE=KEEP_BLOCKED
+BRIDGE=BRIDGE_NOT_READY
+NEXT_ACTION=INDEPENDENT_REVIEW_OF_PR_473_AMENDMENT
+```
+
+Las 48 pruebas focalizadas son unitarias, con dobles/directorios temporales y comprobaciones estáticas de scripts/QML. La primera ejecución de esta selección produjo 46 aprobadas y 2 fallidas por aserciones estáticas demasiado exactas; tras ajustar esas aserciones, la misma selección pasó 48/48. No se ejecutó la suite amplia. Los dos fallos World Model del run amplio anterior siguen sin comparación contra la base y permanecen `UNRESOLVED`; no se atribuyen a esta modificación ni se declaran preexistentes. No se inició la aplicación, AppBootstrap, servidor MCP, Cloudflare, red o transporte real. No se accedió a datos/SQLite ni a credenciales. Ningún gate se cierra con este cambio.
+
+---
+
 ## CURRENT-STATE ROUTING — PR #473 legacy AppBootstrap launch closed (2026-10-23)
 
 Amendment receipt: the Phase 1 resumption receipt below now records the bounded static correction for the separate `AppBootstrap` launch path. The ordinary `AppBootstrap.run()` path no longer checks `IABV_SKIP_MCP_AUTOSTART` or probes the MCP port to decide whether to launch; it does not schedule MCP, Cloudflare, or supervisor work. The legacy process hooks return without calling `Popen`, and the supervisor is inert. `MCPBridgeService` now rejects at the start of `_start_locked()`, before a World Model lookup or runner call. Local client-managed stdio remains the only supported server transport; HTTP/SSE and public tunnels remain disabled.

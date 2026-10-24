@@ -137,3 +137,81 @@ REAL_TRANSPORT=NOT_RUN
 GOVERNANCE=KEEP_BLOCKED
 BRIDGE=BRIDGE_NOT_READY
 ```
+
+## Amendment — no port cleanup and tri-state governance for PR #473
+
+This bounded amendment continues on the existing candidate branch after the
+prior AppBootstrap launch-path change. Candidate identity before the amendment
+was branch `codex/iabv-phase1-bridge-hardening-20261023`, HEAD
+`e002bee235f173f1ae76778d2e65f419d3f332ae`, based on
+`2a5ac42fabbd7c6a66591d127e379432495ad3bc`; the candidate tree was clean.
+The remote branch matched that HEAD and remote `main` matched the stated base.
+PR #473 was observed `OPEN / DRAFT / UNMERGED` before the change.
+
+The PowerShell bootstrap no longer dot-sources `_mcp_port_utils.ps1`, accepts
+an unused `McpPort`, calls `Stop-McpZombies`, starts `start_iabv.ps1`, or
+announces MCP/tunnel startup or a shareable quick-tunnel URL. It still may
+install the `cloudflared` executable as a tool; installation is not process
+execution. Historical `NoStart` and `PrintTunnelUrl` switches remain accepted
+for compatibility, but the bootstrap never starts bridge processes. The
+helper file itself was not changed or deleted; this amendment removes its
+reference from the inspected bootstrap flow. `start_iabv.ps1` no longer
+accepts the unused MCP port or sets `IABV_SKIP_MCP_AUTOSTART` for its UI
+child. Its UI presence/bridge-port checks remain UI checks, not MCP launch
+authorization. No process was inspected or stopped.
+
+`MCPBridgeStatus.governance_blocked` is now `bool | None`: `True` means a
+block was confirmed, `False` means governance was evaluated and no block was
+found, and `None` means `NOT_INSPECTED`. `_start_locked()` retains its early
+transport refusal and records `None`; it does not call
+`_governance_gate_block()`, `WorldModelService.current_model()`, or either
+runner. `to_dict()` retains the null value. `ControlCenterViewModel` uses a
+QVariant property and preserves only explicit booleans or `None`; the QML
+status separates blocked, checked-clear and uninspected states. The UI does
+not treat `None` as permission. `stdio` remains the MCP server's client-managed
+local transport; network transports and public tunnels remain disabled.
+
+### Amendment verification
+
+The following focused selection was run from the candidate project using
+`C:\Users\faber\miniconda3\python.exe` (Python 3.13.2),
+`PYTHONDONTWRITEBYTECODE=1`, candidate `src` on `PYTHONPATH`, and pytest cache
+disabled:
+
+```text
+tests/test_iabv_bootstrap_script.py
+tests/test_bootstrap_mcp_autostart_disabled.py
+tests/test_mcp_bridge_launcher.py
+tests/test_mcp_bridge_service.py
+48 passed in 2.70s
+exit code: 0
+```
+
+The first run of the same selection reported 46 passed and two failed static
+assertions: one compared an accented script sentence literally, and one
+omitted the trailing space in the QML prefix. The assertions were made robust
+to those representation details and the full same selection then passed
+48/48. This is test-harness correction evidence, not an application/runtime
+run. `git diff --check` was clean before recording this receipt.
+
+The amendment updates `CURRENT-STATE.md` with a new top overlay and appends
+this section; previous receipt/history content remains intact. The two
+World-Model fixture failures from the earlier broad run remain
+`UNRESOLVED` because no base comparison was run. No full test suite, build,
+application, AppBootstrap, MCP, Cloudflare, network operation, deployment or
+real transport was run. No protected checkout, `data/`, SQLite, secret,
+credential or private configuration was accessed. Governance remains
+blocked and no prerequisite is closed.
+
+```text
+RATIFIED_OPTION_D_NO_BOOTSTRAP=REMAINS_IN_FORCE
+AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+G1/G2/G3=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+READ_LIST=FAIL_CLOSED
+PUBLIC_TUNNEL=PROHIBITED
+REAL_TRANSPORT=NOT_RUN
+GOVERNANCE=KEEP_BLOCKED
+BRIDGE=BRIDGE_NOT_READY
+NEXT_ACTION=INDEPENDENT_REVIEW_OF_PR_473_AMENDMENT
+```

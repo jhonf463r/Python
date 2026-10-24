@@ -28,3 +28,4 @@ def test_start_iabv_does_not_delegate_to_bridge_or_kill_bridge_processes() -> No
     assert "run_mcp_bridge.ps1" not in script
     assert "Stop-McpZombies -Port $McpPort" not in script
     assert "MCP/tunnel auto-start deshabilitado" in script
+    assert "IABV_SKIP_MCP_AUTOSTART" not in script
