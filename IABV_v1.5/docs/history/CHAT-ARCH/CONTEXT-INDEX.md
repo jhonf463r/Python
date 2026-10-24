@@ -1,6 +1,6 @@
 ## ChatGPT continuity — Owner Option D ratification now recorded (2026-10-23)
 
-Decision receipt: [M1A G1 Owner Option D ratification](./CHAT-ARCH-2026-10-23-M1A-G1-owner-option-d-no-bootstrap-ratification-receipt.md), blob `408229370babd4b53da3247d3aaef6392be5b268`, authored on branch `codex/iabv-option-d-ratification-20261023` from baseline `439d9604037f156160a970dd33d1b3ad76009bdf`. The previous statement that Option D had not yet been explicitly ratified is superseded by this receipt; confirm the receipt's presence on live `main` when validating current state.
+Decision receipt: [M1A G1 Owner Option D ratification](./CHAT-ARCH-2026-10-23-M1A-G1-owner-option-d-no-bootstrap-ratification-receipt.md), blob `cac492006c51c56ea4abc4dff822785e19c65d93`, authored on branch `codex/iabv-option-d-ratification-20261023` from baseline `439d9604037f156160a970dd33d1b3ad76009bdf`. The previous statement that Option D had not yet been explicitly ratified is superseded by this receipt; confirm the receipt's presence on live `main` when validating current state.
 
 Current interpretation: `OWNER_DECISION=RATIFIED_OPTION_D_NO_BOOTSTRAP`; `AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED`; `G1=G2=G3=NOT_ESTABLISHED`; all eight implementation prerequisites remain open. Ratification is not proof of absence, implementation authorization, permission for protected reads or block release. `CURRENT-STATE.md` alone governs current routing; do not repeat the decision question or retry denied readers.
 
