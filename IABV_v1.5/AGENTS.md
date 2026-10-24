@@ -4,7 +4,9 @@ Current decision receipt: [Owner ratification of Option D — no bootstrap](docs
 
 ChatGPT must acknowledge that the Owner explicitly ratified `RATIFICO_OPCION_D_SIN_BOOTSTRAP`. Do not ask that decision again, do not repeat Entra/Authenticator setup, and do not treat this governance decision as proof that assets are absent or as permission to inspect them. Preserve `AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED`, `G1=NOT_ESTABLISHED`, `G2=NOT_ESTABLISHED`, `G3=NOT_ESTABLISHED`, `GOVERNANCE=KEEP_BLOCKED`, `READ_LIST=FAIL_CLOSED`, `IMPLEMENTATION=NOT_AUTHORIZED`, and `AUTOMATIC_FOLLOW_ON=FALSE`. Never retry the denied reader or bypass it through another route. `CURRENT-STATE.md` is the sole owner of current routing and `NEXT_ACTION`.
 
----## OVERRIDING LATEST ROUTING — Entra identity prepared; no-cost bridge-security review completed (2026-10-23)
+---
+
+## OVERRIDING LATEST ROUTING — Entra identity prepared; no-cost bridge-security review completed (2026-10-23)
 
 Latest new-chat handoff: [M1A G1 Entra identity and bridge-security continuity handoff](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-23-M1A-G1-new-chat-continuity-handoff-entra.md), blob `38405887fd8188c58f69ea37d94e55e8dd15806e`.
 Bounded static assessment: [M1A G1 Microsoft Entra no-cost integration](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-23-M1A-G1-Entra-no-cost-integration-static-assessment.md), blob `025a126f8848cab4ac0e6b33f8bd9f2e4740dda6`.
