@@ -1,3 +1,9 @@
+## Latest candidate-only continuity — PR #473 targeted static review (2026-10-23)
+
+New-chat handoff: [Phase 1 MCP transport hardening — targeted static review and new-chat handoff](./CHAT-ARCH-2026-10-23-phase1-transport-hardening-independent-review-handoff.md). It records the exact reviewed source SHA `18feeb0872dfebd583fc1cf70674506277ced09a`, the bounded findings, provenance limits for the reported 48 tests, and the exact next steps. PR #473 remains candidate-only; fetch live PR head and `CURRENT-STATE.md` before proceeding. This receipt does not supersede `main` while unmerged; only the top of `CURRENT-STATE.md` routes the candidate task.
+
+---
+
 ## Current route — bounded Phase 1 MCP transport hardening (2026-10-23)
 
 The latest Owner authorization and candidate-scope receipt is
