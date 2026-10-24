@@ -3305,7 +3305,7 @@ def main() -> None:
             "está permitido hasta verificar autenticación de transporte "
             "y autorización independiente por operación"
         )
-    profile = os.environ.get("IABV_MCP_PROFILE", PROFILE_FULL)
+    profile = os.environ.get("IABV_MCP_PROFILE", PROFILE_LOCAL_RESTRICTED)
     if profile not in SUPPORTED_PROFILES:
         raise ValueError(f"perfil MCP no soportado: {profile}")
 

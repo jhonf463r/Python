@@ -298,31 +298,33 @@ def test_local_restricted_profile_run_skips_dynamic_write_tools(monkeypatch: pyt
     assert set(server.mcp._tool_manager._tools) == {"bridge_health"}
 
 
-def test_main_local_restricted_profile_does_not_construct_appbootstrap(
+def test_main_defaults_to_local_restricted_without_appbootstrap(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    import sys
+    import builtins
 
-    from types import ModuleType
+    original_import = builtins.__import__
+    bootstrap_imports: list[str] = []
 
-    bootstrap = ModuleType("iabv_v15.bootstrap")
+    def reject_bootstrap_import(name: str, *args: object, **kwargs: object) -> object:
+        if name == "iabv_v15.bootstrap":
+            bootstrap_imports.append(name)
+            raise AssertionError("AppBootstrap module must not be imported")
+        return original_import(name, *args, **kwargs)
 
-    def forbidden_bootstrap(*_: object, **__: object) -> None:
-        raise AssertionError("AppBootstrap must not be imported or constructed")
-
-    bootstrap.AppBootstrap = forbidden_bootstrap  # type: ignore[attr-defined]
-    monkeypatch.setitem(sys.modules, "iabv_v15.bootstrap", bootstrap)
+    monkeypatch.setattr(builtins, "__import__", reject_bootstrap_import)
     monkeypatch.setenv("IABV_MCP_TRANSPORT", "stdio")
-    monkeypatch.setenv("IABV_MCP_PROFILE", PROFILE_LOCAL_RESTRICTED)
-    captured: list[tuple[str, set[str]]] = []
+    monkeypatch.delenv("IABV_MCP_PROFILE", raising=False)
+    captured: list[tuple[str, str, set[str]]] = []
 
     def capture_run(server: IABVMCPServer, *, transport: str) -> None:
-        captured.append((transport, set(server.mcp._tool_manager._tools)))
+        captured.append((transport, server.profile, set(server.mcp._tool_manager._tools)))
 
     monkeypatch.setattr(IABVMCPServer, "run", capture_run)
     mcp_main()
 
-    assert captured == [("stdio", {"bridge_health"})]
+    assert bootstrap_imports == []
+    assert captured == [("stdio", PROFILE_LOCAL_RESTRICTED, {"bridge_health"})]
 
 
 @pytest.mark.parametrize("transport", ["sse", "streamable-http"])

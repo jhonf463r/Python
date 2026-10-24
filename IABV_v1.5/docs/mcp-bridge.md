@@ -56,6 +56,7 @@ como servidor `stdio`, desde un checkout que el operador haya seleccionado:
 
 ```powershell
 $env:IABV_MCP_TRANSPORT = 'stdio'
+$env:IABV_MCP_PROFILE = 'local_restricted'
 python -m iabv_v15.infra.mcp.server
 ```
 
