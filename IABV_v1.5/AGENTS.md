@@ -1,6 +1,6 @@
 ## ChatGPT continuity and anti-loop protocol — Owner decision recorded (2026-10-23)
 
-Current decision receipt: [Owner ratification of Option D — no bootstrap](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-23-M1A-G1-owner-option-d-no-bootstrap-ratification-receipt.md), blob `408229370babd4b53da3247d3aaef6392be5b268`, authored on isolated docs-only branch `codex/iabv-option-d-ratification-20261023` from verified `main` `439d9604037f156160a970dd33d1b3ad76009bdf`. The branch is a review proposal; do not treat its proposed routing update as merged until confirmed on live `main`.
+Current decision receipt: [Owner ratification of Option D — no bootstrap](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-23-M1A-G1-owner-option-d-no-bootstrap-ratification-receipt.md), blob `408229370babd4b53da3247d3aaef6392be5b268`, authored on isolated docs-only branch `codex/iabv-option-d-ratification-20261023` from verified `main` `439d9604037f156160a970dd33d1b3ad76009bdf`. The receipt and synchronized routing originated on that isolated branch and were submitted through PR #472. Revalidate the live `main` ref and `CURRENT-STATE.md` before treating any branch-only text as canonical.
 
 ChatGPT must acknowledge that the Owner explicitly ratified `RATIFICO_OPCION_D_SIN_BOOTSTRAP`. Do not ask that decision again, do not repeat Entra/Authenticator setup, and do not treat this governance decision as proof that assets are absent or as permission to inspect them. Preserve `AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED`, `G1=NOT_ESTABLISHED`, `G2=NOT_ESTABLISHED`, `G3=NOT_ESTABLISHED`, `GOVERNANCE=KEEP_BLOCKED`, `READ_LIST=FAIL_CLOSED`, `IMPLEMENTATION=NOT_AUTHORIZED`, and `AUTOMATIC_FOLLOW_ON=FALSE`. Never retry the denied reader or bypass it through another route. `CURRENT-STATE.md` is the sole owner of current routing and `NEXT_ACTION`.
 
@@ -1023,7 +1023,9 @@ Next actor: Sonnet/Claude — one targeted delta review of Entry 278 only. Chall
 
 No implementation, product-source/config edits, tests/builds/runtime, local M0A access, blocked-reader retry/bypass, credential inspection, authentication, installation/update or launch. Acceptance of this candidate cannot release a governance block. Keep `KEEP_BLOCKED`.
 
----## Current route overlay — Entry 274: consolidated M0B-R8.1 contract
+---
+
+## Current route overlay — Entry 274: consolidated M0B-R8.1 contract
 
 Read [CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md) in full, then use the README-first canonical route. Entries 272–273 remain historical; Entry 274 is the single proposed normative contract pending a second challenge.
 
