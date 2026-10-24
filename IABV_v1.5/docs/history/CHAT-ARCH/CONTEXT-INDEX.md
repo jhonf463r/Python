@@ -1,10 +1,12 @@
-## Latest candidate-only continuity — Phase 1 PR #473 targeted static review (2026-10-23)
+## Latest candidate-only continuity — PR #473 full static review found residual tunnel path (2026-10-23)
 
-- Handoff: [Phase 1 MCP transport hardening — targeted static review and new-chat handoff](./CHAT-ARCH-2026-10-23-phase1-transport-hardening-independent-review-handoff.md).
-- Reviewed source SHA: `18feeb0872dfebd583fc1cf70674506277ced09a`; PR #473 must be revalidated for the current head.
-- The two targeted fixes (no PowerShell port-based kill/launch; governance tri-state preserved as unknown) passed source-level inspection only. Owner-reported tests: 48 passed; not independently executed here.
-- Next action: full PR diff review plus a pinned-base comparison of the two World Model snapshot test failures. Keep PR Draft, unmerged and governance blocked.
-- This is a candidate-only breadcrumb; `main` routing remains determined by `CURRENT-STATE.md` on live `main`.
+- Review receipt: [PR #473 full static review — residual tunnel executor and World Model baseline handoff](./CHAT-ARCH-2026-10-23-phase1-full-pr-review-blocker-and-baseline-handoff.md).
+- Reviewed current pre-documentation HEAD: `846c597b604bb1bd19b4cd18e58c5a7e119b0081`; pinned base / live `main`: `2a5ac42fabbd7c6a66591d127e379432495ad3bc`.
+- Disposition: `FULL_PR_STATIC_REVIEW=FAIL`; `common_sense_engine.py` still registers an auto-executable `start_tunnel` route via the Common Sense MCP tool. A broader Cloudflared CLI `tunnel` verb remains a secondary route requiring approval-boundary review.
+- The two World Model tests remain `UNRESOLVED`; no coordinator execution or baseline comparison was possible in this environment. Owner-reported 48 focused passes are not independently reproduced.
+- Next: run only the two named tests on pinned base and pre-repair candidate before editing source; then close tunnel launch routes with narrow regression tests in the same PR. Keep PR #473 Draft, unmerged and governance blocked.
+- This is candidate-only continuity; live `main` routing remains determined solely by `CURRENT-STATE.md` on live `main`.
+
 
 ---
 
