@@ -1,4 +1,4 @@
-## CURRENT-STATE ROUTING PROPOSAL — Owner ratified Option D; no bootstrap (2026-10-23)
+## CURRENT-STATE ROUTING — Owner ratified Option D; no bootstrap (2026-10-23)
 
 Receipt: [M1A G1 Owner Option D ratification](./CHAT-ARCH-2026-10-23-M1A-G1-owner-option-d-no-bootstrap-ratification-receipt.md), blob `cac492006c51c56ea4abc4dff822785e19c65d93`. This routing update originated on isolated branch `codex/iabv-option-d-ratification-20261023`, based on verified `main` commit `439d9604037f156160a970dd33d1b3ad76009bdf`, and was submitted for review via PR #472. Revalidate live `main` to determine whether it is currently canonical. `CURRENT-STATE.md` remains the sole routing authority. The previous `OWNER_DECISION_NOT_CAPTURED` snapshot is superseded by the explicit Owner decision below.
 
