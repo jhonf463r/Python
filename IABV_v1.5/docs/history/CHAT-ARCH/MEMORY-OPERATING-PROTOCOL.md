@@ -4,7 +4,9 @@ Current decision receipt: [M1A G1 Owner Option D ratification](./CHAT-ARCH-2026-
 
 Keep provenance exact: the receipt records an explicit Owner statement, not an independently authenticated identity event. The Owner's report means no qualifying independent authority is known to them; it does not prove authority assets are absent. Preserve `AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED`, never retry a denied reader or use another tool to bypass a denial, and do not ask the same decision again. Entra/Authenticator setup remains completed Owner-reported progress and must not be repeated. `CURRENT-STATE.md` is the sole current route/`NEXT_ACTION` authority. All gates remain fail-closed.
 
----## OVERRIDING LATEST ROUTING — Entra identity prepared; no-cost bridge-security review completed (2026-10-23)
+---
+
+## OVERRIDING LATEST ROUTING — Entra identity prepared; no-cost bridge-security review completed (2026-10-23)
 
 Latest new-chat handoff: [M1A G1 Entra identity and bridge-security continuity handoff](./CHAT-ARCH-2026-10-23-M1A-G1-new-chat-continuity-handoff-entra.md), blob `38405887fd8188c58f69ea37d94e55e8dd15806e`.
 Bounded static assessment: [M1A G1 Microsoft Entra no-cost integration](./CHAT-ARCH-2026-10-23-M1A-G1-Entra-no-cost-integration-static-assessment.md), blob `025a126f8848cab4ac0e6b33f8bd9f2e4740dda6`.
