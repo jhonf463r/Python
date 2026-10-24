@@ -2724,6 +2724,26 @@ class LocalCliToolAdapter:
                         blocked=True,
                     )
 
+        if is_cloudflared and sandbox:
+            # ToolSandbox runs before the approval gate. Never invoke cloudflared
+            # in this phase, even for inspection commands; approval can only
+            # lead to the later non-sandbox adapter call.
+            return {
+                'success': True,
+                'output_text': '[SANDBOX] cloudflared inspection validated; no process invoked.',
+                'extracted_data': {},
+                'artifacts': [],
+                'error_message': '',
+                'execution_ms': 0,
+                'metadata': {
+                    'sandbox': True,
+                    'blocked': False,
+                    'simulated': True,
+                    'reason': 'cloudflared_process_deferred_until_approval',
+                    'executable': executable,
+                },
+            }
+
         cmd_list = [executable, *tokens]
         try:
             completed = subprocess.run(
