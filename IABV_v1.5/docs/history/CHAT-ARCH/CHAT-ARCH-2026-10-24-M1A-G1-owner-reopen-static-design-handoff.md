@@ -165,7 +165,8 @@ TAREA: M1A_G1_REOPENED_GBA_ROOT_CEREMONY_ADVERSARIAL_STATIC_REVIEW
 ROL: revisor independiente, adversarial y source-grounded de seguridad/arquitectura.
 REPOSITORIO: https://github.com/jhonf463r/Python
 PR documental de continuidad ya fusionado: #482
-BASE FIJADA: c3bc9d8b4f727483081cf24650d4e7209687024c
+BASE HISTÓRICA PRE-REAPERTURA: c3bc9d8b4f727483081cf24650d4e7209687024c
+CHECKPOINT MAIN OBSERVADO TRAS LA ADOPCIÓN DOCUMENTAL: 44e74a503905a82e8a76d6116d5814824e58b2c5 (revalidar main al comenzar la revisión; no asumir que este SHA sigue siendo el actual)
 DISEÑO GBA CANDIDATO: commit 675c3bdd046de04e4e7d6bb70d616dbce1354e06
 BLOB DEL DISEÑO: feb61c72e44ec61179fba7827515ab58348f4890
 RECONCILIACIÓN DEL DISEÑO: blob b3a138f4fcf521071e6d0374a81523b78dc66dda
@@ -177,14 +178,14 @@ OBJETIVO:
 Determinar si existe un diseño de raíz de confianza para el bootstrap de IABV que no sea circular, esté justificado por evidencia disponible, pueda mantenerse con presupuesto cero y no requiera exponer HTTP/MCP públicamente. No intentes “hacer que el diseño pase”: debes intentar refutarlo y preservar el bloqueo cuando falte autoridad.
 
 LECTURA DIRIGIDA:
-1. Revalida refs de GitHub y abre los cinco front doors en este orden:
+1. Revalida el SHA actual de refs/heads/main y abre los cinco front doors desde el latest main observado en ese momento, en este orden. El SHA histórico pre-reapertura anterior se usa solo para reconstruir cronología; no leas únicamente ese commit antiguo ni tomes su ruta Option D como la ruta vigente:
    - IABV_v1.5/AGENTS.md
    - IABV_v1.5/docs/history/CHAT-ARCH/README.md
    - IABV_v1.5/docs/history/CHAT-ARCH/CURRENT-STATE.md
    - IABV_v1.5/docs/history/CHAT-ARCH/CONTEXT-INDEX.md
    - IABV_v1.5/docs/history/CHAT-ARCH/MEMORY-OPERATING-PROTOCOL.md
 2. Lee este handoff ya adoptado en main por PR #482 como contexto de continuidad canónico. El diseño GBA del commit/blob fijado sigue siendo una propuesta documental histórica, no una autoridad runtime ni un diseño operacional adoptado.
-3. Lee el diseño GBA en el commit/blob fijados, su reconciliación estática, M1A v1.0.1, la matriz de ocho prerrequisitos, Entry 274, el resultado terminal del bootstrap G1 previo, la investigación OS/Windows y el diseño TPM pin citados en el handoff.
+3. Lee el diseño GBA en el commit/blob fijados, su reconciliación estática, M1A v1.0.1, la matriz de ocho prerrequisitos, Entry 274, el resultado terminal del bootstrap G1 previo, la investigación OS/Windows y el diseño TPM pin citados en el handoff. Distingue el estado canónico actual (reapertura de diseño/static review, adoptada por PR #482 y corregida por PR #483) del estado histórico anterior a esa decisión.
 4. No repitas inventarios amplios ya cerrados. Usa historial existente y solo búsquedas dirigidas para resolver una pregunta concreta.
 
 PREGUNTAS ADVERSARIALES OBLIGATORIAS:
