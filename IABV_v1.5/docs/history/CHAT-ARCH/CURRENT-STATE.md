@@ -32,8 +32,8 @@ AZURE_BILLING_STATE=NOT_VERIFIED
 COST_POLICY=NO_PAID_SERVICES; NO_RESOURCE_DEPLOYMENT
 BRIDGE=BRIDGE_NOT_READY
 AUTOMATIC_FOLLOW_ON=FALSE
-IMMEDIATE_NEXT_ACTION=REVIEW_PROTOCOL_CORRECTION_DRAFT
-NEXT_G1_DECISION=ONE_CONTEXTUALIZED_OWNER_DECISION_ON_VERIFIABLE_AUTHORITY_OR_EXPLICIT_OPTION_D_RATIFICATION; PRESENT_ONCE_AFTER_PROTOCOL_CORRECTION_IS_ADOPTED; DO_NOT_REPEAT_UNLESS_NEW_EVIDENCE_CHANGES_THE_DECISION
+NEXT_ACTION=ONE_CONTEXTUALIZED_OWNER_DECISION_ON_VERIFIABLE_AUTHORITY_OR_EXPLICIT_OPTION_D_RATIFICATION; PRESENT_ONCE_AFTER_PROTOCOL_ADOPTION; DO_NOT_REPEAT_UNLESS_NEW_EVIDENCE_CHANGES_THE_DECISION
+PROTOCOL_CORRECTION_PR=OPEN_DRAFT; NOT_MERGED
 ```
 
 **No gate is closed by this proposal.** The Owner's reported Entra/Authenticator setup is remembered as completed human-authentication progress. Existing independent authority remains `UNKNOWN; NOT_INSPECTED`; the Codex result `SUPPORTED_ROUTE_NOT_FOUND` is not proof that such assets do not exist. The Owner has not explicitly ratified Option D. Do not re-open account setup, retry the denied reader, use an alternate tool to bypass the denial, register an app, alter product code, run tests/build/runtime/transport, launch a tunnel, incur costs, merge, deploy, or release a block under this documentation-only change.
