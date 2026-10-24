@@ -54,9 +54,9 @@ AUTOMATIC_FOLLOW_ON=FALSE
 
 La propia revisión dice que G4–G8 no fueron evaluados/cerrados. No se infiere una capacidad implementada, una identidad de proceso, una vinculación de servidor ni una autorización de lectura a partir del informe, de su archivo o de un hash.
 
-## Enrutamiento propuesto
+## Enrutamiento de continuidad registrado
 
-La única acción siguiente registrada en el candidato de continuidad es:
+Este recibo registra el siguiente destino de continuidad:
 
 ```text
 ACTIVE_TASK=M1A_G1_WAIT_FOR_INDEPENDENT_ROOT_EVIDENCE
@@ -68,7 +68,7 @@ NEXT_ACTION=MAINTAIN_FAIL_CLOSED_PENDING_PREEXISTING_INDEPENDENT_ROOT_AND_MANDAT
 NEXT_REVIEW_TARGET=NONE_UNTIL_GENUINELY_NEW_INDEPENDENT_EVIDENCE
 ```
 
-No se propone otra investigación técnica, una nueva revisión del mismo expediente ni una acción alternativa por lectores denegados. La ruta solo puede reconsiderarse ante evidencia independiente, genuinamente nueva y pertinente sobre una raíz preexistente, su custodia/mandato y la verificación de sus vinculaciones. `CURRENT-STATE.md` continúa siendo la única autoridad para el enrutamiento presente; la adopción de este candidato requiere revisión y merge explícitos.
+No se propone otra investigación técnica, una nueva revisión del mismo expediente ni una acción alternativa por lectores denegados. La ruta solo puede reconsiderarse ante evidencia independiente, genuinamente nueva y pertinente sobre una raíz preexistente, su custodia/mandato y la verificación de sus vinculaciones. `CURRENT-STATE.md` continúa siendo la única autoridad de enrutamiento vigente. Este recibo registra el destino documental de continuidad; su adopción canónica ocurre con el merge explícito de la PR y se verifica mediante fetch-back desde `main`.
 
 ## Fuentes verificadas
 
