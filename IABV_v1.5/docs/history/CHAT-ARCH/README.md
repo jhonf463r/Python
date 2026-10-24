@@ -1,3 +1,9 @@
+## New-chat handoff — PR #473 verification preflight and governance boundary (2026-10-23)
+
+Start here: [New-chat handoff — PR #473 and verification preflight](./CHAT-ARCH-2026-10-23-new-chat-handoff-pr473.md). Live main remains 2a5ac42fabbd7c6a66591d127e379432495ad3bc; its CURRENT-STATE is authoritative and retains Option D/no-bootstrap, IMPLEMENTATION=NOT_AUTHORIZED, TESTS=NOT_RUN, and fail-closed routing. PR #473 is OPEN / DRAFT / UNMERGED. Codex's local worktree was clean but stale at cb1a8b545bc29b13b6da1ada0f0204601805f7dc; preserve it. The candidate's current target blobs are recorded in the handoff. New detached worktree identity preflight only; no test execution until a genuinely new explicit Owner decision reopens the exact test scope. The latest Cloudflared access/sandbox tests remain unrun; previous Owner-reported 11 tests refer to earlier generic-shell changes.
+
+---
+
 ## ChatGPT continuity — local verification worktree mismatch recorded (2026-10-23)
 
 Preflight receipt: [Local verification worktree mismatch and safe reselection](./CHAT-ARCH-2026-10-23-local-verification-worktree-mismatch.md). The Codex attempt found a clean but stale local worktree at cb1a8b545bc29b13b6da1ada0f0204601805f7dc with old adapter/test blobs, and correctly did not run tests or modify files. Remote PR #473 was verified at 52ceb9d362d15191147da5d44de4d3d4ee9a518d, while live main remained 2a5ac42fabbd7c6a66591d127e379432495ad3bc. Preserve the old worktree; create a new detached sibling worktree at the revalidated current PR HEAD, verify exact blobs, and reread canonical routing. Live main CURRENT-STATE currently prohibits tests and retains no-bootstrap/fail-closed; stop after preflight unless a new explicit Owner decision reopens the test scope. PR #473 remains OPEN / DRAFT / UNMERGED.
