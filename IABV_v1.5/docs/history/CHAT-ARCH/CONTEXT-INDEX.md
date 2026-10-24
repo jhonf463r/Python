@@ -1,10 +1,11 @@
-<!-- OWNER-DECISION-OVERRIDE: candidate-only writeback from 2026-10-24; not canonical until adopted on live main and fetched back. -->
+<!-- OWNER-DECISION-OVERRIDE: adopted in documentation PR #482 and fetched back from live main on 2026-10-24; design/static analysis only. -->
 
 ## Latest Owner decision — reopen G1 design/static review only (2026-10-24)
 
-The Owner explicitly superseded the prior `RATIFIED_OPTION_D_NO_BOOTSTRAP` decision for purposes of reopening analysis and authorized a zero-budget, non-public design/static review only. This chat message does not authenticate a runtime principal, create a trust root, establish G1, or authorize code changes, credentials/apps, tests, runtime, transport, deployment, spending or block release. Keep assets `UNKNOWN; NOT_INSPECTED`, G1/G2/G3 unestablished, and protected reads fail-closed. Do not repeat Entra setup or ask the Owner to make the same reopen decision again.
+The Owner explicitly superseded the prior `RATIFIED_OPTION_D_NO_BOOTSTRAP` decision for purposes of reopening analysis and authorized a zero-budget, non-public design/static review only. This chat message does not authenticate a runtime principal, create a trust root, establish G1, or authorize code changes, credentials/apps, tests, runtime, transport, deployment, spending or block release. Keep authority assets `UNKNOWN; NOT_INSPECTED`, G1/G2/G3 unestablished, and protected reads fail-closed. Do not repeat Entra setup or ask the Owner to make the same reopen decision again.
 
-The proposed new route and required static-review prompt are recorded in [M1A G1 Owner reopening — static design handoff](./CHAT-ARCH-2026-10-24-M1A-G1-owner-reopen-static-design-handoff.md). This writeback is candidate-only on branch `codex/m1a-g1-reopen-static-design-20261024`, based on live main `c3bc9d8b4f727483081cf24650d4e7209687024c`; `CURRENT-STATE.md` is the sole routing authority. Until adoption, do not claim this branch changed canonical main.
+The routing handoff is [M1A G1 Owner reopening — static design handoff](./CHAT-ARCH-2026-10-24-M1A-G1-owner-reopen-static-design-handoff.md). PR #482 was merged into live `main` at `62f488cef9e3defbb56304a4d8ae646f4f6b30ef`, and the five routing files plus handoff were fetched back. `CURRENT-STATE.md` remains the sole current routing authority. The technical bridge remains not ready while the root and bindings are unestablished.
+
 
 ---
 
