@@ -1,3 +1,48 @@
+<!-- OWNER-DECISION-OVERRIDE: candidate-only writeback from 2026-10-24. Do not treat as canonical until this documentation PR is adopted on live main and fetched back. -->
+
+## LATEST OWNER ROUTE PROPOSAL — G1 reopened for design/static review only (2026-10-24)
+
+The Owner explicitly withdrew the prior `RATIFIED_OPTION_D_NO_BOOTSTRAP` decision for the purpose of reopening analysis and authorized a zero-budget, non-public design/static review. This overrides the preceding historical routing **within this candidate branch only**. Owner-decision provenance is an explicit chat message, not an independently authenticated runtime identity event.
+
+Handoff: [M1A G1 Owner reopening — static design handoff](./CHAT-ARCH-2026-10-24-M1A-G1-owner-reopen-static-design-handoff.md).
+
+```text
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+ACTIVE_TASK=M1A_G1_REOPENED_GBA_ROOT_CEREMONY_ADVERSARIAL_STATIC_REVIEW
+OWNER_DECISION=REOPENED_G1_DESIGN_AND_STATIC_REVIEW_ONLY
+OWNER_DECISION_PROVENANCE=EXPLICIT_OWNER_CHAT_MESSAGE_2026-10-24
+OWNER_DECISION_CANONICAL_STATUS=CANDIDATE_ONLY_UNTIL_MAIN_ADOPTION
+AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+QUALIFYING_INDEPENDENT_ROOT=NOT_ESTABLISHED
+ROOT_CUSTODIAN_AND_INDEPENDENT_VERIFICATION_CHANNEL=NOT_ESTABLISHED
+IDENTITY_PROVIDER_CANDIDATE=MICROSOFT_ENTRA_ID; OWNER_REPORTED_READY; NOT_YET_TRUSTED_BY_IABV
+OWNER_TO_WINDOWS_PRINCIPAL=NOT_ESTABLISHED
+BOOTSTRAP_AUTHORITY_TO_ISSUER=NOT_ESTABLISHED
+ISSUER_TO_EXACT_SERVER=NOT_ESTABLISHED
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3_VERSIONED_TARGET_RESOLVER=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+GOVERNANCE=KEEP_BLOCKED_WHILE_ROOT_AND_BINDINGS_ARE_UNESTABLISHED
+READ_LIST=FAIL_CLOSED
+IMPLEMENTATION=NOT_AUTHORIZED
+CREDENTIAL_OR_APP_CREATION=NOT_AUTHORIZED
+TESTS=NOT_AUTHORIZED; NOT_RUN
+BUILD=NOT_AUTHORIZED; NOT_RUN
+RUNTIME=NOT_AUTHORIZED; NOT_RUN
+REAL_TRANSPORT=NOT_AUTHORIZED; NOT_RUN
+PUBLIC_TUNNEL=DO_NOT_LAUNCH_OR_EXPOSE
+COST_POLICY=ZERO_BUDGET; NO_PAID_SERVICES; NO_RESOURCE_DEPLOYMENT
+BRIDGE=BRIDGE_NOT_READY
+AUTOMATIC_FOLLOW_ON=FALSE
+NEXT_ACTION=BOUNDED_ADVERSARIAL_STATIC_REVIEW_OF_ROOT_CEREMONY_AND_GBA_DESIGN
+NEXT_REVIEW_TARGET=CLAUDE_OPUS_4_6_IN_ANTIGRAVITY; OWNER_REPORTED_AVAILABILITY
+```
+
+This is a proposed routing change from `main=c3bc9d8b4f727483081cf24650d4e7209687024c`; it is not canonical until adopted on live `main` and fetched back. Do not infer absence of authority assets from `UNKNOWN; NOT_INSPECTED`. The explicit reopen decision does not create a root, authorize implementation, relax fail-closed behavior, or change any cost/runtime gate.
+
+---
+
 <!-- CONTINUITY-PROTOCOL-OVERRIDE: begin; process/navigation only; does not supersede current-state routing below. -->
 ## Mandatory objective-first continuity protocol — navigation rule, not a new technical route (2026-10-23)
 
