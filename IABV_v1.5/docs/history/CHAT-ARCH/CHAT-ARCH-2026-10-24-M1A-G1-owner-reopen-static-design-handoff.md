@@ -154,3 +154,76 @@ A polished protocol without independently supported initial authority is not a p
 - Prior terminal G1 attempt: `CHAT-ARCH-2026-10-22-M1A-G1-trust-bootstrap-candidate-attempt-result.md`, blob `9d81b011244dfc90648eaf30d0ae33292c5a5ef8`.
 - TPM pin design: `CHAT-ARCH-2026-10-23-M1A-G1-independent-TPM-pin-design.md`, blob `7ff1580af2f45c0606f21daf2f966b76ead7e7ac`.
 
+
+
+## 10. Prompt literal para la revisión independiente (copiar y pegar)
+
+Destino recomendado: **Claude Opus 4.6 en Antigravity**, como revisor adversarial de diseño. No es prompt para Codex de implementación. La disponibilidad de ese modelo en Antigravity es un dato reportado por el Owner, no prueba de acceso al repositorio. Si el entorno no puede leer las referencias fijadas, el revisor debe parar y pedir que se adjunten los documentos necesarios, no rellenar huecos con suposiciones.
+
+```text
+TAREA: M1A_G1_REOPENED_GBA_ROOT_CEREMONY_ADVERSARIAL_STATIC_REVIEW
+ROL: revisor independiente, adversarial y source-grounded de seguridad/arquitectura.
+REPOSITORIO: https://github.com/jhonf463r/Python
+PR documental candidato de continuidad: #482
+BASE FIJADA: c3bc9d8b4f727483081cf24650d4e7209687024c
+DISEÑO GBA CANDIDATO: commit 675c3bdd046de04e4e7d6bb70d616dbce1354e06
+BLOB DEL DISEÑO: feb61c72e44ec61179fba7827515ab58348f4890
+RECONCILIACIÓN DEL DISEÑO: blob b3a138f4fcf521071e6d0374a81523b78dc66dda
+
+AUTORIZACIÓN EXACTA:
+El Owner reabrió M1A_G1_TRUST_BOOTSTRAP_AUTHORITY_BOUNDARY únicamente para diseño y revisión estática, con presupuesto cero y sin exponer el puente públicamente. NO hay autorización para crear credenciales, claves, apps o servicios; cambiar código; ejecutar pruebas/build/runtime/MCP; inspeccionar el equipo local o lectores protegidos; lanzar túneles; gastar; desplegar; mezclar código de producto o liberar bloqueos.
+
+OBJETIVO:
+Determinar si existe un diseño de raíz de confianza para el bootstrap de IABV que no sea circular, esté justificado por evidencia disponible, pueda mantenerse con presupuesto cero y no requiera exponer HTTP/MCP públicamente. No intentes “hacer que el diseño pase”: debes intentar refutarlo y preservar el bloqueo cuando falte autoridad.
+
+LECTURA DIRIGIDA:
+1. Revalida refs de GitHub y abre los cinco front doors en este orden:
+   - IABV_v1.5/AGENTS.md
+   - IABV_v1.5/docs/history/CHAT-ARCH/README.md
+   - IABV_v1.5/docs/history/CHAT-ARCH/CURRENT-STATE.md
+   - IABV_v1.5/docs/history/CHAT-ARCH/CONTEXT-INDEX.md
+   - IABV_v1.5/docs/history/CHAT-ARCH/MEMORY-OPERATING-PROTOCOL.md
+2. Lee el handoff de esta tarea en la rama de PR #482 como CANDIDATE_ONLY; no lo trates como canon hasta que se adopte en main.
+3. Lee el diseño GBA en el commit/blob fijados, su reconciliación estática, M1A v1.0.1, la matriz de ocho prerrequisitos, Entry 274, el resultado terminal del bootstrap G1 previo, la investigación OS/Windows y el diseño TPM pin citados en el handoff.
+4. No repitas inventarios amplios ya cerrados. Usa historial existente y solo búsquedas dirigidas para resolver una pregunta concreta.
+
+PREGUNTAS ADVERSARIALES OBLIGATORIAS:
+A. Compara las rutas A (raíz preexistente del Owner), B (autoridad organizacional ya existente), C (ceremonia para una raíz nueva delegada por una raíz preconfiable) y D (sin ancla demostrada). Para cada una enumera premisas, evidencia real, evidencia ausente, coste, canal independiente y riesgos circulares.
+B. Identifica si alguna ruta A/B/C está respaldada por EVIDENCIA ACTUAL; no basta con que sea técnicamente concebible. No deduzcas activos ausentes a partir de AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED.
+C. Analiza el rol de Entra con precisión: la identidad y MFA fueron OWNER_REPORTED; no está aún confiada por IABV. Distingue autenticación humana, mandato de Owner del proyecto, principal Windows, autoridad raíz, emisor, lector y resolución de objetivo. No asumas app registration, access token, audience, tenant validation ni estado de facturación ya verificados.
+D. Evalúa si la frontera de Windows (service SID restringido, key ACL/CNG, named pipe con DACL explícita y posible WebAuthn/TPM) puede reforzar la separación DESPUÉS de una raíz verificada. No la uses como fuente inicial automática de autoridad. Identifica qué depende de capacidades locales aún no verificadas y el threat model de administrador/SYSTEM/kernel.
+E. Traza el grafo completo: Owner responsable → autoridad/raíz autenticada → delegación GBA → custodia/uso del issuer → instancia exacta servidor/reader → decisión por operación → revocación fresca → release independiente de cada bloqueo → recibos durables. Marca cada arista como ESTABLISHED, OWNER_REPORTED, DESIGN_ONLY, NOT_VERIFIED o NOT_ESTABLISHED.
+F. Busca contraejemplos y ataques: TOFU/first-run; clave generada por el host objetivo; fingerprint mostrado por el propio host; GitHub approval/hash como si probara claims de máquina; Entra MFA usado como permiso; caller-supplied SID/PID/path/instance ID; issuer==requester o issuer==reader; raíz o catálogo sustituido; revocación offline/stale; servicio instalado por un administrador no verificado; clonación/reinstalación; rollback de ledger/epoch; presupuesto o entrega inciertos.
+G. Decide si hay un paso mínimo y legítimo que cambie el estado sin buscar secretos ni evadir rutas denegadas, o si NO existe un paso sustentado bajo las restricciones. No preguntes al Owner que repita búsquedas históricas ya disponibles.
+H. Explica la relación con el objetivo final: qué permitiría avanzar hacia un puente gobernado y qué bloquea todavía G1/G2/G3, dejando claro que un diseño aprobado no cierra G1–G8.
+
+RESTRICCIONES:
+- Solo lectura estática de GitHub público y fuentes técnicas oficiales públicas.
+- No accedas a checkout local, dispositivo del Owner, data/, SQLite, .env, secretos, lectores protegidos ni vías alternativas para eludir denegaciones.
+- No ejecutes shell/PowerShell, tests, builds, runtime, MCP, servicios ni transporte real.
+- No crees/inscribas claves, credenciales, apps, cuentas, servicios, trust stores ni túneles.
+- No escribas en GitHub: no edites archivos, ramas, PR, issues ni workflows.
+- Cita cada hallazgo material con path + commit/blob exacto o enlace técnico oficial.
+- Clasifica procedencia como OWNER_REPORTED, STATIC_SOURCE_CONFIRMED, OFFICIAL_DOC_CONFIRMED, DESIGN_PROPOSAL, NOT_VERIFIED o UNRESOLVED.
+- Si no puedes acceder a una referencia, registra ACCESS_NOT_AVAILABLE y para esa afirmación; no inventes contenido ni declares éxito.
+- Detente al entregar un único informe. No hay follow-on automático.
+
+FORMATO OBLIGATORIO DE SALIDA:
+VERDICT = DESIGN_PASS_WITH_EVIDENCED_PATH | CONDITIONAL_DESIGN_ONLY | BLOCKED_NO_NONCIRCULAR_ROOT
+
+1. CLAIMS_AND_PROVENANCE
+2. A_B_C_D_COMPARISON
+3. MINIMAL_TRUST_GRAPH (todas las aristas y estados)
+4. ATTACKS_AND_COUNTEREXAMPLES (mínimo cinco casos concretos)
+5. MINIMUM_NEXT_EVIDENCE (una sola acción mínima o “no supported step”)
+6. GATE_EFFECT (G1, G2, G3; por qué G4–G8 siguen separados)
+7. COST_AND_EXPOSURE
+8. STOP_CONDITIONS
+9. PROVENANCE_LIMITATIONS
+10. NEXT_ACTION (una acción, sin auto-follow-on)
+11. SOURCE_CHANGE=NONE; TESTS=NOT_RUN; BUILD=NOT_RUN; RUNTIME=NOT_RUN; REAL_TRANSPORT=NOT_RUN
+
+REGLA DE ACEPTACIÓN:
+Un documento elegante sin autoridad inicial no es un PASS. Si la raíz independiente no está sustentada, devuelve BLOCKED_NO_NONCIRCULAR_ROOT, identifica la arista exacta faltante y conserva fail-closed. No fabrique una autoridad para demostrar progreso.
+```
+
