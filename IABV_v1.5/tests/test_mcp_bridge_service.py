@@ -69,8 +69,10 @@ class _FakeTunnelRunner:
 class _FakeWorldModelService:
     def __init__(self, snapshot: WorldModelSnapshot | None) -> None:
         self._snapshot = snapshot
+        self.current_model_calls = 0
 
     def current_model(self) -> WorldModelSnapshot | None:
+        self.current_model_calls += 1
         return self._snapshot
 
 
@@ -159,6 +161,7 @@ def test_ui_service_refuses_stdio_without_starting_runners(tmp_path: Path) -> No
     status = svc.set_enabled(True)
     _assert_no_dispatch(status, server, tunnel)
     assert "canal stdio" in (status.last_error or "")
+    assert svc._container.world_model_service.current_model_calls == 0
 
 
 @pytest.mark.parametrize("transport", ["sse", "streamable-http"])
@@ -169,6 +172,7 @@ def test_ui_service_refuses_network_transports_without_starting_runners(
     status = svc.set_enabled(True)
     _assert_no_dispatch(status, server, tunnel)
     assert "autorización" in (status.last_error or "")
+    assert svc._container.world_model_service.current_model_calls == 0
 
 
 def test_unknown_transport_falls_back_to_safe_default(tmp_path: Path) -> None:
@@ -188,7 +192,7 @@ def test_default_runner_compatibility_shims_refuse_direct_start() -> None:
     assert tunnel_runner.url is None
 
 
-def test_active_bridge_block_still_denies_before_runners(tmp_path: Path) -> None:
+def test_active_bridge_block_does_not_trigger_world_model_lookup_or_runner(tmp_path: Path) -> None:
     snapshot = _default_snapshot(blocks=[OperationalBlockRecord(
         block_type="autonomy_disabled",
         assistant_kind="mcp_bridge",
@@ -197,12 +201,14 @@ def test_active_bridge_block_still_denies_before_runners(tmp_path: Path) -> None
     )])
     svc, server, tunnel = _build_service(tmp_path, snapshot=snapshot)
     status = svc.set_enabled(True)
-    assert status.governance_blocked is True
-    assert "Autonomía" in (status.governance_reason or "")
+    assert status.governance_blocked is False
+    assert status.governance_reason is None
+    assert "autorización independiente" in (status.last_error or "")
+    assert svc._container.world_model_service.current_model_calls == 0
     _assert_no_dispatch(status, server, tunnel)
 
 
-def test_global_block_still_denies_before_runners(tmp_path: Path) -> None:
+def test_global_block_does_not_trigger_world_model_lookup_or_runner(tmp_path: Path) -> None:
     snapshot = _default_snapshot(blocks=[OperationalBlockRecord(
         block_type="global_shutdown",
         assistant_kind="*",
@@ -211,7 +217,10 @@ def test_global_block_still_denies_before_runners(tmp_path: Path) -> None:
     )])
     svc, server, tunnel = _build_service(tmp_path, snapshot=snapshot)
     status = svc.set_enabled(True)
-    assert status.governance_blocked is True
+    assert status.governance_blocked is False
+    assert status.governance_reason is None
+    assert "autorización independiente" in (status.last_error or "")
+    assert svc._container.world_model_service.current_model_calls == 0
     _assert_no_dispatch(status, server, tunnel)
 
 

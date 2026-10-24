@@ -1,3 +1,31 @@
+## CURRENT-STATE ROUTING — PR #473 legacy AppBootstrap launch closed (2026-10-23)
+
+Amendment receipt: the Phase 1 resumption receipt below now records the bounded static correction for the separate `AppBootstrap` launch path. The ordinary `AppBootstrap.run()` path no longer checks `IABV_SKIP_MCP_AUTOSTART` or probes the MCP port to decide whether to launch; it does not schedule MCP, Cloudflare, or supervisor work. The legacy process hooks return without calling `Popen`, and the supervisor is inert. `MCPBridgeService` now rejects at the start of `_start_locked()`, before a World Model lookup or runner call. Local client-managed stdio remains the only supported server transport; HTTP/SSE and public tunnels remain disabled.
+
+```text
+ACTIVE_TASK=PHASE1_MCP_BOOTSTRAP_AUTOSTART_CLOSURE
+PR=473; STATE=OPEN_DRAFT_UNMERGED
+BASE_SHA=2a5ac42fabbd7c6a66591d127e379432495ad3bc
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+RATIFIED_OPTION_D_NO_BOOTSTRAP=REMAINS_IN_FORCE
+G1/G2/G3=NOT_ESTABLISHED
+READ_LIST=FAIL_CLOSED
+PROTECTED_READS=NOT_AUTHORIZED
+PUBLIC_TUNNEL=PROHIBITED
+FOCUSED_TESTS=27_PASSED
+PRIOR_BROAD_RUN=86_PASSED; 2_FAILURES_OBSERVED; BASELINE_STATUS=UNRESOLVED
+BUILD=NOT_RUN
+RUNTIME=NOT_RUN
+REAL_TRANSPORT=NOT_RUN
+GOVERNANCE=KEEP_BLOCKED
+BRIDGE=BRIDGE_NOT_READY
+NEXT_ACTION=INDEPENDENT_REVIEW_OF_PR_473_AMENDMENT
+```
+
+The prior broad run's two World Model fixture failures were observed on the earlier PR candidate. They were not compared against the base in a reference run, so this overlay does not label them pre-existing. Only the focused tests listed in the amendment receipt were run for this correction. No gate is closed.
+
+---
+
 ## CURRENT-STATE ROUTING — Owner authorizes bounded Phase 1 transport hardening (2026-10-23)
 
 Decision and scope receipt: [Phase 1 Owner resumption](./CHAT-ARCH-2026-10-23-phase1-transport-hardening-owner-resumption.md). This is a new, explicit, bounded Owner authorization to resume local candidate changes using a static pre-scan substitute. It does not revoke `RATIFIED_OPTION_D_NO_BOOTSTRAP`, establish trust, authorize protected reads, or release a governance block. The receipt records the inspected source scope and final verification when available.

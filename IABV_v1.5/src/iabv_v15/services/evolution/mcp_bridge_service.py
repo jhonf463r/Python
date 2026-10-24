@@ -281,22 +281,14 @@ class MCPBridgeService:
     # Internals
 
     def _start_locked(self) -> MCPBridgeStatus:
-        block = self._governance_gate_block()
         with self._lock:
-            if block is not None:
-                self._status.running = False
-                self._status.tunnel_url = None
-                self._status.governance_blocked = True
-                self._status.governance_reason = block
-                self._status.last_error = None
-                self._update_state("failed")
-                return self.status()
-
             # This UI-owned service cannot provide a client-managed stdio
             # channel, and unauthenticated network transports are not
-            # authorized. Refuse before starting either runner.
+            # authorized. Refuse before even consulting WorldModel or runners.
             self._status.running = False
             self._status.tunnel_url = None
+            self._status.governance_blocked = False
+            self._status.governance_reason = None
             self._status.last_error = (
                 "MCPBridgeService no puede iniciar un canal stdio propiedad "
                 "del cliente; sse/streamable-http permanecen deshabilitados "

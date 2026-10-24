@@ -82,3 +82,58 @@ disclosed rather than represented as no data-directory contact.
 This receipt describes only the bounded candidate work and its evidence. It is
 not an independent review, acceptance, merge, deployment or release of any
 governance gate.
+
+## Amendment — inherited AppBootstrap launch path closed for PR #473
+
+The independent review identified a separate legacy route in `bootstrap.py`.
+The original PR candidate still had `_start_mcp_subprocess()`,
+`_start_tunnel_subprocess()`, the restart-capable `_mcp_supervision_loop()`,
+and a deferred path controlled by `IABV_SKIP_MCP_AUTOSTART`. The amendment
+removes that deferred path and the port probe from `AppBootstrap.run()`;
+retains the legacy methods as unconditional no-op refusal hooks; makes the
+supervision loop inert; and changes `_start_mcp_supervisor()` so it creates no
+thread. The process hooks no longer contain a `Popen` path. No process is
+terminated based on port occupancy. Other shutdown cleanup remains unchanged.
+
+`MCPBridgeService._start_locked()` now rejects before calling
+`_governance_gate_block()`, reading `WorldModelService.current_model()`, or
+invoking either runner. The status records the fail-closed service refusal;
+the World Model is not consulted by this permanently disabled UI-owned start
+path. `stdio` remains available only to an explicit local client. Network
+transports, public tunnels, real transport and application startup remain
+disabled/not run.
+
+### Amendment verification
+
+Focused commands used Python 3.14.4, `PYTHONDONTWRITEBYTECODE=1`, the candidate
+`src` on `PYTHONPATH`, and pytest cache disabled:
+
+```text
+tests/test_bootstrap_mcp_autostart_disabled.py plus
+tests/test_mcp_bridge_service.py: 20 passed
+tests/test_startup_evolution.py::TestBackgroundSubprocessLaunch: 4 passed
+tests/test_mcp_server.py selected transport rejection tests: 3 passed, 69 deselected
+TOTAL_FOCUSED=27_PASSED
+```
+
+The first run of the service/bootstrap pair reported 18 passed and 2 failed
+because two service tests still expected a World Model gate lookup. The tests
+were updated to require the new contract (no lookup, no runner, refusal status)
+and the rerun passed 20/20. This was a test expectation mismatch introduced by
+the requested ordering change, not evidence of a product regression.
+
+The earlier PR candidate had a separate combined run reporting 86 passed and
+two World Model fake-fixture failures. No base-reference execution was made;
+their status as pre-existing remains `UNRESOLVED`. This amendment did not rerun
+that broad set and does not characterize those failures as pre-existing.
+
+```text
+RATIFIED_OPTION_D_NO_BOOTSTRAP=REMAINS_IN_FORCE
+G1/G2/G3=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+READ_LIST=FAIL_CLOSED
+PUBLIC_TUNNEL=PROHIBITED
+REAL_TRANSPORT=NOT_RUN
+GOVERNANCE=KEEP_BLOCKED
+BRIDGE=BRIDGE_NOT_READY
+```
