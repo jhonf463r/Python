@@ -1,6 +1,7 @@
-## Latest candidate-only continuity — PR #473 targeted static review (2026-10-23)
+## Latest candidate-only continuity — PR #473 full static review (2026-10-23)
 
-New-chat handoff: [Phase 1 MCP transport hardening — targeted static review and new-chat handoff](./CHAT-ARCH-2026-10-23-phase1-transport-hardening-independent-review-handoff.md). It records the exact reviewed source SHA `18feeb0872dfebd583fc1cf70674506277ced09a`, the bounded findings, provenance limits for the reported 48 tests, and the exact next steps. PR #473 remains candidate-only; fetch live PR head and `CURRENT-STATE.md` before proceeding. This receipt does not supersede `main` while unmerged; only the top of `CURRENT-STATE.md` routes the candidate task.
+New handoff: [PR #473 full static review — residual tunnel executor and World Model baseline handoff](./CHAT-ARCH-2026-10-23-phase1-full-pr-review-blocker-and-baseline-handoff.md). The current source diff has a blocking residual tunnel-launch route in Common Sense reasoning; the two World Model snapshot tests remain `UNRESOLVED` because the coordinator could not execute them on base and candidate. Revalidate PR #473 before further action; it remains candidate-only, open as Draft and unmerged. This receipt does not supersede `main`; only the top of `CURRENT-STATE.md` routes the candidate task.
+
 
 ---
 
