@@ -158,15 +158,17 @@ A polished protocol without independently supported initial authority is not a p
 
 ## 10. Prompt literal para la revisión independiente (copiar y pegar)
 
-Destino recomendado: **Claude Opus 4.6 en Antigravity**, como revisor adversarial de diseño. No es prompt para Codex de implementación. La disponibilidad de ese modelo en Antigravity es un dato reportado por el Owner, no prueba de acceso al repositorio. Si el entorno no puede leer las referencias fijadas, el revisor debe parar y pedir que se adjunten los documentos necesarios, no rellenar huecos con suposiciones.
+Destino seleccionado: **Gemini 3.8 Flash en Antigravity**, con nivel de razonamiento alto si la interfaz lo permite. Es el sustituto temporal de Claude Opus para esta única revisión adversarial estática, no un implementador. La disponibilidad de Gemini en la interfaz es OWNER_REPORTED; no prueba acceso efectivo al repositorio. Se selecciona por independencia de proveedor y ajuste a tareas complejas de varios pasos. Si no puede leer una referencia necesaria, devuelve ACCESS_NOT_AVAILABLE y no inventes el contenido. Claude Sonnet 4.6 es reserva únicamente si Gemini no puede realizar la revisión y el Owner vuelve con ese bloqueo; no ejecutes ambas revisiones en paralelo.
 
 ```text
 TAREA: M1A_G1_REOPENED_GBA_ROOT_CEREMONY_ADVERSARIAL_STATIC_REVIEW
+DESTINO: GEMINI_3_8_FLASH_IN_ANTIGRAVITY
+RAZONAMIENTO: HIGH (si la interfaz permite seleccionarlo)
 ROL: revisor independiente, adversarial y source-grounded de seguridad/arquitectura.
 REPOSITORIO: https://github.com/jhonf463r/Python
 PR documental de continuidad ya fusionado: #482
 BASE HISTÓRICA PRE-REAPERTURA: c3bc9d8b4f727483081cf24650d4e7209687024c
-CHECKPOINT MAIN OBSERVADO TRAS LA ADOPCIÓN DOCUMENTAL: 44e74a503905a82e8a76d6116d5814824e58b2c5 (revalidar main al comenzar la revisión; no asumir que este SHA sigue siendo el actual)
+MAIN OBSERVADO AL PREPARAR ESTA REVISIÓN: 18d30d3e9bf0032f01e63a042ed450afcd9a29f9 (revalidar main al comenzar la revisión; no asumir que este SHA sigue siendo el actual)
 DISEÑO GBA CANDIDATO: commit 675c3bdd046de04e4e7d6bb70d616dbce1354e06
 BLOB DEL DISEÑO: feb61c72e44ec61179fba7827515ab58348f4890
 RECONCILIACIÓN DEL DISEÑO: blob b3a138f4fcf521071e6d0374a81523b78dc66dda
@@ -185,7 +187,7 @@ LECTURA DIRIGIDA:
    - IABV_v1.5/docs/history/CHAT-ARCH/CONTEXT-INDEX.md
    - IABV_v1.5/docs/history/CHAT-ARCH/MEMORY-OPERATING-PROTOCOL.md
 2. Lee este handoff ya adoptado en main por PR #482 como contexto de continuidad canónico. El diseño GBA del commit/blob fijado sigue siendo una propuesta documental histórica, no una autoridad runtime ni un diseño operacional adoptado.
-3. Lee el diseño GBA en el commit/blob fijados, su reconciliación estática, M1A v1.0.1, la matriz de ocho prerrequisitos, Entry 274, el resultado terminal del bootstrap G1 previo, la investigación OS/Windows y el diseño TPM pin citados en el handoff. Distingue el estado canónico actual (reapertura de diseño/static review, adoptada por PR #482 y corregida por PR #483) del estado histórico anterior a esa decisión.
+3. Lee el diseño GBA en el commit/blob fijados, su reconciliación estática, M1A v1.0.1, la matriz de ocho prerrequisitos, Entry 274, el resultado terminal del bootstrap G1 previo, la investigación OS/Windows y el diseño TPM pin citados en el handoff. Distingue el estado canónico actual (reapertura de diseño/static review, adoptada por PR #482 y corregida por PR #483 y #484) del estado histórico anterior a esa decisión.
 4. No repitas inventarios amplios ya cerrados. Usa historial existente y solo búsquedas dirigidas para resolver una pregunta concreta.
 
 PREGUNTAS ADVERSARIALES OBLIGATORIAS:
