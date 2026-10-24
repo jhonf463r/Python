@@ -2,7 +2,7 @@
 
 - Date: 2026-10-23 (America/Bogota).
 - Task: `M1A_G1_CHATGPT_CONTINUITY_PROTOCOL_CORRECTION`.
-- Status: `DOCUMENTARY_CORRECTION_PROPOSED`; isolated docs-only branch, not merged.
+- Status at authoring: `DOCUMENTARY_CORRECTION_PROPOSED` on an isolated docs-only branch. Check live remote `main` for actual adoption status; this line does not prove present merge state.
 - Branch: `codex/iabv-chatgpt-protocol-correction-20261023`.
 - Exact base: `c95fb23c8ae5f7b6fdd1f94b4dba253347bb89cd`.
 - Project outcome: `GOVERNED_IABV_CODEX_BRIDGE`.
@@ -18,7 +18,7 @@ When this proposal is merged, apply these rules:
 2. `AGENTS.md` defines repository-work behavior. `README.md` is navigation. `CONTEXT-INDEX.md` points to evidence and history. `MEMORY-OPERATING-PROTOCOL.md` defines continuity, provenance and conflict resolution. None overrides the newest valid routing in `CURRENT-STATE.md`.
 3. If these documents disagree, do not merge their instructions informally and do not repeat every conflicting branch of history. Prefer the latest routing block on the live remote `main` in `CURRENT-STATE.md`; record the discrepancy, make a bounded documentation correction, and preserve fail-closed controls.
 4. Do not prepend another full, independent copy of the current state to every file. Keep a compact synchronized pointer in the other entry files and the detailed routing snapshot only in `CURRENT-STATE.md`. Preserve historical records below the current override.
-5. This branch is a proposal, not the live canonical state until reviewed and merged. Do not claim the correction is active in `main` before that happens.
+5. At the time of authoring, this branch is a proposal. Verify adoption against live remote `main`; do not infer that the correction is active from the branch or PR alone.
 
 ## 2. Mandatory startup preflight
 
