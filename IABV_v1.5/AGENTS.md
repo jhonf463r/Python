@@ -1,6 +1,37 @@
+<!-- G1 continuity summary; CURRENT-STATE.md remains the sole routing authority. -->
+
+## Latest terminal G1 review result — BLOCKED_NO_NONCIRCULAR_ROOT (2026-10-24)
+
+The owner-supplied report is archived at [report](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-24-M1A-G1-gemini-adversarial-static-review-report.txt) and reconciled in [receipt](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-24-M1A-G1-adversarial-review-result-receipt.md). Its Gemini 3.8 / Antigravity attribution is stated by the report and is not independently authenticated. Hash verification establishes byte identity only. The review did not establish a qualifying independent root; it does not prove that authority assets are absent. The new-chat [terminal-review handoff](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-24-M1A-G1-terminal-review-new-chat-continuity-handoff.md) records chronology, source-custody lessons and a copy/paste prompt.
+
+```text
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+ACTIVE_TASK=M1A_G1_WAIT_FOR_INDEPENDENT_ROOT_EVIDENCE
+LAST_TERMINAL_TASK=M1A_G1_REOPENED_GBA_ROOT_CEREMONY_ADVERSARIAL_STATIC_REVIEW
+LAST_TERMINAL_RESULT=BLOCKED_NO_NONCIRCULAR_ROOT; OWNER_SUPPLIED_REPORT; REVIEWER_ATTRIBUTION_NOT_INDEPENDENTLY_AUTHENTICATED
+LAST_TERMINAL_REPORT=CHAT-ARCH-2026-10-24-M1A-G1-gemini-adversarial-static-review-report.txt
+AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+QUALIFYING_INDEPENDENT_ROOT=NOT_ESTABLISHED
+ROOT_CUSTODIAN_AND_INDEPENDENT_VERIFICATION_CHANNEL=NOT_ESTABLISHED
+OWNER_TO_WINDOWS_PRINCIPAL=NOT_ESTABLISHED
+BOOTSTRAP_AUTHORITY_TO_ISSUER=NOT_ESTABLISHED
+ISSUER_TO_EXACT_SERVER=NOT_ESTABLISHED
+G1=NOT_ESTABLISHED; G2=NOT_ESTABLISHED; G3_VERSIONED_TARGET_RESOLVER=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+GOVERNANCE=KEEP_BLOCKED; READ_LIST=FAIL_CLOSED; BRIDGE=BRIDGE_NOT_READY
+AUTOMATIC_FOLLOW_ON=FALSE
+NEXT_ACTION=MAINTAIN_FAIL_CLOSED_PENDING_PREEXISTING_INDEPENDENT_ROOT_AND_MANDATE_EVIDENCE
+NEXT_REVIEW_TARGET=NONE_UNTIL_GENUINELY_NEW_INDEPENDENT_EVIDENCE
+```
+
+The prior reopening was limited to design/static review and is now terminal. Its prompt and former `NEXT_ACTION` are historical, not a pending assignment; `docs/history/CHAT-ARCH/CURRENT-STATE.md` carries the routing record. PR #486 is the integration vehicle for this documentation update; its review status is tracked in GitHub. A merge to `main` adopts the record, and fetch-back from `main` verifies its presence. This section records the review outcome, not the PR lifecycle status. The documentation does not authenticate the reviewer, establish authority, close gates, or authorize implementation.
+
+---
+
+
 <!-- OWNER-DECISION-OVERRIDE: adopted in documentation PR #482 and fetched back from live main on 2026-10-24; design/static analysis only. -->
 
-## Latest Owner decision — reopen G1 design/static review only (2026-10-24)
+## Historical Owner decision — reopen G1 design/static review only (2026-10-24; review now terminal)
 
 The Owner explicitly superseded the prior `RATIFIED_OPTION_D_NO_BOOTSTRAP` decision for purposes of reopening analysis and authorized a zero-budget, non-public design/static review only. This chat message does not authenticate a runtime principal, create a trust root, establish G1, or authorize code changes, credentials/apps, tests, runtime, transport, deployment, spending or block release. Keep authority assets `UNKNOWN; NOT_INSPECTED`, G1/G2/G3 unestablished, and protected reads fail-closed. Do not repeat Entra setup or ask the Owner to make the same reopen decision again.
 

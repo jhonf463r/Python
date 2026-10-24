@@ -1,6 +1,53 @@
+<!-- Current-state routing record for the terminal G1 review result. -->
+
+## CURRENT-STATE ROUTING — terminal G1 review result (2026-10-24)
+
+The bounded adversarial static review is terminal. Its owner-supplied report declares `BLOCKED_NO_NONCIRCULAR_ROOT`. The report was byte-verified, but its attribution to Gemini 3.8 / Google Antigravity is not independently authenticated. This result does not establish that authority assets are absent. PR #486 is the integration vehicle for this documentation update; its review status is tracked in GitHub. A merge to `main` adopts this routing record, and fetch-back from `main` verifies its presence. This section records the review outcome, not the PR lifecycle status. The archived [review report](./CHAT-ARCH-2026-10-24-M1A-G1-gemini-adversarial-static-review-report.txt) and [reconciliation receipt](./CHAT-ARCH-2026-10-24-M1A-G1-adversarial-review-result-receipt.md) preserve the source and provenance details. The [terminal-review new-chat handoff](./CHAT-ARCH-2026-10-24-M1A-G1-terminal-review-new-chat-continuity-handoff.md) records the causal history, updated anti-loop lessons and exact startup prompt.
+
+```text
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+ACTIVE_TASK=M1A_G1_WAIT_FOR_INDEPENDENT_ROOT_EVIDENCE
+OWNER_DECISION=REOPENED_G1_DESIGN_AND_STATIC_REVIEW_ONLY
+OWNER_DECISION_PROVENANCE=EXPLICIT_OWNER_CHAT_MESSAGE_2026-10-24
+LAST_TERMINAL_TASK=M1A_G1_REOPENED_GBA_ROOT_CEREMONY_ADVERSARIAL_STATIC_REVIEW
+LAST_TERMINAL_RESULT=BLOCKED_NO_NONCIRCULAR_ROOT; OWNER_SUPPLIED_REPORT; REVIEWER_ATTRIBUTION_NOT_INDEPENDENTLY_AUTHENTICATED
+LAST_TERMINAL_REPORT=CHAT-ARCH-2026-10-24-M1A-G1-gemini-adversarial-static-review-report.txt
+REVIEWED_MAIN=9d5d1cbdb5ced92b7884551b8f9f4c87eeba3e4c
+PR_BASE_MAIN=9d5d1cbdb5ced92b7884551b8f9f4c87eeba3e4c
+AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+QUALIFYING_INDEPENDENT_ROOT=NOT_ESTABLISHED
+ROOT_CUSTODIAN_AND_INDEPENDENT_VERIFICATION_CHANNEL=NOT_ESTABLISHED
+OWNER_TO_WINDOWS_PRINCIPAL=NOT_ESTABLISHED
+BOOTSTRAP_AUTHORITY_TO_ISSUER=NOT_ESTABLISHED
+ISSUER_TO_EXACT_SERVER=NOT_ESTABLISHED
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3_VERSIONED_TARGET_RESOLVER=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+GOVERNANCE=KEEP_BLOCKED
+READ_LIST=FAIL_CLOSED
+IMPLEMENTATION=NOT_AUTHORIZED
+CREDENTIAL_OR_APP_CREATION=NOT_AUTHORIZED
+TESTS=NOT_AUTHORIZED; NOT_RUN
+BUILD=NOT_AUTHORIZED; NOT_RUN
+RUNTIME=NOT_AUTHORIZED; NOT_RUN
+REAL_TRANSPORT=NOT_AUTHORIZED; NOT_RUN
+PUBLIC_TUNNEL=DO_NOT_LAUNCH_OR_EXPOSE
+COST_POLICY=ZERO_BUDGET; NO_PAID_SERVICES; NO_RESOURCE_DEPLOYMENT
+BRIDGE=BRIDGE_NOT_READY
+AUTOMATIC_FOLLOW_ON=FALSE
+NEXT_ACTION=MAINTAIN_FAIL_CLOSED_PENDING_PREEXISTING_INDEPENDENT_ROOT_AND_MANDATE_EVIDENCE
+NEXT_REVIEW_TARGET=NONE_UNTIL_GENUINELY_NEW_INDEPENDENT_EVIDENCE
+```
+
+The earlier reopened review route below is retained as history and is superseded for current routing by this entry. No root or mandate is established, and no global gate is released. `CURRENT-STATE.md` remains the single routing authority.
+
+---
+
+
 <!-- OWNER-DECISION-OVERRIDE: adopted by documentation PR #482 and fetched back from live main on 2026-10-24. This records a design/static-review route only; it does not create runtime authority. -->
 
-## LATEST OWNER ROUTE — G1 reopened for design/static review only (2026-10-24)
+## HISTORICAL ROUTE — G1 reopened for design/static review only (2026-10-24; review now terminal)
 
 The Owner explicitly withdrew the prior `RATIFIED_OPTION_D_NO_BOOTSTRAP` decision for the purpose of reopening analysis and authorized a zero-budget, non-public design/static review. This supersedes the older historical routing below for the **current analysis decision only**. Owner-decision provenance is an explicit chat message, not an independently authenticated runtime identity event.
 

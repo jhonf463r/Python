@@ -1,0 +1,229 @@
+IABV / UAAL — INFORME DE REVISIÓN ESTÁTICA ADVERSARIAL INDEPENDIENTE
+ID DE TAREA: M1A_G1_REOPENED_GBA_ROOT_CEREMONY_ADVERSARIAL_STATIC_REVIEW
+REPOSITORIO: https://github.com/jhonf463r/Python
+BASE / HEAD EVALUADO (main): 9d5d1cbdb5ced92b7884551b8f9f4c87eeba3e4c (docs(IABV): route G1 review to Gemini 3.8)
+ROL: Revisor independiente de seguridad y arquitectura adversarial (Gemini 3.8 en Google Antigravity)
+TIPO DE AUDITORÍA: Revisión documental y arquitectónica estática de solo lectura
+ESTADO DE GOBERNANZA: KEEP_BLOCKED
+ESTADO DE PUENTE: BRIDGE_NOT_READY
+PRERREQUISITOS CERRADOS: 0 / 8
+SEGUIMIENTO AUTOMÁTICO: AUTOMATIC_FOLLOW_ON=FALSE
+
+1. CLAIMS_AND_PROVENANCE
+A continuación se indexan las afirmaciones nucleares evaluadas en el expediente de reapertura, clasificadas según el esquema estricto de evidencia de IABV:
+
+DIRECT_FILE_CONTENT: Contenido literal verificado en los blobs canónicos de main en Git.
+OWNER_REPORTED: Afirmación o estado informado verbalmente por el Owner o agentes sin respaldo criptográfico independiente.
+DERIVED_SYNTHESIS: Deducción lógica o técnica basada en el análisis formal de los contratos.
+UNVERIFIED_ASSERTION: Supuesto de diseño o afirmación que carece de comprobación empírica o formal.
+ID	Afirmación Evaluada	Fuente y Blob / Commit	Clase de Evidencia	Estado de Validación
+C-01	La reapertura de M1A_G1 se limita a diseño y revisión estática, con coste cero y sin exposición pública de transporte.	PRs #482–#485, commit 9d5d1cbdb5ced92b7884551b8f9f4c87eeba3e4c / Blob handoff.md	DIRECT_FILE_CONTENT	VÁLIDO: Conforme a la directiva expresa del Owner y la política canónica.
+C-02	La cuenta Microsoft Entra ID del Owner junto con Microsoft Authenticator MFA constituyen una raíz de autoridad gobernada para IABV.	Blob 025a126f8848cab4ac0e6b33f8bd9f2e4740dda6 (Entra_assessment.md)	OWNER_REPORTED + UNVERIFIED_ASSERTION	REFUTADO: La posesión de credenciales Entra personales no transfiere soberanía criptográfica ni autorización RBAC al runtime local ni a IABV.
+C-03	Una ceremonia GBA (Governance Bootstrap Authority) puede crear una raíz de confianza sin anclarse a una raíz preexistente fuera de banda.	Blobs feb61c72e44ec61179fba7827515ab58348f4890 (GBA_design.md) y b3a138f4fcf521071e6d0374a81523b78dc66dda	DERIVED_SYNTHESIS	REFUTADO (CIRCULAR): Un par de claves generado por el propio host o por un agente (Codex/Antigravity) es indistinguible de TOFU si no se valida contra un ancla preexistente.
+C-04	Los commits en GitHub firmados o aprobados por el Owner autentican de forma segura la identidad de la máquina local y del proceso ejecutor.	Blob 7c72474a5f7c114c02320c177d6ea2aea68ad28f (M1A_v1_0_1.md)	UNVERIFIED_ASSERTION	REFUTADO: Confusión fundamental de dominios: la autenticación web/git en capa de aplicación no acredita tokens de sesión del SO ni atestación TPM local.
+C-05	Las primitivas nativas de Windows (Virtual Service Accounts, CNG ACLs, Named Pipes DACL, TPM 2.0 vTPM) aíslan la ejecución del lector de forma autosuficiente.	Blobs 0316f3b897ed5db98e185bf55db1ba482b7dcaf5 (Windows_research.md) y 7ff1580af2f45c0606f21daf2f966b76ead7e7ac (TPM_pin.md)	DIRECT_FILE_CONTENT + DERIVED_SYNTHESIS	CONDICIONAL: Primitivas válidas exclusivamente para enforcement en profundidad después de que exista una raíz legítima; no pueden auto-aprobarse.
+C-06	Ninguno de los 8 prerrequisitos de implementación de M1A está cerrado.	Blob 1322fdfb26770bcf5bdfab9fd85a7ffcee5d9f37 (Gate_matrix.md) y CURRENT-STATE.md	DIRECT_FILE_CONTENT	VÁLIDO: Confirmado CLOSED=0/8. Intentar saltar a G2/G3 viola la invariante de fail-closed.
+2. A_B_C_D_COMPARISON
+Análisis comparativo de las cuatro rutas estructurales para la resolución de la frontera de autoridad en M1A_G1:
+
+
+
+           +-------------------------------------------------------------+
+           |               ANÁLISIS DE RUTAS DE RAÍZ EN G1               |
+           +-------------------------------------------------------------+
+                                          |
+            +-----------------------------+-----------------------------+
+            |                             |                             |
+      [ RUTA A / B ]                [ RUTA C ]                    [ RUTA D ]
+ (Raíz Externa Previa)         (Ceremonia Local GBA)          (Cierre por Ausencia)
+            |                             |                             |
+  • A: Clave privada Owner      • Generación local en host     • Constatación formal
+    fuera de banda (offline)      o por agente conversacional    de falta de ancla
+  • B: PKI organizacional /     • TOFU circular si no hay        independiente
+    Entra tenant gobernado        atestación previa             • FAIL-CLOSED activo
+            |                             |                             |
+  [ NO EVIDENCIADA ]              [ CIRCULAR / INSEGURA ]      [ POSTURA FORMAL VÁLIDA ]
+Criterio de Auditoría	Ruta A: Raíz Previa del Owner (Fuera de Banda)	Ruta B: Autoridad Organizacional Previa (Tenant / PKI)	Ruta C: Ceremonia GBA Delegada / Local	Ruta D: Ninguna Raíz Demostrada (Fail-Closed)
+Definición Operativa	Anclaje en un par de claves asimétricas de gobernanza preexistente, fuera del host y de la sesión LLM, verificado por huella digital externa.	Entidad certificadora empresarial (CA) o Tenant Microsoft Entra configurado con Enterprise App específica, Claims y App Roles gobernados para IABV.	Generación de una raíz "GBA" en tiempo de ejecución en la máquina de trabajo, vinculada a TPM/CNG y ratificada mediante commit o token de sesión.	Aceptación documental de que no existe ninguna raíz no circular fuera de banda en este momento; mantenimiento del bloqueo normativo.
+No-Circularidad	Alta (No Circular): La clave precede a la sesión y no se deriva del host auditado.	Alta (No Circular): Depende de un directorio de identidades gobernado por políticas externas.	Cero (Estrictamente Circular / TOFU): El host o el agente se declaran a sí mismos autoridad.	Absoluta: No introduce asunciones infundadas de confianza.
+Disponibilidad Real	UNKNOWN; NOT_INSPECTED / NO EVIDENCIADA: No existe registro de clave pública ni canal fuera de banda en el repositorio.	NOT_ESTABLISHED: El tenant informado es un entorno personal de desarrollo sin App Registration para IABV ni claims mapeados.	DESIGN_ONLY: Descrita teóricamente en propuestas, pero técnicamente circular.	ESTABLISHED (Vigente): Estado formal en el repositorio base.
+Coste e Inversión	Cero (si se utiliza hardware/claves offline existentes).	Requiere infraestructura y suscripciones organizacionales activas.	Cero marginal inmediato, pero nulo valor de seguridad.	Estrictamente cero.
+Exposición de Red	Ninguna (revisión de firmas offline).	Requiere llamadas a endpoints públicos de Graph/OpenID Connect.	Local en host, pero vulnerable a evasión de privilegios locales.	Ninguna (cero transporte).
+Veredicto Arquitectural	Inviable en esta sesión por ausencia de evidencia documental previa.	Inviable por ausencia de configuración formal y presupuesto.	RECHAZADO: Viola el principio fundamental contra la invención de autoridad.	ÚNICA OPCIÓN FORMALMENTE RIGUROSA Y SEGURA.
+3. MINIMAL_TRUST_GRAPH
+Evaluación adversarial de los nueve arcos de dependencia de confianza requeridos para habilitar un canal de transporte gobernado hacia el lector IABV:
+
+Mermaid diagram
+Detalle de los 9 Arcos de Confianza:
+Edge E1 
+→
+→ E2 (Owner Físico a Entra ID + MFA):
+Estado: OWNER_REPORTED.
+Análisis: La existencia de la cuenta y el uso de Microsoft Authenticator fue informada verbalmente por el Owner. No existe atestación criptográfica verificable en el expediente ni enlace directo a un hardware security token (ej. FIDO2 / YubiKey) inspeccionado.
+Edge E2 
+→
+→ E3 (Entra ID a GitHub Commit Authority):
+Estado: OWNER_REPORTED.
+Análisis: La vinculación entre la identidad Entra y la cuenta de GitHub jhonf463r es meramente contextual. Los commits en GitHub no llevan firmas X.509 federadas ni commit-signing ligado a dicho tenant corporativo.
+Edge E2 
+→
+→ E4 (Entra ID a Windows Local Principal / SID):
+Estado: NOT_VERIFIED.
+Análisis: No se ha demostrado que la estación de trabajo local esté unida al directorio Entra (Azure AD Joined), ni que el inicio de sesión use un token de identidad corporativo ligado a las políticas del repositorio.
+Edge E4 
+→
+→ E5 (Windows Principal a TPM 2.0 / Endorsement Key):
+Estado: DESIGN_ONLY.
+Análisis: El diseño de fijación de TPM mediante vTPM / Endorsement Key (7ff1580af2f45c0606f21daf2f966b76ead7e7ac) es un esquema teórico no instanciado en el entorno real ni contrastado mediante un certificado de atestación del fabricante.
+Edge E5 
+→
+→ E6 (TPM a CNG Key Storage / VSA Isolation):
+Estado: DESIGN_ONLY.
+Análisis: Las directivas para aislar claves privadas bajo Microsoft Platform Crypto Provider y aislarlas en cuentas de servicio virtuales (NT SERVICE\iabv-reader) permanecen en fase de propuesta documental.
+Edge E6 
+→
+→ E7 (CNG / VSA a Named Pipe DACL):
+Estado: DESIGN_ONLY.
+Análisis: La especificación de tuberías con nombre con listas de control de acceso discrecional (DACL) limitadas a un SID restringido (SeLockMemoryPrivilege, denegación a Network / Remote RPC) no se ha compilado ni evaluado en runtime.
+Edge E7 
+→
+→ E8 (Named Pipe a FastMCP Runtime):
+Estado: DESIGN_ONLY.
+Análisis: El encapsulamiento de FastMCP para no exponer el runner antes del handshake de gobernanza (revisado en PR #481) no cuenta con validación de ejecución integrada sobre Named Pipes.
+Edge E8 
+→
+→ E9 (FastMCP a Lector de Gobernanza IABV):
+Estado: NOT_ESTABLISHED / KEEP_BLOCKED.
+Análisis: La política normativa estipula denegación por defecto (fail-closed). No existe autorización de consumo de datos.
+Arco Transversal de Raíz de Confianza Externa 
+→
+→ IABV Governance:
+Estado: NOT_ESTABLISHED.
+Análisis: Falta el ancla primordial que permita a cualquiera de los nodos E4–E8 validar que la instrucción procede de una autoridad legítima y no de un proceso colocalizado no confiable.
+4. ATTACKS_AND_COUNTEREXAMPLES
+Análisis adversarial de los trece vectores de ataque identificados contra el esquema propuesto:
+
+Ataque 1: TOFU (Trust On First Use) en Raíz GBA Auto-Generada:
+Descripción: Un script genera localmente un par de claves y declara que la clave pública es la "Raíz de Gobernanza".
+Impacto: Crítico. En ausencia de una raíz previa fuera de banda, un atacante o un proceso secundario local puede generar su propio par de claves, firmar su propia autorización y auto-habilitarse acceso.
+Defensa: Rechazo total. No aceptar raíces generadas en la misma sesión/entorno sin verificación previa de huella externa.
+
+Ataque 2: Confusión de Identidad Entra 
+≠
+
+= Autorización IABV:
+Descripción: Afirmar que porque el Owner completó un MFA en Microsoft Authenticator para su cuenta Entra, el proceso del lector tiene autorización gobernada.
+Impacto: Alto. La autenticación humana frente a Microsoft no acredita la delegación de permisos específicos sobre la base SQLite local de IABV. Carece de claims RBAC específicos para la aplicación.
+
+Ataque 3: Suplantación por Firma de Commit en GitHub:
+Descripción: Confiar en que un commit en el repositorio público valida criptográficamente al host local o autoriza una lectura en tiempo real.
+Impacto: Medio-Alto. Los commits en GitHub acreditan escritura en el repositorio git, no autentican identidades en tiempo real en la capa de transporte IPC local de Windows, ni garantizan la integridad de la máquina donde se ejecuta el lector.
+
+Ataque 4: Suplantación de SID / Parámetros por el Cliente (Caller-Supplied Identity):
+Descripción: El cliente MCP envía en el JSON-RPC su propio PID, SID o instance_id.
+Impacto: Crítico. Si el servidor confía en los argumentos suministrados por la llamada, cualquier cliente malicioso puede falsificar ser un proceso de alta integridad.
+Defensa: La identidad debe extraerse exclusivamente del token de seguridad del canal del SO (GetNamedPipeClientProcessId, ImpersonateNamedPipeClient, GetTokenInformation).
+
+Ataque 5: Evasión de DACL de Named Pipe por Administrador Local:
+Descripción: Un proceso elevado con privilegios de administrador local o SeDebugPrivilege suplanta la identidad o modifica la memoria del servidor de lectura.
+Impacto: Alto. Las primitivas locales de Windows aíslan contra procesos estándar (Medium Integrity), pero no son frontera de seguridad absoluta frente a un Administrador Local comprometido sin Hardware Root of Trust / Virtualization-Based Security (VBS).
+
+Ataque 6: Ataque de Relay de Named Pipe (Potato-style / RPC Reflection):
+Descripción: Un atacante redirige la conexión de la tubería para obtener el token de suplantación del cliente o elevar privilegios.
+Defensa Requerida: Uso estricto de banderas PIPE_REJECT_REMOTE_CLIENTS, verificación de nivel de integridad mínimo y prohibición de niveles de delegación excesivos.
+
+Ataque 7: Degradación a Perfil No Restringido (profile="full" Fallback):
+Descripción: Enviar parámetros malformados o omitir variables para forzar al servidor a seleccionar la rama por defecto sin restricciones.
+Evaluación: Bloqueado en el diseño estático F-01 de PR #481, pero requiere rechazo estricto en el constructor antes de cualquier instanciación.
+
+Ataque 8: Replay de Autorizaciones Caducadas (Stale / Replay Attacks):
+Descripción: Reutilización de un token de autorización previamente concedido para sesiones pasadas.
+Defensa Requerida: Requerir nonces criptográficos de un solo uso ligados a la sesión actual de la tubería y límites temporales estrictos (TTL breve).
+
+Ataque 9: Falla Abierta por Lista de Revocación Inalcanzable (Fail-Open on CRL / Revocation):
+Descripción: El endpoint de verificación de revocación no responde y el sistema asume que la credencial es válida.
+Defensa: Fail-Closed Obligatorio. Ante cualquier error de red o timeout en la verificación de revocación, la conexión debe ser terminada inmediatamente con denegación.
+
+Ataque 10: Inyección de Entorno o Rutas Relativas en el Cargador VSA:
+Descripción: Manipulación de PATH, PYTHONPATH o bibliotecas DLL cargadas por la cuenta de servicio virtual.
+Defensa: Carga exclusiva desde rutas absolutas del sistema, binarios firmados y congelamiento de dependencias.
+
+Ataque 11: Fuga de Canal Lateral por Mensajes de Error Detallados:
+Descripción: El servidor MCP devuelve descripciones detalladas de por qué falló la autenticación, revelando SIDs internos o topología de almacenamiento.
+Defensa: Respuestas de error opacas para clientes no autenticados (access_denied).
+
+Ataque 12: Evasión de Bloqueo por Múltiples Lectores Coexistentes:
+Descripción: Intentar invocar un lector alternativo no gobernado (ej. lectura directa de archivos en disco o módulos CLI heredados) cuando el MCP está bloqueado.
+Defensa: La gobernanza de IABV prohíbe taxativamente usar rutas alternativas o recrear lectores evadiendo el canal centralizado.
+
+Ataque 13: Dependencia Circular en la Cadena de Confianza del Agente:
+Descripción: El modelo de lenguaje (Codex / Antigravity) evalúa su propio diseño y se otorga a sí mismo el visto bueno (auto-atestación conversacional).
+Defensa: Principio de No Auto-Autoridad. Un LLM no puede certificar su propia autoridad ni validar afirmaciones de estado sin inspección adversarial externa.
+
+5. MINIMUM_NEXT_EVIDENCE
+ESTADO: NO_SUPPORTED_STEP_UNDER_CURRENT_CONSTRAINTS
+Justificación Técnica Formal
+Bajo las directivas impuestas por el Owner:
+
+Presupuesto cero ($0.00).
+Cero exposición pública de red o endpoints HTTP.
+Prohibición estricta de ejecución local (sin pruebas, sin runtime, sin creación de servicios ni claves).
+Prohibición estricta de inspeccionar secrets, bases de datos o el entorno local de la máquina.
+Es físicamente y lógicamente imposible generar la evidencia mínima requerida para cerrar la no-circularidad de M1A_G1 dentro de la sesión de chat.
+
+Requisito Único de Evidencia Externa Fuera de Banda
+Para que M1A_G1 pueda evolucionar a un estado evaluable distinto de BLOCKED_NO_NONCIRCULAR_ROOT, el Owner debe proporcionar, fuera de banda y de forma auditable en el repositorio:
+
+Un registro público de clave de gobernanza preexistente, acompañado de un artefacto criptográfico firmado fuera de la sesión conversacional (por ejemplo, firma con clave privada PGP/GPG registrada formalmente en commits históricos canónicos, o un manifiesto emitido por un emisor PKI independiente), cuya huella (SHA-256) sea preexistente al inicio del ciclo de bootstrap y verifiable estáticamente sin depender de afirmaciones verbales.
+
+6. GATE_EFFECT
+Impacto de esta auditoría sobre la matriz de gobernanza y puertas normativas:
+
+
+
++-----------------------------------------------------------------------------------+
+|                         ESTADO DE LAS COMPUERTAS M1A                             |
++-----------------------------------------------------------------------------------+
+| G1: TRUST_BOOTSTRAP_AUTHORITY_BOUNDARY   --> [ BLOQUEADO / NO ESTABLECIDO ]       |
+| G2: SECURE_LOCAL_TRANSPORT_BINDING       --> [ NO EVALUABLE / BLOQUEADO POR G1 ]  |
+| G3: RESTRICTED_PRINCIPAL_ENFORCEMENT     --> [ NO EVALUABLE / BLOQUEADO POR G1 ]  |
+| G4 - G8: RUNTIME, AUDIT, READER SCOPING  --> [ NO EVALUABLES / SIN CAMBIOS ]      |
++-----------------------------------------------------------------------------------+
+G1 (TRUST_BOOTSTRAP_AUTHORITY_BOUNDARY):
+Estado: BLOCKED / NOT_ESTABLISHED. La reapertura del diseño ha demostrado que no existe actualmente un ancla no circular documentada. La puerta permanece cerrada.
+G2 (SECURE_LOCAL_TRANSPORT_BINDING):
+Estado: NOT_ESTABLISHED. Depende jerárquicamente de G1. No se puede configurar ni autorizar el transporte Named Pipe hasta que se defina la autoridad que emite los tokens de sesión.
+G3 (RESTRICTED_PRINCIPAL_ENFORCEMENT):
+Estado: NOT_ESTABLISHED. Las directivas de cuentas virtuales (VSA) y DACLs no pueden vincularse a una política de acceso sin un ancla de confianza validada.
+G4 a G8 (Prerrequisitos de Runtime, Configuración y Lector):
+Estado: UNTOUCHED (0/8 cerrados). Ninguna compuerta subsiguiente puede abrirse, evaluarse o modificarse mientras G1 permanezca insatisfecha. Se preserva el principio estricto de fail-closed en cadena.
+7. COST_AND_EXPOSURE
+Evaluación de Coste:
+La revisión documental, descarga estática de blobs vía API pública y redacción de este informe adversarial se ha completado con un consumo financiero de $0.00, cumpliendo de forma absoluta con la directiva de presupuesto cero.
+Evaluación de Exposición de Red:
+No se han abierto túneles (ngrok, dev tunnels, etc.), no se han levantado listeners HTTP/TCP públicos, ni se han expuesto interfaces locales al exterior. El principio de cero exposición perimetral se mantiene intacto.
+8. STOP_CONDITIONS
+Cualquiera de los siguientes eventos constituye un STOP CONDITION INMEDIATO que obliga al sistema y a los agentes a abortar cualquier intento de conexión y retornar a denegación estricta (fail-closed):
+
+Intento de ejecutar un comando de shell, runtime Python o servicio MCP para "probar si conecta" sin autorización previa expresa del Owner.
+Invocación de herramientas o scripts locales para inspeccionar bases de datos SQLite, archivos .env o almacenes de credenciales de Windows.
+Declaración de un pase artificial (PASS) en G1 basado en la existencia de cuentas Entra o afirmaciones de posesión sin verificación criptográfica de claves.
+Auto-generación de certificados o pares de claves locales mediante scripts no anclados a una clave raíz externa preexistente.
+Ingesta de tokens o credenciales de identidad aportados libremente por el cliente a través de canales de chat o JSON-RPC no verificados por el SO.
+Falla, timeout o ausencia de respuesta del mecanismo de atestación de seguridad durante el handshake de transporte.
+9. PROVENANCE_LIMITATIONS
+Límites metodológicos y operacionales de esta auditoría adversarial:
+
+Ámbito Exclusivo: Revisión documental estática basada en el historial del repositorio público jhonf463r/Python en el commit 9d5d1cbdb5ced92b7884551b8f9f4c87eeba3e4c.
+Límites de Inspección: No se ha inspeccionado el sistema de archivos de la máquina física del Owner, ni el registro de Windows, ni el chip TPM, ni la consola de Microsoft Entra ID.
+Límites de Ejecución: Ningún módulo de código ha sido compilado, enlazado, ejecutado o probado dinámicamente durante esta revisión.
+Ausencia de Verificación Fuera de Banda: Este revisor no posee un canal telefónico, físico o PGP fuera de banda con el Owner para verificar afirmaciones verbales.
+10. NEXT_ACTION
+Acción Única Recomendada:
+Preservar formalmente la denegación por defecto (KEEP_BLOCKED) bajo la postura canónica de la Opción D.
+No proceder con ninguna implementación, prueba dinámica ni creación de servicios para M1A hasta que el Owner proporcione un ancla de confianza externa e independiente fuera de banda. Registrar este informe como evidencia adversarial formal en el expediente de gobernanza de IABV.
+
+11. DECLARACIÓN FINAL DE REVISIÓN Y VEREDICTO
+SOURCE_CHANGE=NONE; TESTS=NOT_RUN; BUILD=NOT_RUN; RUNTIME=NOT_RUN; REAL_TRANSPORT=NOT_RUN
+VERDICT:
+VERDICT = BLOCKED_NO_NONCIRCULAR_ROOT
