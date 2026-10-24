@@ -6,7 +6,7 @@ At the verified candidate HEAD, the exact blobs are:
 - IABV_v1.5/src/iabv_v15/services/tools/tool_adapters.py: 5217b8deae01f34ec4402b82c651e9995ae94514
 - IABV_v1.5/tests/test_local_cli_adapter.py: fe53c660fd723ab82bde96b3077b25ca07cc24c2
 
-Do not reset, rebase, clean, overwrite or reuse the stale worktree for this test attempt. After revalidating live refs and reading the canonical five files in order from main, create a new, empty sibling worktree detached at the current exact PR HEAD, verify both blobs and a clean tree, and repeat the authorization check. Run the narrow focused tests only if the canonical preflight confirms the bounded test authorization remains applicable. Reconcile again if any ref, blob, PR state or authority route changed.
+Do not reset, rebase, clean, overwrite or reuse the stale worktree for this attempt. After revalidating live refs and reading the canonical five files in order from main, create a new, empty sibling worktree detached at the current exact PR HEAD and verify both blobs and a clean tree. The current main CURRENT-STATE explicitly retains no-bootstrap/fail-closed routing and TESTS=NOT_RUN; this candidate-only worktree recovery does not override that route. Stop after the new-copy preflight and do not run pytest until a genuinely new explicit Owner decision reopens that test scope. Reconcile again if any ref, blob, PR state or authority route changed.
 
 ```text
 PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
@@ -33,7 +33,7 @@ PUBLIC_TUNNEL=PROHIBITED
 AZURE_BILLING_STATE=NOT_VERIFIED
 COST_POLICY=NO_PAID_SERVICES; NO_RESOURCE_DEPLOYMENT
 BRIDGE=BRIDGE_NOT_READY
-NEXT_ACTION=REVALIDATE_MAIN_AND_PR; READ_CANONICAL_PREFLIGHT; CREATE_NEW_DETACHED_WORKTREE_AT_CURRENT_PR_HEAD; VERIFY_BLOBS; RUN_FOCUSED_TESTS_ONLY_IF_AUTHORIZATION_REMAINS_IN_FORCE
+NEXT_ACTION=REVALIDATE_MAIN_AND_PR; READ_CANONICAL_PREFLIGHT; CREATE_NEW_DETACHED_WORKTREE_AT_CURRENT_PR_HEAD; VERIFY_BLOBS; STOP_BEFORE_TESTS_UNLESS_NEW_EXPLICIT_OWNER_DECISION_REOPENS_TEST_SCOPE
 ```
 
 This candidate-only routing does not supersede live main. Live main still requires no-bootstrap/fail-closed and has NEXT_ACTION=MAINTAIN_NO_BOOTSTRAP_FAIL_CLOSED; REOPEN_ONLY_ON_GENUINELY_NEW_AUTHORITY_EVIDENCE_OR_EXPLICIT_OWNER_DECISION. No test result, authority gate, or block status changes from the reported local mismatch.
