@@ -29,6 +29,7 @@ from iabv_v15.domain.models import (  # noqa: E402
 )
 from iabv_v15.infra.mcp.server import (  # noqa: E402
     IABVMCPServer,
+    _GuardedMCPExecutionBoundary,
     PROFILE_FULL,
     PROFILE_LOCAL_RESTRICTED,
     _to_jsonable,
@@ -239,12 +240,17 @@ def _build_container(**overrides: object) -> _FakeContainer:
     return _FakeContainer(**defaults)
 
 
+def _underlying_sdk_for_test(server: IABVMCPServer):
+    """Reach the wrapped SDK only from tests that inspect registered handlers."""
+    return server.mcp._GuardedMCPExecutionBoundary__sdk
+
+
 def _full_registry_server_for_unit_test(container: object) -> IABVMCPServer:
     """Build a non-runnable full registry solely to unit-test legacy handlers.
 
     This deliberately bypasses the public constructor. The product constructor
-    and every MCP execution entrypoint reject PROFILE_FULL; these tests invoke
-    registered handler functions directly with synthetic dependencies only.
+    and execution boundary reject PROFILE_FULL; these tests invoke registered
+    handler functions directly with synthetic dependencies only.
     """
     from mcp.server.fastmcp import FastMCP
 
@@ -252,13 +258,17 @@ def _full_registry_server_for_unit_test(container: object) -> IABVMCPServer:
     server.container = container
     server.name = "mcp-unit-test"
     server.profile = PROFILE_FULL
-    server.mcp = FastMCP("mcp-unit-test", log_level="WARNING")
-    server._register_tools()
+    sdk = FastMCP("mcp-unit-test", log_level="WARNING")
+    server._IABVMCPServer__execution_boundary = _GuardedMCPExecutionBoundary(
+        sdk,
+        profile_getter=lambda: server.profile,
+    )
+    server._register_tools(sdk)
     return server
 
 
 def _get_tool(server: IABVMCPServer, name: str):
-    registry = server.mcp._tool_manager._tools  # fastmcp exposed internal
+    registry = _underlying_sdk_for_test(server)._tool_manager._tools  # fastmcp exposed internal
     assert name in registry, f"tool {name} no registrada (existentes: {sorted(registry)})"
     return registry[name]
 
@@ -270,7 +280,7 @@ def _call_tool(server: IABVMCPServer, name: str, **kwargs: object) -> object:
 
 def test_server_registers_core_tools() -> None:
     server = _full_registry_server_for_unit_test(_build_container())
-    registered = set(server.mcp._tool_manager._tools.keys())
+    registered = set(_underlying_sdk_for_test(server)._tool_manager._tools.keys())
     expected = {
         "world_model_snapshot",
         "orchestrator_preview",
@@ -294,7 +304,7 @@ def test_server_registers_core_tools() -> None:
 
 def test_local_restricted_profile_registers_only_static_health_tool() -> None:
     server = IABVMCPServer(None, profile=PROFILE_LOCAL_RESTRICTED)
-    registry = server.mcp._tool_manager._tools
+    registry = _underlying_sdk_for_test(server)._tool_manager._tools
 
     assert set(registry) == {"bridge_health"}
     assert _call_tool(server, "bridge_health") == {"status": "ok"}
@@ -306,7 +316,7 @@ def test_server_constructor_defaults_to_local_restricted() -> None:
     server = IABVMCPServer(None)
 
     assert server.profile == PROFILE_LOCAL_RESTRICTED
-    assert set(server.mcp._tool_manager._tools) == {"bridge_health"}
+    assert set(_underlying_sdk_for_test(server)._tool_manager._tools) == {"bridge_health"}
 
 
 def test_server_constructor_rejects_full_before_tool_registration(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -336,7 +346,7 @@ def test_create_server_defaults_to_local_restricted_without_bootstrap(
     server = create_server()
 
     assert server.profile == PROFILE_LOCAL_RESTRICTED
-    assert set(server.mcp._tool_manager._tools) == {"bridge_health"}
+    assert set(_underlying_sdk_for_test(server)._tool_manager._tools) == {"bridge_health"}
 
 
 def test_create_server_rejects_full_before_bootstrap_or_constructor(
@@ -365,7 +375,7 @@ def test_create_server_rejects_full_before_bootstrap_or_constructor(
 def test_direct_full_profile_instance_cannot_run_mcp(monkeypatch: pytest.MonkeyPatch) -> None:
     server = _full_registry_server_for_unit_test(_build_container())
     calls: list[str] = []
-    monkeypatch.setattr(server.mcp, "run", lambda **_: calls.append("run"))
+    monkeypatch.setattr(_underlying_sdk_for_test(server), "run", lambda **_: calls.append("run"))
 
     with pytest.raises(ValueError, match="ejecución MCP bloqueada"):
         server.run(transport="stdio")
@@ -381,12 +391,16 @@ def test_local_restricted_profile_rejects_injected_mcp_registry() -> None:
 def test_local_restricted_profile_run_skips_dynamic_write_tools(monkeypatch: pytest.MonkeyPatch) -> None:
     server = IABVMCPServer(None, profile=PROFILE_LOCAL_RESTRICTED)
     captured: list[str] = []
-    monkeypatch.setattr(server.mcp, "run", lambda *, transport: captured.append(transport))
+    monkeypatch.setattr(
+        _underlying_sdk_for_test(server),
+        "run",
+        lambda *, transport: captured.append(transport),
+    )
 
     server.run(transport="stdio")
 
     assert captured == ["stdio"]
-    assert set(server.mcp._tool_manager._tools) == {"bridge_health"}
+    assert set(_underlying_sdk_for_test(server)._tool_manager._tools) == {"bridge_health"}
 
 
 def test_main_defaults_to_local_restricted_without_appbootstrap(
@@ -409,7 +423,8 @@ def test_main_defaults_to_local_restricted_without_appbootstrap(
     captured: list[tuple[str, str, set[str]]] = []
 
     def capture_run(server: IABVMCPServer, *, transport: str) -> None:
-        captured.append((transport, server.profile, set(server.mcp._tool_manager._tools)))
+        registered = set(_underlying_sdk_for_test(server)._tool_manager._tools)
+        captured.append((transport, server.profile, registered))
 
     monkeypatch.setattr(IABVMCPServer, "run", capture_run)
     mcp_main()
@@ -632,6 +647,34 @@ def test_server_rejects_network_transports_before_run(transport: str) -> None:
         server.run(transport=transport)
 
 
+@pytest.mark.parametrize("transport", ["sse", "streamable-http"])
+def test_public_execution_boundary_rejects_network_transport_without_starting_it(
+    monkeypatch: pytest.MonkeyPatch, transport: str,
+) -> None:
+    server = IABVMCPServer(None, profile=PROFILE_LOCAL_RESTRICTED)
+    sdk_calls: list[dict[str, object]] = []
+    sdk = _underlying_sdk_for_test(server)
+    monkeypatch.setattr(sdk, "run", lambda **kwargs: sdk_calls.append(kwargs))
+
+    # The exposed object is a guarded facade, not the FastMCP SDK itself.
+    assert server.mcp is not sdk
+    assert not hasattr(server.mcp, "_tool_manager")
+    assert not hasattr(server.mcp, "tool")
+    with pytest.raises(AttributeError):
+        setattr(server, "mcp", sdk)
+    with pytest.raises(AttributeError):
+        setattr(server.mcp, "run", lambda **kwargs: None)
+
+    # Check both supported public entrypoints. The SDK is stubbed so no
+    # transport, socket or network listener can start during this regression.
+    with pytest.raises(ValueError, match="transport.*deshabilitado"):
+        server.mcp.run(transport=transport)
+    with pytest.raises(ValueError, match="transport.*deshabilitado"):
+        server.run(transport=transport)
+
+    assert sdk_calls == []
+
+
 def test_server_rejects_full_profile() -> None:
     with pytest.raises(ValueError, match="autorización gobernada verificable"):
         IABVMCPServer(container=None, profile=PROFILE_FULL)
@@ -741,7 +784,7 @@ def test_governance_ignores_permission_gates_already_granted() -> None:
 
 def test_server_registers_audit_tools() -> None:
     server = _full_registry_server_for_unit_test(_build_container())
-    registered = set(server.mcp._tool_manager._tools.keys())
+    registered = set(_underlying_sdk_for_test(server)._tool_manager._tools.keys())
     audit = {
         "run_pytest",
         "read_repo_file",
