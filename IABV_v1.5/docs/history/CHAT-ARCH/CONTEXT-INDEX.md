@@ -1,6 +1,6 @@
 ## ChatGPT continuity — Owner Option D ratification now recorded (2026-10-23)
 
-Decision receipt: [M1A G1 Owner Option D ratification](./CHAT-ARCH-2026-10-23-M1A-G1-owner-option-d-no-bootstrap-ratification-receipt.md), blob `408229370babd4b53da3247d3aaef6392be5b268`, on proposed branch `codex/iabv-option-d-ratification-20261023`, base `439d9604037f156160a970dd33d1b3ad76009bdf`. The previous statement that Option D had not yet been explicitly ratified is superseded by this receipt.
+Decision receipt: [M1A G1 Owner Option D ratification](./CHAT-ARCH-2026-10-23-M1A-G1-owner-option-d-no-bootstrap-ratification-receipt.md), blob `408229370babd4b53da3247d3aaef6392be5b268`, authored on branch `codex/iabv-option-d-ratification-20261023` from baseline `439d9604037f156160a970dd33d1b3ad76009bdf`. The previous statement that Option D had not yet been explicitly ratified is superseded by this receipt; confirm the receipt's presence on live `main` when validating current state.
 
 Current interpretation: `OWNER_DECISION=RATIFIED_OPTION_D_NO_BOOTSTRAP`; `AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED`; `G1=G2=G3=NOT_ESTABLISHED`; all eight implementation prerequisites remain open. Ratification is not proof of absence, implementation authorization, permission for protected reads or block release. `CURRENT-STATE.md` alone governs current routing; do not repeat the decision question or retry denied readers.
 
@@ -1022,7 +1022,9 @@ Next actor: Sonnet/Claude — one targeted delta review of Entry 278 only. Chall
 
 No implementation, product-source/config edits, tests/builds/runtime, local M0A access, blocked-reader retry/bypass, credential inspection, authentication, installation/update or launch. Acceptance of this candidate cannot release a governance block. Keep `KEEP_BLOCKED`.
 
----## Latest route record — Entry 274 (M0B-R8.1 consolidated read-decision contract)
+---
+
+## Latest route record — Entry 274 (M0B-R8.1 consolidated read-decision contract)
 
 - Record: [CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md](./CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md)
 - Status: `M0B_R8_1_CONSOLIDATED_CONTRACT_PROPOSED_PENDING_SECOND_CHALLENGE`; `KEEP_BLOCKED`.
