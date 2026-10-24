@@ -1,8 +1,8 @@
-<!-- OWNER-DECISION-OVERRIDE: candidate-only writeback from 2026-10-24. Do not treat as canonical until this documentation PR is adopted on live main and fetched back. -->
+<!-- OWNER-DECISION-OVERRIDE: adopted by documentation PR #482 and fetched back from live main on 2026-10-24. This records a design/static-review route only; it does not create runtime authority. -->
 
-## LATEST OWNER ROUTE PROPOSAL — G1 reopened for design/static review only (2026-10-24)
+## LATEST OWNER ROUTE — G1 reopened for design/static review only (2026-10-24)
 
-The Owner explicitly withdrew the prior `RATIFIED_OPTION_D_NO_BOOTSTRAP` decision for the purpose of reopening analysis and authorized a zero-budget, non-public design/static review. This overrides the preceding historical routing **within this candidate branch only**. Owner-decision provenance is an explicit chat message, not an independently authenticated runtime identity event.
+The Owner explicitly withdrew the prior `RATIFIED_OPTION_D_NO_BOOTSTRAP` decision for the purpose of reopening analysis and authorized a zero-budget, non-public design/static review. This supersedes the older historical routing below for the **current analysis decision only**. Owner-decision provenance is an explicit chat message, not an independently authenticated runtime identity event.
 
 Handoff: [M1A G1 Owner reopening — static design handoff](./CHAT-ARCH-2026-10-24-M1A-G1-owner-reopen-static-design-handoff.md).
 
@@ -11,7 +11,7 @@ PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
 ACTIVE_TASK=M1A_G1_REOPENED_GBA_ROOT_CEREMONY_ADVERSARIAL_STATIC_REVIEW
 OWNER_DECISION=REOPENED_G1_DESIGN_AND_STATIC_REVIEW_ONLY
 OWNER_DECISION_PROVENANCE=EXPLICIT_OWNER_CHAT_MESSAGE_2026-10-24
-OWNER_DECISION_CANONICAL_STATUS=CANDIDATE_ONLY_UNTIL_MAIN_ADOPTION
+OWNER_DECISION_CANONICAL_STATUS=ADOPTED_ON_LIVE_MAIN_VIA_PR_482; FETCH_BACK_CONFIRMED_2026-10-24
 AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
 QUALIFYING_INDEPENDENT_ROOT=NOT_ESTABLISHED
 ROOT_CUSTODIAN_AND_INDEPENDENT_VERIFICATION_CHANNEL=NOT_ESTABLISHED
@@ -39,7 +39,8 @@ NEXT_ACTION=BOUNDED_ADVERSARIAL_STATIC_REVIEW_OF_ROOT_CEREMONY_AND_GBA_DESIGN
 NEXT_REVIEW_TARGET=CLAUDE_OPUS_4_6_IN_ANTIGRAVITY; OWNER_REPORTED_AVAILABILITY
 ```
 
-This is a proposed routing change from `main=c3bc9d8b4f727483081cf24650d4e7209687024c`; it is not canonical until adopted on live `main` and fetched back. Do not infer absence of authority assets from `UNKNOWN; NOT_INSPECTED`. The explicit reopen decision does not create a root, authorize implementation, relax fail-closed behavior, or change any cost/runtime gate.
+PR #482 is merged; its squash merge commit is `62f488cef9e3defbb56304a4d8ae646f4f6b30ef`. The routing above was fetched back from live `main`. The writeback changes the analysis route only: it does not prove authority assets absent or present, create a root, authorize implementation, or relax fail-closed behavior.
+
 
 ---
 
