@@ -1,3 +1,13 @@
+## Latest candidate-only continuity — Phase 1 PR #473 targeted static review (2026-10-23)
+
+- Handoff: [Phase 1 MCP transport hardening — targeted static review and new-chat handoff](./CHAT-ARCH-2026-10-23-phase1-transport-hardening-independent-review-handoff.md).
+- Reviewed source SHA: `18feeb0872dfebd583fc1cf70674506277ced09a`; PR #473 must be revalidated for the current head.
+- The two targeted fixes (no PowerShell port-based kill/launch; governance tri-state preserved as unknown) passed source-level inspection only. Owner-reported tests: 48 passed; not independently executed here.
+- Next action: full PR diff review plus a pinned-base comparison of the two World Model snapshot test failures. Keep PR Draft, unmerged and governance blocked.
+- This is a candidate-only breadcrumb; `main` routing remains determined by `CURRENT-STATE.md` on live `main`.
+
+---
+
 ## Latest bounded route — Phase 1 MCP transport hardening
 
 - Current routing authority: [CURRENT-STATE.md](./CURRENT-STATE.md).
