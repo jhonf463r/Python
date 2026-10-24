@@ -1,3 +1,13 @@
+## ChatGPT continuity and anti-loop protocol — routing notice (2026-10-23)
+
+Protocol reference: [ChatGPT operational continuity protocol](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-23-CHATGPT-operational-continuity-protocol-correction.md). This documentary correction was authored on isolated branch `codex/iabv-chatgpt-protocol-correction-20261023` from `c95fb23c8ae5f7b6fdd1f94b4dba253347bb89cd`. On every startup, verify live `main` and confirm the file's presence there before treating this proposal as adopted; a branch or PR alone is not canonical authority.
+
+**Execution rules for ChatGPT:** fetch the live remote `main` and complete the five-file preflight in the mandated order; treat `CURRENT-STATE.md` as the sole routing authority and sole owner of `NEXT_ACTION`; acknowledge the already-recorded Entra/Authenticator success without asking the Owner to repeat it; never infer IABV trust from MFA; distinguish `UNKNOWN`, `NOT_INSPECTED`, `SUPPORTED_ROUTE_NOT_FOUND`, `NOT_ESTABLISHED`, and `NOT_AUTHORIZED`; never retry a denied reader or bypass a denial through another tool; do not treat the Owner's confusion as Option D ratification; and do not repeat a decision question after it has been clearly presented and answered/left unknown unless new evidence changes the decision. Preserve fail-closed state and no-cost/no-runtime boundaries.
+
+Do not add another competing routing block here. Detailed protocol and current task decision belong in the linked protocol and live canonical `CURRENT-STATE.md`.
+
+---
+
 ## OVERRIDING LATEST ROUTING — Entra identity prepared; no-cost bridge-security review completed (2026-10-23)
 
 Latest new-chat handoff: [M1A G1 Entra identity and bridge-security continuity handoff](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-23-M1A-G1-new-chat-continuity-handoff-entra.md), blob `38405887fd8188c58f69ea37d94e55e8dd15806e`.
