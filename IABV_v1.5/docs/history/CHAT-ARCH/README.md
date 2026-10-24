@@ -1,3 +1,9 @@
+## ChatGPT continuity — independent generic-shell closure review recorded (2026-10-23)
+
+Review receipt: [PR #473 — independent review of generic shell execution closure](./CHAT-ARCH-2026-10-23-independent-review-generic-shell-closure.md). Reviewed candidate HEAD `cb1a8b545bc29b13b6da1ada0f0204601805f7dc`; static review passes for the generic shell service gate and direct `ShellToolAdapter` denial. Owner-reported 11 focused tests were not independently executed. Application-wide tunnel absence and live process state remain unestablished. PR #473 stays OPEN / DRAFT / UNMERGED; main's no-bootstrap/fail-closed routing is unchanged.
+
+---
+
 ## Latest candidate-only continuity — PR #473 independent review (2026-10-23)
 
 Review receipt: [PR #473 — independent review of residual tunnel-route closures](./CHAT-ARCH-2026-10-23-independent-review-residual-tunnel-closures.md). The two targeted tunnel-start paths statically pass their focused checks. The independent review found a broader local `shell_command`/sandbox execution route not guarded by the current Cloudflare-specific adapter patch, so the global no-tunnel invariant is not established. Owner-reported 8/8 tests and the two-test World Model base comparison were recorded in the closure receipt; they were not re-executed by this reviewer. PR #473 stays Draft and unmerged; revalidate its head after continuity writeback.
