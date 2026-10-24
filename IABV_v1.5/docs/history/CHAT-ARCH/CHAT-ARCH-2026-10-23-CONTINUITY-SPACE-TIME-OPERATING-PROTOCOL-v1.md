@@ -182,3 +182,60 @@ A chat is **not continuity-complete** until it has:
 - [ ] recorded/fetched back any authorized durable writeback and made no unsupported claim of success.
 
 If any item cannot be completed, state the exact uncompleted item and why. Do not improvise authority to appear productive.
+
+---
+
+## 12. Addendum proposed after PR #477 static review — evidence layers and boundary-complete reasoning (2026-10-24)
+
+**Status:** additive process improvement proposed on an isolated documentation branch. It is not an authority grant, does not supersede `CURRENT-STATE.md`, and becomes canonical only after adoption on live `main` and fetch-back.
+
+Latest review receipt candidate: [M1A PR #477 bounded static readiness review](./CHAT-ARCH-2026-10-24-M1A-PR477-static-readiness-review.md). At review time, `main` was `c3bc9d8b4f727483081cf24650d4e7209687024c`; PR #477 candidate HEAD was `47e9458836369a67d4629398b62a93d99e18cc74`. The review disposition was `STATIC_REVIEW=PASS_WITH_LIMITATIONS`, not merge approval. The Owner reported one isolated real STDIO test passing; no matching CI result was returned by the queried GitHub workflow/status surfaces.
+
+### 12.1 Boundary-complete code review
+
+For any security/transport prohibition, inspect the whole effective boundary, not just the named guard:
+
+1. Enumerate every public constructor, factory, CLI `main()`, wrapper execution method, underlying engine/SDK object, UI service, bootstrap hook, script, reasoning executor, generic shell and specialized CLI.
+2. Trace callable references and publicly exposed underlying objects. If wrapper `run()` validates a profile/transport but `self.engine.run()` is directly accessible, record the guard as wrapper-scoped until the underlying object is encapsulated or independently guarded.
+3. Separate **a structurally available escape hatch** from **an in-repository reachable product path**. Do not inflate a theoretical API bypass into a proven active exposure; do not claim a universal invariant merely because no internal caller was found.
+4. Confirm the impact of the escape hatch under the actual registry/configuration. A raw engine that only contains a harmless health tool is different from a raw engine that contains protected or write-capable tools, though it can still violate a claim that network transport is impossible.
+
+### 12.2 Evidence stages must remain disjoint
+
+Report these independently, with source, revision and provenance:
+
+- Static source/diff review.
+- Unit tests reported in a PR body or external actor's summary.
+- A detailed Owner-reported execution (include exact command, exit code, test scope and after-state).
+- CI workflow/status results actually returned from GitHub.
+- Full application/AppBootstrap runtime.
+- Real transport behavior.
+- Actual protected operation authorization.
+- Downstream result ingestion, persistence and later causal reuse.
+
+A positive stage does not promote the next. In particular:
+
+- A rejected tool name that is absent from a restricted registry proves non-exposure in that profile, **not** internal authorization behavior of the absent tool.
+- `bridge_health={"status":"ok"}` proves only the health function returned that payload. It does not prove complete application health or bridge readiness.
+- An Owner-reported test is useful evidence with that provenance, not a CI check and not a test executed by the coordinator.
+- Empty GitHub review/status/workflow results mean `NO_RESULTS_RETURNED_BY_QUERIED_SURFACES`, not proof no review/check exists anywhere.
+- A clean isolated test checkout proves that checkout remained clean under the reported test; it does not establish that another local workspace is clean or canonical.
+
+### 12.3 Loop prevention using terminal review findings
+
+When a previous review named a concrete source path and a later candidate removes it, inspect the exact replacement and targeted regression evidence instead of repeating the same discovery task. A historical finding is closed only for the stated path and scope. Continue searching for new entrypoints only when the current diff, call graph or fresh evidence gives a reason; do not repeat broad scans by habit.
+
+Classify the output for each finding as one of:
+- `CLOSED_FOR_REVIEWED_PATH`;
+- `LATENT_NOT_CURRENTLY_REACHABLE`;
+- `ESCAPE_HATCH_STATICALLY_IDENTIFIED`;
+- `ACTIVE_PRODUCT_PATH_DEMONSTRATED`;
+- `UNKNOWN_NOT_TESTED`.
+
+Use these labels to state exactly what is closed and what is not. Never collapse them into a universal “secure”/“unsafe” verdict.
+
+### 12.4 Authorization and next-action discipline after review
+
+A static review authorization does not authorize source edits, more tests, runtime, network transport, protected reads, merge, deployment or release. Capture the review receipt and its result, preserve the original route and stop. If the review recommends a code change, describe one minimal next task with the exact finding it resolves; wait for that task's specific authorization before implementation. `AUTOMATIC_FOLLOW_ON=FALSE` remains in force.
+
+This addendum improves review procedure only. It does not amend the no-bootstrap decision, establish trust authority, close G1/G2/G3, authorize protected reads or change the current canonical `NEXT_ACTION`.
