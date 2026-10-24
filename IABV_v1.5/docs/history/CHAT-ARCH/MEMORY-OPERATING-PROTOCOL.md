@@ -26,6 +26,16 @@ NEXT_REVIEW_TARGET=NONE_UNTIL_GENUINELY_NEW_INDEPENDENT_EVIDENCE
 
 The prior reopening was limited to design/static review and is now terminal. Its prompt and former `NEXT_ACTION` are historical, not a pending assignment; `CURRENT-STATE.md` carries the routing record. PR #486 is the integration vehicle for this documentation update; its review status is tracked in GitHub. A merge to `main` adopts the record, and fetch-back from `main` verifies its presence. This section records the review outcome, not the PR lifecycle status. The documentation does not authenticate the reviewer, establish authority, close gates, or authorize implementation.
 
+## Reusable chat-protocol delta — evidence custody and terminal boundaries (2026-10-24)
+
+- Revalidate live `main` and the actual PR head; do not treat a pasted SHA or a prior chat state as current.
+- If a source attachment is not available to the executor, do not substitute a similarly named file. Require exact source/package/destination hash agreement and preserve the accepted source bytes.
+- A hash establishes byte identity, not reviewer identity or claim truth. Record AI/model attribution as unauthenticated unless independent invocation evidence exists.
+- A review-process PASS is not a G1/G2/G3 pass. Keep uninspected assets unknown, preserve all fail-closed gates, and do not infer absence from a denied/unavailable route.
+- A branch or PR is a candidate until adopted in live `main` and verified by fetch-back. A terminal negative review gets no automatic follow-on; reopen only on genuinely new, independently verifiable root-and-mandate evidence.
+
+See the [terminal-review new-chat handoff](./CHAT-ARCH-2026-10-24-M1A-G1-terminal-review-new-chat-continuity-handoff.md) for the complete chronology, exact next-chat prompt and stop conditions.
+
 ---
 
 
