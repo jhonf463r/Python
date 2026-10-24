@@ -1,3 +1,39 @@
+## CURRENT-STATE ROUTING — PR #473 residual tunnel-route closure (2026-10-23)
+
+Latest candidate-branch receipt: [PR #473 residual tunnel launch paths closed](./CHAT-ARCH-2026-10-23-phase1-residual-tunnel-closures.md). The same PR branch now removes the Common Sense `cloudflared tunnel run` executor and constrains the `cloudflared_cli` adapter to the fixed inspection subcommands `tunnel list` and `tunnel info`. Focused mocked tests passed 8/8. The two named World Model snapshot tests were run separately on base and the pre-change candidate; both fail on both revisions because the test fake lacks `scan_stats`. This comparison does not repair those tests or change the code under test.
+
+This candidate-only routing does not supersede live `main` while PR #473 is unmerged. Revalidate the branch, PR head, and PR state before further action. Do not infer a running tunnel or effective runtime behavior from the static changes or mocked tests.
+
+```text
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+ACTIVE_TASK=PHASE1_MCP_TRANSPORT_HARDENING
+PR=473; STATE=OPEN_DRAFT_UNMERGED
+BASE_SHA=2a5ac42fabbd7c6a66591d127e379432495ad3bc
+PRE_CHANGE_HEAD=fe83a99ed8115d5c034b33cb21e3573769925920
+IMPLEMENTATION_COMMIT=003124a7aea63765aafc7915b193a4a9fb79e2d3
+COMMON_SENSE_TUNNEL_START=REMOVED; FOCUSED_MOCKED_TEST=PASS
+CLOUDFLARED_TUNNEL_SUBCOMMANDS=LIST_INFO_ONLY; RUN_REJECTED_BEFORE_SUBPROCESS
+FOCUSED_TESTS=8_PASSED
+WORLD_MODEL_TESTS=2_FAILED_ON_BASE_AND_CANDIDATE; SAME_SCAN_STATS_ATTRIBUTEERROR
+BASELINE_COMPARISON=CONFIRMED_PRESENT_ON_BASE_AND_CANDIDATE
+BUILD=NOT_RUN
+RUNTIME=NOT_RUN
+REAL_TRANSPORT=NOT_RUN
+RATIFIED_OPTION_D_NO_BOOTSTRAP=REMAINS_IN_FORCE
+AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+G1/G2/G3=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+GOVERNANCE=KEEP_BLOCKED
+READ_LIST=FAIL_CLOSED
+PUBLIC_TUNNEL=PROHIBITED
+AZURE_BILLING_STATE=NOT_VERIFIED
+COST_POLICY=NO_PAID_SERVICES; NO_RESOURCE_DEPLOYMENT
+BRIDGE=BRIDGE_NOT_READY
+NEXT_ACTION=PUBLISH_ON_SAME_PR_BRANCH_AND_REVALIDATE_PR; DO_NOT_MERGE
+```
+
+---
+
 ## CURRENT-STATE ROUTING — Full PR #473 review found a remaining tunnel-start path (2026-10-23)
 
 Latest candidate-only review receipt: [PR #473 full static review — residual tunnel executor and World Model baseline handoff](./CHAT-ARCH-2026-10-23-phase1-full-pr-review-blocker-and-baseline-handoff.md). This routing is on the isolated candidate branch only; it does **not** replace live `main` routing while PR #473 is unmerged. Live `main` was revalidated as `2a5ac42fabbd7c6a66591d127e379432495ad3bc`. The full source revision reviewed is `18feeb0872dfebd583fc1cf70674506277ced09a`; all PR-head commits after that source revision inspected here change continuity/documentation only. The branch head is intentionally not self-referenced in this file; refetch the branch and PR before any next action.

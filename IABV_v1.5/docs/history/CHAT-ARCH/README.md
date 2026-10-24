@@ -1,3 +1,9 @@
+## Latest candidate-only continuity — PR #473 residual tunnel routes (2026-10-23)
+
+New receipt: [PR #473 residual tunnel launch paths closed](./CHAT-ARCH-2026-10-23-phase1-residual-tunnel-closures.md). The receipt records the pinned base/candidate comparison for the two World Model snapshot tests, the bounded Common Sense and Cloudflared CLI changes, and the focused mocked-test results. PR #473 remains candidate-only; revalidate its head and Draft/unmerged state after publication. `CURRENT-STATE.md` remains the routing authority.
+
+---
+
 ## Latest candidate-only continuity — PR #473 full static review (2026-10-23)
 
 New handoff: [PR #473 full static review — residual tunnel executor and World Model baseline handoff](./CHAT-ARCH-2026-10-23-phase1-full-pr-review-blocker-and-baseline-handoff.md). The current source diff has a blocking residual tunnel-launch route in Common Sense reasoning; the two World Model snapshot tests remain `UNRESOLVED` because the coordinator could not execute them on base and candidate. Revalidate PR #473 before further action; it remains candidate-only, open as Draft and unmerged. This receipt does not supersede `main`; only the top of `CURRENT-STATE.md` routes the candidate task.
