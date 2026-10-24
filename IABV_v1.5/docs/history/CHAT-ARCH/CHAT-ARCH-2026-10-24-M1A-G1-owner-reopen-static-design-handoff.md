@@ -1,4 +1,34 @@
-# M1A G1 — Owner reabre diseño de bootstrap gobernado: handoff y revisión estática adversarial
+<!-- Proposed terminal result update for the previously completed static review; not canonical until this candidate is adopted and fetched back from main. -->
+
+## Resultado terminal de la revisión G1 — BLOCKED_NO_NONCIRCULAR_ROOT
+
+El informe suministrado por el Owner se conserva byte a byte en [el archivo archivado](./CHAT-ARCH-2026-10-24-M1A-G1-gemini-adversarial-static-review-report.txt), con reconciliación en [su recibo](./CHAT-ARCH-2026-10-24-M1A-G1-adversarial-review-result-receipt.md). La atribución a Gemini 3.8 / Google Antigravity solo aparece declarada en el informe y no está autenticada independientemente. El resultado no demuestra ausencia de activos de autoridad.
+
+```text
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+ACTIVE_TASK=M1A_G1_WAIT_FOR_INDEPENDENT_ROOT_EVIDENCE
+LAST_TERMINAL_TASK=M1A_G1_REOPENED_GBA_ROOT_CEREMONY_ADVERSARIAL_STATIC_REVIEW
+LAST_TERMINAL_RESULT=BLOCKED_NO_NONCIRCULAR_ROOT; OWNER_SUPPLIED_REPORT; REVIEWER_ATTRIBUTION_NOT_INDEPENDENTLY_AUTHENTICATED
+AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+QUALIFYING_INDEPENDENT_ROOT=NOT_ESTABLISHED
+ROOT_CUSTODIAN_AND_INDEPENDENT_VERIFICATION_CHANNEL=NOT_ESTABLISHED
+OWNER_TO_WINDOWS_PRINCIPAL=NOT_ESTABLISHED
+BOOTSTRAP_AUTHORITY_TO_ISSUER=NOT_ESTABLISHED
+ISSUER_TO_EXACT_SERVER=NOT_ESTABLISHED
+G1=NOT_ESTABLISHED; G2=NOT_ESTABLISHED; G3_VERSIONED_TARGET_RESOLVER=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+GOVERNANCE=KEEP_BLOCKED; READ_LIST=FAIL_CLOSED; BRIDGE=BRIDGE_NOT_READY
+NEXT_ACTION=MAINTAIN_FAIL_CLOSED_PENDING_PREEXISTING_INDEPENDENT_ROOT_AND_MANDATE_EVIDENCE
+NEXT_REVIEW_TARGET=NONE_UNTIL_GENUINELY_NEW_INDEPENDENT_EVIDENCE
+AUTOMATIC_FOLLOW_ON=FALSE
+```
+
+The routing snapshot and embedded reviewer prompt below document the completed review process; they are historical and are not a pending review assignment. Only genuinely new independent root and mandate evidence can change the next action.
+
+---
+
+
+# M1A G1 — Handoff de reapertura y revisión estática adversarial (resultado terminal registrado)
 
 - Fecha: 2026-10-24 (America/Bogota).
 - Task: `M1A_G1_REOPENED_GBA_ROOT_CEREMONY_ADVERSARIAL_STATIC_REVIEW`.
@@ -57,7 +87,7 @@ This explicitly supersedes the previously ratified Option D for **the current de
 `DESIGN_REVIEW=PASS` is not the same as “G1 closed.”  
 A source diff, key fingerprint, GitHub approval, successful MFA, local administrator privilege, Windows SID, TPM presence or self-signed first-run key does not independently prove the initial Owner/authority binding.
 
-## 4. Current candidate routing
+## 4. Routing snapshot at handoff creation (historical; superseded by terminal result)
 
 ```text
 PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
@@ -156,7 +186,7 @@ A polished protocol without independently supported initial authority is not a p
 
 
 
-## 10. Prompt literal para la revisión independiente (copiar y pegar)
+## 10. Historical prompt used for completed independent review (retained for provenance; do not execute again)
 
 Destino seleccionado: **Gemini 3.8 Flash en Antigravity**, con nivel de razonamiento alto si la interfaz lo permite. Es el sustituto temporal de Claude Opus para esta única revisión adversarial estática, no un implementador. La disponibilidad de Gemini en la interfaz es OWNER_REPORTED; no prueba acceso efectivo al repositorio. Se selecciona por independencia de proveedor y ajuste a tareas complejas de varios pasos. Si no puede leer una referencia necesaria, devuelve ACCESS_NOT_AVAILABLE y no inventes el contenido. Claude Sonnet 4.6 es reserva únicamente si Gemini no puede realizar la revisión y el Owner vuelve con ese bloqueo; no ejecutes ambas revisiones en paralelo.
 
