@@ -2,11 +2,20 @@
 
 ## Estado actual de esta candidata
 
-Esta candidata permite que `IABVMCPServer.run()` seleccione únicamente el
-transporte local `stdio`. Los transportes de red `sse` y `streamable-http`
-fallan cerrados antes de iniciar el servidor. La protección DNS-rebinding y
-los allowlists predeterminados del SDK se conservan; no se instalan hosts ni
-orígenes comodín.
+Esta candidata permite ejecutar únicamente el perfil `local_restricted` por
+el transporte local `stdio`. Ese perfil registra exclusivamente
+`bridge_health`; no construye `AppBootstrap` ni conecta servicios del
+contenedor. Los transportes de red `sse` y `streamable-http` fallan cerrados
+antes de iniciar el servidor. La protección DNS-rebinding y los allowlists
+predeterminados del SDK se conservan; no se instalan hosts ni orígenes comodín.
+
+`local_restricted` es el único perfil admitido por el constructor público,
+`create_server()` y `main()`. Una selección explícita de `full` se rechaza
+antes del bootstrap y del registro de herramientas. `IABVMCPServer.run()`
+también vuelve a comprobar el perfil antes de invocar el runner MCP; una
+instancia `full` construida fuera de los entrypoints admitidos no puede
+ejecutarse mediante ese método. No hay autorización gobernada implementada
+para habilitar las herramientas completas.
 
 `MCPBridgeService` pertenece al ciclo de vida de la UI y no puede proporcionar
 el pipe `stdio` propiedad del cliente. Por ello, su operación de inicio falla
@@ -26,23 +35,15 @@ ejecutarlo. El razonador Common Sense tampoco lanza túneles; el adaptador CLI
 solo permite `cloudflared tunnel list` e `cloudflared tunnel info` para esa
 familia de comandos.
 
-## Herramientas MCP registradas
+## Herramientas MCP ejecutables
 
-El servidor conserva estas herramientas; su registro no implica autorización
-para usarlas ni que el transporte remoto esté disponible:
-
-| Herramienta | Servicio de origen | Efecto declarado |
-| --- | --- | --- |
-| `world_model_snapshot` | `WorldModelService` | Lectura de snapshot |
-| `orchestrator_preview` | `AdaptiveTaskOrchestrator` | Vista previa |
-| `site_exploration_explore` | `SiteExplorationService` y repositorio | Escribe manuales de sitio |
-| `portable_context_get` | `PortableContextService` | Lectura de contexto portable |
-| `self_examination_current` | `OperationalSelfExaminationService` | Lectura de revisión |
-| `chatgpt_web_capture` | `UIExecutionRunner` | Interacción con navegador |
-
-Las herramientas mantienen sus gates de permiso, estado del mundo y bloqueos
-operativos por separado del gate de transporte. `stdio` no concede autoridad
-para leer el repositorio ni para ejecutar herramientas bloqueadas.
+La única herramienta registrada por el perfil ejecutable es
+`bridge_health`, que devuelve `{"status":"ok"}`. Su respuesta indica que esa
+función diagnóstica está disponible; no verifica la salud de la aplicación
+completa ni autoriza lecturas del repositorio. Las herramientas completas
+permanecen inaccesibles por los entrypoints de ejecución MCP. El transporte
+`stdio` tampoco concede autoridad para leer el repositorio ni para ejecutar
+herramientas bloqueadas.
 
 No conectar esta candidata a un túnel público. La autenticación del transporte,
 la autorización independiente por operación, la resolución del destino y la
@@ -51,8 +52,9 @@ restricción no libera bloqueos de gobernanza ni habilita lecturas protegidas.
 
 ## Ejecución local explícita
 
-Un cliente local que ya esté autorizado puede iniciar el módulo directamente
-como servidor `stdio`, desde un checkout que el operador haya seleccionado:
+Un cliente local puede iniciar el módulo como servidor `stdio`, desde un
+checkout que el operador haya seleccionado. Sin `IABV_MCP_PROFILE`, el módulo
+usa `local_restricted`; establecer `full` provoca un rechazo:
 
 ```powershell
 $env:IABV_MCP_TRANSPORT = 'stdio'

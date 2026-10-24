@@ -79,7 +79,9 @@ DEFAULT_SERVER_NAME = "iabv-v15"
 SUPPORTED_TRANSPORTS = {"stdio"}
 PROFILE_FULL = "full"
 PROFILE_LOCAL_RESTRICTED = "local_restricted"
-SUPPORTED_PROFILES = frozenset({PROFILE_FULL, PROFILE_LOCAL_RESTRICTED})
+# The complete profile remains named for explicit rejection and historical
+# references, but no MCP execution entrypoint may select it.
+SUPPORTED_PROFILES = frozenset({PROFILE_LOCAL_RESTRICTED})
 
 
 def _to_jsonable(value: Any) -> Any:
@@ -128,12 +130,14 @@ class IABVMCPServer:
         *,
         name: str = DEFAULT_SERVER_NAME,
         mcp: Any | None = None,
-        profile: str = PROFILE_FULL,
+        profile: str = PROFILE_LOCAL_RESTRICTED,
     ) -> None:
         if profile not in SUPPORTED_PROFILES:
-            raise ValueError(f"perfil MCP no soportado: {profile}")
-        if container is None and profile != PROFILE_LOCAL_RESTRICTED:
-            raise ValueError("container no puede ser None fuera del perfil local restringido")
+            raise ValueError(
+                f"perfil MCP '{profile}' deshabilitado; solo se permite "
+                f"{PROFILE_LOCAL_RESTRICTED} hasta que exista autorización "
+                "gobernada verificable"
+            )
         if profile == PROFILE_LOCAL_RESTRICTED and mcp is not None:
             raise ValueError("el perfil local restringido requiere un registro MCP nuevo")
         self.container = container
@@ -483,6 +487,9 @@ class IABVMCPServer:
                 return {"status": "ok"}
 
             return
+
+        if self.profile != PROFILE_FULL:
+            raise ValueError(f"perfil MCP no registrado: {self.profile}")
 
         @mcp.tool()
         def world_model_snapshot(refresh: bool = False, full: bool = False) -> dict[str, Any]:
@@ -3165,6 +3172,11 @@ class IABVMCPServer:
     # Ciclo de vida
 
     def run(self, transport: str = "stdio") -> None:
+        if self.profile != PROFILE_LOCAL_RESTRICTED:
+            raise ValueError(
+                f"ejecución MCP bloqueada para el perfil '{self.profile}'; "
+                f"solo se permite {PROFILE_LOCAL_RESTRICTED}"
+            )
         if transport not in SUPPORTED_TRANSPORTS:
             raise ValueError(
                 f"transport '{transport}' está deshabilitado; solo stdio local "
@@ -3277,15 +3289,16 @@ def create_server(
     container: Any | None = None,
     *,
     name: str = DEFAULT_SERVER_NAME,
-    profile: str = PROFILE_FULL,
+    profile: str = PROFILE_LOCAL_RESTRICTED,
 ) -> IABVMCPServer:
-    """Fabrica un IABVMCPServer, sin bootstrap para el perfil restringido."""
+    """Fabrica únicamente el servidor MCP local restringido, sin bootstrap."""
 
     if profile not in SUPPORTED_PROFILES:
-        raise ValueError(f"perfil MCP no soportado: {profile}")
-    if container is None and profile != PROFILE_LOCAL_RESTRICTED:
-        from iabv_v15.bootstrap import AppBootstrap
-        container = AppBootstrap()
+        raise ValueError(
+            f"perfil MCP '{profile}' deshabilitado; solo se permite "
+            f"{PROFILE_LOCAL_RESTRICTED} hasta que exista autorización "
+            "gobernada verificable"
+        )
     return IABVMCPServer(container, name=name, profile=profile)
 
 
@@ -3294,9 +3307,8 @@ def main() -> None:
 
     Configurable vía variables de entorno:
       - IABV_MCP_TRANSPORT: stdio (default) | sse | streamable-http
-      - IABV_MCP_PROFILE: full | local_restricted (solo bridge_health, sin bootstrap)
+      - IABV_MCP_PROFILE: local_restricted (solo bridge_health, sin bootstrap)
       - IABV_MCP_NAME: nombre visible del server
-      - IABV_WORKSPACE_ROOT: raíz del workspace para AppBootstrap
     """
     transport = os.environ.get("IABV_MCP_TRANSPORT", "stdio")
     if transport not in SUPPORTED_TRANSPORTS:
@@ -3307,7 +3319,11 @@ def main() -> None:
         )
     profile = os.environ.get("IABV_MCP_PROFILE", PROFILE_LOCAL_RESTRICTED)
     if profile not in SUPPORTED_PROFILES:
-        raise ValueError(f"perfil MCP no soportado: {profile}")
+        raise ValueError(
+            f"perfil MCP '{profile}' deshabilitado; solo se permite "
+            f"{PROFILE_LOCAL_RESTRICTED} hasta que exista autorización "
+            "gobernada verificable"
+        )
 
     logging.basicConfig(
         level=os.environ.get("IABV_MCP_LOG_LEVEL", "INFO"),
@@ -3322,14 +3338,10 @@ def main() -> None:
     from iabv_v15.infra.logging import suppress_noisy_http_loggers
     suppress_noisy_http_loggers()
     name = os.environ.get("IABV_MCP_NAME", DEFAULT_SERVER_NAME)
-    workspace_root = os.environ.get("IABV_WORKSPACE_ROOT")
-
-    if profile == PROFILE_LOCAL_RESTRICTED:
-        server = IABVMCPServer(None, name=name, profile=profile)
-    else:
-        from iabv_v15.bootstrap import AppBootstrap
-        container = AppBootstrap(workspace_root=workspace_root)
-        server = IABVMCPServer(container, name=name, profile=profile)
+    # The runnable entrypoint intentionally has no AppBootstrap path. Any
+    # future full-profile admission requires a separate, implemented and
+    # verified governance contract rather than an environment selector.
+    server = IABVMCPServer(None, name=name, profile=profile)
     server.run(transport=transport)
 
 

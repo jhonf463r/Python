@@ -54,6 +54,10 @@ This is a documentation-only routing update. Do not retry the denied reader, cir
 
 ---
 
+### Candidate-only MCP fail-closed profile receipt (2026-10-24; routing unchanged)
+
+[Receipt](./CHAT-ARCH-2026-10-24-mcp-fail-closed-candidate-consolidation.md) records a separate Owner-authorized candidate change and focused unit-test result: only `local_restricted` is runnable through the public MCP entrypoints; 19 focused tests passed. The work is not merged or canonical and does not establish G1–G3, close any of the eight prerequisites, or prove real transport. The active routing block above and its exact `NEXT_ACTION` remain unchanged; no governance, implementation, test, build or runtime state on `main` is inferred.
+
 ## OVERRIDING LATEST ROUTING — Entra identity prepared; no-cost bridge-security review completed (2026-10-23)
 
 Latest new-chat handoff: [M1A G1 Entra identity and bridge-security continuity handoff](./CHAT-ARCH-2026-10-23-M1A-G1-new-chat-continuity-handoff-entra.md), blob `38405887fd8188c58f69ea37d94e55e8dd15806e`.

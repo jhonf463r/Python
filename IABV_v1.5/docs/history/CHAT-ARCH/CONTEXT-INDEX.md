@@ -9,6 +9,10 @@ Every new IABV chat MUST apply the [Canonical continuity, space-time reasoning a
 [Receipt](./CHAT-ARCH-2026-10-24-local-restricted-stdio-health-check.md): owner-supplied Codex session result reports only the `local_restricted` `stdio` diagnostic tool `bridge_health` returning `{"status":"ok"}`. It does not close G1–G3 or change the active route, `NEXT_ACTION`, or any gate. Use `CURRENT-STATE.md` for routing.
 
 
+## Candidate-only implementation receipt — MCP fail-closed profile consolidation (2026-10-24)
+
+[Receipt](./CHAT-ARCH-2026-10-24-mcp-fail-closed-candidate-consolidation.md) documents the isolated candidate, preserved PR history, four three-way continuity conflict resolutions and 19 focused unit tests. It does not change `main` routing, trust gates, prerequisites or runtime status. This is an evidence pointer, not a “latest routing” section; `CURRENT-STATE.md` remains the only routing authority.
+
 ## ChatGPT continuity — Owner Option D ratification now recorded (2026-10-23)
 
 Decision receipt: [M1A G1 Owner Option D ratification](./CHAT-ARCH-2026-10-23-M1A-G1-owner-option-d-no-bootstrap-ratification-receipt.md), blob `cac492006c51c56ea4abc4dff822785e19c65d93`, authored on branch `codex/iabv-option-d-ratification-20261023` from baseline `439d9604037f156160a970dd33d1b3ad76009bdf`. The previous statement that Option D had not yet been explicitly ratified is superseded by this receipt; confirm the receipt's presence on live `main` when validating current state.
