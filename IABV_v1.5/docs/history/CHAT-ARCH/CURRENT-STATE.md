@@ -1,6 +1,6 @@
 ## CURRENT-STATE ROUTING PROPOSAL — Owner ratified Option D; no bootstrap (2026-10-23)
 
-Receipt: [M1A G1 Owner Option D ratification](./CHAT-ARCH-2026-10-23-M1A-G1-owner-option-d-no-bootstrap-ratification-receipt.md), blob `408229370babd4b53da3247d3aaef6392be5b268`. This proposed routing is on isolated branch `codex/iabv-option-d-ratification-20261023`, based on the verified `main` commit `439d9604037f156160a970dd33d1b3ad76009bdf`; **not merged yet**. This file remains the sole routing authority. The previous `OWNER_DECISION_NOT_CAPTURED` snapshot is superseded by the explicit Owner decision below.
+Receipt: [M1A G1 Owner Option D ratification](./CHAT-ARCH-2026-10-23-M1A-G1-owner-option-d-no-bootstrap-ratification-receipt.md), blob `408229370babd4b53da3247d3aaef6392be5b268`. This routing update originated on isolated branch `codex/iabv-option-d-ratification-20261023`, based on verified `main` commit `439d9604037f156160a970dd33d1b3ad76009bdf`, and was submitted for review via PR #472. Revalidate live `main` to determine whether it is currently canonical. `CURRENT-STATE.md` remains the sole routing authority. The previous `OWNER_DECISION_NOT_CAPTURED` snapshot is superseded by the explicit Owner decision below.
 
 ```text
 PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
@@ -34,13 +34,12 @@ AZURE_BILLING_STATE=NOT_VERIFIED
 COST_POLICY=NO_PAID_SERVICES; NO_RESOURCE_DEPLOYMENT
 BRIDGE=BRIDGE_NOT_READY
 AUTOMATIC_FOLLOW_ON=FALSE
-NEXT_ACTION=REVIEW_DOCS_ONLY_OPTION_D_RATIFICATION_RECEIPT_AND_ROUTING_DIFF
-POST_MERGE_ACTION=MAINTAIN_NO_BOOTSTRAP_FAIL_CLOSED; REOPEN_ONLY_ON_GENUINELY_NEW_AUTHORITY_EVIDENCE_OR_EXPLICIT_OWNER_DECISION
+NEXT_ACTION=MAINTAIN_NO_BOOTSTRAP_FAIL_CLOSED; REOPEN_ONLY_ON_GENUINELY_NEW_AUTHORITY_EVIDENCE_OR_EXPLICIT_OWNER_DECISION
 ```
 
 The Owner's explicit decision is ratified. It states that the Owner does not know of a qualifying pre-existing independent authority; it does **not** establish that trust assets do not exist. The prior reported Codex result `SUPPORTED_ROUTE_NOT_FOUND` means that the bounded route was unavailable and assets were not inspected.
 
-This branch authorizes only a proposed documentation update. Do not retry the denied reader, circumvent its denial, repeat Entra setup or the Option D question, create an authority/credential/app, incur costs, modify product code, run tests/build/runtime/transport, launch a tunnel, merge automatically, deploy, close a gate or release a block. After this documentation proposal is reviewed/merged, the next operational posture is to maintain no-bootstrap/fail-closed, not to begin implementation.
+This is a documentation-only routing update. Do not retry the denied reader, circumvent its denial, repeat Entra setup or the Option D question, create an authority/credential/app, incur costs, modify product code, run tests/build/runtime/transport, launch a tunnel, deploy, close a gate or release a block. Under the ratified Option D, maintain no-bootstrap/fail-closed; resume reconsideration only when genuinely new authority evidence or a new explicit Owner decision changes the basis.
 
 ---
 
@@ -1604,7 +1603,9 @@ Next actor: Sonnet/Claude — one targeted delta review of Entry 278 only. Chall
 
 No implementation, product-source/config edits, tests/builds/runtime, local M0A access, blocked-reader retry/bypass, credential inspection, authentication, installation/update or launch. Acceptance of this candidate cannot release a governance block. Keep `KEEP_BLOCKED`.
 
----## 2026-10-13 CONTINUITY UPDATE — ENTRY 274: CONSOLIDATED R8.1 CONTRACT; SECOND CHALLENGE PENDING
+---
+
+## 2026-10-13 CONTINUITY UPDATE — ENTRY 274: CONSOLIDATED R8.1 CONTRACT; SECOND CHALLENGE PENDING
 
 Canonical: [CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md](./CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md).
 
