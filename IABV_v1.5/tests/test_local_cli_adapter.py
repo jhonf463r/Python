@@ -258,6 +258,41 @@ def test_cloudflared_tunnel_run_is_blocked_even_if_card_metadata_lists_it(
     assert 'subcommand' in result['error_message']
 
 
+@pytest.mark.parametrize(
+    'args',
+    [
+        'access tcp --hostname service.example.test --url localhost:1234',
+        'access login https://service.example.test',
+        'access token --app-id example',
+    ],
+)
+def test_cloudflared_access_verbs_are_blocked_even_if_card_metadata_lists_them(
+    monkeypatch, args: str,
+) -> None:
+    card = _card(
+        tool_id='cloudflared_cli',
+        title='Cloudflared CLI (test)',
+        metadata={
+            'command_name': 'cloudflared',
+            # Deliberately include access to prove the adapter-owned guard wins.
+            'allowed_verbs': ['--version', 'version', 'tunnel', 'access', 'help'],
+            'allowed_subcommands': {'tunnel': ['list', 'info', 'run']},
+        },
+    )
+    adapter = LocalCliToolAdapter()
+    monkeypatch.setattr(adapter, '_resolve_executable', lambda _card: 'cloudflared')
+    monkeypatch.setattr(
+        'iabv_v15.services.tools.tool_adapters.subprocess.run',
+        lambda *_args, **_kwargs: pytest.fail('subprocess.run must not be reached'),
+    )
+
+    result = adapter.run(card, _task(args))
+
+    assert result['success'] is False
+    assert result['metadata']['blocked'] is True
+    assert 'cloudflared verb' in result['error_message']
+
+
 @pytest.mark.parametrize('subcommand', ['list', 'info'])
 def test_cloudflared_declared_tunnel_inspection_subcommands_reach_mocked_process(
     monkeypatch, subcommand: str,
