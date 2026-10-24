@@ -86,7 +86,7 @@ This receipt authorizes only recording the Owner decision. It does not authorize
 - closing G1, G2, G3 or any of the eight implementation prerequisite gates;
 - release of a governance block or claims that the bridge is ready.
 
-The routing/index update in this branch is a documentation proposal only. Its diff must be verified, and it must remain unmerged until review. If merged later, the canonical route is to maintain the already-ratified Option D fail-closed posture, not to ask the same decision again.
+At the time this receipt was created, the routing/index update was a documentation proposal awaiting review. Verify its adoption by checking live `main`. Once the receipt and synchronized routing are present on `main`, the canonical posture is to maintain the already-ratified Option D fail-closed decision, not to ask the same question again.
 
 ## 5. Receipt verification
 
