@@ -298,9 +298,8 @@ def test_cloudflared_guard_uses_executable_identity_not_only_tool_id(monkeypatch
         tool_id='custom_cli_alias',
         title='Custom CLI alias',
         metadata={
-            'command_name': 'cloudflared.exe',
-            'tool_family': 'cloudflared',
-            # Metadata tries to allow the access verb; the adapter-level guard must win.
+            # Neither the ToolCard ID nor metadata identifies Cloudflared.
+            # Only the resolved executable path should activate the fixed guard.
             'allowed_verbs': ['access'],
         },
     )
