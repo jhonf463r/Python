@@ -1,8 +1,8 @@
-<!-- Proposed terminal result update for the previously completed static review; not canonical until this candidate is adopted and fetched back from main. -->
+<!-- Continuity record for the completed G1 static review; PR lifecycle status is tracked externally. -->
 
 ## Resultado terminal de la revisión G1 — BLOCKED_NO_NONCIRCULAR_ROOT
 
-El informe suministrado por el Owner se conserva byte a byte en [el archivo archivado](./CHAT-ARCH-2026-10-24-M1A-G1-gemini-adversarial-static-review-report.txt), con reconciliación en [su recibo](./CHAT-ARCH-2026-10-24-M1A-G1-adversarial-review-result-receipt.md). La atribución a Gemini 3.8 / Google Antigravity solo aparece declarada en el informe y no está autenticada independientemente. El resultado no demuestra ausencia de activos de autoridad.
+El informe suministrado por el Owner se conserva byte a byte en [el archivo archivado](./CHAT-ARCH-2026-10-24-M1A-G1-gemini-adversarial-static-review-report.txt), con reconciliación en [su recibo](./CHAT-ARCH-2026-10-24-M1A-G1-adversarial-review-result-receipt.md). La atribución a Gemini 3.8 / Google Antigravity solo aparece declarada en el informe y no está autenticada independientemente. El resultado no demuestra ausencia de activos de autoridad. La PR #486 es el vehículo de integración documental; su estado de revisión se consulta en GitHub. El merge a `main` adopta el registro y el fetch-back desde `main` verifica su presencia. Este handoff registra el resultado, no el ciclo de vida de la PR.
 
 ```text
 PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE

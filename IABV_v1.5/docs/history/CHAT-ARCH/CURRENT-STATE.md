@@ -1,8 +1,8 @@
-<!-- Proposed routing override based on the terminal static review result; not canonical until this documentation candidate is adopted and fetched back from main. -->
+<!-- Current-state routing record for the terminal G1 review result. -->
 
-## PROPOSED CURRENT ROUTE — terminal G1 review; wait for independent root evidence (2026-10-24)
+## CURRENT-STATE ROUTING — terminal G1 review result (2026-10-24)
 
-The bounded adversarial static review is terminal. Its owner-supplied report declares `BLOCKED_NO_NONCIRCULAR_ROOT`. The report was byte-verified, but its attribution to Gemini 3.8 / Google Antigravity is not independently authenticated. This result does not establish that authority assets are absent.
+The bounded adversarial static review is terminal. Its owner-supplied report declares `BLOCKED_NO_NONCIRCULAR_ROOT`. The report was byte-verified, but its attribution to Gemini 3.8 / Google Antigravity is not independently authenticated. This result does not establish that authority assets are absent. PR #486 is the integration vehicle for this documentation update; its review status is tracked in GitHub. A merge to `main` adopts this routing record, and fetch-back from `main` verifies its presence. This section records the review outcome, not the PR lifecycle status. The archived [review report](./CHAT-ARCH-2026-10-24-M1A-G1-gemini-adversarial-static-review-report.txt) and [reconciliation receipt](./CHAT-ARCH-2026-10-24-M1A-G1-adversarial-review-result-receipt.md) preserve the source and provenance details.
 
 ```text
 PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE

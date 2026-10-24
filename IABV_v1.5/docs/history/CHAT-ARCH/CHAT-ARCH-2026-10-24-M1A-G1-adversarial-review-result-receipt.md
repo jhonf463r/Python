@@ -2,7 +2,7 @@
 
 - **Tarea terminal:** `M1A_G1_REOPENED_GBA_ROOT_CEREMONY_ADVERSARIAL_STATIC_REVIEW`.
 - **Veredicto registrado:** `BLOCKED_NO_NONCIRCULAR_ROOT`.
-- **Estado de este recibo:** candidato documental de continuidad; no canónico hasta su adopción y fetch-back desde `main`.
+- **Integración:** PR #486 es el vehículo de esta actualización documental; el merge a `main` adopta el registro y el fetch-back desde `main` verifica su presencia. El estado de revisión de la PR se consulta en GitHub.
 - **Main evaluado según el informe:** `9d5d1cbdb5ced92b7884551b8f9f4c87eeba3e4c`.
 - **Main revalidado y base de esta PR:** `9d5d1cbdb5ced92b7884551b8f9f4c87eeba3e4c`.
 

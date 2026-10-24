@@ -1,4 +1,4 @@
-<!-- Proposed terminal G1 review routing summary; CURRENT-STATE.md remains the sole routing authority. This candidate is not canonical until adopted and fetched back from main. -->
+<!-- G1 continuity summary; CURRENT-STATE.md remains the sole routing authority. -->
 
 ## Latest terminal G1 review result — BLOCKED_NO_NONCIRCULAR_ROOT (2026-10-24)
 
@@ -24,7 +24,7 @@ NEXT_ACTION=MAINTAIN_FAIL_CLOSED_PENDING_PREEXISTING_INDEPENDENT_ROOT_AND_MANDAT
 NEXT_REVIEW_TARGET=NONE_UNTIL_GENUINELY_NEW_INDEPENDENT_EVIDENCE
 ```
 
-The prior reopening was limited to design/static review. That review is now terminal. Do not treat its prompt or former `NEXT_ACTION` as pending; `CURRENT-STATE.md` carries the proposed current route. This documentation candidate does not authenticate the reviewer, establish authority, close gates, or authorize implementation.
+The prior reopening was limited to design/static review and is now terminal. Its prompt and former `NEXT_ACTION` are historical, not a pending assignment; `CURRENT-STATE.md` carries the routing record. PR #486 is the integration vehicle for this documentation update; its review status is tracked in GitHub. A merge to `main` adopts the record, and fetch-back from `main` verifies its presence. This section records the review outcome, not the PR lifecycle status. The documentation does not authenticate the reviewer, establish authority, close gates, or authorize implementation.
 
 ---
 
