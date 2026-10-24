@@ -2576,24 +2576,19 @@ class SiteExplorerToolAdapter:
 
 
 class LocalCliToolAdapter:
-    """Adapter read-only para CLIs locales (gh, cloudflared, git, winget).
+    """Adaptador para CLIs locales concretas (gh, cloudflared, git, winget).
 
-    Complementa a ``ShellToolAdapter``, que permanece deshabilitado en
-    esta fase: este conoce herramientas concretas, busca su ejecutable en PATH
-    o rutas Windows tipicas y ejecuta con ``shell=False`.
-    y ejecuta con ``shell=False`` para no exponer inyeccion. Es la base que
-    consume ``ToolRegistry`` para ``gh_cli``, ``cloudflared_cli``, ``git_cli``
-    y ``winget_cli``.
+    Complementa a ``ShellToolAdapter``, que permanece deshabilitado en esta
+    fase. Resuelve ejecutables concretos y llama con ``shell=False``. Cada
+    ToolCard declara verbos permitidos; para ``cloudflared_cli``, una allowlist
+    adicional fija impide que la metadata habilite comandos de red o acceso.
 
-    Contratos respetados:
-    - No decide rutas: ``AutonomyGovernancePolicy`` sigue siendo el gate.
-      ``requires_human_approval=True`` en la ``ToolCard`` mantiene cualquier
-      operacion fuera del whitelist detras de ``ToolApprovalPolicy``.
-    - No inventa observaciones: si el binario no existe, ``is_available``
-      devuelve ``False`` y ``run`` corta antes del subprocess.
-    - Read-only por diseno: ``card.metadata['allowed_verbs']`` declara los
-      primeros tokens permitidos; ``BLOCKED_TOKENS`` bloquea tokens
-      destructivos aunque aparezcan listados por error en ``allowed_verbs``.
+    Contratos:
+    - ``AutonomyGovernancePolicy`` y ``ToolApprovalPolicy`` siguen siendo gates
+      separados; esta allowlist técnica no sustituye la autorización.
+    - Si el ejecutable no existe, ``is_available`` devuelve ``False``.
+    - La metadata de ``allowed_verbs`` no puede ampliar la allowlist fija
+      específica de ``cloudflared_cli``.
     """
 
     tool_type = ToolType.SHELL
