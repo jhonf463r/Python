@@ -10,7 +10,7 @@
 
 ## Subsequent Owner decision supersedes the original pending-decision snapshot (2026-10-23)
 
-The Owner subsequently supplied the explicit decision `IABV: RATIFICO_OPCION_D_SIN_BOOTSTRAP`. Its receipt is [M1A G1 Owner Option D ratification](./CHAT-ARCH-2026-10-23-M1A-G1-owner-option-d-no-bootstrap-ratification-receipt.md), blob `408229370babd4b53da3247d3aaef6392be5b268`, authored on isolated branch `codex/iabv-option-d-ratification-20261023` from baseline `439d9604037f156160a970dd33d1b3ad76009bdf`.
+The Owner subsequently supplied the explicit decision `IABV: RATIFICO_OPCION_D_SIN_BOOTSTRAP`. Its receipt is [M1A G1 Owner Option D ratification](./CHAT-ARCH-2026-10-23-M1A-G1-owner-option-d-no-bootstrap-ratification-receipt.md), blob `cac492006c51c56ea4abc4dff822785e19c65d93`, authored on isolated branch `codex/iabv-option-d-ratification-20261023` from baseline `439d9604037f156160a970dd33d1b3ad76009bdf`.
 
 This explicit decision supersedes the prior status in this protocol that said Option D had not yet been ratified. It does not establish that authority assets are absent: `AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED`. At the time this section was authored, the routing amendment and receipt were a separate review proposal. Their current adoption status is determined by live `main`, not by this text or the existence of a branch. All gates remain open, and no protected read, implementation, test, build, runtime, transport, tunnel, paid resource, deployment or block release is authorized.
 
