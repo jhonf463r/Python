@@ -1,6 +1,6 @@
 ## CURRENT-STATE ROUTING PROPOSAL — Owner ratified Option D; no bootstrap (2026-10-23)
 
-Receipt: [M1A G1 Owner Option D ratification](./CHAT-ARCH-2026-10-23-M1A-G1-owner-option-d-no-bootstrap-ratification-receipt.md), blob `408229370babd4b53da3247d3aaef6392be5b268`. This routing update originated on isolated branch `codex/iabv-option-d-ratification-20261023`, based on verified `main` commit `439d9604037f156160a970dd33d1b3ad76009bdf`, and was submitted for review via PR #472. Revalidate live `main` to determine whether it is currently canonical. `CURRENT-STATE.md` remains the sole routing authority. The previous `OWNER_DECISION_NOT_CAPTURED` snapshot is superseded by the explicit Owner decision below.
+Receipt: [M1A G1 Owner Option D ratification](./CHAT-ARCH-2026-10-23-M1A-G1-owner-option-d-no-bootstrap-ratification-receipt.md), blob `cac492006c51c56ea4abc4dff822785e19c65d93`. This routing update originated on isolated branch `codex/iabv-option-d-ratification-20261023`, based on verified `main` commit `439d9604037f156160a970dd33d1b3ad76009bdf`, and was submitted for review via PR #472. Revalidate live `main` to determine whether it is currently canonical. `CURRENT-STATE.md` remains the sole routing authority. The previous `OWNER_DECISION_NOT_CAPTURED` snapshot is superseded by the explicit Owner decision below.
 
 ```text
 PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
@@ -8,7 +8,7 @@ ACTIVE_TASK=M1A_G1_TRUST_BOOTSTRAP_AUTHORITY_BOUNDARY
 OWNER_DECISION=RATIFIED_OPTION_D_NO_BOOTSTRAP
 OWNER_DECISION_PROVENANCE=EXPLICIT_OWNER_CHAT_MESSAGE
 OWNER_RATIFICATION_RECEIPT=CHAT-ARCH-2026-10-23-M1A-G1-owner-option-d-no-bootstrap-ratification-receipt.md
-OWNER_RATIFICATION_RECEIPT_BLOB=408229370babd4b53da3247d3aaef6392be5b268
+OWNER_RATIFICATION_RECEIPT_BLOB=cac492006c51c56ea4abc4dff822785e19c65d93
 ENTRA_DIRECTORY_AND_AUTHENTICATOR=OWNER_REPORTED_READY; DO_NOT_REPEAT_SETUP
 IDENTITY_PROVIDER_CANDIDATE=MICROSOFT_ENTRA_ID; NOT_YET_TRUSTED_BY_IABV
 AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
