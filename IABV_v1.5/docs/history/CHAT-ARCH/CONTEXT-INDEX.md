@@ -1,8 +1,8 @@
-## PROPOSED OVERRIDE — ChatGPT continuity protocol and anti-loop controls (2026-10-23)
+## ChatGPT continuity protocol and anti-loop controls — routing notice (2026-10-23)
 
-Protocol correction proposal: [ChatGPT operational continuity protocol](./CHAT-ARCH-2026-10-23-CHATGPT-operational-continuity-protocol-correction.md), branch `codex/iabv-chatgpt-protocol-correction-20261023`, base `c95fb23c8ae5f7b6fdd1f94b4dba253347bb89cd`; not merged.
+Protocol reference: [ChatGPT operational continuity protocol](./CHAT-ARCH-2026-10-23-CHATGPT-operational-continuity-protocol-correction.md), authored on isolated branch `codex/iabv-chatgpt-protocol-correction-20261023` from `c95fb23c8ae5f7b6fdd1f94b4dba253347bb89cd`. Verify presence on live `main` before treating it as adopted.
 
-This index must point to authoritative evidence rather than create another current route. Canonical current routing belongs only to `CURRENT-STATE.md`. The current evidence says Entra/Authenticator setup is `OWNER_REPORTED_READY`; independent bootstrap authority is `UNKNOWN; NOT_INSPECTED`; the reported Codex session returned `SUPPORTED_ROUTE_NOT_FOUND`; G1–G3 are `NOT_ESTABLISHED`; all eight implementation prerequisites remain open. Option D is required by current evidence but has **not** been explicitly ratified. Do not repeat setup, rerun denied readers, infer absence from no route, or auto-follow into implementation.
+This index points to evidence rather than creating another route. Canonical current routing belongs only to `CURRENT-STATE.md`. The evidence at authoring says Entra/Authenticator setup is `OWNER_REPORTED_READY`; independent bootstrap authority is `UNKNOWN; NOT_INSPECTED`; the reported Codex session returned `SUPPORTED_ROUTE_NOT_FOUND`; G1–G3 are `NOT_ESTABLISHED`; all eight implementation prerequisites remain open. Option D is required by current evidence but has **not** been explicitly ratified. Do not repeat setup, rerun denied readers, infer absence from no route, or auto-follow into implementation.
 
 ---
 
