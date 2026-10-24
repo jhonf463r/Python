@@ -18,9 +18,13 @@ inicia `cloudflared`, HTTP, SSE ni un túnel.
 
 `scripts/start_iabv.ps1` ya no delega al launcher ni intenta liberar un puerto
 terminando procesos MCP; informa que el autoarranque de MCP/túnel está
-deshabilitado. `scripts/iabv_bootstrap.ps1` sigue siendo un bootstrap de
-instalación/configuración preexistente y no se ejecutó ni se modificó en esta
-fase; su wrapper de arranque no inicia MCP/túnel mediante `start_iabv.ps1`.
+deshabilitado. `scripts/iabv_bootstrap.ps1` también fue modificado en esta
+fase: conserva la preparación de instalación/configuración, pero no termina
+procesos por puerto, no inicia MCP/túnel mediante `start_iabv.ps1` ni anuncia
+una URL pública como resultado normal. Instalar `cloudflared` no equivale a
+ejecutarlo. El razonador Common Sense tampoco lanza túneles; el adaptador CLI
+solo permite `cloudflared tunnel list` e `cloudflared tunnel info` para esa
+familia de comandos.
 
 ## Herramientas MCP registradas
 

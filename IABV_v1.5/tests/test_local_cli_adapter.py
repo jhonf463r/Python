@@ -4,7 +4,10 @@ import os
 import stat
 import sys
 from pathlib import Path
+from unittest.mock import patch
 from uuid import uuid4
+
+import pytest
 
 from iabv_v15.domain.models import (
     ToolAction,
@@ -227,6 +230,61 @@ def test_run_blocks_malformed_shlex_input(tmp_path: Path) -> None:
     assert 'args malformados' in result['error_message']
 
 
+@pytest.mark.parametrize('subcommand', ['run', 'create', 'delete', ''])
+def test_cloudflared_tunnel_run_is_blocked_even_if_card_metadata_lists_it(
+    monkeypatch, subcommand: str,
+) -> None:
+    card = _card(
+        tool_id='cloudflared_cli',
+        title='Cloudflared CLI (test)',
+        metadata={
+            'command_name': 'cloudflared',
+            'allowed_verbs': ['--version', 'version', 'tunnel', 'help'],
+            'allowed_subcommands': {'tunnel': ['list', 'info', 'run']},
+        },
+    )
+    adapter = LocalCliToolAdapter()
+    monkeypatch.setattr(adapter, '_resolve_executable', lambda _card: 'cloudflared')
+    monkeypatch.setattr(
+        'iabv_v15.services.tools.tool_adapters.subprocess.run',
+        lambda *_args, **_kwargs: pytest.fail('subprocess.run must not be reached'),
+    )
+
+    args = 'tunnel' + (f' {subcommand}' if subcommand else '')
+    result = adapter.run(card, _task(args))
+
+    assert result['success'] is False
+    assert result['metadata']['blocked'] is True
+    assert 'subcommand' in result['error_message']
+
+
+@pytest.mark.parametrize('subcommand', ['list', 'info'])
+def test_cloudflared_declared_tunnel_inspection_subcommands_reach_mocked_process(
+    monkeypatch, subcommand: str,
+) -> None:
+    from subprocess import CompletedProcess
+
+    card = _card(
+        tool_id='cloudflared_cli',
+        title='Cloudflared CLI (test)',
+        metadata={
+            'command_name': 'cloudflared',
+            'allowed_verbs': ['--version', 'version', 'tunnel', 'help'],
+            'allowed_subcommands': {'tunnel': ['list', 'info']},
+        },
+    )
+    adapter = LocalCliToolAdapter()
+    monkeypatch.setattr(adapter, '_resolve_executable', lambda _card: 'cloudflared')
+    with patch(
+        'iabv_v15.services.tools.tool_adapters.subprocess.run',
+        return_value=CompletedProcess(['cloudflared', 'tunnel', subcommand], 0, 'ok', ''),
+    ) as process:
+        result = adapter.run(card, _task(f'tunnel {subcommand}'))
+
+    assert result['success'] is True, result
+    process.assert_called_once()
+
+
 def test_cloudflared_card_does_not_whitelist_update_verb(tmp_path: Path) -> None:
     from iabv_v15.infra.persistence.database import AppDatabase
     from iabv_v15.infra.persistence.storage import ArtifactStorage
@@ -246,6 +304,7 @@ def test_cloudflared_card_does_not_whitelist_update_verb(tmp_path: Path) -> None
         "'update' muta el binario en disco; debe quedar fuera del allowlist "
         "read-only y solo pasar por ToolApprovalPolicy cuando haga falta."
     )
+    assert card.metadata.get('allowed_subcommands') == {'tunnel': ['list', 'info']}
 
 
 def test_seed_defaults_registers_four_local_cli_cards(tmp_path: Path) -> None:

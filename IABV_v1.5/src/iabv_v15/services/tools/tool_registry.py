@@ -560,7 +560,7 @@ class ToolRegistry:
                 tool_id='cloudflared_cli',
                 title='Cloudflared CLI',
                 tool_type=ToolType.SHELL,
-                description='CLI de Cloudflare Tunnel para inspeccion (version, tunnels, config). El arranque real del tunnel queda delegado a run_mcp_bridge.ps1.',
+                description='CLI de Cloudflare Tunnel para inspeccion de version, listas e informacion; este ToolCard no inicia tuneles.',
                 adapter_key='local_cli',
                 supports_sandbox=False,
                 supports_write=False,
@@ -582,7 +582,8 @@ class ToolRegistry:
                     'allowed_verbs': [
                         '--version', 'version', 'tunnel', 'access', 'help',
                     ],
-                    'notes': 'Verbos de inspeccion (tunnel list, tunnel info) quedan permitidos; arranque real del tunnel sigue corriendo via run_mcp_bridge.ps1. `cloudflared update` queda fuera del allowlist por read-only: pasa por ToolApprovalPolicy si hace falta.',
+                    'allowed_subcommands': {'tunnel': ['list', 'info']},
+                    'notes': 'Solo se permiten tunnel list e tunnel info para inspeccion. Otros subcomandos de tunnel, incluido run, se rechazan en LocalCliToolAdapter. `cloudflared update` queda fuera del allowlist read-only.',
                 },
             ),
             ToolCard(

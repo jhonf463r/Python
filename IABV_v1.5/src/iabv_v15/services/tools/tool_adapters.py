@@ -2620,6 +2620,7 @@ class LocalCliToolAdapter:
     """
 
     tool_type = ToolType.SHELL
+    CLOUDFLARED_TUNNEL_INSPECTION_SUBCOMMANDS = frozenset({'list', 'info'})
 
     # Failsafe sobre la allowlist declarada por cada tool: aunque un operador
     # agregue un verbo destructivo por error al ``allowed_verbs`` de una
@@ -2712,6 +2713,21 @@ class LocalCliToolAdapter:
                 args=args_text,
                 blocked=True,
             )
+
+        if card.tool_id == 'cloudflared_cli' and tokens and tokens[0].lower() == 'tunnel':
+            subcommand = tokens[1].lower() if len(tokens) > 1 else ''
+            if subcommand not in self.CLOUDFLARED_TUNNEL_INSPECTION_SUBCOMMANDS:
+                return self._fail(
+                    start,
+                    f"tunnel subcommand '{subcommand or '<missing>'}' is not allowed; "
+                    'allowed inspection subcommands are '
+                    f'{sorted(self.CLOUDFLARED_TUNNEL_INSPECTION_SUBCOMMANDS)}',
+                    sandbox=sandbox,
+                    executable=executable,
+                    args=args_text,
+                    blocked=True,
+                )
+
         cmd_list = [executable, *tokens]
         try:
             completed = subprocess.run(
