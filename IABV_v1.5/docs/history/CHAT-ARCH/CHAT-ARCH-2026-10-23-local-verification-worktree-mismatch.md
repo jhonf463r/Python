@@ -13,7 +13,7 @@ The Codex verification attempt reported a clean local worktree, but the checked-
 
 LOCAL_HEAD=cb1a8b545bc29b13b6da1ada0f0204601805f7dc
 LOCAL_TOOL_ADAPTERS_BLOB=4e412ab8e5dfdf86af6f93ec04c15b0ed6434ca8
-EXPECTED_REMOTE_TOOL_ADAPTERS_BLOB=5217b8deae01f34ec4407d0f2651612c47752034d
+EXPECTED_REMOTE_TOOL_ADAPTERS_BLOB=5217b8deae01f34ec4402b82c651e9995ae94514
 LOCAL_TEST_LOCAL_CLI_ADAPTER_BLOB=e9de76b25114e3b243f30e8e4830cdd651d75708
 EXPECTED_REMOTE_TEST_LOCAL_CLI_ADAPTER_BLOB=fe53c660fd723ab82bde96b3077b25ca07cc24c2
 TESTS=NOT_RUN
@@ -26,7 +26,7 @@ CANONICAL_DOCS_READ_BY_CODEX_ATTEMPT=NO
 The live GitHub responses confirm:
 - Live main is still 2a5ac42fabbd7c6a66591d127e379432495ad3bc.
 - The candidate branch and PR #473 both point to 52ceb9d362d15191147da5d44de4d3d4ee9a518d.
-- At that candidate HEAD, the exact fetched blob for IABV_v1.5/src/iabv_v15/services/tools/tool_adapters.py is 5217b8deae01f34ec4407d0f2651612c47752034d.
+- At that candidate HEAD, the exact fetched blob for IABV_v1.5/src/iabv_v15/services/tools/tool_adapters.py is 5217b8deae01f34ec4402b82c651e9995ae94514.
 - At that candidate HEAD, the exact fetched blob for IABV_v1.5/tests/test_local_cli_adapter.py is fe53c660fd723ab82bde96b3077b25ca07cc24c2.
 - GitHub comparison reports that candidate HEAD is 18 commits beyond the reported local HEAD, with no divergence.
 
@@ -40,7 +40,7 @@ After reading the five canonical files in order from live main and revalidating 
 
 In the new worktree, verify:
 HEAD=52ceb9d362d15191147da5d44de4d3d4ee9a518d
-IABV_v1.5/src/iabv_v15/services/tools/tool_adapters.py=5217b8deae01f34ec4407d0f2651612c47752034d
+IABV_v1.5/src/iabv_v15/services/tools/tool_adapters.py=5217b8deae01f34ec4402b82c651e9995ae94514
 IABV_v1.5/tests/test_local_cli_adapter.py=fe53c660fd723ab82bde96b3077b25ca07cc24c2
 WORKTREE=NEW, CLEAN, DETACHED
 
