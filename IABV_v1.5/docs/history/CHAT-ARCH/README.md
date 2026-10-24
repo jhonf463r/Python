@@ -1,3 +1,9 @@
+## ChatGPT continuity — local verification worktree mismatch recorded (2026-10-23)
+
+Preflight receipt: [Local verification worktree mismatch and safe reselection](./CHAT-ARCH-2026-10-23-local-verification-worktree-mismatch.md). The Codex attempt found a clean but stale local worktree at cb1a8b545bc29b13b6da1ada0f0204601805f7dc with old adapter/test blobs, and correctly did not run tests or modify files. Remote PR #473 was verified at 52ceb9d362d15191147da5d44de4d3d4ee9a518d, while live main remained 2a5ac42fabbd7c6a66591d127e379432495ad3bc. Preserve the old worktree; create a new detached sibling worktree at the revalidated current PR HEAD, verify exact blobs, and reread the canonical routing before any focused test execution. PR #473 remains OPEN / DRAFT / UNMERGED.
+
+---
+
 ## ChatGPT continuity — bounded Cloudflared access-path fix recorded (2026-10-23)
 
 Review receipt: [PR #473 — Cloudflared CLI access-path closure review](./CHAT-ARCH-2026-10-23-independent-review-cloudflared-access-closure.md). The candidate adapter now rejects Cloudflared verbs outside fixed version/help/tunnel-inspection scope, detects Cloudflared by resolved executable identity as well as ToolCard metadata, and simulates sandbox inspection without starting a process. Tests for access verbs and sandbox process refusal were added but have not been run by this coordinator. PR #473 remains OPEN / DRAFT / UNMERGED; main's no-bootstrap/fail-closed routing is unchanged. Next: run only focused unit tests in the existing isolated Windows worktree, record exact evidence, then review the resulting HEAD.
