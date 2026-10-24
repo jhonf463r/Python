@@ -1,8 +1,8 @@
 # IABV MCP candidate consolidation and fail-closed profile receipt
 
-**Task:** `IABV_CONSOLIDATE_MCP_CANDIDATES_AND_ENFORCE_FAIL_CLOSED_PROFILE`  
-**North Star:** `GOVERNED_IABV_CODEX_BRIDGE`  
-**Evidence class:** candidate source and focused unit-test results from the isolated worktree; upstream PR state from GitHub metadata.  
+**Task:** `IABV_CONSOLIDATE_MCP_CANDIDATES_AND_ENFORCE_FAIL_CLOSED_PROFILE`
+**North Star:** `GOVERNED_IABV_CODEX_BRIDGE`
+**Evidence class:** candidate source and focused unit-test results from the isolated worktree; upstream PR state from GitHub metadata.
 **Owner decision:** `AUTHORIZE_BOUNDED_FAIL_CLOSED_MCP_ENFORCEMENT_AND_CANDIDATE_CONSOLIDATION`.
 
 ## Identity and source history
