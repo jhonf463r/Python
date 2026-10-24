@@ -565,7 +565,7 @@ class ToolRegistry:
                 supports_sandbox=False,
                 supports_write=False,
                 requires_human_approval=True,
-                capabilities=['check_version', 'list_tunnels', 'inspect_tunnel', 'access_info'],
+                capabilities=['check_version', 'list_tunnels', 'inspect_tunnel'],
                 metadata={
                     'tool_family': 'cloudflared',
                     'launch_mode': 'local_cli',
@@ -580,10 +580,10 @@ class ToolRegistry:
                     ],
                     'version_command': '--version',
                     'allowed_verbs': [
-                        '--version', 'version', 'tunnel', 'access', 'help',
+                        '--version', 'version', 'tunnel', 'help',
                     ],
                     'allowed_subcommands': {'tunnel': ['list', 'info']},
-                    'notes': 'Solo se permiten tunnel list e tunnel info para inspeccion. Otros subcomandos de tunnel, incluido run, se rechazan en LocalCliToolAdapter. `cloudflared update` queda fuera del allowlist read-only.',
+                    'notes': 'Solo se permiten version/help y tunnel list/info. Todos los verbos cloudflared restantes, incluido access, se rechazan en LocalCliToolAdapter.',
                 },
             ),
             ToolCard(
