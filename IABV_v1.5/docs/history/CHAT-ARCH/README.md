@@ -1,12 +1,10 @@
-## ChatGPT continuity and anti-loop protocol — routing notice (2026-10-23)
+## ChatGPT continuity — explicit Owner Option D ratification recorded (2026-10-23)
 
-Protocol reference: [ChatGPT operational continuity protocol](./CHAT-ARCH-2026-10-23-CHATGPT-operational-continuity-protocol-correction.md). This documentary correction was authored on isolated branch `codex/iabv-chatgpt-protocol-correction-20261023` from `c95fb23c8ae5f7b6fdd1f94b4dba253347bb89cd`. Confirm the exact contents are present on live `main` before treating the correction as adopted.
+Current receipt proposal: [Owner ratification of Option D — no bootstrap](./CHAT-ARCH-2026-10-23-M1A-G1-owner-option-d-no-bootstrap-ratification-receipt.md), blob `408229370babd4b53da3247d3aaef6392be5b268`, on branch `codex/iabv-option-d-ratification-20261023` from `439d9604037f156160a970dd33d1b3ad76009bdf`; not merged yet.
 
-Use `CURRENT-STATE.md` as the one and only current route/next-action authority. Do not derive a competing action from duplicate historical routing overlays. The recorded Entra directory, dedicated `IABV Owner` identity, Authenticator enrollment, and successful sign-in are completed Owner-reported progress; do not request setup again. They establish human authentication progress, not an IABV trust root. Keep `GOVERNANCE=KEEP_BLOCKED`, `READ_LIST=FAIL_CLOSED`, `IMPLEMENTATION=NOT_AUTHORIZED`; do not repeat denied-route attempts or infer Option D ratification from the Owner's confusion.
+The Owner explicitly ratified no-bootstrap/fail-closed. The ratification records a governance decision, not proof of absence: `AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED`. It does not establish G1–G3 or authorize reads, implementation, tests, runtime, tunnel use, spend, merge or deployment. Do not ask the same decision again or repeat Entra/Authenticator setup. Canonical current routing belongs only to `CURRENT-STATE.md`.
 
----
-
-## OVERRIDING LATEST ROUTING — Entra identity prepared; no-cost bridge-security review completed (2026-10-23)
+---## OVERRIDING LATEST ROUTING — Entra identity prepared; no-cost bridge-security review completed (2026-10-23)
 
 Latest new-chat handoff: [M1A G1 Entra identity and bridge-security continuity handoff](./CHAT-ARCH-2026-10-23-M1A-G1-new-chat-continuity-handoff-entra.md), blob `38405887fd8188c58f69ea37d94e55e8dd15806e`.
 Bounded static assessment: [M1A G1 Microsoft Entra no-cost integration](./CHAT-ARCH-2026-10-23-M1A-G1-Entra-no-cost-integration-static-assessment.md), blob `025a126f8848cab4ac0e6b33f8bd9f2e4740dda6`.
