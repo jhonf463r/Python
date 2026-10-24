@@ -318,6 +318,34 @@ def test_cloudflared_guard_uses_executable_identity_not_only_tool_id(monkeypatch
 
 
 @pytest.mark.parametrize('subcommand', ['list', 'info'])
+def test_cloudflared_inspection_sandbox_never_invokes_process(
+    monkeypatch, subcommand: str,
+) -> None:
+    card = _card(
+        tool_id='cloudflared_cli',
+        title='Cloudflared CLI (test)',
+        metadata={
+            'command_name': 'cloudflared',
+            'allowed_verbs': ['--version', 'version', 'tunnel', 'help'],
+            'allowed_subcommands': {'tunnel': ['list', 'info']},
+        },
+    )
+    adapter = LocalCliToolAdapter()
+    monkeypatch.setattr(adapter, '_resolve_executable', lambda _card: 'cloudflared')
+    with patch(
+        'iabv_v15.services.tools.tool_adapters.subprocess.run',
+        side_effect=AssertionError('cloudflared must be deferred beyond sandbox'),
+    ) as process:
+        result = adapter.run(card, _task(f'tunnel {subcommand}'), sandbox=True)
+
+    assert result['success'] is True, result
+    assert result['metadata']['sandbox'] is True
+    assert result['metadata']['simulated'] is True
+    assert result['metadata']['reason'] == 'cloudflared_process_deferred_until_approval'
+    process.assert_not_called()
+
+
+@pytest.mark.parametrize('subcommand', ['list', 'info'])
 def test_cloudflared_declared_tunnel_inspection_subcommands_reach_mocked_process(
     monkeypatch, subcommand: str,
 ) -> None:
