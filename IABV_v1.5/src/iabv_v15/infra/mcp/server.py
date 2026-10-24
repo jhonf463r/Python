@@ -84,6 +84,41 @@ PROFILE_LOCAL_RESTRICTED = "local_restricted"
 SUPPORTED_PROFILES = frozenset({PROFILE_LOCAL_RESTRICTED})
 
 
+class _GuardedMCPExecutionBoundary:
+    """Encapsulate the SDK runner behind the only supported execution gate.
+
+    This is an API encapsulation boundary, not a sandbox against hostile code
+    with arbitrary introspection in the same Python process.
+    """
+
+    __slots__ = ("__sdk", "__profile_getter")
+
+    def __init__(
+        self,
+        sdk: Any,
+        *,
+        profile_getter: Callable[[], str],
+    ) -> None:
+        self.__sdk = sdk
+        self.__profile_getter = profile_getter
+
+    def run(self, transport: str = "stdio") -> None:
+        """Run the SDK only when both profile and transport remain permitted."""
+        profile = self.__profile_getter()
+        if profile != PROFILE_LOCAL_RESTRICTED:
+            raise ValueError(
+                f"ejecución MCP bloqueada para el perfil '{profile}'; "
+                f"solo se permite {PROFILE_LOCAL_RESTRICTED}"
+            )
+        if transport not in SUPPORTED_TRANSPORTS:
+            raise ValueError(
+                f"transport '{transport}' está deshabilitado; solo stdio local "
+                "está permitido hasta verificar autenticación de transporte "
+                "y autorización independiente por operación"
+            )
+        self.__sdk.run(transport=transport)
+
+
 def _to_jsonable(value: Any) -> Any:
     """Convierte dataclasses, pydantic models y contenedores anidados a JSON."""
 
@@ -148,12 +183,22 @@ class IABVMCPServer:
 
             # Retain the SDK's default security behavior. In particular, do
             # not disable DNS-rebinding protection or install wildcard host /
-            # origin allowlists. IABVMCPServer.run() permits stdio only until
-            # network transport authentication and operation authorization
-            # have been implemented and independently verified.
+            # origin allowlists.
             mcp = FastMCP(name, log_level="WARNING")
-        self.mcp = mcp
-        self._register_tools()
+        # Keep the SDK object behind a narrow runner whose only public
+        # operation revalidates the profile and transport before execution.
+        # Register tools against the local SDK reference; never store that
+        # raw SDK object directly on IABVMCPServer.
+        self.__execution_boundary = _GuardedMCPExecutionBoundary(
+            mcp,
+            profile_getter=lambda: self.profile,
+        )
+        self._register_tools(mcp)
+
+    @property
+    def mcp(self) -> _GuardedMCPExecutionBoundary:
+        """Read-only access to the guarded runner, never to the raw SDK."""
+        return self.__execution_boundary
 
     # ------------------------------------------------------------------
     # Helpers de acceso a servicios del container
@@ -477,8 +522,7 @@ class IABVMCPServer:
     # ------------------------------------------------------------------
     # Registro de tools
 
-    def _register_tools(self) -> None:
-        mcp = self.mcp
+    def _register_tools(self, mcp: Any) -> None:
 
         if self.profile == PROFILE_LOCAL_RESTRICTED:
             @mcp.tool()
@@ -3172,50 +3216,8 @@ class IABVMCPServer:
     # Ciclo de vida
 
     def run(self, transport: str = "stdio") -> None:
-        if self.profile != PROFILE_LOCAL_RESTRICTED:
-            raise ValueError(
-                f"ejecución MCP bloqueada para el perfil '{self.profile}'; "
-                f"solo se permite {PROFILE_LOCAL_RESTRICTED}"
-            )
-        if transport not in SUPPORTED_TRANSPORTS:
-            raise ValueError(
-                f"transport '{transport}' está deshabilitado; solo stdio local "
-                "está permitido hasta verificar autenticación de transporte "
-                "y autorización independiente por operación"
-            )
-
-        if self.profile == PROFILE_LOCAL_RESTRICTED:
-            # This profile intentionally has no container-backed or write-capable
-            # tools, including the dynamic self-update registration below.
-            self.mcp.run(transport=transport)
-            return
-        
-        # Register self-update (write) tools for autonomous self-modification
-        try:
-            from iabv_v15.infra.mcp.self_update_tools import register_self_update_tools
-            _n_write_tools = register_self_update_tools(
-                mcp=self.mcp,
-                workspace_root_fn=self._workspace_root,
-                governance_fn=self._governance_block_for_route,
-                to_jsonable_fn=_to_jsonable,
-            )
-            logger.info("self_update_tools: %d write tools registered", _n_write_tools)
-        except Exception as _sut_exc:
-            logger.warning("self_update_tools: failed to register: %s", _sut_exc)
-
-        # Suppress noisy per-session transport logs from the MCP SDK
-        # and uvicorn access lines.
-        for noisy in ('mcp', 'mcp.server', 'mcp.server.streamable_http',
-                       'fastmcp', 'uvicorn', 'uvicorn.access', 'uvicorn.error'):
-            logging.getLogger(noisy).setLevel(logging.WARNING)
-        # httpx/httpcore handled by shared suppress_noisy_http_loggers().
-        from iabv_v15.infra.logging import suppress_noisy_http_loggers
-        suppress_noisy_http_loggers()
-
-        logger.info("IABV MCP server starting (transport=%s, name=%s)", transport, self.name)
-        self._log_github_api_adapter_status()
-        self._log_devin_api_adapter_status()
-        self.mcp.run(transport=transport)
+        """Execute only through the guarded SDK boundary."""
+        self.__execution_boundary.run(transport=transport)
 
     def _log_devin_api_adapter_status(self) -> None:
         """Diagnostica si ``devin_api`` esta listo para delegar a Devin.
