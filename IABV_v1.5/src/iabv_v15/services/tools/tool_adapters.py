@@ -1739,43 +1739,20 @@ class ShellToolAdapter:
         return True
 
     def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False) -> dict[str, Any]:
-        start = time.perf_counter()
-        command = next((action.value or action.target for action in task.actions if action.action_type == ToolActionType.RUN_COMMAND), '')
-        if not command:
-            command = str(task.metadata.get('command') or '')
-        lowered = f' {command.lower()} '
-        if any(token in lowered for token in self.BLOCKED_TOKENS):
-            return {
-                'success': False,
-                'output_text': '',
-                'extracted_data': {},
-                'artifacts': [],
-                'error_message': 'Comando bloqueado por politica de seguridad.',
-                'execution_ms': 0,
-                'metadata': {'sandbox': sandbox, 'blocked': True},
-            }
-        try:
-            completed = subprocess.run(command, capture_output=True, text=True, shell=True, check=False)
-            success = completed.returncode == 0
-            return {
-                'success': success,
-                'output_text': (completed.stdout or '').strip(),
-                'extracted_data': {'stderr': (completed.stderr or '').strip(), 'returncode': completed.returncode},
-                'artifacts': [],
-                'error_message': '' if success else (completed.stderr or completed.stdout).strip(),
-                'execution_ms': int((time.perf_counter() - start) * 1000),
-                'metadata': {'sandbox': sandbox, 'command': command},
-            }
-        except Exception as exc:
-            return {
-                'success': False,
-                'output_text': '',
-                'extracted_data': {},
-                'artifacts': [],
-                'error_message': str(exc),
-                'execution_ms': int((time.perf_counter() - start) * 1000),
-                'metadata': {'sandbox': sandbox, 'command': command},
-            }
+        # A text denylist cannot safely authorize arbitrary shell syntax
+        # (interpreter indirection, scripts, quoting, and command chaining).
+        # Keep this adapter fail-closed until a separately governed command
+        # execution contract exists. This applies equally to sandbox and
+        # approved execution paths.
+        return {
+            'success': False,
+            'output_text': '',
+            'extracted_data': {},
+            'artifacts': [],
+            'error_message': 'generic_shell_execution_disabled',
+            'execution_ms': 0,
+            'metadata': {'sandbox': sandbox, 'blocked': True, 'reason': 'generic_shell_execution_disabled'},
+        }
 
 
 class DesktopHumanToolAdapter:
