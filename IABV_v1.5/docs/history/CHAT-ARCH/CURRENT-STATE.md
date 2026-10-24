@@ -1,3 +1,39 @@
+## CURRENT-STATE ROUTING — Phase 1 targeted static review recorded; full PR review remains open (2026-10-23)
+
+Latest continuity record: [Phase 1 MCP transport hardening — targeted static review and new-chat handoff](./CHAT-ARCH-2026-10-23-phase1-transport-hardening-independent-review-handoff.md). This candidate-branch receipt is source-grounded at reviewed source commit `18feeb0872dfebd583fc1cf70674506277ced09a`; it is not merged-main state and must not be treated as proof of runtime behavior. PR [#473](https://github.com/jhonf463r/Python/pull/473) must be re-fetched for its current head before any further decision.
+
+The two previously identified amendment findings have no surviving counterexample in the bounded static source check: `iabv_bootstrap.ps1` no longer kills processes by MCP port or launches MCP/tunnel; `MCPBridgeStatus.governance_blocked` preserves `True/False/None`, and the refusal path leaves it `None` without consulting World Model or runners. This was a targeted static review only, not full PR acceptance. Owner-reported focused tests are 48 passed; coordinator test execution is `NOT_RUN`. The prior two World Model snapshot failures remain `UNRESOLVED` pending a base comparison.
+
+```text
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+ACTIVE_TASK=PHASE1_MCP_TRANSPORT_HARDENING
+PR=473; STATE=OPEN_DRAFT_UNMERGED
+LIVE_MAIN_SHA_AT_LAST_PREFLIGHT=2a5ac42fabbd7c6a66591d127e379432495ad3bc
+SOURCE_HEAD_TARGETED_REVIEWED=18feeb0872dfebd583fc1cf70674506277ced09a
+TARGETED_STATIC_REVIEW=PASS_WITH_LIMITATIONS
+FULL_PR_INDEPENDENT_REVIEW=NOT_DONE
+OWNER_REPORTED_FOCUSED_TESTS=48_PASSED
+COORDINATOR_TEST_EXECUTION=NOT_RUN
+WORLD_MODEL_SNAPSHOT_FAILURES=2; BASELINE_COMPARISON=UNRESOLVED
+RATIFIED_OPTION_D_NO_BOOTSTRAP=REMAINS_IN_FORCE
+AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+G1/G2/G3=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+GOVERNANCE=KEEP_BLOCKED
+READ_LIST=FAIL_CLOSED
+PUBLIC_TUNNEL=PROHIBITED
+MCP_PUBLIC_TUNNEL_ACTIVE=UNVERIFIED
+BUILD=NOT_RUN
+RUNTIME=NOT_RUN
+REAL_TRANSPORT=NOT_RUN
+BRIDGE=BRIDGE_NOT_READY
+NEXT_ACTION=FULL_REVIEW_OF_PR_473_DIFF_AND_BASELINE_COMPARE_TWO_WORLD_MODEL_SNAPSHOT_FAILURES
+```
+
+Do not merge, deploy, launch Cloudflare, run application/MCP/real transport, inspect protected data or secrets, repeat Entra setup, or reinterpret the bounded Phase 1 permission as authority to close G1–G3. Preserve all previous receipt/history content below. The exact next-action checklist is in the linked handoff.
+
+---
+
 ## CURRENT-STATE ROUTING — PR #473: bootstrap seguro y gobernanza no inspeccionada (2026-10-23)
 
 Amendment receipt: [Phase 1 transport hardening owner resumption](./CHAT-ARCH-2026-10-23-phase1-transport-hardening-owner-resumption.md), sección “Amendment — no port cleanup and tri-state governance”. El bootstrap de PowerShell prepara herramientas/perfil pero ya no termina procesos por puerto, invoca `start_iabv.ps1`, inicia MCP/túneles ni presenta una URL de túnel como resultado normal. La instalación de `cloudflared` se distingue de su ejecución. El helper `_mcp_port_utils.ps1` permanece intacto; no se importa desde los entry points revisados.
