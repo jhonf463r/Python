@@ -1,17 +1,19 @@
 ## CURRENT-STATE ROUTING — Full PR #473 review found a remaining tunnel-start path (2026-10-23)
 
-Latest candidate-only review receipt: [PR #473 full static review — residual tunnel executor and World Model baseline handoff](./CHAT-ARCH-2026-10-23-phase1-full-pr-review-blocker-and-baseline-handoff.md). This routing is on the isolated candidate branch only; it does **not** replace live `main` routing while PR #473 is unmerged. Revalidated live `main` remains `2a5ac42fabbd7c6a66591d127e379432495ad3bc`; PR #473 remains open, Draft, and unmerged at candidate HEAD `846c597b604bb1bd19b4cd18e58c5a7e119b0081` before this documentation-only update. The code diff from `18feeb0872dfebd583fc1cf70674506277ced09a` to `846c597b604bb1bd19b4cd18e58c5a7e119b0081` contains documentation changes only.
+Latest candidate-only review receipt: [PR #473 full static review — residual tunnel executor and World Model baseline handoff](./CHAT-ARCH-2026-10-23-phase1-full-pr-review-blocker-and-baseline-handoff.md). This routing is on the isolated candidate branch only; it does **not** replace live `main` routing while PR #473 is unmerged. Live `main` was revalidated as `2a5ac42fabbd7c6a66591d127e379432495ad3bc`. Before adding this final routing commit, the PR head was `aa45e3eac3e4431bd5359fce988b822fe83ca2dc`; this commit changes only continuity routing, so the next actor must re-fetch the branch head and confirm that only docs have changed before acting.
 
-The full static review disposition is FAIL because `common_sense_engine.py` still has a `safe=True` `start_tunnel` rule/anomaly mapped to an executor which launches `cloudflared tunnel run`; the MCP-exposed Common Sense tool uses `run_common_sense_reasoning(execute=True)` by default. A separate Cloudflared CLI ToolCard also permits the broad first token `tunnel` despite describing only inspection subcommands; its exact approval behavior was not exercised. Neither finding proves a tunnel is active. No local runtime/process state was inspected.
+The full static review disposition is FAIL because `common_sense_engine.py` still has a `safe=True` `start_tunnel` rule/anomaly mapped to an executor that launches `cloudflared tunnel run`; the MCP-exposed Common Sense tool calls `run_common_sense_reasoning` with `execute=True` by default. A separate Cloudflared CLI ToolCard permits the broad first token `tunnel` despite describing inspection subcommands; its approval behavior for `tunnel run` was not exercised. These are source-level launch paths, not evidence that a tunnel is currently active. Runtime/process state remains `UNVERIFIED`.
 
-The two World Model snapshot tests were not run here because the environment has no repository checkout and cannot resolve GitHub from the execution shell. They remain UNRESOLVED; do not call either pre-existing until the exact tests are executed on the pinned base and the pre-repair candidate. Static similarity is not a substitute for a baseline run.
+The two World Model snapshot tests were not run in this coordinator environment because no repository checkout is available and the execution shell could not resolve GitHub. They remain `UNRESOLVED`; do not call either pre-existing until the exact tests are executed on the pinned base and the pre-repair candidate. Static similarity is not a substitute for a baseline run.
 
 ```text
 PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
 ACTIVE_TASK=PHASE1_MCP_TRANSPORT_HARDENING
 PR=473; STATE=OPEN_DRAFT_UNMERGED
 BASE_SHA=2a5ac42fabbd7c6a66591d127e379432495ad3bc
-PRE_REPAIR_CANDIDATE_SHA=846c597b604bb1bd19b4cd18e58c5a7e119b0081
+LAST_FULL_REVIEW_PR_HEAD=846c597b604bb1bd19b4cd18e58c5a7e119b0081
+LAST_REVIEWED_SOURCE_CODE_SHA=18feeb0872dfebd583fc1cf70674506277ced09a
+DOCS_ONLY_HEAD_BEFORE_THIS_ROUTING_COMMIT=aa45e3eac3e4431bd5359fce988b822fe83ca2dc
 FULL_PR_STATIC_REVIEW=FAIL
 COMMON_SENSE_TUNNEL_LAUNCH_PATH=OPEN_IN_SOURCE; NOT_EXECUTED
 CLOUDFLARED_CLI_TUNNEL_SUBCOMMAND=LATENT_ROUTE; APPROVAL_ENFORCEMENT_NOT_VERIFIED
@@ -34,7 +36,7 @@ BRIDGE=BRIDGE_NOT_READY
 NEXT_ACTION=RUN_ONLY_THE_TWO_WORLD_MODEL_TESTS_ON_PINNED_BASE_AND_PRE_REPAIR_CANDIDATE_BEFORE_SOURCE_EDITS; THEN_DISABLE_TUNNEL_START_ROUTES_WITH_REGRESSION_TESTS_IN_THE_SAME_PR
 ```
 
-Do not merge, mark ready, deploy, launch application/MCP/Cloudflare, use network transport, access protected data, SQLite, credentials or `.env`, repeat Entra setup, or treat bounded Phase 1 authorization as closing G1–G3. Keep the older routing blocks below as history; only this opening block routes the candidate task. The sole routing authority on live `main` remains its own `CURRENT-STATE.md` and its no-bootstrap/fail-closed NEXT_ACTION.
+Do not merge, mark ready, deploy, launch application/MCP/Cloudflare, use network transport, access protected data, SQLite, credentials or `.env`, repeat Entra setup, or treat bounded Phase 1 authorization as closing G1–G3. Keep the older routing blocks below as history; only this opening block routes the candidate task. Live `main` retains its own no-bootstrap/fail-closed NEXT_ACTION.
 ---
 
 ## CURRENT-STATE ROUTING — PR #473: bootstrap seguro y gobernanza no inspeccionada (2026-10-23)
