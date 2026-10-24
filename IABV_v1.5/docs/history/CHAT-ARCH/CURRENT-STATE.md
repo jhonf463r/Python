@@ -42,7 +42,9 @@ The Owner's explicit decision is ratified. It states that the Owner does not kno
 
 This branch authorizes only a proposed documentation update. Do not retry the denied reader, circumvent its denial, repeat Entra setup or the Option D question, create an authority/credential/app, incur costs, modify product code, run tests/build/runtime/transport, launch a tunnel, merge automatically, deploy, close a gate or release a block. After this documentation proposal is reviewed/merged, the next operational posture is to maintain no-bootstrap/fail-closed, not to begin implementation.
 
----## OVERRIDING LATEST ROUTING — Entra identity prepared; no-cost bridge-security review completed (2026-10-23)
+---
+
+## OVERRIDING LATEST ROUTING — Entra identity prepared; no-cost bridge-security review completed (2026-10-23)
 
 Latest new-chat handoff: [M1A G1 Entra identity and bridge-security continuity handoff](./CHAT-ARCH-2026-10-23-M1A-G1-new-chat-continuity-handoff-entra.md), blob `38405887fd8188c58f69ea37d94e55e8dd15806e`.
 Bounded static assessment: [M1A G1 Microsoft Entra no-cost integration](./CHAT-ARCH-2026-10-23-M1A-G1-Entra-no-cost-integration-static-assessment.md), blob `025a126f8848cab4ac0e6b33f8bd9f2e4740dda6`.
