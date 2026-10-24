@@ -1,6 +1,6 @@
 ## ChatGPT continuity — explicit Owner Option D ratification recorded (2026-10-23)
 
-Current receipt proposal: [Owner ratification of Option D — no bootstrap](./CHAT-ARCH-2026-10-23-M1A-G1-owner-option-d-no-bootstrap-ratification-receipt.md), blob `408229370babd4b53da3247d3aaef6392be5b268`, on branch `codex/iabv-option-d-ratification-20261023` from `439d9604037f156160a970dd33d1b3ad76009bdf`; not merged yet.
+Owner decision receipt: [Owner ratification of Option D — no bootstrap](./CHAT-ARCH-2026-10-23-M1A-G1-owner-option-d-no-bootstrap-ratification-receipt.md), blob `408229370babd4b53da3247d3aaef6392be5b268`, authored on branch `codex/iabv-option-d-ratification-20261023` from `439d9604037f156160a970dd33d1b3ad76009bdf`. Confirm its presence on live `main` whenever validating current state; this navigation file does not independently determine merge/adoption status.
 
 The Owner explicitly ratified no-bootstrap/fail-closed. The ratification records a governance decision, not proof of absence: `AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED`. It does not establish G1–G3 or authorize reads, implementation, tests, runtime, tunnel use, spend, merge or deployment. Do not ask the same decision again or repeat Entra/Authenticator setup. Canonical current routing belongs only to `CURRENT-STATE.md`.
 
@@ -1030,7 +1030,9 @@ Next actor: Sonnet/Claude — one targeted delta review of Entry 278 only. Chall
 
 No implementation, product-source/config edits, tests/builds/runtime, local M0A access, blocked-reader retry/bypass, credential inspection, authentication, installation/update or launch. Acceptance of this candidate cannot release a governance block. Keep `KEEP_BLOCKED`.
 
----## 2026-10-13 LATEST CONTRACT — ENTRY 274: M0B-R8.1 CONSOLIDATED; SECOND CHALLENGE PENDING
+---
+
+## 2026-10-13 LATEST CONTRACT — ENTRY 274: M0B-R8.1 CONSOLIDATED; SECOND CHALLENGE PENDING
 
 Canonical: [CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md](./CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md).
 
