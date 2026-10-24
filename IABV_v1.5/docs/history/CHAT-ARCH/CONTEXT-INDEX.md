@@ -1,3 +1,9 @@
+## ChatGPT continuity — bounded Cloudflared access-path fix recorded (2026-10-23)
+
+Review receipt: [PR #473 — Cloudflared CLI access-path closure review](./CHAT-ARCH-2026-10-23-independent-review-cloudflared-access-closure.md). The candidate adapter now rejects Cloudflared verbs outside fixed version/help/tunnel-inspection scope, detects Cloudflared by resolved executable identity as well as ToolCard metadata, and simulates sandbox inspection without starting a process. Tests for access verbs and sandbox process refusal were added but have not been run by this coordinator. PR #473 remains OPEN / DRAFT / UNMERGED; main's no-bootstrap/fail-closed routing is unchanged. Next: run only focused unit tests in the existing isolated Windows worktree, record exact evidence, then review the resulting HEAD.
+
+---
+
 ## ChatGPT continuity — independent generic-shell closure review recorded (2026-10-23)
 
 Review receipt: [PR #473 — independent review of generic shell execution closure](./CHAT-ARCH-2026-10-23-independent-review-generic-shell-closure.md). Reviewed candidate HEAD `cb1a8b545bc29b13b6da1ada0f0204601805f7dc`; static review passes for the generic shell service gate and direct `ShellToolAdapter` denial. Owner-reported 11 focused tests were not independently executed. Application-wide tunnel absence and live process state remain unestablished. PR #473 stays OPEN / DRAFT / UNMERGED; main's no-bootstrap/fail-closed routing is unchanged.
