@@ -2689,7 +2689,16 @@ class LocalCliToolAdapter:
                 blocked=True,
             )
 
-        if card.tool_id == 'cloudflared_cli':
+        executable_name = os.path.basename(executable.replace('\\', '/')).lower()
+        command_name = str(card.metadata.get('command_name') or '').strip().lower()
+        tool_family = str(card.metadata.get('tool_family') or '').strip().lower()
+        is_cloudflared = (
+            card.tool_id == 'cloudflared_cli'
+            or executable_name in {'cloudflared', 'cloudflared.exe'}
+            or command_name in {'cloudflared', 'cloudflared.exe'}
+            or tool_family == 'cloudflared'
+        )
+        if is_cloudflared:
             verb = tokens[0].lower() if tokens else ''
             if verb not in self.CLOUDFLARED_ALLOWED_VERBS:
                 return self._fail(
