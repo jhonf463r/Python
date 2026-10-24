@@ -1,3 +1,9 @@
+<!-- CONTINUITY-PROTOCOL-OVERRIDE: begin; documentation/governance process only; current technical routing remains in CURRENT-STATE.md. -->
+## Mandatory continuity upgrade — objective-first, time-aware, anti-loop operation (2026-10-23)
+
+Every new IABV chat MUST apply the [Canonical continuity, space-time reasoning and anti-loop protocol](./CHAT-ARCH-2026-10-23-CONTINUITY-SPACE-TIME-OPERATING-PROTOCOL-v1.md) before recommending or executing work. Reconstruct the project's event/evidence/dependency history from the canonical archive; preserve provenance; reuse terminal decisions; never ask the Owner to recall or search documents already available through permitted GitHub access; choose one supported, authorized next action that advances the North Star. This is a navigation/reasoning rule only: it does not override `CURRENT-STATE.md`, create trust authority, bypass denied readers, or change implementation/runtime/cost/security gates. A proposal is not canonical until adopted on live `main` and fetched back.
+<!-- CONTINUITY-PROTOCOL-OVERRIDE: end -->
+
 ## ChatGPT continuity — explicit Owner decision supersedes prior pending state (2026-10-23)
 
 Current decision receipt: [M1A G1 Owner Option D ratification](./CHAT-ARCH-2026-10-23-M1A-G1-owner-option-d-no-bootstrap-ratification-receipt.md), blob `cac492006c51c56ea4abc4dff822785e19c65d93`, authored on branch `codex/iabv-option-d-ratification-20261023` from base `439d9604037f156160a970dd33d1b3ad76009bdf`. The Owner explicitly ratified no-bootstrap/fail-closed in a new chat message. Older routing text saying ratification was pending is historical and superseded by this receipt; determine current adoption by checking live `main`.
