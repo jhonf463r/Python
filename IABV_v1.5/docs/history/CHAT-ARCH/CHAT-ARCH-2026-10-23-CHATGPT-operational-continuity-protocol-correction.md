@@ -20,7 +20,7 @@ This explicit decision supersedes the prior status in this protocol that said Op
 
 This document corrects a recurring continuity failure: the assistant has preserved the user's Entra setup but still asked a poorly contextualized authority question because multiple long routing overlays repeated and contradicted one another.
 
-When this proposal is merged, apply these rules:
+Apply these rules whenever this protocol is present on live `main`. The continuity protocol itself was merged in commit `439d9604037f156160a970dd33d1b3ad76009bdf`; the subsequent Option D decision receipt and routing amendment in branch `codex/iabv-option-d-ratification-20261023` remain a separate documentation proposal until reviewed and merged:
 
 1. `CURRENT-STATE.md` is the **single source of current routing and the single owner of `NEXT_ACTION`**. Other front-door files state rules, provenance, or navigation; they must not establish a competing next action.
 2. `AGENTS.md` defines repository-work behavior. `README.md` is navigation. `CONTEXT-INDEX.md` points to evidence and history. `MEMORY-OPERATING-PROTOCOL.md` defines continuity, provenance and conflict resolution. None overrides the newest valid routing in `CURRENT-STATE.md`.
@@ -150,7 +150,7 @@ Do not say the coordinator is a conscious or autonomous "supermind." Treat that 
 
 ## 9. Required routing snapshot after adoption
 
-When this correction is merged, the latest current-state block should preserve:
+The canonical current-state block must preserve the following values after the separate Option D receipt and routing amendment is reviewed and merged:
 
 ```text
 PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
