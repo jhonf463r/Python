@@ -67,7 +67,7 @@ These roles must be identified and assessed separately. A role may be combined w
 2. **Constituting authority** — the already legitimate governance body or institution with mandate to establish/delegate authority for this IABV deployment. Its own identity and mandate must be verifiable before it appoints anyone.
 3. **Proposed enrollment authority (GBA)** — the candidate body/principal to be appointed for a narrowly documented enrollment mandate. It cannot validate its own appointment.
 4. **Mandate custodian** — maintains the authoritative charter/delegation and can produce it through its official channel.
-5. **Independent verifier** — checks the constituting authority, mandate, appointment, and channel from a separate trust path. It must not be the requester, the proposed GBA, the future issuer, or the reader validating its own authority.
+5. **Independent verifier** — checks the constituting authority, mandate, appointment, and channel from a separate trust path. It must not be the constituting authority or mandate custodian whose authority or record it is validating, the requester, the proposed GBA, the future issuer, or the reader validating its own authority.
 6. **Authorization issuer** — later issues narrowly scoped, expiring decisions under a verified delegation; it cannot widen that delegation.
 7. **MCP server/reader verifier** — later validates decisions against the actual server and operation context; it cannot appoint the GBA or authorize itself.
 8. **Catalogue/revocation authority** — administers versioned catalogue and revocation material under a separately verified role.
@@ -117,9 +117,9 @@ A source controlled solely by the candidate GBA, issuer, reader, or requester is
 
 ### Phase 2 — Independently authenticate the source and mandate
 
-A verifier separate from the requester and proposed authority obtains the mandate from an independently authenticated source. The verifier records what was checked, source/channel, date, authority and scope, validity, limitations, and how revocation or later supersession will be detected.
+A verifier distinct from the requester, proposed GBA, constituting authority, and mandate custodian obtains the mandate from an independently authenticated source. Before its finding can be relied on, the verifier's own identity, mandate, scope, effective period, and current revocation status must also be supported by a trust basis established before this ceremony and independently verifiable from the requester, proposed GBA, issuer, reader, and constituting authority/appointment under review. The verifier cannot authenticate its own mandate solely with its own claims, keys, repositories, documents, or signatures, or rely solely on the same appointment it is evaluating. The verification route must permit detection of expiry, revocation, or loss of the verifier's authority. The verifier records what was checked, source/channel, date, authority and scope, validity, limitations, and how revocation or later supersession will be detected.
 
-If the source cannot be independently authenticated, the mandate is ambiguous, the appointment power is missing, or revocation cannot be checked, stop at `CONSTITUTING_AUTHORITY_UNVERIFIED`.
+This requirement does not create an infinite chain of verifiers. It terminates at a trust anchor or authority basis established before this ceremony and independently authenticated under the applicable governance or institutional process. This design neither names nor creates that basis. If no such prior basis can be verified, stop at terminal `VERIFIER_TRUST_ANCHOR_UNAVAILABLE`: do not accept the mandate or appointment, do not complete the ceremony, and preserve Option D with G1 blocked. If the source itself cannot be independently authenticated, the mandate is ambiguous, the appointment power is missing, or revocation cannot be checked, stop at `CONSTITUTING_AUTHORITY_UNVERIFIED`.
 
 ### Phase 3 — Adopt a bounded appointment decision
 
@@ -175,7 +175,7 @@ The evidence packet should contain references and safe metadata, not secrets or 
 | C2 — Appointment power | The source may appoint/delegate the GBA role | Verify scope, approval rules, effective period and revocation | `APPOINTMENT_POWER_UNPROVEN` |
 | C3 — Appointment record | The named candidate was properly appointed | Retrieve/validate official record via a separate channel | `APPOINTMENT_UNVERIFIED` |
 | C4 — Custody and conflicts | Roles, custodians, removal and separation are accountable | Check role map and conflict-of-interest controls | `GOVERNANCE_SEPARATION_INCOMPLETE` |
-| C5 — Independent verification channel | The verifier can authenticate records outside the candidate's control | Confirm channel origin, integrity, freshness and revocation source | `INDEPENDENT_CHANNEL_UNAVAILABLE` |
+| C5 — Independent verification channel | The verifier can authenticate records outside the candidate's control and has a separately verifiable prior authority basis | Confirm channel origin, integrity, freshness, verifier mandate and revocation source | `INDEPENDENT_CHANNEL_UNAVAILABLE` / `VERIFIER_TRUST_ANCHOR_UNAVAILABLE` |
 | C6 — Lifecycle and recovery | Expiry, supersession, compromise and recovery have an independent procedure | Verify responsible parties and evidence path | `RECOVERY_GOVERNANCE_INCOMPLETE` |
 
 C1–C6 being documented does not automatically establish trust. The actual evidence must be independently checked; a template or checklist alone is not evidence.
@@ -187,11 +187,11 @@ C1–C6 being documented does not automatically establish trust. The actual evid
 | G-A: Mandate | A real source with authority over the deployment is independently authenticated | Stop; Outcome C |
 | G-B: Appointment power | That source can validly appoint the named role within the required scope | Stop; no GBA |
 | G-C: Appointment | The actual appointment is authentic, current and revocable | Stop; candidate remains untrusted |
-| G-D: Independence | Verifier, source and candidate are not circularly relying on each other | Stop; record conflict/circularity |
+| G-D: Independence | Verifier has a prior independently verifiable authority basis and is not validating its own mandate; verifier, source and candidate do not rely circularly on each other | Stop; `VERIFIER_TRUST_ANCHOR_UNAVAILABLE` or record conflict/circularity |
 | G-E: G1 evidence | The separate G1 evidence package is complete and independently verified | G1 remains not established |
 | G-F: Governance adoption | A separate authorized decision changes canonical routing, if warranted | Keep current canonical route |
 
-Any unavailable source, ambiguous mandate, disputed appointment, unverified identity, broken chain, unqueryable revocation state, or conflict of interest returns a blocked outcome. No timeout, error, or missing evidence may be interpreted as approval.
+Any unavailable source, ambiguous mandate, disputed appointment, unverified identity or verifier mandate, missing prior verifier trust basis, broken chain, unqueryable revocation state, or conflict of interest returns a blocked outcome. No timeout, error, or missing evidence may be interpreted as approval.
 
 ## 9. Explicit anti-shortcut rules
 
@@ -229,7 +229,7 @@ This document complements, but does not replace, PR #478's minimum G1 evidence c
 
 Neither candidate establishes that a qualifying institution or constituent authority exists. Neither is adopted policy. Both remain subordinate to canonical `CURRENT-STATE.md`.
 
-**Owner/governance decision needed to move beyond the current block:** provide independently verifiable evidence of a real constituent authority and its appointment mandate, or explicitly state that no qualifying source/channel is currently known and retain Option D. The agent must not pick or invent a constituent authority.
+**Current decision and reconsideration boundary:** no further Owner confirmation of Option D is requested. `CURRENT-STATE.md` already records `OWNER_DECISION=RATIFIED_OPTION_D_NO_BOOTSTRAP` and the fail-closed `NEXT_ACTION`; preserve both. Reconsider only if genuinely new authority evidence is independently verified, or if the Owner makes a new explicit decision that changes the basis of canonical routing. Neither condition by itself establishes G1 or authorizes implementation. The agent must not pick or invent a constituent authority.
 
 ## 12. Candidate terminal state
 
@@ -242,6 +242,7 @@ CONSTITUTING_AUTHORITY=UNKNOWN; NOT_INDEPENDENTLY_VERIFIED
 APPOINTMENT_POWER=NOT_ESTABLISHED
 ENROLLMENT_AUTHORITY=PROPOSED_ROLE_ONLY
 INDEPENDENT_VERIFICATION_CHANNEL=NOT_ESTABLISHED
+VERIFIER_TRUST_ANCHOR=NOT_ESTABLISHED
 G1=NOT_ESTABLISHED
 G2=NOT_ESTABLISHED
 G3_VERSIONED_TARGET_RESOLVER=NOT_ESTABLISHED
