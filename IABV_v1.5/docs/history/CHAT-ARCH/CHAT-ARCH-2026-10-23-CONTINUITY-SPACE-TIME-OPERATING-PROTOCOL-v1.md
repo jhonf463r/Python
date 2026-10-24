@@ -4,7 +4,7 @@
 - Owner instruction date: 2026-10-23 (America/Bogota)
 - Scope: project reasoning, memory navigation, decision traceability and next-action selection
 - Intended audience: every new ChatGPT/Codex/other-AI coordination session working on IABV
-- Status: proposed by a documentation-only change; effective as a canonical instruction only after adoption on live `main`
+- Status: baseline protocol adopted on live `main`; the live-`main` copy is authoritative, and branch-only amendments remain candidates until merged and fetched back
 - Project North Star: `GOVERNED_IABV_CODEX_BRIDGE`
 - Active technical frontier at creation: `M1A_G1_TRUST_BOOTSTRAP_AUTHORITY_BOUNDARY`
 
@@ -137,7 +137,7 @@ After preflight, give the Owner one clear operational summary in accessible Span
 
 Prefer plain-language explanations followed by technical identifiers when useful. Avoid presenting a status report as progress. Do not promise asynchronous work or imply that a future result will arrive without performing the action in the current turn.
 
-## 10. Current IABV checkpoint carried with this protocol
+## 10. Historical IABV checkpoint at protocol creation (2026-10-23; superseded by live CURRENT-STATE.md)
 
 At the time this protocol was proposed, live `main` was `2a5ac42fabbd7c6a66591d127e379432495ad3bc`. Canonical routing remains:
 
@@ -182,3 +182,40 @@ A chat is **not continuity-complete** until it has:
 - [ ] recorded/fetched back any authorized durable writeback and made no unsupported claim of success.
 
 If any item cannot be completed, state the exact uncompleted item and why. Do not improvise authority to appear productive.
+
+## 12. Operational lessons added from the terminal G1 review (2026-10-24)
+
+Apply these refinements together with sections 1–11. They improve evidence handling and chat continuity; they do not override live `CURRENT-STATE.md` or authorize any technical action.
+
+### 12.1 Fresh state beats remembered state
+
+- On every new chat, revalidate the live `main` ref, then read the five front doors in the exact order in section 2.
+- Revalidate a PR's actual head/state before editing, reviewing, marking ready or merging. A user-reported SHA is a locator to verify, not proof of the current head.
+- After a branch update, inspect the resulting diff and changed-file list again. Do not assume the update left a PR at the head previously reported.
+
+### 12.2 Source custody and independent attribution are separate checks
+
+- If a delegated executor says a supplied attachment is unavailable, inspect the actually available source/package through supported routes. Do not replace it with a file that merely has a similar display name.
+- Before archiving, compare the exact source member, manifest checksum and destination bytes. A mismatch means stop and resolve provenance; do not continue on the substitute or silently rewrite it. Preserve the accepted report byte-for-byte.
+- Hash equality establishes byte identity only. It does not authenticate a model invocation, the reported reviewer, or the truth of the report's claims. Model availability/selection is not execution evidence.
+
+### 12.3 A route failure is not evidence of global absence
+
+Distinguish `ROUTE_SURFACE_MISMATCH` or `ACTION_UNEXECUTABLE_NO_EVIDENCE` from `TECHNICAL_ABSENCE`. If a permitted reader or artifact route cannot be used, report the exact route as unavailable/not verified, preserve `UNKNOWN; NOT_INSPECTED`, and stop. Do not retry a denied reader or switch tool/provider/transport to bypass the restriction.
+
+### 12.4 Terminal-review semantics and stop conditions
+
+- `BLOCKED_NO_NONCIRCULAR_ROOT` is the terminal result for this review scope. It means the reviewed sources did not establish a qualifying root; it is not proof that authority assets do not exist.
+- `PASS` on a bounded review/writeback checklist is not a G1 pass, implementation readiness, or gate closure. G1/G2/G3 remain `NOT_ESTABLISHED`; prerequisites remain `8; CLOSED=0`.
+- Do not re-run broad Windows/TPM/Entra/OIDC/GBA inventories or the same adversarial review without genuinely new independent evidence about a pre-existing root, its custodian/mandate and independent verification channel, plus the exact Owner-to-principal, authority-to-issuer and issuer-to-server bindings.
+- With no such evidence, `NEXT_REVIEW_TARGET=NONE_UNTIL_GENUINELY_NEW_INDEPENDENT_EVIDENCE` and `AUTOMATIC_FOLLOW_ON=FALSE`. No technical action can honestly close the current dependency. Do not invent a work item merely to appear productive.
+
+### 12.5 Canonical adoption has an observable boundary
+
+A successful branch update or open PR is not canonical. Canonical status requires the record to be adopted on live `main`, followed by fetch-back of the exact live files and verification that the intended route/hash appears there. PR lifecycle status belongs to live GitHub metadata; durable project records describe the evidence/result and must not retain a transient “pending” label as if it were current technical truth. `CURRENT-STATE.md` remains the sole current routing authority.
+
+### 12.6 Handoff delta and first response in the next chat
+
+Use [the terminal G1 new-chat continuity handoff](./CHAT-ARCH-2026-10-24-M1A-G1-terminal-review-new-chat-continuity-handoff.md) for the full causal chronology, source custody incident, evidence classification and exact copy/paste startup prompt. The first response in a new chat must state the verified live-main SHA, terminal review result, precise blocking dependency, fail-closed authorization boundary and whether any genuinely new evidence changes the route. Do not ask the Owner to repeat the reopening decision, Entra setup or archive research.
+
+---
