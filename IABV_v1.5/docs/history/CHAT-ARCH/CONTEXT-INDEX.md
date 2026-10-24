@@ -1,3 +1,11 @@
+## PROPOSED OVERRIDE — ChatGPT continuity protocol and anti-loop controls (2026-10-23)
+
+Protocol correction proposal: [ChatGPT operational continuity protocol](./CHAT-ARCH-2026-10-23-CHATGPT-operational-continuity-protocol-correction.md), branch `codex/iabv-chatgpt-protocol-correction-20261023`, base `c95fb23c8ae5f7b6fdd1f94b4dba253347bb89cd`; not merged.
+
+This index must point to authoritative evidence rather than create another current route. Canonical current routing belongs only to `CURRENT-STATE.md`. The current evidence says Entra/Authenticator setup is `OWNER_REPORTED_READY`; independent bootstrap authority is `UNKNOWN; NOT_INSPECTED`; the reported Codex session returned `SUPPORTED_ROUTE_NOT_FOUND`; G1–G3 are `NOT_ESTABLISHED`; all eight implementation prerequisites remain open. Option D is required by current evidence but has **not** been explicitly ratified. Do not repeat setup, rerun denied readers, infer absence from no route, or auto-follow into implementation.
+
+---
+
 ## OVERRIDING LATEST ROUTING — Entra identity prepared; no-cost bridge-security review completed (2026-10-23)
 
 Latest new-chat handoff: [M1A G1 Entra identity and bridge-security continuity handoff](./CHAT-ARCH-2026-10-23-M1A-G1-new-chat-continuity-handoff-entra.md), blob `38405887fd8188c58f69ea37d94e55e8dd15806e`.
