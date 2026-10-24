@@ -44,11 +44,11 @@ IABV_v1.5/src/iabv_v15/services/tools/tool_adapters.py=5217b8deae01f34ec4402b82c
 IABV_v1.5/tests/test_local_cli_adapter.py=fe53c660fd723ab82bde96b3077b25ca07cc24c2
 WORKTREE=NEW, CLEAN, DETACHED
 
-Then repeat the canonical preflight in order, including the active CURRENT-STATE.md routing, and confirm that the applicable bounded Phase 1 test authorization remains in force. Do not run tests unless that preflight establishes the authorization remains valid.
+Then repeat the canonical preflight in order, including active CURRENT-STATE.md on live main. That file currently routes to MAINTAIN_NO_BOOTSTRAP_FAIL_CLOSED and explicitly keeps tests unrun; the candidate-only historical Phase 1 authorization does not override the current main routing. Create and verify the new worktree, read the canonical documents and stop before pytest. Resume focused tests only after a genuinely new explicit Owner decision reopens that exact test scope.
 
-## Focused tests, only after preflight and authorization pass
+## Focused test selection — reference only; do not execute under current main routing
 
-The intended narrow selection is:
+The intended narrow selection for a future explicitly reauthorized verification is (reference only; no test execution is authorized by this receipt):
 - tests/test_local_cli_adapter.py::test_cloudflared_tunnel_run_is_blocked_even_if_card_metadata_lists_it
 - tests/test_local_cli_adapter.py::test_cloudflared_access_verbs_are_blocked_even_if_card_metadata_lists_them
 - tests/test_local_cli_adapter.py::test_cloudflared_guard_uses_executable_identity_not_only_tool_id
@@ -81,6 +81,6 @@ PUBLIC_TUNNEL=PROHIBITED
 AZURE_BILLING_STATE=NOT_VERIFIED
 COST_POLICY=NO_PAID_SERVICES; NO_RESOURCE_DEPLOYMENT
 BRIDGE=BRIDGE_NOT_READY
-NEXT_ACTION=REVALIDATE_MAIN_AND_PR; READ_CANONICAL_PREFLIGHT; CREATE_NEW_DETACHED_WORKTREE_AT_EXACT_CURRENT_PR_HEAD; VERIFY_BLOBS; THEN_FOCUSED_TESTS_ONLY_IF_AUTHORIZED
+NEXT_ACTION=REVALIDATE_MAIN_AND_PR; READ_CANONICAL_PREFLIGHT; CREATE_NEW_DETACHED_WORKTREE_AT_EXACT_CURRENT_PR_HEAD; VERIFY_BLOBS; STOP_BEFORE_TESTS_UNLESS_NEW_EXPLICIT_OWNER_DECISION_REOPENS_TEST_SCOPE
 
 This record documents the failed preflight only. It does not change product code, test results, global routing on main, trust status, or any governance block. Keep the PR Draft and unmerged.
