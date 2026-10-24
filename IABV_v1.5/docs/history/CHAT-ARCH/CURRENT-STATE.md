@@ -1,3 +1,40 @@
+## CURRENT-STATE ROUTING — New-chat handoff prepared; stale local test worktree preserved (2026-10-23)
+
+Primary continuity handoff: [New-chat handoff — PR #473 and verification preflight](./CHAT-ARCH-2026-10-23-new-chat-handoff-pr473.md). This candidate-only update follows canonical main preflight. It does not supersede live main/CURRENT-STATE.md, whose active task is M1A_G1_TRUST_BOOTSTRAP_AUTHORITY_BOUNDARY and whose NEXT_ACTION remains MAINTAIN_NO_BOOTSTRAP_FAIL_CLOSED.
+
+Live main at preflight: 2a5ac42fabbd7c6a66591d127e379432495ad3bc. Candidate branch at handoff prewrite: ee3e921e6f2c9496ef0d9f9bea14a3cc8189e67a; documentation commits advance the branch, so revalidate HEAD. PR #473 remains OPEN / DRAFT / UNMERGED against live main. Source/test blobs verified at candidate precheck: tool_adapters.py 5217b8deae01f34ec4402b82c651e9995ae94514; tool_registry.py 0599ae4ecd77d85cdee05a04fadcccaad2d5bea2; test_local_cli_adapter.py fe53c660fd723ab82bde96b3077b25ca07cc24c2.
+
+Codex correctly reported a clean but stale local worktree at cb1a8b545bc29b13b6da1ada0f0204601805f7dc; its tool adapter/test blobs did not match the remote candidate. No tests ran and that attempt did not modify files. Preserve that worktree; do not reset/rebase/clean/overwrite. A new detached sibling worktree may be prepared for identity preflight, but current live main explicitly says IMPLEMENTATION=NOT_AUTHORIZED and TESTS=NOT_RUN. Stop before pytest unless a genuinely new explicit Owner decision reopens the exact test scope. Prior owner-reported 11 focused passes belong to the earlier generic-shell stage; later Cloudflared access/sandbox regression tests remain unrun.
+
+```text
+CANDIDATE_CONTINUITY=NEW_CHAT_HANDOFF_READY
+LIVE_MAIN=2a5ac42fabbd7c6a66591d127e379432495ad3bc
+LIVE_MAIN_ACTIVE_TASK=M1A_G1_TRUST_BOOTSTRAP_AUTHORITY_BOUNDARY
+LIVE_MAIN_NEXT_ACTION=MAINTAIN_NO_BOOTSTRAP_FAIL_CLOSED; REOPEN_ONLY_ON_GENUINELY_NEW_AUTHORITY_EVIDENCE_OR_EXPLICIT_OWNER_DECISION
+PR=473; OPEN_DRAFT_UNMERGED
+LOCAL_WORKTREE=cb1a8b545bc29b13b6da1ada0f0204601805f7dc; CLEAN_BUT_STALE; PRESERVE
+TESTS=NOT_RUN
+BUILD=NOT_RUN
+RUNTIME=NOT_RUN
+REAL_TRANSPORT=NOT_RUN
+GLOBAL_PUBLIC_TUNNEL_PROHIBITION=NOT_ESTABLISHED
+RATIFIED_OPTION_D_NO_BOOTSTRAP=REMAINS_IN_FORCE
+AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+G1/G2/G3=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+GOVERNANCE=KEEP_BLOCKED
+READ_LIST=FAIL_CLOSED
+PUBLIC_TUNNEL=PROHIBITED
+AZURE_BILLING_STATE=NOT_VERIFIED
+COST_POLICY=NO_PAID_SERVICES; NO_RESOURCE_DEPLOYMENT
+BRIDGE=BRIDGE_NOT_READY
+NEXT_ACTION=NEW_CHAT_REVALIDATE_MAIN_PR_BRANCH_BLOBS; READ_CANONICAL_PREFLIGHT; PREPARE_NEW_DETACHED_WORKTREE_FOR_IDENTITY_CHECK_ONLY; STOP_BEFORE_TESTS_UNLESS_NEW_EXPLICIT_OWNER_DECISION_REOPENS_SCOPE
+```
+
+This routing documents candidate continuity only. It does not authorize tests, product changes, runtime, tunnel use, real transport, merge, deployment, protected reads, spend or governance-block release.
+
+---
+
 ## CURRENT-STATE ROUTING — local verification worktree mismatch recorded (2026-10-23)
 
 Preflight receipt: [Local verification worktree mismatch and safe reselection](./CHAT-ARCH-2026-10-23-local-verification-worktree-mismatch.md). Codex correctly stopped: the reported local worktree was clean but at HEAD cb1a8b545bc29b13b6da1ada0f0204601805f7dc, with old blobs for the adapter and its test file. It did not run tests or modify files. Live main remains 2a5ac42fabbd7c6a66591d127e379432495ad3bc; PR #473 and its candidate branch were verified at 52ceb9d362d15191147da5d44de4d3d4ee9a518d before this receipt and routing writeback.
