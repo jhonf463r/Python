@@ -1,3 +1,43 @@
+## CURRENT-STATE ROUTING — Cloudflared CLI access verbs closed by a fixed adapter guard (2026-10-23)
+
+Latest bounded review receipt: [PR #473 — Cloudflared CLI access-path closure review](./CHAT-ARCH-2026-10-23-independent-review-cloudflared-access-closure.md). Candidate source/test changes were made after the generic-shell review because the `cloudflared_cli` metadata still admitted `access`, while the earlier guard only constrained `tunnel` subcommands. `access tcp/login/token` could therefore reach the local CLI adapter, and `ToolSandbox` called the adapter with `sandbox=True` before returning to the approval gate.
+
+The candidate now applies a fixed Cloudflared verb allowlist, identifies the executable as Cloudflared even behind an alternate ToolCard ID, removes `access` from the default ToolCard metadata, and simulates the Cloudflared sandbox phase without starting a process. Regression tests were added for access verbs, an alternate ToolCard ID with a Cloudflared executable, and sandbox-mode `tunnel list/info` with no subprocess. **These new tests have not been run by this coordinator**; focused execution in the existing isolated Windows worktree remains next.
+
+```text
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+ACTIVE_TASK=PHASE1_MCP_TRANSPORT_HARDENING; BOUNDED_REVIEW_AND_FIX_RECORDED
+PR=473; STATE=OPEN_DRAFT_UNMERGED
+BASE_SHA=2a5ac42fabbd7c6a66591d127e379432495ad3bc
+SOURCE_FIX_HEAD=bf89dc954cce37240b6e392f7ba2f5f681e2610a
+REVIEW_RECEIPT_COMMIT=50926f3584ded86a422fee8b55a6983219c2acff
+CLOUDFLARED_ACCESS_VERBS=STATIC_GUARD_ADDED
+CLOUDFLARED_SANDBOX=SIMULATION_NO_PROCESS
+GENERIC_SHELL_PATH=FAIL_CLOSED
+FOCUSED_TESTS=ADDED; NOT_RUN_BY_COORDINATOR
+CI=NO_WORKFLOW_RUNS_OR_STATUS_CHECKS_RETURNED
+BUILD=NOT_RUN
+RUNTIME=NOT_RUN
+REAL_TRANSPORT=NOT_RUN
+PROCESS_OR_TUNNEL_STATE=NOT_INSPECTED
+GLOBAL_PUBLIC_TUNNEL_PROHIBITION=NOT_ESTABLISHED
+RATIFIED_OPTION_D_NO_BOOTSTRAP=REMAINS_IN_FORCE
+AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+G1/G2/G3=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+GOVERNANCE=KEEP_BLOCKED
+READ_LIST=FAIL_CLOSED
+PUBLIC_TUNNEL=PROHIBITED
+AZURE_BILLING_STATE=NOT_VERIFIED
+COST_POLICY=NO_PAID_SERVICES; NO_RESOURCE_DEPLOYMENT
+BRIDGE=BRIDGE_NOT_READY
+NEXT_ACTION=RUN_FOCUSED_UNIT_TESTS_IN_EXISTING_ISOLATED_WINDOWS_WORKTREE; REPORT_RESULTS; THEN_REVIEW_NEW_HEAD
+```
+
+This routing is candidate-only and does not supersede live `main`. It does not establish application-wide absence of other launch routes or inspect process state. Keep PR #473 Draft/unmerged; no application, MCP, Cloudflare, shell, real transport, build, deployment, protected data, SQLite, secrets, or governance-block release. Live `main` stays at `2a5ac42fabbd7c6a66591d127e379432495ad3bc` with its own no-bootstrap/fail-closed `NEXT_ACTION`.
+
+---
+
 ## CURRENT-STATE ROUTING — Independent review of generic shell closure (2026-10-23)
 
 Latest bounded review receipt: [PR #473 — independent review of generic shell execution closure](./CHAT-ARCH-2026-10-23-independent-review-generic-shell-closure.md), reviewed candidate HEAD `cb1a8b545bc29b13b6da1ada0f0204601805f7dc`. The implementation change `e4bef794e336a84d538b99dcac3d959cf0c81573` disables `ShellToolAdapter.run()` unconditionally and rejects `shell_command` in `ToolTeachService.execute_task()` before availability, sandbox, approval, or adapter invocation. Static review passes for these bounded paths. The Owner reports 11 focused tests passing; they were not independently executed, and GitHub returned no workflow runs or status checks for this head.
