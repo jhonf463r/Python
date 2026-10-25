@@ -275,3 +275,41 @@ Perform one read-only review of the complete current staged and unstaged diff ac
 After that candidate-wide review and reconciliation against live `CURRENT-STATE.md`, prioritize the Owner-requested Mente Espacio-Tiempo continuity audit. That audit must reuse the existing continuity protocol and static audit, not create a second memory/orchestrator. The continuity priority receipt already records the intended audit scope.
 
 This review closes only the focused exact-diff inspection for these three paths. It does not close the whole bootstrap-boundary review, enable reads, close any G1/G2/G3 prerequisite, or prove runtime learning.
+
+
+## Whole-candidate review report received from Codex — independent byte review pending (2026-10-24, America/Bogota)
+
+The Owner supplied TASK_RESULT=WHOLE_CANDIDATE_STATIC_REVIEW_BUNDLE_ONLY, DIFFS_COMPLETE=YES. Codex reports that the complete staged and unstaged diff exports contain 1,899 and 3,844 lines, with SHA-256 cb7db09f3cec514846af4c1c5d449c22d3b2579de94254a95f12b6557050d9c1 and 0af9902c5109841cde9558857e1aacc99c4b620eaff9a0a75a77a1daeef6fdab, respectively. Their reported directory is a Windows-local temporary path; the bytes were not attached or published to GitHub and this reviewer has not independently verified those hashes or inspected the exports directly.
+
+Codex's whole-candidate static summary reports:
+- R-01: interfaces and contract validators exist, but production owner verifier, challenge store, trust registry, protected issuer credential provider and enrollment producer are not implemented.
+- R-02: the coordinator is connected through AppBootstrap/bridge/runner/server and both handlers, but is deliberately unconfigured and lists eight missing dependencies; the route is fail-closed.
+- R-03: valid synthetic ALLOW remains denied; helpers still resolve the original relative path; same-object binding is not established; explicit AUTHORITY_TARGET_INVALID test is absent.
+- R-04: expected registry ID equality validation exists; no production trusted ID source/registry is established.
+- R-05: SQLite consume-once source logic exists, but a rollback to an older valid snapshot is not detected and production storage/ACL boundaries are not established.
+- R-06: Windows CNG verifies signatures under a supplied RSA key; root/Owner identity of the key is not established.
+- R-07: stdio is available as a source option but streamable HTTP remains the bridge/bootstrap default; no canonical restricted-local profile is verified.
+- R-08: real Owner-to-Windows identity, independent root, issuer service, authenticated IPC, process separation and persistent ACL/trust-store boundary are not established.
+
+These remain Codex-reported static findings until the actual local diff bytes are independently reviewed. The source branch is not on GitHub; do not substitute public main for the dirty candidate.
+
+    TASK_RESULT=WHOLE_CANDIDATE_STATIC_REVIEW_BUNDLE_ONLY
+    DIFFS_COMPLETE=YES; CODEX_REPORTED
+    INDEPENDENT_BYTE_REVIEW=NOT_PERFORMED; SOURCE_EXPORT_BYTES_NOT_RECEIVED
+    TESTS=NOT_RUN
+    BUILD=NOT_RUN
+    RUNTIME=NOT_RUN
+    MCP=NOT_RUN
+    REAL_TRANSPORT=NOT_RUN
+    PROTECTED_READS=FAIL_CLOSED
+    G1=NOT_ESTABLISHED
+    G2=NOT_ESTABLISHED
+    G3=NOT_ESTABLISHED
+    IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+    GOVERNANCE=KEEP_BLOCKED
+    BUDGET=ZERO
+    AUTOMATIC_FOLLOW_ON=FALSE
+
+The immediate next evidence step is to receive the actual staged and unstaged diff artifacts and review their bytes independently. After that review and reconciliation with live CURRENT-STATE.md, the Owner's prioritized Mente Espacio-Tiempo audit remains queued: existing protocol intake, temporal/causal retrieval, stale/conflicting route state, context freshness/goal ordering, real destination-specific assistant delivery/receipts, and later causal reuse. Reuse the existing continuity algorithm audit; do not create another orchestrator.
+
+This update is documentation-branch-only on PR #493. No source code, index, tests, runtime, protected access, credentials, ACL/trust store, merge, deployment or spending were changed/performed.
