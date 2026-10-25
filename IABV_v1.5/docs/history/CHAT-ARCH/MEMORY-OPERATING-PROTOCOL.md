@@ -1,21 +1,31 @@
 <!-- Terminal transition: 2026-10-25. CURRENT-STATE.md remains the sole routing authority. -->
-## CURRENT ROUTE — remove manual artifact-transfer loop; prepare one machine-generated G3 review bundle (2026-10-25)
+## CURRENT ROUTE — producer bundle ready; one private transfer pending for authorized G3 static review (2026-10-25)
 
-The single authorized task `M1A_G1_G3_INTEGRATED_AUTHORIZATION_TO_HANDLE_SOURCE_CANDIDATE_20261025` returned `PARTIAL_G3_HANDLE_CONTRACT_SOURCE_ONLY`, according to the Owner-supplied Codex terminal report. The report claims a source-level capability binding from opened target through decision, permission, guard and reader helper, plus focused source-test authoring. Those source claims have not been independently reviewed here because the listed diff artifacts are Windows-local paths not accessible in this reconciliation session.
+The terminal source task returned `PARTIAL_G3_HANDLE_CONTRACT_SOURCE_ONLY` in the Owner-supplied Codex report. A follow-on read-only packaging task now reports `EVIDENCE_BUNDLE_READY`: one ZIP was generated with the six task diffs, six current source/test files and a manifest. Its bytes have not yet arrived on this review surface, so the reported ZIP hash/member validation remains `OWNER_SUPPLIED_CODEX_REPORT`, not independent verification. The two prior-work preservation diffs were not available and were not reconstructed; the preservation subclaim therefore cannot be closed from this packet.
 
 Terminal receipt: [integrated authorization-to-handle partial-candidate receipt](./CHAT-ARCH-2026-10-25-M1A-G1-G3-INTEGRATED-AUTHORIZATION-TO-HANDLE-PARTIAL-CANDIDATE-RECEIPT.md).
 Prior terminal blocker: [native-handle authorization-binding blocker](./CHAT-ARCH-2026-10-25-M1A-G1-G3-NATIVE-HANDLE-AUTHORIZATION-BINDING-BLOCKER-RECEIPT.md).
 
 The report explicitly leaves `APPROVED_WORKSPACE_ROOT_UNAVAILABLE`, native Windows ABI/filesystem semantics unvalidated, and all tests/build/runtime/MCP/transport unrun. Therefore `G3_SAME_OBJECT=NOT_ESTABLISHED`; a source-only candidate must not be promoted to canonical code or used to enable protected reads. Reported local state/hashes remain `OWNER_SUPPLIED_CODEX_REPORT`, not direct observations by this reconciliation.
 
-The Owner authorized one bounded independent static review. The preceding interaction exposed a coordination defect: the report's exact diffs existed in the producing Windows/Codex environment, but the assistant shifted bundle assembly to the Owner instead of first asking that producer to create one machine-generated evidence ZIP. Living Space-Time protocol revision 2.1 now defines the producer-owned evidence handoff in place to prevent that avoidable loop. The known Library staged.diff.txt and unstaged.diff.txt are not the six task-specific diffs and are not substitutes. The repository jhonf463r/Python is public, so a deleted branch/PR cannot be treated as automatic expiry; the safe default is a local ZIP created by the existing Codex session, outside the checkout, and one upload only if no supported private route delivers it. No source code/test/build/runtime changes are authorized; G3 stays unestablished and protected reads fail-closed.
+The Owner authorized one bounded independent static review. The producing Codex session reports the following ZIP: `IABV_G3_STATIC_REVIEW_EVIDENCE_20261025_3d0c265fc41443739b5e65ef3d4a23d3.zip`, 91,213 bytes, reported SHA-256 `9f9a3e575fa8c6d03b33ae9bdb73bfbf8a4680642b7a65d39fce44e154febe66`. Codex reports six exact task diffs, six current files and `manifest.json`, with member hashes checked by the producer; the ZIP bytes are not yet available here. The `preexisting-staged.diff` and `preexisting-unstaged.diff` members were unavailable and not reconstructed, so preservation cannot yet be independently verified. No connected private machine-to-machine file route is verified; this single ZIP upload is the one remaining transfer action. Do not publish it to the public repository. G3 stays unestablished, protected reads fail-closed, and no code/tests/runtime action is authorized.
 
 ~~~text
 PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
-ACTIVE_TASK=M1A_G1_PREPARE_SINGLE_G3_REVIEW_EVIDENCE_BUNDLE_20261025
-LAST_TERMINAL_TASK=M1A_G1_G3_INTEGRATED_AUTHORIZATION_TO_HANDLE_SOURCE_CANDIDATE_20261025
-LAST_TERMINAL_RESULT=PARTIAL_G3_HANDLE_CONTRACT_SOURCE_ONLY; OWNER_SUPPLIED_CODEX_REPORT; SOURCE_ARTIFACTS_NOT_INDEPENDENTLY_REVIEWED
+ACTIVE_TASK=M1A_G1_TRANSFER_PRODUCER_ZIP_AND_PERFORM_ONE_AUTHORIZED_STATIC_REVIEW_20261025
+LAST_TERMINAL_TASK=M1A_G1_PREPARE_SINGLE_G3_REVIEW_EVIDENCE_BUNDLE_20261025
+LAST_TERMINAL_RESULT=EVIDENCE_BUNDLE_READY; OWNER_SUPPLIED_CODEX_REPORT; ZIP_BYTES_NOT_RECEIVED
 PROTOCOL_DELTA=REVISION_2_1; SECTIONS_9_12_2_26_4_EVOLVED_IN_PLACE
+PREVIOUS_SOURCE_TASK=M1A_G1_G3_INTEGRATED_AUTHORIZATION_TO_HANDLE_SOURCE_CANDIDATE_20261025
+PREVIOUS_SOURCE_RESULT=PARTIAL_G3_HANDLE_CONTRACT_SOURCE_ONLY; SOURCE_ARTIFACTS_NOT_INDEPENDENTLY_REVIEWED
+BUNDLE_NAME=IABV_G3_STATIC_REVIEW_EVIDENCE_20261025_3d0c265fc41443739b5e65ef3d4a23d3.zip
+BUNDLE_SHA256_REPORTED=9f9a3e575fa8c6d03b33ae9bdb73bfbf8a4680642b7a65d39fce44e154febe66
+BUNDLE_SIZE_BYTES_REPORTED=91213
+BUNDLE_VALIDATION=MEMBER_HASHES_VALIDATED_BY_PRODUCER; NOT_INDEPENDENTLY_RECHECKED
+BUNDLE_CONTENTS_REPORTED=6_TASK_DIFFS; 6_CURRENT_SOURCE_TEST_FILES; MANIFEST_JSON
+PRESERVATION_DIFFS=PREEXISTING_STAGED_UNSTAGED_NOT_AVAILABLE; NOT_RECONSTRUCTED; PRESERVATION_NOT_VERIFIED
+ARTIFACT_TRANSFER=NO_CONNECTED_PRIVATE_ROUTE_VERIFIED; ONE_ZIP_UPLOAD_REQUIRED
+STATIC_REVIEW=AUTHORIZED_ONCE; WAITING_FOR_ZIP_BYTES
 COORDINATION_LESSON=ASSISTANT_SHIFTED_BUNDLE_ASSEMBLY_TO_OWNER; CORRECTED_IN_PROTOCOL
 STATIC_REVIEW=AUTHORIZED_ONCE; NOT_STARTED
 REVIEW_ARTIFACTS=EXACT_SIX_TASK_DIFFS; PREEXISTING_STAGED_UNSTAGED_DIFFS; INITIAL_FINAL_STATUS; HASH_MANIFEST
