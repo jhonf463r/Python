@@ -53,6 +53,12 @@ Apply the detailed [route-gate calibration knowledge delta](./CHAT-ARCH-2026-10-
 
 This is durable project guidance, not automatic model-weight training and not evidence that the running IABV algorithm has changed.
 
+- Continuity audit (2026-10-24): source wiring exists for DecisionAuditTrail → OSES → PortableContextService → TaskContextAssembler/AdaptiveTaskOrchestrator and optional SessionStartBriefingService delivery, but end-to-end runtime delivery is not proven. Git-tracked portable-context and self-examination snapshots are from 2026-04-18; `portable_context_get(refresh=False)` allows at least 24-hour-old packages, and the initial perception snapshot is built before GoalEngine attaches session goal context. Keep this as a separate follow-up after the active trust-organ source task; do not invent another orchestrator. See `CHAT-ARCH-2026-10-24-CONTINUITY-ALGORITHMS-STATIC-AUDIT.md`.
+
+
+- **Critical routing correction (2026-10-24):** do not freeze an old `NEXT_ACTION` after a new explicit Owner scope decision. Preserve the terminal technical review as history, record the new decision receipt, and add an additive current-state route transition before the next handoff. A source-construction authorization can permit building a fail-closed organ while root/mandate facts remain unresolved; it cannot authorize positive protected reads or close G1–G3. See section 14 of the continuity protocol and section 10 of the route-gate knowledge delta.
+
+
 - Follow-up case (2026-10-24): a Codex-reported unconditional deny before `read_repo_file` / `list_repo_directory` is containment for those named MCP routes, not a positive authorization path or proof of a protected issuer. Treat source details as `OWNER_REPORTED` until source is accessible and evidence is reviewed. The local candidate `9803a282760824eae630a27561f6aed6c4b6a6bd` was not found on remote GitHub; its tests were reported written but not run. This did not supply independent root-and-mandate evidence, so it does not reopen the terminal G1 route.
 
 

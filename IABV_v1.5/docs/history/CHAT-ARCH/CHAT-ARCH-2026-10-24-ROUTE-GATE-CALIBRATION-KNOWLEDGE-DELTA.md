@@ -149,3 +149,49 @@ Do not describe the two guards as end-to-end security enforcement for the entire
 
 This subsection is an intake and memory record of an Owner-supplied report. It does not certify the candidate, authorize source edits/tests/runtime/publishing, close any gate, or alter `CURRENT-STATE.md`.
 
+## 10. Follow-up calibration — stale-route inertia after a new explicit Owner decision (2026-10-24)
+
+### The joint-reasoning defect
+
+The coordinator correctly treated `CURRENT-STATE.md` as the sole source of current routing, but then incorrectly treated its old `NEXT_ACTION` as immutable after the Owner explicitly changed the authorized work scope. That is a state-machine error, not evidence that the project has no next step.
+
+Three different propositions were collapsed:
+
+1. `ROOT_REVIEW_TERMINAL`: the reviewed evidence did not establish a qualifying independent trust root; that terminal result remains valid for the same evidence set.
+2. `SOURCE_CONSTRUCTION_AUTHORIZATION`: the Owner can explicitly authorize a bounded implementation task without claiming the root already exists.
+3. `CANONICAL_ROUTE_UPDATE`: the new decision must be captured in the current routing record, preserving the old terminal result as history and explicitly listing the new task's boundaries.
+
+A new Owner directive changes permitted scope, not technical truth. It does not create authority assets, make the issuer safe, or close G1–G3. But the old terminal review and its old wait-state must not be repeated as though the new instruction never occurred.
+
+### Correct state transition
+
+```text
+TERMINAL_ROOT_REVIEW=RETAIN_AS_HISTORICAL_RESULT
+NEW_OWNER_DECISION=BOUNDED_SOURCE_CONSTRUCTION_AND_SOURCE_TEST_AUTHORING
+AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+QUALIFYING_INDEPENDENT_ROOT=NOT_ESTABLISHED
+G1_G2_G3=NOT_ESTABLISHED
+SOURCE_IMPLEMENTATION=AUTHORIZED_WITH_EXPLICIT_BOUNDS
+TEST_EXECUTION_BUILD_RUNTIME_TRANSPORT=NOT_AUTHORIZED
+PROTECTED_READS=FAIL_CLOSED
+NEXT_ACTION=CONTINUE_EXISTING_LOCAL_CANDIDATE_WITH_BOUNDED_SOURCE_WORK
+```
+
+This is a **proposed branch-level routing transition** until the changed state record is reviewed and adopted on live `main`. It does not declare the running bridge ready.
+
+### Mandatory algorithm when the route and a new Owner instruction appear to conflict
+
+1. Refresh `main` and read the five canonical front doors in order.
+2. Parse the new Owner message as a decision event: exact scope, permitted effects, explicit exclusions, timestamp/provenance, and what technical facts it does not assert.
+3. Do not use a historical terminal result or old `NEXT_ACTION` to silently erase that new decision. Preserve the result but scope it to the evidence reviewed.
+4. Create a small additive route transition that places the new task at the top of `CURRENT-STATE.md`, links the decision receipt, and preserves old blocks as historical records. Do not rewrite or erase the audit trail.
+5. If the state update cannot be performed in the current surface, label the result `ROUTE_SURFACE_MISMATCH` or `ACTION_UNEXECUTABLE_NO_EVIDENCE`; do not tell the Owner the technical route is impossible. Use the authorized repo checkout as the normal editing surface only when the Owner authorized that task, preserve candidate-only status, and return the diff for canonical review. Do not bypass a denied reader or credential boundary.
+6. Only after the proposed transition's authorization fields match the Owner's exact scope, prepare the next work prompt. Do not include tests/build/runtime/transport/credential/OS changes unless separately authorized.
+7. Keep source implementation, source test authoring, test execution, runtime validation, authority-root establishment, gate closure, and canonical adoption as different stages.
+
+### The architectural insight
+
+The root/mandate dependency blocks issuing a positive protected-read authorization; it does not block constructing a fail-closed authorization organ whose missing-root behavior is denial. The source task must implement the whole path without hard-coded success: real crypto verification, trust-anchor/mandate verification inputs, replay-safe challenge handling, issuer boundary, exact target binding, G2 policy/revocation, G3 resolver, and reader enforcement. Where a real root or OS isolation boundary is unavailable, the implementation must explicitly remain unable to authorize a read.
+
+The Owner decision receipt is [bounded source implementation authorization](./CHAT-ARCH-2026-10-24-M1A-G1-owner-bounded-source-implementation-authorization.md). This section corrects routing behavior; it is not itself an implementation or a gate pass.
+

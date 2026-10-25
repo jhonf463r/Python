@@ -46,6 +46,9 @@ The routing handoff is [M1A G1 Owner reopening — static design handoff](./CHAT
 Every new IABV chat MUST apply the [Canonical continuity, space-time reasoning and anti-loop protocol](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-23-CONTINUITY-SPACE-TIME-OPERATING-PROTOCOL-v1.md) before recommending or executing work. Reconstruct the project's event/evidence/dependency history from the canonical archive; preserve provenance; reuse terminal decisions; never ask the Owner to recall or search documents already available through permitted GitHub access; choose one supported, authorized next action that advances the North Star. This is a navigation/reasoning rule only: it does not override `CURRENT-STATE.md`, create trust authority, bypass denied readers, or change implementation/runtime/cost/security gates. A proposal is not canonical until adopted on live `main` and fetched back.
 <!-- CONTINUITY-PROTOCOL-OVERRIDE: end -->
 
+
+
+For continuity/context-delivery work, consult the [static continuity-algorithms audit](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-24-CONTINUITY-ALGORITHMS-STATIC-AUDIT.md). It distinguishes source wiring from runtime proof, records the current stale-package and initial-goal-order risks, and prevents creating a duplicate memory/orchestrator. This is a secondary audit; the active task and permissions remain governed by `CURRENT-STATE.md`.
 ## 2026-10-24 coordinator calibration — blocker scope and authorization are separate
 
 Apply the [route-gate calibration knowledge delta](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-24-ROUTE-GATE-CALIBRATION-KNOWLEDGE-DELTA.md) and section 13 of the canonical continuity protocol before handing work to another actor.

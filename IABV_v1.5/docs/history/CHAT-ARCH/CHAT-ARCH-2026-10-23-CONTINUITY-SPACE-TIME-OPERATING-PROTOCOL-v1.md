@@ -234,3 +234,21 @@ This calibration repairs a coordinator failure observed after the terminal G1 re
 
 The detailed incident-derived checks and evidence labels are recorded in [Route-gate calibration knowledge delta](./CHAT-ARCH-2026-10-24-ROUTE-GATE-CALIBRATION-KNOWLEDGE-DELTA.md). This section is a reasoning/navigation calibration only; it does not change the current technical route or authorize implementation, tests, protected reads, runtime, transport, credentials, spending or deployment.
 
+## 14. Explicit Owner decision transition — do not freeze a historical NEXT_ACTION
+
+The canonical `CURRENT-STATE.md` remains the single route authority, but its current fields are mutable state, not an immutable veto against a later explicit Owner decision. When a new Owner instruction changes the allowed scope, preserve the old terminal result as history, create a provenance-labeled decision receipt, and add a new current routing block at the top of `CURRENT-STATE.md`. Do not keep repeating the old `NEXT_ACTION` while pretending the new decision never happened.
+
+Separate:
+- **Review outcome:** what the evaluated evidence established or failed to establish.
+- **Authorization event:** which next actions the Owner now permits and which are still forbidden.
+- **Technical state:** which roots/bindings/code/tests/runtime properties are actually established.
+
+A new authorization changes only the second category. It does not establish a root or close a gate. In this incident, the root review remains terminal, but bounded source construction and source-test authoring are newly authorized; test execution/build/runtime/transport, credentials, service installation, persistent OS changes, publishing, deployment, cost and protected-read release remain unauthorized. Keep all real protected reads fail-closed until independent root/mandate and G1/G2/G3 requirements are verified.
+
+**Required transition:** record the Owner decision and exact scope; verify the current baseline; add an additive routing override plus link to the receipt; preserve previous state below as history; validate that every new field matches the authorized scope; then hand off one bounded task. If an update fails in one tool surface, record the exact write failure and keep candidate status; do not reinterpret a tooling issue as proof that no authorized engineering task exists. Do not bypass denied readers or credentials.
+
+The detailed incident and required Codex handoff fields are in [the route-gate calibration knowledge delta](./CHAT-ARCH-2026-10-24-ROUTE-GATE-CALIBRATION-KNOWLEDGE-DELTA.md), sections 10 and 7. This rule is navigation and authorization reconciliation; it does not permit any side effect excluded by the latest Owner decision.
+
+
+
+The related [continuity algorithms static audit](./CHAT-ARCH-2026-10-24-CONTINUITY-ALGORITHMS-STATIC-AUDIT.md) is a separate workstream. Do not preempt the active trust-organ wiring task with an unrelated context refactor; schedule it only after the current candidate delta is reviewed and the next scope is reconciled.

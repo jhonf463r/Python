@@ -1,6 +1,63 @@
-<!-- Current-state routing record for the terminal G1 review result. -->
+<!-- Current-state routing record: bounded trust-organ source work is currently authorized. -->
+## CURRENT-STATE ROUTING — trust/authorization organ source wiring (2026-10-24)
 
-## CURRENT-STATE ROUTING — terminal G1 review result (2026-10-24)
+The Owner's latest explicit instruction authorizes source-code modification and source-test authoring to complete the existing trust/authorization organ. The immediate task is the next unclosed composition edge reported by Codex: register the read-authorization coordinator through `AppBootstrap` and inject it into the two MCP read handlers. This is a source-only continuation, not a claim that a trusted root or positive read path exists. The local candidate's latest HEAD and staged/unstaged state remain Owner-reported; GitHub has not verified the local worktree.
+
+Decision receipt: [bounded source-implementation authorization](./CHAT-ARCH-2026-10-24-M1A-G1-owner-bounded-source-implementation-authorization.md).
+Continuity/context audit: [continuity algorithms static audit](./CHAT-ARCH-2026-10-24-CONTINUITY-ALGORITHMS-STATIC-AUDIT.md).
+
+```text
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+ACTIVE_TASK=M1A_G1_REGISTER_READ_AUTHORIZATION_IN_APPBOOTSTRAP
+OWNER_DECISION=BOUNDED_SOURCE_IMPLEMENTATION_AND_SOURCE_TEST_AUTHORING
+OWNER_DECISION_PROVENANCE=EXPLICIT_OWNER_CHAT_MESSAGE_2026-10-24
+OWNER_DECISION_RECEIPT=CHAT-ARCH-2026-10-24-M1A-G1-owner-bounded-source-implementation-authorization.md
+OWNER_DECISION_SCOPE=SOURCE_CODE_CHANGES_AND_SOURCE_TEST_AUTHORING_ONLY
+CANONICAL_BASE_MAIN=fed7d50926a0c09b2fdd2e9d00cc71fa05a3e6d7
+LOCAL_CANDIDATE_BRANCH=codex/m1a-g1-owner-governed-bootstrap-organ-20261024; OWNER_REPORTED; NOT_FOUND_ON_REMOTE
+LOCAL_CANDIDATE_HEAD=6bc568e1c5a898afd65cc045c779c25a9cdc5489; OWNER_REPORTED; LOCAL_WORKTREE_NOT_INDEPENDENTLY_INSPECTED
+LOCAL_SOURCE_STATE=7_PRIOR_FILES_STAGED; NEW_CHANGES_AND_CURRENT_STATE_UNSTAGED; OWNER_REPORTED; NOT_PUBLISHED
+NEXT_TECHNICAL_EDGE=REGISTER_READ_AUTHORIZATION_COORDINATOR_IN_APPBOOTSTRAP_AND_INJECT_INTO_BOTH_MCP_READ_HANDLERS
+SOURCE_IMPLEMENTATION=AUTHORIZED_WITH_BOUNDS
+SOURCE_TEST_AUTHORING=AUTHORIZED
+TEST_EXECUTION=NOT_AUTHORIZED; NOT_RUN
+BUILD=NOT_AUTHORIZED; NOT_RUN
+RUNTIME=NOT_AUTHORIZED; NOT_RUN
+REAL_TRANSPORT=NOT_AUTHORIZED; NOT_RUN
+PROTECTED_READS=FAIL_CLOSED
+CREDENTIAL_OR_APP_CREATION=NOT_AUTHORIZED
+WINDOWS_SERVICE_INSTALL=NOT_AUTHORIZED
+PERSISTENT_WINDOWS_ACL_OR_TRUST_STORE_CHANGES=NOT_AUTHORIZED
+PUBLIC_TUNNEL=DO_NOT_LAUNCH_OR_EXPOSE
+COST_POLICY=ZERO_BUDGET; NO_PAID_SERVICES; NO_RESOURCE_DEPLOYMENT
+AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+QUALIFYING_INDEPENDENT_ROOT=NOT_ESTABLISHED
+ROOT_CUSTODIAN_AND_INDEPENDENT_VERIFICATION_CHANNEL=NOT_ESTABLISHED
+OWNER_TO_WINDOWS_PRINCIPAL=NOT_ESTABLISHED
+BOOTSTRAP_AUTHORITY_TO_ISSUER=NOT_ESTABLISHED
+ISSUER_TO_EXACT_SERVER=NOT_ESTABLISHED
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3_VERSIONED_TARGET_RESOLVER=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+GOVERNANCE=KEEP_BLOCKED
+READ_LIST=FAIL_CLOSED
+BRIDGE=BRIDGE_NOT_READY
+CONTINUITY_ALGORITHMS=SOURCE_WIRING_PRESENT; END_TO_END_RUNTIME_NOT_VERIFIED
+TRACKED_PORTABLE_CONTEXT_AND_SELF_EXAMINATION_SNAPSHOTS=2026-04-18; STALE_REPOSITORY_ARTIFACTS
+MCP_PORTABLE_CONTEXT_NON_REFRESH_FRESHNESS=EFFECTIVE_MINIMUM_86400_SECONDS; STALE_PACKAGE_POSSIBLE
+ACTIVE_GOAL_INITIAL_PERCEPTION_ORDER=STATIC_RISK; SEE_CONTINUITY_AUDIT
+AUTOMATIC_FOLLOW_ON=FALSE
+NEXT_ACTION=CONTINUE_EXISTING_LOCAL_CANDIDATE_REGISTER_COORDINATOR_IN_APPBOOTSTRAP
+NEXT_REVIEW_TARGET=STATIC_REVIEW_OF_EXACT_SOURCE_DELTA; DO_NOT_CLOSE_GATES_FROM_SOURCE_INTENT
+```
+
+This current route supersedes the older wait-only route below for task selection because the Owner subsequently authorized bounded source construction. It does not supersede the terminal root-review finding or change technical trust facts. The root review remains terminal for its reviewed evidence set; source construction proceeds fail-closed until independently verified authority and G1/G2/G3 requirements exist. Source-only authorization does not include tests/build/runtime, transport, credentials, OS changes, publication, deployment, spending or release.
+
+---
+
+## HISTORICAL ROUTING — terminal G1 root-review result (2026-10-24; preserved below)
+
 
 The bounded adversarial static review is terminal. Its owner-supplied report declares `BLOCKED_NO_NONCIRCULAR_ROOT`. The report was byte-verified, but its attribution to Gemini 3.8 / Google Antigravity is not independently authenticated. This result does not establish that authority assets are absent. PR #486 is the integration vehicle for this documentation update; its review status is tracked in GitHub. A merge to `main` adopts this routing record, and fetch-back from `main` verifies its presence. This section records the review outcome, not the PR lifecycle status. The archived [review report](./CHAT-ARCH-2026-10-24-M1A-G1-gemini-adversarial-static-review-report.txt) and [reconciliation receipt](./CHAT-ARCH-2026-10-24-M1A-G1-adversarial-review-result-receipt.md) preserve the source and provenance details. The [terminal-review new-chat handoff](./CHAT-ARCH-2026-10-24-M1A-G1-terminal-review-new-chat-continuity-handoff.md) records the causal history, updated anti-loop lessons and exact startup prompt.
 

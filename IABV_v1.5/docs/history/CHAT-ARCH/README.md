@@ -26,6 +26,11 @@ NEXT_REVIEW_TARGET=NONE_UNTIL_GENUINELY_NEW_INDEPENDENT_EVIDENCE
 
 The prior reopening was limited to design/static review and is now terminal. Its prompt and former `NEXT_ACTION` are historical, not a pending assignment; `CURRENT-STATE.md` carries the routing record. PR #486 is the integration vehicle for this documentation update; its review status is tracked in GitHub. A merge to `main` adopts the record, and fetch-back from `main` verifies its presence. This section records the review outcome, not the PR lifecycle status. The documentation does not authenticate the reviewer, establish authority, close gates, or authorize implementation.
 
+
+
+## Continuity and AI-context delivery audit (2026-10-24)
+
+The [static continuity-algorithms audit](./CHAT-ARCH-2026-10-24-CONTINUITY-ALGORITHMS-STATIC-AUDIT.md) records the source-level producer-to-consumer links, the stale committed snapshots, the 24-hour non-refresh policy in `portable_context_get`, the initial-goal ordering risk, and the limits of session-briefing delivery evidence. It is static evidence only and does not change the active source task in `CURRENT-STATE.md`.
 ## New reusable reasoning calibration — route-gate scope (2026-10-24)
 
 The [route-gate calibration knowledge delta](./CHAT-ARCH-2026-10-24-ROUTE-GATE-CALIBRATION-KNOWLEDGE-DELTA.md) records the observed all-or-nothing and authorization-drift errors, the corrected blocker taxonomy, and the pre-handoff validation rule. It is process guidance only: live `CURRENT-STATE.md` remains the sole route authority, and its active task/gates are unchanged by this note.
