@@ -41,6 +41,20 @@ See the [terminal-review new-chat handoff](./CHAT-ARCH-2026-10-24-M1A-G1-termina
 
 <!-- OWNER-DECISION-OVERRIDE: adopted in documentation PR #482 and fetched back from live main on 2026-10-24; design/static analysis only. -->
 
+## Reusable chat-protocol delta — route-gate calibration and authorization drift (2026-10-24)
+
+Apply the detailed [route-gate calibration knowledge delta](./CHAT-ARCH-2026-10-24-ROUTE-GATE-CALIBRATION-KNOWLEDGE-DELTA.md) whenever deciding the next IABV task.
+
+- Do not globalize a narrow terminal result: a root review that cannot establish G1 is not proof that trust assets are absent and is not proof that all separate engineering work is technically impossible.
+- Do not use “independent workstream” to evade canonical authorization. In this observed incident, a prompt asked for implementation even though live `CURRENT-STATE.md` said `IMPLEMENTATION=NOT_AUTHORIZED`; record and avoid that coordinator error.
+- Distinguish authority, route availability, source defects, evidence gaps and action authorization. Never equate route failure with technical absence, a valid signature with Owner authority, written tests with executed tests, or a candidate branch with canonical acceptance.
+- Every handoff must reconcile its exact side effects against the live current-state authorization fields before it is issued.
+- Keep `CURRENT-STATE.md` as sole route authority. This calibration does not change `NEXT_ACTION`, authorize a denied read, or enable automatic follow-on.
+
+This is durable project guidance, not automatic model-weight training and not evidence that the running IABV algorithm has changed.
+
+---
+
 ## Historical Owner decision — reopen G1 design/static review only (2026-10-24; review now terminal)
 
 The Owner explicitly superseded the prior `RATIFIED_OPTION_D_NO_BOOTSTRAP` decision for purposes of reopening analysis and authorized a zero-budget, non-public design/static review only. This chat message does not authenticate a runtime principal, create a trust root, establish G1, or authorize code changes, credentials/apps, tests, runtime, transport, deployment, spending or block release. Keep authority assets `UNKNOWN; NOT_INSPECTED`, G1/G2/G3 unestablished, and protected reads fail-closed. Do not repeat Entra setup or ask the Owner to make the same reopen decision again.
