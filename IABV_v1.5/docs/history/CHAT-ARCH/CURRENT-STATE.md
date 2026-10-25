@@ -1,34 +1,26 @@
-<!-- CURRENT ROUTE OVERRIDE: latest Owner decision in this chat; bounded source work only. Preserve the prior terminal result below as history. -->
-## CURRENT-STATE ROUTING — one bounded source-organ remediation reopened by explicit Owner decision (2026-10-24)
+<!-- CURRENT ROUTE OVERRIDE: bounded source task adjudicated; waiting for independent authority/platform evidence. CURRENT-STATE.md remains sole router. -->
+## CURRENT-STATE ROUTING — bounded source-organ remediation terminal for current evidence (2026-10-24)
 
-The Owner's latest instruction explicitly requests proceeding toward completion of the authorization organ or identifying/removing the real bridge blocker, with the existing continuity records used to avoid repeating completed work. This changes the permitted scope for **one bounded source-only remediation task**; it adds no new authority asset or independent root evidence.
+The single Owner-authorized source-only remediation has been handed back and its pasted five-file patch text received a narrow static review. See [static review and route reconciliation receipt](./CHAT-ARCH-2026-10-24-M1A-G1-BOUNDED-SOURCE-REMEDIATION-STATIC-REVIEW-RECEIPT.md). The static result is `PASS_WITH_NOTES_FOR_PASTED_PATCH_TEXT_ONLY`; it is not a raw-diff hash verification or direct Windows worktree inspection. The local candidate remains unpublished.
 
-Decision receipt: [Owner reopening of bounded source-organ remediation](./CHAT-ARCH-2026-10-24-M1A-G1-OWNER-REOPEN-BOUNDED-SOURCE-ORGAN-DECISION-RECEIPT.md).
-
-The previously supplied 12-path staged/unstaged candidate diff bundle remains statically reviewed and SHA-256-verified. Do not repeat that review or ask the Owner for the same files. The actual existing Windows checkout is not accessible from this GitHub surface and its path, branch, HEAD, staged/unstaged state, and affected-file hashes must be revalidated by Codex before edits. Do not treat old checkout metadata as current or use public-main files as a substitute for the dirty candidate.
-
-The one permitted task is a minimal source-only correction in the existing local candidate plus focused source-test authoring, using the decision receipt's four bounded items: (1) strict boolean typing for `mandate.revoked`; (2) reconcile required `server_id`/`issuer_id` fields with the manifest schema version and candidate-owned fixtures/consumers; (3) add the missing explicit `AUTHORITY_TARGET_INVALID` assertion; and (4) determine whether genuine exact-target/same-object binding can be implemented using existing source/platform contracts. The reader must consume the exact identity-bearing target authorized by the decision, not independently resolve the original relative path. If that guarantee depends on a protected platform/issuer boundary not available in this scope, preserve denial and return the precise blocker; do not use mocks or a fabricated root to enable ALLOW.
+The source-level deltas are reported/visible for strict boolean validation of `mandate.revoked`, manifest schema version 2 with explicit v1 rejection, and explicit `AUTHORITY_TARGET_INVALID` coverage for both handlers. The same-object invariant remains `NOT_ESTABLISHED`; keep the existing denial path. No tests, build, runtime, MCP, real transport or protected reads were executed.
 
 ```text
 PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
-ACTIVE_TASK=M1A_G1_BOUNDED_SOURCE_ORGAN_REMEDIATION
-PREVIOUS_TASK=M1A_G1_WAIT_FOR_GENUINELY_NEW_INDEPENDENT_ROOT_AND_MANDATE_EVIDENCE
-OWNER_DECISION=REOPEN_ONE_BOUNDED_SOURCE_ONLY_REMEDIATION_AND_SOURCE_TEST_AUTHORING
-OWNER_DECISION_RECEIPT=CHAT-ARCH-2026-10-24-M1A-G1-OWNER-REOPEN-BOUNDED-SOURCE-ORGAN-DECISION-RECEIPT.md
-SOURCE_CANDIDATE_WORKTREE=OWNER_REPORTED; MUST_REVALIDATE_IN_EXISTING_CHECKOUT
-SOURCE_IMPLEMENTATION=AUTHORIZED_FOR_ONE_BOUNDED_TASK_ONLY
-SOURCE_TEST_AUTHORING=AUTHORIZED_FOR_ONE_BOUNDED_TASK_ONLY
+ACTIVE_TASK=M1A_G1_WAIT_FOR_GENUINELY_NEW_INDEPENDENT_ROOT_AND_AUTHENTICATED_OWNER_ISSUER_OS_BOUNDARY_EVIDENCE
+PREVIOUS_TASK=M1A_G1_BOUNDED_SOURCE_ORGAN_REMEDIATION
+PREVIOUS_TASK_RESULT=PASS_WITH_NOTES_FOR_PASTED_PATCH_TEXT_ONLY
+TASK_RESULT=BOUNDED_SOURCE_ORGAN_REMEDIATION_CANDIDATE_ONLY; OWNER/CODEX_REPORTED
+TASK_DIFF_SHA256=82c46f0d8574343dd94d52aa2642109a9f0b06558c4664b2bbfc62c40b34a460; REPORTED_NOT_RECOMPUTED
+LOCAL_CANDIDATE=OWNER_REPORTED; NOT_DIRECTLY_OBSERVED; UNPUBLISHED
+SOURCE_IMPLEMENTATION=TERMINAL_FOR_CURRENT_SCOPE
+SOURCE_TEST_AUTHORING=TERMINAL_FOR_CURRENT_SCOPE
 TEST_EXECUTION=NOT_AUTHORIZED; NOT_RUN
 BUILD=NOT_AUTHORIZED; NOT_RUN
 RUNTIME=NOT_AUTHORIZED; NOT_RUN
 MCP=NOT_AUTHORIZED; NOT_RUN
 REAL_TRANSPORT=NOT_AUTHORIZED; NOT_RUN
 PROTECTED_READS=FAIL_CLOSED
-CREDENTIAL_CREATION_OR_ENROLLMENT=NOT_AUTHORIZED
-SERVICE_INSTALLATION=NOT_AUTHORIZED
-OS_ACL_TRUST_STORE_OR_IPC_SETUP=NOT_AUTHORIZED
-SOURCE_CANDIDATE_STAGING_COMMIT_PUSH_OR_PUBLICATION=NOT_AUTHORIZED
-DEPLOYMENT_OR_SPENDING=NOT_AUTHORIZED
 AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
 QUALIFYING_INDEPENDENT_ROOT=NOT_ESTABLISHED
 OWNER_TO_WINDOWS_PRINCIPAL=NOT_ESTABLISHED
@@ -42,11 +34,16 @@ GOVERNANCE=KEEP_BLOCKED
 BRIDGE=BRIDGE_NOT_READY
 COST_POLICY=ZERO_BUDGET
 AUTOMATIC_FOLLOW_ON=FALSE
-NEXT_ACTION=RUN_ONE_BOUNDED_SOURCE_ORGAN_REMEDIATION_IN_EXISTING_CANDIDATE_WITH_SOURCE_TEST_AUTHORING_ONLY
-STOP_CONDITION=RETURN_EXACT_DIFF_AND_OPEN_REAL_TRUST_PLATFORM_BINDINGS; DO_NOT_LOOP_OR_ENABLE_PROTECTED_READS
+NEXT_ACTION=WAIT_FOR_GENUINELY_NEW_INDEPENDENT_ROOT_AND_AUTHENTICATED_OWNER_ISSUER_OS_BOUNDARY_EVIDENCE
+NEXT_REVIEW_TARGET=NEW_INDEPENDENT_ROOT_MANDATE_OWNER_HOST_OR_PROTECTED_ISSUER_IPC_G3_SAME_OBJECT_EVIDENCE_ONLY
+STOP_CONDITION=DO_NOT_REPEAT_SOURCE_REVIEW_OR_MICRO_PATCH; DO_NOT_ENABLE_PROTECTED_READS
 ```
 
-This is an authorized source-candidate step, not a claim that the organ or bridge is complete. The previously terminal review remains valid for its evidence set. No root, mandate, authenticated Owner-to-host identity, protected issuer process/IPC, G2 policy, or G3 exact-object binding is presumed present. The result must separate source defects corrected from dependencies that require genuine trust/platform evidence. No tests, build, runtime, transport, credentials, OS configuration, protected reads, publication, or spend.
+This is a terminal candidate result for the current evidence and scope, not a claim that the authorization organ or bridge is ready. Do not re-run the old source review, ask for the same diffs, or create another source-only task automatically. A new, independently verifiable authority/platform evidence event or a new explicit Owner decision is required before another technical task can be selected.
+
+## HISTORICAL CHECKPOINT — bounded source-organ remediation hand-back (2026-10-24)
+
+The Owner/Codex report says five candidate files changed unstaged, the staged/index state and HEAD were preserved, and `git diff --check` returned code 0 with LF/CRLF warnings. Those are report-attributed facts; this surface did not directly inspect the Windows checkout. The exact diff SHA-256 is recorded as reported and was not recomputed from a raw file here. See the linked receipt for the complete evidence limits and per-file adjudication.
 
 ---
 

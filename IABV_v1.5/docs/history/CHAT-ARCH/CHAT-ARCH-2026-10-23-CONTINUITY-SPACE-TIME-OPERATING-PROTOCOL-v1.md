@@ -367,3 +367,26 @@ The current task and permissions live exclusively in `CURRENT-STATE.md`. The tas
 Known source-level gaps from the accepted review are: (a) runtime typing of `mandate.revoked` is weaker than the other revocation checks; (b) new mandatory `server_id`/`issuer_id` fields are not reflected in the manifest schema version; (c) the explicit test assertion for `AUTHORITY_TARGET_INVALID` is missing; and (d) the exact authorized target is not demonstrably the same filesystem object consumed by the reader. Address the first three in one minimal candidate delta. For (d), implement only a genuine same-object invariant if existing source contracts can support it; otherwise keep positive reads blocked and return the precise external trust/platform dependency. No mock provider, locally self-asserted key, textual status field, or synthetic ALLOW may stand in for genuine authority.
 
 The next result is a candidate hand-back, not gate closure. Stop after one task, provide complete exact diffs against the pre-edit baseline, and classify each result as source-corrected, partially implemented, not established, or blocked by excluded authority/platform work. Retain `AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED`, `G1=G2=G3=NOT_ESTABLISHED` unless genuinely new evidence supports a narrower status change, `IMPLEMENTATION_PREREQUISITES=8; CLOSED=0`, `GOVERNANCE=KEEP_BLOCKED`, `PROTECTED_READS=FAIL_CLOSED`, and `AUTOMATIC_FOLLOW_ON=FALSE`.
+
+
+## 24. Bounded source-organ hand-back reconciled — wait for independent authority/platform evidence (2026-10-24)
+
+The one bounded source-only task authorized in section 23 has returned. The [static-review and route-reconciliation receipt](./CHAT-ARCH-2026-10-24-M1A-G1-BOUNDED-SOURCE-REMEDIATION-STATIC-REVIEW-RECEIPT.md) records a `PASS_WITH_NOTES_FOR_PASTED_PATCH_TEXT_ONLY` review of the five visible changed-file hunks. The task report states that strict boolean typing for `mandate.revoked`, manifest schema version 2 plus v1 rejection, and explicit `AUTHORITY_TARGET_INVALID` source coverage were added. The Windows checkout was not directly inspected; the reported diff SHA-256 was not recomputed from raw bytes; tests/build/runtime/MCP/real transport were not run.
+
+The task did not establish exact same-object binding: the reader still lacks a demonstrated contract proving that the identity-bearing object authorized is the object consumed by the helper. Preserve deny-only containment. No independent root, Owner-to-Windows identity, protected issuer/process/IPC boundary, or G3 exact-target binding is newly established.
+
+```text
+PREVIOUS_TASK=M1A_G1_BOUNDED_SOURCE_ORGAN_REMEDIATION
+PREVIOUS_TASK_RESULT=PASS_WITH_NOTES_FOR_PASTED_PATCH_TEXT_ONLY
+ACTIVE_TASK=M1A_G1_WAIT_FOR_GENUINELY_NEW_INDEPENDENT_ROOT_AND_AUTHENTICATED_OWNER_ISSUER_OS_BOUNDARY_EVIDENCE
+AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+G1=G2=G3=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+GOVERNANCE=KEEP_BLOCKED
+PROTECTED_READS=FAIL_CLOSED
+BRIDGE=BRIDGE_NOT_READY
+AUTOMATIC_FOLLOW_ON=FALSE
+NEXT_ACTION=WAIT_FOR_GENUINELY_NEW_INDEPENDENT_ROOT_AND_AUTHENTICATED_OWNER_ISSUER_OS_BOUNDARY_EVIDENCE
+```
+
+The single source task is terminal for the current evidence. Do not repeat the whole-candidate review or initiate another micro-patch loop. New source work requires either genuinely new independently verifiable authority/platform evidence or a new explicit Owner decision. This is a route reconciliation, not technical gate closure or runtime-learning evidence.
