@@ -136,3 +136,21 @@ The validator accepts any nonempty `persistence.registry_id`. Its signature has 
 ### Evidence limitation and next action
 
 The test-diff export is incomplete, so no conclusion is made that all new tests have the asserted coverage. The next bounded task is to add the expected-registry binding and corresponding source tests, then return the complete exact test diff in the same review bundle. Preserve all staged/unstaged paths. No tests/build/runtime/MCP/transport are authorized or claimed. Keep authority assets unknown/not inspected, G1/G2/G3 unestablished, 8 prerequisites open / 0 closed, governance blocked, protected reads fail-closed.
+
+## Follow-up F-03 correction — expected registry identity (2026-10-24)
+
+- Result: `TASK_RESULT=SOURCE_CANDIDATE_ONLY`; `TESTS=NOT_RUN`.
+- Evidence: user supplied the exact validator correction hunk and the full reported test diff. The local Windows worktree itself was not independently accessed; all local identity, hashes and preservation results remain `OWNER_REPORTED`.
+- Static disposition: `STATIC_REVIEW=F03_CORRECTION_PRESENT_IN_SUPPLIED_DIFF; FULL_TEST_DIFF_REVIEWED; TESTS_NOT_RUN`.
+
+### Correction present in the supplied diff
+
+The validator now has required `expected_registry_id: str`, documents that future callers must obtain it from host trust configuration/provider context, rejects values whose exact type is not `str` or which are whitespace-only, and requires exact equality with `persistence.registry_id`. Invalid expected IDs produce `ENROLLMENT_RECEIPT_INVALID`; a mismatch produces `ENROLLMENT_TRUST_REGISTRY_ID_MISMATCH`.
+
+The full supplied test diff includes a successful synthetic receipt using the matching ID, a negative case with a different well-formed expected ID, and parameterized rejection of blank/non-string expected IDs including `None`, integer and boolean. The test suite was not executed.
+
+### Remaining evidence boundary
+
+This closes F-03 at the supplied-source-contract level only. The `expected_registry_id` argument is not inherently trusted: future production code must source it from a trusted host configuration/provider, not from the receipt, request or untrusted issuer metadata. A typed receipt or status string does not prove durable challenge consumption or protected registry persistence. The local source/test blobs reported for this version are source `a5d14a14f31b87f181d7748e63f2f1e44b1948db` and tests `a5c1c182926271457d353b981fd701f3487e0cf4`; index/HEAD hashes are reported in the task intake, but none was independently read from the local filesystem.
+
+G1/G2/G3 remain unestablished; eight prerequisites remain open / zero closed; governance remains blocked; protected reads remain fail-closed; bridge remains not ready. No tests/build/runtime/MCP/transport were executed. No publication or merge of the source candidate occurred.
