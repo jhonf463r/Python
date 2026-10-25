@@ -1,43 +1,34 @@
-<!-- Current-state routing record: F-01/F-02/F-03 source corrections consolidated; whole dirty candidate review is the next bounded action. -->
-## CURRENT-STATE ROUTING — whole-candidate static review before further implementation (2026-10-24)
+<!-- Current-state routing proposal only; live main remains authoritative until PR adoption. --> 
+## CURRENT-STATE PROPOSAL — bind authorized read target before any positive path (2026-10-24)
 
-The consolidated [bootstrap-boundary static review receipt](./CHAT-ARCH-2026-10-24-M1A-G1-bootstrap-boundary-consolidated-static-review-receipt.md) records that the supplied diffs contain the three narrow corrections: F-01 canonical manifest SHA-256 binding; F-02 manifest blob SHA-1/positive exact-integer PR validation; F-03 an exact expected-registry ID binding plus its negative tests. The full supplied test diff for the enrollment receipt was reviewed. All tests remain `NOT_RUN`; source worktree hashes/status are `OWNER_REPORTED`, and the complete local candidate has not been independently read.
+The Owner supplied a Codex `SOURCE_REVIEW_BUNDLE_ONLY` report for the existing dirty local candidate. Codex reports it inspected the 12-path candidate without altering it and exported complete staged/unstaged patch files. Reported patch SHA-256 values are staged `d220b3c57325799e953a0c2534d7bcfa6088f5297b361855c23021f0097909b1` (63,238 bytes) and unstaged `59cb23aefa3205ccad22746f9d3afb7deaa1b604fc3e68eb510d9d23a332e4c6` (87,643 bytes). These local Windows files were not attached as downloadable bytes here. Treat candidate review details as Codex-reported local inspection until the relevant exact source hunk is supplied for another independent review.
 
-**Do not continue micro-patching one validator hunk at a time.** The reported checkout has 12 unique modified paths (7 staged paths and 11 unstaged paths, with overlap). Review the complete current staged and unstaged diff across that candidate as one bounded static review before issuing another implementation assignment. Preserve the checkout; make no edits; run no tests/build/runtime/MCP/transport. The review must distinguish genuinely present source composition from absent production proof and identify exactly which remaining obligations depend on excluded root, credential, enrollment, Windows ACL/trust-store, process/IPC or runtime actions.
+The reported review says AppBootstrap → bridge → runner → MCP server → both protected-read handlers is wired in source, while absent production providers cause fail-closed denial. It does **not** establish runtime behavior, enrollment, trust authority or a positive read path. F-01/F-02/F-03 remain focused static findings from previously supplied diffs, not executed tests.
 
-Canonical live `main` last revalidated during this reconciliation: `2cecd5e9b9e175584d65bbb1198a53bc2346d095`; `CURRENT-STATE.md` blob `c577ab49c5dd16993502c7199560dc94b586a815`. It still routes to `M1A_G1_OWNER_CONTROLLED_BOOTSTRAP_ISSUER_BOUNDARY`. This route refinement exists only on the documentation PR branch and is not canonical until the PR merges and the route is fetched back from live `main`.
+The first actionable source defect is **R-03**: the handler reportedly validates a non-empty `permit.canonical_target` but calls the resource helper with the original untrusted `relative_path`, permitting a second path resolution. The policy decision's target therefore is not yet bound to the object the helper operates on. Keep the present fail-closed composition; do not enable ALLOW. The bounded next source action is to inspect the existing helper contract and minimally repair the target binding, with source tests only. If the same-object guarantee requires a stronger boundary unavailable in the current helper, keep denial and report the exact unmet prerequisite.
 
-Decision receipt: [bounded source-implementation authorization](./CHAT-ARCH-2026-10-24-M1A-G1-owner-bounded-source-implementation-authorization.md).
-Prior focused review: [bootstrap-boundary static review receipt](./CHAT-ARCH-2026-10-24-M1A-G1-bootstrap-boundary-static-review-receipt.md).
-Consolidated review: [bootstrap-boundary consolidated static review receipt](./CHAT-ARCH-2026-10-24-M1A-G1-bootstrap-boundary-consolidated-static-review-receipt.md).
-New-chat handoff and copy/paste prompt: [consolidated new-chat handoff](./CHAT-ARCH-2026-10-24-M1A-G1-CONSOLIDATED-NEW-CHAT-HANDOFF.md).
-Context audit: [continuity algorithms static audit](./CHAT-ARCH-2026-10-24-CONTINUITY-ALGORITHMS-STATIC-AUDIT.md).
+Canonical live `main` at this proposal's latest pre-edit revalidation: `2cecd5e9b9e175584d65bbb1198a53bc2346d095`; live `CURRENT-STATE.md` blob `c577ab49c5dd16993502c7199560dc94b586a815`. It still routes to `M1A_G1_OWNER_CONTROLLED_BOOTSTRAP_ISSUER_BOUNDARY` with `SOURCE_IMPLEMENTATION=AUTHORIZED_WITH_BOUNDS`, `SOURCE_TEST_AUTHORING=AUTHORIZED`, `TEST_EXECUTION=NOT_AUTHORIZED; NOT_RUN`, and `NEXT_ACTION=CONTINUE_EXISTING_LOCAL_CANDIDATE_WITH_OWNER_CONTROLLED_BOOTSTRAP_ISSUER_BOUNDARY`. The specific R-03 task below is a proposed narrowing within that route, not canonical until this documentation branch is adopted and fetched back.
+
+Handoff: [consolidated new-chat handoff](./CHAT-ARCH-2026-10-24-M1A-G1-CONSOLIDATED-NEW-CHAT-HANDOFF.md).
+Consolidated receipt: [bootstrap-boundary static review receipt](./CHAT-ARCH-2026-10-24-M1A-G1-bootstrap-boundary-consolidated-static-review-receipt.md).
 
 ```text
 PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
-ACTIVE_TASK=M1A_G1_REVIEW_COMPLETE_DIRTY_BOOTSTRAP_BOUNDARY_CANDIDATE
-PREVIOUS_TASK=M1A_G1_BIND_ENROLLMENT_RECEIPT_TO_EXPECTED_REGISTRY
-PREVIOUS_TASK_RESULT=SOURCE_CANDIDATE_ONLY; F01_F02_F03_CORRECTIONS_PRESENT_IN_SUPPLIED_DIFF; FULL_RECEIPT_TEST_DIFF_REVIEWED; TESTS_NOT_RUN; WHOLE_CANDIDATE_NOT_REVIEWED
+ACTIVE_TASK=M1A_G1_BIND_AUTHORIZED_CANONICAL_TARGET_TO_READ_OPERATION
+PARENT_TASK=M1A_G1_OWNER_CONTROLLED_BOOTSTRAP_ISSUER_BOUNDARY
+PREVIOUS_TASK=M1A_G1_REVIEW_COMPLETE_DIRTY_BOOTSTRAP_BOUNDARY_CANDIDATE
+PREVIOUS_TASK_RESULT=SOURCE_REVIEW_BUNDLE_ONLY; CODEX_REPORTED_LOCAL_STATIC_REVIEW; RAW_PATCH_BYTES_NOT_AVAILABLE_TO_THIS_REVIEWER
+SOURCE_REVIEW=REPORTED_COMPLETE_FOR_12_PATHS; CHATGPT_BYTE_LEVEL_REVIEW=LIMITED_TO_SUPPLIED_SUMMARY
+NEXT_ACTION=MINIMALLY_REPAIR_R03_AUTHORIZED_TARGET_BINDING_WITH_SOURCE_TESTS
+NEXT_REVIEW_TARGET=EXACT_HUNKS_FOR_SERVER_GUARD_HELPER_CALL_AND_FOCUSED_TESTS
 OWNER_DECISION=BOUNDED_SOURCE_IMPLEMENTATION_AND_SOURCE_TEST_AUTHORING
-OWNER_DECISION_PROVENANCE=EXPLICIT_OWNER_CHAT_MESSAGE_2026-10-24
-OWNER_DECISION_SCOPE=SOURCE_CODE_CHANGES_AND_SOURCE_TEST_AUTHORING_ONLY
-CANONICAL_MAIN_AT_REVALIDATION=2cecd5e9b9e175584d65bbb1198a53bc2346d095; HISTORICAL SNAPSHOT; REFRESH LIVE MAIN BEFORE EACH TASK
-CANONICAL_CURRENT_STATE_BLOB=c577ab49c5dd16993502c7199560dc94b586a815; HISTORICAL SNAPSHOT
-LOCAL_CANDIDATE_BRANCH=codex/m1a-g1-owner-governed-bootstrap-organ-20261024; OWNER_REPORTED; NOT_FOUND_ON_REMOTE
-LOCAL_CANDIDATE_HEAD=6bc568e1c5a898afd65cc045c779c25a9cdc5489; OWNER_REPORTED; NOT_INDEPENDENTLY_INSPECTED
-LOCAL_CANDIDATE_STATE=7_STAGED_PATHS; 11_UNSTAGED_PATHS; 12_UNIQUE_PATHS; OWNER_REPORTED
+SOURCE_IMPLEMENTATION=AUTHORIZED_WITH_BOUNDS
 SOURCE_TEST_AUTHORING=AUTHORIZED
 TEST_EXECUTION=NOT_AUTHORIZED; NOT_RUN
 BUILD=NOT_AUTHORIZED; NOT_RUN
 RUNTIME=NOT_AUTHORIZED; NOT_RUN
 REAL_TRANSPORT=NOT_AUTHORIZED; NOT_RUN
 PROTECTED_READS=FAIL_CLOSED
-CREDENTIAL_OR_APP_CREATION=NOT_AUTHORIZED
-OWNER_ENROLLMENT_OR_CREDENTIAL_CREATION=NOT_AUTHORIZED
-WINDOWS_SERVICE_INSTALL=NOT_AUTHORIZED
-PERSISTENT_WINDOWS_ACL_OR_TRUST_STORE_CHANGES=NOT_AUTHORIZED
-PUBLIC_TUNNEL=DO_NOT_LAUNCH_OR_EXPOSE
-COST_POLICY=ZERO_BUDGET; NO_PAID_SERVICES; NO_RESOURCE_DEPLOYMENT
 AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
 QUALIFYING_INDEPENDENT_ROOT=NOT_ESTABLISHED
 ROOT_CUSTODIAN_AND_INDEPENDENT_VERIFICATION_CHANNEL=NOT_ESTABLISHED
@@ -51,12 +42,11 @@ IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
 GOVERNANCE=KEEP_BLOCKED
 READ_LIST=FAIL_CLOSED
 BRIDGE=BRIDGE_NOT_READY
+COST_POLICY=ZERO_BUDGET
 AUTOMATIC_FOLLOW_ON=FALSE
-NEXT_ACTION=EXPORT_AND_REVIEW_COMPLETE_STAGED_UNSTAGED_CANDIDATE_DIFF
-NEXT_REVIEW_TARGET=ALL_12_UNIQUE_MODIFIED_PATHS; SOURCE_COMPOSITION; MISSING_PRODUCTION_BOUNDARIES; AUTHORIZATION/GATE ALIGNMENT; NO_TEST_EXECUTION; NO_GATE_CLOSURE
 ```
 
-This route proposal advances only static evidence collection and review. It is not authorization to publish/merge the source candidate or perform credentials, enrollment, OS/ACL, test/build/runtime/transport, deployment, spending, or protected-read actions. Keep all security gates fail-closed.
+This proposal authorizes no new side-effect class: source edits/source-test authoring only under the live bounded authorization; no test execution, build, runtime, credentials, enrollment, root creation, Windows ACL/trust-store/service changes, publication, merge, deployment, spend or protected reads. Do not confuse the documentation proposal with canonical state.
 
 ---
 
