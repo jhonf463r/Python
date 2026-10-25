@@ -64,7 +64,7 @@ This checkpoint records the coordination audit as supplementary knowledge; it do
 
 ### Canonical route / governance
 - [`CURRENT-STATE.md`](./CURRENT-STATE.md), live main blob `e51fdc0e6a3d49a83a8619ea864d2cec1b8651b1`.
-- [`AGENTS.md`](../../AGENTS.md), live main blob `50d5843f9d9eb1b81f350a43adbf4881435a9ad3`.
+- [`AGENTS.md](../../../AGENTS.md), live main blob `50d5843f9d9eb1b81f350a43adbf4881435a9ad3`.
 - [`SYMBIOSIS-MAP.md`](./SYMBIOSIS-MAP.md), live main blob `64ea4d572a3d823f5e9fbaf663b8096979864e43`.
 
 ### Prior static continuity work (reuse; do not restart from zero)
