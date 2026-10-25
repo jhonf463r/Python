@@ -3,7 +3,7 @@
 
 The Owner explicitly authorized one integrated source-only G3 candidate after first auditing and reconciling the Mente Espacio-Tiempo continuity records. This route update records that decision and corrects stale front-door summaries; it does not claim Codex has received the prompt or that implementation has started.
 
-Owner decision receipt: [integrated G3 source-candidate authorization](./CHAT-ARCH-2026-10-25-M1A-G1-OWNER-DECISION-INTEGRATED-G3-SOURCE-CANDIDATE-RECEIPT.md).
+Owner decision receipt: [integrated G3 source-candidate authorization](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-25-M1A-G1-OWNER-DECISION-INTEGRATED-G3-SOURCE-CANDIDATE-RECEIPT.md).
 The task must connect an approved workspace-root capability → handle-relative resolver → authorization coordinator/permission → guard → same-handle file reader or directory enumerator. If approved root identity or native same-object semantics cannot be established, preserve deny-only behavior and return a precise blocker. The workspace root is not the independent IABV trust root.
 
 The continuity audit confirmed the living protocol revision 2.0 already defines the relevant transition discipline, including recording explicit Owner decisions, revising the canonical route and requiring fetch-back. The correction is to apply that rule—not create a second memory/orchestrator or rewrite valid history. Runtime freshness/delivery and later causal reuse remain unverified and are outside this G3 task.
