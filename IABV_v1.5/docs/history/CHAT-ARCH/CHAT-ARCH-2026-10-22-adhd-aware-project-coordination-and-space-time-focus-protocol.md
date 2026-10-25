@@ -391,9 +391,9 @@ This preflight is mandatory before every answer that hands work to the Owner or 
 
 Observed 2026-10-25 incident: the assistant supplied a handoff link when an inline copy-ready prompt was requested, then claimed Dropbox delivery without a completed upload receipt. The complete failure and provenance are recorded in [the owner-facing delivery preflight correction](./CHAT-ARCH-2026-10-25-OWNER-FACING-DELIVERY-PREFLIGHT-CORRECTION.md). This is an observed coordination failure; successful reuse in future chats remains unproven until measured.
 
-### 13.3 The concrete correction now applied
+### 13.3 Historical concrete correction from 2026-10-22 (superseded by live CURRENT-STATE routing)
 
-For the current task, the Owner has authorized `M1A_G1_G3_AUTHORITY_ROUTE_CANDIDATE_IMPLEMENTATION`. The coordinator must give the full prompt in the current ChatGPT answer, addressed to **Codex in the existing UI/session**, and require work only on the verified isolated candidate branch `m1a-g1-g3-governance-route-candidate-20261022`, pinned to base `60c8ac6e7ff425c815d9bdc7194bf20ef8d134db`. If Codex cannot safely reach/edit that remote candidate and cannot establish a separate candidate, it must return that capability limitation; it must not touch the Owner's existing checkout or request an Administrator terminal as a workaround.
+For the task that motivated the original 2026-10-22 correction, the Owner authorized `M1A_G1_G3_AUTHORITY_ROUTE_CANDIDATE_IMPLEMENTATION`. The coordinator was required to give the prompt in the ChatGPT answer, addressed to **Codex in the existing UI/session**, and restrict work to the verified isolated candidate branch `m1a-g1-g3-governance-route-candidate-20261022`, pinned to base `60c8ac6e7ff425c815d9bdc7194bf20ef8d134db`. This is historical context only; the live `CURRENT-STATE.md` controls today's task and authorization. If Codex cannot safely reach/edit that remote candidate and cannot establish a separate candidate, it must return that capability limitation; it must not touch the Owner's existing checkout or request an Administrator terminal as a workaround.
 
 The latest task remains governed by `CURRENT-STATE.md`. This interaction contract does not itself dispatch the prompt, execute candidate work, close any implementation prerequisite, authorize protected reads, or release any operational block.
 
