@@ -201,3 +201,47 @@ Exact routing discipline:
 4. No automatic follow-on, tests/runtime, protected reads, credentials, OS/ACL/trust store, publishing, merge, deployment or spending is authorized by this note.
 
 See the whole-candidate static review receipt and Owner continuity directive receipt in this branch.
+
+
+## 12. Exact whole-candidate diff review completed; Mente audit recorded (2026-10-24)
+
+The Owner attached the previously missing `staged.diff.txt` and `unstaged.diff.txt`. Both hashes were independently recomputed and match the Codex report:
+
+- staged, 1,899 lines / 82,068 bytes: `cb7db09f3cec514846af4c1c5d449c22d3b2579de94254a95f12b6557050d9c1`
+- unstaged, 3,844 lines / 168,032 bytes: `0af9902c5109841cde9558857e1aacc99c4b620eaff9a0a75a77a1daeef6fdab`
+
+This supersedes Section 11's statement that the exports remain unavailable and independent byte review has not happened. Read [the independent review result](./CHAT-ARCH-2026-10-24-M1A-G1-INDEPENDENT-WHOLE-CANDIDATE-STATIC-REVIEW-RESULT.md) before asking for another source export.
+
+### Technical disposition
+
+- R-01–R-08 were statically reviewed across the supplied full staged/unstaged diff bundle.
+- The candidate contains trust/issuer contracts and validation logic, CNG-backed RSA signature checking under a supplied key, a SQLite consume-once source implementation and MCP deny-only containment. It does **not** establish the independent root, production Owner verifier/issuer credential provider/challenge store/trust registry/enrollment producer, authenticated issuer OS IPC/process boundary, or protected durable registry.
+- R-03 remains `DENY_ONLY_CONTAINMENT`; `SAME_OBJECT_BINDING=NOT_ESTABLISHED`. A valid `ALLOW` is still denied; the handlers do not pass a G3 identity-bearing target into the actual filesystem operation. No explicit test assertion for `AUTHORITY_TARGET_INVALID` appears in the supplied test diffs.
+- Additional findings: mandatory `server_id` and `issuer_id` are added while `MANIFEST_SCHEMA_VERSION` remains 1; `mandate.revoked` lacks exact boolean type validation unlike the other revocation flags.
+- The static review does not observe the local checkout beyond the supplied diff bytes and does not prove test/build/runtime behavior.
+
+### Mente Espacio-Tiempo follow-up
+
+The existing protocol was reused. The additional static audit confirms stale route summaries in four front-door documents, an explicit 24-hour minimum cache-age behavior for `portable_context_get(refresh=False)` without a freshness verdict, goal attachment after initial perception construction, and Devin-conditional session briefing without a durable receipt binding exact package ID to delivery destination/acknowledgment. Details and smallest correction sequence are in [the Mente Espacio-Tiempo audit delta](./CHAT-ARCH-2026-10-24-MENTE-ESPACIO-TIEMPO-CONTINUITY-AUDIT-DELTA.md). Do not invent a parallel orchestrator or claim autonomous/model-weight learning.
+
+### State carried forward
+
+```text
+DIFF_BYTES=RECEIVED; SHA256_VERIFIED
+WHOLE_CANDIDATE_STATIC_REVIEW=COMPLETE_FOR_SUPPLIED_FULL_DIFF_BUNDLE
+TESTS=NOT_RUN
+BUILD=NOT_RUN
+RUNTIME=NOT_RUN
+MCP=NOT_RUN
+REAL_TRANSPORT=NOT_RUN
+PROTECTED_READS=FAIL_CLOSED
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+GOVERNANCE=KEEP_BLOCKED
+BRIDGE=BRIDGE_NOT_READY
+AUTOMATIC_FOLLOW_ON=FALSE
+```
+
+Live `main` was revalidated as `2cecd5e9b9e175584d65bbb1198a53bc2346d095`. Its canonical `CURRENT-STATE.md` still selects the Owner-controlled bootstrap/issuer-boundary task. The proposed route and receipts are only on documentation PR #493, which remains unmerged. No tests, runtime, credentials, host/OS provisioning, source-candidate change or protected read occurred in this ChatGPT turn.
