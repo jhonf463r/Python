@@ -53,6 +53,9 @@ Apply the detailed [route-gate calibration knowledge delta](./CHAT-ARCH-2026-10-
 
 This is durable project guidance, not automatic model-weight training and not evidence that the running IABV algorithm has changed.
 
+- **Critical routing correction (2026-10-24):** do not freeze an old `NEXT_ACTION` after a new explicit Owner scope decision. Preserve the terminal technical review as history, record the new decision receipt, and add an additive current-state route transition before the next handoff. A source-construction authorization can permit building a fail-closed organ while root/mandate facts remain unresolved; it cannot authorize positive protected reads or close G1–G3. See section 14 of the continuity protocol and section 10 of the route-gate knowledge delta.
+
+
 - Follow-up case (2026-10-24): a Codex-reported unconditional deny before `read_repo_file` / `list_repo_directory` is containment for those named MCP routes, not a positive authorization path or proof of a protected issuer. Treat source details as `OWNER_REPORTED` until source is accessible and evidence is reviewed. The local candidate `9803a282760824eae630a27561f6aed6c4b6a6bd` was not found on remote GitHub; its tests were reported written but not run. This did not supply independent root-and-mandate evidence, so it does not reopen the terminal G1 route.
 
 
