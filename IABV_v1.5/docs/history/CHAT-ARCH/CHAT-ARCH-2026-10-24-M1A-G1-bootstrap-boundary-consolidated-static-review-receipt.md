@@ -130,3 +130,51 @@ The report's aggregate diagnosis is: the static dependency wiring reaches the MC
 `M1A_G1_BIND_AUTHORIZED_CANONICAL_TARGET_TO_READ_OPERATION`: repair R-03 only, within existing source-implementation/source-test authorization and the existing dirty checkout. Inspect the actual helper contract first; make the minimum change so the exact target authorized by the coordinator is the target read/list operations consume, without a second independent interpretation of the untrusted relative path. If the existing helper cannot guarantee that identity, preserve unconditional denial and report the exact blocker rather than inventing a positive path. Add focused source tests for mismatched/rewritten targets and pre-helper denial. Preserve every pre-existing staged delta and all unrelated unstaged changes; do not execute tests/build/runtime/MCP/transport or touch credentials, roots, enrollment, ACLs, services or trust stores. Do not publish or merge the source candidate.
 
 This is a branch-only proposed next action, not a mutation of canonical `main`. It does not contradict the live main authorization; it narrows work within that bounded source task.
+
+## Latest Codex result — R-03 containment candidate, exact test delta still needs review
+
+**Intake:** Owner supplied `TASK_RESULT=SOURCE_CANDIDATE_ONLY` for `M1A_G1_BIND_AUTHORIZED_CANONICAL_TARGET_TO_READ_OPERATION` on 2026-10-24 (America/Bogota). Codex reports the live-main route authorized source changes and source-test authoring only and says no tests/build/runtime/MCP/transport were run.
+
+Reported checkout: `C:/Users/faber/AppData/Local/Temp/iabv-g1-bootstrap-sparse-f99534e037e542038513a974d805bb27`; branch `codex/m1a-g1-owner-governed-bootstrap-organ-20261024`; HEAD `6bc568e1c5a898afd65cc045c779c25a9cdc5489`; main `2cecd5e9b9e175584d65bbb1198a53bc2346d095`. Reported state was unchanged: 12 routes, 7 staged and 11 unstaged statuses with overlap. New deltas are reported unstaged; index preserved. Review-side status is `FILES_MODIFIED_BY_REVIEW=0` as reported by Codex; these local details have not been read independently from the Windows checkout.
+
+Reported current worktree/index/HEAD blobs:
+- `infra/mcp/server.py`: worktree `716e4fcf85667e124ca4ed6aa75931b5746ef5ed`; index `c8436eaf8a9df27b57a079490b4e6025258680b7`; HEAD `fbce8d52ddc121033f5bb87bb92be2aee52da8c0`.
+- `tests/test_mcp_server.py`: worktree `0fc7936c82d6f7dbc29d702db82b44517a0fbb2e`; index `3d4c445350adb3d45e3aefda4a19cdfa8122fabc`; HEAD `88b0a2a1570d7f5bfebcf09b850cd7db24640c65`.
+- `tests/test_read_authorization.py`: worktree `5f93ab1d39d44f0471900d1f3bb546365980b184`; index `08e0b893bd41366be69988a23b2e0fc4a5130fce`; no HEAD blob (reported newly added).
+
+### What the supplied task hunk supports
+
+The supplied `server.py` hunk changes `_protected_read_authority_block()` to return a denial dictionary rather than `None` on the previous success branch. If that is the full operative contract and both handlers return whenever this result is non-`None`, then even a synthetic, well-formed `ALLOW` is contained before the current helpers. The error codes reported are `AUTHORITY_DECISION_SCOPE_MISMATCH`, `AUTHORITY_TARGET_INVALID` and `AUTHORIZED_TARGET_NOT_BOUND_TO_OPERATION`.
+
+This is **fail-closed containment**, not a repair that enables a positive path while guaranteeing same-object identity. It avoids treating a string-valued canonical target as sufficient proof of the object that a helper will open/list. R-03 should therefore be described as `POSITIVE_PATH_DISABLED_PENDING_SAME_OBJECT_BINDING`, not as a production target-binding guarantee.
+
+Codex reports focused tests added for divergent paths, rewritten canonical targets, both handlers and a synthetic `ALLOW` remaining denied. However, only the `server.py` hunk and a summary were supplied in the chat; the full exact test hunks were not supplied. The full current task-specific diff for the three paths has not been independently re-reviewed here. Do not mark R-03 closed until the relevant exact code and test diffs are inspected.
+
+```text
+TASK_RESULT=SOURCE_CANDIDATE_ONLY
+SOURCE_DIFF_BASIS=OWNER_SUPPLIED_SERVER_HUNK_PLUS_SUMMARY
+TEST_HUNKS_EXACTLY_REVIEWED=NO
+TESTS=NOT_RUN
+BUILD=NOT_RUN
+RUNTIME=NOT_RUN
+MCP=NOT_RUN
+REAL_TRANSPORT=NOT_RUN
+PROTECTED_READS=FAIL_CLOSED
+R03=CONTAINMENT_REPORTED; SAME_OBJECT_BINDING_NOT_ESTABLISHED
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+GOVERNANCE=KEEP_BLOCKED
+AUTOMATIC_FOLLOW_ON=FALSE
+```
+
+## Next action — inspect this task's exact source and test delta
+
+Do not implement another patch yet. In the same Windows checkout, produce complete, exact, read-only diffs for:
+1. `IABV_v1.5/src/iabv_v15/infra/mcp/server.py`;
+2. `IABV_v1.5/tests/test_mcp_server.py`;
+3. `IABV_v1.5/tests/test_read_authorization.py`.
+
+Include the current full staged diff and full unstaged diff for those paths so prior staged/unstaged context is visible, plus the exact new R-03 test hunks and precise identification of the task delta. Do not invent a pre-task diff baseline if none was preserved. Include full initial/final status, `--numstat`, the three levels of blob hashes, and a statement of whether the initial/final status and index match. No edit and no execution. This inspection is the next bounded evidence step; once the source/test contract is reviewed, decide whether a minimal further source change is necessary or the current safe result should remain a deny-only containment until platform prerequisites exist.
+
