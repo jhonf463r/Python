@@ -267,12 +267,12 @@ When the Owner supplies a Codex response:
 5. Preserve provenance: GitHub main/PR state may be directly verified; local Codex claims remain `OWNER_REPORTED` until the source delta is accessible and reviewed. Never promote written tests to passed tests or source intent to runtime behavior.
 6. Choose the follow-on only after intake, from the live route and the Owner's exact authorization. A new report can refine the evidence state; it does not itself create root authority, change security facts, or expand permissions.
 
-Historical checkpoint at the reviewed baseline (2026-10-24): the pasted transcript ended with an AppBootstrap registration prompt, while the then-live `CURRENT-STATE.md` routed to `M1A_G1_OWNER_CONTROLLED_BOOTSTRAP_ISSUER_BOUNDARY`. That source attempt was subsequently reviewed as one whole supplied diff bundle, and the bounded source-only attempt is now terminal for the evidence available. After documentation-only PR #493 was adopted and the route was fetched back, the current action became waiting for genuinely new independent root/mandate and authenticated Owner-to-host/issuer-boundary evidence. Treat the AppBootstrap prompt and the earlier source-task instructions in sections 16–20 as historical evidence, not active tasks. Always derive the present action from live `CURRENT-STATE.md`. See [route-gate calibration, section 11](./CHAT-ARCH-2026-10-24-ROUTE-GATE-CALIBRATION-KNOWLEDGE-DELTA.md#11-follow-up-calibration--transcript-task-versus-live-route-2026-10-24).
+Historical checkpoint at the reviewed baseline (2026-10-24): the pasted transcript ended with an AppBootstrap registration prompt, while the then-live `CURRENT-STATE.md` routed to `M1A_G1_OWNER_CONTROLLED_BOOTSTRAP_ISSUER_BOUNDARY`. That source attempt was subsequently reviewed as one whole supplied diff bundle, and the bounded source-only attempt is now terminal for the evidence available. After documentation-only PR #493 was adopted and the route was fetched back, the current action became waiting for genuinely new independent root/mandate and authenticated Owner-to-host/issuer-boundary evidence. Treat the AppBootstrap prompt and prior source-task sections explicitly marked `HISTORICAL CHECKPOINT` as evidence, not active tasks. Always derive the present action from live `CURRENT-STATE.md`. See [route-gate calibration, section 11](./CHAT-ARCH-2026-10-24-ROUTE-GATE-CALIBRATION-KNOWLEDGE-DELTA.md#11-follow-up-calibration--transcript-task-versus-live-route-2026-10-24).
 
 This protocol update is durable project guidance, not model-weight training. It does not change the active technical route, Owner authorization, the eight open prerequisites, or fail-closed behavior.
 
 
-## 16. Bootstrap/issuer candidate result — review before asking for new authority material (2026-10-24)
+## HISTORICAL CHECKPOINT — Bootstrap/issuer candidate result (2026-10-24; superseded by current route)
 
 The current Owner-reported result for `M1A_G1_OWNER_CONTROLLED_BOOTSTRAP_ISSUER_BOUNDARY` says the candidate gained typed challenge/evidence contracts and source tests but not a real Owner assertion verifier, independent root, durable challenge/replay store, protected registry, or authenticated isolated issuer/IPC/OS boundary. It remains `SOURCE_CANDIDATE_ONLY`; the exact local patch has not been independently inspected and no tests/build/runtime/MCP/transport were run.
 
@@ -283,7 +283,7 @@ The source report is internally precise about what is missing, but that precisio
 Required intake artifacts: current main ref, candidate path/branch/HEAD, status before any command, index diff and worktree diff for all three paths, the exact reported blob/hash values, source locations, and explicit statement that no files were modified during diff extraction. Do not merge/rebase, stage, commit, publish, execute tests, build, start runtime, or use MCP transport in the review-preparation step.
 
 
-## 17. Source-evidence consistency review and minimum repair (2026-10-24)
+## HISTORICAL CHECKPOINT — Source-evidence consistency review (2026-10-24; minimum repair superseded)
 
 The static review of the supplied bootstrap-boundary diffs found that `validate_owner_bootstrap_evidence()` accepts a syntactically valid `manifest_sha256` without confirming it is the canonical digest of `challenge.expected_manifest()`. The positive test fixture uses the arbitrary value `"e"*64`, so it does not test actual digest binding. The helper also omits validation of the Git blob SHA format and a positive pull-request number. See the [review receipt](./CHAT-ARCH-2026-10-24-M1A-G1-bootstrap-boundary-static-review-receipt.md).
 
@@ -291,31 +291,31 @@ The next task is a minimum source-only correction: compute the same canonical ma
 
 Do not broaden this repair into a production issuer, root enrollment, registry or process-boundary implementation. Do not execute tests/build/runtime/transport or alter the dirty candidate's previous staged/unstaged work. The source fix does not establish signature provenance, root authority, IPC/OS isolation, G1/G2/G3 or positive protected reads. After the exact repair diff is returned, inspect only that delta and preserve the same evidence distinctions.
 
-## 16. Source evidence correction versus enrollment outcome (2026-10-24)
+## HISTORICAL CHECKPOINT — Source evidence correction versus enrollment outcome (2026-10-24; superseded)
 
 The bootstrap-boundary correction task is reported as `SOURCE_CANDIDATE_ONLY`. The exact pasted diff now contains the required canonical manifest-digest equality check, SHA-1 format validation for `manifest_git_blob_sha`, and exact positive-integer validation for `pull_request_number`; tests for these cases are written but `NOT_RUN`. Treat this as targeted static review only because the local worktree was not directly accessible and the candidate remains unpublished.
 
 Do not infer that the broader bootstrap boundary is implemented. A separate contract mismatch remains: `OwnerControlledBootstrapBoundary.enroll()` returns `OwnerMergeVerificationEvidence`, which describes repository merge proof and is not an enrollment receipt confirming successful one-use challenge consumption and protected registry persistence. The next bounded, authorized source step is to define an explicit typed enrollment outcome/receipt and focused source tests. Do not add a production trust root/verifier/OS boundary or claim positive authorization; keep G1/G2/G3 unestablished, all eight prerequisites open, and protected reads fail-closed.
 
-## 17. Enrollment-receipt summary is not a reviewable source delta (2026-10-24)
+## HISTORICAL CHECKPOINT — Enrollment-receipt source-delta review (2026-10-24; superseded)
 
 When Codex reports a multi-file source change but supplies only summary prose, classify the result as `OWNER_REPORTED` and the static review as `NOT_PERFORMED_EXACT_DIFF_REQUIRED`. Local paths, blob IDs and command summaries do not expose the implementation to this reviewer. Do not infer code correctness from described type names or reported test coverage.
 
 For the enrollment receipt contract, obtain the exact unstaged diff from the same checkout for the two authorized files. Review the actual type definitions, validator and tests, including strict booleans-versus-integers handling, Owner/issuer/server/merge bindings, validity and event-time ordering, empty/malformed references, and behavior if challenge consumption succeeds but registry persistence fails. Status fields such as `CONSUMED_ONCE`, `PERSISTED`, and `ENROLLED` are only claims unless produced by trusted issuer-owned operations. Preserve staged/unstaged state and keep tests/build/runtime/transport unexecuted; do not claim G1/G2/G3 progress from source shape alone.
 
-## 18. Receipt persistence target must be independently bound (2026-10-24)
+## HISTORICAL CHECKPOINT — Receipt persistence target binding (2026-10-24; superseded)
 
 Static review of the supplied enrollment receipt module found that the validator verifies multiple internal field bindings and event-time order, but accepts any nonempty `persistence.registry_id`. A receipt must be checked against an expected registry identity supplied by future trusted host/provider configuration, not a value copied from the receipt or request. Add an exact equality predicate and a negative test using a different well-formed registry identifier.
 
 The test diff supplied for the prior task is incomplete (contains an ellipsis), so describe the review as partial and do not assert that all negative tests exist. Obtain the complete diff after the correction. Keep the distinction between typed status claims and trusted durable actions; do not infer root, registry protection, or runtime enrollment from a dataclass or source test.
 
-## 19. Expected registry identity binding — static correction result (2026-10-24)
+## HISTORICAL CHECKPOINT — Expected registry identity binding (2026-10-24; static result superseded as next task)
 
 The latest supplied F-03 correction adds `expected_registry_id` to `validate_owner_bootstrap_enrollment_receipt()`, rejects non-string/blank values, and requires exact equality with the persisted receipt's `registry_id`. The full supplied test diff contains a mismatched but well-formed identifier case and invalid expected-ID cases. This is a static review of the pasted diff only; tests remain `NOT_RUN`, and local worktree identity and hashes remain `OWNER_REPORTED`.
 
 A caller-supplied `expected_registry_id` is not automatically trusted. A future production boundary must source it from host-owned trust configuration/provider context and must not derive it from the receipt, request or untrusted issuer metadata. The typed receipt and outcome labels still do not prove durable challenge consumption or protected registry persistence. Keep G1/G2/G3 unestablished and protected reads fail-closed.
 
-## 20. Consolidated candidate review before further source changes (2026-10-24)
+## HISTORICAL CHECKPOINT — Consolidated candidate review (2026-10-24; review completed)
 
 After narrow contract corrections have been reviewed, do not perpetuate micro-patch routing when the dirty worktree spans several staged/unstaged source and test files. Preserve the candidate and obtain the complete current staged and unstaged diff across all reported modified paths for one bounded static review. The review must establish source-composition coverage and distinguish remaining source defects from obligations that require excluded authority-root, credential/enrollment, OS/ACL/trust-store, authenticated IPC or runtime actions. If the complete diff cannot be emitted, report the exact coverage limit instead of implying whole-candidate review.
 
@@ -350,7 +350,7 @@ PROTECTED_READS=FAIL_CLOSED
 AUTOMATIC_FOLLOW_ON=FALSE
 ```
 
-The complete supplied staged/unstaged diff bundle was byte-verified and received static review. This verifies the attached patch artifacts, not the Windows worktree identity or executed behavior. No tests, build, runtime, MCP, real transport, or protected read was executed. Do not ask the Owner for the same diffs again, repeat the whole-candidate review, restart source-only micro-patches, or treat a prior transcript's last prompt as the current route. Reopen only when genuinely new, independently verifiable evidence changes the root/mandate/identity-boundary premise, or a new explicit Owner decision changes the permitted scope. Unknown authority assets must remain `UNKNOWN; NOT_INSPECTED`, never silently converted to present or absent.
+The complete supplied staged/unstaged diff bundle was byte-verified and received static review. This verifies the attached patch artifacts, not the Windows worktree identity or executed behavior. No tests, build, runtime, MCP, real transport, or protected read was executed. Do not ask the Owner for the same diffs again, repeat the whole-candidate review, restart source-only micro-patches, or treat a prior transcript's last prompt or any `HISTORICAL CHECKPOINT` as the current route. Reopen only when genuinely new, independently verifiable evidence changes the root/mandate/identity-boundary premise, or a new explicit Owner decision changes the permitted scope. Unknown authority assets must remain `UNKNOWN; NOT_INSPECTED`, never silently converted to present or absent.
 
 The Mente Espacio-Tiempo audit remains static. It identified source-level risks involving persisted-context freshness (including a 24-hour minimum age behavior), initial perception preceding attachment of session-goal context, and missing durable proof linking a briefing package to its destination and confirmation. These findings do not prove that the live Windows package is stale or that a specific delivery failed. Do not create another memory/orchestrator. Reuse the existing protocol, improve its source/runtime evidence contract only under a newly authorized route, and verify any later implementation independently.
 
