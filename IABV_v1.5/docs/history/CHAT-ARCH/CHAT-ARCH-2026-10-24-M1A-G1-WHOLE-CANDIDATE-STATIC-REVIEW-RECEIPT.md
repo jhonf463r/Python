@@ -82,3 +82,30 @@ Immediate next step: obtain the actual staged/unstaged diff artifacts and conduc
 After the evidence bytes have been checked and the route reconciled, continue the Owner-directed Mente Espacio-Tiempo audit, using the existing Space-Time protocol and continuity-algorithms audit. Review cross-chat intake, temporal/causal retrieval, conflicting and stale route snapshots, goal/context ordering, destination-specific delivery receipts and later causal reuse. Do not create a second memory/orchestrator. Durable notes are not proof of autonomous learning; model weights are not changed by documentation.
 
 This is a proposed documentation receipt on the existing PR #493 documentation branch only. Live main remains canonical until authorized adoption and fetch-back.
+
+
+---
+
+## 7. Addendum — source export bytes received and independently reviewed (2026-10-24)
+
+This addendum supersedes the earlier statements in sections 2, 4, 5 and 6 that the diff bytes had not been received and that independent byte review remained pending.
+
+The Owner attached `staged.diff.txt` and `unstaged.diff.txt` in this chat. The review independently read each file and recalculated its hash:
+
+| Artifact | Lines | Bytes | SHA-256 independently verified |
+|---|---:|---:|---|
+| `staged.diff.txt` | 1,899 | 82,068 | `cb7db09f3cec514846af4c1c5d449c22d3b2579de94254a95f12b6557050d9c1` |
+| `unstaged.diff.txt` | 3,844 | 168,032 | `0af9902c5109841cde9558857e1aacc99c4b620eaff9a0a75a77a1daeef6fdab` |
+
+The values match Codex's reported hashes. This confirms the uploaded diff bytes match the reported export identities; it does not directly inspect the local Windows worktree, establish the correctness of every local status claim, or imply that tests were executed.
+
+**Result:** `STATIC_REVIEW=COMPLETE_FOR_SUPPLIED_FULL_DIFF_BUNDLE`. The independent result is in [the review receipt](./CHAT-ARCH-2026-10-24-M1A-G1-INDEPENDENT-WHOLE-CANDIDATE-STATIC-REVIEW-RESULT.md).
+
+Precise disposition:
+- `R03=DENY_ONLY_CONTAINMENT`; `SAME_OBJECT_BINDING=NOT_ESTABLISHED`; `AUTHORITY_TARGET_INVALID_TEST=NOT_PRESENT`.
+- `G1=NOT_ESTABLISHED; G2=NOT_ESTABLISHED; G3=NOT_ESTABLISHED`; eight prerequisites remain open.
+- `PROTECTED_READS=FAIL_CLOSED`; tests/build/runtime/MCP/transport remain `NOT_RUN`.
+- The supplied source is contracts/validators plus fail-closed containment, not a production Owner/issuer/OS trust boundary. Schema versioning and strict boolean validation of `mandate.revoked` are additional source-level findings.
+- The Mente Espacio-Tiempo audit is recorded separately in [the continuity audit delta](./CHAT-ARCH-2026-10-24-MENTE-ESPACIO-TIEMPO-CONTINUITY-AUDIT-DELTA.md).
+
+No candidate source, local status, index or main ref was modified by this review. This receipt and all new routing text are documentation-branch-only; PR #493 remains unmerged.
