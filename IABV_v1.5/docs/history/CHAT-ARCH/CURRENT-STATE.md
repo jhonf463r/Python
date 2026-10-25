@@ -1,34 +1,35 @@
-<!-- Current-state proposal only. Live main remains canonical until an authorized merge and exact fetch-back. -->
-## CURRENT-STATE PROPOSAL — whole-candidate static review and Mente audit complete (2026-10-24)
+<!-- Current-state proposal only. Live main remains canonical until explicit authorized merge and exact fetch-back. -->
+## CURRENT-STATE PROPOSAL — source-only bootstrap attempt terminal; wait for genuinely new authority evidence (2026-10-24)
 
-The Owner supplied the actual staged and unstaged diff bytes. Their SHA-256 values were independently recomputed and match the supplied Codex report. A read-only static review of the diff bundle is complete; this does not directly inspect the local Windows worktree or establish execution. See [independent whole-candidate static review result](./CHAT-ARCH-2026-10-24-M1A-G1-INDEPENDENT-WHOLE-CANDIDATE-STATIC-REVIEW-RESULT.md).
+The supplied full staged/unstaged candidate diffs have received independent byte verification and read-only static review. The hashes match Codex's reported export hashes. This establishes the identity of the uploaded diffs, not local checkout status or executed behavior. See [independent whole-candidate review result](./CHAT-ARCH-2026-10-24-M1A-G1-INDEPENDENT-WHOLE-CANDIDATE-STATIC-REVIEW-RESULT.md).
 
-The candidate contains source contracts/validators, cryptographic verification under a supplied key, SQLite consume-once source logic and MCP deny-only containment. It does not supply production owner assertion/credential/challenge/trust-registry providers, an independently provisioned root, a protected issuer process, authenticated OS IPC, a protected persistent registry or same-object file-handle binding. Positive bootstrap/read authority is therefore not established. A manifest protocol change also adds mandatory `server_id`/`issuer_id` fields while keeping `MANIFEST_SCHEMA_VERSION=1`, and the mandate revocation check does not require an exact boolean; see the review receipt.
+The candidate contains typed contracts/validators, signature checking under a supplied key, SQLite consume-once source logic and deny-only MCP containment. It does not establish a production Owner assertion verifier, protected issuer credential provider, independent enrollment root, challenge store/trust registry, authenticated issuer OS IPC/process separation or same-object target binding. The remaining trust boundary cannot be conjured by more contracts, mock providers, a local self-asserted key, or source-only test authoring.
 
-The Owner-directed Mente Espacio-Tiempo static audit has also been performed against existing continuity code and protocol, without execution. It confirms that the existing architecture should be reused, not duplicated. It identifies stale route summaries in four front doors, a possible 24-hour-old portable-context result without an explicit stale-state contract, the goal-after-initial-perception ordering risk, and briefing delivery without a durable receipt binding a package to a destination. See [Mente Espacio-Tiempo continuity audit delta](./CHAT-ARCH-2026-10-24-MENTE-ESPACIO-TIEMPO-CONTINUITY-AUDIT-DELTA.md).
+The bounded source-construction attempt has therefore reached the precise stop condition in the canonical handoff: report the missing independent authority and protected host/issuer boundary; do not fabricate them. Relevant earlier terminal G1 receipts also recorded `BLOCKED_MISSING_G1_TRUST_ANCHOR` / `BLOCKED_NO_INDEPENDENT_ENROLLMENT_PATH`; the latest diff review does not supply new trust-root evidence. `AUTHORITY_ASSETS` remains `UNKNOWN; NOT_INSPECTED`, not absent.
 
-**Proposed technical disposition:** source-only iteration has not produced a real Owner-controlled bootstrap/issuer/OS trust boundary. Do not loop by adding more contract types or mock providers; preserve fail-closed denial pending genuinely new independent-root and authenticated host/issuer-boundary evidence. All gates remain unchanged. The documentation fixes in this proposal are isolated and do not change live `main`.
+The Owner-directed Mente Espacio-Tiempo static audit is recorded in [the continuity audit delta](./CHAT-ARCH-2026-10-24-MENTE-ESPACIO-TIEMPO-CONTINUITY-AUDIT-DELTA.md). On this proposal branch, all four stale front-door route summaries have been neutralized to direct agents to live `CURRENT-STATE.md`. These changes remain noncanonical until adoption and fetch-back. The audit recommends correcting existing freshness/goal-order/delivery-receipt gaps only after scope reconciliation; do not create a duplicate memory/orchestrator.
 
 ```text
 PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
 ACTIVE_TASK=M1A_G1_OWNER_CONTROLLED_BOOTSTRAP_ISSUER_BOUNDARY
+TASK_ATTEMPT_STATUS=TERMINAL_FOR_CURRENT_SOURCE_EVIDENCE; BOUNDARY_NOT_ESTABLISHED
 LAST_REVIEW=M1A_G1_INDEPENDENT_WHOLE_CANDIDATE_STATIC_REVIEW
 LAST_REVIEW_RESULT=STATIC_REVIEW_COMPLETE_FOR_SUPPLIED_FULL_DIFF_BUNDLE; SHA256_VERIFIED
 SOURCE_CANDIDATE_WORKTREE=OWNER_REPORTED; NOT_DIRECTLY_OBSERVED
-NEXT_ACTION=KEEP_POSITIVE_BOOTSTRAP_DISABLED; WAIT_FOR_GENUINELY_NEW_INDEPENDENT_ROOT_AND_AUTHENTICATED_HOST_ISSUER_BOUNDARY_EVIDENCE
-NEXT_REVIEW_TARGET=NEW_EVIDENCE_FOR_ROOT_CUSTODY_OWNER_PRINCIPAL_ISSUER_IPC_AND_PROTECTED_PERSISTENCE
-SOURCE_IMPLEMENTATION=AUTHORIZED_WITH_BOUNDS; NO_SOURCE_ONLY_LOOP
+AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+QUALIFYING_INDEPENDENT_ROOT=NOT_ESTABLISHED
+OWNER_TO_WINDOWS_PRINCIPAL=NOT_ESTABLISHED
+BOOTSTRAP_AUTHORITY_TO_ISSUER=NOT_ESTABLISHED
+ISSUER_TO_EXACT_SERVER=NOT_ESTABLISHED
+NEXT_ACTION=WAIT_FOR_GENUINELY_NEW_INDEPENDENT_ROOT_AND_AUTHENTICATED_OWNER_ISSUER_OS_BOUNDARY_EVIDENCE
+NEXT_REVIEW_TARGET=INSPECT_ONLY_NEW_EVIDENCE; DO_NOT_REPEAT_BROAD_SOURCE_INVENTORY_OR_ADD_MOCK_CONTRACTS
+SOURCE_IMPLEMENTATION=AUTHORIZED_WITH_BOUNDS; NO_FURTHER_SOURCE_ONLY_LOOP_WITHOUT_NEW_EVIDENCE
 SOURCE_TEST_AUTHORING=AUTHORIZED
 TEST_EXECUTION=NOT_AUTHORIZED; NOT_RUN
 BUILD=NOT_AUTHORIZED; NOT_RUN
 RUNTIME=NOT_AUTHORIZED; NOT_RUN
 REAL_TRANSPORT=NOT_AUTHORIZED; NOT_RUN
 PROTECTED_READS=FAIL_CLOSED
-AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
-QUALIFYING_INDEPENDENT_ROOT=NOT_ESTABLISHED
-OWNER_TO_WINDOWS_PRINCIPAL=NOT_ESTABLISHED
-BOOTSTRAP_AUTHORITY_TO_ISSUER=NOT_ESTABLISHED
-ISSUER_TO_EXACT_SERVER=NOT_ESTABLISHED
 G1=NOT_ESTABLISHED
 G2=NOT_ESTABLISHED
 G3_VERSIONED_TARGET_RESOLVER=NOT_ESTABLISHED
@@ -40,7 +41,10 @@ CONTINUITY_AUDIT=STATIC_REVIEW_COMPLETE; END_TO_END_RUNTIME_UNVERIFIED
 AUTOMATIC_FOLLOW_ON=FALSE
 ```
 
-This state is a documentation-branch proposal only. Live `main` remains at `2cecd5e9b9e175584d65bbb1198a53bc2346d095` and still selects `M1A_G1_OWNER_CONTROLLED_BOOTSTRAP_ISSUER_BOUNDARY` with the current route recorded there. No merge or canonical adoption is claimed.
+**Next-state interpretation:** the current source-only attempt is concluded for the evidence available. Do not start another source-only implementation loop. Reopen only if a genuinely new, independently verifiable root/Owner-to-host/issuer-boundary evidence event or a new explicit Owner decision changes the permitted actions. Any credential enrollment, service installation, OS/ACL/trust-store change, tests/build/runtime/transport, protected reads, publication, merge, deployment or spending remains excluded by the canonical live-main authorization.
+
+This routing is a proposal on the documentation branch. Live `main` remains unchanged and is the sole routing authority until an authorized merge and fetch-back.
+
 
 ---
 
