@@ -104,3 +104,48 @@ NEXT_ACTION=MAINTAIN_FAIL_CLOSED_PENDING_PREEXISTING_INDEPENDENT_ROOT_AND_MANDAT
 ```
 
 The next user-supplied Codex result may be inspected for provenance, exact candidate state, and whether any action exceeded the current authorization. That narrow intake check must not automatically reopen the terminal G1 review, designate a new technical review target, or authorize implementation, tests, transport, or release. A fuller source review requires a scope that is allowed by the live router or a new explicit bounded Owner authorization; it must not be treated as canonical adoption. This document is a durable protocol/memory artifact; it does not automatically train model weights or change the running IABV algorithms.
+
+## 9. Follow-up calibration — unconditional MCP denial is containment, not a positive authorization path (2026-10-24)
+
+### Report provenance and remote verification
+
+- **OWNER_REPORTED:** Codex reports candidate branch `codex/m1a-g1-owner-governed-bootstrap-organ-20261024`, local HEAD `9803a282760824eae630a27561f6aed6c4b6a6bd`, prior local HEAD `22042285ffef8f4af819e93b6d4283a936bcfde3`, clean tree, and no push/PR.
+- **OWNER_REPORTED:** two files changed: `server.py` and `test_mcp_server.py`; source blobs reported as `fbce8d52ddc121033f5bb87bb92be2aee52da8c0` and `88b0a2a1570d7f5bfebcf09b850cd7db24640c65`. The earlier local-only verifier and tests are reported unchanged at blobs `cf58b6c08954dc0c3e2e3b8d6e9e240a1b4c3c72` and `0521a9da88853ea784fee8d4faced15c854a0899`.
+- **DIRECT_GITHUB:** a search of remote branches did not find the stated candidate branch; the reported HEAD lookup returned no commit; PR search returned no PR. This corroborates non-publication, but does not inspect the local checkout or verify the pasted source claims.
+- **OWNER_REPORTED:** the new server guard unconditionally denies `read_repo_file` and `list_repo_directory` before audit helpers; targeted tests were written but not run; only `git diff --check` passed. No build or runtime was observed.
+- The candidate was based on `2d2b25cb81f5acf1dc08afad081d4d4af922abcb`. Live `main` subsequently advanced to `476273ade3c37d273c84322e68e09a48dc054594` through a documentation-only knowledge-calibration PR. Do not treat the candidate base as current main, and do not rebase/publish the local branch without a separately authorized task.
+
+### Correct interpretation of the technical delta
+
+If the report accurately describes the candidate source, the unconditional guards are **route-level containment** for those two MCP tool routes. They are not a functional positive authorization path and do not establish the requested vertical slice.
+
+Use precise labels:
+
+```text
+MCP_READ_LIST_GUARD=OWNER_REPORTED_UNCONDITIONAL_DENY_BEFORE_AUDIT_HELPERS
+SOURCE_INDEPENDENTLY_INSPECTED=FALSE
+TARGETED_TESTS=WRITTEN; NOT_RUN
+DIFF_CHECK=OWNER_REPORTED_PASS
+BUILD=NOT_RUN
+RUNTIME=NOT_RUN
+PROTECTED_ISSUER=NOT_IMPLEMENTED
+CRYPTOGRAPHIC_SIGNATURE_VERIFICATION=NOT_IMPLEMENTED
+DURABLE_ATOMIC_ANTI_REPLAY=NOT_IMPLEMENTED
+OWNER_TO_WINDOWS_PRINCIPAL_BINDING=NOT_ESTABLISHED
+G2_CATALOG_INTEGRITY_REVOCATION=NOT_IMPLEMENTED
+G3_VERSIONED_TARGET_RESOLVER=NOT_IMPLEMENTED
+G1_G2_G3=NOT_ESTABLISHED
+```
+
+Do not describe the two guards as end-to-end security enforcement for the entire process: the report itself says the underlying helpers remain importable by in-process code and that only the named MCP routes are covered. Do not assume this containment should be removed; it remains a reported fail-closed behavior of the candidate, not independently verified canonical source.
+
+### Reusable inference
+
+- `unconditional deny` proves denial behavior only if source/tests/runtime evidence establish it; it does not prove that a legitimate authorized path exists.
+- A deny-before-helper guard can reduce exposure through named entry points, but without a protected issuer and an authenticated, scoped decision it is a **kill switch / containment shim**, not an authorization architecture.
+- Written tests remain unexecuted evidence. `git diff --check` checks patch hygiene, not program behavior or security properties.
+- Adding source guards is a changed candidate, but does not supply the missing independent root, its mandate/custodian/channel, or Owner-to-principal / issuer-to-server bindings. It therefore does not satisfy the canonical condition for reopening the terminal G1 review.
+- Do not issue another implementation prompt based on this report. Keep the local candidate unpromoted and the canonical route unchanged unless genuinely new independent root-and-mandate evidence arrives or the Owner explicitly authorizes a new, bounded scope.
+
+This subsection is an intake and memory record of an Owner-supplied report. It does not certify the candidate, authorize source edits/tests/runtime/publishing, close any gate, or alter `CURRENT-STATE.md`.
+
