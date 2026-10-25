@@ -304,3 +304,9 @@ A correct merge-evidence predicate is not a production enrollment. In particular
 The latest Codex result claims an explicit enrollment receipt contract, supporting consumption/persistence records and source tests. The supplied message contains only a summary, so there is no independent source-level basis to accept those claims yet. Record `TASK_RESULT=SOURCE_CANDIDATE_ONLY`, not a static pass. Obtain the exact unstaged diff for the two authorized source/test files before reviewing it.
 
 The review should discriminate between typed status claims and actual trusted operations; validate exact challenge/Owner/issuer/server/merge bindings, strict value/time semantics, and failure after challenge consumption but before registry persistence. Synthetic `CONSUMED_ONCE`, `PERSISTED`, and `ENROLLED` fields cannot establish durable consumption or write success. Keep all security gates fail-closed and all runtime/test claims unchanged.
+
+## 14. Follow-up calibration — registry identity binding in enrollment receipt (2026-10-24)
+
+The supplied enrollment-receipt module diff partially satisfies its structural purpose, but the validator only requires `persistence.registry_id` to be a nonempty string. Without a trusted expected registry ID and exact equality check, a receipt naming a different registry can pass this binding check. Add the expected ID from trusted host/provider context (never from the receipt/request), and a negative source test for a different syntactically valid registry ID.
+
+Because the test diff included an ellipsis, its full contents and coverage are not reviewable yet. Ask for a complete exact test diff after the bounded correction. Do not promote synthetic status labels or references into proof of durable store/registry operations.
