@@ -1,141 +1,221 @@
-# Canonical continuity, space-time reasoning and anti-loop protocol
+# Canonical continuity, Space-Time cognition, and adaptive neuroplasticity protocol
 
-- Protocol ID: `CONTINUITY_SPACE_TIME_ANTI_LOOP_V1`
+- Protocol ID: `CONTINUITY_SPACE_TIME_ANTI_LOOP` (stable identity; operating method evolves in place)
+- Living operating revision: `2.0 — ADAPTIVE_SPACE_TIME_NEUROPLASTICITY`
+- Evolution rule: integrate new lessons into their owning core rule; preserve dated incidents/history; do not accumulate competing append-only protocols
 - Owner instruction date: 2026-10-23 (America/Bogota)
-- Scope: project reasoning, memory navigation, decision traceability and next-action selection
+- Scope: objective-bound reasoning, temporal evidence graph, adaptive role activation, gated action chains, memory consolidation, delivery receipts and outcome-based protocol evolution
 - Intended audience: every new ChatGPT/Codex/other-AI coordination session working on IABV
-- Status: baseline protocol adopted on live `main`; the live-`main` copy is authoritative, and branch-only amendments remain candidates until merged and fetched back
+- Status: the stable protocol identity is canonical on live `main`; revision 2.0 is a candidate until its authorized merge and fetch-back
 - Project North Star: `GOVERNED_IABV_CODEX_BRIDGE`
 - Active technical frontier at creation: `M1A_G1_TRUST_BOOTSTRAP_AUTHORITY_BOUNDARY`
 
-## 1. Purpose
+## 1. Purpose — one evolving Space-Time cognitive coordination system
 
-Keep the project moving toward its declared outcome without restarting completed investigations, asking the Owner to reconstruct the archive, confusing a design with an implemented capability, or substituting activity for progress.
+Keep the project moving toward `PRIMARY_OUTCOME` by turning distributed interactions into a coherent, time-aware, evidence-grounded operating picture. Treat **“Mente/Supermente Espacio-Tiempo” as an architectural metaphor for coordinated cognition across chats, actors, tools and time**, not as a claim of consciousness, universal shared memory, or autonomous model-weight learning.
 
-Treat project continuity as a **time-aware evidence graph**, not as a pile of disconnected chat summaries. Each meaningful event has a date/checkpoint, source, provenance, scope, result, effect on the current state, dependencies and a next action. Reason forward from the latest accepted state while retaining the causal history that explains how the project arrived there.
+The system has six connected layers that must operate as one loop, not as parallel memory projects:
 
-This protocol improves navigation and reasoning. It does not create technical authority, change a security decision by implication, authorize protected reads, or override the canonical state router.
+1. **Objective and boundary:** define the wanted outcome, success condition, non-goals, authority limits and hard safety gates.
+2. **Space-Time evidence graph:** bind facts, decisions, tasks, artifacts, failures and lessons to source, scope, event time, observation time, validity and causal/dependency edges.
+3. **Adaptive role activation:** select the smallest set of reasoning roles needed for the objective, uncertainty and risk.
+4. **Gated action chain:** choose and sequence actions through explicit prerequisites, permissions, expected evidence and stop conditions.
+5. **Outcome and learning review:** compare intended transition with observed result; distinguish a failed plan, unavailable route, missing evidence and implementation defect.
+6. **Memory consolidation and delivery:** update the owning rule and canonical route, preserve the historical event, fetch back accepted changes, and prove later reuse instead of assuming it.
 
-## 2. Authority hierarchy: which record wins
+The operating method is **evolutionary and consolidating**: when a lesson changes an existing rule, revise that rule in its owning section and preserve the prior event as history. Do not create a new appendix, memory service, orchestrator or competing router for every incident. Keep this existing protocol and current project memory as the shared coordination layer.
 
-For every new chat:
+This protocol changes how the coordinator retrieves, reasons, selects roles and plans. It does not create technical authority, authorize protected reads, guarantee that another session received this context, or alter the weights of ChatGPT/Codex. A lesson is only behaviourally learned across chats after a later, non-identical task demonstrably reuses it and produces an observed, attributable improvement.
 
-1. Revalidate the live GitHub `main` reference. Never use a remembered SHA as if it were still current.
-2. Read these five canonical files from live `main`, in exactly this order:
+## 2. Authority hierarchy and truth arbitration
+
+For every new chat and every material hand-off:
+
+1. Refresh live GitHub `refs/heads/main`; a remembered SHA is historical until revalidated.
+2. Read these files from live `main`, strictly in this order:
    1. `IABV_v1.5/AGENTS.md`
    2. `IABV_v1.5/docs/history/CHAT-ARCH/README.md`
    3. `IABV_v1.5/docs/history/CHAT-ARCH/CURRENT-STATE.md`
    4. `IABV_v1.5/docs/history/CHAT-ARCH/CONTEXT-INDEX.md`
    5. `IABV_v1.5/docs/history/CHAT-ARCH/MEMORY-OPERATING-PROTOCOL.md`
-3. Use `CURRENT-STATE.md` as the **sole authority for current route, active task and NEXT_ACTION**. The other front doors supply operating rules and navigation; they cannot silently replace that route.
-4. Follow only the relevant handoffs, terminal receipts, accepted contracts and review records linked from those files or returned by a targeted archive lookup. Prefer the most recent accepted evidence, not merely the most recently modified prose.
-5. Distinguish live-`main` canonical records from candidate-branch proposals. A change on a branch is not canonical until accepted into `main` and fetched back.
-6. If records conflict, do not average them or silently choose the convenient statement. Identify the conflict, check chronology and adoption on `main`, preserve the more restrictive current gate until the conflict is resolved, and record the exact source/commit responsible for the result.
+3. `CURRENT-STATE.md` is the sole current route authority for `ACTIVE_TASK`, `NEXT_ACTION`, technical gates and current permissions. The other four files provide method and navigation; they cannot supersede it.
+4. Follow only relevant current receipts, contracts and historical records. Select sources by the current unresolved dependency, not by recency alone or by indiscriminate archive volume.
+5. Distinguish live-main truth from a local report, branch, draft PR or proposed memory update. A candidate is not canonical until the permitted merge is complete and the exact state is fetched back from live `main`.
+6. On conflict, construct a dated comparison: source/version, event date, record date, scope, adoption status and authority. Do not average conflicting instructions. Keep the stricter current gate until the conflict is resolved.
 
-GitHub is the durable central project memory for records actually committed there; it is not guaranteed to contain every raw conversation, local file, private secret or event that nobody recorded. If a fact is absent, report that it was not found in the permitted records rather than claiming universal absence or asking the Owner to remember the archive.
+GitHub is the durable source for records actually committed there; it is not a magical transcript of all chats or local runtime. A new chat does not automatically inherit an old chat's hidden context. The coordinator must fetch and bind the records it uses, while marking what was unavailable.
 
-## 3. Build the temporal state map before choosing work
+## 3. Construct the Space-Time evidence graph before selecting work
 
-Internally reconstruct this compact state map from the canonical files and only the relevant history:
+Do not treat memory as a flat summary. Reconstruct the minimum graph needed to answer the current dependency.
 
-- `PRIMARY_OUTCOME`: the end-to-end outcome the project is trying to achieve.
-- `ACTIVE_TASK` / `NEXT_ACTION`: the current frontier and the one action allowed next by the canonical router.
-- `LAST_TERMINAL_TASK`: last closed attempt and its exact terminal result.
-- `OWNER_DECISIONS`: explicit decisions, their exact scope, date and receipt.
-- `ESTABLISHED`: claims supported by accepted evidence, with source and provenance.
-- `OWNER_REPORTED`: useful Owner-supplied reports that have not been independently verified.
-- `UNKNOWN / NOT_INSPECTED / NOT_RUN`: unresolved observations; never silently promote them to true or false.
-- `CLOSED_OR_REJECTED_PATHS`: alternatives already investigated, why they failed, and what genuinely new evidence would justify reopening them.
-- `DEPENDENCY_EDGE`: the exact prerequisite that blocks the desired next stage.
-- `AUTHORIZATION_BOUNDARY`: the precise read, edit, test, runtime, spend, merge or deployment actions currently permitted and forbidden.
-- `EXPECTED_TRANSITION`: what concrete evidence/result would change the state after the proposed action.
-- `NEXT_OWNER_INPUT`: leave empty unless a decision or fact only the Owner can supply is genuinely needed.
+**Node types** include objective, requirement, owner decision, authorization, task, action, observation, claim, source artifact, review, gate, failure, lesson, destination and outcome.
 
-Use a dependency graph, not a flat checklist: an action is valuable when it resolves the earliest open dependency on the path to the North Star. Do not work on a downstream feature while its trust, authorization or contract prerequisite is still unsatisfied.
+**Edge types** include `supports`, `contradicts`, `depends_on`, `supersedes`, `derived_from`, `authorized_by`, `produced`, `reviewed_by`, and `reused_in`. A causal edge is asserted only when evidence supports causation; temporal succession alone does not prove cause.
 
-## 4. Objective-first next-action algorithm
+For each material item retain:
+- stable task/event ID and precise scope;
+- source URI/path and revision (main SHA, commit/blob, candidate HEAD, or report provenance);
+- `event_time`, `observed_at`, `recorded_at`, and a validity/currentness judgment where relevant;
+- epistemic status and confidence basis;
+- related objective, dependency edges, authorization and expected state transition;
+- what would falsify or supersede the claim.
 
-Before performing or recommending any action, answer these questions in order:
+Keep two time axes explicit: **when something happened** versus **when and where it was observed or persisted**. A local Codex statement remains `OWNER_REPORTED` until independently available evidence supports a stronger classification. A timestamped GitHub snapshot proves the age of that snapshot, not the age of the active local workspace.
 
-1. **Outcome link:** Which explicit requirement of `PRIMARY_OUTCOME` does this action advance?
-2. **Current frontier:** Which exact unresolved dependency or contradiction is it intended to resolve?
-3. **Prior-art check:** Does a canonical receipt already answer this question or close this path?
-4. **New information:** What genuinely new evidence, authorization or falsifiable test distinguishes this attempt from a prior failed/closed attempt?
-5. **Route and actor:** Which supported tool, repository path or named actor can perform it under current permissions?
-6. **Scope and risk:** Is it explicitly authorized? What side effects, privacy exposure, tunnel, runtime, cost or protected resource might it touch?
-7. **State transition:** What exact evidence must be returned, where will it be recorded, and which state field could legitimately change?
-8. **Stop condition:** What result means stop without trying alternate routes or repeating the action?
+The current state is a derived, reconciled view; historical events and receipts are retained. Do not delete history to make the current summary neat, and do not leave stale operational commands at the top merely because they remain true as historical records. Put the current route at the front, date and label prior snapshots, and link them to their replacement.
 
-If the action cannot name a dependency it advances, new information it obtains, a permitted route and a measurable state transition, do not do it. Explain the blocker once in plain language and select the nearest safe, useful action that is actually authorized.
+Before reasoning from Portable Context or another package, bind its package ID/digest, creation/update time, source revision, active objective/session, freshness and refresh outcome. If those fields or the delivery route are not observable, label currentness or receipt status `UNKNOWN` / `UNVERIFIED`. Do not claim a newly opened ChatGPT/Codex session consumed a package just because it exists in GitHub or a send was attempted.
 
-## 5. Anti-loop and Owner-burden rules
+## 4. Adaptive reasoning cycle — from intent to verified state transition
 
-- Never ask the Owner to remember, locate or paste a document that the coordinator can search in the project archive through an already-supported, permitted GitHub route.
-- Search the canonical index and targeted historical records before asking the Owner for context. Do not perform an indiscriminate repository-wide scan when a targeted query or known receipt is enough.
-- Never repeat completed Entra/Authenticator setup, the already-ratified Option D decision, or another closed diagnostic/review just because a new chat started.
-- A terminal failure remains terminal for its stated scope. Reopen it only when (a) new evidence changes a premise, (b) a specific correction fixes the identified failure mechanism, or (c) the Owner makes a new explicit decision that changes the permitted scope. A generic desire to progress is not evidence that a failed route now works.
-- Do not disguise the same experiment as a different task, rerun a denied/unavailable reader, or move to another tool/AI/transport to bypass a denied route. Record `NOT_RUN` / `SUPPORTED_ROUTE_NOT_FOUND` accurately and stop.
-- Do not report “no asset exists” from “could not inspect it.” Preserve `UNKNOWN; NOT_INSPECTED`.
-- Do not ask the Owner to provide an independent root merely because the design requires one. First reconcile the existing records and permitted evidence routes. Ask only for a genuinely new fact/decision that the Owner alone controls, and explain exactly why it changes the decision path.
-- One bounded next action at a time. Avoid presenting a large menu of hypothetical paths when canonical routing selects a single one.
-- “Proceed” authorizes only the bounded action just described; it is not blanket permission for new credentials, protected access, implementation, tests, runtime, transport, tunnels, spending, deployment, merge or release unless those actions were explicitly included.
+Execute this compact cycle for every substantive task; use the full version when the state, trust boundary or plan changes.
 
-## 6. Provenance labels and reasoning discipline
+**A. Orient.** Re-read the current route and the actual requested objective. Restate success in observable terms. Bind the current goal before drafting downstream recommendations or constructing an initial task/perception snapshot.
 
-Use exact epistemic labels where relevant:
+**B. Retrieve.** Query canonical records relevant to the earliest open dependency, prior terminal outcome, Owner decisions and exact route. Reuse settled findings. Do not make the Owner repeat archive work the coordinator can perform through an allowed route.
 
-- `DIRECT_GITHUB`: branch/ref/blob/commit/file actually fetched from GitHub during this turn.
-- `OWNER_REPORTED`: result or setup the Owner supplied but the coordinator did not independently observe.
-- `STATIC_REVIEW`: code/document inspection without executing the component.
-- `RUNTIME_VERIFIED`: the named command or runtime path was actually executed and observed under the stated scope.
-- `NOT_RUN`: execution was not performed.
-- `NOT_INSPECTED`: content/resource was not read.
-- `SUPPORTED_ROUTE_NOT_FOUND`: the attempted authorized path was not available; this does not prove global absence.
-- `CANDIDATE_ONLY`: branch proposal or design not accepted as canonical.
+**C. Diagnose.** Map the blocker to an exact category: `AUTHORITY_GATE`, `EVIDENCE_GAP`, `ROUTE_SURFACE_MISMATCH`, `ACTION_UNEXECUTABLE_NO_EVIDENCE`, `SOURCE_DEFECT`, `CONTRACT_MISMATCH`, `DELIVERY_GAP`, or `AUTHORIZATION_GAP`. Name the object, operation, scope and supporting evidence.
 
-Never blur these categories. A green unit test does not prove production runtime; a hash establishes object identity, not truth of the object’s claims; MFA authenticates a user to an identity system, not IABV authority; a static design is not implementation; a successful attempt does not prove durable delivery/persistence unless fetch-back evidence says so.
+**D. Activate roles.** Choose the minimum role set based on objective, domain, uncertainty, consequence and permitted capabilities; see section 5. Do not activate every role by default.
 
-## 7. Delegating to another AI or asking the Owner to act
+**E. Plan the action chain.** Select one next action and, if useful, its dependent stages. Every stage must have preconditions, exact input/source version, authorized actor/tool, expected output/evidence, risk/cost boundary and stop condition. A future stage is a conditional branch, not permission to execute it now.
 
-Delegate only if another actor has a capability the coordinator actually lacks and the task has a bounded, authorized scope. Place the full copy/paste task inline and identify near the top: recipient/tool, exact source/revision, specific objective, known findings, work already closed, permitted actions, forbidden side effects, first unresolved edge, stop conditions, required evidence schema and exact return artifact. Do not ask another AI to re-investigate the entire project.
+**F. Act within authority.** Perform only the first authorized action. Do not bypass a denied route or broaden scope to compensate for missing capability. If no authorized action can reduce the uncertainty, select an explicit wait state instead of inventing work.
 
-When Owner action is truly required, explain in ordinary Spanish:
-1. what one step will do;
-2. why it advances the North Star now;
-3. exactly what the Owner must click/copy/do (only if an Owner action is necessary);
-4. what result to return;
-5. what will not be changed or exposed.
+**G. Verify and adjudicate.** Compare the actual result to the named acceptance criteria. Separate action attempted, action executed, result observed, result persisted and result independently verified. A task report may complete the hand-off without independently proving its technical claims.
 
-Do not transfer archive archaeology to the Owner. Do not ask for secrets, tokens, private keys, recovery codes or protected data in chat or public GitHub.
+**H. Transition and learn.** Record the terminal result, update the canonical route and the owning operating rule when justified, preserve prior history, and identify whether the lesson is a hypothesis, candidate rule or demonstrated reuse. Revalidate live `main` and fetch back any authorized writeback.
 
-## 8. Durable completion and handoff
+For eligible candidate actions, filter out every action that lacks authorization or an essential prerequisite first. Among remaining actions, prioritize the earliest dependency that blocks the North Star, the action with the clearest discriminating evidence, reversibility and zero/lowest justified cost. This is a **lexicographic operating heuristic**, not a scientific probability model; no score or productivity pressure can override a hard gate.
 
-For every meaningful bounded task, leave a concise, durable record when authorized and useful. It must record:
+## 5. Dynamic role/facet activation
 
-- task ID, date/time zone, canonical base SHA and candidate ref/HEAD if any;
-- precise objective and authorization scope;
-- sources and blob/commit IDs, with provenance;
-- prior work reused and why no closed path was repeated;
-- action actually performed, not planned;
-- exact results, failures and unrun steps;
-- before/after state delta, including what did **not** change;
-- decision/gate implications;
-- one next action, its dependency edge, actor, permitted route and stop condition.
+“Activating a profession or facet” means applying an explicit reasoning contract for the current task—not pretending that a hidden ChatGPT mode, tool, model or separate agent has been switched when no such invocation occurred.
 
-A documentation writeback must be made on an isolated documentation branch unless canonical policy explicitly directs otherwise, reviewed for scope, fetched back at the exact branch/commit, and compared against the expected paths/content. Never claim a candidate protocol is active before its acceptance on `main` is fetched and verified. Do not include private tenant/user identifiers or credentials in public history.
+Always use a **Space-Time Navigator** role to establish the current objective, route, time, provenance and unresolved dependency. Then choose only the other roles needed:
 
-## 9. Required answer shape for each new chat
+- **Domain Specialist** — for the precise technical discipline implicated by the dependency (e.g. Python, Git, Windows identity, cryptography, MCP, distributed systems or document governance).
+- **Adversarial Reviewer** — when the claim is security-sensitive, disputed, high-consequence, or could be a false positive.
+- **Evidence Custodian** — when source identity, report provenance, hashes, revisions, staged/unstaged separation or artifact completeness determine the result.
+- **Executor** — only when the live route explicitly authorizes the requested action and the actor has the supported capability.
+- **Independent Verifier** — to re-fetch or independently check the claimed output, acceptance criteria and negative evidence after execution.
+- **Archivist / Learning Synthesizer** — to reconcile the result into the temporal graph, revise the owning rule, update the router, and preserve the historical decision.
 
-After preflight, give the Owner one clear operational summary in accessible Spanish:
+Before delegation, state: `ROLE`, `WHY_THIS_ROLE`, `OBJECTIVE`, `INPUT_BASELINE`, `PRIOR_ART_TO_REUSE`, `AUTHORIZED_OPERATIONS`, `FORBIDDEN_OPERATIONS`, `EXPECTED_EVIDENCE`, and `STOP_CONDITION`. For a high-risk task, use an adversarial reviewer before any promotion of the claim; use an independent verifier if there is a supported route to one.
 
-1. **Where the project stands** — current North Star, active stage and source revision.
-2. **What is already done** — decisions and results that must not be repeated.
-3. **The true blocker** — one precise missing dependency, with evidence and provenance.
-4. **The next step** — one action only, why it advances the outcome, who must execute it and what result is expected.
-5. **Owner action** — say explicitly either “No tienes que hacer nada” or give the exact necessary action; never ask the Owner to redo archive research.
-6. **Boundary** — what remains unauthorized/unknown and why.
+Role selection is adaptive, but minimal: unnecessary personas increase cost and produce conflicting recommendations. A reported model's availability is not proof that it was invoked. Only name a model, connector or executor as used when there is a correlated invocation/result or a directly observed artifact. The coordinator may prepare a prompt for a user-operated Codex session; it must not claim to have dispatched into that session without evidence.
 
-Prefer plain-language explanations followed by technical identifiers when useful. Avoid presenting a status report as progress. Do not promise asynchronous work or imply that a future result will arrive without performing the action in the current turn.
+## 6. The controlled “domino” action chain
+
+Build an explicit dependency chain rather than an uncontrolled cascade. Each step is a small contract:
+
+```text
+STEP_ID
+OBJECTIVE_AND_DEPENDENCY
+PRECONDITIONS_AND_AUTHORIZATION
+INPUT_VERSION_AND_PROVENANCE
+ACTOR_AND_SUPPORTED_ROUTE
+ACTION_AND_EXPECTED_OUTPUT
+ACCEPTANCE_EVIDENCE
+SIDE_EFFECT_AND_COST_BOUNDARY
+STOP_OR_BRANCH_CONDITION
+RESULT_AND_STATE_DELTA
+```
+
+A next domino activates only when the preceding step's acceptance evidence is available and the next step is separately authorized. In planning, label later steps `CONDITIONAL_NOT_DISPATCHED`; do not present a whole chain as an executable plan when some stages need a new Owner decision.
+
+Use one explicit terminal result per bounded task: `PASS`, `PASS_WITH_NOTES`, `FAIL`, `BLOCKED_NO_NONCIRCULAR_ROOT`, `NOT_RUN`, `SUPPORTED_ROUTE_NOT_FOUND`, or another precisely defined outcome. On a terminal result, consume that task's authorization, write `LAST_TERMINAL_TASK/RESULT`, and transition `ACTIVE_TASK/NEXT_ACTION` to the next authorized dependency or an explicit wait state. Never leave the completed task as the next action.
+
+`AUTOMATIC_FOLLOW_ON=FALSE` prohibits starting a new technical action automatically; it does not prohibit authorized result reconciliation, evidence bookkeeping or a documentation-only correction. If documentary writeback is not authorized, report `ROUTE_STATE_STALE` and identify only the narrow permission needed. Never repeat the completed technical action as a workaround for stale routing.
+
+No fallback/bypass: if a supported action is unavailable or denied, record the exact route and stop. Another tool, AI, transport or branch is not automatically an allowed substitute. Technical absence, unsupported route, not inspected and not run are distinct states.
+
+## 7. Evidence discipline, feedback signals and anti-loop controls
+
+Use epistemic status labels consistently:
+- `DIRECT_GITHUB`: exact source/ref/commit/blob/PR state fetched during this turn.
+- `OWNER_REPORTED`: supplied by the Owner or delegated actor and not independently observed here.
+- `STATIC_REVIEW`: source or document reviewed without executing the relevant component.
+- `RUNTIME_VERIFIED`: the named command/runtime path was actually executed and observed under the stated scope.
+- `NOT_RUN`, `NOT_INSPECTED`, `SUPPORTED_ROUTE_NOT_FOUND`, `CANDIDATE_ONLY`, `CANONICAL_FETCH_BACK_VERIFIED`: exact evidence states, not interchangeable labels.
+- `HYPOTHESIS`: plausible explanation not yet discriminated from alternatives.
+- `CONFLICTED`: materially different records whose conflict has not yet been resolved.
+
+Never promote:
+- route unavailable → asset absent;
+- signature verifies → key holder is authorized Owner;
+- MFA succeeds → IABV grants repository authority;
+- PR actor merges → Owner-to-Windows principal is bound;
+- code exists → code executed;
+- tests written → tests passed;
+- send API succeeds → destination received/read/used the context;
+- a summary/hash exists → the underlying report or runtime claim is true;
+- temporal order → causality;
+- a lesson was written → the model autonomously learned it.
+
+Before asking the Owner for input, search the known archive and inspect supported GitHub routes. Ask only for a new fact or explicit decision that the Owner uniquely controls, and state how it changes the authorized dependency. Never request private keys, secrets, tokens, recovery codes or protected data in chat/public history.
+
+Closed/terminal paths remain closed for their stated evidence and authorization scope. Reopen only when genuinely new evidence changes a premise, a specific correction addresses the identified failure mechanism, or a new explicit Owner decision creates a bounded transition. A new chat, new attempt number or pressure to progress is not new evidence.
+
+## 8. Neuroplasticity — how the protocol itself evolves
+
+Treat each interaction as a possible learning signal, not as truth by itself. Separate three stores that work together:
+1. **Immutable event/history:** what was asked, reported, executed, reviewed, accepted, rejected or left unknown, with date and provenance.
+2. **Candidate lesson:** the reusable causal explanation, counterexample, confidence basis, affected scope, proposed correction and how it could be falsified.
+3. **Living operating rule:** the consolidated instruction in the existing protocol section that owns the behavior, plus the current front-door/router summary where applicable.
+
+Apply this loop:
+`OBSERVE → CLASSIFY → EXPLAIN → GENERALIZE → UPDATE_OWNING_RULE → ADVERSARIAL_REVIEW → MERGE/FETCH_BACK → REUSE_IN_A_NON_IDENTICAL_TASK → MEASURE_OUTCOME → CONFIRM / REFINE / REVERT`.
+
+**Evolve in place; preserve history.** When a new lesson overlaps an existing rule, revise or clarify that rule in its owning section instead of stacking another loosely connected appendix. Preserve the incident, decision and old state as dated history; link it to the current rule and record why the change was made. Keep `CURRENT-STATE.md` the only route authority and synchronize its front-door summaries in the same change. If two rules conflict, make the precedence explicit and consolidate the owning rule; do not let multiple summaries become rival policies.
+
+Promote a candidate lesson into a live operating rule only when:
+- the incident and provenance are recorded;
+- the causal/failure mechanism is specific, not merely correlated;
+- prior rules and terminal receipts have been checked;
+- counterexamples and scope limits are considered;
+- the update is reviewed and adopted on live `main` with fetch-back;
+- the expected behavior and a disconfirming condition are explicit.
+
+A single high-impact, directly observed coordination defect can justify a targeted protocol correction, but it must still be marked as a rule change with evidence and limits. Broader generalizations need repeated or independent evidence. If a future non-identical task contradicts the new rule, reopen the rule's validity, update it and preserve the falsifying event instead of rationalizing the miss.
+
+Track learning stages distinctly:
+```text
+LESSON_STATUS=OBSERVED | HYPOTHESIS | CANDIDATE | PROMOTED | SUPERSEDED | REVERTED
+MEMORY_WRITEBACK=NOT_STARTED | CANDIDATE_ONLY | CANONICAL_FETCH_BACK_VERIFIED
+CAUSAL_REUSE=NOT_TESTED | REUSED_IN_LATER_TASK | OUTCOME_VERIFIED
+BEHAVIORAL_IMPROVEMENT=NOT_ESTABLISHED | OBSERVED_WITH_BASELINE
+MODEL_WEIGHT_CHANGE=NOT_CLAIMED
+```
+
+Measure operational outcomes, not the volume of documentation: did a later chat avoid reopening a terminal task, select the correct role for the dependency, use the right source revision, reduce contradictory route statements, avoid an unnecessary Owner burden, or make a better evidence-backed decision? Define the comparison and evidence first. GitHub persistence gives durable external memory; it does not train ChatGPT's weights. A new protocol rule is a hypothesis about better coordination until later behavior provides reuse evidence.
+
+## 9. Durable handoff, context delivery and answer contract
+
+For each meaningful bounded task, persist a concise receipt when authorized and useful. Include:
+- task/event ID, date/time zone, canonical `main` SHA, and candidate branch/HEAD if any;
+- objective, success condition, selected role(s) and why;
+- prior art and terminal paths reused, not repeated;
+- exact sources/paths/blobs, provenance and evidence status;
+- authorized operations, forbidden side effects and stop condition;
+- action actually performed, exact result, what was not run/inspected, and before/after state delta;
+- lesson state, proposed owning-rule change, counterexample/falsifier and later reuse measure;
+- the single next dependency/action or explicit wait condition.
+
+Before delivering a new-chat brief, bind it to the verified current route and identify its destination. For another AI/session, include the exact prompt, source baseline, prior-art links, role contract, action contract, acceptance criteria and prohibited side effects. Distinguish `PREPARED`, `SENT`, `ACKNOWLEDGED`, `CONSUMED`, `REUSED` and `OUTCOME_VERIFIED`; claim only the state supported by a receipt. GitHub records do not prove that a newly opened ChatGPT or Codex session has read them. No automatic-delivery claim without a supported destination and correlated evidence.
+
+A canonical writeback must use the permitted repository route, preserve unrelated work, expose the complete diff, verify changed paths and content, be reviewed and merged only under the governing workflow, then be fetched back from live `main`. A candidate branch/PR is not adopted memory.
+
+Every substantive answer/new-chat intake should cover, in concise Spanish:
+1. **Estado actual:** North Star, active/wait task and verified revision.
+2. **Trabajo reutilizado:** completed outcomes, Owner decisions and closed paths.
+3. **Verdadero bloqueo:** exact dependency and provenance.
+4. **Rol y siguiente acción:** why this role/action is the best discriminating move now, or why no authorized action advances the technical gate.
+5. **Entrega al Owner:** either “no necesitas hacer nada ahora” or the one genuinely necessary action and the exact output to return.
+6. **Límites:** unknown/not-inspected/not-run claims, authorization and stop condition.
+
+Do not claim asynchronous work or promise future results. Do not end a task with a generic progress statement: give a verifiable completion, a precise blocker or a single authorized next step.
 
 ## 10. Historical IABV checkpoint at protocol creation (2026-10-23; superseded by live CURRENT-STATE.md)
 
@@ -168,20 +248,24 @@ NEXT_ACTION=MAINTAIN_NO_BOOTSTRAP_FAIL_CLOSED; REOPEN_ONLY_ON_GENUINELY_NEW_AUTH
 
 This protocol upgrade is process/documentation work only. It does not close G1, authorize inspection of trust assets, authorize implementation or tests, change the no-bootstrap decision, make the unauthenticated HTTP endpoint safe, or authorize a public tunnel, spend, deployment or release. Any technical work must still follow the current canonical `CURRENT-STATE.md`.
 
-## 11. New-chat acceptance checklist
+## 11. New-chat acceptance checklist — adaptive revision 2.0
 
 A chat is **not continuity-complete** until it has:
 
-- [ ] revalidated live `main` and the five canonical files in the required order;
-- [ ] identified the exact current routing authority and distinguished it from branch-only proposals;
-- [ ] read the relevant terminal receipt(s) for the active frontier;
-- [ ] carried forward completed work, Owner decisions, closed paths and negative results with their provenance;
-- [ ] stated one dependency-linked next action or explained why no authorized action can advance the technical gate;
-- [ ] avoided asking the Owner to search/remember the archive or redo completed setup;
-- [ ] checked scope, route, side effects, cost and stop conditions before execution;
-- [ ] recorded/fetched back any authorized durable writeback and made no unsupported claim of success.
+- [ ] refreshed live `main` and read the five canonical files in the exact order in section 2;
+- [ ] identified the objective, success condition, current route, operating revision and source timestamp;
+- [ ] reconstructed the relevant temporal evidence/dependency graph from canonical receipts, without burdening the Owner with archive archaeology;
+- [ ] matched any supplied result to its exact task, acceptance criteria, provenance and original authorization;
+- [ ] selected only the role/facets required by the objective, uncertainty, risk and supported capabilities;
+- [ ] named one authorized next action, or an explicit wait state, with prerequisites, expected evidence and stop condition;
+- [ ] consumed a completed task into `LAST_TERMINAL_TASK/RESULT` and synchronized the router; no terminal task remains as `NEXT_ACTION`;
+- [ ] separated attempted, executed, observed, persisted, delivered, consumed and later reused states;
+- [ ] recorded a reusable lesson in the owning rule when justified, while preserving its incident history and a falsifier;
+- [ ] kept `UNKNOWN`, `NOT_INSPECTED`, `NOT_RUN`, candidate-only and route-unavailable states distinct;
+- [ ] verified merge/fetch-back before describing a documentation change as canonical;
+- [ ] checked the exact authorization, costs, side effects and hard gates before acting, and did not start automatic follow-on work.
 
-If any item cannot be completed, state the exact uncompleted item and why. Do not improvise authority to appear productive.
+If any item cannot be completed, state the exact missing item and why. Do not improvise authority, claim model-weight learning, create a duplicate memory/orchestrator, or manufacture another task to appear productive.
 
 ## 12. Operational lessons added from the terminal G1 review (2026-10-24)
 
@@ -321,13 +405,15 @@ After narrow contract corrections have been reviewed, do not perpetuate micro-pa
 
 For the current bootstrap candidate, F-01/F-02/F-03 are present in the supplied focused deltas, but this is not a review of all 12 dirty paths. Tests/build/runtime/MCP/transport remain `NOT_RUN`; local identity/hashes/status remain `OWNER_REPORTED`; G1/G2/G3 and all eight prerequisites remain unresolved. The [consolidated review receipt](./CHAT-ARCH-2026-10-24-M1A-G1-bootstrap-boundary-consolidated-static-review-receipt.md) is documentary evidence only; live `CURRENT-STATE.md` continues to govern routing.
 
-## 21. Cross-chat evidence learning loop (2026-10-24)
+## 21. Cross-chat evidence learning loop (2026-10-24; integrated into living core revision 2.0)
 
-Treat each chat/Codex interaction as a potential project-knowledge update, not as automatic truth. The loop is: (1) preflight live `main` in the strict five-file order and identify the exact current task; (2) reconcile the supplied result to that task's acceptance criteria; (3) preserve exact provenance and classify evidence level; (4) record defects only when the full relevant diff is available; (5) consolidate narrow fixes into one whole-delta review before another micro-task; (6) update the review receipt, `CURRENT-STATE.md` proposal, context index and handoff together; (7) clearly label branch-only documentation and never imply canonical adoption before merge/fetch-back; (8) end with one bounded evidence request and a paste-ready next-chat prompt.
+This is the historical record of the learning-loop principle. Its operating behavior is now consolidated in core sections 3–9 and checklist 11; it is not a parallel protocol or an instruction to keep appending separate rules.
 
-Evidence classes must remain distinct: `OWNER_REPORTED`; supplied-diff static review; direct repository verification; tests actually executed; runtime/transport verified; canonical merge and fetch-back. Hashes prove bytes only. Source status strings and typed records do not prove that operations occurred. Unknown/not-inspected is not absent. A new chat must check live refs rather than inherit yesterday's SHAs as current.
+The original reusable loop remains: preflight live `main`; match the task/result and acceptance criteria; preserve provenance; review the relevant exact delta; consolidate the lesson into its owning rule; update the canonical route and front doors together; verify adoption by fetch-back; then test reuse in a later non-identical task.
 
-This loop improves continuity by writing lessons into versioned project records. It does not update model weights or establish that the underlying model has learned across chats. Use the [consolidated new-chat handoff](./CHAT-ARCH-2026-10-24-M1A-G1-CONSOLIDATED-NEW-CHAT-HANDOFF.md) as the current prompt template.
+Evidence classes remain separate: `OWNER_REPORTED`, supplied-diff static review, direct GitHub verification, actually executed tests, runtime/transport verification, and canonical merge/fetch-back. Hashes prove byte identity only. Source status fields do not prove operations occurred. Unknown/not-inspected is not absent. A new chat must check current refs, not inherit old SHAs as current.
+
+This durable external memory improves continuity only when the new session fetches/receives it. It does not update model weights. Behavioral reuse remains `NOT_ESTABLISHED` until a named later task cites the promoted lesson and demonstrates an attributable outcome.
 
 ## 22. Historical checkpoint — post-PR #493 route before the latest Owner instruction (2026-10-24)
 
@@ -422,6 +508,8 @@ NEXT_ACTION=PERFORM_ONE_BOUNDED_EXISTING_TRUST_ASSET_READ_ONLY_ASSESSMENT_IN_EXI
 ## 26. Mandatory terminal-result consumption and router transition (2026-10-25)
 
 This section closes a continuity defect found when a task report had returned but the front-door summaries and `CURRENT-STATE.md` still advertised the completed task as active. It supplements sections 2–9 and 15; it does not override Owner authorization or the fail-closed trust gate.
+
+This section preserves the incident and its acceptance evidence. Its operating rule is integrated into core sections 4, 6, 8, 9 and checklist 11; use those core sections as the living procedure rather than treating this incident record as a competing workflow.
 
 ### 26.1 The terminal report is a state event
 
