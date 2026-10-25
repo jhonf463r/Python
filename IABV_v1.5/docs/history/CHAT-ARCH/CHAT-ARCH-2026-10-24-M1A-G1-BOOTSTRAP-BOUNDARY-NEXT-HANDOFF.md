@@ -1,7 +1,8 @@
 # M1A G1 — next handoff: Owner-controlled bootstrap and issuer boundary
 
 - Date: 2026-10-24, America/Bogota
-- Canonical baseline: `0876466a41d63ecc7a9283971118913fa9602f6c`
+- Current canonical main at handoff: `e9911ab00fbc58c7b2b7f56b5c51d876760fca73`
+- Route originally introduced against main: `0876466a41d63ecc7a9283971118913fa9602f6c`
 - Previous candidate result: `TASK_RESULT=SOURCE_CANDIDATE_ONLY`, Owner-reported Codex report in current conversation
 - Destination: Codex, same Windows session that owns the isolated local candidate
 - Scope: source-code modifications and source-test authoring only
@@ -33,7 +34,7 @@ The candidate must have no self-asserted root, no trust-on-first-use shortcut, n
 ## 3. Required bounded source attempt
 
 - Verify actual checkout identity and preserve all staged and unstaged changes. Do not reset, clean, discard, commit, push, or publish.
-- Refresh the remote view of `main`. The latest canonical base is `0876466a41d63ecc7a9283971118913fa9602f6c`; the report's `origin/main=fed7d50926a0c09b2fdd2e9d00cc71fa05a3e6d7` is stale relative to this commit. Because the worktree is dirty, do not merge/rebase until all index and working-tree deltas are safely preserved and the exact conflict/ancestry plan is known. Never sacrifice the candidate's staged or unstaged changes to synchronize documentation.
+- Refresh the remote view of `main`. The latest canonical main is `e9911ab00fbc58c7b2b7f56b5c51d876760fca73`; the report's `origin/main=fed7d50926a0c09b2fdd2e9d00cc71fa05a3e6d7` is stale relative to this commit. The route was introduced on main `0876466a41d63ecc7a9283971118913fa9602f6c`, then adopted by PR #490. Because the worktree is dirty, do not merge/rebase until all index and working-tree deltas are safely preserved and the exact conflict/ancestry plan is known. Never sacrifice the candidate's staged or unstaged changes to synchronize documentation.
 - Reconcile local branch ancestry and the candidate `CURRENT-STATE.md` additively to the latest canonical route. Keep the now-completed wiring task in history, make this task active in the candidate, and preserve the terminal root-review result as history.
 - Inspect the existing `github_owner_merge_bootstrap.py`, `windows_crypto.py`, `read_authorization.py`, and the wired MCP composition only as needed to avoid duplicating the already reported work.
 - Attempt a concrete source-level Owner-controlled bootstrap using documented Windows/API semantics only where the code can accurately represent them. If WebAuthn/Hello is considered, treat it as a candidate authentication factor, not an assumed capability or independent root. A challenge/response needs correct verification, relying-party/origin binding, credential registration semantics, freshness, and replay protection.
