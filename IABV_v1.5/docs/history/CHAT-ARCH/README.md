@@ -1,6 +1,41 @@
+<!-- Owner-authorized route transition: 2026-10-25. CURRENT-STATE.md remains the sole route authority. -->
+
+## CURRENT ROUTE — bounded Windows handle-close task authorized; Codex result intake pending; delivery protocol calibrated (2026-10-25)
+
+The Owner authorized one isolated source task, `M1A_G1_BOUNDED_HANDLE_CLOSE_AND_DETERMINISTIC_CONCURRENCY_FIX_20261025`: correct `OwnedWindowsHandle.close()` failure-state handling, replace the timing-based concurrency assertion with deterministic synchronization, and execute only focused tests using synthetic fixtures. Preserve both historical clones and candidate unchanged; do not invent trust providers; do not perform real protected reads; do not commit, push, merge or create a PR for the product-code task. Stop after the evidence package and independent-review handoff.
+
+The complete task prompt has been provided inline in the current ChatGPT conversation for copy/paste into the existing Codex session. This ChatGPT session has not demonstrated direct dispatch into Codex. The Codex response has not yet been supplied in this chat, so source changes, local commands and test outcomes must not be inferred. The next action is to receive and reconcile the Owner-supplied response against the exact task ID, base, diff, command outputs and stop conditions; refresh live canonical state before any consequential decision.
+
+A separate observed coordination defect was reconciled: an earlier answer pointed to a local prompt file rather than delivering the prompt inline as requested, then asserted a Dropbox upload and verification without an upload operation/receipt. A later answer supplied the full prompt inline, but that does not retroactively verify a Dropbox transfer. The strengthened last-mile rule is in the existing coordination protocol's section 13.2.1 and the [delivery-preflight incident receipt](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-25-OWNER-FACING-DELIVERY-PREFLIGHT-CORRECTION.md). Do not create a duplicate memory/orchestrator; test later causal reuse instead of assuming it.
+
+```text
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+LAST_TERMINAL_TASK=M1A_G1_BUILD_CURRENT_DIRECTORY_DELTA_WITH_PRESERVED_GIT_STATES_20261025
+LAST_TERMINAL_RESULT=ZIP_INTEGRITY_VERIFIED; CURRENT_TREE_DELTA_RECONCILED; STATIC_REVIEW_COMPLETE; BASELINE_LINKAGE_UNRECONCILED
+ACTIVE_TASK=M1A_G1_BOUNDED_HANDLE_CLOSE_AND_DETERMINISTIC_CONCURRENCY_FIX_20261025
+ACTIVE_TASK_STATUS=OWNER_AUTHORIZED; INLINE_PROMPT_DELIVERED_TO_OWNER; CODEX_RESULT_INTAKE_PENDING
+CODEX_DISPATCH=NOT_OBSERVED_IN_THIS_CHAT; DO_NOT_CLAIM_SENT_OR_CONSUMED
+SOURCE_EDIT=AUTHORIZED_ONLY_IN_ISOLATED_CLEAN_CANDIDATE; EXECUTION_NOT_YET_VERIFIED_HERE
+TESTS=FOCUSED_SYNTHETIC_FIXTURES_ONLY; ACTUAL_RESULT_PENDING
+PRODUCT_CODE_COMMIT_PUSH_MERGE=NOT_AUTHORIZED
+DOC_ONLY_METHOD_CALIBRATION=AUTHORIZED; BRANCH_CANDIDATE_UNTIL_MERGE_AND_FETCH_BACK
+METHOD_DELTA=OWNER_FACING_DELIVERY_PREFLIGHT; SECTION_13.2.1
+LESSON_STATUS=PROMOTED_TO_METHOD_RULE; CAUSAL_REUSE=NOT_TESTED
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+PROTECTED_READS=FAIL_CLOSED
+AUTOMATIC_FOLLOW_ON=FALSE
+NEXT_ACTION=RECEIVE_AND_RECONCILE_OWNER_SUPPLIED_CODEX_RESPONSE
+```
+
+<!-- Previous current-route snapshot is retained below as historical context. -->
+
 <!-- Terminal transition: 2026-10-25. CURRENT-STATE.md remains the sole routing authority. -->
 
-## CURRENT ROUTE — current tree delta verified; static review complete; integration remains blocked (2026-10-25)
+## HISTORICAL ROUTE — current tree delta verified; static review complete; integration remains blocked (2026-10-25; superseded by Owner authorization for the bounded handle-close task)
 
 The Dropbox-delivered evidence package has been reconstructed and independently verified: ZIP size 136,229 bytes; SHA-256 `3c60ff2df78bff45c6632e1d85ba93ef97172f7ab1564bfb03f995eb183fb217`; one manifest; all 25 declared non-manifest members match declared sizes and SHA-256 values. The direct present-directory delta contains eight different files and six identical files across the 14-path status union, with 473 additions and 156 deletions. The omitted `github_owner_merge_bootstrap.py` status entry is now reconciled. See [the current tree delta independent static review receipt](./CHAT-ARCH-2026-10-25-M1A-G1-CURRENT-TREE-DELTA-STATIC-REVIEW-RECEIPT.md).
 
