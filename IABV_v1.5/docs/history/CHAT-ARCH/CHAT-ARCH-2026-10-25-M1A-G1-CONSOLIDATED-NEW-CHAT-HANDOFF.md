@@ -5,6 +5,32 @@
 - Current verified GitHub main at handoff preparation: c7b463bc4947f0fccadfcd1ed001e36cc34a9dbc.
 - This is a continuity/handoff document, not a new implementation authorization. CURRENT-STATE.md remains the sole route authority.
 
+## Newer terminal transition — G3 static review failed; remediation decision pending (2026-10-25)
+
+**This transition supersedes the old “ZIP transfer pending / static review not started” route in the snapshots below.** The prior review report supplied by the Owner says the evidence ZIP and all manifest-listed member hashes were independently verified, and returns `FAIL_STATIC_REVIEW_SOURCE_CONTRACT`. This documentary reconciliation records that result but did not re-open the raw ZIP bytes.
+
+Receipt: [G3 static-review failure receipt](./CHAT-ARCH-2026-10-25-M1A-G1-G3-STATIC-REVIEW-FAIL-RECEIPT.md).
+
+The report identifies six blockers: incompatible `consume_once()` arguments; missing opened-object/target-binding/issuance-seal values in `ReadPermit`; missing approved-root provider in the reported composition; incomplete root-policy binding end-to-end; handle borrow/close and cleanup risks; and no real Windows ABI/kernel validation. The prior staged/unstaged preservation diffs were not present, so preservation remains unverified.
+
+The Owner's priority is to finish this organ quickly enough to receive genuine trust-backed authorizations and let downstream PEI work advance. The narrow route is one integrated remediation of these concrete source contracts, with no trust-provider invention and fail-closed behavior retained. The source task is not authorized by this documentation transition. `G1`, `G2`, and `G3` remain unestablished; protected reads remain denied.
+
+```text
+CURRENT_TERMINAL_TASK=M1A_G1_TRANSFER_PRODUCER_ZIP_AND_PERFORM_ONE_AUTHORIZED_STATIC_REVIEW_20261025
+CURRENT_TERMINAL_RESULT=FAIL_STATIC_REVIEW_SOURCE_CONTRACT
+STATIC_REVIEW=COMPLETE
+BUNDLE_HASH_AND_MEMBERS=REPORTED_INDEPENDENTLY_VERIFIED_BY_PRIOR_REVIEW; NOT_REOPENED_IN_THIS_TRANSITION
+PRESERVATION=NOT_VERIFIED
+APPROVED_WORKSPACE_ROOT=UNAVAILABLE_IN_REPORTED_COMPOSITION
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3_SAME_OBJECT=NOT_ESTABLISHED
+GOVERNANCE=KEEP_BLOCKED
+PROTECTED_READS=FAIL_CLOSED
+NEXT_ACTION=OWNER_DECISION_REQUIRED_FOR_ONE_BOUNDED_G3_SOURCE_REMEDIATION_CANDIDATE
+AUTOMATIC_FOLLOW_ON=FALSE
+```
+
 ## Subsequent Owner decision — integrated G3 candidate authorized after continuity reconciliation (2026-10-25)
 
 **This section supersedes the pending-decision wording in the snapshot below.** After this handoff was prepared, the Owner explicitly authorized exactly one integrated G3 source-only candidate and required that the Space-Time memory/continuity logic be analyzed and the route records reconciled first. That requested first step is captured by the linked decision receipt and the current front-door route summaries.
@@ -63,29 +89,34 @@ Current main route-file blobs observed when this handoff began:
 
 Live main must be revalidated for every new session; the listed SHAs are historical snapshots for this handoff, not substitutes for a fresh read.
 
-## 2. Executive status
+## 2. Executive status — current route supersedes earlier transfer-pending snapshots
 
-The latest source-candidate task is terminal at `PARTIAL_G3_HANDLE_CONTRACT_SOURCE_ONLY`, according to the Owner-supplied Codex report. A bounded packaging task has now returned `EVIDENCE_BUNDLE_READY`, also as an Owner-supplied Codex report.
+The authorized static review is terminal with `FAIL_STATIC_REVIEW_SOURCE_CONTRACT`. The prior review report supplied by the Owner states that the ZIP archive and all 12 manifest-listed artifact members passed independent size/SHA-256 checks (13 entries including the manifest). This handoff's documentary update relies on that report; the ZIP bytes were not re-opened during this transition.
 
-Reported ZIP: `IABV_G3_STATIC_REVIEW_EVIDENCE_20261025_3d0c265fc41443739b5e65ef3d4a23d3.zip`, 91,213 bytes, reported SHA-256 `9f9a3e575fa8c6d03b33ae9bdb73bfbf8a4680642b7a65d39fce44e154febe66`. It reportedly contains the six task diffs, six current source/test files and a manifest. The bytes have not yet reached this reviewer, so archive identity and member hashes are not independently checked.
+Reported ZIP: `IABV_G3_STATIC_REVIEW_EVIDENCE_20261025_3d0c265fc41443739b5e65ef3d4a23d3.zip`, 91,213 bytes, reported SHA-256 `9f9a3e575fa8c6d03b33ae9bdb73bfbf8a4680642b7a65d39fce44e154febe66`. The report says its 13 entries consist of six task diffs, six current source/test files and `manifest.json`. The two prior-work artifacts `preexisting-staged.diff` and `preexisting-unstaged.diff` are absent and were not reconstructed; the prior-work preservation subclaim remains not independently verifiable. The observed candidate path is reported under `src/iabv_v15`, not the prompt's `src/iabv15`.
 
-The report says `preexisting-staged.diff` and `preexisting-unstaged.diff` were unavailable and were not reconstructed. The source paths are reported under `src/iabv_v15`, not the initially requested `src/iabv15`. Checkout/index remained unchanged during packaging according to the report, but prior-work preservation is not independently established without the original prior diffs.
+Review findings:
+1. Replay-consumer call/signature mismatch prevents positive authorization from completing against the reported included interface.
+2. `ReadPermit` does not receive the opened target, target-binding ID or coordinator issuance seal required by the guard.
+3. The reported app composition lacks the approved workspace-root provider; safe denial remains `APPROVED_WORKSPACE_ROOT_UNAVAILABLE`.
+4. Root policy identity is not demonstrated end-to-end through opened target, authorization decision, permit and guard.
+5. Handle borrow/close synchronization and cleanup-on-error have static risks.
+6. Mock-only source tests do not establish real Windows ABI/kernel behavior; tests/build/runtime were not run.
 
-The review was explicitly authorized by the Owner. No connected private machine-to-machine transfer route is verified; the smallest remaining transfer is one upload of the already-created ZIP. Do not publish it on the public GitHub repository. Protocol revision 2.1 governs the transfer; the Owner must not assemble files manually.
+See the [terminal review receipt](./CHAT-ARCH-2026-10-25-M1A-G1-G3-STATIC-REVIEW-FAIL-RECEIPT.md) for the exact provenance boundary and findings. The source candidate must not be promoted to canonical code or used to enable protected reads.
 
-~~~text
-ACTIVE_TASK=M1A_G1_TRANSFER_PRODUCER_ZIP_AND_PERFORM_ONE_AUTHORIZED_STATIC_REVIEW_20261025
-LAST_TERMINAL_TASK=M1A_G1_PREPARE_SINGLE_G3_REVIEW_EVIDENCE_BUNDLE_20261025
-LAST_TERMINAL_RESULT=EVIDENCE_BUNDLE_READY; OWNER_SUPPLIED_CODEX_REPORT; ZIP_BYTES_NOT_RECEIVED
+```text
+ACTIVE_TASK=M1A_G1_OWNER_DECISION_ON_ONE_BOUNDED_G3_SOURCE_REMEDIATION_20261025
+ACTIVE_TASK_STATUS=OWNER_DECISION_REQUIRED; NO_SOURCE_TASK_AUTHORIZED
+LAST_TERMINAL_TASK=M1A_G1_TRANSFER_PRODUCER_ZIP_AND_PERFORM_ONE_AUTHORIZED_STATIC_REVIEW_20261025
+LAST_TERMINAL_RESULT=FAIL_STATIC_REVIEW_SOURCE_CONTRACT
 BUNDLE_NAME=IABV_G3_STATIC_REVIEW_EVIDENCE_20261025_3d0c265fc41443739b5e65ef3d4a23d3.zip
 BUNDLE_SHA256_REPORTED=9f9a3e575fa8c6d03b33ae9bdb73bfbf8a4680642b7a65d39fce44e154febe66
 BUNDLE_SIZE_BYTES_REPORTED=91213
-BUNDLE_VALIDATION=MEMBER_HASHES_VALIDATED_BY_PRODUCER; NOT_INDEPENDENTLY_RECHECKED
-BUNDLE_CONTENTS_REPORTED=6_TASK_DIFFS; 6_CURRENT_SOURCE_TEST_FILES; MANIFEST_JSON
+BUNDLE_INTEGRITY=REPORTED_INDEPENDENTLY_VERIFIED_BY_PRIOR_REVIEW; NOT_REOPENED_IN_THIS_TRANSITION
 PRESERVATION_DIFFS=PREEXISTING_STAGED_UNSTAGED_NOT_AVAILABLE; NOT_RECONSTRUCTED; PRESERVATION_NOT_VERIFIED
-STATIC_REVIEW=AUTHORIZED_ONCE; WAITING_FOR_ZIP_BYTES
-ARTIFACT_TRANSFER=NO_CONNECTED_PRIVATE_ROUTE_VERIFIED; ONE_ZIP_UPLOAD_REQUIRED
 APPROVED_WORKSPACE_ROOT=UNAVAILABLE_IN_REPORTED_COMPOSITION
+WORKSPACE_ROOT_IDENTITY_BOUND_TO_APPROVED_POLICY=NOT_ESTABLISHED
 NATIVE_WINDOWS_SEMANTICS=NOT_RUNTIME_VALIDATED
 G1=NOT_ESTABLISHED
 G2=NOT_ESTABLISHED
@@ -100,13 +131,10 @@ RUNTIME=NOT_RUN
 MCP=NOT_RUN
 REAL_TRANSPORT=NOT_RUN
 COST_POLICY=ZERO_BUDGET
+NEXT_ACTION=OWNER_DECISION_REQUIRED_FOR_ONE_BOUNDED_G3_SOURCE_REMEDIATION_CANDIDATE
 AUTOMATIC_FOLLOW_ON=FALSE
-NEXT_ACTION=TRANSFER_ONE_EXISTING_ZIP_TO_CURRENT_CHAT
-NEXT_REVIEW_TARGET=ARCHIVE_AND_MANIFEST_HASHES; EXACT_SIX_DIFFS; SOURCE_CONTRACTS; ROOT_DENIAL; HANDLE_OWNERSHIP; NATIVE_ABI_LIMITATIONS; PRESERVATION_LIMITS
-STOP_CONDITION=NO_IMPLEMENTATION_OR_GATE_RELEASE; NO_PUBLICATION_OF_PACKET_TO_PUBLIC_GITHUB
-~~~
+```
 
-This packaging result is not the static review. Once the ZIP arrives, review its exact bytes and report partial scope where the missing preservation diffs prevent a conclusion.
 ## 3. Chronology of this session and adopted decisions
 
 ### A. Space-Time operating protocol evolves to revision 2.0
@@ -298,18 +326,22 @@ A successful G3 implementation candidate alone would not establish G1/G2 or make
 - Avoid another orchestrator, duplicate protocol or append-only memory file. Evolve the existing owning rule and preserve historical receipts.
 - Do not claim model-weight learning. The durable artifact is the adopted protocol/memory/route; behaviorally demonstrated cross-chat reuse remains a future observation.
 
-## 9. Immediate next decision and how to frame it
+## 9. Immediate next decision — one narrow integrated G3 source remediation
 
-The next decision is not whether Windows has a handle API. That static feasibility question was answered sufficiently to propose a candidate.
+The goal is to finish the authorization-to-handle organ promptly so it can consume genuine trust-backed authorizations and let downstream PEI work advance. The next technical move should not repeat broad Windows API feasibility research. It should be one bounded integrated source-remediation candidate that fixes the specific failures found in the terminal review:
 
-The remaining choice is whether to authorize exactly one **integrated authorization-to-handle source candidate** whose scope explicitly includes the resolver/coordinator interface and approved workspace-root capability. The previous candidate's scope excluded precisely that change and therefore could not succeed even with available native APIs.
+- Align the `consume_once()` protocol, production implementation and test doubles so the replay/one-time authorization path has one consistent binding contract.
+- Populate `ReadPermit` with the exact opened-object reference, target-binding ID and coordinator issuance seal that the server guard requires, with deny-by-default checks intact.
+- Resolve the approved workspace-root provider only through an existing, trusted application composition; carry its policy binding end-to-end.
+- Close handle ownership/lifetime gaps, including borrow/close coordination and cleanup when closing an earlier handle fails.
+- Preserve the current source candidate and all prior dirty work; the absent pre-existing staged/unstaged diffs must not be reconstructed or overwritten. Work in an isolated, provenance-tracked candidate where needed.
 
-Suggested decision question for the Owner:
-“¿Autorizas una única tarea de código fuente integrada G3 que pueda modificar solo el resolver/coordinador de autorización, el guard del servidor, los lectores directos y sus pruebas fuente estrictamente relacionadas, para transportar la misma capacidad de objeto abierto desde una raíz de workspace aprobada hasta la lectura/enumeración, manteniendo cualquier raíz no configurada en DENY y sin ejecutar pruebas/build/runtime, MCP, transporte real ni lecturas protegidas?”
+**Hard stop:** if no real approved-root provider/authority exists in the composition, the task must return `APPROVED_WORKSPACE_ROOT_UNAVAILABLE` with the missing composition edge identified. Do not fabricate trust authority, treat a workspace path as trust, use the workspace root as the independent IABV root, or weaken fail-closed behavior. A source-only repair is not sufficient to establish real Windows semantics, G1/G2 or authorize protected reads.
 
-A “yes” would authorize only that one bounded source candidate; it must still stop if no approved root identity/provider exists or if the native contract cannot be implemented without guessing. It does not authorize trust-root provisioning or positive reads. A “no” means retain the blocker and wait for new independently verifiable evidence.
+This is a recommendation for the next bounded task, **not an authorization to execute it**. A new explicit Owner decision is required before any source modification. The next decision can be made in this chat without asking for the reviewed ZIP again.
 
-No new technical task is authorized by this handoff alone.
+Suggested decision question:
+“¿Autorizas una única tarea de remediación fuente integrada G3, limitada a corregir el contrato `consume_once()`, el vínculo de `ReadPermit` con el objeto abierto/sello de emisión, la composición real del proveedor de raíz aprobada y la propiedad/limpieza de handles, preservando el checkout previo y devolviendo un bloqueo preciso si el proveedor confiable no existe, sin habilitar lecturas protegidas ni declarar G1/G2/G3 cerrados?”
 
 ## 10. New-chat opening instruction
 

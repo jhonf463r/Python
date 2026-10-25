@@ -1,51 +1,47 @@
 <!-- Terminal transition: 2026-10-25. CURRENT-STATE.md remains the sole routing authority. -->
-## CURRENT ROUTE — producer bundle ready; one private transfer pending for authorized G3 static review (2026-10-25)
+## CURRENT ROUTE — G3 static review terminal; source contract fails; remediation decision pending (2026-10-25)
 
-The terminal source task returned `PARTIAL_G3_HANDLE_CONTRACT_SOURCE_ONLY` in the Owner-supplied Codex report. A follow-on read-only packaging task now reports `EVIDENCE_BUNDLE_READY`: one ZIP was generated with the six task diffs, six current source/test files and a manifest. Its bytes have not yet arrived on this review surface, so the reported ZIP hash/member validation remains `OWNER_SUPPLIED_CODEX_REPORT`, not independent verification. The two prior-work preservation diffs were not available and were not reconstructed; the preservation subclaim therefore cannot be closed from this packet.
+The single authorized task `M1A_G1_TRANSFER_PRODUCER_ZIP_AND_PERFORM_ONE_AUTHORIZED_STATIC_REVIEW_20261025` is terminal with `FAIL_STATIC_REVIEW_SOURCE_CONTRACT`, according to the prior review report supplied in this conversation. The report says it independently verified the ZIP archive and all manifest-member hashes (13 entries total); this documentary transition relies on that report and did not re-open the raw ZIP bytes. The two prior-work preservation diffs were absent and not reconstructed, so prior-work preservation remains unverified.
 
-Terminal receipt: [integrated authorization-to-handle partial-candidate receipt](./CHAT-ARCH-2026-10-25-M1A-G1-G3-INTEGRATED-AUTHORIZATION-TO-HANDLE-PARTIAL-CANDIDATE-RECEIPT.md).
-Prior terminal blocker: [native-handle authorization-binding blocker](./CHAT-ARCH-2026-10-25-M1A-G1-G3-NATIVE-HANDLE-AUTHORIZATION-BINDING-BLOCKER-RECEIPT.md).
+Terminal receipt: [G3 static-review failure receipt](./CHAT-ARCH-2026-10-25-M1A-G1-G3-STATIC-REVIEW-FAIL-RECEIPT.md).
+Consolidated handoff: [updated G3/Space-Time handoff](./CHAT-ARCH-2026-10-25-M1A-G1-CONSOLIDATED-NEW-CHAT-HANDOFF.md).
+Prior candidate receipt: [integrated authorization-to-handle partial-candidate receipt](./CHAT-ARCH-2026-10-25-M1A-G1-G3-INTEGRATED-AUTHORIZATION-TO-HANDLE-PARTIAL-CANDIDATE-RECEIPT.md).
 
-The report explicitly leaves `APPROVED_WORKSPACE_ROOT_UNAVAILABLE`, native Windows ABI/filesystem semantics unvalidated, and all tests/build/runtime/MCP/transport unrun. Therefore `G3_SAME_OBJECT=NOT_ESTABLISHED`; a source-only candidate must not be promoted to canonical code or used to enable protected reads. Reported local state/hashes remain `OWNER_SUPPLIED_CODEX_REPORT`, not direct observations by this reconciliation.
+### Static blockers that prevent this organ from accepting trust-backed authorizations
 
-The Owner authorized one bounded independent static review. The producing Codex session reports the following ZIP: `IABV_G3_STATIC_REVIEW_EVIDENCE_20261025_3d0c265fc41443739b5e65ef3d4a23d3.zip`, 91,213 bytes, reported SHA-256 `9f9a3e575fa8c6d03b33ae9bdb73bfbf8a4680642b7a65d39fce44e154febe66`. Codex reports six exact task diffs, six current files and `manifest.json`, with member hashes checked by the producer; the ZIP bytes are not yet available here. The `preexisting-staged.diff` and `preexisting-unstaged.diff` members were unavailable and not reconstructed, so preservation cannot yet be independently verified. No connected private machine-to-machine file route is verified; this single ZIP upload is the one remaining transfer action. Do not publish it to the public repository. G3 stays unestablished, protected reads fail-closed, and no code/tests/runtime action is authorized.
+- The replay-consumer invocation passes three binding arguments that the reported protocol and implementation signatures do not accept.
+- The authorization permit does not retain the opened object, target-binding identifier and coordinator issuance seal required by the server guard.
+- The approved workspace-root provider is unavailable in the reported application composition; deny with `APPROVED_WORKSPACE_ROOT_UNAVAILABLE`.
+- The root policy binding is not demonstrated end-to-end through resolution, decision, permit and guard.
+- Handle borrowing/closing and child-handle cleanup paths have static ownership risks.
+- Mock-oriented tests do not establish native Windows ABI/kernel semantics; tests/build/runtime were not run.
 
-~~~text
+The Owner's goal is to complete this authorization-to-handle organ promptly so it can receive genuine trust-backed authorizations and allow downstream PEI work to advance. The shortest safe route is one bounded integrated source-remediation candidate addressing the concrete contract and ownership findings, not another broad API exploration. It must use a real approved root/provider if one already exists and stop with a precise blocker if it does not; it must not invent trust authority, treat a workspace path as an independent trust root, or weaken fail-closed behavior. This documentary authorization does not authorize that source task.
+
+```text
 PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
-ACTIVE_TASK=M1A_G1_TRANSFER_PRODUCER_ZIP_AND_PERFORM_ONE_AUTHORIZED_STATIC_REVIEW_20261025
-LAST_TERMINAL_TASK=M1A_G1_PREPARE_SINGLE_G3_REVIEW_EVIDENCE_BUNDLE_20261025
-LAST_TERMINAL_RESULT=EVIDENCE_BUNDLE_READY; OWNER_SUPPLIED_CODEX_REPORT; ZIP_BYTES_NOT_RECEIVED
-PROTOCOL_DELTA=REVISION_2_1; SECTIONS_9_12_2_26_4_EVOLVED_IN_PLACE
-PREVIOUS_SOURCE_TASK=M1A_G1_G3_INTEGRATED_AUTHORIZATION_TO_HANDLE_SOURCE_CANDIDATE_20261025
-PREVIOUS_SOURCE_RESULT=PARTIAL_G3_HANDLE_CONTRACT_SOURCE_ONLY; SOURCE_ARTIFACTS_NOT_INDEPENDENTLY_REVIEWED
+ACTIVE_TASK=M1A_G1_OWNER_DECISION_ON_ONE_BOUNDED_G3_SOURCE_REMEDIATION_20261025
+ACTIVE_TASK_STATUS=OWNER_DECISION_REQUIRED; NO_SOURCE_TASK_AUTHORIZED
+LAST_TERMINAL_TASK=M1A_G1_TRANSFER_PRODUCER_ZIP_AND_PERFORM_ONE_AUTHORIZED_STATIC_REVIEW_20261025
+LAST_TERMINAL_RESULT=FAIL_STATIC_REVIEW_SOURCE_CONTRACT; PRIOR_REVIEW_REPORT_RECONCILED
+PRIOR_SOURCE_TASK=M1A_G1_G3_INTEGRATED_AUTHORIZATION_TO_HANDLE_SOURCE_CANDIDATE_20261025
+PRIOR_SOURCE_RESULT=PARTIAL_G3_HANDLE_CONTRACT_SOURCE_ONLY
 BUNDLE_NAME=IABV_G3_STATIC_REVIEW_EVIDENCE_20261025_3d0c265fc41443739b5e65ef3d4a23d3.zip
 BUNDLE_SHA256_REPORTED=9f9a3e575fa8c6d03b33ae9bdb73bfbf8a4680642b7a65d39fce44e154febe66
 BUNDLE_SIZE_BYTES_REPORTED=91213
-BUNDLE_VALIDATION=MEMBER_HASHES_VALIDATED_BY_PRODUCER; NOT_INDEPENDENTLY_RECHECKED
-BUNDLE_CONTENTS_REPORTED=6_TASK_DIFFS; 6_CURRENT_SOURCE_TEST_FILES; MANIFEST_JSON
+BUNDLE_MEMBERS_REPORTED=13; 12_ARTIFACT_MEMBERS_PLUS_MANIFEST
+BUNDLE_INTEGRITY=ARCHIVE_AND_MEMBER_HASHES_REPORTED_INDEPENDENTLY_VERIFIED_BY_PRIOR_REVIEW; NOT_REOPENED_IN_THIS_DOCUMENTARY_UPDATE
 PRESERVATION_DIFFS=PREEXISTING_STAGED_UNSTAGED_NOT_AVAILABLE; NOT_RECONSTRUCTED; PRESERVATION_NOT_VERIFIED
-ARTIFACT_TRANSFER=NO_CONNECTED_PRIVATE_ROUTE_VERIFIED; ONE_ZIP_UPLOAD_REQUIRED
-STATIC_REVIEW=AUTHORIZED_ONCE; WAITING_FOR_ZIP_BYTES
-COORDINATION_LESSON=ASSISTANT_SHIFTED_BUNDLE_ASSEMBLY_TO_OWNER; CORRECTED_IN_PROTOCOL
-REVIEW_TARGETS=EXACT_SIX_TASK_DIFFS; SOURCE_CONTRACTS; ROOT_DENIAL; HANDLE_OWNERSHIP; NATIVE_ABI_LIMITATIONS
-ARTIFACT_CAPTURE=EXISTING_CODEX_SESSION; READ_ONLY; ZIP_OUTSIDE_CHECKOUT
-ARTIFACT_TRANSPORT=SUPPORTED_PRIVATE_ROUTE_NOT_VERIFIED; ONE_ZIP_UPLOAD_FALLBACK
-PUBLIC_GITHUB_REPOSITORY=PUBLIC; TEMPORARY_DELETION_NOT_ASSUMED_TO_ERASE_HISTORY
-CODEX_DISPATCH=OWNER_MEDIATED; BUNDLE_RESULT_RETURNED
-OWNER_DECISION=EXPLICIT_IN_CHAT; ONE_BOUNDED_INDEPENDENT_STATIC_REVIEW; 2026-10-25
-ARTIFACT_STATUS=BUNDLE_REPORTED_READY; BYTES_NOT_RECEIVED; PRESERVATION_DIFFS_MISSING
-SOURCE_CHANGES_REPORTED=6_FILES; +798/-48; HASHES_REPORTER_SUPPLIED
-SOURCE_TESTS=AUTHORED; NOT_RUN
-CANDIDATE_WORKTREE_STATUS=OWNER_SUPPLIED_CODEX_REPORT; NOT_INDEPENDENTLY_OBSERVED
+STATIC_FINDINGS=REPLAY_SIGNATURE_MISMATCH; PERMIT_OBJECT_SEAL_BINDING_MISSING; APPROVED_ROOT_PROVIDER_UNAVAILABLE; ROOT_POLICY_BINDING_INCOMPLETE; HANDLE_LIFETIME_CLEANUP_RISKS; WINDOWS_ABI_NOT_VALIDATED
 APPROVED_WORKSPACE_ROOT=UNAVAILABLE_IN_REPORTED_COMPOSITION
 WORKSPACE_ROOT_IDENTITY_BOUND_TO_APPROVED_POLICY=NOT_ESTABLISHED
 NATIVE_WINDOWS_SEMANTICS=NOT_RUNTIME_VALIDATED
-AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
-QUALIFYING_INDEPENDENT_ROOT=NOT_ESTABLISHED
-OWNER_TO_WINDOWS_PRINCIPAL=NOT_ESTABLISHED
-BOOTSTRAP_AUTHORITY_TO_ISSUER=NOT_ESTABLISHED
-ISSUER_TO_EXACT_SERVER=NOT_ESTABLISHED
-DURABLE_REPLAY_AND_ROLLBACK_PROTECTION=NOT_ESTABLISHED
+SOURCE_TESTS=AUTHORED; NOT_RUN
+TESTS=NOT_RUN
+BUILD=NOT_RUN
+RUNTIME=NOT_RUN
+MCP=NOT_RUN
+REAL_TRANSPORT=NOT_RUN
 G1=NOT_ESTABLISHED
 G2=NOT_ESTABLISHED
 G3_SAME_OBJECT=NOT_ESTABLISHED
@@ -53,18 +49,17 @@ IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
 GOVERNANCE=KEEP_BLOCKED
 PROTECTED_READS=FAIL_CLOSED
 BRIDGE=BRIDGE_NOT_READY
-TESTS=NOT_RUN
-BUILD=NOT_RUN
-RUNTIME=NOT_RUN
-MCP=NOT_RUN
-REAL_TRANSPORT=NOT_RUN
 COST_POLICY=ZERO_BUDGET
-PRODUCT_STAGE_COMMIT_PUSH_MERGE=NOT_AUTHORIZED
+NEXT_ACTION=OWNER_DECISION_REQUIRED_FOR_ONE_BOUNDED_G3_SOURCE_REMEDIATION_CANDIDATE
+NEXT_TASK_TARGET=REPLAY_CONSUMER_CONTRACT; PERMIT_OBJECT_SEAL_BINDING; TRUSTED_ROOT_PROVIDER_COMPOSITION; ROOT_POLICY_BINDING; HANDLE_OWNERSHIP_AND_CLEANUP
+NEXT_TASK_STOP_CONDITION=IF_REAL_APPROVED_ROOT_PROVIDER_UNAVAILABLE; RETURN_PRECISE_BLOCKER; DO_NOT_INVENT_AUTHORITY
+PRODUCT_CODE_MODIFICATION=NOT_PERFORMED
+PRODUCT_STAGE_COMMIT_PUSH_MERGE=NOT_PERFORMED
 AUTOMATIC_FOLLOW_ON=FALSE
-NEXT_ACTION=OWNER_UPLOAD_ONE_ALREADY_GENERATED_ZIP_TO_CURRENT_CHAT; NO_MEMBER_BY_MEMBER_TRANSFER
-NEXT_REVIEW_TARGET=DIFFS_VS_TASK_ACCEPTANCE; OPENED_CAPABILITY_BINDING; ROOT_DENIAL; HANDLE_OWNERSHIP; NATIVE_ABI_LIMITATIONS
-STOP_CONDITION=NO_IMPLEMENTATION_OR_GATE_RELEASE_WITHOUT_SEPARATE_EXPLICIT_AUTHORIZATION_AND_NEW_EVIDENCE
-~~~
+```
+
+A source-only repair will not itself establish G1/G2, validate native Windows semantics, or authorize protected reads. Keep all gates blocked until separate required evidence is accepted.
+
 
 <!-- Owner decision transition: 2026-10-25. CURRENT-STATE.md is the sole route authority. -->
 ## HISTORICAL ROUTE SNAPSHOT — integrated G3 authorization-to-handle source candidate authorized; prior decision state (2026-10-25)
