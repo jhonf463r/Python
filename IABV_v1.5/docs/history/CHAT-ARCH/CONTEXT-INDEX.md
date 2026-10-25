@@ -30,7 +30,7 @@ The prior reopening was limited to design/static review and is now terminal. Its
 
 ## Next trust-organ task — Owner-controlled bootstrap/issuer boundary (2026-10-24)
 
-The supplied staged/unstaged source diff has been statically reviewed. A targeted correction is required because `manifest_sha256` is only shape-checked rather than compared against the canonical `challenge.expected_manifest()` digest; `manifest_git_blob_sha` and positive `pull_request_number` also need validation. Follow `CURRENT-STATE.md` for the next source-only action and the [review receipt](./CHAT-ARCH-2026-10-24-M1A-G1-bootstrap-boundary-static-review-receipt.md). This review is based on supplied diffs; local blob integrity remains unverified. Keep G1/G2/G3 unestablished and protected reads fail-closed.
+The follow-up diff, reviewed from the pasted source only, contains the targeted `manifest_sha256` equality check, `manifest_git_blob_sha` SHA-1 format check, exact-integer/positive pull-request check and source tests for malformed values. Tests remain `NOT_RUN`, and checkout/blob integrity remains unverified. The next source-only edge is to define an explicit typed enrollment receipt/outcome because `OwnerControlledBootstrapBoundary.enroll()` returns merge evidence rather than confirmation of challenge consumption and protected registry persistence. Follow `CURRENT-STATE.md` and the [review receipt](./CHAT-ARCH-2026-10-24-M1A-G1-bootstrap-boundary-static-review-receipt.md). Keep G1/G2/G3 unestablished and protected reads fail-closed.
 
 ## Continuity and AI-context delivery audit (2026-10-24)
 
