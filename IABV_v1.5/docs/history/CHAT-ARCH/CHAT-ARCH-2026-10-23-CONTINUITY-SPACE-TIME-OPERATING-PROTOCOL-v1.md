@@ -267,7 +267,7 @@ When the Owner supplies a Codex response:
 5. Preserve provenance: GitHub main/PR state may be directly verified; local Codex claims remain `OWNER_REPORTED` until the source delta is accessible and reviewed. Never promote written tests to passed tests or source intent to runtime behavior.
 6. Choose the follow-on only after intake, from the live route and the Owner's exact authorization. A new report can refine the evidence state; it does not itself create root authority, change security facts, or expand permissions.
 
-For the current case, the transcript's last visible prompt is the AppBootstrap registration task, while live `CURRENT-STATE.md` routes to `M1A_G1_OWNER_CONTROLLED_BOOTSTRAP_ISSUER_BOUNDARY`. A response for the former must be reconciled as result-intake evidence and must not silently reset the active route. See [route-gate calibration, section 11](./CHAT-ARCH-2026-10-24-ROUTE-GATE-CALIBRATION-KNOWLEDGE-DELTA.md#11-follow-up-calibration--transcript-task-versus-live-route-2026-10-24).
+Historical checkpoint at the reviewed baseline (2026-10-24): the pasted transcript ended with an AppBootstrap registration prompt, while the then-live `CURRENT-STATE.md` routed to `M1A_G1_OWNER_CONTROLLED_BOOTSTRAP_ISSUER_BOUNDARY`. That source attempt was subsequently reviewed as one whole supplied diff bundle, and the bounded source-only attempt is now terminal for the evidence available. After documentation-only PR #493 was adopted and the route was fetched back, the current action became waiting for genuinely new independent root/mandate and authenticated Owner-to-host/issuer-boundary evidence. Treat the AppBootstrap prompt and the earlier source-task instructions in sections 16–20 as historical evidence, not active tasks. Always derive the present action from live `CURRENT-STATE.md`. See [route-gate calibration, section 11](./CHAT-ARCH-2026-10-24-ROUTE-GATE-CALIBRATION-KNOWLEDGE-DELTA.md#11-follow-up-calibration--transcript-task-versus-live-route-2026-10-24).
 
 This protocol update is durable project guidance, not model-weight training. It does not change the active technical route, Owner authorization, the eight open prerequisites, or fail-closed behavior.
 
@@ -328,3 +328,30 @@ Treat each chat/Codex interaction as a potential project-knowledge update, not a
 Evidence classes must remain distinct: `OWNER_REPORTED`; supplied-diff static review; direct repository verification; tests actually executed; runtime/transport verified; canonical merge and fetch-back. Hashes prove bytes only. Source status strings and typed records do not prove that operations occurred. Unknown/not-inspected is not absent. A new chat must check live refs rather than inherit yesterday's SHAs as current.
 
 This loop improves continuity by writing lessons into versioned project records. It does not update model weights or establish that the underlying model has learned across chats. Use the [consolidated new-chat handoff](./CHAT-ARCH-2026-10-24-M1A-G1-CONSOLIDATED-NEW-CHAT-HANDOFF.md) as the current prompt template.
+
+## 22. Post-PR #493 route reconciliation and Owner continuity directive (2026-10-24)
+
+The Owner authorized a documentation-only integration of PR #493 to preserve the Mente Espacio-Tiempo directive and reconcile the terminal whole-candidate review. GitHub reports the squash merge succeeded at `3235219304f87210dd235e0a657111e8981b13b4`. Follow-up documentation commits reconciled the adopted `CURRENT-STATE.md` and replaced obsolete front-door task instructions with explicit historical checkpoints. Fetch-back from live `main` confirmed the route and all five entry-point documents.
+
+The current route is:
+
+```text
+ACTIVE_TASK=M1A_G1_WAIT_FOR_GENUINELY_NEW_INDEPENDENT_ROOT_AND_MANDATE_EVIDENCE
+PREVIOUS_TASK=M1A_G1_OWNER_CONTROLLED_BOOTSTRAP_ISSUER_BOUNDARY
+PREVIOUS_TASK_RESULT=TERMINAL_FOR_CURRENT_SOURCE_EVIDENCE; BOUNDARY_NOT_ESTABLISHED
+NEXT_ACTION=WAIT_FOR_GENUINELY_NEW_INDEPENDENT_ROOT_AND_AUTHENTICATED_OWNER_ISSUER_OS_BOUNDARY_EVIDENCE
+AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3_VERSIONED_TARGET_RESOLVER=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+GOVERNANCE=KEEP_BLOCKED
+PROTECTED_READS=FAIL_CLOSED
+AUTOMATIC_FOLLOW_ON=FALSE
+```
+
+The complete supplied staged/unstaged diff bundle was byte-verified and received static review. This verifies the attached patch artifacts, not the Windows worktree identity or executed behavior. No tests, build, runtime, MCP, real transport, or protected read was executed. Do not ask the Owner for the same diffs again, repeat the whole-candidate review, restart source-only micro-patches, or treat a prior transcript's last prompt as the current route. Reopen only when genuinely new, independently verifiable evidence changes the root/mandate/identity-boundary premise, or a new explicit Owner decision changes the permitted scope. Unknown authority assets must remain `UNKNOWN; NOT_INSPECTED`, never silently converted to present or absent.
+
+The Mente Espacio-Tiempo audit remains static. It identified source-level risks involving persisted-context freshness (including a 24-hour minimum age behavior), initial perception preceding attachment of session-goal context, and missing durable proof linking a briefing package to its destination and confirmation. These findings do not prove that the live Windows package is stale or that a specific delivery failed. Do not create another memory/orchestrator. Reuse the existing protocol, improve its source/runtime evidence contract only under a newly authorized route, and verify any later implementation independently.
+
+The reusable continuity lesson is an explicit loop: `live main → five-file intake → match supplied result to exact TASK/acceptance criteria → provenance/evidence classification → reconcile with current route → one authorized action → durable receipt → fetch-back → later non-identical reuse`. Writing a memory is not itself learning; retrieval alone is not reuse; a later decision must observably change because it used the retained lesson. This protocol changes project guidance only; it does not change model weights or prove autonomous learning.
