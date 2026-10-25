@@ -139,3 +139,36 @@ The Owner asked that this instruction and the entire material lesson from the la
 Use the learning chain `OBSERVATION → PROVENANCE → CAUSAL LESSON → AUTHORIZED DECISION → OUTCOME EVIDENCE → WRITEBACK → FETCH-BACK → LATER CAUSAL REUSE → MEASURABLE CHANGE`. A durable note is not by itself proof of learning. Cross-chat delivery and algorithmic improvement remain unverified until evidence demonstrates them.
 
 **Routing boundary:** this is a follow-up priority, not a replacement for the current R-03 evidence step. The proposed current-state block still selects completion/review of the exact R-03 diffs. `AUTOMATIC_FOLLOW_ON=FALSE` remains in force until the evidence step is complete and the next scope is reconciled against live `CURRENT-STATE.md`. This handoff and the receipt are still only on PR #493's documentation branch; live `main` is authoritative until adoption and fetch-back.
+
+
+## 10. Latest result — exact R-03 bundle delivered and focused static review complete
+
+The Owner supplied all six current staged/unstaged diffs for the three R-03 routes. The focused static review conclusion is:
+
+- Both handlers invoke the guard before their content helpers, and the current guard returns a denial dictionary for all ordinary paths, including synthetic `ALLOW`, malformed scope/target metadata and caught decision exceptions.
+- Source tests cover a divergent requested target, a rewritten canonical target, and synthetic `ALLOW` denial for both handlers. The synthetic typed-chain test in `test_read_authorization.py` directly exercises only `read_repo_file`.
+- There is no explicit assertion for `AUTHORITY_TARGET_INVALID`.
+- Helpers still consume the original relative path and independently resolve it. This is **deny-only containment**, not same-object binding.
+- The bundle is a complete current diff for three paths, not an isolated task-only diff because no pre-task snapshot exists. Candidate checkout identity/hashes remain Codex-reported, and tests/build/runtime/MCP/transport were not run.
+
+Exact state to carry forward:
+
+```text
+R03=STATIC_REVIEW_COMPLETE_FOR_THREE_SUPPLIED_PATHS
+R03_DISPOSITION=DENY_ONLY_CONTAINMENT
+SAME_OBJECT_BINDING=NOT_ESTABLISHED
+AUTHORITY_TARGET_INVALID_TEST=NOT_PRESENT
+TESTS=NOT_RUN
+PROTECTED_READS=FAIL_CLOSED
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+GOVERNANCE=KEEP_BLOCKED
+```
+
+Do not make another isolated R-03 patch yet. The existing candidate-wide obligation remains: review the full accumulated staged and unstaged delta across all 12 unique candidate paths and map actual composition edges against unimplemented trust-root, provider, durable-store, authenticated process/IPC/OS and runtime prerequisites.
+
+**Next action:** complete that read-only whole-candidate diff review, then reconcile the next step with freshly fetched live `CURRENT-STATE.md`. Afterward, the Owner-requested Mente Espacio-Tiempo audit is the priority workstream. Review existing continuity/context algorithms for five-file live-main intake, causal timeline and provenance, stale/conflicting route headers, package freshness, initial-goal ordering, actual destination-specific briefing delivery/receipts and later causal reuse. Reuse the existing audit; do not create another orchestrator. No test execution, runtime, protected reads, credentials, OS/ACL/trust store, publishing, merge or spend is authorized by this note.
+
+This handoff is still branch-only documentation. It must not override canonical `main`.
