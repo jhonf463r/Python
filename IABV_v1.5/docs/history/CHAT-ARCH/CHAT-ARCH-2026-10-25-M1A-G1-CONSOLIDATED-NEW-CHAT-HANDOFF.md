@@ -13,6 +13,14 @@ Decision receipt: [integrated G3 source-candidate authorization](./CHAT-ARCH-202
 
 The previous task remains terminal with zero source delta according to the Owner-supplied Codex report. The historical next-decision question later in this handoff is preserved as chronology, not a live request. Route only from freshly fetched `CURRENT-STATE.md`. The current authorized candidate has not been sent to or executed by the existing Windows Codex session from this interface.
 
+## Subsequent terminal result — integrated G3 source candidate partial; review artifacts pending (2026-10-25)
+
+The authorized task `M1A_G1_G3_INTEGRATED_AUTHORIZATION_TO_HANDLE_SOURCE_CANDIDATE_20261025` has since returned `PARTIAL_G3_HANDLE_CONTRACT_SOURCE_ONLY` in an Owner-supplied Codex report. The report claims a source-level capability-to-reader binding and focused authored tests, but the six full diff files are referenced only by local Windows temporary paths and have not been independently reviewed in this reconciliation. A terminal result receipt records the reported hashes and preserves the provenance distinction.
+
+Receipt: [integrated authorization-to-handle partial-candidate receipt](./CHAT-ARCH-2026-10-25-M1A-G1-G3-INTEGRATED-AUTHORIZATION-TO-HANDLE-PARTIAL-CANDIDATE-RECEIPT.md).
+
+The report still identifies `APPROVED_WORKSPACE_ROOT_UNAVAILABLE` and says native Windows semantics were not runtime-validated. Thus G3 remains unestablished, all protected reads remain fail-closed, and the bridge remains not ready. The previous candidate authorization is consumed. Obtain the exact diff artifacts and a new explicit Owner decision before a bounded independent static review; do not start another implementation task automatically.
+
 ## 1. Read-first contract for the next chat
 
 Before giving any substantive technical recommendation or issuing a prompt, refresh live refs/heads/main and read the following repository files in exactly this order:
