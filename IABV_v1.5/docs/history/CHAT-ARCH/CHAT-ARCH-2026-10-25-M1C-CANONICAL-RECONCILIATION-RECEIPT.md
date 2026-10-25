@@ -2,7 +2,7 @@
 
 Date: 2026-10-25  
 Task: `M1C_G1_CANONICAL_RECONCILIATION_AFTER_M1B_20261025`  
-Outcome: documentation-only candidate; this receipt becomes canonical only after review, merge and fetch-back from live `main`.
+Outcome: PR #526 merged as documentation-only change; five canonical front doors fetched back from live `main`. This follow-up receipt correction is a branch/PR candidate until merged and fetched back.
 
 ## Authority and scope
 
@@ -60,12 +60,12 @@ AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
 PROTECTED_READS=FAIL_CLOSED
 M1B_SOURCE_CANDIDATE_IN_MAIN=FALSE
 AUTOMATIC_FOLLOW_ON=FALSE
-NEXT_ACTION=INDEPENDENT_REVIEW_OF_DOCUMENTATION_PR_ONLY
+NEXT_ACTION=REVIEW_POST_MERGE_STATUS_CORRECTION_PR; NO_AUTOMATIC_FOLLOW_ON
 ```
 
 The next technical decision must remain separate. It must address governed source-candidate integration, same-object end-to-end authorization/consumer binding, and legitimate approved-workspace-root/authority evidence. This receipt does not establish any of them and does not authorize protected reads.
 
 
-## Pull request state
+## PR #526 merge and fetch-back verification
 
-Documentation-only PR prepared and opened: [#526](https://github.com/jhonf463r/Python/pull/526). State: open; merged: false. The PR has not been merged. This receipt records the PR reference; this write does not authorize merge.
+PR [#526](https://github.com/jhonf463r/Python/pull/526) was squash-merged as `452961e4c2d26a2a675eebf1ce97808149fbdce1` at 2026-10-25T22:53:39Z. The five canonical front doors were fetched from live `main` and confirmed to contain the M1B reconciliation, the unintegrated source-candidate status, and fail-closed governance. This follow-up PR corrects lifecycle labels that still said PR #526 was open.
