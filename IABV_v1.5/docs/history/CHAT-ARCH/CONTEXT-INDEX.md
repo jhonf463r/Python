@@ -30,7 +30,7 @@ The prior reopening was limited to design/static review and is now terminal. Its
 
 ## Next trust-organ task — Owner-controlled bootstrap/issuer boundary (2026-10-24)
 
-The latest Owner-reported bootstrap-boundary attempt is source-candidate-only and unreviewed. Before choosing the next engineering action, obtain the exact staged and unstaged diff for the three reported files from the same local checkout; inspect this bounded delta independently rather than re-running bootstrap construction or MCP wiring. Preserve all staged/unstaged changes and avoid merge/rebase of the dirty checkout. G1/G2/G3 and real root/mandate/process-boundary claims remain unestablished; see `CURRENT-STATE.md` and the [bootstrap/issuer handoff](./CHAT-ARCH-2026-10-24-M1A-G1-BOOTSTRAP-BOUNDARY-NEXT-HANDOFF.md).
+The supplied staged/unstaged source diff has been statically reviewed. A targeted correction is required because `manifest_sha256` is only shape-checked rather than compared against the canonical `challenge.expected_manifest()` digest; `manifest_git_blob_sha` and positive `pull_request_number` also need validation. Follow `CURRENT-STATE.md` for the next source-only action and the [review receipt](./CHAT-ARCH-2026-10-24-M1A-G1-bootstrap-boundary-static-review-receipt.md). This review is based on supplied diffs; local blob integrity remains unverified. Keep G1/G2/G3 unestablished and protected reads fail-closed.
 
 ## Continuity and AI-context delivery audit (2026-10-24)
 
