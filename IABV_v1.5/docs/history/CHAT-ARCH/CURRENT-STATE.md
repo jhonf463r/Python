@@ -1,5 +1,70 @@
-<!-- Current-state routing record: bounded trust-organ source work is currently authorized. -->
-## CURRENT-STATE ROUTING — trust/authorization organ source wiring (2026-10-24)
+<!-- Current-state routing record: Owner-controlled bootstrap boundary is now the next bounded source task. -->
+## CURRENT-STATE ROUTING — Owner-controlled bootstrap/issuer boundary (2026-10-24)
+
+The latest Owner-reported Codex result says the source-level composition task `M1A_G1_REGISTER_READ_AUTHORIZATION_IN_APPBOOTSTRAP` is written in the existing local candidate: `AppBootstrap` → `MCPBridgeService` → `FastMCPServerRunner` → `IABVMCPServer` → both MCP read handlers. The coordinator was intentionally created unconfigured, so the resulting runtime path remains fail-closed. This result has not been independently source-inspected because the candidate is local-only and unpublished; treat every code detail as `OWNER_REPORTED`, not accepted behavior.
+
+The next task is not more MCP wiring. It is `M1A_G1_OWNER_CONTROLLED_BOOTSTRAP_ISSUER_BOUNDARY`: attempt a truthful source-level Owner-controlled bootstrap that binds the authenticated Owner principal, protected issuer credential, policy revision and exact server identity. Do not fabricate trust, assume WebAuthn/Hello availability, use trust-on-first-use, or claim OS/process separation from class boundaries. If the required real enrollment/credential/ACL/process boundary cannot be implemented without an excluded platform action, report that exact dependency and keep positive authorization disabled.
+
+Handoff: [Owner-controlled bootstrap/issuer boundary — next task](./CHAT-ARCH-2026-10-24-M1A-G1-BOOTSTRAP-BOUNDARY-NEXT-HANDOFF.md).
+Decision receipt: [bounded source-implementation authorization](./CHAT-ARCH-2026-10-24-M1A-G1-owner-bounded-source-implementation-authorization.md).
+Context audit: [continuity algorithms static audit](./CHAT-ARCH-2026-10-24-CONTINUITY-ALGORITHMS-STATIC-AUDIT.md).
+
+```text
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+ACTIVE_TASK=M1A_G1_OWNER_CONTROLLED_BOOTSTRAP_ISSUER_BOUNDARY
+PREVIOUS_TASK=M1A_G1_REGISTER_READ_AUTHORIZATION_IN_APPBOOTSTRAP
+PREVIOUS_TASK_RESULT=OWNER_REPORTED_SOURCE_CANDIDATE_ONLY; NO_TESTS_OR_RUNTIME
+OWNER_DECISION=BOUNDED_SOURCE_IMPLEMENTATION_AND_SOURCE_TEST_AUTHORING
+OWNER_DECISION_PROVENANCE=EXPLICIT_OWNER_CHAT_MESSAGE_2026-10-24
+OWNER_DECISION_RECEIPT=CHAT-ARCH-2026-10-24-M1A-G1-owner-bounded-source-implementation-authorization.md
+OWNER_DECISION_SCOPE=SOURCE_CODE_CHANGES_AND_SOURCE_TEST_AUTHORING_ONLY
+CANONICAL_BASE_MAIN=0876466a41d63ecc7a9283971118913fa9602f6c
+LOCAL_CANDIDATE_BRANCH=codex/m1a-g1-owner-governed-bootstrap-organ-20261024; OWNER_REPORTED; NOT_FOUND_ON_REMOTE
+LOCAL_CANDIDATE_HEAD=6bc568e1c5a898afd65cc045c779c25a9cdc5489; OWNER_REPORTED; NOT_INDEPENDENTLY_INSPECTED
+LOCAL_CANDIDATE_SOURCE_STATE=7_PATHS_STAGED; 9_PATHS_WITH_UNSTAGED_CHANGES; OWNER_REPORTED; UNCOMMITTED; UNPUBLISHED
+LOCAL_ORIGIN_MAIN_REPORTED=fed7d50926a0c09b2fdd2e9d00cc71fa05a3e6d7; STALE_RELATIVE_TO_CANONICAL_MAIN
+NEXT_TECHNICAL_EDGE=IMPLEMENT_OWNER_CONTROLLED_BOOTSTRAP_AND_REAL_ISSUER_BOUNDARY_WITHOUT_FABRICATING_TRUST
+SOURCE_IMPLEMENTATION=AUTHORIZED_WITH_BOUNDS
+SOURCE_TEST_AUTHORING=AUTHORIZED
+TEST_EXECUTION=NOT_AUTHORIZED; NOT_RUN
+BUILD=NOT_AUTHORIZED; NOT_RUN
+RUNTIME=NOT_AUTHORIZED; NOT_RUN
+REAL_TRANSPORT=NOT_AUTHORIZED; NOT_RUN
+PROTECTED_READS=FAIL_CLOSED
+CREDENTIAL_OR_APP_CREATION=NOT_AUTHORIZED
+OWNER_ENROLLMENT_OR_CREDENTIAL_CREATION=NOT_AUTHORIZED
+WINDOWS_SERVICE_INSTALL=NOT_AUTHORIZED
+PERSISTENT_WINDOWS_ACL_OR_TRUST_STORE_CHANGES=NOT_AUTHORIZED
+PUBLIC_TUNNEL=DO_NOT_LAUNCH_OR_EXPOSE
+COST_POLICY=ZERO_BUDGET; NO_PAID_SERVICES; NO_RESOURCE_DEPLOYMENT
+AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+QUALIFYING_INDEPENDENT_ROOT=NOT_ESTABLISHED
+ROOT_CUSTODIAN_AND_INDEPENDENT_VERIFICATION_CHANNEL=NOT_ESTABLISHED
+OWNER_TO_WINDOWS_PRINCIPAL=NOT_ESTABLISHED
+BOOTSTRAP_AUTHORITY_TO_ISSUER=NOT_ESTABLISHED
+ISSUER_TO_EXACT_SERVER=NOT_ESTABLISHED
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3_VERSIONED_TARGET_RESOLVER=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+GOVERNANCE=KEEP_BLOCKED
+READ_LIST=FAIL_CLOSED
+BRIDGE=BRIDGE_NOT_READY
+CONTINUITY_ALGORITHMS=SOURCE_WIRING_PRESENT; END_TO_END_RUNTIME_NOT_VERIFIED
+TRACKED_PORTABLE_CONTEXT_AND_SELF_EXAMINATION_SNAPSHOTS=2026-04-18; STALE_REPOSITORY_ARTIFACTS
+MCP_PORTABLE_CONTEXT_NON_REFRESH_FRESHNESS=EFFECTIVE_MINIMUM_86400_SECONDS; STALE_PACKAGE_POSSIBLE
+ACTIVE_GOAL_INITIAL_PERCEPTION_ORDER=STATIC_RISK; SEE_CONTINUITY_AUDIT
+AUTOMATIC_FOLLOW_ON=FALSE
+NEXT_ACTION=CONTINUE_EXISTING_LOCAL_CANDIDATE_WITH_OWNER_CONTROLLED_BOOTSTRAP_ISSUER_BOUNDARY
+NEXT_REVIEW_TARGET=STATIC_REVIEW_OF_EXACT_SOURCE_DELTA; DO_NOT_CLOSE_GATES_FROM_SOURCE_INTENT
+```
+
+This route advances the bounded source-construction task in response to the latest Owner-reported candidate result. It does not certify the candidate's code, establish the trust root, close G1–G3, authorize enrollment or platform changes, or permit protected reads. Preserve all staged/unstaged source work and reconcile the stale local `origin/main` reference safely before further edits.
+
+---
+
+<!-- Historical routing record: bounded trust-organ source wiring task superseded by the Owner-controlled bootstrap/issuer boundary route above. -->
+## HISTORICAL ROUTING — MCP read-authorization AppBootstrap wiring (source candidate reported 2026-10-24)
 
 The Owner's latest explicit instruction authorizes source-code modification and source-test authoring to complete the existing trust/authorization organ. The immediate task is the next unclosed composition edge reported by Codex: register the read-authorization coordinator through `AppBootstrap` and inject it into the two MCP read handlers. This is a source-only continuation, not a claim that a trusted root or positive read path exists. The local candidate's latest HEAD and staged/unstaged state remain Owner-reported; GitHub has not verified the local worktree.
 
@@ -52,7 +117,7 @@ NEXT_ACTION=CONTINUE_EXISTING_LOCAL_CANDIDATE_REGISTER_COORDINATOR_IN_APPBOOTSTR
 NEXT_REVIEW_TARGET=STATIC_REVIEW_OF_EXACT_SOURCE_DELTA; DO_NOT_CLOSE_GATES_FROM_SOURCE_INTENT
 ```
 
-This current route supersedes the older wait-only route below for task selection because the Owner subsequently authorized bounded source construction. It does not supersede the terminal root-review finding or change technical trust facts. The root review remains terminal for its reviewed evidence set; source construction proceeds fail-closed until independently verified authority and G1/G2/G3 requirements exist. Source-only authorization does not include tests/build/runtime, transport, credentials, OS changes, publication, deployment, spending or release.
+This route was the prior task for the MCP read-authorization AppBootstrap wiring; the latest Owner-reported Codex result says that source task is complete as a candidate. It is historical only for task selection, not runtime acceptance. It does not supersede the terminal root-review finding or change technical trust facts. The root review remains terminal for its reviewed evidence set; source construction proceeds fail-closed until independently verified authority and G1/G2/G3 requirements exist. Source-only authorization does not include tests/build/runtime, transport, credentials, OS changes, publication, deployment, spending or release.
 
 ---
 

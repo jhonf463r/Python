@@ -28,6 +28,10 @@ The prior reopening was limited to design/static review and is now terminal. Its
 
 
 
+## Next trust-organ task — Owner-controlled bootstrap/issuer boundary (2026-10-24)
+
+Start from [the bounded G1 bootstrap/issuer handoff](./CHAT-ARCH-2026-10-24-M1A-G1-BOOTSTRAP-BOUNDARY-NEXT-HANDOFF.md), not from the old MCP-wiring task. Candidate report provenance is `OWNER_REPORTED`; it has not been published or independently source-reviewed. Preserve the local branch's staged and unstaged deltas, reconcile current `main` safely, and keep root/mandate/G1/G2/G3 unestablished.
+
 ## Continuity and AI-context delivery audit (2026-10-24)
 
 See [continuity algorithms static audit](./CHAT-ARCH-2026-10-24-CONTINUITY-ALGORITHMS-STATIC-AUDIT.md) for source wiring and the bounded freshness/delivery risks. Do not call the live learning loop verified without current runtime evidence; `CURRENT-STATE.md` retains the active task.
