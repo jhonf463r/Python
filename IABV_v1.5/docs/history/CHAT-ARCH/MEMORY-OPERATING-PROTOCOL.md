@@ -1,5 +1,44 @@
 <!-- Terminal transition: 2026-10-25. CURRENT-STATE.md remains the sole routing authority. -->
-## CURRENT ROUTE — G3 source remediation terminal; approved-root provider absent; waiting for new authority evidence (2026-10-25)
+
+## CURRENT ROUTE — Owner-authorized integrated fail-closed authorization-organ completion candidate (2026-10-25)
+
+The Owner's latest explicit instruction reopens one bounded integrated source candidate to finish the authorization organ and prevent repeated route/blocker loops. This is a new scope decision after the terminal result `NO_NEW_EVIDENCE_RECOVERABLE_FROM_EXISTING_SESSION_ARTIFACTS`; it is not a claim that new trust evidence exists. The previous `BLOCKED_APPROVED_WORKSPACE_ROOT_PROVIDER_ABSENT` remains valid for its earlier task, but the missing root must not stop separable source-contract corrections. The organ must remain deny-only in production until real authority and platform prerequisites are independently established.
+
+Decision receipt: [Owner decision — integrated fail-closed organ completion](https://github.com/jhonf463r/Python/blob/docs/iabv-fail-closed-organ-completion-20261025/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-25-M1A-G1-OWNER-DECISION-FAIL-CLOSED-ORGAN-COMPLETION-RECEIPT.md).
+
+```text
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+LAST_TERMINAL_TASK=M1A_G1_RECOVER_PREEXISTING_AUTHORITY_EVIDENCE_WITHOUT_REINVENTORY_20261025
+LAST_TERMINAL_RESULT=NO_NEW_EVIDENCE_RECOVERABLE_FROM_EXISTING_SESSION_ARTIFACTS; OWNER_SUPPLIED_CODEX_REPORT
+ACTIVE_TASK=M1A_G1_INTEGRATED_FAIL_CLOSED_AUTHORIZATION_ORGAN_COMPLETION_20261025
+ACTIVE_TASK_STATUS=OWNER_AUTHORIZED; HANDOFF_PREPARED_NOT_SENT
+OWNER_DECISION=EXPLICIT_CURRENT_CHAT; ONE_INTEGRATED_ISOLATED_SOURCE_CANDIDATE_PLUS_BOUNDED_TESTS
+SOURCE_IMPLEMENTATION=AUTHORIZED_IN_ISOLATED_CANDIDATE
+SOURCE_TEST_AUTHORING=AUTHORIZED
+TEST_EXECUTION=AUTHORIZED_FOR_CANDIDATE_TESTS_AND_SYNTHETIC_TEMPORARY_FIXTURES_ONLY
+BUILD_STATIC_CHECKS=AUTHORIZED_IN_ISOLATED_CANDIDATE
+PRODUCTION_RUNTIME_MCP_REAL_TRANSPORT_PROTECTED_READS=NOT_AUTHORIZED
+TRUST_ROOT_MANDATE_CREDENTIALS_ENROLLMENT_OS_ACL_SERVICE_IPC_PROVISIONING=NOT_AUTHORIZED
+AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3_SAME_OBJECT=NOT_ESTABLISHED_UNTIL_CANDIDATE_EVIDENCE_SUPPORTS_NARROW_CLAIM
+IMPLEMENTATION_PREREQUISITES=8; GLOBAL_GATE_CLOSURE_NOT_YET_ADJUDICATED
+GOVERNANCE=KEEP_BLOCKED_FOR_POSITIVE_PROTECTED_READS
+PROTECTED_READS=FAIL_CLOSED
+BRIDGE=BRIDGE_NOT_READY
+COST_POLICY=ZERO_BUDGET
+PRODUCT_STAGE_COMMIT_PUSH_MERGE=NOT_AUTHORIZED
+AUTOMATIC_FOLLOW_ON=FALSE
+NEXT_ACTION=HAND_OFF_ONE_INTEGRATED_FAIL_CLOSED_ORGAN_COMPLETION_PROMPT_TO_EXISTING_WINDOWS_CODEX_SESSION
+NEXT_TASK_STOP_CONDITION=ONE_TASK_ONLY; PRESERVE_ORIGINAL_CHECKOUT; DO_NOT_INVENT_AUTHORITY; DO_NOT_STOP_SEPARABLE_SOURCE_WORK_SOLELY_DUE_TO_MISSING_ROOT
+```
+
+This route is adopted only after the documentation change is merged and fetched back from live `main`. The prompt is prepared for the existing Windows Codex session, not dispatched by this ChatGPT session. No source candidate has been created or accepted here.
+
+<!-- Previous G3 provider-blocker route is retained below as historical evidence; this new explicit Owner decision supersedes it for this one bounded source-candidate task. -->
+
+## HISTORICAL ROUTE — G3 source remediation terminal; approved-root provider absent; superseded for one Owner-authorized source candidate (2026-10-25)
 
 The Owner-authorized task `M1A_G1_OWNER_AUTHORIZED_ONE_BOUNDED_G3_SOURCE_REMEDIATION_20261025` returned `BLOCKED_APPROVED_WORKSPACE_ROOT_PROVIDER_ABSENT` in the terminal Codex report supplied in this conversation. Codex reports that it stopped before creating a candidate or changing source. The local source lines, checkout preservation and index hashes are **reported by Codex**, not independently re-observed here. The report says the evidence ZIP was blocked by policy; no alternate transfer or public source publication was attempted.
 
