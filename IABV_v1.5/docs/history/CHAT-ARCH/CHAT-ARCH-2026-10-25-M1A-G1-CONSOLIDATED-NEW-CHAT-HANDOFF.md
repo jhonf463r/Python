@@ -5,21 +5,23 @@
 - Current verified GitHub main at handoff preparation: c7b463bc4947f0fccadfcd1ed001e36cc34a9dbc.
 - This is a continuity/handoff document, not a new implementation authorization. CURRENT-STATE.md remains the sole route authority.
 
-## Current authorized route — one bounded G3 source remediation (2026-10-25)
+## Current terminal route — G3 remediation blocked by missing approved-root provider (2026-10-25)
 
-**This is the live handoff route and supersedes the pending-decision wording in the historical snapshot immediately below.** The Owner has explicitly authorized one bounded integrated source-remediation candidate. The authorization is recorded here for continuity; it does not establish that the prompt was delivered to the local Codex session or that implementation has started.
+**The single Owner-authorized source remediation is terminal.** Codex reports `BLOCKED_APPROVED_WORKSPACE_ROOT_PROVIDER_ABSENT`; it stopped before creating an isolated candidate or editing code. This report is not independently source-verified by this ChatGPT session. Its attempt to generate an evidence ZIP was denied by policy; no alternate transfer route was attempted.
 
-Authorization receipt: [single bounded G3 remediation authorization](./CHAT-ARCH-2026-10-25-M1A-G1-OWNER-AUTHORIZED-ONE-BOUNDED-G3-REMEDIATION-RECEIPT.md).
+Terminal receipt: [G3 remediation blocked by absent approved-root provider](./CHAT-ARCH-2026-10-25-M1A-G1-G3-REMEDIATION-BLOCKED-APPROVED-ROOT-PROVIDER-RECEIPT.md).
 
-Use the prior static-review failure as settled prior art. The first candidate action is a narrowly scoped check for a real production approved-workspace-root provider and its authority chain. If unavailable, stop with the exact blocker rather than inventing authority. If available, address the replay-consumer contract, permit/object/issuance-seal binding, end-to-end root-policy binding, and handle ownership/cleanup as one integrated candidate.
-
-Work in an isolated candidate without mutating the original checkout. Source tests may be authored but must not be executed in this task. No build, runtime, MCP, real transport, protected read, product commit, push, merge, or gate release is authorized. The earlier preservation diffs remain unavailable, so the new task must preserve and record the actual pre-task state rather than pretend to recover those historic diffs.
+The next action is the existing wait for genuinely new, independently verifiable root/mandate and approved workspace-root policy/provider evidence. Do not repeat source inventory, invent a provider, or begin another implementation task automatically. The distinction between `AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED` and proof that assets are absent must be maintained.
 
 ```text
-ACTIVE_TASK=M1A_G1_OWNER_AUTHORIZED_ONE_BOUNDED_G3_SOURCE_REMEDIATION_20261025
-ACTIVE_TASK_STATUS=OWNER_AUTHORIZED; CODEX_TERMINAL_RESULT_PENDING
-CODEX_DISPATCH=NOT_OBSERVED_FROM_THIS_CHAT_SESSION; NO_DELIVERY_CLAIM
-APPROVED_WORKSPACE_ROOT_PREFLIGHT=FIRST_GATE
+LAST_TERMINAL_TASK=M1A_G1_OWNER_AUTHORIZED_ONE_BOUNDED_G3_SOURCE_REMEDIATION_20261025
+LAST_TERMINAL_RESULT=BLOCKED_APPROVED_WORKSPACE_ROOT_PROVIDER_ABSENT; OWNER_SUPPLIED_CODEX_REPORT
+ACTIVE_TASK=M1A_G1_WAIT_FOR_GENUINELY_NEW_INDEPENDENT_ROOT_AND_MANDATE_EVIDENCE
+ACTIVE_TASK_STATUS=WAITING_FOR_NEW_VERIFIABLE_EVIDENCE; NO_SOURCE_TASK_AUTHORIZED
+CODEX_SOURCE_DELTA=0; REPORTED
+CODEX_CHECKOUT_PRESERVATION=REPORTED_UNCHANGED; NOT_INDEPENDENTLY_VERIFIED
+EVIDENCE_BUNDLE=NOT_GENERATED; POLICY_DENIED; NO_BYPASS
+AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
 G1=NOT_ESTABLISHED
 G2=NOT_ESTABLISHED
 G3_SAME_OBJECT=NOT_ESTABLISHED
@@ -28,9 +30,10 @@ PROTECTED_READS=FAIL_CLOSED
 BRIDGE=BRIDGE_NOT_READY
 AUTOMATIC_FOLLOW_ON=FALSE
 ```
-## Newer terminal transition — G3 static review failed; remediation decision pending (2026-10-25)
 
-**This transition supersedes the old “ZIP transfer pending / static review not started” route in the snapshots below.** The prior review report supplied by the Owner says the evidence ZIP and all manifest-listed member hashes were independently verified, and returns `FAIL_STATIC_REVIEW_SOURCE_CONTRACT`. This documentary reconciliation records that result but did not re-open the raw ZIP bytes.
+## Historical transition — prior G3 static review failure before the remediation attempt (2026-10-25)
+
+**Historical snapshot; superseded by the current terminal route above.** At that earlier point, the prior review report supplied by the Owner stated that the evidence ZIP and all manifest-listed member hashes were independently verified and returned `FAIL_STATIC_REVIEW_SOURCE_CONTRACT`. That documentary reconciliation did not re-open the raw ZIP bytes.
 
 Receipt: [G3 static-review failure receipt](./CHAT-ARCH-2026-10-25-M1A-G1-G3-STATIC-REVIEW-FAIL-RECEIPT.md).
 
