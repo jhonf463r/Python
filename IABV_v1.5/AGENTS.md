@@ -1,6 +1,23 @@
 <!-- G1 continuity summary; CURRENT-STATE.md remains the sole routing authority. -->
 
-## Latest bounded source-organ result — candidate-only, static review with notes (2026-10-24)
+## CURRENT ROUTE — one bounded read-only assessment of existing trust assets (2026-10-25)
+
+Live `CURRENT-STATE.md` authorizes only `M1A_G1_EXISTING_TRUST_ASSETS_BOUNDED_READ_ONLY_ASSESSMENT` in the already-open local Codex/Windows session. Scope: source-grounded existing asset locators and relevant metadata only; no secret content, broad scans, source edits, tests/build/runtime/transport, protected reads or configuration changes. The task prompt and decision receipt are [here](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-25-M1A-G1-OWNER-DECISION-EXISTING-TRUST-ASSETS-READONLY-ASSESSMENT-RECEIPT.md).
+
+```text
+ACTIVE_TASK=M1A_G1_EXISTING_TRUST_ASSETS_BOUNDED_READ_ONLY_ASSESSMENT
+AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED_UNTIL_LOCATOR_EVIDENCE
+G1=G2=G3=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+GOVERNANCE=KEEP_BLOCKED
+PROTECTED_READS=FAIL_CLOSED
+BRIDGE=BRIDGE_NOT_READY
+AUTOMATIC_FOLLOW_ON=FALSE
+NEXT_ACTION=PERFORM_ONE_BOUNDED_EXISTING_TRUST_ASSET_READ_ONLY_ASSESSMENT_IN_EXISTING_CODEX_SESSION
+```
+
+
+## Previous task result — bounded source-organ remediation (2026-10-24)
 
 Receipt: [bounded source-organ remediation static review](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-24-M1A-G1-BOUNDED-SOURCE-REMEDIATION-STATIC-REVIEW-RECEIPT.md).
 
