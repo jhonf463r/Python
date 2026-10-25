@@ -5,27 +5,30 @@
 - Live-main baseline used for this reconciled handoff revision: `74b47561ebddfc113bd8cf869430c3991f206003` (refreshed immediately before the documentation-branch updates; later main SHAs must be fetched anew).
 - This is a continuity/handoff document, not a new implementation authorization. CURRENT-STATE.md remains the sole route authority.
 
-## CURRENT ROUTE — candidate diff bytes reviewed; pre-task baseline provenance remains unresolved (2026-10-25)
+## CURRENT ROUTE — independent clones confirmed; current working-tree delta is the next evidence action (2026-10-25)
 
-The Owner-supplied ZIP is now available in this ChatGPT session. ZIP SHA-256 `915efa1541aab2546522261a8c60bfa00e4004809156cdd5cfd50b01f9620c33` and embedded diff SHA-256 `6950fb87dcd6f57573f88bbd58b0b880bd0437e69eb5830d9f55a22ad9aa5f93` were independently recomputed and match the manifest/expected digest. The diff contains 8 paths, 2,427 physical patch lines, 473 added lines and 156 deleted lines.
+The Owner-supplied Windows Codex diagnostic reports that the pre-task-labelled and candidate-labelled directories are independent Git clones with distinct `.git`/Git-common directories and separate worktrees. They share reported HEAD `6bc568e1c5a898afd65cc045c779c25a9cdc5489` and branch `codex/m1a-g1-owner-governed-bootstrap-organ-20261024`; the six tracked files in the eight-row table have matching index blobs, while the eight listed working-tree file hashes and NTFS IDs differ. The two clones therefore have different present working-tree contents; this does not establish when or by whom the differences were introduced.
 
-The bytes are intact, but the patch uses absolute paths to temporary pre-task/candidate directories. The manifest's declared base is `fed7d50926a0c09b2fdd2e9d00cc71fa05a3e6d7`; the reported candidate HEAD `6bc568e1c5a898afd65cc045c779c25a9cdc5489` is not fetchable from GitHub. Several old-side path/blob identifiers do not reconcile with the declared tracked Git tree, and the ZIP lacks the full pre-task source snapshot needed to resolve whether the difference is due to a local/sparse/dirty checkout or an incorrectly declared base. This is a provenance blocker, not proof of corruption. See [the independent diff review receipt](./CHAT-ARCH-2026-10-25-M1A-G1-INDEPENDENT-STATIC-REVIEW-DIFF-PROVENANCE-BLOCKER-RECEIPT.md).
+No Dropbox root or filesystem alias was confirmed in the paths inspected. Dropbox/other sync remains `UNKNOWN`; do not attribute the divergence to Dropbox without evidence. The diagnostic also names `github_owner_merge_bootstrap.py` as a third `MM` path, but that path is absent from the eight-row table. Reconcile the union of Git status paths before preparing another review artifact. See [the independent-clone/worktree diagnostic receipt](./CHAT-ARCH-2026-10-25-M1A-G1-INDEPENDENT-CLONES-WORKTREE-DIVERGENCE-DIAGNOSTIC-RECEIPT.md).
 
 ```text
 PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
-LAST_TERMINAL_TASK=M1A_G1_INDEPENDENT_STATIC_REVIEW_OF_INTEGRATED_ORGAN_CANDIDATE_20261025
-LAST_TERMINAL_RESULT=PARTIAL_STATIC_REVIEW; ACCEPTANCE_BLOCKED_BY_UNRECONCILED_PRETASK_BASELINE
+LAST_TERMINAL_TASK=M1A_G1_DIAGNOSE_SHARED_CHECKOUT_AND_FILESYNC_RELATIONSHIP_20261025
+LAST_TERMINAL_RESULT=INDEPENDENT_REPOSITORIES_CONFIRMED; WORKTREE_CHANGES_EXPLAINED; OWNER_SUPPLIED_CODEX_REPORT
 ACTIVE_TASK=M1A_G1_RECONCILE_CANDIDATE_PRETASK_DIFF_PROVENANCE_20261025
-ACTIVE_TASK_STATUS=PREPARE_ONE_PRODUCER_GENERATED_CORRECTED_EVIDENCE_PACKAGE; NO_SOURCE_EDIT
-EVIDENCE_ZIP_SHA256=915efa1541aab2546522261a8c60bfa00e4004809156cdd5cfd50b01f9620c33
-CANDIDATE_DIFF_SHA256=6950fb87dcd6f57573f88bbd58b0b880bd0437e69eb5830d9f55a22ad9aa5f93
-CANDIDATE_HEAD=6bc568e1c5a898afd65cc045c779c25a9cdc5489; REPORTED_LOCAL; NOT_FETCHABLE_ON_GITHUB
-DECLARED_BASE=fed7d50926a0c09b2fdd2e9d00cc71fa05a3e6d7; RELATION_TO_PRETASK_TREE_UNRECONCILED
-PATCH_PATHS=8; PHYSICAL_LINES=2427; ADDED=473; DELETED=156
-PATCH_FORMAT=ABSOLUTE_TEMP_PATHS; NOT_REPOSITORY_RELATIVE
-CODEX_REPORTED_TESTS=264_PASS; NOT_INDEPENDENTLY_VERIFIED
-TESTS_BUILD_RUNTIME_MCP_TRANSPORT=NOT_RUN_BY_REVIEW
-AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+ACTIVE_TASK_STATUS=CURRENT_TREE_DELTA_AND_PRESERVATION_PACKAGE_REQUIRED; NO_SOURCE_EDIT
+CANDIDATE_HEAD=6bc568e1c5a898afd65cc045c779c25a9cdc5489; OWNER_REPORTED_LOCAL
+DECLARED_BASE=fed7d50926a0c09b2fdd2e9d00cc71fa05a3e6d7; HISTORICAL_PRETASK_RELATION_UNVERIFIED
+REPOSITORIES=INDEPENDENT_CLONES_CONFIRMED
+INDEX_BLOBS=MATCH_REPORTED_FOR_SIX_TRACKED_PATHS
+WORKTREE_CONTENTS=DIVERGENT_REPORTED; EIGHT_PATHS_LISTED
+UNTRACKED_PATHS=2_REPORTED
+DROPBOX_OR_SYNC=UNKNOWN
+PATH_INVENTORY=RECONCILE_GITHUB_OWNER_MERGE_BOOTSTRAP_PY_MENTION
+ORIGINAL_ZIP_SHA256=915efa1541aab2546522261a8c60bfa00e4004809156cdd5cfd50b01f9620c33
+ORIGINAL_DIFF_SHA256=6950fb87dcd6f57573f88bbd58b0b880bd0437e69eb5830d9f55a22ad9aa5f93
+NEXT_ACTION=PRODUCER_GENERATE_ONE_CURRENT_DIRECTORY_TO_DIRECTORY_DELTA_AND_PRESERVATION_PACKAGE
+NEXT_ACTION_SEMANTICS=CURRENT_TREE_DELTA_ONLY; NOT_HISTORICAL_TASK_ATTRIBUTION
 G1=NOT_ESTABLISHED
 G2=NOT_ESTABLISHED
 G3_SAME_OBJECT=NOT_ESTABLISHED
@@ -34,11 +37,9 @@ PROTECTED_READS=FAIL_CLOSED
 PRODUCT_STAGE_COMMIT_PUSH_MERGE=NOT_AUTHORIZED
 AUTOMATIC_FOLLOW_ON=FALSE
 HANDOFF=PREPARED_NOT_SENT
-NEXT_ACTION=PRODUCER_REGENERATE_ONE_REPOSITORY_RELATIVE_DIFF_PACKAGE_WITH_VERIFIED_BASELINE_PROVENANCE
-NEXT_TASK_STOP_CONDITION=NO_SOURCE_EDIT; NO_TESTS; NO_GATE_RELEASE; STOP_IF_BASELINE_REMAINS_UNPROVABLE
 ```
 
-The current technical candidate remains unaccepted. This routing update does not establish trust authority, enable protected reads or authorize product-stage source changes.
+Do not perform more Dropbox/synchronization searches or repeat the source implementation/tests just to fill the provenance gap. The next evidence action is a direct, repository-relative comparison of the two surviving directory trees with staged/unstaged/untracked state preserved separately. It can establish the current tree-to-tree delta, not the historical task-only delta without a contemporaneous pre-task receipt.
 
 
 ## Historical transition — prior G3 static review failure before the remediation attempt (2026-10-25)
