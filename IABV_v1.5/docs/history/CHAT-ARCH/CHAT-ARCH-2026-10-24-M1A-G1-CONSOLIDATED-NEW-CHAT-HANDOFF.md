@@ -245,3 +245,19 @@ AUTOMATIC_FOLLOW_ON=FALSE
 ```
 
 Live `main` was revalidated as `2cecd5e9b9e175584d65bbb1198a53bc2346d095`. Its canonical `CURRENT-STATE.md` still selects the Owner-controlled bootstrap/issuer-boundary task. The proposed route and receipts are only on documentation PR #493, which remains unmerged. No tests, runtime, credentials, host/OS provisioning, source-candidate change or protected read occurred in this ChatGPT turn.
+
+
+## 13. Proposal-branch route-summary correction status
+
+After the Mente audit, the first routing code block in `README.md`, `CONTEXT-INDEX.md` and `MEMORY-OPERATING-PROTOCOL.md` was edited on this documentation branch so it no longer presents the terminal root-review task as the current route. Those summaries now direct the reader to fetch live `refs/heads/main` and derive the next action from `CURRENT-STATE.md` only. `AGENTS.md` was not changed and remains a known stale-summary remainder. This is a 3-of-4 proposal correction, not a canonical protocol update.
+
+Exact status remains:
+```text
+PROPOSAL_BRANCH=docs/iabv-transcript-route-intake-calibration-20261024
+PR=493; OPEN; UNMERGED
+FRONT_DOOR_ROUTE_SUMMARIES_NEUTRALIZED=3_OF_4
+AGENTS_MD_REMAINS=KNOWN_REMAINDER
+LIVE_MAIN=2cecd5e9b9e175584d65bbb1198a53bc2346d095; UNCHANGED_BY_THIS_WORK
+```
+
+Do not call the route-summary repair complete or canonical until the remaining summary issue is reconciled, the proposal is reviewed/authorized for merge, and the adopted content is fetched back from live main.
