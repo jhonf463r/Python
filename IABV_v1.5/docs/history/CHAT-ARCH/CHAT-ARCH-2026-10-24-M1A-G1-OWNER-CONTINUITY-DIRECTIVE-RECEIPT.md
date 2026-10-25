@@ -69,7 +69,7 @@ The next bounded evidence action remains to obtain the complete exact staged and
 
 The Owner's new directive is now recorded as a priority for project continuity. It does **not** replace the current task or permit automatic follow-on. After the exact R-03 bundle is complete and reviewed, reconcile the scope against live `CURRENT-STATE.md` before starting the separate continuity workstream.
 
-### Priority P0 — finish the active source-evidence review
+### Priority P0 — initial status when this receipt was drafted (updated by the follow-up below)
 
 - Obtain every exact diff hunk and the required status/hash/numstat evidence for the three R-03 paths.
 - Keep candidate-local facts `OWNER_REPORTED` unless independently observed.
