@@ -1,5 +1,5 @@
 <!-- Terminal transition: 2026-10-25. CURRENT-STATE.md remains the sole routing authority. -->
-## CURRENT ROUTE — one bounded independent G3 static review authorized; exact task artifacts pending (2026-10-25)
+## CURRENT ROUTE — remove manual artifact-transfer loop; prepare one machine-generated G3 review bundle (2026-10-25)
 
 The single authorized task `M1A_G1_G3_INTEGRATED_AUTHORIZATION_TO_HANDLE_SOURCE_CANDIDATE_20261025` returned `PARTIAL_G3_HANDLE_CONTRACT_SOURCE_ONLY`, according to the Owner-supplied Codex terminal report. The report claims a source-level capability binding from opened target through decision, permission, guard and reader helper, plus focused source-test authoring. Those source claims have not been independently reviewed here because the listed diff artifacts are Windows-local paths not accessible in this reconciliation session.
 
@@ -8,13 +8,21 @@ Prior terminal blocker: [native-handle authorization-binding blocker](./CHAT-ARC
 
 The report explicitly leaves `APPROVED_WORKSPACE_ROOT_UNAVAILABLE`, native Windows ABI/filesystem semantics unvalidated, and all tests/build/runtime/MCP/transport unrun. Therefore `G3_SAME_OBJECT=NOT_ESTABLISHED`; a source-only candidate must not be promoted to canonical code or used to enable protected reads. Reported local state/hashes remain `OWNER_SUPPLIED_CODEX_REPORT`, not direct observations by this reconciliation.
 
-The Owner explicitly authorized one bounded independent static review in chat on 2026-10-25. The review is not yet started: the exact six task-diff artifacts and preservation evidence must first be made accessible. The available Library files named staged.diff.txt and unstaged.diff.txt are not verified as the six task-diff artifacts and must not be substituted for them. This authorization does not permit a new implementation attempt, code modification, test/build/runtime execution, publication, root/authority provisioning, or G3 gate release.
+The Owner authorized one bounded independent static review. The preceding interaction exposed a coordination defect: the report's exact diffs existed in the producing Windows/Codex environment, but the assistant shifted bundle assembly to the Owner instead of first asking that producer to create one machine-generated evidence ZIP. The live Space-Time protocol is being evolved in place to revision 2.1 to prevent that avoidable loop. The known Library staged.diff.txt and unstaged.diff.txt are not the six task-specific diffs and are not substitutes. The repository jhonf463r/Python is public, so a deleted branch/PR cannot be treated as automatic expiry; the safe default is a local ZIP created by the existing Codex session, outside the checkout, and one upload only if no supported private route delivers it. No source code/test/build/runtime changes are authorized; G3 stays unestablished and protected reads fail-closed.
 
 ~~~text
 PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
-ACTIVE_TASK=M1A_G1_OBTAIN_EXACT_TASK_DIFF_ARTIFACTS_FOR_ONE_BOUNDED_STATIC_REVIEW
+ACTIVE_TASK=M1A_G1_PREPARE_SINGLE_G3_REVIEW_EVIDENCE_BUNDLE_20261025
 LAST_TERMINAL_TASK=M1A_G1_G3_INTEGRATED_AUTHORIZATION_TO_HANDLE_SOURCE_CANDIDATE_20261025
 LAST_TERMINAL_RESULT=PARTIAL_G3_HANDLE_CONTRACT_SOURCE_ONLY; OWNER_SUPPLIED_CODEX_REPORT; SOURCE_ARTIFACTS_NOT_INDEPENDENTLY_REVIEWED
+PROTOCOL_DELTA=REVISION_2_1; SECTIONS_9_12_2_26_4_EVOLVED_IN_PLACE
+COORDINATION_LESSON=ASSISTANT_SHIFTED_BUNDLE_ASSEMBLY_TO_OWNER; CORRECTED_IN_PROTOCOL
+STATIC_REVIEW=AUTHORIZED_ONCE; NOT_STARTED
+REVIEW_ARTIFACTS=EXACT_SIX_TASK_DIFFS; PREEXISTING_STAGED_UNSTAGED_DIFFS; INITIAL_FINAL_STATUS; HASH_MANIFEST
+ARTIFACT_CAPTURE=EXISTING_CODEX_SESSION; READ_ONLY; ZIP_OUTSIDE_CHECKOUT
+ARTIFACT_TRANSPORT=SUPPORTED_PRIVATE_ROUTE_FIRST; SINGLE_ZIP_UPLOAD_FALLBACK
+PUBLIC_GITHUB_REPOSITORY=PUBLIC; TEMPORARY_DELETION_NOT_ASSUMED_TO_ERASE_HISTORY
+CODEX_DISPATCH=NOT_AVAILABLE_FROM_THIS_CHAT; INLINE_PROMPT_PREPARED_NOT_SENT
 OWNER_DECISION=EXPLICIT_IN_CHAT; ONE_BOUNDED_INDEPENDENT_STATIC_REVIEW; 2026-10-25
 STATIC_REVIEW=AUTHORIZED_ONCE; NOT_STARTED
 REVIEW_ARTIFACTS=EXACT_SIX_TASK_DIFFS; PRESERVATION_DIFFS; INITIAL_FINAL_STATUS; HASH_MANIFEST
@@ -46,7 +54,7 @@ REAL_TRANSPORT=NOT_RUN
 COST_POLICY=ZERO_BUDGET
 PRODUCT_STAGE_COMMIT_PUSH_MERGE=NOT_AUTHORIZED
 AUTOMATIC_FOLLOW_ON=FALSE
-NEXT_ACTION=OBTAIN_EXACT_SIX_TASK_DIFF_ARTIFACTS_AND_PRESERVATION_EVIDENCE_FOR_AUTHORIZED_STATIC_REVIEW
+NEXT_ACTION=ISSUE_ONE_BOUNDED_ARTIFACT_CAPTURE_PROMPT_INLINE_TO_EXISTING_WINDOWS_CODEX_SESSION; WAIT_FOR_BUNDLE
 NEXT_REVIEW_TARGET=DIFFS_VS_TASK_ACCEPTANCE; OPENED_CAPABILITY_BINDING; ROOT_DENIAL; HANDLE_OWNERSHIP; NATIVE_ABI_LIMITATIONS
 STOP_CONDITION=NO_IMPLEMENTATION_OR_GATE_RELEASE_WITHOUT_SEPARATE_EXPLICIT_AUTHORIZATION_AND_NEW_EVIDENCE
 ~~~

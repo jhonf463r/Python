@@ -67,22 +67,26 @@ The latest authorized source-candidate task is terminal:
 
 - Task: `M1A_G1_G3_INTEGRATED_AUTHORIZATION_TO_HANDLE_SOURCE_CANDIDATE_20261025`
 - Result: `PARTIAL_G3_HANDLE_CONTRACT_SOURCE_ONLY`, according to the Owner-supplied Codex terminal report.
-- Source delta reported: six files, `+798/-48`; final source hashes, diff count and local worktree details remain `OWNER_SUPPLIED_CODEX_REPORT` until exact bytes are received and independently checked.
-- The report states `APPROVED_WORKSPACE_ROOT_UNAVAILABLE`; the report does not establish a production provider for the approved root identity.
-- Native Windows ABI and filesystem semantics were not runtime-validated. Source tests were authored but not run; tests, build, runtime, MCP, real transport and protected reads were not executed.
-- The Owner has explicitly authorized one bounded independent static review. That review has not started because the exact six task-diff artifacts and preservation evidence remain inaccessible here.
-- No product-source modification, test execution, runtime action, publication, or gate release is authorized by the review decision.
+- Reported source delta: six files, `+798/-48`; hashes and worktree preservation claims remain `OWNER_SUPPLIED_CODEX_REPORT` until exact bytes are independently checked.
+- The report states `APPROVED_WORKSPACE_ROOT_UNAVAILABLE`; native Windows ABI/filesystem semantics were not runtime-validated.
+- The Owner authorized exactly one bounded independent static review; it is still not started because exact artifacts are not available on the review surface.
 
-The current route is:
+The interaction itself yielded a protocol correction. The assistant correctly refused to substitute older, similarly named staged/unstaged Library files, but asked the Owner to upload/assemble a ZIP before directing the producing Windows Codex session to package its already-local diffs. This unnecessarily shifted work to the Owner. Living protocol revision 2.1 corrects the source-owned artifact handoff in place. The verified repository `jhonf463r/Python` is public; a public branch/PR should not be called temporary merely because it can be deleted. The preferred route is one source-generated ZIP outside the checkout, through a supported private route if one exists, or one upload of that single ZIP when no such route exists.
+
+Current route:
 
 ~~~text
-ACTIVE_TASK=M1A_G1_OBTAIN_EXACT_TASK_DIFF_ARTIFACTS_FOR_ONE_BOUNDED_STATIC_REVIEW
+ACTIVE_TASK=M1A_G1_PREPARE_SINGLE_G3_REVIEW_EVIDENCE_BUNDLE_20261025
 LAST_TERMINAL_TASK=M1A_G1_G3_INTEGRATED_AUTHORIZATION_TO_HANDLE_SOURCE_CANDIDATE_20261025
 LAST_TERMINAL_RESULT=PARTIAL_G3_HANDLE_CONTRACT_SOURCE_ONLY; OWNER_SUPPLIED_CODEX_REPORT; SOURCE_ARTIFACTS_NOT_INDEPENDENTLY_REVIEWED
 OWNER_DECISION=EXPLICIT_IN_CHAT; ONE_BOUNDED_INDEPENDENT_STATIC_REVIEW; 2026-10-25
+PROTOCOL_DELTA=REVISION_2_1; SECTIONS_9_12_2_26_4_EVOLVED_IN_PLACE
 STATIC_REVIEW=AUTHORIZED_ONCE; NOT_STARTED
-REVIEW_ARTIFACTS=EXACT_SIX_TASK_DIFFS; PRESERVATION_DIFFS; INITIAL_FINAL_STATUS; HASH_MANIFEST
-ARTIFACT_STATUS=EXACT_TASK_DIFFS_NOT_YET_ACCESSIBLE
+REVIEW_ARTIFACTS=EXACT_SIX_TASK_DIFFS; PREEXISTING_STAGED_UNSTAGED_DIFFS; INITIAL_FINAL_STATUS; HASH_MANIFEST
+ARTIFACT_CAPTURE=EXISTING_CODEX_SESSION; READ_ONLY; ZIP_OUTSIDE_CHECKOUT
+ARTIFACT_TRANSPORT=SUPPORTED_PRIVATE_ROUTE_FIRST; SINGLE_ZIP_UPLOAD_FALLBACK
+PUBLIC_GITHUB_REPOSITORY=PUBLIC; TEMPORARY_DELETION_NOT_ASSUMED_TO_ERASE_HISTORY
+CODEX_DISPATCH=NOT_AVAILABLE_FROM_THIS_CHAT; INLINE_PROMPT_PREPARED_NOT_SENT
 SOURCE_CHANGES_REPORTED=6_FILES; +798/-48; HASHES_REPORTER_SUPPLIED
 SOURCE_TESTS=AUTHORED; NOT_RUN
 CANDIDATE_WORKTREE_STATUS=OWNER_SUPPLIED_CODEX_REPORT; NOT_INDEPENDENTLY_OBSERVED
@@ -109,12 +113,12 @@ MCP=NOT_RUN
 REAL_TRANSPORT=NOT_RUN
 COST_POLICY=ZERO_BUDGET
 AUTOMATIC_FOLLOW_ON=FALSE
-NEXT_ACTION=OBTAIN_EXACT_TASK_DIFF_ARTIFACTS_AND_PRESERVATION_EVIDENCE
-NEXT_REVIEW_TARGET=DIFFS_VS_TASK_ACCEPTANCE; OPENED_CAPABILITY_BINDING; ROOT_DENIAL; HANDLE_OWNERSHIP; NATIVE_ABI_LIMITATIONS
-STOP_CONDITION=NO_IMPLEMENTATION_OR_GATE_RELEASE_WITHOUT_SEPARATE_EXPLICIT_AUTHORIZATION_AND_NEW_EVIDENCE
+NEXT_ACTION=ISSUE_ONE_BOUNDED_ARTIFACT_CAPTURE_PROMPT_INLINE_TO_EXISTING_WINDOWS_CODEX_SESSION; WAIT_FOR_BUNDLE
+NEXT_REVIEW_TARGET=DIFFS_VS_TASK_ACCEPTANCE; OPENED_CAPABILITY_BINDING; ROOT_DENIAL; HANDLE_OWNERSHIP; NATIVE_ABI_LIMITATIONS; PRESERVATION
+STOP_CONDITION=NO_SOURCE_MODIFICATION_OR_GATE_RELEASE; NO_PUBLICATION_OF_UNREVIEWED_DIFFS_BY_DEFAULT
 ~~~
 
-The review decision authorizes inspection of the exact source diffs only. It does not prove the reported source claims, approve any changed implementation, close a prerequisite, or permit another implementation task. Do not substitute previously saved staged/unstaged diffs for the six task-specific diff artifacts; verify byte identity and preservation evidence first.
+This protocol change improves the coordination method, not the source implementation or trust boundary. It does not claim that the prompt has been sent, that Codex delivered the packet, that the review ran, or that model weights learned.
 ## 3. Chronology of this session and adopted decisions
 
 ### A. Space-Time operating protocol evolves to revision 2.0
