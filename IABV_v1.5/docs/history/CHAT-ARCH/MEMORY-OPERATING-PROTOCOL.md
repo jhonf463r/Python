@@ -4,6 +4,8 @@
 
 The bounded read-only assessment is terminal for its authorized scope. In the files examined, no source-grounded locator was found for local trust-asset metadata; Windows certificate stores, key containers, services, ACLs and named pipes were not inspected. This does not prove global absence. The Owner's records do not identify a qualifying independent authority; Entra/Authenticator remains Owner-reported and is not trusted by IABV. Do not repeat the asset inventory, closed TPM path, Entra setup, source review, or source micro-patches. Wait for genuinely new independently verifiable authority/mandate/binding evidence or a new explicit Owner decision. See [terminal-task routing correction](./CHAT-ARCH-2026-10-25-TERMINAL-TASK-ROUTER-TRANSITION-CORRECTION.md).
 
+Living coordination method: revision 2.0 consolidates objective-bound Space-Time evidence, adaptive role selection, gated action chains and evidence-based rule evolution into the existing protocol. This is a coordination method, not a parallel orchestrator or a claim of model-weight training. See [the living protocol](./CHAT-ARCH-2026-10-23-CONTINUITY-SPACE-TIME-OPERATING-PROTOCOL-v1.md) and [revision receipt](./CHAT-ARCH-2026-10-25-SPACE-TIME-ADAPTIVE-NEUROPLASTICITY-REVISION-2-RECEIPT.md). It does not override the technical route in CURRENT-STATE.md.
+
 ```text
 PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
 ACTIVE_TASK=M1A_G1_WAIT_FOR_GENUINELY_NEW_INDEPENDENT_ROOT_AND_MANDATE_EVIDENCE
