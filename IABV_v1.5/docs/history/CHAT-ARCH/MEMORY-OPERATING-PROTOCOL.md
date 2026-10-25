@@ -1,5 +1,54 @@
+<!-- Terminal transition: 2026-10-25. CURRENT-STATE.md remains the sole routing authority. -->
+## CURRENT ROUTE — integrated G3 source candidate returned partial result; independent review awaits exact artifacts and Owner decision (2026-10-25)
+
+The single authorized task `M1A_G1_G3_INTEGRATED_AUTHORIZATION_TO_HANDLE_SOURCE_CANDIDATE_20261025` returned `PARTIAL_G3_HANDLE_CONTRACT_SOURCE_ONLY`, according to the Owner-supplied Codex terminal report. The report claims a source-level capability binding from opened target through decision, permission, guard and reader helper, plus focused source-test authoring. Those source claims have not been independently reviewed here because the listed diff artifacts are Windows-local paths not accessible in this reconciliation session.
+
+Terminal receipt: [integrated authorization-to-handle partial-candidate receipt](./CHAT-ARCH-2026-10-25-M1A-G1-G3-INTEGRATED-AUTHORIZATION-TO-HANDLE-PARTIAL-CANDIDATE-RECEIPT.md).
+Prior terminal blocker: [native-handle authorization-binding blocker](./CHAT-ARCH-2026-10-25-M1A-G1-G3-NATIVE-HANDLE-AUTHORIZATION-BINDING-BLOCKER-RECEIPT.md).
+
+The report explicitly leaves `APPROVED_WORKSPACE_ROOT_UNAVAILABLE`, native Windows ABI/filesystem semantics unvalidated, and all tests/build/runtime/MCP/transport unrun. Therefore `G3_SAME_OBJECT=NOT_ESTABLISHED`; a source-only candidate must not be promoted to canonical code or used to enable protected reads. Reported local state/hashes remain `OWNER_SUPPLIED_CODEX_REPORT`, not direct observations by this reconciliation.
+
+The next route is a wait state for the six complete task diff artifacts to be made available for a separate bounded static review, plus an explicit Owner decision authorizing that review. This is not permission to start another implementation attempt. No root/authority provisioning, code publication, tests, runtime or gate release is authorized.
+
+~~~text
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+ACTIVE_TASK=M1A_G1_WAIT_FOR_OWNER_DECISION_ON_INDEPENDENT_REVIEW_OF_INTEGRATED_G3_CANDIDATE_OR_KEEP_BLOCKED
+LAST_TERMINAL_TASK=M1A_G1_G3_INTEGRATED_AUTHORIZATION_TO_HANDLE_SOURCE_CANDIDATE_20261025
+LAST_TERMINAL_RESULT=PARTIAL_G3_HANDLE_CONTRACT_SOURCE_ONLY; OWNER_SUPPLIED_CODEX_REPORT; SOURCE_ARTIFACTS_NOT_INDEPENDENTLY_REVIEWED
+SOURCE_CHANGES_REPORTED=6_FILES; +798/-48; HASHES_REPORTER_SUPPLIED
+SOURCE_TESTS=AUTHORED; NOT_RUN
+CANDIDATE_WORKTREE_STATUS=OWNER_SUPPLIED_CODEX_REPORT; NOT_INDEPENDENTLY_OBSERVED
+APPROVED_WORKSPACE_ROOT=UNAVAILABLE_IN_REPORTED_COMPOSITION
+WORKSPACE_ROOT_IDENTITY_BOUND_TO_APPROVED_POLICY=NOT_ESTABLISHED
+NATIVE_WINDOWS_SEMANTICS=NOT_RUNTIME_VALIDATED
+AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+QUALIFYING_INDEPENDENT_ROOT=NOT_ESTABLISHED
+OWNER_TO_WINDOWS_PRINCIPAL=NOT_ESTABLISHED
+BOOTSTRAP_AUTHORITY_TO_ISSUER=NOT_ESTABLISHED
+ISSUER_TO_EXACT_SERVER=NOT_ESTABLISHED
+DURABLE_REPLAY_AND_ROLLBACK_PROTECTION=NOT_ESTABLISHED
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3_SAME_OBJECT=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+GOVERNANCE=KEEP_BLOCKED
+PROTECTED_READS=FAIL_CLOSED
+BRIDGE=BRIDGE_NOT_READY
+TESTS=NOT_RUN
+BUILD=NOT_RUN
+RUNTIME=NOT_RUN
+MCP=NOT_RUN
+REAL_TRANSPORT=NOT_RUN
+COST_POLICY=ZERO_BUDGET
+PRODUCT_STAGE_COMMIT_PUSH_MERGE=NOT_AUTHORIZED
+AUTOMATIC_FOLLOW_ON=FALSE
+NEXT_ACTION=OBTAIN_EXACT_SIX_DIFF_ARTIFACTS_AND_OWNER_DECISION_FOR_ONE_BOUNDED_STATIC_REVIEW
+NEXT_REVIEW_TARGET=DIFFS_VS_TASK_ACCEPTANCE; OPENED_CAPABILITY_BINDING; ROOT_DENIAL; HANDLE_OWNERSHIP; NATIVE_ABI_LIMITATIONS
+STOP_CONDITION=NO_IMPLEMENTATION_OR_GATE_RELEASE_WITHOUT_SEPARATE_EXPLICIT_AUTHORIZATION_AND_NEW_EVIDENCE
+~~~
+
 <!-- Owner decision transition: 2026-10-25. CURRENT-STATE.md is the sole route authority. -->
-## CURRENT ROUTE — integrated G3 authorization-to-handle source candidate authorized; handoff pending (2026-10-25)
+## HISTORICAL ROUTE SNAPSHOT — integrated G3 authorization-to-handle source candidate authorized; prior decision state (2026-10-25)
 
 The Owner explicitly authorized one integrated source-only G3 candidate after first auditing and reconciling the Mente Espacio-Tiempo continuity records. This route update records that decision and corrects stale front-door summaries; it does not claim Codex has received the prompt or that implementation has started.
 
