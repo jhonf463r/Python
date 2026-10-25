@@ -4501,6 +4501,9 @@ This is a deliberate handoff: source evidence → human semantics → independen
 
 Do not let the implementation actor silently decide the domain semantics.
 
+
+- **Static-review result for Owner bootstrap boundary (2026-10-24):** supplied staged/unstaged diffs were reviewed. The helper `validate_owner_bootstrap_evidence()` accepts a syntactically valid but challenge-unbound `manifest_sha256`; the positive fixture literally uses `"e"*64`. It also omits checking `manifest_git_blob_sha` format and a positive integer `pull_request_number`. Next action: correct the manifest digest equality and metadata validations, add rejection tests, preserve the dirty candidate, and do not execute tests/build/runtime. Review receipt: `CHAT-ARCH-2026-10-24-M1A-G1-bootstrap-boundary-static-review-receipt.md`.
+
 ## 2026-10-08 METHOD AMENDMENT — MINIMUM-REPAIR ADVERSARIAL CYCLE
 
 When an adversarial semantic review finds real defects, do not automatically import the reviewer's full ontology into the project.
