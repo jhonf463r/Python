@@ -31,9 +31,9 @@ BRIDGE=BRIDGE_NOT_READY
 AUTOMATIC_FOLLOW_ON=FALSE
 ```
 
-## Newer terminal transition — G3 static review failed; remediation decision pending (2026-10-25)
+## Historical transition — prior G3 static review failure before the remediation attempt (2026-10-25)
 
-**This transition supersedes the old “ZIP transfer pending / static review not started” route in the snapshots below.** The prior review report supplied by the Owner says the evidence ZIP and all manifest-listed member hashes were independently verified, and returns `FAIL_STATIC_REVIEW_SOURCE_CONTRACT`. This documentary reconciliation records that result but did not re-open the raw ZIP bytes.
+**Historical snapshot; superseded by the current terminal route above.** At that earlier point, the prior review report supplied by the Owner stated that the evidence ZIP and all manifest-listed member hashes were independently verified and returned `FAIL_STATIC_REVIEW_SOURCE_CONTRACT`. That documentary reconciliation did not re-open the raw ZIP bytes.
 
 Receipt: [G3 static-review failure receipt](./CHAT-ARCH-2026-10-25-M1A-G1-G3-STATIC-REVIEW-FAIL-RECEIPT.md).
 

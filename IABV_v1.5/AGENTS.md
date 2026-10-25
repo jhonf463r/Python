@@ -50,8 +50,8 @@ AUTOMATIC_FOLLOW_ON=FALSE
 
 A source-only task cannot establish G1/G2 or real Windows semantics by itself. Protected reads remain denied. The current route is a wait state for a specific evidence dependency, not a claim that all possible trust assets are absent.
 
-<!-- Owner authorization transition: 2026-10-25. CURRENT-STATE.md remains the sole routing authority. -->
-## CURRENT ROUTE — one bounded G3 source remediation authorized; result pending (2026-10-25)
+<!-- Historical route snapshot superseded by terminal G3 provider-blocker result, 2026-10-25. -->
+## HISTORICAL ROUTE SNAPSHOT — one bounded G3 source remediation authorized; prior decision state (2026-10-25)
 
 The Owner explicitly authorized exactly one integrated G3 source-remediation task in the current conversation. This route update reconciles that decision into the canonical front doors; it does not claim that Codex received the handoff, that source edits occurred, or that the candidate passed review.
 
