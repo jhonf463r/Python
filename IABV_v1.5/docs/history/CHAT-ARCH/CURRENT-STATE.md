@@ -1,8 +1,8 @@
 <!-- Owner-authorized route transition: 2026-10-25. CURRENT-STATE.md remains the sole route authority. -->
 
-## CURRENT ROUTE — M1B result received; narrow static review favorable; canonical reconciliation PR open; source candidate unintegrated (2026-10-25)
+## CURRENT ROUTE — M1B result received; narrow static review favorable; canonical reconciliation merged; fetch-back verified; post-merge status correction pending; source candidate unintegrated (2026-10-25)
 
-The Owner explicitly authorized this documentation-only reconciliation after the M1B result was supplied. The M1A and M1B source candidates remain isolated, unmerged candidates and are not part of `main`. No product source changes are included in this documentation route.
+The Owner explicitly authorized this documentation-only reconciliation after the M1B result was supplied. PR #526 was squash-merged as `452961e4c2d26a2a675eebf1ce97808149fbdce1`, and all five canonical front doors were fetched back from live `main`. A follow-up documentation PR corrects route-status wording that remained stale after that merge. The M1A and M1B source candidates remain isolated, unmerged candidates and are not part of `main`. No product source changes are included in this documentation route.
 
 ### M1B result and evidence classification
 
@@ -22,11 +22,11 @@ PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
 LAST_TERMINAL_TASK=M1B_G1_OPENED_TARGET_CAPABILITY_CLOSE_RETRY_FIX_20261025
 LAST_TERMINAL_RESULT=SOURCE_CANDIDATE_ONLY; CODEX_REPORTED_17_TESTS_PASSED; NARROW_STATIC_REVIEW_FAVORABLE
 ACTIVE_TASK=M1C_G1_CANONICAL_RECONCILIATION_AFTER_M1B_20261025
-ACTIVE_TASK_STATUS=DOC_ONLY_PR_OPEN; NOT_MERGED
+ACTIVE_TASK_STATUS=M1C_PR_526_MERGED; FIVE_CANONS_FETCHED_BACK; POST_MERGE_STATUS_CORRECTION_PR_PENDING
 M1B_SOURCE_CANDIDATE_IN_MAIN=FALSE
 M1B_TESTS=17_REPORTED_PASS; NOT_RERUN_BY_CHATGPT
 M1B_STATIC_REVIEW=NARROW_FAVORABLE; NOT_WHOLE_ORGAN_ACCEPTANCE
-CANONICAL_RECONCILIATION=BRANCH_AND_PR_ONLY_UNTIL_MERGED_AND_FETCHED_BACK
+CANONICAL_RECONCILIATION=PR_526_MERGED; FIVE_CANONS_FETCHED_BACK_FROM_MAIN; POST_MERGE_ROUTE_WORDING_CORRECTION_PENDING
 DOC_ONLY_PR=https://github.com/jhonf463r/Python/pull/526
 PRODUCT_CODE_COMMIT_PUSH_MERGE=NOT_PERFORMED_BY_M1C
 G1=NOT_ESTABLISHED
@@ -36,7 +36,7 @@ IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
 AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
 PROTECTED_READS=FAIL_CLOSED
 AUTOMATIC_FOLLOW_ON=FALSE
-NEXT_ACTION=INDEPENDENT_REVIEW_OF_DOC_ONLY_PR; DO_NOT_MERGE_WITHOUT_OWNER_DECISION
+NEXT_ACTION=REVIEW_POST_MERGE_STATUS_CORRECTION_PR; NO_AUTOMATIC_FOLLOW_ON
 ```
 
 The next technical phase must be decided separately. At minimum, future work must assess governed integration of the source candidate, end-to-end binding of authorization to the exact opened object and consumer, and legitimate evidence for an approved workspace-root provider and authority chain. This documentation change establishes none of those properties and must not close any implementation prerequisite.
