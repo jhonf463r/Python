@@ -17,7 +17,7 @@ The existing Space-Time operating protocol is already a strong base: it requires
 
 ### A. Route-intake summaries conflict with the canonical router
 
-At the audited live-main baseline, the first sections of four other files—`AGENTS.md`, `README.md`, `CONTEXT-INDEX.md` and `MEMORY-OPERATING-PROTOCOL.md`—contained stale G1 front-matter summaries with `ACTIVE_TASK=M1A_G1_WAIT_FOR_INDEPENDENT_ROOT_EVIDENCE` and the old wait-for-root `NEXT_ACTION`. The live `CURRENT-STATE.md` at this same main SHA says `ACTIVE_TASK=M1A_G1_OWNER_CONTROLLED_BOOTSTRAP_ISSUER_BOUNDARY` and `NEXT_ACTION=CONTINUE_EXISTING_LOCAL_CANDIDATE_WITH_OWNER_CONTROLLED_BOOTSTRAP_ISSUER_BOUNDARY`. In this PR's documentation branch, the stale summary fields have now been neutralized in `README.md`, `CONTEXT-INDEX.md` and `MEMORY-OPERATING-PROTOCOL.md` so their route fields direct agents back to live `CURRENT-STATE.md`; `AGENTS.md` remains unchanged and is still a known stale-summary item. These branch edits are not canonical until an authorized merge and fetch-back.
+At the audited live-main baseline, the first sections of four other files—`AGENTS.md`, `README.md`, `CONTEXT-INDEX.md` and `MEMORY-OPERATING-PROTOCOL.md`—contained stale G1 front-matter summaries with `ACTIVE_TASK=M1A_G1_WAIT_FOR_INDEPENDENT_ROOT_EVIDENCE` and the old wait-for-root `NEXT_ACTION`. The live `CURRENT-STATE.md` at this same main SHA says `ACTIVE_TASK=M1A_G1_OWNER_CONTROLLED_BOOTSTRAP_ISSUER_BOUNDARY` and `NEXT_ACTION=CONTINUE_EXISTING_LOCAL_CANDIDATE_WITH_OWNER_CONTROLLED_BOOTSTRAP_ISSUER_BOUNDARY`. In this PR's documentation branch, all four stale summary blocks have now been neutralized so their route fields direct agents back to freshly fetched live `CURRENT-STATE.md`. These branch edits are not canonical until an authorized merge and fetch-back.
 
 Because the protocol correctly declares `CURRENT-STATE.md` the sole router, the stale summaries do not override the route. However, they create contradictory initial context and increase the chance that an agent copies a stale task before reading the canonical router. The correction should be minimal: make front-door summaries explicitly defer to the live `CURRENT-STATE.md`, or update their route summary only when the same change set reconciles all five files. Never let these mirrors become independent authorities.
 
@@ -96,8 +96,7 @@ This is an audit delta on a documentation branch. It does not change live-main r
 ```text
 LIVE_MAIN_AT_AUDIT=2cecd5e9b9e175584d65bbb1198a53bc2346d095
 STALE_SUMMARIES_OBSERVED_ON_LIVE_MAIN=4
-PROPOSAL_BRANCH_SUMMARIES_NEUTRALIZED=3; README.md, CONTEXT-INDEX.md, MEMORY-OPERATING-PROTOCOL.md
-AGENTS_MD_SUMMARY=UNCHANGED; KNOWN_REMAINDER
+PROPOSAL_BRANCH_SUMMARIES_NEUTRALIZED=4; AGENTS.md, README.md, CONTEXT-INDEX.md, MEMORY-OPERATING-PROTOCOL.md
 CANONICAL_FIX=NOT_ADOPTED; PR_493_OPEN_UNMERGED
 ```
 
