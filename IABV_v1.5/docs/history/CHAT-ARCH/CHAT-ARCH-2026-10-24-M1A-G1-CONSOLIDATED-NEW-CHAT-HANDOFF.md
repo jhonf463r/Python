@@ -125,3 +125,17 @@ Persisten `G1/G2/G3=NOT_ESTABLISHED`, ocho prerrequisitos abiertos y cero cerrad
 - Live canonical state at snapshot: [main CURRENT-STATE](https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CURRENT-STATE.md)
 - Documentation proposal: [PR #493](https://github.com/jhonf463r/Python/pull/493)
 - Consolidated static review receipt: [review receipt](./CHAT-ARCH-2026-10-24-M1A-G1-bootstrap-boundary-consolidated-static-review-receipt.md)
+
+
+## 9. Owner directive — make Mente Espacio-Tiempo continuity durable
+
+The Owner explicitly clarified that the **Mente Espacio-Tiempo** is the project-level memory/navigation/audit/causal-reasoning layer for the entire IABV effort, not a synonym for IABV's runtime learning algorithms. Its purpose is to preserve lessons across interactions and provide ChatGPT/Codex/other agents with the relevant verified state, dependencies, closed paths, evidence provenance, boundaries and next action at the start of each new chat.
+
+The Owner asked that this instruction and the entire material lesson from the latest interaction not be left in ephemeral chat. The corresponding candidate receipt is [Owner continuity directive receipt](./CHAT-ARCH-2026-10-24-M1A-G1-OWNER-CONTINUITY-DIRECTIVE-RECEIPT.md). It captures the following priorities:
+- **P0:** finish the exact current staged/unstaged R-03 diff bundle. The latest Codex response is `TASK_RESULT=SOURCE_REVIEW_BUNDLE_ONLY`, but `DIFFS_COMPLETE=NO`; parts 3–5 are summaries rather than all exact hunks. Keep same-object binding unestablished and protected reads fail-closed.
+- **P1:** after the R-03 exact-diff review and current-route reconciliation, audit the existing Space-Time continuity algorithms and chat startup protocol for end-to-end context retrieval, stale/conflicting summaries, initial-goal ordering, per-agent delivery, receipts/fetch-back and later causal reuse. Reuse the existing static audit; do not create a duplicate memory/orchestrator.
+- **P2:** propose the smallest justified protocol or component change only after the audit identifies a concrete gap. Do not imply source wiring proves runtime behavior or that saved documentation changes model weights.
+
+Use the learning chain `OBSERVATION → PROVENANCE → CAUSAL LESSON → AUTHORIZED DECISION → OUTCOME EVIDENCE → WRITEBACK → FETCH-BACK → LATER CAUSAL REUSE → MEASURABLE CHANGE`. A durable note is not by itself proof of learning. Cross-chat delivery and algorithmic improvement remain unverified until evidence demonstrates them.
+
+**Routing boundary:** this is a follow-up priority, not a replacement for the current R-03 evidence step. The proposed current-state block still selects completion/review of the exact R-03 diffs. `AUTOMATIC_FOLLOW_ON=FALSE` remains in force until the evidence step is complete and the next scope is reconciled against live `CURRENT-STATE.md`. This handoff and the receipt are still only on PR #493's documentation branch; live `main` is authoritative until adoption and fetch-back.
