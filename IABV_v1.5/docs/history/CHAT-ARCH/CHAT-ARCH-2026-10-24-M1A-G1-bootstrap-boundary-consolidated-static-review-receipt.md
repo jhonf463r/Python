@@ -98,3 +98,35 @@ Immediately before this documentation writeback, GitHub reported PR #493 as `sta
 The proposed next step, `M1A_G1_REVIEW_COMPLETE_DIRTY_BOOTSTRAP_BOUNDARY_CANDIDATE`, is a bounded read-only evidence review aligned with the canonical review target, not authority to publish the source candidate or perform implementation/platform/runtime actions. The complete staged and unstaged delta for all reported 12 unique local paths remains unreviewed. The local Windows checkout and reported hashes/status remain `OWNER_REPORTED`; focused F-01/F-02/F-03 findings derive from supplied diffs only.
 
 No tests, build, runtime, MCP, real transport, credentials/enrollment, root creation, Windows ACL/trust-store change, publication, merge, deployment, spending or protected read was performed by this reconciliation. Preserve `AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED`, G1/G2/G3 `NOT_ESTABLISHED`, 8 prerequisites open / 0 closed, governance blocked, protected reads fail-closed, zero budget and `AUTOMATIC_FOLLOW_ON=FALSE`.
+
+## Latest candidate-wide static review report — R-03 remains the first source defect to repair
+
+**Intake:** `TASK_RESULT=SOURCE_REVIEW_BUNDLE_ONLY`, supplied by the Owner from Codex on 2026-10-24 (America/Bogota). The report says Codex inspected the current local candidate in place and exported complete staged and unstaged patch files outside the checkout. This receipt records the reported observations; this GitHub/ChatGPT reviewer did not retrieve those Windows-local patch bytes, so conclusions below are **Codex-reported local static findings**, not independent byte-level re-review by ChatGPT.
+
+Reported identity and preservation:
+- Checkout: `C:\Users\faber\AppData\Local\Temp\iabv-g1-bootstrap-sparse-f99534e037e542038513a974d805bb27`
+- Source branch: `codex/m1a-g1-owner-governed-bootstrap-organ-20261024`; HEAD `6bc568e1c5a898afd65cc045c779c25a9cdc5489`; live main at check: `2cecd5e9b9e175584d65bbb1198a53bc2346d095`.
+- Status reported unchanged: 12 unique paths; 7 staged and 11 unstaged path statuses (overlap included). `FILES_MODIFIED_BY_REVIEW=0`.
+- Staged patch reported as 63,238 bytes, SHA-256 `d220b3c57325799e953a0c2534d7bcfa6088f5297b361855c23021f0097909b1`.
+- Unstaged patch reported as 87,643 bytes, SHA-256 `59cb23aefa3205ccad22746f9d3afb7deaa1b604fc3e68eb510d9d23a332e4c6`.
+- These patch files were reported under `C:\Users\faber\AppData\Local\Temp\iabv-bootstrap-static-review-7de272ded2fa461ba0c97e272dfb4255\`. No portable/downloadable attachment containing their bytes was supplied here. Hashes prove integrity only when compared against the actual files; they do not let this reviewer reconstruct them.
+
+### Candidate-wide results as reported
+
+- **Composition present at source level:** AppBootstrap creates an unconfigured `ReadAuthorizationCoordinator`; the bridge/runner/server chain injects it, and the `read_repo_file` / `list_repo_directory` handlers call an authority guard before their helper paths. Because production providers are absent, the composed route reports fail-closed denial. This is not runtime evidence.
+- **R-01 / enrollment:** protocol interfaces and receipt validators exist, but no concrete production verifier/provider/challenge store/registry or enrollment producer was found by the reported source inspection. `OwnerControlledBootstrapBoundary.enroll()` remains contract-only.
+- **R-02 / provider composition:** root, mandate, G2, G3, authenticated IPC, durable replay and host-process context providers remain absent from the AppBootstrap composition. Fail-closed is preserved; no positive path is established.
+- **R-03 / authorized target binding — priority source defect:** the reported server validation checks the operation and the requested relative target, and verifies that `permit.canonical_target` is nonempty. The handler then calls the existing helper with the original `relative_path`, causing a separate resolution instead of consuming/enforcing the exact authorized target. If an ALLOW path were ever enabled, the decision and opened/listed object could diverge. This is a conditional source/wiring defect in a presently fail-closed composition, not a claim of a currently exploitable positive route.
+- **R-04 / registry identity:** F-03's `expected_registry_id` check is present in the supplied contract, but no production host-trusted ID source or real persisted registry was found by the reported inspection.
+- **R-05 / replay:** the reported `SQLiteReplayConsumer` implements atomic decision replay consumption but is not wired into bootstrap enrollment and does not detect rollback to a prior valid database copy. It is not proof of protected issuer/challenge anti-replay.
+- **R-06 / cryptography:** RSA/SHA-256 verification proves a signature validates under a supplied key; it does not establish that the key belongs to the Owner, an independent root or the required mandate.
+- **R-07 / canonical authority:** candidate documentation and local routing are not canonical `main`.
+- **R-08 / excluded operational dependencies:** real Owner authentication, independent root, issuer credential/provisioning, Owner-to-Windows principal binding, authenticated IPC, ACL/trust-store boundary and runtime validation remain unestablished and were not performed.
+
+The report's aggregate diagnosis is: the static dependency wiring reaches the MCP handlers and denies by default, but the real bootstrap/issuer boundary is not implemented; source-level ALLOW also needs a same-target operation contract before it could ever be enabled. Preserve `G1/G2/G3=NOT_ESTABLISHED`, 8 prerequisites open / 0 closed, governance blocked, protected reads fail-closed and zero budget.
+
+## Proposed next bounded task
+
+`M1A_G1_BIND_AUTHORIZED_CANONICAL_TARGET_TO_READ_OPERATION`: repair R-03 only, within existing source-implementation/source-test authorization and the existing dirty checkout. Inspect the actual helper contract first; make the minimum change so the exact target authorized by the coordinator is the target read/list operations consume, without a second independent interpretation of the untrusted relative path. If the existing helper cannot guarantee that identity, preserve unconditional denial and report the exact blocker rather than inventing a positive path. Add focused source tests for mismatched/rewritten targets and pre-helper denial. Preserve every pre-existing staged delta and all unrelated unstaged changes; do not execute tests/build/runtime/MCP/transport or touch credentials, roots, enrollment, ACLs, services or trust stores. Do not publish or merge the source candidate.
+
+This is a branch-only proposed next action, not a mutation of canonical `main`. It does not contradict the live main authorization; it narrows work within that bounded source task.
