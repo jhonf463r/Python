@@ -104,6 +104,25 @@ Always use a **Space-Time Navigator** role to establish the current objective, r
 
 Before delegation, state: `ROLE`, `WHY_THIS_ROLE`, `OBJECTIVE`, `INPUT_BASELINE`, `PRIOR_ART_TO_REUSE`, `AUTHORIZED_OPERATIONS`, `FORBIDDEN_OPERATIONS`, `EXPECTED_EVIDENCE`, and `STOP_CONDITION`. For a high-risk task, use an adversarial reviewer before any promotion of the claim; use an independent verifier if there is a supported route to one.
 
+For systematic configuration, apply a **hard-gated, auditable selection heuristic** after identifying the task context `x`:
+
+```text
+ELIGIBLE(role, x) =
+  AUTHORIZED(role, x)
+  AND CAPABILITY_SUPPORTED(role, x)
+  AND REQUIRED_PREREQUISITES_READY(x)
+
+ROLE_UTILITY(role | x) =
+  w_goal * GOAL_FIT
+  + w_domain * DOMAIN_MATCH
+  + w_information * EXPECTED_UNCERTAINTY_REDUCTION
+  + w_verify * VERIFICATION_VALUE
+  - w_cost * COST_EXPOSURE
+  - w_risk * EXECUTION_RISK
+```
+
+Only compare eligible roles; a role that fails a hard gate is ineligible regardless of utility. Apply the same principle to actions: prioritize expected discriminating information and progress toward the earliest open dependency, adjusted for justified cost, reversibility and risk. The weights above are **parameters, not validated scientific constants**. Until task/outcome receipts provide a suitable calibration dataset, use a documented qualitative/ordinal rubric and mark missing measurements `UNKNOWN`; never invent numerical scores. Change weights only through a recorded comparison against outcomes and counterexamples. This gives the protocol a testable route toward better configurations without disguising intuition as measured science.
+
 Role selection is adaptive, but minimal: unnecessary personas increase cost and produce conflicting recommendations. A reported model's availability is not proof that it was invoked. Only name a model, connector or executor as used when there is a correlated invocation/result or a directly observed artifact. The coordinator may prepare a prompt for a user-operated Codex session; it must not claim to have dispatched into that session without evidence.
 
 ## 6. The controlled “domino” action chain
