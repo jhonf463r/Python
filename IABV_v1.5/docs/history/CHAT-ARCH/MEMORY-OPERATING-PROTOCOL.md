@@ -1,6 +1,40 @@
 <!-- Terminal transition: 2026-10-25. CURRENT-STATE.md remains the sole routing authority. -->
 
-## CURRENT ROUTE — Owner-authorized integrated fail-closed authorization-organ completion candidate (2026-10-25)
+## CURRENT ROUTE — integrated fail-closed organ candidate returned; independent diff review pending (2026-10-25)
+
+The one Owner-authorized integrated candidate task returned `SOURCE_CANDIDATE_ONLY` in the Owner-supplied Codex report. Codex reports 264 passing focalized tests on its second run and an unchanged original checkout. Those claims, the local source and the exact diff bytes have not been independently inspected in this ChatGPT session. The candidate is not accepted and no gate has closed.
+
+Terminal hand-back: [integrated authorization-organ candidate receipt](https://github.com/jhonf463r/Python/blob/docs/iabv-source-candidate-review-pending-20261025/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-25-M1A-G1-INTEGRATED-ORGAN-CANDIDATE-HAND-BACK-RECEIPT.md).
+
+The reported full diff is at a local Windows path and SHA-256 `6950FB87DCD6F57573F88BBD58B0B880BD0437E69EB5830D9F55A22AD9AA5F93`; neither the bytes nor the hash were recomputed here. The report claims 8 changed routes/2,411 lines while a UI summary mentions 4 files/+33/-12; the exact diff must reconcile this before acceptance. Do not repeat the source implementation, inventory or test command merely to restate results. Review the exact candidate-vs-pre-task-checkout diff before deciding any corrective source task.
+
+```text
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+LAST_TERMINAL_TASK=M1A_G1_INTEGRATED_FAIL_CLOSED_AUTHORIZATION_ORGAN_COMPLETION_20261025
+LAST_TERMINAL_RESULT=SOURCE_CANDIDATE_ONLY; OWNER_SUPPLIED_CODEX_REPORT
+ACTIVE_TASK=M1A_G1_INDEPENDENT_STATIC_REVIEW_OF_INTEGRATED_ORGAN_CANDIDATE_20261025
+ACTIVE_TASK_STATUS=WAITING_FOR_EXACT_DIFF_BYTES; REVIEW_ONLY
+CANDIDATE_DIFF=LOCAL_PATH_REPORTED; SHA256_REPORTED_NOT_RECOMPUTED_HERE
+TESTS=OWNER_REPORTED_264_PASSED; NOT_INDEPENDENTLY_VERIFIED
+INDEPENDENT_STATIC_REVIEW=NOT_COMPLETE
+AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3_SAME_OBJECT=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0 UNTIL INDEPENDENT ADJUDICATION
+GOVERNANCE=KEEP_BLOCKED_FOR_POSITIVE_PROTECTED_READS
+PROTECTED_READS=FAIL_CLOSED
+BRIDGE=BRIDGE_NOT_READY
+PRODUCT_STAGE_COMMIT_PUSH_MERGE=NOT_AUTHORIZED
+AUTOMATIC_FOLLOW_ON=FALSE
+NEXT_ACTION=MAKE_EXACT_CANDIDATE_VS_PRETASK_DIFF_AVAILABLE_FOR_INDEPENDENT_STATIC_REVIEW
+NEXT_TASK_STOP_CONDITION=REVIEW_ONLY; NO_SOURCE_EDIT; NO_INVENTED_AUTHORITY; NO_GATE_RELEASE
+```
+
+This route records the terminal result and review dependency; it does not execute a new source task. The prior authorization's scope is consumed.
+<!-- Previous route: Owner-authorized integrated fail-closed source candidate task is terminal; retained below as historical context. -->
+
+## HISTORICAL ROUTE — Owner-authorized integrated fail-closed authorization-organ completion candidate returned (2026-10-25; terminal)
 
 The Owner's latest explicit instruction reopens one bounded integrated source candidate to finish the authorization organ and prevent repeated route/blocker loops. This is a new scope decision after the terminal result `NO_NEW_EVIDENCE_RECOVERABLE_FROM_EXISTING_SESSION_ARTIFACTS`; it is not a claim that new trust evidence exists. The previous `BLOCKED_APPROVED_WORKSPACE_ROOT_PROVIDER_ABSENT` remains valid for its earlier task, but the missing root must not stop separable source-contract corrections. The organ must remain deny-only in production until real authority and platform prerequisites are independently established.
 
