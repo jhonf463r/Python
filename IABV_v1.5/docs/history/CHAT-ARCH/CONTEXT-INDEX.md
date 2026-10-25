@@ -30,7 +30,7 @@ The prior reopening was limited to design/static review and is now terminal. Its
 
 ## Next trust-organ task — Owner-controlled bootstrap/issuer boundary (2026-10-24)
 
-The new Codex report says the receipt contract has been added, but only a summary—not the exact source/test diff—was supplied. Therefore the receipt implementation has not yet received static code review. Obtain the exact unstaged delta from the same candidate checkout, inspect field bindings, strict type/time predicates, failure semantics and tests, and do not infer proof of real consumption or persistence from synthetic receipt fields. Preserve G1/G2/G3 unestablished and protected reads fail-closed. See `CURRENT-STATE.md` and the [review receipt](./CHAT-ARCH-2026-10-24-M1A-G1-bootstrap-boundary-static-review-receipt.md).
+The supplied source diff has been partially reviewed. F-03: `validate_owner_bootstrap_enrollment_receipt()` accepts any nonempty `persistence.registry_id`; add a trusted expected-registry ID parameter and reject mismatches, with a focused negative test. The supplied test diff is incomplete, so its full coverage remains unreviewed. Obtain the full exact diff after this bounded correction. Synthetic status fields do not prove durable consumption or persistence. Keep G1/G2/G3 unestablished and reads fail-closed. See `CURRENT-STATE.md` and the [review receipt](./CHAT-ARCH-2026-10-24-M1A-G1-bootstrap-boundary-static-review-receipt.md).
 
 ## Continuity and AI-context delivery audit (2026-10-24)
 
