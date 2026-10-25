@@ -30,7 +30,7 @@ The prior reopening was limited to design/static review and is now terminal. Its
 
 ## Next trust-organ task — Owner-controlled bootstrap/issuer boundary (2026-10-24)
 
-The supplied source diff has been partially reviewed. F-03: `validate_owner_bootstrap_enrollment_receipt()` accepts any nonempty `persistence.registry_id`; add a trusted expected-registry ID parameter and reject mismatches, with a focused negative test. The supplied test diff is incomplete, so its full coverage remains unreviewed. Obtain the full exact diff after this bounded correction. Synthetic status fields do not prove durable consumption or persistence. Keep G1/G2/G3 unestablished and reads fail-closed. See `CURRENT-STATE.md` and the [review receipt](./CHAT-ARCH-2026-10-24-M1A-G1-bootstrap-boundary-static-review-receipt.md).
+The latest supplied delta corrects F-03 by adding a nonblank `expected_registry_id` argument and exact equality with `persistence.registry_id`. The complete supplied test diff includes a mismatch case for two well-formed identifiers and rejects invalid expected IDs. Static review of the pasted correction is positive for F-03; tests remain `NOT_RUN` and the local checkout remains unverified. The expected ID must originate in future trusted host/provider context; the function parameter does not prove that provenance. Synthetic states do not prove durable operations. Keep G1/G2/G3 unestablished and reads fail-closed. See `CURRENT-STATE.md` and the [review receipt](./CHAT-ARCH-2026-10-24-M1A-G1-bootstrap-boundary-static-review-receipt.md).
 
 ## Continuity and AI-context delivery audit (2026-10-24)
 
