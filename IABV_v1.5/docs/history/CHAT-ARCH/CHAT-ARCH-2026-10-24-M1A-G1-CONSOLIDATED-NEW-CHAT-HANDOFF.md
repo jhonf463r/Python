@@ -172,3 +172,32 @@ Do not make another isolated R-03 patch yet. The existing candidate-wide obligat
 **Next action:** complete that read-only whole-candidate diff review, then reconcile the next step with freshly fetched live `CURRENT-STATE.md`. Afterward, the Owner-requested Mente Espacio-Tiempo audit is the priority workstream. Review existing continuity/context algorithms for five-file live-main intake, causal timeline and provenance, stale/conflicting route headers, package freshness, initial-goal ordering, actual destination-specific briefing delivery/receipts and later causal reuse. Reuse the existing audit; do not create another orchestrator. No test execution, runtime, protected reads, credentials, OS/ACL/trust store, publishing, merge or spend is authorized by this note.
 
 This handoff is still branch-only documentation. It must not override canonical `main`.
+
+
+## 11. Latest Owner-supplied whole-candidate static report — exact export bytes pending independent inspection
+
+The latest supplied result is TASK_RESULT=WHOLE_CANDIDATE_STATIC_REVIEW_BUNDLE_ONLY, DIFFS_COMPLETE=YES as reported by Codex. It states the staged and unstaged exports contain 1,899 and 3,844 lines and reports SHA-256:
+- staged.diff.txt: cb7db09f3cec514846af4c1c5d449c22d3b2579de94254a95f12b6557050d9c1
+- unstaged.diff.txt: 0af9902c5109841cde9558857e1aacc99c4b620eaff9a0a75a77a1daeef6fdab
+
+The exports remain at a Windows-local temporary path and were not attached or published to GitHub. Therefore, although the report supplies a coherent R-01–R-08 summary, ChatGPT's independent byte-level review is NOT_PERFORMED until the actual two diff files are provided. Do not use public main as a proxy for the local candidate.
+
+Codex's reported high-level findings:
+- R-01: contracts/protocols without production owner verifier, challenge store, trust registry, protected issuer credential provider or enrollment producer.
+- R-02: coordinator composition reaches both handlers but remains unconfigured with eight missing requirements.
+- R-03: deny-only containment, no same-object binding, no explicit AUTHORITY_TARGET_INVALID test.
+- R-04: exact expected-registry equality validator exists; production trusted ID source/registry does not.
+- R-05: SQLite consume-once code exists but valid-snapshot rollback is not detected; production protected store/ACL is not established.
+- R-06: CNG verifies a signature under a supplied RSA key; authority/root provenance is not established.
+- R-07: stdio is a source option while streamable HTTP remains default; restricted-local profile is not verified.
+- R-08: Owner-to-Windows principal, independent root, issuer process, authenticated IPC/process separation and persistent ACL/trust store are not established.
+
+Candidate-preservation results, route hashes, exact status and diff exports remain Codex-reported and have not been independently read from the local Windows workspace. No tests, build, runtime, MCP, or real transport ran.
+
+Exact routing discipline:
+1. Immediate next action: independently inspect the actual staged/unstaged diff bytes, including R-01–R-08 composition and residual obligations.
+2. Reconcile with freshly fetched live CURRENT-STATE.md; it remains the sole route authority.
+3. After independent candidate review, proceed to the Owner-prioritized Mente Espacio-Tiempo audit against existing protocols and source audit; do not invent another orchestrator.
+4. No automatic follow-on, tests/runtime, protected reads, credentials, OS/ACL/trust store, publishing, merge, deployment or spending is authorized by this note.
+
+See the whole-candidate static review receipt and Owner continuity directive receipt in this branch.
