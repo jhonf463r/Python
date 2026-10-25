@@ -6,6 +6,9 @@ The one bounded read-only assessment has returned its report and is terminal for
 Decision and result receipts:
 - [Owner decision and asset assessment task](./CHAT-ARCH-2026-10-25-M1A-G1-OWNER-DECISION-EXISTING-TRUST-ASSETS-READONLY-ASSESSMENT-RECEIPT.md)
 - [Terminal-task routing protocol correction](./CHAT-ARCH-2026-10-25-TERMINAL-TASK-ROUTER-TRANSITION-CORRECTION.md)
+- [Adaptive Space-Time protocol revision 2.0 receipt](./CHAT-ARCH-2026-10-25-SPACE-TIME-ADAPTIVE-NEUROPLASTICITY-REVISION-2-RECEIPT.md)
+
+This is a separate documentation-only evolution of the existing cross-chat reasoning method; it does not change the technical wait route, IABV authorization, or trust gates.
 
 ```text
 PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
