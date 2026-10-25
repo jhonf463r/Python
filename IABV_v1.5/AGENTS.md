@@ -21,25 +21,7 @@ NEXT_ACTION=PERFORM_ONE_BOUNDED_EXISTING_TRUST_ASSET_READ_ONLY_ASSESSMENT_IN_EXI
 
 Receipt: [bounded source-organ remediation static review](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-24-M1A-G1-BOUNDED-SOURCE-REMEDIATION-STATIC-REVIEW-RECEIPT.md).
 
-The one authorized source-only task has been handed back. Visible patch text supports the strict `mandate.revoked` boolean check, manifest schema version 2 with explicit v1 rejection, and the `AUTHORITY_TARGET_INVALID` test for both MCP read handlers. Review status is `PASS_WITH_NOTES_FOR_PASTED_PATCH_TEXT_ONLY`; the reported diff SHA-256 was not recomputed and the Windows worktree was not directly inspected. Tests/build/runtime/MCP/real transport were not run.
-
-The exact filesystem object authorized is still not proven to be the object consumed by the reader. Preserve deny-only containment and every G1/G2/G3 gate. The bounded task is terminal; do not restart the source-only loop. The only current router is `CURRENT-STATE.md`.
-
-```text
-ACTIVE_TASK=M1A_G1_WAIT_FOR_GENUINELY_NEW_INDEPENDENT_ROOT_AND_AUTHENTICATED_OWNER_ISSUER_OS_BOUNDARY_EVIDENCE
-PREVIOUS_TASK=M1A_G1_BOUNDED_SOURCE_ORGAN_REMEDIATION
-PREVIOUS_TASK_RESULT=PASS_WITH_NOTES_FOR_PASTED_PATCH_TEXT_ONLY
-AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
-G1=NOT_ESTABLISHED; G2=NOT_ESTABLISHED; G3=NOT_ESTABLISHED
-IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
-GOVERNANCE=KEEP_BLOCKED
-PROTECTED_READS=FAIL_CLOSED
-BRIDGE=BRIDGE_NOT_READY
-AUTOMATIC_FOLLOW_ON=FALSE
-NEXT_ACTION=WAIT_FOR_GENUINELY_NEW_INDEPENDENT_ROOT_AND_AUTHENTICATED_OWNER_ISSUER_OS_BOUNDARY_EVIDENCE
-```
-
-
+The one authorized source-only task is terminal for current evidence. Its pasted-diff review was limited to `PASS_WITH_NOTES_FOR_PASTED_PATCH_TEXT_ONLY`; the local Windows checkout and raw diff hash were not independently verified, and tests/build/runtime/MCP/transport were not run. Same-object binding remains unestablished. Preserve fail-closed containment; do not repeat the source review or start another patch loop.
 
 ## Latest terminal G1 review result — BLOCKED_NO_NONCIRCULAR_ROOT (2026-10-24)
 
