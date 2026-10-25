@@ -5,6 +5,14 @@
 - Current verified GitHub main at handoff preparation: c7b463bc4947f0fccadfcd1ed001e36cc34a9dbc.
 - This is a continuity/handoff document, not a new implementation authorization. CURRENT-STATE.md remains the sole route authority.
 
+## Subsequent Owner decision — integrated G3 candidate authorized after continuity reconciliation (2026-10-25)
+
+**This section supersedes the pending-decision wording in the snapshot below.** After this handoff was prepared, the Owner explicitly authorized exactly one integrated G3 source-only candidate and required that the Space-Time memory/continuity logic be analyzed and the route records reconciled first. That requested first step is captured by the linked decision receipt and the current front-door route summaries.
+
+Decision receipt: [integrated G3 source-candidate authorization](./CHAT-ARCH-2026-10-25-M1A-G1-OWNER-DECISION-INTEGRATED-G3-SOURCE-CANDIDATE-RECEIPT.md).
+
+The previous task remains terminal with zero source delta according to the Owner-supplied Codex report. The historical next-decision question later in this handoff is preserved as chronology, not a live request. Route only from freshly fetched `CURRENT-STATE.md`. The current authorized candidate has not been sent to or executed by the existing Windows Codex session from this interface.
+
 ## 1. Read-first contract for the next chat
 
 Before giving any substantive technical recommendation or issuing a prompt, refresh live refs/heads/main and read the following repository files in exactly this order:
