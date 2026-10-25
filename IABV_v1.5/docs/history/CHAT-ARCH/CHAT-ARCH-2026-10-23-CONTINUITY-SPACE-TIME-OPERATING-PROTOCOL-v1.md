@@ -270,3 +270,14 @@ When the Owner supplies a Codex response:
 For the current case, the transcript's last visible prompt is the AppBootstrap registration task, while live `CURRENT-STATE.md` routes to `M1A_G1_OWNER_CONTROLLED_BOOTSTRAP_ISSUER_BOUNDARY`. A response for the former must be reconciled as result-intake evidence and must not silently reset the active route. See [route-gate calibration, section 11](./CHAT-ARCH-2026-10-24-ROUTE-GATE-CALIBRATION-KNOWLEDGE-DELTA.md#11-follow-up-calibration--transcript-task-versus-live-route-2026-10-24).
 
 This protocol update is durable project guidance, not model-weight training. It does not change the active technical route, Owner authorization, the eight open prerequisites, or fail-closed behavior.
+
+
+## 16. Bootstrap/issuer candidate result — review before asking for new authority material (2026-10-24)
+
+The current Owner-reported result for `M1A_G1_OWNER_CONTROLLED_BOOTSTRAP_ISSUER_BOUNDARY` says the candidate gained typed challenge/evidence contracts and source tests but not a real Owner assertion verifier, independent root, durable challenge/replay store, protected registry, or authenticated isolated issuer/IPC/OS boundary. It remains `SOURCE_CANDIDATE_ONLY`; the exact local patch has not been independently inspected and no tests/build/runtime/MCP/transport were run.
+
+The next discriminating action is not a second implementation attempt and not a request for the Owner to supply trust assets before reviewing the change. First obtain the exact patch for the reported three paths from the same local Codex checkout, preserving separation of the pre-existing staged index and the new unstaged delta. Inspect that source delta against the current handoff acceptance criteria. If exact source is unavailable, state `ACTION_UNEXECUTABLE_NO_EVIDENCE` for independent source review; do not replace it with a narrative summary or infer global absence.
+
+The source report is internally precise about what is missing, but that precision is still reported evidence, not independent proof. Signature verification with a caller-supplied public key does not establish that key as the Owner's trusted key. Challenge fields binding `server_id` and `issuer_id` do not themselves provide authenticated process identity or a protected issuer. Source tests written are not test results. Keep G1/G2/G3 not established, all eight implementation prerequisites open, and protected reads fail-closed.
+
+Required intake artifacts: current main ref, candidate path/branch/HEAD, status before any command, index diff and worktree diff for all three paths, the exact reported blob/hash values, source locations, and explicit statement that no files were modified during diff extraction. Do not merge/rebase, stage, commit, publish, execute tests, build, start runtime, or use MCP transport in the review-preparation step.
