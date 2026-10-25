@@ -1,5 +1,5 @@
 <!-- Terminal transition: 2026-10-25. CURRENT-STATE.md remains the sole routing authority. -->
-## CURRENT ROUTE — integrated G3 source candidate returned partial result; independent review awaits exact artifacts and Owner decision (2026-10-25)
+## CURRENT ROUTE — one bounded independent G3 static review authorized; exact task artifacts pending (2026-10-25)
 
 The single authorized task `M1A_G1_G3_INTEGRATED_AUTHORIZATION_TO_HANDLE_SOURCE_CANDIDATE_20261025` returned `PARTIAL_G3_HANDLE_CONTRACT_SOURCE_ONLY`, according to the Owner-supplied Codex terminal report. The report claims a source-level capability binding from opened target through decision, permission, guard and reader helper, plus focused source-test authoring. Those source claims have not been independently reviewed here because the listed diff artifacts are Windows-local paths not accessible in this reconciliation session.
 
@@ -8,13 +8,17 @@ Prior terminal blocker: [native-handle authorization-binding blocker](./CHAT-ARC
 
 The report explicitly leaves `APPROVED_WORKSPACE_ROOT_UNAVAILABLE`, native Windows ABI/filesystem semantics unvalidated, and all tests/build/runtime/MCP/transport unrun. Therefore `G3_SAME_OBJECT=NOT_ESTABLISHED`; a source-only candidate must not be promoted to canonical code or used to enable protected reads. Reported local state/hashes remain `OWNER_SUPPLIED_CODEX_REPORT`, not direct observations by this reconciliation.
 
-The next route is a wait state for the six complete task diff artifacts to be made available for a separate bounded static review, plus an explicit Owner decision authorizing that review. This is not permission to start another implementation attempt. No root/authority provisioning, code publication, tests, runtime or gate release is authorized.
+The Owner explicitly authorized one bounded independent static review in chat on 2026-10-25. The review is not yet started: the exact six task-diff artifacts and preservation evidence must first be made accessible. The available Library files named staged.diff.txt and unstaged.diff.txt are not verified as the six task-diff artifacts and must not be substituted for them. This authorization does not permit a new implementation attempt, code modification, test/build/runtime execution, publication, root/authority provisioning, or G3 gate release.
 
 ~~~text
 PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
-ACTIVE_TASK=M1A_G1_WAIT_FOR_OWNER_DECISION_ON_INDEPENDENT_REVIEW_OF_INTEGRATED_G3_CANDIDATE_OR_KEEP_BLOCKED
+ACTIVE_TASK=M1A_G1_OBTAIN_EXACT_TASK_DIFF_ARTIFACTS_FOR_ONE_BOUNDED_STATIC_REVIEW
 LAST_TERMINAL_TASK=M1A_G1_G3_INTEGRATED_AUTHORIZATION_TO_HANDLE_SOURCE_CANDIDATE_20261025
 LAST_TERMINAL_RESULT=PARTIAL_G3_HANDLE_CONTRACT_SOURCE_ONLY; OWNER_SUPPLIED_CODEX_REPORT; SOURCE_ARTIFACTS_NOT_INDEPENDENTLY_REVIEWED
+OWNER_DECISION=EXPLICIT_IN_CHAT; ONE_BOUNDED_INDEPENDENT_STATIC_REVIEW; 2026-10-25
+STATIC_REVIEW=AUTHORIZED_ONCE; NOT_STARTED
+REVIEW_ARTIFACTS=EXACT_SIX_TASK_DIFFS; PRESERVATION_DIFFS; INITIAL_FINAL_STATUS; HASH_MANIFEST
+ARTIFACT_STATUS=EXACT_TASK_DIFFS_NOT_YET_ACCESSIBLE
 SOURCE_CHANGES_REPORTED=6_FILES; +798/-48; HASHES_REPORTER_SUPPLIED
 SOURCE_TESTS=AUTHORED; NOT_RUN
 CANDIDATE_WORKTREE_STATUS=OWNER_SUPPLIED_CODEX_REPORT; NOT_INDEPENDENTLY_OBSERVED
@@ -42,7 +46,7 @@ REAL_TRANSPORT=NOT_RUN
 COST_POLICY=ZERO_BUDGET
 PRODUCT_STAGE_COMMIT_PUSH_MERGE=NOT_AUTHORIZED
 AUTOMATIC_FOLLOW_ON=FALSE
-NEXT_ACTION=OBTAIN_EXACT_SIX_DIFF_ARTIFACTS_AND_OWNER_DECISION_FOR_ONE_BOUNDED_STATIC_REVIEW
+NEXT_ACTION=OBTAIN_EXACT_SIX_TASK_DIFF_ARTIFACTS_AND_PRESERVATION_EVIDENCE_FOR_AUTHORIZED_STATIC_REVIEW
 NEXT_REVIEW_TARGET=DIFFS_VS_TASK_ACCEPTANCE; OPENED_CAPABILITY_BINDING; ROOT_DENIAL; HANDLE_OWNERSHIP; NATIVE_ABI_LIMITATIONS
 STOP_CONDITION=NO_IMPLEMENTATION_OR_GATE_RELEASE_WITHOUT_SEPARATE_EXPLICIT_AUTHORIZATION_AND_NEW_EVIDENCE
 ~~~

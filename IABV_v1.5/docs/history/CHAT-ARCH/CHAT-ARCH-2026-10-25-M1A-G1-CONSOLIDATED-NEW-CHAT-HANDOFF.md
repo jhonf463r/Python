@@ -21,6 +21,25 @@ Receipt: [integrated authorization-to-handle partial-candidate receipt](./CHAT-A
 
 The report still identifies `APPROVED_WORKSPACE_ROOT_UNAVAILABLE` and says native Windows semantics were not runtime-validated. Thus G3 remains unestablished, all protected reads remain fail-closed, and the bridge remains not ready. The previous candidate authorization is consumed. Obtain the exact diff artifacts and a new explicit Owner decision before a bounded independent static review; do not start another implementation task automatically.
 
+## Subsequent Owner decision — one bounded independent static review authorized (2026-10-25)
+
+The Owner explicitly authorized the proposed **single bounded independent static review** in chat (“si autorizo”). This resolves the earlier decision wait; no further approval is required for that review. The review remains pending only because the exact six task-diff artifacts are not yet accessible in this session.
+
+Scope is limited to the six exact task diffs versus the task acceptance criteria, capability-to-opened-object binding, fail-closed denial when the approved workspace root is unavailable, handle ownership/lifetime, native ABI limitations, and preservation of pre-existing staged/unstaged work. Review source bytes and reported hashes must be independently checked. The Library artifacts named `staged.diff.txt` and `unstaged.diff.txt` are not verified substitutes for the six task-specific diff files.
+
+No code modification, tests, build, runtime, MCP, real transport, protected reads, source publication, root/authority provisioning, or gate release is authorized. G3 remains unestablished and protected reads remain fail-closed. No implementation follow-on may begin automatically.
+
+~~~text
+OWNER_DECISION=EXPLICIT_IN_CHAT; ONE_BOUNDED_INDEPENDENT_STATIC_REVIEW; 2026-10-25
+STATIC_REVIEW=AUTHORIZED_ONCE; NOT_STARTED
+REQUIRED_ARTIFACTS=EXACT_SIX_TASK_DIFFS; PREEXISTING_STAGED_UNSTAGED_DIFFS; INITIAL_FINAL_STATUS; HASH_MANIFEST
+NEXT_ACTION=OBTAIN_EXACT_TASK_DIFF_ARTIFACTS_AND_PRESERVATION_EVIDENCE
+G3_SAME_OBJECT=NOT_ESTABLISHED
+GOVERNANCE=KEEP_BLOCKED
+PROTECTED_READS=FAIL_CLOSED
+AUTOMATIC_FOLLOW_ON=FALSE
+~~~
+
 ## 1. Read-first contract for the next chat
 
 Before giving any substantive technical recommendation or issuing a prompt, refresh live refs/heads/main and read the following repository files in exactly this order:
