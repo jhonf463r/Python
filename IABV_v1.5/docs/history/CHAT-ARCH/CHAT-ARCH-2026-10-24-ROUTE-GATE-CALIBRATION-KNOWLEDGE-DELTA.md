@@ -316,3 +316,9 @@ Because the test diff included an ellipsis, its full contents and coverage are n
 The latest supplied diff now requires a nonblank exact-string `expected_registry_id` and compares it to `persistence.registry_id`. The complete test diff supplied in the same message covers a mismatched but well-formed ID and invalid expected-ID types/values. Record `STATIC_REVIEW=F03_CORRECTION_PRESENT_IN_SUPPLIED_DIFF; FULL_TEST_DIFF_REVIEWED; TESTS_NOT_RUN`. This is not direct filesystem verification or a test pass.
 
 The expected ID's origin remains a trust dependency: a function parameter does not authenticate its provenance. Any future production caller must source the value from trusted host configuration/provider context, never from the receipt or request. A value object containing `CONSUMED_ONCE`, `PERSISTED` and `ENROLLED` still cannot prove durable state changes. Preserve all fail-closed gates.
+
+## 16. Consolidate candidate evidence after focused repairs (2026-10-24)
+
+F-01/F-02/F-03 have each been corrected in the focused deltas supplied in chat, with source tests written but not executed. Do not continue creating a new task for each small validator hunk. The current dirty checkout reportedly contains 12 unique modified paths, split across staged and unstaged changes. Obtain the complete current staged and unstaged diff for one bounded review of the whole bootstrap-boundary candidate, then make one evidence-based decision about what source-only work remains possible and what depends on excluded authority or platform actions.
+
+The consolidated receipt is `CHAT-ARCH-2026-10-24-M1A-G1-bootstrap-boundary-consolidated-static-review-receipt.md`. This is a documentation-branch proposal, not canonical adoption. Tests/build/runtime/MCP/transport remain `NOT_RUN`; never treat typed receipt status fields or expected-ID parameters as proof of the actual trust source or durable operations.
