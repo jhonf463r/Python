@@ -1,59 +1,46 @@
-<!-- CURRENT ROUTE OVERRIDE: latest explicit Owner decision authorizes one bounded read-only existing-trust-asset assessment; no implementation authority. -->
-## CURRENT-STATE ROUTING — bounded read-only assessment of pre-existing trust assets (2026-10-25)
+<!-- CURRENT ROUTE OVERRIDE: asset assessment terminal; waiting for genuinely new independent authority evidence or explicit Owner decision. No automatic follow-on. -->
+## CURRENT-STATE ROUTING — wait after terminal asset assessment (2026-10-25)
 
-The Owner explicitly directed proceeding to the next documented traceability step after the bounded source-organ review. This authorizes exactly one `M1A_G1_EXISTING_TRUST_ASSETS_BOUNDED_READ_ONLY_ASSESSMENT` in the already-open local Windows/Codex session, using only source-grounded asset locators and read-only metadata. This decision authorizes observation only; it does not establish any technical fact or authorize another source task.
+The one bounded read-only assessment has returned its report and is terminal for its authorized scope. The inspected source files did not expose a concrete locator for local trust-asset metadata; Windows stores/services/ACLs/named pipes were not inspected. This is not proof of global absence. The Owner's already-ratified no-bootstrap posture remains in force: the Owner has not identified a qualifying pre-existing independent authority, Entra/Authenticator remains Owner-reported and not trusted by IABV, and the earlier TPM/source-review paths are closed for their current evidence. Do not repeat the assessment or initiate a new technical task automatically.
 
-Decision receipt and exact task prompt: [Owner decision — existing trust assets read-only assessment](./CHAT-ARCH-2026-10-25-M1A-G1-OWNER-DECISION-EXISTING-TRUST-ASSETS-READONLY-ASSESSMENT-RECEIPT.md).
+Decision and result receipts:
+- [Owner decision and asset assessment task](./CHAT-ARCH-2026-10-25-M1A-G1-OWNER-DECISION-EXISTING-TRUST-ASSETS-READONLY-ASSESSMENT-RECEIPT.md)
+- [Terminal-task routing protocol correction](./CHAT-ARCH-2026-10-25-TERMINAL-TASK-ROUTER-TRANSITION-CORRECTION.md)
 
 ```text
 PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
-ACTIVE_TASK=M1A_G1_EXISTING_TRUST_ASSETS_BOUNDED_READ_ONLY_ASSESSMENT
-OWNER_DECISION=AUTHORIZE_ONE_BOUNDED_READ_ONLY_EXISTING_TRUST_ASSET_ASSESSMENT
-OWNER_DECISION_PROVENANCE=EXPLICIT_OWNER_CHAT_MESSAGE_2026-10-25
-TASK_AUTHORIZATION=READ_ONLY_EVIDENCE_COLLECTION_ONLY
-EXECUTION_ROUTE=CODEX_EXISTING_UI_SESSION; MUST_VERIFY_ROUTE_AND_LOCAL_CHECKOUT
-SCOPE=SOURCE_GROUNDED_EXISTING_ASSET_LOCATORS_AND_RELEVANT_METADATA_ONLY
-SOURCE_IMPLEMENTATION=NOT_AUTHORIZED
-SOURCE_TEST_AUTHORING=NOT_AUTHORIZED
-TEST_EXECUTION=NOT_AUTHORIZED; NOT_RUN
-BUILD=NOT_AUTHORIZED; NOT_RUN
-RUNTIME=NOT_AUTHORIZED; NOT_RUN
-MCP=NOT_AUTHORIZED; NOT_RUN
-REAL_TRANSPORT=NOT_AUTHORIZED; NOT_RUN
-PROTECTED_READS=FAIL_CLOSED
-PRIVATE_KEY_OR_SECRET_CONTENT=NEVER_READ_OR_EXPORTED
-SERVICE_ACL_TRUST_STORE_CHANGES=NOT_AUTHORIZED
-CREDENTIAL_OR_ROOT_CREATION=NOT_AUTHORIZED
-AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED_UNTIL_EACH_LOCATOR_IS_EVIDENCED
-QUALIFYING_INDEPENDENT_ROOT=NOT_ESTABLISHED
+ACTIVE_TASK=M1A_G1_WAIT_FOR_GENUINELY_NEW_INDEPENDENT_ROOT_AND_MANDATE_EVIDENCE
+LAST_TERMINAL_TASK=M1A_G1_EXISTING_TRUST_ASSETS_BOUNDED_READ_ONLY_ASSESSMENT
+LAST_TERMINAL_RESULT=EXISTING_TRUST_ASSET_READ_ONLY_ASSESSMENT_ONLY
+SOURCE_LOCATOR_ASSESSMENT=COMPLETE_FOR_INSPECTED_FILES
+LOCAL_WINDOWS_ASSET_METADATA=NOT_RUN; NO_SOURCE_GROUNDED_LOCATOR_FOUND
+OWNER_DECISION=RATIFIED_OPTION_D_NO_BOOTSTRAP
+LATEST_BOUNDED_AUTHORIZATION=READ_ONLY_ASSET_ASSESSMENT; CONSUMED
+AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+QUALIFYING_INDEPENDENT_ROOT=NOT_ESTABLISHED; NOT_IDENTIFIED_BY_OWNER
 OWNER_TO_WINDOWS_PRINCIPAL=NOT_ESTABLISHED
 BOOTSTRAP_AUTHORITY_TO_ISSUER=NOT_ESTABLISHED
 ISSUER_TO_EXACT_SERVER=NOT_ESTABLISHED
+ENTRA_TRUSTED_BY_IABV=NOT_ESTABLISHED
 G1=NOT_ESTABLISHED
 G2=NOT_ESTABLISHED
 G3_VERSIONED_TARGET_RESOLVER=NOT_ESTABLISHED
 IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
 GOVERNANCE=KEEP_BLOCKED
+PROTECTED_READS=FAIL_CLOSED
+TESTS=NOT_RUN
+BUILD=NOT_RUN
+RUNTIME=NOT_RUN
+MCP=NOT_RUN
+REAL_TRANSPORT=NOT_RUN
 BRIDGE=BRIDGE_NOT_READY
 COST_POLICY=ZERO_BUDGET
 AUTOMATIC_FOLLOW_ON=FALSE
-NEXT_ACTION=PERFORM_ONE_BOUNDED_EXISTING_TRUST_ASSET_READ_ONLY_ASSESSMENT_IN_EXISTING_CODEX_SESSION
-STOP_CONDITION=REPORT_NOT_RUN_SUPPORTED_ROUTE_NOT_FOUND_IF_NO_LEGITIMATE_READ_ONLY_ROUTE; NO_FALLBACK_OR_BYPASS
+NEXT_ACTION=MAINTAIN_NO_BOOTSTRAP_FAIL_CLOSED; REOPEN_ONLY_ON_GENUINELY_NEW_INDEPENDENT_AUTHORITY_EVIDENCE_OR_EXPLICIT_OWNER_DECISION
+NEXT_REVIEW_TARGET=ONLY_GENUINELY_NEW_EVIDENCE; DO_NOT_REPEAT_ASSET_INVENTORY_TPM_SETUP_ENTRA_SETUP_OR_CLOSED_SOURCE_REVIEW
 ```
 
-## Scope and safety boundary
-
-The assessment may inspect relevant existing source/docs to find precise locators, then read only metadata at those locations (presence/type/size/time/ACL owner-protection posture and public certificate/key fingerprints). Specific service or IPC metadata may be queried only where existing source/config identifies the exact endpoint. No broad filesystem or store scan; no private-key/secret read, copy, export, signing, credential enrollment, service/ACL/trust-store change, test/build/runtime/transport, or protected read. If the legitimate local route is missing, stop with `TASK_RESULT=NOT_RUN; REASON=SUPPORTED_ROUTE_NOT_FOUND`.
-
-Do not promote existence to trust. A private-key container or certificate is not a root of authority unless independently bound to a legitimate custodian, mandate and target; the assessment must keep every dependency separate.
-
-## Acceptance
-
-Return one redacted evidence inventory, exact checkout identity and before/after state, source-grounded locators, per-edge provenance, commands/queries and statuses, each edge classified as proven/partially supported/not established/unknown, and all excluded execution statuses as `NOT_RUN`. Stop after the inventory; no automatic follow-on or repairs.
-
----
-
-<!-- Historical source-organ hand-back route retained below; superseded by this one-task read-only authorization. -->
+<!-- Historical source-organ hand-back route retained below; completed assessment and current wait route are summarized above. -->
 
 <!-- HISTORICAL ROUTE CHECKPOINT: bounded source task adjudicated; superseded by the latest explicit Owner read-only assessment decision. -->
 ## HISTORICAL CHECKPOINT — bounded source-organ remediation terminal for current evidence (2026-10-24)

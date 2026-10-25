@@ -322,3 +322,24 @@ The expected ID's origin remains a trust dependency: a function parameter does n
 F-01/F-02/F-03 have each been corrected in the focused deltas supplied in chat, with source tests written but not executed. Do not continue creating a new task for each small validator hunk. The current dirty checkout reportedly contains 12 unique modified paths, split across staged and unstaged changes. Obtain the complete current staged and unstaged diff for one bounded review of the whole bootstrap-boundary candidate, then make one evidence-based decision about what source-only work remains possible and what depends on excluded authority or platform actions.
 
 The consolidated receipt is `CHAT-ARCH-2026-10-24-M1A-G1-bootstrap-boundary-consolidated-static-review-receipt.md`. The copy/paste continuity prompt is `CHAT-ARCH-2026-10-24-M1A-G1-CONSOLIDATED-NEW-CHAT-HANDOFF.md`. This is a documentation-branch proposal, not canonical adoption. Tests/build/runtime/MCP/transport remain `NOT_RUN`; never treat typed receipt status fields or expected-ID parameters as proof of the actual trust source or durable operations.
+
+
+---
+
+## 12. New calibration — terminal task result must be consumed into canonical routing (2026-10-25)
+
+### Observed coordinator error
+
+After the Owner supplied the result for `M1A_G1_EXISTING_TRUST_ASSETS_BOUNDED_READ_ONLY_ASSESSMENT`, the current route still labeled that task active and directed the next chat to perform it. The assistant correctly preserved the rule that no automatic technical follow-on was authorized, but incorrectly failed to reconcile the completed task into a terminal receipt and wait route. This leaves a stale-router loop: a fresh chat can repeat already-completed work despite the transcript containing the result.
+
+### Reusable correction
+
+- Match each report to the exact task and its acceptance criteria; then consume the completion into `LAST_TERMINAL_TASK/RESULT` and the next canonical state.
+- `AUTOMATIC_FOLLOW_ON=FALSE` blocks automatic execution of a new task; it is not a prohibition on authorized status reconciliation.
+- A terminal task must not remain the pending `NEXT_ACTION`. When no new evidence/action is authorized, transition to the explicit wait-for-independent-evidence/Owner-decision state, preserving the old task as history.
+- Synchronize the top routing summaries in all four front doors with the same current-state transition; never update only one summary and leave contradictory copies in the others.
+- If documentary writeback itself is not authorized, label the route `ROUTE_STATE_STALE` and ask only for the narrow authorization required; never rerun the completed technical task as a workaround.
+- Canonical truth is established only after an authorized docs-only PR is reviewed, merged under the permitted workflow, and fetched back from live `main`.
+
+This is a coordination/memory-navigation calibration. It does not establish any local asset, create a root, trust Entra, close G1–G3, authorize implementation or prove automatic algorithmic learning. The concrete incident and acceptance invariants are in [the terminal-task routing correction receipt](./CHAT-ARCH-2026-10-25-TERMINAL-TASK-ROUTER-TRANSITION-CORRECTION.md).
+

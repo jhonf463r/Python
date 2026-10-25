@@ -413,3 +413,59 @@ BRIDGE=BRIDGE_NOT_READY
 AUTOMATIC_FOLLOW_ON=FALSE
 NEXT_ACTION=PERFORM_ONE_BOUNDED_EXISTING_TRUST_ASSET_READ_ONLY_ASSESSMENT_IN_EXISTING_CODEX_SESSION
 ```
+
+
+---
+
+## 16. Mandatory terminal-result consumption and router transition (2026-10-25)
+
+This section closes a continuity defect found when a task report had returned but the front-door summaries and `CURRENT-STATE.md` still advertised the completed task as active. It supplements sections 2–9 and 15; it does not override Owner authorization or the fail-closed trust gate.
+
+### 16.1 The terminal report is a state event
+
+On receiving a task result, do not jump directly from interpreting the report to a new recommendation. First match the exact task identifier against the canonical route and its handoff, adjudicate the report against the original acceptance criteria, and consume the result into the time-aware evidence graph.
+
+When the task's stated stop condition is met, record the terminal task/result, provenance, exact evidence boundary, remaining dependency, and excluded/unrun actions. A report can be `OWNER_REPORTED` and still be the observed completion of the delegated task; this does not independently certify its technical claims.
+
+### 16.2 Completed work must not remain the active next action
+
+A completed bounded action must not remain the top-level `ACTIVE_TASK`/`NEXT_ACTION` merely because `AUTOMATIC_FOLLOW_ON=FALSE`. These fields mean different things:
+
+- `LAST_TERMINAL_TASK/RESULT`: what just finished and what it actually established.
+- `ACTIVE_TASK`: the next live frontier, including a legitimate wait-for-evidence/Owner-decision state.
+- `NEXT_ACTION`: the one permitted operation or explicit wait condition for that frontier.
+- `AUTOMATIC_FOLLOW_ON=FALSE`: no new technical action may start automatically; it does not prohibit authorized bookkeeping, report reconciliation or a documentation-only router correction.
+
+If no new technical action is authorized and no genuinely new evidence exists, move the router to the existing wait state and preserve the old task in history. Do not invent an implementation, another inventory, or an intermediate prompt just to create apparent activity.
+
+### 16.3 State-transition algorithm
+
+After terminal-result intake:
+
+1. `TASK_ID_MATCHED=TRUE`: compare the report with the exact prior task and acceptance conditions.
+2. `RESULT_PROVENANCE_CLASSIFIED=TRUE`: retain distinctions among `DIRECT_GITHUB`, `OWNER_REPORTED`, `STATIC_REVIEW`, `RUNTIME_VERIFIED`, `NOT_RUN`, `NOT_INSPECTED`, and `SUPPORTED_ROUTE_NOT_FOUND`.
+3. `TASK_AUTHORIZATION_CONSUMED=TRUE`: stop treating the completed task's permission as reusable or open-ended.
+4. `LAST_TERMINAL_TASK/RESULT_UPDATED=TRUE`: preserve the result and its limits.
+5. `CURRENT_STATE_TRANSITIONED=TRUE`: select the next explicitly authorized task or a truthful wait state. Never leave a completed action as the pending `NEXT_ACTION`.
+6. `FRONT_DOORS_SYNCHRONIZED=TRUE`: update `AGENTS.md`, `README.md`, `CONTEXT-INDEX.md`, and `MEMORY-OPERATING-PROTOCOL.md` alongside the new top-level state whenever the relevant routing summary changes.
+7. `NO_AUTOMATIC_ACTION=TRUE`: do not execute the new task or widen scope without authorization/new qualifying evidence.
+8. `FETCH_BACK_VERIFIED=TRUE`: claim canonical adoption only after the authorized change is merged and the exact live-`main` route/receipt has been fetched back.
+
+If the current router is stale but writeback is not authorized, do not repeat the completed task. State `ROUTE_STATE_STALE`, identify the exact permission needed for a documentation-only transition, and stop. If a new bounded documentation authorization is given, perform only that transition and its review/fetch-back.
+
+### 16.4 Anti-loop acceptance invariants
+
+Every handoff and new-chat intake must check:
+
+```text
+TASK_ID_MATCHED_TO_RESULT=TRUE
+TERMINAL_RESULT_CONSUMED_BY_ROUTER=TRUE
+LAST_TERMINAL_TASK_IS_NOT_STILL_PENDING=TRUE
+NEXT_ACTION_DOES_NOT_REPEAT_COMPLETED_TASK=TRUE
+UNKNOWN_NOT_INSPECTED_NOT_RUN_PRESERVED=TRUE
+AUTOMATIC_FOLLOW_ON=FALSE; NO_NEW_TECHNICAL_ACTION_STARTED
+FRONT_DOOR_SUMMARIES_MATCH_CURRENT_STATE=TRUE
+CANONICAL_CLAIM_REQUIRES_MAIN_FETCH_BACK=TRUE
+```
+
+A repeat/reopen is allowed only with its own new bounded authorization and a stated new evidential premise or correction. A new chat, a new task number, or pressure to progress does not count as new evidence. The protocol is coordination guidance, not automatic model-weight training or proof that a runtime learning loop has changed.
