@@ -63,33 +63,34 @@ Live main must be revalidated for every new session; the listed SHAs are histori
 
 ## 2. Executive status
 
-The latest authorized source-candidate task is TERMINAL:
+The latest authorized source-candidate task is terminal:
 
-- Task: M1A_G1_G3_NTCREATEFILE_HANDLE_RELATIVE_SOURCE_CANDIDATE_20261025
-- Result: BLOCKED_ON_NATIVE_HANDLE_BINDING_DETAILS
-- Source delta: zero changed files, empty task diff per Codex report.
-- Why: Windows has suitable low-level handle APIs for a plausible design, but the existing IABV authorization resolver/coordinator accepts and preserves path text, not an identity-bearing open object. Opening a handle after a decision made on a string does not prove that the decision authorized the object subsequently read.
-- The previous task's scope explicitly excluded changing the resolver/coordinator contract. The exact next seam therefore lies outside that task's authorization.
-- No tests/source tests were added or executed; no build, runtime, MCP, real transport or protected reads.
-- No product changes were staged, committed, pushed, published or merged by that task.
+- Task: `M1A_G1_G3_INTEGRATED_AUTHORIZATION_TO_HANDLE_SOURCE_CANDIDATE_20261025`
+- Result: `PARTIAL_G3_HANDLE_CONTRACT_SOURCE_ONLY`, according to the Owner-supplied Codex terminal report.
+- Source delta reported: six files, `+798/-48`; final source hashes, diff count and local worktree details remain `OWNER_SUPPLIED_CODEX_REPORT` until exact bytes are received and independently checked.
+- The report states `APPROVED_WORKSPACE_ROOT_UNAVAILABLE`; the report does not establish a production provider for the approved root identity.
+- Native Windows ABI and filesystem semantics were not runtime-validated. Source tests were authored but not run; tests, build, runtime, MCP, real transport and protected reads were not executed.
+- The Owner has explicitly authorized one bounded independent static review. That review has not started because the exact six task-diff artifacts and preservation evidence remain inaccessible here.
+- No product-source modification, test execution, runtime action, publication, or gate release is authorized by the review decision.
 
 The current route is:
 
 ~~~text
-ACTIVE_TASK=M1A_G1_WAIT_FOR_OWNER_DECISION_ON_INTEGRATED_AUTHORIZATION_TO_HANDLE_CONTRACT_OR_KEEP_BLOCKED
-LAST_TERMINAL_TASK=M1A_G1_G3_NTCREATEFILE_HANDLE_RELATIVE_SOURCE_CANDIDATE_20261025
-LAST_TERMINAL_RESULT=BLOCKED_ON_NATIVE_HANDLE_BINDING_DETAILS; NEW_SOURCE_DELTA_NONE; OWNER_SUPPLIED_CODEX_REPORT
-SOURCE_CHANGES_BY_LAST_TASK=0
-SOURCE_DIFF_SHA256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
-SOURCE_TESTS=AUTHORED_OR_UNCHANGED; NOT_RUN
-TESTS=NOT_RUN
-BUILD=NOT_RUN
-RUNTIME=NOT_RUN
-MCP=NOT_RUN
-REAL_TRANSPORT=NOT_RUN
+ACTIVE_TASK=M1A_G1_OBTAIN_EXACT_TASK_DIFF_ARTIFACTS_FOR_ONE_BOUNDED_STATIC_REVIEW
+LAST_TERMINAL_TASK=M1A_G1_G3_INTEGRATED_AUTHORIZATION_TO_HANDLE_SOURCE_CANDIDATE_20261025
+LAST_TERMINAL_RESULT=PARTIAL_G3_HANDLE_CONTRACT_SOURCE_ONLY; OWNER_SUPPLIED_CODEX_REPORT; SOURCE_ARTIFACTS_NOT_INDEPENDENTLY_REVIEWED
+OWNER_DECISION=EXPLICIT_IN_CHAT; ONE_BOUNDED_INDEPENDENT_STATIC_REVIEW; 2026-10-25
+STATIC_REVIEW=AUTHORIZED_ONCE; NOT_STARTED
+REVIEW_ARTIFACTS=EXACT_SIX_TASK_DIFFS; PRESERVATION_DIFFS; INITIAL_FINAL_STATUS; HASH_MANIFEST
+ARTIFACT_STATUS=EXACT_TASK_DIFFS_NOT_YET_ACCESSIBLE
+SOURCE_CHANGES_REPORTED=6_FILES; +798/-48; HASHES_REPORTER_SUPPLIED
+SOURCE_TESTS=AUTHORED; NOT_RUN
+CANDIDATE_WORKTREE_STATUS=OWNER_SUPPLIED_CODEX_REPORT; NOT_INDEPENDENTLY_OBSERVED
+APPROVED_WORKSPACE_ROOT=UNAVAILABLE_IN_REPORTED_COMPOSITION
+WORKSPACE_ROOT_IDENTITY_BOUND_TO_APPROVED_POLICY=NOT_ESTABLISHED
+NATIVE_WINDOWS_SEMANTICS=NOT_RUNTIME_VALIDATED
 AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
 QUALIFYING_INDEPENDENT_ROOT=NOT_ESTABLISHED
-WORKSPACE_ROOT_IDENTITY_BOUND_TO_APPROVED_POLICY=NOT_ESTABLISHED
 OWNER_TO_WINDOWS_PRINCIPAL=NOT_ESTABLISHED
 BOOTSTRAP_AUTHORITY_TO_ISSUER=NOT_ESTABLISHED
 ISSUER_TO_EXACT_SERVER=NOT_ESTABLISHED
@@ -101,15 +102,19 @@ IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
 GOVERNANCE=KEEP_BLOCKED
 PROTECTED_READS=FAIL_CLOSED
 BRIDGE=BRIDGE_NOT_READY
+TESTS=NOT_RUN
+BUILD=NOT_RUN
+RUNTIME=NOT_RUN
+MCP=NOT_RUN
+REAL_TRANSPORT=NOT_RUN
 COST_POLICY=ZERO_BUDGET
 AUTOMATIC_FOLLOW_ON=FALSE
-NEXT_ACTION=OWNER_DECISION_REQUIRED_TO_AUTHORIZE_ONE_INTEGRATED_AUTHORIZATION_TO_HANDLE_SOURCE_CANDIDATE_OR_KEEP_BLOCKED
-NEXT_REVIEW_TARGET=APPROVED_ROOT_CAPABILITY_TO_RESOLVER_TO_COORDINATOR_DECISION_TO_SAME_HANDLE_CONSUMPTION
-STOP_CONDITION=NO_FOLLOW_ON_WITHOUT_NEW_EXPLICIT_SCOPE; KEEP_PROTECTED_READS_DENIED
+NEXT_ACTION=OBTAIN_EXACT_TASK_DIFF_ARTIFACTS_AND_PRESERVATION_EVIDENCE
+NEXT_REVIEW_TARGET=DIFFS_VS_TASK_ACCEPTANCE; OPENED_CAPABILITY_BINDING; ROOT_DENIAL; HANDLE_OWNERSHIP; NATIVE_ABI_LIMITATIONS
+STOP_CONDITION=NO_IMPLEMENTATION_OR_GATE_RELEASE_WITHOUT_SEPARATE_EXPLICIT_AUTHORIZATION_AND_NEW_EVIDENCE
 ~~~
 
-The next chat must not pretend the previous source candidate is still in progress and must not run a second task automatically. A new scope decision is required to include the resolver/coordinator seam in one integrated source-only candidate.
-
+The review decision authorizes inspection of the exact source diffs only. It does not prove the reported source claims, approve any changed implementation, close a prerequisite, or permit another implementation task. Do not substitute previously saved staged/unstaged diffs for the six task-specific diff artifacts; verify byte identity and preservation evidence first.
 ## 3. Chronology of this session and adopted decisions
 
 ### A. Space-Time operating protocol evolves to revision 2.0
