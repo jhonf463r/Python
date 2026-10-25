@@ -63,7 +63,7 @@ This route advances the bounded source-construction task in response to the late
 
 ---
 
-<!-- Current-state routing record: bounded trust-organ source work is currently authorized. -->
+<!-- Historical routing record: bounded trust-organ source wiring task superseded by the Owner-controlled bootstrap/issuer boundary route above. -->
 ## HISTORICAL ROUTING — MCP read-authorization AppBootstrap wiring (source candidate reported 2026-10-24)
 
 The Owner's latest explicit instruction authorizes source-code modification and source-test authoring to complete the existing trust/authorization organ. The immediate task is the next unclosed composition edge reported by Codex: register the read-authorization coordinator through `AppBootstrap` and inject it into the two MCP read handlers. This is a source-only continuation, not a claim that a trusted root or positive read path exists. The local candidate's latest HEAD and staged/unstaged state remain Owner-reported; GitHub has not verified the local worktree.
