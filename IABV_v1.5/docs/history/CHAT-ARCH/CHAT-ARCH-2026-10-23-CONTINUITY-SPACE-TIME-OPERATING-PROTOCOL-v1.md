@@ -308,3 +308,9 @@ For the enrollment receipt contract, obtain the exact unstaged diff from the sam
 Static review of the supplied enrollment receipt module found that the validator verifies multiple internal field bindings and event-time order, but accepts any nonempty `persistence.registry_id`. A receipt must be checked against an expected registry identity supplied by future trusted host/provider configuration, not a value copied from the receipt or request. Add an exact equality predicate and a negative test using a different well-formed registry identifier.
 
 The test diff supplied for the prior task is incomplete (contains an ellipsis), so describe the review as partial and do not assert that all negative tests exist. Obtain the complete diff after the correction. Keep the distinction between typed status claims and trusted durable actions; do not infer root, registry protection, or runtime enrollment from a dataclass or source test.
+
+## 19. Expected registry identity binding — static correction result (2026-10-24)
+
+The latest supplied F-03 correction adds `expected_registry_id` to `validate_owner_bootstrap_enrollment_receipt()`, rejects non-string/blank values, and requires exact equality with the persisted receipt's `registry_id`. The full supplied test diff contains a mismatched but well-formed identifier case and invalid expected-ID cases. This is a static review of the pasted diff only; tests remain `NOT_RUN`, and local worktree identity and hashes remain `OWNER_REPORTED`.
+
+A caller-supplied `expected_registry_id` is not automatically trusted. A future production boundary must source it from host-owned trust configuration/provider context and must not derive it from the receipt, request or untrusted issuer metadata. The typed receipt and outcome labels still do not prove durable challenge consumption or protected registry persistence. Keep G1/G2/G3 unestablished and protected reads fail-closed.
