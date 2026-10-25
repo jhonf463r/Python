@@ -64,7 +64,7 @@ This checkpoint records the coordination audit as supplementary knowledge; it do
 
 ### Canonical route / governance
 - [`CURRENT-STATE.md`](./CURRENT-STATE.md), live main blob `e51fdc0e6a3d49a83a8619ea864d2cec1b8651b1`.
-- [`AGENTS.md](../../../AGENTS.md), live main blob `50d5843f9d9eb1b81f350a43adbf4881435a9ad3`.
+- [AGENTS.md](../../../AGENTS.md), live main blob `50d5843f9d9eb1b81f350a43adbf4881435a9ad3`.
 - [`SYMBIOSIS-MAP.md`](./SYMBIOSIS-MAP.md), live main blob `64ea4d572a3d823f5e9fbaf663b8096979864e43`.
 
 ### Prior static continuity work (reuse; do not restart from zero)
@@ -80,7 +80,7 @@ This checkpoint records the coordination audit as supplementary knowledge; it do
 - `src/iabv_v15/services/tools/tool_registry.py`, blob `17a0f7cc82dfb6722d4f2d7b231ac61551eb7ac2`.
 - `src/iabv_v15/services/evolution/session_start_briefing_service.py`, blob `b6b292d6b8739d833a74461c7fb96a424f53dd67`.
 - `src/iabv_v15/infra/mcp/server.py`, blob `17b87a1555a63a6350b7f2f02e8f8ec61ad24f7c`.
-- `src/iabv_v15/domain/models.py), blob `a9033d21052c519e09f482097599c704a62ea916` (the fetched range contained `GoalContext` and `DecisionContext`; not a full-model review).
+- `src/iabv_v15/domain/models.py`, blob `a9033d21052c519e09f482097599c704a62ea916` (the fetched range contained `GoalContext` and `DecisionContext`; not a full-model review).
 
 Only the listed paths/ranges and linked audit receipts were inspected in this checkpoint. No claim of whole-repository completeness is made.
 
