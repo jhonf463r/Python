@@ -101,7 +101,7 @@ Before doing project work, each new chat/worker must:
 
 **Current inherited blocker (do not silently bypass):** live `CURRENT-STATE.md` at the start of this proposal records `ACTIVE_TASK=M1A_G1_RECONCILE_CANDIDATE_PRETASK_DIFF_PROVENANCE_20261025`, requiring a repository-relative current directory-to-directory delta and preservation package. It also records `PRODUCT_STAGE_COMMIT_PUSH_MERGE=NOT_AUTHORIZED`, `PROTECTED_READS=FAIL_CLOSED`, `G1/G2/G3=NOT_ESTABLISHED`, and `AUTOMATIC_FOLLOW_ON=FALSE`. This proposal does not itself cancel that route or authorize product-source edits, tests against the product runtime, protected reads, credentials, deployments, merges or spending. The Owner's new collective-coordination direction can be developed as a documentary candidate and read-only work allocation while those limits remain in force.
 
-## 6. Task packet contract
+## 5. Task packet contract
 
 Every worker assignment must carry these fields. Do not assign a vague request such as “audit IABV deeply”.
 
@@ -129,7 +129,7 @@ AUTOMATIC_FOLLOW_ON=FALSE
 
 For source work, add the exact working branch, file ownership, expected tests, protected surfaces, rollback/preservation plan, and who independently reviews the change. The coordinator must not mark a task “active” just because it wrote the packet; assignment/dispatch and acceptance have separate states.
 
-## 7. Parallelism and workspace isolation
+## 6. Parallelism and workspace isolation
 
 Parallel work is permitted only where dependencies and collision risk are explicit.
 
@@ -141,7 +141,7 @@ Parallel work is permitted only where dependencies and collision risk are explic
 - **No speculative execution:** do not launch paid models, external browser sessions, code changes, system commands or follow-on workers unless the specific route permits them.
 - **One integration route:** multiple branches can exist, but only one reconciled active integration task is represented by `CURRENT-STATE.md`.
 
-## 8. Optional examples of bounded work packets (not dispatched)
+## 7. Optional examples of bounded work packets (not dispatched)
 
 These three packets illustrate how Space-Time could guide separate helpers *if a future, explicit task calls for parallel analysis*. They are deliberately read-only and have non-overlapping scopes. They are not orders to contact helpers, do not supersede the current active task, and must not be dispatched automatically. If this addendum is not yet canonical, use it as a draft handoff only; live `CURRENT-STATE.md` still governs permissions.
 
@@ -182,7 +182,7 @@ Inspect only:
 
 Use distinct states for source wiring, actual transport invocation, adapter acceptance, confirmed destination receipt, later decision use and measurable outcome. Preserve existing rich context; do not propose a second memory service. **Do not edit source or tests.**
 
-## 9. Required worker return receipt
+## 8. Required worker return receipt
 
 Each worker returns a single concise report with:
 
@@ -209,7 +209,7 @@ NEXT_ACTION_RECOMMENDED=
 
 Workers should include short cited code fragments or line/function ranges, but not dump entire files. Do not expose secrets, tokens, credentials, personal account data or unrelated user information.
 
-## 10. Coordinator adjudication and integration gate
+## 9. Coordinator adjudication and integration gate
 
 The coordinator must not average conflicting conclusions or accept a class-name-only claim. Compare each return against:
 1. exact `TASK_ID` and acceptance criteria;
@@ -230,7 +230,7 @@ After reconciliation:
 - preserve base and worktree evidence, reconcile file overlap and build/test receipts;
 - only then propose canonical adoption, update all required front doors in one reconciled change and verify fetch-back.
 
-## 11. Criteria for claiming collective symbiosis
+## 10. Criteria for claiming collective symbiosis
 
 Use the following progressive stages; never collapse them into a single “learned” label.
 
@@ -245,7 +245,7 @@ Use the following progressive stages; never collapse them into a single “learn
 
 Only stages actually evidenced may be claimed. A ChatGPT conversation cannot silently access or control other independent ChatGPT chats. Those chats can collaborate through bounded packets and returned evidence, or through a supported transport if one is separately implemented and verified. This document does not establish such a transport.
 
-## 12. Immediate result and stop rule
+## 11. Immediate result and stop rule
 
 This addendum proposes a disciplined way for the Space-Time Mente to maintain awareness of consultation purpose, project relationship, and execution authority. It does not activate a helper swarm by default. The three read-only packets above are optional examples for a later, explicitly authorized delegation—not work to launch automatically. The Space-Time coordinator remains the single integrator.
 
