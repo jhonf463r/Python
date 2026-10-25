@@ -2,7 +2,7 @@
 
 ## Latest bounded source-organ result — candidate-only, static review with notes (2026-10-24)
 
-Receipt: [bounded source-organ remediation static review](./CHAT-ARCH-2026-10-24-M1A-G1-BOUNDED-SOURCE-REMEDIATION-STATIC-REVIEW-RECEIPT.md).
+Receipt: [bounded source-organ remediation static review](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-24-M1A-G1-BOUNDED-SOURCE-REMEDIATION-STATIC-REVIEW-RECEIPT.md).
 
 The one authorized source-only task has been handed back. Visible patch text supports the strict `mandate.revoked` boolean check, manifest schema version 2 with explicit v1 rejection, and the `AUTHORITY_TARGET_INVALID` test for both MCP read handlers. Review status is `PASS_WITH_NOTES_FOR_PASTED_PATCH_TEXT_ONLY`; the reported diff SHA-256 was not recomputed and the Windows worktree was not directly inspected. Tests/build/runtime/MCP/real transport were not run.
 
