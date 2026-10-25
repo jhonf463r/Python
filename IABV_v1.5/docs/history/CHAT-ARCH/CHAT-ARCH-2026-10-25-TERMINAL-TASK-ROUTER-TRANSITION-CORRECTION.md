@@ -5,7 +5,7 @@
 - Authorization: explicit Owner request to correct the cross-chat protocol defect.
 - Base: live main f041e31fa36e293a770e23143d799d8687a039c0.
 - Scope: documentation and routing only; no product code or local execution.
-- Status: candidate until merged and verified from live main.
+- Canonical adoption: merged into live main at `9289d024b1700ea7894c8dcd3223c4d901bc723d`; the route, protocol and receipt were fetched back from main and compared successfully.
 
 ## Incident
 

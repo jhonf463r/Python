@@ -326,7 +326,7 @@ The consolidated receipt is `CHAT-ARCH-2026-10-24-M1A-G1-bootstrap-boundary-cons
 
 ---
 
-## 12. New calibration — terminal task result must be consumed into canonical routing (2026-10-25)
+## 17. New calibration — terminal task result must be consumed into canonical routing (2026-10-25)
 
 ### Observed coordinator error
 

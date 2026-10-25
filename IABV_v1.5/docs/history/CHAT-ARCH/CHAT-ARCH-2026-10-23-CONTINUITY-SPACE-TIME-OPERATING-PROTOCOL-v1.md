@@ -402,6 +402,8 @@ Prompt and evidence contract: [Owner decision receipt — bounded read-only trus
 
 Each asset and dependency edge must be separately classified. `NOT_FOUND_AT_EXACT_INSPECTED_LOCATOR` does not mean global absence. `AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED` remains the state for every unreached asset. An observed certificate, key container, service or pipe is not automatically a qualifying root or trusted issuer. This one inventory is terminal; there is no automatic code-fix loop.
 
+**Historical dispatch snapshot — terminal and superseded on 2026-10-25.** The following `ACTIVE_TASK` and `NEXT_ACTION` fields record the state when the assessment was authorized, not the current route. The result has since returned; the top of live `CURRENT-STATE.md` and the [terminal-task routing correction receipt](./CHAT-ARCH-2026-10-25-TERMINAL-TASK-ROUTER-TRANSITION-CORRECTION.md) are authoritative. Do not launch this inventory again from the following historical block. Section 26 defines the required transition after any terminal result.
+
 ```text
 ACTIVE_TASK=M1A_G1_EXISTING_TRUST_ASSETS_BOUNDED_READ_ONLY_ASSESSMENT
 OWNER_DECISION=AUTHORIZE_ONE_BOUNDED_READ_ONLY_EXISTING_TRUST_ASSET_ASSESSMENT
@@ -417,7 +419,7 @@ NEXT_ACTION=PERFORM_ONE_BOUNDED_EXISTING_TRUST_ASSET_READ_ONLY_ASSESSMENT_IN_EXI
 
 ---
 
-## 16. Mandatory terminal-result consumption and router transition (2026-10-25)
+## 26. Mandatory terminal-result consumption and router transition (2026-10-25)
 
 This section closes a continuity defect found when a task report had returned but the front-door summaries and `CURRENT-STATE.md` still advertised the completed task as active. It supplements sections 2–9 and 15; it does not override Owner authorization or the fail-closed trust gate.
 
