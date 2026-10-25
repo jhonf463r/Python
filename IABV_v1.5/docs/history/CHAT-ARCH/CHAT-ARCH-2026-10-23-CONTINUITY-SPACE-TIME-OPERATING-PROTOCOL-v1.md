@@ -1,7 +1,7 @@
 # Canonical continuity, Space-Time cognition, and adaptive neuroplasticity protocol
 
 - Protocol ID: `CONTINUITY_SPACE_TIME_ANTI_LOOP` (stable identity; operating method evolves in place)
-- Living operating revision: `2.1 — ADAPTIVE_SPACE_TIME_NEUROPLASTICITY + MACHINE_GENERATED_EVIDENCE_HANDOFF`
+- Living operating revision: `2.2 — ADAPTIVE_SPACE_TIME_NEUROPLASTICITY + OWNER_CONTEXT_AWARE_TURN_ROUTING + VERIFIED_CONTEXT_HANDOFF`
 - Evolution rule: integrate new lessons into their owning core rule; preserve dated incidents/history; do not accumulate competing append-only protocols
 - Owner instruction date: 2026-10-23 (America/Bogota)
 - Scope: objective-bound reasoning, temporal evidence graph, adaptive role activation, gated action chains, memory consolidation, delivery receipts and outcome-based protocol evolution
@@ -45,6 +45,14 @@ For every new chat and every material hand-off:
 
 GitHub is the durable source for records actually committed there; it is not a magical transcript of all chats or local runtime. A new chat does not automatically inherit an old chat's hidden context. The coordinator must fetch and bind the records it uses, while marking what was unavailable.
 
+### Turn-boundary refresh and route-drift prevention (revision 2.2)
+
+The five-file live-main intake remains mandatory at the start of every new chat. In an ongoing chat, refresh live `refs/heads/main` and `CURRENT-STATE.md` before a material next decision when the Owner changes scope or priority, an external AI returns a result or artifact, a branch/PR/merge may have changed, new evidence may alter the blocker, or the last verified route may no longer be current. Compare the refreshed route with the state already used and recompute the next action. An earlier in-chat SHA is not a permanent cache.
+
+Do not re-read all five large front doors for every trivial follow-up when no route, evidence, permission or objective could have changed. Use full five-file intake for new chats and targeted live-state refresh for material in-session transitions. Record the main SHA and observation time that actually supported the decision. If the route cannot be verified, label it `ROUTE_UNVERIFIED` and do not issue a consequential handoff.
+
+A bounded, Owner-authorized documentary audit may finish without silently replacing an active technical task. Unless the Owner explicitly changes priority, preserve that task's route and return to it after the audit terminates. An aspiration to improve the project does not itself authorize unrelated code, credentials, runtime or deployment actions.
+
 ## 3. Construct the Space-Time evidence graph before selecting work
 
 Do not treat memory as a flat summary. Reconstruct the minimum graph needed to answer the current dependency.
@@ -67,11 +75,13 @@ The current state is a derived, reconciled view; historical events and receipts 
 
 Before reasoning from Portable Context or another package, bind its package ID/digest, creation/update time, source revision, active objective/session, freshness and refresh outcome. If those fields or the delivery route are not observable, label currentness or receipt status `UNKNOWN` / `UNVERIFIED`. Do not claim a newly opened ChatGPT/Codex session consumed a package just because it exists in GitHub or a send was attempted.
 
+Treat the Owner's immediate objective and explicit operating constraints as task context, not optional conversational color. Capture project-relevant constraints such as `ZERO_BUDGET`, free/connected tools, available access surfaces, intended output and manual-step cost. Mark each as Owner-stated, inferred or unknown, with source/time where material. Reuse answers already available in the conversation or canonical record instead of asking the Owner to repeat them. Minimize human effort without bypassing authorization. Public GitHub is not a private transport; free does not mean safe or authorized.
+
 ## 4. Adaptive reasoning cycle — from intent to verified state transition
 
 Execute this compact cycle for every substantive task; use the full version when the state, trust boundary or plan changes.
 
-**A. Orient.** Re-read the current route and the actual requested objective. Restate success in observable terms. Bind the current goal before drafting downstream recommendations or constructing an initial task/perception snapshot.
+**A. Orient.** Re-read the current route and the actual requested objective. Restate success in observable terms. Bind the current goal before drafting downstream recommendations or constructing an initial task/perception snapshot. Also bind immediate human circumstances and explicit constraints—especially budget, available tools/access, intended output and avoidable manual effort—before ranking actions. Do not repeat a question already answered. A bounded documentation authorization does not imply permission for product-code edits, tests, credentials, runtime, publication or deployment.
 
 **B. Retrieve.** Query canonical records relevant to the earliest open dependency, prior terminal outcome, Owner decisions and exact route. Reuse settled findings. Do not make the Owner repeat archive work the coordinator can perform through an allowed route.
 
@@ -93,7 +103,7 @@ For eligible candidate actions, filter out every action that lacks authorization
 
 “Activating a profession or facet” means applying an explicit reasoning contract for the current task—not pretending that a hidden ChatGPT mode, tool, model or separate agent has been switched when no such invocation occurred.
 
-Always use a **Space-Time Navigator** role to establish the current objective, route, time, provenance and unresolved dependency. Then choose only the other roles needed:
+Always use a **Space-Time Navigator** role to establish the current objective, route, time, provenance, Owner-stated constraints and unresolved dependency. Treat human-context and interaction-cost awareness as checks within this existing role, not as new permanent personas. Then choose only the other roles needed:
 
 - **Domain Specialist** — for the precise technical discipline implicated by the dependency (e.g. Python, Git, Windows identity, cryptography, MCP, distributed systems or document governance).
 - **Adversarial Reviewer** — when the claim is security-sensitive, disputed, high-consequence, or could be a false positive.
@@ -210,6 +220,8 @@ MODEL_WEIGHT_CHANGE=NOT_CLAIMED
 
 Measure operational outcomes, not the volume of documentation: did a later chat avoid reopening a terminal task, select the correct role for the dependency, use the right source revision, reduce contradictory route statements, avoid an unnecessary Owner burden, or make a better evidence-backed decision? Define the comparison and evidence first. GitHub persistence gives durable external memory; it does not train ChatGPT's weights. A new protocol rule is a hypothesis about better coordination until later behavior provides reuse evidence.
 
+Track coordination outcomes separately across later tasks: stale-route reuse, repeated Owner questions, avoidable manual transfers per handoff, briefs with verified goal/freshness provenance, destination-bound delivery receipt coverage, later causal reuse, and attributable rework reduction. Establish a baseline before claiming improvement. Do not compress these into one intelligence/consciousness score. A metric without observations is `UNKNOWN`, not zero.
+
 ## 9. Durable handoff, context delivery and answer contract
 
 For each meaningful bounded task, persist a concise receipt when authorized and useful. Include:
@@ -223,6 +235,12 @@ For each meaningful bounded task, persist a concise receipt when authorized and 
 - the single next dependency/action or explicit wait condition.
 
 Before delivering a new-chat brief, bind it to the verified current route and identify its destination. For another AI/session, include the exact prompt, source baseline, prior-art links, role contract, action contract, acceptance criteria and prohibited side effects. Distinguish `PREPARED`, `SENT`, `ACKNOWLEDGED`, `CONSUMED`, `REUSED` and `OUTCOME_VERIFIED`; claim only the state supported by a receipt. GitHub records do not prove that a newly opened ChatGPT or Codex session has read them. No automatic-delivery claim without a supported destination and correlated evidence.
+
+### Minimum current-context envelope (existing organs only)
+
+For every new chat or material AI handoff, assemble one concise, self-contained envelope from canonical records: (1) `PRIMARY_OUTCOME` and the Owner's immediate objective; (2) explicit constraints such as budget and effort limits; (3) live-main SHA and observation time; (4) current `ACTIVE_TASK/NEXT_ACTION` and permissions; (5) latest terminal result and evidence class; (6) relevant closed paths and a few exact prior-art links; (7) blocker, unknowns and unrun checks; (8) destination-specific delivery state; (9) acceptance criteria and expected output; and (10) one next action or truthful wait state. Prefer selective decision-relevant context over archive dumping or a parallel memory.
+
+Distinguish `PREPARED`, `SENT`, `ACKNOWLEDGED`, `CONSUMED`, `REUSED`, and `OUTCOME_VERIFIED`. Where supported, bind `task_id`, `package_id`/digest, objective/session binding, destination/provider/session ID, send time, remote message/correlation ID and acknowledgment. If no supported receipt exists, mark `UNAVAILABLE`/`UNVERIFIED`; do not assume every ChatGPT/Codex session receives a Devin briefing.
 
 ### Evidence handoff: prefer producer-generated, one-package transfer
 
@@ -312,6 +330,10 @@ Apply these refinements together with sections 1–11. They improve evidence han
 - On every new chat, revalidate the live `main` ref, then read the five front doors in the exact order in section 2.
 - Revalidate a PR's actual head/state before editing, reviewing, marking ready or merging. A user-reported SHA is a locator to verify, not proof of the current head.
 - After a branch update, inspect the resulting diff and changed-file list again. Do not assume the update left a PR at the head previously reported.
+
+- During a long chat, refresh live-main/`CURRENT-STATE.md` before the next material decision whenever scope or evidence may have changed. Initial five-file intake is not a permanent cache.
+- Keep one live technical route. Finish a bounded documentary audit without silently making it a competing `ACTIVE_TASK`; return to the still-authorized route unless the Owner explicitly reprioritizes.
+- Before requesting manual work, exhaust supported conversation/repository/Library retrieval, have the producer create one evidence package when possible, and request at most one unavoidable transfer. Never substitute public publication for private transfer.
 
 ### 12.2 Source custody and independent attribution are separate checks
 
@@ -603,6 +625,12 @@ ONE_BUNDLE_PREFERRED_TO_MULTIPLE_MANUAL_UPLOADS=TRUE
 AUTOMATIC_FOLLOW_ON=FALSE; NO_NEW_TECHNICAL_ACTION_STARTED
 FRONT_DOOR_SUMMARIES_MATCH_CURRENT_STATE=TRUE
 CANONICAL_CLAIM_REQUIRES_MAIN_FETCH_BACK=TRUE
+MATERIAL_TURN_ROUTE_REFRESHED_WHEN_EXTERNAL_STATE_MAY_HAVE_CHANGED=TRUE
+OWNER_OBJECTIVE_AND_EXPLICIT_CONSTRAINTS_BOUND=TRUE
+AVOIDABLE_OWNER_MANUAL_WORK_MINIMIZED_WITHOUT_GATE_BYPASS=TRUE
+NO_REDUNDANT_QUESTION_WHEN_ANSWER_IS_ALREADY_AVAILABLE=TRUE
+CONTEXT_DELIVERY_NOT_INFERRED_FROM_GITHUB_PERSISTENCE_OR_SEND_ATTEMPT=TRUE
+LATER_CAUSAL_REUSE_REQUIRED_FOR_LEARNING_CLAIM=TRUE
 ```
 
 A repeat/reopen is allowed only with its own new bounded authorization and a stated new evidential premise or correction. A new chat, a new task number, or pressure to progress does not count as new evidence. The protocol is coordination guidance, not automatic model-weight training or proof that a runtime learning loop has changed.
