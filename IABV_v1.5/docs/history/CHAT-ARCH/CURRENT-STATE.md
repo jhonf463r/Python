@@ -1,27 +1,24 @@
-<!-- Current-state routing proposal only; live main remains authoritative until PR adoption. --> 
-## CURRENT-STATE PROPOSAL — bind authorized read target before any positive path (2026-10-24)
+<!-- Current-state routing proposal only; canonical live main remains authoritative until adoption. -->
+## CURRENT-STATE PROPOSAL — review R-03 containment diff before further source changes (2026-10-24)
 
-The Owner supplied a Codex `SOURCE_REVIEW_BUNDLE_ONLY` report for the existing dirty local candidate. Codex reports it inspected the 12-path candidate without altering it and exported complete staged/unstaged patch files. Reported patch SHA-256 values are staged `d220b3c57325799e953a0c2534d7bcfa6088f5297b361855c23021f0097909b1` (63,238 bytes) and unstaged `59cb23aefa3205ccad22746f9d3afb7deaa1b604fc3e68eb510d9d23a332e4c6` (87,643 bytes). These local Windows files were not attached as downloadable bytes here. Treat candidate review details as Codex-reported local inspection until the relevant exact source hunk is supplied for another independent review.
+The latest Owner-supplied Codex result reports a source-only change that makes `_protected_read_authority_block()` return denial even for a syntactically valid `ALLOW`, because the existing helpers independently resolve the input path and do not consume an identity-bearing target from the permit. This is a sensible fail-closed containment candidate, not a positive same-object-binding implementation. The server hunk was supplied in chat; the complete exact test hunks were not, so the task delta is not yet independently statically certified here.
 
-The reported review says AppBootstrap → bridge → runner → MCP server → both protected-read handlers is wired in source, while absent production providers cause fail-closed denial. It does **not** establish runtime behavior, enrollment, trust authority or a positive read path. F-01/F-02/F-03 remain focused static findings from previously supplied diffs, not executed tests.
+The reported checkout is `codex/m1a-g1-owner-governed-bootstrap-organ-20261024`, HEAD `6bc568e1c5a898afd65cc045c779c25a9cdc5489`; 12 routes, 7 staged and 11 unstaged statuses with overlap; the task changes reportedly remain unstaged. New worktree hashes reported: server `716e4fcf85667e124ca4ed6aa75931b5746ef5ed`, server tests `0fc7936c82d6f7dbc29d702db82b44517a0fbb2e`, read-authorization tests `5f93ab1d39d44f0471900d1f3bb546365980b184`. The checkout and hashes remain owner/Codex-reported.
 
-The first actionable source defect is **R-03**: the handler reportedly validates a non-empty `permit.canonical_target` but calls the resource helper with the original untrusted `relative_path`, permitting a second path resolution. The policy decision's target therefore is not yet bound to the object the helper operates on. Keep the present fail-closed composition; do not enable ALLOW. The bounded next source action is to inspect the existing helper contract and minimally repair the target binding, with source tests only. If the same-object guarantee requires a stronger boundary unavailable in the current helper, keep denial and report the exact unmet prerequisite.
+**Next action: read-only export and focused static review of exact task diffs**, not another implementation patch. Require full current staged and unstaged diffs for `server.py`, `test_mcp_server.py` and `test_read_authorization.py`, exact new R-03 test hunks, hashes, and initial/final status. If no pre-task patch baseline was saved, say so instead of reconstructing one. Do not execute tests/build/runtime/MCP/transport or alter the dirty checkout.
 
-Canonical live `main` at this proposal's latest pre-edit revalidation: `2cecd5e9b9e175584d65bbb1198a53bc2346d095`; live `CURRENT-STATE.md` blob `c577ab49c5dd16993502c7199560dc94b586a815`. It still routes to `M1A_G1_OWNER_CONTROLLED_BOOTSTRAP_ISSUER_BOUNDARY` with `SOURCE_IMPLEMENTATION=AUTHORIZED_WITH_BOUNDS`, `SOURCE_TEST_AUTHORING=AUTHORIZED`, `TEST_EXECUTION=NOT_AUTHORIZED; NOT_RUN`, and `NEXT_ACTION=CONTINUE_EXISTING_LOCAL_CANDIDATE_WITH_OWNER_CONTROLLED_BOOTSTRAP_ISSUER_BOUNDARY`. The specific R-03 task below is a proposed narrowing within that route, not canonical until this documentation branch is adopted and fetched back.
+Canonical live `main` last revalidated: `2cecd5e9b9e175584d65bbb1198a53bc2346d095`; live `CURRENT-STATE.md` blob `c577ab49c5dd16993502c7199560dc94b586a815`. It still routes to `M1A_G1_OWNER_CONTROLLED_BOOTSTRAP_ISSUER_BOUNDARY`, authorizes source changes/source-test authoring with bounds, and excludes test execution/runtime/transport, credentials/enrollment/OS changes and protected reads. The R-03 review is within that bounded source task; this proposed route remains documentation-branch only.
 
 Handoff: [consolidated new-chat handoff](./CHAT-ARCH-2026-10-24-M1A-G1-CONSOLIDATED-NEW-CHAT-HANDOFF.md).
-Consolidated receipt: [bootstrap-boundary static review receipt](./CHAT-ARCH-2026-10-24-M1A-G1-bootstrap-boundary-consolidated-static-review-receipt.md).
+Receipt: [consolidated static review receipt](./CHAT-ARCH-2026-10-24-M1A-G1-bootstrap-boundary-consolidated-static-review-receipt.md).
 
 ```text
 PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
-ACTIVE_TASK=M1A_G1_BIND_AUTHORIZED_CANONICAL_TARGET_TO_READ_OPERATION
-PARENT_TASK=M1A_G1_OWNER_CONTROLLED_BOOTSTRAP_ISSUER_BOUNDARY
-PREVIOUS_TASK=M1A_G1_REVIEW_COMPLETE_DIRTY_BOOTSTRAP_BOUNDARY_CANDIDATE
-PREVIOUS_TASK_RESULT=SOURCE_REVIEW_BUNDLE_ONLY; CODEX_REPORTED_LOCAL_STATIC_REVIEW; RAW_PATCH_BYTES_NOT_AVAILABLE_TO_THIS_REVIEWER
-SOURCE_REVIEW=REPORTED_COMPLETE_FOR_12_PATHS; CHATGPT_BYTE_LEVEL_REVIEW=LIMITED_TO_SUPPLIED_SUMMARY
-NEXT_ACTION=MINIMALLY_REPAIR_R03_AUTHORIZED_TARGET_BINDING_WITH_SOURCE_TESTS
-NEXT_REVIEW_TARGET=EXACT_HUNKS_FOR_SERVER_GUARD_HELPER_CALL_AND_FOCUSED_TESTS
-OWNER_DECISION=BOUNDED_SOURCE_IMPLEMENTATION_AND_SOURCE_TEST_AUTHORING
+ACTIVE_TASK=M1A_G1_REVIEW_R03_FAIL_CLOSED_CONTAINMENT_DIFF
+PREVIOUS_TASK=M1A_G1_BIND_AUTHORIZED_CANONICAL_TARGET_TO_READ_OPERATION
+PREVIOUS_TASK_RESULT=SOURCE_CANDIDATE_ONLY; DENY_ONLY_CONTAINMENT_REPORTED; TEST_HUNKS_NOT_EXACTLY_REVIEWED
+NEXT_ACTION=EXPORT_AND_REVIEW_EXACT_CURRENT_DIFFS_FOR_THREE_R03_PATHS
+NEXT_REVIEW_TARGET=SERVER_GUARD_AND_BOTH_HANDLER_CALLS; EXACT_NEW_TEST_HUNKS; PRESERVATION
 SOURCE_IMPLEMENTATION=AUTHORIZED_WITH_BOUNDS
 SOURCE_TEST_AUTHORING=AUTHORIZED
 TEST_EXECUTION=NOT_AUTHORIZED; NOT_RUN
@@ -31,7 +28,6 @@ REAL_TRANSPORT=NOT_AUTHORIZED; NOT_RUN
 PROTECTED_READS=FAIL_CLOSED
 AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
 QUALIFYING_INDEPENDENT_ROOT=NOT_ESTABLISHED
-ROOT_CUSTODIAN_AND_INDEPENDENT_VERIFICATION_CHANNEL=NOT_ESTABLISHED
 OWNER_TO_WINDOWS_PRINCIPAL=NOT_ESTABLISHED
 BOOTSTRAP_AUTHORITY_TO_ISSUER=NOT_ESTABLISHED
 ISSUER_TO_EXACT_SERVER=NOT_ESTABLISHED
@@ -46,7 +42,7 @@ COST_POLICY=ZERO_BUDGET
 AUTOMATIC_FOLLOW_ON=FALSE
 ```
 
-This proposal authorizes no new side-effect class: source edits/source-test authoring only under the live bounded authorization; no test execution, build, runtime, credentials, enrollment, root creation, Windows ACL/trust-store/service changes, publication, merge, deployment, spend or protected reads. Do not confuse the documentation proposal with canonical state.
+This is a proposal only. It does not publish or promote the source candidate, enable positive reads, close any gate, or authorize excluded execution/platform actions.
 
 ---
 
