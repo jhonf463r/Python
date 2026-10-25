@@ -2,17 +2,17 @@
 
 Date: 2026-10-25  
 Task: `M1C_G1_CANONICAL_RECONCILIATION_AFTER_M1B_20261025`  
-Outcome: PR #526 merged as documentation-only change; five canonical front doors fetched back from live `main`. This follow-up receipt correction is a branch/PR candidate until merged and fetched back.
+Outcome: PR #526 and PR #527 merged as documentation-only changes; five canonical front doors fetched back from live `main`. This receipt records the finalized M1C reconciliation history and verified governance state.
 
 ## Authority and scope
 
-The Owner explicitly authorized one documentation-only reconciliation and preparation of a documentation PR. The authorization excludes product code changes, source candidate integration, protected reads, test execution, runtime, trust provisioning and merging this PR.
+The Owner explicitly authorized the M1C documentation reconciliation and subsequently authorized the documentation-only PR merges. No product source changes, candidate integration, protected reads, test execution, runtime or trust provisioning occurred in M1C.
 
 ## Canonical baseline inspected
 
 Repository: `jhonf463r/Python`  
 Base `main` SHA: `4ac6045792e93c9a3033ebbfb7a34792dbf94f61`  
-Prior M1B candidate base/HEAD reported by Codex: `1c86dcb43ceabf149dae3edb8b5f9530536e4ff6`. GitHub compare confirms that SHA is an ancestor of current `main`; `main` is one commit ahead and reflects the documentation-only PR #525. The five canons were fetched from `main`; source and test paths for M1B returned 404 on `main`.
+Prior M1B candidate base/HEAD reported by Codex: `1c86dcb43ceabf149dae3edb8b5f9530536e4ff6`. GitHub comparison confirmed that SHA is an ancestor of `main`, three commits behind the current head: PR #525 merge `4ac6045792e93c9a3033ebbfb7a34792dbf94f61`, PR #526 merge `452961e4c2d26a2a675eebf1ce97808149fbdce1`, and PR #527 merge `568d2fbac5d09ad0e144197801ee41b98f61a98c`. All five canons were fetched from the resulting live `main`; source and test paths for M1B returned 404 on `main`.
 
 ## M1B evidence reconciliation
 
@@ -60,7 +60,8 @@ AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
 PROTECTED_READS=FAIL_CLOSED
 M1B_SOURCE_CANDIDATE_IN_MAIN=FALSE
 AUTOMATIC_FOLLOW_ON=FALSE
-NEXT_ACTION=REVIEW_POST_MERGE_STATUS_CORRECTION_PR; NO_AUTOMATIC_FOLLOW_ON
+M1C_DOCUMENTATION_RECONCILIATION=COMPLETE; PR_526_AND_527_MERGED; FIVE_CANONS_FETCHED_BACK
+NEXT_ACTION=PLAN_NEXT_BOUNDED_AUTHORIZATION_ORGAN_STEP; KEEP_PROTECTED_READS_FAIL_CLOSED
 ```
 
 The next technical decision must remain separate. It must address governed source-candidate integration, same-object end-to-end authorization/consumer binding, and legitimate approved-workspace-root/authority evidence. This receipt does not establish any of them and does not authorize protected reads.
