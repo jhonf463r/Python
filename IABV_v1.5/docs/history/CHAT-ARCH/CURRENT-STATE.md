@@ -1,32 +1,31 @@
-<!-- Current-state routing record: receipt validator needs trusted-registry target binding; full test diff is still incomplete. -->
-## CURRENT-STATE ROUTING — bind enrollment receipt to expected registry (2026-10-24)
+<!-- Current-state routing record: supplied enrollment-receipt diff now contains expected registry binding; exact test diff reviewed, tests not run. -->
+## CURRENT-STATE ROUTING — enrollment receipt registry binding statically reviewed (2026-10-24)
 
-The Owner supplied the exact unstaged module diff for the reported `M1A_G1_DEFINE_EXPLICIT_BOOTSTRAP_ENROLLMENT_RECEIPT_CONTRACT` change. Static inspection of that source shows the new receipt validator checks challenge, server, issuer, Owner and merge bindings, requires outcome strings `CONSUMED_ONCE`, `PERSISTED` and `ENROLLED`, validates positive integer versions and enforces consumption → persistence → receipt timestamp order. These are source-level consistency checks only; they do not prove that the referenced durable actions occurred.
+The latest supplied result for `M1A_G1_BIND_ENROLLMENT_RECEIPT_TO_EXPECTED_REGISTRY` is `TASK_RESULT=SOURCE_CANDIDATE_ONLY`. The exact validator hunk adds required `expected_registry_id: str`, rejects values whose exact type is not `str` or whose contents are whitespace-only, documents that its value must come from future trusted host configuration/provider context, and requires exact equality with `persistence.registry_id`. Invalid expected values raise `ENROLLMENT_RECEIPT_INVALID`; mismatch raises `ENROLLMENT_TRUST_REGISTRY_ID_MISMATCH`. The complete test diff supplied in this turn includes a syntactically valid registry mismatch case and invalid expected-ID cases.
 
-**Finding F-03 — target registry is not bound to a trusted expected identity.** `validate_owner_bootstrap_enrollment_receipt()` only checks that `persistence.registry_id` is a nonempty string. It has no `expected_registry_id`/trusted registry identity input and no equality check, so a well-formed receipt naming a different registry is not rejected by this validator. Add a strict expected-registry binding supplied by the future trusted host/provider context—not from the receipt, caller request or untrusted issuer fields—and tests for a mismatched but well-formed registry ID. This remains source-contract validation and must not imply the independent trust root or production registry is established.
+Static disposition: `STATIC_REVIEW=F03_CORRECTION_PRESENT_IN_SUPPLIED_DIFF; FULL_TEST_DIFF_REVIEWED; TESTS_NOT_RUN`. This applies to the pasted delta, not independent access to the Windows worktree or runtime behavior. Reported working/index/HEAD hashes and staged/unstaged preservation are still `OWNER_REPORTED`. The candidate remains local-only and absent from remote branches. The latest diff reported worktree hashes source `a5d14a14f31b87f181d7748e63f2f1e44b1948db` and test `a5c1c182926271457d353b981fd701f3487e0cf4`, with the prior staged/index blobs retained. Tests/build/runtime/MCP/transport were not run.
 
-The test diff received in chat was not complete: the captured output includes an ellipsis and explicitly notes that it is not a full export. Therefore the test coverage for the new validator has not been fully reviewed. The next task is a bounded correction to bind `registry_id` to an expected trusted value and return the complete exact test diff for review. Preserve all staged/unstaged work.
+The expected registry parameter is a source-contract binding only: its provenance cannot be enforced merely by adding a function argument. Any future production caller must obtain it from independently trusted host configuration/provider context rather than from the receipt, request or untrusted issuer fields. The value-object receipt and outcome labels still do not prove real durable challenge consumption or registry persistence. No production Owner verifier, independent trust root, durable anti-replay store, protected registry or authenticated issuer IPC/process/OS boundary has been established.
 
-Reported worktree identity remains `OWNER_REPORTED`: checkout `C:\Users\faber\AppData\Local\Temp\iabv-g1-bootstrap-sparse-f99534e037e542038513a974d805bb27`, branch `codex/m1a-g1-owner-governed-bootstrap-organ-20261024`, HEAD `6bc568e1c5a898afd65cc045c779c25a9cdc5489`. The candidate branch/HEAD are not present on remote GitHub. The reported worktree source/test blobs are `84e950934abb5969af3621a97d79d12123927234` / `7350da4ed4560639678edd584af49ee018847468`; their hashes are not independently verified against the local filesystem. The report says 7 staged / 11 unstaged paths, identical pre/post status, and `git diff --check` clean with LF/CRLF warnings. Tests/build/runtime/MCP/transport remain `NOT_RUN`.
+Reported worktree identity remains `OWNER_REPORTED`: checkout `C:\Users\faber\AppData\Local\Temp\iabv-g1-bootstrap-sparse-f99534e037e542038513a974d805bb27`, branch `codex/m1a-g1-owner-governed-bootstrap-organ-20261024`, HEAD `6bc568e1c5a898afd65cc045c779c25a9cdc5489`; reported `main` at the task was `2cecd5e9b9e175584d65bbb1198a53bc2346d095`. Do not treat these historical claims as current or verified.
 
-No real Owner verifier, independent root, durable anti-replay store, protected registry or authenticated issuer IPC/process/OS boundary is established. `AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED`; G1/G2/G3 remain unestablished; 8 prerequisites open / 0 closed; governance blocked; protected reads fail-closed; bridge not ready.
+### Gate state and next bounded action
 
-Handoff: [Owner-controlled bootstrap/issuer boundary](./CHAT-ARCH-2026-10-24-M1A-G1-BOOTSTRAP-BOUNDARY-NEXT-HANDOFF.md).
-Review receipt: [bootstrap-boundary static review receipt](./CHAT-ARCH-2026-10-24-M1A-G1-bootstrap-boundary-static-review-receipt.md).
-
-### Current gate record
+The receipt contract has no further defect identified in the supplied hunk/full test diff for F-03. The next practical step is to preserve the candidate and return a consolidated static review receipt; do not start production enrollment work or infer gate progress. Re-read live `CURRENT-STATE.md` before any new task because this route is a proposal on the documentation PR branch only.
 
 ```text
 PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
-ACTIVE_TASK=M1A_G1_BIND_ENROLLMENT_RECEIPT_TO_EXPECTED_REGISTRY
-PREVIOUS_TASK=M1A_G1_DEFINE_EXPLICIT_BOOTSTRAP_ENROLLMENT_RECEIPT_CONTRACT
-PREVIOUS_TASK_RESULT=SOURCE_REVIEW_BUNDLE_ONLY; MODULE_DIFF_PARTIALLY_REVIEWED; F03_EXPECTED_REGISTRY_BINDING_MISSING; TEST_DIFF_INCOMPLETE
+ACTIVE_TASK=M1A_G1_CONSOLIDATE_ENROLLMENT_RECEIPT_STATIC_REVIEW
+PREVIOUS_TASK=M1A_G1_BIND_ENROLLMENT_RECEIPT_TO_EXPECTED_REGISTRY
+PREVIOUS_TASK_RESULT=SOURCE_CANDIDATE_ONLY; STATIC_REVIEW_F03_CORRECTION_PRESENT_IN_SUPPLIED_DIFF; FULL_TEST_DIFF_REVIEWED; TESTS_NOT_RUN; CHECKOUT_NOT_INDEPENDENTLY_VERIFIED
 OWNER_DECISION=BOUNDED_SOURCE_IMPLEMENTATION_AND_SOURCE_TEST_AUTHORING
 OWNER_DECISION_PROVENANCE=EXPLICIT_OWNER_CHAT_MESSAGE_2026-10-24
 OWNER_DECISION_SCOPE=SOURCE_CODE_CHANGES_AND_SOURCE_TEST_AUTHORING_ONLY
-CANONICAL_MAIN_AT_PREFLIGHT=2cecd5e9b9e175584d65bbb1198a53bc2346d095; REFRESH LIVE MAIN BEFORE EACH TASK
+CANONICAL_MAIN_AT_PREFLIGHT=2cecd5e9b9e175584d65bbb1198a53bc2346d095; HISTORICAL; REFRESH LIVE MAIN BEFORE EACH TASK
 LOCAL_CANDIDATE_BRANCH=codex/m1a-g1-owner-governed-bootstrap-organ-20261024; OWNER_REPORTED; NOT_FOUND_ON_REMOTE
 LOCAL_CANDIDATE_HEAD=6bc568e1c5a898afd65cc045c779c25a9cdc5489; OWNER_REPORTED; NOT_INDEPENDENTLY_INSPECTED
+LOCAL_SOURCE_BLOB= a5d14a14f31b87f181d7748e63f2f1e44b1948db; OWNER_REPORTED
+LOCAL_TEST_BLOB= a5c1c182926271457d353b981fd701f3487e0cf4; OWNER_REPORTED
 SOURCE_TEST_AUTHORING=AUTHORIZED
 TEST_EXECUTION=NOT_AUTHORIZED; NOT_RUN
 BUILD=NOT_AUTHORIZED; NOT_RUN
@@ -53,11 +52,11 @@ GOVERNANCE=KEEP_BLOCKED
 READ_LIST=FAIL_CLOSED
 BRIDGE=BRIDGE_NOT_READY
 AUTOMATIC_FOLLOW_ON=FALSE
-NEXT_ACTION=ADD_EXPECTED_TRUST_REGISTRY_ID_BINDING_AND_TESTS
-NEXT_REVIEW_TARGET=SOURCE_PREDICATE_AND_FULL_TEST_DIFF; NO_GATE_CLOSURE
+NEXT_ACTION=CONSOLIDATE_STATIC_REVIEW_AND_REVALIDATE_CANONICAL_ROUTER
+NEXT_REVIEW_TARGET=REVIEW_RECEIPT_AND_ROUTE_ONLY; NO_TEST_EXECUTION; NO_GATE_CLOSURE
 ```
 
-This route is a proposal on the documentation PR branch only. It does not change live `main`, certify the local candidate, authorize real enrollment/credentials/OS changes, enable protected reads, or permit execution, publication, merge, deployment or spend.
+This route is documentation-only and noncanonical until adopted on live `main` and fetched back. It does not authorize real enrollment, new credentials, root creation, OS/ACL changes, test/build/runtime/transport execution, publication, merge, deployment, spending or protected reads.
 
 ---
 
