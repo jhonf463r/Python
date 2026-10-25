@@ -23,13 +23,14 @@ The report still identifies `APPROVED_WORKSPACE_ROOT_UNAVAILABLE` and says nativ
 
 ## Subsequent Owner decision — one bounded independent static review authorized (2026-10-25)
 
-The Owner explicitly authorized the proposed **single bounded independent static review** in chat (“si autorizo”). This resolves the earlier decision wait; no further approval is required for that review. The review remains pending because the exact task-diff bytes are not yet accessible on this review surface. Protocol revision 2.1 supersedes manual artifact gathering: route from section 2, have the existing source Codex session generate one evidence ZIP, and request at most one upload only if no supported private route exists.
+This is a historical snapshot of the state immediately after the Owner authorized the proposed **single bounded independent static review** in chat (“si autorizo”). It is superseded by the later terminal bundle result and transfer route in Section 2. The evidence ZIP has since been generated; only its transfer remains outstanding. Protocol revision 2.1 directs the producer—not the Owner—to assemble one bundle.
 
 Scope is limited to the six exact task diffs versus the task acceptance criteria, capability-to-opened-object binding, fail-closed denial when the approved workspace root is unavailable, handle ownership/lifetime, native ABI limitations, and preservation of pre-existing staged/unstaged work. Review source bytes and reported hashes must be independently checked. The Library artifacts named `staged.diff.txt` and `unstaged.diff.txt` are not verified substitutes for the six task-specific diff files.
 
 No code modification, tests, build, runtime, MCP, real transport, protected reads, source publication, root/authority provisioning, or gate release is authorized. G3 remains unestablished and protected reads remain fail-closed. No implementation follow-on may begin automatically.
 
 ~~~text
+SNAPSHOT_STATUS=HISTORICAL; SUPERSEDED_BY_SECTION_2
 OWNER_DECISION=EXPLICIT_IN_CHAT; ONE_BOUNDED_INDEPENDENT_STATIC_REVIEW; 2026-10-25
 PROTOCOL_DELTA=REVISION_2_1; PRODUCER_GENERATED_EVIDENCE_HANDOFF
 STATIC_REVIEW=AUTHORIZED_ONCE; NOT_STARTED
@@ -64,42 +65,28 @@ Live main must be revalidated for every new session; the listed SHAs are histori
 
 ## 2. Executive status
 
-The latest authorized source-candidate task is terminal:
+The latest source-candidate task is terminal at `PARTIAL_G3_HANDLE_CONTRACT_SOURCE_ONLY`, according to the Owner-supplied Codex report. A bounded packaging task has now returned `EVIDENCE_BUNDLE_READY`, also as an Owner-supplied Codex report.
 
-- Task: `M1A_G1_G3_INTEGRATED_AUTHORIZATION_TO_HANDLE_SOURCE_CANDIDATE_20261025`
-- Result: `PARTIAL_G3_HANDLE_CONTRACT_SOURCE_ONLY`, according to the Owner-supplied Codex terminal report.
-- Reported source delta: six files, `+798/-48`; hashes and worktree preservation claims remain `OWNER_SUPPLIED_CODEX_REPORT` until exact bytes are independently checked.
-- The report states `APPROVED_WORKSPACE_ROOT_UNAVAILABLE`; native Windows ABI/filesystem semantics were not runtime-validated.
-- The Owner authorized exactly one bounded independent static review; it is still not started because exact artifacts are not available on the review surface.
+Reported ZIP: `IABV_G3_STATIC_REVIEW_EVIDENCE_20261025_3d0c265fc41443739b5e65ef3d4a23d3.zip`, 91,213 bytes, reported SHA-256 `9f9a3e575fa8c6d03b33ae9bdb73bfbf8a4680642b7a65d39fce44e154febe66`. It reportedly contains the six task diffs, six current source/test files and a manifest. The bytes have not yet reached this reviewer, so archive identity and member hashes are not independently checked.
 
-The interaction itself yielded a protocol correction. The assistant correctly refused to substitute older, similarly named staged/unstaged Library files, but asked the Owner to upload/assemble a ZIP before directing the producing Windows Codex session to package its already-local diffs. This unnecessarily shifted work to the Owner. Living protocol revision 2.1 corrects the source-owned artifact handoff in place. The verified repository `jhonf463r/Python` is public; a public branch/PR should not be called temporary merely because it can be deleted. The preferred route is one source-generated ZIP outside the checkout, through a supported private route if one exists, or one upload of that single ZIP when no such route exists.
+The report says `preexisting-staged.diff` and `preexisting-unstaged.diff` were unavailable and were not reconstructed. The source paths are reported under `src/iabv_v15`, not the initially requested `src/iabv15`. Checkout/index remained unchanged during packaging according to the report, but prior-work preservation is not independently established without the original prior diffs.
 
-Current route:
+The review was explicitly authorized by the Owner. No connected private machine-to-machine transfer route is verified; the smallest remaining transfer is one upload of the already-created ZIP. Do not publish it on the public GitHub repository. Protocol revision 2.1 governs the transfer; the Owner must not assemble files manually.
 
 ~~~text
-ACTIVE_TASK=M1A_G1_PREPARE_SINGLE_G3_REVIEW_EVIDENCE_BUNDLE_20261025
-LAST_TERMINAL_TASK=M1A_G1_G3_INTEGRATED_AUTHORIZATION_TO_HANDLE_SOURCE_CANDIDATE_20261025
-LAST_TERMINAL_RESULT=PARTIAL_G3_HANDLE_CONTRACT_SOURCE_ONLY; OWNER_SUPPLIED_CODEX_REPORT; SOURCE_ARTIFACTS_NOT_INDEPENDENTLY_REVIEWED
-OWNER_DECISION=EXPLICIT_IN_CHAT; ONE_BOUNDED_INDEPENDENT_STATIC_REVIEW; 2026-10-25
-PROTOCOL_DELTA=REVISION_2_1; SECTIONS_9_12_2_26_4_EVOLVED_IN_PLACE
-STATIC_REVIEW=AUTHORIZED_ONCE; NOT_STARTED
-REVIEW_ARTIFACTS=EXACT_SIX_TASK_DIFFS; PREEXISTING_STAGED_UNSTAGED_DIFFS; INITIAL_FINAL_STATUS; HASH_MANIFEST
-ARTIFACT_CAPTURE=EXISTING_CODEX_SESSION; READ_ONLY; ZIP_OUTSIDE_CHECKOUT
-ARTIFACT_TRANSPORT=SUPPORTED_PRIVATE_ROUTE_FIRST; SINGLE_ZIP_UPLOAD_FALLBACK
-PUBLIC_GITHUB_REPOSITORY=PUBLIC; TEMPORARY_DELETION_NOT_ASSUMED_TO_ERASE_HISTORY
-CODEX_DISPATCH=NOT_AVAILABLE_FROM_THIS_CHAT; INLINE_PROMPT_PREPARED_NOT_SENT
-SOURCE_CHANGES_REPORTED=6_FILES; +798/-48; HASHES_REPORTER_SUPPLIED
-SOURCE_TESTS=AUTHORED; NOT_RUN
-CANDIDATE_WORKTREE_STATUS=OWNER_SUPPLIED_CODEX_REPORT; NOT_INDEPENDENTLY_OBSERVED
+ACTIVE_TASK=M1A_G1_TRANSFER_PRODUCER_ZIP_AND_PERFORM_ONE_AUTHORIZED_STATIC_REVIEW_20261025
+LAST_TERMINAL_TASK=M1A_G1_PREPARE_SINGLE_G3_REVIEW_EVIDENCE_BUNDLE_20261025
+LAST_TERMINAL_RESULT=EVIDENCE_BUNDLE_READY; OWNER_SUPPLIED_CODEX_REPORT; ZIP_BYTES_NOT_RECEIVED
+BUNDLE_NAME=IABV_G3_STATIC_REVIEW_EVIDENCE_20261025_3d0c265fc41443739b5e65ef3d4a23d3.zip
+BUNDLE_SHA256_REPORTED=9f9a3e575fa8c6d03b33ae9bdb73bfbf8a4680642b7a65d39fce44e154febe66
+BUNDLE_SIZE_BYTES_REPORTED=91213
+BUNDLE_VALIDATION=MEMBER_HASHES_VALIDATED_BY_PRODUCER; NOT_INDEPENDENTLY_RECHECKED
+BUNDLE_CONTENTS_REPORTED=6_TASK_DIFFS; 6_CURRENT_SOURCE_TEST_FILES; MANIFEST_JSON
+PRESERVATION_DIFFS=PREEXISTING_STAGED_UNSTAGED_NOT_AVAILABLE; NOT_RECONSTRUCTED; PRESERVATION_NOT_VERIFIED
+STATIC_REVIEW=AUTHORIZED_ONCE; WAITING_FOR_ZIP_BYTES
+ARTIFACT_TRANSFER=NO_CONNECTED_PRIVATE_ROUTE_VERIFIED; ONE_ZIP_UPLOAD_REQUIRED
 APPROVED_WORKSPACE_ROOT=UNAVAILABLE_IN_REPORTED_COMPOSITION
-WORKSPACE_ROOT_IDENTITY_BOUND_TO_APPROVED_POLICY=NOT_ESTABLISHED
 NATIVE_WINDOWS_SEMANTICS=NOT_RUNTIME_VALIDATED
-AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
-QUALIFYING_INDEPENDENT_ROOT=NOT_ESTABLISHED
-OWNER_TO_WINDOWS_PRINCIPAL=NOT_ESTABLISHED
-BOOTSTRAP_AUTHORITY_TO_ISSUER=NOT_ESTABLISHED
-ISSUER_TO_EXACT_SERVER=NOT_ESTABLISHED
-DURABLE_REPLAY_AND_ROLLBACK_PROTECTION=NOT_ESTABLISHED
 G1=NOT_ESTABLISHED
 G2=NOT_ESTABLISHED
 G3_SAME_OBJECT=NOT_ESTABLISHED
@@ -114,12 +101,12 @@ MCP=NOT_RUN
 REAL_TRANSPORT=NOT_RUN
 COST_POLICY=ZERO_BUDGET
 AUTOMATIC_FOLLOW_ON=FALSE
-NEXT_ACTION=ISSUE_ONE_BOUNDED_ARTIFACT_CAPTURE_PROMPT_INLINE_TO_EXISTING_WINDOWS_CODEX_SESSION; WAIT_FOR_BUNDLE
-NEXT_REVIEW_TARGET=DIFFS_VS_TASK_ACCEPTANCE; OPENED_CAPABILITY_BINDING; ROOT_DENIAL; HANDLE_OWNERSHIP; NATIVE_ABI_LIMITATIONS; PRESERVATION
-STOP_CONDITION=NO_SOURCE_MODIFICATION_OR_GATE_RELEASE; NO_PUBLICATION_OF_UNREVIEWED_DIFFS_BY_DEFAULT
+NEXT_ACTION=TRANSFER_ONE_EXISTING_ZIP_TO_CURRENT_CHAT
+NEXT_REVIEW_TARGET=ARCHIVE_AND_MANIFEST_HASHES; EXACT_SIX_DIFFS; SOURCE_CONTRACTS; ROOT_DENIAL; HANDLE_OWNERSHIP; NATIVE_ABI_LIMITATIONS; PRESERVATION_LIMITS
+STOP_CONDITION=NO_IMPLEMENTATION_OR_GATE_RELEASE; NO_PUBLICATION_OF_PACKET_TO_PUBLIC_GITHUB
 ~~~
 
-This protocol change improves the coordination method, not the source implementation or trust boundary. It does not claim that the prompt has been sent, that Codex delivered the packet, that the review ran, or that model weights learned.
+This packaging result is not the static review. Once the ZIP arrives, review its exact bytes and report partial scope where the missing preservation diffs prevent a conclusion.
 ## 3. Chronology of this session and adopted decisions
 
 ### A. Space-Time operating protocol evolves to revision 2.0
