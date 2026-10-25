@@ -1,47 +1,45 @@
 <!-- G1 continuity summary; CURRENT-STATE.md remains the sole routing authority. -->
 
-## CURRENT ROUTE — Owner reopens one integrated source-organ completion candidate (2026-10-25)
+## CURRENT ROUTE — source-organ candidate terminal; isolate G3 handle contract (2026-10-25)
 
-The Owner's latest explicit instruction reopens ONE bounded, integrated source-only candidate task after the prior bounded remediation and trust-asset inventory were consumed. Reuse their accepted findings; do not repeat the broad review, asset inventory, TPM path, Entra setup, or already-terminal micro-patches. This does not supply new authority evidence or authorize a positive read.
+The one integrated source-only candidate task returned `TASK_RESULT=BLOCKED_ON_EXTERNAL_TRUST_BOUNDARY`. The supplied Codex report says no files changed because the relevant source-level validation and fail-closed controls were already present in the inspected candidate. The report and local hashes/status remain `OWNER_SUPPLIED_CODEX_REPORT`; they were not independently executed or re-observed in this reconciliation.
 
-The authorized objective is to reconcile the actual existing Windows candidate, preserve its prior staged/unstaged state, and complete only source-enforceable authorization-organ contracts in one coherent candidate. The same-object G3 path must either pass the exact identity-bearing object to the reader or remain denied with the irreducible dependency identified. Do not synthesize an authority/root, production provider, protected issuer, OS identity, IPC boundary, registry, or trust asset.
+The precise remaining engineering edge is G3: the reader resolves the original path again instead of consuming the same identity-bearing filesystem object authorized by the decision. The next useful engineering question is whether a handle-backed Windows reader contract can safely bind authorization and consumption to the same opened object. Do not repeat the broad source review, previous micro-patches, trust-asset inventory, TPM path or Entra setup.
 
-Decision receipt: [Owner decision — one integrated authorization-organ completion candidate](./CHAT-ARCH-2026-10-25-M1A-G1-OWNER-DECISION-INTEGRATED-AUTHORIZATION-ORGAN-COMPLETION-RECEIPT.md).
+Separately, no qualifying independent authority root, mandate/custodian, Owner-to-Windows principal, or protected issuer/server binding has been established. Even a correct G3 handle contract would not itself establish G1/G2 or enable positive protected reads.
+
+Result receipt: [integrated authorization-organ source completion result](./CHAT-ARCH-2026-10-25-M1A-G1-INTEGRATED-AUTHORIZATION-ORGAN-SOURCE-COMPLETION-RESULT-RECEIPT.md).
 
 ```text
 PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
-ACTIVE_TASK=M1A_G1_INTEGRATED_AUTHORIZATION_ORGAN_SOURCE_COMPLETION_CANDIDATE
-LAST_TERMINAL_TASK=M1A_G1_EXISTING_TRUST_ASSETS_BOUNDED_READ_ONLY_ASSESSMENT
-LAST_TERMINAL_RESULT=NO_SOURCE_GROUNDED_LOCAL_ASSET_LOCATOR_FOUND_IN_INSPECTED_FILES
-PREVIOUS_SOURCE_TASK=M1A_G1_BOUNDED_SOURCE_ORGAN_REMEDIATION; TERMINAL_FOR_ITS_SCOPE
-CURRENT_OWNER_DECISION=REOPEN_ONE_INTEGRATED_SOURCE_ONLY_CANDIDATE_TASK
-CANDIDATE_BASE_MAIN=0674f3a1460214377f1a4a75fed20d0a834e682d
+ACTIVE_TASK=M1A_G1_WAIT_FOR_EXPLICIT_SCOPE_FOR_G3_HANDLE_BACKED_READER_CONTRACT
+LAST_TERMINAL_TASK=M1A_G1_INTEGRATED_AUTHORIZATION_ORGAN_SOURCE_COMPLETION_CANDIDATE
+LAST_TERMINAL_RESULT=BLOCKED_ON_EXTERNAL_TRUST_BOUNDARY; NEW_SOURCE_DELTA_NONE; CODEX_REPORTED
+SOURCE_CHANGES_BY_LAST_TASK=0
+SOURCE_TESTS=UNCHANGED; NOT_RUN
+CANDIDATE_CHECKOUT_STATUS=CODEX_REPORTED_UNCHANGED; NOT_INDEPENDENTLY_OBSERVED
 AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
 QUALIFYING_INDEPENDENT_ROOT=NOT_ESTABLISHED
 OWNER_TO_WINDOWS_PRINCIPAL=NOT_ESTABLISHED
 BOOTSTRAP_AUTHORITY_TO_ISSUER=NOT_ESTABLISHED
 ISSUER_TO_EXACT_SERVER=NOT_ESTABLISHED
-G1=NOT_ESTABLISHED
+DURABLE_REPLAY_AND_ROLLBACK_PROTECTION=NOT_ESTABLISHED
 G2=NOT_ESTABLISHED
-G3_VERSIONED_TARGET_RESOLVER=NOT_ESTABLISHED_UNTIL_SAME_OBJECT_CONTRACT_IS_EVIDENCED
+G3_SAME_OBJECT=NOT_ESTABLISHED; DENY_ONLY
 IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
-SOURCE_ONLY_CANDIDATE=AUTHORIZED_FOR_ONE_TASK
+GOVERNANCE=KEEP_BLOCKED
+PROTECTED_READS=FAIL_CLOSED
+BRIDGE=BRIDGE_NOT_READY
 TESTS=NOT_RUN
 BUILD=NOT_RUN
 RUNTIME=NOT_RUN
 MCP=NOT_RUN
 REAL_TRANSPORT=NOT_RUN
-PROTECTED_READS=FAIL_CLOSED
-GOVERNANCE=KEEP_BLOCKED
-BRIDGE=BRIDGE_NOT_READY
 COST_POLICY=ZERO_BUDGET
 AUTOMATIC_FOLLOW_ON=FALSE
-NEXT_ACTION=HAND_OFF_ONE_BOUNDED_SOURCE_ONLY_COMPLETION_TASK_TO_CODEX_EXISTING_WINDOWS_SESSION; THEN_STOP_FOR_REVIEW
-STOP_CONDITION=RETURN_ONE_COMPLETE_CANDIDATE_AND_EXACT_RESIDUAL_BLOCKER_MATRIX; DO_NOT_ENABLE_POSITIVE_READS
+NEXT_ACTION=OWNER_DECISION_REQUIRED_TO_AUTHORIZE_ONE_NEW_G3_HANDLE_BACKED_READER_CONTRACT_TASK; DO_NOT_REPEAT_COMPLETED_REVIEWS
+STOP_CONDITION=NO_NEW_TECHNICAL_TASK_UNTIL_NEW_EXPLICIT_SCOPE; KEEP_PROTECTED_READS_DENIED
 ```
-
-Scope limits: inspect/reuse only relevant existing candidate/source and accepted receipts; author focused tests where needed but do not execute them. Do not stage/commit/push/publish/merge product source. No credentials, trust-root creation/enrollment, Entra app, service, OS/ACL/registry/trust-store changes, IPC provisioning, public tunnel, tests, build, runtime, MCP, transport, protected reads, deployment or spend. Return complete before/after evidence and stop after this task.
-
 
 ## Previous task result — bounded source-organ remediation (2026-10-24)
 
