@@ -1,26 +1,34 @@
 <!-- Owner-authorized route transition: 2026-10-25. CURRENT-STATE.md remains the sole route authority. -->
 
-## CURRENT ROUTE — bounded Windows handle-close task authorized; Codex result intake pending; delivery protocol calibrated (2026-10-25)
+## CURRENT ROUTE — M1B result received; narrow static review favorable; canonical reconciliation PR open; source candidate unintegrated (2026-10-25)
 
-The Owner authorized one isolated source task, `M1A_G1_BOUNDED_HANDLE_CLOSE_AND_DETERMINISTIC_CONCURRENCY_FIX_20261025`: correct `OwnedWindowsHandle.close()` failure-state handling, replace the timing-based concurrency assertion with deterministic synchronization, and execute only focused tests using synthetic fixtures. Preserve both historical clones and candidate unchanged; do not invent trust providers; do not perform real protected reads; do not commit, push, merge or create a PR for the product-code task. Stop after the evidence package and independent-review handoff.
+The Owner explicitly authorized this documentation-only reconciliation after the M1B result was supplied. The M1A and M1B source candidates remain isolated, unmerged candidates and are not part of `main`. No product source changes are included in this documentation route.
 
-The complete task prompt has been provided inline in the current ChatGPT conversation for copy/paste into the existing Codex session. This ChatGPT session has not demonstrated direct dispatch into Codex. The Codex response has not yet been supplied in this chat, so source changes, local commands and test outcomes must not be inferred. The next action is to receive and reconcile the Owner-supplied response against the exact task ID, base, diff, command outputs and stop conditions; refresh live canonical state before any consequential decision.
+### M1B result and evidence classification
 
-A separate observed coordination defect was reconciled: an earlier answer pointed to a local prompt file rather than delivering the prompt inline as requested, then asserted a Dropbox upload and verification without an upload operation/receipt. A later answer supplied the full prompt inline, but that does not retroactively verify a Dropbox transfer. The strengthened last-mile rule is in the existing coordination protocol's section 13.2.1 and the [delivery-preflight incident receipt](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-25-OWNER-FACING-DELIVERY-PREFLIGHT-CORRECTION.md). Do not create a duplicate memory/orchestrator; test later causal reuse instead of assuming it.
+- Task: `M1B_G1_OPENED_TARGET_CAPABILITY_CLOSE_RETRY_FIX_20261025`; Codex reported `TASK_RESULT=SOURCE_CANDIDATE_ONLY`.
+- Candidate base/HEAD reported by Codex: `1c86dcb43ceabf149dae3edb8b5f9530536e4ff6`. A GitHub comparison confirmed this SHA is an ancestor of current `main` `4ac6045792e93c9a3033ebbfb7a34792dbf94f61`; current main is one commit ahead, with the documentation-only PR #525 changes.
+- Candidate files reported: `IABV_v1.5/src/iabv_v15/infra/mcp/windows_handle_reader.py` and `IABV_v1.5/tests/test_windows_handle_reader.py`. Fetching those paths from current `main` returns 404, consistent with the candidate not being integrated.
+- Codex reports one focused run with 17 tests passing (exit 0). ChatGPT did not rerun the tests; this remains an implementer-reported observation, not independent dynamic verification.
+- ChatGPT retrieved and statically examined the patch text from Dropbox. The narrow change in `OpenedTargetCapability.close()` is favorable: it preserves a re-tryable state after an underlying close exception, serializes close attempts using `_closing`, and marks the wrapper closed after the underlying close succeeds. The added synthetic regression checks failure, retry success and idempotence; a concurrent test uses explicit events/condition signaling. This is a narrow static review only, not whole-organ acceptance or proof of native Windows semantics.
+- Dropbox metadata and readable content confirm the report and patch exist at the paths recorded in [the M1C reconciliation receipt](./CHAT-ARCH-2026-10-25-M1C-CANONICAL-RECONCILIATION-RECEIPT.md). The evidence ZIP is stored in Dropbox as Base64 text, not as a ZIP binary. Its metadata was checked; ChatGPT did not independently decode the ZIP or recompute its member hashes in this reconciliation.
+
+### Current work and route
+
+The Owner authorized one documentation-only reconciliation. This branch synchronizes the five canonical front doors and adds a receipt separating reported test execution, static review, artifact transfer, and canonical adoption.
 
 ```text
 PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
-LAST_TERMINAL_TASK=M1A_G1_BUILD_CURRENT_DIRECTORY_DELTA_WITH_PRESERVED_GIT_STATES_20261025
-LAST_TERMINAL_RESULT=ZIP_INTEGRITY_VERIFIED; CURRENT_TREE_DELTA_RECONCILED; STATIC_REVIEW_COMPLETE; BASELINE_LINKAGE_UNRECONCILED
-ACTIVE_TASK=M1A_G1_BOUNDED_HANDLE_CLOSE_AND_DETERMINISTIC_CONCURRENCY_FIX_20261025
-ACTIVE_TASK_STATUS=OWNER_AUTHORIZED; INLINE_PROMPT_DELIVERED_TO_OWNER; CODEX_RESULT_INTAKE_PENDING
-CODEX_DISPATCH=NOT_OBSERVED_IN_THIS_CHAT; DO_NOT_CLAIM_SENT_OR_CONSUMED
-SOURCE_EDIT=AUTHORIZED_ONLY_IN_ISOLATED_CLEAN_CANDIDATE; EXECUTION_NOT_YET_VERIFIED_HERE
-TESTS=FOCUSED_SYNTHETIC_FIXTURES_ONLY; ACTUAL_RESULT_PENDING
-PRODUCT_CODE_COMMIT_PUSH_MERGE=NOT_AUTHORIZED
-DOC_ONLY_METHOD_CALIBRATION=AUTHORIZED; BRANCH_CANDIDATE_UNTIL_MERGE_AND_FETCH_BACK
-METHOD_DELTA=OWNER_FACING_DELIVERY_PREFLIGHT; SECTION_13.2.1
-LESSON_STATUS=PROMOTED_TO_METHOD_RULE; CAUSAL_REUSE=NOT_TESTED
+LAST_TERMINAL_TASK=M1B_G1_OPENED_TARGET_CAPABILITY_CLOSE_RETRY_FIX_20261025
+LAST_TERMINAL_RESULT=SOURCE_CANDIDATE_ONLY; CODEX_REPORTED_17_TESTS_PASSED; NARROW_STATIC_REVIEW_FAVORABLE
+ACTIVE_TASK=M1C_G1_CANONICAL_RECONCILIATION_AFTER_M1B_20261025
+ACTIVE_TASK_STATUS=DOC_ONLY_PR_OPEN; NOT_MERGED
+M1B_SOURCE_CANDIDATE_IN_MAIN=FALSE
+M1B_TESTS=17_REPORTED_PASS; NOT_RERUN_BY_CHATGPT
+M1B_STATIC_REVIEW=NARROW_FAVORABLE; NOT_WHOLE_ORGAN_ACCEPTANCE
+CANONICAL_RECONCILIATION=BRANCH_AND_PR_ONLY_UNTIL_MERGED_AND_FETCHED_BACK
+DOC_ONLY_PR=https://github.com/jhonf463r/Python/pull/526
+PRODUCT_CODE_COMMIT_PUSH_MERGE=NOT_PERFORMED_BY_M1C
 G1=NOT_ESTABLISHED
 G2=NOT_ESTABLISHED
 G3=NOT_ESTABLISHED
@@ -28,8 +36,14 @@ IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
 AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
 PROTECTED_READS=FAIL_CLOSED
 AUTOMATIC_FOLLOW_ON=FALSE
-NEXT_ACTION=RECEIVE_AND_RECONCILE_OWNER_SUPPLIED_CODEX_RESPONSE
+NEXT_ACTION=INDEPENDENT_REVIEW_OF_DOC_ONLY_PR; DO_NOT_MERGE_WITHOUT_OWNER_DECISION
 ```
+
+The next technical phase must be decided separately. At minimum, future work must assess governed integration of the source candidate, end-to-end binding of authorization to the exact opened object and consumer, and legitimate evidence for an approved workspace-root provider and authority chain. This documentation change establishes none of those properties and must not close any implementation prerequisite.
+
+Space-Time method delta: distinguish `implementer-reported test results`, `static review`, `Dropbox transfer`, and `canonical adoption`. Recording/retrieving this rule is not evidence of autonomous learning; `CAUSAL_REUSE=NOT_TESTED`.
+
+Do not merge this PR automatically. Once reviewed and explicitly merged, fetch all five canonical front doors back from live `main` before treating this route as canonically adopted.
 
 <!-- Previous current-route snapshot is retained below as historical context. -->
 
