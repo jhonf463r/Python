@@ -1,5 +1,42 @@
 <!-- Current-state proposal only. Live main remains the sole canonical route authority until an authorized merge and fetch-back. -->
-## CURRENT-STATE PROPOSAL — R-03 focused review complete; whole-candidate review next (2026-10-24)
+## CURRENT-STATE PROPOSAL — whole-candidate Codex report received; independent byte review pending (2026-10-24)
+
+Codex supplied a whole-candidate R-01–R-08 static-review summary and reported complete local staged/unstaged exports (1,899 and 3,844 lines) with SHA-256 values recorded in the whole-candidate receipt. The temporary export bytes have not been attached or published to GitHub, so ChatGPT has not independently inspected or re-hashed them. The report is OWNER_SUPPLIED_CODEX_STATIC_REVIEW_REPORT; do not promote it to independent byte-level verification.
+
+Reported findings: R-01 production owner verifier/challenge/trust registry/issuer/enrollment producer absent; R-02 coordinator is connected but unconfigured with eight missing requirements; R-03 deny-only, same-object binding absent, explicit AUTHORITY_TARGET_INVALID assertion absent; R-04 no production trusted registry ID source; R-05 SQLite replay source does not detect rollback to an older valid snapshot; R-06 signature key authority unestablished; R-07 restricted local transport profile not verified; R-08 real Owner/Windows principal, root, issuer process/IPC, ACL/trust store and process separation unestablished.
+
+**Next proposed evidence step:** obtain and independently inspect the exact staged.diff.txt and unstaged.diff.txt bytes cited in the receipt. Do not use public main as a proxy for the local dirty candidate. After that review, reconcile the next scope against live CURRENT-STATE.md, then prioritize the Owner-requested Mente Espacio-Tiempo audit using the existing continuity protocol and static audit.
+
+    PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+    ACTIVE_TASK=M1A_G1_INDEPENDENT_BYTE_REVIEW_WHOLE_CANDIDATE_DIFFS
+    PREVIOUS_TASK=M1A_G1_REVIEW_COMPLETE_DIRTY_BOOTSTRAP_BOUNDARY_CANDIDATE
+    PREVIOUS_TASK_RESULT=WHOLE_CANDIDATE_STATIC_REVIEW_BUNDLE_ONLY; DIFFS_COMPLETE=YES; CODEX_REPORTED
+    INDEPENDENT_BYTE_REVIEW=NOT_PERFORMED; SOURCE_EXPORT_BYTES_NOT_RECEIVED
+    NEXT_ACTION=OBTAIN_AND_INDEPENDENTLY_REVIEW_STAGED_UNSTAGED_DIFF_EXPORTS
+    NEXT_REVIEW_TARGET=R01_R08_SOURCE_COMPOSITION_AND_RESIDUAL_AUTHORITY_DEPENDENCIES
+    SOURCE_IMPLEMENTATION=AUTHORIZED_WITH_BOUNDS
+    SOURCE_TEST_AUTHORING=AUTHORIZED
+    TEST_EXECUTION=NOT_AUTHORIZED; NOT_RUN
+    BUILD=NOT_AUTHORIZED; NOT_RUN
+    RUNTIME=NOT_AUTHORIZED; NOT_RUN
+    REAL_TRANSPORT=NOT_AUTHORIZED; NOT_RUN
+    PROTECTED_READS=FAIL_CLOSED
+    AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+    G1=NOT_ESTABLISHED
+    G2=NOT_ESTABLISHED
+    G3_VERSIONED_TARGET_RESOLVER=NOT_ESTABLISHED
+    IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+    GOVERNANCE=KEEP_BLOCKED
+    BRIDGE=BRIDGE_NOT_READY
+    COST_POLICY=ZERO_BUDGET
+    AUTOMATIC_FOLLOW_ON=FALSE
+
+This routing proposal is documentation-branch-only and does not alter live main, authorize automatic follow-on, enable protected reads, or close any prerequisite.
+
+---
+
+<!-- Historical proposal: R-03 focused review complete; whole-candidate review next (superseded by whole-candidate report intake). -->
+## HISTORICAL PROPOSAL — R-03 focused review complete; whole-candidate review next (2026-10-24)
 
 The complete current staged/unstaged diff bundle for the three R-03 paths was supplied in the chat and statically reviewed. The current server guard denies before invoking either helper, including typed synthetic ALLOW. This is deny-only containment; the helpers still independently resolve the original relative path, so positive same-object binding is not established. The source test package lacks an explicit `AUTHORITY_TARGET_INVALID` assertion. Tests/build/runtime/MCP/transport were not run.
 
