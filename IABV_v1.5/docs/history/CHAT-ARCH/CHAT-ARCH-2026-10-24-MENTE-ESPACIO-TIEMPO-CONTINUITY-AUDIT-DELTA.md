@@ -5,7 +5,7 @@
 - Existing protocol inspected: `CHAT-ARCH-2026-10-23-CONTINUITY-SPACE-TIME-OPERATING-PROTOCOL-v1.md`, blob `da2cb8e1ccda2c0827b1903af430592af3946334`
 - Existing static audit inspected: `CHAT-ARCH-2026-10-24-CONTINUITY-ALGORITHMS-STATIC-AUDIT.md`, blob `05f63f43349ebc7a942fa28e7f9e710c67086ab9`
 - Method: read-only review of direct-GitHub source and canonical continuity documents. No test, runtime or active application session was run.
-- Status: `STATIC_AUDIT_DELTA`; proposal branch only.
+- Status: `STATIC_AUDIT_DELTA`; adopted as documentation in PR #493 (squash merge `3235219304f87210dd235e0a657111e8981b13b4`), followed by canonical route and front-door reconciliations on live `main`; fetch-back verified.
 
 ## 1. Purpose and conceptual boundary
 
@@ -17,7 +17,7 @@ The existing Space-Time operating protocol is already a strong base: it requires
 
 ### A. Route-intake summaries conflict with the canonical router
 
-At the audited live-main baseline, the first sections of four other files—`AGENTS.md`, `README.md`, `CONTEXT-INDEX.md` and `MEMORY-OPERATING-PROTOCOL.md`—contained stale G1 front-matter summaries with `ACTIVE_TASK=M1A_G1_WAIT_FOR_INDEPENDENT_ROOT_EVIDENCE` and the old wait-for-root `NEXT_ACTION`. The live `CURRENT-STATE.md` at this same main SHA says `ACTIVE_TASK=M1A_G1_OWNER_CONTROLLED_BOOTSTRAP_ISSUER_BOUNDARY` and `NEXT_ACTION=CONTINUE_EXISTING_LOCAL_CANDIDATE_WITH_OWNER_CONTROLLED_BOOTSTRAP_ISSUER_BOUNDARY`. In this PR's documentation branch, all four stale summary blocks have now been neutralized so their route fields direct agents back to freshly fetched live `CURRENT-STATE.md`. These branch edits are not canonical until an authorized merge and fetch-back.
+At the audited live-main baseline, the first sections of four other files—`AGENTS.md`, `README.md`, `CONTEXT-INDEX.md` and `MEMORY-OPERATING-PROTOCOL.md`—contained stale G1 front-matter summaries with `ACTIVE_TASK=M1A_G1_WAIT_FOR_INDEPENDENT_ROOT_EVIDENCE` and the old wait-for-root `NEXT_ACTION`. The live `CURRENT-STATE.md` at this same main SHA says `ACTIVE_TASK=M1A_G1_OWNER_CONTROLLED_BOOTSTRAP_ISSUER_BOUNDARY` and `NEXT_ACTION=CONTINUE_EXISTING_LOCAL_CANDIDATE_WITH_OWNER_CONTROLLED_BOOTSTRAP_ISSUER_BOUNDARY`. PR #493's documentation-only changes were adopted into live `main` by squash merge `3235219304f87210dd235e0a657111e8981b13b4`. Follow-up main commits then reconciled the now-canonical `CURRENT-STATE.md` and explicitly relabelled the stale source-task summaries in the four front-door files as historical checkpoints. Fetch-back verified the updated blobs. Every new chat must still refresh live `main` and derive its action only from the current `CURRENT-STATE.md`.
 
 Because the protocol correctly declares `CURRENT-STATE.md` the sole router, the stale summaries do not override the route. However, they create contradictory initial context and increase the chance that an agent copies a stale task before reading the canonical router. The correction should be minimal: make front-door summaries explicitly defer to the live `CURRENT-STATE.md`, or update their route summary only when the same change set reconciles all five files. Never let these mirrors become independent authorities.
 
@@ -101,3 +101,9 @@ CANONICAL_FIX=NOT_ADOPTED; PR_493_OPEN_UNMERGED
 ```
 
 This distinction is material: editing the proposal branch is not a live-main protocol change. New chats must keep reading `CURRENT-STATE.md` from freshly fetched live main, regardless of what a branch proposal says.
+
+## 7. Adoption and current-state reconciliation (2026-10-24)
+
+This audit delta is no longer branch-only. PR #493 was merged as a documentation-only squash; follow-up commits corrected adoption wording in `CURRENT-STATE.md` and relabelled obsolete source-task instructions in `AGENTS.md`, `README.md`, `CONTEXT-INDEX.md`, and `MEMORY-OPERATING-PROTOCOL.md`. The latest route remains `WAIT_FOR_GENUINELY_NEW_INDEPENDENT_ROOT_AND_AUTHENTICATED_OWNER_ISSUER_OS_BOUNDARY_EVIDENCE`. The candidate's review result and the continuity findings do not establish G1–G3 and do not authorize further source-only loops, tests, runtime, credentials, platform changes, protected reads, publication of the source candidate, or spend.
+
+The remediation queue for freshness, goal ordering, delivery receipts and causal reuse remains a set of static findings—not an active implementation assignment. It must be reconciled against a future live `CURRENT-STATE.md` authorization before any source changes. The existing protocol is the continuity mechanism; the durable knowledge delta is this adoption record plus the independent-review receipts. Evidence of later reuse must be observed in a future non-identical task before calling it behavioral learning.
