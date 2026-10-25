@@ -195,3 +195,43 @@ The root/mandate dependency blocks issuing a positive protected-read authorizati
 
 The Owner decision receipt is [bounded source implementation authorization](./CHAT-ARCH-2026-10-24-M1A-G1-owner-bounded-source-implementation-authorization.md). This section corrects routing behavior; it is not itself an implementation or a gate pass.
 
+
+
+## 11. Follow-up calibration — transcript task versus live route (2026-10-24)
+
+### Observed coordination risk
+
+The supplied conversation ends with a detailed prompt for `M1A_G1_REGISTER_READ_AUTHORIZATION_IN_APPBOOTSTRAP`. Live `main`, however, already records that task as source-complete for routing purposes based on an `OWNER_REPORTED` Codex result, and selects `M1A_G1_OWNER_CONTROLLED_BOOTSTRAP_ISSUER_BOUNDARY` as the next task. The mismatch creates a predictable trap: following transcript chronology alone can reopen a completed composition edge, while following only the latest route without receiving the promised report can miss new evidence about the prior task.
+
+Neither mistake is acceptable. The transcript identifies what a response may be answering; the live router identifies what task is currently next. Treat these as separate dimensions and reconcile both.
+
+### Required Codex-result intake procedure
+
+1. **Bind the result to a task ID.** Extract the exact `TASK=` and compare it with the prompt answered. Do not infer task identity solely from position in the chat or from a branch name.
+2. **Refresh canonical authority.** Fetch live `refs/heads/main` and read `CURRENT-STATE.md` before choosing the next action. Commit SHAs recorded in previous prompts or reports are historical observations, not current aliases.
+3. **Audit the reported candidate identity.** Compare repository, checkout, branch, HEAD before and after, current remote main, clean/dirty state, and staged versus unstaged diffs. Preserve the existing work; do not reset, clean, overwrite, or infer unchanged content from a reused branch name.
+4. **Test the report against its original acceptance criteria.** For the AppBootstrap task, the discriminating edge was explicit registration/injection through `AppBootstrap → MCPBridgeService → FastMCPServerRunner → IABVMCPServer → read_repo_file/list_repo_directory`, with missing providers and composition failures staying DENY before resource helpers. Source location and diff evidence are required; class additions or self-reported completion alone do not establish this.
+5. **Keep evidence categories separate.** State what was directly observed in GitHub, what Codex reports locally, what source was independently inspected, which tests were written, and which tests/build/runtime/transport were actually run. In the authorized candidate scope here, execution remains `NOT_AUTHORIZED; NOT_RUN`.
+6. **Do not rewind routing by transcript order.** If the response belongs to the prior AppBootstrap task, intake it against that task, reconcile any new delta or contradiction, and then continue from the current bootstrap/issuer boundary route. Do not reissue AppBootstrap wiring or restart broad research unless the current canonical state and new evidence justify it.
+7. **Do not promote technical claims by implication.** The AppBootstrap wiring report does not establish an independent trust root, Owner-to-Windows-principal binding, a protected issuer/IPC boundary, production G1/G2/G3 providers, or a positive protected-read path.
+
+### State transition invariants
+
+```text
+TRANSCRIPT_LAST_PROMPT != CANONICAL_NEXT_ACTION_BY_DEFAULT
+CODEX_RESULT_TASK_ID = EXPLICITLY_MATCHED
+LIVE_MAIN = REFRESHED_BEFORE_ROUTE_DECISION
+LOCAL_CANDIDATE_FACTS = OWNER_REPORTED_UNTIL_INDEPENDENTLY_INSPECTED
+SUPERSEDED_TASK_RESULT = INTAKE_AND_RECONCILE; DO_NOT_REWIND_ROUTE
+ACTIVE_TASK = M1A_G1_OWNER_CONTROLLED_BOOTSTRAP_ISSUER_BOUNDARY
+OWNER_SOURCE_SCOPE = SOURCE_CODE_AND_SOURCE_TEST_AUTHORING_ONLY
+TEST_EXECUTION_BUILD_RUNTIME_TRANSPORT = NOT_AUTHORIZED; NOT_RUN
+G1_G2_G3 = NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES = 8; CLOSED = 0
+READ_LIST = FAIL_CLOSED
+GOVERNANCE = KEEP_BLOCKED
+BRIDGE = BRIDGE_NOT_READY
+AUTOMATIC_FOLLOW_ON = FALSE
+```
+
+This calibration improves task-result intake and continuity only. It does not change the route, widen Owner authorization, certify local code, close a gate, or turn documentation into model-weight training. It supplements section 10's stale-route-inertia rule: section 10 handles a new Owner decision that changes scope; section 11 handles a new report that may refer to an older prompt while the current route has already advanced.
