@@ -118,3 +118,21 @@ The source/test diff must be provided from the same checkout, without changing t
 Even if the validator is internally consistent, synthetic fields marked `CONSUMED_ONCE`, `PERSISTED` and `ENROLLED` do not prove durable actions occurred. A production result must originate from trusted issuer-owned operations. There is still no real Owner verifier, independent root, durable replay store, protected registry or authenticated process/IPC/OS boundary. G1/G2/G3 remain unestablished; eight prerequisites remain open; protected reads fail-closed.
 
 Next action: obtain the exact unstaged diff for the two authorized paths and conduct a bounded static review. Do not run tests/build/runtime/transport, modify credentials or OS state, publish or merge, or change gate status.
+
+## Enrollment receipt contract — partial static review and F-03 (2026-10-24)
+
+- Result intake: `TASK_RESULT=SOURCE_REVIEW_BUNDLE_ONLY`; `TESTS=NOT_RUN`.
+- Evidence basis: the user supplied a long module diff that exposes `validate_owner_bootstrap_enrollment_receipt()` and related dataclasses, but the test diff is explicitly incomplete (the output contains an ellipsis and is not a full export). The claimed Windows checkout and hashes remain `OWNER_REPORTED`; this reviewer did not access the local worktree. The candidate branch/HEAD is not present on remote GitHub.
+- Disposition: `STATIC_REVIEW=PARTIAL_MODULE_REVIEW; F03_EXPECTED_REGISTRY_BINDING_MISSING; TEST_DIFF_INCOMPLETE`.
+
+### Positive source-contract observations
+
+The supplied module diff shows explicit dataclasses for challenge consumption, trust-registry persistence and enrollment receipt. The validator checks bindings from receipt to challenge, Owner, issuer and merge evidence; rejects missing sub-record objects; checks exact integer types for version/time fields; requires the outcomes `CONSUMED_ONCE`, `PERSISTED` and `ENROLLED`; and enforces chronology from challenge issue through consumption, persistence and receipt issue. Comments correctly state that these metadata do not prove durable operations. These are static observations from the provided source, not execution evidence.
+
+### F-03 — missing trusted registry target binding
+
+The validator accepts any nonempty `persistence.registry_id`. Its signature has no trusted expected-registry identity, and no comparison binds the ID to a value obtained from trusted host configuration/provider context. Therefore a receipt naming a different well-formed registry is not rejected on this dimension. Add an `expected_registry_id` or equivalent trusted registry identity parameter and require strict exact equality; the expected value must not come from the receipt, caller request, or untrusted issuer metadata. Add a negative test for a mismatching but syntactically valid registry ID. This strengthens only the source contract; it does not create a root of trust or prove the registry implementation is protected.
+
+### Evidence limitation and next action
+
+The test-diff export is incomplete, so no conclusion is made that all new tests have the asserted coverage. The next bounded task is to add the expected-registry binding and corresponding source tests, then return the complete exact test diff in the same review bundle. Preserve all staged/unstaged paths. No tests/build/runtime/MCP/transport are authorized or claimed. Keep authority assets unknown/not inspected, G1/G2/G3 unestablished, 8 prerequisites open / 0 closed, governance blocked, protected reads fail-closed.
