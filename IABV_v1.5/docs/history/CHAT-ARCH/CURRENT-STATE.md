@@ -1,5 +1,49 @@
-<!-- CURRENT ROUTE OVERRIDE: asset assessment terminal; waiting for genuinely new independent authority evidence or explicit Owner decision. No automatic follow-on. -->
-## CURRENT-STATE ROUTING — wait after terminal asset assessment (2026-10-25)
+<!-- CURRENT ROUTE TRANSITION: new explicit Owner decision reopens one integrated source-only candidate task; technical trust gates remain fail-closed. -->
+## CURRENT-STATE ROUTING — one integrated authorization-organ source candidate (2026-10-25)
+
+The Owner's latest instruction is a new bounded decision to continue finishing the authorization organ. It supersedes the previous wait action only for ONE integrated source-only candidate task. It does not supply new independent-root or platform-boundary evidence, and it does not permit enabling the bridge or protected reads.
+
+Use the already-existing Codex Windows session and revalidate the actual checkout, branch, HEAD and status before acting. Reconcile against the previous bounded source-organ review and the 2026-10-25 trust-asset inventory; do not repeat those closed investigations or the prior micro-patches. Preserve all pre-existing staged/index/unstaged content. Complete only source-enforceable contracts; where same-object binding or a positive trust chain requires missing OS/authority infrastructure, keep the path denied and report the exact dependency.
+
+Owner-decision receipt: [one integrated authorization-organ completion candidate](./CHAT-ARCH-2026-10-25-M1A-G1-OWNER-DECISION-INTEGRATED-AUTHORIZATION-ORGAN-COMPLETION-RECEIPT.md).
+
+```text
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+ACTIVE_TASK=M1A_G1_INTEGRATED_AUTHORIZATION_ORGAN_SOURCE_COMPLETION_CANDIDATE
+LAST_TERMINAL_TASK=M1A_G1_EXISTING_TRUST_ASSETS_BOUNDED_READ_ONLY_ASSESSMENT
+LAST_TERMINAL_RESULT=NO_SOURCE_GROUNDED_LOCAL_ASSET_LOCATOR_FOUND_IN_INSPECTED_FILES
+PREVIOUS_SOURCE_TASK=M1A_G1_BOUNDED_SOURCE_ORGAN_REMEDIATION; TERMINAL_FOR_ITS_SCOPE
+CURRENT_OWNER_DECISION=REOPEN_ONE_INTEGRATED_SOURCE_ONLY_CANDIDATE_TASK
+CANDIDATE_BASE_MAIN=0674f3a1460214377f1a4a75fed20d0a834e682d
+LATEST_BOUNDED_AUTHORIZATION=ONE_SOURCE_ONLY_CANDIDATE_TASK; ACTIVE
+AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+QUALIFYING_INDEPENDENT_ROOT=NOT_ESTABLISHED
+ENTRA_TRUSTED_BY_IABV=NOT_ESTABLISHED
+OWNER_TO_WINDOWS_PRINCIPAL=NOT_ESTABLISHED
+BOOTSTRAP_AUTHORITY_TO_ISSUER=NOT_ESTABLISHED
+ISSUER_TO_EXACT_SERVER=NOT_ESTABLISHED
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3_VERSIONED_TARGET_RESOLVER=NOT_ESTABLISHED_UNTIL_SAME_OBJECT_CONTRACT_IS_EVIDENCED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+SOURCE_ONLY_CANDIDATE=AUTHORIZED_FOR_ONE_TASK
+TESTS=NOT_RUN
+BUILD=NOT_RUN
+RUNTIME=NOT_RUN
+MCP=NOT_RUN
+REAL_TRANSPORT=NOT_RUN
+PROTECTED_READS=FAIL_CLOSED
+GOVERNANCE=KEEP_BLOCKED
+BRIDGE=BRIDGE_NOT_READY
+COST_POLICY=ZERO_BUDGET
+AUTOMATIC_FOLLOW_ON=FALSE
+NEXT_ACTION=HAND_OFF_ONE_BOUNDED_SOURCE_ONLY_COMPLETION_TASK_TO_CODEX_EXISTING_WINDOWS_SESSION; THEN_STOP_FOR_REVIEW
+NEXT_REVIEW_TARGET=ONE_CANDIDATE_RESULT_AND_EXACT_RESIDUAL_BLOCKER_MATRIX; NO_AUTOMATIC_SECOND_ATTEMPT
+```
+
+
+<!-- HISTORICAL ROUTING SNAPSHOT: the wait route below was current before the Owner's new decision receipt; superseded for one source-only candidate task. -->
+## HISTORICAL ROUTE — wait after terminal asset assessment (2026-10-25; superseded for one source-only candidate task)
 
 The one bounded read-only assessment has returned its report and is terminal for its authorized scope. The inspected source files did not expose a concrete locator for local trust-asset metadata; Windows stores/services/ACLs/named pipes were not inspected. This is not proof of global absence. The Owner's already-ratified no-bootstrap posture remains in force: the Owner has not identified a qualifying pre-existing independent authority, Entra/Authenticator remains Owner-reported and not trusted by IABV, and the earlier TPM/source-review paths are closed for their current evidence. Do not repeat the assessment or initiate a new technical task automatically.
 
@@ -43,8 +87,7 @@ NEXT_ACTION=MAINTAIN_NO_BOOTSTRAP_FAIL_CLOSED; REOPEN_ONLY_ON_GENUINELY_NEW_INDE
 NEXT_REVIEW_TARGET=ONLY_GENUINELY_NEW_EVIDENCE; DO_NOT_REPEAT_ASSET_INVENTORY_TPM_SETUP_ENTRA_SETUP_OR_CLOSED_SOURCE_REVIEW
 ```
 
-<!-- Historical source-organ hand-back route retained below; completed assessment and current wait route are summarized above. -->
-
+<!-- Prior source-organ and trust-asset chronology retained below. -->
 <!-- HISTORICAL ROUTE CHECKPOINT: bounded source task adjudicated; superseded by the latest explicit Owner read-only assessment decision. -->
 ## HISTORICAL CHECKPOINT — bounded source-organ remediation terminal for current evidence (2026-10-24)
 
