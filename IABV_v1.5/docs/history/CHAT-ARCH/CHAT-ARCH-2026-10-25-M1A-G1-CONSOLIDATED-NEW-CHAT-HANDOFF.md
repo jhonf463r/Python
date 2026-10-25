@@ -2,34 +2,44 @@
 
 - Snapshot date: 2026-10-25, America/Bogota.
 - Purpose: resume in a new ChatGPT conversation without redoing terminal work, confusing a static design result with implementation, or losing the authorization history and technical deductions.
-- Current verified GitHub main at handoff preparation: c7b463bc4947f0fccadfcd1ed001e36cc34a9dbc.
+- Live-main baseline used for this reconciled handoff revision: `74b47561ebddfc113bd8cf869430c3991f206003` (refreshed immediately before the documentation-branch updates; later main SHAs must be fetched anew).
 - This is a continuity/handoff document, not a new implementation authorization. CURRENT-STATE.md remains the sole route authority.
 
-## Current terminal route — G3 remediation blocked by missing approved-root provider (2026-10-25)
+## CURRENT ROUTE — candidate diff bytes reviewed; pre-task baseline provenance remains unresolved (2026-10-25)
 
-**The single Owner-authorized source remediation is terminal.** Codex reports `BLOCKED_APPROVED_WORKSPACE_ROOT_PROVIDER_ABSENT`; it stopped before creating an isolated candidate or editing code. This report is not independently source-verified by this ChatGPT session. Its attempt to generate an evidence ZIP was denied by policy; no alternate transfer route was attempted.
+The Owner-supplied ZIP is now available in this ChatGPT session. ZIP SHA-256 `915efa1541aab2546522261a8c60bfa00e4004809156cdd5cfd50b01f9620c33` and embedded diff SHA-256 `6950fb87dcd6f57573f88bbd58b0b880bd0437e69eb5830d9f55a22ad9aa5f93` were independently recomputed and match the manifest/expected digest. The diff contains 8 paths, 2,427 physical patch lines, 473 added lines and 156 deleted lines.
 
-Terminal receipt: [G3 remediation blocked by absent approved-root provider](./CHAT-ARCH-2026-10-25-M1A-G1-G3-REMEDIATION-BLOCKED-APPROVED-ROOT-PROVIDER-RECEIPT.md).
-
-The next action is the existing wait for genuinely new, independently verifiable root/mandate and approved workspace-root policy/provider evidence. Do not repeat source inventory, invent a provider, or begin another implementation task automatically. The distinction between `AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED` and proof that assets are absent must be maintained.
+The bytes are intact, but the patch uses absolute paths to temporary pre-task/candidate directories. The manifest's declared base is `fed7d50926a0c09b2fdd2e9d00cc71fa05a3e6d7`; the reported candidate HEAD `6bc568e1c5a898afd65cc045c779c25a9cdc5489` is not fetchable from GitHub. Several old-side path/blob identifiers do not reconcile with the declared tracked Git tree, and the ZIP lacks the full pre-task source snapshot needed to resolve whether the difference is due to a local/sparse/dirty checkout or an incorrectly declared base. This is a provenance blocker, not proof of corruption. See [the independent diff review receipt](./CHAT-ARCH-2026-10-25-M1A-G1-INDEPENDENT-STATIC-REVIEW-DIFF-PROVENANCE-BLOCKER-RECEIPT.md).
 
 ```text
-LAST_TERMINAL_TASK=M1A_G1_OWNER_AUTHORIZED_ONE_BOUNDED_G3_SOURCE_REMEDIATION_20261025
-LAST_TERMINAL_RESULT=BLOCKED_APPROVED_WORKSPACE_ROOT_PROVIDER_ABSENT; OWNER_SUPPLIED_CODEX_REPORT
-ACTIVE_TASK=M1A_G1_WAIT_FOR_GENUINELY_NEW_INDEPENDENT_ROOT_AND_MANDATE_EVIDENCE
-ACTIVE_TASK_STATUS=WAITING_FOR_NEW_VERIFIABLE_EVIDENCE; NO_SOURCE_TASK_AUTHORIZED
-CODEX_SOURCE_DELTA=0; REPORTED
-CODEX_CHECKOUT_PRESERVATION=REPORTED_UNCHANGED; NOT_INDEPENDENTLY_VERIFIED
-EVIDENCE_BUNDLE=NOT_GENERATED; POLICY_DENIED; NO_BYPASS
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+LAST_TERMINAL_TASK=M1A_G1_INDEPENDENT_STATIC_REVIEW_OF_INTEGRATED_ORGAN_CANDIDATE_20261025
+LAST_TERMINAL_RESULT=PARTIAL_STATIC_REVIEW; ACCEPTANCE_BLOCKED_BY_UNRECONCILED_PRETASK_BASELINE
+ACTIVE_TASK=M1A_G1_RECONCILE_CANDIDATE_PRETASK_DIFF_PROVENANCE_20261025
+ACTIVE_TASK_STATUS=PREPARE_ONE_PRODUCER_GENERATED_CORRECTED_EVIDENCE_PACKAGE; NO_SOURCE_EDIT
+EVIDENCE_ZIP_SHA256=915efa1541aab2546522261a8c60bfa00e4004809156cdd5cfd50b01f9620c33
+CANDIDATE_DIFF_SHA256=6950fb87dcd6f57573f88bbd58b0b880bd0437e69eb5830d9f55a22ad9aa5f93
+CANDIDATE_HEAD=6bc568e1c5a898afd65cc045c779c25a9cdc5489; REPORTED_LOCAL; NOT_FETCHABLE_ON_GITHUB
+DECLARED_BASE=fed7d50926a0c09b2fdd2e9d00cc71fa05a3e6d7; RELATION_TO_PRETASK_TREE_UNRECONCILED
+PATCH_PATHS=8; PHYSICAL_LINES=2427; ADDED=473; DELETED=156
+PATCH_FORMAT=ABSOLUTE_TEMP_PATHS; NOT_REPOSITORY_RELATIVE
+CODEX_REPORTED_TESTS=264_PASS; NOT_INDEPENDENTLY_VERIFIED
+TESTS_BUILD_RUNTIME_MCP_TRANSPORT=NOT_RUN_BY_REVIEW
 AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
 G1=NOT_ESTABLISHED
 G2=NOT_ESTABLISHED
 G3_SAME_OBJECT=NOT_ESTABLISHED
-GOVERNANCE=KEEP_BLOCKED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
 PROTECTED_READS=FAIL_CLOSED
-BRIDGE=BRIDGE_NOT_READY
+PRODUCT_STAGE_COMMIT_PUSH_MERGE=NOT_AUTHORIZED
 AUTOMATIC_FOLLOW_ON=FALSE
+HANDOFF=PREPARED_NOT_SENT
+NEXT_ACTION=PRODUCER_REGENERATE_ONE_REPOSITORY_RELATIVE_DIFF_PACKAGE_WITH_VERIFIED_BASELINE_PROVENANCE
+NEXT_TASK_STOP_CONDITION=NO_SOURCE_EDIT; NO_TESTS; NO_GATE_RELEASE; STOP_IF_BASELINE_REMAINS_UNPROVABLE
 ```
+
+The current technical candidate remains unaccepted. This routing update does not establish trust authority, enable protected reads or authorize product-stage source changes.
+
 
 ## Historical transition — prior G3 static review failure before the remediation attempt (2026-10-25)
 
@@ -53,7 +63,7 @@ G2=NOT_ESTABLISHED
 G3_SAME_OBJECT=NOT_ESTABLISHED
 GOVERNANCE=KEEP_BLOCKED
 PROTECTED_READS=FAIL_CLOSED
-NEXT_ACTION=OWNER_DECISION_REQUIRED_FOR_ONE_BOUNDED_G3_SOURCE_REMEDIATION_CANDIDATE
+HISTORICAL_NEXT_ACTION=OWNER_DECISION_REQUIRED_FOR_ONE_BOUNDED_G3_SOURCE_REMEDIATION_CANDIDATE
 AUTOMATIC_FOLLOW_ON=FALSE
 ```
 
@@ -115,9 +125,9 @@ Current main route-file blobs observed when this handoff began:
 
 Live main must be revalidated for every new session; the listed SHAs are historical snapshots for this handoff, not substitutes for a fresh read.
 
-## 2. Executive status — current route supersedes earlier transfer-pending snapshots
+## 2. Historical G3 static-review result — retained evidence; not the current task
 
-The authorized static review is terminal with `FAIL_STATIC_REVIEW_SOURCE_CONTRACT`. The prior review report supplied by the Owner states that the ZIP archive and all 12 manifest-listed artifact members passed independent size/SHA-256 checks (13 entries including the manifest). This handoff's documentary update relies on that report; the ZIP bytes were not re-opened during this transition.
+The earlier, separate G3 candidate was reviewed in this conversation and returned `FAIL_STATIC_REVIEW_SOURCE_CONTRACT`. The ZIP and all 12 manifest-listed members were independently checked in that review; the two pre-existing staged/unstaged preservation diffs were absent, so preservation remains unverified. This historical result is not the current candidate-review route.
 
 Reported ZIP: `IABV_G3_STATIC_REVIEW_EVIDENCE_20261025_3d0c265fc41443739b5e65ef3d4a23d3.zip`, 91,213 bytes, reported SHA-256 `9f9a3e575fa8c6d03b33ae9bdb73bfbf8a4680642b7a65d39fce44e154febe66`. The report says its 13 entries consist of six task diffs, six current source/test files and `manifest.json`. The two prior-work artifacts `preexisting-staged.diff` and `preexisting-unstaged.diff` are absent and were not reconstructed; the prior-work preservation subclaim remains not independently verifiable. The observed candidate path is reported under `src/iabv_v15`, not the prompt's `src/iabv15`.
 
@@ -132,8 +142,8 @@ Review findings:
 See the [terminal review receipt](./CHAT-ARCH-2026-10-25-M1A-G1-G3-STATIC-REVIEW-FAIL-RECEIPT.md) for the exact provenance boundary and findings. The source candidate must not be promoted to canonical code or used to enable protected reads.
 
 ```text
-ACTIVE_TASK=M1A_G1_OWNER_DECISION_ON_ONE_BOUNDED_G3_SOURCE_REMEDIATION_20261025
-ACTIVE_TASK_STATUS=OWNER_DECISION_REQUIRED; NO_SOURCE_TASK_AUTHORIZED
+HISTORICAL_ACTIVE_TASK=M1A_G1_OWNER_DECISION_ON_ONE_BOUNDED_G3_SOURCE_REMEDIATION_20261025
+HISTORICAL_ACTIVE_TASK_STATUS=OWNER_DECISION_REQUIRED_AT_THAT_SNAPSHOT; SUPERSEDED
 LAST_TERMINAL_TASK=M1A_G1_TRANSFER_PRODUCER_ZIP_AND_PERFORM_ONE_AUTHORIZED_STATIC_REVIEW_20261025
 LAST_TERMINAL_RESULT=FAIL_STATIC_REVIEW_SOURCE_CONTRACT
 BUNDLE_NAME=IABV_G3_STATIC_REVIEW_EVIDENCE_20261025_3d0c265fc41443739b5e65ef3d4a23d3.zip

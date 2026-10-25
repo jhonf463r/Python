@@ -1,37 +1,39 @@
 <!-- Terminal transition: 2026-10-25. CURRENT-STATE.md remains the sole routing authority. -->
 
-## CURRENT ROUTE — integrated fail-closed organ candidate returned; independent diff review pending (2026-10-25)
+## CURRENT ROUTE — candidate diff bytes reviewed; pre-task baseline provenance remains unresolved (2026-10-25)
 
-The one Owner-authorized integrated candidate task returned `SOURCE_CANDIDATE_ONLY` in the Owner-supplied Codex report. Codex reports 264 passing focalized tests on its second run and an unchanged original checkout. Those claims, the local source and the exact diff bytes have not been independently inspected in this ChatGPT session. The candidate is not accepted and no gate has closed.
+The Owner-supplied ZIP is now available in this ChatGPT session. ZIP SHA-256 `915efa1541aab2546522261a8c60bfa00e4004809156cdd5cfd50b01f9620c33` and embedded diff SHA-256 `6950fb87dcd6f57573f88bbd58b0b880bd0437e69eb5830d9f55a22ad9aa5f93` were independently recomputed and match the manifest/expected digest. The diff contains 8 paths, 2,427 physical patch lines, 473 added lines and 156 deleted lines.
 
-Terminal hand-back: [integrated authorization-organ candidate receipt](https://github.com/jhonf463r/Python/blob/docs/iabv-source-candidate-review-pending-20261025/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-25-M1A-G1-INTEGRATED-ORGAN-CANDIDATE-HAND-BACK-RECEIPT.md).
-
-The reported full diff is at a local Windows path and SHA-256 `6950FB87DCD6F57573F88BBD58B0B880BD0437E69EB5830D9F55A22AD9AA5F93`; neither the bytes nor the hash were recomputed here. The report claims 8 changed routes/2,411 lines while a UI summary mentions 4 files/+33/-12; the exact diff must reconcile this before acceptance. Do not repeat the source implementation, inventory or test command merely to restate results. Review the exact candidate-vs-pre-task-checkout diff before deciding any corrective source task.
+The bytes are intact, but the patch uses absolute paths to temporary pre-task/candidate directories. The manifest's declared base is `fed7d50926a0c09b2fdd2e9d00cc71fa05a3e6d7`; the reported candidate HEAD `6bc568e1c5a898afd65cc045c779c25a9cdc5489` is not fetchable from GitHub. Several old-side path/blob identifiers do not reconcile with the declared tracked Git tree, and the ZIP lacks the full pre-task source snapshot needed to resolve whether the difference is due to a local/sparse/dirty checkout or an incorrectly declared base. This is a provenance blocker, not proof of corruption. See [the independent diff review receipt](./CHAT-ARCH-2026-10-25-M1A-G1-INDEPENDENT-STATIC-REVIEW-DIFF-PROVENANCE-BLOCKER-RECEIPT.md).
 
 ```text
 PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
-LAST_TERMINAL_TASK=M1A_G1_INTEGRATED_FAIL_CLOSED_AUTHORIZATION_ORGAN_COMPLETION_20261025
-LAST_TERMINAL_RESULT=SOURCE_CANDIDATE_ONLY; OWNER_SUPPLIED_CODEX_REPORT
-ACTIVE_TASK=M1A_G1_INDEPENDENT_STATIC_REVIEW_OF_INTEGRATED_ORGAN_CANDIDATE_20261025
-ACTIVE_TASK_STATUS=WAITING_FOR_EXACT_DIFF_BYTES; REVIEW_ONLY
-CANDIDATE_DIFF=LOCAL_PATH_REPORTED; SHA256_REPORTED_NOT_RECOMPUTED_HERE
-TESTS=OWNER_REPORTED_264_PASSED; NOT_INDEPENDENTLY_VERIFIED
-INDEPENDENT_STATIC_REVIEW=NOT_COMPLETE
+LAST_TERMINAL_TASK=M1A_G1_INDEPENDENT_STATIC_REVIEW_OF_INTEGRATED_ORGAN_CANDIDATE_20261025
+LAST_TERMINAL_RESULT=PARTIAL_STATIC_REVIEW; ACCEPTANCE_BLOCKED_BY_UNRECONCILED_PRETASK_BASELINE
+ACTIVE_TASK=M1A_G1_RECONCILE_CANDIDATE_PRETASK_DIFF_PROVENANCE_20261025
+ACTIVE_TASK_STATUS=PREPARE_ONE_PRODUCER_GENERATED_CORRECTED_EVIDENCE_PACKAGE; NO_SOURCE_EDIT
+EVIDENCE_ZIP_SHA256=915efa1541aab2546522261a8c60bfa00e4004809156cdd5cfd50b01f9620c33
+CANDIDATE_DIFF_SHA256=6950fb87dcd6f57573f88bbd58b0b880bd0437e69eb5830d9f55a22ad9aa5f93
+CANDIDATE_HEAD=6bc568e1c5a898afd65cc045c779c25a9cdc5489; REPORTED_LOCAL; NOT_FETCHABLE_ON_GITHUB
+DECLARED_BASE=fed7d50926a0c09b2fdd2e9d00cc71fa05a3e6d7; RELATION_TO_PRETASK_TREE_UNRECONCILED
+PATCH_PATHS=8; PHYSICAL_LINES=2427; ADDED=473; DELETED=156
+PATCH_FORMAT=ABSOLUTE_TEMP_PATHS; NOT_REPOSITORY_RELATIVE
+CODEX_REPORTED_TESTS=264_PASS; NOT_INDEPENDENTLY_VERIFIED
+TESTS_BUILD_RUNTIME_MCP_TRANSPORT=NOT_RUN_BY_REVIEW
 AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
 G1=NOT_ESTABLISHED
 G2=NOT_ESTABLISHED
 G3_SAME_OBJECT=NOT_ESTABLISHED
-IMPLEMENTATION_PREREQUISITES=8; CLOSED=0 UNTIL INDEPENDENT ADJUDICATION
-GOVERNANCE=KEEP_BLOCKED_FOR_POSITIVE_PROTECTED_READS
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
 PROTECTED_READS=FAIL_CLOSED
-BRIDGE=BRIDGE_NOT_READY
 PRODUCT_STAGE_COMMIT_PUSH_MERGE=NOT_AUTHORIZED
 AUTOMATIC_FOLLOW_ON=FALSE
-NEXT_ACTION=MAKE_EXACT_CANDIDATE_VS_PRETASK_DIFF_AVAILABLE_FOR_INDEPENDENT_STATIC_REVIEW
-NEXT_TASK_STOP_CONDITION=REVIEW_ONLY; NO_SOURCE_EDIT; NO_INVENTED_AUTHORITY; NO_GATE_RELEASE
+HANDOFF=PREPARED_NOT_SENT
+NEXT_ACTION=PRODUCER_REGENERATE_ONE_REPOSITORY_RELATIVE_DIFF_PACKAGE_WITH_VERIFIED_BASELINE_PROVENANCE
+NEXT_TASK_STOP_CONDITION=NO_SOURCE_EDIT; NO_TESTS; NO_GATE_RELEASE; STOP_IF_BASELINE_REMAINS_UNPROVABLE
 ```
 
-This route records the terminal result and review dependency; it does not execute a new source task. The prior authorization's scope is consumed.
+The current technical candidate remains unaccepted. This routing update does not establish trust authority, enable protected reads or authorize product-stage source changes.
 <!-- Previous route: Owner-authorized integrated fail-closed source candidate task is terminal; retained below as historical context. -->
 
 ## HISTORICAL ROUTE — Owner-authorized integrated fail-closed authorization-organ completion candidate returned (2026-10-25; terminal)
