@@ -390,3 +390,26 @@ NEXT_ACTION=WAIT_FOR_GENUINELY_NEW_INDEPENDENT_ROOT_AND_AUTHENTICATED_OWNER_ISSU
 ```
 
 The single source task is terminal for the current evidence. Do not repeat the whole-candidate review or initiate another micro-patch loop. New source work requires either genuinely new independently verifiable authority/platform evidence or a new explicit Owner decision. This is a route reconciliation, not technical gate closure or runtime-learning evidence.
+
+
+## 25. Owner-authorized next evidence step — pre-existing trust assets, read-only only (2026-10-25)
+
+After the bounded source-organ hand-back was reconciled, the Owner explicitly instructed the coordinator to proceed to the next documented step and use the existing traceability to determine what is needed to continue the bridge. This authorizes one bounded `M1A_G1_EXISTING_TRUST_ASSETS_BOUNDED_READ_ONLY_ASSESSMENT`. The explicit decision changes the permitted observation scope; it is not evidence that assets exist, are trusted, or are absent.
+
+Use the Owner's already-open local Windows/Codex session and only source-grounded asset locators. Check file/store/service/IPC metadata narrowly; public certificate/key metadata is in scope. Do not read/export private-key bytes or secrets; do not inspect password/token/cookie/Credential Manager/DPAPI/browser or environment-variable values; do not recursively scan the profile, drive or broad trust stores. Do not change source, index, ACLs, registry, trust stores, services, credentials, certificates or environment. No test/build/runtime/MCP/transport/protected read; no issuer invocation; no public tunnel, spending, staging, commit, push, publication or deployment. Do not repeat the closed TPM preflight or Entra/Authenticator setup.
+
+Prompt and evidence contract: [Owner decision receipt — bounded read-only trust asset assessment](./CHAT-ARCH-2026-10-25-M1A-G1-OWNER-DECISION-EXISTING-TRUST-ASSETS-READONLY-ASSESSMENT-RECEIPT.md). If the route is unsupported or access is denied, report `TASK_RESULT=NOT_RUN; REASON=SUPPORTED_ROUTE_NOT_FOUND` and stop. Never bypass a denial.
+
+Each asset and dependency edge must be separately classified. `NOT_FOUND_AT_EXACT_INSPECTED_LOCATOR` does not mean global absence. `AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED` remains the state for every unreached asset. An observed certificate, key container, service or pipe is not automatically a qualifying root or trusted issuer. This one inventory is terminal; there is no automatic code-fix loop.
+
+```text
+ACTIVE_TASK=M1A_G1_EXISTING_TRUST_ASSETS_BOUNDED_READ_ONLY_ASSESSMENT
+OWNER_DECISION=AUTHORIZE_ONE_BOUNDED_READ_ONLY_EXISTING_TRUST_ASSET_ASSESSMENT
+PROTECTED_READS=FAIL_CLOSED
+G1=G2=G3=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+GOVERNANCE=KEEP_BLOCKED
+BRIDGE=BRIDGE_NOT_READY
+AUTOMATIC_FOLLOW_ON=FALSE
+NEXT_ACTION=PERFORM_ONE_BOUNDED_EXISTING_TRUST_ASSET_READ_ONLY_ASSESSMENT_IN_EXISTING_CODEX_SESSION
+```

@@ -1,5 +1,62 @@
-<!-- CURRENT ROUTE OVERRIDE: bounded source task adjudicated; waiting for independent authority/platform evidence. CURRENT-STATE.md remains sole router. -->
-## CURRENT-STATE ROUTING — bounded source-organ remediation terminal for current evidence (2026-10-24)
+<!-- CURRENT ROUTE OVERRIDE: latest explicit Owner decision authorizes one bounded read-only existing-trust-asset assessment; no implementation authority. -->
+## CURRENT-STATE ROUTING — bounded read-only assessment of pre-existing trust assets (2026-10-25)
+
+The Owner explicitly directed proceeding to the next documented traceability step after the bounded source-organ review. This authorizes exactly one `M1A_G1_EXISTING_TRUST_ASSETS_BOUNDED_READ_ONLY_ASSESSMENT` in the already-open local Windows/Codex session, using only source-grounded asset locators and read-only metadata. This decision authorizes observation only; it does not establish any technical fact or authorize another source task.
+
+Decision receipt and exact task prompt: [Owner decision — existing trust assets read-only assessment](./CHAT-ARCH-2026-10-25-M1A-G1-OWNER-DECISION-EXISTING-TRUST-ASSETS-READONLY-ASSESSMENT-RECEIPT.md).
+
+```text
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+ACTIVE_TASK=M1A_G1_EXISTING_TRUST_ASSETS_BOUNDED_READ_ONLY_ASSESSMENT
+OWNER_DECISION=AUTHORIZE_ONE_BOUNDED_READ_ONLY_EXISTING_TRUST_ASSET_ASSESSMENT
+OWNER_DECISION_PROVENANCE=EXPLICIT_OWNER_CHAT_MESSAGE_2026-10-25
+TASK_AUTHORIZATION=READ_ONLY_EVIDENCE_COLLECTION_ONLY
+EXECUTION_ROUTE=CODEX_EXISTING_UI_SESSION; MUST_VERIFY_ROUTE_AND_LOCAL_CHECKOUT
+SCOPE=SOURCE_GROUNDED_EXISTING_ASSET_LOCATORS_AND_RELEVANT_METADATA_ONLY
+SOURCE_IMPLEMENTATION=NOT_AUTHORIZED
+SOURCE_TEST_AUTHORING=NOT_AUTHORIZED
+TEST_EXECUTION=NOT_AUTHORIZED; NOT_RUN
+BUILD=NOT_AUTHORIZED; NOT_RUN
+RUNTIME=NOT_AUTHORIZED; NOT_RUN
+MCP=NOT_AUTHORIZED; NOT_RUN
+REAL_TRANSPORT=NOT_AUTHORIZED; NOT_RUN
+PROTECTED_READS=FAIL_CLOSED
+PRIVATE_KEY_OR_SECRET_CONTENT=NEVER_READ_OR_EXPORTED
+SERVICE_ACL_TRUST_STORE_CHANGES=NOT_AUTHORIZED
+CREDENTIAL_OR_ROOT_CREATION=NOT_AUTHORIZED
+AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED_UNTIL_EACH_LOCATOR_IS_EVIDENCED
+QUALIFYING_INDEPENDENT_ROOT=NOT_ESTABLISHED
+OWNER_TO_WINDOWS_PRINCIPAL=NOT_ESTABLISHED
+BOOTSTRAP_AUTHORITY_TO_ISSUER=NOT_ESTABLISHED
+ISSUER_TO_EXACT_SERVER=NOT_ESTABLISHED
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3_VERSIONED_TARGET_RESOLVER=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+GOVERNANCE=KEEP_BLOCKED
+BRIDGE=BRIDGE_NOT_READY
+COST_POLICY=ZERO_BUDGET
+AUTOMATIC_FOLLOW_ON=FALSE
+NEXT_ACTION=PERFORM_ONE_BOUNDED_EXISTING_TRUST_ASSET_READ_ONLY_ASSESSMENT_IN_EXISTING_CODEX_SESSION
+STOP_CONDITION=REPORT_NOT_RUN_SUPPORTED_ROUTE_NOT_FOUND_IF_NO_LEGITIMATE_READ_ONLY_ROUTE; NO_FALLBACK_OR_BYPASS
+```
+
+## Scope and safety boundary
+
+The assessment may inspect relevant existing source/docs to find precise locators, then read only metadata at those locations (presence/type/size/time/ACL owner-protection posture and public certificate/key fingerprints). Specific service or IPC metadata may be queried only where existing source/config identifies the exact endpoint. No broad filesystem or store scan; no private-key/secret read, copy, export, signing, credential enrollment, service/ACL/trust-store change, test/build/runtime/transport, or protected read. If the legitimate local route is missing, stop with `TASK_RESULT=NOT_RUN; REASON=SUPPORTED_ROUTE_NOT_FOUND`.
+
+Do not promote existence to trust. A private-key container or certificate is not a root of authority unless independently bound to a legitimate custodian, mandate and target; the assessment must keep every dependency separate.
+
+## Acceptance
+
+Return one redacted evidence inventory, exact checkout identity and before/after state, source-grounded locators, per-edge provenance, commands/queries and statuses, each edge classified as proven/partially supported/not established/unknown, and all excluded execution statuses as `NOT_RUN`. Stop after the inventory; no automatic follow-on or repairs.
+
+---
+
+<!-- Historical source-organ hand-back route retained below; superseded by this one-task read-only authorization. -->
+
+<!-- HISTORICAL ROUTE CHECKPOINT: bounded source task adjudicated; superseded by the latest explicit Owner read-only assessment decision. -->
+## HISTORICAL CHECKPOINT — bounded source-organ remediation terminal for current evidence (2026-10-24)
 
 The single Owner-authorized source-only remediation has been handed back and its pasted five-file patch text received a narrow static review. See [static review and route reconciliation receipt](./CHAT-ARCH-2026-10-24-M1A-G1-BOUNDED-SOURCE-REMEDIATION-STATIC-REVIEW-RECEIPT.md). The static result is `PASS_WITH_NOTES_FOR_PASTED_PATCH_TEXT_ONLY`; it is not a raw-diff hash verification or direct Windows worktree inspection. The local candidate remains unpublished.
 

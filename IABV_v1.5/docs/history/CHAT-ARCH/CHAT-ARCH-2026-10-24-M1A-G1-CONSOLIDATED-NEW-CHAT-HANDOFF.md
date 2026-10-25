@@ -1,3 +1,13 @@
+<!-- LATEST HANDOFF OVERRIDE: explicit Owner authorization for one bounded read-only trust-asset assessment; read live CURRENT-STATE.md first. -->
+# CURRENT HANDOFF OVERRIDE — existing trust asset assessment, read-only only
+
+The Owner has authorized one bounded `M1A_G1_EXISTING_TRUST_ASSETS_BOUNDED_READ_ONLY_ASSESSMENT`. Read [live CURRENT-STATE.md](./CURRENT-STATE.md) and the five canonical files first. The full copy/paste prompt is in the [Owner decision receipt](./CHAT-ARCH-2026-10-25-M1A-G1-OWNER-DECISION-EXISTING-TRUST-ASSETS-READONLY-ASSESSMENT-RECEIPT.md).
+
+Use only the already-open local Windows/Codex session. Inspect source-grounded existing locators and relevant metadata, not secrets. No broad scan, source modifications, tests/build/runtime/MCP/transport, protected reads, credential/root creation, service/ACL/trust-store changes, TPM or Entra setup repetition, publication or spend. If a supported read-only route is unavailable, return `NOT_RUN; SUPPORTED_ROUTE_NOT_FOUND`; do not bypass denial.
+
+Preserve `AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED` for unreached assets, `G1=G2=G3=NOT_ESTABLISHED`, all eight prerequisites open, governance blocked, and bridge not ready. This task ends with one evidence inventory and no automatic follow-on.
+
+---
 <!-- LATEST HANDOFF OVERRIDE: reconciled from live main on 2026-10-24; follow CURRENT-STATE.md only. -->
 # CURRENT HANDOFF OVERRIDE — bounded source task terminal; authority/platform evidence required
 
