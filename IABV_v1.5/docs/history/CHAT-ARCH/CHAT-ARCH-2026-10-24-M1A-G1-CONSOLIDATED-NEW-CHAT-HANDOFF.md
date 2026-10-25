@@ -46,21 +46,31 @@ The user supplied exact focused diffs. Static review of those supplied diffs fou
 - Exact disposition: `STATIC_REVIEW=F01_F02_F03_CORRECTIONS_PRESENT_IN_SUPPLIED_DIFF; FULL_RECEIPT_TEST_DIFF_REVIEWED; TESTS_NOT_RUN`.
 - The reviewer saw the supplied focused diffs, not the whole candidate's aggregate staged/unstaged patch. The local Windows checkout has not been directly inspected. Do not claim whole-candidate approval.
 
-## 5. Latest candidate-wide review report and next source task
+## 5. Latest Codex result — R-03 fail-closed containment, exact test diff pending review
 
-The Owner supplied Codex's `TASK_RESULT=SOURCE_REVIEW_BUNDLE_ONLY` report. It describes a local review of the 12-path dirty candidate and reports no repo/index edits. The patch files were said to be exported outside the checkout:
-- staged HEAD→index, 63,238 bytes, SHA-256 `d220b3c57325799e953a0c2534d7bcfa6088f5297b361855c23021f0097909b1`;
-- unstaged index→worktree, 87,643 bytes, SHA-256 `59cb23aefa3205ccad22746f9d3afb7deaa1b604fc3e68eb510d9d23a332e4c6`.
+Owner supplied `TASK_RESULT=SOURCE_CANDIDATE_ONLY` for `M1A_G1_BIND_AUTHORIZED_CANONICAL_TARGET_TO_READ_OPERATION`. Codex says the checkout is the reported Windows candidate, task changes are unstaged, the preexisting index was preserved, and `git diff --check` passed. Tests/build/runtime/MCP/transport were not run.
 
-They reside at a Windows-local `C:\Users\faber\AppData\Local\Temp\iabv-bootstrap-static-review-7de272ded2fa461ba0c97e272dfb4255\` path and were not attached as downloadable patch bytes here. Distinguish Codex's reported inspection from a direct independent review of those bytes. Main remains authoritative; the receipt records the current limitations/provenance.
+Reported identity: branch `codex/m1a-g1-owner-governed-bootstrap-organ-20261024`, HEAD `6bc568e1c5a898afd65cc045c779c25a9cdc5489`, main `2cecd5e9b9e175584d65bbb1198a53bc2346d095`. Reported state remains 12 unique routes, 7 staged/11 unstaged path statuses with overlap.
 
-The report says source wiring reaches both `read_repo_file` and `list_repo_directory`, with providers absent and fail-closed denial in the current composition. It also reports that the enrollment boundary remains interfaces/validators rather than a concrete issuer/enrollment producer. The full set of findings is in the [consolidated static-review receipt](./CHAT-ARCH-2026-10-24-M1A-G1-bootstrap-boundary-consolidated-static-review-receipt.md).
+Reported worktree/index/HEAD blobs:
+- `infra/mcp/server.py`: `716e4fcf85667e124ca4ed6aa75931b5746ef5ed` / `c8436eaf8a9df27b57a079490b4e6025258680b7` / `fbce8d52ddc121033f5bb87bb92be2aee52da8c0`
+- `tests/test_mcp_server.py`: `0fc7936c82d6f7dbc29d702db82b44517a0fbb2e` / `3d4c445350adb3d45e3aefda4a19cdfa8122fabc` / `88b0a2a1570d7f5bfebcf09b850cd7db24640c65`
+- `tests/test_read_authorization.py`: `5f93ab1d39d44f0471900d1f3bb546365980b184` / `08e0b893bd41366be69988a23b2e0fc4a5130fce` / no HEAD blob (new path).
 
-**First actionable source defect: R-03, exact authorized-target binding.** The reported code verifies that `permit.canonical_target` is nonempty, but calls the read/list helper using the original `relative_path`, which is resolved independently. A future ALLOW decision could therefore describe a different target from the object the helper consumes. This is conditional on a positive path that is currently unavailable; do not enable that path.
+The supplied server hunk changes `_protected_read_authority_block()` to deny every typed decision, including synthetic `ALLOW`, because existing helpers independently resolve paths and cannot consume a trusted object identity. If both handlers return on the resulting denial dict, this is containment. It does **not** implement the positive same-object target-binding path. The server hunk was supplied, but exact test hunks were not; the full accumulated test deltas have not been independently reviewed in this chat.
 
-Next proposed task: `M1A_G1_BIND_AUTHORIZED_CANONICAL_TARGET_TO_READ_OPERATION`. On the existing checkout, inspect the actual helper implementation, make the smallest source-only change that causes the operation to consume the exact target validated by the coordinator, and add focused source tests. If the existing abstractions cannot guarantee same-target identity, retain fail-closed denial and report that exact blocker. Preserve all preexisting staged and unstaged state, write all new modifications unstaged, and do not run tests/build/runtime/MCP/transport or perform credentials/root/enrollment/OS/ACL/trust-store/service/deployment actions. Do not publish or merge the candidate.
+### Next evidence step (read-only)
 
-This next task is a bounded narrowing within the source implementation and source-test authoring scope recorded in live main; it does not alter the canonical route or authorize a positive read. After every task, refresh live main and read the five required files before further routing.
+Do not make another code patch until reviewing the exact source and tests for this task. In the existing checkout, return complete current staged and unstaged diffs for:
+1. `IABV_v1.5/src/iabv_v15/infra/mcp/server.py`
+2. `IABV_v1.5/tests/test_mcp_server.py`
+3. `IABV_v1.5/tests/test_read_authorization.py`
+
+Also return exact new R-03 test hunks and show how they map to each handler. Include status before/after, staged/unstaged numstat, worktree/index/HEAD blob hashes and index-preservation evidence. Because these files contain prior unstaged work, label the diffs as **full current diffs**. If no exact pre-task worktree snapshot was saved, do not fabricate an isolated task-only diff; state that the task-specific baseline cannot be reconstructed and distinguish the hunk supplied in chat from the unreviewed test changes. No edits or tests/build/runtime/MCP/transport.
+
+The next decision is whether the current deny-only containment is sufficient to retain as fail-closed code while platform prerequisites are unresolved, or whether a minimal source-contract defect remains in the denial path. Do not try to enable positive reads without the exact same-object contract and independent authority/issuer prerequisites.
+
+
 
 ## 6. Hard constraints — do not relax
 
@@ -90,35 +100,24 @@ For every new Codex/chat result:
 ## 8. Copy/paste prompt for the next ChatGPT conversation
 
 ```text
-Continuamos el proyecto IABV en https://github.com/jhonf463r/Python. La documentación que sigue está en la rama propuesta `docs/iabv-transcript-route-intake-calibration-20261024`, dentro del PR #493, no en canonical main.
+Continuamos IABV en https://github.com/jhonf463r/Python. Los documentos de continuidad enlazados están en el PR documental #493, todavía no canónico. Antes de cualquier nueva decisión, refresca live `refs/heads/main` y lee en el orden obligatorio los cinco archivos: AGENTS.md, CHAT-ARCH/README.md, CURRENT-STATE.md, CONTEXT-INDEX.md y MEMORY-OPERATING-PROTOCOL.md. Comprueba el PR #493 y no fusiones ni trates su propuesta como canonical.
 
-Handoff: https://github.com/jhonf463r/Python/blob/docs/iabv-transcript-route-intake-calibration-20261024/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-24-M1A-G1-CONSOLIDATED-NEW-CHAT-HANDOFF.md
-Recibo: https://github.com/jhonf463r/Python/blob/docs/iabv-transcript-route-intake-calibration-20261024/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-24-M1A-G1-bootstrap-boundary-consolidated-static-review-receipt.md
+Último resultado de Codex: `TASK_RESULT=SOURCE_CANDIDATE_ONLY`, tarea `M1A_G1_BIND_AUTHORIZED_CANONICAL_TARGET_TO_READ_OPERATION`. Checkout reportado `C:\Users\faber\AppData\Local\Temp\iabv-g1-bootstrap-sparse-f99534e037e542038513a974d805bb27`; branch `codex/m1a-g1-owner-governed-bootstrap-organ-20261024`; HEAD `6bc568e1c5a898afd65cc045c779c25a9cdc5489`; main verificado durante preflight `2cecd5e9b9e175584d65bbb1198a53bc2346d095`. Estado reportado: las mismas 12 rutas, 7 staged y 11 unstaged con solapamiento. Cambios nuevos unstaged; índice preservado.
 
-Antes de asignar cualquier trabajo, refresca `refs/heads/main` en GitHub y lee, en este orden estricto:
-1) `IABV_v1.5/AGENTS.md`
-2) `IABV_v1.5/docs/history/CHAT-ARCH/README.md`
-3) `IABV_v1.5/docs/history/CHAT-ARCH/CURRENT-STATE.md`
-4) `IABV_v1.5/docs/history/CHAT-ARCH/CONTEXT-INDEX.md`
-5) `IABV_v1.5/docs/history/CHAT-ARCH/MEMORY-OPERATING-PROTOCOL.md`
+La corrección reportada transforma `_protected_read_authority_block()` para que siempre produzca una denegación, incluso ante un `ALLOW` tipado, porque los helpers actuales reciben una ruta relativa y la resuelven independientemente. Eso es contención fail-closed, no un camino positivo con binding del mismo objeto. La respuesta incluyó el hunk del servidor y un resumen de tests, pero no los hunks exactos completos de las pruebas. No declares R-03 cerrado aún.
 
-Comprueba el estado vivo del PR #493. Nunca trates una propuesta del PR como canónica antes de que se integre por una acción autorizada y se verifique su presencia en main.
+Siguiente paso — no codificar todavía: ejecuta solo inspección Git en el checkout existente, sin modificarlo. Entrega:
+1) `git status --short` inicial y final;
+2) diff staged completo y diff unstaged completo para `IABV_v1.5/src/iabv_v15/infra/mcp/server.py`, `IABV_v1.5/tests/test_mcp_server.py`, `IABV_v1.5/tests/test_read_authorization.py`, con contexto;
+3) hunks exactos de las pruebas nuevas para R-03, correlacionados con ambos handlers;
+4) `git diff --cached --numstat`, `git diff --numstat` y hashes de blobs worktree/index/HEAD;
+5) prueba de preservación del estado inicial y del índice.
 
-La última respuesta de Codex es `TASK_RESULT=SOURCE_REVIEW_BUNDLE_ONLY`. Reporta inspección local de 12 rutas; 7 estados staged y 11 unstaged con solapamiento; sin cambios de repositorio por la revisión; pruebas/build/runtime/MCP/transporte no ejecutados. Reporta parches completos fuera del checkout con SHA-256 staged `d220b3c57325799e953a0c2534d7bcfa6088f5297b361855c23021f0097909b1` y unstaged `59cb23aefa3205ccad22746f9d3afb7deaa1b604fc3e68eb510d9d23a332e4c6`. Los bytes están en una ruta local de Windows no adjunta al chat; distingue la revisión local reportada por Codex de cualquier revisión independiente de esos bytes.
+Los tests contienen cambios unstaged anteriores. Etiqueta la salida como diff completo acumulado. Si no se conservó una snapshot exacta anterior a la tarea, no reconstruyas un delta task-only inventado: declara esa limitación y distingue la única hunk del servidor recibida por chat de los cambios de test aún no revisados. No edites archivos ni ejecutes tests/build/runtime/MCP/transport.
 
-Hallazgo prioritario reportado: `R-03`. El coordinador valida `permit.canonical_target`, pero el handler llama al helper con `relative_path` original, que el helper resuelve de nuevo. La autorización y el objeto operado pueden divergir en un futuro camino positivo. El wiring actual sigue fail-closed porque faltan los proveedores productivos; no habilites un ALLOW ni afirmes que se ha explotado.
+Después, revisa el contrato de denegación y sus pruebas antes de proponer cualquier cambio. No habilites ALLOW ni lecturas positivas. No credenciales, enrollment, raíz, servicios/ACL/trust-store, publicación o merge. Resultado `TASK_RESULT=SOURCE_REVIEW_BUNDLE_ONLY`; `TESTS=NOT_RUN`, `BUILD=NOT_RUN`, `RUNTIME=NOT_RUN`, `MCP=NOT_RUN`, `REAL_TRANSPORT=NOT_RUN`, `PROTECTED_READS=FAIL_CLOSED`.
 
-Tarea acotada: `M1A_G1_BIND_AUTHORIZED_CANONICAL_TARGET_TO_READ_OPERATION`. En el checkout existente:
-- preserva todas las modificaciones staged/unstaged; no uses reset, clean, checkout, restore, stash, add, commit, rebase ni merge;
-- inspecciona la implementación del helper existente y reutiliza sus mecanismos; minimiza el alcance al handler/helper necesario y sus pruebas fuente;
-- haz que el objeto operado sea exactamente el objeto cuya identidad/ruta se autorizó. No basta con comprobar que `canonical_target` no está vacío y luego re-resolver `relative_path`;
-- añade pruebas fuente para destino distinto/reescrito y denegación antes del helper; escribir pruebas no significa ejecutarlas;
-- si las abstracciones existentes no permiten asegurar la identidad del destino, conserva el fail-closed y devuelve el blocker preciso en vez de inventar una garantía;
-- no ejecutes pruebas, build, runtime, MCP ni transporte. No crees root/credenciales/enrollment ni modifiques ACL, trust store, servicios o configuración persistente; no publiques ni integres el candidato.
-
-Devuelve `TASK_RESULT=SOURCE_CANDIDATE_ONLY`, los diffs exactos de todas las rutas tocadas, hashes del árbol de trabajo/índice/HEAD, estado inicial/final y las pruebas marcadas `NOT_RUN`. No cierres G1/G2/G3: siguen `NOT_ESTABLISHED`, 8 prerrequisitos abiertos/0 cerrados, gobernanza bloqueada, lecturas protegidas fail-closed y presupuesto cero.
-
-Al interpretar el resultado, clasifica cada afirmación por procedencia: reporte del Owner/Codex, diff exacto inspeccionado, repositorio verificado, tests ejecutados, runtime y adopción canónica. No confundas tests escritos con ejecutados, ni hashes reportados con bytes verificados. No repitas la revisión completa ni microparches F-01/F-02/F-03 salvo evidencia nueva de regresión.
+Persisten `G1/G2/G3=NOT_ESTABLISHED`, ocho prerrequisitos abiertos y cero cerrados, gobernanza bloqueada y presupuesto cero. Clasifica cada afirmación según procedencia. Un hunk revisado o una prueba escrita no es una prueba ejecutada, un camino positivo ni evidencia de aislamiento real.
 ```
 
 ## Source links
