@@ -1,3 +1,44 @@
+<!-- Current-state proposal only. Live main remains the sole canonical route authority until an authorized merge and fetch-back. -->
+## CURRENT-STATE PROPOSAL — R-03 focused review complete; whole-candidate review next (2026-10-24)
+
+The complete current staged/unstaged diff bundle for the three R-03 paths was supplied in the chat and statically reviewed. The current server guard denies before invoking either helper, including typed synthetic ALLOW. This is deny-only containment; the helpers still independently resolve the original relative path, so positive same-object binding is not established. The source test package lacks an explicit `AUTHORITY_TARGET_INVALID` assertion. Tests/build/runtime/MCP/transport were not run.
+
+The three-route R-03 review is complete, but the accumulated staged and unstaged delta across the reported 12 unique local candidate paths has not been reviewed together. Do not patch R-03 again in isolation. Do not invent a task-only diff because there is no pre-task snapshot.
+
+**Next proposed action:** one read-only whole-candidate static review of the complete staged and unstaged diff across all 12 unique paths; map source composition and residual trust-root/provider/durable-store/IPC/OS/runtime dependencies. After that review, reconcile the next action against live main, then prioritize the Owner's Mente Espacio-Tiempo continuity audit using the existing Space-Time protocol and static audit.
+
+```text
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+ACTIVE_TASK=M1A_G1_REVIEW_COMPLETE_DIRTY_BOOTSTRAP_BOUNDARY_CANDIDATE
+PREVIOUS_TASK=M1A_G1_REVIEW_R03_FAIL_CLOSED_CONTAINMENT_DIFF
+PREVIOUS_TASK_RESULT=SOURCE_REVIEW_BUNDLE_ONLY; DIFFS_COMPLETE=YES; FOCUSED_STATIC_REVIEW_COMPLETE
+R03=DENY_ONLY_CONTAINMENT
+SAME_OBJECT_BINDING=NOT_ESTABLISHED
+AUTHORITY_TARGET_INVALID_TEST=NOT_PRESENT
+NEXT_ACTION=REVIEW_COMPLETE_CURRENT_STAGED_UNSTAGED_DIFF_ACROSS_12_PATHS
+NEXT_REVIEW_TARGET=SOURCE_COMPOSITION_AND_RESIDUAL_TRUST_IPC_OS_RUNTIME_DEPENDENCIES
+SOURCE_IMPLEMENTATION=AUTHORIZED_WITH_BOUNDS
+SOURCE_TEST_AUTHORING=AUTHORIZED
+TEST_EXECUTION=NOT_AUTHORIZED; NOT_RUN
+BUILD=NOT_AUTHORIZED; NOT_RUN
+RUNTIME=NOT_AUTHORIZED; NOT_RUN
+REAL_TRANSPORT=NOT_AUTHORIZED; NOT_RUN
+PROTECTED_READS=FAIL_CLOSED
+AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3_VERSIONED_TARGET_RESOLVER=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+GOVERNANCE=KEEP_BLOCKED
+BRIDGE=BRIDGE_NOT_READY
+COST_POLICY=ZERO_BUDGET
+AUTOMATIC_FOLLOW_ON=FALSE
+```
+
+This proposal does not alter live main, authorize automatic follow-on, enable protected reads or close any prerequisite.
+
+---
+
 <!-- Current-state routing proposal only; canonical live main remains authoritative until adoption. -->
 ## CURRENT-STATE PROPOSAL — review R-03 containment diff before further source changes (2026-10-24)
 
