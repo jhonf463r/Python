@@ -8,7 +8,7 @@
 
 ## 1. Owner direction and architectural boundary
 
-The Owner has asked the Space-Time Mente to coordinate collective development with three or more separate ChatGPT helper chats plus other appropriate assistants. Their outputs should contribute to one shared project history and one reconciled plan. The intended coordinator restores the objective, recovers relevant prior evidence, assigns disjoint work, reconciles returned artifacts, records what actually changed, and prevents repeated investigations.
+The Owner wants the Space-Time Mente itself to guide whatever helper chats or assistants are useful when a future objective genuinely needs delegation. The purpose is not to recruit helpers for every consultation. The coordinator restores the objective, recovers relevant prior evidence, decides whether any worker is needed, assigns disjoint work only when appropriate, reconciles returned artifacts, records what actually changed, and prevents repeated investigations. This conversation is a meta-coordination consultation; it does not dispatch the optional helper packets below.
 
 **Reuse the existing Space-Time/MOP architecture. Do not create a new “supermind service”, second task router, independent memory database, or competing source of truth.** This addendum tightens the collaboration protocol at the human/chat/task boundary; it does not claim to implement an autonomous runtime coordinator.
 
@@ -141,9 +141,9 @@ Parallel work is permitted only where dependencies and collision risk are explic
 - **No speculative execution:** do not launch paid models, external browser sessions, code changes, system commands or follow-on workers unless the specific route permits them.
 - **One integration route:** multiple branches can exist, but only one reconciled active integration task is represented by `CURRENT-STATE.md`.
 
-## 8. Three disjoint first-pass work packets
+## 8. Optional examples of bounded work packets (not dispatched)
 
-These packets are deliberately **read-only**. Their purpose is to supply independent, non-overlapping evidence before any proposed source changes. They may be sent to separate helper chats. If this addendum is not yet canonical, use it as a draft handoff only; live `CURRENT-STATE.md` still governs permissions.
+These three packets illustrate how Space-Time could guide separate helpers *if a future, explicit task calls for parallel analysis*. They are deliberately read-only and have non-overlapping scopes. They are not orders to contact helpers, do not supersede the current active task, and must not be dispatched automatically. If this addendum is not yet canonical, use it as a draft handoff only; live `CURRENT-STATE.md` still governs permissions.
 
 ### `SPACE-COORD-01-CAPABILITY-TRANSPORT` — Helper A
 **Question:** Where and why is task-level capability/readiness identity lost between `AdaptiveSession` and concrete `ToolTask`/tool selection on current live `main`?
