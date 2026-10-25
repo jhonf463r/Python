@@ -283,3 +283,12 @@ GOVERNANCE=KEEP_BLOCKED
 BRIDGE=BRIDGE_NOT_READY
 AUTOMATIC_FOLLOW_ON=FALSE
 ```
+
+
+## 13. Follow-up calibration — manifest evidence must be bound, not merely well-shaped (2026-10-24)
+
+The supplied source diff for the Owner-controlled bootstrap boundary showed that `validate_owner_bootstrap_evidence()` validated `manifest_sha256` only by a SHA-256 regular expression. The synthetic positive fixture uses `"e"*64`, so a well-formed but incorrect digest is accepted. The helper also fails to check `manifest_git_blob_sha` shape and positive `pull_request_number`.
+
+This is a source-contract defect, not evidence of a runtime exploit: the production bootstrap adapter is absent and the protected-read positive path remains disabled. The minimum repair is to recompute the canonical challenge manifest digest and compare exact equality, validate SHA-1 blob syntax, validate a positive exact integer PR number, and test each mismatch. This is consistent with the project invariant that a data shape or matching identifier is not proof that evidence corresponds to the exact authorized object.
+
+The review was based on Owner-supplied diffs in chat. The local source blob identities have not been independently fetched from the checkout, and none of the source tests were executed. See `CHAT-ARCH-2026-10-24-M1A-G1-bootstrap-boundary-static-review-receipt.md`. The route in live `CURRENT-STATE.md` remains authoritative; the next bounded repair route described here is a proposal until adopted on main and fetched back.
