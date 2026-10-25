@@ -5,6 +5,7 @@
 The single authorized task M1A_G1_G3_NTCREATEFILE_HANDLE_RELATIVE_SOURCE_CANDIDATE_20261025 returned TASK_RESULT=BLOCKED_ON_NATIVE_HANDLE_BINDING_DETAILS with no source changes, according to the Owner-supplied Codex report.
 
 Terminal receipt: [G3 native-handle authorization-binding blocker](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-25-M1A-G1-G3-NATIVE-HANDLE-AUTHORIZATION-BINDING-BLOCKER-RECEIPT.md).
+New-chat handoff: [consolidated G3 and Space-Time continuity handoff](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-25-M1A-G1-CONSOLIDATED-NEW-CHAT-HANDOFF.md).
 Feasibility design: [G3 handle primitive feasibility result](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-25-M1A-G1-G3-HANDLE-PRIMITIVE-DESIGN-FEASIBILITY-RESULT.md).
 
 The report identifies the exact missing edge: ReadAuthorizationCoordinator.decide_mcp_read() receives operation and requested target as strings; the resolver returns a textual canonical_target and the permission retains that text rather than a capability bound to an opened object. server.py obtains the workspace as a path and can fall back to os.getcwd(); an approved workspace-root identity bound to the handle is not established. Creating a native handle after a textual-path authorization therefore cannot prove that the decision authorizes the object the reader consumes.
