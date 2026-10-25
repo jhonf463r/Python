@@ -2,7 +2,7 @@
 
 ## CURRENT ROUTE — one bounded read-only assessment of existing trust assets (2026-10-25)
 
-Live `CURRENT-STATE.md` authorizes only `M1A_G1_EXISTING_TRUST_ASSETS_BOUNDED_READ_ONLY_ASSESSMENT` in the already-open local Codex/Windows session. Scope: source-grounded existing asset locators and relevant metadata only; no secret content, broad scans, source edits, tests/build/runtime/transport, protected reads or configuration changes. The task prompt and decision receipt are [here](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-25-M1A-G1-OWNER-DECISION-EXISTING-TRUST-ASSETS-READONLY-ASSESSMENT-RECEIPT.md).
+Live `CURRENT-STATE.md` authorizes only `M1A_G1_EXISTING_TRUST_ASSETS_BOUNDED_READ_ONLY_ASSESSMENT` in the already-open local Codex/Windows session. Scope: source-grounded existing asset locators and relevant metadata only; no secret content, broad scans, source edits, tests/build/runtime/transport, protected reads or configuration changes. The task prompt and decision receipt are [here](./CHAT-ARCH-2026-10-25-M1A-G1-OWNER-DECISION-EXISTING-TRUST-ASSETS-READONLY-ASSESSMENT-RECEIPT.md).
 
 ```text
 ACTIVE_TASK=M1A_G1_EXISTING_TRUST_ASSETS_BOUNDED_READ_ONLY_ASSESSMENT
