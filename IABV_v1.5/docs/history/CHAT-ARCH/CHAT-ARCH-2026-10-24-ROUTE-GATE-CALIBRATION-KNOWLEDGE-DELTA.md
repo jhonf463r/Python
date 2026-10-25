@@ -235,3 +235,51 @@ AUTOMATIC_FOLLOW_ON = FALSE
 ```
 
 This calibration improves task-result intake and continuity only. It does not change the route, widen Owner authorization, certify local code, close a gate, or turn documentation into model-weight training. It supplements section 10's stale-route-inertia rule: section 10 handles a new Owner decision that changes scope; section 11 handles a new report that may refer to an older prompt while the current route has already advanced.
+
+
+## 12. Follow-up calibration — Owner-controlled bootstrap boundary result intake (2026-10-24)
+
+### Reported outcome and provenance
+
+The Owner supplied a Codex report for `M1A_G1_OWNER_CONTROLLED_BOOTSTRAP_ISSUER_BOUNDARY` with `TASK_RESULT=SOURCE_CANDIDATE_ONLY`. It reports three existing paths changed and no new files:
+
+- `github_owner_merge_bootstrap.py`, reported working-tree blob `97d0295028e9da203548f26e86f3c1f75bc303b1`;
+- `test_github_owner_merge_bootstrap.py`, reported working-tree blob `1e32059a99091ccca4636b34ba00b80faeeecd9c`;
+- candidate `CURRENT-STATE.md`, reported working-tree blob `b62b6e3728a18e156db8d52bc070ff97a601211b`.
+
+The report says the local HEAD remained `6bc568e1c5a898afd65cc045c779c25a9cdc5489`, main at task time was `2cecd5e9b9e175584d65bbb1198a53bc2346d095`, and the branch diverged by 9 local commits and 4 remote commits, with overlapping local changes. No merge/rebase, test/build/runtime/MCP/transport or publication occurred. It reports seven staged paths retained, eleven unstaged paths at end, and no dependency changes. These are `OWNER_REPORTED`; GitHub did not find the candidate branch or HEAD, so it cannot inspect the local worktree or independently validate the blob claims. The exact diff was not attached to this intake.
+
+### Correct interpretation
+
+The report describes a useful narrowing of the boundary contract: `G1EnrollmentChallenge` binds `server_id` and `issuer_id`; typed verifier, credential-provider, challenge-store, trust-registry and boundary interfaces are present in source; source tests reportedly cover challenge bindings, expiry, Owner/issuer identity, server identity and policy version. However, the report expressly says that a real Owner assertion verifier, independent provisioned root, persistent challenge/replay store, protected trust registry, authenticated process/IPC and OS isolation do not exist. Validation against a public key supplied to a signature verifier does not authenticate the trustworthiness of that key. Therefore the result does not establish a usable positive authorization path or close G1/G2/G3.
+
+Do not overstate the candidate as security-complete; do not dismiss the source-contract work as zero progress either. It advances the explicit contract and records exact missing dependencies, while leaving the actual trust and isolation boundary unimplemented. Tests are written but `NOT_RUN`; `git diff --check` (reported PASS) is patch hygiene only, not behavioral evidence.
+
+### Next discriminating action
+
+The bootstrap handoff's stop condition is targeted static review of the exact source delta. Therefore:
+
+1. Obtain a read-only source-diff package from the same local Codex checkout, distinguishing `git diff --cached` (pre-existing staged work) from `git diff` (unstaged delta), with status, paths, before/after hashes and no staging/edits.
+2. Have an independent reviewer inspect the exact three-path delta against the bounded handoff: challenge binding and validation, evidence/identity source, store interface truthfulness, trust-registry semantics, fail-closed behavior, and whether candidate `CURRENT-STATE.md` preserves chronology and gates.
+3. Only after that review decide whether the candidate contract is source-correct within its scope or whether there is a specific source defect. If the boundary still requires disallowed enrollment/credential/ACL/process actions, record the exact authorization/evidence gap and preserve DENY; do not ask the Owner for root material prematurely or re-run broad platform research.
+
+Current canonical route transition is proposed as `M1A_G1_REVIEW_OWNER_CONTROLLED_BOOTSTRAP_BOUNDARY_SOURCE_DELTA`, with `NEXT_ACTION=OBTAIN_EXACT_STAGED_AND_UNSTAGED_SOURCE_DIFF_FOR_INDEPENDENT_STATIC_REVIEW`. This routing proposal remains noncanonical until its documentation PR is merged and fetched back. The local candidate remains uncommitted/unpublished; the PR does not modify it.
+
+```text
+LATEST_CODEX_RESULT=SOURCE_CANDIDATE_ONLY; OWNER_REPORTED
+SOURCE_PATCH_AVAILABLE_TO_REVIEWER=FALSE
+EXACT_DIFF=NOT_ATTACHED
+TESTS=WRITTEN; NOT_RUN
+BUILD_RUNTIME_MCP_TRANSPORT=NOT_RUN
+INDEPENDENT_ROOT=NOT_ESTABLISHED
+OWNER_ASSERTION_VERIFIER=NOT_IMPLEMENTED
+DURABLE_CHALLENGE_REPLAY_STORE=NOT_IMPLEMENTED
+PROTECTED_TRUST_REGISTRY=NOT_IMPLEMENTED
+AUTHENTICATED_PROCESS_IPC_OS_BOUNDARY=NOT_ESTABLISHED
+G1=NOT_ESTABLISHED; G2=NOT_ESTABLISHED; G3=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+READ_LIST=FAIL_CLOSED
+GOVERNANCE=KEEP_BLOCKED
+BRIDGE=BRIDGE_NOT_READY
+AUTOMATIC_FOLLOW_ON=FALSE
+```
