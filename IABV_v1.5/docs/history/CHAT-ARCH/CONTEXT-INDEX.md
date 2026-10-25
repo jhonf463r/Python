@@ -1,29 +1,47 @@
 <!-- G1 continuity summary; CURRENT-STATE.md remains the sole routing authority. -->
 
-## CURRENT ROUTE — wait after terminal asset assessment (2026-10-25)
+## CURRENT ROUTE — Owner reopens one integrated source-organ completion candidate (2026-10-25)
 
-The bounded read-only assessment is terminal for its authorized scope. In the files examined, no source-grounded locator was found for local trust-asset metadata; Windows certificate stores, key containers, services, ACLs and named pipes were not inspected. This does not prove global absence. The Owner's records do not identify a qualifying independent authority; Entra/Authenticator remains Owner-reported and is not trusted by IABV. Do not repeat the asset inventory, closed TPM path, Entra setup, source review, or source micro-patches. Wait for genuinely new independently verifiable authority/mandate/binding evidence or a new explicit Owner decision. See [terminal-task routing correction](./CHAT-ARCH-2026-10-25-TERMINAL-TASK-ROUTER-TRANSITION-CORRECTION.md).
+The Owner's latest explicit instruction reopens ONE bounded, integrated source-only candidate task after the prior bounded remediation and trust-asset inventory were consumed. Reuse their accepted findings; do not repeat the broad review, asset inventory, TPM path, Entra setup, or already-terminal micro-patches. This does not supply new authority evidence or authorize a positive read.
 
-Living coordination method: revision 2.0 consolidates objective-bound Space-Time evidence, adaptive role selection, gated action chains and evidence-based rule evolution into the existing protocol. This is a coordination method, not a parallel orchestrator or a claim of model-weight training. See [the living protocol](./CHAT-ARCH-2026-10-23-CONTINUITY-SPACE-TIME-OPERATING-PROTOCOL-v1.md) and [revision receipt](./CHAT-ARCH-2026-10-25-SPACE-TIME-ADAPTIVE-NEUROPLASTICITY-REVISION-2-RECEIPT.md). It does not override the technical route in CURRENT-STATE.md.
+The authorized objective is to reconcile the actual existing Windows candidate, preserve its prior staged/unstaged state, and complete only source-enforceable authorization-organ contracts in one coherent candidate. The same-object G3 path must either pass the exact identity-bearing object to the reader or remain denied with the irreducible dependency identified. Do not synthesize an authority/root, production provider, protected issuer, OS identity, IPC boundary, registry, or trust asset.
+
+Decision receipt: [Owner decision — one integrated authorization-organ completion candidate](./CHAT-ARCH-2026-10-25-M1A-G1-OWNER-DECISION-INTEGRATED-AUTHORIZATION-ORGAN-COMPLETION-RECEIPT.md).
 
 ```text
 PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
-ACTIVE_TASK=M1A_G1_WAIT_FOR_GENUINELY_NEW_INDEPENDENT_ROOT_AND_MANDATE_EVIDENCE
+ACTIVE_TASK=M1A_G1_INTEGRATED_AUTHORIZATION_ORGAN_SOURCE_COMPLETION_CANDIDATE
 LAST_TERMINAL_TASK=M1A_G1_EXISTING_TRUST_ASSETS_BOUNDED_READ_ONLY_ASSESSMENT
-LAST_TERMINAL_RESULT=EXISTING_TRUST_ASSET_READ_ONLY_ASSESSMENT_ONLY
-SOURCE_LOCATOR_ASSESSMENT=COMPLETE_FOR_INSPECTED_FILES
-LOCAL_WINDOWS_ASSET_METADATA=NOT_RUN; NO_SOURCE_GROUNDED_LOCATOR_FOUND
+LAST_TERMINAL_RESULT=NO_SOURCE_GROUNDED_LOCAL_ASSET_LOCATOR_FOUND_IN_INSPECTED_FILES
+PREVIOUS_SOURCE_TASK=M1A_G1_BOUNDED_SOURCE_ORGAN_REMEDIATION; TERMINAL_FOR_ITS_SCOPE
+CURRENT_OWNER_DECISION=REOPEN_ONE_INTEGRATED_SOURCE_ONLY_CANDIDATE_TASK
+CANDIDATE_BASE_MAIN=0674f3a1460214377f1a4a75fed20d0a834e682d
 AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
 QUALIFYING_INDEPENDENT_ROOT=NOT_ESTABLISHED
-ENTRA_TRUSTED_BY_IABV=NOT_ESTABLISHED
-G1=G2=G3=NOT_ESTABLISHED
+OWNER_TO_WINDOWS_PRINCIPAL=NOT_ESTABLISHED
+BOOTSTRAP_AUTHORITY_TO_ISSUER=NOT_ESTABLISHED
+ISSUER_TO_EXACT_SERVER=NOT_ESTABLISHED
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3_VERSIONED_TARGET_RESOLVER=NOT_ESTABLISHED_UNTIL_SAME_OBJECT_CONTRACT_IS_EVIDENCED
 IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
-GOVERNANCE=KEEP_BLOCKED
+SOURCE_ONLY_CANDIDATE=AUTHORIZED_FOR_ONE_TASK
+TESTS=NOT_RUN
+BUILD=NOT_RUN
+RUNTIME=NOT_RUN
+MCP=NOT_RUN
+REAL_TRANSPORT=NOT_RUN
 PROTECTED_READS=FAIL_CLOSED
+GOVERNANCE=KEEP_BLOCKED
 BRIDGE=BRIDGE_NOT_READY
+COST_POLICY=ZERO_BUDGET
 AUTOMATIC_FOLLOW_ON=FALSE
-NEXT_ACTION=MAINTAIN_NO_BOOTSTRAP_FAIL_CLOSED; REOPEN_ONLY_ON_GENUINELY_NEW_INDEPENDENT_AUTHORITY_EVIDENCE_OR_EXPLICIT_OWNER_DECISION
+NEXT_ACTION=HAND_OFF_ONE_BOUNDED_SOURCE_ONLY_COMPLETION_TASK_TO_CODEX_EXISTING_WINDOWS_SESSION; THEN_STOP_FOR_REVIEW
+STOP_CONDITION=RETURN_ONE_COMPLETE_CANDIDATE_AND_EXACT_RESIDUAL_BLOCKER_MATRIX; DO_NOT_ENABLE_POSITIVE_READS
 ```
+
+Scope limits: inspect/reuse only relevant existing candidate/source and accepted receipts; author focused tests where needed but do not execute them. Do not stage/commit/push/publish/merge product source. No credentials, trust-root creation/enrollment, Entra app, service, OS/ACL/registry/trust-store changes, IPC provisioning, public tunnel, tests, build, runtime, MCP, transport, protected reads, deployment or spend. Return complete before/after evidence and stop after this task.
+
 
 ## Previous task result — bounded source-organ remediation (2026-10-24)
 
