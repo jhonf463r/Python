@@ -114,3 +114,14 @@ Related documents:
 - [Consolidated new-chat handoff](./CHAT-ARCH-2026-10-24-M1A-G1-CONSOLIDATED-NEW-CHAT-HANDOFF.md)
 - [Current-state route on live main](https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CURRENT-STATE.md)
 - [PR #493](https://github.com/jhonf463r/Python/pull/493)
+
+
+## Follow-up after the exact R-03 bundle — P0 evidence status updated (2026-10-24)
+
+The Owner supplied the six full current staged/unstaged diffs for the three R-03 routes. Focused static review is now complete for those supplied paths. Codex-reported checkout identity and hashes remain owner-reported; no direct Windows filesystem access was performed in this review.
+
+Result: the guard currently denies every ordinary decision path before either read helper; it denies typed synthetic `ALLOW` because the helper would independently resolve the original relative path. Tests source-cover path mismatch, rewritten canonical target, and synthetic `ALLOW` for both handlers. An explicit `AUTHORITY_TARGET_INVALID` test is missing. No tests/build/runtime/MCP/transport ran. R-03 remains `DENY_ONLY_CONTAINMENT`; same-object binding is not established and protected reads stay fail-closed.
+
+The three-path evidence step is complete, but the complete accumulated 12-path candidate delta remains unreviewed. The next bounded evidence step is the read-only, whole-candidate staged/unstaged review already described in the prior consolidated receipt and PR #493 description. Do not issue another narrow patch in isolation.
+
+After whole-candidate review and canonical route reconciliation, the Owner's queued Mente Espacio-Tiempo audit is the next priority: verify new-chat preflight, temporal/causal retrieval, stale/conflicting route summaries, freshness and goal ordering, actual per-agent context delivery/receipts, and later causal reuse. Reuse the existing continuity algorithm audit; do not invent another orchestrator. This prioritization does not change `main` or authorize automatic follow-on.
