@@ -310,3 +310,9 @@ The review should discriminate between typed status claims and actual trusted op
 The supplied enrollment-receipt module diff partially satisfies its structural purpose, but the validator only requires `persistence.registry_id` to be a nonempty string. Without a trusted expected registry ID and exact equality check, a receipt naming a different registry can pass this binding check. Add the expected ID from trusted host/provider context (never from the receipt/request), and a negative source test for a different syntactically valid registry ID.
 
 Because the test diff included an ellipsis, its full contents and coverage are not reviewable yet. Ask for a complete exact test diff after the bounded correction. Do not promote synthetic status labels or references into proof of durable store/registry operations.
+
+## 15. Follow-up calibration — expected registry binding correction (2026-10-24)
+
+The latest supplied diff now requires a nonblank exact-string `expected_registry_id` and compares it to `persistence.registry_id`. The complete test diff supplied in the same message covers a mismatched but well-formed ID and invalid expected-ID types/values. Record `STATIC_REVIEW=F03_CORRECTION_PRESENT_IN_SUPPLIED_DIFF; FULL_TEST_DIFF_REVIEWED; TESTS_NOT_RUN`. This is not direct filesystem verification or a test pass.
+
+The expected ID's origin remains a trust dependency: a function parameter does not authenticate its provenance. Any future production caller must source the value from trusted host configuration/provider context, never from the receipt or request. A value object containing `CONSUMED_ONCE`, `PERSISTED` and `ENROLLED` still cannot prove durable state changes. Preserve all fail-closed gates.
