@@ -1,29 +1,28 @@
 <!-- G1 continuity summary; CURRENT-STATE.md remains the sole routing authority. -->
 
-## CURRENT ROUTE — G3 handle semantics blocker terminal; Owner decision required (2026-10-25)
+## CURRENT ROUTE — G3 handle design feasible with constraints; Owner decision required (2026-10-25)
 
-The single authorized task M1A_G1_G3_HANDLE_BACKED_READER_CONTRACT_SOURCE_CANDIDATE_20261025 has returned TASK_RESULT=BLOCKED_ON_PLATFORM_HANDLE_SEMANTICS. The Owner-supplied Codex report says zero files changed because the inspected call chain provides no demonstrated identity-bearing open-handle primitive for authorizing and consuming the same file or directory object without path re-resolution.
+The authorized static feasibility task M1A_G1_G3_HANDLE_PRIMITIVE_DESIGN_FEASIBILITY_20261025 is terminal with TASK_RESULT=VIABLE_WITH_CONSTRAINTS. Official Microsoft documentation supports a plausible user-mode design: component-by-component NtCreateFile calls relative to an opened parent directory handle, FILE_OPEN_REPARSE_POINT on each component, handle-based checks before descent, ReadFile on the authorized final file handle, and GetFileInformationByHandleEx on the authorized directory handle for enumeration.
 
-Terminal receipt: [G3 handle-backed reader-contract blocker](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-25-M1A-G1-G3-HANDLE-BACKED-READER-CONTRACT-BLOCKER-RECEIPT.md).
-Authorization history: [Owner decision for one bounded G3 task](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-25-M1A-G1-OWNER-DECISION-G3-HANDLE-BACKED-READER-CONTRACT-RECEIPT.md).
+Design receipt: [G3 handle primitive feasibility result](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-25-M1A-G1-G3-HANDLE-PRIMITIVE-DESIGN-FEASIBILITY-RESULT.md).
+Prior blocked candidate result: [terminal G3 handle-semantics blocker]( docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-25-M1A-G1-G3-HANDLE-BACKED-READER-CONTRACT-BLOCKER-RECEIPT.md ).
 
-The report says audit_tools/__init__.py resolves and returns a Path; file reads later call Path.read_text(); directory enumeration uses os.listdir(resolved) and performs path-based child checks. The server's protected-read guards continue denying requests, including when a synthetic ALLOW is presented, and the handlers return before the helpers on denial. These code details, paths/line numbers, SHA-256 values, Git blob IDs and worktree-preservation observations are OWNER_SUPPLIED_CODEX_REPORT; they were not independently re-observed from this reconciliation environment.
+This is a static design result, not a source implementation, runtime proof or G3 pass. No code was changed, no source tests were authored, and tests/build/runtime/MCP/real transport/protected reads were not run. The prior Windows source report, file hashes and worktree preservation evidence remain OWNER_SUPPLIED_CODEX_REPORT; they are not upgraded to independently observed claims by the design analysis.
 
-No path wrapper, copied identity fields or second lookup can satisfy same-object binding. The correct result for this bounded scope is no implementation, not an emulated guarantee. The finding is localized to the inspected call chain; it does not establish global absence of a suitable Windows primitive or dependency.
+The main design conditions are: use an approved workspace-root handle whose identity is bound to policy; reject absolute/UNC/device/drive-relative paths, traversal components and ADS; open and inspect exactly one component at a time relative to the held parent; deny reparse points by default; validate type and required metadata through the returned handle; consume a file through that same handle and enumerate a directory through that same handle; define handle ownership/lifetime, share modes, concurrent mutation, hard-link policy and an explicit supported-filesystem matrix; deny on any unsupported/ambiguous primitive. The official file ID guidance warns against using IDs alone as durable identity.
 
-No further technical task may start automatically. The next Owner decision is whether to authorize one separate design-feasibility-only investigation of a genuine Windows handle-backed primitive for both files and directory enumeration (including ancestor traversal, reparse points, replacement races, and handle lifetime), or leave G3 blocked pending an independently supported primitive/dependency. No code changes, tests, build, runtime, MCP, real transport or protected reads are authorized by such a proposal until separately specified and authorized.
+The separate independent IABV authority root/mandate, Owner-to-Windows identity, authority-to-issuer and issuer-to-server bindings, G2 production policy and rollback-resistant replay persistence remain unresolved. A workspace directory handle is not an IABV trust root. G1/G2/G3 remain NOT_ESTABLISHED; all protected reads remain fail-closed.
 
-G1/G2 remain unestablished; root/mandate/custodian, Owner-to-Windows identity, authority-to-issuer/server bindings and rollback-resistant replay protection remain unresolved. G3 is not established. Keep fail-closed containment and zero budget.
+The feasibility task and prior single source-candidate authorization are both consumed. The next action is a new explicit Owner decision: authorize exactly one bounded source-only G3 candidate using the proposed NtCreateFile handle-relative walk (including directly related source-test authoring, tests NOT RUN), or keep G3 blocked. No implementation or other technical follow-on is automatically authorized.
 
 ~~~text
 PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
-ACTIVE_TASK=M1A_G1_WAIT_FOR_OWNER_DECISION_AFTER_G3_PLATFORM_HANDLE_SEMANTICS_BLOCKER
-LAST_TERMINAL_TASK=M1A_G1_G3_HANDLE_BACKED_READER_CONTRACT_SOURCE_CANDIDATE_20261025
-LAST_TERMINAL_RESULT=BLOCKED_ON_PLATFORM_HANDLE_SEMANTICS; NEW_SOURCE_DELTA_NONE; OWNER_SUPPLIED_CODEX_REPORT
-SOURCE_CHANGES_BY_LAST_TASK=0
-SOURCE_DIFF_SHA256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
-SOURCE_TESTS=AUTHORED_OR_UNCHANGED; NOT_RUN
-CANDIDATE_CHECKOUT_STATUS=CODEX_REPORTED_UNCHANGED; NOT_INDEPENDENTLY_OBSERVED
+ACTIVE_TASK=M1A_G1_WAIT_FOR_OWNER_DECISION_ON_G3_NTCREATEFILE_SOURCE_CANDIDATE_OR_REMAIN_BLOCKED
+LAST_TERMINAL_TASK=M1A_G1_G3_HANDLE_PRIMITIVE_DESIGN_FEASIBILITY_20261025
+LAST_TERMINAL_RESULT=VIABLE_WITH_CONSTRAINTS; OFFICIAL_MICROSOFT_DOCS_REVIEWED; DESIGN_ONLY
+DESIGN_RECEIPT=CHAT-ARCH-2026-10-25-M1A-G1-G3-HANDLE-PRIMITIVE-DESIGN-FEASIBILITY-RESULT.md
+SOURCE_CHANGES_BY_TERMINAL_TASK=0
+SOURCE_TESTS=NOT_AUTHORED; NOT_RUN
 AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
 QUALIFYING_INDEPENDENT_ROOT=NOT_ESTABLISHED
 OWNER_TO_WINDOWS_PRINCIPAL=NOT_ESTABLISHED
@@ -32,7 +31,7 @@ ISSUER_TO_EXACT_SERVER=NOT_ESTABLISHED
 DURABLE_REPLAY_AND_ROLLBACK_PROTECTION=NOT_ESTABLISHED
 G1=NOT_ESTABLISHED
 G2=NOT_ESTABLISHED
-G3_SAME_OBJECT=NOT_ESTABLISHED; BLOCKED_ON_PLATFORM_HANDLE_SEMANTICS
+G3_SAME_OBJECT=NOT_ESTABLISHED; FEASIBLE_DESIGN_CANDIDATE_IDENTIFIED
 IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
 GOVERNANCE=KEEP_BLOCKED
 PROTECTED_READS=FAIL_CLOSED
@@ -44,19 +43,17 @@ MCP=NOT_RUN
 REAL_TRANSPORT=NOT_RUN
 COST_POLICY=ZERO_BUDGET
 AUTOMATIC_FOLLOW_ON=FALSE
-NEXT_ACTION=OWNER_DECISION_REQUIRED_TO_AUTHORIZE_ONE_G3_HANDLE_PRIMITIVE_DESIGN_FEASIBILITY_TASK_OR_KEEP_BLOCKED
-NEXT_REVIEW_TARGET=G3_WINDOWS_HANDLE_PRIMITIVE_FEASIBILITY; SOURCE_EDITS_NOT_AUTHORIZED_BY_THIS_WAIT_STATE
-STOP_CONDITION=NO_FOLLOW_ON_WITHOUT_NEW_EXPLICIT_SCOPE; KEEP_PROTECTED_READS_DENIED
+NEXT_ACTION=OWNER_DECISION_REQUIRED_TO_AUTHORIZE_ONE_BOUNDED_G3_NTCREATEFILE_SOURCE_CANDIDATE_OR_KEEP_BLOCKED
+NEXT_REVIEW_TARGET=G3_HANDLE_RELATIVE_WALK_AND_SAME_OBJECT_CONSUMPTION; ROOT_AUTHORITY_REMAINS_UNESTABLISHED
+STOP_CONDITION=NO_IMPLEMENTATION_WITHOUT_NEW_EXPLICIT_SCOPE; KEEP_PROTECTED_READS_DENIED
 ~~~
 
 
-<!-- HISTORICAL ROUTING SNAPSHOT: Owner authorization for one G3 task; task has now returned a terminal blocker. -->
-## HISTORICAL ROUTE — one G3 handle-backed source task authorized (2026-10-25; terminal)
+<!-- HISTORICAL ROUTING SNAPSHOT: design feasibility is now terminal; implementation requires another explicit Owner decision. -->
+## HISTORICAL ROUTE — G3 handle-primitives blocker followed by static feasibility result (2026-10-25)
 
-Owner decision receipt: [one-task G3 authorization](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-25-M1A-G1-OWNER-DECISION-G3-HANDLE-BACKED-READER-CONTRACT-RECEIPT.md).
-Terminal result receipt: [G3 handle-backed reader-contract blocker](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-25-M1A-G1-G3-HANDLE-BACKED-READER-CONTRACT-BLOCKER-RECEIPT.md).
+The prior task returned BLOCKED_ON_PLATFORM_HANDLE_SEMANTICS with no source delta. The subsequent Owner-authorized static feasibility task consulted official Microsoft documentation and identified a plausible handle-relative design, classified VIABLE_WITH_CONSTRAINTS. This does not prove target-host compatibility or G3 implementation. See [feasibility result](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-25-M1A-G1-G3-HANDLE-PRIMITIVE-DESIGN-FEASIBILITY-RESULT.md) and [prior terminal blocker receipt](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-25-M1A-G1-G3-HANDLE-BACKED-READER-CONTRACT-BLOCKER-RECEIPT.md).
 
-The prior task was authorized for a single bounded source-only attempt in the existing Codex Windows session. Codex returned BLOCKED_ON_PLATFORM_HANDLE_SEMANTICS and reports zero file changes. That task is consumed; its authorization does not authorize another task. The local source findings and hashes remain OWNER_SUPPLIED_CODEX_REPORT, not independently observed here.
 
 ## Previous task result — bounded source-organ remediation (2026-10-24)
 
