@@ -114,3 +114,12 @@ The remediation queue for freshness, goal ordering, delivery receipts and causal
 The Owner/Codex hand-back for `M1A_G1_BOUNDED_SOURCE_ORGAN_REMEDIATION` was statically adjudicated against the visible five-file patch text. Result: `PASS_WITH_NOTES_FOR_PASTED_PATCH_TEXT_ONLY`. The strict boolean guard, manifest version 2/v1 rejection and explicit `AUTHORITY_TARGET_INVALID` test appear in the supplied hunks. The reported diff hash was not recomputed from raw bytes, the local Windows checkout was not directly inspected, and no tests/build/runtime/MCP/transport were run. See [task receipt](./CHAT-ARCH-2026-10-24-M1A-G1-BOUNDED-SOURCE-REMEDIATION-STATIC-REVIEW-RECEIPT.md).
 
 The task does not close the independent-root, Owner-to-host, protected issuer/process/IPC or exact-target same-object dependencies. The canonical route returns to waiting for genuinely new, independently verifiable authority/platform evidence. This reconciles the prior section's historically accurate account of the source-only reopening without converting its task into an automatic loop.
+
+
+## 9. Owner-authorized read-only trust-asset assessment — current task (2026-10-25)
+
+The Owner has explicitly authorized one bounded `M1A_G1_EXISTING_TRUST_ASSETS_BOUNDED_READ_ONLY_ASSESSMENT`, the exact next candidate named in historical `CURRENT-STATE.md` as requiring a separate Owner decision and supported route. This scope is read-only evidence collection in the already-open local Codex/Windows session, using source-grounded locations and metadata only. It is not authority or bridge evidence by itself.
+
+The required prompt, restrictions and acceptance contract are in [the Owner decision receipt](./CHAT-ARCH-2026-10-25-M1A-G1-OWNER-DECISION-EXISTING-TRUST-ASSETS-READONLY-ASSESSMENT-RECEIPT.md). The result must distinguish `PRESENT_AND_PROVEN_FOR_NARROW_CLAIM`, `PRESENT_BUT_NOT_TRUSTED`, `NOT_FOUND_AT_EXACT_INSPECTED_LOCATOR`, `UNKNOWN_NOT_INSPECTED` and `SUPPORTED_ROUTE_NOT_FOUND`; it must not expose secrets or generalize a local miss to global absence. If no supported route exists, stop without using an alternate route.
+
+All gates remain open until a later independent evidence reconciliation. No source changes, tests/build/runtime/transport, protected reads, credentials, service/ACL/trust-store changes or automatic follow-on are authorized by this task.
