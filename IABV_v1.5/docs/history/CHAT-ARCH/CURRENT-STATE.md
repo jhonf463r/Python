@@ -1,29 +1,34 @@
-<!-- CURRENT ROUTE TRANSITION: the integrated source candidate is terminal; G3 handle contract requires a separate explicit scope decision. -->
-## CURRENT-STATE ROUTING — source-organ candidate terminal; G3 handle contract isolated (2026-10-25)
+## CURRENT ROUTE — Owner authorized one bounded G3 handle-backed reader-contract task (2026-10-25)
 
-The Owner-supplied Codex report returned `BLOCKED_ON_EXTERNAL_TRUST_BOUNDARY` with `NEW_SOURCE_DELTA=NONE`. The report says the source-level checks were already present in the inspected candidate and no files were changed. Its checkout/status/hash observations remain report-derived, not independently observed here.
+The Owner replied “si autorizo” to the explicit scope question for exactly one task in the existing Codex Windows session. The authorization is bounded to the G3 same-object handle-backed reader contract and directly related source-test authoring; test execution, build, runtime, MCP, real transport and protected reads remain prohibited. The decision receipt records the conversational authorization but is not an independent identity attestation.
 
-The immediate source engineering question is G3: a handle-backed Windows reader contract that makes the reader consume the exact identity-bearing filesystem object accepted by the authorization decision. The current code path re-resolves a path, so same-object binding remains unestablished and protected reads stay denied. Do not repeat the previous source review, micro-patches or asset inventory.
+Decision receipt: [Owner authorization for one G3 handle-backed reader-contract task](./CHAT-ARCH-2026-10-25-M1A-G1-OWNER-DECISION-G3-HANDLE-BACKED-READER-CONTRACT-RECEIPT.md).
 
-No independent root/custodian/mandate, Owner-to-Windows principal binding, protected issuer/server boundary, production G2 authority or rollback-resistant replay store has been established. Solving G3 alone would not enable the bridge.
+The last candidate task remains terminal at BLOCKED_ON_EXTERNAL_TRUST_BOUNDARY with NEW_SOURCE_DELTA=NONE according to the Owner-supplied Codex report. Do not repeat that review, broad source scans, micro-patches, trust-asset inventories, TPM work or Entra setup. The active task is the next narrow source frontier, not evidence that it has already been dispatched or completed.
 
-Result receipt: [integrated authorization-organ source completion result](./CHAT-ARCH-2026-10-25-M1A-G1-INTEGRATED-AUTHORIZATION-ORGAN-SOURCE-COMPLETION-RESULT-RECEIPT.md).
+The existing Windows checkout details and dirty-state hashes remain report-derived and must be revalidated in the existing Codex session before edits. Preserve all staged/unstaged work and the original index. If the candidate baseline cannot be verified, if the target edits cannot be isolated from prior work, or if the available platform/code primitive cannot provide genuine same-object semantics, stop without destructive changes and return the precise blocker. Author focused tests if warranted, but do not run them. Never replace a real handle with a path string or path re-resolution fallback.
 
-```text
+No G3 contract improvement can establish the missing independent root/mandate, Owner-to-Windows principal, issuer/server binding, production G2 authority or rollback-resistant replay. Keep the governance and bridge blocked and all protected reads fail-closed.
+
+~~~text
 PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
-ACTIVE_TASK=M1A_G1_WAIT_FOR_EXPLICIT_SCOPE_FOR_G3_HANDLE_BACKED_READER_CONTRACT
+OWNER_DECISION=EXPLICIT_SCOPE_APPROVED_IN_CHAT
+OWNER_DECISION_RECEIPT=CHAT-ARCH-2026-10-25-M1A-G1-OWNER-DECISION-G3-HANDLE-BACKED-READER-CONTRACT-RECEIPT.md
+ACTIVE_TASK=M1A_G1_G3_HANDLE_BACKED_READER_CONTRACT_SOURCE_CANDIDATE_20261025
+TASK_STATUS=AUTHORIZED; HANDOFF_PREPARED_NOT_SENT
 LAST_TERMINAL_TASK=M1A_G1_INTEGRATED_AUTHORIZATION_ORGAN_SOURCE_COMPLETION_CANDIDATE
 LAST_TERMINAL_RESULT=BLOCKED_ON_EXTERNAL_TRUST_BOUNDARY; NEW_SOURCE_DELTA_NONE; CODEX_REPORTED
-SOURCE_CHANGES_BY_LAST_TASK=0
-SOURCE_TESTS=UNCHANGED; NOT_RUN
+IMPLEMENTATION=AUTHORIZED_FOR_ONE_BOUNDED_G3_SOURCE_CANDIDATE_ONLY
+SOURCE_TEST_AUTHORING=PERMITTED; TEST_EXECUTION=NOT_AUTHORIZED
 AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
 QUALIFYING_INDEPENDENT_ROOT=NOT_ESTABLISHED
 OWNER_TO_WINDOWS_PRINCIPAL=NOT_ESTABLISHED
 BOOTSTRAP_AUTHORITY_TO_ISSUER=NOT_ESTABLISHED
 ISSUER_TO_EXACT_SERVER=NOT_ESTABLISHED
+DURABLE_REPLAY_AND_ROLLBACK_PROTECTION=NOT_ESTABLISHED
 G1=NOT_ESTABLISHED
 G2=NOT_ESTABLISHED
-G3_SAME_OBJECT=NOT_ESTABLISHED; DENY_ONLY
+G3_SAME_OBJECT=NOT_ESTABLISHED; TASK_AUTHORIZED; NOT_YET_OBSERVED
 IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
 GOVERNANCE=KEEP_BLOCKED
 PROTECTED_READS=FAIL_CLOSED
@@ -34,10 +39,13 @@ RUNTIME=NOT_RUN
 MCP=NOT_RUN
 REAL_TRANSPORT=NOT_RUN
 COST_POLICY=ZERO_BUDGET
+PRODUCT_STAGE_COMMIT_PUSH_MERGE=NOT_AUTHORIZED
 AUTOMATIC_FOLLOW_ON=FALSE
-NEXT_ACTION=OWNER_DECISION_REQUIRED_TO_AUTHORIZE_ONE_NEW_G3_HANDLE_BACKED_READER_CONTRACT_TASK; DO_NOT_REPEAT_COMPLETED_REVIEWS
-NEXT_REVIEW_TARGET=G3_HANDLE_BACKED_SAME_OBJECT_CONTRACT_ONLY; ROOT_AUTHORITY_REMAINS_UNESTABLISHED
-```
+CODEX_HANDOFF=PREPARED_NOT_SENT
+NEXT_ACTION=OWNER_DELIVER_ONE_PREPARED_PROMPT_TO_EXISTING_CODEX_WINDOWS_SESSION; STOP_AFTER_ONE_TERMINAL_REPORT
+STOP_CONDITION=ONE_TASK_ONLY; NO_FOLLOW_ON; KEEP_PROTECTED_READS_DENIED
+~~~
+
 
 <!-- HISTORICAL ROUTING SNAPSHOT: the wait route below was current before the Owner's new decision receipt; superseded for one source-only candidate task. -->
 ## HISTORICAL ROUTE — wait after terminal asset assessment (2026-10-25; superseded for one source-only candidate task)
