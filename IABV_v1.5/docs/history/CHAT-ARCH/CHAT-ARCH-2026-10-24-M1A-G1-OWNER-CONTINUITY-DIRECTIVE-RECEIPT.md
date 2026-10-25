@@ -125,3 +125,17 @@ Result: the guard currently denies every ordinary decision path before either re
 The three-path evidence step is complete, but the complete accumulated 12-path candidate delta remains unreviewed. The next bounded evidence step is the read-only, whole-candidate staged/unstaged review already described in the prior consolidated receipt and PR #493 description. Do not issue another narrow patch in isolation.
 
 After whole-candidate review and canonical route reconciliation, the Owner's queued Mente Espacio-Tiempo audit is the next priority: verify new-chat preflight, temporal/causal retrieval, stale/conflicting route summaries, freshness and goal ordering, actual per-agent context delivery/receipts, and later causal reuse. Reuse the existing continuity algorithm audit; do not invent another orchestrator. This prioritization does not change `main` or authorize automatic follow-on.
+
+
+## Whole-candidate report received — audit boundary and priority preserved (2026-10-24)
+
+The Owner supplied a Codex whole-candidate static-review report covering R-01–R-08 and referencing complete local staged/unstaged diff exports. Codex reports 1,899 staged-diff lines and 3,844 unstaged-diff lines with SHA-256 values in the whole-candidate static review receipt. The actual diff bytes were not attached/published, so this reviewer has not independently inspected or re-hashed the Windows-local exports. Keep the report as OWNER_SUPPLIED_CODEX_STATIC_REVIEW_REPORT, not as independent byte-level review.
+
+The report reinforces the known architectural split:
+- source composition can be present while security authorities/providers remain unconfigured;
+- SQLite replay implementation does not prove rollback resistance or protected production persistence;
+- RSA signature verification does not bind a public key to an independent root or authenticated Owner;
+- a configured transport option does not prove a canonical restricted local profile or actual runtime;
+- denial-only R-03 containment is not positive same-object binding.
+
+For continuity, the immediate evidence prerequisite is independent review of the exported diff bytes. Once that is done and the canonical route is reconciled, the Owner-requested Mente Espacio-Tiempo audit remains the priority: source-supported intake, causal history, stale route detection, context assembly/freshness, destination-specific delivery receipts, and later causal reuse. Do not create a parallel memory/orchestrator and do not claim automatic learning from saved documentation alone.
