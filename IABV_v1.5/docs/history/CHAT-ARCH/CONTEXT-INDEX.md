@@ -30,7 +30,7 @@ The prior reopening was limited to design/static review and is now terminal. Its
 
 ## Next trust-organ task — Owner-controlled bootstrap/issuer boundary (2026-10-24)
 
-Start from [the bounded G1 bootstrap/issuer handoff](./CHAT-ARCH-2026-10-24-M1A-G1-BOOTSTRAP-BOUNDARY-NEXT-HANDOFF.md), not from the old MCP-wiring task. Candidate report provenance is `OWNER_REPORTED`; it has not been published or independently source-reviewed. Preserve the local branch's staged and unstaged deltas, reconcile current `main` safely, and keep root/mandate/G1/G2/G3 unestablished.
+The latest Owner-reported bootstrap-boundary attempt is source-candidate-only and unreviewed. Before choosing the next engineering action, obtain the exact staged and unstaged diff for the three reported files from the same local checkout; inspect this bounded delta independently rather than re-running bootstrap construction or MCP wiring. Preserve all staged/unstaged changes and avoid merge/rebase of the dirty checkout. G1/G2/G3 and real root/mandate/process-boundary claims remain unestablished; see `CURRENT-STATE.md` and the [bootstrap/issuer handoff](./CHAT-ARCH-2026-10-24-M1A-G1-BOOTSTRAP-BOUNDARY-NEXT-HANDOFF.md).
 
 ## Continuity and AI-context delivery audit (2026-10-24)
 
