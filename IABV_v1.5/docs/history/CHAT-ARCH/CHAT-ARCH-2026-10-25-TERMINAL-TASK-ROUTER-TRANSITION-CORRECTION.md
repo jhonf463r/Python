@@ -5,7 +5,7 @@
 - Authorization: explicit Owner request to correct the cross-chat protocol defect.
 - Base: live main f041e31fa36e293a770e23143d799d8687a039c0.
 - Scope: documentation and routing only; no product code or local execution.
-- Canonical adoption: merged into live main at `9289d024b1700ea7894c8dcd3223c4d901bc723d`; the route, protocol and receipt were fetched back from main and compared successfully.
+- Canonical adoption: routing correction PR #496 merged at `9289d024b1700ea7894c8dcd3223c4d901bc723d`; snapshot-labeling follow-up PR #498 merged at `d1315309124e32682d1d99531b1e632157d160c7`. After both merges, live `main` was re-read and the route, protocol addendum and receipt were fetched back.
 
 ## Incident
 
