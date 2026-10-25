@@ -1,3 +1,13 @@
+<!-- LATEST HANDOFF OVERRIDE: reconciled from live main on 2026-10-24; follow CURRENT-STATE.md only. -->
+# CURRENT HANDOFF OVERRIDE — bounded source task terminal; authority/platform evidence required
+
+The bounded source-organ task has returned and received a narrow static review of the five-file patch text. Result: `PASS_WITH_NOTES_FOR_PASTED_PATCH_TEXT_ONLY`. Read the canonical [CURRENT-STATE.md](./CURRENT-STATE.md) first; this additive handoff note does not override it.
+
+Receipt: [M1A G1 bounded source-organ static review and route reconciliation](./CHAT-ARCH-2026-10-24-M1A-G1-BOUNDED-SOURCE-REMEDIATION-STATIC-REVIEW-RECEIPT.md). The task report's diff SHA-256 was not recomputed and its Windows checkout was not directly inspected. Tests/build/runtime/MCP/real transport were not run.
+
+The source task is terminal for current evidence. The exact authorized filesystem object remains unproven as the object consumed by the reader. Preserve `PROTECTED_READS=FAIL_CLOSED`, `G1=G2=G3=NOT_ESTABLISHED`, `IMPLEMENTATION_PREREQUISITES=8; CLOSED=0`, `GOVERNANCE=KEEP_BLOCKED`, and `AUTOMATIC_FOLLOW_ON=FALSE`. Do not ask for the same diff, repeat the broad review, publish the local source candidate, or start another micro-patch loop. Wait for genuinely new independently verifiable root/mandate/Owner-host/protected-issuer/G3 binding evidence or a new explicit Owner decision.
+
+---
 # New-chat handoff — IABV bootstrap boundary and continuity protocol
 
 **Prepared:** 2026-10-24, America/Bogota  
