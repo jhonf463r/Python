@@ -53,6 +53,9 @@ Apply the detailed [route-gate calibration knowledge delta](./CHAT-ARCH-2026-10-
 
 This is durable project guidance, not automatic model-weight training and not evidence that the running IABV algorithm has changed.
 
+- Follow-up case (2026-10-24): a Codex-reported unconditional deny before `read_repo_file` / `list_repo_directory` is containment for those named MCP routes, not a positive authorization path or proof of a protected issuer. Treat source details as `OWNER_REPORTED` until source is accessible and evidence is reviewed. The local candidate `9803a282760824eae630a27561f6aed6c4b6a6bd` was not found on remote GitHub; its tests were reported written but not run. This did not supply independent root-and-mandate evidence, so it does not reopen the terminal G1 route.
+
+
 ---
 
 ## Historical Owner decision — reopen G1 design/static review only (2026-10-24; review now terminal)
