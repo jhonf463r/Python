@@ -19,7 +19,7 @@ The authorized task `M1A_G1_G3_INTEGRATED_AUTHORIZATION_TO_HANDLE_SOURCE_CANDIDA
 
 Receipt: [integrated authorization-to-handle partial-candidate receipt](./CHAT-ARCH-2026-10-25-M1A-G1-G3-INTEGRATED-AUTHORIZATION-TO-HANDLE-PARTIAL-CANDIDATE-RECEIPT.md).
 
-The report still identifies `APPROVED_WORKSPACE_ROOT_UNAVAILABLE` and says native Windows semantics were not runtime-validated. Thus G3 remains unestablished, all protected reads remain fail-closed, and the bridge remains not ready. The previous candidate authorization is consumed. Obtain the exact diff artifacts and a new explicit Owner decision before a bounded independent static review; do not start another implementation task automatically.
+The report still identifies `APPROVED_WORKSPACE_ROOT_UNAVAILABLE` and says native Windows semantics were not runtime-validated. Thus G3 remains unestablished, all protected reads remain fail-closed, and the bridge remains not ready. The candidate-implementation authorization is consumed. At the time this terminal result was recorded, the next action was to obtain the exact diff artifacts and a separate Owner decision for one bounded independent static review; the subsequent Owner decision authorizing that review is recorded in the next section. Do not start another implementation task automatically.
 
 ## Subsequent Owner decision — one bounded independent static review authorized (2026-10-25)
 
