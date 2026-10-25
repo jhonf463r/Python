@@ -90,10 +90,9 @@ For every new Codex/chat result:
 ## 8. Copy/paste prompt for the next ChatGPT conversation
 
 ```text
-Continuamos el proyecto IABV en https://github.com/jhonf463r/Python. Usa como contexto inicial el handoff:
-IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-24-M1A-G1-CONSOLIDATED-NEW-CHAT-HANDOFF.md
-y el recibo:
-IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-24-M1A-G1-bootstrap-boundary-consolidated-static-review-receipt.md
+Continuamos el proyecto IABV en https://github.com/jhonf463r/Python. Usa como contexto adicional estos documentos de la rama documental (NO están en live main mientras PR #493 siga sin fusionar):
+Handoff: https://github.com/jhonf463r/Python/blob/docs/iabv-transcript-route-intake-calibration-20261024/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-24-M1A-G1-CONSOLIDATED-NEW-CHAT-HANDOFF.md
+Recibo: https://github.com/jhonf463r/Python/blob/docs/iabv-transcript-route-intake-calibration-20261024/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-24-M1A-G1-bootstrap-boundary-consolidated-static-review-receipt.md
 
 Antes de dar instrucciones o asignar otra tarea, revalida en GitHub la rama refs/heads/main y lee EN ESTE ORDEN:
 1) IABV_v1.5/AGENTS.md
