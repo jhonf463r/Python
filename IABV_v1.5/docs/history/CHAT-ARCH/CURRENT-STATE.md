@@ -42,6 +42,9 @@ NEXT_REVIEW_TARGET=NONE_UNTIL_GENUINELY_NEW_INDEPENDENT_EVIDENCE
 
 The earlier reopened review route below is retained as history and is superseded for current routing by this entry. No root or mandate is established, and no global gate is released. `CURRENT-STATE.md` remains the single routing authority.
 
+Reasoning calibration pointer (2026-10-24): the [route-gate calibration knowledge delta](./CHAT-ARCH-2026-10-24-ROUTE-GATE-CALIBRATION-KNOWLEDGE-DELTA.md) documents how to avoid both globalizing a narrow blocker and exceeding the current authorization. It is process guidance only; it does not change this file's `ACTIVE_TASK`, gate values, `AUTOMATIC_FOLLOW_ON`, or `NEXT_ACTION`.
+
+
 ---
 
 

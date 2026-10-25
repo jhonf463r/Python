@@ -46,6 +46,13 @@ The routing handoff is [M1A G1 Owner reopening — static design handoff](./CHAT
 Every new IABV chat MUST apply the [Canonical continuity, space-time reasoning and anti-loop protocol](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-23-CONTINUITY-SPACE-TIME-OPERATING-PROTOCOL-v1.md) before recommending or executing work. Reconstruct the project's event/evidence/dependency history from the canonical archive; preserve provenance; reuse terminal decisions; never ask the Owner to recall or search documents already available through permitted GitHub access; choose one supported, authorized next action that advances the North Star. This is a navigation/reasoning rule only: it does not override `CURRENT-STATE.md`, create trust authority, bypass denied readers, or change implementation/runtime/cost/security gates. A proposal is not canonical until adopted on live `main` and fetched back.
 <!-- CONTINUITY-PROTOCOL-OVERRIDE: end -->
 
+## 2026-10-24 coordinator calibration — blocker scope and authorization are separate
+
+Apply the [route-gate calibration knowledge delta](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-24-ROUTE-GATE-CALIBRATION-KNOWLEDGE-DELTA.md) and section 13 of the canonical continuity protocol before handing work to another actor.
+
+**Hard rule:** re-read live `CURRENT-STATE.md` before issuing a task prompt. A G1 root/authority blocker does not prove global technical absence or that every separate action is impossible; it also does not authorize implementation. Never request implementation while canonical `IMPLEMENTATION=NOT_AUTHORIZED`, and never treat “independent” work as implicitly permitted. Separate `AUTHORITY_GATE`, `ROUTE_SURFACE_MISMATCH`, `ACTION_UNEXECUTABLE_NO_EVIDENCE`, `SOURCE_DEFECT`, `EVIDENCE_GAP` and `AUTHORIZATION_GAP`. Keep denied readers fail-closed; do not switch tools/routes to circumvent a denial. Written code, written tests, executed tests, runtime verification and canonical adoption remain different evidence states. This calibration is process guidance and does not alter the current `NEXT_ACTION` or relax any gate.
+
+
 ## ChatGPT continuity and anti-loop protocol — Owner decision recorded (2026-10-23)
 
 Current decision receipt: [Owner ratification of Option D — no bootstrap](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-23-M1A-G1-owner-option-d-no-bootstrap-ratification-receipt.md), blob `cac492006c51c56ea4abc4dff822785e19c65d93`, authored on isolated docs-only branch `codex/iabv-option-d-ratification-20261023` from verified `main` `439d9604037f156160a970dd33d1b3ad76009bdf`. The receipt and synchronized routing originated on that isolated branch and were submitted through PR #472. Revalidate the live `main` ref and `CURRENT-STATE.md` before treating any branch-only text as canonical.
