@@ -1,31 +1,30 @@
-<!-- Current-state routing record: supplied enrollment-receipt diff now contains expected registry binding; exact test diff reviewed, tests not run. -->
-## CURRENT-STATE ROUTING — enrollment receipt registry binding statically reviewed (2026-10-24)
+<!-- Current-state routing record: F-01/F-02/F-03 source corrections consolidated; whole dirty candidate review is the next bounded action. -->
+## CURRENT-STATE ROUTING — whole-candidate static review before further implementation (2026-10-24)
 
-The latest supplied result for `M1A_G1_BIND_ENROLLMENT_RECEIPT_TO_EXPECTED_REGISTRY` is `TASK_RESULT=SOURCE_CANDIDATE_ONLY`. The exact validator hunk adds required `expected_registry_id: str`, rejects values whose exact type is not `str` or whose contents are whitespace-only, documents that its value must come from future trusted host configuration/provider context, and requires exact equality with `persistence.registry_id`. Invalid expected values raise `ENROLLMENT_RECEIPT_INVALID`; mismatch raises `ENROLLMENT_TRUST_REGISTRY_ID_MISMATCH`. The complete test diff supplied in this turn includes a syntactically valid registry mismatch case and invalid expected-ID cases.
+The consolidated [bootstrap-boundary static review receipt](./CHAT-ARCH-2026-10-24-M1A-G1-bootstrap-boundary-consolidated-static-review-receipt.md) records that the supplied diffs contain the three narrow corrections: F-01 canonical manifest SHA-256 binding; F-02 manifest blob SHA-1/positive exact-integer PR validation; F-03 an exact expected-registry ID binding plus its negative tests. The full supplied test diff for the enrollment receipt was reviewed. All tests remain `NOT_RUN`; source worktree hashes/status are `OWNER_REPORTED`, and the complete local candidate has not been independently read.
 
-Static disposition: `STATIC_REVIEW=F03_CORRECTION_PRESENT_IN_SUPPLIED_DIFF; FULL_TEST_DIFF_REVIEWED; TESTS_NOT_RUN`. This applies to the pasted delta, not independent access to the Windows worktree or runtime behavior. Reported working/index/HEAD hashes and staged/unstaged preservation are still `OWNER_REPORTED`. The candidate remains local-only and absent from remote branches. The latest diff reported worktree hashes source `a5d14a14f31b87f181d7748e63f2f1e44b1948db` and test `a5c1c182926271457d353b981fd701f3487e0cf4`, with the prior staged/index blobs retained. Tests/build/runtime/MCP/transport were not run.
+**Do not continue micro-patching one validator hunk at a time.** The reported checkout has 12 unique modified paths (7 staged paths and 11 unstaged paths, with overlap). Review the complete current staged and unstaged diff across that candidate as one bounded static review before issuing another implementation assignment. Preserve the checkout; make no edits; run no tests/build/runtime/MCP/transport. The review must distinguish genuinely present source composition from absent production proof and identify exactly which remaining obligations depend on excluded root, credential, enrollment, Windows ACL/trust-store, process/IPC or runtime actions.
 
-The expected registry parameter is a source-contract binding only: its provenance cannot be enforced merely by adding a function argument. Any future production caller must obtain it from independently trusted host configuration/provider context rather than from the receipt, request or untrusted issuer fields. The value-object receipt and outcome labels still do not prove real durable challenge consumption or registry persistence. No production Owner verifier, independent trust root, durable anti-replay store, protected registry or authenticated issuer IPC/process/OS boundary has been established.
+Canonical live `main` last revalidated during this reconciliation: `2cecd5e9b9e175584d65bbb1198a53bc2346d095`; `CURRENT-STATE.md` blob `c577ab49c5dd16993502c7199560dc94b586a815`. It still routes to `M1A_G1_OWNER_CONTROLLED_BOOTSTRAP_ISSUER_BOUNDARY`. This route refinement exists only on the documentation PR branch and is not canonical until the PR merges and the route is fetched back from live `main`.
 
-Reported worktree identity remains `OWNER_REPORTED`: checkout `C:\Users\faber\AppData\Local\Temp\iabv-g1-bootstrap-sparse-f99534e037e542038513a974d805bb27`, branch `codex/m1a-g1-owner-governed-bootstrap-organ-20261024`, HEAD `6bc568e1c5a898afd65cc045c779c25a9cdc5489`; reported `main` at the task was `2cecd5e9b9e175584d65bbb1198a53bc2346d095`. Do not treat these historical claims as current or verified.
-
-### Gate state and next bounded action
-
-The receipt contract has no further defect identified in the supplied hunk/full test diff for F-03. The next practical step is to preserve the candidate and return a consolidated static review receipt; do not start production enrollment work or infer gate progress. Re-read live `CURRENT-STATE.md` before any new task because this route is a proposal on the documentation PR branch only.
+Decision receipt: [bounded source-implementation authorization](./CHAT-ARCH-2026-10-24-M1A-G1-owner-bounded-source-implementation-authorization.md).
+Prior focused review: [bootstrap-boundary static review receipt](./CHAT-ARCH-2026-10-24-M1A-G1-bootstrap-boundary-static-review-receipt.md).
+Consolidated review: [bootstrap-boundary consolidated static review receipt](./CHAT-ARCH-2026-10-24-M1A-G1-bootstrap-boundary-consolidated-static-review-receipt.md).
+Context audit: [continuity algorithms static audit](./CHAT-ARCH-2026-10-24-CONTINUITY-ALGORITHMS-STATIC-AUDIT.md).
 
 ```text
 PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
-ACTIVE_TASK=M1A_G1_CONSOLIDATE_ENROLLMENT_RECEIPT_STATIC_REVIEW
+ACTIVE_TASK=M1A_G1_REVIEW_COMPLETE_DIRTY_BOOTSTRAP_BOUNDARY_CANDIDATE
 PREVIOUS_TASK=M1A_G1_BIND_ENROLLMENT_RECEIPT_TO_EXPECTED_REGISTRY
-PREVIOUS_TASK_RESULT=SOURCE_CANDIDATE_ONLY; STATIC_REVIEW_F03_CORRECTION_PRESENT_IN_SUPPLIED_DIFF; FULL_TEST_DIFF_REVIEWED; TESTS_NOT_RUN; CHECKOUT_NOT_INDEPENDENTLY_VERIFIED
+PREVIOUS_TASK_RESULT=SOURCE_CANDIDATE_ONLY; F01_F02_F03_CORRECTIONS_PRESENT_IN_SUPPLIED_DIFF; FULL_RECEIPT_TEST_DIFF_REVIEWED; TESTS_NOT_RUN; WHOLE_CANDIDATE_NOT_REVIEWED
 OWNER_DECISION=BOUNDED_SOURCE_IMPLEMENTATION_AND_SOURCE_TEST_AUTHORING
 OWNER_DECISION_PROVENANCE=EXPLICIT_OWNER_CHAT_MESSAGE_2026-10-24
 OWNER_DECISION_SCOPE=SOURCE_CODE_CHANGES_AND_SOURCE_TEST_AUTHORING_ONLY
-CANONICAL_MAIN_AT_PREFLIGHT=2cecd5e9b9e175584d65bbb1198a53bc2346d095; HISTORICAL; REFRESH LIVE MAIN BEFORE EACH TASK
+CANONICAL_MAIN_AT_REVALIDATION=2cecd5e9b9e175584d65bbb1198a53bc2346d095; HISTORICAL SNAPSHOT; REFRESH LIVE MAIN BEFORE EACH TASK
+CANONICAL_CURRENT_STATE_BLOB=c577ab49c5dd16993502c7199560dc94b586a815; HISTORICAL SNAPSHOT
 LOCAL_CANDIDATE_BRANCH=codex/m1a-g1-owner-governed-bootstrap-organ-20261024; OWNER_REPORTED; NOT_FOUND_ON_REMOTE
 LOCAL_CANDIDATE_HEAD=6bc568e1c5a898afd65cc045c779c25a9cdc5489; OWNER_REPORTED; NOT_INDEPENDENTLY_INSPECTED
-LOCAL_SOURCE_BLOB= a5d14a14f31b87f181d7748e63f2f1e44b1948db; OWNER_REPORTED
-LOCAL_TEST_BLOB= a5c1c182926271457d353b981fd701f3487e0cf4; OWNER_REPORTED
+LOCAL_CANDIDATE_STATE=7_STAGED_PATHS; 11_UNSTAGED_PATHS; 12_UNIQUE_PATHS; OWNER_REPORTED
 SOURCE_TEST_AUTHORING=AUTHORIZED
 TEST_EXECUTION=NOT_AUTHORIZED; NOT_RUN
 BUILD=NOT_AUTHORIZED; NOT_RUN
@@ -52,11 +51,11 @@ GOVERNANCE=KEEP_BLOCKED
 READ_LIST=FAIL_CLOSED
 BRIDGE=BRIDGE_NOT_READY
 AUTOMATIC_FOLLOW_ON=FALSE
-NEXT_ACTION=CONSOLIDATE_STATIC_REVIEW_AND_REVALIDATE_CANONICAL_ROUTER
-NEXT_REVIEW_TARGET=REVIEW_RECEIPT_AND_ROUTE_ONLY; NO_TEST_EXECUTION; NO_GATE_CLOSURE
+NEXT_ACTION=EXPORT_AND_REVIEW_COMPLETE_STAGED_UNSTAGED_CANDIDATE_DIFF
+NEXT_REVIEW_TARGET=ALL_12_UNIQUE_MODIFIED_PATHS; SOURCE_COMPOSITION; MISSING_PRODUCTION_BOUNDARIES; AUTHORIZATION/GATE ALIGNMENT; NO_TEST_EXECUTION; NO_GATE_CLOSURE
 ```
 
-This route is documentation-only and noncanonical until adopted on live `main` and fetched back. It does not authorize real enrollment, new credentials, root creation, OS/ACL changes, test/build/runtime/transport execution, publication, merge, deployment, spending or protected reads.
+This route proposal advances only static evidence collection and review. It is not authorization to publish/merge the source candidate or perform credentials, enrollment, OS/ACL, test/build/runtime/transport, deployment, spending, or protected-read actions. Keep all security gates fail-closed.
 
 ---
 
