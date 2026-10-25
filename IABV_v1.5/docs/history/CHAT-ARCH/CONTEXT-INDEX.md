@@ -1,8 +1,8 @@
 <!-- Owner-authorized route transition: 2026-10-25. CURRENT-STATE.md remains the sole route authority. -->
 
-## CURRENT ROUTE — M1B result received; narrow static review favorable; canonical reconciliation merged; fetch-back verified; post-merge status correction pending; source candidate unintegrated (2026-10-25)
+## CURRENT ROUTE — M1B result reconciled; canonical documentation synchronized; source candidate unintegrated (2026-10-25)
 
-The Owner explicitly authorized this documentation-only reconciliation after the M1B result was supplied. PR #526 was squash-merged as `452961e4c2d26a2a675eebf1ce97808149fbdce1`, and all five canonical front doors were fetched back from live `main`. A follow-up documentation PR corrects route-status wording that remained stale after that merge. The M1A and M1B source candidates remain isolated, unmerged candidates and are not part of `main`. No product source changes are included in this documentation route.
+The Owner authorized the M1C documentation reconciliation and its final route-state cleanup. PR #526 was squash-merged as `452961e4c2d26a2a675eebf1ce97808149fbdce1`; PR #527 was squash-merged as `568d2fbac5d09ad0e144197801ee41b98f61a98c`. All five canonical front doors were fetched back from live `main` after those merges. The current route now records the M1B result and the completed documentation reconciliation. The M1A and M1B source candidates remain isolated, unmerged candidates and are not part of `main`. No product source changes are included in this documentation route.
 
 ### M1B result and evidence classification
 
@@ -15,19 +15,20 @@ The Owner explicitly authorized this documentation-only reconciliation after the
 
 ### Current work and route
 
-The Owner authorized one documentation-only reconciliation. This branch synchronizes the five canonical front doors and adds a receipt separating reported test execution, static review, artifact transfer, and canonical adoption.
+The documentation reconciliation is complete in `main`: PR #526 records the M1B result and PR #527 corrects the stale post-merge lifecycle labels. The six-document change history separates Codex-reported test execution, narrow static review, Dropbox artifact transfer, and canonical adoption. No product code, tests, runtime, MCP transport, trust provisioning, or protected reads were changed or executed by this documentation sequence.
 
 ```text
 PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
 LAST_TERMINAL_TASK=M1B_G1_OPENED_TARGET_CAPABILITY_CLOSE_RETRY_FIX_20261025
 LAST_TERMINAL_RESULT=SOURCE_CANDIDATE_ONLY; CODEX_REPORTED_17_TESTS_PASSED; NARROW_STATIC_REVIEW_FAVORABLE
-ACTIVE_TASK=M1C_G1_CANONICAL_RECONCILIATION_AFTER_M1B_20261025
-ACTIVE_TASK_STATUS=M1C_PR_526_MERGED; FIVE_CANONS_FETCHED_BACK; POST_MERGE_STATUS_CORRECTION_PR_PENDING
+LAST_COMPLETED_DOCUMENTATION_TASK=M1C_G1_CANONICAL_RECONCILIATION_AFTER_M1B_20261025
+ACTIVE_TASK=PLAN_NEXT_BOUNDED_AUTHORIZATION_ORGAN_STEP
+ACTIVE_TASK_STATUS=M1C_COMPLETE; PR_526_AND_527_MERGED; FIVE_CANONS_FETCHED_BACK
 M1B_SOURCE_CANDIDATE_IN_MAIN=FALSE
 M1B_TESTS=17_REPORTED_PASS; NOT_RERUN_BY_CHATGPT
 M1B_STATIC_REVIEW=NARROW_FAVORABLE; NOT_WHOLE_ORGAN_ACCEPTANCE
-CANONICAL_RECONCILIATION=PR_526_MERGED; FIVE_CANONS_FETCHED_BACK_FROM_MAIN; POST_MERGE_ROUTE_WORDING_CORRECTION_PENDING
-DOC_ONLY_PR=https://github.com/jhonf463r/Python/pull/526
+CANONICAL_RECONCILIATION=COMPLETE; PR_526_AND_527_MERGED; FIVE_CANONS_VERIFIED_FROM_MAIN
+DOCUMENTATION_PR_HISTORY=PR_526_MERGED; PR_527_MERGED
 PRODUCT_CODE_COMMIT_PUSH_MERGE=NOT_PERFORMED_BY_M1C
 G1=NOT_ESTABLISHED
 G2=NOT_ESTABLISHED
@@ -36,14 +37,14 @@ IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
 AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
 PROTECTED_READS=FAIL_CLOSED
 AUTOMATIC_FOLLOW_ON=FALSE
-NEXT_ACTION=REVIEW_POST_MERGE_STATUS_CORRECTION_PR; NO_AUTOMATIC_FOLLOW_ON
+NEXT_ACTION=PLAN_NEXT_BOUNDED_AUTHORIZATION_ORGAN_STEP; KEEP_PROTECTED_READS_FAIL_CLOSED
 ```
 
 The next technical phase must be decided separately. At minimum, future work must assess governed integration of the source candidate, end-to-end binding of authorization to the exact opened object and consumer, and legitimate evidence for an approved workspace-root provider and authority chain. This documentation change establishes none of those properties and must not close any implementation prerequisite.
 
 Space-Time method delta: distinguish `implementer-reported test results`, `static review`, `Dropbox transfer`, and `canonical adoption`. Recording/retrieving this rule is not evidence of autonomous learning; `CAUSAL_REUSE=NOT_TESTED`.
 
-Do not merge this PR automatically. Once reviewed and explicitly merged, fetch all five canonical front doors back from live `main` before treating this route as canonically adopted.
+The canonical documentation reconciliation is complete and has been fetched back from live `main`. The next technical phase is separate from this documentation task and must preserve the fail-closed gate until its own evidence is independently reviewed.
 
 <!-- Previous current-route snapshot is retained below as historical context. -->
 
