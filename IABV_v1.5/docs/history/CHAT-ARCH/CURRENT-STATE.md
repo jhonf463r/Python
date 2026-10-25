@@ -1,5 +1,5 @@
-<!-- Current-state proposal only. Live main remains canonical until explicit authorized merge and exact fetch-back. -->
-## CURRENT-STATE PROPOSAL — source-only bootstrap attempt terminal; wait for genuinely new authority evidence (2026-10-24)
+<!-- Canonical routing adopted from documentation-only PR #493 by squash merge; fetch-back verified. CURRENT-STATE.md is the sole route authority. -->
+## CURRENT-STATE ROUTING — source-only bootstrap attempt terminal; wait for genuinely new authority evidence (2026-10-24)
 
 The supplied full staged/unstaged candidate diffs have received independent byte verification and read-only static review. The hashes match Codex's reported export hashes. This establishes the identity of the uploaded diffs, not local checkout status or executed behavior. See [independent whole-candidate review result](./CHAT-ARCH-2026-10-24-M1A-G1-INDEPENDENT-WHOLE-CANDIDATE-STATIC-REVIEW-RESULT.md).
 
@@ -7,12 +7,13 @@ The candidate contains typed contracts/validators, signature checking under a su
 
 The bounded source-construction attempt has therefore reached the precise stop condition in the canonical handoff: report the missing independent authority and protected host/issuer boundary; do not fabricate them. Relevant earlier terminal G1 receipts also recorded `BLOCKED_MISSING_G1_TRUST_ANCHOR` / `BLOCKED_NO_INDEPENDENT_ENROLLMENT_PATH`; the latest diff review does not supply new trust-root evidence. `AUTHORITY_ASSETS` remains `UNKNOWN; NOT_INSPECTED`, not absent.
 
-The Owner-directed Mente Espacio-Tiempo static audit is recorded in [the continuity audit delta](./CHAT-ARCH-2026-10-24-MENTE-ESPACIO-TIEMPO-CONTINUITY-AUDIT-DELTA.md). On this proposal branch, all four stale front-door route summaries have been neutralized to direct agents to live `CURRENT-STATE.md`. These changes remain noncanonical until adoption and fetch-back. The audit recommends correcting existing freshness/goal-order/delivery-receipt gaps only after scope reconciliation; do not create a duplicate memory/orchestrator.
+The Owner-directed Mente Espacio-Tiempo static audit is recorded in [the continuity audit delta](./CHAT-ARCH-2026-10-24-MENTE-ESPACIO-TIEMPO-CONTINUITY-AUDIT-DELTA.md). PR #493 neutralized the stale routing summaries in all four front-door documents (`AGENTS.md`, `README.md`, `CONTEXT-INDEX.md`, and `MEMORY-OPERATING-PROTOCOL.md`). The documentation-only changes were adopted into live `main` by squash merge commit `3235219304f87210dd235e0a657111e8981b13b4`, then fetched back for verification. Every new chat must still refresh live `main` and use this file as the sole routing authority. The static audit recommends fixing the existing freshness, goal-order, and delivery-receipt gaps only after scope reconciliation; do not create a duplicate memory/orchestrator.
 
 ```text
 PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
-ACTIVE_TASK=M1A_G1_OWNER_CONTROLLED_BOOTSTRAP_ISSUER_BOUNDARY
-TASK_ATTEMPT_STATUS=TERMINAL_FOR_CURRENT_SOURCE_EVIDENCE; BOUNDARY_NOT_ESTABLISHED
+ACTIVE_TASK=M1A_G1_WAIT_FOR_GENUINELY_NEW_INDEPENDENT_ROOT_AND_MANDATE_EVIDENCE
+PREVIOUS_TASK=M1A_G1_OWNER_CONTROLLED_BOOTSTRAP_ISSUER_BOUNDARY
+PREVIOUS_TASK_RESULT=TERMINAL_FOR_CURRENT_SOURCE_EVIDENCE; BOUNDARY_NOT_ESTABLISHED
 LAST_REVIEW=M1A_G1_INDEPENDENT_WHOLE_CANDIDATE_STATIC_REVIEW
 LAST_REVIEW_RESULT=STATIC_REVIEW_COMPLETE_FOR_SUPPLIED_FULL_DIFF_BUNDLE; SHA256_VERIFIED
 SOURCE_CANDIDATE_WORKTREE=OWNER_REPORTED; NOT_DIRECTLY_OBSERVED
@@ -23,8 +24,8 @@ BOOTSTRAP_AUTHORITY_TO_ISSUER=NOT_ESTABLISHED
 ISSUER_TO_EXACT_SERVER=NOT_ESTABLISHED
 NEXT_ACTION=WAIT_FOR_GENUINELY_NEW_INDEPENDENT_ROOT_AND_AUTHENTICATED_OWNER_ISSUER_OS_BOUNDARY_EVIDENCE
 NEXT_REVIEW_TARGET=INSPECT_ONLY_NEW_EVIDENCE; DO_NOT_REPEAT_BROAD_SOURCE_INVENTORY_OR_ADD_MOCK_CONTRACTS
-SOURCE_IMPLEMENTATION=AUTHORIZED_WITH_BOUNDS; NO_FURTHER_SOURCE_ONLY_LOOP_WITHOUT_NEW_EVIDENCE
-SOURCE_TEST_AUTHORING=AUTHORIZED
+SOURCE_IMPLEMENTATION=STOPPED_FOR_CURRENT_EVIDENCE; REOPEN_ONLY_ON_GENUINELY_NEW_INDEPENDENT_EVIDENCE_OR_NEW_EXPLICIT_OWNER_DECISION
+SOURCE_TEST_AUTHORING=NO_NEW_SOURCE_TEST_AUTHORING_WITHOUT_NEW_EVIDENCE_OR_NEW_EXPLICIT_OWNER_DECISION
 TEST_EXECUTION=NOT_AUTHORIZED; NOT_RUN
 BUILD=NOT_AUTHORIZED; NOT_RUN
 RUNTIME=NOT_AUTHORIZED; NOT_RUN
@@ -41,9 +42,9 @@ CONTINUITY_AUDIT=STATIC_REVIEW_COMPLETE; END_TO_END_RUNTIME_UNVERIFIED
 AUTOMATIC_FOLLOW_ON=FALSE
 ```
 
-**Next-state interpretation:** the current source-only attempt is concluded for the evidence available. Do not start another source-only implementation loop. Reopen only if a genuinely new, independently verifiable root/Owner-to-host/issuer-boundary evidence event or a new explicit Owner decision changes the permitted actions. Any credential enrollment, service installation, OS/ACL/trust-store change, tests/build/runtime/transport, protected reads, publication, merge, deployment or spending remains excluded by the canonical live-main authorization.
+**Next-state interpretation:** the current source-only attempt is concluded for the evidence available. Do not start another source-only implementation loop. Reopen only if a genuinely new, independently verifiable root/Owner-to-host/issuer-boundary evidence event or a new explicit Owner decision changes the permitted actions. Credential enrollment, service installation, OS/ACL/trust-store changes, test execution, builds, runtime, MCP/real transport, protected reads, source-candidate publication or merge, deployment and spending remain unauthorized. The explicitly authorized and completed PR #493 merge was documentation-only; it did not modify product source, establish a trust root, or release any technical gate.
 
-This routing is a proposal on the documentation branch. Live `main` remains unchanged and is the sole routing authority until an authorized merge and fetch-back.
+This routing has been adopted in live `main` through the documentation-only squash merge of PR #493 and was fetched back for verification. This file is now the sole canonical route authority; the merge did not change product source, execute tests/runtime, establish trust authority, or enable protected reads.
 
 
 ---
