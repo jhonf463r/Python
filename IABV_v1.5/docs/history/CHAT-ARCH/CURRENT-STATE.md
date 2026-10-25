@@ -9,6 +9,10 @@ Handoff: [Owner-controlled bootstrap/issuer boundary — next task](./CHAT-ARCH-
 Decision receipt: [bounded source-implementation authorization](./CHAT-ARCH-2026-10-24-M1A-G1-owner-bounded-source-implementation-authorization.md).
 Context audit: [continuity algorithms static audit](./CHAT-ARCH-2026-10-24-CONTINUITY-ALGORITHMS-STATIC-AUDIT.md).
 
+### Transcript-versus-route intake guard (2026-10-24)
+
+The final visible prompt in an attached transcript may describe a task that the live route has already superseded. If a later message supplies a Codex response for `M1A_G1_REGISTER_READ_AUTHORIZATION_IN_APPBOOTSTRAP`, classify and evaluate it against that original prompt as result-intake evidence; do not move `ACTIVE_TASK` backward or overwrite `NEXT_ACTION` merely because the prompt is the last one in the transcript. Reconcile its exact task ID, checkout/HEAD, staged and unstaged deltas, source claims, and written-versus-executed checks with the already-recorded Owner-reported result. The active route remains `M1A_G1_OWNER_CONTROLLED_BOOTSTRAP_ISSUER_BOUNDARY` unless current authoritative evidence or a new explicit Owner decision justifies a transition. This note changes no authorization or security gate.
+
 ```text
 PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
 ACTIVE_TASK=M1A_G1_OWNER_CONTROLLED_BOOTSTRAP_ISSUER_BOUNDARY
