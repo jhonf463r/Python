@@ -5,6 +5,29 @@
 - Current verified GitHub main at handoff preparation: c7b463bc4947f0fccadfcd1ed001e36cc34a9dbc.
 - This is a continuity/handoff document, not a new implementation authorization. CURRENT-STATE.md remains the sole route authority.
 
+## Current authorized route — one bounded G3 source remediation (2026-10-25)
+
+**This is the live handoff route and supersedes the pending-decision wording in the historical snapshot immediately below.** The Owner has explicitly authorized one bounded integrated source-remediation candidate. The authorization is recorded here for continuity; it does not establish that the prompt was delivered to the local Codex session or that implementation has started.
+
+Authorization receipt: [single bounded G3 remediation authorization](./CHAT-ARCH-2026-10-25-M1A-G1-OWNER-AUTHORIZED-ONE-BOUNDED-G3-REMEDIATION-RECEIPT.md).
+
+Use the prior static-review failure as settled prior art. The first candidate action is a narrowly scoped check for a real production approved-workspace-root provider and its authority chain. If unavailable, stop with the exact blocker rather than inventing authority. If available, address the replay-consumer contract, permit/object/issuance-seal binding, end-to-end root-policy binding, and handle ownership/cleanup as one integrated candidate.
+
+Work in an isolated candidate without mutating the original checkout. Source tests may be authored but must not be executed in this task. No build, runtime, MCP, real transport, protected read, product commit, push, merge, or gate release is authorized. The earlier preservation diffs remain unavailable, so the new task must preserve and record the actual pre-task state rather than pretend to recover those historic diffs.
+
+```text
+ACTIVE_TASK=M1A_G1_OWNER_AUTHORIZED_ONE_BOUNDED_G3_SOURCE_REMEDIATION_20261025
+ACTIVE_TASK_STATUS=OWNER_AUTHORIZED; CODEX_TERMINAL_RESULT_PENDING
+CODEX_DISPATCH=NOT_OBSERVED_FROM_THIS_CHAT_SESSION; NO_DELIVERY_CLAIM
+APPROVED_WORKSPACE_ROOT_PREFLIGHT=FIRST_GATE
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3_SAME_OBJECT=NOT_ESTABLISHED
+GOVERNANCE=KEEP_BLOCKED
+PROTECTED_READS=FAIL_CLOSED
+BRIDGE=BRIDGE_NOT_READY
+AUTOMATIC_FOLLOW_ON=FALSE
+```
 ## Newer terminal transition — G3 static review failed; remediation decision pending (2026-10-25)
 
 **This transition supersedes the old “ZIP transfer pending / static review not started” route in the snapshots below.** The prior review report supplied by the Owner says the evidence ZIP and all manifest-listed member hashes were independently verified, and returns `FAIL_STATIC_REVIEW_SOURCE_CONTRACT`. This documentary reconciliation records that result but did not re-open the raw ZIP bytes.

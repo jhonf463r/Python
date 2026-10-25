@@ -1,47 +1,39 @@
-<!-- Terminal transition: 2026-10-25. CURRENT-STATE.md remains the sole routing authority. -->
-## CURRENT ROUTE — G3 static review terminal; source contract fails; remediation decision pending (2026-10-25)
+<!-- Owner authorization transition: 2026-10-25. CURRENT-STATE.md remains the sole routing authority. -->
+## CURRENT ROUTE — one bounded G3 source remediation authorized; result pending (2026-10-25)
 
-The single authorized task `M1A_G1_TRANSFER_PRODUCER_ZIP_AND_PERFORM_ONE_AUTHORIZED_STATIC_REVIEW_20261025` is terminal with `FAIL_STATIC_REVIEW_SOURCE_CONTRACT`, according to the prior review report supplied in this conversation. The report says it independently verified the ZIP archive and all manifest-member hashes (13 entries total); this documentary transition relies on that report and did not re-open the raw ZIP bytes. The two prior-work preservation diffs were absent and not reconstructed, so prior-work preservation remains unverified.
+The Owner explicitly authorized exactly one integrated G3 source-remediation task in the current conversation. This route update reconciles that decision into the canonical front doors; it does not claim that Codex received the handoff, that source edits occurred, or that the candidate passed review.
 
-Terminal receipt: [G3 static-review failure receipt](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-25-M1A-G1-G3-STATIC-REVIEW-FAIL-RECEIPT.md).
-Consolidated handoff: [updated G3/Space-Time handoff](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-25-M1A-G1-CONSOLIDATED-NEW-CHAT-HANDOFF.md).
-Prior candidate receipt: [integrated authorization-to-handle partial-candidate receipt](./CHAT-ARCH-2026-10-25-M1A-G1-G3-INTEGRATED-AUTHORIZATION-TO-HANDLE-PARTIAL-CANDIDATE-RECEIPT.md).
+Terminal review receipt: [G3 static-review failure receipt](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-25-M1A-G1-G3-STATIC-REVIEW-FAIL-RECEIPT.md).
+Owner authorization receipt: [single bounded G3 remediation authorization](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-25-M1A-G1-OWNER-AUTHORIZED-ONE-BOUNDED-G3-REMEDIATION-RECEIPT.md).
+Consolidated handoff: [current G3/Space-Time handoff](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-25-M1A-G1-CONSOLIDATED-NEW-CHAT-HANDOFF.md).
 
-### Static blockers that prevent this organ from accepting trust-backed authorizations
+### Existing findings to reuse
 
-- The replay-consumer invocation passes three binding arguments that the reported protocol and implementation signatures do not accept.
-- The authorization permit does not retain the opened object, target-binding identifier and coordinator issuance seal required by the server guard.
-- The approved workspace-root provider is unavailable in the reported application composition; deny with `APPROVED_WORKSPACE_ROOT_UNAVAILABLE`.
-- The root policy binding is not demonstrated end-to-end through resolution, decision, permit and guard.
-- Handle borrowing/closing and child-handle cleanup paths have static ownership risks.
-- Mock-oriented tests do not establish native Windows ABI/kernel semantics; tests/build/runtime were not run.
+- `ReplayConsumer.consume_once()` has an incompatible invocation/signature contract in the reviewed candidate.
+- `ReadPermit` fails to retain the opened-object reference, target-binding identifier and coordinator issuance seal required by the guard.
+- The last reported composition lacked a real approved workspace-root provider; the first action in the new task is to verify whether a valid provider and authority chain actually exist.
+- Root-policy binding is not established end-to-end; handle ownership/cleanup have static risks; native Windows ABI/kernel semantics remain unvalidated.
+- The earlier ZIP review report says the manifest-listed members passed hash checks, but the two pre-existing staged/unstaged diffs were absent. Preservation of that earlier checkout was not independently verified.
 
-The Owner's goal is to complete this authorization-to-handle organ promptly so it can receive genuine trust-backed authorizations and allow downstream PEI work to advance. The shortest safe route is one bounded integrated source-remediation candidate addressing the concrete contract and ownership findings, not another broad API exploration. It must use a real approved root/provider if one already exists and stop with a precise blocker if it does not; it must not invent trust authority, treat a workspace path as an independent trust root, or weaken fail-closed behavior. This documentary authorization does not authorize that source task.
+The source task must work on an isolated candidate and preserve the original checkout. If the real approved-root provider or its authority chain is absent, return `BLOCKED_APPROVED_WORKSPACE_ROOT_PROVIDER_ABSENT` (or the precise verified dependency blocker), make no speculative trust changes, and retain fail-closed behavior. Do not invent a provider or substitute a workspace path for IABV trust authority.
 
 ```text
 PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
-ACTIVE_TASK=M1A_G1_OWNER_DECISION_ON_ONE_BOUNDED_G3_SOURCE_REMEDIATION_20261025
-ACTIVE_TASK_STATUS=OWNER_DECISION_REQUIRED; NO_SOURCE_TASK_AUTHORIZED
+ACTIVE_TASK=M1A_G1_OWNER_AUTHORIZED_ONE_BOUNDED_G3_SOURCE_REMEDIATION_20261025
+ACTIVE_TASK_STATUS=OWNER_AUTHORIZED; CODEX_TERMINAL_RESULT_PENDING
+OWNER_DECISION=EXPLICIT_IN_CHAT; ONE_BOUNDED_INTEGRATED_SOURCE_REMEDIATION; 2026-10-25
+CODEX_DISPATCH=NOT_OBSERVED_FROM_THIS_CHAT_SESSION; NO_DELIVERY_CLAIM
+CODEX_TERMINAL_RESULT=NOT_YET_RECEIVED_IN_THIS_CHAT
 LAST_TERMINAL_TASK=M1A_G1_TRANSFER_PRODUCER_ZIP_AND_PERFORM_ONE_AUTHORIZED_STATIC_REVIEW_20261025
-LAST_TERMINAL_RESULT=FAIL_STATIC_REVIEW_SOURCE_CONTRACT; PRIOR_REVIEW_REPORT_RECONCILED
-PRIOR_SOURCE_TASK=M1A_G1_G3_INTEGRATED_AUTHORIZATION_TO_HANDLE_SOURCE_CANDIDATE_20261025
-PRIOR_SOURCE_RESULT=PARTIAL_G3_HANDLE_CONTRACT_SOURCE_ONLY
-BUNDLE_NAME=IABV_G3_STATIC_REVIEW_EVIDENCE_20261025_3d0c265fc41443739b5e65ef3d4a23d3.zip
-BUNDLE_SHA256_REPORTED=9f9a3e575fa8c6d03b33ae9bdb73bfbf8a4680642b7a65d39fce44e154febe66
-BUNDLE_SIZE_BYTES_REPORTED=91213
-BUNDLE_MEMBERS_REPORTED=13; 12_ARTIFACT_MEMBERS_PLUS_MANIFEST
-BUNDLE_INTEGRITY=ARCHIVE_AND_MEMBER_HASHES_REPORTED_INDEPENDENTLY_VERIFIED_BY_PRIOR_REVIEW; NOT_REOPENED_IN_THIS_DOCUMENTARY_UPDATE
-PRESERVATION_DIFFS=PREEXISTING_STAGED_UNSTAGED_NOT_AVAILABLE; NOT_RECONSTRUCTED; PRESERVATION_NOT_VERIFIED
-STATIC_FINDINGS=REPLAY_SIGNATURE_MISMATCH; PERMIT_OBJECT_SEAL_BINDING_MISSING; APPROVED_ROOT_PROVIDER_UNAVAILABLE; ROOT_POLICY_BINDING_INCOMPLETE; HANDLE_LIFETIME_CLEANUP_RISKS; WINDOWS_ABI_NOT_VALIDATED
-APPROVED_WORKSPACE_ROOT=UNAVAILABLE_IN_REPORTED_COMPOSITION
+LAST_TERMINAL_RESULT=FAIL_STATIC_REVIEW_SOURCE_CONTRACT; REPORTED_REVIEW_RECONCILED
+APPROVED_WORKSPACE_ROOT_PREFLIGHT=FIRST_GATE; CURRENT_TASK_RESULT_PENDING
 WORKSPACE_ROOT_IDENTITY_BOUND_TO_APPROVED_POLICY=NOT_ESTABLISHED
-NATIVE_WINDOWS_SEMANTICS=NOT_RUNTIME_VALIDATED
-SOURCE_TESTS=AUTHORED; NOT_RUN
-TESTS=NOT_RUN
-BUILD=NOT_RUN
-RUNTIME=NOT_RUN
-MCP=NOT_RUN
-REAL_TRANSPORT=NOT_RUN
+TEST_SOURCE_AUTHORING=AUTHORIZED_WITHIN_BOUNDED_SCOPE
+TESTS=NOT_AUTHORIZED; MUST_NOT_RUN_IN_THIS_TASK
+BUILD=NOT_AUTHORIZED; MUST_NOT_RUN_IN_THIS_TASK
+RUNTIME=NOT_AUTHORIZED; MUST_NOT_RUN_IN_THIS_TASK
+MCP=NOT_AUTHORIZED; MUST_NOT_RUN_IN_THIS_TASK
+REAL_TRANSPORT=NOT_AUTHORIZED; MUST_NOT_RUN_IN_THIS_TASK
 G1=NOT_ESTABLISHED
 G2=NOT_ESTABLISHED
 G3_SAME_OBJECT=NOT_ESTABLISHED
@@ -50,16 +42,13 @@ GOVERNANCE=KEEP_BLOCKED
 PROTECTED_READS=FAIL_CLOSED
 BRIDGE=BRIDGE_NOT_READY
 COST_POLICY=ZERO_BUDGET
-NEXT_ACTION=OWNER_DECISION_REQUIRED_FOR_ONE_BOUNDED_G3_SOURCE_REMEDIATION_CANDIDATE
-NEXT_TASK_TARGET=REPLAY_CONSUMER_CONTRACT; PERMIT_OBJECT_SEAL_BINDING; TRUSTED_ROOT_PROVIDER_COMPOSITION; ROOT_POLICY_BINDING; HANDLE_OWNERSHIP_AND_CLEANUP
-NEXT_TASK_STOP_CONDITION=IF_REAL_APPROVED_ROOT_PROVIDER_UNAVAILABLE; RETURN_PRECISE_BLOCKER; DO_NOT_INVENT_AUTHORITY
-PRODUCT_CODE_MODIFICATION=NOT_PERFORMED
-PRODUCT_STAGE_COMMIT_PUSH_MERGE=NOT_PERFORMED
+NEXT_ACTION=RECEIVE_AND_ADJUDICATE_CODEX_TERMINAL_REPORT; VERIFY_CANDIDATE_AND_PRESERVATION_EVIDENCE
+NEXT_TASK_STOP_CONDITION=IF_REAL_APPROVED_ROOT_PROVIDER_OR_AUTHORITY_CHAIN_IS_ABSENT; RETURN_PRECISE_BLOCKER; DO_NOT_INVENT_AUTHORITY
+PRODUCT_CODE_STAGE_COMMIT_PUSH_MERGE=NOT_AUTHORIZED
 AUTOMATIC_FOLLOW_ON=FALSE
 ```
 
-A source-only repair will not itself establish G1/G2, validate native Windows semantics, or authorize protected reads. Keep all gates blocked until separate required evidence is accepted.
-
+The Owner's requested objective is to finish this organ efficiently enough to receive genuine trust-backed authorizations and allow downstream PEI work to advance. A source candidate is not an accepted organ: G1/G2, native Windows semantics, durable replay/rollback protection, and all remaining gates require their own evidence. Keep protected reads denied until the relevant trust and acceptance criteria are separately satisfied.
 
 <!-- Owner decision transition: 2026-10-25. CURRENT-STATE.md is the sole route authority. -->
 ## HISTORICAL ROUTE SNAPSHOT — integrated G3 authorization-to-handle source candidate authorized; prior decision state (2026-10-25)
