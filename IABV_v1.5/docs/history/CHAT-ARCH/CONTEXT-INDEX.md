@@ -1,21 +1,30 @@
 <!-- G1 continuity summary; CURRENT-STATE.md remains the sole routing authority. -->
 
-## CURRENT ROUTE — one bounded read-only assessment of existing trust assets (2026-10-25)
+## CURRENT ROUTE — wait for genuinely new independent authority evidence (2026-10-25)
 
-Live `CURRENT-STATE.md` authorizes only `M1A_G1_EXISTING_TRUST_ASSETS_BOUNDED_READ_ONLY_ASSESSMENT` in the already-open local Codex/Windows session. Scope: source-grounded existing asset locators and relevant metadata only; no secret content, broad scans, source edits, tests/build/runtime/transport, protected reads or configuration changes. The task prompt and decision receipt are [here](./CHAT-ARCH-2026-10-25-M1A-G1-OWNER-DECISION-EXISTING-TRUST-ASSETS-READONLY-ASSESSMENT-RECEIPT.md).
+The bounded read-only assessment of pre-existing trust assets is terminal for the inspected source scope. Its [reconciliation receipt](./CHAT-ARCH-2026-10-25-M1A-G1-EXISTING-TRUST-ASSET-ASSESSMENT-RECONCILIATION-RECEIPT.md). The result is not global asset absence: the Owner reported no identified independently verifiable root, inspected source files yielded no concrete local asset locator, and Windows asset metadata was not queried. Entra remains Owner-reported progress, not an IABV-trusted authority. The prior candidate review remained static; protected issuer, independent root and G3 same-object binding are unestablished.
 
-```text
-ACTIVE_TASK=M1A_G1_EXISTING_TRUST_ASSETS_BOUNDED_READ_ONLY_ASSESSMENT
-AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED_UNTIL_LOCATOR_EVIDENCE
-G1=G2=G3=NOT_ESTABLISHED
+Do not repeat asset inventories, source reviews or micro-patches, and do not start an automatic follow-on. Wait for genuinely new independently verifiable authority evidence or an explicit Owner decision. CURRENT-STATE.md remains the only routing authority.
+
+ACTIVE_TASK=WAIT_FOR_GENUINELY_NEW_INDEPENDENT_AUTHORITY_EVIDENCE_OR_EXPLICIT_OWNER_DECISION
+LAST_TERMINAL_TASK=M1A_G1_EXISTING_TRUST_ASSETS_BOUNDED_READ_ONLY_ASSESSMENT
+LAST_TERMINAL_RESULT=NO_SOURCE_GROUNDED_LOCAL_ASSET_LOCATOR_FOUND_IN_INSPECTED_FILES
+LOCAL_WINDOWS_ASSET_METADATA=NOT_RUN
+AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+QUALIFYING_INDEPENDENT_ROOT=NOT_ESTABLISHED
+ENTRA_TRUSTED_BY_IABV=NOT_ESTABLISHED
+OWNER_TO_WINDOWS_PRINCIPAL=NOT_ESTABLISHED
+BOOTSTRAP_AUTHORITY_TO_ISSUER=NOT_ESTABLISHED
+ISSUER_TO_EXACT_SERVER=NOT_ESTABLISHED
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3_VERSIONED_TARGET_RESOLVER=NOT_ESTABLISHED
 IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
 GOVERNANCE=KEEP_BLOCKED
 PROTECTED_READS=FAIL_CLOSED
 BRIDGE=BRIDGE_NOT_READY
 AUTOMATIC_FOLLOW_ON=FALSE
-NEXT_ACTION=PERFORM_ONE_BOUNDED_EXISTING_TRUST_ASSET_READ_ONLY_ASSESSMENT_IN_EXISTING_CODEX_SESSION
-```
-
+NEXT_ACTION=WAIT_FOR_GENUINELY_NEW_INDEPENDENT_AUTHORITY_EVIDENCE_OR_EXPLICIT_OWNER_DECISION
 
 ## Previous task result — bounded source-organ remediation (2026-10-24)
 
