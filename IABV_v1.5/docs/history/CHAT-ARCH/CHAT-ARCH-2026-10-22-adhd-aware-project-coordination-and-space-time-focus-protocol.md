@@ -377,6 +377,20 @@ When the next task belongs to Codex, Sonnet/Claude, OpenCode, Kilo, or another A
 - If the prompt is too long for a platform limit, state the exact limitation and provide the smallest self-contained usable chunks in the current conversation, each clearly labeled and ordered; do not silently omit required context.
 - Keep the durable handoff and `CURRENT-STATE.md` consistent with the prompt delivered inline. Fetch back every material write. Treat this as a workflow rule that is `DOCUMENTED`; do not claim runtime enforcement or learned behavior until later use demonstrates it.
 
+### 13.2.1 Owner-facing delivery preflight — prompt form and transfer truth (2026-10-25)
+
+This preflight is mandatory before every answer that hands work to the Owner or another AI. It operationalizes the existing rule; it does not create a new coordinator, memory store or routing authority.
+
+1. **Classify the requested deliverable:** `PROMPT`, `FILE`, `TOOL_ACTION`, or `EXPLANATION`. Match the output form to what the Owner actually requested.
+2. **When the Owner needs a prompt to paste into Codex/another AI, deliver the complete self-contained prompt inline in the current chat.** A file or repository link may be supplementary, never the sole location of the actionable instructions. Do not respond to a copy/paste request with “open this link.”
+3. **Treat artifact creation and transfer as separate events.** Keep distinct states such as `LOCAL_ARTIFACT_CREATED`, `UPLOAD_NOT_ATTEMPTED`, `UPLOAD_IN_PROGRESS`, `UPLOAD_COMPLETED`, `DESTINATION_VERIFIED`, and `DESTINATION_CONSUMED`. Do not collapse these states in narration or reporting.
+4. Claim a file was uploaded only when the actual supported upload tool returns success; for asynchronous work, poll until completed. Record the exact returned destination/path and metadata. Read back or verify the destination content/hash when the route supports it. Local existence, a prepared path, a previous-session artifact, or an in-progress call is not an upload receipt.
+5. An upload receipt does not prove Codex opened, read or consumed the file. Report each stage only from evidence: `PREPARED` → `SENT` → `ACKNOWLEDGED` → `CONSUMED` → `REUSED` → `OUTCOME_VERIFIED`.
+6. Before sending, perform a **claim-to-receipt check** over every past-tense operational statement: created, sent, uploaded, shared, read, executed, tested, verified or merged. If there is no supporting tool receipt/direct observation, downgrade the statement to its accurate state and disclose the limitation.
+7. Give one clear Owner-facing next action. If a direct dispatch is unavailable, state `HANDOFF=PREPARED_NOT_SENT`; the Owner should only need to paste the complete prompt into the named AI session and return its response. Use shared tools directly when they are available, authorized, and actually required; never pretend the connector or a background dispatch ran.
+
+Observed 2026-10-25 incident: the assistant supplied a handoff link when an inline copy-ready prompt was requested, then claimed Dropbox delivery without a completed upload receipt. The complete failure and provenance are recorded in [the owner-facing delivery preflight correction](./CHAT-ARCH-2026-10-25-OWNER-FACING-DELIVERY-PREFLIGHT-CORRECTION.md). This is an observed coordination failure; successful reuse in future chats remains unproven until measured.
+
 ### 13.3 The concrete correction now applied
 
 For the current task, the Owner has authorized `M1A_G1_G3_AUTHORITY_ROUTE_CANDIDATE_IMPLEMENTATION`. The coordinator must give the full prompt in the current ChatGPT answer, addressed to **Codex in the existing UI/session**, and require work only on the verified isolated candidate branch `m1a-g1-g3-governance-route-candidate-20261022`, pinned to base `60c8ac6e7ff425c815d9bdc7194bf20ef8d134db`. If Codex cannot safely reach/edit that remote candidate and cannot establish a separate candidate, it must return that capability limitation; it must not touch the Owner's existing checkout or request an Administrator terminal as a workaround.
@@ -385,7 +399,7 @@ The latest task remains governed by `CURRENT-STATE.md`. This interaction contrac
 
 ### 13.4 Durable incident record and next-chat verification
 
-The exact incident, consequence, corrective rule and current authorized task are preserved in [the inline-prompt delivery/new-chat continuity correction](./CHAT-ARCH-2026-10-22-inline-prompt-delivery-and-new-chat-continuity-correction.md). The corrective rule is not satisfied merely by linking this file: the coordinator must actually place the complete actionable prompt in the answer that instructs the Owner to hand it to another AI. On the next new project chat, verify this behavior by delivering the full destination prompt inline without external retrieval. Until that happens, keep `COORDINATION_RULE=DOCUMENTED; CAUSAL_REUSE_NOT_PROVEN`.
+The original incident remains preserved in [the inline-prompt delivery/new-chat continuity correction](./CHAT-ARCH-2026-10-22-inline-prompt-delivery-and-new-chat-continuity-correction.md). The repeat failure on 2026-10-25 and the strengthened last-mile check are recorded in [the owner-facing delivery preflight correction](./CHAT-ARCH-2026-10-25-OWNER-FACING-DELIVERY-PREFLIGHT-CORRECTION.md). The acceptance rule is behavioral, not documentary: on a relevant future task, deliver the prompt inline, verify any upload before claiming it, and distinguish destination receipt from Codex consumption. Until a later non-identical task demonstrates this with evidence, keep `COORDINATION_RULE=DOCUMENTED; CAUSAL_REUSE_NOT_PROVEN`.
 
 
 ## 14. Execution-to-evidence stage separation — UAAL-D018 (2026-10-23)
