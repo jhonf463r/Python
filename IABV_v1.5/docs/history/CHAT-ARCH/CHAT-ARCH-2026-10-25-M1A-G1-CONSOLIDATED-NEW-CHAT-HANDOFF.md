@@ -23,7 +23,7 @@ The report still identifies `APPROVED_WORKSPACE_ROOT_UNAVAILABLE` and says nativ
 
 ## Subsequent Owner decision — one bounded independent static review authorized (2026-10-25)
 
-The Owner explicitly authorized the proposed **single bounded independent static review** in chat (“si autorizo”). This resolves the earlier decision wait; no further approval is required for that review. The review remains pending only because the exact six task-diff artifacts are not yet accessible in this session.
+The Owner explicitly authorized the proposed **single bounded independent static review** in chat (“si autorizo”). This resolves the earlier decision wait; no further approval is required for that review. The review remains pending because the exact task-diff bytes are not yet accessible on this review surface. Protocol revision 2.1 supersedes manual artifact gathering: route from section 2, have the existing source Codex session generate one evidence ZIP, and request at most one upload only if no supported private route exists.
 
 Scope is limited to the six exact task diffs versus the task acceptance criteria, capability-to-opened-object binding, fail-closed denial when the approved workspace root is unavailable, handle ownership/lifetime, native ABI limitations, and preservation of pre-existing staged/unstaged work. Review source bytes and reported hashes must be independently checked. The Library artifacts named `staged.diff.txt` and `unstaged.diff.txt` are not verified substitutes for the six task-specific diff files.
 
@@ -31,9 +31,10 @@ No code modification, tests, build, runtime, MCP, real transport, protected read
 
 ~~~text
 OWNER_DECISION=EXPLICIT_IN_CHAT; ONE_BOUNDED_INDEPENDENT_STATIC_REVIEW; 2026-10-25
+PROTOCOL_DELTA=REVISION_2_1; PRODUCER_GENERATED_EVIDENCE_HANDOFF
 STATIC_REVIEW=AUTHORIZED_ONCE; NOT_STARTED
 REQUIRED_ARTIFACTS=EXACT_SIX_TASK_DIFFS; PREEXISTING_STAGED_UNSTAGED_DIFFS; INITIAL_FINAL_STATUS; HASH_MANIFEST
-NEXT_ACTION=OBTAIN_EXACT_TASK_DIFF_ARTIFACTS_AND_PRESERVATION_EVIDENCE
+NEXT_ACTION=SOURCE_ACTOR_GENERATES_ONE_ZIP_OUTSIDE_CHECKOUT; CURRENT_ROUTE_IN_SECTION_2
 G3_SAME_OBJECT=NOT_ESTABLISHED
 GOVERNANCE=KEEP_BLOCKED
 PROTECTED_READS=FAIL_CLOSED
