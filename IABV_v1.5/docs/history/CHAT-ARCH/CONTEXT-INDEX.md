@@ -8,7 +8,7 @@ Prior terminal blocker: [native-handle authorization-binding blocker](./CHAT-ARC
 
 The report explicitly leaves `APPROVED_WORKSPACE_ROOT_UNAVAILABLE`, native Windows ABI/filesystem semantics unvalidated, and all tests/build/runtime/MCP/transport unrun. Therefore `G3_SAME_OBJECT=NOT_ESTABLISHED`; a source-only candidate must not be promoted to canonical code or used to enable protected reads. Reported local state/hashes remain `OWNER_SUPPLIED_CODEX_REPORT`, not direct observations by this reconciliation.
 
-The Owner authorized one bounded independent static review. The preceding interaction exposed a coordination defect: the report's exact diffs existed in the producing Windows/Codex environment, but the assistant shifted bundle assembly to the Owner instead of first asking that producer to create one machine-generated evidence ZIP. The live Space-Time protocol is being evolved in place to revision 2.1 to prevent that avoidable loop. The known Library staged.diff.txt and unstaged.diff.txt are not the six task-specific diffs and are not substitutes. The repository jhonf463r/Python is public, so a deleted branch/PR cannot be treated as automatic expiry; the safe default is a local ZIP created by the existing Codex session, outside the checkout, and one upload only if no supported private route delivers it. No source code/test/build/runtime changes are authorized; G3 stays unestablished and protected reads fail-closed.
+The Owner authorized one bounded independent static review. The preceding interaction exposed a coordination defect: the report's exact diffs existed in the producing Windows/Codex environment, but the assistant shifted bundle assembly to the Owner instead of first asking that producer to create one machine-generated evidence ZIP. Living Space-Time protocol revision 2.1 now defines the producer-owned evidence handoff in place to prevent that avoidable loop. The known Library staged.diff.txt and unstaged.diff.txt are not the six task-specific diffs and are not substitutes. The repository jhonf463r/Python is public, so a deleted branch/PR cannot be treated as automatic expiry; the safe default is a local ZIP created by the existing Codex session, outside the checkout, and one upload only if no supported private route delivers it. No source code/test/build/runtime changes are authorized; G3 stays unestablished and protected reads fail-closed.
 
 ~~~text
 PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
@@ -24,8 +24,6 @@ ARTIFACT_TRANSPORT=SUPPORTED_PRIVATE_ROUTE_FIRST; SINGLE_ZIP_UPLOAD_FALLBACK
 PUBLIC_GITHUB_REPOSITORY=PUBLIC; TEMPORARY_DELETION_NOT_ASSUMED_TO_ERASE_HISTORY
 CODEX_DISPATCH=NOT_AVAILABLE_FROM_THIS_CHAT; INLINE_PROMPT_PREPARED_NOT_SENT
 OWNER_DECISION=EXPLICIT_IN_CHAT; ONE_BOUNDED_INDEPENDENT_STATIC_REVIEW; 2026-10-25
-STATIC_REVIEW=AUTHORIZED_ONCE; NOT_STARTED
-REVIEW_ARTIFACTS=EXACT_SIX_TASK_DIFFS; PRESERVATION_DIFFS; INITIAL_FINAL_STATUS; HASH_MANIFEST
 ARTIFACT_STATUS=EXACT_TASK_DIFFS_NOT_YET_ACCESSIBLE
 SOURCE_CHANGES_REPORTED=6_FILES; +798/-48; HASHES_REPORTER_SUPPLIED
 SOURCE_TESTS=AUTHORED; NOT_RUN
