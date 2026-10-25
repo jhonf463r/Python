@@ -1,6 +1,44 @@
+<!-- Owner-supplied Codex result reconciled with Dropbox artifact reads and second static review, 2026-10-25. CURRENT-STATE.md remains the sole route authority. -->
+
+## CURRENT ROUTE — close-fix candidate delivered; wrapper close-retry defect blocks acceptance (2026-10-25)
+
+The Owner supplied Codex's terminal report for `M1A_G1_BOUNDED_HANDLE_CLOSE_AND_DETERMINISTIC_CONCURRENCY_FIX_20261025`. The three artifacts are visible in `/IABV-IA-BRIDGE/OUTBOX`; their names, Dropbox IDs and listed sizes were verified. The report and patch were fetched and read. Codex reports 15 focused tests passed, a successful `git diff --check`, no product commit/push/merge/PR, and preservation of the two historical clones. These execution and local-worktree claims remain `OWNER_SUPPLIED_CODEX_REPORT`; this ChatGPT session did not run the tests or inspect the Windows checkout. The Base64 ZIP's internal hashes/manifest were not independently recomputed in this review.
+
+A second static inspection of `M1A_G1_CLOSEFIX.patch` found a blocking sibling defect in the new `OpenedTargetCapability.close()`: it sets `self._closed = True` before calling `self._handle.close()`. If the underlying close raises, a later call on the capability returns early and cannot retry. The included concurrency test monkeypatches the underlying close to succeed and does not cover this failure/retry path. See [the second static review receipt](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-25-M1A-G1-CLOSEFIX-SECOND-STATIC-REVIEW-RECEIPT.md).
+
+Therefore the delivered source remains a candidate and is **not accepted for integration**. Codex's reported test pass supports the narrower lower-level `OwnedWindowsHandle.close()` scenario; it does not cover the wrapper defect, actual Windows kernel behavior, AppBootstrap wiring or the authorization organ end-to-end. The patch's own module docstring says current `AppBootstrap` does not provide a policy-approved `WorkspaceRootCapability`. No live protected read, IABV runtime or real transport was performed.
+
+The single next decision is whether to authorize one new, bounded, isolated source task to fix the outer capability's failed-close/retry state and add a synthetic regression test, or to keep the candidate blocked. No follow-up source edit starts automatically; the previous authorization was one task and is consumed. Even after such a fix, organ completion still requires independent evidence for the approved root/authority composition and the remaining prerequisites.
+
+```text
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+LAST_TERMINAL_TASK=M1A_G1_BOUNDED_HANDLE_CLOSE_AND_DETERMINISTIC_CONCURRENCY_FIX_20261025
+LAST_TERMINAL_RESULT=SOURCE_CANDIDATE_DELIVERED; CODEX_REPORTED_15_FOCUSED_TESTS_PASS; SECOND_STATIC_REVIEW_BLOCKS_INTEGRATION
+CODEX_CANDIDATE_BASE=1c86dcb43ceabf149dae3edb8b5f9530536e4ff6
+CANONICAL_MAIN=4ac6045792e93c9a3033ebbfb7a34792dbf94f61
+CANDIDATE_STATUS=UNMERGED; PRODUCT_CODE_UNCHANGED_ON_MAIN
+CODEX_TEST_RESULT=OWNER_SUPPLIED_REPORT; NOT_RERUN_IN_CHATGPT
+DROPBOX=REPORT_AND_PATCH_FETCHED; THREE_LISTED_ARTIFACTS_EXIST
+ZIP_INTERNAL_HASH_RECALCULATION=NOT_RUN
+STATIC_FINDING=OPENED_TARGET_CAPABILITY_CLOSE_MARKS_CLOSED_BEFORE_UNDERLYING_CLOSE_SUCCEEDS
+ACTIVE_TASK=M1A_G1_AWAIT_OWNER_DECISION_AFTER_CLOSEFIX_STATIC_REVIEW_20261025
+ACTIVE_TASK_STATUS=REVIEW_COMPLETE; CANDIDATE_NOT_ACCEPTED; FOLLOWUP_SOURCE_EDIT_NOT_AUTHORIZED
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+PROTECTED_READS=FAIL_CLOSED
+PRODUCT_CODE_COMMIT_PUSH_MERGE=NOT_AUTHORIZED
+AUTOMATIC_FOLLOW_ON=FALSE
+NEXT_ACTION=OWNER_DECISION_ON_ONE_BOUNDED_WRAPPER_CLOSE_RETRY_FIX_OR_KEEP_BLOCKED
+```
+
+<!-- Prior route snapshot retained as historical context. -->
+
 <!-- Owner-authorized route transition: 2026-10-25. CURRENT-STATE.md remains the sole route authority. -->
 
-## CURRENT ROUTE — bounded Windows handle-close task authorized; Codex result intake pending; delivery protocol calibrated (2026-10-25)
+## HISTORICAL ROUTE — bounded Windows handle-close task authorized; Codex result intake pending (2026-10-25; superseded by Codex candidate delivery and second static review)
 
 The Owner authorized one isolated source task, `M1A_G1_BOUNDED_HANDLE_CLOSE_AND_DETERMINISTIC_CONCURRENCY_FIX_20261025`: correct `OwnedWindowsHandle.close()` failure-state handling, replace the timing-based concurrency assertion with deterministic synchronization, and execute only focused tests using synthetic fixtures. Preserve both historical clones and candidate unchanged; do not invent trust providers; do not perform real protected reads; do not commit, push, merge or create a PR for the product-code task. Stop after the evidence package and independent-review handoff.
 
