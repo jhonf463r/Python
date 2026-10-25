@@ -30,7 +30,7 @@ The prior reopening was limited to design/static review and is now terminal. Its
 
 ## Next trust-organ task — Owner-controlled bootstrap/issuer boundary (2026-10-24)
 
-The latest supplied delta corrects F-03 by adding a nonblank `expected_registry_id` argument and exact equality with `persistence.registry_id`. The complete supplied test diff includes a mismatch case for two well-formed identifiers and rejects invalid expected IDs. Static review of the pasted correction is positive for F-03; tests remain `NOT_RUN` and the local checkout remains unverified. The expected ID must originate in future trusted host/provider context; the function parameter does not prove that provenance. Synthetic states do not prove durable operations. Keep G1/G2/G3 unestablished and reads fail-closed. See `CURRENT-STATE.md` and the [review receipt](./CHAT-ARCH-2026-10-24-M1A-G1-bootstrap-boundary-static-review-receipt.md).
+The [consolidated static review receipt](./CHAT-ARCH-2026-10-24-M1A-G1-bootstrap-boundary-consolidated-static-review-receipt.md) records F-01/F-02/F-03 as corrected in the supplied focused deltas, including a full supplied test diff for expected-registry mismatch and invalid values. This is not direct checkout verification; tests remain `NOT_RUN`. The whole dirty candidate across 12 unique paths is not yet reviewed as one unit. Next, preserve and obtain its complete staged/unstaged diffs for one bounded static review. Keep trusted registry ID provenance, durable consumption, protected persistence and issuer process/OS boundary explicitly unresolved; G1/G2/G3 remain unestablished and reads fail-closed.
 
 ## Continuity and AI-context delivery audit (2026-10-24)
 
