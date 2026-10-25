@@ -329,11 +329,11 @@ Evidence classes must remain distinct: `OWNER_REPORTED`; supplied-diff static re
 
 This loop improves continuity by writing lessons into versioned project records. It does not update model weights or establish that the underlying model has learned across chats. Use the [consolidated new-chat handoff](./CHAT-ARCH-2026-10-24-M1A-G1-CONSOLIDATED-NEW-CHAT-HANDOFF.md) as the current prompt template.
 
-## 22. Post-PR #493 route reconciliation and Owner continuity directive (2026-10-24)
+## 22. Historical checkpoint — post-PR #493 route before the latest Owner instruction (2026-10-24)
 
 The Owner authorized a documentation-only integration of PR #493 to preserve the Mente Espacio-Tiempo directive and reconcile the terminal whole-candidate review. GitHub reports the squash merge succeeded at `3235219304f87210dd235e0a657111e8981b13b4`. Follow-up documentation commits reconciled the adopted `CURRENT-STATE.md` and replaced obsolete front-door task instructions with explicit historical checkpoints. Fetch-back from live `main` confirmed the route and all five entry-point documents.
 
-The current route is:
+At that checkpoint, the route was:
 
 ```text
 ACTIVE_TASK=M1A_G1_WAIT_FOR_GENUINELY_NEW_INDEPENDENT_ROOT_AND_MANDATE_EVIDENCE
@@ -355,3 +355,15 @@ The complete supplied staged/unstaged diff bundle was byte-verified and received
 The Mente Espacio-Tiempo audit remains static. It identified source-level risks involving persisted-context freshness (including a 24-hour minimum age behavior), initial perception preceding attachment of session-goal context, and missing durable proof linking a briefing package to its destination and confirmation. These findings do not prove that the live Windows package is stale or that a specific delivery failed. Do not create another memory/orchestrator. Reuse the existing protocol, improve its source/runtime evidence contract only under a newly authorized route, and verify any later implementation independently.
 
 The reusable continuity lesson is an explicit loop: `live main → five-file intake → match supplied result to exact TASK/acceptance criteria → provenance/evidence classification → reconcile with current route → one authorized action → durable receipt → fetch-back → later non-identical reuse`. Writing a memory is not itself learning; retrieval alone is not reuse; a later decision must observably change because it used the retained lesson. This protocol changes project guidance only; it does not change model weights or prove autonomous learning.
+
+## 23. Latest Owner decision — reopen one bounded source-organ remediation task (2026-10-24)
+
+After the documentation-only PR #493 was adopted and its route fetched back, the Owner explicitly requested that work proceed toward completing the authorization organ or identifying/removing the real blocker to the bridge, with prior memory and review findings reused to avoid repetition. This new decision supersedes the prior wait-for-new-evidence action **only for one bounded source-only remediation task**. It supplies no new root, mandate, host identity, issuer credential, process/IPC boundary, or platform evidence.
+
+Decision receipt: [Owner reopening of bounded source-organ remediation](./CHAT-ARCH-2026-10-24-M1A-G1-OWNER-REOPEN-BOUNDED-SOURCE-ORGAN-DECISION-RECEIPT.md).
+
+The current task and permissions live exclusively in `CURRENT-STATE.md`. The task must start in the existing Windows candidate, not a fresh copy of public main; the previous full diff bundle is already reviewed and must not be re-requested. Revalidate the checkout and compare the actual source baseline before editing. Preserve all prior staged state and do not stage/commit/publish. Only source code edits and focused source-test authoring are allowed. No test execution, build, runtime, MCP, real transport, protected reads, credential/enrollment, services, OS/ACL/trust-store/IPC setup, deployment, public tunnel, or spending is authorized.
+
+Known source-level gaps from the accepted review are: (a) runtime typing of `mandate.revoked` is weaker than the other revocation checks; (b) new mandatory `server_id`/`issuer_id` fields are not reflected in the manifest schema version; (c) the explicit test assertion for `AUTHORITY_TARGET_INVALID` is missing; and (d) the exact authorized target is not demonstrably the same filesystem object consumed by the reader. Address the first three in one minimal candidate delta. For (d), implement only a genuine same-object invariant if existing source contracts can support it; otherwise keep positive reads blocked and return the precise external trust/platform dependency. No mock provider, locally self-asserted key, textual status field, or synthetic ALLOW may stand in for genuine authority.
+
+The next result is a candidate hand-back, not gate closure. Stop after one task, provide complete exact diffs against the pre-edit baseline, and classify each result as source-corrected, partially implemented, not established, or blocked by excluded authority/platform work. Retain `AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED`, `G1=G2=G3=NOT_ESTABLISHED` unless genuinely new evidence supports a narrower status change, `IMPLEMENTATION_PREREQUISITES=8; CLOSED=0`, `GOVERNANCE=KEEP_BLOCKED`, `PROTECTED_READS=FAIL_CLOSED`, and `AUTOMATIC_FOLLOW_ON=FALSE`.
