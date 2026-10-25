@@ -75,3 +75,21 @@ AUTOMATIC_FOLLOW_ON=FALSE
 ```
 
 This receipt records only the supplied source diff and the bounded review findings. It does not establish authority, authorize protected reads, close gates, or claim canonical adoption.
+
+## Follow-up review — evidence-consistency correction (2026-10-24)
+
+- Follow-up task reported by Codex: `M1A_G1_FIX_BOOTSTRAP_EVIDENCE_CONSISTENCY_VALIDATION`.
+- Report disposition: `TASK_RESULT=SOURCE_CANDIDATE_ONLY`; checkout, branch HEAD, file blobs, backup integrity and git status remain `OWNER_REPORTED` because this reviewer has only the supplied report/diff, not the Windows worktree.
+- Targeted static result: `STATIC_REVIEW=F01_F02_CORRECTIONS_PRESENT_IN_SUPPLIED_DIFF`; this is not a test pass, production-boundary pass, or gate closure.
+
+### Targeted findings
+
+1. **Manifest digest binding — corrected in the supplied diff.** The validator recomputes `sha256(json.dumps(challenge.expected_manifest(), sort_keys=True).encode()).hexdigest()` and requires exact equality with `merge.manifest_sha256`. The positive fixture now computes the same expected digest; a test rejects a different but well-formed SHA-256 digest.
+2. **Merge metadata validation — corrected in the supplied diff.** `manifest_git_blob_sha` must be a string matching the SHA-1 regex. `pull_request_number` must satisfy `type(value) is int` and be greater than zero, rejecting booleans as well. The predicate checks relevant runtime types before invoking regexes and includes malformed-field tests.
+3. **Written versus executed checks.** Codex reports `git diff --check` passed, but that remains report evidence. All source tests are `NOT_RUN`; no build, runtime, MCP or transport was executed. The local candidate is still uncommitted/unpublished and has not been independently reconciled against GitHub.
+
+### Residual boundary-contract issue — next bounded task
+
+`OwnerControlledBootstrapBoundary.enroll()` still declares a return type of `OwnerMergeVerificationEvidence`. That type represents repository merge evidence, not an explicit enrollment outcome confirming that the one-use challenge was consumed and the protected registry write was completed. Since no production implementation exists, this is not evidence of a successful enrollment; nevertheless, the API contract should not let a caller mistake merge verification for an enrollment receipt. The next source-only task should define an explicit typed enrollment receipt/outcome and tests for its bindings and success semantics, without pretending a Python protocol creates a security boundary.
+
+The real Owner assertion verifier, independently provisioned trust root, durable anti-replay consumption, protected registry, and authenticated issuer process/IPC/OS boundary remain absent. `AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED`; G1/G2/G3 remain unestablished; 8 prerequisites remain open / 0 closed; governance remains blocked; protected reads remain fail-closed. No root/credential/enrollment/OS action, test execution, build, runtime, transport, publish, merge, deployment or spend is authorized by this receipt.
