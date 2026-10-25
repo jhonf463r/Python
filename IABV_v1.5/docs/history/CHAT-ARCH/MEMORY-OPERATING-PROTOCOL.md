@@ -1,31 +1,40 @@
 <!-- G1 continuity summary; CURRENT-STATE.md remains the sole routing authority. -->
 
-## CURRENT ROUTE — Owner authorized one bounded G3 handle-relative source candidate (2026-10-25)
+## CURRENT ROUTE — G3 source candidate terminal; authorization-to-handle contract remains open (2026-10-25)
 
-The Owner explicitly authorized one source-only candidate task using the G3 handle-relative feasibility design. This permits narrow source changes and directly related source-test authoring only. Test execution, build, runtime, MCP, real transport and protected reads remain prohibited. The conversational authorization is recorded as an Owner decision; it is not an independent identity attestation.
+The single authorized task M1A_G1_G3_NTCREATEFILE_HANDLE_RELATIVE_SOURCE_CANDIDATE_20261025 returned TASK_RESULT=BLOCKED_ON_NATIVE_HANDLE_BINDING_DETAILS with no source changes, according to the Owner-supplied Codex report.
 
-Owner decision receipt: [one-task G3 source candidate authorization](./CHAT-ARCH-2026-10-25-M1A-G1-OWNER-DECISION-G3-NTCREATEFILE-SOURCE-CANDIDATE-RECEIPT.md).
-Design basis: [G3 handle primitive feasibility result](./CHAT-ARCH-2026-10-25-M1A-G1-G3-HANDLE-PRIMITIVE-DESIGN-FEASIBILITY-RESULT.md).
+Terminal receipt: [G3 native-handle authorization-binding blocker](./CHAT-ARCH-2026-10-25-M1A-G1-G3-NATIVE-HANDLE-AUTHORIZATION-BINDING-BLOCKER-RECEIPT.md).
+Feasibility design: [G3 handle primitive feasibility result](./CHAT-ARCH-2026-10-25-M1A-G1-G3-HANDLE-PRIMITIVE-DESIGN-FEASIBILITY-RESULT.md).
+
+The report identifies the exact missing edge: ReadAuthorizationCoordinator.decide_mcp_read() receives operation and requested target as strings; the resolver returns a textual canonical_target and the permission retains that text rather than a capability bound to an opened object. server.py obtains the workspace as a path and can fall back to os.getcwd(); an approved workspace-root identity bound to the handle is not established. Creating a native handle after a textual-path authorization therefore cannot prove that the decision authorizes the object the reader consumes.
+
+Those local file/line details, hashes and backup/preservation claims remain OWNER_SUPPLIED_CODEX_REPORT. The report says the index, seven staged routes, eleven unstaged routes and twelve unique paths were preserved, and the task diff is empty. This documentation reconciliation does not independently access the Windows-local backup directory or certify its byte contents.
+
+The Windows API feasibility result remains useful, but APIs alone do not solve the application contract. A viable integrated candidate must join the approved root capability, per-component handle-relative resolver, authorization coordinator decision, final permission and consumer to the same identity-bearing opened object. It must define ownership/lifetime, close-once handling, file reads and directory enumeration; deny on missing/ambiguous approved root identity; and never use a post-authorization path-based fallback. The root capability must not be presented as the independent IABV trust root.
+
+The previous task is consumed. Its scope explicitly excluded changing the resolver/coordinator contract, so a new integrated attempt requires a new explicit Owner decision. No code task starts automatically.
 
 ~~~text
 PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
-OWNER_DECISION=EXPLICIT_SCOPE_APPROVED_IN_CHAT
-OWNER_DECISION_RECEIPT=CHAT-ARCH-2026-10-25-M1A-G1-OWNER-DECISION-G3-NTCREATEFILE-SOURCE-CANDIDATE-RECEIPT.md
-ACTIVE_TASK=M1A_G1_G3_NTCREATEFILE_HANDLE_RELATIVE_SOURCE_CANDIDATE_20261025
-TASK_STATUS=AUTHORIZED; HANDOFF_PREPARED_NOT_SENT
-LAST_TERMINAL_TASK=M1A_G1_G3_HANDLE_PRIMITIVE_DESIGN_FEASIBILITY_20261025
-LAST_TERMINAL_RESULT=VIABLE_WITH_CONSTRAINTS; DESIGN_ONLY
-IMPLEMENTATION=AUTHORIZED_FOR_ONE_BOUNDED_G3_SOURCE_CANDIDATE
-SOURCE_TEST_AUTHORING=PERMITTED; TEST_EXECUTION=NOT_AUTHORIZED
+ACTIVE_TASK=M1A_G1_WAIT_FOR_OWNER_DECISION_ON_INTEGRATED_AUTHORIZATION_TO_HANDLE_CONTRACT_OR_KEEP_BLOCKED
+LAST_TERMINAL_TASK=M1A_G1_G3_NTCREATEFILE_HANDLE_RELATIVE_SOURCE_CANDIDATE_20261025
+LAST_TERMINAL_RESULT=BLOCKED_ON_NATIVE_HANDLE_BINDING_DETAILS; NEW_SOURCE_DELTA_NONE; OWNER_SUPPLIED_CODEX_REPORT
+TERMINAL_RECEIPT=CHAT-ARCH-2026-10-25-M1A-G1-G3-NATIVE-HANDLE-AUTHORIZATION-BINDING-BLOCKER-RECEIPT.md
+SOURCE_CHANGES_BY_LAST_TASK=0
+SOURCE_DIFF_SHA256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+SOURCE_TESTS=AUTHORED_OR_UNCHANGED; NOT_RUN
+CANDIDATE_CHECKOUT_STATUS=CODEX_REPORTED_UNCHANGED; NOT_INDEPENDENTLY_OBSERVED
 AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
 QUALIFYING_INDEPENDENT_ROOT=NOT_ESTABLISHED
+WORKSPACE_ROOT_IDENTITY_BOUND_TO_APPROVED_POLICY=NOT_ESTABLISHED
 OWNER_TO_WINDOWS_PRINCIPAL=NOT_ESTABLISHED
 BOOTSTRAP_AUTHORITY_TO_ISSUER=NOT_ESTABLISHED
 ISSUER_TO_EXACT_SERVER=NOT_ESTABLISHED
 DURABLE_REPLAY_AND_ROLLBACK_PROTECTION=NOT_ESTABLISHED
 G1=NOT_ESTABLISHED
 G2=NOT_ESTABLISHED
-G3_SAME_OBJECT=NOT_ESTABLISHED; IMPLEMENTATION_CANDIDATE_AUTHORIZED; NOT_YET_OBSERVED
+G3_SAME_OBJECT=NOT_ESTABLISHED
 IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
 GOVERNANCE=KEEP_BLOCKED
 PROTECTED_READS=FAIL_CLOSED
@@ -38,14 +47,17 @@ REAL_TRANSPORT=NOT_RUN
 COST_POLICY=ZERO_BUDGET
 PRODUCT_STAGE_COMMIT_PUSH_MERGE=NOT_AUTHORIZED
 AUTOMATIC_FOLLOW_ON=FALSE
-CODEX_HANDOFF=PREPARED_NOT_SENT
-NEXT_ACTION=OWNER_DELIVER_ONE_PREPARED_PROMPT_TO_EXISTING_CODEX_WINDOWS_SESSION; STOP_AFTER_ONE_TERMINAL_REPORT
-STOP_CONDITION=ONE_SOURCE_CANDIDATE_ONLY; NO_FOLLOW_ON; KEEP_PROTECTED_READS_DENIED
+NEXT_ACTION=OWNER_DECISION_REQUIRED_TO_AUTHORIZE_ONE_INTEGRATED_AUTHORIZATION_TO_HANDLE_SOURCE_CANDIDATE_OR_KEEP_BLOCKED
+NEXT_REVIEW_TARGET=APPROVED_ROOT_CAPABILITY_TO_RESOLVER_TO_COORDINATOR_DECISION_TO_SAME_HANDLE_CONSUMPTION
+STOP_CONDITION=NO_FOLLOW_ON_WITHOUT_NEW_EXPLICIT_SCOPE; KEEP_PROTECTED_READS_DENIED
 ~~~
 
-The reported Windows candidate path/branch/HEAD and dirty-state hashes remain OWNER_SUPPLIED_CODEX_REPORT and must be revalidated inside the existing Codex session. Preserve all staged and unstaged work and the original index. If baseline identity or delta isolation fails, do not edit. Use a component-by-component handle-relative walk; reject reparse points by default; consume file bytes and enumerate directories through the same authorized handles; define handle lifetime and fail closed on ambiguity. Never use path re-resolution as a fallback.
 
-The static design is not implementation proof. G1/G2 and the independent authority bindings remain unresolved. Even a sound G3 source candidate would not close those gates or make the bridge ready. The candidate remains non-canonical until a separate review/adoption. This is the single authorized task; no automatic follow-on.
+<!-- HISTORICAL ROUTING SNAPSHOT: native handle candidate returned terminal authorization-binding blocker. -->
+## HISTORICAL ROUTE — native handle APIs feasible, authorization-to-object binding unresolved (2026-10-25; terminal)
+
+The previous source candidate did not change files because its scope prohibited changing the resolver/coordinator contract, yet that contract is required to bind the authorization decision to an opened object. The candidate result is recorded at [terminal blocker receipt](./CHAT-ARCH-2026-10-25-M1A-G1-G3-NATIVE-HANDLE-AUTHORIZATION-BINDING-BLOCKER-RECEIPT.md); the prior static API feasibility remains at [design receipt](./CHAT-ARCH-2026-10-25-M1A-G1-G3-HANDLE-PRIMITIVE-DESIGN-FEASIBILITY-RESULT.md). These are distinct results: API feasibility is not application-level authorization binding or a G3 pass.
+
 
 ## Previous task result — bounded source-organ remediation (2026-10-24)
 
