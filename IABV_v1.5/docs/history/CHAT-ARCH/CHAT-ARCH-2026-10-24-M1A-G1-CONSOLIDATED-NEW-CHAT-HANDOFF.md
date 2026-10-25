@@ -249,15 +249,15 @@ Live `main` was revalidated as `2cecd5e9b9e175584d65bbb1198a53bc2346d095`. Its c
 
 ## 13. Proposal-branch route-summary correction status
 
-After the Mente audit, the first routing code block in `README.md`, `CONTEXT-INDEX.md` and `MEMORY-OPERATING-PROTOCOL.md` was edited on this documentation branch so it no longer presents the terminal root-review task as the current route. Those summaries now direct the reader to fetch live `refs/heads/main` and derive the next action from `CURRENT-STATE.md` only. `AGENTS.md` was not changed and remains a known stale-summary remainder. This is a 3-of-4 proposal correction, not a canonical protocol update.
+After the Mente audit, the first routing code block in all four front-door documents—`AGENTS.md`, `README.md`, `CONTEXT-INDEX.md` and `MEMORY-OPERATING-PROTOCOL.md`—was edited on this documentation branch so it no longer presents the terminal root-review task as the current route. Those summaries direct readers to fetch live `refs/heads/main` and derive the next action from `CURRENT-STATE.md` only. This is a 4-of-4 proposal correction, not a canonical protocol update.
 
-Exact status remains:
+Exact status:
 ```text
 PROPOSAL_BRANCH=docs/iabv-transcript-route-intake-calibration-20261024
 PR=493; OPEN; UNMERGED
-FRONT_DOOR_ROUTE_SUMMARIES_NEUTRALIZED=3_OF_4
-AGENTS_MD_REMAINS=KNOWN_REMAINDER
+FRONT_DOOR_ROUTE_SUMMARIES_NEUTRALIZED=4_OF_4
+CANONICAL_FIX=NOT_ADOPTED
 LIVE_MAIN=2cecd5e9b9e175584d65bbb1198a53bc2346d095; UNCHANGED_BY_THIS_WORK
 ```
 
-Do not call the route-summary repair complete or canonical until the remaining summary issue is reconciled, the proposal is reviewed/authorized for merge, and the adopted content is fetched back from live main.
+The proposed `CURRENT-STATE.md` now records that the present source-only bootstrap attempt is terminal for the evidence available and that no further source-only loop should start without genuinely new independent root/Owner-to-host/issuer-boundary evidence. Live `main` remains the only route authority until explicit authorized merge and fetch-back.
