@@ -423,13 +423,13 @@ NEXT_ACTION=PERFORM_ONE_BOUNDED_EXISTING_TRUST_ASSET_READ_ONLY_ASSESSMENT_IN_EXI
 
 This section closes a continuity defect found when a task report had returned but the front-door summaries and `CURRENT-STATE.md` still advertised the completed task as active. It supplements sections 2–9 and 15; it does not override Owner authorization or the fail-closed trust gate.
 
-### 16.1 The terminal report is a state event
+### 26.1 The terminal report is a state event
 
 On receiving a task result, do not jump directly from interpreting the report to a new recommendation. First match the exact task identifier against the canonical route and its handoff, adjudicate the report against the original acceptance criteria, and consume the result into the time-aware evidence graph.
 
 When the task's stated stop condition is met, record the terminal task/result, provenance, exact evidence boundary, remaining dependency, and excluded/unrun actions. A report can be `OWNER_REPORTED` and still be the observed completion of the delegated task; this does not independently certify its technical claims.
 
-### 16.2 Completed work must not remain the active next action
+### 26.2 Completed work must not remain the active next action
 
 A completed bounded action must not remain the top-level `ACTIVE_TASK`/`NEXT_ACTION` merely because `AUTOMATIC_FOLLOW_ON=FALSE`. These fields mean different things:
 
@@ -440,7 +440,7 @@ A completed bounded action must not remain the top-level `ACTIVE_TASK`/`NEXT_ACT
 
 If no new technical action is authorized and no genuinely new evidence exists, move the router to the existing wait state and preserve the old task in history. Do not invent an implementation, another inventory, or an intermediate prompt just to create apparent activity.
 
-### 16.3 State-transition algorithm
+### 26.3 State-transition algorithm
 
 After terminal-result intake:
 
@@ -455,7 +455,7 @@ After terminal-result intake:
 
 If the current router is stale but writeback is not authorized, do not repeat the completed task. State `ROUTE_STATE_STALE`, identify the exact permission needed for a documentation-only transition, and stop. If a new bounded documentation authorization is given, perform only that transition and its review/fetch-back.
 
-### 16.4 Anti-loop acceptance invariants
+### 26.4 Anti-loop acceptance invariants
 
 Every handoff and new-chat intake must check:
 
