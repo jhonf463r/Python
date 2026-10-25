@@ -6,7 +6,7 @@
 - Owner instruction date: 2026-10-23 (America/Bogota)
 - Scope: objective-bound reasoning, temporal evidence graph, adaptive role activation, gated action chains, memory consolidation, delivery receipts and outcome-based protocol evolution
 - Intended audience: every new ChatGPT/Codex/other-AI coordination session working on IABV
-- Status: the stable protocol identity is canonical on live `main`; revision 2.0 is a candidate until its authorized merge and fetch-back
+- Status: the live `main` copy is authoritative; changes on other refs remain candidates until the permitted merge and exact fetch-back are verified
 - Project North Star: `GOVERNED_IABV_CODEX_BRIDGE`
 - Active technical frontier at creation: `M1A_G1_TRUST_BOOTSTRAP_AUTHORITY_BOUNDARY`
 
