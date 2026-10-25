@@ -178,3 +178,37 @@ Do not implement another patch yet. In the same Windows checkout, produce comple
 
 Include the current full staged diff and full unstaged diff for those paths so prior staged/unstaged context is visible, plus the exact new R-03 test hunks and precise identification of the task delta. Do not invent a pre-task diff baseline if none was preserved. Include full initial/final status, `--numstat`, the three levels of blob hashes, and a statement of whether the initial/final status and index match. No edit and no execution. This inspection is the next bounded evidence step; once the source/test contract is reviewed, decide whether a minimal further source change is necessary or the current safe result should remain a deny-only containment until platform prerequisites exist.
 
+
+
+## Latest Codex intake — R-03 bundle incomplete; Owner directs continuity work to be preserved (2026-10-24, America/Bogota)
+
+The Owner supplied a further `TASK_RESULT=SOURCE_REVIEW_BUNDLE_ONLY`. Codex reports that both MCP handlers invoke the denial guard before their helpers; every normal path, including a well-formed synthetic `ALLOW`, produces a denial payload. The report classifies that behavior as fail-closed containment, not positive same-object binding. Codex reports source tests for divergent paths, rewritten canonical target and synthetic `ALLOW` for both handlers, but no explicit test assertion for `AUTHORITY_TARGET_INVALID`.
+
+The returned message does **not** include all exact unstaged hunks from parts 3–5. Codex itself says the full exact current diff is not delivered in the response. The supplied review therefore remains incomplete:
+
+```text
+TASK_RESULT=SOURCE_REVIEW_BUNDLE_ONLY
+DIFFS_COMPLETE=NO
+R03=CONTAINMENT_REPORTED; STATIC_CONFIRMATION_INCOMPLETE
+SAME_OBJECT_BINDING=NOT_ESTABLISHED
+TESTS=NOT_RUN
+BUILD=NOT_RUN
+RUNTIME=NOT_RUN
+MCP=NOT_RUN
+REAL_TRANSPORT=NOT_RUN
+PROTECTED_READS=FAIL_CLOSED
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+GOVERNANCE=KEEP_BLOCKED
+BUDGET=ZERO
+```
+
+No pre-task worktree snapshot exists to isolate authorship; do not invent a task-only diff. Preserve the three-path exact-diff export as the next bounded evidence step. The source candidate and hashes remain Owner/Codex-reported; the reviewer did not access the local Windows checkout. No tests/build/runtime/MCP/transport were performed.
+
+The Owner also explicitly directed that this complete conversation-level lesson set must be made durable and reused by the project-level **Mente Espacio-Tiempo**. The Mente means project continuity, time-aware memory navigation, audits, causal analysis, decision provenance, and delivery of relevant context to each new assistant. It is distinct from IABV's runtime learning components. The request is recorded in the [Owner continuity directive receipt](./CHAT-ARCH-2026-10-24-M1A-G1-OWNER-CONTINUITY-DIRECTIVE-RECEIPT.md). This does not imply automatic learning, universal context delivery or model-weight changes are proven.
+
+Priority order: (P0) complete and statically review the exact R-03 diffs; (P1) after that evidence review and current-route reconciliation, audit the existing continuity algorithms/protocols for new-chat preflight, temporal/causal retrieval, stale/conflicting routing summaries, context freshness, initial-goal ordering, per-agent briefing delivery/receipts, and later causal reuse; (P2) propose the smallest justified protocol/component correction. Reuse the existing Space-Time protocol and static audit; do not invent a duplicate orchestrator or preempt the active source-evidence task.
+
+This addition is documentation-branch-only on `docs/iabv-transcript-route-intake-calibration-20261024`. It does not modify live `main`, merge PR #493, change the active canonical route, authorize automatic follow-on, or relax the fail-closed boundary.
