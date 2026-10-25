@@ -12,7 +12,7 @@ The Owner explicitly authorized the M1C documentation reconciliation and subsequ
 
 Repository: `jhonf463r/Python`  
 Base `main` SHA: `4ac6045792e93c9a3033ebbfb7a34792dbf94f61`  
-Prior M1B candidate base/HEAD reported by Codex: `1c86dcb43ceabf149dae3edb8b5f9530536e4ff6`. GitHub comparison confirmed that SHA is an ancestor of `main`, three commits behind the current head: PR #525 merge `4ac6045792e93c9a3033ebbfb7a34792dbf94f61`, PR #526 merge `452961e4c2d26a2a675eebf1ce97808149fbdce1`, and PR #527 merge `568d2fbac5d09ad0e144197801ee41b98f61a98c`. All five canons were fetched from the resulting live `main`; source and test paths for M1B returned 404 on `main`.
+Prior M1B candidate base/HEAD reported by Codex: `1c86dcb43ceabf149dae3edb8b5f9530536e4ff6`. GitHub history confirms that SHA is an ancestor of `main`. At the time of the original M1C evidence reconciliation, it was three commits behind the head, through documentation-only PRs #525, #526 and #527. PR #528 subsequently merged the final route-status normalization. These commit counts and SHAs are a chronology of the observed reconciliation, not a claim about the current moving `main` head. The five canons were fetched from live `main` after the merges; source and test paths for M1B return 404 on `main`.
 
 ## M1B evidence reconciliation
 
