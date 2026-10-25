@@ -212,3 +212,66 @@ The Owner also explicitly directed that this complete conversation-level lesson 
 Priority order: (P0) complete and statically review the exact R-03 diffs; (P1) after that evidence review and current-route reconciliation, audit the existing continuity algorithms/protocols for new-chat preflight, temporal/causal retrieval, stale/conflicting routing summaries, context freshness, initial-goal ordering, per-agent briefing delivery/receipts, and later causal reuse; (P2) propose the smallest justified protocol/component correction. Reuse the existing Space-Time protocol and static audit; do not invent a duplicate orchestrator or preempt the active source-evidence task.
 
 This addition is documentation-branch-only on `docs/iabv-transcript-route-intake-calibration-20261024`. It does not modify live `main`, merge PR #493, change the active canonical route, authorize automatic follow-on, or relax the fail-closed boundary.
+
+
+## Exact R-03 bundle delivered — focused static review complete (2026-10-24, America/Bogota)
+
+The Owner supplied all six current diffs for the three R-03 paths: staged and unstaged diffs for `server.py`, `test_mcp_server.py`, and `test_read_authorization.py`. No pre-task snapshot exists; therefore these are complete current diffs, not a fabricated task-only diff.
+
+### Candidate identity and preservation — Owner/Codex-reported
+
+- Checkout: `C:/Users/faber/AppData/Local/Temp/iabv-g1-bootstrap-sparse-f99534e037e542038513a974d805bb27`
+- Branch/HEAD: `codex/m1a-g1-owner-governed-bootstrap-organ-20261024` / `6bc568e1c5a898afd65cc045c779c25a9cdc5489`
+- Live main at Codex preflight: `2cecd5e9b9e175584d65bbb1198a53bc2346d095`
+- Reported status unchanged: 12 unique paths; 7 staged and 11 unstaged status entries with overlap.
+- `git diff --check=0`, with LF/CRLF warning for `test_read_authorization.py`.
+- No files, index or HEAD were modified; tests/build/runtime/MCP/transport were not run.
+
+Three-route reported blobs:
+
+| Path | Worktree | Index | HEAD |
+|---|---|---|---|
+| `IABV_v1.5/src/iabv_v15/infra/mcp/server.py` | `716e4fcf85667e124ca4ed6aa75931b5746ef5ed` | `c8436eaf8a9df27b57a079490b4e6025258680b7` | `fbce8d52ddc121033f5bb87bb92be2aee52da8c0` |
+| `IABV_v1.5/tests/test_mcp_server.py` | `0fc7936c82d6f7dbc29d702db82b44517a0fbb2e` | `3d4c445350adb3d45e3aefda4a19cdfa8122fabc` | `88b0a2a1570d7f5bfebcf09b850cd7db24640c65` |
+| `IABV_v1.5/tests/test_read_authorization.py` | `5f93ab1d39d44f0471900d1f3bb546365980b184` | `08e0b893bd41366be69988a23b2e0fc4a5130fce` | `ABSENT` |
+
+These Windows local details are reproduced from the Owner-supplied Codex report, not independently read from the local filesystem.
+
+### Static findings from the exact supplied diffs
+
+1. Both handlers call `_protected_read_authority_block()` before the content helper. In the supplied implementation every ordinary decision branch, absent-coordinator path, malformed decision, invalid scope/metadata path and caught decision exception produces a dictionary denial. Each handler returns that payload whenever it is not `None`. The code is fail-closed as written, but the later helper call remains present as a latent path if a future change were to permit `None`.
+2. The dictionary shape (`governance_blocked`, `reason`, `operation`, `detail`) matches what the handlers return.
+3. Tests in `test_mcp_server.py` cover synthetic `ALLOW` denials for both read/list handlers, requested-path divergence, and a rewritten canonical target. The corresponding synthetic-coordinator test in `test_read_authorization.py` directly tests only `read_repo_file`.
+4. There is no explicit assertion/test case for `AUTHORITY_TARGET_INVALID`, although the guard contains a branch for it.
+5. The guard rejects a well-formed `ALLOW` with `AUTHORIZED_TARGET_NOT_BOUND_TO_OPERATION`. Existing helpers still receive the original relative path and independently resolve it; they do not consume an identity-bearing object from the permit. Thus this candidate gives **deny-only containment**, not positive same-object authorization.
+6. These conclusions are static inspection of the supplied text. `TESTS=NOT_RUN`; payload compatibility and branch control flow are not runtime-verified.
+
+### Result and next dependency
+
+```text
+R03=STATIC_REVIEW_COMPLETE_FOR_THREE_SUPPLIED_PATHS
+R03_DISPOSITION=DENY_ONLY_CONTAINMENT
+SAME_OBJECT_BINDING=NOT_ESTABLISHED
+AUTHORITY_TARGET_INVALID_TEST=NOT_PRESENT
+TESTS=NOT_RUN
+BUILD=NOT_RUN
+RUNTIME=NOT_RUN
+MCP=NOT_RUN
+REAL_TRANSPORT=NOT_RUN
+PROTECTED_READS=FAIL_CLOSED
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+GOVERNANCE=KEEP_BLOCKED
+```
+
+**Do not patch R-03 again in isolation before the complete candidate review.** The three-route diff bundle completes the focused R-03 evidence step, but it does not satisfy the existing whole-candidate review obligation: the accumulated staged and unstaged delta over all 12 unique candidate paths has not been inspected as one unit.
+
+### Next bounded evidence action
+
+Perform one read-only review of the complete current staged and unstaged diff across all 12 reported unique paths, preserving the dirty checkout. Map each source composition edge to its owning provider/consumer; distinguish source contracts from trusted producers, durable registry/replay, authenticated process/IPC/OS boundaries and runtime proof. Identify any side effect that would require a separate authorization. Do not execute tests/build/runtime/MCP/transport or publish/merge.
+
+After that candidate-wide review and reconciliation against live `CURRENT-STATE.md`, prioritize the Owner-requested Mente Espacio-Tiempo continuity audit. That audit must reuse the existing continuity protocol and static audit, not create a second memory/orchestrator. The continuity priority receipt already records the intended audit scope.
+
+This review closes only the focused exact-diff inspection for these three paths. It does not close the whole bootstrap-boundary review, enable reads, close any G1/G2/G3 prerequisite, or prove runtime learning.
