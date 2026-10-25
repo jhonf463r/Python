@@ -127,7 +127,7 @@ Persisten `G1/G2/G3=NOT_ESTABLISHED`, ocho prerrequisitos abiertos y cero cerrad
 - Consolidated static review receipt: [review receipt](./CHAT-ARCH-2026-10-24-M1A-G1-bootstrap-boundary-consolidated-static-review-receipt.md)
 
 
-## 9. Owner directive — make Mente Espacio-Tiempo continuity durable
+## 9. Owner directive — make Mente Espacio-Tiempo continuity durable (initial evidence snapshot; R-03 status superseded by section 10)
 
 The Owner explicitly clarified that the **Mente Espacio-Tiempo** is the project-level memory/navigation/audit/causal-reasoning layer for the entire IABV effort, not a synonym for IABV's runtime learning algorithms. Its purpose is to preserve lessons across interactions and provide ChatGPT/Codex/other agents with the relevant verified state, dependencies, closed paths, evidence provenance, boundaries and next action at the start of each new chat.
 
