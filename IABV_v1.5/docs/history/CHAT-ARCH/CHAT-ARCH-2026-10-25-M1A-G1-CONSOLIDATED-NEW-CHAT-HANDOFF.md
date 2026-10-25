@@ -2,7 +2,7 @@
 
 - Snapshot date: 2026-10-25, America/Bogota.
 - Purpose: resume in a new ChatGPT conversation without redoing terminal work, confusing a static design result with implementation, or losing the authorization history and technical deductions.
-- Current verified GitHub main at handoff preparation: c7b463bc4947f0fccadfcd1ed001e36cc34a9dbc.
+- Live-main baseline used for this reconciled handoff revision: `74b47561ebddfc113bd8cf869430c3991f206003` (refreshed immediately before the documentation-branch updates; later main SHAs must be fetched anew).
 - This is a continuity/handoff document, not a new implementation authorization. CURRENT-STATE.md remains the sole route authority.
 
 ## CURRENT ROUTE — candidate diff bytes reviewed; pre-task baseline provenance remains unresolved (2026-10-25)
