@@ -30,7 +30,7 @@ The prior reopening was limited to design/static review and is now terminal. Its
 
 ## Next trust-organ task — Owner-controlled bootstrap/issuer boundary (2026-10-24)
 
-The follow-up diff, reviewed from the pasted source only, contains the targeted `manifest_sha256` equality check, `manifest_git_blob_sha` SHA-1 format check, exact-integer/positive pull-request check and source tests for malformed values. Tests remain `NOT_RUN`, and checkout/blob integrity remains unverified. The next source-only edge is to define an explicit typed enrollment receipt/outcome because `OwnerControlledBootstrapBoundary.enroll()` returns merge evidence rather than confirmation of challenge consumption and protected registry persistence. Follow `CURRENT-STATE.md` and the [review receipt](./CHAT-ARCH-2026-10-24-M1A-G1-bootstrap-boundary-static-review-receipt.md). Keep G1/G2/G3 unestablished and protected reads fail-closed.
+The new Codex report says the receipt contract has been added, but only a summary—not the exact source/test diff—was supplied. Therefore the receipt implementation has not yet received static code review. Obtain the exact unstaged delta from the same candidate checkout, inspect field bindings, strict type/time predicates, failure semantics and tests, and do not infer proof of real consumption or persistence from synthetic receipt fields. Preserve G1/G2/G3 unestablished and protected reads fail-closed. See `CURRENT-STATE.md` and the [review receipt](./CHAT-ARCH-2026-10-24-M1A-G1-bootstrap-boundary-static-review-receipt.md).
 
 ## Continuity and AI-context delivery audit (2026-10-24)
 
