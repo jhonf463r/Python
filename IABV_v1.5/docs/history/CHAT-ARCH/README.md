@@ -30,7 +30,7 @@ The prior reopening was limited to design/static review and is now terminal. Its
 
 ## Next trust-organ task — Owner-controlled bootstrap/issuer boundary (2026-10-24)
 
-The latest candidate report says the AppBootstrap-to-MCP coordinator wiring is source-complete but not independently reviewed or executed. The next bounded source task is the [Owner-controlled bootstrap/issuer boundary handoff](./CHAT-ARCH-2026-10-24-M1A-G1-BOOTSTRAP-BOUNDARY-NEXT-HANDOFF.md); follow the current `CURRENT-STATE.md` route. The reported local candidate remains uncommitted/unpublished, all gates remain open, and the current main is `0876466a41d63ecc7a9283971118913fa9602f6c`.
+The latest candidate report says the AppBootstrap-to-MCP coordinator wiring is source-complete but not independently reviewed or executed. The next bounded source task is the [Owner-controlled bootstrap/issuer boundary handoff](./CHAT-ARCH-2026-10-24-M1A-G1-BOOTSTRAP-BOUNDARY-NEXT-HANDOFF.md); follow the current `CURRENT-STATE.md` route. The reported local candidate remains uncommitted/unpublished, all gates remain open, and the route was introduced on main `0876466a41d63ecc7a9283971118913fa9602f6c` and adopted by PR #490 at current main `e9911ab00fbc58c7b2b7f56b5c51d876760fca73`.
 ## Continuity and AI-context delivery audit (2026-10-24)
 
 The [static continuity-algorithms audit](./CHAT-ARCH-2026-10-24-CONTINUITY-ALGORITHMS-STATIC-AUDIT.md) records the source-level producer-to-consumer links, the stale committed snapshots, the 24-hour non-refresh policy in `portable_context_get`, the initial-goal ordering risk, and the limits of session-briefing delivery evidence. It is static evidence only and does not change the active source task in `CURRENT-STATE.md`.
