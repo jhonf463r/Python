@@ -1,7 +1,7 @@
 # Canonical continuity, Space-Time cognition, and adaptive neuroplasticity protocol
 
 - Protocol ID: `CONTINUITY_SPACE_TIME_ANTI_LOOP` (stable identity; operating method evolves in place)
-- Living operating revision: `2.0 — ADAPTIVE_SPACE_TIME_NEUROPLASTICITY`
+- Living operating revision: `2.1 — ADAPTIVE_SPACE_TIME_NEUROPLASTICITY + MACHINE_GENERATED_EVIDENCE_HANDOFF`
 - Evolution rule: integrate new lessons into their owning core rule; preserve dated incidents/history; do not accumulate competing append-only protocols
 - Owner instruction date: 2026-10-23 (America/Bogota)
 - Scope: objective-bound reasoning, temporal evidence graph, adaptive role activation, gated action chains, memory consolidation, delivery receipts and outcome-based protocol evolution
@@ -224,6 +224,23 @@ For each meaningful bounded task, persist a concise receipt when authorized and 
 
 Before delivering a new-chat brief, bind it to the verified current route and identify its destination. For another AI/session, include the exact prompt, source baseline, prior-art links, role contract, action contract, acceptance criteria and prohibited side effects. Distinguish `PREPARED`, `SENT`, `ACKNOWLEDGED`, `CONSUMED`, `REUSED` and `OUTCOME_VERIFIED`; claim only the state supported by a receipt. GitHub records do not prove that a newly opened ChatGPT or Codex session has read them. No automatic-delivery claim without a supported destination and correlated evidence.
 
+### Evidence handoff: prefer producer-generated, one-package transfer
+
+When review depends on files that exist only in another AI's/local execution session, the coordinator owns the evidence-transfer plan. Do not default to asking the Owner to locate, export, rename or assemble multiple files when the producing session can create one exact evidence package. A local Windows path reported by Codex is not readable from this ChatGPT session; a GitHub or Library filename with similar wording is not a substitute.
+
+Apply this route in order:
+
+1. **Recover before requesting.** Search current-conversation attachments, the Library and the exact canonical/branch/PR references using the task ID and expected filenames. Record which source surfaces were checked. Do not repeat a search already known to be exhausted without a changed precondition.
+2. **Have the producer create one bundle.** If the original Codex session and workspace are available, provide one bounded, copy-ready prompt asking that session to collect the already-produced evidence read-only and write a single ZIP outside the source checkout. The ZIP must contain the exact task artifacts, a SHA-256/size/path manifest, the task and candidate identities, relevant before/after status and index identity, and the separately preserved pre-existing staged/unstaged diffs required for preservation review. Preserve source artifacts byte-for-byte; do not regenerate a look-alike patch from a later worktree and label it as the original.
+3. **Use an existing supported private route first.** If a working, authorized, machine-readable private storage/attachment route exists, use it and verify artifact identity at the destination. Do not invent a connector or claim a send/receipt that the session cannot observe.
+4. **Treat public GitHub as publication, not temporary storage.** Verify repository visibility before choosing it. A public branch, PR, commit, or artifact may remain reachable through Git object/history after branch/PR deletion; do not call that an automatic expiry after “a few hours.” Never publish unreviewed security diffs, dirty pre-existing changes, private data or secrets to a public repository by default. A public evidence branch is permitted only after the exact packet is screened, the Owner has explicitly authorized public disclosure of those exact contents, the dedicated evidence-only destination and cleanup operation are specified, and the receipt says deletion cannot erase prior public exposure. Never put evidence-only artifacts on `main` or mix them into a product-code commit.
+5. **Ask the Owner for one transfer only, if still necessary.** If no supported private route can deliver the bundle to the reviewer, ask for one upload of the producer-generated ZIP—not separate files and not a manually assembled packet. Explain the one unavoidable action and exact expected filename. Do not ask the Owner to perform work the producing actor can do.
+6. **If packaging/transfer is unavailable, report the precise blocked edge.** Name the unavailable actor, destination or route, and the minimum artifact that cannot cross the boundary. Preserve `ROUTE_SURFACE_MISMATCH` / `ACTION_UNEXECUTABLE_NO_EVIDENCE`; do not turn it into technical absence or bypass denied access through another tool.
+
+The evidence package is not a license to broaden the task. Exclude credentials, tokens, private keys, environment files, databases, unrelated workspace contents and any other out-of-scope material. If a required preservation diff may contain sensitive or private data, do not upload it to public storage; use an authorized private route or stop with the exact limitation. A manifest should identify each member's relative path, bytes, SHA-256, producer/source checkout, base/HEAD, generation time and whether the member is original or derived. Keep `task diff`, `pre-existing staged diff`, and `pre-existing unstaged diff` as separate evidence objects.
+
+If this ChatGPT session cannot invoke the existing Codex session, prepare the full bounded prompt inline for the named existing session and set `HANDOFF=PREPARED_NOT_SENT`. Do not tell the Owner it was sent, do not force them to fetch the prompt from GitHub, and do not ask them to reconstruct the task history. The goal is to reduce a multi-file/manual exchange to one machine-produced, identity-verifiable package plus at most one unavoidable transfer action.
+
 A canonical writeback must use the permitted repository route, preserve unrelated work, expose the complete diff, verify changed paths and content, be reviewed and merged only under the governing workflow, then be fetched back from live `main`. A candidate branch/PR is not adopted memory.
 
 Every substantive answer/new-chat intake should cover, in concise Spanish:
@@ -298,9 +315,14 @@ Apply these refinements together with sections 1–11. They improve evidence han
 
 ### 12.2 Source custody and independent attribution are separate checks
 
-- If a delegated executor says a supplied attachment is unavailable, inspect the actually available source/package through supported routes. Do not replace it with a file that merely has a similar display name.
+- Do not turn an evidence-route mismatch into manual work for the Owner by default. Search the actually available conversation/library/repository surfaces first; when the exact source is local to an available delegated session, have that source actor generate one bounded ZIP evidence packet outside the checkout.
+- The packet must preserve exact task diffs and the original staged/unstaged preservation artifacts as distinct members, with a manifest of paths, byte lengths, SHA-256 digests, source revision, task ID, generation time and before/after status/index identity. Do not include unrelated workspace files, secrets, tokens, private keys, databases or environment contents.
+- Prefer an already supported, authorized private route. Verify the destination bytes against the manifest. If one ZIP attachment is the only supported private transfer, request one producer-generated ZIP—not several files or a user-assembled bundle.
+- The repository `jhonf463r/Python` is confirmed public at the current route snapshot. Do not put unreviewed security diffs or pre-existing dirty diffs there by default. Deleting a public branch or PR is not a privacy guarantee or verified expiry. Public artifact publication needs explicit disclosure authorization for the exact packet, a content screen, a dedicated evidence-only branch and a documented cleanup action; nothing is committed to `main`.
+- If a required pre-existing diff contains sensitive content, preserve its local byte identity and stop the external transfer until a supported private route can carry it safely. A redacted/substituted diff must never be represented as the original.
 - Before archiving, compare the exact source member, manifest checksum and destination bytes. A mismatch means stop and resolve provenance; do not continue on the substitute or silently rewrite it. Preserve the accepted report byte-for-byte.
 - Hash equality establishes byte identity only. It does not authenticate a model invocation, the reported reviewer, or the truth of the report's claims. Model availability/selection is not execution evidence.
+- If this session cannot dispatch to the delegated actor, state `HANDOFF=PREPARED_NOT_SENT` and present the complete prompt inline to the existing session; do not claim dispatch and do not make the Owner retrieve the prompt from a repository link.
 
 ### 12.3 A route failure is not evidence of global absence
 
@@ -572,6 +594,12 @@ TERMINAL_RESULT_CONSUMED_BY_ROUTER=TRUE
 LAST_TERMINAL_TASK_IS_NOT_STILL_PENDING=TRUE
 NEXT_ACTION_DOES_NOT_REPEAT_COMPLETED_TASK=TRUE
 UNKNOWN_NOT_INSPECTED_NOT_RUN_PRESERVED=TRUE
+ARTIFACT_ROUTES_CHECKED_BEFORE_OWNER_BURDEN=TRUE
+PRODUCER_GENERATES_ONE_EVIDENCE_BUNDLE_WHEN_AVAILABLE=TRUE
+EXACT_TASK_ARTIFACTS_NOT_REPLACED_BY_SIMILAR_NAMED_FILES=TRUE
+TRANSFER_VISIBILITY_RETENTION_AND_CLEANUP_REVIEWED=TRUE
+PUBLIC_GITHUB_DELETION_NOT_TREATED_AS_EXPIRY=TRUE
+ONE_BUNDLE_PREFERRED_TO_MULTIPLE_MANUAL_UPLOADS=TRUE
 AUTOMATIC_FOLLOW_ON=FALSE; NO_NEW_TECHNICAL_ACTION_STARTED
 FRONT_DOOR_SUMMARIES_MATCH_CURRENT_STATE=TRUE
 CANONICAL_CLAIM_REQUIRES_MAIN_FETCH_BACK=TRUE
