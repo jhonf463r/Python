@@ -1,7 +1,7 @@
 # Canonical continuity, Space-Time cognition, and adaptive neuroplasticity protocol
 
 - Protocol ID: `CONTINUITY_SPACE_TIME_ANTI_LOOP` (stable identity; operating method evolves in place)
-- Living operating revision: `2.2 — ADAPTIVE_SPACE_TIME_NEUROPLASTICITY + OWNER_CONTEXT_AWARE_TURN_ROUTING + VERIFIED_CONTEXT_HANDOFF`
+- Living operating revision: `2.3 — ADAPTIVE_SPACE_TIME_NEUROPLASTICITY + OWNER_CONTEXT_AWARE_TURN_ROUTING + VERIFIED_CONTEXT_HANDOFF + OWNER_FACING_DELIVERY_PREFLIGHT`
 - Evolution rule: integrate new lessons into their owning core rule; preserve dated incidents/history; do not accumulate competing append-only protocols
 - Owner instruction date: 2026-10-23 (America/Bogota)
 - Scope: objective-bound reasoning, temporal evidence graph, adaptive role activation, gated action chains, memory consolidation, delivery receipts and outcome-based protocol evolution
@@ -260,6 +260,17 @@ The evidence package is not a license to broaden the task. Exclude credentials, 
 If this ChatGPT session cannot invoke the existing Codex session, prepare the full bounded prompt inline for the named existing session and set `HANDOFF=PREPARED_NOT_SENT`. Do not tell the Owner it was sent, do not force them to fetch the prompt from GitHub, and do not ask them to reconstruct the task history. The goal is to reduce a multi-file/manual exchange to one machine-produced, identity-verifiable package plus at most one unavoidable transfer action.
 
 A canonical writeback must use the permitted repository route, preserve unrelated work, expose the complete diff, verify changed paths and content, be reviewed and merged only under the governing workflow, then be fetched back from live `main`. A candidate branch/PR is not adopted memory.
+
+### Owner-facing delivery preflight (revision 2.3)
+
+Before sending an answer that hands work to the Owner or another AI, classify the requested output and verify that the answer's form matches the request. An actionable prompt intended for copy/paste must appear complete and self-contained inline; links and attachments are supplementary, not the only delivery route.
+
+Keep each communication stage separate:
+`LOCAL_ARTIFACT_CREATED` ≠ `UPLOAD_COMPLETED` ≠ `DESTINATION_VERIFIED` ≠ `CODEX_CONSUMED` ≠ `OUTCOME_VERIFIED`.
+
+A transfer claim requires the real tool receipt and completion state; poll asynchronous transfers until completed. Verify the exact destination and returned metadata, and read back/check a digest when supported. Before sending, check every past-tense operational claim against a tool receipt or direct observation. When that evidence does not exist, report the accurate state (for example, `PREPARED_NOT_SENT` or `UPLOAD_NOT_ATTEMPTED`) instead of claiming success. Do not make the Owner navigate to a link just to retrieve a prompt that should be in the message.
+
+This refines the existing Owner coordination rule in section 13.2.1 of `CHAT-ARCH-2026-10-22-adhd-aware-project-coordination-and-space-time-focus-protocol.md`; it is not a parallel protocol or proof of automated dispatch. The incident and correction are recorded in [the owner-facing delivery preflight receipt](./CHAT-ARCH-2026-10-25-OWNER-FACING-DELIVERY-PREFLIGHT-CORRECTION.md). Behavioral reuse across chats remains unproven until a later relevant task supplies evidence.
 
 Every substantive answer/new-chat intake should cover, in concise Spanish:
 1. **Estado actual:** North Star, active/wait task and verified revision.
