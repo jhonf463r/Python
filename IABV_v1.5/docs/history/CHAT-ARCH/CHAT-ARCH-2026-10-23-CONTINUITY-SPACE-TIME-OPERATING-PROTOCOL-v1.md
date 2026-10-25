@@ -252,3 +252,21 @@ The detailed incident and required Codex handoff fields are in [the route-gate c
 
 
 The related [continuity algorithms static audit](./CHAT-ARCH-2026-10-24-CONTINUITY-ALGORITHMS-STATIC-AUDIT.md) is a separate workstream. Do not preempt the active trust-organ wiring task with an unrelated context refactor; schedule it only after the current candidate delta is reviewed and the next scope is reconciled.
+
+
+## 15. Transcript chronology is evidence, not routing authority (2026-10-24)
+
+A copied chat transcript and live GitHub can describe different points in the task sequence. The final prompt visible in a transcript is not necessarily the current task: a later report or documentation adoption may already have advanced the canonical route. This exact mismatch is a known coordination hazard and must be handled as an explicit intake step, not by guessing which chronology is newest.
+
+When the Owner supplies a Codex response:
+
+1. Extract its exact `TASK=` identifier and compare it with the prompt it claims to answer. Do not infer task identity from the message order alone.
+2. Refresh live `refs/heads/main` and read `CURRENT-STATE.md`; recorded SHAs are historical snapshots. Current state governs the next action, while the response is evidence about the task it actually executed.
+3. If the response belongs to a task already superseded by the current route, evaluate it against that task's acceptance criteria and record any genuinely new delta, contradiction, or blocker. Do not rewind `ACTIVE_TASK`, reissue the same prompt, or treat an Owner-reported local change as canonical merely because it came last in the transcript.
+4. Reconcile checkout path, branch, HEAD before/after, base/main freshness, worktree status, staged/unstaged changes, exact blobs/diff, source locations, and checks written versus checks executed. A reused branch name does not prove the candidate is unchanged.
+5. Preserve provenance: GitHub main/PR state may be directly verified; local Codex claims remain `OWNER_REPORTED` until the source delta is accessible and reviewed. Never promote written tests to passed tests or source intent to runtime behavior.
+6. Choose the follow-on only after intake, from the live route and the Owner's exact authorization. A new report can refine the evidence state; it does not itself create root authority, change security facts, or expand permissions.
+
+For the current case, the transcript's last visible prompt is the AppBootstrap registration task, while live `CURRENT-STATE.md` routes to `M1A_G1_OWNER_CONTROLLED_BOOTSTRAP_ISSUER_BOUNDARY`. A response for the former must be reconciled as result-intake evidence and must not silently reset the active route. See [route-gate calibration, section 11](./CHAT-ARCH-2026-10-24-ROUTE-GATE-CALIBRATION-KNOWLEDGE-DELTA.md#11-follow-up-calibration--transcript-task-versus-live-route-2026-10-24).
+
+This protocol update is durable project guidance, not model-weight training. It does not change the active technical route, Owner authorization, the eight open prerequisites, or fail-closed behavior.
