@@ -1,5 +1,57 @@
+<!-- CURRENT ROUTE OVERRIDE: latest Owner decision in this chat; bounded source work only. Preserve the prior terminal result below as history. -->
+## CURRENT-STATE ROUTING — one bounded source-organ remediation reopened by explicit Owner decision (2026-10-24)
+
+The Owner's latest instruction explicitly requests proceeding toward completion of the authorization organ or identifying/removing the real bridge blocker, with the existing continuity records used to avoid repeating completed work. This changes the permitted scope for **one bounded source-only remediation task**; it adds no new authority asset or independent root evidence.
+
+Decision receipt: [Owner reopening of bounded source-organ remediation](./CHAT-ARCH-2026-10-24-M1A-G1-OWNER-REOPEN-BOUNDED-SOURCE-ORGAN-DECISION-RECEIPT.md).
+
+The previously supplied 12-path staged/unstaged candidate diff bundle remains statically reviewed and SHA-256-verified. Do not repeat that review or ask the Owner for the same files. The actual existing Windows checkout is not accessible from this GitHub surface and its path, branch, HEAD, staged/unstaged state, and affected-file hashes must be revalidated by Codex before edits. Do not treat old checkout metadata as current or use public-main files as a substitute for the dirty candidate.
+
+The one permitted task is a minimal source-only correction in the existing local candidate plus focused source-test authoring, using the decision receipt's four bounded items: (1) strict boolean typing for `mandate.revoked`; (2) reconcile required `server_id`/`issuer_id` fields with the manifest schema version and candidate-owned fixtures/consumers; (3) add the missing explicit `AUTHORITY_TARGET_INVALID` assertion; and (4) determine whether genuine exact-target/same-object binding can be implemented using existing source/platform contracts. The reader must consume the exact identity-bearing target authorized by the decision, not independently resolve the original relative path. If that guarantee depends on a protected platform/issuer boundary not available in this scope, preserve denial and return the precise blocker; do not use mocks or a fabricated root to enable ALLOW.
+
+```text
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+ACTIVE_TASK=M1A_G1_BOUNDED_SOURCE_ORGAN_REMEDIATION
+PREVIOUS_TASK=M1A_G1_WAIT_FOR_GENUINELY_NEW_INDEPENDENT_ROOT_AND_MANDATE_EVIDENCE
+OWNER_DECISION=REOPEN_ONE_BOUNDED_SOURCE_ONLY_REMEDIATION_AND_SOURCE_TEST_AUTHORING
+OWNER_DECISION_RECEIPT=CHAT-ARCH-2026-10-24-M1A-G1-OWNER-REOPEN-BOUNDED-SOURCE-ORGAN-DECISION-RECEIPT.md
+SOURCE_CANDIDATE_WORKTREE=OWNER_REPORTED; MUST_REVALIDATE_IN_EXISTING_CHECKOUT
+SOURCE_IMPLEMENTATION=AUTHORIZED_FOR_ONE_BOUNDED_TASK_ONLY
+SOURCE_TEST_AUTHORING=AUTHORIZED_FOR_ONE_BOUNDED_TASK_ONLY
+TEST_EXECUTION=NOT_AUTHORIZED; NOT_RUN
+BUILD=NOT_AUTHORIZED; NOT_RUN
+RUNTIME=NOT_AUTHORIZED; NOT_RUN
+MCP=NOT_AUTHORIZED; NOT_RUN
+REAL_TRANSPORT=NOT_AUTHORIZED; NOT_RUN
+PROTECTED_READS=FAIL_CLOSED
+CREDENTIAL_CREATION_OR_ENROLLMENT=NOT_AUTHORIZED
+SERVICE_INSTALLATION=NOT_AUTHORIZED
+OS_ACL_TRUST_STORE_OR_IPC_SETUP=NOT_AUTHORIZED
+SOURCE_CANDIDATE_STAGING_COMMIT_PUSH_OR_PUBLICATION=NOT_AUTHORIZED
+DEPLOYMENT_OR_SPENDING=NOT_AUTHORIZED
+AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+QUALIFYING_INDEPENDENT_ROOT=NOT_ESTABLISHED
+OWNER_TO_WINDOWS_PRINCIPAL=NOT_ESTABLISHED
+BOOTSTRAP_AUTHORITY_TO_ISSUER=NOT_ESTABLISHED
+ISSUER_TO_EXACT_SERVER=NOT_ESTABLISHED
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3_VERSIONED_TARGET_RESOLVER=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+GOVERNANCE=KEEP_BLOCKED
+BRIDGE=BRIDGE_NOT_READY
+COST_POLICY=ZERO_BUDGET
+AUTOMATIC_FOLLOW_ON=FALSE
+NEXT_ACTION=RUN_ONE_BOUNDED_SOURCE_ORGAN_REMEDIATION_IN_EXISTING_CANDIDATE_WITH_SOURCE_TEST_AUTHORING_ONLY
+STOP_CONDITION=RETURN_EXACT_DIFF_AND_OPEN_REAL_TRUST_PLATFORM_BINDINGS; DO_NOT_LOOP_OR_ENABLE_PROTECTED_READS
+```
+
+This is an authorized source-candidate step, not a claim that the organ or bridge is complete. The previously terminal review remains valid for its evidence set. No root, mandate, authenticated Owner-to-host identity, protected issuer process/IPC, G2 policy, or G3 exact-object binding is presumed present. The result must separate source defects corrected from dependencies that require genuine trust/platform evidence. No tests, build, runtime, transport, credentials, OS configuration, protected reads, publication, or spend.
+
+---
+
 <!-- Canonical routing adopted from documentation-only PR #493 by squash merge; fetch-back verified. CURRENT-STATE.md is the sole route authority. -->
-## CURRENT-STATE ROUTING — source-only bootstrap attempt terminal; wait for genuinely new authority evidence (2026-10-24)
+## HISTORICAL CHECKPOINT — prior wait-for-evidence route before latest Owner decision (2026-10-24)
 
 The supplied full staged/unstaged candidate diffs have received independent byte verification and read-only static review. The hashes match Codex's reported export hashes. This establishes the identity of the uploaded diffs, not local checkout status or executed behavior. See [independent whole-candidate review result](./CHAT-ARCH-2026-10-24-M1A-G1-INDEPENDENT-WHOLE-CANDIDATE-STATIC-REVIEW-RESULT.md).
 
