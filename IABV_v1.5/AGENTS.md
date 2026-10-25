@@ -1,3 +1,55 @@
+<!-- Terminal transition: 2026-10-25. CURRENT-STATE.md remains the sole routing authority. -->
+## CURRENT ROUTE — G3 source remediation terminal; approved-root provider absent; waiting for new authority evidence (2026-10-25)
+
+The Owner-authorized task `M1A_G1_OWNER_AUTHORIZED_ONE_BOUNDED_G3_SOURCE_REMEDIATION_20261025` returned `BLOCKED_APPROVED_WORKSPACE_ROOT_PROVIDER_ABSENT` in the terminal Codex report supplied in this conversation. Codex reports that it stopped before creating a candidate or changing source. The local source lines, checkout preservation and index hashes are **reported by Codex**, not independently re-observed here. The report says the evidence ZIP was blocked by policy; no alternate transfer or public source publication was attempted.
+
+Terminal receipt: [G3 remediation blocked by absent approved-root provider](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-25-M1A-G1-G3-REMEDIATION-BLOCKED-APPROVED-ROOT-PROVIDER-RECEIPT.md).
+Prior terminal source review: [G3 static-review failure receipt](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-25-M1A-G1-G3-STATIC-REVIEW-FAIL-RECEIPT.md).
+Consumed authorization: [Owner authorization for one bounded G3 remediation](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-25-M1A-G1-OWNER-AUTHORIZED-ONE-BOUNDED-G3-REMEDIATION-RECEIPT.md).
+Consolidated handoff: [current G3/Space-Time handoff](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-25-M1A-G1-CONSOLIDATED-NEW-CHAT-HANDOFF.md).
+
+### Terminal finding
+
+The report says `AppBootstrap` registers `ReadAuthorizationCoordinator.unconfigured()` without a productive `approved_workspace_root_provider`; workspace configuration supplies a path or `Path.cwd()`, not an approved capability; and the server denies when the provider is unavailable. The prior source composition finding is therefore reinforced, but local file claims remain reported because no exact source package was transferred. The ZIP creation denial is a delivery/policy boundary, not permission to bypass it.
+
+The source task's authorization is consumed. Do not run another source-only task, repeat the broad source inventory, invent a trust provider, or substitute the workspace path for IABV's independent trust root. The next route is to wait for genuinely new, independently verifiable trust-root/mandate and approved-root policy/provider evidence, or a new explicit Owner decision for a different bounded prerequisite action. Existing `AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED` must remain distinct from proof that assets are absent.
+
+```text
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+LAST_TERMINAL_TASK=M1A_G1_OWNER_AUTHORIZED_ONE_BOUNDED_G3_SOURCE_REMEDIATION_20261025
+LAST_TERMINAL_RESULT=BLOCKED_APPROVED_WORKSPACE_ROOT_PROVIDER_ABSENT; OWNER_SUPPLIED_CODEX_REPORT
+ACTIVE_TASK=M1A_G1_WAIT_FOR_GENUINELY_NEW_INDEPENDENT_ROOT_AND_MANDATE_EVIDENCE
+ACTIVE_TASK_STATUS=WAITING_FOR_NEW_VERIFIABLE_EVIDENCE; NO_SOURCE_TASK_AUTHORIZED
+CODEX_REPORTED_MAIN_AT_TASK_OBSERVATION=735a0b2a04050291e41e7e9bc98e1efacd3fdf6b
+CANONICAL_MAIN_AT_RECONCILIATION=85ddf62107097458cdb6f9280e216a932918ea92
+CODEX_SOURCE_DELTA=0; REPORTED
+CODEX_CHECKOUT_PRESERVATION=REPORTED_UNCHANGED; NOT_INDEPENDENTLY_VERIFIED
+EVIDENCE_BUNDLE=NOT_GENERATED; POLICY_DENIED; NO_BYPASS
+APPROVED_WORKSPACE_ROOT_PROVIDER=NOT_ESTABLISHED_IN_REPORTED_COMPOSITION
+WORKSPACE_ROOT_IDENTITY_BOUND_TO_APPROVED_POLICY=NOT_ESTABLISHED
+AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+QUALIFYING_INDEPENDENT_ROOT=NOT_ESTABLISHED
+OWNER_TO_WINDOWS_PRINCIPAL=NOT_ESTABLISHED
+BOOTSTRAP_AUTHORITY_TO_ISSUER=NOT_ESTABLISHED
+ISSUER_TO_EXACT_SERVER=NOT_ESTABLISHED
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3_SAME_OBJECT=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+GOVERNANCE=KEEP_BLOCKED
+PROTECTED_READS=FAIL_CLOSED
+BRIDGE=BRIDGE_NOT_READY
+COST_POLICY=ZERO_BUDGET
+NEXT_ACTION=WAIT_FOR_GENUINELY_NEW_INDEPENDENT_ROOT_AND_MANDATE_EVIDENCE
+NEXT_REVIEW_TARGET=ONLY_NEW_VERIFIABLE_ROOT_MANDATE_OWNER_HOST_ISSUER_SERVER_OR_APPROVED_WORKSPACE_ROOT_POLICY_PROVIDER_EVIDENCE
+NEXT_TASK_STOP_CONDITION=NO_NEW_EVIDENCE; NO_REPEATED_SOURCE_INVENTORY; NO_INVENTED_TRUST_PROVIDER; FAIL_CLOSED
+PRODUCT_CODE_MODIFICATION=NOT_PERFORMED_BY_TERMINAL_TASK; REPORTED
+PRODUCT_STAGE_COMMIT_PUSH_MERGE=NOT_AUTHORIZED
+AUTOMATIC_FOLLOW_ON=FALSE
+```
+
+A source-only task cannot establish G1/G2 or real Windows semantics by itself. Protected reads remain denied. The current route is a wait state for a specific evidence dependency, not a claim that all possible trust assets are absent.
+
 <!-- Owner authorization transition: 2026-10-25. CURRENT-STATE.md remains the sole routing authority. -->
 ## CURRENT ROUTE — one bounded G3 source remediation authorized; result pending (2026-10-25)
 
