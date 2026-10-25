@@ -1,40 +1,39 @@
 <!-- Terminal transition: 2026-10-25. CURRENT-STATE.md remains the sole routing authority. -->
 
-## CURRENT ROUTE — independent clones confirmed; current working-tree delta is the next evidence action (2026-10-25)
+## CURRENT ROUTE — current tree delta verified; static review complete; integration remains blocked (2026-10-25)
 
-The Owner-supplied Windows Codex diagnostic reports that the pre-task-labelled and candidate-labelled directories are independent Git clones with distinct `.git`/Git-common directories and separate worktrees. They share reported HEAD `6bc568e1c5a898afd65cc045c779c25a9cdc5489` and branch `codex/m1a-g1-owner-governed-bootstrap-organ-20261024`; the six tracked files in the eight-row table have matching index blobs, while the eight listed working-tree file hashes and NTFS IDs differ. The two clones therefore have different present working-tree contents; this does not establish when or by whom the differences were introduced.
+The Dropbox-delivered evidence package has been reconstructed and independently verified: ZIP size 136,229 bytes; SHA-256 `3c60ff2df78bff45c6632e1d85ba93ef97172f7ab1564bfb03f995eb183fb217`; one manifest; all 25 declared non-manifest members match declared sizes and SHA-256 values. The direct present-directory delta contains eight different files and six identical files across the 14-path status union, with 473 additions and 156 deletions. The omitted `github_owner_merge_bootstrap.py` status entry is now reconciled. See [the current tree delta independent static review receipt](./CHAT-ARCH-2026-10-25-M1A-G1-CURRENT-TREE-DELTA-STATIC-REVIEW-RECEIPT.md).
 
-No Dropbox root or filesystem alias was confirmed in the paths inspected. Dropbox/other sync remains `UNKNOWN`; do not attribute the divergence to Dropbox without evidence. The diagnostic also names `github_owner_merge_bootstrap.py` as a third `MM` path, but that path is absent from the eight-row table. Reconcile the union of Git status paths before preparing another review artifact. See [the independent-clone/worktree diagnostic receipt](./CHAT-ARCH-2026-10-25-M1A-G1-INDEPENDENT-CLONES-WORKTREE-DIVERGENCE-DIAGNOSTIC-RECEIPT.md).
+The evidence package establishes a reproducible current comparison of two independent clones, not a historical proof that the pretask-labelled working tree matched declared base `fed7d50926a0c09b2fdd2e9d00cc71fa05a3e6d7` at task start. That baseline relationship remains unreconciled. The source delta has useful fail-closed binding and replay checks, but static review also found a close-failure cleanup defect and a non-deterministic concurrency test. No tests/build/runtime/MCP transport were run.
 
 ```text
 PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
-LAST_TERMINAL_TASK=M1A_G1_DIAGNOSE_SHARED_CHECKOUT_AND_FILESYNC_RELATIONSHIP_20261025
-LAST_TERMINAL_RESULT=INDEPENDENT_REPOSITORIES_CONFIRMED; WORKTREE_CHANGES_EXPLAINED; OWNER_SUPPLIED_CODEX_REPORT
-ACTIVE_TASK=M1A_G1_RECONCILE_CANDIDATE_PRETASK_DIFF_PROVENANCE_20261025
-ACTIVE_TASK_STATUS=CURRENT_TREE_DELTA_AND_PRESERVATION_PACKAGE_REQUIRED; NO_SOURCE_EDIT
+LAST_TERMINAL_TASK=M1A_G1_BUILD_CURRENT_DIRECTORY_DELTA_WITH_PRESERVED_GIT_STATES_20261025
+LAST_TERMINAL_RESULT=ZIP_INTEGRITY_VERIFIED; CURRENT_TREE_DELTA_RECONCILED; STATIC_REVIEW_NOT_ACCEPTED_FOR_INTEGRATION
+ACTIVE_TASK=M1A_G1_AWAIT_OWNER_DECISION_AFTER_CURRENT_TREE_DELTA_STATIC_REVIEW_20261025
+ACTIVE_TASK_STATUS=STATIC_REVIEW_COMPLETE; BASELINE_LINKAGE_UNRECONCILED; NO_NEW_SOURCE_EDIT_AUTHORIZATION
 CANDIDATE_HEAD=6bc568e1c5a898afd65cc045c779c25a9cdc5489; OWNER_REPORTED_LOCAL
 DECLARED_BASE=fed7d50926a0c09b2fdd2e9d00cc71fa05a3e6d7; HISTORICAL_PRETASK_RELATION_UNVERIFIED
-REPOSITORIES=INDEPENDENT_CLONES_CONFIRMED
-INDEX_BLOBS=MATCH_REPORTED_FOR_SIX_TRACKED_PATHS
-WORKTREE_CONTENTS=DIVERGENT_REPORTED; EIGHT_PATHS_LISTED
-UNTRACKED_PATHS=2_REPORTED
-DROPBOX_OR_SYNC=UNKNOWN
-PATH_INVENTORY=RECONCILE_GITHUB_OWNER_MERGE_BOOTSTRAP_PY_MENTION
-ORIGINAL_ZIP_SHA256=915efa1541aab2546522261a8c60bfa00e4004809156cdd5cfd50b01f9620c33
+CURRENT_TREE_DELTA=8_DIFFERENT_FILES; 6_IDENTICAL_FILES; 473_ADDITIONS; 156_DELETIONS
+CURRENT_TREE_DELTA_ZIP_SHA256=3c60ff2df78bff45c6632e1d85ba93ef97172f7ab1564bfb03f995eb183fb217
 ORIGINAL_DIFF_SHA256=6950fb87dcd6f57573f88bbd58b0b880bd0437e69eb5830d9f55a22ad9aa5f93
-NEXT_ACTION=PRODUCER_GENERATE_ONE_CURRENT_DIRECTORY_TO_DIRECTORY_DELTA_AND_PRESERVATION_PACKAGE
-NEXT_ACTION_SEMANTICS=CURRENT_TREE_DELTA_ONLY; NOT_HISTORICAL_TASK_ATTRIBUTION
+BASELINE_LINKAGE=UNRECONCILED; DO_NOT_PROMOTE_AS_PATCH_AGAINST_DECLARED_BASE
+KNOWN_STATIC_FINDINGS=HANDLE_CLOSE_FAILURE_STATE; NONDETERMINISTIC_CONCURRENCY_TEST
 G1=NOT_ESTABLISHED
 G2=NOT_ESTABLISHED
 G3_SAME_OBJECT=NOT_ESTABLISHED
 IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
 PROTECTED_READS=FAIL_CLOSED
 PRODUCT_STAGE_COMMIT_PUSH_MERGE=NOT_AUTHORIZED
+SOURCE_EDIT=NOT_AUTHORIZED_IN_THIS_TASK
 AUTOMATIC_FOLLOW_ON=FALSE
+NEXT_ACTION=OWNER_DECISION_ON_ONE_BOUNDED_ISOLATED_SOURCE_TASK_AND_CLEAN_BASELINE_STRATEGY
 HANDOFF=PREPARED_NOT_SENT
 ```
 
-Do not perform more Dropbox/synchronization searches or repeat the source implementation/tests just to fill the provenance gap. The next evidence action is a direct, repository-relative comparison of the two surviving directory trees with staged/unstaged/untracked state preserved separately. It can establish the current tree-to-tree delta, not the historical task-only delta without a contemporaneous pre-task receipt.
+The next proposed technical slice, if separately authorized, is to correct `OwnedWindowsHandle.close()` so failed native close attempts do not permanently mark an unclosed handle as closed, replace the timing-only concurrency assertion with deterministic synchronization, and verify the candidate from a clean, established base. Do not provision or invent trust-root, mandate, issuer-IPC, or approved-root providers to force positive protected reads.
+
 <!-- Previous route: Owner-authorized integrated fail-closed source candidate task is terminal; retained below as historical context. -->
 
 ## HISTORICAL ROUTE — Owner-authorized integrated fail-closed authorization-organ completion candidate returned (2026-10-25; terminal)
