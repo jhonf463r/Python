@@ -1,4 +1,49 @@
-## CURRENT ROUTE — G3 source candidate terminal; authorization-to-handle contract remains open (2026-10-25)
+<!-- Owner decision transition: 2026-10-25. CURRENT-STATE.md is the sole route authority. -->
+## CURRENT ROUTE — integrated G3 authorization-to-handle source candidate authorized; handoff pending (2026-10-25)
+
+The Owner explicitly authorized one integrated source-only G3 candidate after first auditing and reconciling the Mente Espacio-Tiempo continuity records. This route update records that decision and corrects stale front-door summaries; it does not claim Codex has received the prompt or that implementation has started.
+
+Owner decision receipt: [integrated G3 source-candidate authorization](./CHAT-ARCH-2026-10-25-M1A-G1-OWNER-DECISION-INTEGRATED-G3-SOURCE-CANDIDATE-RECEIPT.md).
+The task must connect an approved workspace-root capability → handle-relative resolver → authorization coordinator/permission → guard → same-handle file reader or directory enumerator. If approved root identity or native same-object semantics cannot be established, preserve deny-only behavior and return a precise blocker. The workspace root is not the independent IABV trust root.
+
+The continuity audit confirmed the living protocol revision 2.0 already defines the relevant transition discipline, including recording explicit Owner decisions, revising the canonical route and requiring fetch-back. The correction is to apply that rule—not create a second memory/orchestrator or rewrite valid history. Runtime freshness/delivery and later causal reuse remain unverified and are outside this G3 task.
+
+~~~text
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+ACTIVE_TASK=M1A_G1_G3_INTEGRATED_AUTHORIZATION_TO_HANDLE_SOURCE_CANDIDATE_20261025
+OWNER_DECISION=EXPLICIT_IN_CHAT; ONE_INTEGRATED_SOURCE_CANDIDATE; CONTINUITY_RECONCILIATION_FIRST
+TASK_STATUS=AUTHORIZED; HANDOFF_PREPARED_NOT_SENT
+SPACE_TIME_PROTOCOL=REVISION_2.0; EXISTING_RULE_APPLIED; NO_DUPLICATE_MEMORY_OR_ORCHESTRATOR
+CONTINUITY_RECONCILIATION=DOCUMENTARY_ROUTE_TRANSITION; FETCH_BACK_REQUIRED_FOR_CANONICAL_ADOPTION
+SOURCE_SCOPE=AUTHORIZATION_CONTRACT; ROOT_CAPABILITY; RESOLVER; SERVER_GUARD; HANDLE_BACKED_READERS; DIRECT_SOURCE_TESTS
+SOURCE_TESTS=AUTHORING_ALLOWED; NOT_RUN
+TESTS=NOT_RUN
+BUILD=NOT_RUN
+RUNTIME=NOT_RUN
+MCP=NOT_RUN
+REAL_TRANSPORT=NOT_RUN
+AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+QUALIFYING_INDEPENDENT_ROOT=NOT_ESTABLISHED
+WORKSPACE_ROOT_IDENTITY_BOUND_TO_APPROVED_POLICY=NOT_ESTABLISHED
+OWNER_TO_WINDOWS_PRINCIPAL=NOT_ESTABLISHED
+BOOTSTRAP_AUTHORITY_TO_ISSUER=NOT_ESTABLISHED
+ISSUER_TO_EXACT_SERVER=NOT_ESTABLISHED
+DURABLE_REPLAY_AND_ROLLBACK_PROTECTION=NOT_ESTABLISHED
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3_SAME_OBJECT=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+GOVERNANCE=KEEP_BLOCKED
+PROTECTED_READS=FAIL_CLOSED
+BRIDGE=BRIDGE_NOT_READY
+COST_POLICY=ZERO_BUDGET
+PRODUCT_STAGE_COMMIT_PUSH_MERGE=NOT_AUTHORIZED
+AUTOMATIC_FOLLOW_ON=FALSE
+NEXT_ACTION=HAND_OFF_ONE_BOUNDED_PROMPT_TO_EXISTING_WINDOWS_CODEX_SESSION; WAIT_FOR_TERMINAL_REPORT
+STOP_CONDITION=NO_SECOND_TASK_OR_GATE_RELEASE_WITHOUT_NEW_EVIDENCE_AND_EXPLICIT_AUTHORIZATION
+~~~
+
+## HISTORICAL ROUTE SNAPSHOT — G3 source candidate terminal; authorization-to-handle contract remains open (2026-10-25)
 
 The single authorized task M1A_G1_G3_NTCREATEFILE_HANDLE_RELATIVE_SOURCE_CANDIDATE_20261025 returned TASK_RESULT=BLOCKED_ON_NATIVE_HANDLE_BINDING_DETAILS with no source changes, according to the Owner-supplied Codex report.
 
