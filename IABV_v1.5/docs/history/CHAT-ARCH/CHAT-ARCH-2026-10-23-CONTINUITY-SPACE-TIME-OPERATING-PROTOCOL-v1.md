@@ -249,3 +249,6 @@ A new authorization changes only the second category. It does not establish a ro
 
 The detailed incident and required Codex handoff fields are in [the route-gate calibration knowledge delta](./CHAT-ARCH-2026-10-24-ROUTE-GATE-CALIBRATION-KNOWLEDGE-DELTA.md), sections 10 and 7. This rule is navigation and authorization reconciliation; it does not permit any side effect excluded by the latest Owner decision.
 
+
+
+The related [continuity algorithms static audit](./CHAT-ARCH-2026-10-24-CONTINUITY-ALGORITHMS-STATIC-AUDIT.md) is a separate workstream. Do not preempt the active trust-organ wiring task with an unrelated context refactor; schedule it only after the current candidate delta is reviewed and the next scope is reconciled.
