@@ -103,4 +103,4 @@ AUTOMATIC_FOLLOW_ON=FALSE
 NEXT_ACTION=MAINTAIN_FAIL_CLOSED_PENDING_PREEXISTING_INDEPENDENT_ROOT_AND_MANDATE_EVIDENCE
 ```
 
-The next user-supplied Codex result may be examined as a new report under the current allowed review scope, but it does not automatically authorize implementation, test execution, transport, or release. This document is a durable protocol/memory artifact; it does not automatically train model weights or change the running IABV algorithms.
+The next user-supplied Codex result may be inspected for provenance, exact candidate state, and whether any action exceeded the current authorization. That narrow intake check must not automatically reopen the terminal G1 review, designate a new technical review target, or authorize implementation, tests, transport, or release. A fuller source review requires a scope that is allowed by the live router or a new explicit bounded Owner authorization; it must not be treated as canonical adoption. This document is a durable protocol/memory artifact; it does not automatically train model weights or change the running IABV algorithms.
