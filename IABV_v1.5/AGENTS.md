@@ -6,7 +6,7 @@ The owner-supplied report is archived at [report](docs/history/CHAT-ARCH/CHAT-AR
 
 ```text
 PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
-ACTIVE_TASK=M1A_G1_WAIT_FOR_INDEPENDENT_ROOT_EVIDENCE
+ACTIVE_TASK=READ_LIVE_CURRENT_STATE; THIS_TERMINAL_SUMMARY_IS_NOT_THE_ROUTER
 LAST_TERMINAL_TASK=M1A_G1_REOPENED_GBA_ROOT_CEREMONY_ADVERSARIAL_STATIC_REVIEW
 LAST_TERMINAL_RESULT=BLOCKED_NO_NONCIRCULAR_ROOT; OWNER_SUPPLIED_REPORT; REVIEWER_ATTRIBUTION_NOT_INDEPENDENTLY_AUTHENTICATED
 LAST_TERMINAL_REPORT=CHAT-ARCH-2026-10-24-M1A-G1-gemini-adversarial-static-review-report.txt
@@ -20,8 +20,8 @@ G1=NOT_ESTABLISHED; G2=NOT_ESTABLISHED; G3_VERSIONED_TARGET_RESOLVER=NOT_ESTABLI
 IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
 GOVERNANCE=KEEP_BLOCKED; READ_LIST=FAIL_CLOSED; BRIDGE=BRIDGE_NOT_READY
 AUTOMATIC_FOLLOW_ON=FALSE
-NEXT_ACTION=MAINTAIN_FAIL_CLOSED_PENDING_PREEXISTING_INDEPENDENT_ROOT_AND_MANDATE_EVIDENCE
-NEXT_REVIEW_TARGET=NONE_UNTIL_GENUINELY_NEW_INDEPENDENT_EVIDENCE
+NEXT_ACTION=FETCH_LIVE_REFS_HEADS_MAIN_AND_READ_CURRENT_STATE; ROUTE_FROM_THAT_FILE_ONLY
+NEXT_REVIEW_TARGET=DETERMINE_FROM_LIVE_CURRENT_STATE; DO_NOT_USE_HISTORICAL_SUMMARY_AS_ROUTE
 ```
 
 The prior reopening was limited to design/static review and is now terminal. Its prompt and former `NEXT_ACTION` are historical, not a pending assignment; `docs/history/CHAT-ARCH/CURRENT-STATE.md` carries the routing record. PR #486 is the integration vehicle for this documentation update; its review status is tracked in GitHub. A merge to `main` adopts the record, and fetch-back from `main` verifies its presence. This section records the review outcome, not the PR lifecycle status. The documentation does not authenticate the reviewer, establish authority, close gates, or authorize implementation.
@@ -48,6 +48,9 @@ Every new IABV chat MUST apply the [Canonical continuity, space-time reasoning a
 ## CURRENT ACTIVE TASK — Owner-controlled bootstrap/issuer boundary (2026-10-24)
 
 Use [CURRENT-STATE.md](docs/history/CHAT-ARCH/CURRENT-STATE.md) as the sole active router. The latest Owner-reported Codex result says the read-authorization coordinator is now composed through AppBootstrap → MCPBridgeService → FastMCPServerRunner → IABVMCPServer and called by both MCP read handlers, but the local source remains uncommitted, unpublished, and not independently inspected; tests/runtime were not run. The next bounded source task is [M1A G1 Owner-controlled bootstrap/issuer boundary](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-24-M1A-G1-BOOTSTRAP-BOUNDARY-NEXT-HANDOFF.md). Do not repeat MCP wiring or broad feasibility research. Preserve all local staged/unstaged changes, fetch live `refs/heads/main` at task start; any SHA written in a handoff is a historical snapshot and must not be treated as current, reconcile stale origin refs non-destructively, and attempt only source + source-test changes. No enrollment/credential creation, platform probes/configuration, service install, persistent ACL/trust-store change, tests/build/runtime/transport, publishing, merge, deployment or spend. No root fabrication; all real reads remain fail-closed.
+
+Latest Owner-reported result for the bootstrap/issuer source attempt: three existing files were changed; typed contracts and source tests are reported, while the real Owner assertion verifier, independent root, durable replay store, protected registry and authenticated process/IPC/OS boundary remain absent. The local patch is not published or independently inspectable through GitHub; tests were written but not run. Do not issue another boundary-implementation prompt from this summary. Follow live `CURRENT-STATE.md`: obtain the exact staged/unstaged diff for targeted independent static review, preserving the dirty checkout. The report does not establish G1/G2/G3 or relax fail-closed reads.
+The consolidated review receipt now records F-01/F-02/F-03 corrections in the supplied module/test deltas. F-03 adds a nonblank exact-string `expected_registry_id`, exact equality with `persistence.registry_id`, and mismatch/invalid-value tests. This is static review of pasted diffs only: local worktree hashes/status remain `OWNER_REPORTED`, tests/build/runtime were not run, and the whole 12-path candidate has not been reviewed as a unit. Follow live `CURRENT-STATE.md`: obtain/review the full current staged and unstaged candidate diff in one bounded pass, without edits or execution, before any further implementation assignment. Do not continue one-hunk micro-patches. Receipt: `docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-24-M1A-G1-bootstrap-boundary-consolidated-static-review-receipt.md`. New-chat continuity packet and copy/paste prompt: `docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-24-M1A-G1-CONSOLIDATED-NEW-CHAT-HANDOFF.md`.
 
 
 

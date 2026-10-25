@@ -6,7 +6,7 @@ The owner-supplied report is archived at [report](./CHAT-ARCH-2026-10-24-M1A-G1-
 
 ```text
 PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
-ACTIVE_TASK=M1A_G1_WAIT_FOR_INDEPENDENT_ROOT_EVIDENCE
+ACTIVE_TASK=READ_LIVE_CURRENT_STATE; THIS_TERMINAL_SUMMARY_IS_NOT_THE_ROUTER
 LAST_TERMINAL_TASK=M1A_G1_REOPENED_GBA_ROOT_CEREMONY_ADVERSARIAL_STATIC_REVIEW
 LAST_TERMINAL_RESULT=BLOCKED_NO_NONCIRCULAR_ROOT; OWNER_SUPPLIED_REPORT; REVIEWER_ATTRIBUTION_NOT_INDEPENDENTLY_AUTHENTICATED
 LAST_TERMINAL_REPORT=CHAT-ARCH-2026-10-24-M1A-G1-gemini-adversarial-static-review-report.txt
@@ -20,8 +20,8 @@ G1=NOT_ESTABLISHED; G2=NOT_ESTABLISHED; G3_VERSIONED_TARGET_RESOLVER=NOT_ESTABLI
 IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
 GOVERNANCE=KEEP_BLOCKED; READ_LIST=FAIL_CLOSED; BRIDGE=BRIDGE_NOT_READY
 AUTOMATIC_FOLLOW_ON=FALSE
-NEXT_ACTION=MAINTAIN_FAIL_CLOSED_PENDING_PREEXISTING_INDEPENDENT_ROOT_AND_MANDATE_EVIDENCE
-NEXT_REVIEW_TARGET=NONE_UNTIL_GENUINELY_NEW_INDEPENDENT_EVIDENCE
+NEXT_ACTION=FETCH_LIVE_REFS_HEADS_MAIN_AND_READ_CURRENT_STATE; ROUTE_FROM_THAT_FILE_ONLY
+NEXT_REVIEW_TARGET=DETERMINE_FROM_LIVE_CURRENT_STATE; DO_NOT_USE_HISTORICAL_SUMMARY_AS_ROUTE
 ```
 
 The prior reopening was limited to design/static review and is now terminal. Its prompt and former `NEXT_ACTION` are historical, not a pending assignment; `CURRENT-STATE.md` carries the routing record. PR #486 is the integration vehicle for this documentation update; its review status is tracked in GitHub. A merge to `main` adopts the record, and fetch-back from `main` verifies its presence. This section records the review outcome, not the PR lifecycle status. The documentation does not authenticate the reviewer, establish authority, close gates, or authorize implementation.
@@ -30,7 +30,7 @@ The prior reopening was limited to design/static review and is now terminal. Its
 
 ## Next trust-organ task — Owner-controlled bootstrap/issuer boundary (2026-10-24)
 
-The latest candidate report says the AppBootstrap-to-MCP coordinator wiring is source-complete but not independently reviewed or executed. The next bounded source task is the [Owner-controlled bootstrap/issuer boundary handoff](./CHAT-ARCH-2026-10-24-M1A-G1-BOOTSTRAP-BOUNDARY-NEXT-HANDOFF.md); follow the current `CURRENT-STATE.md` route. The reported local candidate remains uncommitted/unpublished, all gates remain open, and the route was introduced on main `0876466a41d63ecc7a9283971118913fa9602f6c`, adopted by PR #490, and its metadata was corrected by PR #491. SHA values here are historical; fetch live `refs/heads/main` before every task.
+The [consolidated bootstrap-boundary static review receipt](./CHAT-ARCH-2026-10-24-M1A-G1-bootstrap-boundary-consolidated-static-review-receipt.md) records the supplied F-01/F-02/F-03 corrections and their test-diff evidence. The full receipt test diff contains the expected-registry mismatch and invalid-value cases. Tests remain `NOT_RUN`, and local checkout hashes/status remain `OWNER_REPORTED`. The next step is one complete review of the current staged and unstaged candidate across its 12 unique modified paths; do not continue micro-patching from individual hunks. Expected registry identity still must come from trusted host/provider context, while the real verifier/root/replay store/protected registry/issuer OS boundary remain unestablished. Follow `CURRENT-STATE.md`. The [new-chat handoff](./CHAT-ARCH-2026-10-24-M1A-G1-CONSOLIDATED-NEW-CHAT-HANDOFF.md) includes the exact preflight order, evidence limits, read-only diff request, and copy/paste prompt.
 ## Continuity and AI-context delivery audit (2026-10-24)
 
 The [static continuity-algorithms audit](./CHAT-ARCH-2026-10-24-CONTINUITY-ALGORITHMS-STATIC-AUDIT.md) records the source-level producer-to-consumer links, the stale committed snapshots, the 24-hour non-refresh policy in `portable_context_get`, the initial-goal ordering risk, and the limits of session-briefing delivery evidence. It is static evidence only and does not change the active source task in `CURRENT-STATE.md`.

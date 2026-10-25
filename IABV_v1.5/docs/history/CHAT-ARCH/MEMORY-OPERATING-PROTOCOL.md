@@ -6,7 +6,7 @@ The owner-supplied report is archived at [report](./CHAT-ARCH-2026-10-24-M1A-G1-
 
 ```text
 PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
-ACTIVE_TASK=M1A_G1_WAIT_FOR_INDEPENDENT_ROOT_EVIDENCE
+ACTIVE_TASK=READ_LIVE_CURRENT_STATE; THIS_TERMINAL_SUMMARY_IS_NOT_THE_ROUTER
 LAST_TERMINAL_TASK=M1A_G1_REOPENED_GBA_ROOT_CEREMONY_ADVERSARIAL_STATIC_REVIEW
 LAST_TERMINAL_RESULT=BLOCKED_NO_NONCIRCULAR_ROOT; OWNER_SUPPLIED_REPORT; REVIEWER_ATTRIBUTION_NOT_INDEPENDENTLY_AUTHENTICATED
 LAST_TERMINAL_REPORT=CHAT-ARCH-2026-10-24-M1A-G1-gemini-adversarial-static-review-report.txt
@@ -20,8 +20,8 @@ G1=NOT_ESTABLISHED; G2=NOT_ESTABLISHED; G3_VERSIONED_TARGET_RESOLVER=NOT_ESTABLI
 IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
 GOVERNANCE=KEEP_BLOCKED; READ_LIST=FAIL_CLOSED; BRIDGE=BRIDGE_NOT_READY
 AUTOMATIC_FOLLOW_ON=FALSE
-NEXT_ACTION=MAINTAIN_FAIL_CLOSED_PENDING_PREEXISTING_INDEPENDENT_ROOT_AND_MANDATE_EVIDENCE
-NEXT_REVIEW_TARGET=NONE_UNTIL_GENUINELY_NEW_INDEPENDENT_EVIDENCE
+NEXT_ACTION=FETCH_LIVE_REFS_HEADS_MAIN_AND_READ_CURRENT_STATE; ROUTE_FROM_THAT_FILE_ONLY
+NEXT_REVIEW_TARGET=DETERMINE_FROM_LIVE_CURRENT_STATE; DO_NOT_USE_HISTORICAL_SUMMARY_AS_ROUTE
 ```
 
 The prior reopening was limited to design/static review and is now terminal. Its prompt and former `NEXT_ACTION` are historical, not a pending assignment; `CURRENT-STATE.md` carries the routing record. PR #486 is the integration vehicle for this documentation update; its review status is tracked in GitHub. A merge to `main` adopts the record, and fetch-back from `main` verifies its presence. This section records the review outcome, not the PR lifecycle status. The documentation does not authenticate the reviewer, establish authority, close gates, or authorize implementation.
@@ -53,6 +53,9 @@ Apply the detailed [route-gate calibration knowledge delta](./CHAT-ARCH-2026-10-
 
 This is durable project guidance, not automatic model-weight training and not evidence that the running IABV algorithm has changed.
 - **Bootstrap boundary next step (2026-10-24):** the latest Owner-reported Codex result says the `AppBootstrap` → `MCPBridgeService` → `FastMCPServerRunner` → `IABVMCPServer` wiring is now written, but source is local-only and tests/build/runtime were not run. The route has advanced to `M1A_G1_OWNER_CONTROLLED_BOOTSTRAP_ISSUER_BOUNDARY`. Do not loop on wiring or broad review. Keep the staged/unstaged local candidate intact; the reported `origin/main=fed7d50926a0c09b2fdd2e9d00cc71fa05a3e6d7` was stale at report time. Fetch live `refs/heads/main` before each task; SHA values stored in continuity records are historical snapshots only and must never be treated as a permanent current-main alias. Next actor is Codex in the same Windows checkout; implement only a truthful Owner-controlled source boundary, with no credentials/enrollment/OS changes or test execution. See `CHAT-ARCH-2026-10-24-M1A-G1-BOOTSTRAP-BOUNDARY-NEXT-HANDOFF.md`.
+- **Consolidated bootstrap-boundary review (2026-10-24):** the focused source/test deltas supplied in chat contain F-01 canonical manifest digest equality, F-02 blob SHA/PR number checks, and F-03 exact expected-registry binding with negative tests. Static review is limited to pasted diffs; local checkout/hashes/status remain `OWNER_REPORTED`; tests/build/runtime/transport are `NOT_RUN`. The expected registry ID must come from trusted host/provider context, while typed outcomes do not prove durable operations. The entire dirty candidate has 12 unique paths and has not been reviewed as one unit; next obtain its full current staged and unstaged diff for one consolidated static review before any new implementation assignment. See `CHAT-ARCH-2026-10-24-M1A-G1-bootstrap-boundary-consolidated-static-review-receipt.md`. New-chat startup prompt and durable continuity handoff: `CHAT-ARCH-2026-10-24-M1A-G1-CONSOLIDATED-NEW-CHAT-HANDOFF.md`.
+
+- **Transcript-versus-live-route intake (2026-10-24):** a supplied Codex response must first be matched to its exact `TASK=` and original acceptance criteria. The last visible prompt in a copied chat is not routing authority. If it belongs to an already superseded task, record/reconcile it as historical result evidence and keep the live `CURRENT-STATE.md` route unless the evidence or a new explicit Owner decision warrants a transition. Compare the reported checkout/HEAD and staged/unstaged deltas; do not assume continuity from a reused branch name. See section 11 of the [route-gate calibration knowledge delta](./CHAT-ARCH-2026-10-24-ROUTE-GATE-CALIBRATION-KNOWLEDGE-DELTA.md) and section 15 of the continuity protocol.
 
 - Continuity audit (2026-10-24): source wiring exists for DecisionAuditTrail → OSES → PortableContextService → TaskContextAssembler/AdaptiveTaskOrchestrator and optional SessionStartBriefingService delivery, but end-to-end runtime delivery is not proven. Git-tracked portable-context and self-examination snapshots are from 2026-04-18; `portable_context_get(refresh=False)` allows at least 24-hour-old packages, and the initial perception snapshot is built before GoalEngine attaches session goal context. Keep this as a separate follow-up after the active trust-organ source task; do not invent another orchestrator. See `CHAT-ARCH-2026-10-24-CONTINUITY-ALGORITHMS-STATIC-AUDIT.md`.
 
@@ -4496,6 +4499,9 @@ Once defined, the contract becomes a candidate hypothesis and must be independen
 This is a deliberate handoff: source evidence → human semantics → independent challenge → engineering.
 
 Do not let the implementation actor silently decide the domain semantics.
+
+
+- **Static-review result for Owner bootstrap boundary (2026-10-24):** supplied staged/unstaged diffs were reviewed. The helper `validate_owner_bootstrap_evidence()` accepts a syntactically valid but challenge-unbound `manifest_sha256`; the positive fixture literally uses `"e"*64`. It also omits checking `manifest_git_blob_sha` format and a positive integer `pull_request_number`. Next action: correct the manifest digest equality and metadata validations, add rejection tests, preserve the dirty candidate, and do not execute tests/build/runtime. Review receipt: `CHAT-ARCH-2026-10-24-M1A-G1-bootstrap-boundary-static-review-receipt.md`.
 
 ## 2026-10-08 METHOD AMENDMENT — MINIMUM-REPAIR ADVERSARIAL CYCLE
 

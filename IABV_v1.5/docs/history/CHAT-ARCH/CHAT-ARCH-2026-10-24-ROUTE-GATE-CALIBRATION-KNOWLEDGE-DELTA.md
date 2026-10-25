@@ -195,3 +195,130 @@ The root/mandate dependency blocks issuing a positive protected-read authorizati
 
 The Owner decision receipt is [bounded source implementation authorization](./CHAT-ARCH-2026-10-24-M1A-G1-owner-bounded-source-implementation-authorization.md). This section corrects routing behavior; it is not itself an implementation or a gate pass.
 
+
+
+## 11. Follow-up calibration — transcript task versus live route (2026-10-24)
+
+### Observed coordination risk
+
+The supplied conversation ends with a detailed prompt for `M1A_G1_REGISTER_READ_AUTHORIZATION_IN_APPBOOTSTRAP`. Live `main`, however, already records that task as source-complete for routing purposes based on an `OWNER_REPORTED` Codex result, and selects `M1A_G1_OWNER_CONTROLLED_BOOTSTRAP_ISSUER_BOUNDARY` as the next task. The mismatch creates a predictable trap: following transcript chronology alone can reopen a completed composition edge, while following only the latest route without receiving the promised report can miss new evidence about the prior task.
+
+Neither mistake is acceptable. The transcript identifies what a response may be answering; the live router identifies what task is currently next. Treat these as separate dimensions and reconcile both.
+
+### Required Codex-result intake procedure
+
+1. **Bind the result to a task ID.** Extract the exact `TASK=` and compare it with the prompt answered. Do not infer task identity solely from position in the chat or from a branch name.
+2. **Refresh canonical authority.** Fetch live `refs/heads/main` and read `CURRENT-STATE.md` before choosing the next action. Commit SHAs recorded in previous prompts or reports are historical observations, not current aliases.
+3. **Audit the reported candidate identity.** Compare repository, checkout, branch, HEAD before and after, current remote main, clean/dirty state, and staged versus unstaged diffs. Preserve the existing work; do not reset, clean, overwrite, or infer unchanged content from a reused branch name.
+4. **Test the report against its original acceptance criteria.** For the AppBootstrap task, the discriminating edge was explicit registration/injection through `AppBootstrap → MCPBridgeService → FastMCPServerRunner → IABVMCPServer → read_repo_file/list_repo_directory`, with missing providers and composition failures staying DENY before resource helpers. Source location and diff evidence are required; class additions or self-reported completion alone do not establish this.
+5. **Keep evidence categories separate.** State what was directly observed in GitHub, what Codex reports locally, what source was independently inspected, which tests were written, and which tests/build/runtime/transport were actually run. In the authorized candidate scope here, execution remains `NOT_AUTHORIZED; NOT_RUN`.
+6. **Do not rewind routing by transcript order.** If the response belongs to the prior AppBootstrap task, intake it against that task, reconcile any new delta or contradiction, and then continue from the current bootstrap/issuer boundary route. Do not reissue AppBootstrap wiring or restart broad research unless the current canonical state and new evidence justify it.
+7. **Do not promote technical claims by implication.** The AppBootstrap wiring report does not establish an independent trust root, Owner-to-Windows-principal binding, a protected issuer/IPC boundary, production G1/G2/G3 providers, or a positive protected-read path.
+
+### State transition invariants
+
+```text
+TRANSCRIPT_LAST_PROMPT != CANONICAL_NEXT_ACTION_BY_DEFAULT
+CODEX_RESULT_TASK_ID = EXPLICITLY_MATCHED
+LIVE_MAIN = REFRESHED_BEFORE_ROUTE_DECISION
+LOCAL_CANDIDATE_FACTS = OWNER_REPORTED_UNTIL_INDEPENDENTLY_INSPECTED
+SUPERSEDED_TASK_RESULT = INTAKE_AND_RECONCILE; DO_NOT_REWIND_ROUTE
+ACTIVE_TASK = M1A_G1_OWNER_CONTROLLED_BOOTSTRAP_ISSUER_BOUNDARY
+OWNER_SOURCE_SCOPE = SOURCE_CODE_AND_SOURCE_TEST_AUTHORING_ONLY
+TEST_EXECUTION_BUILD_RUNTIME_TRANSPORT = NOT_AUTHORIZED; NOT_RUN
+G1_G2_G3 = NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES = 8; CLOSED = 0
+READ_LIST = FAIL_CLOSED
+GOVERNANCE = KEEP_BLOCKED
+BRIDGE = BRIDGE_NOT_READY
+AUTOMATIC_FOLLOW_ON = FALSE
+```
+
+This calibration improves task-result intake and continuity only. It does not change the route, widen Owner authorization, certify local code, close a gate, or turn documentation into model-weight training. It supplements section 10's stale-route-inertia rule: section 10 handles a new Owner decision that changes scope; section 11 handles a new report that may refer to an older prompt while the current route has already advanced.
+
+
+## 12. Follow-up calibration — Owner-controlled bootstrap boundary result intake (2026-10-24)
+
+### Reported outcome and provenance
+
+The Owner supplied a Codex report for `M1A_G1_OWNER_CONTROLLED_BOOTSTRAP_ISSUER_BOUNDARY` with `TASK_RESULT=SOURCE_CANDIDATE_ONLY`. It reports three existing paths changed and no new files:
+
+- `github_owner_merge_bootstrap.py`, reported working-tree blob `97d0295028e9da203548f26e86f3c1f75bc303b1`;
+- `test_github_owner_merge_bootstrap.py`, reported working-tree blob `1e32059a99091ccca4636b34ba00b80faeeecd9c`;
+- candidate `CURRENT-STATE.md`, reported working-tree blob `b62b6e3728a18e156db8d52bc070ff97a601211b`.
+
+The report says the local HEAD remained `6bc568e1c5a898afd65cc045c779c25a9cdc5489`, main at task time was `2cecd5e9b9e175584d65bbb1198a53bc2346d095`, and the branch diverged by 9 local commits and 4 remote commits, with overlapping local changes. No merge/rebase, test/build/runtime/MCP/transport or publication occurred. It reports seven staged paths retained, eleven unstaged paths at end, and no dependency changes. These are `OWNER_REPORTED`; GitHub did not find the candidate branch or HEAD, so it cannot inspect the local worktree or independently validate the blob claims. The exact diff was not attached to this intake.
+
+### Correct interpretation
+
+The report describes a useful narrowing of the boundary contract: `G1EnrollmentChallenge` binds `server_id` and `issuer_id`; typed verifier, credential-provider, challenge-store, trust-registry and boundary interfaces are present in source; source tests reportedly cover challenge bindings, expiry, Owner/issuer identity, server identity and policy version. However, the report expressly says that a real Owner assertion verifier, independent provisioned root, persistent challenge/replay store, protected trust registry, authenticated process/IPC and OS isolation do not exist. Validation against a public key supplied to a signature verifier does not authenticate the trustworthiness of that key. Therefore the result does not establish a usable positive authorization path or close G1/G2/G3.
+
+Do not overstate the candidate as security-complete; do not dismiss the source-contract work as zero progress either. It advances the explicit contract and records exact missing dependencies, while leaving the actual trust and isolation boundary unimplemented. Tests are written but `NOT_RUN`; `git diff --check` (reported PASS) is patch hygiene only, not behavioral evidence.
+
+### Next discriminating action
+
+The bootstrap handoff's stop condition is targeted static review of the exact source delta. Therefore:
+
+1. Obtain a read-only source-diff package from the same local Codex checkout, distinguishing `git diff --cached` (pre-existing staged work) from `git diff` (unstaged delta), with status, paths, before/after hashes and no staging/edits.
+2. Have an independent reviewer inspect the exact three-path delta against the bounded handoff: challenge binding and validation, evidence/identity source, store interface truthfulness, trust-registry semantics, fail-closed behavior, and whether candidate `CURRENT-STATE.md` preserves chronology and gates.
+3. Only after that review decide whether the candidate contract is source-correct within its scope or whether there is a specific source defect. If the boundary still requires disallowed enrollment/credential/ACL/process actions, record the exact authorization/evidence gap and preserve DENY; do not ask the Owner for root material prematurely or re-run broad platform research.
+
+Current canonical route transition is proposed as `M1A_G1_REVIEW_OWNER_CONTROLLED_BOOTSTRAP_BOUNDARY_SOURCE_DELTA`, with `NEXT_ACTION=OBTAIN_EXACT_STAGED_AND_UNSTAGED_SOURCE_DIFF_FOR_INDEPENDENT_STATIC_REVIEW`. This routing proposal remains noncanonical until its documentation PR is merged and fetched back. The local candidate remains uncommitted/unpublished; the PR does not modify it.
+
+```text
+LATEST_CODEX_RESULT=SOURCE_CANDIDATE_ONLY; OWNER_REPORTED
+SOURCE_PATCH_AVAILABLE_TO_REVIEWER=FALSE
+EXACT_DIFF=NOT_ATTACHED
+TESTS=WRITTEN; NOT_RUN
+BUILD_RUNTIME_MCP_TRANSPORT=NOT_RUN
+INDEPENDENT_ROOT=NOT_ESTABLISHED
+OWNER_ASSERTION_VERIFIER=NOT_IMPLEMENTED
+DURABLE_CHALLENGE_REPLAY_STORE=NOT_IMPLEMENTED
+PROTECTED_TRUST_REGISTRY=NOT_IMPLEMENTED
+AUTHENTICATED_PROCESS_IPC_OS_BOUNDARY=NOT_ESTABLISHED
+G1=NOT_ESTABLISHED; G2=NOT_ESTABLISHED; G3=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+READ_LIST=FAIL_CLOSED
+GOVERNANCE=KEEP_BLOCKED
+BRIDGE=BRIDGE_NOT_READY
+AUTOMATIC_FOLLOW_ON=FALSE
+```
+
+
+## 13. Follow-up calibration — manifest evidence must be bound, not merely well-shaped (2026-10-24)
+
+The supplied source diff for the Owner-controlled bootstrap boundary showed that `validate_owner_bootstrap_evidence()` validated `manifest_sha256` only by a SHA-256 regular expression. The synthetic positive fixture uses `"e"*64`, so a well-formed but incorrect digest is accepted. The helper also fails to check `manifest_git_blob_sha` shape and positive `pull_request_number`.
+
+This is a source-contract defect, not evidence of a runtime exploit: the production bootstrap adapter is absent and the protected-read positive path remains disabled. The minimum repair is to recompute the canonical challenge manifest digest and compare exact equality, validate SHA-1 blob syntax, validate a positive exact integer PR number, and test each mismatch. This is consistent with the project invariant that a data shape or matching identifier is not proof that evidence corresponds to the exact authorized object.
+
+The review was based on Owner-supplied diffs in chat. The local source blob identities have not been independently fetched from the checkout, and none of the source tests were executed. See `CHAT-ARCH-2026-10-24-M1A-G1-bootstrap-boundary-static-review-receipt.md`. The route in live `CURRENT-STATE.md` remains authoritative; the next bounded repair route described here is a proposal until adopted on main and fetched back.
+
+## 12. Follow-up calibration — source validation is not enrollment success (2026-10-24)
+
+The reported source correction closes two narrow static-review findings in the pasted delta: the manifest digest must equal the canonical digest of `challenge.expected_manifest()`, and merge metadata requires a valid SHA-1 blob form plus an exact positive pull-request integer. The corresponding source tests are written, not executed; local file hashes and preservation remain `OWNER_REPORTED`.
+
+A correct merge-evidence predicate is not a production enrollment. In particular, the current `OwnerControlledBootstrapBoundary.enroll()` return type is `OwnerMergeVerificationEvidence`, which does not itself state that the one-use challenge was consumed or the protected registry write persisted. Require a separate typed enrollment outcome/receipt contract before callers can treat enrollment as successful. The receipt is a source-level contract, not an OS isolation claim; tests remain unexecuted, and root, verifier, replay store, registry protection, issuer process binding and G1/G2/G3 stay unresolved.
+
+## 13. Follow-up calibration — require exact source delta for receipt review (2026-10-24)
+
+The latest Codex result claims an explicit enrollment receipt contract, supporting consumption/persistence records and source tests. The supplied message contains only a summary, so there is no independent source-level basis to accept those claims yet. Record `TASK_RESULT=SOURCE_CANDIDATE_ONLY`, not a static pass. Obtain the exact unstaged diff for the two authorized source/test files before reviewing it.
+
+The review should discriminate between typed status claims and actual trusted operations; validate exact challenge/Owner/issuer/server/merge bindings, strict value/time semantics, and failure after challenge consumption but before registry persistence. Synthetic `CONSUMED_ONCE`, `PERSISTED`, and `ENROLLED` fields cannot establish durable consumption or write success. Keep all security gates fail-closed and all runtime/test claims unchanged.
+
+## 14. Follow-up calibration — registry identity binding in enrollment receipt (2026-10-24)
+
+The supplied enrollment-receipt module diff partially satisfies its structural purpose, but the validator only requires `persistence.registry_id` to be a nonempty string. Without a trusted expected registry ID and exact equality check, a receipt naming a different registry can pass this binding check. Add the expected ID from trusted host/provider context (never from the receipt/request), and a negative source test for a different syntactically valid registry ID.
+
+Because the test diff included an ellipsis, its full contents and coverage are not reviewable yet. Ask for a complete exact test diff after the bounded correction. Do not promote synthetic status labels or references into proof of durable store/registry operations.
+
+## 15. Follow-up calibration — expected registry binding correction (2026-10-24)
+
+The latest supplied diff now requires a nonblank exact-string `expected_registry_id` and compares it to `persistence.registry_id`. The complete test diff supplied in the same message covers a mismatched but well-formed ID and invalid expected-ID types/values. Record `STATIC_REVIEW=F03_CORRECTION_PRESENT_IN_SUPPLIED_DIFF; FULL_TEST_DIFF_REVIEWED; TESTS_NOT_RUN`. This is not direct filesystem verification or a test pass.
+
+The expected ID's origin remains a trust dependency: a function parameter does not authenticate its provenance. Any future production caller must source the value from trusted host configuration/provider context, never from the receipt or request. A value object containing `CONSUMED_ONCE`, `PERSISTED` and `ENROLLED` still cannot prove durable state changes. Preserve all fail-closed gates.
+
+## 16. Consolidate candidate evidence after focused repairs (2026-10-24)
+
+F-01/F-02/F-03 have each been corrected in the focused deltas supplied in chat, with source tests written but not executed. Do not continue creating a new task for each small validator hunk. The current dirty checkout reportedly contains 12 unique modified paths, split across staged and unstaged changes. Obtain the complete current staged and unstaged diff for one bounded review of the whole bootstrap-boundary candidate, then make one evidence-based decision about what source-only work remains possible and what depends on excluded authority or platform actions.
+
+The consolidated receipt is `CHAT-ARCH-2026-10-24-M1A-G1-bootstrap-boundary-consolidated-static-review-receipt.md`. The copy/paste continuity prompt is `CHAT-ARCH-2026-10-24-M1A-G1-CONSOLIDATED-NEW-CHAT-HANDOFF.md`. This is a documentation-branch proposal, not canonical adoption. Tests/build/runtime/MCP/transport remain `NOT_RUN`; never treat typed receipt status fields or expected-ID parameters as proof of the actual trust source or durable operations.

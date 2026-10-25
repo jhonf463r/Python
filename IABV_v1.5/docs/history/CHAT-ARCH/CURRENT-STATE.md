@@ -1,30 +1,72 @@
-<!-- Current-state routing record: Owner-controlled bootstrap boundary is now the next bounded source task. -->
-## CURRENT-STATE ROUTING — Owner-controlled bootstrap/issuer boundary (2026-10-24)
+<!-- Current-state proposal only. Live main remains canonical until explicit authorized merge and exact fetch-back. -->
+## CURRENT-STATE PROPOSAL — source-only bootstrap attempt terminal; wait for genuinely new authority evidence (2026-10-24)
 
-The latest Owner-reported Codex result says the source-level composition task `M1A_G1_REGISTER_READ_AUTHORIZATION_IN_APPBOOTSTRAP` is written in the existing local candidate: `AppBootstrap` → `MCPBridgeService` → `FastMCPServerRunner` → `IABVMCPServer` → both MCP read handlers. The coordinator was intentionally created unconfigured, so the resulting runtime path remains fail-closed. This result has not been independently source-inspected because the candidate is local-only and unpublished; treat every code detail as `OWNER_REPORTED`, not accepted behavior.
+The supplied full staged/unstaged candidate diffs have received independent byte verification and read-only static review. The hashes match Codex's reported export hashes. This establishes the identity of the uploaded diffs, not local checkout status or executed behavior. See [independent whole-candidate review result](./CHAT-ARCH-2026-10-24-M1A-G1-INDEPENDENT-WHOLE-CANDIDATE-STATIC-REVIEW-RESULT.md).
 
-The next task is not more MCP wiring. It is `M1A_G1_OWNER_CONTROLLED_BOOTSTRAP_ISSUER_BOUNDARY`: attempt a truthful source-level Owner-controlled bootstrap that binds the authenticated Owner principal, protected issuer credential, policy revision and exact server identity. Do not fabricate trust, assume WebAuthn/Hello availability, use trust-on-first-use, or claim OS/process separation from class boundaries. If the required real enrollment/credential/ACL/process boundary cannot be implemented without an excluded platform action, report that exact dependency and keep positive authorization disabled.
+The candidate contains typed contracts/validators, signature checking under a supplied key, SQLite consume-once source logic and deny-only MCP containment. It does not establish a production Owner assertion verifier, protected issuer credential provider, independent enrollment root, challenge store/trust registry, authenticated issuer OS IPC/process separation or same-object target binding. The remaining trust boundary cannot be conjured by more contracts, mock providers, a local self-asserted key, or source-only test authoring.
 
-Handoff: [Owner-controlled bootstrap/issuer boundary — next task](./CHAT-ARCH-2026-10-24-M1A-G1-BOOTSTRAP-BOUNDARY-NEXT-HANDOFF.md).
-Decision receipt: [bounded source-implementation authorization](./CHAT-ARCH-2026-10-24-M1A-G1-owner-bounded-source-implementation-authorization.md).
-Context audit: [continuity algorithms static audit](./CHAT-ARCH-2026-10-24-CONTINUITY-ALGORITHMS-STATIC-AUDIT.md).
+The bounded source-construction attempt has therefore reached the precise stop condition in the canonical handoff: report the missing independent authority and protected host/issuer boundary; do not fabricate them. Relevant earlier terminal G1 receipts also recorded `BLOCKED_MISSING_G1_TRUST_ANCHOR` / `BLOCKED_NO_INDEPENDENT_ENROLLMENT_PATH`; the latest diff review does not supply new trust-root evidence. `AUTHORITY_ASSETS` remains `UNKNOWN; NOT_INSPECTED`, not absent.
+
+The Owner-directed Mente Espacio-Tiempo static audit is recorded in [the continuity audit delta](./CHAT-ARCH-2026-10-24-MENTE-ESPACIO-TIEMPO-CONTINUITY-AUDIT-DELTA.md). On this proposal branch, all four stale front-door route summaries have been neutralized to direct agents to live `CURRENT-STATE.md`. These changes remain noncanonical until adoption and fetch-back. The audit recommends correcting existing freshness/goal-order/delivery-receipt gaps only after scope reconciliation; do not create a duplicate memory/orchestrator.
 
 ```text
 PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
 ACTIVE_TASK=M1A_G1_OWNER_CONTROLLED_BOOTSTRAP_ISSUER_BOUNDARY
-PREVIOUS_TASK=M1A_G1_REGISTER_READ_AUTHORIZATION_IN_APPBOOTSTRAP
-PREVIOUS_TASK_RESULT=OWNER_REPORTED_SOURCE_CANDIDATE_ONLY; NO_TESTS_OR_RUNTIME
-OWNER_DECISION=BOUNDED_SOURCE_IMPLEMENTATION_AND_SOURCE_TEST_AUTHORING
-OWNER_DECISION_PROVENANCE=EXPLICIT_OWNER_CHAT_MESSAGE_2026-10-24
-OWNER_DECISION_RECEIPT=CHAT-ARCH-2026-10-24-M1A-G1-owner-bounded-source-implementation-authorization.md
-OWNER_DECISION_SCOPE=SOURCE_CODE_CHANGES_AND_SOURCE_TEST_AUTHORING_ONLY
-ROUTE_INTRODUCED_ON_MAIN=0876466a41d63ecc7a9283971118913fa9602f6c
-MAIN_SHA_POLICY=FETCH_LIVE_REFS_HEADS_MAIN_BEFORE_EACH_TASK; RECORDED_SHA_VALUES_ARE_HISTORICAL_SNAPSHOTS
-LOCAL_CANDIDATE_BRANCH=codex/m1a-g1-owner-governed-bootstrap-organ-20261024; OWNER_REPORTED; NOT_FOUND_ON_REMOTE
-LOCAL_CANDIDATE_HEAD=6bc568e1c5a898afd65cc045c779c25a9cdc5489; OWNER_REPORTED; NOT_INDEPENDENTLY_INSPECTED
-LOCAL_CANDIDATE_SOURCE_STATE=7_PATHS_STAGED; 9_PATHS_WITH_UNSTAGED_CHANGES; OWNER_REPORTED; UNCOMMITTED; UNPUBLISHED
-LOCAL_ORIGIN_MAIN_REPORTED=fed7d50926a0c09b2fdd2e9d00cc71fa05a3e6d7; STALE_RELATIVE_TO_CANONICAL_MAIN
-NEXT_TECHNICAL_EDGE=IMPLEMENT_OWNER_CONTROLLED_BOOTSTRAP_AND_REAL_ISSUER_BOUNDARY_WITHOUT_FABRICATING_TRUST
+TASK_ATTEMPT_STATUS=TERMINAL_FOR_CURRENT_SOURCE_EVIDENCE; BOUNDARY_NOT_ESTABLISHED
+LAST_REVIEW=M1A_G1_INDEPENDENT_WHOLE_CANDIDATE_STATIC_REVIEW
+LAST_REVIEW_RESULT=STATIC_REVIEW_COMPLETE_FOR_SUPPLIED_FULL_DIFF_BUNDLE; SHA256_VERIFIED
+SOURCE_CANDIDATE_WORKTREE=OWNER_REPORTED; NOT_DIRECTLY_OBSERVED
+AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+QUALIFYING_INDEPENDENT_ROOT=NOT_ESTABLISHED
+OWNER_TO_WINDOWS_PRINCIPAL=NOT_ESTABLISHED
+BOOTSTRAP_AUTHORITY_TO_ISSUER=NOT_ESTABLISHED
+ISSUER_TO_EXACT_SERVER=NOT_ESTABLISHED
+NEXT_ACTION=WAIT_FOR_GENUINELY_NEW_INDEPENDENT_ROOT_AND_AUTHENTICATED_OWNER_ISSUER_OS_BOUNDARY_EVIDENCE
+NEXT_REVIEW_TARGET=INSPECT_ONLY_NEW_EVIDENCE; DO_NOT_REPEAT_BROAD_SOURCE_INVENTORY_OR_ADD_MOCK_CONTRACTS
+SOURCE_IMPLEMENTATION=AUTHORIZED_WITH_BOUNDS; NO_FURTHER_SOURCE_ONLY_LOOP_WITHOUT_NEW_EVIDENCE
+SOURCE_TEST_AUTHORING=AUTHORIZED
+TEST_EXECUTION=NOT_AUTHORIZED; NOT_RUN
+BUILD=NOT_AUTHORIZED; NOT_RUN
+RUNTIME=NOT_AUTHORIZED; NOT_RUN
+REAL_TRANSPORT=NOT_AUTHORIZED; NOT_RUN
+PROTECTED_READS=FAIL_CLOSED
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3_VERSIONED_TARGET_RESOLVER=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+GOVERNANCE=KEEP_BLOCKED
+BRIDGE=BRIDGE_NOT_READY
+COST_POLICY=ZERO_BUDGET
+CONTINUITY_AUDIT=STATIC_REVIEW_COMPLETE; END_TO_END_RUNTIME_UNVERIFIED
+AUTOMATIC_FOLLOW_ON=FALSE
+```
+
+**Next-state interpretation:** the current source-only attempt is concluded for the evidence available. Do not start another source-only implementation loop. Reopen only if a genuinely new, independently verifiable root/Owner-to-host/issuer-boundary evidence event or a new explicit Owner decision changes the permitted actions. Any credential enrollment, service installation, OS/ACL/trust-store change, tests/build/runtime/transport, protected reads, publication, merge, deployment or spending remains excluded by the canonical live-main authorization.
+
+This routing is a proposal on the documentation branch. Live `main` remains unchanged and is the sole routing authority until an authorized merge and fetch-back.
+
+
+---
+
+<!-- Historical proposal: R-03 focused review complete; whole-candidate review next (superseded by whole-candidate report intake). -->
+## HISTORICAL PROPOSAL — R-03 focused review complete; whole-candidate review next (2026-10-24)
+
+The complete current staged/unstaged diff bundle for the three R-03 paths was supplied in the chat and statically reviewed. The current server guard denies before invoking either helper, including typed synthetic ALLOW. This is deny-only containment; the helpers still independently resolve the original relative path, so positive same-object binding is not established. The source test package lacks an explicit `AUTHORITY_TARGET_INVALID` assertion. Tests/build/runtime/MCP/transport were not run.
+
+The three-route R-03 review is complete, but the accumulated staged and unstaged delta across the reported 12 unique local candidate paths has not been reviewed together. Do not patch R-03 again in isolation. Do not invent a task-only diff because there is no pre-task snapshot.
+
+**Next proposed action:** one read-only whole-candidate static review of the complete staged and unstaged diff across all 12 unique paths; map source composition and residual trust-root/provider/durable-store/IPC/OS/runtime dependencies. After that review, reconcile the next action against live main, then prioritize the Owner's Mente Espacio-Tiempo continuity audit using the existing Space-Time protocol and static audit.
+
+```text
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+ACTIVE_TASK=M1A_G1_REVIEW_COMPLETE_DIRTY_BOOTSTRAP_BOUNDARY_CANDIDATE
+PREVIOUS_TASK=M1A_G1_REVIEW_R03_FAIL_CLOSED_CONTAINMENT_DIFF
+PREVIOUS_TASK_RESULT=SOURCE_REVIEW_BUNDLE_ONLY; DIFFS_COMPLETE=YES; FOCUSED_STATIC_REVIEW_COMPLETE
+R03=DENY_ONLY_CONTAINMENT
+SAME_OBJECT_BINDING=NOT_ESTABLISHED
+AUTHORITY_TARGET_INVALID_TEST=NOT_PRESENT
+NEXT_ACTION=REVIEW_COMPLETE_CURRENT_STAGED_UNSTAGED_DIFF_ACROSS_12_PATHS
+NEXT_REVIEW_TARGET=SOURCE_COMPOSITION_AND_RESIDUAL_TRUST_IPC_OS_RUNTIME_DEPENDENCIES
 SOURCE_IMPLEMENTATION=AUTHORIZED_WITH_BOUNDS
 SOURCE_TEST_AUTHORING=AUTHORIZED
 TEST_EXECUTION=NOT_AUTHORIZED; NOT_RUN
@@ -32,15 +74,51 @@ BUILD=NOT_AUTHORIZED; NOT_RUN
 RUNTIME=NOT_AUTHORIZED; NOT_RUN
 REAL_TRANSPORT=NOT_AUTHORIZED; NOT_RUN
 PROTECTED_READS=FAIL_CLOSED
-CREDENTIAL_OR_APP_CREATION=NOT_AUTHORIZED
-OWNER_ENROLLMENT_OR_CREDENTIAL_CREATION=NOT_AUTHORIZED
-WINDOWS_SERVICE_INSTALL=NOT_AUTHORIZED
-PERSISTENT_WINDOWS_ACL_OR_TRUST_STORE_CHANGES=NOT_AUTHORIZED
-PUBLIC_TUNNEL=DO_NOT_LAUNCH_OR_EXPOSE
-COST_POLICY=ZERO_BUDGET; NO_PAID_SERVICES; NO_RESOURCE_DEPLOYMENT
+AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3_VERSIONED_TARGET_RESOLVER=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+GOVERNANCE=KEEP_BLOCKED
+BRIDGE=BRIDGE_NOT_READY
+COST_POLICY=ZERO_BUDGET
+AUTOMATIC_FOLLOW_ON=FALSE
+```
+
+This proposal does not alter live main, authorize automatic follow-on, enable protected reads or close any prerequisite.
+
+---
+
+<!-- Current-state routing proposal only; canonical live main remains authoritative until adoption. -->
+## CURRENT-STATE PROPOSAL — review R-03 containment diff before further source changes (2026-10-24)
+
+The latest Owner-supplied Codex result reports a source-only change that makes `_protected_read_authority_block()` return denial even for a syntactically valid `ALLOW`, because the existing helpers independently resolve the input path and do not consume an identity-bearing target from the permit. This is a sensible fail-closed containment candidate, not a positive same-object-binding implementation. The server hunk was supplied in chat; the complete exact test hunks were not, so the task delta is not yet independently statically certified here.
+
+The reported checkout is `codex/m1a-g1-owner-governed-bootstrap-organ-20261024`, HEAD `6bc568e1c5a898afd65cc045c779c25a9cdc5489`; 12 routes, 7 staged and 11 unstaged statuses with overlap; the task changes reportedly remain unstaged. New worktree hashes reported: server `716e4fcf85667e124ca4ed6aa75931b5746ef5ed`, server tests `0fc7936c82d6f7dbc29d702db82b44517a0fbb2e`, read-authorization tests `5f93ab1d39d44f0471900d1f3bb546365980b184`. The checkout and hashes remain owner/Codex-reported.
+
+**Next action: read-only export and focused static review of exact task diffs**, not another implementation patch. Require full current staged and unstaged diffs for `server.py`, `test_mcp_server.py` and `test_read_authorization.py`, exact new R-03 test hunks, hashes, and initial/final status. If no pre-task patch baseline was saved, say so instead of reconstructing one. Do not execute tests/build/runtime/MCP/transport or alter the dirty checkout.
+
+Canonical live `main` last revalidated: `2cecd5e9b9e175584d65bbb1198a53bc2346d095`; live `CURRENT-STATE.md` blob `c577ab49c5dd16993502c7199560dc94b586a815`. It still routes to `M1A_G1_OWNER_CONTROLLED_BOOTSTRAP_ISSUER_BOUNDARY`, authorizes source changes/source-test authoring with bounds, and excludes test execution/runtime/transport, credentials/enrollment/OS changes and protected reads. The R-03 review is within that bounded source task; this proposed route remains documentation-branch only.
+
+Handoff: [consolidated new-chat handoff](./CHAT-ARCH-2026-10-24-M1A-G1-CONSOLIDATED-NEW-CHAT-HANDOFF.md).
+Receipt: [consolidated static review receipt](./CHAT-ARCH-2026-10-24-M1A-G1-bootstrap-boundary-consolidated-static-review-receipt.md).
+
+```text
+PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
+ACTIVE_TASK=M1A_G1_REVIEW_R03_FAIL_CLOSED_CONTAINMENT_DIFF
+PREVIOUS_TASK=M1A_G1_BIND_AUTHORIZED_CANONICAL_TARGET_TO_READ_OPERATION
+PREVIOUS_TASK_RESULT=SOURCE_CANDIDATE_ONLY; DENY_ONLY_CONTAINMENT_REPORTED; TEST_HUNKS_NOT_EXACTLY_REVIEWED
+NEXT_ACTION=EXPORT_AND_REVIEW_EXACT_CURRENT_DIFFS_FOR_THREE_R03_PATHS
+NEXT_REVIEW_TARGET=SERVER_GUARD_AND_BOTH_HANDLER_CALLS; EXACT_NEW_TEST_HUNKS; PRESERVATION
+SOURCE_IMPLEMENTATION=AUTHORIZED_WITH_BOUNDS
+SOURCE_TEST_AUTHORING=AUTHORIZED
+TEST_EXECUTION=NOT_AUTHORIZED; NOT_RUN
+BUILD=NOT_AUTHORIZED; NOT_RUN
+RUNTIME=NOT_AUTHORIZED; NOT_RUN
+REAL_TRANSPORT=NOT_AUTHORIZED; NOT_RUN
+PROTECTED_READS=FAIL_CLOSED
 AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
 QUALIFYING_INDEPENDENT_ROOT=NOT_ESTABLISHED
-ROOT_CUSTODIAN_AND_INDEPENDENT_VERIFICATION_CHANNEL=NOT_ESTABLISHED
 OWNER_TO_WINDOWS_PRINCIPAL=NOT_ESTABLISHED
 BOOTSTRAP_AUTHORITY_TO_ISSUER=NOT_ESTABLISHED
 ISSUER_TO_EXACT_SERVER=NOT_ESTABLISHED
@@ -51,16 +129,11 @@ IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
 GOVERNANCE=KEEP_BLOCKED
 READ_LIST=FAIL_CLOSED
 BRIDGE=BRIDGE_NOT_READY
-CONTINUITY_ALGORITHMS=SOURCE_WIRING_PRESENT; END_TO_END_RUNTIME_NOT_VERIFIED
-TRACKED_PORTABLE_CONTEXT_AND_SELF_EXAMINATION_SNAPSHOTS=2026-04-18; STALE_REPOSITORY_ARTIFACTS
-MCP_PORTABLE_CONTEXT_NON_REFRESH_FRESHNESS=EFFECTIVE_MINIMUM_86400_SECONDS; STALE_PACKAGE_POSSIBLE
-ACTIVE_GOAL_INITIAL_PERCEPTION_ORDER=STATIC_RISK; SEE_CONTINUITY_AUDIT
+COST_POLICY=ZERO_BUDGET
 AUTOMATIC_FOLLOW_ON=FALSE
-NEXT_ACTION=CONTINUE_EXISTING_LOCAL_CANDIDATE_WITH_OWNER_CONTROLLED_BOOTSTRAP_ISSUER_BOUNDARY
-NEXT_REVIEW_TARGET=STATIC_REVIEW_OF_EXACT_SOURCE_DELTA; DO_NOT_CLOSE_GATES_FROM_SOURCE_INTENT
 ```
 
-This route advances the bounded source-construction task in response to the latest Owner-reported candidate result. It does not certify the candidate's code, establish the trust root, close G1–G3, authorize enrollment or platform changes, or permit protected reads. Preserve all staged/unstaged source work and reconcile the stale local `origin/main` reference safely before further edits.
+This is a proposal only. It does not publish or promote the source candidate, enable positive reads, close any gate, or authorize excluded execution/platform actions.
 
 ---
 
