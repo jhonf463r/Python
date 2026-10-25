@@ -93,3 +93,28 @@ This receipt records only the supplied source diff and the bounded review findin
 `OwnerControlledBootstrapBoundary.enroll()` still declares a return type of `OwnerMergeVerificationEvidence`. That type represents repository merge evidence, not an explicit enrollment outcome confirming that the one-use challenge was consumed and the protected registry write was completed. Since no production implementation exists, this is not evidence of a successful enrollment; nevertheless, the API contract should not let a caller mistake merge verification for an enrollment receipt. The next source-only task should define an explicit typed enrollment receipt/outcome and tests for its bindings and success semantics, without pretending a Python protocol creates a security boundary.
 
 The real Owner assertion verifier, independently provisioned trust root, durable anti-replay consumption, protected registry, and authenticated issuer process/IPC/OS boundary remain absent. `AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED`; G1/G2/G3 remain unestablished; 8 prerequisites remain open / 0 closed; governance remains blocked; protected reads remain fail-closed. No root/credential/enrollment/OS action, test execution, build, runtime, transport, publish, merge, deployment or spend is authorized by this receipt.
+
+## Enrollment receipt source attempt — intake only (2026-10-24)
+
+- Reported task: `M1A_G1_DEFINE_EXPLICIT_BOOTSTRAP_ENROLLMENT_RECEIPT_CONTRACT`.
+- Reported result: `TASK_RESULT=SOURCE_CANDIDATE_ONLY`.
+- **Static-review disposition: `EXACT_DIFF_REQUIRED; NOT_REVIEWED`.** The user supplied a summary, not the exact unstaged source/test diff. The local Windows path and files are inaccessible to this reviewer, and the candidate branch/HEAD are not on GitHub. The summary cannot establish that the implementation actually contains the described predicates or tests.
+
+### Owner-reported identity and checks
+
+- Checkout: `C:\Users\faber\AppData\Local\Temp\iabv-g1-bootstrap-sparse-f99534e037e542038513a974d805bb27`.
+- Branch: `codex/m1a-g1-owner-governed-bootstrap-organ-20261024`.
+- HEAD before/after: `6bc568e1c5a898afd65cc045c779c25a9cdc5489`.
+- Source working-tree blob: `84e950934abb5969af3621a97d79d12123927234`; test working-tree blob: `7350da4ed4560639678edd584af49ee018847468`.
+- Index blobs reportedly preserved: source `efc1db55155fc15c57f55f904b7d1379257e6716`; tests `fef0d1f1d6d658d8c2612f38996c82e2b2254087`.
+- HEAD blobs reportedly preserved: source `cf58b6c08954dc0c3e2e3b8d6e9e240a1b4c3c72`; tests `0521a9da88853ea784fee8d4faced15c854a0899`.
+- Report says 7 staged / 11 unstaged paths, status identical before/after, staged-patch SHA-256 `DA6B9757009A65CDAED2399081A5D5441F5601EB7F781A5ADC19562AB8CA467D`, and `git diff --check` clean with LF/CRLF warnings. All of these are `OWNER_REPORTED`, not independently verified.
+- Tests/build/runtime/MCP/transport: `NOT_RUN`; new dependencies: 0.
+
+### Required exact review surface
+
+The source/test diff must be provided from the same checkout, without changing the worktree. Static review must verify the exact shapes and predicates for `OwnerBootstrapChallengeConsumption`, `OwnerBootstrapTrustRegistryPersistence`, `OwnerBootstrapEnrollmentReceipt`, `validate_owner_bootstrap_enrollment_receipt()`, the `enroll()` return annotation and associated tests. In particular, review whether success-status fields and nonempty references are merely self-asserted, whether Owner/issuer/server/merge bindings are validated, whether time fields reject booleans and invalid order, and whether failure between challenge consumption and registry persistence is represented without permitting a fake successful receipt.
+
+Even if the validator is internally consistent, synthetic fields marked `CONSUMED_ONCE`, `PERSISTED` and `ENROLLED` do not prove durable actions occurred. A production result must originate from trusted issuer-owned operations. There is still no real Owner verifier, independent root, durable replay store, protected registry or authenticated process/IPC/OS boundary. G1/G2/G3 remain unestablished; eight prerequisites remain open; protected reads fail-closed.
+
+Next action: obtain the exact unstaged diff for the two authorized paths and conduct a bounded static review. Do not run tests/build/runtime/transport, modify credentials or OS state, publish or merge, or change gate status.
