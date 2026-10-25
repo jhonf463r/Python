@@ -1,37 +1,37 @@
-<!-- Current-state routing record: Owner-controlled bootstrap boundary is now the next bounded source task. -->
-## CURRENT-STATE ROUTING — targeted correction after bootstrap-boundary static review (2026-10-24)
+<!-- Current-state routing record: targeted merge-evidence correction reviewed; explicit enrollment outcome contract is next. -->
+## CURRENT-STATE ROUTING — explicit bootstrap enrollment outcome contract (2026-10-24)
 
-The Owner supplied the exact staged and unstaged diffs for `M1A_G1_OWNER_CONTROLLED_BOOTSTRAP_ISSUER_BOUNDARY`. A static review of those pasted diffs found a material source-contract defect in `validate_owner_bootstrap_evidence()`: it validates the shape of `merge.manifest_sha256` but not equality with the canonical hash of `challenge.expected_manifest()`; the positive fixture uses the arbitrary digest `"e"*64` and therefore does not prove manifest binding. The same predicate does not validate `manifest_git_blob_sha` or require a positive integer `pull_request_number`. Review details and provenance: [bootstrap-boundary static review receipt](./CHAT-ARCH-2026-10-24-M1A-G1-bootstrap-boundary-static-review-receipt.md).
+The supplied Codex result for `M1A_G1_FIX_BOOTSTRAP_EVIDENCE_CONSISTENCY_VALIDATION` reports a source-only change to the existing local candidate. Static review of the exact pasted delta finds both targeted corrections present: the manifest digest is recomputed from `challenge.expected_manifest()` and compared for equality; the manifest Git blob SHA is format-checked; and `pull_request_number` must be an exact positive integer. The updated positive fixture uses the canonical digest, and source tests cover wrong-but-well-formed digest and malformed metadata.
 
-The source diff was inspected as provided in the conversation, but checkout/blob integrity remains `OWNER_REPORTED`: the local branch/HEAD are not present on GitHub and the reviewer did not directly read the local worktree. No tests were executed. The minimum next task is `M1A_G1_FIX_BOOTSTRAP_EVIDENCE_CONSISTENCY_VALIDATION`: correct the manifest digest binding, validate the merge evidence's blob-SHA and pull-request-number fields, and add source tests for mismatched but well-formed hashes and invalid metadata. Do not add production adapters, reimplement the issuer boundary, change trust roots, run tests/build/runtime/transport, or reconcile the dirty local branch with merge/rebase.
+This disposition is `SOURCE_CANDIDATE_ONLY` / `STATIC_REVIEW=F01_F02_CORRECTIONS_PRESENT_IN_SUPPLIED_DIFF`, not test execution or direct checkout verification. Candidate identity, hashes, backup integrity, staged/unstaged preservation and `git diff --check` remain Codex-reported. Tests/build/runtime/MCP/transport were not run. Do not promote the pasted delta to canonical source or claim the broader G1 boundary exists.
 
-The review does not establish any production Owner verifier, independently provisioned root, durable replay store, protected trust registry, authenticated issuer IPC/OS boundary, or positive read path. Preserve G1/G2/G3 unestablished and protected reads fail-closed.
+One contract issue remains in the supplied source: `OwnerControlledBootstrapBoundary.enroll()` returns `OwnerMergeVerificationEvidence`, which proves/represents merge evidence rather than an explicit enrollment outcome confirming both one-use challenge consumption and protected registry persistence. The next bounded task is to define a typed enrollment receipt/outcome with clear binding and success semantics, and author source tests for those semantics. It must remain a source contract, not a claim that a Python Protocol supplies isolation or a production enrollment implementation.
 
 Handoff: [Owner-controlled bootstrap/issuer boundary](./CHAT-ARCH-2026-10-24-M1A-G1-BOOTSTRAP-BOUNDARY-NEXT-HANDOFF.md).
 Decision receipt: [bounded source-implementation authorization](./CHAT-ARCH-2026-10-24-M1A-G1-owner-bounded-source-implementation-authorization.md).
-Review receipt: [bootstrap-boundary static review](./CHAT-ARCH-2026-10-24-M1A-G1-bootstrap-boundary-static-review-receipt.md).
+Review receipt: [bootstrap-boundary static review and follow-up](./CHAT-ARCH-2026-10-24-M1A-G1-bootstrap-boundary-static-review-receipt.md).
 Context audit: [continuity algorithms static audit](./CHAT-ARCH-2026-10-24-CONTINUITY-ALGORITHMS-STATIC-AUDIT.md).
 
-### Transcript-versus-route intake guard (2026-10-24)
+### Codex-result intake and candidate-preservation guard (2026-10-24)
 
-The final visible prompt in an attached transcript may describe a task that the live route has already superseded. If a later message supplies a Codex response for `M1A_G1_REGISTER_READ_AUTHORIZATION_IN_APPBOOTSTRAP`, classify and evaluate it against that original prompt as result-intake evidence; do not move `ACTIVE_TASK` backward or overwrite `NEXT_ACTION` merely because the prompt is the last one in the transcript. Reconcile its exact task ID, checkout/HEAD, staged and unstaged deltas, source claims, and written-versus-executed checks with the already-recorded Owner-reported result. The supplied-diff intake and static review are complete. The active route is `M1A_G1_FIX_BOOTSTRAP_EVIDENCE_CONSISTENCY_VALIDATION`; the prior review task must not be repeated unless a new source delta or contradictory evidence appears. This note changes no authorization or security gate.
+Match every report to its exact `TASK=` and acceptance criteria; transcript chronology and a reused checkout/branch name do not prove current task identity or byte identity. Fetch live `refs/heads/main` at every task start, preserve dirty staged and unstaged work, and distinguish supplied-diff review from direct checkout verification. Written tests are not executed tests. A candidate branch/PR remains noncanonical until adopted in live `main` and fetched back.
 
 ```text
 PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
-ACTIVE_TASK=M1A_G1_FIX_BOOTSTRAP_EVIDENCE_CONSISTENCY_VALIDATION
-PREVIOUS_TASK=M1A_G1_REVIEW_OWNER_CONTROLLED_BOOTSTRAP_BOUNDARY_SOURCE_DELTA
-PREVIOUS_TASK_RESULT=STATIC_REVIEW_OF_OWNER_SUPPLIED_DIFF; MATERIAL_MANIFEST_BINDING_DEFECT_FOUND; CHECKOUT_INTEGRITY_NOT_INDEPENDENTLY_VERIFIED
+ACTIVE_TASK=M1A_G1_DEFINE_EXPLICIT_BOOTSTRAP_ENROLLMENT_RECEIPT_CONTRACT
+PREVIOUS_TASK=M1A_G1_FIX_BOOTSTRAP_EVIDENCE_CONSISTENCY_VALIDATION
+PREVIOUS_TASK_RESULT=SOURCE_CANDIDATE_ONLY; STATIC_REVIEW_TARGETED_F01_F02_CORRECTIONS_PRESENT_IN_SUPPLIED_DIFF; CHECKOUT_UNVERIFIED; TESTS_NOT_RUN
 OWNER_DECISION=BOUNDED_SOURCE_IMPLEMENTATION_AND_SOURCE_TEST_AUTHORING
 OWNER_DECISION_PROVENANCE=EXPLICIT_OWNER_CHAT_MESSAGE_2026-10-24
 OWNER_DECISION_RECEIPT=CHAT-ARCH-2026-10-24-M1A-G1-owner-bounded-source-implementation-authorization.md
 OWNER_DECISION_SCOPE=SOURCE_CODE_CHANGES_AND_SOURCE_TEST_AUTHORING_ONLY
 ROUTE_INTRODUCED_ON_MAIN=0876466a41d63ecc7a9283971118913fa9602f6c
-MAIN_SHA_POLICY=FETCH_LIVE_REFS_HEADS_MAIN_BEFORE_EACH_TASK; RECORDED_SHA_VALUES_ARE_HISTORICAL_SNAPSHOTS
+CANONICAL_BASE_MAIN=2cecd5e9b9e175584d65bbb1198a53bc2346d095; VERIFIED_AS_PR_BASE_AT_REVIEW; REFRESH LIVE MAIN AGAIN BEFORE NEXT TASK
 LOCAL_CANDIDATE_BRANCH=codex/m1a-g1-owner-governed-bootstrap-organ-20261024; OWNER_REPORTED; NOT_FOUND_ON_REMOTE
 LOCAL_CANDIDATE_HEAD=6bc568e1c5a898afd65cc045c779c25a9cdc5489; OWNER_REPORTED; NOT_INDEPENDENTLY_INSPECTED
-LOCAL_CANDIDATE_SOURCE_STATE=7_STAGED_PATHS_PRESERVED; 11_UNSTAGED_PATHS_AT_END; 9_PRIOR_UNSTAGED_PRESERVED; 2_ADDITIONAL_PATHS (BOOTSTRAP_SOURCE_AND_TEST); CURRENT_STATE ALSO MODIFIED; OWNER_REPORTED; UNCOMMITTED; UNPUBLISHED
+LOCAL_CANDIDATE_SOURCE_STATE=7_STAGED_PATHS_PRESERVED; 11_UNSTAGED_PATHS_AT_END; 9_PRIOR_UNSTAGED_PRESERVED; 2_ADDITIONAL_PATHS (BOOTSTRAP_SOURCE_AND_TEST); CURRENT_STATE_ALSO_MODIFIED_PREEXISTING; OWNER_REPORTED; UNCOMMITTED; UNPUBLISHED
 LOCAL_MAIN_AT_ATTEMPT=2cecd5e9b9e175584d65bbb1198a53bc2346d095; OWNER_REPORTED; REFRESH LIVE MAIN AGAIN BEFORE NEXT TASK
-NEXT_TECHNICAL_EDGE=CORRECT_MANIFEST_DIGEST_BINDING_AND_VALIDATE_MERGE_EVIDENCE_METADATA
+NEXT_TECHNICAL_EDGE=DEFINE_EXPLICIT_ENROLLMENT_RECEIPT_OUTCOME_AND_TEST_BINDINGS
 SOURCE_IMPLEMENTATION=AUTHORIZED_WITH_BOUNDS
 SOURCE_TEST_AUTHORING=AUTHORIZED
 TEST_EXECUTION=NOT_AUTHORIZED; NOT_RUN
@@ -63,11 +63,12 @@ TRACKED_PORTABLE_CONTEXT_AND_SELF_EXAMINATION_SNAPSHOTS=2026-04-18; STALE_REPOSI
 MCP_PORTABLE_CONTEXT_NON_REFRESH_FRESHNESS=EFFECTIVE_MINIMUM_86400_SECONDS; STALE_PACKAGE_POSSIBLE
 ACTIVE_GOAL_INITIAL_PERCEPTION_ORDER=STATIC_RISK; SEE_CONTINUITY_AUDIT
 AUTOMATIC_FOLLOW_ON=FALSE
-NEXT_ACTION=FIX_BOOTSTRAP_EVIDENCE_CONSISTENCY_AND_ADD_SOURCE_TESTS
-NEXT_REVIEW_TARGET=3_PATH_SOURCE_DELTA; MANIFEST_DIGEST_EQUALITY; SHA1_BLOB_FORMAT; POSITIVE_PR_NUMBER; TESTS_SOURCE_ONLY; NO_GATE_CLOSURE
+NEXT_ACTION=DEFINE_EXPLICIT_BOOTSTRAP_ENROLLMENT_RECEIPT_CONTRACT_AND_SOURCE_TESTS
+NEXT_REVIEW_TARGET=SOURCE_CONTRACT_AND_TARGETED_TESTS_ONLY; NO_PRODUCTION_ADAPTERS; NO_GATE_CLOSURE
 ```
 
-This route advances the bounded source-construction task in response to the latest Owner-reported candidate result. It does not certify the candidate's code, establish the trust root, close G1–G3, authorize enrollment or platform changes, or permit protected reads. Preserve all staged/unstaged source work and reconcile the stale local `origin/main` reference safely before further edits.
+This proposed route advances only source-contract clarity. It does not authorize real enrollment, credential/root creation, OS/ACL/trust-store changes, test execution, build, runtime, transport, publication, merge, deployment, spending, or protected reads. Keep authority assets unknown/not inspected; G1/G2/G3 unestablished; 8 prerequisites open / 0 closed; governance blocked; bridge not ready; and all protected reads fail-closed.
+
 
 ---
 
