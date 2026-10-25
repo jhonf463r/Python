@@ -28,9 +28,11 @@ The prior reopening was limited to design/static review and is now terminal. Its
 
 
 
-## Next trust-organ task — Owner-controlled bootstrap/issuer boundary (2026-10-24)
+## Historical checkpoint — bootstrap/issuer source review terminal for current evidence (2026-10-24)
 
-The [consolidated static review receipt](./CHAT-ARCH-2026-10-24-M1A-G1-bootstrap-boundary-consolidated-static-review-receipt.md) records F-01/F-02/F-03 as corrected in the supplied focused deltas, including a full supplied test diff for expected-registry mismatch and invalid values. This is not direct checkout verification; tests remain `NOT_RUN`. The whole dirty candidate across 12 unique paths is not yet reviewed as one unit. Next, preserve and obtain its complete staged/unstaged diffs for one bounded static review. Keep trusted registry ID provenance, durable consumption, protected persistence and issuer process/OS boundary explicitly unresolved; G1/G2/G3 remain unestablished and reads fail-closed. The [consolidated new-chat handoff](./CHAT-ARCH-2026-10-24-M1A-G1-CONSOLIDATED-NEW-CHAT-HANDOFF.md) gives the strict preflight order and the next evidence request.
+The whole-candidate staged/unstaged diff bundle has now received static review, and both supplied SHA-256 hashes were verified. This validates the uploaded artifacts, not the live Windows worktree or execution. Tests/build/runtime/MCP/real transport were not run. The source-only attempt did not establish an independent root/mandate, authenticated Owner-to-host identity, protected issuer/process/IPC boundary, or same-object target binding. See the [independent whole-candidate review](./CHAT-ARCH-2026-10-24-M1A-G1-INDEPENDENT-WHOLE-CANDIDATE-STATIC-REVIEW-RESULT.md) and [consolidated handoff](./CHAT-ARCH-2026-10-24-M1A-G1-CONSOLIDATED-NEW-CHAT-HANDOFF.md).
+
+Do not ask for the same diffs or start another source-only loop. The live `CURRENT-STATE.md` is the only route authority and now directs the project to wait for genuinely new, independently verifiable root/mandate and authenticated Owner-to-host/issuer-boundary evidence. `AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED`; G1–G3 remain unestablished, all eight prerequisites are open, reads fail-closed, and zero budget remains in force. The Mente Space-Time audit remains static; runtime delivery and causal learning are not proven.
 
 ## Continuity and AI-context delivery audit (2026-10-24)
 
