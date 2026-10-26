@@ -1,6 +1,35 @@
 <!-- Owner-authorized route transition: 2026-10-26. CURRENT-STATE.md remains the sole route authority. -->
 
-## CURRENT ROUTE — Sanitized Actions discussion published; wait for external evidence (2026-10-26)
+## CURRENT ROUTE — Continue organ review independently of Actions support (2026-10-26)
+
+The Owner directed that authorization-organ development must not pause solely for the Actions startup issue. The public [Community discussion #211346](https://github.com/orgs/community/discussions/211346) remains a parallel infrastructure escalation.
+
+PR #531 remains `OPEN`, `DRAFT=TRUE`, `MERGED=FALSE` at candidate HEAD `50cbd2b8b3d643d05726290c76ef13f85731949e`. A targeted read of the exact candidate shows a fail-closed coordinator/preflight, same-opened-object permit/guard/reader bindings, handle-backed readers, transactional nonce single-use, and signature verification. Production bootstrap still registers `ReadAuthorizationCoordinator.unconfigured()`; rollback resistance and trusted root/Owner authority are not established. These are partial static observations; tests remain `NOT_RUN`.
+
+**Next action:** complete one bounded independent static review of the exact 13-file PR #531 diff and test changes against existing R-01–R-08 findings. Do not wait for the Community response to do this review. Do not edit source, run tests/runtime, repeat broad inventory, invent trust providers, or close gates during the review. If the review finds a material source defect, obtain a separate bounded implementation decision; otherwise route to the specific external authority/platform prerequisites.
+
+```text
+OWNER_DIRECTION=DO_NOT_PAUSE_ORGAN_DEVELOPMENT_SOLELY_FOR_ACTIONS_SUPPORT_DELAY
+ORGAN_TRACK=CONTINUE_BOUNDED_STATIC_REVIEW_IN_PARALLEL
+COMMUNITY_POST=PUBLISHED; DISCUSSION_211346
+PR531=OPEN_DRAFT_UNMERGED
+CANDIDATE_HEAD=50cbd2b8b3d643d05726290c76ef13f85731949e
+FULL_STATIC_REVIEW=NOT_COMPLETE
+TESTS=NOT_RUN
+ACTIONS_USAGE_BLOCK=UNKNOWN
+ROOT_CAUSE=UNKNOWN
+G1/G2/G3=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+PROTECTED_READS=FAIL_CLOSED
+BRIDGE=BRIDGE_NOT_READY
+NEXT_ACTION=COMPLETE_BOUNDED_INDEPENDENT_STATIC_REVIEW_OF_EXACT_PR531_DIFF_AND_TESTS
+```
+
+Full provenance: [organ parallel-route receipt](./CHAT-ARCH-2026-10-26-M1F-ORGAN-PARALLEL-ROUTE-RECEIPT.md). This is documentation-only and does not change the candidate or acceptance state.
+
+
+## HISTORICAL ROUTE — Sanitized Actions discussion published; wait for external evidence (2026-10-26) (superseded 2026-10-26 by parallel organ-review direction)
 
 ### Live references and publication provenance
 

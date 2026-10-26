@@ -1,6 +1,13 @@
 <!-- Route summary synchronized 2026-10-26. CURRENT-STATE.md is the sole active route authority. -->
 
-## CURRENT ROUTE — Sanitized GitHub Actions discussion published; external response pending (2026-10-26)
+## CURRENT ROUTE — Organ review proceeds in parallel with Actions support (2026-10-26)
+
+Use [CURRENT-STATE.md](./CURRENT-STATE.md) as route authority. Owner direction: do not pause organ development solely for the Actions support thread. [Discussion #211346](https://github.com/orgs/community/discussions/211346) is a parallel infrastructure path.
+
+PR #531 is still open/draft/unmerged at `50cbd2b8b3d643d05726290c76ef13f85731949e`. Targeted source reads show a fail-closed candidate with same-object bindings and handle-backed readers, but production bootstrap is unconfigured and real G1/G2/G3 authority prerequisites remain unestablished. Tests are not run. Complete one bounded independent static review of the exact PR diff and test changes; do not wait for the public answer, patch blindly, run tests, or invent trust providers. See [the route receipt](./CHAT-ARCH-2026-10-26-M1F-ORGAN-PARALLEL-ROUTE-RECEIPT.md).
+
+
+## HISTORICAL ROUTE — Sanitized GitHub Actions discussion published; external response pending (2026-10-26) (superseded 2026-10-26 by parallel organ-review direction)
 
 Use [CURRENT-STATE.md](./CURRENT-STATE.md) as the sole routing authority. The publication and provenance record is [the Actions usage and support eligibility receipt](./CHAT-ARCH-2026-10-26-M1F-ACTIONS-USAGE-AND-SUPPORT-ELIGIBILITY-RECEIPT.md).
 
