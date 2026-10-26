@@ -28,6 +28,7 @@ from iabv_v15.domain.models import (
     OperationalBlockRecord,
     WorldModelSnapshot,
 )
+from iabv_v15.services.security.read_authorization import ReadAuthorizationCoordinator
 from iabv_v15.services.evolution.mcp_bridge_service import (
     FastMCPServerRunner,
     MCPBridgeService,
@@ -113,17 +114,42 @@ def _default_snapshot(
     )
 
 
+_USE_TEST_COORDINATOR = object()
+
+
+def _fully_wired_test_coordinator() -> ReadAuthorizationCoordinator:
+    """Satisfy the dependency-presence preflight only; never used to authorize a read."""
+
+    return ReadAuthorizationCoordinator(
+        trust_provider=object(),  # type: ignore[arg-type]
+        mandate_provider=object(),  # type: ignore[arg-type]
+        merge_evidence_provider=object(),  # type: ignore[arg-type]
+        policy_provider=object(),  # type: ignore[arg-type]
+        target_resolver=object(),  # type: ignore[arg-type]
+        issuer_client=object(),  # type: ignore[arg-type]
+        replay_consumer=object(),  # type: ignore[arg-type]
+        request_context_provider=object(),  # type: ignore[arg-type]
+    )
+
+
 def _build_service(
     tmp_path: Path,
     *,
     tunnel_runner: _FakeTunnelRunner | None = None,
     snapshot: WorldModelSnapshot | None = None,
+    read_authorization_coordinator: object = _USE_TEST_COORDINATOR,
 ) -> tuple[MCPBridgeService, _FakeServerRunner, _FakeTunnelRunner]:
     server = _FakeServerRunner()
     tunnel = tunnel_runner or _FakeTunnelRunner()
+    coordinator = (
+        _fully_wired_test_coordinator()
+        if read_authorization_coordinator is _USE_TEST_COORDINATOR
+        else read_authorization_coordinator
+    )
     svc = MCPBridgeService(
         container=_FakeContainer(snapshot or _default_snapshot()),
         workspace_root=tmp_path,
+        read_authorization_coordinator=coordinator,
         server_runner=server,
         tunnel_runner=tunnel,
         tunnel_timeout_s=0.5,
@@ -133,6 +159,37 @@ def _build_service(
 
 # ----------------------------------------------------------------------
 # Preferencia persistida
+
+
+def test_bridge_stays_stopped_without_read_authorization_coordinator(tmp_path: Path) -> None:
+    svc, server, tunnel = _build_service(tmp_path, read_authorization_coordinator=None)
+
+    status = svc.set_enabled(True)
+
+    assert server.started == 0
+    assert tunnel.started == 0
+    assert status.running is False
+    assert status.state == "failed"
+    assert status.governance_blocked is True
+    assert status.governance_reason == "AUTHORIZATION_COORDINATOR_UNAVAILABLE"
+
+
+def test_bridge_stays_stopped_when_authorization_coordinator_is_unconfigured(tmp_path: Path) -> None:
+    svc, server, tunnel = _build_service(
+        tmp_path,
+        read_authorization_coordinator=ReadAuthorizationCoordinator.unconfigured(),
+    )
+
+    status = svc.set_enabled(True)
+
+    assert server.started == 0
+    assert tunnel.started == 0
+    assert status.running is False
+    assert status.state == "failed"
+    assert status.governance_blocked is True
+    assert status.governance_reason is not None
+    assert status.governance_reason.startswith("AUTHORIZATION_PREREQUISITES_MISSING:")
+    assert "INDEPENDENT_TRUST_ROOT_PROVIDER" in status.governance_reason
 
 
 def test_enabled_pref_starts_false_when_no_config(tmp_path: Path) -> None:
@@ -388,6 +445,7 @@ def test_service_passes_transport_and_bind_to_server_runner(tmp_path: Path) -> N
     svc = MCPBridgeService(
         container=_FakeContainer(_default_snapshot()),
         workspace_root=tmp_path,
+        read_authorization_coordinator=_fully_wired_test_coordinator(),
         server_runner=server,
         tunnel_runner=tunnel,
         transport="sse",

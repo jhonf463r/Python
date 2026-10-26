@@ -444,8 +444,35 @@ class MCPBridgeService:
     # ------------------------------------------------------------------
     # Internals
 
+    def _authorization_organ_gate_block(self) -> str | None:
+        """Keep the bridge down while the read-authorization composition is incomplete.
+
+        This is a dependency preflight, not proof of G1-G8 acceptance or a
+        substitute for the authorization decision at each protected read.
+        """
+
+        try:
+            from iabv_v15.services.security.read_authorization import ReadAuthorizationCoordinator
+        except Exception:
+            logger.exception("Authorization organ unavailable; MCP bridge remains stopped")
+            return "AUTHORIZATION_COORDINATOR_UNAVAILABLE"
+
+        coordinator = self._read_authorization_coordinator
+        if type(coordinator) is not ReadAuthorizationCoordinator:
+            return "AUTHORIZATION_COORDINATOR_UNAVAILABLE"
+        try:
+            missing = coordinator.missing_requirements()
+        except Exception:
+            logger.exception("Authorization prerequisites could not be checked; MCP bridge remains stopped")
+            return "AUTHORIZATION_PREREQUISITES_UNVERIFIABLE"
+        if type(missing) is not tuple or any(type(item) is not str or not item for item in missing):
+            return "AUTHORIZATION_PREREQUISITES_UNVERIFIABLE"
+        if missing:
+            return "AUTHORIZATION_PREREQUISITES_MISSING:" + ",".join(missing)
+        return None
+
     def _start_locked(self) -> MCPBridgeStatus:
-        block = self._governance_gate_block()
+        block = self._authorization_organ_gate_block() or self._governance_gate_block()
         with self._lock:
             if block is not None:
                 self._status.running = False
