@@ -34,7 +34,7 @@ RETRY_CLASS=SAME_OR_LOW_INFORMATION_UNLESS_A_NEW_PRECONDITION_IS_VERIFIED
 NEXT_ACTION=OWNER_INSPECT_BILLING_AND_LICENSING_OR_REQUEST_OFFICIAL_REVIEW; DO_NOT_TRIGGER_UNCHANGED_WORKFLOW
 ```
 
-This finding updates the last observed run but does not establish why the account-lock message appears. Current GitHub Status reports Actions operational generally; that does not disprove this account/repository-specific restriction. The authenticated Actions UI warning still needs a fresh visual check.
+This finding updates the last observed run but does not establish why the account-lock message appears. Apply [UAAL-D019 — Space-Time Anti-Loop and First-Open Causal Frontier](./CHAT-ARCH-2026-10-26-UAAL-D019-SPACE-TIME-ANTI-LOOP-CAUSAL-FRONTIER.md): it is the same terminal outcome stage; do not repeat the workflow unchanged without a verified material precondition delta. Current GitHub Status reports Actions operational generally; that does not disprove this account/repository-specific restriction. The authenticated Actions UI warning still needs a fresh visual check. The browser connector rejected strict mode because this account lacks that beta; rechecking via its default 150-step mode requires Owner approval.
 
 ### Community response evidence
 
@@ -55,7 +55,7 @@ LAST_TASK=M1F_PR531_ACTIONS_BILLING_LOCK_DIAGNOSIS_20261026
 R07_TRANSPORT_PROFILE=LOCAL_ONLY_ENFORCED_IN_CANDIDATE_SERVICE
 PR531=OPEN_DRAFT_UNMERGED
 CANDIDATE_HEAD=bc2baf525a70d66628809360a197f25a069aa328
-ACTIONS_ACCOUNT_WARNING=BILLING_LOCK_MESSAGE_VISIBLE_ON_REPOSITORY_ACTIONS_PAGE
+ACTIONS_ACCOUNT_WARNING=LAST_OBSERVED_BILLING_LOCK_MESSAGE; FRESH_UI_RECHECK=PENDING_OWNER_APPROVAL_FOR_DEFAULT_BROWSER_MODE
 BILLING_UNDERLYING_CAUSE=UNKNOWN; PAYMENT_DETAILS_NOT_INSPECTED
 LATEST_RUN=40408992195; STARTUP_FAILURE; WORKFLOW_NAME_EMPTY; JOBS=0
 PREVIOUS_RUN=40406668947; STARTUP_FAILURE; PATH=BuildFailed; JOBS=0
