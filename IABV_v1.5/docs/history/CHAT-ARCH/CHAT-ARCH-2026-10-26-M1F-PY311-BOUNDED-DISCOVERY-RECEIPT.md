@@ -3,14 +3,14 @@
 **STATUS:** TESTS=NOT_RUN; no eligible Python 3.11 executable was found in the bounded discovery scope.
 **OBSERVATION TIME:** 2026-10-26, 2:01 p.m. America/Bogota (Owner-supplied).
 **EVIDENCE CLASS:** Owner-reported local Windows observations; not independently executed by this writer.
-**LIVE MAIN OBSERVED:** ff560e042342a4915d9e1ab1dfc605084c164b57 at the start of this activity; the immediately preceding user report observed c58faf60cffc8eb8048f67f0b62c8ff4e50b1015.
+**OWNER PREFLIGHT AND LIVE MAIN REVALIDATED BEFORE RECEIPT WRITEBACK:** c58faf60cffc8eb8048f67f0b62c8ff4e50b1015. The receipt-creation commit subsequently advanced main.
 **PR:** [#531](https://github.com/jhonf463r/Python/pull/531), OPEN, DRAFT=TRUE, MERGED=FALSE.
 **CANDIDATE HEAD:** 50cbd2b8b3d643d05726290c76ef13f85731949e.
 **PR BASE:** 7ddfe285b1a3267f9ef6f57f862cca78bc8438c2.
 
 ## 1. Remote preflight and candidate integrity
 
-The Owner's preflight reports that main was c58faf60cffc8eb8048f67f0b62c8ff4e50b1015. Current connector revalidation confirms that same main SHA and PR #531 remains open, draft, unmerged at the same candidate HEAD and base.
+The Owner's preflight reports main=c58faf60cffc8eb8048f67f0b62c8ff4e50b1015, and the live GitHub ref was revalidated at the same SHA immediately before receipt writeback. PR #531 remains open, draft, unmerged at the same candidate HEAD and base.
 
 The comparison from the PR base to main reports 18 commits ahead and 0 behind. The compare result lists 11 changed paths, all documentation files; no candidate source edit or merge is reported. The previously inspected focused test workflow remains infrastructure-blocked: run [#40258140268](https://github.com/jhonf463r/Python/actions/runs/40258140268) completed with failure before test steps, and no combined status checks are reported. Earlier evidence for run #40258135717 has the same pre-step failure classification. These are not product test results.
 
