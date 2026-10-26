@@ -4,33 +4,33 @@
 
 ### Live revisions and tested target
 
-- `main` immediately before this route write: `705ddf1780b92b9c20614c8250cbb716f1ceca46` (the preceding commit added the setup-blocker receipt).
+- Live `main` revalidated immediately before this route writeback: `ce50fda7923103d6297b67a26494b362cdcb0c79`. This update itself creates a documentation commit; fetch `main` again before the next action.
 - PR [#531](https://github.com/jhonf463r/Python/pull/531) remains `OPEN`, `DRAFT=TRUE`, `MERGED=FALSE`.
-- Exact authorized candidate HEAD: `50cbd2b8b3d643d05726290c76ef13f85731949e`; recorded PR base: `7ddfe285b1a3267f9ef6f57f862cca78bc8438c2`.
-- Commit comparison from the recorded base to the previously observed `main=ff560e042342a4915d9e1ab1dfc605084c164b57` was 11 commits ahead, 0 behind, all changed paths documentation-only. No source candidate changes or merge occurred in the Owner-reported execution.
+- Exact candidate HEAD: `50cbd2b8b3d643d05726290c76ef13f85731949e`; recorded PR base: `7ddfe285b1a3267f9ef6f57f862cca78bc8438c2`.
+- The comparison from base `7ddfe285b1a3267f9ef6f57f862cca78bc8438c2` to pre-writeback `main=ff560e042342a4915d9e1ab1dfc605084c164b57` was 11 commits ahead and 0 behind; the compared changes were documentation-only. No candidate source change or merge occurred in the Owner-reported attempt.
 
 ### Latest Owner-supplied execution receipt
 
 See [M1F Python 3.11 setup blocker receipt](./CHAT-ARCH-2026-10-26-M1F-PY311-SETUP-BLOCKER-RECEIPT.md). The receipt is Owner-reported, not independently re-executed by this writer.
 
 - First disposable clone: checkout stopped with Git `Filename too long`, exit `128`; partial checkout was left intact and not used.
-- Second disposable clone: reached exact candidate HEAD and was reported clean before and after setup; `core.longpaths=true` was scoped to that clone. The original `C:\Python` checkout was not used or modified.
-- A new temporary `IABV_DATA_DIR` and clone-local `PYTHONPATH` were set. `py -3.11 -m venv .venv` then failed with exit `103`, `No suitable Python runtime found`.
-- Python 3.11 and project dependencies were not installed; no venv was created; `pytest` was never invoked and no pytest log exists. The Owner retained the setup log locally; its exact local path is omitted from this repository record.
-- The last inspected hosted candidate runs [#40258140268](https://github.com/jhonf463r/Python/actions/runs/40258140268) and [#40258135717](https://github.com/jhonf463r/Python/actions/runs/40258135717) failed before steps. They are not test results.
+- Second disposable clone: reached exact candidate HEAD and was reported clean before and after preparation; `core.longpaths=true` was scoped to that clone. The original `C:\Python` checkout was not used or modified.
+- A new temporary `IABV_DATA_DIR` and clone-local `PYTHONPATH` were set. `py -3.11 -m venv .venv` failed with exit `103`, `No suitable Python runtime found`.
+- Python 3.11 and project dependencies were not installed; no venv was created; `pytest` was never invoked and no pytest log exists. The Owner retained the setup log locally; its exact path is omitted from this repository record.
+- The last inspected hosted candidate runs [#40258140268](https://github.com/jhonf463r/Python/actions/runs/40258140268) and [#40258135717](https://github.com/jhonf463r/Python/actions/runs/40258135717) failed before job steps. They are not test results.
 
 ### Exact next action
 
-Resume only in an approved isolated Windows environment that already has Python 3.11 available, or when the hosted runner is genuinely assigned and can execute steps. Do not reinstall or add runtimes as an improvised workaround, and do not rerun unchanged preparation in the same unavailable environment.
+Resume only in an approved isolated Windows environment that already has Python 3.11, or when a hosted runner is genuinely assigned and its job steps execute. Do not install a runtime as an improvised workaround or repeat unchanged preparation in the same unavailable environment.
 
-Before any retry, revalidate live `main`, PR #531 state, and exact candidate HEAD. If the HEAD changes, require a new handoff for that reviewed SHA. Then use [the exact-HEAD Windows test handoff](./CHAT-ARCH-2026-10-26-M1F-WINDOWS-TEST-HANDOFF-EXACT-HEAD.md) to execute only:
+Before retrying, revalidate live `main`, PR #531 state and exact candidate HEAD. If the HEAD changes, require a new handoff reviewed for that SHA. Then use [the exact-HEAD Windows test handoff](./CHAT-ARCH-2026-10-26-M1F-WINDOWS-TEST-HANDOFF-EXACT-HEAD.md) to execute only:
 1. `IABV_v1.5/tests/test_mcp_bridge_service.py`
 2. `IABV_v1.5/tests/test_read_authorization.py`
 3. `IABV_v1.5/tests/test_windows_handle_reader.py`
 
-Capture the actual output, exit code, tested SHA and log. No blind workflow retry; no test or patch loop without executed evidence. If neither an approved Windows executor with Python 3.11 nor an actually assigned runner is available, keep `TESTS=NOT_RUN` and stop this path.
+Capture actual output, exit code, tested SHA and log. Do not rerun the unassigned workflow blindly or patch-loop without executed evidence. If no approved Windows executor with Python 3.11 and no actually assigned runner are available, keep `TESTS=NOT_RUN` and stop this path.
 
-Do not touch the original checkout, start AppBootstrap/MCP/Cloudflared/issuer/real transport, read protected data or secrets, merge PR #531, or enable protected reads.
+Do not touch the original checkout; start no AppBootstrap, MCP, Cloudflared, issuer process or real transport; perform no protected reads or secret inspection; do not merge PR #531 or enable protected reads.
 
 ### Canonical disposition
 
