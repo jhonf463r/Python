@@ -1,34 +1,30 @@
 <!-- Route summary synchronized 2026-10-26. CURRENT-STATE.md is the sole active route authority. -->
 
-## CURRENT ROUTE — M1F authorization tests blocked by missing Python 3.11 (2026-10-26)
+## CURRENT ROUTE — M1F tests blocked by absent Python 3.11 in checked environment (2026-10-26)
 
-Before acting, read `IABV_v1.5/docs/history/CHAT-ARCH/CURRENT-STATE.md` first and follow its live route. Revalidate live `main`, PR #531 state and the exact candidate HEAD immediately before execution; never treat a SHA copied from a historical receipt as a guarantee of current state.
+Read IABV_v1.5/docs/history/CHAT-ARCH/CURRENT-STATE.md first and follow its active route. Revalidate live main, PR #531 and the exact candidate HEAD immediately before any new execution.
 
-### Active state
+### Latest disposition
 
-- PR [#531](https://github.com/jhonf463r/Python/pull/531): `OPEN`, `DRAFT=TRUE`, `MERGED=FALSE`.
-- Last verified candidate HEAD: `50cbd2b8b3d643d05726290c76ef13f85731949e`.
-- Latest Owner-supplied preparation outcome: `TESTS=NOT_RUN`. A clean temporary clone reached the exact candidate SHA, but `py -3.11 -m venv .venv` failed with exit `103`, `No suitable Python runtime found`. No dependencies or venv were installed or created; pytest was not invoked.
-- The first disposable clone stopped at `Filename too long` (exit `128`) and was not the test source. The original checkout was not used or modified.
-- Full details: [M1F Python 3.11 setup blocker receipt](./docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-26-M1F-PY311-SETUP-BLOCKER-RECEIPT.md).
-- Exact-HEAD test procedure: [Windows test handoff](./docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-26-M1F-WINDOWS-TEST-HANDOFF-EXACT-HEAD.md).
+- PR #531 remains OPEN, DRAFT=TRUE, MERGED=FALSE at candidate HEAD 50cbd2b8b3d643d05726290c76ef13f85731949e.
+- The Owner's bounded Windows discovery reports no eligible Python 3.11 runtime in the checked launcher output, command lookup, registry keys or conventional Python311 paths. Other Python versions found are not substitutes for the handoff's specified runtime.
+- No new clone was searched for or reused, no venv/dependencies were created and pytest was not invoked. This is TESTS=NOT_RUN, not a product assertion failure.
+- Detailed new receipt: [M1F Python 3.11 bounded discovery](./docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-26-M1F-PY311-BOUNDED-DISCOVERY-RECEIPT.md).
+- Previous venv failure receipt: [M1F Python 3.11 setup blocker](./docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-26-M1F-PY311-SETUP-BLOCKER-RECEIPT.md).
+- Exact focused-test procedure: [Windows test handoff](./docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-26-M1F-WINDOWS-TEST-HANDOFF-EXACT-HEAD.md).
 
 ### Execution guardrails
 
-Do not repeat the unchanged failed setup in the same unavailable environment, improvise a Python installation, or rerun the unassigned hosted workflow blindly. Resume only in an approved isolated Windows environment that already has Python 3.11, or after a hosted runner is demonstrably assigned and job steps execute. If neither is available, preserve `TESTS=NOT_RUN` and stop this path.
+The bounded runtime-discovery cycle is closed for this environment. Do not repeat the same searches, use Python 3.10/3.12/3.13/3.14 as silent substitutes, install a runtime as an improvised workaround, create additional clones, or blindly retry the unassigned hosted workflow. Resume only when an approved isolated Windows executor already has Python 3.11, or a hosted runner is genuinely assigned and executes steps. Keep the original checkout untouched; start no operational service or transport; read no secrets/protected data; do not modify source or merge the candidate.
 
-Use a disposable clone, venv and fresh temporary `IABV_DATA_DIR`. Do not touch the original checkout; start no AppBootstrap, MCP, Cloudflared, issuer or real transport; perform no protected reads or secret inspection; do not patch-loop without executed evidence. Never merge PR #531 or grant whole-organ acceptance from authored tests.
-
-```text
-CLEANUP_COMPLETE=FALSE
-TESTS=NOT_RUN
-TEST_SETUP_BLOCKER=PYTHON_3_11_UNAVAILABLE; VENV_EXIT=103
-G1/G2/G3=NOT_ESTABLISHED
-IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
-WHOLE_ORGAN_ACCEPTANCE=NOT_GRANTED
-PROTECTED_READS=FAIL_CLOSED
-BRIDGE=BRIDGE_NOT_READY
-```
+    PYTHON311_DISCOVERY=BOUNDED_CHECK_COMPLETE_FOR_CURRENT_ENVIRONMENT
+    TESTS=NOT_RUN
+    PYTEST_INVOKED=FALSE
+    G1/G2/G3=NOT_ESTABLISHED
+    IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+    WHOLE_ORGAN_ACCEPTANCE=NOT_GRANTED
+    PROTECTED_READS=FAIL_CLOSED
+    BRIDGE=BRIDGE_NOT_READY
 
 CURRENT-STATE.md is authoritative if any route summary or historical record conflicts with it.
 
