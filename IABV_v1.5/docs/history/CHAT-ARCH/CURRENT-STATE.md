@@ -9,6 +9,7 @@
 - Candidate HEAD: `bc2baf525a70d66628809360a197f25a069aa328`.
 - R-07 source/test evidence: [local-only reconciliation receipt](./CHAT-ARCH-2026-10-26-M1F-PR531-R07-LOCAL-ONLY-RECONCILIATION.md).
 - Actions blocker receipt: [Actions billing-lock route](./CHAT-ARCH-2026-10-26-M1F-PR531-ACTIONS-BILLING-LOCK-ROUTE.md).
+- Fresh authenticated UI recheck: billing-lock warning remains visible; 175 listed runs failed at startup ([read-only inspection receipt](https://agent.tinyfish.ai/runs/2fe72c49-0d19-4454-8f5d-0560942ca147)).
 - Latest observed candidate run: [#40408992195](https://github.com/jhonf463r/Python/actions/runs/40408992195) (`startup_failure`, `jobs=[]`); prior run [#40406668947](https://github.com/jhonf463r/Python/actions/runs/40406668947).
 - Community escalation: [#211346](https://github.com/orgs/community/discussions/211346).
 - New reply assessment: [community reply assessment](./CHAT-ARCH-2026-10-26-M1F-ACTIONS-COMMUNITY-REPLY-ASSESSMENT.md).
@@ -55,7 +56,7 @@ RETRY_CLASS=SAME_OR_LOW_INFORMATION_UNLESS_A_NEW_PRECONDITION_IS_VERIFIED
 NEXT_ACTION=OWNER_INSPECT_BILLING_AND_LICENSING_OR_REQUEST_OFFICIAL_REVIEW; DO_NOT_TRIGGER_UNCHANGED_WORKFLOW
 ```
 
-This finding updates the last observed run but does not establish why the account-lock message appears. Apply [UAAL-D019 — Space-Time Anti-Loop and First-Open Causal Frontier](./CHAT-ARCH-2026-10-26-UAAL-D019-SPACE-TIME-ANTI-LOOP-CAUSAL-FRONTIER.md): it is the same terminal outcome stage; do not repeat the workflow unchanged without a verified material precondition delta. Current GitHub Status reports Actions operational generally; that does not disprove this account/repository-specific restriction. The authenticated Actions UI warning still needs a fresh visual check. The browser connector rejected strict mode because this account lacks that beta; rechecking via its default 150-step mode requires Owner approval.
+This finding updates the last observed run but does not establish why the account-lock message appears. Apply [UAAL-D019 — Space-Time Anti-Loop and First-Open Causal Frontier](./CHAT-ARCH-2026-10-26-UAAL-D019-SPACE-TIME-ANTI-LOOP-CAUSAL-FRONTIER.md): it is the same terminal outcome stage; do not repeat the workflow unchanged without a verified material precondition delta. Current GitHub Status reports Actions operational generally; that does not disprove this account/repository-specific restriction. That earlier pending-recheck state is superseded by the later Owner-authorized read-only UI confirmation recorded above; the warning remains visible.
 
 ### Community response evidence
 
