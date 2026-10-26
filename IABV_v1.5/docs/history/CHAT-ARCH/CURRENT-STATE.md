@@ -70,7 +70,7 @@ R-07 is locally enforced on the candidate: loopback binds only, injected public 
 
 ### Required next action
 
-Resolve or obtain the reason for the account-billing lock through GitHub's account UI before another Actions attempt; no payment details should be shared in chat and no billing change was made here. Once execution is restored, revalidate `main`, PR state and exact candidate HEAD, then run the three focused suites on an approved Windows/Python 3.11 executor and preserve exact SHA, job/step evidence and exit code. If the failed zero-job run cannot be rerun, establish a separately reviewed trigger path. Do not repeat the same startup failure, change workflow YAML blindly, rebase or merge the PR, or enable protected reads.
+The next Owner action is to open GitHub account Settings → Billing & Licensing and review whether it shows an active subscription, balance or payment issue. Do not share payment details in this chat and do not change billing merely to test a hypothesis. If Billing & Licensing shows no issue to resolve, use the [GitHub Support portal](https://support.github.com/contact) to request an official review of the billing lock, following [GitHub's locked-account guidance](https://docs.github.com/en/billing/how-tos/troubleshooting/locked-account). Do not repeat the same workflow while the warning remains. After an independently observed change to the execution precondition, refresh `main`, PR #531 and the exact candidate HEAD, then run the three focused suites on an approved Windows/Python 3.11 executor with SHA, job/step logs and exit-code evidence. Do not modify workflow YAML blindly, rebase/merge the PR or enable protected reads.
 
 ```text
 LAST_TASK=M1F_PR531_ACTIONS_BILLING_LOCK_DIAGNOSIS_20261026
