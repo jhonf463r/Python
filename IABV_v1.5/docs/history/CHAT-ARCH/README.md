@@ -1,5 +1,17 @@
 <!-- Route summary synchronized 2026-10-26. CURRENT-STATE.md is the sole active route authority. -->
 
+## Latest verified route delta — billing discrepancy and support intake completed (2026-10-26)
+
+The Owner-authorized read-only Billing & Licensing check is complete: GitHub Free and Copilot Free are visible, with no billing alert or balance explaining the Actions restriction. The authenticated Actions page still displays the billing-lock warning and lists 185 runs as failed at startup. Root cause remains UNKNOWN; TESTS=NOT_RUN.
+
+No official support ticket was created: the Free-account contact flow reached a form without a subject or description field. A sanitized follow-up was posted to existing Community discussion #211346 at https://github.com/community/community/discussions/211346/comments/19206234; the thread was still Unanswered at last check.
+
+Canonical evidence: [M1F Actions billing-lock support intake outcome](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-26-M1F-ACTIONS-BILLING-LOCK-SUPPORT-INTAKE-OUTCOME.md). CURRENT-STATE.md remains the sole operational route authority.
+
+UAAL-D019 no-repeat rule: do not repeat unchanged Actions runs, the completed Billing & Licensing inspection, or the same unproductive support-form navigation without a material new condition. Do not create dummy workflows, change billing, or buy a plan to test a hypothesis. In parallel, continue bounded source-grounded G1/G2/G3 producer-gap analysis without synthetic trust providers, protected-read enablement, rebase or merge.
+
+At this route update, main=b6381951c473d145898d23c971702525f2112a7b. PR #531 remains OPEN/DRAFT/UNMERGED at candidate bc2baf525a70d66628809360a197f25a069aa328; main-versus-candidate comparison is 17 commits ahead / 62 behind, merge base 7ddfe285b1a3267f9ef6f57f862cca78bc8438c2.
+
 ## CURRENT ROUTE — Focused validation blocked by visible GitHub Actions billing-lock warning (2026-10-26)
 
 Use [CURRENT-STATE.md](./CURRENT-STATE.md) as the sole route authority. PR #531 remains open, draft and unmerged at candidate HEAD `bc2baf525a70d66628809360a197f25a069aa328`. R-07 remains locally constrained: loopback only, no tunnel, no public URL.
