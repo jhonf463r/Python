@@ -49,6 +49,8 @@ The latest route observed before this cleanup receipt says:
 - The next technical action is to run `tests/test_mcp_bridge_service.py`, `tests/test_read_authorization.py` and `tests/test_windows_handle_reader.py` against the exact current candidate HEAD in an approved isolated Windows environment or a genuinely assigned runner. Prior workflows with `runner_id=0`, empty `runner_name` and no steps did not execute tests. Do not rerun a blocked workflow blindly; first verify actual runner assignment or use the already authorized isolated Windows route.
 - The exact SHA/HEAD and runner readiness must be revalidated immediately before execution. Preserve all fail-closed gates. Do not merge PR #531, start real transport or enable protected reads.
 
+The exact current candidate test procedure is versioned separately: [M1F Windows test handoff — exact PR #531 HEAD](./CHAT-ARCH-2026-10-26-M1F-WINDOWS-TEST-HANDOFF-EXACT-HEAD.md). Use it only after revalidating that PR #531 still points to the pinned SHA; it is a prepared handoff, not an execution receipt.
+
 ## 5. State at the transition
 
 ```text
