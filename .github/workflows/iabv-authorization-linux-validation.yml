@@ -16,7 +16,6 @@ jobs:
       contents: read
     env:
       PYTHONPATH: IABV_v1.5/src
-      IABV_DATA_DIR: ${{ runner.temp }}/iabv-authz-test-data-${{ github.run_id }}
     steps:
       - name: Check out isolated candidate
         uses: actions/checkout@v7.0.1
@@ -32,7 +31,10 @@ jobs:
         run: python -m pip install --disable-pip-version-check -e "IABV_v1.5[dev]"
 
       - name: Create isolated data directory
-        run: mkdir -p "$IABV_DATA_DIR"
+        run: |
+          export IABV_DATA_DIR="$RUNNER_TEMP/iabv-authz-test-data-$GITHUB_RUN_ID"
+          mkdir -p "$IABV_DATA_DIR"
+          echo "IABV_DATA_DIR=$IABV_DATA_DIR" >> "$GITHUB_ENV"
 
       - name: Run focused authorization contract suites
         run: >-
