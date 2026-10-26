@@ -1,49 +1,28 @@
-<!-- Owner-authorized route transition: 2026-10-25. CURRENT-STATE.md remains the sole route authority. -->
+<!-- Route summary synchronized 2026-10-26. CURRENT-STATE.md is the sole active route authority. -->
 
-## CURRENT ROUTE — G3 identity-binding hardening in candidate; hosted test execution unavailable (2026-10-25)
+## CURRENT ROUTE — Memory protocol follows the M1F setup blocker (2026-10-26)
 
-### Live revisions
+`CURRENT-STATE.md` remains the sole active route authority. Revalidate its referenced main SHA, PR state and candidate HEAD before acting; use the linked records as evidence, not as automatic proof of current state.
 
-At 2026-10-25 21:15 America/Bogota, live main was 24a08f9fc4c82ee261f21d95707bcbd5d86f0d36. Draft PR #531 remains open and unmerged at candidate head 50cbd2b8b3d643d05726290c76ef13f85731949e. Its historical base SHA is 7ddfe285b1a3267f9ef6f57f862cca78bc8438c2; main is one later documentation-only commit ahead. The source candidate remains isolated from production.
+### Evidence classification and causal reuse
 
-Detailed evidence: https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-25-M1F-G3-BINDING-AND-RUNNER-RECONCILIATION-RECEIPT.md
+The latest Windows execution receipt is Owner-supplied evidence, not independently re-executed by this writer. It reports that the approved candidate was checked out in a clean disposable clone, then environment preparation stopped because no suitable Python 3.11 runtime was available (`py -3.11 -m venv .venv`, exit `103`). No pytest invocation occurred.
 
-### Bounded source corrections fetched back from the candidate
+This is consistent with the existing rule that a remembered constraint must alter a current decision and that causal reuse requires an attributable chain from prior experience to changed decision and observable consequence. It does **not** establish internal memory activation, causal reuse or algorithmic learning:
 
-1. G3 target identity: ReadAuthorizationCoordinator.authorize now requires workspace_id, checkout_id and resolver_version returned by the target resolver to equal those on the identical opened-target capability. The MCP enforcement guard independently checks the same three permit-to-capability equalities.
-2. Startup preflight: MCPBridgeService now refuses to start either MCP or Cloudflared when approved_workspace_root_provider is absent or does not expose callable current_workspace_root.
-3. Regression coverage: six parameterized G3 resolver/guard cases and two missing/invalid root-provider startup cases were added. These tests are authored but have not run.
+```text
+CAUSAL_REUSE=NOT_ESTABLISHED
+ALGORITHM_LEARNED=NOT_PROVEN
+TESTS=NOT_RUN
+```
 
-This corrects two source-level gaps; it does not establish a trusted root, authentic provider, native Windows semantics or whole-organ acceptance.
+Durable evidence:
+- [M1F Python 3.11 setup blocker receipt](./CHAT-ARCH-2026-10-26-M1F-PY311-SETUP-BLOCKER-RECEIPT.md)
+- [Exact-HEAD Windows test handoff](./CHAT-ARCH-2026-10-26-M1F-WINDOWS-TEST-HANDOFF-EXACT-HEAD.md)
 
-### Hosted execution blocker — verified across runner labels
+### Route constraints
 
-The latest candidate runs 40258140268 and 40258135717 use windows-latest but report runner_id=0, empty runner_name and steps=[]. The separate Ubuntu fallback run 40257696172 reports the same runner_id=0, empty runner_name and steps=[] with label ubuntu-latest. Each terminated before checkout, dependency installation or pytest. The precise hosted-runner assignment cause is unknown.
-
-The local tool container also could not resolve github.com to obtain a clone. Therefore TESTS=NOT_RUN, BUILD=NOT_RUN, RUNTIME=NOT_RUN, native Windows handles/ACL=NOT_RUN, authenticated IPC/anti-rollback=NOT_RUN and real MCP transport/protected reads=NOT_RUN. This is an execution-infrastructure failure, not evidence that source assertions failed or passed.
-
-Do not repeat the failed runs blindly. A valid runner assignment requires runner_id greater than zero, a nonempty runner_name and actual job step records.
-
-### Trust boundary still not provisioned
-
-AppBootstrap on main has no approved_workspace_root_provider wiring. The candidate still composes ReadAuthorizationCoordinator.unconfigured() and does not wire a production root provider. The repository path .github/iabv-g1-bootstrap-manifest.json returned 404 on main and candidate. This establishes only the repository-path result; it does not prove no other local or external trust asset exists.
-
-AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED. No trust root, owner mandate, production G2 policy/revocation provider, G3 root/resolver, authenticated issuer IPC, host-owned process identity or rollback-resistant replay provider was fabricated or declared established.
-
-### Canonical disposition
-
-G1=NOT_ESTABLISHED
-G2=NOT_ESTABLISHED
-G3=NOT_ESTABLISHED
-IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
-WHOLE_ORGAN_ACCEPTANCE=NOT_GRANTED
-PROTECTED_READS=FAIL_CLOSED
-BRIDGE=BRIDGE_NOT_READY
-
-### Exact next action
-
-The current statically identified source gaps have bounded fixes in the candidate. Stop the patch loop unless executed test evidence or a newly evidenced defect justifies another change. When an approved runner is actually assigned, execute the three focused suites against the then-current exact PR #531 head and retain complete logs. Then continue evidence-backed G1/G2/G3 authority provisioning and native Windows acceptance. Do not merge the candidate, enable protected reads, start production transport or infer acceptance from Git blob identity and authored tests.
-
+Do not retry the unchanged setup in the same environment, install runtimes as an improvised bypass, or rerun the hosted workflow blindly. Resume only in an approved isolated Windows environment already provisioned with Python 3.11 or after runner assignment and actual job steps are verified. If neither is available, record `TESTS=NOT_RUN` and stop the route. Preserve the source candidate, keep protected reads fail-closed, and do not infer G1/G2/G3 or whole-organ acceptance from authored tests or documentation.
 
 ## HISTORICAL ROUTE — Windows-specific runner handoff before cross-platform runner reconciliation (superseded 2026-10-25)
 
