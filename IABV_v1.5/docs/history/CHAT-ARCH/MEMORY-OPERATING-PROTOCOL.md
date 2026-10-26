@@ -1,6 +1,33 @@
 <!-- Route summary synchronized 2026-10-26. CURRENT-STATE.md is the sole active route authority. -->
 
-## CURRENT ROUTE — R-07 transport integration gap found; implementation decision pending (2026-10-26)
+<!-- Active route synchronized 2026-10-26. CURRENT-STATE.md is the sole route authority. -->
+
+## CURRENT ROUTE — PR #531 validation blocked by visible Actions billing-lock warning; community reply assessed (2026-10-26)
+
+For the active IABV-to-Codex bridge route, follow [CURRENT-STATE.md](./CURRENT-STATE.md) as the sole operational authority. PR #531 remains open/draft/unmerged at candidate `bc2baf525a70d66628809360a197f25a069aa328`; R-07 is already reconciled local-only and must not be reopened as a pending design decision.
+
+The signed-in repository Actions page displayed a billing-lock warning; run #40406668947 has `startup_failure`, `path=BuildFailed`, and zero jobs, so no product tests ran. The reason for the account lock and Actions usage remain unknown. The public discussion #211346 has one community-user comment, not an official diagnosis. Its billing/index/ARC suggestions are unverified; do not create a dummy workflow or diagnostic branch. Full assessment: [community reply assessment](./CHAT-ARCH-2026-10-26-M1F-ACTIONS-COMMUNITY-REPLY-ASSESSMENT.md).
+
+Next Owner action: inspect GitHub account Billing & licensing without sharing payment details or changing billing merely to test a theory. Once Actions execution is restored, revalidate live `main`, PR state and exact candidate HEAD, then run the three focused suites on an approved isolated Windows/Python 3.11 executor. Do not repeat failed zero-job runs; do not rebase/merge, enable protected reads or claim acceptance until all evidence gates close.
+
+```text
+LAST_TASK=M1F_PR531_ACTIONS_BILLING_LOCK_AND_COMMUNITY_REPLY_ASSESSMENT_20261026
+PR531=OPEN_DRAFT_UNMERGED
+CANDIDATE_HEAD=bc2baf525a70d66628809360a197f25a069aa328
+R07_TRANSPORT_PROFILE=LOCAL_ONLY_ENFORCED_IN_CANDIDATE_SERVICE
+ACTIONS_ACCOUNT_WARNING=BILLING_LOCK_MESSAGE_VISIBLE; UNDERLYING_REASON_UNKNOWN
+COMMUNITY_REPLY=ONE_PUBLIC_COMMENT; UNVERIFIED_USER_HYPOTHESES
+TESTS=NOT_RUN
+G1/G2/G3=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+PROTECTED_READS=FAIL_CLOSED
+BRIDGE=BRIDGE_NOT_READY
+NEXT_ACTION=OWNER_REVIEW_BILLING_LOCK; THEN_REVALIDATE_AND_RUN_FOCUSED_SUITES
+```
+
+## HISTORICAL ROUTE — R-07 transport integration gap found; implementation decision pending (2026-10-26) (superseded by local-only reconciliation and Actions billing-lock diagnosis)
+
+## HISTORICAL ROUTE — R-07 transport integration gap found; implementation decision pending (2026-10-26) (superseded by local-only reconciliation and Actions billing-lock diagnosis)
 
 The bounded PR #531 review of R-01–R-08 and material test changes is complete enough to route the next decision, but this is not exhaustive line-by-line review of all additions and not acceptance. The exact candidate still has no production G1/G2/G3 provider chain; `AppBootstrap` registers `ReadAuthorizationCoordinator.unconfigured()`. Tests remain `NOT_RUN`.
 

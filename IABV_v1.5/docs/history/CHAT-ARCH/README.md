@@ -6,6 +6,8 @@ Use [CURRENT-STATE.md](./CURRENT-STATE.md) as the sole route authority. PR #531 
 
 The signed-in repository Actions UI explicitly reports that workflows cannot execute because account billing is locked. Latest candidate run [#40406668947](https://github.com/jhonf463r/Python/actions/runs/40406668947) is `startup_failure`, unnamed `BuildFailed` path, with `jobs=[]`; no Python step or test ran. The general plan page did not show a lock banner, so the underlying billing cause remains unknown and no payment details were inspected or changed.
 
+The public Actions discussion [#211346](https://github.com/orgs/community/discussions/211346) now has one community-user comment, not an official GitHub diagnosis. Treat its billing/index/ARC suggestions as unverified hypotheses; do not follow its suggestion to create a dummy workflow or diagnostic branch. See [community reply assessment](./CHAT-ARCH-2026-10-26-M1F-ACTIONS-COMMUNITY-REPLY-ASSESSMENT.md). `ROOT_CAUSE=UNKNOWN` and `TESTS=NOT_RUN` remain unchanged.
+
 Full evidence and next route: [Actions billing-lock receipt](./CHAT-ARCH-2026-10-26-M1F-PR531-ACTIONS-BILLING-LOCK-ROUTE.md). Keep `TESTS=NOT_RUN`, G1/G2/G3 unestablished, eight prerequisites open, protected reads fail-closed and `BRIDGE=BRIDGE_NOT_READY`. Resolve the visible account lock, then revalidate exact HEAD and execute the three focused tests on an approved Windows/Python 3.11 executor. Do not repeat failed Actions runs or merge/rebase the candidate yet.
 
 ## HISTORICAL ROUTE — PR #531 R-07 local-only transport reconciliation recorded; validation pending (2026-10-26) (superseded by Actions billing-lock diagnosis, 2026-10-26)
