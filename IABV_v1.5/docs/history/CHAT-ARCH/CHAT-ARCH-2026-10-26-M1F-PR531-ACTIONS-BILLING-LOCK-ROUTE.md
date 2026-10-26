@@ -121,6 +121,34 @@ RUNTIME_METHOD_ENFORCEMENT=NOT_PROVEN
 
 This is a durable route-to-method link, not proof that a new chat has consumed the rule. A later non-identical task must demonstrate its use and verified effect before causal reuse can be claimed.
 
+## Fresh authenticated UI recheck — owner-authorized, read-only (2026-10-26)
+
+The Owner explicitly authorized a new read-only inspection because the strict browser mode was unavailable. The default browser mode loaded the signed-in repository Actions page successfully.
+
+Observed facts:
+- Repository: `jhonf463r/Python`; page: `Actions → All workflows`.
+- The exact billing-lock warning remains visible at the top: “GitHub Actions workflows can't be executed on this repository. Your account's billing is currently locked. Please update your payment information.”
+- The page showed 175 workflow runs; all listed runs appeared in “failed at startup” state.
+- Inspection receipt: [TinyFish read-only browser run](https://agent.tinyfish.ai/runs/2fe72c49-0d19-4454-8f5d-0560942ca147).
+- No workflow was clicked/dispatched, no retry was attempted, no billing/settings were changed.
+
+This directly establishes that the UI warning persisted at inspection time. It does not establish the underlying reason for the billing lock, and it does not prove that every listed run corresponds to this particular focused workflow. The workflow metadata query independently showed two recent attempts for the exact candidate, #40408992195 and #40406668947, with `startup_failure` and `jobs=[]`.
+
+UAAL-D019 application in this session: the proposed next step was a read-only check of the changed external precondition rather than another workflow run. The method guided classification of the result; because the Owner also explicitly directed this check, the exclusive causal contribution of the stored method is not isolated. Record this as `METHOD_APPLIED_AND_ROUTE_CHANGED_IN_THIS_SESSION`, not as autonomous learning or general runtime enforcement. A future non-identical task must still demonstrate repeatable causal reuse.
+
+```text
+FRESH_UI_RECHECK=CONFIRMED_READ_ONLY
+ACTIONS_ACCOUNT_WARNING=CURRENTLY_VISIBLE
+ACTIONS_UI_RUN=2fe72c49-0d19-4454-8f5d-0560942ca147
+ACTIONS_UI_RUNS_LISTED=175; ALL_LISTED=FAILED_AT_STARTUP
+UI_CHECK_SIDE_EFFECTS=NONE
+UAAL_D019=APPLIED_IN_THIS_SESSION
+METHOD_REUSE_EVIDENCE=ROUTE_SELECTED_READ_ONLY_RECHECK; NO_UNCHANGED_WORKFLOW_RETRY
+METHOD_CAUSAL_CONTRIBUTION=NOT_ISOLATED_FROM_EXPLICIT_OWNER_INSTRUCTION
+AUTONOMOUS_RUNTIME_ENFORCEMENT=NOT_PROVEN
+GENERAL_CAUSAL_REUSE=NOT_ESTABLISHED
+```
+
 ## Canonical status
 
 ```text
@@ -128,7 +156,7 @@ LAST_TASK=M1F_PR531_ACTIONS_BILLING_LOCK_DIAGNOSIS_20261026
 R07_TRANSPORT_PROFILE=LOCAL_ONLY_ENFORCED_IN_CANDIDATE_SERVICE
 PR531=OPEN_DRAFT_UNMERGED
 CANDIDATE_HEAD=bc2baf525a70d66628809360a197f25a069aa328
-ACTIONS_ACCOUNT_WARNING=BILLING_LOCK_MESSAGE_VISIBLE_ON_REPOSITORY_ACTIONS_PAGE
+ACTIONS_ACCOUNT_WARNING=CURRENTLY_VISIBLE; FRESH_UI_RECHECK=CONFIRMED_READ_ONLY
 BILLING_UNDERLYING_CAUSE=UNKNOWN; PAYMENT_DETAILS_NOT_INSPECTED
 BILLING_PLAN_OVERVIEW=FREE_2000_MINUTES; NO_GENERAL_WARNING_ON_THAT_VIEW
 LATEST_RUN=40408992195; STARTUP_FAILURE; WORKFLOW_NAME_EMPTY; WORKFLOW_ID=397336571; JOBS=0
@@ -143,7 +171,7 @@ IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
 WHOLE_ORGAN_ACCEPTANCE=NOT_GRANTED
 PROTECTED_READS=FAIL_CLOSED
 BRIDGE=BRIDGE_NOT_READY
-NEXT_ACTION=OWNER_RESOLVE_ACCOUNT_BILLING_LOCK_WITHOUT_SHARING_PAYMENT_DETAILS; THEN_REVALIDATE_AND_RUN_FOCUSED_SUITES
+NEXT_ACTION=OWNER_REVIEW_BILLING_AND_LICENSING_OR_REQUEST_OFFICIAL_LOCK_REVIEW; AFTER_VERIFIED_PRECONDITION_CHANGE_REVALIDATE_AND_RUN_FOCUSED_SUITES
 AUTOMATIC_FOLLOW_ON=CONTINUE_WITH_NEXT_DISCRIMINATING_STEP; DO_NOT_REPEAT_FAILED_ACTIONS
 ```
 
