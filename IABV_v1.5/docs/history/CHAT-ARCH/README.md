@@ -114,6 +114,13 @@ NEXT_ACTION=EXECUTE_THREE_FOCUSED_SUITES_ON_ISOLATED_WINDOWS_CLONE; THEN REVIEW 
 
 All prior route snapshots remain below the historical-route boundary.
 
+## Latest bounded cleanup receipt — 2026-10-26
+
+The latest Owner-supplied receipt is reconciled in [CHAT-ARCH-2026-10-26-cleanup-receipt-reconciliation-and-route-transition.md](./CHAT-ARCH-2026-10-26-cleanup-receipt-reconciliation-and-route-transition.md). No deletion was executed; the latest C: reading is not reclaimed-space evidence. `hcsparle`, the Ollama model store and Driver Booster data remain preserved because no specific safe, authorized disposable candidate was demonstrated. The cleanup track is formally delimited under current evidence, not complete. Do not repeat the same Ollama inspection absent new evidence.
+
+Return to `CURRENT-STATE.md` for the bridge route. Revalidate live `main` and PR #531; do not repeat a hosted workflow blindly while runner assignment remains `runner_id=0`, empty runner name and no steps. Execute the three focused suites only on a genuinely assigned runner or the authorized isolated Windows route. Keep PR #531 unmerged and protected reads fail-closed.
+
+
 ## Supplemental cleanup continuity record — 2026-10-26
 
 The global laptop-cleanup experience writeback is recorded in [CHAT-ARCH-2026-10-26-global-laptop-cleanup-learning-writeback.md](./CHAT-ARCH-2026-10-26-global-laptop-cleanup-learning-writeback.md). Activate it for cleanup/resource-pressure tasks alongside the September 3 capability boundary, October 8 experience-driven task-construction rule and October 10 anti-loop/policy-denial history.
