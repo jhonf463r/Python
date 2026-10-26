@@ -25,7 +25,6 @@ jobs:
     timeout-minutes: 10
     env:
       PYTHONPATH: IABV_v1.5/src
-      IABV_DATA_DIR: ${{ runner.temp }}/iabv-authz-test-data
     steps:
       - name: Check out the reviewed pull-request revision
         uses: actions/checkout@v7.0.1
@@ -43,6 +42,8 @@ jobs:
           "pytest>=8,<9" "pydantic>=2.7,<3" "httpx>=0.27,<1"
 
       - name: Run bridge-start and authorization contract tests
+        env:
+          IABV_DATA_DIR: ${{ runner.temp }}/iabv-authz-test-data
         run: >-
           python -m pytest
           IABV_v1.5/tests/test_mcp_bridge_service.py
