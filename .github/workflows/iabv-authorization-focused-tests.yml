@@ -1,7 +1,12 @@
 name: IABV authorization focused candidate tests
 
 "on":
+  push:
+    branches:
+      - "codex/iabv-m1f-authz-candidate-review-20261025"
   pull_request:
+    branches:
+      - "main"
     paths:
       - "IABV_v1.5/src/iabv_v15/services/evolution/mcp_bridge_service.py"
       - "IABV_v1.5/src/iabv_v15/services/security/read_authorization.py"
