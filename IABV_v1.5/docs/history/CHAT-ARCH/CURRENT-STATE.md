@@ -1,6 +1,59 @@
-<!-- Owner-authorized route transition: R-07 local-only transport reconciliation, 2026-10-26. CURRENT-STATE.md remains the sole route authority. -->
+<!-- Owner-authorized route transition: Actions billing-lock blocker, 2026-10-26. CURRENT-STATE.md remains the sole route authority. -->
 
-## CURRENT ROUTE — PR #531 R-07 local-only transport reconciliation recorded; validation and branch reconciliation pending (2026-10-26)
+## CURRENT ROUTE — Focused validation blocked by visible account billing lock in GitHub Actions (2026-10-26)
+
+### Live references
+
+- PR [#531](https://github.com/jhonf463r/Python/pull/531): `OPEN`, `DRAFT=TRUE`, `MERGED=FALSE`.
+- Candidate branch: `codex/iabv-m1f-authz-candidate-review-20261025`.
+- Candidate HEAD: `bc2baf525a70d66628809360a197f25a069aa328`.
+- R-07 source/test evidence: [local-only reconciliation receipt](./CHAT-ARCH-2026-10-26-M1F-PR531-R07-LOCAL-ONLY-RECONCILIATION.md).
+- Actions blocker receipt: [Actions billing-lock route](./CHAT-ARCH-2026-10-26-M1F-PR531-ACTIONS-BILLING-LOCK-ROUTE.md).
+- Latest candidate run: [#40406668947](https://github.com/jhonf463r/Python/actions/runs/40406668947).
+- Community escalation: [#211346](https://github.com/orgs/community/discussions/211346).
+
+### Immediate blocker
+
+The signed-in repository Actions UI displays: “GitHub Actions workflows can't be executed on this repository. Your account's billing is currently locked. Please update your payment information.” It also shows all workflow runs in startup failure. The general Billing & Plans overview did not display a lock banner, so the two UI views conflict; retain the more specific Actions warning as a live execution blocker without inferring the underlying payment reason. Payment details were not inspected and no settings changed.
+
+The run metadata for #40406668947 is `conclusion=startup_failure`, `name=""`, `path=BuildFailed`, `workflow_id=397336571`, `jobs=[]`; combined statuses are empty. Tests never started. Direct browser API requests for the referenced Check Suite/workflow returned 404, but private-resource access may be masked because those requests did not carry a GitHub API credential; they do not prove a missing/orphaned workflow. The actual workflow file is present on `main` and the candidate at blob `fc3ff9c6d04a16a391a19b7e0792d6f3c482995c`.
+
+### Executor and acceptance state
+
+The available local container runs Python 3.13.5, has no Python 3.11 and no repo worktree, so it is not the approved Windows/Python 3.11 executor. Static import-path review found the focused test modules do not instantiate `AppBootstrap`; no secret file was opened. The workflow requests `windows-latest`, Python 3.11, an isolated runner-temp `IABV_DATA_DIR`, and the three focused suites. **Tests/build/runtime remain `NOT_RUN`**.
+
+R-07 is locally enforced on the candidate: loopback binds only, injected public tunnel rejected, no Cloudflare lifecycle. Production bootstrap remains `ReadAuthorizationCoordinator.unconfigured()`; G1/G2/G3 and all eight prerequisites remain open. Protected reads stay fail-closed.
+
+### Required next action
+
+Resolve or obtain the reason for the account-billing lock through GitHub's account UI before another Actions attempt; no payment details should be shared in chat and no billing change was made here. Once execution is restored, revalidate `main`, PR state and exact candidate HEAD, then run the three focused suites on an approved Windows/Python 3.11 executor and preserve exact SHA, job/step evidence and exit code. If the failed zero-job run cannot be rerun, establish a separately reviewed trigger path. Do not repeat the same startup failure, change workflow YAML blindly, rebase or merge the PR, or enable protected reads.
+
+```text
+LAST_TASK=M1F_PR531_ACTIONS_BILLING_LOCK_DIAGNOSIS_20261026
+R07_TRANSPORT_PROFILE=LOCAL_ONLY_ENFORCED_IN_CANDIDATE_SERVICE
+PR531=OPEN_DRAFT_UNMERGED
+CANDIDATE_HEAD=bc2baf525a70d66628809360a197f25a069aa328
+ACTIONS_ACCOUNT_WARNING=BILLING_LOCK_MESSAGE_VISIBLE_ON_REPOSITORY_ACTIONS_PAGE
+BILLING_UNDERLYING_CAUSE=UNKNOWN; PAYMENT_DETAILS_NOT_INSPECTED
+LATEST_RUN=40406668947; STARTUP_FAILURE; WORKFLOW_NAME_EMPTY; PATH=BuildFailed; JOBS=0
+CHECK_SUITE_DIAGNOSTIC=NOT_RECOVERED; PRIVATE_API_404_INCONCLUSIVE
+TESTS=NOT_RUN
+EXECUTOR=NO_APPROVED_WINDOWS_PYTHON311_EXECUTOR_IN_THIS_SESSION
+ACTIONS_USAGE_MINUTES=UNKNOWN
+G1/G2/G3=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+WHOLE_ORGAN_ACCEPTANCE=NOT_GRANTED
+PROTECTED_READS=FAIL_CLOSED
+BRIDGE=BRIDGE_NOT_READY
+NEXT_ACTION=OWNER_RESOLVE_ACCOUNT_BILLING_LOCK_WITHOUT_SHARING_PAYMENT_DETAILS; THEN_REVALIDATE_AND_RUN_FOCUSED_SUITES
+AUTOMATIC_FOLLOW_ON=CONTINUE_WITH_NEXT_DISCRIMINATING_STEP; DO_NOT_REPEAT_FAILED_ACTIONS
+```
+
+The previous R-07 active section below is retained as historical context.
+
+
+## HISTORICAL ROUTE — PR #531 R-07 local-only transport reconciliation recorded; validation pending (2026-10-26) (superseded by Actions billing-lock diagnosis)
 
 ### Live references
 

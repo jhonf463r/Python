@@ -1,6 +1,14 @@
 <!-- Route summary synchronized 2026-10-26. CURRENT-STATE.md is the sole active route authority. -->
 
-## CURRENT ROUTE — PR #531 R-07 local-only transport reconciliation recorded; validation pending (2026-10-26)
+## CURRENT ROUTE — Focused validation blocked by visible GitHub Actions billing-lock warning (2026-10-26)
+
+Use [CURRENT-STATE.md](./CURRENT-STATE.md) as the sole route authority. PR #531 remains open, draft and unmerged at candidate HEAD `bc2baf525a70d66628809360a197f25a069aa328`. R-07 remains locally constrained: loopback only, no tunnel, no public URL.
+
+The signed-in repository Actions UI explicitly reports that workflows cannot execute because account billing is locked. Latest candidate run [#40406668947](https://github.com/jhonf463r/Python/actions/runs/40406668947) is `startup_failure`, unnamed `BuildFailed` path, with `jobs=[]`; no Python step or test ran. The general plan page did not show a lock banner, so the underlying billing cause remains unknown and no payment details were inspected or changed.
+
+Full evidence and next route: [Actions billing-lock receipt](./CHAT-ARCH-2026-10-26-M1F-PR531-ACTIONS-BILLING-LOCK-ROUTE.md). Keep `TESTS=NOT_RUN`, G1/G2/G3 unestablished, eight prerequisites open, protected reads fail-closed and `BRIDGE=BRIDGE_NOT_READY`. Resolve the visible account lock, then revalidate exact HEAD and execute the three focused tests on an approved Windows/Python 3.11 executor. Do not repeat failed Actions runs or merge/rebase the candidate yet.
+
+## HISTORICAL ROUTE — PR #531 R-07 local-only transport reconciliation recorded; validation pending (2026-10-26) (superseded by Actions billing-lock diagnosis, 2026-10-26)
 
 Use [CURRENT-STATE.md](./CURRENT-STATE.md) as the sole route authority. R-07 has been reconciled on PR #531's candidate branch, not merged into `main`. The bridge service now enforces loopback-only binding, rejects an injected tunnel runner, and does not start or publish a Cloudflare URL. The authenticated remote profile remains unimplemented; Host/Origin and DNS-rebinding protections were not weakened.
 
