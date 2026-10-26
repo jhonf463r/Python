@@ -9,7 +9,7 @@
 - Candidate HEAD: `bc2baf525a70d66628809360a197f25a069aa328`.
 - R-07 source/test evidence: [local-only reconciliation receipt](./CHAT-ARCH-2026-10-26-M1F-PR531-R07-LOCAL-ONLY-RECONCILIATION.md).
 - Actions blocker receipt: [Actions billing-lock route](./CHAT-ARCH-2026-10-26-M1F-PR531-ACTIONS-BILLING-LOCK-ROUTE.md).
-- Latest candidate run: [#40406668947](https://github.com/jhonf463r/Python/actions/runs/40406668947).
+- Latest observed candidate run: [#40408992195](https://github.com/jhonf463r/Python/actions/runs/40408992195) (`startup_failure`, `jobs=[]`); prior run [#40406668947](https://github.com/jhonf463r/Python/actions/runs/40406668947).
 - Community escalation: [#211346](https://github.com/orgs/community/discussions/211346).
 - New reply assessment: [community reply assessment](./CHAT-ARCH-2026-10-26-M1F-ACTIONS-COMMUNITY-REPLY-ASSESSMENT.md).
 
@@ -18,6 +18,23 @@
 The signed-in repository Actions UI displays: “GitHub Actions workflows can't be executed on this repository. Your account's billing is currently locked. Please update your payment information.” It also shows all workflow runs in startup failure. The general Billing & Plans overview did not display a lock banner, so the two UI views conflict; retain the more specific Actions warning as a live execution blocker without inferring the underlying payment reason. Payment details were not inspected and no settings changed.
 
 The run metadata for #40406668947 is `conclusion=startup_failure`, `name=""`, `path=BuildFailed`, `workflow_id=397336571`, `jobs=[]`; combined statuses are empty. Tests never started. Direct browser API requests for the referenced Check Suite/workflow returned 404, but private-resource access may be masked because those requests did not carry a GitHub API credential; they do not prove a missing/orphaned workflow. The actual workflow file is present on `main` and the candidate at blob `fc3ff9c6d04a16a391a19b7e0792d6f3c482995c`.
+
+### Newer zero-job run discovered during 2026-10-26 continuity revalidation
+
+The GitHub connector's current workflow-run list for the exact candidate HEAD now includes run [#40408992195](https://github.com/jhonf463r/Python/actions/runs/40408992195), newer than #40406668947. It is `completed/startup_failure`, with an empty workflow name and workflow ID `397336571`. The job-list query for #40408992195 returned `jobs=[]`. This is a newer repeated startup failure, not test execution. The initiating event for this run was not established here, so do not attribute it to a particular user or automation.
+
+Compare against the previous terminal attempt:
+```text
+PRIOR_EXPERIMENT=FOCUSED_ACTIONS_RUN_ON_CANDIDATE_BC2BAF5
+NEWER_RUN=40408992195; COMPLETED; STARTUP_FAILURE; JOBS=0
+PRIOR_RUN=40406668947; COMPLETED; STARTUP_FAILURE; JOBS=0
+PRECONDITION_DELTA=NOT_ESTABLISHED
+TESTS=NOT_RUN
+RETRY_CLASS=SAME_OR_LOW_INFORMATION_UNLESS_A_NEW_PRECONDITION_IS_VERIFIED
+NEXT_ACTION=OWNER_INSPECT_BILLING_AND_LICENSING_OR_REQUEST_OFFICIAL_REVIEW; DO_NOT_TRIGGER_UNCHANGED_WORKFLOW
+```
+
+This finding updates the last observed run but does not establish why the account-lock message appears. Current GitHub Status reports Actions operational generally; that does not disprove this account/repository-specific restriction. The authenticated Actions UI warning still needs a fresh visual check.
 
 ### Community response evidence
 
@@ -40,7 +57,9 @@ PR531=OPEN_DRAFT_UNMERGED
 CANDIDATE_HEAD=bc2baf525a70d66628809360a197f25a069aa328
 ACTIONS_ACCOUNT_WARNING=BILLING_LOCK_MESSAGE_VISIBLE_ON_REPOSITORY_ACTIONS_PAGE
 BILLING_UNDERLYING_CAUSE=UNKNOWN; PAYMENT_DETAILS_NOT_INSPECTED
-LATEST_RUN=40406668947; STARTUP_FAILURE; WORKFLOW_NAME_EMPTY; PATH=BuildFailed; JOBS=0
+LATEST_RUN=40408992195; STARTUP_FAILURE; WORKFLOW_NAME_EMPTY; JOBS=0
+PREVIOUS_RUN=40406668947; STARTUP_FAILURE; PATH=BuildFailed; JOBS=0
+REPEATED_ZERO_JOB_STARTUP_FAILURE=TRUE; PRECONDITION_DELTA=NOT_ESTABLISHED
 CHECK_SUITE_DIAGNOSTIC=NOT_RECOVERED; PRIVATE_API_404_INCONCLUSIVE
 TESTS=NOT_RUN
 EXECUTOR=NO_APPROVED_WINDOWS_PYTHON311_EXECUTOR_IN_THIS_SESSION
