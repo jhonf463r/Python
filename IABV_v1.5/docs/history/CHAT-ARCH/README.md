@@ -114,6 +114,15 @@ NEXT_ACTION=EXECUTE_THREE_FOCUSED_SUITES_ON_ISOLATED_WINDOWS_CLONE; THEN REVIEW 
 
 All prior route snapshots remain below the historical-route boundary.
 
+## Supplemental cleanup continuity record — 2026-10-26
+
+The global laptop-cleanup experience writeback is recorded in [CHAT-ARCH-2026-10-26-global-laptop-cleanup-learning-writeback.md](./CHAT-ARCH-2026-10-26-global-laptop-cleanup-learning-writeback.md). Activate it for cleanup/resource-pressure tasks alongside the September 3 capability boundary, October 8 experience-driven task-construction rule and October 10 anti-loop/policy-denial history.
+
+The cleanup remains incomplete; `hcsparle` is unresolved and must be preserved pending discriminating installation evidence. Continue with independent candidates rather than restarting a global scan. The next candidate is read-only classification of the historically reported Ollama model store; no model deletion is authorized by size alone. Never retry a previously policy-blocked target by another route. Preserve Windows, IABV/Git/evidence, browser applications and sessions, and unique user data.
+
+This is historical/operational memory, not a replacement for the sole active routing authority, `CURRENT-STATE.md`. It does not establish general IABV self-cleanup capability or prove later causal reuse.
+
+
 ## HISTORICAL ROUTE NOTE
 
 Previous route snapshots are retained below as historical evidence. They are not current routing instructions where they conflict with the route section above.
