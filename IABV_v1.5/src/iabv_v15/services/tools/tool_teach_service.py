@@ -60,6 +60,7 @@ class ToolTeachService:
         rollback_manager: ToolRollbackManager,
         adapters: dict[str, ToolAdapter],
         workspace_root: str,
+        data_root: str | Path | None = None,
         interaction_learning_service: InteractionLearningService | None = None,
         mode_selector: InteractionModeSelector | None = None,
         experiment_lab: ExperimentLab | None = None,
@@ -74,6 +75,9 @@ class ToolTeachService:
         self.rollback_manager = rollback_manager
         self.adapters = adapters
         self.workspace_root = Path(workspace_root)
+        # Preserve normal workspace/data behavior while permitting isolated I1
+        # to route profile and screenshot state to its dedicated data root.
+        self.data_root = Path(data_root) if data_root is not None else self.workspace_root / 'data'
         self.interaction_learning_service = interaction_learning_service
         self.mode_selector = mode_selector
         self.experiment_lab = experiment_lab
@@ -988,7 +992,7 @@ class ToolTeachService:
             if url:
                 actions.append(ToolAction(action_type=ToolActionType.OPEN_URL, label='Abrir URL', target=url))
             if 'captura' in request.user_goal.lower() or 'screenshot' in request.user_goal.lower():
-                shot_path = str(self.workspace_root / 'data' / 'tool_teaching' / 'playwright_last.png')
+                shot_path = str(self.data_root / 'tool_teaching' / 'playwright_last.png')
                 actions.append(ToolAction(action_type=ToolActionType.SCREENSHOT, label='Tomar captura', parameters={'path': shot_path}))
             if not actions:
                 actions.append(ToolAction(action_type=ToolActionType.OPEN_URL, label='Abrir URL', target=url or 'https://example.com'))
@@ -1693,7 +1697,7 @@ class ToolTeachService:
         background_capture_mode: str,
         isolated_session_required: bool,
     ) -> str:
-        root = self.workspace_root / 'data' / 'tool_teaching' / 'external_assistants'
+        root = self.data_root / 'tool_teaching' / 'external_assistants'
         if tool_id == 'codex_installed' or str(background_capture_mode or '').strip().lower() == 'codex_rollout':
             profile_dir = root / 'codex_home'
         elif isolated_session_required:
@@ -1890,7 +1894,7 @@ class ToolTeachService:
                 return None
             return ToolAction(action_type=ToolActionType.EXTRACT_TEXT, label='Extraccion reutilizada', target=target, metadata={'reused_from_pattern': True})
         if operation == ToolActionType.SCREENSHOT.value:
-            path = target or str(self.workspace_root / 'data' / 'tool_teaching' / 'playwright_reused.png')
+            path = target or str(self.data_root / 'tool_teaching' / 'playwright_reused.png)
             return ToolAction(action_type=ToolActionType.SCREENSHOT, label='Captura reutilizada', target=path, parameters={'path': path}, metadata={'reused_from_pattern': True})
         if operation == ToolActionType.VERIFY_STATE.value:
             return ToolAction(action_type=ToolActionType.VERIFY_STATE, label='Verificacion reutilizada', target=target, metadata={'reused_from_pattern': True})

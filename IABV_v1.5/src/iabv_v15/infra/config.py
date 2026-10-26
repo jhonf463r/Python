@@ -28,9 +28,50 @@ def _env_optional_flag(*names: str) -> bool | None:
     return None
 
 
+def _resolve_i1_isolated_data_root(workspace_root: Path) -> Path:
+    """Validate the dedicated, empty data root required by I1 isolated mode.
+
+    This path check is not an OS sandbox. Runtime remains separately gated
+    until the remaining bootstrap effects have been reviewed.
+    """
+    raw = os.getenv('IABV_I1_DATA_ROOT', '').strip()
+    if not raw:
+        raise RuntimeError(
+            'IABV_I1_ISOLATED_MODE=1 requires an explicit IABV_I1_DATA_ROOT.'
+        )
+    candidate = Path(raw).expanduser()
+    if not candidate.is_absolute():
+        raise RuntimeError('IABV_I1_DATA_ROOT must be an absolute path.')
+    if candidate.is_symlink():
+        raise RuntimeError('IABV_I1_DATA_ROOT must not be a symlink.')
+    target = candidate.resolve(strict=False)
+    workspace = workspace_root.resolve(strict=False)
+    if (
+        target == workspace
+        or workspace in target.parents
+        or target in workspace.parents
+    ):
+        raise RuntimeError(
+            'IABV_I1_DATA_ROOT must not overlap the source workspace.'
+        )
+    if target.exists():
+        if not target.is_dir():
+            raise RuntimeError('IABV_I1_DATA_ROOT exists but is not a directory.')
+        try:
+            next(target.iterdir())
+        except StopIteration:
+            pass
+        else:
+            raise RuntimeError(
+                'IABV_I1_DATA_ROOT must be new or empty; refusing state reuse.'
+            )
+    return target
+
+
 def load_app_config(workspace_root: str | None = None) -> AppConfig:
     root = Path(workspace_root or Path.cwd()).resolve()
-    data_dir = root / 'data'
+    isolated_mode = os.getenv('IABV_I1_ISOLATED_MODE', '').strip() == '1'
+    data_dir = _resolve_i1_isolated_data_root(root) if isolated_mode else root / 'data'
     chrome_default = os.getenv(
         'IABV_CHROME_USER_DATA_DIR',
         str(Path.home() / 'AppData' / 'Local' / 'Google' / 'Chrome' / 'User Data'),
