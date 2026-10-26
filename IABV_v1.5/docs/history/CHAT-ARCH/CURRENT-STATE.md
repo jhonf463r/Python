@@ -1,6 +1,61 @@
-<!-- Owner-authorized route transition: 2026-10-26. CURRENT-STATE.md remains the sole route authority. -->
+<!-- Owner-authorized route transition: R-07 local-only transport reconciliation, 2026-10-26. CURRENT-STATE.md remains the sole route authority. -->
 
-## CURRENT ROUTE — Bounded PR #531 review identifies R-07 transport gap; separate Owner decision required (2026-10-26)
+## CURRENT ROUTE — PR #531 R-07 local-only transport reconciliation recorded; validation and branch reconciliation pending (2026-10-26)
+
+### Live references
+
+- PR [#531](https://github.com/jhonf463r/Python/pull/531) remains `OPEN`, `DRAFT=TRUE`, `MERGED=FALSE`, with candidate HEAD `bc2baf525a70d66628809360a197f25a069aa328`.
+- The R-07 source/test change is confined to candidate branch `codex/iabv-m1f-authz-candidate-review-20261025`; it is not merged into `main`.
+- Reconciliation receipt: [CHAT-ARCH-2026-10-26-M1F-PR531-R07-LOCAL-ONLY-RECONCILIATION.md](./CHAT-ARCH-2026-10-26-M1F-PR531-R07-LOCAL-ONLY-RECONCILIATION.md).
+- GitHub Actions support remains a parallel track: [Community discussion #211346](https://github.com/orgs/community/discussions/211346). `ACTIONS_USAGE_BLOCK=UNKNOWN`; the cause has not been established.
+
+### R-07 result
+
+The bounded Owner-authorized task chose **local-only**. `MCPBridgeService` now rejects non-loopback bind hosts and injected tunnel runners; its lifecycle no longer starts/waits for/stops Cloudflare, and `tunnel_url` remains unset. Existing MCP Host/Origin and DNS-rebinding protections were not weakened. An authenticated remote profile, fixed trusted hostname and exact-origin contract remain unimplemented. Do not use wildcard allowlists or disable DNS-rebinding protection.
+
+Only these two paths changed between the previous candidate HEAD `50cbd2b8b3d643d05726290c76ef13f85731949e` and the reconciled HEAD:
+- `IABV_v1.5/src/iabv_v15/services/evolution/mcp_bridge_service.py`
+- `IABV_v1.5/tests/test_mcp_bridge_service.py`
+
+The three candidate commits are recorded in the receipt. Fetched-back source/test blobs are `e0e23f62904a2adf2e8b932c96896935fcf0cf6b` and `c05541fbaa3c2a9757af88a49e18ab4502fd0008`.
+
+### Verification and remaining gates
+
+- Files were fetched back and statically checked. Python tests, builds, lint/static commands and runtime checks remain **`NOT_RUN`**. No test PASS is claimed.
+- No MCP transport, public tunnel, production runtime, native Windows ACL/handle path, issuer IPC or protected read was started or exercised.
+- Production bootstrap still uses `ReadAuthorizationCoordinator.unconfigured()`. G1/G2/G3 remain not established; authority assets remain unknown/not inspected. Dependency-presence checks do not prove provider authenticity.
+- The compare from `main=b111a26f46730a99bad3cf60cc68f8ece66dc916` to candidate HEAD `bc2baf525a70d66628809360a197f25a069aa328` reported the candidate 17 commits ahead and 32 behind at the time of that check. Documentation-only commits have since advanced `main`; re-fetch the exact divergence before any later rebase/merge. Branch-base reconciliation is outside this R-07 task and has not been performed. Do not merge this candidate.
+- Keep protected reads fail-closed and bridge production readiness blocked pending approved isolated validation and all independent authority/platform requirements.
+
+### Canonical status
+
+```text
+LAST_TASK=M1F_PR531_R07_LOCAL_ONLY_TRANSPORT_RECONCILIATION
+R07_TRANSPORT_PROFILE=LOCAL_ONLY_ENFORCED_IN_CANDIDATE_SERVICE
+REMOTE_TRANSPORT_PROFILE=NOT_IMPLEMENTED
+PR531=OPEN_DRAFT_UNMERGED
+CANDIDATE_HEAD=bc2baf525a70d66628809360a197f25a069aa328
+CANDIDATE_VS_MAIN_AT_BASE_b111a26f46730a99bad3cf60cc68f8ece66dc916=17_AHEAD;32_BEHIND_AT_COMPARISON
+BRANCH_REBASE=NOT_PERFORMED
+CHANGED_PATHS=2; MCP_BRIDGE_SERVICE_AND_SERVICE_TESTS_ONLY
+TESTS=NOT_RUN
+MCP_RUNTIME=NOT_RUN
+WINDOWS_NATIVE_ACCEPTANCE=NOT_RUN
+ACTIONS_USAGE_BLOCK=UNKNOWN
+ROOT_CAUSE=UNKNOWN
+G1/G2/G3=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+WHOLE_ORGAN_ACCEPTANCE=NOT_GRANTED
+PROTECTED_READS=FAIL_CLOSED
+BRIDGE=BRIDGE_NOT_READY
+NEXT_ACTION=VALIDATE_FOCUSED_TESTS_ON_EXACT_HEAD_IN_APPROVED_ISOLATED_EXECUTOR; THEN_REVIEW_BRANCH_BASE_DIVERGENCE_SEPARATELY
+```
+
+This is a candidate transport-profile correction, not a completed test run, production acceptance, or merge authorization. The prior R-07 decision-pending section below is historical and preserved for provenance.
+
+
+## HISTORICAL ROUTE — Bounded PR #531 review identified R-07 transport gap; separate Owner decision required (2026-10-26) (superseded 2026-10-26 by local-only reconciliation)
 
 ### Live references
 
