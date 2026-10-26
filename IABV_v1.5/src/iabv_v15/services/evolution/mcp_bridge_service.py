@@ -469,6 +469,12 @@ class MCPBridgeService:
             return "AUTHORIZATION_PREREQUISITES_UNVERIFIABLE"
         if missing:
             return "AUTHORIZATION_PREREQUISITES_MISSING:" + ",".join(missing)
+
+        root_provider = getattr(self._container, "approved_workspace_root_provider", None)
+        if root_provider is None:
+            return "APPROVED_WORKSPACE_ROOT_PROVIDER_UNAVAILABLE"
+        if not callable(getattr(root_provider, "current_workspace_root", None)):
+            return "APPROVED_WORKSPACE_ROOT_PROVIDER_INVALID"
         return None
 
     def _start_locked(self) -> MCPBridgeStatus:
