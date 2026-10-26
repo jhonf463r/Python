@@ -1,0 +1,144 @@
+name: IABV M1F isolated Windows runner probe
+
+"on":
+  push:
+    branches:
+      - codex/iabv-m1f-runner-probe-20261026
+
+permissions:
+  contents: read
+
+jobs:
+  windows-runner-probe-and-focused-tests:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - name: Diagnose assigned runner before candidate download
+        shell: pwsh
+        run: |
+          Write-Output "RUNNER_DIAGNOSTIC=ASSIGNED"
+          Write-Output "RUNNER_NAME=$env:RUNNER_NAME"
+          Write-Output "RUNNER_OS=$env:RUNNER_OS"
+          Write-Output "RUNNER_TEMP=$env:RUNNER_TEMP"
+          Write-Output "CANDIDATE_SHA=50cbd2b8b3d643d05726290c76ef13f85731949e"
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v7.1.0
+        with:
+          python-version: "3.11"
+
+      - name: Verify configured Python executable
+        shell: pwsh
+        run: |
+          $version = (& python --version 2>&1 | Out-String).Trim()
+          Write-Output "PYTHON_VERSION=$version"
+          if ($LASTEXITCODE -ne 0 -or $version -notmatch '^Python 3\.11\.\d+') {
+            throw "Expected Python 3.11.x; got: $version"
+          }
+
+      - name: Fetch and verify the exact PR candidate in an isolated repository
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $repoUrl = 'https://github.com/jhonf463r/Python.git'
+          $expectedSha = '50cbd2b8b3d643d05726290c76ef13f85731949e'
+          $authBytes = [System.Text.Encoding]::ASCII.GetBytes("x-access-token:$env:GITHUB_TOKEN")
+          $authValue = 'AUTHORIZATION: basic ' + [Convert]::ToBase64String($authBytes)
+          $env:GIT_CONFIG_COUNT = '1'
+          $env:GIT_CONFIG_KEY_0 = 'http.https://github.com/.extraheader'
+          $env:GIT_CONFIG_VALUE_0 = $authValue
+          try {
+            $refOutput = git ls-remote $repoUrl refs/pull/531/head
+            if ($LASTEXITCODE -ne 0) { throw "PR ref lookup failed with exit $LASTEXITCODE" }
+            $remoteSha = (($refOutput -split '\s+')[0]).Trim()
+            Write-Output "REMOTE_PR_HEAD=$remoteSha"
+            if ($remoteSha -ne $expectedSha) { throw "PR #531 head changed; expected $expectedSha, got $remoteSha" }
+
+            $candidateRoot = Join-Path $env:RUNNER_TEMP ('iabv-m1f-candidate-' + [guid]::NewGuid().ToString('N'))
+            New-Item -ItemType Directory -Path $candidateRoot | Out-Null
+            git -C $candidateRoot init --quiet
+            if ($LASTEXITCODE -ne 0) { throw "git init failed with exit $LASTEXITCODE" }
+            git -C $candidateRoot config core.longpaths true
+            if ($LASTEXITCODE -ne 0) { throw "core.longpaths configuration failed with exit $LASTEXITCODE" }
+            git -C $candidateRoot remote add origin $repoUrl
+            if ($LASTEXITCODE -ne 0) { throw "git remote add failed with exit $LASTEXITCODE" }
+            git -C $candidateRoot fetch --no-tags --depth=1 origin refs/pull/531/head
+            if ($LASTEXITCODE -ne 0) { throw "PR fetch failed with exit $LASTEXITCODE" }
+            $fetchedSha = (git -C $candidateRoot rev-parse FETCH_HEAD).Trim()
+            if ($LASTEXITCODE -ne 0 -or $fetchedSha -ne $expectedSha) { throw "Fetched SHA mismatch: $fetchedSha" }
+            git -C $candidateRoot checkout --detach $expectedSha
+            if ($LASTEXITCODE -ne 0) { throw "Detached checkout failed with exit $LASTEXITCODE" }
+            $head = (git -C $candidateRoot rev-parse HEAD).Trim()
+            if ($LASTEXITCODE -ne 0 -or $head -ne $expectedSha) { throw "Checkout HEAD mismatch: $head" }
+            $status = @(git -C $candidateRoot status --porcelain)
+            if ($LASTEXITCODE -ne 0 -or $status.Count -ne 0) { throw 'Candidate checkout is not clean' }
+            Add-Content -Path $env:GITHUB_ENV -Value "IABV_CANDIDATE_ROOT=$candidateRoot"
+            Write-Output "CANDIDATE_HEAD=$head"
+            Write-Output "CANDIDATE_STATUS=CLEAN"
+            Write-Output "CANDIDATE_ROOT=$candidateRoot"
+          }
+          finally {
+            Remove-Item Env:GIT_CONFIG_COUNT -ErrorAction SilentlyContinue
+            Remove-Item Env:GIT_CONFIG_KEY_0 -ErrorAction SilentlyContinue
+            Remove-Item Env:GIT_CONFIG_VALUE_0 -ErrorAction SilentlyContinue
+            Remove-Item Env:GITHUB_TOKEN -ErrorAction SilentlyContinue
+          }
+
+      - name: Prepare isolated test data and install declared development dependencies
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $candidateRoot = $env:IABV_CANDIDATE_ROOT
+          $dataDir = Join-Path $env:RUNNER_TEMP ('iabv-m1f-test-data-' + [guid]::NewGuid().ToString('N'))
+          New-Item -ItemType Directory -Path $dataDir | Out-Null
+          $env:IABV_DATA_DIR = $dataDir
+          $env:PYTHONPATH = Join-Path $candidateRoot 'IABV_v1.5\src'
+          Add-Content -Path $env:GITHUB_ENV -Value "IABV_DATA_DIR=$dataDir"
+          Add-Content -Path $env:GITHUB_ENV -Value "PYTHONPATH=$env:PYTHONPATH"
+          Write-Output "IABV_DATA_DIR=$dataDir"
+          Write-Output "PYTHONPATH=$env:PYTHONPATH"
+          Push-Location $candidateRoot
+          try {
+            python -m venv .venv
+            if ($LASTEXITCODE -ne 0) { throw "venv creation failed with exit $LASTEXITCODE" }
+            $venvPython = Join-Path $candidateRoot '.venv\Scripts\python.exe'
+            $venvVersion = (& $venvPython --version 2>&1 | Out-String).Trim()
+            Write-Output "VENV_PYTHON_VERSION=$venvVersion"
+            if ($LASTEXITCODE -ne 0 -or $venvVersion -notmatch '^Python 3\.11\.\d+') { throw "Venv is not Python 3.11.x: $venvVersion" }
+            & $venvPython -m pip install --disable-pip-version-check -e 'IABV_v1.5[dev]'
+            if ($LASTEXITCODE -ne 0) { throw "Dependency install failed with exit $LASTEXITCODE" }
+          }
+          finally {
+            Pop-Location
+          }
+
+      - name: Run the three focused authorization suites
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $candidateRoot = $env:IABV_CANDIDATE_ROOT
+          $expectedSha = '50cbd2b8b3d643d05726290c76ef13f85731949e'
+          $head = (git -C $candidateRoot rev-parse HEAD).Trim()
+          if ($LASTEXITCODE -ne 0 -or $head -ne $expectedSha) { throw "Candidate SHA changed before tests: $head" }
+          $log = Join-Path $env:RUNNER_TEMP ("IABV-M1F-pytest-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT.log")
+          $venvPython = Join-Path $candidateRoot '.venv\Scripts\python.exe'
+          Write-Output "TEST_CANDIDATE_SHA=$head"
+          Write-Output "TEST_LOG=$log"
+          Push-Location $candidateRoot
+          try {
+            & $venvPython -m pytest `
+              IABV_v1.5/tests/test_mcp_bridge_service.py `
+              IABV_v1.5/tests/test_read_authorization.py `
+              IABV_v1.5/tests/test_windows_handle_reader.py -q 2>&1 |
+              Tee-Object -FilePath $log
+            $testExit = $LASTEXITCODE
+            Write-Output "TEST_EXIT_CODE=$testExit"
+            Write-Output "TEST_CANDIDATE_SHA=$head"
+            Write-Output "TEST_LOG=$log"
+            exit $testExit
+          }
+          finally {
+            Pop-Location
+          }
