@@ -328,6 +328,9 @@ class IABVMCPServer:
                     or not decision.permit.checkout_id
                     or type(decision.permit.resolver_version) is not str
                     or not decision.permit.resolver_version
+                    or decision.permit.workspace_id != opened_target.workspace_id
+                    or decision.permit.checkout_id != opened_target.checkout_id
+                    or decision.permit.resolver_version != opened_target.resolver_version
                     or type(decision.permit.policy_version) is not int
                     or decision.permit.policy_version < 1
                     or type(decision.permit.issued_at_epoch) is not int
