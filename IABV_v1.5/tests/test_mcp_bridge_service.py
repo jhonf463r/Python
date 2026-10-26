@@ -97,9 +97,17 @@ class _FakeWorldModelService:
         return self._snapshot
 
 
+class _PresenceOnlyRootProvider:
+    """Dependency-presence sentinel; it never supplies an approved root."""
+
+    def current_workspace_root(self) -> None:
+        raise AssertionError("bridge startup preflight must not resolve or open a workspace root")
+
+
 class _FakeContainer:
     def __init__(self, snapshot: WorldModelSnapshot | None = None) -> None:
         self.world_model_service = _FakeWorldModelService(snapshot) if snapshot is not None else None
+        self.approved_workspace_root_provider = _PresenceOnlyRootProvider()
 
 
 def _default_snapshot(
@@ -190,6 +198,34 @@ def test_bridge_stays_stopped_when_authorization_coordinator_is_unconfigured(tmp
     assert status.governance_reason is not None
     assert status.governance_reason.startswith("AUTHORIZATION_PREREQUISITES_MISSING:")
     assert "INDEPENDENT_TRUST_ROOT_PROVIDER" in status.governance_reason
+
+
+def test_bridge_stays_stopped_without_approved_workspace_root_provider(tmp_path: Path) -> None:
+    svc, server, tunnel = _build_service(tmp_path)
+    svc._container.approved_workspace_root_provider = None
+
+    status = svc.set_enabled(True)
+
+    assert server.started == 0
+    assert tunnel.started == 0
+    assert status.running is False
+    assert status.state == "failed"
+    assert status.governance_blocked is True
+    assert status.governance_reason == "APPROVED_WORKSPACE_ROOT_PROVIDER_UNAVAILABLE"
+
+
+def test_bridge_stays_stopped_with_invalid_approved_workspace_root_provider(tmp_path: Path) -> None:
+    svc, server, tunnel = _build_service(tmp_path)
+    svc._container.approved_workspace_root_provider = object()
+
+    status = svc.set_enabled(True)
+
+    assert server.started == 0
+    assert tunnel.started == 0
+    assert status.running is False
+    assert status.state == "failed"
+    assert status.governance_blocked is True
+    assert status.governance_reason == "APPROVED_WORKSPACE_ROOT_PROVIDER_INVALID"
 
 
 def test_enabled_pref_starts_false_when_no_config(tmp_path: Path) -> None:
