@@ -1,34 +1,34 @@
 <!-- Route summary synchronized 2026-10-26. CURRENT-STATE.md is the sole active route authority. -->
 
-## CURRENT ROUTE — M1F focused tests not run: Python 3.11 unavailable (2026-10-26)
+## CURRENT ROUTE — M1F focused tests await eligible Python 3.11 executor (2026-10-26)
 
-Use `CURRENT-STATE.md` as the sole route authority and revalidate `main`, PR #531 and candidate HEAD before any new execution.
+Use CURRENT-STATE.md as the sole route authority. Before a new attempt, revalidate live main, PR #531 state and the exact candidate SHA.
 
 ### Latest continuity records
 
-- [M1F Python 3.11 setup blocker receipt](./CHAT-ARCH-2026-10-26-M1F-PY311-SETUP-BLOCKER-RECEIPT.md) — latest Owner-supplied Windows execution report. The exact candidate was checked out in the second disposable clone, but venv setup failed with exit `103` because Python 3.11 was unavailable. `pytest` was never invoked; `TESTS=NOT_RUN`.
-- [M1F exact-HEAD Windows test handoff](./CHAT-ARCH-2026-10-26-M1F-WINDOWS-TEST-HANDOFF-EXACT-HEAD.md) — bounded procedure for the three focused suites; requires an approved isolated Windows executor with Python 3.11.
-- [Cleanup receipt reconciliation and route transition](./CHAT-ARCH-2026-10-26-cleanup-receipt-reconciliation-and-route-transition.md) — global cleanup formally delimited under current evidence but not complete.
-- [Global laptop cleanup and learning constraints](./CHAT-ARCH-2026-10-26-global-laptop-cleanup-learning-writeback.md) — prior cleanup failures, preservation boundaries and unproven causal learning.
+- [M1F Python 3.11 bounded discovery receipt](./CHAT-ARCH-2026-10-26-M1F-PY311-BOUNDED-DISCOVERY-RECEIPT.md) — Owner-reported read-only discovery found no eligible Python 3.11 in the checked Windows locations. The discovery is complete for this environment; do not repeat it without materially new evidence.
+- [M1F Python 3.11 setup blocker receipt](./CHAT-ARCH-2026-10-26-M1F-PY311-SETUP-BLOCKER-RECEIPT.md) — earlier venv creation failed with exit 103; pytest was not invoked.
+- [M1F exact-HEAD Windows test handoff](./CHAT-ARCH-2026-10-26-M1F-WINDOWS-TEST-HANDOFF-EXACT-HEAD.md) — use only in an approved isolated Windows environment with Python 3.11 or a verified assigned hosted runner.
+- [Cleanup receipt reconciliation](./CHAT-ARCH-2026-10-26-cleanup-receipt-reconciliation-and-route-transition.md) — cleanup remains formally delimited, not complete.
 
 ### Current canonical status
 
-```text
-PR531=OPEN_DRAFT_UNMERGED
-CANDIDATE_HEAD=50cbd2b8b3d643d05726290c76ef13f85731949e
-TESTS=NOT_RUN
-TEST_SETUP_BLOCKER=PYTHON_3_11_UNAVAILABLE; VENV_EXIT=103
-HOSTED_RUNNER_ASSIGNMENT=FAILED_BEFORE_FIRST_STEP
-G1/G2/G3=NOT_ESTABLISHED
-IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
-WHOLE_ORGAN_ACCEPTANCE=NOT_GRANTED
-PROTECTED_READS=FAIL_CLOSED
-BRIDGE=BRIDGE_NOT_READY
-CAUSAL_REUSE=NOT_ESTABLISHED
-ALGORITHM_LEARNED=NOT_PROVEN
-```
+    PR531=OPEN_DRAFT_UNMERGED
+    CANDIDATE_HEAD=50cbd2b8b3d643d05726290c76ef13f85731949e
+    PYTHON311_DISCOVERY=BOUNDED_CHECK_COMPLETE_FOR_CURRENT_ENVIRONMENT
+    PYTHON_3_11=NOT_INSTALLED_OR_NOT_DISCOVERABLE_IN_CHECKED_LOCATIONS
+    TESTS=NOT_RUN
+    PYTEST_INVOKED=FALSE
+    HOSTED_RUNNER_ASSIGNMENT=FAILED_BEFORE_FIRST_STEP
+    G1/G2/G3=NOT_ESTABLISHED
+    IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+    WHOLE_ORGAN_ACCEPTANCE=NOT_GRANTED
+    PROTECTED_READS=FAIL_CLOSED
+    BRIDGE=BRIDGE_NOT_READY
+    CAUSAL_REUSE=NOT_ESTABLISHED
+    ALGORITHM_LEARNED=NOT_PROVEN
 
-Next action: run the three focused suites only after the exact SHA and PR state are revalidated and a suitable approved executor is available. Do not repeat the same setup unchanged or interpret infrastructure failure as a product test failure.
+Next action: execute the three focused suites only after exact SHA revalidation and actual access to an eligible executor. Do not repeat the blocked setup unchanged or treat infrastructure failure as test failure.
 
 ## HISTORICAL ROUTE — Windows-specific runner handoff before cross-platform runner reconciliation (superseded 2026-10-25)
 
