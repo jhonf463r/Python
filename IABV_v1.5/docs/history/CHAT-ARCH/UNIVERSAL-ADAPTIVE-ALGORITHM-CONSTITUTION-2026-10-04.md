@@ -394,3 +394,25 @@ UAAL-D018 strengthens its observe/verify/store/reuse edges: consequential action
 This refines the existing meta-method plasticity concept and does not create a separate algorithm, memory organ, agent, or router. It reuses the Memory Operating Protocol, Development Control Tower, evidence receipts, and `CURRENT-STATE.md` routing authority. Unknown handling remains fail-closed; structured observations require field-level capture states; retries require an explicit changed precondition and valid authorization.
 
 The method is documentary only. It does not prove runtime implementation, invocation, TPM state, automatic coordination, or learned behavior. Details and acceptance cases are in the canonical UAAL-D018 receipt.
+
+
+## 20E. SPACE-TIME ANTI-LOOP AND FIRST-OPEN CAUSAL FRONTIER (UAAL-D019)
+
+- `CONCEPT_ID=UAAL-D019`
+- `PARENT_CONCEPT_ID=UAAL-D014` (Meta-Method Plasticity / Failure-to-Evolution Loop)
+- `REFINES=UAAL-D018` (Execution-to-Evidence Stage Separation / Observability)
+- `ROOT=UAAL-ROOT-001`
+- `CANONICAL_SOURCE=CHAT-ARCH-2026-10-26-UAAL-D019-SPACE-TIME-ANTI-LOOP-CAUSAL-FRONTIER.md`
+- `STATUS=DOCUMENTED_METHOD; RUNTIME_ENFORCEMENT=NOT_PROVEN`
+
+**Problem:** prior context can be present while the next decision still repeats an operation that cannot produce new information under unchanged relevant conditions.
+
+**Mechanism:** before action selection, reconstruct the relevant temporal dependency graph; retrieve terminal and negative knowledge; fingerprint the decision-relevant experiment; compare it to prior attempts; select the earliest open causal edge and the smallest admissible discriminating action. If a terminal blocker recurs with the same fingerprint, do not retry unchanged. Reopening requires an observed material precondition change, a distinct falsifiable hypothesis/action, independently observed transient conditions plus a bounded retry plan, or new explicit Owner authorization.
+
+The fingerprint is based on objective/acceptance, exact target and revision, operation/material inputs, actor/route, authorization/preconditions, relevant environment/runtime, and expected observation/stop condition. New chat/task IDs, timestamps, wording or branch names are event metadata, not new causal evidence.
+
+Outcomes must remain stage-specific: `NOT_INVOKED`, `INVOKED_NO_OBSERVATION`, `STARTUP_FAILURE_ZERO_JOBS`, `EXECUTED_ASSERTION_FAILURE`, `OBSERVED_UNVERIFIED`, `PASS_WITH_SCOPE`, `BLOCKED_AUTHORIZATION`, `BLOCKED_PRECONDITION`, `CANONICAL_FETCH_BACK_VERIFIED`, `CAUSAL_REUSE_NOT_TESTED`, and `CAUSAL_REUSE_VERIFIED`. A visible blocker may be verified while its underlying root cause remains unknown.
+
+**Current application:** a GitHub Actions run with `startup_failure` and `jobs=[]` did not execute IABV tests. Repeating the same workflow while the account billing-lock warning and relevant execution precondition are unchanged is not a discriminating code test. The current route is to resolve or obtain an official explanation for the account restriction; after a material precondition change, refresh live refs and execute the exact focused suites in the approved Windows/Python 3.11 environment. Source authority gates G1/G2/G3 remain separate and open.
+
+This concept reuses the existing memory, evidence, route and governance organs; it does not create another memory store, router, coordinator or agent. It is not proof of automated anti-loop runtime, model-weight changes, consciousness or learning. A future non-identical task must demonstrate the rule was retrieved, changed the chosen action, and produced an independently verified outcome before claiming causal reuse.
