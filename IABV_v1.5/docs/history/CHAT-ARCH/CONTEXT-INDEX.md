@@ -1,54 +1,61 @@
 <!-- Owner-authorized route transition: 2026-10-25. CURRENT-STATE.md remains the sole route authority. -->
 
-## CURRENT ROUTE — M1B result reconciled; canonical documentation synchronized; source candidate unintegrated (2026-10-25)
+## CURRENT ROUTE — M1F reconstructed and bounded static review completed; production authorization remains blocked (2026-10-25)
 
-The Owner authorized the M1C documentation reconciliation and its final route-state cleanup. PR #526 was squash-merged as `452961e4c2d26a2a675eebf1ce97808149fbdce1`; PR #527 was squash-merged as `568d2fbac5d09ad0e144197801ee41b98f61a98c`. All five canonical front doors were fetched back from live `main` after those merges. The current route now records the M1B result and the completed documentation reconciliation. The M1A and M1B source candidates remain isolated, unmerged candidates and are not part of `main`. No product source changes are included in this documentation route.
+M1D and M1E have been reconstructed by Codex in a clean, isolated clone at the verified main baseline. The consolidated M1F candidate is supported by an independently checksum-verified diff and corrected evidence ZIP in the shared Dropbox OUTBOX. ChatGPT's static review is bounded to transfer integrity and the two M1E handle-cleanup paths; it is not a whole-organ acceptance or a statement that native Windows behavior has been verified.
 
-### M1B result and evidence classification
+### M1D / M1E / M1F evidence reconciliation
 
-- Task: `M1B_G1_OPENED_TARGET_CAPABILITY_CLOSE_RETRY_FIX_20261025`; Codex reported `TASK_RESULT=SOURCE_CANDIDATE_ONLY`.
-- Candidate base/HEAD reported by Codex: `1c86dcb43ceabf149dae3edb8b5f9530536e4ff6`. GitHub history confirms this SHA is an ancestor of current `main`. At the time M1C first reconciled the candidate, `main` was `4ac6045792e93c9a3033ebbfb7a34792dbf94f61`; documentation-only PRs #526, #527 and #528 were merged afterward. The referenced SHA and commit distance are historical observations, not the present `main` head. The candidate source/test paths remain absent from current `main`, consistent with non-integration.
-- Candidate files reported: `IABV_v1.5/src/iabv_v15/infra/mcp/windows_handle_reader.py` and `IABV_v1.5/tests/test_windows_handle_reader.py`. Fetching those paths from current `main` returns 404, consistent with the candidate not being integrated.
-- Codex reports one focused run with 17 tests passing (exit 0). ChatGPT did not rerun the tests; this remains an implementer-reported observation, not independent dynamic verification.
-- ChatGPT retrieved and statically examined the patch text from Dropbox. The narrow change in `OpenedTargetCapability.close()` is favorable: it preserves a re-tryable state after an underlying close exception, serializes close attempts using `_closing`, and marks the wrapper closed after the underlying close succeeds. The added synthetic regression checks failure, retry success and idempotence; a concurrent test uses explicit events/condition signaling. This is a narrow static review only, not whole-organ acceptance or proof of native Windows semantics.
-- Dropbox metadata and readable content confirm the report and patch exist at the paths recorded in [the M1C reconciliation receipt](./CHAT-ARCH-2026-10-25-M1C-CANONICAL-RECONCILIATION-RECEIPT.md). The evidence ZIP is stored in Dropbox as Base64 text, not as a ZIP binary. Its metadata was checked; ChatGPT did not independently decode the ZIP or recompute its member hashes in this reconciliation.
+- M1D candidate archive: 56,468 bytes; SHA-256 8b842c1d7aea09ae0bd709eb5ef4e5ce3c3cd5137c5f0561317c97ecdac22954. M1D's declared candidate-vs-main diff: 236,488 bytes; SHA-256 2d81795259bf27841ca0cc77c06144a4007a198f76a644986966a6023c3af722.
+- M1E relative cleanup diff: 38,025 bytes; SHA-256 e7a996ec45222ce625ee9c80950ce2951dd8e0cfbf5529cca89e775090c34373. Corrected M1E archive: 11,557 bytes; SHA-256 60ff35ff9e0f6e69061f2a4ca3338a5d8809961c251df5c8c3137bf8673e7711.
+- M1F consolidated candidate-vs-main diff: 249,105 UTF-8 bytes; SHA-256 29902d05a6f65e74ca251af174917074f2939a018ddd241c95da39eb87dd0021. This identity was independently recomputed from the Dropbox text after removing one extraction-added terminal newline; the resulting byte count and hash match the declared local artifact.
+- Corrected M1F evidence archive: 56,546 bytes; SHA-256 7c161a009a50da8133b173d7b282964ad4678818f713d2fb793e4a59ce22590f. ChatGPT independently decoded the Base64 read from Dropbox and recomputed the ZIP SHA-256 and byte length. The internal member inventory and member hashes remain as reported by the producer's M1F manifest; they were not separately re-expanded in this bounded review.
+- M1F evidence/report and consolidated diff are preserved in Dropbox at /IABV-IA-BRIDGE/OUTBOX/. The corrected report notes that M1E's original patch headers and literal separator required a separate normalized temporary copy for application. The original M1E patch was preserved unchanged.
 
-### Current work and route
+### Bounded independent static review
 
-The documentation reconciliation is complete in `main`: PR #526 records the M1B result and PR #527 corrects the stale post-merge lifecycle labels. The six-document change history separates Codex-reported test execution, narrow static review, Dropbox artifact transfer, and canonical adoption. No product code, tests, runtime, MCP transport, trust provisioning, or protected reads were changed or executed by this documentation sequence.
+- The M1E change to _open_component retains one OwnedWindowsHandle wrapper for the newly opened native handle. If metadata/type/reparse validation fails and close also fails, WindowsHandleCleanupError retains the original validation error, cleanup error and handle reference, rather than suppressing the cleanup failure or wrapping the same native handle twice.
+- The M1E change to open_target registers each newly opened child in the local ownership collection before borrowing it or attempting to close the prior parent. Failure enters reverse-order cleanup; if cleanup also fails, the returned cleanup error preserves the operation failure and remaining owned-handle references for retry.
+- The added tests described in the M1F report exercise the parent-close failure, child cleanup failure and validation-plus-cleanup failure cases with synthetic handles. Codex reports 24 focused tests passed in M1F, AST parsing passed for 13 Python files, and the complete-delta whitespace check exited 0. ChatGPT did not rerun tests or native code.
+- Within these two corrected cleanup paths, this review found no new bounded blocker requiring another immediate rewrite. That finding is not proof of whole-candidate security or native Windows correctness.
 
-```text
+### Candidate status and unresolved gates
+
+M1F was reconstructed from a clean detached checkout at main SHA 74b9a3900b39ed2009fccf4ba0be20faf7d9dac8. The consolidated delta contains the 13 reported M1D candidate paths, with M1E updating only windows_handle_reader.py and test_windows_handle_reader.py. No product source commit, push, merge or PR occurred; the candidate is not in main.
+
+The current production composition still registers ReadAuthorizationCoordinator.unconfigured() and does not wire an approved workspace-root provider, G1 trust anchor/Owner mandate, G2 policy provider, G3 production resolver, authenticated issuer IPC, persistent replay provider or host-owned server identity. This deliberately remains deny-only. The M1F mocks do not prove native Windows handle semantics, OS ACL containment, authority authenticity, issuer process identity, rollback-resistant replay state, real protected reads or live MCP transport. The prior reported bootstrap invocation that may have read a local secrets file remains a prior-run limitation; M1F did not repeat it.
+
+Space-Time evidence classification: producer-reported test result, independently checked artifact identity, bounded static source review, Dropbox transfer and canonical adoption are separate claims. The first four do not imply product integration or automatic learning.
+
+~~~text
 PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
-LAST_TERMINAL_TASK=M1B_G1_OPENED_TARGET_CAPABILITY_CLOSE_RETRY_FIX_20261025
-LAST_TERMINAL_RESULT=SOURCE_CANDIDATE_ONLY; CODEX_REPORTED_17_TESTS_PASSED; NARROW_STATIC_REVIEW_FAVORABLE
-LAST_COMPLETED_DOCUMENTATION_TASK=M1C_G1_CANONICAL_RECONCILIATION_AFTER_M1B_20261025
-ACTIVE_TASK=PLAN_NEXT_BOUNDED_AUTHORIZATION_ORGAN_STEP
-ACTIVE_TASK_STATUS=M1C_COMPLETE; PR_526_AND_527_MERGED; FIVE_CANONS_FETCHED_BACK
-M1B_SOURCE_CANDIDATE_IN_MAIN=FALSE
-M1B_TESTS=17_REPORTED_PASS; NOT_RERUN_BY_CHATGPT
-M1B_STATIC_REVIEW=NARROW_FAVORABLE; NOT_WHOLE_ORGAN_ACCEPTANCE
-CANONICAL_RECONCILIATION=COMPLETE; PR_526_AND_527_MERGED; FIVE_CANONS_VERIFIED_FROM_MAIN
-DOCUMENTATION_PR_HISTORY=PR_526_MERGED; PR_527_MERGED
-PRODUCT_CODE_COMMIT_PUSH_MERGE=NOT_PERFORMED_BY_M1C
+LAST_TERMINAL_TASK=M1F_G1_RECONSTRUCT_M1D_PLUS_M1E_ON_CLEAN_MAIN_20261025
+LAST_TERMINAL_RESULT=RECONSTRUCTED_SOURCE_CANDIDATE_ONLY; CODEX_REPORTED_24_FOCUSED_TESTS_PASS; CHATGPT_BOUNDED_STATIC_REVIEW_FAVORABLE_FOR_M1E_CLEANUP
+LAST_COMPLETED_DOCUMENTATION_TASK=M1G_M1F_EVIDENCE_RECONCILIATION_AND_ROUTE_WRITEBACK_20261025
+ACTIVE_TASK=OWNER_DECISION_ON_NEW_INDEPENDENT_AUTHORITY_EVIDENCE_OR_ONE_SPECIFIC_BOUNDED_PREREQUISITE_TASK
+M1D_SOURCE_CANDIDATE_IN_MAIN=FALSE
+M1E_HANDLE_CLEANUP_STATIC_REVIEW=BOUNDED_FAVORABLE
+M1F_CONSOLIDATED_DIFF_SHA256=29902d05a6f65e74ca251af174917074f2939a018ddd241c95da39eb87dd0021
+M1F_ZIP_SHA256=7c161a009a50da8133b173d7b282964ad4678818f713d2fb793e4a59ce22590f
+WHOLE_ORGAN_ACCEPTANCE=NOT_GRANTED
 G1=NOT_ESTABLISHED
 G2=NOT_ESTABLISHED
 G3=NOT_ESTABLISHED
 IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
 AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+APPROVED_WORKSPACE_ROOT_PROVIDER=NOT_WIRED_IN_CANDIDATE_COMPOSITION
 PROTECTED_READS=FAIL_CLOSED
+BRIDGE=BRIDGE_NOT_READY
+PRODUCT_SOURCE_COMMIT_PUSH_MERGE=NOT_PERFORMED
+CANONICAL_RECONCILIATION=THIS_DOCUMENTATION_CHANGE_ONLY
 AUTOMATIC_FOLLOW_ON=FALSE
-NEXT_ACTION=PLAN_NEXT_BOUNDED_AUTHORIZATION_ORGAN_STEP; KEEP_PROTECTED_READS_FAIL_CLOSED
-```
+NEXT_ACTION=OWNER_DECISION_ON_NEW_INDEPENDENT_AUTHORITY_EVIDENCE_OR_ONE_SPECIFIC_BOUNDED_PREREQUISITE_TASK
+~~~
 
-The next technical phase must be decided separately. At minimum, future work must assess governed integration of the source candidate, end-to-end binding of authorization to the exact opened object and consumer, and legitimate evidence for an approved workspace-root provider and authority chain. This documentation change establishes none of those properties and must not close any implementation prerequisite.
 
-Space-Time method delta: distinguish `implementer-reported test results`, `static review`, `Dropbox transfer`, and `canonical adoption`. Recording/retrieving this rule is not evidence of autonomous learning; `CAUSAL_REUSE=NOT_TESTED`.
+## HISTORICAL ROUTE NOTE
 
-The canonical documentation reconciliation is complete and has been fetched back from live `main`. The next technical phase is separate from this documentation task and must preserve the fail-closed gate until its own evidence is independently reviewed.
-
-<!-- Previous current-route snapshot is retained below as historical context. -->
-
-<!-- Terminal transition: 2026-10-25. CURRENT-STATE.md remains the sole routing authority. -->
+Previous route snapshots are retained below as historical evidence. They are not current routing instructions where they conflict with the route section above.
 
 ## HISTORICAL ROUTE — current tree delta verified; static review complete; integration remains blocked (2026-10-25; superseded by Owner authorization for the bounded handle-close task)
 
