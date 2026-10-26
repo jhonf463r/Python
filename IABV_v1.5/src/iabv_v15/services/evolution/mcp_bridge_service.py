@@ -114,21 +114,28 @@ class _TunnelRunner:
 class FastMCPServerRunner:
     """Corre `IABVMCPServer.run(transport)` dentro de un hilo daemon."""
 
-    def __init__(self, container: Any) -> None:
+    def __init__(self, container: Any, *, read_authorization_coordinator: Any | None = None) -> None:
         self._container = container
+        self._read_authorization_coordinator = read_authorization_coordinator
         self._thread: threading.Thread | None = None
         self._server: Any = None
         self._stopped = threading.Event()
 
-    def run_threaded(self, transport: str, host: str, port: int) -> threading.Thread:
-        from iabv_v15.infra.mcp.server import IABVMCPServer  # lazy
+    def _build_server(self) -> Any:
+        from iabv_v15.infra.mcp.server import IABVMCPServer
 
+        return IABVMCPServer(
+            self._container,
+            read_authorization_coordinator=self._read_authorization_coordinator,
+        )
+
+    def run_threaded(self, transport: str, host: str, port: int) -> threading.Thread:
         # FastMCP lee host/port de su config / env. Seteamos via env por compatibilidad
         # con distintos clientes.
         os.environ["FASTMCP_HOST"] = str(host)
         os.environ["FASTMCP_PORT"] = str(port)
 
-        self._server = IABVMCPServer(self._container)
+        self._server = self._build_server()
         self._stopped.clear()
 
         def _target() -> None:
@@ -311,6 +318,7 @@ class MCPBridgeService:
         *,
         container: Any,
         workspace_root: Path | str | None = None,
+        read_authorization_coordinator: Any | None = None,
         server_runner: _ServerRunner | None = None,
         tunnel_runner: _TunnelRunner | None = None,
         transport: str = DEFAULT_TRANSPORT,
@@ -320,8 +328,12 @@ class MCPBridgeService:
         clock: Callable[[], float] | None = None,
     ) -> None:
         self._container = container
+        self._read_authorization_coordinator = read_authorization_coordinator
         self._workspace_root = Path(workspace_root) if workspace_root else Path.cwd()
-        self._server_runner: _ServerRunner = server_runner or FastMCPServerRunner(container)
+        self._server_runner: _ServerRunner = server_runner or FastMCPServerRunner(
+            container,
+            read_authorization_coordinator=read_authorization_coordinator,
+        )
         self._tunnel_runner: _TunnelRunner = tunnel_runner or CloudflaredTunnelRunner()
         self._transport = transport if transport in {"stdio", "sse", "streamable-http"} else DEFAULT_TRANSPORT
         self._bind_host = bind_host
@@ -604,6 +616,7 @@ def build_mcp_bridge_service(
     container: Any,
     *,
     workspace_root: Path | str | None = None,
+    read_authorization_coordinator: Any | None = None,
 ) -> MCPBridgeService:
     """Construye el service con defaults razonables para AppBootstrap."""
 
@@ -616,6 +629,7 @@ def build_mcp_bridge_service(
     return MCPBridgeService(
         container=container,
         workspace_root=workspace_root,
+        read_authorization_coordinator=read_authorization_coordinator,
         transport=transport,
         bind_host=bind_host,
         bind_port=bind_port,

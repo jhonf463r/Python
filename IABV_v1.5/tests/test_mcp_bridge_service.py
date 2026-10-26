@@ -29,6 +29,7 @@ from iabv_v15.domain.models import (
     WorldModelSnapshot,
 )
 from iabv_v15.services.evolution.mcp_bridge_service import (
+    FastMCPServerRunner,
     MCPBridgeService,
     MCPBridgeStatus,
 )
@@ -396,6 +397,34 @@ def test_service_passes_transport_and_bind_to_server_runner(tmp_path: Path) -> N
     )
     svc.set_enabled(True)
     assert server.last_args == {"transport": "sse", "host": "0.0.0.0", "port": 9123}
+
+
+def test_mcp_bridge_passes_registered_read_authority_explicitly_to_server(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    from iabv_v15.infra.mcp import server as server_module
+
+    coordinator = object()
+    service = MCPBridgeService(
+        container=_FakeContainer(_default_snapshot()),
+        workspace_root=tmp_path,
+        read_authorization_coordinator=coordinator,
+        tunnel_runner=_FakeTunnelRunner(),
+    )
+    assert type(service._server_runner) is FastMCPServerRunner
+    assert service._server_runner._read_authorization_coordinator is coordinator
+
+    captured: dict[str, object] = {}
+
+    class _Server:
+        def __init__(self, container, *, read_authorization_coordinator):
+            captured["container"] = container
+            captured["coordinator"] = read_authorization_coordinator
+
+    monkeypatch.setattr(server_module, "IABVMCPServer", _Server, raising=False)
+    service._server_runner._build_server()
+    assert captured == {
+        "container": service._container,
+        "coordinator": coordinator,
+    }
 
 
 def test_invalid_transport_falls_back_to_default(tmp_path: Path) -> None:
