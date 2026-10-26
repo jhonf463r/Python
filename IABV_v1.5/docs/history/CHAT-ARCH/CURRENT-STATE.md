@@ -1,37 +1,56 @@
-<!-- Owner-authorized route transition: 2026-10-25. CURRENT-STATE.md remains the sole route authority. -->
+<!-- Owner-authorized route transition: 2026-10-26. CURRENT-STATE.md remains the sole route authority. -->
 
-## CURRENT ROUTE — G3 identity-binding hardening in candidate; hosted test execution unavailable (2026-10-25)
+## CURRENT ROUTE — cleanup formally delimited; M1F focused tests are the next bridge gate (2026-10-26)
 
-### Live revisions
+### Live baseline and candidate
 
-At 2026-10-25 21:15 America/Bogota, live main was 24a08f9fc4c82ee261f21d95707bcbd5d86f0d36. Draft PR #531 remains open and unmerged at candidate head 50cbd2b8b3d643d05726290c76ef13f85731949e. Its historical base SHA is 7ddfe285b1a3267f9ef6f57f862cca78bc8438c2; main is one later documentation-only commit ahead. The source candidate remains isolated from production.
+- Live `main` revalidated immediately before this route writeback: `c82312e708a09e1290960e068387d0c9b14aac07`. This is the writeback baseline; fetch `main` again before the next task because this update itself creates a new documentation commit.
+- PR [#531](https://github.com/jhonf463r/Python/pull/531) remains `OPEN`, `DRAFT=TRUE`, `MERGED=FALSE`.
+- Exact candidate HEAD: `50cbd2b8b3d643d05726290c76ef13f85731949e`.
+- The latest verified focused-workflow observation for that HEAD is run [#40258140268](https://github.com/jhonf463r/Python/actions/runs/40258140268). Its job reports `runner_id=0`, empty `runner_name` and `steps=[]`; the suites did not execute. Do not rerun this workflow blindly. No assertion PASS or FAIL can be inferred from a job that did not reach a step.
 
-Detailed evidence: https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-25-M1F-G3-BINDING-AND-RUNNER-RECONCILIATION-RECEIPT.md
+### Cleanup disposition after the Owner-supplied receipt (2026-10-26)
 
-### Bounded source corrections fetched back from the candidate
+The cleanup track is formally delimited under current evidence, but is **not complete**. The latest receipt reports no deletion in that session and a C: reading of `16,416,227,328` free bytes; its fluctuating readings are not reclaimed-space evidence.
 
-1. G3 target identity: ReadAuthorizationCoordinator.authorize now requires workspace_id, checkout_id and resolver_version returned by the target resolver to equal those on the identical opened-target capability. The MCP enforcement guard independently checks the same three permit-to-capability equalities.
-2. Startup preflight: MCPBridgeService now refuses to start either MCP or Cloudflared when approved_workspace_root_provider is absent or does not expose callable current_workspace_root.
-3. Regression coverage: six parameterized G3 resolver/guard cases and two missing/invalid root-provider startup cases were added. These tests are authored but have not run.
+- `HCSPARLE=PRESERVE_UNRESOLVED`: download-operation completion does not establish that the target Visual Studio version was installed or that staging is disposable.
+- `OLLAMA_MODEL_STORE=CLASSIFIED_BOUNDEDLY; ALL_MODELS_PRESERVED`: `ollama ps` did not complete; no model was proven both disposable and safe/authorized to remove.
+- `IOBIT_DRIVER_BOOSTER=PRESERVE_UNRESOLVED`: the presence of backup/download/license subfolders and absence of a queried uninstall-registry match do not prove disposability.
+- `SAFE_AUTHORIZED_DELETE_CANDIDATE=NONE_DEMONSTRATED_IN_CURRENT_RECEIPTS`.
+- Do not repeat the same Ollama inspection unless new discriminating evidence appears. Do not retry previously policy-blocked targets through alternate routes.
+- The receipt is Owner-reported evidence. It is consistent with the prior method but does not establish internal memory activation, causal reuse or algorithmic learning.
 
-This corrects two source-level gaps; it does not establish a trusted root, authentic provider, native Windows semantics or whole-organ acceptance.
+Durable receipts:
+- [Global laptop cleanup and learning constraints](./CHAT-ARCH-2026-10-26-global-laptop-cleanup-learning-writeback.md)
+- [Cleanup receipt reconciliation and route transition](./CHAT-ARCH-2026-10-26-cleanup-receipt-reconciliation-and-route-transition.md)
 
-### Hosted execution blocker — verified across runner labels
+### Exact next action — authorization organ and bridge
 
-The latest candidate runs 40258140268 and 40258135717 use windows-latest but report runner_id=0, empty runner_name and steps=[]. The separate Ubuntu fallback run 40257696172 reports the same runner_id=0, empty runner_name and steps=[] with label ubuntu-latest. Each terminated before checkout, dependency installation or pytest. The precise hosted-runner assignment cause is unknown.
+Use the [versioned Windows test handoff for the exact PR #531 HEAD](./CHAT-ARCH-2026-10-26-M1F-WINDOWS-TEST-HANDOFF-EXACT-HEAD.md), only after revalidating live `main`, PR state and exact candidate HEAD.
 
-The local tool container also could not resolve github.com to obtain a clone. Therefore TESTS=NOT_RUN, BUILD=NOT_RUN, RUNTIME=NOT_RUN, native Windows handles/ACL=NOT_RUN, authenticated IPC/anti-rollback=NOT_RUN and real MCP transport/protected reads=NOT_RUN. This is an execution-infrastructure failure, not evidence that source assertions failed or passed.
+Run these three focused suites on the Owner's approved isolated Windows environment, using a disposable clone/venv and fresh temporary `IABV_DATA_DIR`:
+1. `IABV_v1.5/tests/test_mcp_bridge_service.py`
+2. `IABV_v1.5/tests/test_read_authorization.py`
+3. `IABV_v1.5/tests/test_windows_handle_reader.py`
 
-Do not repeat the failed runs blindly. A valid runner assignment requires runner_id greater than zero, a nonempty runner_name and actual job step records.
+Do not use or modify the original checkout. Do not start AppBootstrap, MCP, Cloudflared, an issuer process or real transport; do not access protected reads or secrets. If no authorized isolated executor is available and the hosted runner is still unassigned, record `TESTS=NOT_RUN` and stop this execution path rather than bypassing the blocker.
 
-### Trust boundary still not provisioned
+Capture the complete log, exact exit code, tested SHA and any setup/collection failure. Reconcile test failures by their first causal edge; do not patch-loop without new executed evidence. After focused tests, continue evidence-backed G1/G2/G3 authority provisioning and native Windows acceptance. Authored tests are not test results, and passing these suites alone is not whole-organ acceptance.
 
-AppBootstrap on main has no approved_workspace_root_provider wiring. The candidate still composes ReadAuthorizationCoordinator.unconfigured() and does not wire a production root provider. The repository path .github/iabv-g1-bootstrap-manifest.json returned 404 on main and candidate. This establishes only the repository-path result; it does not prove no other local or external trust asset exists.
+### Canonical security disposition
 
-AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED. No trust root, owner mandate, production G2 policy/revocation provider, G3 root/resolver, authenticated issuer IPC, host-owned process identity or rollback-resistant replay provider was fabricated or declared established.
-
-### Canonical disposition
-
+```text
+CLEANUP_COMPLETE=FALSE
+CLEANUP_TRACK=FORMALLY_DELIMITED_UNDER_CURRENT_EVIDENCE
+SAFE_AUTHORIZED_DELETE_CANDIDATE=NONE_DEMONSTRATED_IN_CURRENT_RECEIPTS
+CLEANUP_SPACE_RECOVERY_IN_LATEST_RECEIPT=NONE
+CAUSAL_REUSE=NOT_ESTABLISHED
+ALGORITHM_LEARNED=NOT_PROVEN
+CANDIDATE_PR=531; OPEN_DRAFT; MERGED=FALSE
+CANDIDATE_HEAD=50cbd2b8b3d643d05726290c76ef13f85731949e
+TESTS=NOT_RUN
+HOSTED_RUNNER_ASSIGNMENT=FAILED_BEFORE_FIRST_STEP
+AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
 G1=NOT_ESTABLISHED
 G2=NOT_ESTABLISHED
 G3=NOT_ESTABLISHED
@@ -39,11 +58,10 @@ IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
 WHOLE_ORGAN_ACCEPTANCE=NOT_GRANTED
 PROTECTED_READS=FAIL_CLOSED
 BRIDGE=BRIDGE_NOT_READY
+NEXT_ACTION=RUN_THREE_FOCUSED_SUITES_ON_EXACT_PR531_HEAD_IN_APPROVED_ISOLATED_WINDOWS_ENVIRONMENT; THEN_RECONCILE_RESULTS_AND_CONTINUE_G1_G2_G3_AUTHORITY_EVIDENCE
+```
 
-### Exact next action
-
-The current statically identified source gaps have bounded fixes in the candidate. Stop the patch loop unless executed test evidence or a newly evidenced defect justifies another change. When an approved runner is actually assigned, execute the three focused suites against the then-current exact PR #531 head and retain complete logs. Then continue evidence-backed G1/G2/G3 authority provisioning and native Windows acceptance. Do not merge the candidate, enable protected reads, start production transport or infer acceptance from Git blob identity and authored tests.
-
+Historical records below this boundary are preserved as-is and remain historical, not active routing authority.
 
 ## HISTORICAL ROUTE — Windows-specific runner handoff before cross-platform runner reconciliation (superseded 2026-10-25)
 
