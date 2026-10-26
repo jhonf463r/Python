@@ -187,6 +187,28 @@ Before asking the Owner for input, search the known archive and inspect supporte
 
 Closed/terminal paths remain closed for their stated evidence and authorization scope. Reopen only when genuinely new evidence changes a premise, a specific correction addresses the identified failure mechanism, or a new explicit Owner decision creates a bounded transition. A new chat, new attempt number or pressure to progress is not new evidence.
 
+### 7.6 UAAL-D019 material retry gate and first open causal edge
+
+Before taking a new action after a terminal or blocked result, compare the proposed operation with the prior relevant attempt using a decision-relevant fingerprint:
+
+```text
+objective/acceptance
++ exact target/revision
++ operation/material input
++ actor/route
++ authorization and preconditions
++ environment/runtime
++ expected observation/stop condition
+```
+
+Classify the proposal as `SAME_EXPERIMENT` or `MATERIAL_DELTA`. A new chat, run/task ID, timestamp, prompt wording or branch name does not establish a material difference. Do not repeat an unchanged action after the same terminal blocker unless an observed precondition changed, a different falsifiable hypothesis predicts a different observable, independently observed transient conditions justify a bounded retry plan, or a new explicit Owner decision changes scope. Every justified retry must state what it is expected to reveal that the prior attempt did not.
+
+Identify the first open causal edge that blocks the active objective and is addressable within current authorization. Record the furthest directly supported evidence stage: `NOT_INVOKED`, `INVOKED_NO_OBSERVATION`, `STARTUP_FAILURE_ZERO_JOBS`, `EXECUTED_ASSERTION_FAILURE`, `OBSERVED_UNVERIFIED`, `PASS_WITH_SCOPE`, `BLOCKED_AUTHORIZATION`, `BLOCKED_PRECONDITION`, canonical fetch-back, or later causal reuse. Do not convert a pre-job startup failure into a product test failure, or infer downstream success from upstream execution.
+
+If no admissible action can reduce uncertainty, choose a truthful wait state and name the exact external observation or Owner decision that can reopen the route. A blocked track does not authorize a bypass through another AI, tool, branch or transport. Prefer an already authorized independent task only when it does not bypass the blocking dependency.
+
+Full decision rules and the current bridge application: [UAAL-D019](./CHAT-ARCH-2026-10-26-UAAL-D019-SPACE-TIME-ANTI-LOOP-CAUSAL-FRONTIER.md). This is documented method guidance; automatic runtime enforcement and later causal reuse remain unproven.
+
 ## 8. Neuroplasticity — how the protocol itself evolves
 
 Treat each interaction as a possible learning signal, not as truth by itself. Separate three stores that work together:
@@ -319,6 +341,8 @@ A chat is **not continuity-complete** until it has:
 
 - [ ] refreshed live `main` and read the five canonical files in the exact order in section 2;
 - [ ] identified the objective, success condition, current route, operating revision and source timestamp;
+- [ ] compared the next proposed action with prior terminal attempts using the UAAL-D019 experiment fingerprint, and justified any repeat with a material, evidenced premise;
+- [ ] identified the first open causal edge and the furthest result stage actually evidenced;
 - [ ] reconstructed the relevant temporal evidence/dependency graph from canonical receipts, without burdening the Owner with archive archaeology;
 - [ ] matched any supplied result to its exact task, acceptance criteria, provenance and original authorization;
 - [ ] selected only the role/facets required by the objective, uncertainty, risk and supported capabilities;
