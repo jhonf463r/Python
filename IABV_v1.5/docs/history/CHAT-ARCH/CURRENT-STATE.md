@@ -1,36 +1,41 @@
 <!-- Owner-authorized route transition: 2026-10-25. CURRENT-STATE.md remains the sole route authority. -->
 
-## CURRENT ROUTE — M1F source candidate has bridge-start fail-closed guard; validation remains blocked before test execution (2026-10-25)
+## CURRENT ROUTE — M1F candidate has bridge-start fail-closed guard; focused tests cannot start until a runner is assigned (2026-10-25)
 
-### Live state and verified source candidate
+### Live state at route observation
 
-At `2026-10-25T20:32:28-05:00` (`America/Bogota`), live `main` was `f00e3aa09b0efba10efab56735aca3c40fd71509`. The authorization candidate is separate from `main` and remains draft PR [#531](https://github.com/jhonf463r/Python/pull/531):
+At `2026-10-25T20:38:19-05:00` (`America/Bogota`), live `main` was `0876e1ff5590523876d36114786cb43febfbb58b`. The authorization candidate remains separate from `main` and is tracked in draft [PR #531](https://github.com/jhonf463r/Python/pull/531):
 
-- Candidate branch: `codex/iabv-m1f-authz-candidate-review-20261025`.
+- Branch: `codex/iabv-m1f-authz-candidate-review-20261025`.
 - Candidate head: `928fd7c7924919d71d305504784a6a2bc1589c16`.
-- PR state: `OPEN`, `DRAFT=TRUE`, `MERGED=FALSE`; 13 candidate paths; 5,593 additions and 60 deletions.
-- Original M1F reconstruction matched 13/13 target Git blob IDs. The follow-on guard changed only `mcp_bridge_service.py` and `test_mcp_bridge_service.py`; their fetched-back blob IDs remain `5c573dc9a7288d8b952cbf5c3002f3746d78356a` and `1ef26acd54a9ccf1caab0f6a1ac2294b2989e570`. The other 11 files still match the original M1F target blob IDs.
-- The source correction adds `_authorization_organ_gate_block()` before the MCP server/tunnel runners start. It denies bridge startup when the coordinator is absent, not of the expected type, cannot safely report its requirements, or reports mandatory dependencies missing. Two regression tests cover absent and unconfigured coordinators.
-- This preflight does not establish provider authenticity or the eight-gate acceptance state. `AppBootstrap` still composes `ReadAuthorizationCoordinator.unconfigured()`, so this candidate remains deny-only.
+- PR state: open, draft, not merged; 13 source/test paths.
+- Original M1F reconstruction independently matched 13/13 target Git blob IDs. The follow-on bridge-start correction changes `mcp_bridge_service.py` and `test_mcp_bridge_service.py`; their current candidate blob IDs are `5c573dc9a7288d8b952cbf5c3002f3746d78356a` and `1ef26acd54a9ccf1caab0f6a1ac2294b2989e570`. The other 11 files still match their original M1F target blob IDs.
 
-### Focused CI attempt — exact limitation
+### Source correction
 
-A narrowly scoped workflow exists at `.github/workflows/iabv-authorization-focused-tests.yml`, with read-only repository permissions, no secrets, `persist-credentials: false`, a temporary `IABV_DATA_DIR`, and only two intended suites: `test_mcp_bridge_service.py` and `test_read_authorization.py`.
+`MCPBridgeService._authorization_organ_gate_block()` is checked before the operational governance gate and before either the MCP server or Cloudflared tunnel runner can start. It denies startup when the coordinator is unavailable, has the wrong type, cannot report its mandatory requirements safely, or reports any required provider absent. Two regression tests were added for missing and unconfigured coordinators.
 
-Seven focused-workflow runs were observed across the workflow setup/fix iterations. The latest candidate-head run is [40254373973](https://github.com/jhonf463r/Python/actions/runs/40254373973) for `928fd7c7924919d71d305504784a6a2bc1589c16`. The latest job API reports `conclusion=failure`, blank `runner_name`, and `steps=[]`; no test command ran. The separate one-step/no-checkout/no-secret runner preflight [40254520105](https://github.com/jhonf463r/Python/actions/runs/40254520105) also failed before a runner was assigned and before any step ran. Its temporary workflow has been removed from `main` by cleanup PR #539; the focused workflow remains.
+This is only a dependency-presence preflight, not evidence of provider authenticity, native Windows behavior or formal G1–G8 acceptance. `AppBootstrap` still uses `ReadAuthorizationCoordinator.unconfigured()`; production authority providers remain absent and the current route remains deny-only.
 
-The log download returned no artifact (`BlobNotFound`), so the specific GitHub-side startup reason is **not verified**. Do not label these as failed assertions or as a source-test failure. The exact current test evidence state is `NOT_RUN`; producer-reported earlier tests remain `PRODUCER_REPORTED`.
+### Focused test configuration and observed execution limit
 
-The session's local container could not resolve `raw.githubusercontent.com` or `github.com`; therefore it could not clone the repository for an alternate local test run. No Owner Windows execution, native Windows test, live transport, or protected read was attempted.
+The focused CI workflow is being extended to cover three source-focused suites:
+- `IABV_v1.5/tests/test_mcp_bridge_service.py`
+- `IABV_v1.5/tests/test_read_authorization.py`
+- `IABV_v1.5/tests/test_windows_handle_reader.py`
 
-### Current gates and next action
+The workflow uses `pull_request` for candidate source/test paths and `push` for the dedicated candidate branch, read-only repository permissions, no secrets, `persist-credentials: false`, and a unique runner-temporary `IABV_DATA_DIR`. Its trigger will not run candidate tests on a workflow-only maintenance PR, where those source files do not yet exist on the PR head.
+
+The latest candidate run before this workflow expansion, [40254373973](https://github.com/jhonf463r/Python/actions/runs/40254373973), ended in failure with a job but an empty `runner_name` and `steps=[]`. A separate one-step, no-checkout/no-secret smoke run [40254520105](https://github.com/jhonf463r/Python/actions/runs/40254520105) had the same result. The temporary smoke workflow was removed through PR #539. No test command ran; those are runner-startup outcomes, not failing source assertions. Log download returned `BlobNotFound`, so the GitHub-side reason for not assigning a runner is unverified. The local container also cannot resolve GitHub hosts, so a local clone was not available.
+
+### Gate state and next step
 
 ```text
-MAIN=f00e3aa09b0efba10efab56735aca3c40fd71509
+MAIN_AT_ROUTE_OBSERVATION=0876e1ff5590523876d36114786cb43febfbb58b
 CANDIDATE_PR=531; OPEN_DRAFT; MERGED=FALSE
 CANDIDATE_HEAD=928fd7c7924919d71d305504784a6a2bc1589c16
-BRIDGE_START_GUARD=SOURCE_PATCHED; FETCHBACK_VERIFIED
-FOCUSED_TEST_WORKFLOW=CONFIGURED; HOSTED_RUNNER_STARTUP_FAILURE; JOB_STEPS=0
+BRIDGE_START_GUARD=PATCHED; FETCHBACK_VERIFIED
+FOCUSED_TEST_SUITES=3_CONFIGURED; EXECUTION=BLOCKED_BEFORE_FIRST_STEP
 TESTS=NOT_RUN
 BUILD=NOT_RUN
 RUNTIME=NOT_RUN
@@ -45,10 +50,10 @@ IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
 WHOLE_ORGAN_ACCEPTANCE=NOT_GRANTED
 PROTECTED_READS=FAIL_CLOSED
 BRIDGE=BRIDGE_NOT_READY
-NEXT_ACTION=RESTORE_OR_SELECT_A_SUPPORTED_TEST_RUNNER; EXECUTE_FOCUSED_SUITES_WITH_TEMP_DATA; CONTINUE_AUTHORITY_EVIDENCE_ROUTE
+NEXT_ACTION=EXECUTE_THREE_FOCUSED_SUITES_ON_A_SUPPORTED_RUNNER; CONTINUE_REAL_AUTHORITY_AND_WINDOWS_EVIDENCE
 ```
 
-The new receipt `CHAT-ARCH-2026-10-25-M1F-CI-RUNNER-STARTUP-BLOCKER-RECEIPT.md` records these run IDs, their empty runner/step evidence, the no-secrets smoke preflight and the source candidate's exact head. All historical entries remain below the historical-route boundary.
+The CI receipt records exact run IDs and provenance; it does not treat missing-runner failures as test results. Historical route entries remain below the historical-route boundary.
 
 ## HISTORICAL ROUTE NOTE
 

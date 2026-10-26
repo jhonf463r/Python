@@ -12,9 +12,10 @@ name: IABV authorization focused candidate tests
       - "IABV_v1.5/src/iabv_v15/services/security/read_authorization.py"
       - "IABV_v1.5/src/iabv_v15/services/security/github_owner_merge_bootstrap.py"
       - "IABV_v1.5/src/iabv_v15/services/security/windows_crypto.py"
+      - "IABV_v1.5/src/iabv_v15/infra/mcp/windows_handle_reader.py"
       - "IABV_v1.5/tests/test_mcp_bridge_service.py"
       - "IABV_v1.5/tests/test_read_authorization.py"
-      - ".github/workflows/iabv-authorization-focused-tests.yml"
+      - "IABV_v1.5/tests/test_windows_handle_reader.py"
 
 permissions:
   contents: read
@@ -48,4 +49,5 @@ jobs:
           python -m pytest
           IABV_v1.5/tests/test_mcp_bridge_service.py
           IABV_v1.5/tests/test_read_authorization.py
+          IABV_v1.5/tests/test_windows_handle_reader.py
           -q
