@@ -1,0 +1,46 @@
+{
+  "generated_at": "2026-08-20T14:31:03.476611+00:00",
+  "reason": "test",
+  "tool_checks": [],
+  "environment_match": {
+    "matched": false,
+    "mismatches": [
+      "no hay EnvironmentSelfModel ni WorldModelSnapshot disponibles"
+    ],
+    "environment_digest": "",
+    "world_model_digest": ""
+  },
+  "pending_issues": [],
+  "world_model_digest": {
+    "available": false
+  },
+  "summary_markdown": "# Auditor\u00eda operativa \u2014 IABV v1.5\n- Generado: 2026-08-20T14:31:03.476611+00:00\n- Raz\u00f3n: test\n- Tools OK: 0 / 0\n## Entorno vs WorldModel\n- no hay EnvironmentSelfModel ni WorldModelSnapshot disponibles\n## Pendientes top-5\n- (ninguno reportado)\n## Cruce de fuentes\n- Laptop local observada por WorldModel: no\n- UNRESOLVED:requires_local_laptop_audit\n- Orden: WorldModel/Environment > contratos > contexto/autoexamen > pruebas > ExperimentLab > auditor\u00eda externa",
+  "cross_source_truth": {
+    "purpose": "Cruzar como ve IABV la laptop local, como lo audita Devin/IA externa y que evidencian codigo/pruebas.",
+    "source_order": [
+      "WorldModelSnapshot",
+      "EnvironmentSelfModel",
+      "source_contracts",
+      "PortableContextPackage",
+      "SelfExaminationSnapshot",
+      "tests",
+      "ExperimentLab",
+      "external_ia_audit"
+    ],
+    "local_laptop_observed": false,
+    "environment_self_model_observed": false,
+    "world_model_observed": false,
+    "code_contracts_observed": true,
+    "tests_observed": false,
+    "external_ia_audit_observed": false,
+    "requires_external_ia": true,
+    "requires_local_runtime": true,
+    "pending_permission_gates": [],
+    "pending_issue_count": 0,
+    "unresolved": [
+      "UNRESOLVED:requires_local_laptop_audit"
+    ],
+    "recommendation": "Ejecutar autoauditoria en la laptop real y fusionarla con auditoria externa; lo no observable desde la VM debe quedar UNRESOLVED."
+  },
+  "canonical_identity": null
+}
