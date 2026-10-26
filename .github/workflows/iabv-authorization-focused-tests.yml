@@ -1,6 +1,6 @@
 name: IABV authorization focused candidate tests
 
-on:
+"on":
   pull_request:
     paths:
       - "IABV_v1.5/src/iabv_v15/services/evolution/mcp_bridge_service.py"
