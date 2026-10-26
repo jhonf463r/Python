@@ -470,6 +470,11 @@ The routing handoff is [M1A G1 Owner reopening — static design handoff](./CHAT
 Every new IABV chat MUST apply the [Canonical continuity, space-time reasoning and anti-loop protocol](./CHAT-ARCH-2026-10-23-CONTINUITY-SPACE-TIME-OPERATING-PROTOCOL-v1.md) before recommending or executing work. Reconstruct the project's event/evidence/dependency history from the canonical archive; preserve provenance; reuse terminal decisions; never ask the Owner to recall or search documents already available through permitted GitHub access; choose one supported, authorized next action that advances the North Star. This is a navigation/reasoning rule only: it does not override `CURRENT-STATE.md`, create trust authority, bypass denied readers, or change implementation/runtime/cost/security gates. A proposal is not canonical until adopted on live `main` and fetched back.
 <!-- CONTINUITY-PROTOCOL-OVERRIDE: end -->
 
+## Supplementary evidence pointer — local restricted stdio health check (2026-10-24)
+
+[Receipt](./CHAT-ARCH-2026-10-24-local-restricted-stdio-health-check.md): owner-supplied Codex session result reports only the `local_restricted` `stdio` diagnostic tool `bridge_health` returning `{"status":"ok"}`. It does not close G1–G3 or change the active route, `NEXT_ACTION`, or any gate. Use `CURRENT-STATE.md` for routing.
+
+
 ## ChatGPT continuity — Owner Option D ratification now recorded (2026-10-23)
 
 Decision receipt: [M1A G1 Owner Option D ratification](./CHAT-ARCH-2026-10-23-M1A-G1-owner-option-d-no-bootstrap-ratification-receipt.md), blob `cac492006c51c56ea4abc4dff822785e19c65d93`, authored on branch `codex/iabv-option-d-ratification-20261023` from baseline `439d9604037f156160a970dd33d1b3ad76009bdf`. The previous statement that Option D had not yet been explicitly ratified is superseded by this receipt; confirm the receipt's presence on live `main` when validating current state.
