@@ -1,6 +1,21 @@
 <!-- Route summary synchronized 2026-10-26. CURRENT-STATE.md is the sole active route authority. -->
 
-## CURRENT ROUTE — M1F tests blocked by absent Python 3.11 in checked environment (2026-10-26)
+## CURRENT ROUTE — Actions usage diagnosis complete; sanitized support escalation awaits Owner authorization (2026-10-26)
+
+Use [CURRENT-STATE.md](docs/history/CHAT-ARCH/CURRENT-STATE.md) as the sole routing authority. The latest receipt is [M1F Actions usage and support eligibility](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-26-M1F-ACTIONS-USAGE-AND-SUPPORT-ELIGIBILITY-RECEIPT.md).
+
+- Live references before this documentation writeback: `main=98615768b9ecff77ecfe3418bb39a8ece9f53e07`; PR #531 remains open, draft and unmerged at candidate HEAD `50cbd2b8b3d643d05726290c76ef13f85731949e`.
+- Run `40386434070` is `startup_failure` with `jobs=[]`; no IABV tests ran.
+- Codex's usage endpoint query returned HTTP 404 without usage figures. `ACTIONS_USAGE_BLOCK=UNKNOWN`; do not infer a budget block or a clear budget.
+- The authenticated Support portal showed technical support is not included for the observed personal GitHub Free account; Actions is not a standalone contact category.
+- The Copilot Support query was not sent and returned no answer. No ticket or public discussion was submitted.
+- Next action: obtain explicit Owner approval before publishing the sanitized draft prepared in the receipt to the public GitHub Community Actions category.
+- Preserve `ROOT_CAUSE=UNKNOWN`, `TESTS=NOT_RUN`, `G1/G2/G3=NOT_ESTABLISHED`, eight implementation prerequisites open, `PROTECTED_READS=FAIL_CLOSED`, `BRIDGE=BRIDGE_NOT_READY`, `CAUSAL_REUSE=NOT_ESTABLISHED`, and `ALGORITHM_LEARNED=NOT_PROVEN`.
+
+Do not repeat the usage query or failed workflows, create branches, modify candidate source, change billing/Actions settings, post without Owner authorization, or merge PR #531.
+
+
+## HISTORICAL ROUTE — M1F tests blocked by absent Python 3.11 in checked environment (2026-10-26) (superseded 2026-10-26 by Actions usage/support escalation)
 
 Read IABV_v1.5/docs/history/CHAT-ARCH/CURRENT-STATE.md first and follow its active route. Revalidate live main, PR #531 and the exact candidate HEAD immediately before any new execution.
 

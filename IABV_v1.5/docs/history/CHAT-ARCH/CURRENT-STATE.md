@@ -1,6 +1,56 @@
 <!-- Owner-authorized route transition: 2026-10-26. CURRENT-STATE.md remains the sole route authority. -->
 
-## CURRENT ROUTE — M1F tests blocked by missing Python 3.11 and no manual hosted-workflow trigger (2026-10-26)
+## CURRENT ROUTE — Actions usage check terminal; support escalation awaits Owner publication authorization (2026-10-26)
+
+### Live references and evidence provenance
+
+- Live `main` before this documentation-only writeback: `98615768b9ecff77ecfe3418bb39a8ece9f53e07`. Re-fetch main and the candidate before any subsequent repository action.
+- PR [#531](https://github.com/jhonf463r/Python/pull/531) remains `OPEN`, `DRAFT=TRUE`, `MERGED=FALSE`.
+- Candidate HEAD remains `50cbd2b8b3d643d05726290c76ef13f85731949e`.
+- Diagnostic run [#40386434070](https://github.com/jhonf463r/Python/actions/runs/40386434070) currently reports `startup_failure`, `workflow_id=397336571`, `path=BuildFailed`, empty workflow name, and diagnostic head `8b03ac4bb147db39efb23fa6e02d256ec41e5f2e`. The live Jobs API returns `jobs=[]`.
+- Prior Codex evidence reports that workflow ID `397336571` had `state=deleted`; the current connected GitHub action rejects a re-fetch of that endpoint, so this detail is identified as Codex-reported, not independently reverified here.
+- Codex previously reported repository Actions `enabled=true` and `allowed_actions=all`. This does not rule out account/organization policy, usage, concurrency or hosted-runner capacity.
+- Codex's authorized usage query to `repos/jhonf463r/Python/actions/billing/usage` returned HTTP 404 with no usage values. Keep `ACTIONS_USAGE_BLOCK=UNKNOWN`; do not infer BLOCKED or NOT_BLOCKED.
+- The authenticated GitHub Support portal was inspected through TinyFish. It identified the signed-in account as personal GitHub Free, showed `Technical support not included`, and did not expose GitHub Actions as its own category. Copilot in GitHub Support was visible, but the attempted browser-driven query was blocked before being sent and yielded no Copilot answer.
+- No ticket was sent and no public Community discussion was published.
+
+### Route decision
+
+The usage check is terminal for the currently authorized evidence. Do not repeat the same endpoint query, search alternative billing endpoints, inspect payment details, run another workflow/test, create a branch, modify candidate source, change settings/budgets, or merge PR #531.
+
+The free support route identified by the portal is GitHub Community Discussions in the Actions category. A sanitized draft is prepared in [the Actions/support eligibility receipt](./CHAT-ARCH-2026-10-26-M1F-ACTIONS-USAGE-AND-SUPPORT-ELIGIBILITY-RECEIPT.md), but this forum is public. **Do not publish it until the Owner explicitly authorizes that public post.** The proposed post omits the private repository name, exact run URL, branch, SHA, account identifier, source, logs and protected data.
+
+### Canonical status
+
+```text
+LAST_TERMINAL_TASK=M1F_GITHUB_ACTIONS_USAGE_DIAGNOSIS_AND_SUPPORT_ROUTE_RECONCILIATION_20261026
+LAST_TERMINAL_RESULT=USAGE_QUERY_HTTP_404_NO_VALUES; SUPPORT_FREE_PLAN_TECHNICAL_SUPPORT_NOT_INCLUDED
+PR531=OPEN_DRAFT_UNMERGED
+CANDIDATE_HEAD=50cbd2b8b3d643d05726290c76ef13f85731949e
+DIAGNOSTIC_RUN=40386434070; STARTUP_FAILURE; JOBS=0
+ACTIONS_SETTINGS=ENABLED; ALLOWED_ACTIONS=ALL (CODEX-REPORTED)
+ACTIONS_USAGE_BLOCK=UNKNOWN
+ROOT_CAUSE=UNKNOWN
+SUPPORT_TICKET=NOT_SENT
+COPILOT_SUPPORT_QUERY=NOT_SENT; NO_RESPONSE
+COMMUNITY_POST=NOT_PUBLISHED; OWNER_AUTHORIZATION_REQUIRED
+TESTS=NOT_RUN
+G1/G2/G3=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+WHOLE_ORGAN_ACCEPTANCE=NOT_GRANTED
+PROTECTED_READS=FAIL_CLOSED
+BRIDGE=BRIDGE_NOT_READY
+CLEANUP_COMPLETE=FALSE
+CLEANUP_TRACK=FORMALLY_DELIMITED_UNDER_CURRENT_EVIDENCE
+CAUSAL_REUSE=NOT_ESTABLISHED
+ALGORITHM_LEARNED=NOT_PROVEN
+NEXT_ACTION=OBTAIN_EXPLICIT_OWNER_AUTHORIZATION_TO_PUBLISH_SANITIZED_GITHUB_COMMUNITY_ACTIONS_DISCUSSION
+```
+
+Full provenance and the publication-safe draft are in the linked receipt. This is a documentation route transition only; it does not change source or establish runtime/security acceptance.
+
+
+## HISTORICAL ROUTE — M1F tests blocked by missing Python 3.11 and no manual hosted-workflow trigger (2026-10-26) (superseded 2026-10-26 by Actions usage/support escalation)
 
 ### Live revisions and candidate
 

@@ -1,6 +1,34 @@
 <!-- Route summary synchronized 2026-10-26. CURRENT-STATE.md is the sole active route authority. -->
 
-## CURRENT ROUTE — M1F runtime discovery exhausted for this Windows environment (2026-10-26)
+## CURRENT ROUTE — M1F Actions usage check terminal; support publication gate pending (2026-10-26)
+
+`CURRENT-STATE.md` is the sole active route authority. The latest durable record is [the Actions usage and support eligibility receipt](./CHAT-ARCH-2026-10-26-M1F-ACTIONS-USAGE-AND-SUPPORT-ELIGIBILITY-RECEIPT.md).
+
+This session adds a genuine continuity delta:
+- Codex's read-only Actions usage query returned HTTP 404 with no values; `ACTIONS_USAGE_BLOCK=UNKNOWN`, not blocked or clear.
+- Live run `40386434070` remains `startup_failure` with no jobs. Workflow metadata points to `workflow_id=397336571` / `BuildFailed`; the deleted-state detail remains reported by Codex because the connected reader could not re-fetch that endpoint.
+- The signed-in Support portal identified a personal GitHub Free account and displayed `Technical support not included`; no technical ticket was sent.
+- The browser attempt to query Copilot in GitHub Support did not submit a query and returned no answer. No public Community post was published.
+- A sanitized Actions discussion draft is durable in the receipt; public publication remains gated on explicit Owner authorization.
+
+```text
+LAST_TERMINAL_TASK=M1F_GITHUB_ACTIONS_USAGE_DIAGNOSIS_AND_SUPPORT_ROUTE_RECONCILIATION_20261026
+ACTIONS_USAGE_BLOCK=UNKNOWN
+ROOT_CAUSE=UNKNOWN
+TESTS=NOT_RUN
+G1/G2/G3=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+PROTECTED_READS=FAIL_CLOSED
+BRIDGE=BRIDGE_NOT_READY
+CAUSAL_REUSE=NOT_ESTABLISHED
+ALGORITHM_LEARNED=NOT_PROVEN
+NEXT_ACTION=OBTAIN_EXPLICIT_OWNER_AUTHORIZATION_TO_PUBLISH_SANITIZED_GITHUB_COMMUNITY_ACTIONS_DISCUSSION
+```
+
+This is durable project memory/writeback, not automatic model-weight training and not proof that a runtime algorithm learned from the event. Preserve the evidence, do not repeat terminal checks unchanged, and revalidate live refs before the next operational action.
+
+
+## HISTORICAL ROUTE — M1F runtime discovery exhausted for this Windows environment (2026-10-26) (superseded 2026-10-26 by Actions usage/support escalation)
 
 CURRENT-STATE.md remains the sole active route authority. Revalidate live main, PR #531 and candidate HEAD before any future execution. Use the linked receipts as provenance, not as proof of future environment state.
 
