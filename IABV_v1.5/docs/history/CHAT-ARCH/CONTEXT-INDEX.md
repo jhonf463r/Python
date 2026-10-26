@@ -114,6 +114,15 @@ NEXT_ACTION=EXECUTE_THREE_FOCUSED_SUITES_ON_ISOLATED_WINDOWS_CLONE; THEN REVIEW 
 
 All prior route snapshots remain below the historical-route boundary.
 
+## Supplemental cleanup continuity index — 2026-10-26
+
+For a global laptop-cleanup objective, activate [CHAT-ARCH-2026-10-26 — Global laptop cleanup, experience reuse and autonomous-capability boundary](./CHAT-ARCH-2026-10-26-global-laptop-cleanup-learning-writeback.md) together with the linked September 3, October 8 and October 10 source records.
+
+Operational constraints: do not restart a global inventory; do not retry exact deletion targets previously blocked by policy through alternate routes; treat `hcsparle` as `PRESERVE_UNRESOLVED` unless the final Visual Studio install status is evidenced; then continue with an independent, bounded candidate. The next proposed candidate is read-only classification of the historically reported Ollama model store, not deletion by size alone. Preserve Windows, IABV/Git/evidence, browsers and sessions, and unique user data.
+
+This is objective-conditioned memory only. It does not supersede `CURRENT-STATE.md` or its current `NEXT_ACTION`, grant execution authority, establish general IABV filesystem-cleanup capability, or prove causal learning. `CLEANUP_COMPLETE=FALSE`; `CAUSAL_REUSE=NOT_ESTABLISHED`.
+
+
 ## HISTORICAL ROUTE NOTE
 
 Previous route snapshots are retained below as historical evidence. They are not current routing instructions where they conflict with the route section above.
