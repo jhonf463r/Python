@@ -1,6 +1,14 @@
 <!-- Route summary synchronized 2026-10-26. CURRENT-STATE.md is the sole active route authority. -->
 
-## CURRENT ROUTE — PR #531 bounded gate review complete; R-07 design decision pending (2026-10-26)
+## CURRENT ROUTE — PR #531 R-07 local-only transport reconciliation recorded; validation pending (2026-10-26)
+
+Use [CURRENT-STATE.md](./CURRENT-STATE.md) as the sole route authority. R-07 has been reconciled on PR #531's candidate branch, not merged into `main`. The bridge service now enforces loopback-only binding, rejects an injected tunnel runner, and does not start or publish a Cloudflare URL. The authenticated remote profile remains unimplemented; Host/Origin and DNS-rebinding protections were not weakened.
+
+Candidate HEAD: `bc2baf525a70d66628809360a197f25a069aa328`. The bounded delta from the previous candidate HEAD changes only `mcp_bridge_service.py` and `test_mcp_bridge_service.py`. Full provenance: [R-07 local-only reconciliation receipt](./CHAT-ARCH-2026-10-26-M1F-PR531-R07-LOCAL-ONLY-RECONCILIATION.md).
+
+Tests/build/runtime: `NOT_RUN`. G1/G2/G3 remain unestablished, eight prerequisites remain open, protected reads stay fail-closed, and PR #531 must not be merged yet. The comparison made against `main=b111a26f46730a99bad3cf60cc68f8ece66dc916` reported 17 commits ahead / 32 behind; subsequent documentation-only main commits mean divergence must be re-fetched before any rebase/merge. Rebase/reconciliation was not part of this task. GitHub Actions discussion [#211346](https://github.com/orgs/community/discussions/211346) remains a parallel track; usage block and root cause are unknown.
+
+## HISTORICAL ROUTE — PR #531 bounded gate review complete; R-07 design decision pending (2026-10-26) (superseded 2026-10-26 by local-only reconciliation)
 
 Use [CURRENT-STATE.md](./CURRENT-STATE.md) as the only route authority. The bounded R-01–R-08 review found the current fail-closed source contracts meaningful but incomplete for production acceptance. `AppBootstrap` still uses `ReadAuthorizationCoordinator.unconfigured()`; G1/G2/G3 and all eight prerequisites remain open; tests remain `NOT_RUN`.
 
