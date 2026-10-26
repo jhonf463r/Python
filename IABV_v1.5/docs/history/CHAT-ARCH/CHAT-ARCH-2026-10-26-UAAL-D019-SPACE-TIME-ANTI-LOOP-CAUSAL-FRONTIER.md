@@ -188,6 +188,24 @@ GENERAL_CAUSAL_REUSE=NOT_ESTABLISHED
 MODEL_WEIGHT_CHANGE=NOT_CLAIMED
 ```
 
+## 9B. External-state verification result — billing warning persists (2026-10-26)
+
+The Owner authorized a read-only signed-in browser recheck. The repository Actions page loaded and still showed the exact account billing-lock warning. It listed 175 workflow runs, all in “failed at startup” state. No workflow was launched and no settings were changed. Receipt: [read-only UI inspection](https://agent.tinyfish.ai/runs/2fe72c49-0d19-4454-8f5d-0560942ca147).
+
+A current official documentation check found that GitHub's [locked-account guidance](https://docs.github.com/en/billing/how-tos/troubleshooting/locked-account) says a failed authorization hold related to Copilot or budget changes can also block Actions/free-tier access, even without an active subscription or balance; this remains a possible explanation, not this account's confirmed cause. The documented next route when Billing & Licensing shows no issue is the [GitHub Support portal](https://support.github.com/contact) to request review. The public status page [currently reports all systems operational](https://www.githubstatus.com/); it lists a general incident affecting Actions, Issues, API Requests and Pull Requests from 18:48 to 18:57 UTC on October 26 as resolved. Neither the general incident nor general healthy status explains the observed account-level warning.
+
+```text
+LIVE_WARNING_RECHECK=CONFIRMED_READ_ONLY
+ACTIONS_UI_RUN=2fe72c49-0d19-4454-8f5d-0560942ca147
+ACTIONS_UI_RUNS_LISTED=175; ALL_LISTED=FAILED_AT_STARTUP
+GITHUB_STATUS=ALL_SYSTEMS_OPERATIONAL; OCT26_1848_1857UTC_INCIDENT=RESOLVED
+OFFICIAL_LOCK_CAUSE=UNKNOWN; FAILED_AUTHORIZATION_HOLD=CANDIDATE_EXPLANATION_ONLY
+OWNER_NEXT_ACTION=INSPECT_BILLING_AND_LICENSING; IF_NO_ISSUE_THEN_REQUEST_GITHUB_SUPPORT_REVIEW
+UNCHANGED_WORKFLOW_RETRY=NOT_JUSTIFIED
+```
+
+The method was explicitly applied in this session to avoid repeating the zero-job workflow and instead verify the changed external precondition. Because the Owner also directly instructed this browser check, the method's exclusive causal contribution is not isolated. Record one observed application, not autonomous learning or general runtime enforcement.
+
 ## 10. Required new-chat handoff
 
 The next chat should start from live `main` and the canonical front doors, then:
