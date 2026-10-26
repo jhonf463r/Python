@@ -6,7 +6,7 @@ The Owner-authorized read-only Billing & Licensing check is complete: GitHub Fre
 
 No official support ticket was created: the Free-account contact flow reached a form without a subject or description field. A sanitized follow-up was posted to existing Community discussion #211346 at https://github.com/community/community/discussions/211346/comments/19206234; the thread was still Unanswered at last check.
 
-Canonical evidence: [M1F Actions billing-lock support intake outcome](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-26-M1F-ACTIONS-BILLING-LOCK-SUPPORT-INTAKE-OUTCOME.md). CURRENT-STATE.md remains the sole operational route authority.
+Canonical evidence: [M1F Actions billing-lock support intake outcome](https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-26-M1F-ACTIONS-BILLING-LOCK-SUPPORT-INTAKE-OUTCOME.md). CURRENT-STATE.md remains the sole operational route authority.
 
 UAAL-D019 no-repeat rule: do not repeat unchanged Actions runs, the completed Billing & Licensing inspection, or the same unproductive support-form navigation without a material new condition. Do not create dummy workflows, change billing, or buy a plan to test a hypothesis. In parallel, continue bounded source-grounded G1/G2/G3 producer-gap analysis without synthetic trust providers, protected-read enablement, rebase or merge.
 
