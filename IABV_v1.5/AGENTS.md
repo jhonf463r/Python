@@ -1,56 +1,58 @@
 <!-- Owner-authorized route transition: 2026-10-25. CURRENT-STATE.md remains the sole route authority. -->
 
-## CURRENT ROUTE — M1F reconstructed and bounded static review completed; production authorization remains blocked (2026-10-25)
+## CURRENT ROUTE — M1F candidate now blocks bridge start when authorization dependencies are absent; organ acceptance remains blocked (2026-10-25)
 
-M1D and M1E have been reconstructed by Codex in a clean, isolated clone at the verified main baseline. The consolidated M1F candidate is supported by an independently checksum-verified diff and corrected evidence ZIP in the shared Dropbox OUTBOX. ChatGPT's static review is bounded to transfer integrity and the two M1E handle-cleanup paths; it is not a whole-organ acceptance or a statement that native Windows behavior has been verified.
+### Live state and source-candidate correction
 
-### M1D / M1E / M1F evidence reconciliation
+At `2026-10-25T20:15:19-05:00` (`America/Bogota`), the live `main` revision was fetched as `6b732fe350b7c8db95358239efe5d53288ef32f7`. The latest source candidate remains an unmerged draft PR, separate from `main`:
 
-- M1D candidate archive: 56,468 bytes; SHA-256 8b842c1d7aea09ae0bd709eb5ef4e5ce3c3cd5137c5f0561317c97ecdac22954. M1D's declared candidate-vs-main diff: 236,488 bytes; SHA-256 2d81795259bf27841ca0cc77c06144a4007a198f76a644986966a6023c3af722.
-- M1E relative cleanup diff: 38,025 bytes; SHA-256 e7a996ec45222ce625ee9c80950ce2951dd8e0cfbf5529cca89e775090c34373. Corrected M1E archive: 11,557 bytes; SHA-256 60ff35ff9e0f6e69061f2a4ca3338a5d8809961c251df5c8c3137bf8673e7711.
-- M1F consolidated candidate-vs-main diff: 249,105 UTF-8 bytes; SHA-256 29902d05a6f65e74ca251af174917074f2939a018ddd241c95da39eb87dd0021. This identity was independently recomputed from the Dropbox text after removing one extraction-added terminal newline; the resulting byte count and hash match the declared local artifact.
-- Corrected M1F evidence archive: 56,546 bytes; SHA-256 7c161a009a50da8133b173d7b282964ad4678818f713d2fb793e4a59ce22590f. ChatGPT independently decoded the Base64 read from Dropbox and recomputed the ZIP SHA-256 and byte length. The internal member inventory and member hashes remain as reported by the producer's M1F manifest; they were not separately re-expanded in this bounded review.
-- M1F evidence/report and consolidated diff are preserved in Dropbox at /IABV-IA-BRIDGE/OUTBOX/. The corrected report notes that M1E's original patch headers and literal separator required a separate normalized temporary copy for application. The original M1E patch was preserved unchanged.
+- Candidate PR: [#531](https://github.com/jhonf463r/Python/pull/531), `OPEN`, `DRAFT=TRUE`, `MERGED=FALSE`; 13 paths changed; 5,593 additions and 60 deletions; head commit `0d1a9ff1639aabb7134d39888339ba12cc382b5c`.
+- Candidate branch: `codex/iabv-m1f-authz-candidate-review-20261025`.
+- Parent candidate commit before the latest correction: `e3618526fd20fb2a59fd30b250c68dee4c78c8c0`.
+- The initial M1F reconstruction independently matched 13/13 target Git blob IDs. A subsequent source review amended two existing candidate files and re-fetched them: `mcp_bridge_service.py` blob `5c573dc9a7288d8b952cbf5c3002f3746d78356a`; `test_mcp_bridge_service.py` blob `1ef26acd54a9ccf1caab0f6a1ac2294b2989e570`. The other 11 files still match the original M1F target blob IDs (11/11 independently fetched). The updated branch is therefore the original identity-verified candidate plus a separate, explicit two-file correction—not the unchanged original 13-file M1F snapshot.
 
-### Bounded independent static review
+### Corrected source risk: bridge transport could start with the organ unconfigured
 
-- The M1E change to _open_component retains one OwnedWindowsHandle wrapper for the newly opened native handle. If metadata/type/reparse validation fails and close also fails, WindowsHandleCleanupError retains the original validation error, cleanup error and handle reference, rather than suppressing the cleanup failure or wrapping the same native handle twice.
-- The M1E change to open_target registers each newly opened child in the local ownership collection before borrowing it or attempting to close the prior parent. Failure enters reverse-order cleanup; if cleanup also fails, the returned cleanup error preserves the operation failure and remaining owned-handle references for retry.
-- The added tests described in the M1F report exercise the parent-close failure, child cleanup failure and validation-plus-cleanup failure cases with synthetic handles. Codex reports 24 focused tests passed in M1F, AST parsing passed for 13 Python files, and the complete-delta whitespace check exited 0. ChatGPT did not rerun tests or native code.
-- Within these two corrected cleanup paths, this review found no new bounded blocker requiring another immediate rewrite. That finding is not proof of whole-candidate security or native Windows correctness.
+Static inspection found that `MCPBridgeService._start_locked()` consulted the operational World Model governance gate, but did not check whether the injected read-authorization coordinator was missing or unconfigured before starting the MCP server and Cloudflared tunnel. In the prior composition, missing World Model data did not itself block startup. The source candidate now calls a bounded authorization-dependency preflight before either runner starts.
 
-### Candidate status and unresolved gates
+Two focused regression tests were added:
+- `test_bridge_stays_stopped_without_read_authorization_coordinator`
+- `test_bridge_stays_stopped_when_authorization_coordinator_is_unconfigured`
 
-M1F was reconstructed from a clean detached checkout at main SHA 74b9a3900b39ed2009fccf4ba0be20faf7d9dac8. The consolidated delta contains the 13 reported M1D candidate paths, with M1E updating only windows_handle_reader.py and test_windows_handle_reader.py. No product source commit, push, merge or PR occurred; the candidate is not in main.
+They assert that neither the server runner nor tunnel runner starts when the coordinator is missing or has missing required providers. The preflight checks exact coordinator type and presence of mandatory dependencies, but **does not prove provider authenticity, Windows/IPC behavior, or formal G1–G8 acceptance**. It is a source-level defense-in-depth correction, not authority evidence. The production candidate still composes `ReadAuthorizationCoordinator.unconfigured()`, so the proposed source path remains deny-only and blocks bridge startup.
 
-The current production composition still registers ReadAuthorizationCoordinator.unconfigured() and does not wire an approved workspace-root provider, G1 trust anchor/Owner mandate, G2 policy provider, G3 production resolver, authenticated issuer IPC, persistent replay provider or host-owned server identity. This deliberately remains deny-only. The M1F mocks do not prove native Windows handle semantics, OS ACL containment, authority authenticity, issuer process identity, rollback-resistant replay state, real protected reads or live MCP transport. The prior reported bootstrap invocation that may have read a local secrets file remains a prior-run limitation; M1F did not repeat it.
+### Verification and limits
 
-Space-Time evidence classification: producer-reported test result, independently checked artifact identity, bounded static source review, Dropbox transfer and canonical adoption are separate claims. The first four do not imply product integration or automatic learning.
+- Candidate file fetch-back: the two modified blob IDs above matched exact expected candidate blobs; 11 remaining candidate files matched the original M1F target blobs.
+- New regression tests were authored but **not run**. No local clone could be obtained because this execution environment failed to resolve `github.com`; no GitHub Actions status checks or PR workflow runs were returned for the inspected candidate commit.
+- Static test/import preflight was bounded to the test module, its direct imports and the shared `conftest.py`. The test does not directly import `AppBootstrap` or invoke `_auto_load_secrets()`; the full transitive import graph was not executed, so test execution remains pending until an approved isolated runner is available.
+- Native Windows handle/ACL behavior, authenticated issuer IPC, rollback-resistant replay, production runtime, live MCP transport, protected reads and the full suite remain `NOT_RUN`. No local Owner Windows execution is claimed.
 
-~~~text
-PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
-LAST_TERMINAL_TASK=M1F_G1_RECONSTRUCT_M1D_PLUS_M1E_ON_CLEAN_MAIN_20261025
-LAST_TERMINAL_RESULT=RECONSTRUCTED_SOURCE_CANDIDATE_ONLY; CODEX_REPORTED_24_FOCUSED_TESTS_PASS; CHATGPT_BOUNDED_STATIC_REVIEW_FAVORABLE_FOR_M1E_CLEANUP
-LAST_COMPLETED_DOCUMENTATION_TASK=M1G_M1F_EVIDENCE_RECONCILIATION_AND_ROUTE_WRITEBACK_20261025
-ACTIVE_TASK=OWNER_DECISION_ON_NEW_INDEPENDENT_AUTHORITY_EVIDENCE_OR_ONE_SPECIFIC_BOUNDED_PREREQUISITE_TASK
-M1D_SOURCE_CANDIDATE_IN_MAIN=FALSE
-M1E_HANDLE_CLEANUP_STATIC_REVIEW=BOUNDED_FAVORABLE
-M1F_CONSOLIDATED_DIFF_SHA256=29902d05a6f65e74ca251af174917074f2939a018ddd241c95da39eb87dd0021
-M1F_ZIP_SHA256=7c161a009a50da8133b173d7b282964ad4678818f713d2fb793e4a59ce22590f
+### Canonical gate state
+
+```text
+MAIN=6b732fe350b7c8db95358239efe5d53288ef32f7
+CANDIDATE_PR=531; OPEN_DRAFT; MERGED=FALSE
+CANDIDATE_HEAD=0d1a9ff1639aabb7134d39888339ba12cc382b5c
+ORIGINAL_M1F_TARGET_BLOBS=13/13_VERIFIED_BEFORE_FOLLOW_ON_PATCH
+ORIGINAL_M1F_TARGET_BLOBS_STILL_UNCHANGED=11/13; TWO_FILES_AMENDED_BY_EXPLICIT_BRIDGE_GUARD
+BRIDGE_START_GUARD=AUTHORIZATION_DEPENDENCY_PREFLIGHT_ADDED; TESTS_AUTHORED_NOT_RUN
 WHOLE_ORGAN_ACCEPTANCE=NOT_GRANTED
 G1=NOT_ESTABLISHED
 G2=NOT_ESTABLISHED
 G3=NOT_ESTABLISHED
 IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
 AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
-APPROVED_WORKSPACE_ROOT_PROVIDER=NOT_WIRED_IN_CANDIDATE_COMPOSITION
 PROTECTED_READS=FAIL_CLOSED
 BRIDGE=BRIDGE_NOT_READY
-PRODUCT_SOURCE_COMMIT_PUSH_MERGE=NOT_PERFORMED
-CANONICAL_RECONCILIATION=THIS_DOCUMENTATION_CHANGE_ONLY
-AUTOMATIC_FOLLOW_ON=FALSE
-NEXT_ACTION=OWNER_DECISION_ON_NEW_INDEPENDENT_AUTHORITY_EVIDENCE_OR_ONE_SPECIFIC_BOUNDED_PREREQUISITE_TASK
-~~~
+SOURCE_TESTS=NOT_RUN
+NATIVE_WINDOWS_VALIDATION=NOT_RUN
+LIVE_TRANSPORT=NOT_RUN
+PRODUCT_SOURCE_MERGE=NOT_PERFORMED
+NEXT_ACTION=RUN_SAFE_FOCUSED_CANDIDATE_TESTS_IN_APPROVED_ISOLATED_RUNNER; CONTINUE_WHOLE_CANDIDATE_REVIEW; DO_NOT_ACTIVATE_BRIDGE
+```
+
+The evidence and canonical eight-gate acceptance matrix remain in `CHAT-ARCH-2026-10-25-M1F-DRAFT-PR-531-RECONSTRUCTION-RECEIPT.md`; no gate is closed by this follow-on correction. Prior route entries are preserved below the historical-route boundary.
 
 
 ## HISTORICAL ROUTE NOTE
