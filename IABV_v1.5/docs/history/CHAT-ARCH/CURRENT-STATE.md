@@ -1,5 +1,15 @@
 <!-- Owner-authorized route transition: Actions billing-lock blocker, 2026-10-26. CURRENT-STATE.md remains the sole route authority. -->
 
+### Latest verified route delta — billing discrepancy and support intake completed (2026-10-26)
+
+This delta supersedes the earlier next-action instruction to inspect Billing & Licensing: the Owner-authorized read-only check is completed. Billing & Licensing shows GitHub Free and Copilot Free with no visible billing alert or balance explaining the restriction, while the authenticated Actions page still shows the account-billing-lock warning and lists 185 runs as failed at startup. The underlying cause remains UNKNOWN. No Actions tests ran; TESTS=NOT_RUN.
+
+The official GitHub Support billing path was inspected but no ticket was submitted: the final Free-account form showed only From, CCs and Type of Issue, without a subject/description field. A sanitized update was posted to existing Community discussion #211346 (https://github.com/orgs/community/discussions/211346), comment #19206234 (https://github.com/community/community/discussions/211346/comments/19206234); the thread remains unanswered at last check.
+
+Full evidence: M1F Actions billing-lock support intake outcome (./CHAT-ARCH-2026-10-26-M1F-ACTIONS-BILLING-LOCK-SUPPORT-INTAKE-OUTCOME.md), receipt commit 5896abe012bcb0e03d9ff2264c4e68c793b5efb5.
+
+Do not repeat the same workflow, the same Billing & Licensing inspection, or the same support-form navigation without a material new condition. Do not create a dummy workflow, change billing or purchase a plan to test a hypothesis. In parallel, continue only bounded source-grounded review of the real G1/G2/G3 producer gap; no synthetic trust providers, protected-read enablement, merge or rebase. Revalidate refs before any future action. Current main at receipt creation was 5896abe012bcb0e03d9ff2264c4e68c793b5efb5; PR #531 remains open/draft/unmerged at candidate bc2baf525a70d66628809360a197f25a069aa328, 17 ahead / 61 behind after the receipt commit.
+
 ## CURRENT ROUTE — Focused validation blocked by visible account billing lock in GitHub Actions (2026-10-26)
 
 ### Live references
