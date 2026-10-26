@@ -73,6 +73,32 @@ The previously published [sanitized Community escalation #211346](https://github
 4. Record exact tested SHA, run URL, job/step logs and exit code. If the old zero-job run cannot be re-run, choose a separately reviewed trigger path; do not make an unrelated source change only to provoke CI.
 5. After valid test evidence, review branch-base divergence against freshly fetched `main` separately. Keep protected reads denied until all real authority and platform requirements are independently established.
 
+## Space-Time anti-loop method delta — required for the next chat
+
+This blocker is now linked to the refined operating method [UAAL-D019 — Space-Time Anti-Loop and First-Open Causal Frontier](./CHAT-ARCH-2026-10-26-UAAL-D019-SPACE-TIME-ANTI-LOOP-CAUSAL-FRONTIER.md), registered in the conceptual lineage as a child of `UAAL-D014` that refines `UAAL-D018`.
+
+Apply the rule before any new execution attempt:
+
+1. Refresh live `main`, PR #531, exact candidate HEAD, and the visible Actions restriction. Treat the old SHA/run data as historical until revalidated.
+2. The prior attempt ended at `STARTUP_FAILURE_ZERO_JOBS`. Therefore `TESTS=NOT_RUN`; this is not a Python assertion failure or evidence that the product tests passed/failed.
+3. Fingerprint the proposed action across objective, exact target/revision, operation/input, execution route, authorization/preconditions, relevant environment/runtime, and expected observation. A new chat, task number, prompt wording or elapsed time is not a material change.
+4. If the billing-lock warning and execution precondition remain unchanged, do not repeat the same workflow unchanged. The next discriminating step is the Owner's account Billing & licensing inspection or an official explanation of the lock; do not share payment details in chat or change billing merely to test a guess.
+5. When that execution precondition materially changes, revalidate current `main`, PR #531 and exact candidate HEAD, then run only the three specified focused suites on the approved isolated Windows/Python 3.11 executor. Capture SHA, run URL, jobs/steps, logs and exit code.
+6. Keep this infrastructure frontier separate from G1/G2/G3: resolving Actions or passing tests does not establish real production authority providers, exact-target resolution, anti-rollback or whole-organ acceptance.
+
+```text
+METHOD_DELTA=UAAL-D019
+PRIOR_FAILURE_CLASS=STARTUP_FAILURE_ZERO_JOBS
+UNCHANGED_RETRY=PROHIBITED_WITHOUT_MATERIAL_DELTA
+NEXT_ACTION=OWNER_RESOLVE_OR_OBTAIN_OFFICIAL_EXPLANATION_FOR_VISIBLE_ACTIONS_BILLING_LOCK
+TESTS=NOT_RUN
+G1/G2/G3=NOT_ESTABLISHED
+CAUSAL_REUSE=NOT_ESTABLISHED
+RUNTIME_METHOD_ENFORCEMENT=NOT_PROVEN
+```
+
+This is a durable route-to-method link, not proof that a new chat has consumed the rule. A later non-identical task must demonstrate its use and verified effect before causal reuse can be claimed.
+
 ## Canonical status
 
 ```text
