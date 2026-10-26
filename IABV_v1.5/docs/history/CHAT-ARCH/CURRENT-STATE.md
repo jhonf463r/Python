@@ -852,7 +852,16 @@ The Owner's explicit decision is ratified. It states that the Owner does not kno
 
 This is a documentation-only routing update. Do not retry the denied reader, circumvent its denial, repeat Entra setup or the Option D question, create an authority/credential/app, incur costs, modify product code, run tests/build/runtime/transport, launch a tunnel, deploy, close a gate or release a block. Under the ratified Option D, maintain no-bootstrap/fail-closed; resume reconsideration only when genuinely new authority evidence or a new explicit Owner decision changes the basis.
 
+### Supplementary client diagnostic receipt (2026-10-24; routing unchanged)
+
+[Receipt](./CHAT-ARCH-2026-10-24-local-restricted-stdio-health-check.md) records the supplied Codex session result: local `stdio`, profile `local_restricted`, exactly `bridge_health`, response `{"status":"ok"}`. This is not a full IABV health check or evidence that establishes G1–G3. The routing block above, including its exact `NEXT_ACTION`, all trust and implementation states, and fail-closed posture, remains unchanged. No new runtime/build/authorization state is inferred.
+
+
 ---
+
+### Candidate-only MCP fail-closed profile receipt (2026-10-24; routing unchanged)
+
+[Receipt](./CHAT-ARCH-2026-10-24-mcp-fail-closed-candidate-consolidation.md) records a separate Owner-authorized candidate change and focused unit-test result: only `local_restricted` is runnable through the public MCP entrypoints; 19 focused tests passed. The work is not merged or canonical and does not establish G1–G3, close any of the eight prerequisites, or prove real transport. The active routing block above and its exact `NEXT_ACTION` remain unchanged; no governance, implementation, test, build or runtime state on `main` is inferred.
 
 ## OVERRIDING LATEST ROUTING — Entra identity prepared; no-cost bridge-security review completed (2026-10-23)
 

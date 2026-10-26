@@ -1,5 +1,10 @@
 ## OVERRIDING LATEST ROUTING — New-chat continuity handoff after UAAL-D018 (2026-10-23)
 
+## Supplementary local diagnostic — no authority-gap closure (2026-10-24)
+
+[Receipt](./CHAT-ARCH-2026-10-24-local-restricted-stdio-health-check.md) records a supplied Codex client result calling IABV's `local_restricted` MCP profile over `stdio`; the only reported tool was `bridge_health`, returning `{"status":"ok"}`. This direction is Codex → IABV diagnostic invocation. It does not demonstrate IABV selecting/invoking an external AI and ingesting its result, so symbiosis stages S2–S4 remain unproven and no causal reuse is claimed. The active routing remains owned by `CURRENT-STATE.md`.
+
+
 The canonical startup handoff is [here](./CHAT-ARCH-2026-10-23-new-chat-continuity-handoff-after-UAAL-D018.md), blob `71f0ef6911bf6f67f7fb8f6249bf7ce5b4963589`. Current baseline at preparation: `8c453dbdd0b3bb0b606fb46f6b243df525ac10f8`. Verify remote `main` again before executing any action.
 
 The North Star is `GOVERNED_IABV_CODEX_BRIDGE`; the active frontier is `M1A_G1_TRUST_BOOTSTRAP_AUTHORITY_BOUNDARY`. UAAL-D018 is persisted as a documented method refinement, not a runtime implementation. It separates action authority, input, invocation, source result, output shape, field projection, serialization/transport, receipt reconciliation, canonical fetch-back and later causal reuse. `COORDINATOR_RUNTIME=NOT_PROVEN`; `CAUSAL_SPACE_TIME_REUSE=NOT_PROVEN`.
