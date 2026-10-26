@@ -1,6 +1,31 @@
 <!-- Route summary synchronized 2026-10-26. CURRENT-STATE.md is the sole active route authority. -->
 
-## CURRENT ROUTE — Parallel source review and Actions escalation (2026-10-26)
+## CURRENT ROUTE — R-07 transport integration gap found; implementation decision pending (2026-10-26)
+
+The bounded PR #531 review of R-01–R-08 and material test changes is complete enough to route the next decision, but this is not exhaustive line-by-line review of all additions and not acceptance. The exact candidate still has no production G1/G2/G3 provider chain; `AppBootstrap` registers `ReadAuthorizationCoordinator.unconfigured()`. Tests remain `NOT_RUN`.
+
+New finding: server Host/Origin allowlists are local-only while bridge defaults to streamable HTTP plus a Cloudflare tunnel with an external/dynamic hostname. SDK documentation says real external hostnames must be explicitly allowlisted; do not restore wildcard bypasses. The next action requires a separate Owner decision for one bounded R-07 transport-profile reconciliation—local-only/stdio/no tunnel, or an explicitly authenticated and narrowly allowlisted remote route. Keep the community support track parallel.
+
+```text
+STATIC_REVIEW=M1F_PR531_R01_R08_BOUNDED_REVIEW_COMPLETE
+EXHAUSTIVE_LINE_BY_LINE_REVIEW=NOT_CLAIMED
+R07_TRANSPORT_PROFILE=INTEGRATION_GAP_IDENTIFIED
+PR531=OPEN_DRAFT_UNMERGED
+CANDIDATE_HEAD=50cbd2b8b3d643d05726290c76ef13f85731949e
+TESTS=NOT_RUN
+ACTIONS_USAGE_BLOCK=UNKNOWN
+ROOT_CAUSE=UNKNOWN
+G1/G2/G3=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+PROTECTED_READS=FAIL_CLOSED
+BRIDGE=BRIDGE_NOT_READY
+NEXT_ACTION=OWNER_DECISION_ON_ONE_BOUNDED_R07_TRANSPORT_PROFILE_RECONCILIATION
+```
+
+Details: [bounded review receipt](./CHAT-ARCH-2026-10-26-M1F-PR531-STATIC-REVIEW-ROUTE-RESULT.md).
+
+
+## HISTORICAL ROUTE — Parallel source review and Actions escalation (2026-10-26) (superseded 2026-10-26 by bounded PR #531 review outcome)
 
 Owner direction: do not pause the authorization organ solely for GitHub Actions support. Continue one bounded independent static review of PR #531 exact diff and tests in parallel with [Community discussion #211346](https://github.com/orgs/community/discussions/211346). Targeted source reads found a fail-closed implementation, but production provider composition stays unconfigured; SQLite rollback resistance and trust-root provenance remain unestablished. No tests ran.
 

@@ -1,6 +1,15 @@
 <!-- Route summary synchronized 2026-10-26. CURRENT-STATE.md is the sole active route authority. -->
 
-## CURRENT ROUTE — Organ review proceeds in parallel with Actions support (2026-10-26)
+## CURRENT ROUTE — PR #531 bounded gate review complete; R-07 design decision pending (2026-10-26)
+
+Use [CURRENT-STATE.md](docs/history/CHAT-ARCH/CURRENT-STATE.md) as the only route authority. The bounded R-01–R-08 review found the current fail-closed source contracts meaningful but incomplete for production acceptance. `AppBootstrap` still uses `ReadAuthorizationCoordinator.unconfigured()`; G1/G2/G3 and all eight prerequisites remain open; tests remain `NOT_RUN`.
+
+A transport integration gap remains: the MCP server allows only local Host/Origin values while the bridge defaults to streamable HTTP plus a public/dynamic Cloudflare tunnel hostname. Do not use wildcards or disable DNS-rebinding protection. Obtain a separate Owner decision for a local-only route or an explicitly authenticated, narrowly allowlisted remote route before editing source. Full review details: [bounded PR #531 static review receipt](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-26-M1F-PR531-STATIC-REVIEW-ROUTE-RESULT.md).
+
+The community Actions escalation [#211346](https://github.com/orgs/community/discussions/211346) continues in parallel. No source was edited and no tests ran in this review.
+
+
+## HISTORICAL ROUTE — Organ review proceeds in parallel with Actions support (2026-10-26) (superseded 2026-10-26 by bounded PR #531 review outcome)
 
 Use [CURRENT-STATE.md](docs/history/CHAT-ARCH/CURRENT-STATE.md) as route authority. Owner direction: do not pause organ development solely for the Actions support thread. [Discussion #211346](https://github.com/orgs/community/discussions/211346) is a parallel infrastructure path.
 

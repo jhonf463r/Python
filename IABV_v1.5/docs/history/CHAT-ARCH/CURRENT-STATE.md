@@ -1,6 +1,49 @@
 <!-- Owner-authorized route transition: 2026-10-26. CURRENT-STATE.md remains the sole route authority. -->
 
-## CURRENT ROUTE — Continue organ review independently of Actions support (2026-10-26)
+## CURRENT ROUTE — Bounded PR #531 review identifies R-07 transport gap; separate Owner decision required (2026-10-26)
+
+### Live references
+
+- Live `main` before this documentation-only route transition: `125e47260714d6adbeacc40fd4245fe9ac5063a7`.
+- PR #531 remains `OPEN`, `DRAFT=TRUE`, `MERGED=FALSE` at candidate HEAD `50cbd2b8b3d643d05726290c76ef13f85731949e`.
+- Community escalation [#211346](https://github.com/orgs/community/discussions/211346) remains a parallel infrastructure track, not a prerequisite for organ source review.
+- Actions run 40386434070 is a separate probe-branch `startup_failure` with no jobs, not test evidence for the PR candidate. Usage remains `UNKNOWN` after HTTP 404/no values.
+
+### Review disposition
+
+A bounded static review of the R-01–R-08 boundaries and material test deltas is complete; exhaustive line-by-line review of all approximately 5,700 additions is not claimed. The review found that the source candidate has useful fail-closed composition, same-opened-object permit/guard/reader contracts, handle-backed readers, transactional replay and signature verification. Production bootstrap still uses `ReadAuthorizationCoordinator.unconfigured()`; G1/G2/G3 and all eight prerequisites remain open. Tests remain `NOT_RUN`.
+
+One source integration gap is now explicit: the MCP server restricts Host/Origin to local values, while the bridge defaults to HTTP plus a Cloudflare tunnel exposing an external/dynamic hostname. The official MCP SDK documents that a real deployment hostname must be explicitly allowlisted or the Host check refuses requests. Do not fix this with `*` or by disabling DNS-rebinding protection.
+
+### Exact next action
+
+Obtain a separate Owner decision on one bounded R-07 transport-profile reconciliation: either keep the bridge local-only/stdio with no public tunnel, or design an explicitly authenticated, narrowly allowlisted remote tunnel with a defined hostname/origin and startup lifecycle. Do not edit source until that scope is authorized. This task must not fabricate trust roots, Owner mandates, policy, issuer IPC, approved workspace-root providers, or anti-rollback state. The Actions investigation continues in parallel; no test execution is authorized by this review.
+
+### Canonical status
+
+```text
+STATIC_REVIEW=M1F_PR531_R01_R08_BOUNDED_REVIEW_COMPLETE
+EXHAUSTIVE_LINE_BY_LINE_REVIEW=NOT_CLAIMED
+R07_TRANSPORT_PROFILE=INTEGRATION_GAP_IDENTIFIED
+PR531=OPEN_DRAFT_UNMERGED
+CANDIDATE_HEAD=50cbd2b8b3d643d05726290c76ef13f85731949e
+TESTS=NOT_RUN
+ACTIONS_USAGE_BLOCK=UNKNOWN
+ROOT_CAUSE=UNKNOWN
+G1/G2/G3=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+WHOLE_ORGAN_ACCEPTANCE=NOT_GRANTED
+PROTECTED_READS=FAIL_CLOSED
+BRIDGE=BRIDGE_NOT_READY
+NEXT_ACTION=OWNER_DECISION_ON_ONE_BOUNDED_R07_TRANSPORT_PROFILE_RECONCILIATION
+```
+
+Full findings: [bounded review receipt](./CHAT-ARCH-2026-10-26-M1F-PR531-STATIC-REVIEW-ROUTE-RESULT.md). This route transition is documentation-only; no candidate source or test execution changed.
+
+
+
+## HISTORICAL ROUTE — Continue organ review independently of Actions support (2026-10-26) (superseded 2026-10-26 by bounded PR #531 review outcome)
 
 The Owner directed that authorization-organ development must not pause solely for the Actions startup issue. The public [Community discussion #211346](https://github.com/orgs/community/discussions/211346) remains a parallel infrastructure escalation.
 
