@@ -74,3 +74,14 @@ Until then, stop this execution path rather than looping on an unavailable prere
     ALGORITHM_LEARNED=NOT_PROVEN
 
 This writeback records an Owner-reported environment blocker. It does not prove causal memory activation or algorithmic learning. A later non-identical task must demonstrate that the retained experience changes an attributable decision and observable action.
+
+
+## 7. Hosted workflow configuration checked after the bounded discovery
+
+Read-only inspection of `.github/workflows/iabv-authorization-focused-tests.yml` at both the exact candidate HEAD and main returned the same Git blob SHA: `fc3ff9c6d04a16a391a19b7e0792d6f3c482995c`.
+
+The workflow declares only `push` for the candidate branch and `pull_request` targeting main with path filters. It does **not** declare `workflow_dispatch`, so there is no supported manual-dispatch trigger in this workflow as currently written. Its job uses `runs-on: windows-latest`; Python 3.11 is installed within a job step, which cannot execute if runner assignment fails before the first step.
+
+No workflow was dispatched, rerun, edited, or added. No candidate branch was changed. Do not simulate a dispatch by modifying the PR branch, and do not infer that a currently green public status page means this particular repository will be assigned a runner. The first new execution must have a clear, authorized trigger and must show actual assigned-runner/step evidence.
+
+Current next-action precondition is therefore twofold: the local test route needs an approved executor already containing Python 3.11, or the hosted execution route needs a valid, authorized trigger plus an actually assigned runner that advances into steps.
