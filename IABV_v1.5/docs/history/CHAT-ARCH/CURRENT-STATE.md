@@ -1,61 +1,63 @@
 <!-- Owner-authorized route transition: 2026-10-26. CURRENT-STATE.md remains the sole route authority. -->
 
-## CURRENT ROUTE — M1F focused tests blocked at Windows venv setup; Python 3.11 unavailable (2026-10-26)
+## CURRENT ROUTE — M1F focused tests blocked: Python 3.11 unavailable in the checked Windows environment (2026-10-26)
 
-### Live revisions and tested target
+### Live revisions and candidate
 
-- Live `main` revalidated immediately before this route writeback: `ce50fda7923103d6297b67a26494b362cdcb0c79`. This update itself creates a documentation commit; fetch `main` again before the next action.
-- PR [#531](https://github.com/jhonf463r/Python/pull/531) remains `OPEN`, `DRAFT=TRUE`, `MERGED=FALSE`.
-- Exact candidate HEAD: `50cbd2b8b3d643d05726290c76ef13f85731949e`; recorded PR base: `7ddfe285b1a3267f9ef6f57f862cca78bc8438c2`.
-- The comparison from base `7ddfe285b1a3267f9ef6f57f862cca78bc8438c2` to pre-writeback `main=ff560e042342a4915d9e1ab1dfc605084c164b57` was 11 commits ahead and 0 behind; the compared changes were documentation-only. No candidate source change or merge occurred in the Owner-reported attempt.
+- Live main revalidated before this route write: a66e46efa25652ee2c63f9263ac1f7fe7d469d86. This update itself will create a documentation commit; re-fetch main before the next operation.
+- PR [#531](https://github.com/jhonf463r/Python/pull/531) remains OPEN, DRAFT=TRUE, MERGED=FALSE.
+- Exact candidate HEAD: 50cbd2b8b3d643d05726290c76ef13f85731949e; recorded PR base: 7ddfe285b1a3267f9ef6f57f862cca78bc8438c2.
+- The comparison from the PR base to main c58faf60cffc8eb8048f67f0b62c8ff4e50b1015 reports 18 commits ahead, 0 behind and 11 changed paths, all documentation files. No candidate source update or merge is evidenced.
 
-### Latest Owner-supplied execution receipt
+### Latest execution and bounded discovery
 
-See [M1F Python 3.11 setup blocker receipt](./CHAT-ARCH-2026-10-26-M1F-PY311-SETUP-BLOCKER-RECEIPT.md). The receipt is Owner-reported, not independently re-executed by this writer.
+The most recent local result is an Owner-supplied report, not independently executed by this writer. See [M1F Python 3.11 bounded discovery receipt](./CHAT-ARCH-2026-10-26-M1F-PY311-BOUNDED-DISCOVERY-RECEIPT.md).
 
-- First disposable clone: checkout stopped with Git `Filename too long`, exit `128`; partial checkout was left intact and not used.
-- Second disposable clone: reached exact candidate HEAD and was reported clean before and after preparation; `core.longpaths=true` was scoped to that clone. The original `C:\Python` checkout was not used or modified.
-- A new temporary `IABV_DATA_DIR` and clone-local `PYTHONPATH` were set. `py -3.11 -m venv .venv` failed with exit `103`, `No suitable Python runtime found`.
-- Python 3.11 and project dependencies were not installed; no venv was created; `pytest` was never invoked and no pytest log exists. The Owner retained the setup log locally; its exact path is omitted from this repository record.
-- The last inspected hosted candidate runs [#40258140268](https://github.com/jhonf463r/Python/actions/runs/40258140268) and [#40258135717](https://github.com/jhonf463r/Python/actions/runs/40258135717) failed before job steps. They are not test results.
+- The earlier setup attempt had a second clean disposable clone at the exact candidate HEAD but failed at venv creation with exit 103 because Python 3.11 was unavailable. Pytest was not invoked.
+- The subsequent bounded check reports: py -0p lists 3.14, 3.12 and 3.10 but no 3.11; the enumerated 3.12 path no longer exists; command lookup exposes C:\Python314\python.exe only; checked Python 3.11 registry keys and conventional Python311 paths are absent.
+- The report also mentions other directly verified versions (3.14.4, 3.13.2, 3.10.18, 3.10.0). None satisfies the explicit Python 3.11 test-handoff requirement.
+- No clone was searched for/reused in the latest attempt, no virtual environment or dependencies were created, and no tests were run. The original checkout and candidate source were not changed.
+- The bounded Python search is complete for this observation cycle. Do not repeat it or restart clone/setup attempts unless materially new evidence changes runtime availability.
+
+The latest inspected GitHub Actions run [#40258140268](https://github.com/jhonf463r/Python/actions/runs/40258140268) completed with failure before test steps; the combined status endpoint showed no status checks. Prior run #40258135717 was also recorded as failing before steps. These are infrastructure blockers, not assertion results.
 
 ### Exact next action
 
-Resume only in an approved isolated Windows environment that already has Python 3.11, or when a hosted runner is genuinely assigned and its job steps execute. Do not install a runtime as an improvised workaround or repeat unchanged preparation in the same unavailable environment.
+Stop the current execution path until one of the following is true:
+1. an approved isolated Windows executor already has a usable Python 3.11 runtime; or
+2. GitHub Actions demonstrates an actually assigned runner and executed job steps.
 
-Before retrying, revalidate live `main`, PR #531 state and exact candidate HEAD. If the HEAD changes, require a new handoff reviewed for that SHA. Then use [the exact-HEAD Windows test handoff](./CHAT-ARCH-2026-10-26-M1F-WINDOWS-TEST-HANDOFF-EXACT-HEAD.md) to execute only:
-1. `IABV_v1.5/tests/test_mcp_bridge_service.py`
-2. `IABV_v1.5/tests/test_read_authorization.py`
-3. `IABV_v1.5/tests/test_windows_handle_reader.py`
+Do not silently substitute Python 3.10, 3.12, 3.13 or 3.14, install a runtime as an improvised workaround, create more clones or rerun the failed workflow blindly. When a valid executor is available, revalidate live main, PR state and candidate HEAD; if the HEAD changes, require a reviewed handoff for that SHA. Then use [the exact-HEAD Windows handoff](./CHAT-ARCH-2026-10-26-M1F-WINDOWS-TEST-HANDOFF-EXACT-HEAD.md) to execute only:
+1. IABV_v1.5/tests/test_mcp_bridge_service.py
+2. IABV_v1.5/tests/test_read_authorization.py
+3. IABV_v1.5/tests/test_windows_handle_reader.py
 
-Capture actual output, exit code, tested SHA and log. Do not rerun the unassigned workflow blindly or patch-loop without executed evidence. If no approved Windows executor with Python 3.11 and no actually assigned runner are available, keep `TESTS=NOT_RUN` and stop this path.
+Capture exact SHA, output, exit code and log. Do not touch the original checkout; start no AppBootstrap/MCP/Cloudflared/issuer/real transport; read no protected data or secrets; do not modify candidate source, merge PR #531 or enable protected reads.
 
-Do not touch the original checkout; start no AppBootstrap, MCP, Cloudflared, issuer process or real transport; perform no protected reads or secret inspection; do not merge PR #531 or enable protected reads.
+### Canonical status
 
-### Canonical disposition
+    CLEANUP_COMPLETE=FALSE
+    CLEANUP_TRACK=FORMALLY_DELIMITED_UNDER_CURRENT_EVIDENCE
+    PR531=OPEN_DRAFT_UNMERGED
+    CANDIDATE_HEAD=50cbd2b8b3d643d05726290c76ef13f85731949e
+    PYTHON311_DISCOVERY=BOUNDED_CHECK_COMPLETE_FOR_CURRENT_ENVIRONMENT
+    PYTHON_3_11=NOT_INSTALLED_OR_NOT_DISCOVERABLE_IN_CHECKED_LOCATIONS
+    TESTS=NOT_RUN
+    PYTEST_INVOKED=FALSE
+    HOSTED_RUNNER_ASSIGNMENT=FAILED_BEFORE_FIRST_STEP
+    G1=NOT_ESTABLISHED
+    G2=NOT_ESTABLISHED
+    G3=NOT_ESTABLISHED
+    IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+    AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+    WHOLE_ORGAN_ACCEPTANCE=NOT_GRANTED
+    PROTECTED_READS=FAIL_CLOSED
+    BRIDGE=BRIDGE_NOT_READY
+    CAUSAL_REUSE=NOT_ESTABLISHED
+    ALGORITHM_LEARNED=NOT_PROVEN
+    NEXT_ACTION=RUN_THREE_FOCUSED_SUITES_ONLY_ON_EXACT_PR531_HEAD_IN_APPROVED_WINDOWS_ENVIRONMENT_WITH_PYTHON_3_11_OR_ACTUALLY_ASSIGNED_HOSTED_RUNNER
 
-```text
-CLEANUP_COMPLETE=FALSE
-CLEANUP_TRACK=FORMALLY_DELIMITED_UNDER_CURRENT_EVIDENCE
-CANDIDATE_PR=531; OPEN_DRAFT; MERGED=FALSE
-CANDIDATE_HEAD=50cbd2b8b3d643d05726290c76ef13f85731949e
-TESTS=NOT_RUN
-TEST_SETUP_BLOCKER=PYTHON_3_11_UNAVAILABLE; VENV_EXIT=103
-HOSTED_RUNNER_ASSIGNMENT=FAILED_BEFORE_FIRST_STEP
-G1=NOT_ESTABLISHED
-G2=NOT_ESTABLISHED
-G3=NOT_ESTABLISHED
-IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
-AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
-WHOLE_ORGAN_ACCEPTANCE=NOT_GRANTED
-PROTECTED_READS=FAIL_CLOSED
-BRIDGE=BRIDGE_NOT_READY
-CAUSAL_REUSE=NOT_ESTABLISHED
-ALGORITHM_LEARNED=NOT_PROVEN
-NEXT_ACTION=EXECUTE_THREE_FOCUSED_SUITES_ON_EXACT_PR531_HEAD_IN_APPROVED_ISOLATED_WINDOWS_ENVIRONMENT_WITH_PYTHON_3_11_OR_ACTUALLY_ASSIGNED_HOSTED_RUNNER
-```
-
-Historical records below this boundary are preserved exactly and remain historical, not active routing authority.
+Historical records below this boundary remain intact and are not active routing authority.
 
 ## HISTORICAL ROUTE — Windows-specific runner handoff before cross-platform runner reconciliation (superseded 2026-10-25)
 
