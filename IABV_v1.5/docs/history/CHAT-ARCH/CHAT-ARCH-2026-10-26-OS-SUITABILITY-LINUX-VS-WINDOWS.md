@@ -25,7 +25,7 @@ Esto es una recomendación arquitectónica, **no una afirmación de que un despl
 
 ### 2.1 Ejecución de escritorio
 
-Fuente: [`ui_execution_runner.py`](../../src/iabv_v15/services/tools/ui_execution_runner.py).
+Fuente: [`ui_execution_runner.py`](../../../src/iabv_v15/services/tools/ui_execution_runner.py).
 
 - `UIExecutionRunner` carga `ctypes.windll.user32` y su `is_available()` exige `os.name == 'nt'` además de un `user32` utilizable.
 - Su método `run()` etiqueta el resultado como simulado cuando no hay backend de ejecución real o cuando se ejecuta en sandbox.
@@ -36,7 +36,7 @@ Esto pesa mucho en una IA que debe observar e interactuar con los programas inst
 
 ### 2.2 Portapapeles, ventanas y APIs del sistema
 
-Fuente: [`win_clipboard_bridge.py`](../../src/iabv_v15/services/platform/win_clipboard_bridge.py), [`tool_adapters.py`](../../src/iabv_v15/services/tools/tool_adapters.py) y [`bootstrap.py`](../../src/iabv_v15/bootstrap.py).
+Fuente: [`win_clipboard_bridge.py`](../../../src/iabv_v15/services/platform/win_clipboard_bridge.py), [`tool_adapters.py`](../../../src/iabv_v15/services/tools/tool_adapters.py) y [`bootstrap.py`](../../../src/iabv_v15/bootstrap.py).
 
 - `WinClipboardBridge` accede a `user32`/`kernel32`; en sistemas no Windows marca esa función como no disponible y lanza `ClipboardUnavailableError` si se intenta usar el puente Win32.
 - Varias rutas de detección/foco de ventanas recurren a `ctypes.windll.user32`.
@@ -45,7 +45,7 @@ Fuente: [`win_clipboard_bridge.py`](../../src/iabv_v15/services/platform/win_cli
 
 ### 2.3 Configuración del navegador y perfiles
 
-Fuente: [`infra/config.py`](../../src/iabv_v15/infra/config.py) y [`BrowserSessionController`](../../src/iabv_v15/services/capture/browser_session_controller.py).
+Fuente: [`infra/config.py`](../../../src/iabv_v15/infra/config.py) y [`BrowserSessionController`](../../../src/iabv_v15/services/capture/browser_session_controller.py).
 
 - La ruta predeterminada del perfil de Chrome utiliza `Path.home() / 'AppData' / 'Local' / 'Google' / 'Chrome' / 'User Data'`, lo cual es Windows-específico.
 - El controlador de sesiones de Playwright es, en sí, portable entre plataformas compatibles, pero usar un perfil persistente, conservar el estado autenticado y capturar respuestas en el navegador del usuario requiere rutas, perfiles, permisos, sesión gráfica y configuración propias de cada sistema.
@@ -53,7 +53,7 @@ Fuente: [`infra/config.py`](../../src/iabv_v15/infra/config.py) y [`BrowserSessi
 
 ### 2.4 Arranque, instalación y operación cotidiana
 
-Fuentes: [`start_iabv.ps1`](../../scripts/start_iabv.ps1), [`iabv_bootstrap.ps1`](../../scripts/iabv_bootstrap.ps1), [`IABV.vbs`](../../scripts/IABV.vbs) y [`mcp-bridge.md`](../../docs/mcp-bridge.md).
+Fuentes: [`start_iabv.ps1`](../../../scripts/start_iabv.ps1), [`iabv_bootstrap.ps1`](../../../scripts/iabv_bootstrap.ps1), [`IABV.vbs`](../../../scripts/IABV.vbs) y [`mcp-bridge.md`](../../mcp-bridge.md).
 
 - El flujo de inicio “de un clic” se basa en PowerShell y VBScript.
 - El bootstrap instala binarios Windows portables de herramientas auxiliares y trabaja con perfiles/secrets de PowerShell.
@@ -62,7 +62,7 @@ Fuentes: [`start_iabv.ps1`](../../scripts/start_iabv.ps1), [`iabv_bootstrap.ps1`
 
 ### 2.5 GPU y recursos
 
-Fuente: [`gpu_metacognition.py`](../../src/iabv_v15/services/gpu_metacognition.py) y [`limits_awareness.py`](../../src/iabv_v15/services/limits_awareness.py).
+Fuente: [`gpu_metacognition.py`](../../../src/iabv_v15/services/gpu_metacognition.py) y [`limits_awareness.py`](../../../src/iabv_v15/services/limits_awareness.py).
 
 - La detección de GPU prueba `nvidia-smi`; después intenta `wmic` y una ruta de PowerShell específica de Windows.
 - Hay algo de código para sistemas no Windows (por ejemplo `which`, `sensors` y sugerencias de `lm-sensors`), pero las rutas no tienen la misma cobertura: la detección completa no es simétrica.
