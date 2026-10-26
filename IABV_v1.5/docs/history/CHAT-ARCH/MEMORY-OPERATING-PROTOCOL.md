@@ -1,28 +1,27 @@
 <!-- Route summary synchronized 2026-10-26. CURRENT-STATE.md is the sole active route authority. -->
 
-## CURRENT ROUTE — Memory protocol follows the M1F setup blocker (2026-10-26)
+## CURRENT ROUTE — M1F runtime discovery exhausted for this Windows environment (2026-10-26)
 
-`CURRENT-STATE.md` remains the sole active route authority. Revalidate its referenced main SHA, PR state and candidate HEAD before acting; use the linked records as evidence, not as automatic proof of current state.
+CURRENT-STATE.md remains the sole active route authority. Revalidate live main, PR #531 and candidate HEAD before any future execution. Use the linked receipts as provenance, not as proof of future environment state.
 
-### Evidence classification and causal reuse
+### Evidence and decision delta
 
-The latest Windows execution receipt is Owner-supplied evidence, not independently re-executed by this writer. It reports that the approved candidate was checked out in a clean disposable clone, then environment preparation stopped because no suitable Python 3.11 runtime was available (`py -3.11 -m venv .venv`, exit `103`). No pytest invocation occurred.
+The Owner's follow-up bounded discovery checked py -0p, command resolution, typical Python 3.11 locations, and relevant installation registry keys. It found no usable Python 3.11 in the checked locations; other Python versions are not authorized substitutes under the exact-HEAD handoff. Consequently this attempt did not search for/reuse clones, create a venv, install dependencies, or invoke pytest.
 
-This is consistent with the existing rule that a remembered constraint must alter a current decision and that causal reuse requires an attributable chain from prior experience to changed decision and observable consequence. It does **not** establish internal memory activation, causal reuse or algorithmic learning:
+This is evidence of a changed current decision: the runtime-discovery branch is closed for the present environment, and the next route is conditional on an already provisioned approved executor or an actually assigned hosted runner. It does not establish that internal memory was activated, nor does it establish algorithmic learning; later non-identical causal reuse remains unproven.
 
-```text
-CAUSAL_REUSE=NOT_ESTABLISHED
-ALGORITHM_LEARNED=NOT_PROVEN
-TESTS=NOT_RUN
-```
+    PYTHON311_DISCOVERY=BOUNDED_CHECK_COMPLETE_FOR_CURRENT_ENVIRONMENT
+    TESTS=NOT_RUN
+    PYTEST_INVOKED=FALSE
+    CAUSAL_REUSE=NOT_ESTABLISHED
+    ALGORITHM_LEARNED=NOT_PROVEN
 
 Durable evidence:
-- [M1F Python 3.11 setup blocker receipt](./CHAT-ARCH-2026-10-26-M1F-PY311-SETUP-BLOCKER-RECEIPT.md)
+- [Bounded Python 3.11 discovery receipt](./CHAT-ARCH-2026-10-26-M1F-PY311-BOUNDED-DISCOVERY-RECEIPT.md)
+- [Initial venv setup blocker receipt](./CHAT-ARCH-2026-10-26-M1F-PY311-SETUP-BLOCKER-RECEIPT.md)
 - [Exact-HEAD Windows test handoff](./CHAT-ARCH-2026-10-26-M1F-WINDOWS-TEST-HANDOFF-EXACT-HEAD.md)
 
-### Route constraints
-
-Do not retry the unchanged setup in the same environment, install runtimes as an improvised bypass, or rerun the hosted workflow blindly. Resume only in an approved isolated Windows environment already provisioned with Python 3.11 or after runner assignment and actual job steps are verified. If neither is available, record `TESTS=NOT_RUN` and stop the route. Preserve the source candidate, keep protected reads fail-closed, and do not infer G1/G2/G3 or whole-organ acceptance from authored tests or documentation.
+Do not repeat the same discovery without material new evidence, substitute another Python version, install a runtime as an improvised bypass, create more clones, or rerun the unassigned workflow blindly. Keep protected reads fail-closed and do not infer G1/G2/G3 acceptance from source or documentation.
 
 ## HISTORICAL ROUTE — Windows-specific runner handoff before cross-platform runner reconciliation (superseded 2026-10-25)
 
