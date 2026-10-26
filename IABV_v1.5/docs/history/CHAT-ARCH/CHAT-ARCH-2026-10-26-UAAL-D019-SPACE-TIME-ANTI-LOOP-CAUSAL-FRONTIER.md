@@ -167,6 +167,27 @@ Revise, narrow or revert this rule if a non-identical task demonstrates that fin
 
 This is a coordination/design artifact. It does not prove automatic runtime enforcement, model-weight change, consciousness, sentience, universal adaptation or causal learning.
 
+## 9A. Observed application episode — authenticated UI recheck (2026-10-26)
+
+In a subsequent continuity task, the current route was refreshed, the newer run #40408992195 was discovered with `startup_failure` and `jobs=[]`, and an unchanged workflow retry was not selected. After explicit Owner authorization, the next action was a read-only authenticated check of the repository Actions page.
+
+**Observed result:** the account billing-lock warning was still visible; the page listed 175 workflow runs, all reported as failed at startup. No workflow was run and no settings were changed. Evidence: [read-only browser run](https://agent.tinyfish.ai/runs/2fe72c49-0d19-4454-8f5d-0560942ca147), reconciled into [the active route](./CURRENT-STATE.md) and [the billing-lock receipt](./CHAT-ARCH-2026-10-26-M1F-PR531-ACTIONS-BILLING-LOCK-ROUTE.md).
+
+This episode demonstrates that the method was explicitly applied to compare the prior zero-job attempts and select a fresh external-state observation instead of repeating the workflow. However, the Owner also directly instructed that check, so this is **not an isolated causal experiment proving that the saved method alone caused the decision**. It is one observed method-application episode; repeatability, autonomous runtime enforcement and general algorithmic learning remain unproven.
+
+```text
+METHOD_APPLICATION=OBSERVED_IN_THIS_SESSION
+PRIOR_TERMINAL_OUTCOME=STARTUP_FAILURE_ZERO_JOBS
+PROPOSED_UNCHANGED_RETRY=NOT_SELECTED
+SELECTED_ACTION=OWNER_AUTHORIZED_READ_ONLY_UI_RECHECK
+OBSERVED_DELTA=ACCOUNT_BILLING_LOCK_WARNING_STILL_VISIBLE
+RESULT_ROUTE=OWNER_BILLING_AND_LICENSING_REVIEW_OR_OFFICIAL_LOCK_REVIEW
+METHOD_CAUSAL_CONTRIBUTION=NOT_ISOLATED_FROM_EXPLICIT_OWNER_INSTRUCTION
+AUTONOMOUS_RUNTIME_ENFORCEMENT=NOT_PROVEN
+GENERAL_CAUSAL_REUSE=NOT_ESTABLISHED
+MODEL_WEIGHT_CHANGE=NOT_CLAIMED
+```
+
 ## 10. Required new-chat handoff
 
 The next chat should start from live `main` and the canonical front doors, then:
