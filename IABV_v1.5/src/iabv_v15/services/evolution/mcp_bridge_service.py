@@ -331,12 +331,10 @@ class MCPBridgeService:
         self._clock = clock or time.time
 
         self._lock = threading.RLock()
-        # `_lock` se libera durante las operaciones de I/O largas
-        # (`run_threaded`, `tunnel.start`, `wait_for_url`). `_operation_lock`
-        # serializa el ciclo completo de start/stop para que una llamada
-        # concurrente a `set_enabled(False)` no pueda terminar antes que un
-        # start en vuelo y perder la carrera final (bridge quedaba `running`
-        # con `enabled_pref=False`).
+        # `_lock` se libera mientras se invoca `run_threaded`. `_operation_lock`
+        # serializa start/stop para que un toggle OFF durante el arranque no
+        # termine antes que el start y deje el bridge en estado `running`
+        # con `enabled_pref=False`.
         self._operation_lock = threading.Lock()
         self._listeners: list[Callable[[dict[str, Any]], None]] = []
 
