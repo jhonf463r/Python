@@ -1,51 +1,59 @@
 <!-- Owner-authorized route transition: 2026-10-25. CURRENT-STATE.md remains the sole route authority. -->
 
-## CURRENT ROUTE — M1F candidate reconstructed with exact Git-blob identity and published as draft PR #531; organ acceptance remains blocked (2026-10-25)
+## CURRENT ROUTE — M1F candidate now blocks bridge start when authorization dependencies are absent; organ acceptance remains blocked (2026-10-25)
 
-### Verified candidate event
+### Live state and source-candidate correction
 
-At `2026-10-25T19:56:55-05:00` (`America/Bogota`), the published source candidate was fetched back from GitHub and verified as an open draft PR. The `main` tip used as the candidate base was `e6c3fc499a121872926c36584b91ffd22dca288f` (the documentation-only merge of PR #530). The candidate was reconstructed from the existing M1F consolidated diff against that exact base; all six modified-file base blobs matched `main`, and all 13 resulting candidate Git blob IDs matched the diff's declared target IDs. This confirms the identity of the reconstructed files, not their runtime behavior or security acceptance.
+At `2026-10-25T20:15:19-05:00` (`America/Bogota`), the live `main` revision was fetched as `6b732fe350b7c8db95358239efe5d53288ef32f7`. The latest source candidate remains an unmerged draft PR, separate from `main`:
 
+- Candidate PR: [#531](https://github.com/jhonf463r/Python/pull/531), `OPEN`, `DRAFT=TRUE`, `MERGED=FALSE`; 13 paths changed; 5,593 additions and 60 deletions; head commit `0d1a9ff1639aabb7134d39888339ba12cc382b5c`.
 - Candidate branch: `codex/iabv-m1f-authz-candidate-review-20261025`.
-- Candidate commit: `e3618526fd20fb2a59fd30b250c68dee4c78c8c0`.
-- Review PR: [#531 — draft candidate](https://github.com/jhonf463r/Python/pull/531); state `OPEN`, `DRAFT=TRUE`, `MERGED=FALSE`; 13 files changed, 5,507 additions, 59 deletions. GitHub reported the PR mergeable when fetched back.
-- The branch is not `main`. No source change was merged. PR #530 remains a documentation-only integration and did not integrate the authorization code.
-- The Dropbox M1F report and original artifacts remain preserved. Dropbox text extraction returned 249,089 characters for the stored consolidated diff whose recorded file size is 249,105 bytes. This session does not claim the extracted text is byte-identical to the stored diff or reassert its raw-file hash. Instead, all 13 reconstructed file objects were independently validated against the exact target Git blob IDs in the patch. M1E's required temporary normalization remains documented; its source artifact was not rewritten.
+- Parent candidate commit before the latest correction: `e3618526fd20fb2a59fd30b250c68dee4c78c8c0`.
+- The initial M1F reconstruction independently matched 13/13 target Git blob IDs. A subsequent source review amended two existing candidate files and re-fetched them: `mcp_bridge_service.py` blob `5c573dc9a7288d8b952cbf5c3002f3746d78356a`; `test_mcp_bridge_service.py` blob `1ef26acd54a9ccf1caab0f6a1ac2294b2989e570`. The other 11 files still match the original M1F target blob IDs (11/11 independently fetched). The updated branch is therefore the original identity-verified candidate plus a separate, explicit two-file correction—not the unchanged original 13-file M1F snapshot.
 
-### Implementation and test boundary
+### Corrected source risk: bridge transport could start with the organ unconfigured
 
-The candidate explicitly constructs `ReadAuthorizationCoordinator.unconfigured()` in `AppBootstrap`. Production providers for the approved workspace root, G1 trust anchor/Owner mandate, G2 policy, G3 resolver, authenticated issuer IPC, persistent replay state, and host-owned server identity remain unprovisioned. Authority assets remain `UNKNOWN; NOT_INSPECTED`. The candidate's intended behavior is therefore deny-only, and `PROTECTED_READS=FAIL_CLOSED`.
+Static inspection found that `MCPBridgeService._start_locked()` consulted the operational World Model governance gate, but did not check whether the injected read-authorization coordinator was missing or unconfigured before starting the MCP server and Cloudflared tunnel. In the prior composition, missing World Model data did not itself block startup. The source candidate now calls a bounded authorization-dependency preflight before either runner starts.
 
-The M1F producer reported 24 focused synthetic-handle tests passing, AST parsing of 13 changed Python files, and a full-delta whitespace check exiting 0. These remain `PRODUCER_REPORTED`; this session did not execute them. A container clone attempt failed because the execution environment could not resolve `github.com`. No Python tests, build, local static command, production runtime, real MCP transport, protected read, native Windows handle/ACL validation, authenticated IPC validation, or rollback-resistance test was run in this session. Do not repeat the prior bootstrap test route that may have reached `_auto_load_secrets()`; the prior report did not establish whether the local file was read, and no secret was inspected here.
+Two focused regression tests were added:
+- `test_bridge_stays_stopped_without_read_authorization_coordinator`
+- `test_bridge_stays_stopped_when_authorization_coordinator_is_unconfigured`
 
-### Current gate state
+They assert that neither the server runner nor tunnel runner starts when the coordinator is missing or has missing required providers. The preflight checks exact coordinator type and presence of mandatory dependencies, but **does not prove provider authenticity, Windows/IPC behavior, or formal G1–G8 acceptance**. It is a source-level defense-in-depth correction, not authority evidence. The production candidate still composes `ReadAuthorizationCoordinator.unconfigured()`, so the proposed source path remains deny-only and blocks bridge startup.
+
+### Verification and limits
+
+- Candidate file fetch-back: the two modified blob IDs above matched exact expected candidate blobs; 11 remaining candidate files matched the original M1F target blobs.
+- New regression tests were authored but **not run**. No local clone could be obtained because this execution environment failed to resolve `github.com`; no GitHub Actions status checks or PR workflow runs were returned for the inspected candidate commit.
+- Static test/import preflight was bounded to the test module, its direct imports and the shared `conftest.py`. The test does not directly import `AppBootstrap` or invoke `_auto_load_secrets()`; the full transitive import graph was not executed, so test execution remains pending until an approved isolated runner is available.
+- Native Windows handle/ACL behavior, authenticated issuer IPC, rollback-resistant replay, production runtime, live MCP transport, protected reads and the full suite remain `NOT_RUN`. No local Owner Windows execution is claimed.
+
+### Canonical gate state
 
 ```text
-PRIMARY_OUTCOME=GOVERNED_IABV_CODEX_BRIDGE
-LAST_TERMINAL_TASK=M1F_G1_RECONSTRUCT_M1D_PLUS_M1E_ON_CLEAN_MAIN_20261025
-LAST_COMPLETED_SOURCE_TASK=M1F_BLOB_VERIFIED_RECONSTRUCTION_AND_DRAFT_PR_531
-CANDIDATE_SOURCE_BASE=e6c3fc499a121872926c36584b91ffd22dca288f
-CANDIDATE_BRANCH=codex/iabv-m1f-authz-candidate-review-20261025
-CANDIDATE_COMMIT=e3618526fd20fb2a59fd30b250c68dee4c78c8c0
+MAIN=6b732fe350b7c8db95358239efe5d53288ef32f7
 CANDIDATE_PR=531; OPEN_DRAFT; MERGED=FALSE
-CANDIDATE_FILES=13; TARGET_GIT_BLOB_MATCHES=13/13; MODIFIED_BASE_BLOB_MATCHES=6/6
-CANDIDATE_TESTS_THIS_SESSION=NOT_RUN
-PRODUCER_REPORTED_TESTS=24_FOCUSED_PASS; AST_13_PASS; DIFF_CHECK_EXIT_0
+CANDIDATE_HEAD=0d1a9ff1639aabb7134d39888339ba12cc382b5c
+ORIGINAL_M1F_TARGET_BLOBS=13/13_VERIFIED_BEFORE_FOLLOW_ON_PATCH
+ORIGINAL_M1F_TARGET_BLOBS_STILL_UNCHANGED=11/13; TWO_FILES_AMENDED_BY_EXPLICIT_BRIDGE_GUARD
+BRIDGE_START_GUARD=AUTHORIZATION_DEPENDENCY_PREFLIGHT_ADDED; TESTS_AUTHORED_NOT_RUN
 WHOLE_ORGAN_ACCEPTANCE=NOT_GRANTED
 G1=NOT_ESTABLISHED
 G2=NOT_ESTABLISHED
 G3=NOT_ESTABLISHED
 IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
 AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
-APPROVED_WORKSPACE_ROOT_PROVIDER=NOT_WIRED_IN_CANDIDATE_COMPOSITION
 PROTECTED_READS=FAIL_CLOSED
 BRIDGE=BRIDGE_NOT_READY
+SOURCE_TESTS=NOT_RUN
+NATIVE_WINDOWS_VALIDATION=NOT_RUN
+LIVE_TRANSPORT=NOT_RUN
 PRODUCT_SOURCE_MERGE=NOT_PERFORMED
-AUTOMATIC_FOLLOW_ON=FALSE
-NEXT_ACTION=INDEPENDENT_WHOLE_CANDIDATE_REVIEW_AND_SAFE_TEST_ENVIRONMENT_PREFLIGHT; KEEP_FAIL_CLOSED
+NEXT_ACTION=RUN_SAFE_FOCUSED_CANDIDATE_TESTS_IN_APPROVED_ISOLATED_RUNNER; CONTINUE_WHOLE_CANDIDATE_REVIEW; DO_NOT_ACTIVATE_BRIDGE
 ```
 
-The detailed evidence classification and the canonical eight-gate adjudication are in `CHAT-ARCH-2026-10-25-M1F-DRAFT-PR-531-RECONSTRUCTION-RECEIPT.md`. Historical route snapshots below remain historical; this section is the current route pointer.
+The evidence and canonical eight-gate acceptance matrix remain in `CHAT-ARCH-2026-10-25-M1F-DRAFT-PR-531-RECONSTRUCTION-RECEIPT.md`; no gate is closed by this follow-on correction. Prior route entries are preserved below the historical-route boundary.
+
 
 ## HISTORICAL ROUTE NOTE
 
