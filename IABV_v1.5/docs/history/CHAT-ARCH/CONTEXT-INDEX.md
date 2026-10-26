@@ -114,6 +114,13 @@ NEXT_ACTION=EXECUTE_THREE_FOCUSED_SUITES_ON_ISOLATED_WINDOWS_CLONE; THEN REVIEW 
 
 All prior route snapshots remain below the historical-route boundary.
 
+## Cleanup receipt reconciliation and route transition — 2026-10-26
+
+Activate [CHAT-ARCH-2026-10-26 cleanup receipt reconciliation and route transition](./CHAT-ARCH-2026-10-26-cleanup-receipt-reconciliation-and-route-transition.md) for the latest Owner-supplied Windows cleanup receipt. Its bounded Ollama inspection found no model proven disposable under all required conditions; the Driver Booster folder likewise remains unresolved; `hcsparle` remains `PRESERVE_UNRESOLVED`. No deletion occurred and the reported free-space fluctuations are not reclaimed space. The cleanup track is therefore formally delimited under current evidence, but `CLEANUP_COMPLETE=FALSE`.
+
+The previous Ollama candidate recommendation is superseded for this observation cycle; do not repeat it without new discriminating evidence. Resume only the canonical `CURRENT-STATE.md` route: revalidate live `main` and PR #531, verify an actually assigned runner or use the already authorized isolated Windows route, then execute the three focused suites against the exact current candidate HEAD. Keep all trust gates fail-closed. This receipt is Owner-reported evidence and does not establish causal learning or general IABV self-cleanup capability.
+
+
 ## Supplemental cleanup continuity index — 2026-10-26
 
 For a global laptop-cleanup objective, activate [CHAT-ARCH-2026-10-26 — Global laptop cleanup, experience reuse and autonomous-capability boundary](./CHAT-ARCH-2026-10-26-global-laptop-cleanup-learning-writeback.md) together with the linked September 3, October 8 and October 10 source records.
