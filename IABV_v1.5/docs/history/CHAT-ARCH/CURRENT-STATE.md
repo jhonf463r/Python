@@ -1,38 +1,43 @@
 <!-- Owner-authorized route transition: 2026-10-26. CURRENT-STATE.md remains the sole route authority. -->
 
-## CURRENT ROUTE — M1F focused tests blocked: Python 3.11 unavailable in the checked Windows environment (2026-10-26)
+## CURRENT ROUTE — M1F tests blocked by missing Python 3.11 and no manual hosted-workflow trigger (2026-10-26)
 
 ### Live revisions and candidate
 
-- Live main revalidated before this route write: a66e46efa25652ee2c63f9263ac1f7fe7d469d86. This update itself will create a documentation commit; re-fetch main before the next operation.
+- Live main revalidated immediately before this route write: a7b40a252f28e4a2de53edb7bab4ac32d0a2a30c. This update itself creates a documentation commit; re-fetch main before the next action.
 - PR [#531](https://github.com/jhonf463r/Python/pull/531) remains OPEN, DRAFT=TRUE, MERGED=FALSE.
 - Exact candidate HEAD: 50cbd2b8b3d643d05726290c76ef13f85731949e; recorded PR base: 7ddfe285b1a3267f9ef6f57f862cca78bc8438c2.
-- The comparison from the PR base to main c58faf60cffc8eb8048f67f0b62c8ff4e50b1015 reports 18 commits ahead, 0 behind and 11 changed paths, all documentation files. No candidate source update or merge is evidenced.
+- Compare from PR base to the revalidated main: 26 commits ahead, 0 behind, with 12 changed paths; all returned paths are Markdown documentation. No candidate source update or merge is evidenced.
 
-### Latest execution and bounded discovery
+### Latest Owner-supplied local result
 
-The most recent local result is an Owner-supplied report, not independently executed by this writer. See [M1F Python 3.11 bounded discovery receipt](./CHAT-ARCH-2026-10-26-M1F-PY311-BOUNDED-DISCOVERY-RECEIPT.md).
+See [M1F Python 3.11 bounded discovery receipt](./CHAT-ARCH-2026-10-26-M1F-PY311-BOUNDED-DISCOVERY-RECEIPT.md). The Windows observations are Owner-reported, not independently re-executed by this writer.
 
-- The earlier setup attempt had a second clean disposable clone at the exact candidate HEAD but failed at venv creation with exit 103 because Python 3.11 was unavailable. Pytest was not invoked.
-- The subsequent bounded check reports: py -0p lists 3.14, 3.12 and 3.10 but no 3.11; the enumerated 3.12 path no longer exists; command lookup exposes C:\Python314\python.exe only; checked Python 3.11 registry keys and conventional Python311 paths are absent.
-- The report also mentions other directly verified versions (3.14.4, 3.13.2, 3.10.18, 3.10.0). None satisfies the explicit Python 3.11 test-handoff requirement.
-- No clone was searched for/reused in the latest attempt, no virtual environment or dependencies were created, and no tests were run. The original checkout and candidate source were not changed.
-- The bounded Python search is complete for this observation cycle. Do not repeat it or restart clone/setup attempts unless materially new evidence changes runtime availability.
+- Bounded runtime discovery did not find a Python 3.11 executable in the checked launcher output, command lookup, registry locations or conventional Python311 paths. Other Python versions found are not substitutes under the existing handoff.
+- The search is complete for this environment and observation cycle. Do not repeat it without materially new evidence.
+- The prior attempt's second disposable clone reached the exact candidate and was clean, but venv creation failed with exit 103. No dependencies were installed, no venv was created and pytest was never invoked. The original checkout and candidate source remain unmodified.
+- Canonical outcome: TESTS=NOT_RUN; PYTEST_INVOKED=FALSE.
 
-The latest inspected GitHub Actions run [#40258140268](https://github.com/jhonf463r/Python/actions/runs/40258140268) completed with failure before test steps; the combined status endpoint showed no status checks. Prior run #40258135717 was also recorded as failing before steps. These are infrastructure blockers, not assertion results.
+### Hosted execution route inspected
+
+Read-only inspection of `.github/workflows/iabv-authorization-focused-tests.yml` at main and the exact candidate returned the same blob SHA `fc3ff9c6d04a16a391a19b7e0792d6f3c482995c`. The workflow triggers only on push to the candidate branch and qualifying pull-request events; it does not declare `workflow_dispatch`. The job uses `windows-latest` and would set up Python 3.11 inside the job, but that setup cannot run until a runner is assigned and steps begin.
+
+Latest inspected run [#40258140268](https://github.com/jhonf463r/Python/actions/runs/40258140268) failed before test steps; the combined status endpoint showed no checks. Earlier run #40258135717 was likewise recorded as a pre-step failure. These are not product test results. No run was re-triggered and no workflow or candidate branch was changed.
 
 ### Exact next action
 
-Stop the current execution path until one of the following is true:
-1. an approved isolated Windows executor already has a usable Python 3.11 runtime; or
-2. GitHub Actions demonstrates an actually assigned runner and executed job steps.
+Stop the current test execution path until one of these is available:
+1. an approved isolated Windows executor that already contains a usable Python 3.11 runtime; or
+2. a separately authorized hosted execution route with a valid trigger and evidence of an actually assigned runner that advances into steps.
 
-Do not silently substitute Python 3.10, 3.12, 3.13 or 3.14, install a runtime as an improvised workaround, create more clones or rerun the failed workflow blindly. When a valid executor is available, revalidate live main, PR state and candidate HEAD; if the HEAD changes, require a reviewed handoff for that SHA. Then use [the exact-HEAD Windows handoff](./CHAT-ARCH-2026-10-26-M1F-WINDOWS-TEST-HANDOFF-EXACT-HEAD.md) to execute only:
+Do not repeat local runtime discovery, substitute Python 3.10/3.12/3.13/3.14, create more clones, edit the candidate to trigger a workflow, or rerun old Actions runs blindly. A green public service-status page alone is not evidence that this repository's job will receive a runner.
+
+When a valid executor and trigger are available, revalidate live main, PR state and exact candidate HEAD; if the HEAD changes, require a reviewed handoff for the new SHA. Then execute only:
 1. IABV_v1.5/tests/test_mcp_bridge_service.py
 2. IABV_v1.5/tests/test_read_authorization.py
 3. IABV_v1.5/tests/test_windows_handle_reader.py
 
-Capture exact SHA, output, exit code and log. Do not touch the original checkout; start no AppBootstrap/MCP/Cloudflared/issuer/real transport; read no protected data or secrets; do not modify candidate source, merge PR #531 or enable protected reads.
+Capture the exact tested SHA, full output/log, and exit code. Do not touch the original checkout; start no AppBootstrap/MCP/Cloudflared/issuer/real transport; read no protected data or secrets; do not modify candidate source, merge PR #531 or enable protected reads.
 
 ### Canonical status
 
@@ -42,9 +47,10 @@ Capture exact SHA, output, exit code and log. Do not touch the original checkout
     CANDIDATE_HEAD=50cbd2b8b3d643d05726290c76ef13f85731949e
     PYTHON311_DISCOVERY=BOUNDED_CHECK_COMPLETE_FOR_CURRENT_ENVIRONMENT
     PYTHON_3_11=NOT_INSTALLED_OR_NOT_DISCOVERABLE_IN_CHECKED_LOCATIONS
+    HOSTED_WORKFLOW_DISPATCH=NOT_CONFIGURED
+    HOSTED_RUNNER_ASSIGNMENT=FAILED_BEFORE_FIRST_STEP
     TESTS=NOT_RUN
     PYTEST_INVOKED=FALSE
-    HOSTED_RUNNER_ASSIGNMENT=FAILED_BEFORE_FIRST_STEP
     G1=NOT_ESTABLISHED
     G2=NOT_ESTABLISHED
     G3=NOT_ESTABLISHED
@@ -55,7 +61,7 @@ Capture exact SHA, output, exit code and log. Do not touch the original checkout
     BRIDGE=BRIDGE_NOT_READY
     CAUSAL_REUSE=NOT_ESTABLISHED
     ALGORITHM_LEARNED=NOT_PROVEN
-    NEXT_ACTION=RUN_THREE_FOCUSED_SUITES_ONLY_ON_EXACT_PR531_HEAD_IN_APPROVED_WINDOWS_ENVIRONMENT_WITH_PYTHON_3_11_OR_ACTUALLY_ASSIGNED_HOSTED_RUNNER
+    NEXT_ACTION=USE_APPROVED_WINDOWS_EXECUTOR_WITH_PYTHON_3_11_OR_ESTABLISH_AUTHORIZED_HOSTED_TRIGGER_AND_VERIFY_RUNNER_ASSIGNMENT_BEFORE_EXECUTING_THREE_FOCUSED_SUITES
 
 Historical records below this boundary remain intact and are not active routing authority.
 
