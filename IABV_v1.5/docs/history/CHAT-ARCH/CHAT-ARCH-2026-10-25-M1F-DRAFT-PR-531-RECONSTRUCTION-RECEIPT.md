@@ -7,6 +7,7 @@
 - **Candidate commit:** `e3618526fd20fb2a59fd30b250c68dee4c78c8c0`
 - **Candidate branch:** `codex/iabv-m1f-authz-candidate-review-20261025`
 - **Candidate PR:** [#531](https://github.com/jhonf463r/Python/pull/531), open draft, not merged.
+- **Canonical route writeback:** [documentation PR #532](https://github.com/jhonf463r/Python/pull/532), which updates the five required front doors and adds this receipt; no product source files are changed by #532.
 - **Scope:** reconstruct the already-existing M1F consolidated source candidate on live `main`, then leave the source changes reviewable without promoting them to production.
 
 ## 1. Direct verification performed in this session
