@@ -1,49 +1,30 @@
-<!-- Owner-authorized route transition: 2026-10-25. CURRENT-STATE.md remains the sole route authority. -->
+<!-- Route summary synchronized 2026-10-26. CURRENT-STATE.md is the sole active route authority. -->
 
-## CURRENT ROUTE — G3 identity-binding hardening in candidate; hosted test execution unavailable (2026-10-25)
+## CURRENT ROUTE — M1F Windows test execution awaits Python 3.11-ready executor (2026-10-26)
 
-### Live revisions
+Start with [CURRENT-STATE.md](./CURRENT-STATE.md). It is the single source of truth for the active project route; older records below the historical boundary are evidence, not competing instructions.
 
-At 2026-10-25 21:15 America/Bogota, live main was 24a08f9fc4c82ee261f21d95707bcbd5d86f0d36. Draft PR #531 remains open and unmerged at candidate head 50cbd2b8b3d643d05726290c76ef13f85731949e. Its historical base SHA is 7ddfe285b1a3267f9ef6f57f862cca78bc8438c2; main is one later documentation-only commit ahead. The source candidate remains isolated from production.
+### Latest records
 
-Detailed evidence: https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-25-M1F-G3-BINDING-AND-RUNNER-RECONCILIATION-RECEIPT.md
+- [M1F Python 3.11 setup blocker receipt](./CHAT-ARCH-2026-10-26-M1F-PY311-SETUP-BLOCKER-RECEIPT.md): records the Owner-reported preparation failure. The second disposable clone reached the approved candidate SHA; venv creation failed because Python 3.11 was unavailable. `TESTS=NOT_RUN`.
+- [M1F exact-HEAD Windows test handoff](./CHAT-ARCH-2026-10-26-M1F-WINDOWS-TEST-HANDOFF-EXACT-HEAD.md): exact procedures and guardrails for the three focused suites.
+- [Cleanup receipt reconciliation](./CHAT-ARCH-2026-10-26-cleanup-receipt-reconciliation-and-route-transition.md): the cleanup path is formally delimited, not complete.
+- [Global laptop cleanup/learning writeback](./CHAT-ARCH-2026-10-26-global-laptop-cleanup-learning-writeback.md): prior attempts and continuity constraints.
 
-### Bounded source corrections fetched back from the candidate
+### Current disposition
 
-1. G3 target identity: ReadAuthorizationCoordinator.authorize now requires workspace_id, checkout_id and resolver_version returned by the target resolver to equal those on the identical opened-target capability. The MCP enforcement guard independently checks the same three permit-to-capability equalities.
-2. Startup preflight: MCPBridgeService now refuses to start either MCP or Cloudflared when approved_workspace_root_provider is absent or does not expose callable current_workspace_root.
-3. Regression coverage: six parameterized G3 resolver/guard cases and two missing/invalid root-provider startup cases were added. These tests are authored but have not run.
-
-This corrects two source-level gaps; it does not establish a trusted root, authentic provider, native Windows semantics or whole-organ acceptance.
-
-### Hosted execution blocker — verified across runner labels
-
-The latest candidate runs 40258140268 and 40258135717 use windows-latest but report runner_id=0, empty runner_name and steps=[]. The separate Ubuntu fallback run 40257696172 reports the same runner_id=0, empty runner_name and steps=[] with label ubuntu-latest. Each terminated before checkout, dependency installation or pytest. The precise hosted-runner assignment cause is unknown.
-
-The local tool container also could not resolve github.com to obtain a clone. Therefore TESTS=NOT_RUN, BUILD=NOT_RUN, RUNTIME=NOT_RUN, native Windows handles/ACL=NOT_RUN, authenticated IPC/anti-rollback=NOT_RUN and real MCP transport/protected reads=NOT_RUN. This is an execution-infrastructure failure, not evidence that source assertions failed or passed.
-
-Do not repeat the failed runs blindly. A valid runner assignment requires runner_id greater than zero, a nonempty runner_name and actual job step records.
-
-### Trust boundary still not provisioned
-
-AppBootstrap on main has no approved_workspace_root_provider wiring. The candidate still composes ReadAuthorizationCoordinator.unconfigured() and does not wire a production root provider. The repository path .github/iabv-g1-bootstrap-manifest.json returned 404 on main and candidate. This establishes only the repository-path result; it does not prove no other local or external trust asset exists.
-
-AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED. No trust root, owner mandate, production G2 policy/revocation provider, G3 root/resolver, authenticated issuer IPC, host-owned process identity or rollback-resistant replay provider was fabricated or declared established.
-
-### Canonical disposition
-
-G1=NOT_ESTABLISHED
-G2=NOT_ESTABLISHED
-G3=NOT_ESTABLISHED
-IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+```text
+PR531=OPEN_DRAFT_UNMERGED
+CANDIDATE_HEAD=50cbd2b8b3d643d05726290c76ef13f85731949e
+TESTS=NOT_RUN
+TEST_SETUP_BLOCKER=PYTHON_3_11_UNAVAILABLE; VENV_EXIT=103
+G1/G2/G3=NOT_ESTABLISHED
 WHOLE_ORGAN_ACCEPTANCE=NOT_GRANTED
 PROTECTED_READS=FAIL_CLOSED
 BRIDGE=BRIDGE_NOT_READY
+```
 
-### Exact next action
-
-The current statically identified source gaps have bounded fixes in the candidate. Stop the patch loop unless executed test evidence or a newly evidenced defect justifies another change. When an approved runner is actually assigned, execute the three focused suites against the then-current exact PR #531 head and retain complete logs. Then continue evidence-backed G1/G2/G3 authority provisioning and native Windows acceptance. Do not merge the candidate, enable protected reads, start production transport or infer acceptance from Git blob identity and authored tests.
-
+The next action is not a source patch. It is execution of the three focused suites on the exact revalidated candidate in an approved isolated Windows environment that already has Python 3.11, or on a demonstrably assigned hosted runner. Do not retry the same failed setup unchanged or treat infrastructure failure as test failure.
 
 ## HISTORICAL ROUTE — Windows-specific runner handoff before cross-platform runner reconciliation (superseded 2026-10-25)
 
