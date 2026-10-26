@@ -1,6 +1,38 @@
 <!-- Route summary synchronized 2026-10-26. CURRENT-STATE.md is the sole active route authority. -->
 
-## CURRENT ROUTE — M1F Actions usage check terminal; support publication gate pending (2026-10-26)
+## CURRENT ROUTE — Sanitized Actions escalation published; await response (2026-10-26)
+
+`CURRENT-STATE.md` is the sole active route authority. The full record is [the Actions usage and support eligibility receipt](./CHAT-ARCH-2026-10-26-M1F-ACTIONS-USAGE-AND-SUPPORT-ELIGIBILITY-RECEIPT.md).
+
+New verified continuity delta:
+- After explicit Owner authorization, TinyFish published the exact sanitized discussion in the verified GitHub Community Actions category: [discussion #211346](https://github.com/orgs/community/discussions/211346).
+- TinyFish reported exact title/body match to the authorized draft and no private repo identifiers, run URL, branch, SHA, account ID, source, logs, or protected data in the public post.
+- Status was unanswered at publication. No support ticket was created; the attempted Copilot support query was blocked before sending and returned no answer.
+- Codex's Actions usage endpoint query returned HTTP 404 without values. `ACTIONS_USAGE_BLOCK=UNKNOWN`; root cause remains unknown.
+- Next: wait for an actual Community response or genuinely new external evidence, then assess one discriminating next action. Do not repeat old checks, rerun workflows/tests, alter settings, modify source, or merge PR #531.
+
+```text
+LAST_TERMINAL_TASK=M1F_GITHUB_ACTIONS_USAGE_DIAGNOSIS_AND_SANITIZED_COMMUNITY_ESCALATION_20261026
+COMMUNITY_POST=PUBLISHED
+COMMUNITY_DISCUSSION_ID=211346
+COMMUNITY_DISCUSSION_URL=https://github.com/orgs/community/discussions/211346
+COMMUNITY_STATUS=UNANSWERED_AT_PUBLICATION
+ACTIONS_USAGE_BLOCK=UNKNOWN
+ROOT_CAUSE=UNKNOWN
+TESTS=NOT_RUN
+G1/G2/G3=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+PROTECTED_READS=FAIL_CLOSED
+BRIDGE=BRIDGE_NOT_READY
+CAUSAL_REUSE=NOT_ESTABLISHED
+ALGORITHM_LEARNED=NOT_PROVEN
+NEXT_ACTION=WAIT_FOR_COMMUNITY_RESPONSE_AND_REVIEW_NEW_EVIDENCE_ONLY
+```
+
+This durable writeback preserves evidence, decision and routing changes; it is not automatic model-weight training, nor proof of algorithmic learning. A later claim of learning requires retrieving this delta and demonstrating changed future routing under new evidence.
+
+
+## HISTORICAL ROUTE — M1F Actions usage check terminal; support publication gate pending (2026-10-26) (superseded 2026-10-26 by publication of Actions escalation)
 
 `CURRENT-STATE.md` is the sole active route authority. The latest durable record is [the Actions usage and support eligibility receipt](./CHAT-ARCH-2026-10-26-M1F-ACTIONS-USAGE-AND-SUPPORT-ELIGIBILITY-RECEIPT.md).
 

@@ -1,6 +1,60 @@
 <!-- Owner-authorized route transition: 2026-10-26. CURRENT-STATE.md remains the sole route authority. -->
 
-## CURRENT ROUTE — Actions usage check terminal; support escalation awaits Owner publication authorization (2026-10-26)
+## CURRENT ROUTE — Sanitized Actions discussion published; wait for external evidence (2026-10-26)
+
+### Live references and publication provenance
+
+- Live `main` immediately before this documentation-only reconciliation: `4de9bb9d3a18b7e4191797e3165474f59873d705`. Re-fetch before subsequent repository work.
+- PR [#531](https://github.com/jhonf463r/Python/pull/531) remains `OPEN`, `DRAFT=TRUE`, `MERGED=FALSE`; candidate HEAD remains `50cbd2b8b3d643d05726290c76ef13f85731949e`.
+- Diagnostic run [#40386434070](https://github.com/jhonf463r/Python/actions/runs/40386434070) has `startup_failure`, workflow ID `397336571`, path `BuildFailed`, empty workflow name, and `jobs=[]`.
+- Codex's authorized Actions usage query returned HTTP 404 with no minute values. `ACTIONS_USAGE_BLOCK=UNKNOWN`; this neither proves blocking nor clears the budget hypothesis.
+- The authenticated GitHub Support portal identified the active account as personal GitHub Free and displayed `Technical support not included`. No support ticket was sent. The attempt to ask Copilot in GitHub Support was blocked before the question was sent; no Copilot answer exists.
+- After the Owner's explicit publication authorization, TinyFish posted the sanitized discussion in the verified GitHub Community Discussions Actions category:
+  - Title: **GitHub Actions workflow ends in startup_failure before job creation**
+  - URL: https://github.com/orgs/community/discussions/211346
+  - Discussion ID: `211346`
+  - Status observed at completion: `Unanswered`
+  - TinyFish verified that the title and three paragraphs matched the authorized draft and contained no private repository name, exact run URL, branch, SHA, account identifier, source, logs, or protected data.
+
+### Route decision
+
+The current evidence has been escalated through the free public channel. Do not repeat the usage query, rerun Actions or tests, create branches, modify candidate source, change account/repository/billing settings, or merge PR #531 just to generate activity. The discussion itself does not prove a root cause. Re-enter technical investigation only when a Community answer or other genuinely new evidence provides a discriminating next check. Any public follow-up must remain sanitized and must not disclose private correlation identifiers.
+
+### Canonical status
+
+```text
+LAST_TERMINAL_TASK=M1F_GITHUB_ACTIONS_USAGE_DIAGNOSIS_AND_SANITIZED_COMMUNITY_ESCALATION_20261026
+LAST_TERMINAL_RESULT=SANITIZED_DISCUSSION_PUBLISHED; UNANSWERED_AT_PUBLICATION
+COMMUNITY_POST=PUBLISHED
+COMMUNITY_CATEGORY=ACTIONS
+COMMUNITY_DISCUSSION_ID=211346
+COMMUNITY_DISCUSSION_URL=https://github.com/orgs/community/discussions/211346
+COMMUNITY_STATUS=UNANSWERED_AT_PUBLICATION
+PR531=OPEN_DRAFT_UNMERGED
+CANDIDATE_HEAD=50cbd2b8b3d643d05726290c76ef13f85731949e
+DIAGNOSTIC_RUN=40386434070; STARTUP_FAILURE; JOBS=0
+ACTIONS_SETTINGS=ENABLED; ALLOWED_ACTIONS=ALL (CODEX-REPORTED)
+ACTIONS_USAGE_BLOCK=UNKNOWN
+ROOT_CAUSE=UNKNOWN
+SUPPORT_TICKET=NOT_SENT
+COPILOT_SUPPORT_QUERY=NOT_SENT; NO_RESPONSE
+TESTS=NOT_RUN
+G1/G2/G3=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+WHOLE_ORGAN_ACCEPTANCE=NOT_GRANTED
+PROTECTED_READS=FAIL_CLOSED
+BRIDGE=BRIDGE_NOT_READY
+CLEANUP_COMPLETE=FALSE
+CLEANUP_TRACK=FORMALLY_DELIMITED_UNDER_CURRENT_EVIDENCE
+CAUSAL_REUSE=NOT_ESTABLISHED
+ALGORITHM_LEARNED=NOT_PROVEN
+NEXT_ACTION=WAIT_FOR_COMMUNITY_RESPONSE_AND_REVIEW_NEW_EVIDENCE_ONLY
+```
+
+Full provenance and the exact sanitized body are recorded in [the Actions usage and support eligibility receipt](./CHAT-ARCH-2026-10-26-M1F-ACTIONS-USAGE-AND-SUPPORT-ELIGIBILITY-RECEIPT.md). This route transition is documentation-only; it does not resolve the Actions failure or change implementation/security acceptance.
+
+
+## HISTORICAL ROUTE — Actions usage check terminal; support escalation awaits Owner publication authorization (2026-10-26) (superseded 2026-10-26 by publication of Actions escalation)
 
 ### Live references and evidence provenance
 

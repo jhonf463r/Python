@@ -116,3 +116,36 @@ NEXT_ACTION=OBTAIN_EXPLICIT_OWNER_AUTHORIZATION_TO_PUBLISH_SANITIZED_GITHUB_COMM
 ```
 
 This receipt records project continuity, not model-weight training and not proof of algorithmic learning. Future agents must fetch this receipt and the updated `CURRENT-STATE.md` before selecting a new action.
+
+## Publication outcome addendum — 2026-10-26
+
+The earlier sections above record the state when this receipt was first written, before the Owner authorized public publication. After explicit authorization in the continuing ChatGPT conversation, TinyFish published the sanitized draft exactly as recorded above.
+
+- Verified category: GitHub Community Discussions — Actions.
+- Title: **GitHub Actions workflow ends in startup_failure before job creation**
+- Public URL: https://github.com/orgs/community/discussions/211346
+- Discussion ID: `211346`.
+- Author shown by TinyFish: `jhonf463r`.
+- Initial status at completion: `Unanswered`.
+- TinyFish reported that the title and all three body paragraphs were submitted verbatim with no additions. It confirmed no private repository name, exact run URL, branch, SHA, account identifier, logs, source code, or protected data appeared in the public post.
+- No support ticket was created. No workflow, test suite, repository setting, billing setting, source file or PR state was changed by this publication task.
+
+The next action is to wait for a Community response and evaluate only new evidence. Do not repeat the usage endpoint query or failed runs, and do not treat the discussion itself as diagnosis or proof of a root cause.
+
+```text
+COMMUNITY_POST=PUBLISHED
+COMMUNITY_CATEGORY=ACTIONS
+COMMUNITY_DISCUSSION_ID=211346
+COMMUNITY_DISCUSSION_URL=https://github.com/orgs/community/discussions/211346
+COMMUNITY_STATUS=UNANSWERED_AT_PUBLICATION
+PUBLIC_BODY=VERIFIED_AGAINST_AUTHORIZED_SANITIZED_DRAFT_BY_TINYFISH
+SUPPORT_TICKET=NOT_SENT
+ROOT_CAUSE=UNKNOWN
+ACTIONS_USAGE_BLOCK=UNKNOWN
+TESTS=NOT_RUN
+G1/G2/G3=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+PROTECTED_READS=FAIL_CLOSED
+BRIDGE=BRIDGE_NOT_READY
+NEXT_ACTION=WAIT_FOR_COMMUNITY_RESPONSE_AND_REVIEW_NEW_EVIDENCE_ONLY
+```

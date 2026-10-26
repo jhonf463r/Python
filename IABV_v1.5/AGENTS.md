@@ -1,6 +1,19 @@
 <!-- Route summary synchronized 2026-10-26. CURRENT-STATE.md is the sole active route authority. -->
 
-## CURRENT ROUTE — Actions usage diagnosis complete; sanitized support escalation awaits Owner authorization (2026-10-26)
+## CURRENT ROUTE — Sanitized GitHub Actions discussion published; external response pending (2026-10-26)
+
+Use [CURRENT-STATE.md](docs/history/CHAT-ARCH/CURRENT-STATE.md) as the sole routing authority. The publication and provenance record is [the Actions usage and support eligibility receipt](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-26-M1F-ACTIONS-USAGE-AND-SUPPORT-ELIGIBILITY-RECEIPT.md).
+
+- TinyFish published the Owner-authorized sanitized draft in the verified GitHub Community Discussions Actions category: [discussion #211346](https://github.com/orgs/community/discussions/211346).
+- The title and three body paragraphs matched the authorized draft according to the completed browser run. No private repository name, exact run URL, branch, SHA, account identifier, source, logs, or protected data were included.
+- The discussion was unanswered at publication. The next action is to wait for a response and evaluate genuinely new evidence; do not repeat the same endpoint query or failed workflows.
+- Keep `ACTIONS_USAGE_BLOCK=UNKNOWN`, `ROOT_CAUSE=UNKNOWN`, `TESTS=NOT_RUN`, G1/G2/G3 unestablished, eight implementation prerequisites open, `PROTECTED_READS=FAIL_CLOSED`, and `BRIDGE=BRIDGE_NOT_READY`.
+- PR #531 remains open, draft, and unmerged. No source, configuration, billing setting, workflow or test was changed for this escalation.
+
+Public responses must be reviewed for evidence and scope; do not provide private correlation identifiers in public comments. This publication is an escalation step, not a root-cause diagnosis or evidence of model-weight learning.
+
+
+## HISTORICAL ROUTE — Actions usage diagnosis complete; sanitized support escalation awaits Owner authorization (2026-10-26) (superseded 2026-10-26 by publication of Actions escalation)
 
 Use [CURRENT-STATE.md](docs/history/CHAT-ARCH/CURRENT-STATE.md) as the sole routing authority. The latest receipt is [M1F Actions usage and support eligibility](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-26-M1F-ACTIONS-USAGE-AND-SUPPORT-ELIGIBILITY-RECEIPT.md).
 
