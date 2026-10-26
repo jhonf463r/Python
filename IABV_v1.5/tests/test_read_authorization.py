@@ -380,6 +380,65 @@ def _coordinator(
 
 
 @requires_cng
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("workspace_id", "other-workspace"),
+        ("checkout_id", "other-checkout"),
+        ("resolver_version", "other-resolver"),
+    ],
+)
+def test_resolved_target_identity_must_match_opened_capability(
+    field: str, value: str,
+) -> None:
+    opened_target = _opened_target()
+    setattr(opened_target, field, value)
+    request = replace(_request(), opened_target=opened_target)
+    # Keep a fixed, request-matching resolver identity to ensure the mismatch
+    # is specifically between the resolver result and the opened capability.
+    resolver = _Targets(target=_Targets().target)
+    replay = _Replay()
+
+    with pytest.raises(ReadAuthorizationDenied, match="G3_TARGET_RESOLUTION_INVALID"):
+        _coordinator(targets=resolver, replay=replay).authorize(request)
+
+    assert replay.consumed == []
+
+
+@requires_cng
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("workspace_id", "other-workspace"),
+        ("checkout_id", "other-checkout"),
+        ("resolver_version", "other-resolver"),
+    ],
+)
+def test_mcp_guard_rejects_permit_identity_not_bound_to_opened_target(
+    field: str, value: str, tmp_path, monkeypatch: pytest.MonkeyPatch,
+) -> None:  # type: ignore[no-untyped-def]
+    coordinator = _coordinator(request_context=_RequestContext())
+    permit = coordinator.authorize(_request())
+    bad_permit = replace(permit, **{field: value})
+
+    def return_mismatched_permit(**_kwargs: object) -> ReadAuthorizationDecision:
+        return ReadAuthorizationDecision.allow(bad_permit)
+
+    monkeypatch.setattr(coordinator, "decide_mcp_read", return_mismatched_permit)
+    server, _ = _mcp_server(coordinator, str(tmp_path))
+
+    block = server._protected_read_authority_block(
+        operation="read_repo_file",
+        requested_relative_target="docs/readme.md",
+        opened_target=permit.opened_target,
+    )
+
+    assert block is not None
+    assert block["governance_blocked"] is True
+    assert block["reason"] == "AUTHORITY_TARGET_INVALID"
+
+
+@requires_cng
 def test_test_fixture_chain_returns_exact_scoped_permit() -> None:
     replay = _Replay()
     coordinator = _coordinator(replay=replay)
