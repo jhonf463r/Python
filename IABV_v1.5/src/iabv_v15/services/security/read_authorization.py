@@ -686,6 +686,9 @@ class ReadAuthorizationCoordinator:
                 or target.operation != request.operation
                 or target.workspace_id != request.workspace_id
                 or target.checkout_id != request.checkout_id
+                or target.workspace_id != getattr(opened_target, "workspace_id", None)
+                or target.checkout_id != getattr(opened_target, "checkout_id", None)
+                or target.resolver_version != getattr(opened_target, "resolver_version", None)
                 or target.opened_target is not opened_target
                 or target.target_binding_id != opened_target.target_binding_id
                 or type(getattr(opened_target, "canonical_target", None)) is not str
