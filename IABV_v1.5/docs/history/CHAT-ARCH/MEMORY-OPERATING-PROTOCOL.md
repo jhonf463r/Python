@@ -1,5 +1,17 @@
 
 
+## Method delta — GitHub key fingerprint and private PEM are distinct artifacts (2026-10-27)
+
+The GitHub App Credentials → Key pairs UI was inspected read-only. The copyable 40-character field is explicitly labeled **“Copyable key fingerprint”** and the page has no private-key download button. The Owner now reports a PEM obtained through another UI option; that PEM has not yet been verified. Do not re-ask for the old 40-character value and do not treat it as key material. A fingerprint is a verifier for a local PEM, not a private key and not a way to reconstruct one.
+
+On receipt of a genuinely new local PEM, use local Codex to import the private key, compute its public-key fingerprint, and compare with GitHub locally without exposing the PEM or the full fingerprint. The GitHub docs specify SHA-256 over DER SubjectPublicKeyInfo encoded as Base64. Do not presume equivalence if the UI presents a different format; reconcile the format explicitly or leave match unverified. Validation and fingerprint match are separate gates, and neither implies secure custody or App API preflight.
+
+Current episode and prompt: [cross-chat handoff section 13](https://github.com/jhonf463r/Python/blob/chat-continuity-key-recovery-handoff-20261027/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-27-M1A-GITHUB-APP-KEY-RECOVERY-CROSS-CHAT-HANDOFF.md). This is a documentation-only method delta in the candidate branch. It does not authorize storing secrets, token creation, runtime or code changes.
+
+---
+
+
+
 ## Method delta — local-only secret entry must not become model-context secret handling (2026-10-27)
 
 A local popup can reduce manual handling only if the complete secret is genuinely available and the popup sends it directly to a local secret store, never back to a model conversation or transcript. Do not use a paste box to compensate for a missing credential artifact. First distinguish the artifact's type and source: GitHub App PEM private key vs public fingerprint/key ID vs ordinary website password/token. A short copied identifier is not interchangeable with a private-key file. GitHub downloads the PEM at key generation and stores only the public part; the fingerprint helps verify a local PEM and cannot reconstruct it.
