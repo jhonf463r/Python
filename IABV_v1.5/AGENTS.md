@@ -1,4 +1,22 @@
-<!-- Latest Entra G1 design-only route synchronized 2026-10-27. CURRENT-STATE.md remains the sole operational route authority. -->
+<!-- Latest Entra G1 independent design review synchronized 2026-10-27. CURRENT-STATE.md remains the sole operational route authority. -->
+
+## Independent technical review — Entra G1 design corrected; no implementation authorized (2026-10-27)
+
+The documentation-only design was independently re-reviewed against current Microsoft Entra guidance, the MCP Authorization specification (2025-11-25) and the MCP Python SDK authorization guide. The design file was updated and verified by fetch-back: [M1A G1 Entra bootstrap design and review](https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-27-M1A-G1-ENTRA-BOOTSTRAP-DESIGN-ONLY.md).
+
+**Corrections now recorded:**
+1. For Entra v2 tokens, do not conflate the canonical MCP URL / Application ID URI / OAuth resource with the token's aud; the expected aud is normally the API's Application (client) ID GUID. Validate the exact URL/resource and token audience independently.
+2. The exact installed MCP/FastMCP SDK versions and their authentication interfaces must be identified before implementation. Do not disable audience/resource validation to work around a mismatch.
+3. HTTP OAuth protection does not automatically protect stdio transport. If stdio remains in use, its local process, identity and mandate boundary needs its own verified controls.
+4. The proposed local enrollment ceremony is not yet proven to be independent of MCP or sufficient to establish G1. A local Windows confirmation alone is not proof of an independent trust channel.
+
+Official sources consulted: [Microsoft's Entra MCP server guidance](https://learn.microsoft.com/en-us/entra/agent-id/secure-mcp-server-with-entra-id), [MCP authorization specification](https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization), [MCP Python SDK authorization](https://py.sdk.modelcontextprotocol.io/run/authorization/).
+
+**Scope and state:** documentary review only. No portal access, app registration, credential, permission, source edit, test, build, runtime, transport, tunnel, protected read, merge or deployment was performed. Option D/no-bootstrap stays operationally fail-closed; G1/G2/G3 remain NOT_ESTABLISHED; the eight implementation prerequisites remain open; protected reads remain FAIL_CLOSED; bridge remains BRIDGE_NOT_READY; automatic follow-on remains FALSE.
+
+**Next action:** Owner review of the corrected design. Any registration, local bootstrap, implementation, testing, tunnel or deployment requires a separate explicit authorization for that exact phase. Do not repeat Entra/Authenticator setup or the earlier broad OIDC feasibility review.
+
+
 
 ## Latest route delta — Entra G1 design documented; operations remain fail-closed (2026-10-27)
 
