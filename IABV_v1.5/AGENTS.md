@@ -1,4 +1,18 @@
-<!-- Latest Entra G1 independent design review synchronized 2026-10-27. CURRENT-STATE.md remains the sole operational route authority. -->
+<!-- MCP 1.30 target and integration plan synchronized 2026-10-27. CURRENT-STATE.md remains the sole operational route authority. -->
+
+## Objetivo MCP ratificado y plan de integración documentado — sin código ni cambios de entorno (2026-10-27)
+
+El Owner respondió «ok procede» a la propuesta de fijar un único objetivo para preparar la integración. El alcance ratificado es solo la selección del objetivo y la planificación documental: Miniconda Python 3.13.2; MCP Python SDK mcp==1.30.0 como versión objetivo; Streamable HTTP; bind local 127.0.0.1:8000; sin túnel público. Esto no autoriza instalación/actualización de paquetes, cambios de código, configuración de Entra, ejecución del servidor, pruebas, lecturas protegidas, merge ni despliegue.
+
+Plan versionado: [M1A G1 — objetivo MCP fijado y plan de integración Entra (sin cambios de código)](https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-27-M1A-G1-MCP130-IMPLEMENTATION-PLAN-NO-CODE.md). El plan identifica archivos, dependencias y aceptación futura, separa hallazgos de main de los informes locales aportados por Codex, y mantiene intacto el checkout local reportado como muy sucio.
+
+**Bloqueos previos a cualquier E2E:** el entorno Miniconda informado aún tiene mcp 1.27.0, no 1.30.0; debe resolverse la instalación en un entorno aislado solo tras autorización. La URL canónica HTTPS del recurso MCP aún no está aprobada y no se permite túnel; por eso la combinación loopback solo sirve como objetivo local, no como prueba de OAuth real de Entra. La autenticación por token no está conectada en main, el transporte HTTP debe fallar cerrado si no tiene auth, stdio requiere frontera local propia, y G1/G2/G3 siguen sin establecer.
+
+**Estado terminal:** TARGET=MINICONDA_PYTHON_3_13_2; MCP=1.30.0; TRANSPORT=STREAMABLE_HTTP; BIND=127.0.0.1:8000; TUNNEL=DISABLED; SOURCE_CHANGES=NOT_AUTHORIZED; ENVIRONMENT_CHANGES=NOT_AUTHORIZED; ENTRA_PORTAL_OR_REGISTRATION=NOT_AUTHORIZED; TESTS/BUILD/RUNTIME=NOT_RUN; PROTECTED_READS=FAIL_CLOSED; OPTION_D=UNCHANGED; BRIDGE=BRIDGE_NOT_READY; AUTOMATIC_FOLLOW_ON=FALSE.
+
+**Siguiente puerta:** autorización explícita separada para implementación de código en una worktree/branch/PR aislada. No tocar el checkout sucio ni modificar main directamente. No repetir los análisis ya completados.
+
+
 
 ## Independent technical review — Entra G1 design corrected; no implementation authorized (2026-10-27)
 
