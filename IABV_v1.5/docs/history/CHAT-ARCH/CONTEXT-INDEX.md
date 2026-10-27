@@ -1,3 +1,15 @@
+<!-- Update 2026-10-27: Codex verified that the new PEM imports as RSA PKCS#1 private key, 2048 bits; fingerprint computed in memory. GitHub match remains unverified. -->
+
+## LATEST UPDATE — PEM validated; clipboard fingerprint comparison pending (2026-10-27)
+
+The Owner supplied the local Codex result: Windows execution as MSI\\faber; new PEM imports as a valid RSA private PKCS#1 key of 2048 bits; public fingerprint was computed in memory but not shown/persisted. It was not compared with GitHub because no transcript-safe route was used. No secret custody, JWT, installation token, App API call, or GitHub/repo changes occurred.
+
+Read [handoff section 14](https://github.com/jhonf463r/Python/blob/chat-continuity-key-recovery-handoff-20261027/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-27-M1A-GITHUB-APP-KEY-RECOVERY-CROSS-CHAT-HANDOFF.md) for the next focused Codex prompt. The prompt reads GitHub's copied fingerprint only from the local Windows clipboard and compares in memory. The 40-character value observed in the UI conflicts with the currently documented SHA-256/Base64 fingerprint representation: do not guess an algorithm or declare a match if formats differ. Do not paste the fingerprint into chat or Codex, do not select the old TXT, and do not generate JWTs/tokens or call the App API.
+
+Current state: PEM structure valid; local fingerprint computed; GitHub correspondence NOT_VERIFIED; custody NOT_ESTABLISHED; G1/G2/G3 remain NOT_ESTABLISHED; protected reads fail-closed; bridge not ready. This is a supporting continuity pointer on a review branch, not canonical route authority. Fetch live main/CURRENT-STATE.md first in any new session.
+
+---
+
 <!-- Update 2026-10-27: Owner reports a new PEM obtained via another UI path. -->
 
 ## LATEST UPDATE — Owner reports new PEM; validate it instead of repeating TXT/download steps (2026-10-27)
