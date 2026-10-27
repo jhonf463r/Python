@@ -5179,3 +5179,14 @@ For this GitHub App key page, the latest read-only observation found:
 Method change: stop using clipboard as an extraction path. If local authenticated browser inspection is permitted, target only the exact visible code node within the identified key card and read its text into local process memory. Compare it against the locally calculated SHA-256 digest; strip only the exact `SHA256:` prefix and surrounding whitespace, strictly decode standard Base64 to exactly 32 bytes, and compare the bytes. Never dump DOM/page text or expose the node text. If the node cannot be uniquely selected and kept local, stop with NOT_VERIFIED; do not fall back to screenshots, whole-page copying, or guessed algorithms.
 
 The local PEM is reported structurally valid RSA PKCS#1 2048-bit and the local fingerprint computed in memory. Clipboard was reset; no comparison has succeeded. Key custody and API preflight remain separate and unauthorized. The governing principle remains: if the exact target or byte representation cannot be verified, retain uncertainty and fail closed.
+
+
+## 2026-10-27 METHOD DELTA — Reconcile UI evidence before repeating extraction
+
+If a UI-derived value is needed for local comparison but the intended copy control cannot be identified, stop the clipboard workflow instead of clicking ambiguous controls. Treat an unexpected clipboard length/class as an unresolved wrong-target or format result; never infer the prior clipboard contents from metadata. Reset the current clipboard without reading the old contents, while noting that this does not prove historical clipboard copies were erased.
+
+When a later read-only inspection identifies the value as a specific rendered text node and contradicts an earlier UI label, preserve both observations with timestamps/provenance, but route the next action using the later specific inspection. Do not silently erase history, repeat the older instructions, or promote the earlier observation to current truth.
+
+Preferred safe comparison: uniquely select the exact node using the local authenticated browser's accessibility/DOM representation, read only that node into local process memory, strictly validate the documented SHA-256/Base64 representation, and compare bytes locally. Do not dump page text, HTML, DOM, screenshots or node values. If the node cannot be selected unambiguously or read without transcript exposure, stop with NOT_VERIFIED and do not fall back to clipboard.
+
+Keep the gates distinct: PEM structurally valid; local digest computed; external digest matched; runtime identity and secret custody established; App API preflight completed; subsequent bridge work authorized. Passing an earlier gate does not imply any later gate. This update does not change the canonical route or authorize code, tests, runtime, protected reads, API actions, or transport.
