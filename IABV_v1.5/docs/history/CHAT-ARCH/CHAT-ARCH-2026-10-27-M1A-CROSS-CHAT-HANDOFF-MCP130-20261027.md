@@ -1,5 +1,17 @@
 # Handoff entre chats — IABV / Entra G1 / MCP 1.30 (2026-10-27)
 
+## Latest candidate validation — PR #549 HEAD 519c55a5 (2026-10-27)
+
+The Owner supplied Codex's isolated test-execution report for candidate `519c55a5b96a5e0b3826b54bf92726ef7f1b9c28`. GitHub independently confirms that commit's parent is `b55a39322d04eff5fc501629c5f331d8ea22c291` and its diff changes only `IABV_v1.5/tests/test_mcp_server.py` (+33/-7). PR #549 stays `OPEN/DRAFT/UNMERGED`, based on `a8624c30744da7f593d6a1c829e48aa229c8efca`; `main` before this documentation update was `7780db1b33304923c17a0247403cb789c7907e01`.
+
+Reported results (logs are local temporary files and were not independently inspected in this session): Python 3.14.4 in a fresh venv; `mcp==1.30.0`, `pytest==9.2.0`; four suites passed: verifier 36, MCP server 90, audit tools 56, bridge service 16; combined 198 passed, one warning, exit 0. The earlier combined run was 194 passed / 4 failed. Only test fixtures/requests were corrected. Python 3.13.2 was unavailable, so that target remains unverified. No live Entra/JWKS, server, tunnel or GitHub Actions execution occurred; this commit carries `[skip ci]`.
+
+The previous independent static review was for `b55a39322d04eff5fc501629c5f331d8ea22c291`; independent review of the exact current HEAD `519c55a5b96a5e0b3826b54bf92726ef7f1b9c28` remains pending. Continue to preserve `G1/G2/G3=NOT_ESTABLISHED`, `MCP_TOOL_ALLOWLIST=EMPTY`, `PROTECTED_READS=FAIL_CLOSED`, `TUNNEL=DISABLED`, `BRIDGE=BRIDGE_NOT_READY`, `MERGE=NOT_AUTHORIZED`. Passing local synthetic tests is real progress, but not proof of live authorization or bridge readiness.
+
+Receipt: [M1A PR #549 isolated test execution — 519c55a5](./CHAT-ARCH-2026-10-27-M1A-PR549-TEST-RUN-519C-RECEIPT.md).
+
+---
+
 ## Dictamen independiente completado — PR #549 HEAD b55a3932 (2026-10-27)
 
 Se recibió y contrastó el dictamen estático de solo lectura para el HEAD exacto `b55a39322d04eff5fc501629c5f331d8ea22c291`. PR #549 permanece `OPEN/DRAFT/UNMERGED`, con base `a8624c30744da7f593d6a1c829e48aa229c8efca`; `main` antes de esta actualización era `b8e18eb725a951209854e0b0756e88a7c7cbdc88`.

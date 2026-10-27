@@ -1,5 +1,25 @@
 <!-- Canonical route authority; authorization scope reconciled 2026-10-27. Candidate-only source preparation for PR #549 is recorded; tests/runtime/activation/merge remain unauthorized. -->
 
+## Latest candidate validation — PR #549 HEAD 519c55a5: isolated test suites reported passing (2026-10-27)
+
+This entry supersedes earlier candidate-head and test-state references only where it explicitly identifies the latest source candidate. The execution evidence below was reported by the Owner from Codex's isolated temporary clone; the local temporary logs are not accessible to this documentation writer, so the run results are not independently reproduced here. GitHub independently confirms the candidate commit and its test-only diff.
+
+- PR #549: `OPEN/DRAFT/UNMERGED`; branch `codex/m1a-g1-mcp130-entra-implementation-20261027`; current HEAD `519c55a5b96a5e0b3826b54bf92726ef7f1b9c28`; parent HEAD `b55a39322d04eff5fc501629c5f331d8ea22c291`; original PR base remains `a8624c30744da7f593d6a1c829e48aa229c8efca`.
+- Current `main` before this documentation-only commit: `7780db1b33304923c17a0247403cb789c7907e01`.
+- Verified GitHub commit: [`519c55a5`](https://github.com/jhonf463r/Python/commit/519c55a5b96a5e0b3826b54bf92726ef7f1b9c28), message `[skip ci] Fix MCP test fixture contracts`. Its complete diff modifies only `IABV_v1.5/tests/test_mcp_server.py` (+33/-7); product source, authority gates, launchers and bridge policy were not changed by this commit.
+- Owner/Codex-reported environment: fresh detached clone at the exact earlier SHA, initial worktree clean; Python 3.13.2 was unavailable, so an isolated venv used Python 3.14.4, `mcp==1.30.0`, `pytest==9.2.0` and declared project/dev dependencies. `C:\Python` was not modified.
+- First combined run: 194 passed, 4 failed (exit 1). Test-only corrections addressed the loopback Host, startup preflight fixture, missing fake `scan_stats`, and SSE data-frame parsing. No production controls were changed.
+- Owner/Codex-reported final results: `test_entra_token_verifier.py=36 passed`; `test_mcp_server.py=90 passed`; `test_mcp_audit_tools.py=56 passed`; `test_mcp_bridge_service.py=16 passed`; combined `198 passed, 1 warning, exit 0`. The warning concerns a short synthetic HMAC key in a negative test. Exact temporary log names are preserved in the execution receipt below.
+- This is local isolated test execution, not GitHub Actions CI, not Python 3.13.2 validation and not end-to-end Entra/JWKS/bridge runtime. The commit includes `[skip ci]`; no workflow was manually started and GitHub reports no runs for this SHA.
+- **Independent static review of exact HEAD `519c55a5b96a5e0b3826b54bf92726ef7f1b9c28` remains pending.** The previous independent review applies to `b55a39322d04eff5fc501629c5f331d8ea22c291`; the current commit is test-only, but it must not inherit the earlier review label.
+- Gates unchanged: `G1/G2/G3=NOT_ESTABLISHED`; `MCP_TOOL_ALLOWLIST=EMPTY`; `PROTECTED_READS=FAIL_CLOSED`; `TUNNEL=DISABLED`; `BRIDGE=BRIDGE_NOT_READY`; `MERGE=NOT_AUTHORIZED`; `PRODUCTION_ACTIVATION=NOT_AUTHORIZED`.
+
+Next causal frontier: independently review the exact `519c55a5b96a5e0b3826b54bf92726ef7f1b9c28` test-only delta, then identify the concrete independently verifiable producers required for G1/G2/G3 and mandate revocation. Passing synthetic tests proves neither live authority nor authorized operations. Do not enable tools or activate the bridge as a shortcut.
+
+Receipt: [M1A PR #549 isolated test execution — 519c55a5](./CHAT-ARCH-2026-10-27-M1A-PR549-TEST-RUN-519C-RECEIPT.md).
+
+---
+
 ## Dictamen independiente estático completado — PR #549 HEAD b55a3932 (2026-10-27)
 
 La revisión independiente de solo lectura aportada para esta revisión apunta al HEAD exacto `b55a39322d04eff5fc501629c5f331d8ea22c291`. Referencias reconciliadas: PR #549 `OPEN/DRAFT/UNMERGED`, base `a8624c30744da7f593d6a1c829e48aa229c8efca`; `main` inmediatamente antes de esta actualización documental: `b8e18eb725a951209854e0b0756e88a7c7cbdc88`.
