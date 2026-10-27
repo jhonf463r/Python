@@ -562,3 +562,46 @@ AUTOMATIC_FOLLOW_ON=FALSE
 ```
 
 No se eligió una nueva autoridad, no se creó app registration, no se solicitaron tokens, no se inspeccionaron credenciales, no hubo pruebas o runtime y no se cambió `main`. El análisis acota una posibilidad técnica, pero la aprobación móvil completa sigue sin estar implementada.
+
+
+## 19. Reutilización posible del adaptador GitHub existente: capacidades y límites (2026-10-26)
+
+Esta comprobación estática adicional usa únicamente blobs de `main`. No inspeccionó ni leyó tokens, no llamó al adaptador en runtime y no confirma que su token esté configurado.
+
+### Capacidades ya presentes
+
+- `GitHubRemoteService`, blob `f410a70f63cd9f125bc78d618c6ccf85d9341c17`, puede solicitar aprobación al `HumanApprovalBroker` antes de una publicación de PR cuando la política no permite autoaprobar. El alcance observado se forma alrededor de `open_pr`, rama y base; el resultado registra `approved`, `rejected`, `timed_out` y `auto_resolved`, y luego continúa a push/creación de PR si aprueba.
+- `GitHubApiToolAdapter`, blob `f8ce508342d2da96f30b2152ffa242f08b187987`, declara estas acciones: `read_pr`, `create_pr`, `merge_pr`, `enable_auto_merge`, `comment_issue`, `list_issues` y `list_prs`. Requiere un token y un repositorio configurados para estar disponible.
+- El flujo de publicación demuestra que el repositorio ya tiene una integración GitHub reutilizable para determinadas operaciones. No demuestra una bandeja de aprobación remota, consulta de comentarios, ni un canal autenticado que llegue al reader.
+
+Fuente: [GitHubRemoteService](https://github.com/jhonf463r/Python/blob/f5e5643df9dbf2a9c10e4d950275b8b28459d1ed/IABV_v1.5/src/iabv_v15/services/tools/github_remote_service.py) · [Tool adapters / GitHubApiToolAdapter](https://github.com/jhonf463r/Python/blob/f5e5643df9dbf2a9c10e4d950275b8b28459d1ed/IABV_v1.5/src/iabv_v15/services/tools/tool_adapters.py).
+
+### Qué no puede reutilizarse directamente
+
+1. La aprobación de publicar una PR es una acción distinta de autorizar una lectura protegida; no debe ampliarse su semántica.
+2. El broker sigue sin un manejador de prompt registrado en el cableado de UI observado, y el resultado de aprobación no acredita la identidad autenticada del Owner.
+3. El adaptador actual no declara una acción para leer comentarios/feedback de una solicitud de aprobación ni un mecanismo de polling de desafíos; `comment_issue` y `list_issues` no forman una ida y vuelta de autorización.
+4. La presencia de un token en configuración no fue verificada y no se inspeccionaron secretos. La identidad GitHub `jhonf463r` y los permisos del repositorio en el plano GitHub no se consideran adoptados automáticamente como la autoridad Owner de runtime de IABV.
+
+### Hipótesis de relay pull-based — no aprobada ni implementada
+
+Como alternativa futura, un consumidor local podría publicar una petición mínima en un recurso privado ya gobernado y consultar desde el equipo (solo salida) una respuesta que incluya un challenge y digest del alcance. Eso evitaría requerir una conexión entrante al listener local, pero sería un protocolo nuevo: harían falta una ruta de lectura de respuestas, límites de acceso verificados, una identidad Owner adoptada, presentación humana del alcance exacto, vínculo challenge/digest, expiración, consumo duradero, anti-replay/rollback, revocación y confirmación del reader. Cualquier detalle de una lectura protegida enviado a GitHub también tendría que estar expresamente dentro del alcance de datos aprobado.
+
+Esta hipótesis no es actualmente una solución existente, no supera por sí sola G1 y probablemente añadiría más complejidad que probar el candidato Entra ya evaluado. Se conserva como comparación, no como siguiente tarea autorizada.
+
+### Estado
+
+```text
+GITHUB_API_ADAPTER=EXISTS; TOKEN_AVAILABILITY=UNKNOWN
+GITHUB_APPROVAL_POLLING=NOT_IMPLEMENTED_IN_DECLARED_ACTIONS
+GITHUB_REMOTE_SERVICE=EXISTING_PR_PUBLICATION_APPROVAL_ONLY
+REMOTE_COMMENT_IDENTITY_TO_OWNER=NOT_ESTABLISHED
+PULL_BASED_RELAY=DESIGN_HYPOTHESIS_ONLY
+PUBLIC_INBOUND_LISTENER=NOT_REQUIRED_FOR_POLLING_HYPOTHESIS; NO_RELAY_CONFIGURED
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3=NOT_ESTABLISHED
+PROTECTED_READS=FAIL_CLOSED
+IMPLEMENTATION=NOT_AUTHORIZED
+TESTS=NOT_RUN; BUILD=NOT_RUN; RUNTIME=NOT_RUN; REAL_TRANSPORT=NOT_RUN
+```
