@@ -6,6 +6,12 @@
 - Canonical route authority remains [CURRENT-STATE.md](./CURRENT-STATE.md). Every new session must fetch it from live `main` before material action.
 - This document does not authorize code changes, protected reads, trust-root provisioning, tests/runtime, merge/rebase, or deployment.
 
+
+
+## Latest cross-chat handoff — 2026-10-27: GitHub App key recovery
+
+For the active local GitHub App key-recovery episode, read the [2026-10-27 cross-chat handoff](https://github.com/jhonf463r/Python/blob/chat-continuity-key-recovery-handoff-20261027/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-27-M1A-GITHUB-APP-KEY-RECOVERY-CROSS-CHAT-HANDOFF.md) before asking the Owner for further action. It preserves the precise failed attempts, known facts versus hypotheses, the pending Codex output, and the stop conditions. It is supporting continuity, not a replacement for `CURRENT-STATE.md`; re-fetch canonical main first. Do not repeat the download instruction until the existing Downloads/Opera history and the GitHub UI field label have been inspected. Never ask for the private key in chat.
+
 ## 1. Owner intent and correction
 
 The Owner wants project continuity across chats, less repetition, and use of previous deductions, mistakes, rejected attempts, and live GitHub evidence. The Owner primarily uses the ChatGPT phone app and expects Codex/IABV to ask for approvals in clear language when an actual Owner decision is required.
