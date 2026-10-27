@@ -1,5 +1,22 @@
 <!-- Canonical route authority; authorization scope reconciled 2026-10-27. Candidate-only source preparation for PR #549 is recorded; tests/runtime/activation/merge remain unauthorized. -->
 
+## Static delta review completed — PR #549 HEAD 519c55a5 (2026-10-27)
+
+A bounded, read-only static review was performed against the exact candidate commit `519c55a5b96a5e0b3826b54bf92726ef7f1b9c28` and its complete GitHub patch. Scope was only the new commit's test-only delta; this does not replace a full security review of the entire candidate or the runtime.
+
+- Result for this delta: `NEW_P0=0`; `NEW_P1=0`; `NEW_CONFIRMED_P2=0`.
+- GitHub confirms parent `b55a39322d04eff5fc501629c5f331d8ea22c291` and exactly one changed file: `IABV_v1.5/tests/test_mcp_server.py` (+33/-7).
+- Static conclusion: the loopback Host, typed sealed-preflight fixture, fake `scan_stats`, and SSE `data:` frame parsing changes are consistent with the test contracts. No product source or authorization gate changed in this commit.
+- The reported local test pass is owner/Codex-reported; temporary logs were not independently retrieved here. Reported result remains 198 passed, one warning, exit 0 on Python 3.14.4. Python 3.13.2 and GitHub Actions CI were not validated.
+- Existing system-level acceptance blocker is unchanged: `G1/G2/G3=NOT_ESTABLISHED`; `MCP_TOOL_ALLOWLIST=EMPTY`; protected reads fail closed; bridge remains not ready. This review does not authorize operation, merge or activation.
+- The prior finding about no production operation authority remains a P1 acceptance blocker for the candidate as a whole; `NEW_P1=0` means this small test-only delta adds no new P1.
+
+Next route: do not keep expanding the Entra token-verifier tests as a substitute for the actual integrated authorization organ. Reconcile the existing M1A/G1-G3 source-organ candidate (PR #531, still stale-base draft) with this validated auth transport candidate, preserving the no-rebase/no-merge boundary. First discriminate whether any independently verifiable Owner root/mandate asset exists in the already-authorized source/artifact evidence; current canonical status says `AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED`, `OWNER_ROOT_SELECTION=NOT_PROVIDED`. Do not invent a root or repeat prior broad inventories.
+
+Review receipt: [PR #549 519c static delta review](./CHAT-ARCH-2026-10-27-M1A-PR549-519C-STATIC-DELTA-REVIEW.md).
+
+---
+
 ## Latest candidate validation — PR #549 HEAD 519c55a5: isolated test suites reported passing (2026-10-27)
 
 This entry supersedes earlier candidate-head and test-state references only where it explicitly identifies the latest source candidate. The execution evidence below was reported by the Owner from Codex's isolated temporary clone; the local temporary logs are not accessible to this documentation writer, so the run results are not independently reproduced here. GitHub independently confirms the candidate commit and its test-only diff.

@@ -1,5 +1,17 @@
 # Handoff entre chats — IABV / Entra G1 / MCP 1.30 (2026-10-27)
 
+## Static review of PR #549 test-only delta completed — HEAD 519c55a5 (2026-10-27)
+
+Read-only review of exact commit `519c55a5b96a5e0b3826b54bf92726ef7f1b9c28` confirms parent `b55a39322d04eff5fc501629c5f331d8ea22c291` and only one changed path, `tests/test_mcp_server.py`. The test fixture corrections are statically coherent; no new finding was identified in this delta (`NEW_P0=0; NEW_P1=0; NEW_CONFIRMED_P2=0`). This is not a full security certification.
+
+The four local suites are reported by Codex as passing (198 combined, one warning, exit 0), in Python 3.14.4; logs were not independently retrieved here, Python 3.13.2 was unavailable, and GitHub Actions CI was not run. PR #549 remains open/draft/unmerged at `519c55a5b96a5e0b3826b54bf92726ef7f1b9c28`, base `a8624c30744da7f593d6a1c829e48aa229c8efca`.
+
+The acceptance blocker is unchanged. The next route is to reconcile this Entra transport/authentication candidate with the pre-existing integrated G1/G2/G3 source-organ candidate in PR #531, after a narrow evidence check on real authority artifacts. Do not rebase, merge, fabricate a root or enable protected reads.
+
+Receipt: [PR #549 519c static delta review](./CHAT-ARCH-2026-10-27-M1A-PR549-519C-STATIC-DELTA-REVIEW.md).
+
+---
+
 ## Latest candidate validation — PR #549 HEAD 519c55a5 (2026-10-27)
 
 The Owner supplied Codex's isolated test-execution report for candidate `519c55a5b96a5e0b3826b54bf92726ef7f1b9c28`. GitHub independently confirms that commit's parent is `b55a39322d04eff5fc501629c5f331d8ea22c291` and its diff changes only `IABV_v1.5/tests/test_mcp_server.py` (+33/-7). PR #549 stays `OPEN/DRAFT/UNMERGED`, based on `a8624c30744da7f593d6a1c829e48aa229c8efca`; `main` before this documentation update was `7780db1b33304923c17a0247403cb789c7907e01`.
