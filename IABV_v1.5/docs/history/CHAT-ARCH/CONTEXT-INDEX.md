@@ -1,3 +1,15 @@
+<!-- Update 2026-10-27: Owner reports a new PEM obtained via another UI path. -->
+
+## LATEST UPDATE — Owner reports new PEM; validate it instead of repeating TXT/download steps (2026-10-27)
+
+The Owner now reports that a `.pem` file is available from another GitHub UI option. Read the [focused handoff and Codex prompt](https://github.com/jhonf463r/Python/blob/chat-continuity-key-recovery-handoff-20261027/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-27-M1A-GITHUB-APP-KEY-RECOVERY-CROSS-CHAT-HANDOFF.md) section 13. Do not select the old 40-character TXT again.
+
+Read-only browser inspection found the old 40-character field is labeled “Copyable key fingerprint”; the Key pairs page has no private-key download action. The field label is now confirmed; its value was never stored in the repo/docs. The PEM now reported by the Owner is new and not yet locally validated.
+
+Next: use local Codex to validate this PEM structurally and compute its public SHA-256/Base64 fingerprint in memory; compare locally with the existing GitHub fingerprint without displaying either value. Do not store/cipher the key, create tokens or call the App API until validation and exact match are established. If GitHub’s displayed fingerprint format cannot be reconciled unambiguously with the local algorithm, leave MATCH=NOT_VERIFIED.
+
+---
+
 <!-- Latest Codex result incorporated 2026-10-27. Read the linked handoff; no local PEM was found in the bounded search. -->
 
 ## LATEST UPDATE — private-key download still unresolved; do not ask for the same TXT again (2026-10-27)
