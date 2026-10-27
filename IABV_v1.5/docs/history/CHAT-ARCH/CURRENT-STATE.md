@@ -10,6 +10,14 @@ Full evidence: M1F Actions billing-lock support intake outcome (./CHAT-ARCH-2026
 
 Do not repeat the same workflow, the same Billing & Licensing inspection, or the same support-form navigation without a material new condition. Do not create a dummy workflow, change billing or purchase a plan to test a hypothesis. In parallel, continue only bounded source-grounded review of the real G1/G2/G3 producer gap; no synthetic trust providers, protected-read enablement, merge or rebase. Revalidate refs before any future action. Current main at receipt creation was 5896abe012bcb0e03d9ff2264c4e68c793b5efb5; PR #531 remains open/draft/unmerged at candidate bc2baf525a70d66628809360a197f25a069aa328, 17 ahead / 61 behind after the receipt commit.
 
+### Parallel research track — neuro-inspired space-time activation (2026-10-26; non-routing)
+
+A separate, document-only research track now exists in [PR #547](https://github.com/jhonf463r/Python/pull/547), branch `uaal-neural-activation-research-20261026`, candidate HEAD `a3a61f449f0d7b943b40b57a264b512157a439a0`. Its single proposed artifact is [CHAT-ARCH-2026-10-26-UAAL-SPACE-TIME-NEURAL-ACTIVATION-RESEARCH-DRAFT.md](https://github.com/jhonf463r/Python/blob/uaal-neural-activation-research-20261026/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-26-UAAL-SPACE-TIME-NEURAL-ACTIVATION-RESEARCH-DRAFT.md), fetched back at blob `774986aa7b740ab59e36b61ce6d4d40e3eee9665`. The PR is `OPEN/DRAFT/UNMERGED`; this track is not canonical policy or implementation authorization.
+
+The draft reconciles the neuro-inspired hypothesis with `UAAL-ROOT-001`, the existing Resonant Self-Knowledge Retrieval Fabric, UAAL-D014/D015/D018/D019, the shared developmental knowledge field and the Universal Experimental Reality Loop. It treats SynapticRouter as a descriptive weighted ranking mechanism, not a biological spiking network; formalizes objective-conditioned activation and temporal-causal evidence; and proposes measurable baseline/treatment criteria. It explicitly defers new services, gossip, mandatory vector clocks, EWC/parametric training and Byzantine consensus until an existing-organ composition gap is demonstrated.
+
+**Routing boundary:** this parallel track does not replace or reprioritize the active M1F/M1A route below; it does not close G1/G2/G3, any of the eight implementation gates, or authorize code changes, tests, build, runtime, protected reads, merge, rebase or deployment. Keep this PR a design candidate pending independent review. Future work should test activation/reuse only when authorized and should reuse existing organs rather than create a parallel memory/orchestrator.
+
 ## CURRENT ROUTE — Focused validation blocked by visible account billing lock in GitHub Actions (2026-10-26)
 
 ### Live references
