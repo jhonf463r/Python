@@ -359,3 +359,72 @@ SOURCE_RUNTIME_CHANGES=0
 MERGE_OR_REBASE=NOT_AUTHORIZED
 AUTOMATIC_FOLLOW_ON=FALSE
 ~~~
+
+## 16. Continuidad de aprobación del Owner desde móvil — addendum de factibilidad (2026-10-26)
+
+**Alcance:** revisión estática de fuente, historial y documentación pública. Este addendum no es una adopción canónica, no selecciona una raíz de confianza y no autoriza implementación, registro de aplicaciones, creación de credenciales, ejecución ni lecturas protegidas.
+
+### 16.1 Reconciliación del resultado terminal de Codex
+
+La respuesta `TASK_RESULT=NOT_RUN; REASON=CANONICAL_ROUTE_CONTRADICTION` es correcta para el encargo que intentó retomar la evaluación de activos ya consumida. La evaluación `M1A_G1_EXISTING_TRUST_ASSETS_BOUNDED_READ_ONLY_ASSESSMENT` es terminal para su alcance. La revisión de fuente no encontró un localizador concreto para inspección de metadatos de Windows; por tanto `LOCAL_WINDOWS_ASSET_METADATA=NOT_RUN` y `AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED`. Esto no prueba presencia ni ausencia global de activos. No se debe repetir el inventario ni tratar el `NOT_RUN` como una nueva observación del equipo.
+
+La instrucción del Owner de continuar se interpreta aquí como permiso para avanzar en análisis documental acotado de la experiencia de aprobación, no como autorización para provisionar una raíz, cambiar código, ejecutar pruebas, abrir un túnel, habilitar lecturas protegidas, fusionar o rebasar ramas.
+
+### 16.2 Órganos existentes observados en `main`
+
+Baseline de lectura: `main=f5e5643df9dbf2a9c10e4d950275b8b28459d1ed`.
+
+- `src/iabv_v15/services/security/human_approval_broker.py`, blob `4a447149cf1b2771f6959658338a72b381f00b19`: existe `HumanApprovalBroker`, con solicitud pendiente y métodos de resolución `approve(request_id)` / `reject(request_id)`. La resolución observada es de memoria; su contrato genérico no autentica por sí solo al aprobador ni establece una decisión de lectura autoritativa y durable.
+- `src/iabv_v15/bootstrap.py`, blob `e4befa6b683fc87aed7481f377f1332f5753e2c3`: crea el broker y lo pasa al ViewModel/panel de actividad. En `_wire_task_a_signals()` conecta los manejadores de credenciales, aclaraciones, dependencias, actividad y salud; en el tramo inspeccionado no conecta `human_approval_broker.register_prompt_handler`.
+- `src/iabv_v15/services/security/proactive_dashboard_service.py`, blob `08535790507b88f9a36e62cbc02e5fa8f84bf379`: convierte solicitudes pendientes en elementos de panel y les asigna `actionable=True`.
+- `src/iabv_v15/ui/qml/pages/EvolutionCenterPage.qml`, blob `c96a89bebd405af6a1bd8828d9153d5fd0be882b`: el delegado de esos elementos presenta título y detalle; en el bloque revisado no se observan controles de aprobar/rechazar conectados al broker.
+- `src/iabv_v15/services/security/approval_memory.py`, blob `ed85408d96fb0cdfddb05489d6c38cf714275f91`: la memoria de aprobación puede auto-resolver solicitudes que coincidan con políticas. Una autorización protegida que requiere presencia humana fresca no puede aceptar una autoaprobación como si fuese un acto interactivo actual.
+
+**Dictamen de fuente:** hay órganos reutilizables para representar una solicitud y mostrarla en el panel, pero no quedó demostrada la cadena completa `solicitud → UI accionable → Owner autenticado → decisión ligada al alcance exacto → consumo único y durable → verificación inmediata del reader`. No se debe crear otro broker, almacén de memoria u “órgano” antes de verificar qué se puede componer de lo existente.
+
+### 16.3 Móvil y candidatos de identidad: límites verificables
+
+1. La documentación de OpenAI indica que la pestaña **Remoto** de la app móvil ChatGPT puede acceder a chats compatibles de Codex de escritorio. Eso ayuda a interactuar desde el teléfono con una sesión Codex existente, si está conectada y es compatible; no equivale a Codex Cloud ni crea autenticación de Owner dentro del runtime de IABV. Referencia: https://help.openai.com/es-419/articles/20001275-chatgpt-trabajo-y-codex
+2. El historial de IABV ya registra el directorio Microsoft Entra, usuario Owner y acceso con Authenticator como información reportada por el Owner. La evaluación estática anterior calificó Entra como candidato plausible para autenticar al humano sin un servicio de pago, pero `ENTRA_TRUSTED_BY_IABV=NOT_ESTABLISHED`: no acreditó app registration, validación de tokens ni integración de runtime. No repetir la configuración de Entra/Authenticator ya intentada.
+3. GitHub Apps pueden emitir tokens de usuario para acciones en nombre de una persona; la documentación recomienda GitHub Apps frente a OAuth Apps cuando se requieren permisos más granulares y tokens de corta duración. Es un candidato de diseño, no una integración IABV existente. Referencias: https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/about-authentication-with-a-github-app y https://docs.github.com/en/apps/creating-github-apps/about-creating-github-apps/best-practices-for-creating-a-github-app
+4. La identidad de GitHub observada por una conexión de herramienta prueba control de ese plano de GitHub, no el vínculo `Owner → principal Windows → issuer → instancia exacta de reader` dentro de IABV. Una conversación, aprobación de Codex, comentario/merge de GitHub o token de usuario tampoco constituye por sí solo el recibo operativo que consume el reader.
+
+### 16.4 Siguiente trabajo de diseño recomendado — reutilizar, no improvisar
+
+Antes de cualquier cambio de código, preparar un contrato mínimo de aprobación que reutilice `HumanApprovalBroker` y el panel existentes:
+
+- Presentar al Owner, antes de confirmar, el repositorio y revisión exactos, la instancia/checkout objetivo, operación, destinos y alcance completos, límites de datos/llamadas, destinatario del contenido, vencimiento y efecto previsto.
+- Vincular la confirmación a un challenge de un solo uso y a una representación/digest inequívoco de ese alcance; denegar si caduca, se repite, cambia el destino, falta identidad o no puede comprobarse la revocación.
+- Definir un retorno accesible desde el teléfono sin asumir conectividad entrante al servicio local. R-07 sigue siendo `loopback-only`; no crear túnel público ni debilitar Host/Origin/DNS-rebinding para facilitar la UI.
+- Evaluar primero la integración de la identidad existente ya reportada; comparar GitHub App solo donde resuelva una dependencia concreta. La identidad externa debe verificarse con issuer/tenant/audience/subject, expiración, revocación y vínculo explícito al rol Owner. No escoger un proveedor ni dar por establecida una raíz por la mera existencia de una cuenta.
+- Mantener fuera de la autoaprobación de `ApprovalMemory` las decisiones que requieren presencia humana fresca. La respuesta de UI debe ser una entrada al protocolo, no un permiso transferible ni una sustitución de la autorización del servidor.
+- Separar el primer arreglo de la experiencia de solicitud del cierre de G1/G2/G3. Que el Owner pueda responder a un prompt es una capacidad de interfaz; no acredita el origen de la autoridad, al issuer, el catálogo, el resolver, el estado anti-replay ni el objeto exacto que consume el reader.
+
+### 16.5 Estado de cierre de este addendum
+
+```text
+TASK=OWNER_MOBILE_APPROVAL_PATH_STATIC_FEASIBILITY
+RESULT=SOURCE_GROUNDED_DESIGN_FINDINGS_RECORDED
+MAIN_BASE=f5e5643df9dbf2a9c10e4d950275b8b28459d1ed
+CURRENT_STATE_REMAINS_CANONICAL=TRUE
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+LOCAL_WINDOWS_ASSET_METADATA=NOT_RUN
+PROTECTED_READS=FAIL_CLOSED
+TESTS=NOT_RUN
+BUILD=NOT_RUN
+RUNTIME=NOT_RUN
+MCP=NOT_RUN
+REAL_TRANSPORT=NOT_RUN
+PUBLIC_TUNNEL=NOT_AUTHORIZED
+PR531=OPEN_DRAFT_UNMERGED
+PR546=OPEN_DRAFT_UNMERGED
+PR547=OPEN_DRAFT_UNMERGED
+MERGE_OR_REBASE=NOT_AUTHORIZED
+NEXT_ACTION=BOUNDED_OWNER_APPROVAL_DESIGN_REVIEW; NO_PRODUCT_IMPLEMENTATION
+```
+
+Este addendum amplía el borrador de diseño de la PR #546 y queda como candidato de revisión. No modifica `main` ni sustituye `CURRENT-STATE.md`.
