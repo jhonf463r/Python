@@ -81,6 +81,51 @@ def test_deferred_init_does_not_wire_services(tmp_path: Path) -> None:
     assert not hasattr(bootstrap, 'world_model_service')
 
 
+def test_deferred_bootstrap_registers_fail_closed_read_authority(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import iabv_v15.bootstrap as bootstrap_module
+
+    monkeypatch.setattr(bootstrap_module, '_auto_load_secrets', lambda: 0)
+    from iabv_v15.bootstrap import AppBootstrap
+    from iabv_v15.services.security.read_authorization import ReadAuthorizationCoordinator
+
+    bootstrap = AppBootstrap(str(tmp_path), _defer_services=True)
+
+    assert type(bootstrap.read_authorization_coordinator) is ReadAuthorizationCoordinator
+    assert bootstrap.read_authorization_coordinator.missing_requirements() == (
+        "INDEPENDENT_TRUST_ROOT_PROVIDER",
+        "OWNER_MANDATE_PROVIDER",
+        "OWNER_MERGE_EVIDENCE_PROVIDER",
+        "G2_POLICY_PROVIDER",
+        "G3_TARGET_RESOLVER",
+        "AUTHENTICATED_ISSUER_IPC",
+        "PERSISTENT_REPLAY_CONSUMER",
+        "HOST_OWNED_SERVER_PROCESS_IDENTITY",
+    )
+
+
+def test_bootstrap_passes_registered_authority_to_bridge_factory(tmp_path: Path) -> None:
+    from types import SimpleNamespace
+
+    from iabv_v15.bootstrap import AppBootstrap
+    from iabv_v15.services.security.read_authorization import ReadAuthorizationCoordinator
+
+    bootstrap = AppBootstrap.__new__(AppBootstrap)
+    coordinator = ReadAuthorizationCoordinator.unconfigured()
+    bootstrap.config = SimpleNamespace(workspace_root=str(tmp_path))
+    bootstrap.read_authorization_coordinator = coordinator
+
+    with patch('iabv_v15.bootstrap.build_mcp_bridge_service') as factory:
+        bootstrap._create_mcp_bridge_service()
+
+    factory.assert_called_once_with(
+        bootstrap,
+        workspace_root=str(tmp_path),
+        read_authorization_coordinator=coordinator,
+    )
+
+
 def test_deferred_init_is_fast(tmp_path: Path) -> None:
     """Deferred __init__ should complete in well under 2 seconds."""
     from iabv_v15.bootstrap import AppBootstrap
