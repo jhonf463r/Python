@@ -4,9 +4,13 @@
 
 This entry reconciles the current conversation into the active route. It is a documentation-only continuity update; it does not authorize product changes or replace the authority requirements below. CURRENT-STATE.md remains the sole operational routing authority. Re-fetch live refs before any later source, test, merge or release action.
 
+### Canonical route clarification — prior Owner ratification of Option D (2026-10-27)
+
+The live receipt linked below records the Owner's explicit prior decision to keep no-bootstrap/fail-closed behavior. That decision must not be requested again. It is distinct from evidence that a technical root exists: `OWNER_ROOT_SELECTION=NOT_PROVIDED` remains accurate, and the receipt explicitly says its provenance is an Owner chat message, not an independently authenticated runtime identity event. The active technical frontier remains G1. The next step is new independently verifiable evidence of a pre-existing root, mandate and independent verification channel, or a genuinely new Owner decision to change the previous no-bootstrap choice. Until then, preserve all G1/G2/G3 and protected-read gates; do not create a root or bypass the blocker.
+
 ### Trace of decisions and evidence from this conversation
 
-1. **Governed authority design supplied by the Owner.** The submitted G1/G2/G3 design is a requirements proposal, not proof of an existing root, custodian, channel, issuer, publisher, or target registry. The Owner explicitly had not selected or provisioned those dependencies. Option D (no bootstrap; fail-closed denial) therefore remains the safe operational disposition unless independently verifiable evidence or a new explicit Owner decision changes it.
+1. **Governed authority design supplied by the Owner.** The submitted G1/G2/G3 design is a requirements proposal, not proof of an existing root, custodian, channel, issuer, publisher, or target registry. The Owner has not selected or provisioned those technical dependencies. Separately, the existing [Option D ratification receipt](./CHAT-ARCH-2026-10-23-M1A-G1-owner-option-d-no-bootstrap-ratification-receipt.md) records the Owner's explicit chat decision to preserve no-bootstrap/fail-closed behavior. Do not ask the Owner to repeat that decision. The receipt settles the prior governance choice; it does not prove that a technical root or mandate exists, or independently authenticate an Owner-to-runtime identity binding.
 2. **Independent design review of PR #547.** At its earlier HEAD a3a61f449f0d7b943b40b57a264b512157a439a0, the review identified an order-dependent pseudocode defect: marking a candidate visited when enqueued could discard a later incoming relationship before its score/provenance was evaluated. The defect was in research pseudocode, not a demonstrated runtime failure.
 3. **Owner authorized bounded documentary continuation.** The research draft was corrected and extended on branch uaal-neural-activation-research-20261026. Current observed PR #547 HEAD is 9b60d787528a5199c36b59a6c172f860c4bd6a86; fetched-back blob is 74456b145c340dd106f4d2b58990cec59d50e1ea, 704 lines / 59,849 characters at last verification. The draft preserves incoming typed relations before candidate deduplication, records incomplete expansion/budget state, separates retained ideas from the active working set, preserves versions/contradictions/provenance, and defines open questions. The revised HEAD has not received an independent re-review; the PR remains OPEN/DRAFT/UNMERGED and non-authoritative.
 4. **Owner requested non-destructive idea evolution.** New material must be captured with provenance before relevance filtering. Low current relevance means DEFERRED, not deleted. Similarity does not prove identity; contradictions and prior versions remain linked. Repeated retrieval or agreement does not earn authority. A claim of reusable learning requires a verified delta consumed in a later non-identical task with independently verified effect. These rules reconcile with the existing Resonant Self-Knowledge Retrieval Fabric, Shared Developmental Knowledge Field, MEMORY-OPERATING-PROTOCOL, CONTEXT-INDEX, UNRESOLVED-KNOWLEDGE and UAAL-D014/D015/D018/D019. They do not create a new memory store, “supermind” service, or UAAL concept.
@@ -17,7 +21,7 @@ This entry reconciles the current conversation into the active route. It is a do
 
 **P0 — Preserve safety and provenance invariants.** Keep G1/G2/G3 NOT_ESTABLISHED, all eight implementation prerequisites open, protected reads fail-closed, and BRIDGE_NOT_READY. No synthetic providers, locally invented root/pin, production claims from interfaces, protected reads, source implementation, tests/runtime, merge, rebase, or deployment are authorized by this continuity update.
 
-**P1 — Active first-open dependency: G1 root, mandate and independent verification channel.** The next meaningful transition requires either (a) independently verifiable evidence of an already-existing authority/root and mandate with an out-of-band verification path, or (b) an explicit Owner decision to retain option D / choose among the already-described governance paths. “Proceed,” a design document, GitHub merge/signature evidence, a local key, a hash, or a type/interface does not select or establish that authority. If no independent root/mandate can be demonstrated, retain D and record the external dependency; do not emulate it.
+**P1 — Active first-open dependency: G1 root, mandate and independent verification channel.** The Owner's prior decision to retain Option D/no-bootstrap is already recorded in the linked receipt; do not reopen that same decision. The next meaningful transition requires independently verifiable evidence of a pre-existing authority/root, its mandate over IABV, and an independent verification channel, or a genuinely new explicit Owner decision that changes the prior no-bootstrap choice. The prior decision, a design document, GitHub merge/signature evidence, a local key, a hash, or a type/interface does not establish the technical authority. If the required evidence is unavailable, retain D and wait; do not emulate a root or bypass governance.
 
 **P2 — Only after legitimate authority is evidenced, establish G2 and G3 producers separately.** G2 needs the authorized, fresh versioned policy/catalogue producer plus current revocation authority. G3 needs an authoritative versioned operation-to-target mapping bound to real operation/call-site identity and the exact opened object consumed. A Protocol, tool inventory, world snapshot, path, or handle primitive alone is not the authority producer. Do not reopen the broad inventory already completed; examine only the exact new evidence/producer presented.
 
@@ -38,12 +42,13 @@ The developmental/“supermind” responsibility is a method-level audit across 
 
 ### Handoff / route lock
 
-The first actionable dependency remains OWNER_DECISION_OR_INDEPENDENTLY_VERIFIABLE_G1_ROOT_AND_MANDATE. After that evidence exists, evaluate G2 and G3 producers in dependency order; only then consider separately authorized implementation/acceptance. While waiting, do not generate a new inventory, synthetic bootstrap, dummy workflow, or another research branch. The next chat/session must begin with a fresh read of this file and the exact evidence linked above.
+The prior Owner decision to retain Option D/no-bootstrap is already recorded; do not ask the Owner to repeat it. The first actionable dependency is independently verifiable evidence of a pre-existing G1 root, mandate over IABV, and independent verification channel (or a genuinely new Owner decision explicitly changing Option D). Only after G1 is established may G2 and G3 producers be evaluated in dependency order; later implementation/acceptance requires its own authorization. While waiting, do not generate a new inventory, synthetic bootstrap, dummy workflow, or another research branch. The next chat/session must begin with a fresh read of this file and the exact evidence linked above.
 
 ```text
 CHAT_CONTINUITY=CONSOLIDATED; FETCHBACK_REQUIRED
 ACTIVE_FRONTIER=G1_INDEPENDENT_ROOT_MANDATE_AND_VERIFICATION_CHANNEL
 OWNER_ROOT_SELECTION=NOT_PROVIDED
+OWNER_DECISION=RATIFIED_OPTION_D_NO_BOOTSTRAP; PROVENANCE=EXPLICIT_CHAT_RECEIPT; NOT_RUNTIME_AUTHENTICATION
 OPTION_D=RETAIN_FAIL_CLOSED_UNTIL_INDEPENDENT_EVIDENCE_OR_NEW_EXPLICIT_DECISION
 G1=NOT_ESTABLISHED
 G2=NOT_ESTABLISHED
@@ -58,7 +63,7 @@ TESTS=NOT_RUN
 RUNTIME=NOT_RUN
 PROTECTED_READS=FAIL_CLOSED
 BRIDGE=BRIDGE_NOT_READY
-NEXT_ACTION=OWNER_DECISION_OR_INDEPENDENTLY_VERIFIABLE_G1_ROOT_AND_MANDATE
+NEXT_ACTION=INDEPENDENTLY_VERIFIABLE_G1_ROOT_MANDATE_AND_VERIFICATION_CHANNEL_OR_NEW_EXPLICIT_DECISION_TO_CHANGE_OPTION_D
 AUTOMATIC_FOLLOW_ON=FALSE
 ```
 
