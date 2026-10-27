@@ -79,17 +79,23 @@ The selected TXT’s 40-character content was not a complete PEM private key acc
 
 Changing `.txt` to `.pem` would only change the extension. It cannot turn a fingerprint, ID or partial value into the private key. The private key cannot be reconstructed from the public-key fingerprint.
 
-## 5. Current next action — consume the pending Codex download investigation
+## 5. Current next action — inspect authenticated GitHub field and download behavior
 
-The last prompt given to Codex was to **investigate existing downloads and the GitHub UI label**, not to validate the same 40-character TXT again. The Owner said they will provide Codex’s result. At handoff creation, that result has not yet been received in this conversation. Therefore:
+The latest Codex report has now been received and incorporated. Do not wait for or request the same report again. Codex checked the current user’s Downloads folder and Opera histories:
+- No PEM was found in the checked Downloads folder.
+- Opera GX history was accessible read-only and contained no matching PEM/app-key download in the checked period.
+- Opera Stable history returned a database-locked error and was not bypassed.
+- The authenticated GitHub Credentials → Key pairs page could not be inspected, so the label of the Owner’s copyable 40-character value remains unknown.
+- Selecting the same TXT again returned the same non-PEM text. Do not select or validate that same file again.
 
-1. Wait for/read the Owner’s next Codex report and reconcile it here. Do not automatically start another browser/Codex task before evaluating that result.
-2. Codex should have checked the relevant Opera download history and the current Windows user’s Downloads folder in a bounded way, without broad disk inventory or disclosing private paths.
-3. Codex should have identified the actual label associated with the copied 40-character item, without copying the value into a transcript or log.
-4. If a previously downloaded PEM exists, use that original file for local validation; do not ask the Owner to repeat a download operation.
-5. If no PEM exists and local browser evidence shows the download did not complete, report the exact observed cause. Only then consider creating a replacement key and troubleshooting the browser download with explicit Owner involvement. Preserve existing keypair entries until a replacement has been validated and securely stored; do not revoke or delete automatically.
-6. If the “number” is only a fingerprint/key identifier, explain plainly that it cannot authenticate as the private key and cannot recreate that key.
-7. Do not install OpenSSL, change browser/security policies, use secret-sharing websites, or ask the Owner to paste the PEM into ChatGPT/Codex chat. A private-key file should be read by a local process from the selected file path.
+Next action:
+1. Inspect the exact label next to the copyable value in the authenticated GitHub App UI, without copying its value to chat or transcript.
+2. Inspect the actual New key/download interaction and browser state. The specific cause of the unavailable download remains UNKNOWN; do not assume it was blocked or that a download definitely never occurred.
+3. If the item is a fingerprint or key ID, explain that it is not a private-key PEM and cannot reconstruct the private key.
+4. Only if the UI/download investigation confirms that no usable PEM exists, consider a replacement key and handle download troubleshooting as one bounded action. Preserve existing GitHub key entries until a replacement is validated and safely stored; never revoke automatically.
+5. Do not ask the Owner to repeat generic download instructions, paste any secret into chat, or copy the 40-character value again.
+
+A local-only popup for secret input may be a future UX for a complete secret that is genuinely available. It is not a recovery method for a missing PEM or an unknown 40-character value. See section 11 for the complete latest evidence and the distinction between the GitHub App machine key and website credentials managed by IABV.
 
 ## 6. Local key verification — only after locating a real PEM
 
@@ -140,14 +146,17 @@ GITHUB_APP_INSTALLATION=INSTALLED; INSTALLATION_ID=175851462
 GITHUB_APP_REPOSITORIES=ONLY:jhonf463r/Python; REPOSITORY_ID=860009771
 GITHUB_APP_PERMISSIONS=METADATA_READ; ISSUES_READ_WRITE; ALL_OTHERS_NONE
 GITHUB_APP_WEBHOOKS=DISABLED; OAUTH=DISABLED; DEVICE_FLOW=DISABLED
-PRIVATE_KEY_PEM_LOCATED=NOT_CONFIRMED
+OPERA_GX_HISTORY=CHECKED; NO_MATCHING_PEM_DOWNLOAD_FOUND_IN_CHECKED_PERIOD
+OPERA_STABLE_HISTORY=LOCKED; NOT_BYPASSED
+LOCAL_DOWNLOADS_PEM=NONE_FOUND_IN_CHECKED_FOLDER
 SELECTED_TXT_LENGTH=40; PEM_MARKERS=ABSENT
 SELECTED_VALUE_LABEL=UNKNOWN; VALUE_IS_FINGERPRINT=NOT_CONFIRMED
+DOWNLOAD_CAUSE=UNKNOWN
 PRIVATE_KEY_VALIDITY=NOT_VERIFIED
 PRIVATE_KEY_FINGERPRINT=NOT_OBTAINED; MATCH=NOT_VERIFIED
 PRIVATE_KEY_CUSTODY=NOT_ESTABLISHED
 GITHUB_APP_AUTH_PREFLIGHT=NOT_RUN; INSTALLATION_TOKEN=NOT_CREATED
-NEXT_ACTION=AWAIT_CODEX_REPORT_ON_BROWSER_DOWNLOADS_AND_GITHUB_FIELD_LABEL
+NEXT_ACTION=INSPECT_AUTHENTICATED_GITHUB_FIELD_LABEL_AND_NEW_KEY_DOWNLOAD_BEHAVIOR
 G1=NOT_ESTABLISHED; G2=NOT_ESTABLISHED; G3=NOT_ESTABLISHED
 IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
 PROTECTED_READS=FAIL_CLOSED
