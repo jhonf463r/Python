@@ -605,3 +605,75 @@ PROTECTED_READS=FAIL_CLOSED
 IMPLEMENTATION=NOT_AUTHORIZED
 TESTS=NOT_RUN; BUILD=NOT_RUN; RUNTIME=NOT_RUN; REAL_TRANSPORT=NOT_RUN
 ```
+
+
+## 20. Candidato de canal móvil↔equipo sin listener entrante: GitHub App + aprobación por comentario privado (diseño para decisión; no provisionado)
+
+### Evidencia nueva verificada en el plano GitHub
+
+En esta reconciliación, la conexión GitHub disponible devuelve la identidad `jhonf463r` (user ID `28608338`). La metadata viva del repositorio devuelve `jhonf463r/Python` (repository ID `860009771`), propietario con el mismo user ID; el nivel de permiso de esa cuenta en el repositorio es `admin`. El repositorio es privado. Esto es evidencia del plano de control de GitHub y de los permisos de la conexión usada en esta sesión; **no** demuestra que IABV tenga el mismo token, conozca esta identidad en runtime o ya la acepte como autoridad.
+
+### Propuesta
+
+La alternativa más prometedora para la experiencia solicitada (Owner usa el teléfono, PC no expone un listener público) es una **bandeja de aprobación pull-based en un issue privado del repositorio**, creada y consultada por una GitHub App limitada a ese único repositorio.
+
+1. Un emisor local de confianza genera una solicitud con un ID aleatorio, desafío de un solo uso, expiración y digest canónico del alcance. El cuerpo del issue enseña antes de decidir: instalación/checkout y revisión exactos, operación, destino, propósito, datos que se transmitirían, destinatario, límites y vencimiento. No incluye contenido protegido del archivo ni secretos.
+2. La GitHub App instala permisos mínimos para el único repositorio; como candidato, `Metadata: read` más `Issues: write` (que permite leer los comentarios necesarios). Se verifica que Issues esté habilitado antes de cualquier prueba. La solicitud se crea como actividad de la App, no usando un token personal que pueda publicar una aprobación fingiendo ser el Owner.
+3. El Owner abre ese issue desde GitHub en el teléfono y responde explícitamente `APPROVE <request-id> <challenge>` o `REJECT ...` después de revisar el alcance. La respuesta se recibe mediante el endpoint de comentarios del issue; el equipo inicia todas las conexiones hacia la API de GitHub. No requiere conexión entrante al equipo ni túnel público.
+4. Antes de aceptar, el consumidor local verifica: repository ID y issue inmutables; autor del comentario igual al user ID Owner enrolado (no solo el texto/login); asociación con la misma solicitud; digest y versión del cuerpo sin cambios; desafío, expiración y no-replay; permiso y estado de revocación; y que la confirmación no supere el alcance mostrado. Consume el desafío de forma durable y atómica.
+5. El reader sigue haciendo la comprobación final inmediatamente antes de operar y consume el mismo objeto cuya identidad fue autorizada. La respuesta de GitHub es evidencia de una decisión humana autenticada en el plano GitHub; no sustituye las garantías del issuer, del host ni del reader.
+
+Documentación oficial que acredita la capacidad básica del proveedor, no esta integración hipotética:
+- GitHub permite habilitar Device Flow para ciertas GitHub Apps y generar tokens de usuario desde un dispositivo secundario: https://docs.github.com/en/apps/maintaining-github-apps/modifying-a-github-app-registration y https://docs.github.com/es/apps/creating-github-apps/authenticating-with-a-github-app/generating-a-user-access-token-for-a-github-app.
+- La API de GitHub puede listar comentarios de issues y la respuesta incluye el autor/ID; los tokens de GitHub App pueden leerlos con permisos de Issues o Pull requests: https://docs.github.com/en/rest/issues/comments.
+- Una GitHub App puede actuar como App/instalación o en nombre de un usuario; los tokens de usuario están limitados por los permisos efectivos de la App y del usuario: https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/about-authentication-with-a-github-app y https://docs.github.com/en/apps/creating-github-apps/about-creating-github-apps/best-practices-for-creating-a-github-app.
+
+### Por qué se prefiere investigar este canal antes de Entra o Codex Remote
+
+- No requiere que el teléfono llegue por red al listener loopback del PC.
+- Usa un proveedor externo con identidad de comentario verificable y una pantalla de consentimiento que puede mostrar el alcance exacto; un flujo de login por sí solo no puede aprobar ese alcance.
+- Evita depender de que Codex Remote exponga una API de callback hacia el broker de IABV, integración que sigue sin demostrarse.
+- Permite acotar los datos enviados al proveedor externo al manifiesto de solicitud y la respuesta. El contenido protegido no se publica en el issue. Si ni siquiera los metadatos de alcance pueden enviarse a GitHub según una política futura, este canal no será admisible.
+- Requiere una nueva GitHub App, su instalación y una clave privada de App custodiada en el host. Esa clave no debe confundirse con la credencial Owner ni puede autorizar por sí misma una operación. La provisión y protección de esa clave, la política de coste cero y el tratamiento de revocación son trabajos posteriores.
+
+### Límite crítico de confianza
+
+Esta arquitectura **no cierra G1 por el mero hecho de autenticarse en GitHub**. El Owner debe adoptar explícitamente la identidad de GitHub y su relación con el repositorio como fuente de mandato para el puente, y aceptar una ceremonia de enrolamiento que enlace esa autoridad externa con el principal local y la instancia exacta de IABV. El ID de usuario, el permiso `admin`, el comentario, un merge o un token aislados no crean automáticamente esa delegación. La conexión GitHub de esta sesión no se transfiere a IABV.
+
+Si el Owner no adopta esa fuente externa, se mantiene Option D/no-bootstrap. Si la adopta, aún quedan por diseñar y aprobar el enrolamiento del host/issuer, almacenamiento de clave, ledger anti-rollback y productor G3 antes de que un reader pueda permitir una lectura protegida.
+
+### Precondiciones que deben verificarse en una fase posterior, no ahora
+
+- GitHub Issues habilitado en el repositorio privado.
+- Registro e instalación de una GitHub App con permisos mínimos restringidos a repository ID `860009771`.
+- Identidad de comentario con user ID `28608338` verificada por respuesta API autenticada; denegar cualquier otro actor aunque tenga permiso de comentario.
+- Protección del cuerpo del issue: comparar contra el digest local esperado y denegar si es editado, sustituido o reabierto con otro alcance.
+- Persistencia durable del consumo, revocación y recuperación anti-rollback.
+- Comprobación de reader a la revisión/objeto exactos, fuera de los metadatos controlados por el caller.
+- Verificación de que no se inicia ningún listener público ni túnel; R-07 permanece `loopback-only`.
+- Revisión independiente posterior del diseño y un permiso de implementación separado.
+
+### Dictamen provisional
+
+```text
+GITHUB_ACCOUNT_AND_REPO_OWNERSHIP=VERIFIED_IN_CONNECTED_CONTROL_PLANE
+OWNER_ID=28608338; REPOSITORY_ID=860009771
+PRIVATE_REPO=TRUE; OWNER_PERMISSION=ADMIN
+GITHUB_APP_PRIVATE_APPROVAL_INBOX=FEASIBLE_DESIGN_CANDIDATE; NOT_CREATED
+ISSUE_COMMENT_AUTHOR_ID=AVAILABLE_FROM_GITHUB_API; NOT_INTEGRATED_IN_IABV
+PHONE_TO_LOCAL_PULL_CHANNEL=ARCHITECTURALLY_PLAUSIBLE; NOT_IMPLEMENTED
+GITHUB_ISSUES_ENABLED=UNKNOWN
+GITHUB_APP_KEY_CUSTODY=NOT_ESTABLISHED
+OWNER_ADOPTION_OF_GITHUB_AS_IABV_AUTHORITY=NOT_PROVIDED
+OWNER_TO_WINDOWS_PRINCIPAL=NOT_ESTABLISHED
+ISSUER_TO_EXACT_SERVER=NOT_ESTABLISHED
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3=NOT_ESTABLISHED
+PROTECTED_READS=FAIL_CLOSED
+PUBLIC_LISTENER_OR_TUNNEL=NOT_PROPOSED
+IMPLEMENTATION_OR_APP_PROVISIONING=NOT_AUTHORIZED
+TESTS=NOT_RUN; BUILD=NOT_RUN; RUNTIME=NOT_RUN; REAL_TRANSPORT=NOT_RUN
+```
+
+Esta opción convierte el siguiente bloqueo en una decisión concreta de gobernanza: si el Owner autoriza que la cuenta GitHub que ya posee el repositorio sea la identidad externa que IABV reconocerá para iniciar el enrolamiento. No se registra ninguna App ni se crea credencial hasta que esa decisión se formule expresamente. La decisión de identidad no elimina los gates restantes ni autoriza lecturas protegidas.
