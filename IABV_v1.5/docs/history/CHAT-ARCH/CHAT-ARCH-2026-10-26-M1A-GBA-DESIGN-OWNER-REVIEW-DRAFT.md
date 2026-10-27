@@ -799,3 +799,58 @@ BRIDGE=BRIDGE_NOT_READY
 No crear un Issue de prueba ni simular que ya existe transporte. El siguiente paso es cerrar la custodia de clave de la App en el host Windows autorizado, sin colocar la clave en el chat, en Issues ni en el repositorio; luego definir y verificar un flujo local pull-based con identidad Owner autenticada, digest/canonical scope, expiración y consumo durable anti-replay. La App instalada no es un issuer y el permiso `Issues: write` no autoriza por sí mismo lecturas protegidas. La siguiente implementación debe quedar sujeta a revisión de la ruta exacta y a la autorización de implementación ya delimitada, y requiere evidencia independiente antes de habilitar cualquier reader protegido.
 
 Este apartado se añade únicamente a la rama documental de la PR #546. No modifica `main`, no fusiona/rebasa ninguna PR y no altera el estado operativo canónico.
+
+
+## 23. Estado reportado de clave local y protocolo de saldo/contingencia (2026-10-27)
+
+### Estado de la clave: declaración del Owner, aún sin validación técnica
+
+El Owner informa que generó una clave privada para la GitHub App pero que no consiguió descargarla directamente; indica que pudo copiar su contenido, pegarlo en el Bloc de notas y cambiar la extensión del archivo de `.txt` a `.pem`.
+
+Esta es una declaración del Owner, no evidencia suficiente de que el archivo sea un PEM íntegro, válido o correspondiente a la clave pública que GitHub muestra para la App. **No se ha recibido, leído ni almacenado aquí ningún secreto, y la clave no debe copiarse al chat ni a este documento.**
+
+Distinción importante: cambiar el nombre o la extensión a `.pem` no convierte ni repara el contenido. El archivo puede funcionar si el texto PEM completo fue copiado sin omisiones ni alteraciones y conserva sus saltos de línea; esto aún no se ha comprobado. La documentación de GitHub indica que la clave para una GitHub App se descarga en formato PEM, concretamente PKCS#1 RSA, y recomienda verificar la clave local comparando su huella con la huella que aparece en las credenciales de la App.
+
+Procedimiento seguro pendiente, desde el Windows que ejecutará IABV:
+
+1. Revisar el historial de descargas del navegador y la carpeta Descargas antes de asumir que la descarga falló. No enviar el archivo a ningún servicio ni repositorio.
+2. Comprobar localmente que el archivo tiene el nombre real terminado en `.pem` (no `.pem.txt`) y que el contenido conserva los marcadores PEM de inicio/fin y todas sus líneas. No mostrar ni copiar el contenido secreto a la conversación.
+3. Validar la sintaxis y calcular localmente la huella pública de la clave con OpenSSL; compararla exactamente con la huella de la clave que figura en la página Credentials → Key pairs de la GitHub App. La igualdad confirma correspondencia; el nombre/extensión del archivo no lo hace.
+4. Mantener la clave en almacenamiento local protegido para la identidad Windows que ejecuta IABV, fuera del repositorio y de carpetas sincronizadas/compartidas. No usarla para pedir tokens hasta validar la huella y definir su custodia.
+5. Si la copia es incompleta o no coincide la huella, generar una nueva clave desde la configuración de GitHub App, localizar el PEM que el navegador descargue y validar la nueva clave antes de usarla. No revocar la clave existente hasta tener confirmada la sustituta; si la clave antigua pudo quedar expuesta, tratarlo como incidente y rotar/revocar con el procedimiento de GitHub.
+
+### Saldo de automatización y regla de contingencia
+
+Consulta de solo lectura al saldo TinyFish en 2026-10-27: `available_balance=4.52 USD`, `auto_reload=unconfigured`, sin recarga pendiente. Es saldo de la herramienta de automatización del navegador; no es saldo ni credencial de GitHub y su agotamiento no desinstala ni invalida la GitHub App.
+
+Regla para evitar ejecuciones truncadas y vueltas repetidas:
+
+- Antes de una automatización larga, comprobar el saldo y estimar su coste desde las tarifas vigentes; conservar un margen y no iniciar una tarea que probablemente se quede sin saldo a mitad de una operación.
+- Si la herramienta avisa que faltan créditos, detener nuevas automatizaciones y conservar el último resultado verificable. No reintentar la misma tarea sin cambio de precondiciones.
+- Solo considerar un perfil/cuenta de un ayudante distinto cuando el Owner confirme que esa persona autoriza expresamente el uso y esa persona conecte de forma segura su propia sesión/cuenta. No pedir ni recibir contraseñas, códigos MFA, tokens o credenciales en el chat; no intentar trasladar la sesión de GitHub propietaria ni cambiar el dueño de la App/repositorio.
+- Antes de cambiar, explicar el impacto y confirmar que se utiliza únicamente para automatización autorizada. No cambiar de cuenta en silencio ni usar otra cuenta para eludir controles de seguridad, permisos, límites de uso o facturación.
+- Si el ayudante no está disponible o no hay consentimiento/perfil independiente, detener la automatización y pedir al Owner que recargue el saldo o autorice explícitamente otro método válido.
+
+### Estado técnico resultante
+
+```text
+GITHUB_APP_REGISTRATION=CREATED; NAME=iabv-approval-relay-20261027; APP_ID=5496678
+GITHUB_APP_INSTALLATION=INSTALLED; INSTALLATION_ID=175851462
+GITHUB_APP_INSTALLATION_REPOSITORIES=ONLY:jhonf463r/Python
+OWNER_REPORTED_PRIVATE_KEY_FILE=TEXT_COPIED_TO_NOTEPAD; EXTENSION_CHANGED_TO_PEM
+PRIVATE_KEY_FILE_INTEGRITY=NOT_VERIFIED
+PRIVATE_KEY_FINGERPRINT_MATCH=NOT_VERIFIED
+PRIVATE_KEY_CUSTODY=NOT_VERIFIED
+TINYFISH_WALLET_BALANCE=4.52_USD; AUTO_RELOAD=UNCONFIGURED; AS_OF=2026-10-27T15:08:58.364Z
+HELPER_ACCOUNT_FALLBACK=OWNER_CONSENT_AND_SEPARATE_AUTHENTICATED_PROFILE_REQUIRED
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3=NOT_ESTABLISHED
+PROTECTED_READS=FAIL_CLOSED
+TESTS=NOT_RUN; BUILD=NOT_RUN; RUNTIME=NOT_RUN; REAL_TRANSPORT=NOT_RUN
+BRIDGE=BRIDGE_NOT_READY
+```
+
+No se ejecutó prueba de la clave, no se solicitó ni generó un token de instalación, no se creó contenido en Issues y no se alteró `main` ni `CURRENT-STATE.md`. Este apartado es documentación de continuidad en esta PR de borrador; no cierra gates de autoridad ni habilita lecturas protegidas.
+
+Referencia oficial: https://docs.github.com/es/apps/creating-github-apps/authenticating-with-a-github-app/managing-private-keys-for-github-apps
