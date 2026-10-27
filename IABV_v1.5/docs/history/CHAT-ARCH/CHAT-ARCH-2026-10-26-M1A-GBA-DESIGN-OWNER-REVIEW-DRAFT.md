@@ -1002,3 +1002,39 @@ BRIDGE=BRIDGE_NOT_READY
 ```
 
 Esta sección registra el resultado y una siguiente acción acotada. No cambia `main` ni `CURRENT-STATE.md`, no modifica código de producto y no cierra ningún gate de autoridad. La sección pertenece a la rama documental de PR #546 y no es autoridad canónica.
+
+
+## 26. Segundo preflight local: selector funciona, diagnóstico de importación pendiente (2026-10-27)
+
+Codex local informa que el selector nativo de Windows funcionó y el Owner seleccionó el archivo `.txt`. El archivo se leyó solo dentro del proceso local; su contenido y su ruta no se mostraron ni se transmitieron.
+
+El intento de validación devolvió `KEY_VALID=NO_OR_UNREADABLE`, `ERROR_TYPE=MethodInvocationException`, código de salida `3`. El flujo se detuvo sin calcular huella, persistir el secreto ni llamar a GitHub. No hubo cambios de archivos, configuración ni recursos remotos.
+
+**Interpretación:** `MethodInvocationException` es el tipo envolvente de PowerShell y no basta para identificar el fallo subyacente. No se puede concluir que el archivo sea válido ni inválido. Entre las posibilidades están un método de importación no compatible con el runtime, formato PEM no reconocido o una clave incompleta; ninguna está confirmada.
+
+### Siguiente acción discriminante
+
+En una nueva ejecución local y solo de diagnóstico, Codex debe:
+1. Obtener la versión de PowerShell/.NET y el nombre del método criptográfico que produjo la excepción.
+2. Capturar el tipo y mensaje de la excepción interna, sin mostrar contenido del archivo, ni imprimir ni registrar el secreto o la ruta completa.
+3. Usar, si ya existe, un validador compatible instalado localmente; preferir el procedimiento oficial de huella de GitHub. No instalar herramientas ni convertir el archivo automáticamente.
+4. Si obtiene una huella local, compararla con la visible en Credentials → Key pairs de la GitHub App. No cifrar, guardar ni usar la clave para autenticar hasta que la huella coincida exactamente.
+5. No generar ni revocar otra clave sin decisión explícita. No crear JWT/tokens ni llamar a la API de GitHub mientras la clave siga sin validar.
+
+Referencias: [GitHub: administración y verificación de claves de GitHub Apps](https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/managing-private-keys-for-github-apps); [Microsoft: RSA.ImportFromPem y compatibilidad de .NET](https://learn.microsoft.com/en-us/dotnet/api/system.security.cryptography.rsa.importfrompem).
+
+```text
+WINDOWS_NATIVE_PICKER=WORKED; OWNER_SELECTED_FILE=YES
+SECRET_CONTENT_EXPOSED=NO
+PRIVATE_KEY_VALIDITY=NO_OR_UNREADABLE; ROOT_CAUSE=UNKNOWN
+POWERSHELL_EXCEPTION=MethodInvocationException; INNER_EXCEPTION=NOT_CAPTURED
+FINGERPRINT=NOT_OBTAINED; MATCH=NOT_VERIFIED
+CUSTODY=NOT_ESTABLISHED
+GITHUB_APP_PREFLIGHT=NOT_RUN; INSTALLATION_TOKEN=NOT_CREATED
+G1=NOT_ESTABLISHED; G2=NOT_ESTABLISHED; G3=NOT_ESTABLISHED
+PROTECTED_READS=FAIL_CLOSED
+TESTS=NOT_RUN; BUILD=NOT_RUN; RUNTIME=NOT_RUN; REAL_TRANSPORT=NOT_RUN
+BRIDGE=BRIDGE_NOT_READY
+```
+
+Esta sección es continuidad documental en la rama de borrador de PR #546. No modifica `main` ni `CURRENT-STATE.md`, ni cierra ningún gate.
