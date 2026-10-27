@@ -1,3 +1,65 @@
+<!-- Session closeout update 2026-10-27 11:34 America/Bogota: clipboard cleared; exact copy control not found; next path is local DOM node, no clipboard. -->
+
+## SESSION CLOSEOUT — Continue from local DOM fingerprint comparison (2026-10-27)
+
+The Owner's latest Codex result: `LOCAL_EXECUTION=YES`, `CLIPBOARD_RESET=YES`, `COPY_CONTROL_IDENTIFIED=NO`, no clipboard sample, `MATCH=NOT_VERIFIED`, and no secret exposure/persistence reported. This is **not** a format match or mismatch; no comparison was possible.
+
+Read [handoff section 17](https://github.com/jhonf463r/Python/blob/chat-continuity-key-recovery-handoff-20261027/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-27-M1A-GITHUB-APP-KEY-RECOVERY-CROSS-CHAT-HANDOFF.md) for the full chronology, verified/reported facts, unresolved contradictions, next-chat starter, and safety limits. Section 16 contains the latest read-only GitHub UI observation: fingerprint is plain text in a `code` node under “Private key” / “Label: Private”; no adjacent copy button exists. Next bounded action: local browser DOM/accessibility targeting of that one node, reading its text only to process memory, strict SHA-256/Base64 validation and byte comparison, with outcome only. No clipboard fallback, screenshots, page/DOM dumps, or displayed fingerprint.
+
+The PEM was reported as structurally valid RSA PKCS#1 private 2048-bit; the local fingerprint was computed. GitHub correspondence, custody, and App API preflight remain unverified/not done. Never select the old TXT, repeat generic download instructions, or generate tokens. Live `main/CURRENT-STATE.md` blob still `7a261129c8611cc0b5ed3788fc00c5d90ae189ea`; this branch/PR is supporting continuity, not operational authority. G1/G2/G3 remain NOT_ESTABLISHED; protected reads fail-closed; bridge not ready.
+
+---
+
+<!-- Update 2026-10-27: latest authenticated UI inspection found fingerprint as code text; no copy button. -->
+
+## LATEST UPDATE — Read the exact SHA256 fingerprint node, not clipboard (2026-10-27, 11:34 America/Bogota)
+
+The Owner reports Codex reset the current Windows clipboard successfully, but could not identify a copy control. A new read-only inspection of the authenticated GitHub Key pairs page contradicts the earlier “Copyable key fingerprint” description: the page heading is “Private key”; the fingerprint is plain text in a `code` element beginning with `SHA256:`; no dedicated adjacent copy button exists. The earlier 40-character field report remains a historical discrepancy, not a current confirmed fact.
+
+Read [handoff section 16](https://github.com/jhonf463r/Python/blob/chat-continuity-key-recovery-handoff-20261027/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-27-M1A-GITHUB-APP-KEY-RECOVERY-CROSS-CHAT-HANDOFF.md). Next local Codex action: target only the fingerprint’s `code` node within the card headed “Private key” and labeled “Label: Private”, read its content into local process memory, compare strictly against the local SHA-256 digest, and return only the outcome. Do not use the clipboard, dump DOM/page content, or expose either fingerprint. If it cannot unambiguously target the node, stop.
+
+PEM structure remains valid (RSA PKCS#1 2048 bits); local public fingerprint computed; GitHub match NOT_VERIFIED; custody not established; no JWT/token/API call. G1/G2/G3 remain NOT_ESTABLISHED; protected reads fail-closed; bridge not ready. This is supporting continuity on a review branch, not canonical routing authority. Fetch live main/CURRENT-STATE.md first.
+
+---
+
+<!-- Update 2026-10-27: Owner reports a new PEM obtained via another UI path. -->
+
+## LATEST UPDATE — Owner reports new PEM; validate it instead of repeating TXT/download steps (2026-10-27)
+
+The Owner now reports that a `.pem` file is available from another GitHub UI option. Read the [focused handoff and Codex prompt](https://github.com/jhonf463r/Python/blob/chat-continuity-key-recovery-handoff-20261027/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-27-M1A-GITHUB-APP-KEY-RECOVERY-CROSS-CHAT-HANDOFF.md) section 13. Do not select the old 40-character TXT again.
+
+Read-only browser inspection found the old 40-character field is labeled “Copyable key fingerprint”; the Key pairs page has no private-key download action. The field label is now confirmed; its value was never stored in the repo/docs. The PEM now reported by the Owner is new and not yet locally validated.
+
+Next: use local Codex to validate this PEM structurally and compute its public SHA-256/Base64 fingerprint in memory; compare locally with the existing GitHub fingerprint without displaying either value. Do not store/cipher the key, create tokens or call the App API until validation and exact match are established. If GitHub’s displayed fingerprint format cannot be reconciled unambiguously with the local algorithm, leave MATCH=NOT_VERIFIED.
+
+---
+
+<!-- Latest Codex result incorporated 2026-10-27. Read the linked handoff; no local PEM was found in the bounded search. -->
+
+## LATEST UPDATE — private-key download still unresolved; do not ask for the same TXT again (2026-10-27)
+
+Read the [cross-chat key-recovery handoff](https://github.com/jhonf463r/Python/blob/chat-continuity-key-recovery-handoff-20261027/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-27-M1A-GITHUB-APP-KEY-RECOVERY-CROSS-CHAT-HANDOFF.md) before taking action.
+
+Codex checked the current user's Downloads folder and Opera GX history: no PEM or suggestive recent TXT file was found; Opera GX had no matching download in the checked period. Opera Stable history was locked and was not bypassed. The authenticated GitHub Credentials → Key pairs UI label could not be inspected. A further manual selection of the same TXT returned 40 characters with no PEM markers. Stop selecting/validating that file; it is not recognized PEM and its 40-character value must not be assumed to be the fingerprint or key ID. The cause of the download problem remains UNKNOWN.
+
+Owner preference: minimize manual steps and let local Codex perform safe work. A local-only secret-entry window may be designed for real secrets only after the actual secret material exists and the UI is demonstrably isolated from model prompts/transcripts/logs. It cannot turn a fingerprint/unknown value into a private key. Separate the GitHub App machine key from site/user credentials administered by IABV; inspect/reuse the existing credential-management organ before designing another vault.
+
+Next action: inspect the authenticated GitHub UI's actual field label and New key/download behavior without exposing the copied value. Do not repeat generic download instructions, do not rotate/revoke keys automatically, do not create tokens/API calls until an actual PEM has been validated and its fingerprint matched. See handoff section 11 for full chronology, constraints and exact status.
+
+---
+
+## LATEST CROSS-CHAT HANDOFF — GitHub App private-key recovery (2026-10-27)
+
+**Read this handoff for the current local-key episode:** [GitHub App key recovery handoff](https://github.com/jhonf463r/Python/blob/chat-continuity-key-recovery-handoff-20261027/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-27-M1A-GITHUB-APP-KEY-RECOVERY-CROSS-CHAT-HANDOFF.md).
+
+- Owner reports GitHub's private-key download has not worked; do not repeat generic download instructions without checking Opera download history and the current UI field label.
+- The selected TXT contained 40 characters without PEM markers. Its meaning is unknown; do not call it a fingerprint/key ID without label evidence and do not treat it as a private key.
+- Codex local correctly passed the text read from the file to `RSA.ImportFromPem`; the API rejected it as non-PEM. No fingerprint, custody or GitHub API preflight has succeeded.
+- Current next action is to consume the pending Codex report about local downloads and the GitHub field label. No repeated read of the 40-character TXT, no key rotation/revocation, no secret in chat.
+- This handoff and pointer are candidate docs on a review branch, not canonical route state. Every session must fetch live `main/CURRENT-STATE.md` first.
+
+---
+
 <!-- Route summary synchronized 2026-10-26. CURRENT-STATE.md is the sole active route authority. -->
 
 ## Latest verified route delta — billing discrepancy and support intake completed (2026-10-26)

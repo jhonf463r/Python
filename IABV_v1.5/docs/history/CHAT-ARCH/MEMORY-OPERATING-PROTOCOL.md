@@ -1,3 +1,46 @@
+
+
+## Method delta — GitHub key fingerprint and private PEM are distinct artifacts (2026-10-27)
+
+The GitHub App Credentials → Key pairs UI was inspected read-only. The copyable 40-character field is explicitly labeled **“Copyable key fingerprint”** and the page has no private-key download button. The Owner now reports a PEM obtained through another UI option; that PEM has not yet been verified. Do not re-ask for the old 40-character value and do not treat it as key material. A fingerprint is a verifier for a local PEM, not a private key and not a way to reconstruct one.
+
+On receipt of a genuinely new local PEM, use local Codex to import the private key, compute its public-key fingerprint, and compare with GitHub locally without exposing the PEM or the full fingerprint. The GitHub docs specify SHA-256 over DER SubjectPublicKeyInfo encoded as Base64. Do not presume equivalence if the UI presents a different format; reconcile the format explicitly or leave match unverified. Validation and fingerprint match are separate gates, and neither implies secure custody or App API preflight.
+
+Current episode and prompt: [cross-chat handoff section 13](https://github.com/jhonf463r/Python/blob/chat-continuity-key-recovery-handoff-20261027/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-27-M1A-GITHUB-APP-KEY-RECOVERY-CROSS-CHAT-HANDOFF.md). This is a documentation-only method delta in the candidate branch. It does not authorize storing secrets, token creation, runtime or code changes.
+
+---
+
+
+
+## Method delta — local-only secret entry must not become model-context secret handling (2026-10-27)
+
+A local popup can reduce manual handling only if the complete secret is genuinely available and the popup sends it directly to a local secret store, never back to a model conversation or transcript. Do not use a paste box to compensate for a missing credential artifact. First distinguish the artifact's type and source: GitHub App PEM private key vs public fingerprint/key ID vs ordinary website password/token. A short copied identifier is not interchangeable with a private-key file. GitHub downloads the PEM at key generation and stores only the public part; the fingerprint helps verify a local PEM and cannot reconstruct it.
+
+For secrets IABV uses to administer websites, prefer reuse of the existing credential-management organ and OS-backed storage with least privilege. Do not invent a second vault before locating the existing provider, consumers, audit/revocation path and real runtime identity. The user-facing prompt should request only an irreducible action such as selecting an actual local file or completing authentication; Codex should automate the rest if it has the necessary local access.
+
+Sequence is non-skippable: artifact located → format validated locally → fingerprint/identity matched → custodian/runtime principal established → secret stored/protected → narrow API preflight → only later, separately authorized bridge integration. Success at one stage is not evidence for the next. Keep secrets out of chats, tickets, GitHub Issues, source files, logs and memory documents. See the [2026-10-27 cross-chat handoff](https://github.com/jhonf463r/Python/blob/chat-continuity-key-recovery-handoff-20261027/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-27-M1A-GITHUB-APP-KEY-RECOVERY-CROSS-CHAT-HANDOFF.md) for the current episode.
+
+This is a method-level documentary delta on a review branch; it does not authorize secret storage/runtime changes or alter canonical CURRENT-STATE.md.
+
+---
+
+<!-- Cross-chat method delta linked to https://github.com/jhonf463r/Python/blob/chat-continuity-key-recovery-handoff-20261027/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-27-M1A-GITHUB-APP-KEY-RECOVERY-CROSS-CHAT-HANDOFF.md; this is a draft branch entry until reviewed. -->
+
+## Method delta — do not repeat owner-reported failed UI actions; distinguish artifact types (2026-10-27)
+
+Generalizable lesson from the IABV→Codex bridge key-recovery episode:
+
+- When the Owner has already reported that a UI action failed, do not repeat the same generic instruction. First inspect available local evidence (download history, UI state, error output) and state why the next action differs.
+- Distinguish an identifier or fingerprint from a private-key file. A filename extension is not proof of content; a 40-character text value without PEM markers is not a complete PEM. Do not infer the field's meaning from length alone.
+- Distinguish stages of success: picker opened ≠ file valid; file valid ≠ GitHub fingerprint match; match ≠ secure custody; secure custody ≠ App API preflight; App preflight ≠ G1/G2/G3 or bridge ready.
+- Capture the exact sanitized inner error. Do not use a wrapper error as a root cause when the underlying exception is available. Do not expose secrets in prompts, transcripts, Issues or logs.
+- Prefer local Codex automation for tasks it can safely complete, while preserving the Owner's explicit choice for selecting a local file and for genuine security/rotation decisions.
+- Preserve chronology, but keep the newest handoff in a small dedicated artifact and route to it through `CONTEXT-INDEX.md`; do not keep expanding unrelated PRs with dozens of current-state sections.
+
+Episode-specific state and the pending next action are in the [2026-10-27 handoff](https://github.com/jhonf463r/Python/blob/chat-continuity-key-recovery-handoff-20261027/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-27-M1A-GITHUB-APP-KEY-RECOVERY-CROSS-CHAT-HANDOFF.md). This method entry is documentation-only on a candidate branch and does not modify `main/CURRENT-STATE.md`.
+
+---
+
 <!-- Route summary synchronized 2026-10-26. CURRENT-STATE.md is the sole active route authority. -->
 
 ## Latest verified route delta — billing discrepancy and support intake completed (2026-10-26)
@@ -5089,3 +5132,61 @@ The repair stage must preserve reuse-first and anti-scope-creep:
 - distinguish a semantic necessity from a useful future extension.
 
 This protects the developmental method from ontology inflation while retaining adversarial learning.
+
+
+## 2026-10-27 METHOD DELTA — Compare local key fingerprints without transcript exposure
+
+When a secret/key file is structurally validated but its public fingerprint has not been compared with an external control-plane fingerprint, the state remains “valid artifact; identity match not verified.” Do not claim the key belongs to the expected App.
+
+Preferred bounded comparison:
+1. Keep the private PEM and both fingerprints in local process memory only.
+2. If the external value is available only through an authenticated UI, use the local browser's native Copy control to put it on the local OS clipboard. Never paste the value into a model prompt, chat, terminal expression, issue, repo or file.
+3. Read clipboard text directly into a local variable. Never emit it or include it in exception messages. Compute the local fingerprint in memory using the exact documented algorithm.
+4. Apply only the formatting normalization the official specification supports. If the external value's format contradicts the documented algorithm, return FORMAT_MISMATCH / NOT_VERIFIED; do not silently try alternate algorithms or infer equivalence from length/appearance.
+5. Print only categorical outcome/status. Keep custody, JWT/API preflight and runtime integration as separately authorized stages.
+
+For the GitHub App key episode, official docs specify SHA-256 of DER SubjectPublicKeyInfo, Base64 encoded. A reported 40-character “Copyable key fingerprint” is an unresolved format discrepancy because that is not the usual Base64 form of a 32-byte SHA-256 digest. The PEM has now been reported by local Codex as a valid RSA PKCS#1 private key of 2048 bits, and its local public fingerprint has been computed in memory; GitHub match remains NOT_VERIFIED.
+
+General principle: a valid cryptographic artifact is not proof of identity binding. A local computation is not a comparison; a comparison with incompatible representations is not evidence of either match or mismatch. Preserve the uncertainty explicitly and stop before secret custody or token/API actions when the exact match gate remains open.
+
+
+## 2026-10-27 METHOD DELTA — Clipboard metadata can reveal a wrong UI copy target
+
+When a supposedly precise UI copy action yields a clipboard length/class that is incompatible with the expected artifact (here, 3734 characters and OTHER instead of a documented SHA-256/Base64 fingerprint), preserve the result as a format mismatch, not as a key mismatch.
+
+Required response:
+- Do not inspect, echo, log, or persist the unknown clipboard content just to identify it.
+- Reset the current clipboard to a harmless marker without reading its prior contents.
+- Inspect the UI accessibility tree or specific control relationship before repeating the action; do not copy the whole page/row/DOM, and do not click ambiguous controls.
+- If the exact adjacent copy control cannot be identified, stop and request only the minimal human intervention needed.
+- Never infer clipboard contents from its length or character class.
+- Keep PEM validity, local fingerprint computation, fingerprint comparison, key custody, JWT/token issuance, and API preflight as separate gates.
+
+This episode's current state: the PEM was reported by Codex as valid RSA PKCS#1 private 2048-bit; its local public fingerprint was computed in memory. Clipboard comparison returned OTHER / 3734 characters; its contents remain unknown, no values were exposed or persisted according to the reported output, and match remains NOT_VERIFIED. Do not store the key, create tokens, or call the App API until exact comparison succeeds and a separate phase is authorized.
+
+
+## 2026-10-27 METHOD DELTA — Target the rendered fingerprint node instead of copying UI
+
+A newer authenticated UI inspection can contradict earlier accessibility/label reports. Preserve the chronology and clearly supersede the earlier operational assumption; do not silently erase or promote conflicting historical observations.
+
+For this GitHub App key page, the latest read-only observation found:
+- Heading: “Private key”.
+- Secondary label: “Label: Private”.
+- The fingerprint is visible as plain text in a `code` element and begins with `SHA256:`.
+- No adjacent copy button exists.
+- The older report of a 40-character “Copyable key fingerprint” field is contradicted by this later observation and remains a historical discrepancy.
+
+Method change: stop using clipboard as an extraction path. If local authenticated browser inspection is permitted, target only the exact visible code node within the identified key card and read its text into local process memory. Compare it against the locally calculated SHA-256 digest; strip only the exact `SHA256:` prefix and surrounding whitespace, strictly decode standard Base64 to exactly 32 bytes, and compare the bytes. Never dump DOM/page text or expose the node text. If the node cannot be uniquely selected and kept local, stop with NOT_VERIFIED; do not fall back to screenshots, whole-page copying, or guessed algorithms.
+
+The local PEM is reported structurally valid RSA PKCS#1 2048-bit and the local fingerprint computed in memory. Clipboard was reset; no comparison has succeeded. Key custody and API preflight remain separate and unauthorized. The governing principle remains: if the exact target or byte representation cannot be verified, retain uncertainty and fail closed.
+
+
+## 2026-10-27 METHOD DELTA — Reconcile UI evidence before repeating extraction
+
+If a UI-derived value is needed for local comparison but the intended copy control cannot be identified, stop the clipboard workflow instead of clicking ambiguous controls. Treat an unexpected clipboard length/class as an unresolved wrong-target or format result; never infer the prior clipboard contents from metadata. Reset the current clipboard without reading the old contents, while noting that this does not prove historical clipboard copies were erased.
+
+When a later read-only inspection identifies the value as a specific rendered text node and contradicts an earlier UI label, preserve both observations with timestamps/provenance, but route the next action using the later specific inspection. Do not silently erase history, repeat the older instructions, or promote the earlier observation to current truth.
+
+Preferred safe comparison: uniquely select the exact node using the local authenticated browser's accessibility/DOM representation, read only that node into local process memory, strictly validate the documented SHA-256/Base64 representation, and compare bytes locally. Do not dump page text, HTML, DOM, screenshots or node values. If the node cannot be selected unambiguously or read without transcript exposure, stop with NOT_VERIFIED and do not fall back to clipboard.
+
+Keep the gates distinct: PEM structurally valid; local digest computed; external digest matched; runtime identity and secret custody established; App API preflight completed; subsequent bridge work authorized. Passing an earlier gate does not imply any later gate. This update does not change the canonical route or authorize code, tests, runtime, protected reads, API actions, or transport.

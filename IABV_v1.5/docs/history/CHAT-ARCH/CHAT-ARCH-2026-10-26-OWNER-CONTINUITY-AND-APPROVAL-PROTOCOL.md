@@ -6,6 +6,12 @@
 - Canonical route authority remains [CURRENT-STATE.md](./CURRENT-STATE.md). Every new session must fetch it from live `main` before material action.
 - This document does not authorize code changes, protected reads, trust-root provisioning, tests/runtime, merge/rebase, or deployment.
 
+
+
+## Latest cross-chat handoff — 2026-10-27: GitHub App key recovery
+
+For the active local GitHub App key-recovery episode, read the [2026-10-27 cross-chat handoff](https://github.com/jhonf463r/Python/blob/chat-continuity-key-recovery-handoff-20261027/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-27-M1A-GITHUB-APP-KEY-RECOVERY-CROSS-CHAT-HANDOFF.md) before asking the Owner for further action. Section 17 is the latest session closeout; section 16 is the latest UI-finding and local-comparison instruction: a new read-only UI inspection found the fingerprint as plain text in a `code` element under the “Private key” heading and found no adjacent copy button, contradicting the earlier “Copyable key fingerprint” description. The local clipboard has been reset; do not reuse or inspect its previous content. Use the local browser DOM/accessibility tree to read only the exact fingerprint node in process memory and compare it to the locally computed SHA-256 digest. Never dump DOM/page contents, show the fingerprint, or fall back to clipboard. If the node cannot be selected unambiguously, leave MATCH=NOT_VERIFIED and stop. No key storage, JWT/token or API call. Do not repeat the old TXT or generic download instructions. This is supporting continuity, not a replacement for CURRENT-STATE.md; re-fetch canonical main first. Never ask for the private key in chat.
+
 ## 1. Owner intent and correction
 
 The Owner wants project continuity across chats, less repetition, and use of previous deductions, mistakes, rejected attempts, and live GitHub evidence. The Owner primarily uses the ChatGPT phone app and expects Codex/IABV to ask for approvals in clear language when an actual Owner decision is required.
