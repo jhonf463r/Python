@@ -630,3 +630,50 @@ Antes de cualquier otro cambio, no modificar main/CURRENT-STATE, código, permis
 Live `main/CURRENT-STATE.md` was re-fetched in this session and its blob remains `7a261129c8611cc0b5ed3788fc00c5d90ae189ea`. The active frontier remains `G1_INDEPENDENT_ROOT_MANDATE_AND_VERIFICATION_CHANNEL`. Preserve the existing guardrails verbatim: `G1/G2/G3=NOT_ESTABLISHED`; `IMPLEMENTATION_PREREQUISITES=8; CLOSED=0`; `AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED`; `PROTECTED_READS=FAIL_CLOSED`; `TESTS=NOT_RUN; RUNTIME=NOT_RUN`; `AUTOMATIC_FOLLOW_ON=FALSE`; `BRIDGE=BRIDGE_NOT_READY`.
 
 The supporting documentation branch/PR is not canonical until normally reviewed; do not merge it automatically and do not write this episode into `main/CURRENT-STATE.md` under the current scope.
+
+
+## 18. Latest local execution result — browser observation route still unavailable (2026-10-27, 12:29 America/Bogota)
+
+### Exact Owner-supplied Codex result
+
+```text
+LOCAL_EXECUTION=YES
+WINDOW_CONTEXT_RETAINED=YES
+OPERA_WINDOW_IDENTIFIED=YES
+TARGET_PAGE_PRESENT=UNKNOWN
+LOGIN_OR_SECURITY_CHALLENGE=UNKNOWN
+TARGET_CARD_IDENTIFIED=NO
+FINGERPRINT_NODE_IDENTIFIED=NO
+PEM_IMPORT=NOT_RECHECKED
+RSA_BITS=2048
+LOCAL_FINGERPRINT=NOT_RECHECKED
+PAGE_FINGERPRINT_FORMAT=NOT_REACHED
+MATCH=NOT_VERIFIED
+SECRET_VALUES_EXPOSED=NO
+SECRET_MATERIAL_PERSISTED=NO
+GITHUB_CHANGED=NO
+REPOSITORY_CHANGED=NO
+TOKENS_CREATED=NO
+GITHUB_APP_API_CALLED=NO
+TESTS=NOT_RUN
+BUILD=NOT_RUN
+RUNTIME=NOT_RUN
+PROTECTED_READS=FAIL_CLOSED
+AUTOMATIC_FOLLOW_ON=FALSE
+BRIDGE=BRIDGE_NOT_READY
+Blocker reported: no IABV navigation/comparison route was exposed. The local operation retained Opera's identifier, but Windows UI Automation did not confirm the target page. The process stopped without inspecting the card or reading the fingerprint.
+```
+
+### Interpretation and route control
+
+- This is the latest Owner-supplied local execution result; it is not an independently reproduced local observation by the ChatGPT/GitHub connector.
+- The operation reached neither target-page confirmation nor card/node identification. No digest comparison was performed. `MATCH=NOT_VERIFIED` is neither a match nor a mismatch; `PEM_IMPORT=NOT_RECHECKED` does not overturn the prior Owner-reported successful PEM import.
+- `IABV_ROUTE_AVAILABLE=NO` from this session is evidence that the required route was not exposed to that Codex execution. It does not establish that IABV has no browser/perception organs globally, nor that the target page is absent; `TARGET_PAGE_PRESENT=UNKNOWN` must remain unknown.
+- Repeating the same navigation/UI Automation sequence without a materially new observation channel is not justified. The next bounded task is a read-only diagnosis of whether this local Codex session exposes an approved, demonstrably local DOM/accessibility reader that can target a single node without returning its value. Scope the probe only to browser observation capabilities and data-boundary guarantees; do not repeat a broad organ inventory or inspect the fingerprint during that diagnostic.
+- Do not use the clipboard, screenshots, page/DOM dumps, remote browser services, or an alternate route that bypasses governance. If no local observation method and output boundary can be demonstrated without touching the fingerprint, stop with `LOCAL_DOM_ACCESS=UNAVAILABLE_OR_NOT_PROVEN; MATCH=NOT_VERIFIED`. Only after a supported local method is established may the exact §16 comparison be attempted; do not replay its prior navigation sequence by default.
+
+### Preserved restrictions and canonical status
+
+No GitHub App API call, JWT, installation token, PEM storage, app mutation, repository/code change, tests/build/runtime, protected read, or real transport was performed. The sole change associated with this note is documentary continuity on the existing PR #548 branch; `main` and `main/CURRENT-STATE.md` were not modified.
+
+The canonical route remains the live `main/CURRENT-STATE.md`: `ACTIVE_FRONTIER=G1_INDEPENDENT_ROOT_MANDATE_AND_VERIFICATION_CHANNEL`; `G1/G2/G3=NOT_ESTABLISHED`; `IMPLEMENTATION_PREREQUISITES=8; CLOSED=0`; `AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED`; `PROTECTED_READS=FAIL_CLOSED`; `TESTS=NOT_RUN`; `RUNTIME=NOT_RUN`; `AUTOMATIC_FOLLOW_ON=FALSE`; `BRIDGE=BRIDGE_NOT_READY`. This key-identity comparison does not alter that route or authorize follow-on stages.
