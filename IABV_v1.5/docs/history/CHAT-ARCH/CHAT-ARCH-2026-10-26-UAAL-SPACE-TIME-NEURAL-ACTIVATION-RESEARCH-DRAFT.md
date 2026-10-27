@@ -199,9 +199,9 @@ activate(query, existing_indexes, budget, policy):
 
     candidate_records = {}  # all known candidates, including unresolved leads
     activated_ids = set()
-    best_score = {}
+    budget_deferred_ids = set()
+    best_score = {}          # best admissible individual-route score per candidate
     provenance = {}          # distinct source and typed-edge refs, each with status
-    started = set()          # prevents cyclic/repeated expansion in this pass
     expanded = set()         # nodes whose full bounded relation set was processed
     partially_expanded = set()
     frontier = priority_queue(order=(-score, stable_candidate_id))
@@ -213,32 +213,32 @@ activate(query, existing_indexes, budget, policy):
     for seed in sort_seeds_deterministically(seeds):
         candidate_records[seed.id] = retain_candidate_and_all_source_refs(seed)
         provenance[seed.id] = all_distinct_source_refs(seed)
-        best_score[seed.id] = objective_conditioned_activation_score(
-            query, seed, source_evidence, currentness, capability_fit
-        )
         if not admissible(seed, query):
             record_block(seed, "inadmissible_or_unresolved")
             continue  # retained as a lead/hypothesis; not promoted as truth
+        best_score[seed.id] = objective_conditioned_activation_score(
+            query, seed, source_evidence, currentness, capability_fit
+        )
         enqueue(frontier, seed, best_score[seed.id])
 
     while frontier not empty:
         entry = pop_best_with_stable_tie_break(frontier)
         node = entry.candidate
 
-        if entry.score != best_score[node.id]:
-            continue  # discard stale queue entry, not the candidate or its history
-        if node.id in started:
+        if entry.score != best_score.get(node.id):
+            continue  # discard a stale queue entry, not the candidate or history
+        if node.id in activated_ids:
             continue
         if not admissible(node, query):
             record_block(node, "inadmissible_or_unresolved")
             continue
         if cost(node) exceeds remaining_node_budget(spent_nodes, budget):
+            budget_deferred_ids.add(node.id)
             record_deferred_candidate(node, "node_budget_exhausted")
             continue
 
         activated_ids.add(node.id)
         spent_nodes += cost(node)
-        started.add(node.id)
         record_why_activated(node, best_score[node.id], provenance[node.id])
 
         relations = sort_by_canonical_relation_identity(
@@ -269,16 +269,21 @@ activate(query, existing_indexes, budget, policy):
                 record_unresolved_relation(edge, "target_unresolved")
                 continue
 
-            # Preserve the relation and its epistemic state even when it cannot
-            # authorize activation or count toward a confirmed ranking.
+            # Preserve the route and its epistemic state even if it cannot
+            # justify activation or contribute to a confirmed candidate score.
             route_state = classify_relation_evidence(edge, neighbor, query)
             provenance.setdefault(neighbor.id, set()).add(
                 (relation_id, route_state)
             )
             if not route_state.is_admissible:
-                record_blocked_relation(edge, neighbor, route_state.reason)
                 if neighbor.id not in candidate_records:
                     candidate_records[neighbor.id] = retain_candidate_as_lead(neighbor)
+                record_blocked_relation(edge, neighbor, route_state.reason)
+                continue
+            if not admissible(neighbor, query):
+                if neighbor.id not in candidate_records:
+                    candidate_records[neighbor.id] = retain_candidate_as_lead(neighbor)
+                record_block(neighbor, "inadmissible_or_unresolved")
                 continue
 
             candidate_score = objective_conditioned_activation_score(
@@ -288,9 +293,10 @@ activate(query, existing_indexes, budget, policy):
             )
 
             was_known = neighbor.id in candidate_records
+            had_admissible_score = neighbor.id in best_score
             if not was_known:
                 candidate_records[neighbor.id] = retain_candidate(neighbor)
-                provenance.setdefault(neighbor.id, set())
+            if not had_admissible_score:
                 best_score[neighbor.id] = candidate_score
                 score_improved = true
             elif rank_policy_is_strictly_better(
@@ -301,20 +307,16 @@ activate(query, existing_indexes, budget, policy):
                 record_alternate_route(neighbor.id, relation_id, candidate_score)
                 score_improved = false
 
-            # Route provenance was recorded before any seen/started/expanded test.
+            # Incoming-route provenance is preserved before any seen/expanded check.
             if neighbor.id in activated_ids:
-                # Keep the new route and score. Do not charge node cost twice.
-                # Its outgoing relations depend on query + its own edges, not path.
+                # Do not charge the same node twice or re-expand by path score:
+                # outgoing relevance depends on query + its own typed relations.
                 continue
 
-            if not admissible(neighbor, query):
-                record_block(neighbor, "inadmissible_or_unresolved")
-                continue
-            if cost(neighbor) exceeds remaining_node_budget(spent_nodes, budget):
-                record_deferred_candidate(neighbor, "node_budget_exhausted")
-                continue
-
-            if score_improved or not was_known:
+            # The queue is updated if a better route arrives before activation.
+            # A node already deferred for node budget is not retried in this pass.
+            if neighbor.id not in budget_deferred_ids and (
+                    score_improved or not was_known):
                 update_or_enqueue(frontier, neighbor, best_score[neighbor.id])
 
         if traversal_complete:
@@ -330,10 +332,11 @@ activate(query, existing_indexes, budget, policy):
         best_score,
         all_unique_provenance=provenance,
         blocked_and_deferred=blocked_or_deferred,
-        not_started=activated_ids - started,
+        unactivated_candidates=set(candidate_records) - activated_ids,
         not_fully_expanded=activated_ids - expanded,
         partially_expanded=partially_expanded,
         pending_frontier=stable_candidate_ids(frontier),
+        budget_deferred=budget_deferred_ids,
         budget_coverage=coverage_status(spent_nodes, spent_relations, budget)
     )
 ~~~
