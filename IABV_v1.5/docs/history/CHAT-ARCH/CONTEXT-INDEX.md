@@ -1,4 +1,18 @@
-<!-- MCP 1.30 target and integration plan synchronized 2026-10-27. CURRENT-STATE.md remains the sole operational route authority. -->
+<!-- Cross-chat handoff synchronized 2026-10-27. CURRENT-STATE.md remains the sole operational route authority. -->
+
+## Hand-off vigente para iniciar un nuevo chat (2026-10-27)
+
+Leer siempre primero [CURRENT-STATE.md](./docs/history/CHAT-ARCH/CURRENT-STATE.md) desde main. El handoff detallado está en [CHAT-ARCH-2026-10-27-M1A-CROSS-CHAT-HANDOFF-MCP130-20261027.md](https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-27-M1A-CROSS-CHAT-HANDOFF-MCP130-20261027.md); el plan ratificado sin código en [MCP 1.30 implementation plan]( https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-27-M1A-G1-MCP130-IMPLEMENTATION-PLAN-NO-CODE.md ); el diseño Entra corregido en [Entra G1 design]( https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-27-M1A-G1-ENTRA-BOOTSTRAP-DESIGN-ONLY.md ).
+
+Owner ratificó el objetivo de planificación: Miniconda Python 3.13.2, mcp==1.30.0 como objetivo, Streamable HTTP, 127.0.0.1:8000 y sin túnel. El consentimiento cubre objetivo y plan documental, NO implementación, instalación de paquetes, portal Entra, registros, credenciales, permisos, tests/runtime, túnel, merge ni lecturas protegidas. Option D/no-bootstrap sigue vigente; no pedir que lo ratifique otra vez.
+
+El reporte local de Codex encontró un checkout C:\Python muy sucio y detached; no tocar, limpiar ni sincronizar ese árbol. El entorno Miniconda informado aún usa mcp 1.27.0. La URL HTTPS canónica Entra no está aprobada; Entra v2 exige validar aud independientemente de URL/resource; stdio no queda protegido por OAuth HTTP; el verificador Entra no está conectado en main. G1/G2/G3 siguen NOT_ESTABLISHED; 8 prerrequisitos abiertos; lecturas protegidas FAIL_CLOSED; bridge BRIDGE_NOT_READY.
+
+Aplicar UAAL-D019 anti-loop y los protocolos de procedencia. El siguiente paso es autorización explícita para trabajo de código en worktree/branch/PR aislada; no ejecutar ni instalar nada automáticamente. El handoff contiene prompt inicial completo, subproblema PR #548 y los estados paralelos para conservar.
+
+
+
+
 
 ## Objetivo MCP ratificado y plan de integración documentado — sin código ni cambios de entorno (2026-10-27)
 
