@@ -563,3 +563,70 @@ No guardes/cifres el PEM, no generes JWT ni token de instalación, no llames a l
     TESTS=NOT_RUN; BUILD=NOT_RUN; RUNTIME=NOT_RUN; REAL_TRANSPORT=NOT_RUN
     AUTOMATIC_FOLLOW_ON=FALSE
     BRIDGE=BRIDGE_NOT_READY
+
+
+## 17. Session closeout and next-chat routing (2026-10-27, Owner report 11:34 America/Bogota)
+
+### Exact latest result supplied by Owner
+
+```text
+LOCAL_EXECUTION=YES
+CLIPBOARD_RESET=YES
+COPY_CONTROL_IDENTIFIED=NO
+CLIPBOARD_LENGTH=UNKNOWN
+CLIPBOARD_CHAR_CLASS=UNKNOWN
+CLIPBOARD_FORMAT=UNAVAILABLE
+MATCH=NOT_VERIFIED
+FORMAT_MISMATCH=NO
+SECRET_VALUES_EXPOSED=NO
+SECRET_MATERIAL_PERSISTED=NO
+```
+
+Interpretation:
+- The local task ran and reported that the current Windows clipboard was overwritten with a harmless marker without reading the prior contents.
+- The exact copy control could not be identified. No further clipboard sample was taken and no fingerprint comparison occurred.
+- `FORMAT_MISMATCH=NO` in this specific result means no new value was available to classify; it does **not** mean the formats matched. The latest determination remains `MATCH=NOT_VERIFIED`.
+- The prior 3734-character `OTHER` clipboard sample remains unknown. Do not read, infer, recover, log or reuse its contents. The reported reset concerns the current clipboard only and does not establish deletion of any clipboard-history/cloud-sync copies.
+- No private key, public fingerprint, token or key material was reported exposed or persisted.
+
+### Reconciled evidence timeline — carry this into the next chat
+
+1. **GitHub App exists, but is not an IABV trust root yet.** App `iabv-approval-relay-20261027`, App ID `5496678`, installation `175851462`, repository scope only `jhonf463r/Python` (repository ID `860009771`). Permissions remain Metadata read and Issues read/write; all others no access. Webhook/OAuth/Device Flow remain disabled. This is configuration evidence, not an App-auth preflight or G1/G2/G3.
+2. **Old TXT is not the private key.** The earlier selected file held 40 characters and was rejected by `RSA.ImportFromPem`; do not repeat its selection. An earlier UI observation called a value “Copyable key fingerprint”, but that observation is contradicted by the later read-only page inspection recorded in section 16. Preserve the conflict as history instead of silently choosing the older observation.
+3. **New PEM structure is valid, according to the Owner-provided local Codex report.** The file imports as private RSA PKCS#1, 2048 bits. Its public SHA-256 fingerprint was computed in local memory; no fingerprint value was shown or persisted.
+4. **Clipboard is not a usable comparison path.** The earlier comparison returned `OTHER`, 3734 characters. The current clipboard reset was reported successful. The adjacent copy-control identification returned NO. Do not use clipboard again for the fingerprint workflow.
+5. **Latest UI evidence changes the method.** Section 16 records a separate read-only browser inspection: heading “Private key”; secondary metadata “Label: Private”; fingerprint appears as plain text in a `code` element beginning with `SHA256:`; no adjacent copy button exists. This is the current route hypothesis, distinct from the Owner's just-reported result that Codex could not identify the control. The next discriminating action is local browser DOM/accessibility targeting of that exact code node, not copying UI.
+6. **Fingerprint match has never succeeded.** Current state is `GITHUB_FINGERPRINT_MATCH=NOT_VERIFIED`. Do not say the PEM is wrong or right for this App until a strict byte comparison is completed. If the node cannot be uniquely identified and read only in local process memory, stop.
+7. **Nothing beyond comparison is authorized/completed.** No private-key custody/storage, JWT, installation token, GitHub App API preflight, product change, protected read, tests, build, runtime or real transport. Even a future `MATCH=YES` does not grant authorization for those later stages.
+
+### Next action — one bounded local test
+
+Use section 16's replacement Codex prompt. The only objective is to:
+- confirm local Windows context and reuse the already validated PEM;
+- identify the one `code` node belonging to the card headed “Private key” and labeled “Label: Private” using local DOM/accessibility;
+- read that single node's text directly into a local variable, never printing it or dumping page/DOM content;
+- verify the literal `SHA256:` prefix and strict Base64 decoding to exactly 32 digest bytes (standard padded or unpadded form only);
+- compare digest bytes locally and report only `MATCH=YES/NO/NOT_VERIFIED`.
+
+No clipboard fallback. No screenshot, DOM dump, page text, HTML, node contents, fingerprint, PEM, path or token in output. If selector is ambiguous or the content cannot be kept local, stop at `FINGERPRINT_NODE_IDENTIFIED=NO; MATCH=NOT_VERIFIED`. Do not invent an alternate algorithm.
+
+### How to start the next ChatGPT conversation
+
+Paste the following as the opening message, then use the linked handoff as the detailed evidence source:
+
+~~~text
+Continúa el proyecto IABV → Codex desde el estado vivo de GitHub. Primero vuelve a leer live main/IABV_v1.5/docs/history/CHAT-ARCH/CURRENT-STATE.md; esa es la única autoridad operativa. Después lee PR #548 y la sección 17 (incluida la sección 16) de este handoff:
+https://github.com/jhonf463r/Python/blob/chat-continuity-key-recovery-handoff-20261027/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-27-M1A-GITHUB-APP-KEY-RECOVERY-CROSS-CHAT-HANDOFF.md
+
+No repitas los intentos con el TXT de 40 caracteres, no uses el portapapeles para esta huella y no repitas las instrucciones genéricas de descarga. Hecho reportado: el PEM nuevo importa como RSA PKCS#1 privada de 2048 bits; su huella local ya se calculó en memoria. La coincidencia con GitHub no está verificada. El portapapeles actual fue limpiado según Codex; el control de copia no se identificó; no se expusieron ni persistieron valores.
+
+El siguiente paso acotado es seguir la sección 16: inspeccionar solo con DOM/accesibilidad local el nodo code que contiene la huella dentro de la tarjeta “Private key” con metadato “Label: Private”, leerlo en memoria y comparar estrictamente SHA-256/Base64. Nunca mostrar huellas, PEM, DOM o página. Si no puede identificarse unívocamente, detenerse con MATCH=NOT_VERIFIED.
+
+Antes de cualquier otro cambio, no modificar main/CURRENT-STATE, código, permisos, PR merge/rebase, tests/build/runtime, lecturas protegidas o transporte. No crear JWT ni tokens, no llamar a la API, no almacenar la clave. G1/G2/G3 siguen NOT_ESTABLISHED; protected reads fail-closed; automatic follow-on false; bridge not ready.
+~~~
+
+### Canonical status guardrails
+
+Live `main/CURRENT-STATE.md` was re-fetched in this session and its blob remains `7a261129c8611cc0b5ed3788fc00c5d90ae189ea`. The active frontier remains `G1_INDEPENDENT_ROOT_MANDATE_AND_VERIFICATION_CHANNEL`. Preserve the existing guardrails verbatim: `G1/G2/G3=NOT_ESTABLISHED`; `IMPLEMENTATION_PREREQUISITES=8; CLOSED=0`; `AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED`; `PROTECTED_READS=FAIL_CLOSED`; `TESTS=NOT_RUN; RUNTIME=NOT_RUN`; `AUTOMATIC_FOLLOW_ON=FALSE`; `BRIDGE=BRIDGE_NOT_READY`.
+
+The supporting documentation branch/PR is not canonical until normally reviewed; do not merge it automatically and do not write this episode into `main/CURRENT-STATE.md` under the current scope.
