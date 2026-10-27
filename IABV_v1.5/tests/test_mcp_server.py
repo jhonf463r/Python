@@ -29,6 +29,7 @@ from iabv_v15.domain.models import (  # noqa: E402
 )
 from iabv_v15.infra.mcp.server import IABVMCPServer, _to_jsonable  # noqa: E402
 from iabv_v15.infra.mcp import server as _mcp_server_module  # noqa: E402
+from iabv_v15.infra.mcp import server as _mcp_server_module  # noqa: E402
 from iabv_v15.services.tools.site_exploration_service import (  # noqa: E402
     SiteExplorationResult,
     SitePageSnapshot,
@@ -293,6 +294,41 @@ def test_create_server_runs_preflight_before_constructing_appbootstrap(monkeypat
     monkeypatch.setattr(_mcp_server_module, "preflight_mcp_startup_configuration", deny_preflight)
     with pytest.raises(RuntimeError, match="preflight-denied"):
         _mcp_server_module.create_server(container=None)
+
+
+def test_server_rejects_arbitrary_prevalidated_entra_tuple() -> None:
+    with pytest.raises(TypeError, match="sealed _ValidatedMCPStartup"):
+        IABVMCPServer(
+            _build_container(),
+            _startup_preflight=(object(), object()),
+        )
+
+
+def test_validated_startup_cannot_be_created_without_preflight_seal() -> None:
+    with pytest.raises(TypeError, match="must be created by preflight"):
+        _mcp_server_module._ValidatedMCPStartup(
+            transport="streamable-http",
+            bind_host="127.0.0.1",
+            bind_port=8000,
+            token_verifier=object(),
+            auth_settings=object(),
+            _seal=object(),
+        )
+
+
+def test_validated_startup_state_is_immutable(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    marker = object()
+    monkeypatch.setattr(_mcp_server_module, "_validate_entra_auth_pair", lambda pair: pair)
+    preflight = _mcp_server_module._ValidatedMCPStartup(
+        transport="streamable-http",
+        bind_host="127.0.0.1",
+        bind_port=8000,
+        token_verifier=marker,
+        auth_settings=marker,
+        _seal=_mcp_server_module._STARTUP_PREFLIGHT_SEAL,
+    )
+    with pytest.raises(AttributeError, match="immutable"):
+        preflight.transport = "stdio"
 
 
 def test_streamable_http_requires_complete_entra_configuration(monkeypatch) -> None:  # type: ignore[no-untyped-def]

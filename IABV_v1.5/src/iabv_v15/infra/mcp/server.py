@@ -75,16 +75,100 @@ def _run_sync_off_event_loop(
 
 DEFAULT_SERVER_NAME = "iabv-v15"
 SUPPORTED_TRANSPORTS = {"stdio", "sse", "streamable-http"}
-_UNPREVALIDATED_ENTRA_AUTH = object()
+_NO_STARTUP_PREFLIGHT = object()
+_STARTUP_PREFLIGHT_SEAL = object()
 
 
-def preflight_mcp_startup_configuration(transport: str) -> tuple[Any, Any]:
+def _url_binding_key(value: Any) -> tuple[str, str, int, str]:
+    """Compare HTTPS URL identities without conflating root slash normalization."""
+    from urllib.parse import urlsplit
+
+    parsed = urlsplit(str(value))
+    return (
+        parsed.scheme.lower(),
+        (parsed.hostname or "").lower(),
+        parsed.port or 443,
+        parsed.path or "/",
+    )
+
+
+def _validate_entra_auth_pair(entra_auth: Any) -> tuple[Any, Any]:
+    """Validate concrete SDK/auth types and their exact configuration binding."""
+    if not isinstance(entra_auth, tuple) or len(entra_auth) != 2:
+        raise TypeError("Entra auth must be a verifier/settings pair from the configured builder.")
+
+    token_verifier, auth_settings = entra_auth
+    from mcp.server.auth.settings import AuthSettings
+    from iabv_v15.infra.mcp.entra_token_verifier import EntraTokenVerifier
+
+    if not isinstance(token_verifier, EntraTokenVerifier):
+        raise TypeError("Entra preflight requires the configured EntraTokenVerifier type.")
+    if not isinstance(auth_settings, AuthSettings):
+        raise TypeError("Entra preflight requires the MCP SDK AuthSettings type.")
+
+    config = token_verifier.config
+    if _url_binding_key(auth_settings.issuer_url) != _url_binding_key(config.issuer_url):
+        raise ValueError("Entra issuer settings do not match the verifier configuration.")
+    if _url_binding_key(auth_settings.resource_server_url) != _url_binding_key(config.resource_server_url):
+        raise ValueError("MCP resource settings do not match the verifier configuration.")
+    if auth_settings.required_scopes != [config.required_app_role]:
+        raise ValueError("MCP required scopes do not match the configured Entra app role.")
+    if auth_settings.validate_token_resource is not False:
+        raise ValueError("Entra v2 audience must be validated by the verifier, not SDK resource comparison.")
+    return token_verifier, auth_settings
+
+
+class _ValidatedMCPStartup:
+    """Sealed, in-process result of MCP startup preflight.
+
+    This prevents accidental/arbitrary tuple injection into IABVMCPServer.
+    It is an API-integrity check, not a security boundary against hostile code
+    that already executes in this Python process.
+    """
+
+    __slots__ = (
+        "transport",
+        "bind_host",
+        "bind_port",
+        "token_verifier",
+        "auth_settings",
+        "_seal",
+    )
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        if hasattr(self, name):
+            raise AttributeError("Validated MCP startup state is immutable.")
+        object.__setattr__(self, name, value)
+
+    def __init__(
+        self,
+        *,
+        transport: str,
+        bind_host: str,
+        bind_port: int,
+        token_verifier: Any,
+        auth_settings: Any,
+        _seal: object,
+    ) -> None:
+        if _seal is not _STARTUP_PREFLIGHT_SEAL:
+            raise TypeError("MCP startup preflight objects must be created by preflight_mcp_startup_configuration.")
+        if transport != "streamable-http" or bind_host != "127.0.0.1" or bind_port != 8000:
+            raise ValueError("MCP startup preflight is not bound to the approved local transport.")
+        pair = _validate_entra_auth_pair((token_verifier, auth_settings))
+        self.transport = transport
+        self.bind_host = bind_host
+        self.bind_port = bind_port
+        self.token_verifier, self.auth_settings = pair
+        self._seal = _seal
+
+
+def preflight_mcp_startup_configuration(transport: str) -> _ValidatedMCPStartup:
     """Validate transport, loopback bind and Entra config before AppBootstrap.
 
     This function performs configuration checks only: it does not instantiate
     AppBootstrap, read protected repository content, or contact Entra/JWKS.
-    The returned verifier/settings pair is passed into IABVMCPServer so startup
-    consumes the exact configuration that passed this preflight.
+    It returns a sealed typed object bound to this transport and local endpoint;
+    arbitrary non-null tuples are never treated as provenance.
     """
     if transport not in SUPPORTED_TRANSPORTS:
         raise ValueError("Unsupported MCP transport: " + transport)
@@ -111,7 +195,15 @@ def preflight_mcp_startup_configuration(transport: str) -> tuple[Any, Any]:
             "canonical HTTPS resource URL, and matching Application ID URI must be configured "
             "before AppBootstrap initialization."
         )
-    return entra_auth
+    token_verifier, auth_settings = _validate_entra_auth_pair(entra_auth)
+    return _ValidatedMCPStartup(
+        transport=transport,
+        bind_host=requested_host,
+        bind_port=requested_port,
+        token_verifier=token_verifier,
+        auth_settings=auth_settings,
+        _seal=_STARTUP_PREFLIGHT_SEAL,
+    )
 
 
 def _to_jsonable(value: Any) -> Any:
@@ -160,7 +252,7 @@ class IABVMCPServer:
         *,
         name: str = DEFAULT_SERVER_NAME,
         mcp: Any | None = None,
-        _prevalidated_entra_auth: Any = _UNPREVALIDATED_ENTRA_AUTH,
+        _startup_preflight: Any = _NO_STARTUP_PREFLIGHT,
     ) -> None:
         if container is None:
             raise ValueError("container no puede ser None")
@@ -173,6 +265,25 @@ class IABVMCPServer:
         except ValueError:
             requested_port = -1
         self._bind_config_valid = requested_host == "127.0.0.1" and requested_port == 8000
+        self._startup_preflight: _ValidatedMCPStartup | None = None
+
+        if _startup_preflight is not _NO_STARTUP_PREFLIGHT:
+            if (
+                type(_startup_preflight) is not _ValidatedMCPStartup
+                or _startup_preflight._seal is not _STARTUP_PREFLIGHT_SEAL
+            ):
+                raise TypeError(
+                    "IABVMCPServer requires a sealed _ValidatedMCPStartup from preflight; "
+                    "arbitrary auth tuples or objects are rejected."
+                )
+            if (
+                _startup_preflight.bind_host != requested_host
+                or _startup_preflight.bind_port != requested_port
+            ):
+                raise RuntimeError("MCP preflight bind does not match the current server configuration.")
+            if mcp is not None:
+                raise ValueError("A preflight-bound auth configuration cannot be combined with an injected MCP server.")
+            self._startup_preflight = _startup_preflight
 
         if mcp is None:
             from mcp.server.fastmcp import FastMCP
@@ -183,12 +294,17 @@ class IABVMCPServer:
                 "host": "127.0.0.1",
                 "port": 8000,
             }
-            if _prevalidated_entra_auth is _UNPREVALIDATED_ENTRA_AUTH:
-                entra_auth = build_entra_auth_from_environment()
+            if self._startup_preflight is not None:
+                entra_auth = (
+                    self._startup_preflight.token_verifier,
+                    self._startup_preflight.auth_settings,
+                )
             else:
-                entra_auth = _prevalidated_entra_auth
+                entra_auth = build_entra_auth_from_environment()
+                if entra_auth is not None:
+                    entra_auth = _validate_entra_auth_pair(entra_auth)
             if entra_auth is not None:
-                token_verifier, auth_settings = entra_auth
+                token_verifier, auth_settings = _validate_entra_auth_pair(entra_auth)
                 fastmcp_kwargs["token_verifier"] = token_verifier
                 fastmcp_kwargs["auth"] = auth_settings
                 self._http_auth_configured = True
@@ -3214,6 +3330,8 @@ class IABVMCPServer:
             )
         if not self._bind_config_valid:
             raise RuntimeError("Fail-closed: MCP must bind only to 127.0.0.1:8000.")
+        if self._startup_preflight is not None and transport != self._startup_preflight.transport:
+            raise RuntimeError("Fail-closed: requested transport does not match the validated startup preflight.")
         if not self._http_auth_configured:
             raise RuntimeError(
                 "Fail-closed: Entra tenant, API audience, Owner role, allowed client, "
@@ -3328,7 +3446,7 @@ def create_server(container: Any | None = None, *, name: str = DEFAULT_SERVER_NA
     return IABVMCPServer(
         container,
         name=name,
-        _prevalidated_entra_auth=prevalidated_entra_auth,
+        _startup_preflight=prevalidated_entra_auth,
     )
 
 
@@ -3365,7 +3483,7 @@ def main() -> None:
     server = IABVMCPServer(
         container,
         name=name,
-        _prevalidated_entra_auth=prevalidated_entra_auth,
+        _startup_preflight=prevalidated_entra_auth,
     )
     server.run(transport=transport)
 
