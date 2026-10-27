@@ -1,5 +1,27 @@
 <!-- Owner-authorized route transition: Actions billing-lock blocker, 2026-10-26. CURRENT-STATE.md remains the sole route authority. -->
 
+### Latest continuation delta — bounded G1/G2/G3 producer review completed (2026-10-26; source-only)
+
+A single bounded, read-only source review was completed against the exact PR #531 candidate and the live main observed at review start (44cbe159a0f87effca4e56d23f539b5fdf3ef60c). This did not repeat the broad authority inventory and did not access local/protected data.
+
+**Important main-versus-candidate boundary:** current main's IABV_v1.5/src/iabv_v15/bootstrap.py is blob e4befa6b683fc87aed7481f377f1332f5753e2c3 and contains no ReadAuthorizationCoordinator; the candidate-only path IABV_v1.5/src/iabv_v15/services/security/read_authorization.py is absent on main at this revision (contents fetch returned 404). Therefore the proposed authorization-organ code has not been promoted to main; findings below describe PR #531's candidate, not a production runtime already present on main.
+
+**Exact candidate evidence:**
+- PR #531 remains OPEN/DRAFT/UNMERGED, HEAD bc2baf525a70d66628809360a197f25a069aa328. The comparison with main at review start was 17 ahead / 66 behind; do not rebase or merge as part of this task.
+- Candidate bootstrap.py, blob 802f1b42881f383d9ac33fea8ee6c2c913a4da32, line 507 explicitly composes ReadAuthorizationCoordinator.unconfigured().
+- Candidate read_authorization.py, blob 3a57d1148c175040b7b747a6e04411c542c51dd3, lines 288–324 define TrustAnchorProvider, OwnerMandateProvider, OwnerMergeEvidenceProvider, G2PolicyProvider, G3TargetResolver and AuthenticatedIssuerIpcClient as Protocol contracts.
+- In that same candidate file, unconfigured() (lines 445–459) supplies None for all provider slots; missing_requirements() (lines 484–500) names eight absent dependencies: independent trust root, Owner mandate, merge evidence, G2 policy, G3 target resolution, authenticated issuer IPC, persistent replay consumer and host-owned server/process identity.
+
+**Bounded verdict:**
+- G1=NOT_ESTABLISHED: no independently rooted trust-anchor/Owner-mandate producer is wired. A GitHub merge-evidence verifier is a bounded evidence source, not itself an independent root or authenticated Owner principal.
+- G2=NOT_ESTABLISHED: the authorized, fresh catalogue/policy provider and its revocation authority are not wired.
+- G3=NOT_ESTABLISHED: the versioned server-side operation-to-target producer is not wired. A Protocol or opened-handle contract alone is not its authoritative registry/provider.
+- The candidate's explicit None dependencies preserve fail-closed behavior; interface presence does not close any gate. The source review does not establish whether local or external authority assets exist: AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED.
+
+No code was changed. No tests/build/runtime or protected reads were performed. IMPLEMENTATION_PREREQUISITES=8; CLOSED=0; PROTECTED_READS=FAIL_CLOSED; BRIDGE=BRIDGE_NOT_READY.
+
+**First unresolved dependency:** a separately verifiable pre-existing root/mandate and independent verification channel, or an explicit Owner decision that retains option D. The Owner's authorization to prepare a design did not select a root, custodian, issuer or channel. Do not fabricate providers to make the type-check or wire synthetic trust. GitHub Actions retains the already-recorded visible billing-lock blocker and zero-job outcomes; do not repeat unchanged workflows or the completed billing/support navigation without a verified material condition change. The active M1F/M1A routing remains otherwise unchanged.
+
 ### Latest verified route delta — billing discrepancy and support intake completed (2026-10-26)
 
 This delta supersedes the earlier next-action instruction to inspect Billing & Licensing: the Owner-authorized read-only check is completed. Billing & Licensing shows GitHub Free and Copilot Free with no visible billing alert or balance explaining the restriction, while the authenticated Actions page still shows the account-billing-lock warning and lists 185 runs as failed at startup. The underlying cause remains UNKNOWN. No Actions tests ran; TESTS=NOT_RUN.
