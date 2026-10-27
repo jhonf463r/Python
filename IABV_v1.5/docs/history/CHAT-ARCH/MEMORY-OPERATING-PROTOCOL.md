@@ -5163,3 +5163,19 @@ Required response:
 - Keep PEM validity, local fingerprint computation, fingerprint comparison, key custody, JWT/token issuance, and API preflight as separate gates.
 
 This episode's current state: the PEM was reported by Codex as valid RSA PKCS#1 private 2048-bit; its local public fingerprint was computed in memory. Clipboard comparison returned OTHER / 3734 characters; its contents remain unknown, no values were exposed or persisted according to the reported output, and match remains NOT_VERIFIED. Do not store the key, create tokens, or call the App API until exact comparison succeeds and a separate phase is authorized.
+
+
+## 2026-10-27 METHOD DELTA — Target the rendered fingerprint node instead of copying UI
+
+A newer authenticated UI inspection can contradict earlier accessibility/label reports. Preserve the chronology and clearly supersede the earlier operational assumption; do not silently erase or promote conflicting historical observations.
+
+For this GitHub App key page, the latest read-only observation found:
+- Heading: “Private key”.
+- Secondary label: “Label: Private”.
+- The fingerprint is visible as plain text in a `code` element and begins with `SHA256:`.
+- No adjacent copy button exists.
+- The older report of a 40-character “Copyable key fingerprint” field is contradicted by this later observation and remains a historical discrepancy.
+
+Method change: stop using clipboard as an extraction path. If local authenticated browser inspection is permitted, target only the exact visible code node within the identified key card and read its text into local process memory. Compare it against the locally calculated SHA-256 digest; strip only the exact `SHA256:` prefix and surrounding whitespace, strictly decode standard Base64 to exactly 32 bytes, and compare the bytes. Never dump DOM/page text or expose the node text. If the node cannot be uniquely selected and kept local, stop with NOT_VERIFIED; do not fall back to screenshots, whole-page copying, or guessed algorithms.
+
+The local PEM is reported structurally valid RSA PKCS#1 2048-bit and the local fingerprint computed in memory. Clipboard was reset; no comparison has succeeded. Key custody and API preflight remain separate and unauthorized. The governing principle remains: if the exact target or byte representation cannot be verified, retain uncertainty and fail closed.
