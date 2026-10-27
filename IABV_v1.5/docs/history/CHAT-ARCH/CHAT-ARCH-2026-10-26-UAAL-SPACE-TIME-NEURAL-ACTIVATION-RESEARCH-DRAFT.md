@@ -194,42 +194,122 @@ Si una condición obligatoria es UNKNOWN, el nodo no puede promoverse como verda
 
 ~~~text
 activate(query, existing_indexes, budget, policy):
-    seeds = retrieve_candidates_from_existing_sources(query)
-    active = canonicalize_and_dedupe(seeds)
-    frontier = rank_by_evidence_currentness_and_capability_fit(active, query)
-    visited = ids(active)
-    spent = cost(active)
+    seed_candidates = retrieve_candidates_from_existing_sources(query)
+    seeds = canonicalize_exact_identity_duplicates_only(seed_candidates)
 
-    while frontier not empty and spent < budget:
-        node = frontier.pop_best()
+    candidate_records = {}  # all known candidates, including unresolved leads
+    activated_ids = set()
+    best_score = {}
+    provenance = {}          # distinct source and typed-edge references per candidate
+    expanded = set()         # controls traversal, never erases incoming routes
+    frontier = priority_queue(order=(-score, stable_candidate_id))
+    blocked_or_deferred = []
+    examined_relations = set()
+    spent_nodes = 0
+    spent_relations = 0
 
+    for seed in sort_seeds_deterministically(seeds):
+        candidate_records[seed.id] = retain_candidate_and_all_source_refs(seed)
+        provenance[seed.id] = all_distinct_source_refs(seed)
+        best_score[seed.id] = objective_conditioned_activation_score(
+            query, seed, source_evidence, currentness, capability_fit
+        )
+        if not admissible(seed, query):
+            record_block(seed, "inadmissible_or_unresolved")
+            continue  # retained as a lead/hypothesis; not promoted as truth
+        if cost(seed) exceeds remaining_node_budget(spent_nodes, budget):
+            record_deferred_candidate(seed, "node_budget_exhausted")
+            continue
+        activated_ids.add(seed.id)
+        spent_nodes += cost(seed)
+        enqueue(frontier, seed, best_score[seed.id])
+
+    while frontier not empty and budget_allows(spent_nodes, spent_relations, budget):
+        node = pop_best_with_stable_tie_break(frontier)
+
+        if node.id in expanded:
+            continue
         if not admissible(node, query):
             record_block(node, "inadmissible_or_unresolved")
             continue
 
-        record_why_activated(node)
+        expanded.add(node.id)
+        record_why_activated(node, best_score[node.id], provenance[node.id])
 
-        for edge in typed_relevant_relations(node, query):
-            neighbor = resolve(edge.target)
-            if neighbor.id in visited:
+        for edge in sort_by_canonical_relation_identity(
+                typed_relevant_relations(node, query)):
+            relation_id = canonical_relation_identity(
+                edge.source_id, edge.target_id, edge.type,
+                edge.source_reference, edge.source_revision
+            )
+            if relation_id in examined_relations:
                 continue
-            if cost(neighbor) exceeds remaining_budget:
+            if relation_budget_exhausted(spent_relations, budget):
+                record_deferred_relation(edge, "relation_budget_exhausted")
+                break
+
+            examined_relations.add(relation_id)
+            spent_relations += cost(edge)
+            neighbor = resolve(edge.target)
+
+            if neighbor is unresolved:
+                record_unresolved_relation(edge, "target_unresolved")
                 continue
             if policy_requires_scope_gate(neighbor) and not policy.permits(neighbor):
-                record_block(neighbor, "scope_or_authority")
+                record_blocked_relation(edge, neighbor, "scope_or_authority")
                 continue
 
-            score = objective_conditioned_activation_score(
-                lexical_fit, semantic_fit, edge_strength, evidence,
-                currentness, verified_historical_utility, capability_fit,
+            candidate_score = objective_conditioned_activation_score(
+                query, neighbor, edge, evidence, currentness,
+                verified_historical_utility, capability_fit,
                 duplicate_stale_conflict_penalty
             )
-            enqueue_if_relevant(frontier, neighbor, edge, score)
-            visited.add(neighbor.id)
-            spent += cost(neighbor)
 
-    return evidence_aware_activation_packet(query, active, spent)
+            if neighbor.id not in candidate_records:
+                candidate_records[neighbor.id] = retain_candidate(neighbor)
+                best_score[neighbor.id] = candidate_score
+                provenance[neighbor.id] = set()
+            provenance.setdefault(neighbor.id, set()).add(relation_id)
+
+            # Crucial: record and score the incoming route before deduplicating the node.
+            if neighbor.id in activated_ids or neighbor.id in candidate_records:
+                if rank_policy_is_strictly_better(candidate_score, best_score[neighbor.id]):
+                    best_score[neighbor.id] = candidate_score
+                else:
+                    record_alternate_route(neighbor.id, relation_id, candidate_score)
+
+            if neighbor.id in activated_ids:
+                # A visited/expanded node still accumulates distinct route provenance.
+                # Node cost is charged once; route count is not a ranking bonus.
+                continue
+
+            if not admissible(neighbor, query):
+                record_block(neighbor, "inadmissible_or_unresolved")
+                continue
+            if cost(neighbor) exceeds remaining_node_budget(spent_nodes, budget):
+                record_deferred_candidate(neighbor, "node_budget_exhausted")
+                continue
+
+            activated_ids.add(neighbor.id)
+            spent_nodes += cost(neighbor)
+            update_or_enqueue(frontier, neighbor, best_score[neighbor.id])
+
+    return evidence_aware_activation_packet(
+        query,
+        candidate_records,
+        activated_ids,
+        best_score,
+        all_unique_provenance=provenance,
+        blocked_and_deferred=blocked_or_deferred,
+        budget_coverage=coverage_status(spent_nodes, spent_relations, budget)
+    )
 ~~~
+
+La semántica conservadora de esta primera versión es deliberada: la puntuación de un nodo es la mejor puntuación admisible de una ruta individual; las demás rutas relevantes se conservan en su procedencia, pero no suman votos ni refuerzan el ranking por mera repetición. Una evidencia verdaderamente independiente solo puede mejorar el componente de evidencia si su independencia, alcance y vigencia se evalúan explícitamente. La expansión de un nodo se realiza una vez porque su salida depende del objetivo y de sus propias relaciones, no de la ruta por la que fue descubierto; si en el futuro se decide un score dependiente de caminos, se necesitará otra regla de propagación y un test anti-ciclo separado.
+
+La deduplicación del nodo y la deduplicación de evidencia son operaciones distintas. Un candidato canónico puede mostrarse una vez y conservar múltiples referencias de origen; versiones diferentes, afirmaciones distintas o contradicciones no se fusionan por similitud semántica. Si no existe una identidad estable suficiente, se etiqueta POTENTIAL_DUPLICATE y se conserva por separado hasta resolver la identidad.
+
+El paquete debe informar si la cobertura fue completa o truncada por presupuesto, las relaciones no evaluadas y la razón de cada bloqueo. Los ordenamientos de nodos y relaciones requieren desempates estables. La prueba estática/diseño debe comprobar que permutar el orden de relaciones equivalentes no cambia el ranking ni la procedencia cuando el presupuesto permite recorrer el mismo vecindario. Bajo presupuesto agotado, la salida debe declarar cobertura incompleta, nunca aparentar una exploración exhaustiva.
 
 Este pseudocódigo es una especificación de diseño, no una instrucción para crear un servicio nuevo. La primera prueba debe componer los índices y fuentes existentes: CONTEXT-INDEX, protocolo de memoria, búsqueda lexical disponible, self-code analysis, capability/tool registries, experiment records, world/self models, unresolved knowledge y evidencia de procedencia.
 
@@ -352,6 +432,36 @@ PREDICTION_BEFORE_ACTION
 No aumentar un score solo por repetición bruta. Un fallo de producto, una denegación de autorización, un timeout y una prueba que no arrancó describen causas distintas; no deben convertirse en una recompensa universal única. La consolidación mantiene versiones previas, fuentes, casos de aplicación, vigencia, contradicciones y contraejemplos. Una Knowledge Delta solo llega a REUSABLE cuando una tarea posterior relevante la activa y demuestra cambio de decisión/acción y efecto.
 
 La investigación sobre memoria de agentes distingue representaciones episódicas, semánticas y procedimentales, pero no prueba por sí sola que IABV realice aprendizaje general. Referencias: [A Survey on the Memory Mechanism of LLM-based Agents](https://arxiv.org/abs/2404.13501) y [LEGOMem: Modular Procedural Memory for Multi-agent LLM Systems](https://arxiv.org/abs/2510.04851).
+
+## 8.1 Captura e integración acumulativa de ideas — conservar sin congelar
+
+La evolución buscada no consiste en escoger una idea nueva y borrar las anteriores. El campo debe crecer por **acumulación gobernada, comparación y revisión trazable**. La captura de ideas y la activación para una tarea son operaciones diferentes: una idea puede quedar guardada y vinculada aunque no deba entrar en el contexto activo de la tarea actual.
+
+El principio reutiliza la gramática ya documentada en el [Resonant Self-Knowledge Retrieval Fabric](./CHAT-ARCH-2026-09-30-001-resonant-self-knowledge-retrieval-fabric.md), el [Shared Developmental Knowledge Field](./CHAT-ARCH-2026-10-03-007-shared-developmental-knowledge-field.md), el [protocolo de memoria](./MEMORY-OPERATING-PROTOCOL.md), [CONTEXT-INDEX](./CONTEXT-INDEX.md), [UNRESOLVED-KNOWLEDGE](./UNRESOLVED-KNOWLEDGE.md) y la [Constitución UAAL](./UNIVERSAL-ADAPTIVE-ALGORITHM-CONSTITUTION-2026-10-04.md). No autoriza una base de memoria paralela ni un nuevo órgano.
+
+### Invariantes de preservación
+
+1. **Capturar antes de filtrar por relevancia.** Toda idea sustantiva recibe una referencia recuperable y su procedencia antes de decidir si se activa para el objetivo de hoy. Un score bajo significa «no activar ahora», no «eliminar» ni «no tiene valor futuro».
+2. **Preservar la formulación original.** Conservar la fuente original o una referencia inmutable a ella, además de una síntesis normalizada. La síntesis no sustituye matices, condiciones, ejemplos ni advertencias que pudieran resultar importantes más adelante.
+3. **No sobrescribir la historia.** Las correcciones se registran como deltas enlazados; no se reescribe silenciosamente el estado previo. Una idea puede marcarse SUPERSEDED para un alcance concreto, pero la versión anterior y la razón de la sustitución permanecen consultables.
+4. **No confundir similitud con identidad.** Solo se deduplican registros con identidad canónica suficiente. Ideas parecidas pero distintas se enlazan como RELATED, EXTENDS, SPECIALIZES, ALTERNATIVE_TO, REFINES o CONTRADICTS. Si la identidad es dudosa, usar POTENTIAL_DUPLICATE y mantener ambos registros hasta resolverlo.
+5. **Separar idea, evidencia y estado epistemológico.** FACT, INFERENCE, HYPOTHESIS, QUESTION, LESSON, METHOD, CAPABILITY_EVIDENCE y ROUTING_EVIDENCE no se mezclan. Una idea rechazada para un alcance no se convierte en una falsedad universal; se conserva con el alcance, la evidencia y la razón de rechazo.
+6. **Mantener contradicciones y resultados negativos.** No fusionar dos explicaciones opuestas mediante promedio de puntuaciones ni decidir por la cantidad de IAs que estén de acuerdo. Se comparan fuente, independencia, revisión, actualidad, alcance y resultado; si no basta, la conclusión es CONFLICTED o UNKNOWN.
+7. **Promover, no borrar.** La secuencia conceptual es CAPTURED → CLASSIFIED → LINKED → EVALUATED. Después, según la evidencia, puede quedar ACTIVE_FOR_SCOPE, DEFERRED_WITH_REENTRY_CONDITION, REJECTED_FOR_SCOPE_WITH_REASON o SUPERSEDED_WITH_LINEAGE. VERIFIED exige evidencia adecuada; REUSABLE exige además recuperación en una tarea posterior no idéntica y efecto causal independientemente verificado.
+8. **Evitar el refuerzo por frecuencia.** Repetición, recuperación frecuente, copia del mismo texto o consenso aparente no incrementan el rango por sí solos. Menciones duplicadas no votan varias veces. Evidencia independiente solo cuenta como corroboración si su independencia y su aplicabilidad están justificadas.
+9. **Mantener aparcada la idea no prioritaria.** Cada idea DEFERRED conserva motivo, condición de reentrada o cierre y relaciones con el objetivo activo. El objetivo vigente conserva una sola ruta/tarea prioritaria; la bandeja de ideas no se transforma en una cola de tareas simultáneas.
+
+### Registro mínimo que debe poder reconstruirse
+
+Sin imponer un esquema de almacenamiento nuevo, las superficies actuales deben permitir recuperar, cuando exista esa información: referencia estable de idea o artefacto; formulación/fuente; fecha y procedencia; objetivo/sesión de origen; clase epistemológica; alcance y supuestos; estado; relaciones hacia ideas anteriores, contradicciones y revisiones; evidencias y contraejemplos; razón de activación o aplazamiento; condición de reentrada; y delta que motivaría una decisión diferente.
+
+Cuando la fuente o dato no se ha observado, el campo correspondiente se marca UNKNOWN/MISSING; no se infiere. Cuando el registro actual no pueda representar uno de estos atributos, eso se convierte en un gap de composición documentado, no en permiso automático para crear una nueva clase, base o servicio.
+
+### Supervisión metacognitiva sin una «supermente» paralela
+
+La idea de una «supermente pendiente de todo» se concreta como responsabilidades de los algoritmos/protocolos ya existentes, no como una entidad consciente ni otro servicio supervisor. En cada ciclo pertinente deben verificar: (a) que las ideas sustantivas nuevas quedaron capturadas; (b) que la activación no ocultó ideas antiguas, alternativas o contraejemplos; (c) que las relaciones y contradicciones mantienen procedencia; (d) que no se promovió una hipótesis por repetición; (e) que las ideas aparcadas tienen condición de reentrada; y (f) que el plan operativo sigue obedeciendo a CURRENT-STATE.md. OSES, el Development Control Tower, el protocolo de memoria y los índices existentes son superficies candidatas a componer; esta asignación es un contrato de diseño, no prueba que hoy se ejecute automáticamente.
+
+El criterio de evolución no es conservar todo como si fuera verdadero. Es conservar la historia y sus diferencias para que nueva evidencia pueda refinar, limitar, integrar o reemplazar explícitamente una conclusión sin borrar cómo y por qué cambió.
 
 ## 9. Reporte de estado por órgano y clase
 
@@ -489,6 +599,12 @@ CROSS_ORGAN_CAUSAL_VERIFICATION=NOT_DEMONSTRATED_END_TO_END
 PORTABLE_CONTEXT_FRESHNESS=STATIC_RISK; RUNTIME_AGE_UNKNOWN
 GOAL_BEFORE_INITIAL_DECISION=STATIC_RISK; EFFECT_NOT_RUNTIME_VERIFIED
 CAUSAL_REUSE=NOT_VERIFIED_END_TO_END
+ACTIVATION_NODE_SCORE=MAX_SINGLE_ADMISSIBLE_CANDIDATE_SCORE; NO_FREQUENCY_BONUS
+ACTIVATION_PROVENANCE=ACCUMULATE_DISTINCT_ROUTES_AND_SOURCES
+DEDUPE_RULE=CANONICAL_IDENTITY_ONLY; AMBIGUOUS_IDENTITY_RETAINED_AS_POTENTIAL_DUPLICATE
+IDEA_LINEAGE=NON_DESTRUCTIVE; SUPERSESSION_PRESERVES_PRIOR_VERSIONS
+IDEA_CAPTURE_AND_META_SUPERVISION=DESIGN_CONTRACT; RUNTIME_ENFORCEMENT_NOT_PROVEN
+BUDGET_COVERAGE=EXPLICIT_COMPLETE_OR_TRUNCATED_STATUS_REQUIRED
 CONSCIOUSNESS_CLAIM=NOT_MADE
 IMPLEMENTATION=NOT_AUTHORIZED
 TESTS=NOT_RUN
@@ -501,4 +617,52 @@ MAIN_CHANGED=FALSE
 PR531_CHANGED=FALSE
 PR546_CHANGED=FALSE
 AUTOMATIC_FOLLOW_ON=FALSE
+~~~
+
+
+## 17. Decisiones de diseño, dudas abiertas y frontera de retorno al puente
+
+### Decisiones conservadoras fijadas en este borrador
+
+- Una identidad de nodo ya vista no permite descartar una nueva relación entrante: se conserva su procedencia y se compara su puntuación.
+- En la primera línea base, la puntuación del nodo es la mejor puntuación de una ruta individual admisible; la procedencia agrega las rutas distintas, no sus votos. La combinación de múltiples rutas solo se considerará como experimento separado.
+- No se fusionan automáticamente afirmaciones por semejanza léxica/semántica. Si falta identidad estable, se conservan separadas y se señala la posible duplicación.
+- Las ideas previas, alternativas, contradicciones, rechazos acotados y versiones supersedidas mantienen linaje. La activación elige el contexto de trabajo; no gobierna la existencia de una idea en el campo histórico.
+- Los parámetros no fijados siguen sin fijar. No se inventan pesos, top-k, umbrales de mejora, profundidad, presupuestos ni TTL de frescura.
+- La supervisión de captura, contradicción, procedencia y reentrada se expresa como responsabilidad metodológica de órganos/protocolos existentes. No se propone un «cerebro» o servicio nuevo.
+- Todo lo anterior es diseño estático. No declara que el sistema lo ejecute, que se haya medido la calidad del ranking o que exista aprendizaje causal.
+
+### Dudas abiertas que requieren evidencia, no intuición
+
+| Pregunta | Qué se sabe ahora | Criterio de resolución futuro |
+|---|---|---|
+| ¿Las identidades actuales distinguen idea, afirmación, versión y evidencia de origen? | El diseño requiere distinguirlas; no se ha demostrado que todas las superficies actuales lo representen de extremo a extremo. | Mapear solo el caso piloto contra los registros existentes; si falta semántica, documentar el gap antes de proponer un esquema nuevo. |
+| ¿El ranking es estable ante distinto orden de relaciones equivalentes? | El pseudocódigo corregido impide descartar una ruta solo por haber visitado el nodo; la invariancia global todavía no está demostrada. | Prueba de diseño/baseline con el mismo grafo en permutaciones distintas, primero con presupuesto suficiente y después con truncamiento explícito. |
+| ¿Cómo se arbitra una contradicción entre fuentes? | No debe decidirse por similitud, frecuencia ni acuerdo entre IAs; la regla específica depende del tipo de afirmación y la autoridad de la fuente. | Registrar scope, independencia, revisión, actualidad y contraejemplos; mantener CONFLICTED/UNKNOWN si falta un discriminador. |
+| ¿Qué reglas concretas de frescura y coste son apropiadas por clase de dato? | Top-k, pesos, budgets y TTL no están autorizados ni calibrados. | Definir baseline y métrica antes de elegir valores; no usar un TTL universal por analogía biológica. |
+| ¿La captura y supervisión ocurren automáticamente en el runtime? | No hay evidencia de una cadena universal de captura → reconciliación → actualización → recuperación → reutilización causal. | Más adelante, con autorización independiente, comprobar productor/consumidor y fetch-back sobre un caso estrecho; el texto guardado no cierra esta duda. |
+| ¿La idea nueva cambia una decisión futura por ser correcta o solo por repetición? | La hipótesis exige Knowledge Delta verificado y tarea posterior no idéntica. | Registrar predicción previa, observación, verificación independiente y la decisión posterior que consume el delta. |
+
+### Separación obligatoria respecto al puente IABV–Codex
+
+Este borrador no selecciona ni acredita raíz de confianza, custodio, mandato, canal independiente, credenciales, issuer, G2 publisher, resolver G3, ledger antirrollback ni principal Windows. Tampoco cambia la opción D, los ocho gates o la política de lecturas protegidas. Esos estados pertenecen al contrato de autoridad gobernada y a la ruta operativa canónica, no al algoritmo de activación.
+
+Para regresar al puente, releer [CURRENT-STATE.md](./CURRENT-STATE.md) y consumir la evidencia allí enlazada; no usar esta investigación como ruta de ejecución ni repetir la inventariación amplia ya realizada. A la última revalidación de esta investigación, el trabajo paralelo permitido era una revisión acotada y basada en fuente del hueco real de productores G1/G2/G3. La restricción visible de GitHub Actions y la ausencia de jobs de las ejecuciones previas no se resuelven con este cambio documental: no repetir el workflow sin un cambio material de precondición observado. Mantener la separación entre este frente de evolución del método y la primera frontera causal abierta del puente.
+
+~~~text
+IDEA_CAPTURE=NON_DESTRUCTIVE_DESIGN_SPECIFIED; RUNTIME_NOT_PROVEN
+ACTIVATION_DEDUPE=CANONICAL_IDENTITY_ONLY
+MULTI_ROUTE_PROVENANCE=RETAINED; ROUTE_COUNT_NOT_USED_AS_SCORE_BONUS
+NODE_SCORE_BASELINE=MAX_SINGLE_ADMISSIBLE_CANDIDATE_SCORE
+CONTRADICTIONS=RETAINED_AND_TYPED; AUTO_MERGE=PROHIBITED
+PARAMETERS=UNSET_PENDING_BASELINE
+NEW_SUPERVISORY_SERVICE=NOT_PROPOSED
+PR547=DESIGN_DRAFT_ONLY
+BRIDGE_ROUTE=READ_CURRENT_STATE; NOT_CHANGED_BY_THIS_RESEARCH
+G1/G2/G3=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+PROTECTED_READS=FAIL_CLOSED
+BRIDGE=BRIDGE_NOT_READY
+TESTS=NOT_RUN
+RUNTIME=NOT_RUN
 ~~~
