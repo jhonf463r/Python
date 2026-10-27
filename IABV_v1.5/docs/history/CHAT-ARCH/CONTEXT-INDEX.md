@@ -1,3 +1,15 @@
+<!-- Session closeout update 2026-10-27 11:34 America/Bogota: clipboard cleared; exact copy control not found; next path is local DOM node, no clipboard. -->
+
+## SESSION CLOSEOUT — Continue from local DOM fingerprint comparison (2026-10-27)
+
+The Owner's latest Codex result: `LOCAL_EXECUTION=YES`, `CLIPBOARD_RESET=YES`, `COPY_CONTROL_IDENTIFIED=NO`, no clipboard sample, `MATCH=NOT_VERIFIED`, and no secret exposure/persistence reported. This is **not** a format match or mismatch; no comparison was possible.
+
+Read [handoff section 17](https://github.com/jhonf463r/Python/blob/chat-continuity-key-recovery-handoff-20261027/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-27-M1A-GITHUB-APP-KEY-RECOVERY-CROSS-CHAT-HANDOFF.md) for the full chronology, verified/reported facts, unresolved contradictions, next-chat starter, and safety limits. Section 16 contains the latest read-only GitHub UI observation: fingerprint is plain text in a `code` node under “Private key” / “Label: Private”; no adjacent copy button exists. Next bounded action: local browser DOM/accessibility targeting of that one node, reading its text only to process memory, strict SHA-256/Base64 validation and byte comparison, with outcome only. No clipboard fallback, screenshots, page/DOM dumps, or displayed fingerprint.
+
+The PEM was reported as structurally valid RSA PKCS#1 private 2048-bit; the local fingerprint was computed. GitHub correspondence, custody, and App API preflight remain unverified/not done. Never select the old TXT, repeat generic download instructions, or generate tokens. Live `main/CURRENT-STATE.md` blob still `7a261129c8611cc0b5ed3788fc00c5d90ae189ea`; this branch/PR is supporting continuity, not operational authority. G1/G2/G3 remain NOT_ESTABLISHED; protected reads fail-closed; bridge not ready.
+
+---
+
 <!-- Update 2026-10-27: latest authenticated UI inspection found fingerprint as code text; no copy button. -->
 
 ## LATEST UPDATE — Read the exact SHA256 fingerprint node, not clipboard (2026-10-27, 11:34 America/Bogota)
