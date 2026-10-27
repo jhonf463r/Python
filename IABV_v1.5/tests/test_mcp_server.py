@@ -68,6 +68,7 @@ class _FakeWorldModelService:
     def __init__(self, snapshot: WorldModelSnapshot) -> None:
         self._snapshot = snapshot
         self.calls: list[tuple[str, bool]] = []
+        self.scan_stats: dict[str, object] = {}
 
     def current_model(self) -> WorldModelSnapshot:
         self.calls.append(("current", False))
@@ -409,7 +410,10 @@ def test_http_auth_middleware_rejects_before_tool_and_exposes_prm(monkeypatch) -
     container = _build_container()
     world_model = container.world_model_service
     server = IABVMCPServer(container, _startup_preflight=startup)
-    with TestClient(server.mcp.streamable_http_app()) as client:
+    with TestClient(
+        server.mcp.streamable_http_app(),
+        base_url="http://127.0.0.1:8000",
+    ) as client:
         request_body = {
             "jsonrpc": "2.0",
             "id": 1,
@@ -496,7 +500,10 @@ def test_valid_scoped_token_still_cannot_invoke_tool_without_operation_authority
         "Authorization": "Bearer valid-synthetic-token",
         "Accept": "application/json, text/event-stream",
     }
-    with TestClient(server.mcp.streamable_http_app()) as client:
+    with TestClient(
+        server.mcp.streamable_http_app(),
+        base_url="http://127.0.0.1:8000",
+    ) as client:
         initialized = client.post(
             "/mcp",
             json={
@@ -538,7 +545,9 @@ def test_valid_scoped_token_still_cannot_invoke_tool_without_operation_authority
             headers=session_headers,
         )
         assert result.status_code == 200
-        payload = result.json()
+        # Streamable HTTP responds with an SSE message even when Accept also
+        # allows JSON; decode the JSON-RPC payload from its data frame.
+        payload = json.loads(result.text.split("data:", 1)[1].strip())
         assert payload.get("result", {}).get("isError") is True
         assert "operation_authority_unavailable:world_model_snapshot" in json.dumps(payload)
         assert verifier.calls >= 3
@@ -719,14 +728,31 @@ def test_validated_startup_cannot_be_created_without_preflight_seal() -> None:
 
 
 def test_validated_startup_state_is_immutable(monkeypatch) -> None:  # type: ignore[no-untyped-def]
-    marker = object()
-    monkeypatch.setattr(_mcp_server_module, "_validate_entra_auth_pair", lambda pair: pair)
+    from mcp.server.auth.settings import AuthSettings
+    from iabv_v15.infra.mcp.entra_token_verifier import EntraAuthConfig, EntraTokenVerifier
+
+    config = EntraAuthConfig(
+        tenant_id="11111111-1111-4111-8111-111111111111",
+        api_client_id="22222222-2222-4222-8222-222222222222",
+        owner_object_id="33333333-3333-4333-8333-333333333333",
+        required_app_role="IABV.Owner",
+        allowed_client_ids=frozenset({"44444444-4444-4444-8444-444444444444"}),
+        application_id_uri="https://mcp.example.test/iabv",
+        resource_server_url="https://mcp.example.test/iabv",
+    )
+    verifier = EntraTokenVerifier(config)
+    settings = AuthSettings(
+        issuer_url=config.issuer_url,
+        resource_server_url=config.resource_server_url,
+        required_scopes=[config.required_app_role],
+        validate_token_resource=False,
+    )
     preflight = _mcp_server_module._ValidatedMCPStartup(
         transport="streamable-http",
         bind_host="127.0.0.1",
         bind_port=8000,
-        token_verifier=marker,
-        auth_settings=marker,
+        token_verifier=verifier,
+        auth_settings=settings,
         _seal=_mcp_server_module._STARTUP_PREFLIGHT_SEAL,
     )
     with pytest.raises(AttributeError, match="immutable"):
