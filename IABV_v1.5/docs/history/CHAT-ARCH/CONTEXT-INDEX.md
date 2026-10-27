@@ -1,4 +1,16 @@
-<!-- Cross-chat handoff pointer updated on branch chat-continuity-key-recovery-handoff-20261027; CURRENT-STATE.md remains the canonical active route. -->
+<!-- Latest Codex result incorporated 2026-10-27. Read the linked handoff; no local PEM was found in the bounded search. -->
+
+## LATEST UPDATE — private-key download still unresolved; do not ask for the same TXT again (2026-10-27)
+
+Read the [cross-chat key-recovery handoff](https://github.com/jhonf463r/Python/blob/chat-continuity-key-recovery-handoff-20261027/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-27-M1A-GITHUB-APP-KEY-RECOVERY-CROSS-CHAT-HANDOFF.md) before taking action.
+
+Codex checked the current user's Downloads folder and Opera GX history: no PEM or suggestive recent TXT file was found; Opera GX had no matching download in the checked period. Opera Stable history was locked and was not bypassed. The authenticated GitHub Credentials → Key pairs UI label could not be inspected. A further manual selection of the same TXT returned 40 characters with no PEM markers. Stop selecting/validating that file; it is not recognized PEM and its 40-character value must not be assumed to be the fingerprint or key ID. The cause of the download problem remains UNKNOWN.
+
+Owner preference: minimize manual steps and let local Codex perform safe work. A local-only secret-entry window may be designed for real secrets only after the actual secret material exists and the UI is demonstrably isolated from model prompts/transcripts/logs. It cannot turn a fingerprint/unknown value into a private key. Separate the GitHub App machine key from site/user credentials administered by IABV; inspect/reuse the existing credential-management organ before designing another vault.
+
+Next action: inspect the authenticated GitHub UI's actual field label and New key/download behavior without exposing the copied value. Do not repeat generic download instructions, do not rotate/revoke keys automatically, do not create tokens/API calls until an actual PEM has been validated and its fingerprint matched. See handoff section 11 for full chronology, constraints and exact status.
+
+---
 
 ## LATEST CROSS-CHAT HANDOFF — GitHub App private-key recovery (2026-10-27)
 
