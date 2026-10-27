@@ -83,3 +83,11 @@ At authoring time, the route remains:
 - PR #531, #546 and #547 are independent open draft candidates, not evidence of production readiness.
 
 These values are a dated snapshot, not perpetual facts: the next session must revalidate live references through `CURRENT-STATE.md`.
+
+
+## Latest bounded route recheck — 2026-10-26
+
+- Live canonical route is still [CURRENT-STATE.md](./CURRENT-STATE.md), blob `7a261129c8611cc0b5ed3788fc00c5d90ae189ea`; do not replace it with this supporting protocol.
+- The prior G1 asset task is terminal for source-locator search: no local asset locator was found in inspected source; Windows trust-store/service/ACL/IPC metadata was **NOT_RUN**. The resulting authority state remains UNKNOWN/NOT_INSPECTED, not absent. See [terminal route correction](./CHAT-ARCH-2026-10-25-TERMINAL-TASK-ROUTER-TRANSITION-CORRECTION.md) and the [bounded assessment receipt with its exact prompt](./CHAT-ARCH-2026-10-25-M1A-G1-OWNER-DECISION-EXISTING-TRUST-ASSETS-READONLY-ASSESSMENT-RECEIPT.md).
+- This ChatGPT session has GitHub repository access but no exposed connection to the Owner's existing Codex UI or local Windows session. Do not claim local metadata inspection was performed or use an alternate path to bypass that boundary. New GitHub account/repository metadata confirms control-plane access only; it does not establish IABV runtime authority or the Owner-to-Windows/issuer binding.
+- Owner's latest instruction asks agents to keep using continuity and to request bounded approvals in plain language. It does not create a root or automatically authorize protected reads, implementation, tests/runtime, merge/rebase or deployment. `G1/G2/G3=NOT_ESTABLISHED`; `PROTECTED_READS=FAIL_CLOSED`; `BRIDGE=BRIDGE_NOT_READY`.
