@@ -1,3 +1,5 @@
+> **AVISO DE VIGENCIA — 2026-10-27, 12:34 America/Bogota.** Esta nota de continuidad no sustituye a `main/IABV_v1.5/docs/history/CHAT-ARCH/CURRENT-STATE.md`, que sigue siendo la única autoridad operativa. Para la tarea específica de recuperar la huella, los prompts antiguos de las secciones 16–17 que proponían leer/comparar el nodo quedan **suspendidos por las secciones 19–20**: no se deben ejecutar hasta que exista evidencia nueva de una ruta local aprobada y de un límite de salida que impida que el valor llegue al modelo/transcripción/logs/archivos. El último diagnóstico es `LOCAL_DOM_ACCESS=UNKNOWN; RAW_VALUE_CAN_REACH_MODEL_OR_TRANSCRIPT=YES; NEXT_ACTION=STOP_UNTIL_ROUTE_EVIDENCE`. La conexión móvil/remota de Codex es una opción separada para dirigir tareas no sensibles; no sustituye ese límite de datos ni cierra G1. La rama/PR se debe revalidar en vivo al entrar en cada sesión.
+
 # IABV → Codex bridge — cross-chat handoff: GitHub App key recovery and continuity (2026-10-27)
 
 - Date: 2026-10-27, America/Bogota.
@@ -709,3 +711,103 @@ NEXT_ACTION=STOP_UNTIL_ROUTE_EVIDENCE
 No fingerprint comparison occurred. The report does not change the earlier Owner-reported PEM structural validation, but that import/fingerprint was not rechecked in this run. No secret values were reported exposed and no secret material persisted. No GitHub App API call, JWT, installation token, app mutation, code/repository change, tests/build/runtime, protected read, or real transport was performed.
 
 The live `main/CURRENT-STATE.md` was re-fetched before this note; blob remains `7a261129c8611cc0b5ed3788fc00c5d90ae189ea`. Its canonical active frontier and authority gates are unchanged. Keep `G1/G2/G3=NOT_ESTABLISHED`; `IMPLEMENTATION_PREREQUISITES=8; CLOSED=0`; `AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED`; `PROTECTED_READS=FAIL_CLOSED`; `TESTS=NOT_RUN`; `RUNTIME=NOT_RUN`; `AUTOMATIC_FOLLOW_ON=FALSE`; `BRIDGE=BRIDGE_NOT_READY`. The change is limited to this documentary handoff on the existing draft PR branch; do not merge it or modify `main/CURRENT-STATE.md` as part of this step.
+
+
+## 20. Auditoría causal de esta conversación y corrección del protocolo anti-repetición (2026-10-27)
+
+### 20.1 Método aplicado y alcance
+
+Se aplicó manualmente el ciclo ya documentado en UAAL-D019, sin ejecutar código del producto ni afirmar que el runtime implemente autónomamente este método:
+
+```text
+FETCH_LIVE_CANONICAL_STATE
+→ RECOVER_PRIOR_DECISIONS_AND_TERMINAL_RESULTS
+→ CLASSIFY_FACT / OWNER_REPORTED / INFERENCE / HYPOTHESIS / CONFLICT
+→ FINGERPRINT_PRIOR_ATTEMPT
+→ IDENTIFY_FIRST_OPEN_CAUSAL_EDGE
+→ CHECK_AUTHORIZATION + CAPABILITY + DATA_BOUNDARY
+→ SELECT_ONE_DISCRIMINATING_ACTION_OR_STOP
+→ CLASSIFY_AT_ACTUAL_STAGE
+→ WRITE_TO_APPROVED_SUPPORTING_LOCATION
+→ FETCH_BACK_AND_VERIFY
+```
+
+Live `main/CURRENT-STATE.md` was re-fetched at blob `7a261129c8611cc0b5ed3788fc00c5d90ae189ea`. The current episode was recorded only in this supporting handoff branch; `main`, product code, permissions, credentials, tests, runtime, protected reads and real transport were not changed or exercised. This is one observed manual application of the method, **not proof of autonomous enforcement or causal learning in the IABV runtime**.
+
+### 20.2 Reconciled evidence timeline
+
+| Stage | Evidence | Correct interpretation |
+|---|---|---|
+| Old TXT attempt | Owner-supplied Codex report: 40-character input rejected by `RSA.ImportFromPem` | That TXT is not a usable private PEM for this task. Do not select it again. |
+| New PEM validation | Owner-supplied local report: private RSA PKCS#1, 2048 bits; public fingerprint computed in memory | Structural validation reported; not proof the key is registered in the GitHub App. |
+| Clipboard attempt | Earlier output `OTHER`, 3734 characters; content unknown; subsequent marker reset reported | No usable fingerprint result. Never read, infer, recover, reuse or echo prior clipboard content. |
+| GitHub UI structure | Prior read-only browser observation reported heading “Private key”, label “Label: Private”, a `code` node beginning `SHA256:`, and no adjacent copy control | A selector hypothesis exists, but this does not prove this Codex session can target/read that node safely. |
+| Repeated local navigation/UIA | Reports at approximately 12:23 and 12:29 retained/identified Opera but left target page unknown and found no card/node | The expected stage was not reached. These runs did not test whether the digest matches. Repeating the same UIA sequence was low-information. |
+| Route diagnosis at 12:34 | Owner-supplied result: IABV browser route unavailable; observer registered; accessibility available; DOM/UIA scope unknown; execution local; raw value could reach model/transcript | Decisive blocker is unproven data isolation, not demonstrated key mismatch. Stop before reading the fingerprint. |
+| Current handoff ref | Direct GitHub REST reads show branch HEAD and PR #548 HEAD both `6c31ecb919ea337645bb1fc323af317ed02c9b16`; PR open/draft/unmerged | Earlier normalized `fetch_pr` result was stale relative to the write. Direct REST branch and PR endpoint reconciled it; the supposed remaining HEAD discrepancy is closed. |
+
+Evidence supplied by the Owner/Codex is explicitly not represented as independently reproduced local execution. Unknown stays unknown.
+
+### 20.3 Errors in our previous reasoning/workflow
+
+1. **We retried UI Automation before proving the route contract.** After multiple runs returned `TARGET_PAGE_PRESENT=UNKNOWN` and `FINGERPRINT_NODE_IDENTIFIED=NO`, the next decision should have shifted to a read-only capability-and-data-boundary diagnosis. The attempts were eventually stopped, but not early enough. UAAL-D019 §3–6 requires an experiment fingerprint and a materially new hypothesis/precondition before repeating.
+2. **We treated “accessibility available” as too close to “safe DOM read available”.** These are different claims. UI Automation can expose window/control metadata without reliable page-DOM semantics. Local process execution also does not mean local-only data: the actual contract must prevent the sensitive string from reaching model context, responses, transcript, logs or files.
+3. **We let a chronological handoff preserve an executable instruction after its premise had failed.** Sections 16–17 contained the previous “read this node locally” next step; section 19 later recorded `RAW_VALUE_CAN_REACH_MODEL_OR_TRANSCRIPT=YES` and mandated stopping. Without a conspicuous supersession notice, retrieval of the older prompt could restart a blocked experiment. This section and the notice at the top explicitly suspend that prompt until new route evidence exists; historical evidence is retained rather than erased.
+4. **We nearly conflated mobile approval with fixing the key-observation blocker.** Official OpenAI documentation confirms that ChatGPT mobile can connect to a compatible desktop Codex host and review/approve actions, subject to availability and workspace settings. That can reduce routine handoffs for non-sensitive work, but it does not add a safe DOM reader, isolate arbitrary output from the conversation, establish IABV G1, or authorize protected reads. Local task context/output may be synchronized/stored by the product; therefore do not use Remote/mobile as a route for exposing the PEM or raw fingerprint while the output boundary is unproven. Remote/mobile setup is optional and separate, not a prerequisite for this fingerprint check.
+5. **We overstated a PR metadata discrepancy based on one normalized connector response.** Direct GETs of the branch and PR endpoints now agree on HEAD `6c31ecb919ea337645bb1fc323af317ed02c9b16`. The earlier disagreement was a connector-view freshness problem, not an enduring Git ref inconsistency. For important state transitions, verify the exact branch ref and pull request head via live REST/fetch-back before declaring a conflict.
+6. **We risked conflating this key-recovery subtask with the canonical bridge gate.** Even a future `MATCH=YES` would prove only that this PEM's public key matches the registered App fingerprint. It would not prove private-key custody, trusted Owner authority, policy/revocation, exact-target binding, replay protection or bridge readiness. The active canonical frontier remains G1; this episode does not reprioritize it.
+7. **We identified an unresolved canonical-route wording conflict.** A separate historical receipt explicitly records an Owner ratification of Option D/no-bootstrap and says not to ask for the same decision again once the canonical routing is synchronized. The current live `CURRENT-STATE.md` still says `OWNER_ROOT_SELECTION=NOT_PROVIDED` and `NEXT_ACTION=OWNER_DECISION_OR_INDEPENDENTLY_VERIFIABLE_G1_ROOT_AND_MANDATE`. These can refer to distinct questions (ratifying no-bootstrap vs selecting/proving a root), but the distinction is not stated clearly in the current snapshot. Do not silently change the canonical router from this handoff branch, and do not ask the Owner to repeat a decision already recorded. Treat this as a route-document reconciliation item for a separately authorized canonical update; until then, the live `CURRENT-STATE.md` remains the operational authority and the safety gates remain closed.
+
+### 20.4 Corrected rules for the next session
+
+- **Canonical first, not memory first:** fetch current live `CURRENT-STATE.md`; then the exact active PR/ref and the most recent terminal results. Memory and historical search guide retrieval but cannot overrule live canonical state.
+- **Chronology with supersession:** keep old attempts and prompts for provenance, but make the current applicable action explicit and mark earlier instructions superseded when their premises fail.
+- **No action without capability and output contracts:** registered tool ≠ available capability; local ≠ isolated; control accessibility ≠ reliable DOM. Prove route, scope, exact target selection, and data boundary before touching sensitive content.
+- **No-repeat gate:** same target + same operation + same actor/route + same preconditions + same expected observation = same experiment, regardless of rewritten prompt/time/chat. Retry only if a relevant precondition changed, a distinct hypothesis predicts a different observation, transient evidence is independently observed with a bounded retry plan, or authorization genuinely changed.
+- **One frontier, one next action:** for this fingerprint subtask the next action is `STOP_UNTIL_ROUTE_EVIDENCE`; do not set up mobile Remote just to retry it. Separately, mobile/Remote may be configured by the Owner if desired for approvals on ordinary, non-sensitive Codex tasks. The canonical bridge frontier remains G1 as defined in `CURRENT-STATE.md`.
+- **Stage labels must be literal:** `WINDOW_IDENTIFIED` does not mean `PAGE_OBSERVED`; `ACCESSIBILITY_AVAILABLE` does not mean `DOM_AVAILABLE`; `LOCAL_EXECUTION` does not mean `VALUE_ISOLATED`; PEM import does not mean fingerprint match; a documented feature does not mean IABV runtime integration.
+- **Do not ask the Owner to solve the engineering design.** Recover evidence, identify the actual missing producer/channel, explain the simplest action in everyday language, then ask for a decision only if one is genuinely required. Do not request passwords, tokens, private keys or a new Entra/Authenticator setup.
+- **Learning claim boundary:** this is a documented process correction and fetch-back-verified handoff delta. It is not proof that an IABV algorithm changed, that model weights changed, or that a later non-identical task causally reused the learning. That stronger claim requires a separate later observable reuse test.
+
+### 20.5 Open state and restrictions
+
+```text
+LATEST_LOCAL_REPORT=12:34_OWNER_SUPPLIED
+IABV_BROWSER_ROUTE=UNAVAILABLE
+BROWSER_OBSERVER_REGISTERED=YES
+LOCAL_DOM_ACCESS=UNKNOWN
+ACCESSIBILITY_ACCESS=AVAILABLE
+UIA_CAPABILITY_SCOPE=UNKNOWN
+EXECUTION_BOUNDARY=LOCAL
+RAW_VALUE_CAN_REACH_MODEL_OR_TRANSCRIPT=YES
+BLOCKER_CLASS=DATA_BOUNDARY_UNPROVEN
+FINGERPRINT_NODE_IDENTIFIED=NO
+GITHUB_FINGERPRINT_MATCH=NOT_VERIFIED
+PRIVATE_KEY_CUSTODY=NOT_ESTABLISHED
+GITHUB_APP_AUTH_PREFLIGHT=NOT_RUN
+JWT=NOT_CREATED
+INSTALLATION_TOKEN=NOT_CREATED
+GITHUB_APP_API_CALLED=NO
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+PROTECTED_READS=FAIL_CLOSED
+TESTS=NOT_RUN
+BUILD=NOT_RUN
+RUNTIME=NOT_RUN
+REAL_TRANSPORT=NOT_RUN
+AUTOMATIC_FOLLOW_ON=FALSE
+BRIDGE=BRIDGE_NOT_READY
+NEXT_ACTION_FOR_KEY_TASK=STOP_UNTIL_ROUTE_EVIDENCE
+ACTIVE_CANONICAL_FRONTIER=G1_INDEPENDENT_ROOT_MANDATE_AND_VERIFICATION_CHANNEL
+```
+
+### 20.6 Official mobile/Remote references — capability, not trust-root evidence
+
+- Codex on mobile: https://learn.chatgpt.com/docs/mobile
+- Remote connections and setup/troubleshooting: https://learn.chatgpt.com/docs/remote-connections
+- OpenAI Help Center (Spanish, Work and Codex): https://help.openai.com/es-419/articles/20001275-chatgpt-work-and-codex
+
+These establish the documented product workflow for compatible hosts and approvals only. They are not evidence of IABV runtime integration or a secret-safe value path.
