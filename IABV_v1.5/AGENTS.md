@@ -1,6 +1,29 @@
-<!-- Route summary synchronized 2026-10-26. CURRENT-STATE.md is the sole active route authority. -->
+<!-- Latest bounded G1/Entra route synchronized 2026-10-27. CURRENT-STATE.md remains the sole operational route authority. -->
 
-## Latest verified route delta — billing discrepancy and support intake completed (2026-10-26)
+## Latest bounded G1 result — Microsoft Entra is an authentication candidate, not an established IABV authority (2026-10-27)
+
+The Owner authorized a **read-only reassessment only** of whether the already reported Microsoft Entra setup can serve as a pre-existing external authority for G1. The existing directory, dedicated IABV Owner identity and Authenticator sign-in remain Owner-reported; this review did not independently access the Entra portal.
+
+**Result:** `ENTRA_IDENTITY_PROVIDER_CANDIDATE=PLAUSIBLE_FOR_OWNER_AUTHENTICATION`; `ENTRA_AS_STANDALONE_G1_AUTHORITY=NOT_ESTABLISHED`. Official Microsoft documentation describes tenant-scoped OIDC metadata/JWKS, API-side validation of access tokens intended for the API's audience, and app roles defined and assigned through an application registration. The live project source/docs do not establish a configured IABV app registration, token validation, role-to-mandate mapping or protected Owner-to-Windows/issuer-to-server binding. In the inspected main path, `pyproject.toml` has no direct OIDC/JWT validation dependency; the MCP server's inspected constructor disables DNS-rebinding protection and allows wildcard hosts/origins; the bridge documentation says HTTP token authentication is absent. Actual local runtime/tunnel state remains unverified.
+
+The existing Entra/Authenticator setup must **not** be repeated. This assessment does not overturn the previously ratified Option D/no-bootstrap decision and does not authorize app registration, credentials, permission changes, source edits, tests, runtime, protected reads, public tunnels or deployment. Keep `G1/G2/G3=NOT_ESTABLISHED`, `AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED`, `PROTECTED_READS=FAIL_CLOSED`, `AUTOMATIC_FOLLOW_ON=FALSE` and `BRIDGE=BRIDGE_NOT_READY`.
+
+**Next step:** new independently verifiable G1 authority/root/mandate/channel evidence, or a genuinely new explicit Owner decision to change Option D and authorize a bounded Entra-bootstrap design. Do not repeat broad OIDC feasibility or Entra setup. Always re-read live `CURRENT-STATE.md` before an action.
+
+Canonical route and detailed evidence: https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CURRENT-STATE.md  
+Existing bounded assessment: https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-23-M1A-G1-Entra-no-cost-integration-static-assessment.md
+
+Official references:  
+- OIDC metadata/JWKS: https://learn.microsoft.com/en-us/entra/identity-platform/v2-protocols-oidc  
+- Access-token validation: https://learn.microsoft.com/en-us/entra/identity-platform/access-tokens  
+- App-role authorization: https://learn.microsoft.com/en-us/entra/identity-platform/howto-implement-rbac-for-apps  
+- Licensing: https://learn.microsoft.com/en-us/entra/fundamentals/licensing
+
+---
+
+<!-- Route summary synchronized 2026-10-27. CURRENT-STATE.md is the sole active route authority. -->
+
+## Previous parallel infrastructure route delta — billing discrepancy and support intake completed (2026-10-26)
 
 The Owner-authorized read-only Billing & Licensing check is complete: GitHub Free and Copilot Free are visible, with no billing alert or balance explaining the Actions restriction. The authenticated Actions page still displays the billing-lock warning and lists 185 runs as failed at startup. Root cause remains UNKNOWN; TESTS=NOT_RUN.
 
