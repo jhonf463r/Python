@@ -737,7 +737,7 @@ Esta decisión se incorpora en la rama de diseño de la PR #546 para revisión; 
 
 ## 22. Evidencia posterior: GitHub App registrada e instalada en el repositorio único (2026-10-27)
 
-## 22. Evidencia posterior: GitHub App registrada e instalada en el repositorio único (2026-10-27)
+
 
 ### Resultado observado
 
