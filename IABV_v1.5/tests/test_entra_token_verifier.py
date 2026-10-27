@@ -194,6 +194,22 @@ def test_wrong_audience_tenant_owner_client_role_or_version_is_denied(overrides:
     assert asyncio.run(verifier.verify_token(token)) is None
 
 
+def test_client_audience_id_token_shape_is_denied_without_nonce_markers() -> None:
+    config = _config()
+    private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    verifier = _StaticKeyVerifier(config, private_key.public_key())
+    client_id = next(iter(config.allowed_client_ids))
+    token = _signed_token(
+        config,
+        private_key,
+        aud=client_id,
+        azp=client_id,
+        roles=[config.required_app_role],
+    )
+    # This token has no nonce/at_hash markers; the API audience check must still deny it.
+    assert asyncio.run(verifier.verify_token(token)) is None
+
+
 def test_malformed_wrong_type_or_wrong_algorithm_token_is_denied() -> None:
     config = _config()
     verifier = _StaticKeyVerifier(config, object())

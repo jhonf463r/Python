@@ -46,7 +46,17 @@ def _capture_handler_for_unit_tests(registrar, *args, **kwargs):  # type: ignore
     return capture
 
 
-_mcp_server_module._FailClosedMCPToolRegistrar.tool = _capture_handler_for_unit_tests
+@pytest.fixture(autouse=True)
+def _isolate_test_original_handlers(monkeypatch):  # type: ignore[no-untyped-def]
+    _TEST_ORIGINAL_HANDLERS.clear()
+    monkeypatch.setattr(
+        _mcp_server_module._FailClosedMCPToolRegistrar,
+        "tool",
+        _capture_handler_for_unit_tests,
+    )
+    yield
+    _TEST_ORIGINAL_HANDLERS.clear()
+
 
 from iabv_v15.services.tools.site_exploration_service import (  # noqa: E402
     SiteExplorationResult,
