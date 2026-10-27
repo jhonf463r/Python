@@ -734,3 +734,68 @@ Registrar y configurar la App con los permisos mínimos exactos, instalarla úni
 
 Esta decisión se incorpora en la rama de diseño de la PR #546 para revisión; no modifica `main`, no fusiona ni rebasa PRs y no activa la ruta del puente.
 
+
+## 22. Evidencia posterior: GitHub App registrada e instalada en el repositorio único (2026-10-27)
+
+## 22. Evidencia posterior: GitHub App registrada e instalada en el repositorio único (2026-10-27)
+
+### Resultado observado
+
+Tras completar la verificación adicional de GitHub, se registró y luego instaló la GitHub App dedicada al relay de aprobación. La automatización verificó la pantalla de creación y el resultado de instalación.
+
+- Owner GitHub: `@jhonf463r`, user ID `28608338`.
+- Repositorio: `jhonf463r/Python`, repository ID `860009771`, privado, Issues habilitado.
+- App registrada: `iabv-approval-relay-20261027`.
+- Slug: `iabv-approval-relay-20261027`.
+- App ID: `5496678`.
+- Página de ajustes: https://github.com/settings/apps/iabv-approval-relay-20261027
+- Installation ID: `175851462`.
+- Fecha de instalación confirmada: 2026-10-27.
+
+### Alcance y permisos confirmados
+
+La instalación quedó en modalidad **Only select repositories** y el único repositorio seleccionado es `jhonf463r/Python`.
+
+- `Metadata: read-only`.
+- `Issues: read/write`.
+- Todos los demás permisos de repositorio, organización, cuenta y empresa: `No access`.
+- Webhook Active: desmarcado; sin URL, eventos suscritos ni secreto.
+- OAuth user authorization: desmarcado.
+- Device Flow: desmarcado.
+- Callback y post-install setup URL: no configurados.
+- Clave privada de la App: no generada ni descargada.
+- No se crearon Issues, comentarios, ramas, commits de código ni contenido de aprobación en el repositorio.
+
+La instalación es una capacidad externa configurada; todavía no demuestra que IABV o el proceso Windows puedan autenticarse como la App ni que un mensaje de aprobación sea verificado por el reader.
+
+### Reconciliación causal
+
+Esta evidencia sustituye, solo como estado posterior a la fecha de registro, los valores históricos `GITHUB_APP_REGISTRATION=NOT_CREATED` y `GITHUB_APP_INSTALLATION=NOT_CREATED` que aparecen en §21. §21 conserva la cronología válida a la hora en que se escribió; este apartado registra el cambio posterior. No modificar ni inferir desde este documento un nuevo estado de `main` o de `CURRENT-STATE.md`.
+
+```text
+OWNER_ADOPTION_OF_GITHUB_AS_IABV_AUTHORITY=AUTHORIZED; DATE=2026-10-27
+GITHUB_OWNER_ID=28608338; REPOSITORY_ID=860009771
+GITHUB_ISSUES_ENABLED=TRUE; VERIFIED_BY_REPOSITORY_API
+GITHUB_APP_REGISTRATION=CREATED; NAME=iabv-approval-relay-20261027; APP_ID=5496678
+GITHUB_APP_INSTALLATION=INSTALLED; INSTALLATION_ID=175851462
+GITHUB_APP_INSTALLATION_REPOSITORIES=ONLY:jhonf463r/Python; REPOSITORY_ID=860009771
+GITHUB_APP_PERMISSIONS=METADATA_READ; ISSUES_READ_WRITE; ALL_OTHER_PERMISSIONS=NONE
+GITHUB_APP_WEBHOOKS=DISABLED
+GITHUB_APP_OAUTH=DISABLED; DEVICE_FLOW=DISABLED
+GITHUB_APP_PRIVATE_KEY=NOT_GENERATED; KEY_CUSTODY=NOT_ESTABLISHED
+OWNER_TO_WINDOWS_PRINCIPAL=NOT_ESTABLISHED
+ISSUER_TO_EXACT_SERVER=NOT_ESTABLISHED
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3=NOT_ESTABLISHED
+CANONICAL_MAIN_CURRENT_STATE=UNCHANGED_BY_THIS_DOCUMENTATION_UPDATE
+PROTECTED_READS=FAIL_CLOSED
+TESTS=NOT_RUN; BUILD=NOT_RUN; RUNTIME=NOT_RUN; REAL_TRANSPORT=NOT_RUN
+BRIDGE=BRIDGE_NOT_READY
+```
+
+### Siguiente acción discriminante
+
+No crear un Issue de prueba ni simular que ya existe transporte. El siguiente paso es cerrar la custodia de clave de la App en el host Windows autorizado, sin colocar la clave en el chat, en Issues ni en el repositorio; luego definir y verificar un flujo local pull-based con identidad Owner autenticada, digest/canonical scope, expiración y consumo durable anti-replay. La App instalada no es un issuer y el permiso `Issues: write` no autoriza por sí mismo lecturas protegidas. La siguiente implementación debe quedar sujeta a revisión de la ruta exacta y a la autorización de implementación ya delimitada, y requiere evidencia independiente antes de habilitar cualquier reader protegido.
+
+Este apartado se añade únicamente a la rama documental de la PR #546. No modifica `main`, no fusiona/rebasa ninguna PR y no altera el estado operativo canónico.
