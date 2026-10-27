@@ -1,5 +1,69 @@
 <!-- Owner-authorized route transition: Actions billing-lock blocker, 2026-10-26. CURRENT-STATE.md remains the sole route authority. -->
 
+## Owner-directed continuity and priority consolidation — 2026-10-26
+
+This entry reconciles the current conversation into the active route. It is a documentation-only continuity update; it does not authorize product changes or replace the authority requirements below. CURRENT-STATE.md remains the sole operational routing authority. Re-fetch live refs before any later source, test, merge or release action.
+
+### Trace of decisions and evidence from this conversation
+
+1. **Governed authority design supplied by the Owner.** The submitted G1/G2/G3 design is a requirements proposal, not proof of an existing root, custodian, channel, issuer, publisher, or target registry. The Owner explicitly had not selected or provisioned those dependencies. Option D (no bootstrap; fail-closed denial) therefore remains the safe operational disposition unless independently verifiable evidence or a new explicit Owner decision changes it.
+2. **Independent design review of PR #547.** At its earlier HEAD a3a61f449f0d7b943b40b57a264b512157a439a0, the review identified an order-dependent pseudocode defect: marking a candidate visited when enqueued could discard a later incoming relationship before its score/provenance was evaluated. The defect was in research pseudocode, not a demonstrated runtime failure.
+3. **Owner authorized bounded documentary continuation.** The research draft was corrected and extended on branch uaal-neural-activation-research-20261026. Current observed PR #547 HEAD is 9b60d787528a5199c36b59a6c172f860c4bd6a86; fetched-back blob is 74456b145c340dd106f4d2b58990cec59d50e1ea, 704 lines / 59,849 characters at last verification. The draft preserves incoming typed relations before candidate deduplication, records incomplete expansion/budget state, separates retained ideas from the active working set, preserves versions/contradictions/provenance, and defines open questions. The revised HEAD has not received an independent re-review; the PR remains OPEN/DRAFT/UNMERGED and non-authoritative.
+4. **Owner requested non-destructive idea evolution.** New material must be captured with provenance before relevance filtering. Low current relevance means DEFERRED, not deleted. Similarity does not prove identity; contradictions and prior versions remain linked. Repeated retrieval or agreement does not earn authority. A claim of reusable learning requires a verified delta consumed in a later non-identical task with independently verified effect. These rules reconcile with the existing Resonant Self-Knowledge Retrieval Fabric, Shared Developmental Knowledge Field, MEMORY-OPERATING-PROTOCOL, CONTEXT-INDEX, UNRESOLVED-KNOWLEDGE and UAAL-D014/D015/D018/D019. They do not create a new memory store, “supermind” service, or UAAL concept.
+5. **Bounded producer review of PR #531.** At the review baseline, live main was 44cbe159a0f87effca4e56d23f539b5fdf3ef60c. On that baseline, main's bootstrap.py blob e4befa6b683fc87aed7481f377f1332f5753e2c3 did not include ReadAuthorizationCoordinator, and read_authorization.py was absent from main. Those authority-organ changes exist only in PR #531's candidate. Its bootstrap.py blob 802f1b42881f383d9ac33fea8ee6c2c913a4da32 line 507 uses ReadAuthorizationCoordinator.unconfigured(); its read_authorization.py blob 3a57d1148c175040b7b747a6e04411c542c51dd3 defines provider Protocols but wires no production providers. unconfigured() passes None into all provider slots; missing_requirements() names eight dependencies. This is source-only evidence about the candidate; it does not prove local/external authority assets do not exist.
+6. **Actions blocker remains a separate execution dependency.** The observed account-billing-lock warning and zero-job startup failures remain the last verified state. The general Billing & Licensing check was completed and did not explain the warning; the support-form path was inspected but no ticket was submitted; one sanitized Community comment exists, not an official diagnosis. Root cause remains UNKNOWN. No unchanged workflow, billing inspection, or same support-form navigation is justified without material new evidence.
+
+### Current priority order — one active frontier, parallel work only when independently admissible
+
+**P0 — Preserve safety and provenance invariants.** Keep G1/G2/G3 NOT_ESTABLISHED, all eight implementation prerequisites open, protected reads fail-closed, and BRIDGE_NOT_READY. No synthetic providers, locally invented root/pin, production claims from interfaces, protected reads, source implementation, tests/runtime, merge, rebase, or deployment are authorized by this continuity update.
+
+**P1 — Active first-open dependency: G1 root, mandate and independent verification channel.** The next meaningful transition requires either (a) independently verifiable evidence of an already-existing authority/root and mandate with an out-of-band verification path, or (b) an explicit Owner decision to retain option D / choose among the already-described governance paths. “Proceed,” a design document, GitHub merge/signature evidence, a local key, a hash, or a type/interface does not select or establish that authority. If no independent root/mandate can be demonstrated, retain D and record the external dependency; do not emulate it.
+
+**P2 — Only after legitimate authority is evidenced, establish G2 and G3 producers separately.** G2 needs the authorized, fresh versioned policy/catalogue producer plus current revocation authority. G3 needs an authoritative versioned operation-to-target mapping bound to real operation/call-site identity and the exact opened object consumed. A Protocol, tool inventory, world snapshot, path, or handle primitive alone is not the authority producer. Do not reopen the broad inventory already completed; examine only the exact new evidence/producer presented.
+
+**P3 — Candidate implementation and acceptance are a later, separately authorized phase.** PR #531 is still OPEN/DRAFT/UNMERGED at bc2baf525a70d66628809360a197f25a069aa328. Its branch is divergent from live main; refresh both refs and the compare if an expressly authorized action later requires it. Do not rebase/merge. Do not treat the candidate as production code on main. Any implementation, platform test, or acceptance action needs its own revision-bound authorization and evidence.
+
+**P4 — Hosted validation waits for a material execution-precondition change.** Do not rerun the same workflow while the Actions billing-lock warning persists or navigate the same finished billing/support path again. Resume only after an actual official GitHub response, materially changed authenticated UI state, or a genuinely different verified support route; keep the reason for the lock UNKNOWN until explained. This blocker is parallel to, not evidence for or against, the trust-root question.
+
+**P5 — Future tests, only after the applicable gates/permissions and runner prerequisites are satisfied.** If separately authorized and an approved Windows/Python 3.11 executor is available, execute only the three already-scoped suites in the exact selected candidate, and preserve SHA, workflow/run, job/step, logs, exit codes and fetch-back. Until jobs actually start, TESTS=NOT_RUN. A successful test run would not itself establish G1/G2/G3 authority.
+
+**P6 — Park the neuro-inspired activation research outside the bridge route.** PR #547 stays a design-only draft pending bounded independent review of its updated HEAD. PR #546 remains untouched and is not an active dependency in this route. Do not merge/rebase either research PR as part of M1A/M1F work.
+
+### “Mente Espacio-Tiempo” operationalized without creating another brain
+
+Use the already-existing methodological loop:
+CAPTURE IDEA + SOURCE → CLASSIFY FACT / INFERENCE / HYPOTHESIS / QUESTION → LINK PRIOR ART / CONTRADICTIONS / VERSION LINEAGE → ACTIVATE ONLY THE OBJECTIVE-RELEVANT WORKING SET → CHECK CURRENT AUTHORITY AND FIRST OPEN CAUSAL EDGE → TAKE ONE AUTHORIZED DISCRIMINATING ACTION → RECORD STAGE-SPECIFIC OBSERVATION → VERIFY → PROPOSE A BOUNDED KNOWLEDGE/METHOD DELTA → CANONICAL WRITE AND FETCH-BACK → TEST LATER REUSE IN A NON-IDENTICAL TASK.
+
+The developmental/“supermind” responsibility is a method-level audit across existing memory, OSES, Development Control Tower, RuntimeAuditTracer/DecisionAuditTrail and route authority, not a claim of consciousness or a new runtime coordinator. A missing producer or unobserved field remains UNKNOWN. A captured idea is not a verified fact; a saved delta is not runtime learning; a new document does not outrank CURRENT-STATE.
+
+### Handoff / route lock
+
+The first actionable dependency remains OWNER_DECISION_OR_INDEPENDENTLY_VERIFIABLE_G1_ROOT_AND_MANDATE. After that evidence exists, evaluate G2 and G3 producers in dependency order; only then consider separately authorized implementation/acceptance. While waiting, do not generate a new inventory, synthetic bootstrap, dummy workflow, or another research branch. The next chat/session must begin with a fresh read of this file and the exact evidence linked above.
+
+```text
+CHAT_CONTINUITY=CONSOLIDATED; FETCHBACK_REQUIRED
+ACTIVE_FRONTIER=G1_INDEPENDENT_ROOT_MANDATE_AND_VERIFICATION_CHANNEL
+OWNER_ROOT_SELECTION=NOT_PROVIDED
+OPTION_D=RETAIN_FAIL_CLOSED_UNTIL_INDEPENDENT_EVIDENCE_OR_NEW_EXPLICIT_DECISION
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+PR531=OPEN_DRAFT_UNMERGED; HEAD=bc2baf525a70d66628809360a197f25a069aa328
+PR546=OPEN_DRAFT_UNMERGED; NO_ACTION
+PR547=OPEN_DRAFT_UNMERGED; HEAD=9b60d787528a5199c36b59a6c172f860c4bd6a86; INDEPENDENT_REREVIEW=PENDING
+ACTIONS_BILLING_LOCK=OBSERVED; ROOT_CAUSE=UNKNOWN; UNCHANGED_RETRY=PROHIBITED
+TESTS=NOT_RUN
+RUNTIME=NOT_RUN
+PROTECTED_READS=FAIL_CLOSED
+BRIDGE=BRIDGE_NOT_READY
+NEXT_ACTION=OWNER_DECISION_OR_INDEPENDENTLY_VERIFIABLE_G1_ROOT_AND_MANDATE
+AUTOMATIC_FOLLOW_ON=FALSE
+```
+
+```
+
 ### Latest continuation delta — bounded G1/G2/G3 producer review completed (2026-10-26; source-only)
 
 A single bounded, read-only source review was completed against the exact PR #531 candidate and the live main observed at review start (44cbe159a0f87effca4e56d23f539b5fdf3ef60c). This did not repeat the broad authority inventory and did not access local/protected data.
