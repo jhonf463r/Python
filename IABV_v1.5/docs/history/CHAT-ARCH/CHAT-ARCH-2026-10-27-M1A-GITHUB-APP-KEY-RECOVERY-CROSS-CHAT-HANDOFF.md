@@ -392,3 +392,78 @@ AUTOMATIC_FOLLOW_ON=FALSE
 BRIDGE=BRIDGE_NOT_READY
 ~~~
 
+
+
+## 15. Latest Codex report — clipboard is not the fingerprint (2026-10-27)
+
+### New result received from Owner
+
+The Owner supplied the latest local Codex summary:
+
+    LOCAL_EXECUTION=YES
+    PEM_IMPORT=VALID
+    RSA_BITS=2048
+    LOCAL_FINGERPRINT=COMPUTED
+    CLIPBOARD_FORMAT=OTHER
+    CLIPBOARD_LENGTH=3734
+    CLIPBOARD_CHAR_CLASS=OTHER
+    MATCH=NOT_VERIFIED
+    FORMAT_MISMATCH=YES
+    SECRET_VALUES_EXPOSED=NO
+    SECRET_MATERIAL_PERSISTED=NO
+
+This supports that the new PEM remains structurally valid and that the compare attempt did not establish a match. The clipboard value is not the expected documented fingerprint representation. Its contents are unknown and must not be inferred from length/class alone. Do not read it into a transcript, echo it, write it to disk, or retry comparing it as if it were a fingerprint. The report says no values were exposed or persisted; this is a user-supplied Codex report, not independently observed by the assistant.
+
+### Immediate next action
+
+Use local Codex only to reset the current Windows clipboard to a harmless empty/marker value, without reading the previous clipboard content. Do not inspect or change clipboard-history/cloud-sync settings during this action. Do not save the old clipboard value to disk. If the user uses Windows clipboard history or sync, note that resetting the current clipboard does not itself prove historical copies were erased.
+
+After reset, inspect the actual local GitHub page/control before attempting another comparison. Identify the visible label “Copyable key fingerprint” and the specific adjacent copy button via accessibility/UI automation. Do not click a generic page-copy or “copy all” control; do not select/copy the page, DOM, HTML, or entire row. Do not expose the field value to model output. If the exact adjacent copy control cannot be identified with confidence, stop with COPY_CONTROL_IDENTIFIED=NO; do not copy anything and do not fabricate a comparison.
+
+If and only if the correct adjacent control is positively identified, click just that control locally, read clipboard contents directly into a local variable, and report metadata only. A valid value must be accepted only if it exactly conforms to GitHub’s documented SHA-256/Base64 fingerprint representation. If clipboard length remains 3734 or format class is OTHER, reset the clipboard again and stop. No alternate hashing guesses, no clipboard content output, no secret/token/API actions.
+
+### Prompt for the next Codex local run
+
+~~~text
+Seguimos en Windows local, con la App GitHub iabv-approval-relay-20261027. El PEM nuevo ya está validado como RSA PKCS#1 privada de 2048 bits; no lo vuelvas a probar salvo que sea necesario para una comparación local.
+
+La comparación anterior devolvió CLIPBOARD_FORMAT=OTHER, CLIPBOARD_LENGTH=3734, CLIPBOARD_CHAR_CLASS=OTHER, MATCH=NOT_VERIFIED. No se conoce el contenido. NO lo leas, lo imprimas, lo guardes ni lo describas. No vuelvas a usar ese contenido para comparar.
+
+Fase A — mitigar clipboard:
+1. Confirma ejecución local en Windows y usuario MSI\faber.
+2. Sobrescribe inmediatamente el contenido ACTUAL del portapapeles por una cadena inocua fija, por ejemplo IABV_DIAGNOSTIC_CLIPBOARD_RESET. Hazlo sin leer el contenido anterior. No lo imprimas como resultado ni lo guardes en disco.
+3. Devuelve únicamente CLIPBOARD_RESET=YES/NO. No cambies la configuración de Clipboard History/cloud sync ni inspecciones su contenido histórico.
+
+Fase B — inspección del control, sin copiar todavía:
+4. Abre/usa la sesión del navegador local ya autenticada en la página exacta Credentials → Key pairs de la App existente. No inicies sesión con otra cuenta ni solicites credenciales en el chat.
+5. Mediante UI automation/accesibilidad identifica sin leer ni imprimir el valor de la huella: su etiqueta exacta “Copyable key fingerprint”, el contenedor de ese campo y el control de copia ADYACENTE. Distingue ese botón de los controles para copiar la página completa, el HTML, el nombre de la clave o cualquier otro dato.
+6. En esta fase no hagas click en ningún botón de copia. No devuelvas screenshot, DOM, HTML, innerText ni atributo value que pueda incluir la huella. Devuelve solo COPY_CONTROL_IDENTIFIED=YES/NO y el nombre accesible del botón si se puede obtener sin incluir valores.
+
+Si COPY_CONTROL_IDENTIFIED=NO, detente. No sigas probando controles al azar. Reporta el motivo concreto y pide al Owner una acción manual mínima para seleccionar el control correcto.
+
+Fase C — solo si el paso B identificó inequívocamente el botón correcto:
+7. Haz click SOLO en el control de copia adyacente a “Copyable key fingerprint”. No uses Ctrl+A/Ctrl+C, no copies el row ni la página.
+8. Lee el portapapeles directamente en una variable local, sin imprimirlo, registrarlo, introducirlo en prompts, ni escribirlo a disco. Calcula solo longitud y clase de caracteres. Si no es inequívocamente el SHA-256/Base64 documentado por GitHub, devuelve CLIPBOARD_FORMAT=OTHER, MATCH=NOT_VERIFIED y FORMAT_MISMATCH=YES; vuelve a sobrescribir el portapapeles con la cadena inocua fija y detente.
+9. Solo si el formato es compatible, calcula/reutiliza la huella local desde el PEM y compara todo en memoria, devolviendo MATCH=YES/NO/NOT_VERIFIED. Nunca muestres la huella completa ni el contenido del clipboard.
+10. No guardes ni cifres la clave; no generes JWT ni installation token; no llames a la API de GitHub; no cambies GitHub, el repositorio ni archivos del producto; no ejecutes tests/build/runtime/protected reads/real transport; no revoques ni sustituyas claves.
+
+Informe final: LOCAL_EXECUTION; CLIPBOARD_RESET; COPY_CONTROL_IDENTIFIED; CLIPBOARD_LENGTH; CLIPBOARD_CHAR_CLASS; CLIPBOARD_FORMAT; MATCH; FORMAT_MISMATCH; SECRET_VALUES_EXPOSED=NO; SECRET_MATERIAL_PERSISTED=NO. Si el control no se identifica inequívocamente, no continúes hacia la comparación.
+~~~
+
+### Current evidence state
+
+~~~text
+NEW_PEM=RSA_PRIVATE_PKCS1_2048; STRUCTURE_VALID
+LOCAL_FINGERPRINT=COMPUTED_IN_MEMORY
+LATEST_CLIPBOARD_READ=3734_CHARS; FORMAT_OTHER; CONTENT_UNKNOWN; DO_NOT_REUSE
+GITHUB_FINGERPRINT_MATCH=NOT_VERIFIED
+COPY_CONTROL_IDENTIFICATION=NOT_DONE
+PRIVATE_KEY_CUSTODY=NOT_ESTABLISHED
+GITHUB_APP_AUTH_PREFLIGHT=NOT_RUN; JWT=NOT_CREATED; INSTALLATION_TOKEN=NOT_CREATED
+G1=NOT_ESTABLISHED; G2=NOT_ESTABLISHED; G3=NOT_ESTABLISHED
+PROTECTED_READS=FAIL_CLOSED
+TESTS=NOT_RUN; BUILD=NOT_RUN; RUNTIME=NOT_RUN; REAL_TRANSPORT=NOT_RUN
+AUTOMATIC_FOLLOW_ON=FALSE
+BRIDGE=BRIDGE_NOT_READY
+~~~
+
