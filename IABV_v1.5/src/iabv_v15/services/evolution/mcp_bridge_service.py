@@ -268,8 +268,12 @@ class MCPBridgeService:
     ) -> None:
         self._container = container
         self._workspace_root = Path(workspace_root) if workspace_root else Path.cwd()
+        # Reject tunnel injection before constructing any runner in this profile.
+        # No alternate implementation may bypass the public-tunnel deny gate.
+        if tunnel_runner is not None:
+            raise ValueError("public_tunnel_runner_injection_disabled_by_policy")
         self._server_runner: _ServerRunner = server_runner or FastMCPServerRunner(container)
-        self._tunnel_runner: _TunnelRunner = tunnel_runner or CloudflaredTunnelRunner()
+        self._tunnel_runner: _TunnelRunner = CloudflaredTunnelRunner()
         self._transport = transport if transport in {"stdio", "sse", "streamable-http"} else DEFAULT_TRANSPORT
         self._bind_host = bind_host
         self._bind_port = int(bind_port)
@@ -389,7 +393,8 @@ class MCPBridgeService:
                 self._status.last_error = "public_tunnel_disabled_by_policy; bridge remains not ready"
                 self._update_state("failed")
             return self.status()
-        block = self._governance_gate_block()        with self._lock:
+        block = self._governance_gate_block()
+        with self._lock:
             if block is not None:
                 self._status.running = False
                 self._status.tunnel_url = None

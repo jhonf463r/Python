@@ -28,6 +28,7 @@ from iabv_v15.domain.models import (  # noqa: E402
     IATraceEntry,
 )
 from iabv_v15.infra.mcp.server import IABVMCPServer, _to_jsonable  # noqa: E402
+from iabv_v15.infra.mcp import server as _mcp_server_module  # noqa: E402
 from iabv_v15.services.tools.site_exploration_service import (  # noqa: E402
     SiteExplorationResult,
     SitePageSnapshot,
@@ -241,6 +242,57 @@ def _get_tool(server: IABVMCPServer, name: str):
 def _call_tool(server: IABVMCPServer, name: str, **kwargs: object) -> object:
     tool = _get_tool(server, name)
     return tool.fn(**kwargs)
+
+
+def test_preflight_rejects_stdio_before_any_bootstrap_work(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    for name in (
+        "IABV_ENTRA_TENANT_ID",
+        "IABV_ENTRA_API_CLIENT_ID",
+        "IABV_ENTRA_OWNER_OBJECT_ID",
+        "IABV_ENTRA_REQUIRED_APP_ROLE",
+        "IABV_ENTRA_ALLOWED_CLIENT_IDS",
+        "IABV_ENTRA_APPLICATION_ID_URI",
+        "IABV_MCP_RESOURCE_SERVER_URL",
+    ):
+        monkeypatch.delenv(name, raising=False)
+    with pytest.raises(RuntimeError, match="independent authorization boundary"):
+        _mcp_server_module.preflight_mcp_startup_configuration("stdio")
+
+
+def test_preflight_rejects_missing_entra_config_before_bootstrap(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    for name in (
+        "IABV_ENTRA_TENANT_ID",
+        "IABV_ENTRA_API_CLIENT_ID",
+        "IABV_ENTRA_OWNER_OBJECT_ID",
+        "IABV_ENTRA_REQUIRED_APP_ROLE",
+        "IABV_ENTRA_ALLOWED_CLIENT_IDS",
+        "IABV_ENTRA_APPLICATION_ID_URI",
+        "IABV_MCP_RESOURCE_SERVER_URL",
+    ):
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setenv("FASTMCP_HOST", "127.0.0.1")
+    monkeypatch.setenv("FASTMCP_PORT", "8000")
+    with pytest.raises(RuntimeError, match="before AppBootstrap initialization"):
+        _mcp_server_module.preflight_mcp_startup_configuration("streamable-http")
+
+
+def test_create_server_runs_preflight_before_constructing_appbootstrap(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    import sys
+    import types
+
+    def forbidden_bootstrap(*args, **kwargs):
+        pytest.fail("AppBootstrap must not be constructed before MCP preflight")
+
+    bootstrap_module = types.ModuleType("iabv_v15.bootstrap")
+    bootstrap_module.AppBootstrap = forbidden_bootstrap
+    monkeypatch.setitem(sys.modules, "iabv_v15.bootstrap", bootstrap_module)
+
+    def deny_preflight(transport: str):
+        raise RuntimeError("preflight-denied")
+
+    monkeypatch.setattr(_mcp_server_module, "preflight_mcp_startup_configuration", deny_preflight)
+    with pytest.raises(RuntimeError, match="preflight-denied"):
+        _mcp_server_module.create_server(container=None)
 
 
 def test_streamable_http_requires_complete_entra_configuration(monkeypatch) -> None:  # type: ignore[no-untyped-def]

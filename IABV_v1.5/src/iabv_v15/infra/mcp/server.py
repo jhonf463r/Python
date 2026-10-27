@@ -75,6 +75,43 @@ def _run_sync_off_event_loop(
 
 DEFAULT_SERVER_NAME = "iabv-v15"
 SUPPORTED_TRANSPORTS = {"stdio", "sse", "streamable-http"}
+_UNPREVALIDATED_ENTRA_AUTH = object()
+
+
+def preflight_mcp_startup_configuration(transport: str) -> tuple[Any, Any]:
+    """Validate transport, loopback bind and Entra config before AppBootstrap.
+
+    This function performs configuration checks only: it does not instantiate
+    AppBootstrap, read protected repository content, or contact Entra/JWKS.
+    The returned verifier/settings pair is passed into IABVMCPServer so startup
+    consumes the exact configuration that passed this preflight.
+    """
+    if transport not in SUPPORTED_TRANSPORTS:
+        raise ValueError("Unsupported MCP transport: " + transport)
+    if transport != "streamable-http":
+        raise RuntimeError(
+            "Fail-closed: only authenticated Streamable HTTP is eligible; "
+            "SSE and stdio have no verified independent authorization boundary."
+        )
+
+    requested_host = (os.environ.get("FASTMCP_HOST") or "127.0.0.1").strip()
+    try:
+        requested_port = int(os.environ.get("FASTMCP_PORT") or "8000")
+    except ValueError:
+        requested_port = -1
+    if requested_host != "127.0.0.1" or requested_port != 8000:
+        raise RuntimeError("Fail-closed: MCP must bind only to 127.0.0.1:8000.")
+
+    from iabv_v15.infra.mcp.entra_token_verifier import build_entra_auth_from_environment
+
+    entra_auth = build_entra_auth_from_environment()
+    if entra_auth is None:
+        raise RuntimeError(
+            "Fail-closed: complete Entra tenant, API audience, Owner role, allowed client, "
+            "canonical HTTPS resource URL, and matching Application ID URI must be configured "
+            "before AppBootstrap initialization."
+        )
+    return entra_auth
 
 
 def _to_jsonable(value: Any) -> Any:
@@ -123,6 +160,7 @@ class IABVMCPServer:
         *,
         name: str = DEFAULT_SERVER_NAME,
         mcp: Any | None = None,
+        _prevalidated_entra_auth: Any = _UNPREVALIDATED_ENTRA_AUTH,
     ) -> None:
         if container is None:
             raise ValueError("container no puede ser None")
@@ -145,7 +183,10 @@ class IABVMCPServer:
                 "host": "127.0.0.1",
                 "port": 8000,
             }
-            entra_auth = build_entra_auth_from_environment()
+            if _prevalidated_entra_auth is _UNPREVALIDATED_ENTRA_AUTH:
+                entra_auth = build_entra_auth_from_environment()
+            else:
+                entra_auth = _prevalidated_entra_auth
             if entra_auth is not None:
                 token_verifier, auth_settings = entra_auth
                 fastmcp_kwargs["token_verifier"] = token_verifier
@@ -3277,12 +3318,18 @@ class IABVMCPServer:
 
 
 def create_server(container: Any | None = None, *, name: str = DEFAULT_SERVER_NAME) -> IABVMCPServer:
-    """Fabrica un IABVMCPServer. Si container es None, construye AppBootstrap."""
+    """Preflight configuration before constructing AppBootstrap or the MCP server."""
 
+    transport = os.environ.get("IABV_MCP_TRANSPORT", "streamable-http")
+    prevalidated_entra_auth = preflight_mcp_startup_configuration(transport)
     if container is None:
         from iabv_v15.bootstrap import AppBootstrap
         container = AppBootstrap()
-    return IABVMCPServer(container, name=name)
+    return IABVMCPServer(
+        container,
+        name=name,
+        _prevalidated_entra_auth=prevalidated_entra_auth,
+    )
 
 
 def main() -> None:
@@ -3309,9 +3356,17 @@ def main() -> None:
     name = os.environ.get("IABV_MCP_NAME", DEFAULT_SERVER_NAME)
     workspace_root = os.environ.get("IABV_WORKSPACE_ROOT")
 
+    # Configuration must fail closed before AppBootstrap can load secrets,
+    # create directories, configure tracing, or wire services.
+    prevalidated_entra_auth = preflight_mcp_startup_configuration(transport)
+
     from iabv_v15.bootstrap import AppBootstrap
     container = AppBootstrap(workspace_root=workspace_root)
-    server = IABVMCPServer(container, name=name)
+    server = IABVMCPServer(
+        container,
+        name=name,
+        _prevalidated_entra_auth=prevalidated_entra_auth,
+    )
     server.run(transport=transport)
 
 
