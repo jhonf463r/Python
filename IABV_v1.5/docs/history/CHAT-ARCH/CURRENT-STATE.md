@@ -1,4 +1,26 @@
-<!-- Canonical route authority; MCP 1.30 target ratified and integration plan recorded 2026-10-27. No code/environment change authorized. -->
+<!-- Canonical route authority; cross-chat handoff consolidated and fetch-back verified 2026-10-27. No code/environment change authorized. -->
+
+## Cierre de continuidad para nuevo chat — HANDOFF verificado (2026-10-27)
+
+El handoff entre chats ya está guardado y se comprobó mediante lectura de vuelta: [CHAT-ARCH-2026-10-27-M1A-CROSS-CHAT-HANDOFF-MCP130-20261027.md](https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-27-M1A-CROSS-CHAT-HANDOFF-MCP130-20261027.md). Léase junto con este archivo, que sigue siendo la autoridad única de ruta.
+
+Documentos vinculados:
+- Plan sin código del objetivo ratificado: [MCP 1.30 / Streamable HTTP / loopback 8000](https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-27-M1A-G1-MCP130-IMPLEMENTATION-PLAN-NO-CODE.md).
+- Diseño Entra corregido tras revisión independiente: [diseño de bootstrap G1](https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-27-M1A-G1-ENTRA-BOOTSTRAP-DESIGN-ONLY.md).
+
+**Decisión ratificada:** Miniconda Python 3.13.2; paquete MCP SDK mcp==1.30.0 como objetivo futuro; Streamable HTTP; bind 127.0.0.1:8000; sin túnel. «Ok procede» autoriza la selección del objetivo y el plan documental únicamente. No autoriza cambios de código, instalación/actualización de paquetes, acceso al portal Entra, registros, credenciales, roles, runtime, pruebas, túneles ni lecturas protegidas. No repetir la pregunta sobre el objetivo ni la decisión Option D.
+
+**Reporte local de Codex — procedencia limitada:** el preflight informado por el Owner encontró Miniconda Python 3.13.2 con mcp 1.27.0 y otro entorno Python 3.14.4 con mcp 1.30.0; dos procesos MCP preexistentes; checkout C:\Python detached en 8425f03eb45abd11951938f6e3234459c1585b55 con 13.833 entradas de estado reportadas, 13.313 untracked y errores de acceso al enumerar algunos directorios. El asistente no reejecutó la inspección local; preservar como reporte de Codex, no como evidencia directa de GitHub main. No matar procesos, limpiar, cambiar de rama, sincronizar ni editar ese checkout.
+
+**Deducciones y bloqueos:** el lanzador de main predetermina Miniconda, Streamable HTTP y puerto 8000, pero contiene ruta Cloudflare que no debe iniciarse; el módulo usa stdio por defecto si no se fija transporte; la documentación del puente describe puerto 8765 y declara que HTTP aún no tiene autenticación por token. main no conecta un verificador Entra ni declara explícitamente las dependencias necesarias. Entra v2: validar por separado recurso/Application ID URI y claim aud (normalmente el Application/client ID GUID); no desactivar controles para resolver incompatibilidades. HTTP OAuth no protege stdio. La URL HTTPS canónica del recurso sigue sin aprobarse. La ceremonia local independiente de G1 sigue siendo hipótesis. G1/G2/G3 no establecidos; 8 prerrequisitos abiertos; lecturas protegidas fail-closed; puente no listo.
+
+**Protocolo anti-repetición:** aplicar UAAL-D019: no repetir la misma combinación de revisión/objetivo/operación/ruta/precondiciones/entorno esperando un resultado distinto. Elegir una única acción discriminante que pueda probarse o detenerse. Separar siempre evidencia main, reporte local de Codex, Owner-reported, inferencia, hipótesis, unknown y not-run. No convertir un protocolo/interfaz en proveedor real ni una revisión documental en implementación probada.
+
+**Siguiente frontera:** hace falta una autorización explícita nueva para la implementación inicial en una worktree/branch/PR draft aislada desde main vivo, preservando C:\Python. La recomendación de alcance es solo preparar código fail-closed, dependencias declaradas y pruebas en una PR borrador, sin instalar paquetes en el entorno de uso, sin configuración Entra, sin ejecución de pruebas/runtime, sin túnel, sin lectura protegida y sin merge. Esta autorización aún no se ha dado. No hay continuación automática.
+
+**Tareas paralelas que no se deben perder:** PR #531 sigue draft y no fusionada; #546 permanece sin acción; #547 necesita revisión independiente de su HEAD vivo. El bloqueo de GitHub Actions mantiene causa raíz desconocida; no repetir runs, facturación ni el mismo formulario sin evidencia material nueva. PR #548 pertenece a la tarea aparte de recuperación de clave GitHub App; mantener MATCH=NOT_VERIFIED y no leer de nuevo la huella mediante navegador/clipboard sin ruta local aprobada.
+
+
 
 ## Objetivo MCP ratificado y plan de integración documentado — sin código ni cambios de entorno (2026-10-27)
 
@@ -107,8 +129,8 @@ The prior Owner decision to retain Option D/no-bootstrap is already recorded; do
 ```text
 CHAT_CONTINUITY=CONSOLIDATED; FETCHBACK_REQUIRED
 ACTIVE_FRONTIER=OWNER_EXPLICIT_AUTHORIZATION_FOR_ISOLATED_CODE_IMPLEMENTATION
-LAST_TERMINAL_TASK=M1A_G1_MCP130_TARGET_AND_IMPLEMENTATION_PLAN_20261027
-LAST_TERMINAL_RESULT=TARGET_RATIFIED; PLAN_DOCUMENTED; SOURCE_AND_ENVIRONMENT_CHANGES_NOT_AUTHORIZED
+LAST_TERMINAL_TASK=CHAT_CONTINUITY_HANDOFF_MCP130_20261027
+LAST_TERMINAL_RESULT=HANDOFF_CONSOLIDATED; DOCUMENT_FETCHBACK_VERIFIED; IMPLEMENTATION_NOT_AUTHORIZED
 OWNER_ROOT_SELECTION=NOT_PROVIDED
 OWNER_DECISION=RATIFIED_OPTION_D_NO_BOOTSTRAP; PROVENANCE=EXPLICIT_CHAT_RECEIPT; NOT_RUNTIME_AUTHENTICATION
 LATEST_OWNER_AUTHORIZATION=ENTRA_G1_DESIGN_DOCUMENTATION_ONLY; PROVENANCE=EXPLICIT_CHAT_RESPONSE; NOT_RUNTIME_AUTHENTICATION
@@ -141,6 +163,12 @@ TARGET_MCP_SDK=1.30.0; CURRENT_MINICONDA_VERSION_REPORTED=1.27.0; UPDATE_NOT_AUT
 TARGET_TRANSPORT=STREAMABLE_HTTP; TARGET_BIND=127.0.0.1:8000; TUNNEL=DISABLED
 ENTRA_CANONICAL_HTTPS_RESOURCE_URL=NOT_APPROVED; ENTRA_E2E=BLOCKED
 LOCAL_CHECKOUT=DIRTY_DETACHED_REPORTED; PRESERVE; DO_NOT_EDIT
+HANDOFF_PATH=IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-27-M1A-CROSS-CHAT-HANDOFF-MCP130-20261027.md
+HANDOFF_SHA=ebe9e0e77ac9ab374f181b63e7111413ea2b0a5f
+TARGET_PLAN_SHA=f0a008006b410fda126ee3072368526f0dde6657
+MAIN_LATEST_HANDOFF_COMMIT=ad1ea60591e91403412152c413cbb28954134312
+OWNER_TARGET_RATIFICATION=PYTHON_3.13.2; MCP_1.30.0; STREAMABLE_HTTP; LOOPBACK_8000; NO_TUNNEL
+IMPLEMENTATION_AUTHORIZATION=NOT_GRANTED
 ```
 
 ```
