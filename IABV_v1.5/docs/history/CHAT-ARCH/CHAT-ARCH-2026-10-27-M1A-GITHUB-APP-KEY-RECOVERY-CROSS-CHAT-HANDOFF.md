@@ -227,3 +227,66 @@ PROTECTED_READS=FAIL_CLOSED
 TESTS=NOT_RUN; BUILD=NOT_RUN; RUNTIME=NOT_RUN; REAL_TRANSPORT=NOT_RUN
 BRIDGE=BRIDGE_NOT_READY
 ```
+
+
+## 12. Decisión del Owner sobre ventana local de secretos y credenciales web (2026-10-27)
+
+### Decisión recomendada
+
+No abrir todavía una ventana para pegar el valor de 40 caracteres. El Owner pidió que Codex/IABV realicen el trabajo de forma más automática y eviten pasos repetidos. La mejor ruta es una arquitectura de entrada local de secretos, pero no debe confundirse con la recuperación de esta clave que aún no está disponible.
+
+**Para la GitHub App de este episodio:**
+- Una ventana local de entrada sería válida solo si el Owner ya dispone del PEM completo, pero no lo tiene localizado.
+- La interfaz de GitHub normalmente descarga el PEM en el momento de crear la clave y muestra un fingerprint para comprobar la correspondencia. GitHub conserva la parte pública, no la clave privada. No debe suponerse que el valor de 40 caracteres sea el fingerprint, un key ID o la clave privada hasta comprobar la etiqueta real.
+- Pegar el valor de 40 caracteres en una ventana no lo convierte en el PEM. La prioridad es abrir la sesión local autenticada de GitHub, identificar el rótulo exacto y observar el estado real de la descarga. Si la sesión no está autenticada, permitir que el Owner complete el login/MFA en esa interfaz local; no solicitar códigos ni contraseñas por chat.
+- No repetir la selección del TXT ni intentar leerlo otra vez: ya sabemos que tiene 40 caracteres sin estructura PEM.
+- No generar una clave sustituta en esta etapa de diagnóstico. Si tras inspeccionar la UI se confirma que no existe PEM local y la clave debe sustituirse, tratar la generación y descarga como una acción separada y controlada, verificar inmediatamente que el archivo ha llegado al Windows local y preservar cualquier clave anterior hasta validar la nueva.
+
+### Diseño objetivo para secretos de IABV
+
+La solución a largo plazo sí debe reducir la carga manual mediante un **secret-entry local-first** y un almacén de credenciales protegido, pero reutilizando el órgano de credenciales existente de IABV en vez de crear un segundo vault prematuramente.
+
+Propiedades obligatorias de una futura ventana local:
+1. Se ejecuta en el Windows local y su control de entrada entrega el secreto directamente a un proceso/servicio local de custodia.
+2. El contenido no se envía al modelo, ni aparece en prompt, transcript, logs, crash reporting, Issues o documentos de memoria.
+3. El programa devuelve solo un resultado no secreto (guardado/no guardado y un handle), nunca el valor ni un token.
+4. Los secretos se cifran/protegen por el principal Windows autorizado; el acceso del proceso runtime se verifica antes de afirmar que una credencial está disponible.
+5. No se lee ni se guarda en un vault una contraseña/cookie/token de una web solo porque IABV pueda navegar esa web. Se respetan consentimiento, alcance, caducidad y revocación. Para sesiones de navegador, se prefiere el perfil/almacén del navegador cuando sea suficiente.
+6. La GitHub App private key y los secretos de cuentas web son clases distintas: la primera firma JWT como identidad técnica de una App; los segundos autentican al usuario/servicio frente a sitios concretos. No deben compartir permisos ni políticas por defecto.
+
+Para la App, el orden es: obtener el PEM completo → validar su estructura localmente → comparar la huella con GitHub → demostrar el principal Windows runtime → persistirlo bajo custodia local → hacer preflight mínimo de API. Para cada credencial web, el orden es consentimiento/alcance → entrada local → almacenamiento protegido mediante provider existente → acceso por handle para el consumidor autorizado → auditoría/rotación/revocación. El éxito de una etapa no prueba la siguiente.
+
+### Prompt siguiente para Codex local (sin crear claves)
+
+Ejecuta esta tarea acotada en Windows. No cambies archivos del producto ni configuración de GitHub.
+
+- Abre la sesión del navegador local de Windows que ya utiliza el Owner e intenta acceder a la página Credentials → Key pairs de la App existente.
+- Si la página exige login/MFA, detente y presenta la interfaz local para que el Owner lo complete. No pidas credenciales en el chat ni compartas cookies/sesiones con otra cuenta.
+- Identifica solo la etiqueta del valor que el Owner pudo copiar y el estado del botón/flujo de descarga. No copies el valor al transcript, al modelo ni a logs.
+- Inspecciona si el navegador registró un bloqueo/aviso de descarga en el evento de New key anterior, si ese evento está disponible. No cambies silenciosamente configuración de seguridad.
+- No generes otra clave, no revokes ninguna, no vuelvas a seleccionar el TXT de 40 caracteres y no intentes validar ese TXT.
+- Devuelve: etiqueta exacta del campo (sin valor), si el UI muestra el fingerprint de alguna clave, si hay un PEM original local y el motivo de descarga disponible en la UI. Si el motivo no aparece, deja `DOWNLOAD_CAUSE=UNKNOWN`.
+- No generes tokens ni llames a la API de la App.
+
+### Estado
+
+```text
+LOCAL_SECRET_ENTRY_WINDOW=RECOMMENDED_AS_FUTURE_LOCAL_ONLY_INTERFACE; NOT_IMPLEMENTED
+WINDOW_TO_PASTE_UNKNOWN_40_CHAR_VALUE=NOT_RECOMMENDED
+WEBSITE_CREDENTIAL_STORE=REUSE_EXISTING_IABV_PROVIDER_FIRST; NOT_INSPECTED_IN_THIS_TASK
+GITHUB_APP_PEM=NOT_LOCATED
+SELECTED_TXT=40_CHARACTERS; PEM_MARKERS_ABSENT; DO_NOT_RESELECT
+GITHUB_KEY_UI_LABEL=NOT_VERIFIED
+DOWNLOAD_CAUSE=UNKNOWN
+NEW_KEY_GENERATION=NOT_PERFORMED_BY_THIS_DIAGNOSTIC
+PRIVATE_KEY_VALIDITY=NOT_VERIFIED
+PRIVATE_KEY_FINGERPRINT_MATCH=NOT_VERIFIED
+PRIVATE_KEY_CUSTODY=NOT_ESTABLISHED
+GITHUB_APP_AUTH_PREFLIGHT=NOT_RUN; INSTALLATION_TOKEN=NOT_CREATED
+G1=NOT_ESTABLISHED; G2=NOT_ESTABLISHED; G3=NOT_ESTABLISHED
+PROTECTED_READS=FAIL_CLOSED
+TESTS=NOT_RUN; BUILD=NOT_RUN; RUNTIME=NOT_RUN; REAL_TRANSPORT=NOT_RUN
+BRIDGE=BRIDGE_NOT_READY
+```
+
+This is supporting continuity on a review branch only; it does not replace `CURRENT-STATE.md` or authorize runtime/source changes.
