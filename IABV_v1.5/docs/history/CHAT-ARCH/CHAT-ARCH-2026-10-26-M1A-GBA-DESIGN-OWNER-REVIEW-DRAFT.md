@@ -854,3 +854,89 @@ BRIDGE=BRIDGE_NOT_READY
 No se ejecutó prueba de la clave, no se solicitó ni generó un token de instalación, no se creó contenido en Issues y no se alteró `main` ni `CURRENT-STATE.md`. Este apartado es documentación de continuidad en esta PR de borrador; no cierra gates de autoridad ni habilita lecturas protegidas.
 
 Referencia oficial: https://docs.github.com/es/apps/creating-github-apps/authenticating-with-a-github-app/managing-private-keys-for-github-apps
+
+
+## 24. Decisión Owner: Codex local como operador de custodia y preflight, nunca pegado de la clave al modelo (2026-10-27)
+
+### Decisión y criterio de ergonomía
+
+El Owner solicita minimizar tareas manuales y delegar en Codex las operaciones que una IA pueda ejecutar mejor y más rápido, incluyendo el uso de GitHub cuando esté disponible y autorizado. Se adopta como ruta preferida Codex ejecutado localmente en el Windows destino, con un pequeño flujo de custodia local, en vez de pedir al Owner que vuelva a copiar datos manualmente o que pegue la clave dentro de una conversación.
+
+La idea de un “prompt seguro” debe distinguir dos mecanismos:
+- **No seguro:** pegar el contenido PEM en la caja de chat/prompt de Codex, ChatGPT, una Issue, una variable incluida en un comando, o cualquier interfaz cuyo contenido pueda ser registrado en transcriptos/logs.
+- **Preferido:** Codex genera y ejecuta en el Windows local un asistente/script que abre un selector de archivo local, lee la clave dentro del proceso local sin imprimir su contenido, la valida, compara su huella y solo entonces la guarda cifrada/protegida localmente. El prompt contiene instrucciones; no contiene la clave.
+
+Este flujo requiere Codex CLI/desktop con acceso local al Windows y al árbol de trabajo local. Si la sesión de Codex es remota/cloud o no puede interactuar con el sistema de archivos local, debe detenerse y no simular que puede guardar el secreto en el host físico.
+
+### Evidencia y estado no presumido
+
+El Owner informa que ya generó una clave para la App, que no consiguió descargarla directamente, que copió su contenido en Bloc de notas y cambió la extensión a .pem. Esto **no demuestra** que el texto esté completo, que el archivo sea PEM válido ni que corresponda a la clave pública que registra GitHub.
+
+- No se recibió ni almacenó el contenido privado en chat o en GitHub.
+- App: iabv-approval-relay-20261027, App ID 5496678.
+- Instalación: ID 175851462, limitada a jhonf463r/Python (repository ID 860009771).
+- GitHub owner user ID 28608338.
+- Permisos instalados: Metadata read; Issues read/write; todos los demás sin acceso.
+- Aún no se ha validado el PEM local, su huella, la identidad de Windows bajo la que corre IABV ni la autenticación JWT/install-token.
+
+### Prompt listo para usar en Codex local
+
+El texto siguiente es una orden de trabajo; **no anexar ni pegar la clave al prompt**.
+
+---
+
+Trabaja en el Windows físico donde se ejecuta IABV, usando Codex local (CLI/Desktop con acceso real al disco local), no un entorno cloud/remoto. Objetivo: custodiar y validar localmente la clave de la GitHub App aprobada, y hacer un preflight API estrictamente de solo lectura si la clave es válida. El secreto nunca debe entrar en el transcript/model context.
+
+Contexto verificado:
+- Repo privado: jhonf463r/Python; repository_id=860009771.
+- Owner: @jhonf463r; owner user id=28608338.
+- GitHub App: iabv-approval-relay-20261027; app_id=5496678.
+- Installation id=175851462; instalada únicamente en jhonf463r/Python.
+- Permisos instalados: Metadata read; Issues read/write; todos los demás No access.
+- Webhooks, OAuth y Device Flow desactivados.
+- main/CURRENT-STATE.md es la autoridad operativa. La PR #546 está abierta, draft y sin fusionar. Sus apartados 22–24 son documentación candidata, no autoridad canónica.
+
+Reglas de seguridad obligatorias:
+1. No pidas pegar la clave en el chat, el prompt, una Issue ni un comando. No muestres, imprimas, registres, adjuntes ni copies el contenido PEM al transcript, logs, reporte, variables de entorno o argumentos de línea de comandos.
+2. Primero confirma que la ejecución es local en Windows y que tienes acceso al equipo/disco. Si estás en cloud/remoto, detente.
+3. Lee solo lo necesario para identificar, de forma de solo lectura, el usuario Windows actual y el principal que ejecuta IABV (proceso/servicio/tarea ya existente). No hagas inventario amplio ni cambies servicios, ACLs globales, políticas, rama, código ni configuración canónica.
+4. Abre un selector de archivo local (Windows OpenFileDialog) para que el Owner elija su archivo PEM/TXT ya guardado. El script local debe leerlo en memoria sin que una operación tipo Get-Content/cat muestre su contenido. No asumir que cambiar extensión valida el archivo.
+5. Valida la estructura PEM localmente con las APIs criptográficas .NET compatibles con Windows/PowerShell (clave RSA privada). No normalices ni reescribas el original; si está incompleto/inválido, detente y explica el resultado sin imprimir el contenido.
+6. Calcula localmente la huella de clave pública con el mismo algoritmo que GitHub documenta: equivalente a la secuencia OpenSSL rsa, public output, DER, SHA-256 y Base64. Se puede implementar con RSA.ExportSubjectPublicKeyInfo + SHA-256 + Base64. Usa el navegador GitHub ya autenticado, si está disponible, para consultar Credentials → Key pairs de la App y comparar la huella. Solo una coincidencia exacta permite continuar. La huella no es la clave privada; solo mostrarla si hace falta para la verificación.
+7. No revoques ni generes otra clave automáticamente. Si el archivo no se puede validar o la huella no coincide, detente; reporta que se necesita recuperar el archivo original o generar una clave sustituta y espera una decisión explícita antes de cualquier rotación.
+8. Antes de instalar el secreto, determina el principal real de ejecución de IABV. Si IABV corre bajo el mismo usuario Windows, guarda una copia cifrada con Windows DPAPI CurrentUser en un directorio local de secretos de IABV y restringe los permisos del directorio al usuario y SYSTEM. No dejes un PEM plaintext adicional. Si la identidad de runtime es distinta/desconocida, no pongas ACLs al azar ni afirmes que IABV lo puede leer: detente después de verificar la huella y presenta las opciones compatibles con el principal real. Nunca guardes clave/cifrado/config dentro del repositorio ni de carpetas sincronizadas.
+9. Guarda solo configuración no secreta (app_id, installation_id, repository_id, método de almacenamiento y ruta del secreto cifrado) en el lugar local apropiado y con ACL mínima. Ningún token debe persistirse.
+10. Después de coincidencia de huella y custodia coherente con el principal runtime, intenta un preflight GitHub App mínimo: crea un JWT RS256 de corta duración en memoria; GET /app debe confirmar app id 5496678; GET /app/installations/175851462 debe confirmar la instalación; intercambia el JWT por un installation access token efímero, úsalo solo en memoria y hace GET /repos/jhonf463r/Python verificando id=860009771 y private=true. No llames endpoints de Issues, no crees ni edites nada, no hagas push/commit/PR, no leas contenido del repositorio con ese token y nunca imprimas JWT ni installation token. Descarta los secretos de memoria en cuanto sea viable.
+11. No cambies main/CURRENT-STATE.md ni fuentes de producto, no alteres PRs, no fusiones, no ejecutes tests/build/runtime ni lecturas protegidas del producto. Este preflight es solo comprobación de credencial y alcance de la instalación, no valida G1/G2/G3 ni el puente físico.
+12. Informe final sin secretos: host local confirmado sí/no; usuario/principal runtime (nombre, no credenciales); resultado PEM válido sí/no; huella local coincide sí/no; ubicación protegida (ruta, no contenido); preflight GET /app, GET instalación y GET repo con sus códigos HTTP/IDs; qué se modificó localmente; qué no se hizo; siguiente única dependencia.
+
+No afirmes éxito si no viste cada resultado; ante cualquier ambigüedad, detente de forma segura y explica el bloqueo en lenguaje sencillo.
+
+---
+
+### Política de saldo y uso de perfil ayudante
+
+Lectura TinyFish de solo lectura a las 2026-10-27 15:08:58 UTC: available_balance=4.52 USD, recarga automática sin configurar, ninguna recarga pendiente. Tarifas observadas: Agent US$0.016/paso; Browser US$0.002/minuto. Los créditos cubren la automatización del navegador, no GitHub ni IABV.
+
+Antes de cada automatización larga, estimar coste con las tarifas vigentes. No iniciar si el saldo disponible no cubre el coste estimado más un margen de al menos 25% y un remanente de US$0.50; en tal caso, presentar las opciones antes de iniciar. No cambiar de cuenta de forma silenciosa.
+
+Se podrá usar el saldo/perfil de un ayudante solo si el Owner lo autoriza para esa tarea y el ayudante autoriza expresamente usar su propia cuenta/perfil autenticado de forma independiente. No compartir sesiones, contraseñas, códigos MFA, cookies, claves o tokens, ni utilizar una cuenta alternativa para eludir controles de seguridad, permisos o facturación. La identidad propietaria de GitHub, el repositorio, la App y la instalación sigue siendo @jhonf463r y no se transfiere al ayudante.
+
+### Estado y aceptación del próximo paso
+
+- OWNER_PREFERENCE=MINIMIZE_MANUAL_STEPS; DELEGATE_TO_LOCAL_CODEX_WHERE_SAFE
+- PRIVATE_KEY_SOURCE=OWNER_COPIED_TO_NOTEPAD_AND_RENAMED_PEM
+- PRIVATE_KEY_CONTENT_IN_CHAT=NEVER_PROVIDED
+- PRIVATE_KEY_VALIDITY=NOT_VERIFIED
+- PRIVATE_KEY_FINGERPRINT_MATCH=NOT_VERIFIED
+- PRIVATE_KEY_LOCAL_CUSTODY=NOT_ESTABLISHED
+- WINDOWS_RUNTIME_PRINCIPAL=NOT_VERIFIED
+- GITHUB_APP_AUTH_PREFLIGHT=NOT_RUN
+- INSTALLATION_TOKEN=NOT_CREATED
+- TINYFISH_WALLET_BALANCE=4.52_USD; AUTO_RELOAD=UNCONFIGURED; AS_OF=2026-10-27T15:08:58.364Z
+- G1=NOT_ESTABLISHED; G2=NOT_ESTABLISHED; G3=NOT_ESTABLISHED
+- PROTECTED_READS=FAIL_CLOSED
+- TESTS=NOT_RUN; BUILD=NOT_RUN; RUNTIME=NOT_RUN; REAL_TRANSPORT=NOT_RUN
+- BRIDGE=BRIDGE_NOT_READY
+
+Esta sección es un plan de ejecución seguro y un handoff para Codex local. No afirma que la clave sea válida ni cierra G1/G2/G3. Añadida solo a la rama documental de la PR #546; main y CURRENT-STATE.md permanecen sin cambios.
