@@ -1128,3 +1128,59 @@ BRIDGE=BRIDGE_NOT_READY
 ```
 
 Este apartado corrige la hipótesis anterior en la sección 27: primero se debe obtener el archivo PEM completo descargado por GitHub; no volver a diagnosticar métodos de importación sobre el TXT de 40 caracteres. Solo se actualiza la rama de borrador de PR #546; `main` y `CURRENT-STATE.md` no se modifican.
+
+
+## 29. Corrección de continuidad: el TXT de 40 caracteres no era el PEM; no repetir instrucciones de descarga sin diagnosticar el navegador (2026-10-27)
+
+### Corrección recibida del Owner
+
+El Owner ya había explicado que GitHub no le permite descargar el archivo privado y que la interfaz sí le permite copiar “el número que sale”. El asistente no conservó esa distinción y volvió a recomendar el mismo paso de descarga. Se registra como error de continuidad: no pedir de nuevo la misma acción manual ni sugerir simplemente que el Owner descargue el PEM sin investigar por qué falla.
+
+### Hechos confirmados
+
+- App: iabv-approval-relay-20261027, App ID 5496678.
+- Instalación: ID 175851462, solo para jhonf463r/Python.
+- El Owner seleccionó en Codex un archivo de texto de 40 caracteres.
+- Codex confirmó que el texto tenía 40 caracteres, sin BOM, saltos de línea ni etiquetas PEM reconocidas.
+- RSA.ImportFromPem recibió el contenido del archivo, no la ruta, y rechazó ese texto.
+- No se obtuvo huella local, no hubo comparación con GitHub, no se guardó/cifró la clave y no se generaron tokens.
+- No está confirmado qué representa el valor de 40 caracteres: podría ser un identificador o dato de huella visible, pero no se debe clasificar como tal sin inspeccionar su etiqueta. Es claro que no era el PEM privado completo reconocido por la API criptográfica.
+
+### Distinción técnica establecida
+
+La documentación oficial de GitHub dice que al pulsar New key se descarga un archivo PEM y que GitHub conserva solo la parte pública. También indica que la UI muestra la huella SHA-256 del par de claves para compararla con la huella calculada localmente desde el PEM. La huella permite verificar la clave, pero no reemplaza ni permite reconstruir la clave privada.
+
+Referencia: https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/managing-private-keys-for-github-apps
+
+### Próxima acción: automatizar el diagnóstico de descarga, no pedir al Owner que repita pasos
+
+Codex local debe investigar el mecanismo de descarga antes de solicitar otra intervención manual:
+
+1. Revisar el historial de descargas de Opera y la carpeta de descargas de ese usuario Windows, usando búsqueda acotada por fecha y extensión PEM. No hacer inventario de todo el equipo ni imprimir rutas privadas en el chat.
+2. Inspeccionar la configuración/permisos de descarga del navegador y el resultado de descarga asociado a la última operación, si es observable localmente. No cambiar ajustes automáticamente.
+3. Acceder a la página Credentials → Key pairs de la App y distinguir visualmente las columnas/etiquetas (por ejemplo, fecha, identificador, fingerprint) sin copiar el valor al transcript. Registrar solamente la etiqueta, longitud y si el elemento es el PEM descargable o la huella.
+4. Si existe un PEM descargado, usarlo directamente y no pedir al Owner crear otro.
+5. Si no existe el PEM y la interfaz confirma que el archivo privado no se descargó ni se guardó, no existe un método para reconstruirlo desde el fingerprint/identificador. Proponer entonces generar una clave sustituta mediante la UI oficial y resolver la descarga en el navegador local: conservar la clave anterior, comprobar que el navegador realmente descargó el nuevo archivo, validar PEM y huella y solo después planear custodia. No revocar la clave anterior hasta que la nueva haya sido validada y custodiada.
+6. No pedir que copie/pegue el secreto, ni intentar convertir el número de 40 caracteres en una clave, ni instalar OpenSSL o cambiar políticas del navegador sin autorización.
+7. No usar la API de GitHub con una clave no validada. No crear Issue/Comentario/token, no cambiar app permissions, repo, main, CURRENT-STATE.md, ni ejecutar tests/build/runtime/lecturas protegidas.
+
+### Estado actual inequívoco
+
+```text
+OWNER_ALREADY_REPORTED_DOWNLOAD_BLOCK=TRUE
+ASSISTANT_REPEAT_DOWNLOAD_INSTRUCTION=CORRECTED
+SELECTED_TXT_LENGTH=40; PEM_MARKERS=ABSENT
+SELECTED_VALUE_SEMANTICS=UNKNOWN; DO_NOT_ASSUME_FINGERPRINT_OR_KEY
+PRIVATE_KEY_PEM_AVAILABLE_LOCALLY=NOT_CONFIRMED
+PRIVATE_KEY_VALIDITY=NOT_VERIFIED
+PRIVATE_KEY_FINGERPRINT=NOT_OBTAINED; MATCH=NOT_VERIFIED
+DOWNLOAD_BROWSER_CAUSE=UNKNOWN; INVESTIGATION=NEXT
+PRIVATE_KEY_CUSTODY=NOT_ESTABLISHED
+GITHUB_APP_AUTH_PREFLIGHT=NOT_RUN; INSTALLATION_TOKEN=NOT_CREATED
+G1=NOT_ESTABLISHED; G2=NOT_ESTABLISHED; G3=NOT_ESTABLISHED
+PROTECTED_READS=FAIL_CLOSED
+TESTS=NOT_RUN; BUILD=NOT_RUN; RUNTIME=NOT_RUN; REAL_TRANSPORT=NOT_RUN
+BRIDGE=BRIDGE_NOT_READY
+```
+
+La sección se incorpora a la rama documental de PR #546 únicamente como corrección de continuidad y plan acotado. No modifica main ni CURRENT-STATE.md. El siguiente intento debe investigar el estado de descarga/etiqueta, no pedir al Owner que repita el paso ya fallido.
