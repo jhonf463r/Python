@@ -1,4 +1,4 @@
-<!-- Canonical route authority; authorization scope reconciled 2026-10-27. Candidate-only source preparation for PR #549 is recorded; tests/runtime/activation/merge remain unauthorized. -->
+<!-- Canonical route authority; candidate test execution is Owner/Codex-reported and the test-only delta is statically reviewed; real Entra/runtime/protected reads/tunnel/merge/activation remain unauthorized. -->
 
 ## Static delta review completed — PR #549 HEAD 519c55a5 (2026-10-27)
 
@@ -17,6 +17,21 @@ Review receipt: [PR #549 519c static delta review](./CHAT-ARCH-2026-10-27-M1A-PR
 
 ---
 
+## Protocol evolution — UAAL-CFCP-001 and current causal frontier (2026-10-27)
+
+This handoff and continuity now use [UAAL-CFCP-001 — Protocolo de continuidad por evidencia y frontera causal](./CHAT-ARCH-2026-10-27-UAAL-EVIDENCE-TO-CAUSAL-FRONTIER-CONTINUITY-PROTOCOL-v1.md).
+
+Methodological lesson from PR #549: the first combined test run was 194 passed / 4 failed. The failures were traced to test contracts/fixtures; only tests were changed, affected suites and the combined suite were rerun, with 198 passed / 1 warning / exit 0 reported by Codex. GitHub independently confirms the subsequent commit changes only tests/test_mcp_server.py (+33/-7), and the exact test-only diff has been statically reviewed with no new P0/P1/confirmed P2. The local logs were not independently retrieved in this session.
+
+State by provenance: candidate identity and diff are LIVE_VERIFIED from GitHub; local test counts are OWNER_CODEX_REPORTED; the test-only delta is INDEPENDENTLY_REVIEWED; production Entra, actual revocation and bridge readiness are NOT_RUN / NOT_ESTABLISHED. Python 3.13.2 and GitHub Actions CI remain unvalidated.
+
+- PR #549: OPEN/DRAFT/UNMERGED; HEAD 519c55a5b96a5e0b3826b54bf92726ef7f1b9c28; base a8624c30744da7f593d6a1c829e48aa229c8efca.
+- PR #531: OPEN/DRAFT/UNMERGED; HEAD bc2baf525a70d66628809360a197f25a069aa328; base 7ddfe285b1a3267f9ef6f57f862cca78bc8438c2. Do not rebase or merge either candidate.
+- G1/G2/G3=NOT_ESTABLISHED; AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED; OWNER_ROOT_SELECTION=NOT_PROVIDED; MCP_TOOL_ALLOWLIST=EMPTY; PROTECTED_READS=FAIL_CLOSED; TUNNEL=DISABLED; BRIDGE=BRIDGE_NOT_READY.
+
+Next causal frontier: do not keep expanding the PR #549 verifier test inventory as a substitute for authorization. Perform one bounded, read-only source review of the live PR #531 candidate: trace bootstrap.py into ReadAuthorizationCoordinator and the concrete provider instances wired for G1/G2/G3. First determine whether already-present evidence contains an independently verifiable Owner root/mandate and independent verification/revocation channel, or only Protocols, unconfigured None providers, synthetic tests or bounded GitHub merge evidence. Do not repeat the broad architecture inventory; do not fabricate providers, roots or policies.
+
+---
 ## Latest candidate validation — PR #549 HEAD 519c55a5: isolated test suites reported passing (2026-10-27)
 
 This entry supersedes earlier candidate-head and test-state references only where it explicitly identifies the latest source candidate. The execution evidence below was reported by the Owner from Codex's isolated temporary clone; the local temporary logs are not accessible to this documentation writer, so the run results are not independently reproduced here. GitHub independently confirms the candidate commit and its test-only diff.

@@ -76,3 +76,30 @@ INDEPENDENT_REVIEW_OF_519C=PENDING
 ```
 
 Next action: bounded static review of the exact current HEAD `519c55a5b96a5e0b3826b54bf92726ef7f1b9c28`; then focus on the concrete missing authority/revocation producers rather than repeating these tests. Do not merge, configure Entra, enable operations or activate the bridge until the separate authority gates are actually satisfied.
+
+## Addendum — static delta review completed and process-learning protocol updated (2026-10-27)
+
+The exact test-only delta at 519c55a5b96a5e0b3826b54bf92726ef7f1b9c28 has subsequently received a bounded static review in [CHAT-ARCH-2026-10-27-M1A-PR549-519C-STATIC-DELTA-REVIEW.md](./CHAT-ARCH-2026-10-27-M1A-PR549-519C-STATIC-DELTA-REVIEW.md). The earlier pending indicator above is historical and is superseded by this addendum.
+
+```text
+EXACT_DELTA_REVIEW=COMPLETED
+NEW_P0=0
+NEW_P1=0
+NEW_CONFIRMED_P2=0
+REVIEW_SCOPE=TESTS_TEST_MCP_SERVER_PY_ONLY
+LOCAL_TESTS=OWNER_CODEX_REPORTED_PASS; 198_PASSED; 1_WARNING; EXIT=0
+LOCAL_LOGS=NOT_INDEPENDENTLY_RETRIEVED_IN_THIS_SESSION
+PYTHON_3_13_2=NOT_AVAILABLE_IN_REPORTED_RUN
+GITHUB_ACTIONS_CI=NOT_RUN
+G1/G2/G3=NOT_ESTABLISHED
+MCP_TOOL_ALLOWLIST=EMPTY
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+MERGE=NOT_AUTHORIZED
+PRODUCTION_ACTIVATION=NOT_AUTHORIZED
+```
+
+Method-level learning is versioned in [UAAL-CFCP-001](./CHAT-ARCH-2026-10-27-UAAL-EVIDENCE-TO-CAUSAL-FRONTIER-CONTINUITY-PROTOCOL-v1.md). This is a persistent documented protocol update, not a claim that ChatGPT, Codex and IABV automatically share a runtime or autonomous memory.
+
+Next frontier: bounded, read-only inspection of the concrete G1 provider chain in the live PR #531 candidate, with no broad re-inventory, no fabricated authority and no merge/rebase.

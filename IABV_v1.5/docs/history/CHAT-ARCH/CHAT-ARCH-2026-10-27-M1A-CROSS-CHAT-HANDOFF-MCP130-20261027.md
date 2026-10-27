@@ -1,5 +1,26 @@
 # Handoff entre chats — IABV / Entra G1 / MCP 1.30 (2026-10-27)
 
+## Continuity checkpoint for a new chat — current verified route (2026-10-27)
+
+Canonical authority: [CURRENT-STATE.md](./CURRENT-STATE.md). Read it first, then [UAAL-CFCP-001](./CHAT-ARCH-2026-10-27-UAAL-EVIDENCE-TO-CAUSAL-FRONTIER-CONTINUITY-PROTOCOL-v1.md). New headed sections supersede older status lines where they conflict; keep historical receipts intact.
+
+Live references verified for this checkpoint:
+- main before this documentation update: 1b8906057e0ae19f4a79b451f5e4ec476a0442c3.
+- PR #549: OPEN/DRAFT/UNMERGED; HEAD 519c55a5b96a5e0b3826b54bf92726ef7f1b9c28; base a8624c30744da7f593d6a1c829e48aa229c8efca. Four local suites are Owner/Codex-reported as passing (198 combined, 1 warning, exit 0) on Python 3.14.4; the exact test-only delta has a bounded static review with no new P0/P1/confirmed P2. The local logs were not independently inspected here; Python 3.13.2 and GitHub Actions CI were not validated.
+- PR #531: OPEN/DRAFT/UNMERGED; HEAD bc2baf525a70d66628809360a197f25a069aa328; base 7ddfe285b1a3267f9ef6f57f862cca78bc8438c2. Its branch is on an older base; do not rebase or merge automatically.
+- Gates: G1/G2/G3=NOT_ESTABLISHED; AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED; OWNER_ROOT_SELECTION=NOT_PROVIDED; MCP_TOOL_ALLOWLIST=EMPTY; PROTECTED_READS=FAIL_CLOSED; TUNNEL=DISABLED; BRIDGE=BRIDGE_NOT_READY; MERGE=NOT_AUTHORIZED; PRODUCTION_ACTIVATION=NOT_AUTHORIZED.
+
+## Next task — one discriminating read-only review, not another broad inventory
+
+Inspect only the exact live PR #531 HEAD bc2baf525a70d66628809360a197f25a069aa328. Follow bootstrap.py composition into ReadAuthorizationCoordinator and trace concrete wired provider instances for G1/G2/G3. First question: does already-present, independently verifiable evidence establish an Owner trust root/mandate plus an independent verification/revocation channel, or are the paths only Protocol contracts, unconfigured None providers, synthetic tests or bounded GitHub merge evidence? Report exact path/line/blob evidence, separate observation from inference, and stop if no real G1 artifact is present. Do not repeat the broad inventory.
+
+Do not change code, rebase/merge, configure production Entra, run live runtime, enable protected reads or tools, start a tunnel, or activate the bridge during this read-only discrimination. If G1 has no real source/evidence, specify the exact missing producer and the one new input that could change the decision.
+
+## Process learning
+
+The first failed test run is evidence, not noise: preserve it, classify root cause, fix only the layer shown to be wrong, rerun the affected suites and the full set, and report both initial and final outcomes. A new commit always gets a SHA-bound delta review; no review inherits automatically to a new HEAD. A test pass is not live authority or E2E readiness. These rules now live in UAAL-CFCP-001.
+
+---
 ## Static review of PR #549 test-only delta completed — HEAD 519c55a5 (2026-10-27)
 
 Read-only review of exact commit `519c55a5b96a5e0b3826b54bf92726ef7f1b9c28` confirms parent `b55a39322d04eff5fc501629c5f331d8ea22c291` and only one changed path, `tests/test_mcp_server.py`. The test fixture corrections are statically coherent; no new finding was identified in this delta (`NEW_P0=0; NEW_P1=0; NEW_CONFIRMED_P2=0`). This is not a full security certification.
