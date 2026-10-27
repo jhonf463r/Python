@@ -1,5 +1,23 @@
 <!-- Canonical route authority; authorization scope reconciled 2026-10-27. Candidate-only source preparation for PR #549 is recorded; tests/runtime/activation/merge remain unauthorized. -->
 
+## Latest source-candidate follow-up — PR #549 HEAD b55a3932 (2026-10-27)
+
+This entry supersedes the candidate SHA and review-pending details in the preceding candidate-update section. Earlier candidate states remain historical records.
+
+- PR #549: `OPEN/DRAFT/UNMERGED` — https://github.com/jhonf463r/Python/pull/549.
+- Branch: `codex/m1a-g1-mcp130-entra-implementation-20261027`.
+- Previous HEAD: `8afee332e5e0f65715013effcee57b215413547c`.
+- Current source-candidate HEAD: `b55a39322d04eff5fc501629c5f331d8ea22c291`, commit message `[skip ci] Isolate MCP test handlers and cover ID-token audience denial`.
+- Canonical `main` before this documentation update: `3b6d2f7056777141ec3a04020654455e811697e1`. No rebase, merge, or base change was performed.
+- This follow-up changes only `tests/test_mcp_server.py` and `tests/test_entra_token_verifier.py`. The handler-capture registry in the tests is now installed/restored per test using pytest monkeypatch rather than patching the server class for the entire test-module lifetime. Added a negative synthetic token contract whose audience is the permitted client ID (ID-token-like audience), with no `nonce`/`at_hash` markers, and which must still fail the API audience check.
+- Static source transformations passed in-memory sanity checks and both updated files were fetched back from the exact new HEAD. No tests/build/runtime/CI were executed. The workflow query for the preceding HEAD had no runs; this new HEAD carries `[skip ci]`.
+- The prior independent report applies to `8afee332e5e0f65715013effcee57b215413547c` and earlier revisions, not to `b55a39322d04eff5fc501629c5f331d8ea22c291`. Independent review of the exact current HEAD is pending.
+- Preserve: `G1/G2/G3=NOT_ESTABLISHED`; `MCP_TOOL_ALLOWLIST=EMPTY`; `PROTECTED_READS=FAIL_CLOSED`; `TUNNEL=DISABLED`; `BRIDGE=BRIDGE_NOT_READY`; `TESTS/BUILD/RUNTIME=NOT_RUN`; `MERGE=NOT_AUTHORIZED`; `PRODUCTION_ACTIVATION=NOT_AUTHORIZED`.
+
+Next action: obtain a bounded independent static review of `b55a39322d04eff5fc501629c5f331d8ea22c291`, then decide the testing gate separately. Do not install packages, run tests, configure Entra, start the bridge, enable operations, or merge in this phase.
+
+---
+
 ## Latest source-candidate correction — PR #549 HEAD 8afee332 (2026-10-27)
 
 **This is the current candidate status and supersedes earlier candidate-HEAD references below, which remain historical evidence.**

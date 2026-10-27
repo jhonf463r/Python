@@ -1,5 +1,23 @@
 # Handoff entre chats — IABV / Entra G1 / MCP 1.30 (2026-10-27)
 
+## Latest candidate update — PR #549 HEAD b55a3932 (2026-10-27)
+
+This note supersedes earlier candidate HEAD references only. It does not relax the no-tests/no-runtime/no-merge boundaries.
+
+- PR: https://github.com/jhonf463r/Python/pull/549 — OPEN/DRAFT/UNMERGED.
+- Current main before this note: `3b6d2f7056777141ec3a04020654455e811697e1`. PR base remains its earlier recorded SHA `a8624c30744da7f593d6a1c829e48aa229c8efca`. Do not rebase or merge automatically.
+- Previous candidate HEAD: `8afee332e5e0f65715013effcee57b215413547c`.
+- Current candidate HEAD: `b55a39322d04eff5fc501629c5f331d8ea22c291`.
+- Latest commit changes two test files only: per-test scoped capture of original handlers in test-only state, and a negative ID-token-like audience contract without relying on `nonce`/`at_hash` markers.
+- The prior static correction removed original-handler references from production MCP tool wrappers, kept the allowlist empty and tightened ordinary mutability of trust-binding fields. Latest source files were fetched back from the exact candidate HEAD.
+- Tests/build/runtime/CI have not been run. The prior independent report does not review this new HEAD. Request the second static review against `b55a39322d04eff5fc501629c5f331d8ea22c291` exactly.
+- Preserve `G1/G2/G3=NOT_ESTABLISHED`, `PROTECTED_READS=FAIL_CLOSED`, `MCP_TOOL_ALLOWLIST=EMPTY`, `TUNNEL=DISABLED`, `BRIDGE=BRIDGE_NOT_READY`, `MERGE=NOT_AUTHORIZED`.
+
+Receipt: [CHAT-ARCH-2026-10-27-M1A-PR549-CORRECTION-B55A-FETCHBACK-RECEIPT.md](./CHAT-ARCH-2026-10-27-M1A-PR549-CORRECTION-B55A-FETCHBACK-RECEIPT.md).
+
+---
+
+
 ## Latest candidate update — PR #549 HEAD 8afee332 (2026-10-27)
 
 This note supersedes the candidate SHA only; it does not supersede the no-runtime/no-merge boundaries recorded below.
