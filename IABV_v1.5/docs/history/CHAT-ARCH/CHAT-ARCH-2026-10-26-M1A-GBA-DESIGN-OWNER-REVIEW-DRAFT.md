@@ -487,3 +487,78 @@ NEXT_CANONICAL_ACTION=WAIT_FOR_GENUINELY_NEW_INDEPENDENT_G1_ROOT_AND_MANDATE_EVI
 ```
 
 Este resultado actualiza la trazabilidad del borrador; no cambia el enrutamiento canónico de `CURRENT-STATE.md`, no crea una raíz de confianza y no autoriza automáticamente una fase técnica siguiente.
+
+
+## 18. Evaluación de canales móviles y retorno local: evidencia oficial, sin integración (2026-10-26)
+
+Esta sección continúa el alcance documental del informe de revisión móvil. No crea una aplicación, no registra un proveedor, no cambia transporte y no afirma una integración existente.
+
+### A. Codex Remote: canal de trabajo humano, no API de autorización IABV
+
+La documentación oficial de OpenAI describe acceso, desde la pestaña Remote de ChatGPT móvil, a chats compatibles de Codex de escritorio. La experiencia permite continuar hilos, responder preguntas y revisar/aprobar acciones de Codex; los archivos, credenciales y permisos del entorno permanecen en el host. Esto puede ser una interfaz útil para dirigir la tarea del puente desde el teléfono cuando el host y la versión instalada sean compatibles.
+
+Fuentes oficiales:
+- https://help.openai.com/es-419/articles/20001275-chatgpt-work-and-codex
+- https://openai.com/es-419/index/work-with-codex-from-anywhere/
+
+**Límite:** estas fuentes describen interacción remota con Codex, no una integración que entregue un evento firmado, fresco y ligado a la operación desde Remote hasta `HumanApprovalBroker` de IABV. La compatibilidad exacta del host Windows debe verificarse en la instalación real; no se presume por documentación general. `CODEX_REMOTE_TO_IABV_BROKER_BINDING=NOT_ESTABLISHED`.
+
+### B. Entra device authorization flow: candidato para autenticar al humano sin callback entrante
+
+Microsoft documenta un flujo donde el cliente local solicita un `device_code` y un `user_code`, presenta una URL de verificación al usuario y consulta el endpoint de token hasta que el usuario completa o deniega la autenticación. El usuario puede usar otro dispositivo, como el teléfono; no se requiere que el teléfono abra una conexión entrante al listener loopback del equipo local.
+
+Fuente oficial:
+- https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-device-code
+
+**Qué podría resolver:** una posible parte de autenticación de usuario en un flujo iniciado desde el equipo, compatible en principio con un diseño sin listener público, manteniendo el transporte local-only.
+
+**Qué no resuelve:** el flujo devuelve tokens de autenticación/autorización para scopes de la aplicación; no muestra automáticamente el alcance concreto de una lectura IABV ni constituye, por sí solo, un consentimiento fresco para esa operación. La aplicación debe validar el token conforme al protocolo y su configuración, identificar inequívocamente al principal, vincularlo al rol Owner autorizado y exigir una confirmación independiente que cubra la instancia, revisión, operación, destino, datos expuestos, destinatario, límites y vencimiento.
+
+La existencia de un directorio Entra y un inicio con Authenticator es Owner-reported en el historial; una app registration, su client ID, flujo registrado y validación en IABV no están demostrados. Este análisis no repite la configuración previa ni crea nada. `ENTRA_DEVICE_FLOW=DOCUMENTED_CANDIDATE; NOT_CONFIGURED_OR_TESTED`.
+
+Referencias OIDC para el descubrimiento y la validación del lado servidor:
+- https://learn.microsoft.com/en-us/entra/identity-platform/v2-protocols-oidc
+- https://learn.microsoft.com/en-us/entra/identity-platform/access-tokens
+
+### C. GitHub App: identidad atribuible, pero todavía no provisionada
+
+GitHub documenta que una GitHub App puede actuar como la propia app, como instalación o en nombre de un usuario mediante un user access token. Ese tercer modo puede atribuir acciones al usuario autenticado, dentro de los permisos efectivos de la app y del usuario.
+
+Fuentes oficiales:
+- https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/about-authentication-with-a-github-app
+- https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app
+
+**Límite:** un user access token autentica/atribuye una acción a un usuario de GitHub; no prueba automáticamente que ese usuario sea el Owner de runtime de IABV, que controle la instancia Windows exacta o que haya aprobado un target/scope de lectura concreto. No hay una GitHub App de aprobación IABV identificada como ya provisionada. No crear una durante este estudio.
+
+### Comparación y decisión de diseño provisional
+
+| Candidato | Puede contribuir | No demuestra |
+|---|---|---|
+| Codex Remote | Continuidad humana y aprobación de acciones dentro de Codex en un host compatible | Evento de aprobación consumible por IABV; autoridad G1; autorización de lectura |
+| Entra device flow | Autenticación de usuario iniciada desde el equipo, con interacción en el teléfono y polling saliente | Consentimiento IABV ligado a un scope concreto; autoridad Owner ya enrolada; raíz G1 |
+| GitHub App user token | Identidad GitHub y acciones atribuibles al usuario bajo permisos delimitados | Vínculo Owner→principal Windows→issuer→reader; consentimiento de una lectura específica |
+
+**Recomendación de diseño, no adopción:** conservar como dirección el modelo A ya seleccionado por el Owner (principal Windows enrolado + confirmación explícita ligada a la intención). Para la parte de autenticación remota, evaluar Entra device flow antes de crear una nueva app o ruta, porque se apoya en una identidad que el historial ya registra como configurada por el Owner y no requiere callback entrante. Esta prioridad es una hipótesis de diseño basada en reutilización, no prueba de viabilidad completa ni autorización para registrar una aplicación. GitHub App permanece como alternativa comparativa si Entra no satisface los requisitos.
+
+Incluso si el identity flow resulta viable, queda por diseñar un canal donde el teléfono vea y confirme el alcance exacto de la operación; luego el servidor debe validar challenge, expiración, consumo único, revocación y el binding del reader al mismo objeto consumido. No se debe inventar ese canal a partir del mero flujo de login.
+
+### Estado
+
+```text
+CODEX_REMOTE_TO_IABV_BROKER_BINDING=NOT_ESTABLISHED
+WINDOWS_REMOTE_HOST_COMPATIBILITY=NOT_VERIFIED_IN_OWNER_INSTALLATION
+ENTRA_DEVICE_FLOW=DOCUMENTED_CANDIDATE; NOT_CONFIGURED_OR_TESTED
+PHONE_SCOPE_CONFIRMATION_UI=NOT_ESTABLISHED
+GITHUB_APP_APPROVAL=ALTERNATIVE; NOT_PROVISIONED
+INBOUND_PUBLIC_LISTENER=NOT_REQUIRED_BY_DEVICE-CODE_AUTH_FLOW
+R07=LOOPBACK_ONLY; NO_TUNNEL
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3=NOT_ESTABLISHED
+PROTECTED_READS=FAIL_CLOSED
+IMPLEMENTATION=NOT_AUTHORIZED
+TESTS=NOT_RUN; BUILD=NOT_RUN; RUNTIME=NOT_RUN; REAL_TRANSPORT=NOT_RUN
+AUTOMATIC_FOLLOW_ON=FALSE
+```
+
+No se eligió una nueva autoridad, no se creó app registration, no se solicitaron tokens, no se inspeccionaron credenciales, no hubo pruebas o runtime y no se cambió `main`. El análisis acota una posibilidad técnica, pero la aprobación móvil completa sigue sin estar implementada.
