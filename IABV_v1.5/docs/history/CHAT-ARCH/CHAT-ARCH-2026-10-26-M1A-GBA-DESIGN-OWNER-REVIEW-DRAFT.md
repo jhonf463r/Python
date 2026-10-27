@@ -185,7 +185,7 @@ La decisión no debe convertirse en un token bearer transferible. Entry 274 exig
 Antes de operar, el reader debe verificar:
 - referencia a una decisión existente y autoritativa;
 - sesión/instancia/reader/target y scope coincidentes;
-- aprobación fresca y evento UI auténtico;
+- referencia a una decisión autoritativa que demuestre que el issuer verificó una aprobación fresca y un evento UI auténtico ligado al scope; el reader no confía en datos de UI aportados por el caller ni necesita consumir directamente una credencial de interfaz;
 - política y revocación vigentes;
 - estado del bloqueo aplicable y release independiente, si alguna vez existe;
 - vigencia y presupuesto disponible;
