@@ -67,8 +67,10 @@ def _validate_https_resource_url(value: str, env_name: str) -> str:
         port = parsed.port
     except ValueError as exc:
         raise EntraConfigurationError(f"{env_name} contains an invalid port.") from exc
-    if port not in (None, 443):
-        raise EntraConfigurationError(f"{env_name} must use the standard HTTPS port.")
+    if port is not None:
+        raise EntraConfigurationError(
+            f"{env_name} must omit an explicit port to preserve exact URL identity."
+        )
     if (
         parsed.scheme != "https"
         or not parsed.hostname
@@ -83,6 +85,11 @@ def _validate_https_resource_url(value: str, env_name: str) -> str:
         raise EntraConfigurationError(
             f"{env_name} must be the approved canonical HTTPS resource URL "
             "without credentials, query, or fragment."
+        )
+    canonical_url = f"https://{parsed.hostname or ''}{parsed.path or '/'}"
+    if value != canonical_url:
+        raise EntraConfigurationError(
+            f"{env_name} must use a canonical URL spelling with exact host and path components."
         )
     try:
         ipaddress.ip_address(parsed.hostname)
@@ -157,7 +164,9 @@ class EntraTokenVerifier:
     """
 
     def __init__(self, config: EntraAuthConfig, *, jwks_cache_seconds: int = 3600) -> None:
-        self.config = config
+        if not isinstance(config, EntraAuthConfig):
+            raise TypeError("EntraTokenVerifier requires the immutable EntraAuthConfig snapshot.")
+        self._config = config
         self._issuer_url = config.issuer_url
         self._metadata_url = (
             f"https://login.microsoftonline.com/{config.tenant_id}/v2.0/.well-known/openid-configuration"
@@ -166,6 +175,11 @@ class EntraTokenVerifier:
         self._jwks_by_kid: dict[str, dict[str, Any]] = {}
         self._jwks_expires_at = 0.0
         self._jwks_lock = asyncio.Lock()
+
+    @property
+    def config(self) -> EntraAuthConfig:
+        """Read-only reference to the frozen configuration accepted by this verifier."""
+        return self._config
 
     async def _load_jwks(self) -> dict[str, dict[str, Any]]:
         now = time.monotonic()

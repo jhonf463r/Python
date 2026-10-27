@@ -111,12 +111,19 @@ class FastMCPServerRunner:
     def run_threaded(self, transport: str, host: str, port: int) -> threading.Thread:
         from iabv_v15.infra.mcp.server import IABVMCPServer  # lazy
 
-        # FastMCP lee host/port de su config / env. Seteamos via env por compatibilidad
-        # con distintos clientes.
-        os.environ["FASTMCP_HOST"] = str(host)
-        os.environ["FASTMCP_PORT"] = str(port)
+        from iabv_v15.infra.mcp.server import preflight_mcp_startup_configuration
 
-        self._server = IABVMCPServer(self._container)
+        # Validate explicit runner arguments before constructing FastMCP or
+        # mutating process state, then pass the same sealed snapshot to server.
+        startup = preflight_mcp_startup_configuration(
+            transport,
+            bind_host=host,
+            bind_port=port,
+        )
+        self._server = IABVMCPServer(
+            self._container,
+            _startup_preflight=startup,
+        )
         self._server.validate_transport_configuration(transport)
         self._stopped.clear()
 

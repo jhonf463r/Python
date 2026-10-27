@@ -39,7 +39,8 @@ import asyncio
 import concurrent.futures
 import logging
 import os
-from dataclasses import asdict, is_dataclass
+from dataclasses import asdict, dataclass, is_dataclass
+from functools import wraps
 from typing import Any, Callable, TypeVar
 
 from iabv_v15.infra.mcp import audit_tools, audit_tools_observation
@@ -79,17 +80,24 @@ _NO_STARTUP_PREFLIGHT = object()
 _STARTUP_PREFLIGHT_SEAL = object()
 
 
-def _url_binding_key(value: Any) -> tuple[str, str, int, str]:
-    """Compare HTTPS URL identities without conflating root slash normalization."""
-    from urllib.parse import urlsplit
+def _url_binding_key(value: Any) -> str:
+    """Preserve the exact serialized URL identity; do not normalize components."""
+    if value is None:
+        raise ValueError("MCP URL identity is missing.")
+    identity = str(value)
+    if not identity or identity != identity.strip():
+        raise ValueError("MCP URL identity is empty or contains outer whitespace.")
+    return identity
 
-    parsed = urlsplit(str(value))
-    return (
-        parsed.scheme.lower(),
-        (parsed.hostname or "").lower(),
-        parsed.port or 443,
-        parsed.path or "/",
-    )
+
+@dataclass(frozen=True)
+class _AuthSettingsSnapshot:
+    """Immutable settings captured by preflight and copied into the SDK at start."""
+
+    issuer_url: str
+    resource_server_url: str
+    required_scopes: tuple[str, ...]
+    validate_token_resource: bool
 
 
 def _validate_entra_auth_pair(entra_auth: Any) -> tuple[Any, Any]:
@@ -131,7 +139,7 @@ class _ValidatedMCPStartup:
         "bind_host",
         "bind_port",
         "token_verifier",
-        "auth_settings",
+        "_auth_settings_snapshot",
         "_seal",
     )
 
@@ -158,11 +166,36 @@ class _ValidatedMCPStartup:
         self.transport = transport
         self.bind_host = bind_host
         self.bind_port = bind_port
-        self.token_verifier, self.auth_settings = pair
+        self.token_verifier = pair[0]
+        settings = pair[1]
+        self._auth_settings_snapshot = _AuthSettingsSnapshot(
+            issuer_url=_url_binding_key(settings.issuer_url),
+            resource_server_url=_url_binding_key(settings.resource_server_url),
+            required_scopes=tuple(settings.required_scopes),
+            validate_token_resource=bool(settings.validate_token_resource),
+        )
         self._seal = _seal
 
+    @property
+    def auth_settings(self) -> Any:
+        """Return a fresh SDK object so caller mutation cannot alter the snapshot."""
+        from mcp.server.auth.settings import AuthSettings
 
-def preflight_mcp_startup_configuration(transport: str) -> _ValidatedMCPStartup:
+        snapshot = self._auth_settings_snapshot
+        return AuthSettings(
+            issuer_url=snapshot.issuer_url,
+            resource_server_url=snapshot.resource_server_url,
+            required_scopes=list(snapshot.required_scopes),
+            validate_token_resource=snapshot.validate_token_resource,
+        )
+
+
+def preflight_mcp_startup_configuration(
+    transport: str,
+    *,
+    bind_host: str | None = None,
+    bind_port: int | None = None,
+) -> _ValidatedMCPStartup:
     """Validate transport, loopback bind and Entra config before AppBootstrap.
 
     This function performs configuration checks only: it does not instantiate
@@ -178,11 +211,21 @@ def preflight_mcp_startup_configuration(transport: str) -> _ValidatedMCPStartup:
             "SSE and stdio have no verified independent authorization boundary."
         )
 
-    requested_host = (os.environ.get("FASTMCP_HOST") or "127.0.0.1").strip()
+    requested_host = (
+        (os.environ.get("FASTMCP_HOST") or "127.0.0.1")
+        if bind_host is None
+        else bind_host
+    )
     try:
-        requested_port = int(os.environ.get("FASTMCP_PORT") or "8000")
-    except ValueError:
+        requested_port = (
+            int(os.environ.get("FASTMCP_PORT") or "8000")
+            if bind_port is None
+            else bind_port
+        )
+    except (TypeError, ValueError):
         requested_port = -1
+    if not isinstance(requested_host, str) or isinstance(requested_port, bool) or not isinstance(requested_port, int):
+        raise RuntimeError("Fail-closed: invalid MCP bind configuration.")
     if requested_host != "127.0.0.1" or requested_port != 8000:
         raise RuntimeError("Fail-closed: MCP must bind only to 127.0.0.1:8000.")
 
@@ -238,6 +281,41 @@ def _to_jsonable(value: Any) -> Any:
         return None
 
 
+class _FailClosedMCPToolRegistrar:
+    """Wrap every registered tool with deny-by-default operation authorization.
+
+    No production operation currently has independently verifiable G1/G2/G3
+    authorization by operation, scope and destination. The empty allowlist is
+    intentional; Entra authentication alone never bypasses this invocation gate.
+    A token role is an issuance-time claim, not a live mandate-revocation source.
+    Because every invocation is denied, the admitted operation-authorization
+    window is zero until an independently verifiable authority is wired.
+    """
+
+    _SAFE_OPERATION_ALLOWLIST: frozenset[str] = frozenset()
+
+    def __init__(self, fastmcp: Any) -> None:
+        self._fastmcp = fastmcp
+
+    def tool(self, *args: Any, **kwargs: Any) -> Any:
+        register = self._fastmcp.tool(*args, **kwargs)
+
+        def decorate(handler: Callable[..., Any]) -> Any:
+            @wraps(handler)
+            def guarded(*handler_args: Any, **handler_kwargs: Any) -> Any:
+                operation = handler.__name__
+                if operation not in self._SAFE_OPERATION_ALLOWLIST:
+                    # Tool bodies have heterogeneous return schemas; raising
+                    # avoids returning a denial object with the wrong schema.
+                    raise PermissionError(f"operation_authority_unavailable:{operation}")
+                return handler(*handler_args, **handler_kwargs)
+
+            setattr(guarded, "__iabv_original_handler__", handler)
+            return register(guarded)
+
+        return decorate
+
+
 class IABVMCPServer:
     """Adaptador delgado que expone servicios de IABV vía MCP.
 
@@ -259,12 +337,6 @@ class IABVMCPServer:
         self.container = container
         self.name = name
         self._http_auth_configured = False
-        requested_host = (os.environ.get("FASTMCP_HOST") or "127.0.0.1").strip()
-        try:
-            requested_port = int(os.environ.get("FASTMCP_PORT") or "8000")
-        except ValueError:
-            requested_port = -1
-        self._bind_config_valid = requested_host == "127.0.0.1" and requested_port == 8000
         self._startup_preflight: _ValidatedMCPStartup | None = None
 
         if _startup_preflight is not _NO_STARTUP_PREFLIGHT:
@@ -276,35 +348,32 @@ class IABVMCPServer:
                     "IABVMCPServer requires a sealed _ValidatedMCPStartup from preflight; "
                     "arbitrary auth tuples or objects are rejected."
                 )
-            if (
-                _startup_preflight.bind_host != requested_host
-                or _startup_preflight.bind_port != requested_port
-            ):
-                raise RuntimeError("MCP preflight bind does not match the current server configuration.")
             if mcp is not None:
                 raise ValueError("A preflight-bound auth configuration cannot be combined with an injected MCP server.")
             self._startup_preflight = _startup_preflight
 
+        if self._startup_preflight is not None:
+            requested_host = self._startup_preflight.bind_host
+            requested_port = self._startup_preflight.bind_port
+        else:
+            requested_host = os.environ.get("FASTMCP_HOST") or "127.0.0.1"
+            try:
+                requested_port = int(os.environ.get("FASTMCP_PORT") or "8000")
+            except ValueError:
+                requested_port = -1
+        self._bind_config_valid = requested_host == "127.0.0.1" and requested_port == 8000
+
         if mcp is None:
             from mcp.server.fastmcp import FastMCP
-            from iabv_v15.infra.mcp.entra_token_verifier import build_entra_auth_from_environment
 
             fastmcp_kwargs: dict[str, Any] = {
                 "log_level": "WARNING",
-                "host": "127.0.0.1",
-                "port": 8000,
+                "host": requested_host,
+                "port": requested_port,
             }
             if self._startup_preflight is not None:
-                entra_auth = (
-                    self._startup_preflight.token_verifier,
-                    self._startup_preflight.auth_settings,
-                )
-            else:
-                entra_auth = build_entra_auth_from_environment()
-                if entra_auth is not None:
-                    entra_auth = _validate_entra_auth_pair(entra_auth)
-            if entra_auth is not None:
-                token_verifier, auth_settings = _validate_entra_auth_pair(entra_auth)
+                token_verifier = self._startup_preflight.token_verifier
+                auth_settings = self._startup_preflight.auth_settings
                 fastmcp_kwargs["token_verifier"] = token_verifier
                 fastmcp_kwargs["auth"] = auth_settings
                 self._http_auth_configured = True
@@ -637,7 +706,11 @@ class IABVMCPServer:
     # Registro de tools
 
     def _register_tools(self) -> None:
-        mcp = self.mcp
+        # Entra authenticates a caller but does not provide per-operation,
+        # scope and destination authority. Keep every tool invocation denied
+        # until a real coordinator supplies that missing authorization.
+        self._tool_registrar = _FailClosedMCPToolRegistrar(self.mcp)
+        mcp = self._tool_registrar
 
         @mcp.tool()
         def world_model_snapshot(refresh: bool = False, full: bool = False) -> dict[str, Any]:
@@ -3328,10 +3401,15 @@ class IABVMCPServer:
                 "Fail-closed: only authenticated Streamable HTTP is eligible; "
                 "SSE and stdio have no verified independent authorization boundary."
             )
-        if not self._bind_config_valid:
+        if self._startup_preflight is None:
+            raise RuntimeError("Fail-closed: MCP start requires the sealed startup preflight.")
+        if transport != self._startup_preflight.transport:
+            raise RuntimeError("Fail-closed: MCP transport differs from its validated preflight.")
+        if not self._bind_config_valid or (
+            self._startup_preflight.bind_host != "127.0.0.1"
+            or self._startup_preflight.bind_port != 8000
+        ):
             raise RuntimeError("Fail-closed: MCP must bind only to 127.0.0.1:8000.")
-        if self._startup_preflight is not None and transport != self._startup_preflight.transport:
-            raise RuntimeError("Fail-closed: requested transport does not match the validated startup preflight.")
         if not self._http_auth_configured:
             raise RuntimeError(
                 "Fail-closed: Entra tenant, API audience, Owner role, allowed client, "
@@ -3344,7 +3422,7 @@ class IABVMCPServer:
         try:
             from iabv_v15.infra.mcp.self_update_tools import register_self_update_tools
             _n_write_tools = register_self_update_tools(
-                mcp=self.mcp,
+                mcp=self._tool_registrar,
                 workspace_root_fn=self._workspace_root,
                 governance_fn=self._governance_block_for_route,
                 to_jsonable_fn=_to_jsonable,
@@ -3458,6 +3536,14 @@ def main() -> None:
       - IABV_MCP_NAME: nombre visible del server
       - IABV_WORKSPACE_ROOT: raíz del workspace para AppBootstrap
     """
+    transport = os.environ.get("IABV_MCP_TRANSPORT", "streamable-http")
+    name = os.environ.get("IABV_MCP_NAME", DEFAULT_SERVER_NAME)
+    workspace_root = os.environ.get("IABV_WORKSPACE_ROOT")
+
+    # Configuration must fail closed before logger setup or AppBootstrap can
+    # load secrets, create directories, configure tracing, or wire services.
+    prevalidated_entra_auth = preflight_mcp_startup_configuration(transport)
+
     logging.basicConfig(
         level=os.environ.get("IABV_MCP_LOG_LEVEL", "INFO"),
         format="%(asctime)s %(levelname)s %(name)s - %(message)s",
@@ -3470,13 +3556,6 @@ def main() -> None:
     # httpx/httpcore handled by shared suppress_noisy_http_loggers().
     from iabv_v15.infra.logging import suppress_noisy_http_loggers
     suppress_noisy_http_loggers()
-    transport = os.environ.get("IABV_MCP_TRANSPORT", "streamable-http")
-    name = os.environ.get("IABV_MCP_NAME", DEFAULT_SERVER_NAME)
-    workspace_root = os.environ.get("IABV_WORKSPACE_ROOT")
-
-    # Configuration must fail closed before AppBootstrap can load secrets,
-    # create directories, configure tracing, or wire services.
-    prevalidated_entra_auth = preflight_mcp_startup_configuration(transport)
 
     from iabv_v15.bootstrap import AppBootstrap
     container = AppBootstrap(workspace_root=workspace_root)

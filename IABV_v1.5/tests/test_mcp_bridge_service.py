@@ -8,6 +8,7 @@ alternate tunnel runner in this code path.
 from __future__ import annotations
 
 import json
+import os
 import threading
 from pathlib import Path
 
@@ -21,6 +22,7 @@ from iabv_v15.domain.models import (
 )
 from iabv_v15.services.evolution.mcp_bridge_service import (
     CloudflaredTunnelRunner,
+    FastMCPServerRunner,
     MCPBridgeService,
 )
 
@@ -90,6 +92,65 @@ def _build_service(
         server_runner=server,
     )
     return service, server
+
+
+def test_server_runner_passes_the_same_sealed_preflight_to_server(monkeypatch: pytest.MonkeyPatch) -> None:
+    import sys
+    import types
+
+    marker = object()
+    seen: list[object] = []
+
+    def preflight(transport: str, *, bind_host: str, bind_port: int) -> object:
+        assert (transport, bind_host, bind_port) == ("streamable-http", "127.0.0.1", 8000)
+        return marker
+
+    class FakeServer:
+        def __init__(self, container: object, *, _startup_preflight: object) -> None:
+            seen.append(_startup_preflight)
+
+        def validate_transport_configuration(self, transport: str) -> None:
+            assert transport == "streamable-http"
+
+        def run(self, *, transport: str) -> None:
+            raise AssertionError("thread target is not executed by this source contract test")
+
+    class FakeThread:
+        def __init__(self, *, target, name: str, daemon: bool) -> None:  # type: ignore[no-untyped-def]
+            self.target = target
+            self.name = name
+            self.daemon = daemon
+            self.started = False
+
+        def start(self) -> None:
+            self.started = True
+
+    server_module = types.ModuleType("iabv_v15.infra.mcp.server")
+    server_module.IABVMCPServer = FakeServer
+    server_module.preflight_mcp_startup_configuration = preflight
+    monkeypatch.setitem(sys.modules, "iabv_v15.infra.mcp.server", server_module)
+    monkeypatch.setattr(threading, "Thread", FakeThread)
+
+    runner = FastMCPServerRunner(_FakeContainer())
+    thread = runner.run_threaded("streamable-http", "127.0.0.1", 8000)
+    assert seen == [marker]
+    assert thread.started is True
+
+
+def test_server_runner_rejects_invalid_preflight_before_starting_thread(monkeypatch: pytest.MonkeyPatch) -> None:
+    runner = FastMCPServerRunner(_FakeContainer())
+    monkeypatch.setenv("FASTMCP_HOST", "unchanged-host")
+    monkeypatch.setenv("FASTMCP_PORT", "8765")
+
+    def forbidden_thread_start(self: threading.Thread) -> None:
+        pytest.fail("invalid MCP configuration must be rejected before a thread starts")
+
+    monkeypatch.setattr(threading.Thread, "start", forbidden_thread_start)
+    with pytest.raises(RuntimeError, match="127.0.0.1:8000"):
+        runner.run_threaded("streamable-http", "0.0.0.0", 8000)
+    assert runner._server is None
+    assert os.environ["FASTMCP_HOST"] == "unchanged-host"
+    assert os.environ["FASTMCP_PORT"] == "8765"
 
 
 def test_production_cloudflared_runner_is_disabled_without_spawning_process(monkeypatch: pytest.MonkeyPatch) -> None:
