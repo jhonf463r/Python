@@ -1,5 +1,23 @@
 <!-- Canonical route authority; authorization scope reconciled 2026-10-27. Candidate-only source preparation for PR #549 is recorded; tests/runtime/activation/merge remain unauthorized. -->
 
+## Latest source-candidate correction — PR #549 HEAD 8afee332 (2026-10-27)
+
+**This is the current candidate status and supersedes earlier candidate-HEAD references below, which remain historical evidence.**
+
+- PR: https://github.com/jhonf463r/Python/pull/549 — `OPEN/DRAFT/UNMERGED`.
+- Candidate branch: `codex/m1a-g1-mcp130-entra-implementation-20261027`.
+- Previous HEAD: `05d007965ea7efda6f528657e20103ea82bcb6b5`.
+- New source-candidate HEAD: `8afee332e5e0f65715013effcee57b215413547c`, commit message `[skip ci] Harden fail-closed tool guard and auth binding`.
+- Canonical `main` before this follow-up note: `6d69e87d63131a99ee4748c0f6a2a0b8b2cbe82d`. The branch remains an isolated candidate. Do not rebase, merge, or change the PR base automatically.
+- Four files changed in the source follow-up: `server.py`, `entra_token_verifier.py`, `test_mcp_server.py`, and `test_entra_token_verifier.py`. Verified by fetch-back: production MCP tool wrappers no longer expose a custom original-handler pointer or a `functools.wraps` `__wrapped__` reference; the allowlist remains empty and the wrapper still denies all operations; the preflight and verifier trust-binding fields reject ordinary deletion/reassignment; new source contracts cover a valid synthetic scoped token that is still denied at the operation gate and a missing required scope returning 403.
+- Tests/build/runtime/CI remain not run. Workflow query for this HEAD returned no runs. These are source-only assertions, not runtime proof.
+- **Independent review status:** pending for this exact HEAD. The independent report for `05d007965ea7efda6f528657e20103ea82bcb6b5` must not be treated as a review of `8afee332e5e0f65715013effcee57b215413547c`.
+- Open limits: `G1/G2/G3=NOT_ESTABLISHED`; `MCP_TOOL_ALLOWLIST=EMPTY`; `PROTECTED_READS=FAIL_CLOSED`; `TUNNEL=DISABLED`; `BRIDGE=BRIDGE_NOT_READY`; `TESTS/BUILD/RUNTIME=NOT_RUN`; `MERGE=NOT_AUTHORIZED`; `PRODUCTION_ACTIVATION=NOT_AUTHORIZED`.
+
+Next step: obtain the scoped independent static review of HEAD `8afee332e5e0f65715013effcee57b215413547c`. After that, decide separately whether to authorize source-only follow-up or a test-run phase. Do not execute tests, install packages, configure Entra, activate the bridge, or merge as part of this step.
+
+---
+
 ## Actualización canónica vigente — consentimiento code-only acotado para PR #549 (2026-10-27)
 
 **Esta entrada reconcilia el estado actual; no reescribe el significado histórico de las decisiones previas.** La respuesta original «ok procede» sí autorizó únicamente fijar el objetivo MCP y documentar el plan. Después, el Owner pidió continuar, recibió en esta conversación un prompt de Codex con alcance explícito para preparar/corregir una candidata aislada de código y aportó el resultado de esa ejecución. Este registro deja constancia del consentimiento de alcance observado en la conversación y del resultado comunicado por el Owner. No se presenta como una cita de una autorización redactada directamente por el Owner, una autenticación independiente de identidad de runtime ni una raíz de confianza.

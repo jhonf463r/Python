@@ -1,5 +1,23 @@
 # Handoff entre chats — IABV / Entra G1 / MCP 1.30 (2026-10-27)
 
+## Latest candidate update — PR #549 HEAD 8afee332 (2026-10-27)
+
+This note supersedes the candidate SHA only; it does not supersede the no-runtime/no-merge boundaries recorded below.
+
+- PR #549: OPEN/DRAFT/UNMERGED — https://github.com/jhonf463r/Python/pull/549
+- Base initially verified: `a8624c30744da7f593d6a1c829e48aa229c8efca`; current canonical main was `6d69e87d63131a99ee4748c0f6a2a0b8b2cbe82d` before this note. Do not rebase or merge automatically.
+- Previous candidate HEAD: `05d007965ea7efda6f528657e20103ea82bcb6b5`.
+- Current candidate HEAD: `8afee332e5e0f65715013effcee57b215413547c`.
+- Corrections: remove original-handler references from production tool objects while keeping the allowlist empty; prevent ordinary deletion of preflight fields and reassignment/deletion of verifier trust-binding fields; add test contracts for valid synthetic auth still blocked by the operation gate and missing scope -> 403. Four files changed in the latest commit.
+- Source was fetched back and static anchors verified. No tests/build/runtime/CI were run; no workflow runs were found for this HEAD.
+- The previous independent report targets HEAD `05d007965ea7efda6f528657e20103ea82bcb6b5`, not this new SHA. Independent review of `8afee332e5e0f65715013effcee57b215413547c` is now the next action.
+- Preserve: `G1/G2/G3=NOT_ESTABLISHED`; `MCP_TOOL_ALLOWLIST=EMPTY`; `PROTECTED_READS=FAIL_CLOSED`; `TUNNEL=DISABLED`; `BRIDGE=BRIDGE_NOT_READY`; `MERGE=NOT_AUTHORIZED`; no local checkout changes.
+
+Review follow-up receipt: [CHAT-ARCH-2026-10-27-M1A-PR549-CORRECTION-8AFEE-FETCHBACK-RECEIPT.md](./CHAT-ARCH-2026-10-27-M1A-PR549-CORRECTION-8AFEE-FETCHBACK-RECEIPT.md).
+
+---
+
+
 ## Addendum vigente — autorización limitada de candidata PR #549 (2026-10-27)
 
 Leer primero `CURRENT-STATE.md`; su nueva entrada de reconciliación prevalece cuando una sección histórica del presente handoff aún diga que nunca se autorizó preparar código. La respuesta original «ok procede» sigue describiendo correctamente la ratificación inicial del objetivo/plan, pero posteriormente se aceptó y ejecutó un prompt con alcance explícito para preparar una candidata code-only aislada.
