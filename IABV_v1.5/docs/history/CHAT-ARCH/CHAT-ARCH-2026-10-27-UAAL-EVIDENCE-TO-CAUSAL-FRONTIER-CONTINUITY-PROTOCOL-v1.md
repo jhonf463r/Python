@@ -84,3 +84,29 @@ PYTHON_3_13_2=NOT_AVAILABLE_IN_REPORTED_RUN
 GITHUB_ACTIONS_CI=NOT_RUN
 LOCAL_TESTS=OWNER_CODEX_REPORTED_PASS; 198_PASSED; 1_WARNING; EXIT=0
 ```
+
+
+## 9. Automation-first operation and OS-consent boundary — 2026-10-27
+
+### Normative rule
+
+The Owner is the decision/consent authority, not the default shell operator. When a bounded operation is authorized and a supported local agent can execute it, the agent MUST attempt the safe automated route first. Do not assign the Owner manual shell commands, console navigation, screenshots or copying of diagnostic values merely because the first process lacks a capability.
+
+### Elevation decision
+
+1. Determine whether elevation is actually required for the narrow operation; do not infer it from one access-denied result unless the API's documented contract supports that inference.
+2. If elevation is necessary and the operation is already explicitly authorized, ask the local agent to invoke the standard OS consent UI (on Windows, a separate bounded process using a supported `RunAs`/UAC flow). The prompt is the human interruption; it replaces manual operation.
+3. After consent, execute only the pre-authorized read-only command set. Capture exit codes and sanitized outputs in a temporary artifact readable by the parent process. Never log secrets, raw SID, credentials, private keys or unrelated device details. Clean up temporary artifacts created by the task.
+4. If consent is denied, no eligible admin account exists, a policy blocks elevation, or the agent cannot invoke the UI, stop that attempt and report a precise blocker. Do not circumvent UAC, suppress prompts, change policy, self-elevate invisibly or retry an unchanged action.
+5. Never extrapolate read-only elevation consent to provisioning, key creation, service installation, ACL changes, Entra configuration, protected reads, tunnel/runtime activation or merge. Those remain separate gates.
+6. Ask the Owner only for a human-owned choice or unavoidable OS/account consent. Do not ask the Owner to carry out diagnostic steps that the supported local agent can perform. If this ChatGPT session lacks local-desktop execution, state that limitation and use Codex as the local execution bridge rather than claiming the popup was launched here.
+
+### Evidence and anti-loop requirements
+
+Record the exact scope, whether the UAC prompt was invoked (not merely planned), whether it was accepted/denied/unavailable, exit code, output provenance, cleanup, and the next discriminating question. The first non-elevated denial remains historical evidence; a second attempt is justified only because the authorization context changed. If the elevated attempt is still denied, do not repeat it without a changed precondition.
+
+### Applied to the current M1A task
+
+The local Codex report says `ADMIN_CONTEXT=False` and correctly stopped before TPM/Secure Boot queries. Next action is one automated, user-consented, read-only elevation attempt for the exact prior query set. No manual console opening is required if the local agent can display the normal UAC prompt. If no interactive local execution channel exists, record `UAC_UI_UNAVAILABLE_IN_AGENT` and stop; do not claim a hardware result.
+
+This rule changes workflow ergonomics only. It does not establish G1/G2/G3 or authorize any product operation.
