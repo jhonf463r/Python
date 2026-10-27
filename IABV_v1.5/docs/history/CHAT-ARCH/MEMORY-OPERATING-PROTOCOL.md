@@ -1,3 +1,17 @@
+
+
+## Method delta — local-only secret entry must not become model-context secret handling (2026-10-27)
+
+A local popup can reduce manual handling only if the complete secret is genuinely available and the popup sends it directly to a local secret store, never back to a model conversation or transcript. Do not use a paste box to compensate for a missing credential artifact. First distinguish the artifact's type and source: GitHub App PEM private key vs public fingerprint/key ID vs ordinary website password/token. A short copied identifier is not interchangeable with a private-key file. GitHub downloads the PEM at key generation and stores only the public part; the fingerprint helps verify a local PEM and cannot reconstruct it.
+
+For secrets IABV uses to administer websites, prefer reuse of the existing credential-management organ and OS-backed storage with least privilege. Do not invent a second vault before locating the existing provider, consumers, audit/revocation path and real runtime identity. The user-facing prompt should request only an irreducible action such as selecting an actual local file or completing authentication; Codex should automate the rest if it has the necessary local access.
+
+Sequence is non-skippable: artifact located → format validated locally → fingerprint/identity matched → custodian/runtime principal established → secret stored/protected → narrow API preflight → only later, separately authorized bridge integration. Success at one stage is not evidence for the next. Keep secrets out of chats, tickets, GitHub Issues, source files, logs and memory documents. See the [2026-10-27 cross-chat handoff](https://github.com/jhonf463r/Python/blob/chat-continuity-key-recovery-handoff-20261027/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-27-M1A-GITHUB-APP-KEY-RECOVERY-CROSS-CHAT-HANDOFF.md) for the current episode.
+
+This is a method-level documentary delta on a review branch; it does not authorize secret storage/runtime changes or alter canonical CURRENT-STATE.md.
+
+---
+
 <!-- Cross-chat method delta linked to https://github.com/jhonf463r/Python/blob/chat-continuity-key-recovery-handoff-20261027/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-27-M1A-GITHUB-APP-KEY-RECOVERY-CROSS-CHAT-HANDOFF.md; this is a draft branch entry until reviewed. -->
 
 ## Method delta — do not repeat owner-reported failed UI actions; distinguish artifact types (2026-10-27)
