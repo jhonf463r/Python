@@ -200,8 +200,10 @@ activate(query, existing_indexes, budget, policy):
     candidate_records = {}  # all known candidates, including unresolved leads
     activated_ids = set()
     best_score = {}
-    provenance = {}          # distinct source and typed-edge references per candidate
-    expanded = set()         # controls traversal, never erases incoming routes
+    provenance = {}          # distinct source and typed-edge refs, each with status
+    started = set()          # prevents cyclic/repeated expansion in this pass
+    expanded = set()         # nodes whose full bounded relation set was processed
+    partially_expanded = set()
     frontier = priority_queue(order=(-score, stable_candidate_id))
     blocked_or_deferred = []
     examined_relations = set()
@@ -217,27 +219,34 @@ activate(query, existing_indexes, budget, policy):
         if not admissible(seed, query):
             record_block(seed, "inadmissible_or_unresolved")
             continue  # retained as a lead/hypothesis; not promoted as truth
-        if cost(seed) exceeds remaining_node_budget(spent_nodes, budget):
-            record_deferred_candidate(seed, "node_budget_exhausted")
-            continue
-        activated_ids.add(seed.id)
-        spent_nodes += cost(seed)
         enqueue(frontier, seed, best_score[seed.id])
 
-    while frontier not empty and budget_allows(spent_nodes, spent_relations, budget):
-        node = pop_best_with_stable_tie_break(frontier)
+    while frontier not empty:
+        entry = pop_best_with_stable_tie_break(frontier)
+        node = entry.candidate
 
-        if node.id in expanded:
+        if entry.score != best_score[node.id]:
+            continue  # discard stale queue entry, not the candidate or its history
+        if node.id in started:
             continue
         if not admissible(node, query):
             record_block(node, "inadmissible_or_unresolved")
             continue
+        if cost(node) exceeds remaining_node_budget(spent_nodes, budget):
+            record_deferred_candidate(node, "node_budget_exhausted")
+            continue
 
-        expanded.add(node.id)
+        activated_ids.add(node.id)
+        spent_nodes += cost(node)
+        started.add(node.id)
         record_why_activated(node, best_score[node.id], provenance[node.id])
 
-        for edge in sort_by_canonical_relation_identity(
-                typed_relevant_relations(node, query)):
+        relations = sort_by_canonical_relation_identity(
+            typed_relevant_relations(node, query)
+        )
+        traversal_complete = true
+
+        for relation_index, edge in enumerate(relations):
             relation_id = canonical_relation_identity(
                 edge.source_id, edge.target_id, edge.type,
                 edge.source_reference, edge.source_revision
@@ -245,7 +254,11 @@ activate(query, existing_indexes, budget, policy):
             if relation_id in examined_relations:
                 continue
             if relation_budget_exhausted(spent_relations, budget):
-                record_deferred_relation(edge, "relation_budget_exhausted")
+                record_deferred_relations(
+                    relations[relation_index:], "relation_budget_exhausted"
+                )
+                partially_expanded.add(node.id)
+                traversal_complete = false
                 break
 
             examined_relations.add(relation_id)
@@ -255,8 +268,17 @@ activate(query, existing_indexes, budget, policy):
             if neighbor is unresolved:
                 record_unresolved_relation(edge, "target_unresolved")
                 continue
-            if policy_requires_scope_gate(neighbor) and not policy.permits(neighbor):
-                record_blocked_relation(edge, neighbor, "scope_or_authority")
+
+            # Preserve the relation and its epistemic state even when it cannot
+            # authorize activation or count toward a confirmed ranking.
+            route_state = classify_relation_evidence(edge, neighbor, query)
+            provenance.setdefault(neighbor.id, set()).add(
+                (relation_id, route_state)
+            )
+            if not route_state.is_admissible:
+                record_blocked_relation(edge, neighbor, route_state.reason)
+                if neighbor.id not in candidate_records:
+                    candidate_records[neighbor.id] = retain_candidate_as_lead(neighbor)
                 continue
 
             candidate_score = objective_conditioned_activation_score(
@@ -268,19 +290,21 @@ activate(query, existing_indexes, budget, policy):
             was_known = neighbor.id in candidate_records
             if not was_known:
                 candidate_records[neighbor.id] = retain_candidate(neighbor)
+                provenance.setdefault(neighbor.id, set())
                 best_score[neighbor.id] = candidate_score
-                provenance[neighbor.id] = set()
-            elif rank_policy_is_strictly_better(candidate_score, best_score[neighbor.id]):
+                score_improved = true
+            elif rank_policy_is_strictly_better(
+                    candidate_score, best_score[neighbor.id]):
                 best_score[neighbor.id] = candidate_score
+                score_improved = true
             else:
                 record_alternate_route(neighbor.id, relation_id, candidate_score)
+                score_improved = false
 
-            # Crucial: preserve the incoming route before any active/expanded check.
-            provenance.setdefault(neighbor.id, set()).add(relation_id)
-
+            # Route provenance was recorded before any seen/started/expanded test.
             if neighbor.id in activated_ids:
-                # A visited/expanded node still accumulates distinct route provenance.
-                # Node cost is charged once; route count is not a ranking bonus.
+                # Keep the new route and score. Do not charge node cost twice.
+                # Its outgoing relations depend on query + its own edges, not path.
                 continue
 
             if not admissible(neighbor, query):
@@ -290,9 +314,14 @@ activate(query, existing_indexes, budget, policy):
                 record_deferred_candidate(neighbor, "node_budget_exhausted")
                 continue
 
-            activated_ids.add(neighbor.id)
-            spent_nodes += cost(neighbor)
-            update_or_enqueue(frontier, neighbor, best_score[neighbor.id])
+            if score_improved or not was_known:
+                update_or_enqueue(frontier, neighbor, best_score[neighbor.id])
+
+        if traversal_complete:
+            expanded.add(node.id)
+
+        if relation_budget_exhausted(spent_relations, budget):
+            break
 
     return evidence_aware_activation_packet(
         query,
@@ -301,12 +330,13 @@ activate(query, existing_indexes, budget, policy):
         best_score,
         all_unique_provenance=provenance,
         blocked_and_deferred=blocked_or_deferred,
-        not_expanded=active_ids - expanded,
+        not_started=activated_ids - started,
+        not_fully_expanded=activated_ids - expanded,
+        partially_expanded=partially_expanded,
         pending_frontier=stable_candidate_ids(frontier),
         budget_coverage=coverage_status(spent_nodes, spent_relations, budget)
     )
 ~~~
-
 La semántica conservadora de esta primera versión es deliberada: la puntuación de un nodo es la mejor puntuación admisible de una ruta individual; las demás rutas relevantes se conservan en su procedencia, pero no suman votos ni refuerzan el ranking por mera repetición. Una evidencia verdaderamente independiente solo puede mejorar el componente de evidencia si su independencia, alcance y vigencia se evalúan explícitamente. La expansión de un nodo se realiza una vez porque su salida depende del objetivo y de sus propias relaciones, no de la ruta por la que fue descubierto; si en el futuro se decide un score dependiente de caminos, se necesitará otra regla de propagación y un test anti-ciclo separado.
 
 La deduplicación del nodo y la deduplicación de evidencia son operaciones distintas. Un candidato canónico puede mostrarse una vez y conservar múltiples referencias de origen; versiones diferentes, afirmaciones distintas o contradicciones no se fusionan por similitud semántica. Si no existe una identidad estable suficiente, se etiqueta POTENTIAL_DUPLICATE y se conserva por separado hasta resolver la identidad.
