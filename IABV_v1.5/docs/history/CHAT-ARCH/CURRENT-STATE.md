@@ -1,3 +1,22 @@
+## Owner preference and automation-first permission protocol — 2026-10-27
+
+This entry supersedes older handoff wording that assigns manual command/UI work to the Owner when an approved local agent can perform it.
+
+- `AUTOMATION_FIRST=TRUE`; `MANUAL_COMMANDS_FOR_OWNER=AVOID`; `MANUAL_UI_NAVIGATION_FOR_OWNER=AVOID`.
+- Latest local probe reported by Owner/Codex: `ADMIN_CONTEXT=False`; probe stopped before TPM/Secure Boot queries, so `TPM=UNKNOWN`, `SECURE_BOOT=UNKNOWN`.
+- Authorized scope: read-only capability discovery only. No provisioning, key creation, TPM changes, services, ACLs, Entra configuration, protected reads, runtime, tunnel or merge.
+- If the authorized query genuinely requires elevation, the local agent should invoke the normal Windows UAC consent flow through a supported OS mechanism (for example, a bounded child process using `Start-Process -Verb RunAs`). After consent, run only the exact read-only query, capture sanitized output/exit code, and clean up task-owned temporary artifacts.
+- Do not ask the Owner to open consoles, run commands, navigate settings or copy diagnostics if local Codex can execute the operation. The Owner's interaction should be limited to a genuine decision or the normal UAC accept/deny prompt.
+- Never bypass UAC, suppress consent, self-grant privileges, change policy or broaden the query. If consent is denied, elevation is unavailable or the agent cannot invoke the UI, report the precise blocker and stop without a retry loop.
+- Elevation consent for a read-only probe does not authorize provisioning, keys, services, IPC/ACL changes, Entra configuration or activation.
+- Provenance: local values are Owner/Codex-reported; this ChatGPT session has no direct local Windows UI/command channel and has not launched a UAC window.
+
+Preserve: `G1/G2/G3=NOT_ESTABLISHED`; `MCP_TOOL_ALLOWLIST=EMPTY`; `PROTECTED_READS=FAIL_CLOSED`; `TUNNEL=DISABLED`; `BRIDGE=BRIDGE_NOT_READY`; `MERGE=NOT_AUTHORIZED`.
+
+Receipt: [UAAL automation-first UAC read-only discovery receipt](./CHAT-ARCH-2026-10-27-UAAL-AUTOMATION-FIRST-UAC-READONLY-DISCOVERY-RECEIPT.md).
+
+---
+
 <!-- Canonical route authority; candidate test execution is Owner/Codex-reported and the test-only delta is statically reviewed; real Entra/runtime/protected reads/tunnel/merge/activation remain unauthorized. -->
 
 ## Static delta review completed — PR #549 HEAD 519c55a5 (2026-10-27)
