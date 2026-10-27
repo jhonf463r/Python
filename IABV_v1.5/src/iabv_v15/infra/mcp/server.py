@@ -37,10 +37,10 @@ from __future__ import annotations
 
 import asyncio
 import concurrent.futures
+import inspect
 import logging
 import os
 from dataclasses import asdict, dataclass, is_dataclass
-from functools import wraps
 from typing import Any, Callable, TypeVar
 
 from iabv_v15.infra.mcp import audit_tools, audit_tools_observation
@@ -147,6 +147,9 @@ class _ValidatedMCPStartup:
         if hasattr(self, name):
             raise AttributeError("Validated MCP startup state is immutable.")
         object.__setattr__(self, name, value)
+
+    def __delattr__(self, name: str) -> None:
+        raise AttributeError("Validated MCP startup state is immutable.")
 
     def __init__(
         self,
@@ -301,16 +304,25 @@ class _FailClosedMCPToolRegistrar:
         register = self._fastmcp.tool(*args, **kwargs)
 
         def decorate(handler: Callable[..., Any]) -> Any:
-            @wraps(handler)
-            def guarded(*handler_args: Any, **handler_kwargs: Any) -> Any:
-                operation = handler.__name__
+            operation = handler.__name__
+
+            def guarded(*_handler_args: Any, **_handler_kwargs: Any) -> Any:
                 if operation not in self._SAFE_OPERATION_ALLOWLIST:
                     # Tool bodies have heterogeneous return schemas; raising
                     # avoids returning a denial object with the wrong schema.
                     raise PermissionError(f"operation_authority_unavailable:{operation}")
-                return handler(*handler_args, **handler_kwargs)
+                # A non-empty list alone is not sufficient to authorize execution.
+                # Keep all operations denied until a real G1/G2/G3 dispatcher is wired.
+                raise PermissionError(f"operation_authority_unavailable:dispatcher_not_implemented:{operation}")
 
-            setattr(guarded, "__iabv_original_handler__", handler)
+            # Preserve the discoverable contract without functools.wraps (which exposes
+            # the original via __wrapped__) and without a custom handler pointer.
+            guarded.__name__ = handler.__name__
+            guarded.__qualname__ = handler.__qualname__
+            guarded.__module__ = handler.__module__
+            guarded.__doc__ = handler.__doc__
+            guarded.__annotations__ = dict(getattr(handler, "__annotations__", {}))
+            guarded.__signature__ = inspect.signature(handler)
             return register(guarded)
 
         return decorate

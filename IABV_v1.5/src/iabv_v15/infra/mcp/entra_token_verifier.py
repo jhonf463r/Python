@@ -176,6 +176,20 @@ class EntraTokenVerifier:
         self._jwks_expires_at = 0.0
         self._jwks_lock = asyncio.Lock()
 
+    _IMMUTABLE_AUTH_FIELDS = frozenset(
+        {"_config", "_issuer_url", "_metadata_url", "_jwks_cache_seconds"}
+    )
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        if name in EntraTokenVerifier._IMMUTABLE_AUTH_FIELDS and hasattr(self, name):
+            raise AttributeError(f"{name} is immutable after verifier construction.")
+        object.__setattr__(self, name, value)
+
+    def __delattr__(self, name: str) -> None:
+        if name in EntraTokenVerifier._IMMUTABLE_AUTH_FIELDS:
+            raise AttributeError(f"{name} is immutable after verifier construction.")
+        object.__delattr__(self, name)
+
     @property
     def config(self) -> EntraAuthConfig:
         """Read-only reference to the frozen configuration accepted by this verifier."""

@@ -382,6 +382,20 @@ def test_removed_signing_key_remains_accepted_until_cache_expiry(monkeypatch: py
     assert len(requests) == 6
 
 
+@pytest.mark.parametrize(
+    "field",
+    ["_config", "_issuer_url", "_metadata_url", "_jwks_cache_seconds"],
+)
+def test_verifier_trust_binding_fields_cannot_be_reassigned_or_deleted(field: str) -> None:
+    verifier = EntraTokenVerifier(_config())
+    original_value = getattr(verifier, field)
+    with pytest.raises(AttributeError):
+        setattr(verifier, field, original_value)
+    with pytest.raises(AttributeError):
+        delattr(verifier, field)
+    assert getattr(verifier, field) == original_value
+
+
 def test_expired_jwks_cache_refresh_failure_does_not_reuse_removed_key(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
