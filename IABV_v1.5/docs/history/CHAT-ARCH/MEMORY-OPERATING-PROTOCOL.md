@@ -1,4 +1,18 @@
-<!-- Latest bounded G1/Entra route synchronized 2026-10-27. CURRENT-STATE.md remains the sole operational route authority. -->
+<!-- Latest Entra G1 design-only route synchronized 2026-10-27. CURRENT-STATE.md remains the sole operational route authority. -->
+
+## Latest route delta — Entra G1 design documented; operations remain fail-closed (2026-10-27)
+
+The Owner answered “sí” to the specific request to prepare an Entra-based G1 bootstrap design **only as documentation**. This is a new, bounded authorization for design writing, not runtime authentication and not permission to create Entra registrations/credentials, change permissions, modify source, run tests/runtime, establish a root, enable protected reads, open a tunnel or deploy.
+
+**Design document:** [M1A G1 — Entra bootstrap design (documentation only)](https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-27-M1A-G1-ENTRA-BOOTSTRAP-DESIGN-ONLY.md). Its design is now saved and verified by fetch-back. It specifies tenant-specific access-token validation, exact API/resource audience, an Owner mandate mapped by immutable identity rather than display name, a proposed independent local enrollment channel, server/revision binding, revocation, transport controls, and future acceptance tests. Those controls remain proposals until separately implemented and proven.
+
+**Interpretation of Option D:** the prior no-bootstrap decision remains active for operations. The new response authorizes the design document only; it does not establish G1, select/provision a trust root, or authorize implementation. No need to repeat the question about whether to prepare the design, and no need to repeat Entra/Authenticator setup.
+
+**Current state:** G1/G2/G3 NOT_ESTABLISHED; the eight implementation prerequisites remain open; protected reads FAIL_CLOSED; app registration NOT_CREATED_OR_NOT_REPORTED and portal NOT_INSPECTED; access-token validation NOT_ESTABLISHED_IN_MAIN; MCP HTTP token authentication remains absent in the documented current design; public tunnel state UNVERIFIED; tests/build/runtime/real transport NOT_RUN; bridge NOT_READY.
+
+**Next action:** Owner review of the documented design. Any subsequent inspection/creation of registrations, identity assignments, source changes, local enrollment, tests, tunnel or deployment requires a separate explicit authorization for that phase. No automatic follow-on. CURRENT-STATE.md remains the sole route authority.
+
+
 
 ## Latest bounded G1 result — Microsoft Entra is an authentication candidate, not an established IABV authority (2026-10-27)
 
