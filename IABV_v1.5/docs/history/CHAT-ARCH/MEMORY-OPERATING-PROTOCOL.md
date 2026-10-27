@@ -1,3 +1,20 @@
+<!-- Cross-chat method delta linked to https://github.com/jhonf463r/Python/blob/chat-continuity-key-recovery-handoff-20261027/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-27-M1A-GITHUB-APP-KEY-RECOVERY-CROSS-CHAT-HANDOFF.md; this is a draft branch entry until reviewed. -->
+
+## Method delta — do not repeat owner-reported failed UI actions; distinguish artifact types (2026-10-27)
+
+Generalizable lesson from the IABV→Codex bridge key-recovery episode:
+
+- When the Owner has already reported that a UI action failed, do not repeat the same generic instruction. First inspect available local evidence (download history, UI state, error output) and state why the next action differs.
+- Distinguish an identifier or fingerprint from a private-key file. A filename extension is not proof of content; a 40-character text value without PEM markers is not a complete PEM. Do not infer the field's meaning from length alone.
+- Distinguish stages of success: picker opened ≠ file valid; file valid ≠ GitHub fingerprint match; match ≠ secure custody; secure custody ≠ App API preflight; App preflight ≠ G1/G2/G3 or bridge ready.
+- Capture the exact sanitized inner error. Do not use a wrapper error as a root cause when the underlying exception is available. Do not expose secrets in prompts, transcripts, Issues or logs.
+- Prefer local Codex automation for tasks it can safely complete, while preserving the Owner's explicit choice for selecting a local file and for genuine security/rotation decisions.
+- Preserve chronology, but keep the newest handoff in a small dedicated artifact and route to it through `CONTEXT-INDEX.md`; do not keep expanding unrelated PRs with dozens of current-state sections.
+
+Episode-specific state and the pending next action are in the [2026-10-27 handoff](https://github.com/jhonf463r/Python/blob/chat-continuity-key-recovery-handoff-20261027/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-27-M1A-GITHUB-APP-KEY-RECOVERY-CROSS-CHAT-HANDOFF.md). This method entry is documentation-only on a candidate branch and does not modify `main/CURRENT-STATE.md`.
+
+---
+
 <!-- Route summary synchronized 2026-10-26. CURRENT-STATE.md is the sole active route authority. -->
 
 ## Latest verified route delta — billing discrepancy and support intake completed (2026-10-26)
