@@ -10,7 +10,7 @@
 
 ## Latest cross-chat handoff — 2026-10-27: GitHub App key recovery
 
-For the active local GitHub App key-recovery episode, read the [2026-10-27 cross-chat handoff](https://github.com/jhonf463r/Python/blob/chat-continuity-key-recovery-handoff-20261027/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-27-M1A-GITHUB-APP-KEY-RECOVERY-CROSS-CHAT-HANDOFF.md) before asking the Owner for further action. It preserves the precise failed attempts, known facts versus hypotheses, the pending Codex output, and the stop conditions. It is supporting continuity, not a replacement for `CURRENT-STATE.md`; re-fetch canonical main first. Do not repeat the download instruction until the existing Downloads/Opera history and the GitHub UI field label have been inspected. Never ask for the private key in chat.
+For the active local GitHub App key-recovery episode, read the [2026-10-27 cross-chat handoff](https://github.com/jhonf463r/Python/blob/chat-continuity-key-recovery-handoff-20261027/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-27-M1A-GITHUB-APP-KEY-RECOVERY-CROSS-CHAT-HANDOFF.md) before asking the Owner for further action. It preserves the precise failed attempts, the Codex report that no PEM was found in checked Downloads/Opera GX history while Opera Stable history was locked, the unverified GitHub UI field label, known facts versus hypotheses, and stop conditions. It is supporting continuity, not a replacement for `CURRENT-STATE.md`; re-fetch canonical main first. Do not repeat the download instruction until the existing Downloads/Opera history and the GitHub UI field label have been inspected. Never ask for the private key in chat.
 
 ## 1. Owner intent and correction
 
