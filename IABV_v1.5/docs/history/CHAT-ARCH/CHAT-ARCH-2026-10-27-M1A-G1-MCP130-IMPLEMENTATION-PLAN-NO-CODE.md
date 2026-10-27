@@ -1,8 +1,11 @@
 # M1A G1 — Objetivo MCP fijado y plan de integración Entra (sin cambios de código)
 
+> **Reconciliación posterior (2026-10-27):** Este plan documenta la decisión original de planificación sin código; una autorización conversacional posterior cubrió únicamente preparar/corregir una candidata de código aislada en [PR #549](https://github.com/jhonf463r/Python/pull/549), HEAD `05d007965ea7efda6f528657e20103ea82bcb6b5`, base inicial `a8624c30744da7f593d6a1c829e48aa229c8efca`. Procedencia: el Owner usó el prompt de alcance limitado preparado en esta conversación y luego aportó el resultado de Codex. Esto registra consentimiento conversacional limitado, no autenticación independiente de runtime ni autorización operativa. No autoriza instalar paquetes, ejecutar tests/build/runtime/CI, portal/configuración real de Entra, túneles, lecturas protegidas, merge, despliegue o activación. `G1/G2/G3=NOT_ESTABLISHED`; lecturas protegidas siguen `FAIL_CLOSED`. La condición de no autorización que sigue en este plan describe el momento original de redacción y queda supersedida solo para la candidata code-only PR #549.
+
+
 - Fecha: 2026-10-27 (America/Bogota).
 - Tarea: M1A_G1_MCP130_TARGET_AND_IMPLEMENTATION_PLAN_20261027.
-- Resultado: TARGET_RATIFIED; PLAN_DOCUMENTED; SOURCE_MODIFICATION_NOT_AUTHORIZED.
+- Resultado original del plan: TARGET_RATIFIED; PLAN_DOCUMENTED; SOURCE_MODIFICATION_NOT_AUTHORIZED_AT_PLAN_CREATION; LATER=CODE_ONLY_CANDIDATE_PR549_PREPARED.
 - Procedencia: el Owner respondió «ok procede» a la propuesta explícita de fijar el objetivo Python 3.13.2 + MCP SDK 1.30.0 + Streamable HTTP loopback en puerto 8000 sin túnel. Este consentimiento fija el objetivo de planificación; no autentica identidad de runtime ni autoriza instalar paquetes, cambiar código, configurar Entra, iniciar procesos, ejecutar pruebas, abrir túneles o realizar lecturas protegidas.
 
 ## 1. Objetivo ratificado

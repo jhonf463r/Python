@@ -1,8 +1,11 @@
 # M1A G1 — Diseño de bootstrap de confianza con Microsoft Entra (solo documentación)
 
+> **Reconciliación de alcance (2026-10-27):** Se preparó después una candidata code-only aislada en [PR #549](https://github.com/jhonf463r/Python/pull/549), HEAD `05d007965ea7efda6f528657e20103ea82bcb6b5`, bajo consentimiento conversacional acotado, evidenciado por el prompt específico utilizado en Codex y el resultado devuelto por el Owner. Esta preparación de código no implementa ni establece una raíz de confianza productiva: el bootstrap real de Entra, registro/roles/credenciales, ejecución de pruebas/runtime, túneles, lecturas protegidas, merge, despliegue y activación continúan sin autorizar. Mantener `G1/G2/G3=NOT_ESTABLISHED` y el comportamiento fail-closed. Esta nota no convierte el diseño en evidencia de una autoridad real ni autentica independientemente la identidad de runtime.
+
+
 - Fecha: 2026-10-27 (America/Bogota).
 - Tarea: M1A_G1_ENTRA_BOOTSTRAP_DESIGN_DOCUMENTATION_ONLY_20261027.
-- Estado: DESIGN_UPDATED_AFTER_INDEPENDENT_REVIEW; OWNER_REVIEW_PENDING; IMPLEMENTATION_NOT_AUTHORIZED.
+- Estado: DESIGN_UPDATED_AFTER_INDEPENDENT_REVIEW; CODE_ONLY_CANDIDATE_PR549_PREPARED; ENTRA_BOOTSTRAP/OPERATIONAL_ACTIVATION_NOT_AUTHORIZED.
 - Autoridad de esta tarea: respuesta explícita del Owner «sí» a preparar este diseño solo como documentación, sin crear registros, credenciales ni modificar código. El recibo es procedencia de conversación; no autentica por sí mismo una identidad en tiempo de ejecución.
 
 ## 1. Dictamen ejecutivo

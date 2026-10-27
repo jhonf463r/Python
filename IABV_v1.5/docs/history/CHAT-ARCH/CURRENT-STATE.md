@@ -1,4 +1,24 @@
-<!-- Canonical route authority; cross-chat handoff consolidated and fetch-back verified 2026-10-27. No code/environment change authorized. -->
+<!-- Canonical route authority; authorization scope reconciled 2026-10-27. Candidate-only source preparation for PR #549 is recorded; tests/runtime/activation/merge remain unauthorized. -->
+
+## Actualización canónica vigente — consentimiento code-only acotado para PR #549 (2026-10-27)
+
+**Esta entrada reconcilia el estado actual; no reescribe el significado histórico de las decisiones previas.** La respuesta original «ok procede» sí autorizó únicamente fijar el objetivo MCP y documentar el plan. Después, el Owner pidió continuar, recibió en esta conversación un prompt de Codex con alcance explícito para preparar/corregir una candidata aislada de código y aportó el resultado de esa ejecución. Este registro deja constancia del consentimiento de alcance observado en la conversación y del resultado comunicado por el Owner. No se presenta como una cita de una autorización redactada directamente por el Owner, una autenticación independiente de identidad de runtime ni una raíz de confianza.
+
+**Recibo de procedencia:** [registro de reconciliación de autorización code-only PR #549](./CHAT-ARCH-2026-10-27-M1A-CODE-ONLY-PR549-AUTHORIZATION-RECONCILIATION-RECEIPT.md).
+
+**Alcance estrictamente cubierto:** preparación y corrección de código y pruebas fuente en la rama aislada de la PR borrador #549, cuya base inicial verificada era `a8624c30744da7f593d6a1c829e48aa229c8efca` y cuyo HEAD de candidato devuelto y verificado en GitHub es `05d007965ea7efda6f528657e20103ea82bcb6b5`. El commit correctivo citado modifica seis archivos de esa candidata. Esta autorización no se extiende a `main` como código de producto, al checkout local `C:\Python`, ni a instalar dependencias, resolver paquetes, ejecutar pruebas, build, servidor, runtime, CI manual, llamadas reales a Entra/JWKS, inspección/creación de registros o credenciales, túneles, lecturas protegidas, merge, despliegue o activación.
+
+**Estado verificable de la candidata:** PR #549 abierta, en borrador y sin fusionar; cuatro commits en la rama candidata al momento de esta reconciliación; el último HEAD verificado es `05d007965ea7efda6f528657e20103ea82bcb6b5`. La revisión independiente de ese HEAD confirma 0 P0 demostrados, 2 bloqueos P1 y 3 cuestiones P2; los tests y el runtime siguen sin ejecutarse. Este registro no convierte esos tests fuente en evidencia de aprobación.
+
+**Límites y puertas conservados:** `TESTS=NOT_RUN`; `BUILD=NOT_RUN`; `RUNTIME=NOT_RUN`; `G1/G2/G3=NOT_ESTABLISHED`; `PROTECTED_READS=FAIL_CLOSED`; `TUNNEL=DISABLED`; `BRIDGE=BRIDGE_NOT_READY`; `MERGE=NOT_AUTHORIZED`; `PRODUCTION_ACTIVATION=NOT_AUTHORIZED`. El registrador de la candidata conserva una lista de operaciones permitidas vacía; esto mantiene denegadas las invocaciones MCP, pero no establece G1/G2/G3 ni constituye una frontera contra llamadas directas de código dentro del mismo proceso.
+
+**Supersesión acotada de estados anteriores:** las declaraciones de «implementación no autorizada» que preceden a esta entrada reflejaban correctamente el estado antes del consentimiento conversacional limitado a la candidata PR #549. Solo quedan supersedidas para esa preparación de código fuente en rama aislada. Siguen plenamente vigentes para bootstrap operativo, autoridad Entra real, instalación, ejecución, pruebas, túneles, lecturas protegidas, aceptación, merge y despliegue. El estado histórico se conserva para procedencia.
+
+**Siguiente puerta:** no repetir la solicitud de autorización para preparar esa candidata. Primero conservar y revisar el cambio documental; después, cualquier ejecución de pruebas/build/runtime requiere autorización específica separada. No habilitar ninguna herramienta mientras G1/G2/G3 y la revocación independiente del mandato no estén establecidos.
+
+---
+
+
 
 ## Cierre de continuidad para nuevo chat — HANDOFF verificado (2026-10-27)
 
@@ -8,7 +28,7 @@ Documentos vinculados:
 - Plan sin código del objetivo ratificado: [MCP 1.30 / Streamable HTTP / loopback 8000](https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-27-M1A-G1-MCP130-IMPLEMENTATION-PLAN-NO-CODE.md).
 - Diseño Entra corregido tras revisión independiente: [diseño de bootstrap G1](https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-27-M1A-G1-ENTRA-BOOTSTRAP-DESIGN-ONLY.md).
 
-**Decisión ratificada:** Miniconda Python 3.13.2; paquete MCP SDK mcp==1.30.0 como objetivo futuro; Streamable HTTP; bind 127.0.0.1:8000; sin túnel. «Ok procede» autoriza la selección del objetivo y el plan documental únicamente. No autoriza cambios de código, instalación/actualización de paquetes, acceso al portal Entra, registros, credenciales, roles, runtime, pruebas, túneles ni lecturas protegidas. No repetir la pregunta sobre el objetivo ni la decisión Option D.
+**Decisión ratificada:** Miniconda Python 3.13.2; paquete MCP SDK mcp==1.30.0 como objetivo futuro; Streamable HTTP; bind 127.0.0.1:8000; sin túnel. «Ok procede» autoriza la selección del objetivo y el plan documental únicamente. En ese momento no autorizaba cambios de código ni instalación/actualización de paquetes, acceso al portal Entra, registros, credenciales, roles, runtime, pruebas, túneles ni lecturas protegidas; el consentimiento conversacional posterior se limita a la candidata aislada PR #549, según la actualización canónica vigente. No repetir la pregunta sobre el objetivo ni la decisión Option D.
 
 **Reporte local de Codex — procedencia limitada:** el preflight informado por el Owner encontró Miniconda Python 3.13.2 con mcp 1.27.0 y otro entorno Python 3.14.4 con mcp 1.30.0; dos procesos MCP preexistentes; checkout C:\Python detached en 8425f03eb45abd11951938f6e3234459c1585b55 con 13.833 entradas de estado reportadas, 13.313 untracked y errores de acceso al enumerar algunos directorios. El asistente no reejecutó la inspección local; preservar como reporte de Codex, no como evidencia directa de GitHub main. No matar procesos, limpiar, cambiar de rama, sincronizar ni editar ese checkout.
 

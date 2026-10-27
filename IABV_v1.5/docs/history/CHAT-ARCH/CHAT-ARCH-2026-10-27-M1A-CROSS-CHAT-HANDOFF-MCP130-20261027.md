@@ -1,5 +1,22 @@
 # Handoff entre chats — IABV / Entra G1 / MCP 1.30 (2026-10-27)
 
+## Addendum vigente — autorización limitada de candidata PR #549 (2026-10-27)
+
+Leer primero `CURRENT-STATE.md`; su nueva entrada de reconciliación prevalece cuando una sección histórica del presente handoff aún diga que nunca se autorizó preparar código. La respuesta original «ok procede» sigue describiendo correctamente la ratificación inicial del objetivo/plan, pero posteriormente se aceptó y ejecutó un prompt con alcance explícito para preparar una candidata code-only aislada.
+
+- PR: https://github.com/jhonf463r/Python/pull/549
+- Base inicial: `a8624c30744da7f593d6a1c829e48aa229c8efca`
+- HEAD verificado: `05d007965ea7efda6f528657e20103ea82bcb6b5`
+- Procedencia: consentimiento de alcance en esta conversación evidenciado por el prompt acotado usado por el Owner y el resultado de Codex aportado después; no es autenticación independiente del runtime.
+- Autorizado: cambios de código y pruebas fuente únicamente en la rama candidata de PR #549.
+- No autorizado: instalación, resolución de dependencias, ejecución de pruebas/build/runtime/CI, portal o configuración real de Entra, túnel, lecturas protegidas, merge, despliegue o activación; no tocar el checkout `C:\Python`.
+- Estado: `PR=OPEN/DRAFT/UNMERGED`; `TESTS/BUILD/RUNTIME=NOT_RUN`; `G1/G2/G3=NOT_ESTABLISHED`; `PROTECTED_READS=FAIL_CLOSED`; `TUNNEL=DISABLED`; `BRIDGE=BRIDGE_NOT_READY`; `MERGE=NOT_AUTHORIZED`.
+
+El recibo de procedencia está en [CHAT-ARCH-2026-10-27-M1A-CODE-ONLY-PR549-AUTHORIZATION-RECONCILIATION-RECEIPT.md](./CHAT-ARCH-2026-10-27-M1A-CODE-ONLY-PR549-AUTHORIZATION-RECONCILIATION-RECEIPT.md). La revisión independiente del HEAD actual encontró 0 P0 demostrados, 2 bloqueos P1 y 3 riesgos/vacíos P2; los informes de pruebas fuente no cuentan como pruebas ejecutadas.
+
+---
+
+
 - Zona horaria: America/Bogota.
 - Propósito: permitir que un nuevo chat continúe sin perder las decisiones, evidencia, límites de autorización, fallos previos ni reglas anti-repetición.
 - Autoridad operativa única: [CURRENT-STATE.md](./CURRENT-STATE.md). Un resumen o handoff no puede sobrescribir su estado vivo.
