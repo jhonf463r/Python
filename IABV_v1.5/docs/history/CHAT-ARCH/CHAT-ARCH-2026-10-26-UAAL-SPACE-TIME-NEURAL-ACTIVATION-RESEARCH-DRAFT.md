@@ -265,18 +265,18 @@ activate(query, existing_indexes, budget, policy):
                 duplicate_stale_conflict_penalty
             )
 
-            if neighbor.id not in candidate_records:
+            was_known = neighbor.id in candidate_records
+            if not was_known:
                 candidate_records[neighbor.id] = retain_candidate(neighbor)
                 best_score[neighbor.id] = candidate_score
                 provenance[neighbor.id] = set()
-            provenance.setdefault(neighbor.id, set()).add(relation_id)
+            elif rank_policy_is_strictly_better(candidate_score, best_score[neighbor.id]):
+                best_score[neighbor.id] = candidate_score
+            else:
+                record_alternate_route(neighbor.id, relation_id, candidate_score)
 
-            # Crucial: record and score the incoming route before deduplicating the node.
-            if neighbor.id in activated_ids or neighbor.id in candidate_records:
-                if rank_policy_is_strictly_better(candidate_score, best_score[neighbor.id]):
-                    best_score[neighbor.id] = candidate_score
-                else:
-                    record_alternate_route(neighbor.id, relation_id, candidate_score)
+            # Crucial: preserve the incoming route before any active/expanded check.
+            provenance.setdefault(neighbor.id, set()).add(relation_id)
 
             if neighbor.id in activated_ids:
                 # A visited/expanded node still accumulates distinct route provenance.
@@ -301,6 +301,8 @@ activate(query, existing_indexes, budget, policy):
         best_score,
         all_unique_provenance=provenance,
         blocked_and_deferred=blocked_or_deferred,
+        not_expanded=active_ids - expanded,
+        pending_frontier=stable_candidate_ids(frontier),
         budget_coverage=coverage_status(spent_nodes, spent_relations, budget)
     )
 ~~~
