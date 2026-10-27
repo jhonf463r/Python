@@ -677,3 +677,35 @@ Blocker reported: no IABV navigation/comparison route was exposed. The local ope
 No GitHub App API call, JWT, installation token, PEM storage, app mutation, repository/code change, tests/build/runtime, protected read, or real transport was performed. The sole change associated with this note is documentary continuity on the existing PR #548 branch; `main` and `main/CURRENT-STATE.md` were not modified.
 
 The canonical route remains the live `main/CURRENT-STATE.md`: `ACTIVE_FRONTIER=G1_INDEPENDENT_ROOT_MANDATE_AND_VERIFICATION_CHANNEL`; `G1/G2/G3=NOT_ESTABLISHED`; `IMPLEMENTATION_PREREQUISITES=8; CLOSED=0`; `AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED`; `PROTECTED_READS=FAIL_CLOSED`; `TESTS=NOT_RUN`; `RUNTIME=NOT_RUN`; `AUTOMATIC_FOLLOW_ON=FALSE`; `BRIDGE=BRIDGE_NOT_READY`. This key-identity comparison does not alter that route or authorize follow-on stages.
+
+## 19. Local browser-observation route diagnosis — data boundary unproven (2026-10-27, 12:34 America/Bogota)
+
+### Exact Owner-supplied Codex result
+
+```text
+LOCAL_EXECUTION=YES
+IABV_BROWSER_ROUTE=UNAVAILABLE
+BROWSER_OBSERVER_REGISTERED=YES
+LOCAL_DOM_ACCESS=UNKNOWN
+ACCESSIBILITY_ACCESS=AVAILABLE
+UIA_CAPABILITY_SCOPE=UNKNOWN
+EXECUTION_BOUNDARY=LOCAL
+RAW_VALUE_CAN_REACH_MODEL_OR_TRANSCRIPT=YES
+BLOCKER_CLASS=DATA_BOUNDARY_UNPROVEN
+EVIDENCE=Las herramientas IABV expuestas ofrecen estado de ventanas y funciones de repositorio, pero no navegación/DOM. PowerShell local cargó Windows UI Automation y accedió a controles de Opera; no se demostró que exponga de forma fiable el DOM de la página. node_repl está expuesto pero su inicialización falló previamente; mcp__cua_repl también está expuesto, pero no se inicializó. Sus contratos permiten que la salida incluya estado de interfaz, y no acreditan que un valor leído quede aislado del modelo o la transcripción.
+NEXT_ACTION=STOP_UNTIL_ROUTE_EVIDENCE
+```
+
+### Bounded interpretation
+
+- This is the latest Owner-supplied local Codex report, recorded as reported evidence rather than independently reproduced by the GitHub connector.
+- The diagnosis distinguishes three facts: a browser observer is registered, a Windows accessibility surface is available, but reliable page-DOM access and UI Automation scope are unknown. The local execution boundary alone is insufficient: the report explicitly says raw values can reach the model/transcript and no isolation guarantee is proven.
+- Therefore, do not read the fingerprint node through accessibility, initialize `node_repl`/`mcp__cua_repl` for this sensitive read, or test a candidate route on the fingerprint. Do not repeat the prior navigation/UIA attempts. `LOCAL_DOM_ACCESS=UNKNOWN` is not `AVAILABLE`; `EXECUTION_BOUNDARY=LOCAL` does not override `RAW_VALUE_CAN_REACH_MODEL_OR_TRANSCRIPT=YES`.
+- The next admissible step is to obtain independent, non-secret route/contract evidence that identifies an approved local mechanism whose output can be constrained so the sensitive value never reaches the model, response, transcript, logs, or files. This must be proven from the tool's actual documented/observable contract or a separately validated design—not inferred from a tool name, local execution, or ability to access accessibility controls.
+- If that boundary cannot be proven without reading or emitting the sensitive value, stop and preserve `MATCH=NOT_VERIFIED`. No clipboard fallback, screenshot, DOM/page dump, remote browser, or alternate governance-bypassing route.
+
+### Stage and authorization state
+
+No fingerprint comparison occurred. The report does not change the earlier Owner-reported PEM structural validation, but that import/fingerprint was not rechecked in this run. No secret values were reported exposed and no secret material persisted. No GitHub App API call, JWT, installation token, app mutation, code/repository change, tests/build/runtime, protected read, or real transport was performed.
+
+The live `main/CURRENT-STATE.md` was re-fetched before this note; blob remains `7a261129c8611cc0b5ed3788fc00c5d90ae189ea`. Its canonical active frontier and authority gates are unchanged. Keep `G1/G2/G3=NOT_ESTABLISHED`; `IMPLEMENTATION_PREREQUISITES=8; CLOSED=0`; `AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED`; `PROTECTED_READS=FAIL_CLOSED`; `TESTS=NOT_RUN`; `RUNTIME=NOT_RUN`; `AUTOMATIC_FOLLOW_ON=FALSE`; `BRIDGE=BRIDGE_NOT_READY`. The change is limited to this documentary handoff on the existing draft PR branch; do not merge it or modify `main/CURRENT-STATE.md` as part of this step.
