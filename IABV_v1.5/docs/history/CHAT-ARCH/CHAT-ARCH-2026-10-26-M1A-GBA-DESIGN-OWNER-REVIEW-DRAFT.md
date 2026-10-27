@@ -1,0 +1,303 @@
+# M1A GBA — diseño gobernado de autoridad (borrador de revisión del Owner)
+
+- Fecha: 2026-10-26, America/Bogota.
+- Tarea: M1A_GBA_GOVERNED_AUTHORITY_DESIGN_OWNER_REVIEW.
+- Estado: DRAFT_FOR_OWNER_REVIEW.
+- Rama de revisión: m1a-gba-design-review-20261026.
+- Base remota observada: main=cac98375e4e94547ddfa89b30acab6b24ca769e2.
+- Alcance: diseño, requisitos, decisiones abiertas y artefactos futuros de aceptación.
+- Cambios de código/runtime: ninguno.
+- Adopción canónica: no solicitada ni efectuada.
+- Implementación, provisión de autoridad/credenciales, pruebas y lecturas protegidas: no autorizadas por este documento.
+
+## 1. Propósito y dictamen preliminar
+
+Este borrador desarrolla los requisitos de G1, G2, G3, emisor, IPC, replay y contexto confiable. Los nombres de roles, artefactos y relaciones son elementos propuestos de diseño, no evidencia de servicios, custodios, claves o canales actualmente existentes.
+
+**Dictamen preliminar:** CONDITIONAL_DESIGN_REVIEW; OWNER_REVIEW_REQUIRED. La propuesta debe mantener la opción D —sin ancla demostrada, sin bootstrap y con denegación— mientras una raíz independiente, su mandato, custodia y canal de verificación no estén demostrados. El borrador no selecciona una autoridad, persona, organización, plataforma, mecanismo IPC ni proveedor.
+
+La adopción normativa previa de M1A v1.0.1 es exclusivamente de diseño. No constituye una credencial de runtime ni autoriza implementación, pruebas, build, acceso al checkout local, transporte real, merge, deployment, lectura protegida o liberación de bloqueos.
+
+Referencias rectoras:
+- [CURRENT-STATE.md](https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CURRENT-STATE.md).
+- [Reconciliación estática de diseño GBA](https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-23-M1A-G1-governance-owned-bootstrap-authority-design-static-reconciliation.md).
+- [Contrato consolidado Entry 274](https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-13-274-m0b-r8-1-consolidated-read-decision-contract.md).
+- [Matriz de los ocho prerrequisitos M1A](https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1A-v1_0_1-implementation-prerequisite-evidence-gate-matrix.md).
+- [Recibo de adopción explícita M1A v1.0.1](https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-22-M1A-v1_0_1-explicit-owner-adoption-receipt.md).
+
+## 2. Modelo de confianza y flujo de decisión
+
+El diagrama separa de forma deliberada **delegación de autoridad**, **flujo de solicitud/respuesta** y **persistencia**. Una conexión de datos no demuestra confianza; cada relación de autoridad exige evidencia propia, vigente, exacta, verificable y revocable.
+
+~~~mermaid
+flowchart LR
+    ROOT["Raíz independiente<br/>aún no demostrada"]
+    GBA["GBA gobernada<br/>rol de diseño"]
+    OWNER["Owner autenticado<br/>aprobación fresca"]
+    G2["Catálogo G2<br/>publicadores, clases, versión, revocación"]
+    G3["Registro G3 versionado<br/>operación → destino autorizado"]
+    ISSUER["Emisor protegido<br/>decisión server-side"]
+    IPC["IPC autenticado<br/>peer, sesión, challenge"]
+    READER["Reader/servidor exacto<br/>reverifica antes de operar"]
+    HANDLE["Handle del objeto<br/>el mismo que se consume"]
+    DECISION["Registro autoritativo<br/>decisión y presupuesto"]
+    REPLAY["Estado replay/challenge<br/>durable y anti-rollback"]
+    LEDGER["Ledger operacional<br/>intención, resultado, entrega y recibo"]
+    BLOCK["Autoridad independiente<br/>de release por bloqueo"]
+
+    ROOT -->|"delegación verificada"| GBA
+    GBA -->|"delegación limitada"| ISSUER
+    GBA -->|"política/mandato"| G2
+    GBA -->|"mandato de registro"| G3
+    OWNER -->|"aprobación fresca"| ISSUER
+    G2 -->|"catálogo y revocación vigentes"| ISSUER
+    G3 -->|"mapping autorizado"| ISSUER
+    ISSUER -->|"solicitud autenticada / referencia no autoritativa"| IPC
+    IPC -->|"sesión y peer verificados"| READER
+    READER -->|"consume el objeto ya autorizado"| HANDLE
+    ISSUER --> DECISION
+    ISSUER --> REPLAY
+    ISSUER --> LEDGER
+    READER --> LEDGER
+    BLOCK -.->|"release separada; hoy no demostrada"| READER
+~~~
+
+El diagrama no declara que exista ninguno de estos servicios. Cada enlace deberá tener una evidencia y un responsable propios. La autoridad para crear o revocar raíces, mandatos, catálogo, mappings G3, decisiones, releases de bloqueo y recibos no puede inferirse de la capacidad técnica de conectarlos.
+
+### Semántica obligatoria de la decisión
+
+- La aprobación fresca del Owner, la decisión del emisor, la verificación inmediata del reader, el resultado de la operación, la entrega de contenido y el recibo son etapas distintas.
+- La decisión de lectura es un **registro autoritativo del lado del servidor**, ligado a la sesión, instancia, reader, target, scope, expiración y presupuesto. No es un token bearer transferible ni una credencial reutilizable.
+- El IPC transporta mensajes autenticados y, cuando proceda, referencias de decisión que no conceden autoridad por sí mismas. El reader consulta/verifica el estado autoritativo apropiado y revalida los requisitos inmediatamente antes de actuar.
+- Un ALLOW, una firma válida, un hash, un ID, un recibo o una respuesta positiva de un adapter no sustituyen la validación del reader ni liberan un bloqueo de gobernanza.
+- La ausencia, ambigüedad, inconsistencia, caducidad, revocación no comprobable o pérdida de estado autoritativo produce denegación.
+
+Este flujo conserva la separación de Entry 274 entre aprobación, decisión, verificador del reader y ledger.
+
+## 3. Alternativas de anclaje y decisión actual
+
+Las alternativas son opciones conceptuales, no sistemas existentes:
+
+| Opción | Fuente inicial | Condición necesaria | Estado con la evidencia disponible |
+|---|---|---|---|
+| A — Raíz Owner preexistente | Clave/certificado cuya relación con la responsabilidad sobre IABV ya se hubiera establecido de forma independiente. | Fingerprint autenticado fuera del host y del canal solicitante, mandato, custodia, recuperación y revocación verificables. | No demostrada. |
+| B — Autoridad organizacional existente | Autoridad con jurisdicción real sobre el proyecto. | Identidad, mandato, delegación al proyecto y revocación verificados desde una base independiente. | No demostrada; no se presupone organización alguna. |
+| C — Nueva autoridad delegada | Ceremonia para una nueva raíz bajo una autoridad externa ya confiable. | Una autoridad preexistente debe autenticar la ceremonia y el fingerprint nuevo por canal independiente. | No admisible si no se prueba primero la raíz delegante; no crea confianza desde cero. |
+| D — Sin ancla demostrada | Ninguna. | Mantener el bloqueo y registrar la evidencia faltante. | **Disposición requerida por la evidencia actual.** |
+
+**Condición de parada:** si no se puede demostrar una raíz, su mandato sobre IABV, el custodio y el canal independiente, el estado es UNANCHORED. No se inicializa bootstrap, no se emiten credenciales y no se habilitan lecturas.
+
+## 4. Custodia, establecimiento, rotación y revocación de la raíz
+
+### Decisiones previas que corresponden a gobernanza
+
+Gobernanza debe identificar mediante decisión separada:
+- custodio accountable y suplente;
+- quién propone, verifica y aprueba operaciones sobre la raíz;
+- quórum y separación de funciones, incluyendo tratamiento de conflictos;
+- recuperación, sucesión, respuesta ante compromiso y pérdida de custodia;
+- verificador independiente y canal de verificación fuera del host, del issuer, del reader y de la solicitud que pide acceso;
+- política de alcance, vigencia y revocación;
+- amenazas dentro y fuera del modelo, en particular administrador local, SYSTEM, kernel y recuperación física/lógica del equipo.
+
+**Estado:** DECISION_NECESARIA. No se designa aquí una persona, organización, proveedor, algoritmo de quórum, hardware ni período temporal.
+
+### Ceremonia de establecimiento propuesta — no ejecutada
+
+1. Identificar la fuente A o B, la autoridad con mandato, los custodios, el alcance sobre IABV y el canal independiente.
+2. Verificar la autoridad fuera del workspace y de los procesos requester, issuer y reader.
+3. Publicar un charter versionado que registre identidad/fingerprint, cadena, alcance, delegaciones, custodios, quórum, secuencia monotónica, vigencia, revocación, recuperación y sucesión.
+4. Verificar de manera independiente el fingerprint y el mandato por un canal previamente confiable, distinto del que solicita acceso.
+5. Si falta cualquier elemento esencial, detenerse con BLOCKED_MISSING_GOVERNANCE_BOOTSTRAP_ANCHOR.
+
+No son raíces válidas por sí solas una clave creada localmente, la confianza TOFU en el primer uso, un SID, un privilegio de administrador, una firma bajo una clave suministrada, un evento de merge, un hash de Git, una aprobación conversacional o el propio issuer futuro.
+
+### Rotación y revocación
+
+El diseño requiere que la rotación sea autorizada por la raíz vigente, secuenciada, correlacionada y verificada independientemente. El host o la entidad enrolada no pueden sustituir el pin de confianza. Cada raíz, delegación, credencial Owner, issuer, publicador G2, versión G3 y registro de servidor debe tener un estado de revocación identificable.
+
+Una fuente de revocación ausente, desactualizada, contradictoria, inaccesible o sin prueba de autoridad implica denegación. Ante compromiso de raíz se bloquea el sistema y se exige recuperación externa; no se regenera localmente una raíz bajo la misma identidad. Ventanas de rotación, TTL de revocación y parámetros de recuperación quedan pendientes de decisión y evidencia; no se inventan valores.
+
+## 5. Vinculación Owner → principal local → issuer → reader/servidor
+
+El enrolamiento debe demostrar por separado:
+
+1. **Owner → rol de gobernanza:** credencial preinscrita bajo una raíz válida, prueba de posesión y aprobación fresca ligada a un challenge, propósito y alcance concretos.
+2. **Owner → principal local:** principal obtenido del contexto autenticado del sistema operativo, no de un campo suministrado por el caller.
+3. **Principal/instalación → issuer:** delegación que liga clave pública, identidad del servicio, release/artefacto y ámbito autorizado.
+4. **Issuer → instancia exacta:** identidad registrada del reader/servidor, sesión autenticada, versión de política y binding del workspace/checkout.
+5. **Reader → operación concreta:** operación real registrada y destino derivado del contexto confiable y G3.
+
+Un SID, PID, ruta, nombre de proceso, fingerprint, hash, respuesta MFA o campo peer_identity aislado no demuestra estos enlaces. La posibilidad de utilizar Windows Hello/WebAuthn, CNG o un mecanismo específico de Windows no demuestra que exista enrolamiento ni binding para IABV; su aceptabilidad depende de evidencia de plataforma y revisión separada.
+
+**Estado:** vínculo de raíz y principal NOT_ESTABLISHED; issuer y servidor exactos NOT_ESTABLISHED.
+
+## 6. Enrolamiento del issuer e IPC autenticado
+
+El issuer tendría identidad, clave y delegación limitadas, separadas del requester y del reader. La clave privada no sería accesible al requester ni al reader. El enrolamiento debe vincular el issuer con el release verificado, la clave pública, el principal de servicio, el reader/servidor y la política aplicable.
+
+El canal IPC requiere como mínimo:
+- autenticación del peer por una autoridad del sistema operativo y autorización de acceso limitada al principal del servicio;
+- desafío/respuesta frescos con protección contra replay;
+- vínculo criptográfico entre solicitud, sesión, instancia, issuer, reader, target y política;
+- comportamiento definido ante suplantación del endpoint, sustitución del proceso, reutilización del PID, desconexión y mensajes fuera de secuencia;
+- verificación inmediata por el reader, sin delegar la decisión a datos no autenticados recibidos por IPC.
+
+No se elige en este borrador un servicio, named pipe, mecanismo de custodia o ACL concretos. El diseño debe someter la alternativa seleccionada a revisión específica de Windows antes de autorizar implementación.
+
+**Estado:** ISSUER_IPC=NOT_ESTABLISHED; el contrato de interfaz no demuestra adapter productivo, servicio issuer, límites de proceso ni autenticación real del peer.
+
+## 7. Catálogo G2: productores, integridad y revocación
+
+Un catálogo admisible debe identificar como mínimo:
+- publicadores autorizados y delegaciones vigentes;
+- clases de productor y allowlists por clase;
+- versiones, integridad, vigencia y ciclo de publicación/retiro;
+- revocaciones de publicadores, productores, mandatos y políticas;
+- secuencia/epoch monotónico, completitud y freshness;
+- attestation firmada por una autoridad cuya confianza se haya establecido independientemente.
+
+Issuer y reader deben rechazar catálogo incompleto, no autenticado, ambiguo, rollbackeado, vencido, sin attestation de completitud o con revocación inaccesible. Un snapshot vacío solo es admisible si una autoridad confiable certifica explícitamente que está completo y vigente. Digest, schema, recibo, manifest o snapshot observacional no establecen autoridad del publicador.
+
+**Estado:** existen tipos y evaluación parcial en fuente candidata; el publicador confiable, el catálogo autoritativo, la allowlist y la fuente de revocación están NOT_ESTABLISHED.
+
+## 8. Resolver G3 y binding al mismo objeto consumido
+
+G3 debe ser un registro versionado y gobernado del lado del servidor que mapee cada operación protegida real a su implementación/call site, workspace y checkout registrados, reglas de destino autorizadas y versión de política. La solicitud del caller puede señalar un nombre de ruta solicitado, pero no definir por sí misma operación confiable, autoridad, workspace, root, scope ni destino canónico.
+
+Requisitos:
+- root del workspace y checkout con identidad estable y registro de ciclo de vida; no basta una cadena de ruta;
+- mappings G3 versionados, revisados, con autoridad, publisher/custodio y estado de revocación identificables;
+- target derivado del registro del servidor y de la operación real, nunca de un scope autorreferenciado por el caller;
+- decisión ligada a la identidad del target abierto;
+- reader consume exactamente el objeto abierto y autorizado, sin una segunda resolución por ruta después del ALLOW;
+- para listados, autorizar el handle de un directorio no autoriza automáticamente leer sus hijos;
+- cambios, contradicciones o pérdida de identidad del objeto invalidan la decisión y deniegan.
+
+La apertura relativa por handle y el consumo mediante el mismo handle son mecanismos técnicos presentes en la fuente candidata, pero no acreditan la aprobación de la raíz, el registro G3, ni la identidad del workspace. La viabilidad de una primitiva no constituye autoridad operativa.
+
+**Estado:** G3_VERSIONED_TARGET_RESOLVER=NOT_ESTABLISHED; APPROVED_WORKSPACE_ROOT_PROVIDER=NOT_ESTABLISHED.
+
+## 9. Decisión del servidor, IPC y semántica de autorización
+
+La decisión no debe convertirse en un token bearer transferible. Entry 274 exige una decisión autoritativa del lado del servidor, enlazada a la sesión y al reader/target previstos, con presupuestos finitos y registro atómico.
+
+Antes de operar, el reader debe verificar:
+- referencia a una decisión existente y autoritativa;
+- sesión/instancia/reader/target y scope coincidentes;
+- aprobación fresca y evento UI auténtico;
+- política y revocación vigentes;
+- estado del bloqueo aplicable y release independiente, si alguna vez existe;
+- vigencia y presupuesto disponible;
+- binding del objeto abierto y contexto del host;
+- integridad y disponibilidad del ledger.
+
+Una decisión desconocida, registro ausente, ledger inconsistente/perdido, escritura atómica fallida, revocación inaccesible, presupuesto no recuperable o binding contradictorio produce denegación. Tras reinicio no se reconstruyen permisos desde el caller, un token copiado ni defaults in-memory.
+
+## 10. Replay, anti-rollback y ledger operativo
+
+Las responsabilidades relacionadas deben distinguirse en el diseño aunque en el futuro compartan una infraestructura:
+
+1. **Registro de challenges/replay:** consumo único y atómico de nonce/challenge, expiración, vínculo con sesión/decisión y rechazo de duplicación.
+2. **Estado de decisión/presupuestos:** decisiones server-side, contabilidad de presupuestos y recuperación de intents no resueltos.
+3. **Ledger operacional:** eventos correlacionados de predecisión, intento de operación, resultado observado, intento de entrega, resultado de entrega y recibo.
+
+Cada registro debe tener controles de acceso y escritura definidos. La arquitectura debe decidir si usa almacenes separados o límites lógicos y de permisos equivalentes. La generación/epoch debe estar anclada fuera del almacenamiento que un requester pueda restaurar libremente. La pérdida, restauración de snapshot, corrupción, discontinuidad, contradicción o estado ambiguo detiene las lecturas; no se reinicializa el ledger para restaurar disponibilidad.
+
+Un recibo solo prueba lo realmente observado y persistido. Un intento no demuestra entrega; una respuesta visible no demuestra persistencia canónica; un ID correlacionado por sí solo no acredita causalidad ni aprendizaje.
+
+**Estado:** la candidata contiene una clase SQLite de consumo único, pero no está conectada como autoridad operacional protegida y no detecta por sí sola la restauración de un snapshot válido anterior. Replay protegido contra rollback NOT_ESTABLISHED.
+
+## 11. Frescura y límites temporales
+
+Entry 274 propone estos límites conservadores para aprobación y decisión:
+- challenge de aprobación: máximo 120 segundos;
+- intervalo entre aprobación interactiva y emisión: máximo 60 segundos;
+- vida de la decisión desde emisión del servidor: máximo cinco minutos.
+
+Este borrador los conserva como **parámetros de referencia del diseño**, no como valores aplicados en runtime ni como aceptación de implementación. Antes de una futura especificación implementable, el Owner debe ratificarlos como requisitos de diseño o decidir otros valores mediante una revisión explícita. No deben alterarse silenciosamente como simples parámetros de configuración.
+
+Issuer y reader deben usar reloj confiable de servidor para evidencia temporal y reloj monotónico para vencimiento transcurrido en proceso. Freshness/revocación se comprueban al emitir, al reservar cada intent y antes de entregar contenido. Si la decisión vence o se revoca durante una operación, se descarta el contenido en staging y no se entrega.
+
+Estos límites no fijan las ventanas de rotación, expiración de raíces, delegaciones, catálogos o revocaciones; siguen pendientes de decisión y evidencia.
+
+## 12. Liberación de bloqueos: frontera independiente
+
+Una decisión válida de lectura **no libera un bloqueo de gobernanza**. El issuer y el reader no pueden inferir una liberación a partir de identidad, aprobación del Owner para leer, merge, hash, firma, catálogo, G3 o recibo.
+
+Si aplica cualquier bloqueo y no existe una release independiente, actual, autenticada y autorizada por la autoridad responsable de ese bloqueo, el resultado es terminal:
+
+**BLOCK_RELEASE_UNSUPPORTED → DENY**
+
+Una release futura necesitaría diseño y autorización separados y tendría que quedar ligada como mínimo al ID y revisión/contenido del bloqueo, target, operación/scope, autoridad, principal, emisión, expiración y revocación. El reader la verifica independientemente en la frontera protegida. No se presupone que exista hoy un mecanismo de release.
+
+## 13. Ocho gates y evidencia de aceptación
+
+Los ocho prerrequisitos siguen abiertos para aceptación de implementación. La existencia de tipos o primitivas en fuente solo permite afirmar lo limitado que se ha verificado estáticamente.
+
+| Gate | Evidencia requerida para una fase futura | Estado actual |
+|---|---|---|
+| G1 — raíz, Owner y principal autenticado | Raíz, mandato, cadena, custodia, revocación y vínculos exactos verificados por canal independiente. | NOT_ESTABLISHED |
+| G2 — catálogo y productores | Catálogo completo versionado, publicador autorizado, clases/allowlists y revocación autenticada. | NOT_ESTABLISHED |
+| G3 — resolver destino | Registro server-side versionado, autoridad/custodio, mappings de operaciones reales y binding del objeto. | NOT_ESTABLISHED |
+| G4 — wiring de evaluación | Evidencia de cada call site protegido y de que el control obligatorio no puede omitirse. | NOT_VERIFIED |
+| G5 — agregación y releases | Evaluación completa de bloqueos, causas de denegación y release separado por bloqueo cuando esté autorizado. | NOT_ESTABLISHED |
+| G6 — Entry 274, contención y ledger | Aprobación fresca, decision ledger, reader inmediato, budgets, revocación, contención y recibos correlacionados. | NOT_VERIFIED |
+| G7 — pruebas autorizadas | Autorización explícita por separado, commit exacto, entorno, comandos, artefactos y resultados vinculados a cada caso. | NOT_RUN |
+| G8 — aceptación independiente | Revisión independiente vinculada a SHA exacto, límites de evidencia y recibos verificables. | NOT_ACCEPTED |
+
+Para aceptar una implementación futura se necesita un paquete correlacionado de charter y registro de raíz; prueba de verificación fuera de banda; delegaciones GBA; identidad/release de issuer y reader; especificación y evidencia IPC; catálogo y revocación; mapping G3 y call sites; ledger y anti-rollback; evidencia de releases de bloqueos; y resultados de pruebas autorizadas vinculados al SHA exacto.
+
+Mocks, hashes, fixtures sintéticos, documentación o análisis estático no cierran las garantías de identidad, custodia, IPC, Windows ni anti-rollback. Pruebas, build, runtime, transporte y lecturas protegidas requieren autorización separada.
+
+## 14. Decisiones aún reservadas al Owner/gobernanza
+
+El Owner/gobernanza debe decidir y evidenciar, sin que este documento las tome en su nombre:
+1. Si presenta evidencia que haga admisible A/B, encarga una ceremonia C delegada por una raíz preexistente, o ratifica formalmente D.
+2. Custodio/suplente, quórum, recuperación, sucesión, rotación y revocación de la raíz.
+3. Credencial del rol de gobernanza y vínculo con principal Windows, issuer y reader exactos.
+4. Responsables de publicador G2, registro G3, issuer, reader y ledger; separación de funciones y conflictos permitidos.
+5. Amenazas dentro/fuera de alcance, incluido administrador local, SYSTEM, kernel y recuperación de equipo.
+6. Ratificación o revisión de los parámetros de frescura de Entry 274 y fijación posterior de períodos de rotación/revocación.
+7. Condiciones y autoridad independiente para cualquier futura release de bloqueo.
+8. Actores y alcance de las fases futuras de implementación, pruebas y aceptación independiente.
+
+No se debe inventar un actor, custodia, servicio, secreto, raíz, catálogo, registro, release ni canal para cerrar una decisión pendiente.
+
+## 15. Seis precisiones incorporadas en esta revisión
+
+1. **Grafo de autoridad:** el diagrama distingue delegación, comunicación y persistencia.
+2. **Custodia de decisión:** la decisión es server-side y no transferible; IPC no convierte una respuesta en permiso.
+3. **Ledger:** replay, decisión/presupuestos y auditoría operacional tienen responsabilidades y límites de escritura distintos.
+4. **Binding G3/handle:** el target viene de registro autorizado y se consume el mismo objeto abierto, sin segunda resolución por ruta.
+5. **Bloqueos:** una decisión de lectura no libera bloqueos; si no hay release independiente válida, denegar terminalmente.
+6. **Frescura:** se preservan los límites propuestos por Entry 274 como referencia de diseño, expresamente pendientes de ratificación previa a implementación.
+
+## 16. Disposición y estado terminal
+
+Este documento solicita revisión del Owner; no adopción automática. La opción D sigue siendo la disposición operativa segura mientras no exista evidencia externa verificable de autoridad.
+
+~~~text
+TASK=M1A_GBA_GOVERNED_AUTHORITY_DESIGN_OWNER_REVIEW
+DESIGN_REVIEW=CONDITIONALLY_SOUND; OWNER_REVIEW_REQUIRED
+CANONICAL_ADOPTION=NOT_DONE
+GOVERNANCE_BOOTSTRAP=UNANCHORED
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3_VERSIONED_TARGET_RESOLVER=NOT_ESTABLISHED
+ISSUER_IPC=NOT_ESTABLISHED
+PROTECTED_REPLAY=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+GOVERNANCE=OPTION_D_REQUIRED_WITH_CURRENT_EVIDENCE
+PROTECTED_READS=FAIL_CLOSED
+BLOCK_RELEASE=UNSUPPORTED_UNLESS_INDEPENDENTLY_AUTHORIZED
+BRIDGE=BRIDGE_NOT_READY
+IMPLEMENTATION=NOT_AUTHORIZED
+TRUST_ROOT_CREATION=NOT_AUTHORIZED
+CREDENTIAL_OR_ISSUER_PROVISIONING=NOT_AUTHORIZED
+TESTS=NOT_RUN
+WORKFLOWS=NOT_RUN
+SOURCE_RUNTIME_CHANGES=0
+MERGE_OR_REBASE=NOT_AUTHORIZED
+AUTOMATIC_FOLLOW_ON=FALSE
+~~~
