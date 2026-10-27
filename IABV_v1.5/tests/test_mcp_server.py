@@ -243,6 +243,58 @@ def _call_tool(server: IABVMCPServer, name: str, **kwargs: object) -> object:
     return tool.fn(**kwargs)
 
 
+def test_streamable_http_requires_complete_entra_configuration(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    for name in (
+        "IABV_ENTRA_TENANT_ID",
+        "IABV_ENTRA_API_CLIENT_ID",
+        "IABV_ENTRA_OWNER_OBJECT_ID",
+        "IABV_ENTRA_REQUIRED_APP_ROLE",
+        "IABV_ENTRA_ALLOWED_CLIENT_IDS",
+        "IABV_ENTRA_APPLICATION_ID_URI",
+        "IABV_MCP_RESOURCE_SERVER_URL",
+    ):
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setenv("FASTMCP_HOST", "127.0.0.1")
+    monkeypatch.setenv("FASTMCP_PORT", "8000")
+    server = IABVMCPServer(_build_container())
+    with pytest.raises(RuntimeError, match="Fail-closed: Entra"):
+        server.validate_transport_configuration("streamable-http")
+
+
+def test_stdio_and_sse_are_rejected_without_independent_local_boundary(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    for name in (
+        "IABV_ENTRA_TENANT_ID",
+        "IABV_ENTRA_API_CLIENT_ID",
+        "IABV_ENTRA_OWNER_OBJECT_ID",
+        "IABV_ENTRA_REQUIRED_APP_ROLE",
+        "IABV_ENTRA_ALLOWED_CLIENT_IDS",
+        "IABV_ENTRA_APPLICATION_ID_URI",
+        "IABV_MCP_RESOURCE_SERVER_URL",
+    ):
+        monkeypatch.delenv(name, raising=False)
+    server = IABVMCPServer(_build_container())
+    for transport in ("stdio", "sse"):
+        with pytest.raises(RuntimeError, match="independent authorization boundary"):
+            server.validate_transport_configuration(transport)
+
+
+def test_non_loopback_or_non_target_port_is_rejected(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    for name in (
+        "IABV_ENTRA_TENANT_ID",
+        "IABV_ENTRA_API_CLIENT_ID",
+        "IABV_ENTRA_OWNER_OBJECT_ID",
+        "IABV_ENTRA_REQUIRED_APP_ROLE",
+        "IABV_ENTRA_ALLOWED_CLIENT_IDS",
+        "IABV_ENTRA_APPLICATION_ID_URI",
+        "IABV_MCP_RESOURCE_SERVER_URL",
+    ):
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setenv("FASTMCP_HOST", "0.0.0.0")
+    monkeypatch.setenv("FASTMCP_PORT", "8000")
+    server = IABVMCPServer(_build_container())
+    with pytest.raises(RuntimeError, match="127.0.0.1:8000"):
+        server.validate_transport_configuration("streamable-http")
+
 def test_server_registers_core_tools() -> None:
     server = IABVMCPServer(_build_container())
     registered = set(server.mcp._tool_manager._tools.keys())
@@ -549,29 +601,23 @@ def test_server_registers_audit_tools() -> None:
     assert audit <= registered, f"faltan audit tools: {audit - registered}"
 
 
-def test_read_repo_file_happy_path_via_server(tmp_path) -> None:  # type: ignore[no-untyped-def]
+def test_read_repo_file_fails_closed_via_server(tmp_path) -> None:  # type: ignore[no-untyped-def]
     (tmp_path / "docs").mkdir()
-    (tmp_path / "docs" / "hello.md").write_text("hola", encoding="utf-8")
+    (tmp_path / "docs" / "hello.md").write_text("must-not-be-disclosed", encoding="utf-8")
     server = IABVMCPServer(_build_container(workspace_root=str(tmp_path)))
     payload = _call_tool(server, "read_repo_file", relative_path="docs/hello.md")
-    assert payload["content"] == "hola"
-    assert payload["path"] == "docs/hello.md"
+    assert payload["error"] == "scoped_read_authority_unavailable"
+    assert "content" not in payload
+    assert "must-not-be-disclosed" not in str(payload)
 
 
-def test_read_repo_file_returns_error_payload_on_invalid(tmp_path) -> None:  # type: ignore[no-untyped-def]
-    server = IABVMCPServer(_build_container(workspace_root=str(tmp_path)))
-    payload = _call_tool(server, "read_repo_file", relative_path="/etc/passwd")
-    assert payload["error"] == "absolute_path_forbidden"
-
-
-def test_list_repo_directory_via_server(tmp_path) -> None:  # type: ignore[no-untyped-def]
-    (tmp_path / "a.txt").write_text("x")
-    (tmp_path / ".env").write_text("S")
+def test_list_repo_directory_fails_closed_via_server(tmp_path) -> None:  # type: ignore[no-untyped-def]
+    (tmp_path / "secret-name.txt").write_text("x", encoding="utf-8")
     server = IABVMCPServer(_build_container(workspace_root=str(tmp_path)))
     payload = _call_tool(server, "list_repo_directory", relative_path="")
-    names = {entry["name"]: entry for entry in payload["entries"]}
-    assert ".env" in names and names[".env"]["sensitive"] is True
-
+    assert payload["error"] == "scoped_read_authority_unavailable"
+    assert "entries" not in payload
+    assert "secret-name.txt" not in str(payload)
 
 def test_capture_ui_screenshot_without_provider_degrades_via_server() -> None:
     server = IABVMCPServer(_build_container())
@@ -638,7 +684,8 @@ def test_audit_tools_allow_when_only_unrelated_block(tmp_path) -> None:  # type:
     )
     payload = _call_tool(server, "read_repo_file", relative_path="file.md")
     assert "governance_blocked" not in payload
-    assert payload["content"] == "contenido"
+    assert payload["error"] == "scoped_read_authority_unavailable"
+    assert "content" not in payload
 
 
 def test_run_pytest_tool_signature_rejects_python_executable() -> None:

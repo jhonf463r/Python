@@ -29,6 +29,7 @@ from iabv_v15.domain.models import (
     WorldModelSnapshot,
 )
 from iabv_v15.services.evolution.mcp_bridge_service import (
+    CloudflaredTunnelRunner,
     MCPBridgeService,
     MCPBridgeStatus,
 )
@@ -129,6 +130,29 @@ def _build_service(
     )
     return svc, server, tunnel
 
+
+def test_production_cloudflared_runner_is_disabled_without_spawning_process(monkeypatch: pytest.MonkeyPatch) -> None:
+    def forbidden_popen(*args: object, **kwargs: object) -> object:
+        pytest.fail("public tunnel process must not be created in this phase")
+
+    monkeypatch.setattr("iabv_v15.services.evolution.mcp_bridge_service.subprocess.Popen", forbidden_popen)
+    runner = CloudflaredTunnelRunner(cloudflared_bin="cloudflared")
+    runner.start("127.0.0.1", 8000)
+    assert runner.last_error == "public_tunnel_disabled_by_policy"
+    assert runner.url is None
+
+def test_production_bridge_is_blocked_before_starting_server(tmp_path: Path) -> None:
+    server = _FakeServerRunner()
+    service = MCPBridgeService(
+        container=_FakeContainer(_default_snapshot()),
+        workspace_root=tmp_path,
+        server_runner=server,
+    )
+    status = service.set_enabled(True)
+    assert server.started == 0
+    assert status.running is False
+    assert status.state == "failed"
+    assert status.last_error == "public_tunnel_disabled_by_policy; bridge remains not ready"
 
 # ----------------------------------------------------------------------
 # Preferencia persistida

@@ -128,38 +128,31 @@ class IABVMCPServer:
             raise ValueError("container no puede ser None")
         self.container = container
         self.name = name
+        self._http_auth_configured = False
+        requested_host = (os.environ.get("FASTMCP_HOST") or "127.0.0.1").strip()
+        try:
+            requested_port = int(os.environ.get("FASTMCP_PORT") or "8000")
+        except ValueError:
+            requested_port = -1
+        self._bind_config_valid = requested_host == "127.0.0.1" and requested_port == 8000
+
         if mcp is None:
-            from mcp.server.fastmcp import FastMCP  # lazy import
+            from mcp.server.fastmcp import FastMCP
+            from iabv_v15.infra.mcp.entra_token_verifier import build_entra_auth_from_environment
 
             fastmcp_kwargs: dict[str, Any] = {
-                'log_level': 'WARNING',
+                "log_level": "WARNING",
+                "host": "127.0.0.1",
+                "port": 8000,
             }
-            # MCP Python SDK >= 1.x introdujo DNS rebinding protection en
-            # ``streamable-http`` que rechaza cualquier Host distinto a
-            # localhost con ``HTTP/2 421 Invalid Host header`` (issue
-            # modelcontextprotocol/python-sdk#1798). En nuestro flujo de
-            # audit live el MCP se expone detras de un quick-tunnel de
-            # cloudflared, asi que el Host llega como
-            # ``*.trycloudflare.com`` y el server devolveria 421. Para
-            # permitir el audit real desde afuera, inyectamos
-            # ``TransportSecuritySettings`` con hosts/origenes abiertos
-            # cuando la proteccion esta disponible en la version
-            # instalada. Si la dependencia no expone el simbolo (versiones
-            # viejas) seguimos con el constructor por defecto.
-            try:
-                from mcp.server.transport_security import TransportSecuritySettings
+            entra_auth = build_entra_auth_from_environment()
+            if entra_auth is not None:
+                token_verifier, auth_settings = entra_auth
+                fastmcp_kwargs["token_verifier"] = token_verifier
+                fastmcp_kwargs["auth"] = auth_settings
+                self._http_auth_configured = True
 
-                fastmcp_kwargs["transport_security"] = TransportSecuritySettings(
-                    enable_dns_rebinding_protection=False,
-                    allowed_hosts=["*"],
-                    allowed_origins=["*"],
-                )
-            except Exception:
-                # Compatibilidad hacia atras: versiones sin
-                # ``TransportSecuritySettings`` tampoco aplican la
-                # proteccion, asi que no hace falta configurar nada.
-                pass
-
+            # Keep SDK loopback DNS-rebinding protection enabled; never inject wildcard hosts/origins.
             mcp = FastMCP(name, **fastmcp_kwargs)
         self.mcp = mcp
         self._register_tools()
@@ -3169,10 +3162,25 @@ class IABVMCPServer:
     # ------------------------------------------------------------------
     # Ciclo de vida
 
-    def run(self, transport: str = "stdio") -> None:
+    def validate_transport_configuration(self, transport: str) -> None:
+        """Reject transports without an explicit verified authentication boundary."""
         if transport not in SUPPORTED_TRANSPORTS:
-            raise ValueError(f"transport '{transport}' no soportado. Usa {sorted(SUPPORTED_TRANSPORTS)}")
-        
+            raise ValueError("Unsupported MCP transport: " + transport)
+        if transport != "streamable-http":
+            raise RuntimeError(
+                "Fail-closed: only authenticated Streamable HTTP is eligible; "
+                "SSE and stdio have no verified independent authorization boundary."
+            )
+        if not self._bind_config_valid:
+            raise RuntimeError("Fail-closed: MCP must bind only to 127.0.0.1:8000.")
+        if not self._http_auth_configured:
+            raise RuntimeError(
+                "Fail-closed: Entra tenant, API audience, Owner role, allowed client, "
+                "canonical HTTPS resource URL, and matching Application ID URI must be configured."
+            )
+
+    def run(self, transport: str = "stdio") -> None:
+        self.validate_transport_configuration(transport)
         # Register self-update (write) tools for autonomous self-modification
         try:
             from iabv_v15.infra.mcp.self_update_tools import register_self_update_tools
@@ -3281,7 +3289,7 @@ def main() -> None:
     """Entry point CLI: `python -m iabv_v15.infra.mcp.server`.
 
     Configurable vía variables de entorno:
-      - IABV_MCP_TRANSPORT: stdio (default) | sse | streamable-http
+      - IABV_MCP_TRANSPORT: streamable-http (default; complete Entra auth required)
       - IABV_MCP_NAME: nombre visible del server
       - IABV_WORKSPACE_ROOT: raíz del workspace para AppBootstrap
     """
@@ -3297,7 +3305,7 @@ def main() -> None:
     # httpx/httpcore handled by shared suppress_noisy_http_loggers().
     from iabv_v15.infra.logging import suppress_noisy_http_loggers
     suppress_noisy_http_loggers()
-    transport = os.environ.get("IABV_MCP_TRANSPORT", "stdio")
+    transport = os.environ.get("IABV_MCP_TRANSPORT", "streamable-http")
     name = os.environ.get("IABV_MCP_NAME", DEFAULT_SERVER_NAME)
     workspace_root = os.environ.get("IABV_WORKSPACE_ROOT")
 
