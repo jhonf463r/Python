@@ -428,3 +428,62 @@ NEXT_ACTION=BOUNDED_OWNER_APPROVAL_DESIGN_REVIEW; NO_PRODUCT_IMPLEMENTATION
 ```
 
 Este addendum amplía el borrador de diseño de la PR #546 y queda como candidato de revisión. No modifica `main` ni sustituye `CURRENT-STATE.md`.
+
+
+## 17. Reconciliación del informe de revisión estática del flujo de aprobación móvil (2026-10-26)
+
+- Tarea de origen: `M1A_G1_MOBILE_OWNER_APPROVAL_DESIGN_INDEPENDENT_REVIEW`.
+- Procedencia: informe de revisión suministrado por el Owner en la conversación; el propio informe declara que no puede certificar independencia formal porque no hay separación verificable entre implementador y revisor.
+- Clasificación: `BOUNDED_STATIC_REVIEW_REPORT`; `FORMAL_INDEPENDENCE=NOT_ESTABLISHED`. No se atribuye certificación externa ni se presenta el informe de usuario como una ejecución que hayamos observado de forma independiente.
+- Identidad candidata revisada: PR #546 HEAD previo `9f0cc1a405147748f371bc8eead12b3e0cca3200`, documento blob `41762a2524824f7d611f208d028242bb91242b09`. El borrador sigue siendo candidato no canónico.
+- Baseline de código referida por el informe: `main=f5e5643df9dbf2a9c10e4d950275b8b28459d1ed`. Los blobs citados para broker, bootstrap, dashboard, QML y ApprovalMemory fueron contrastados mediante lectura de fuente en main durante la reconciliación: `4a447149cf1b2771f6959658338a72b381f00b19`, `e4befa6b683fc87aed7481f377f1332f5753e2c3`, `08535790507b88f9a36e62cbc02e5fa8f84bf379`, `c96a89bebd405af6a1bd8828d9153d5fd0be882b` y `ed85408d96fb0cdfddb05489d6c38cf714275f91`, respectivamente.
+
+### Hallazgos reconciliados
+
+1. **Solicitud/UI:** el broker mantiene solicitudes pendientes y el dashboard las serializa como entradas `actionable=True`. En el delegado QML inspeccionado se presentan título y detalle, pero no hay controles conectados de aprobar/rechazar ni se demuestra que se renderice el alcance completo que exige Entry 274.
+2. **Cableado:** el `_wire_task_a_signals()` de `bootstrap.py` conecta credenciales, aclaraciones, dependencias y actividad, pero no registra `human_approval_broker.register_prompt_handler(...)`. Por tanto, el recorrido integrado desde la solicitud del broker hasta esa UI no está demostrado.
+3. **Identidad:** `approve(request_id, payload)` / `reject(request_id)` resuelven una solicitud pendiente en memoria sin comprobar una identidad autenticada del aprobador. El ID correlaciona una entrada local; no prueba el rol Owner.
+4. **Persistencia y replay:** `ApprovalMemory` persiste políticas reutilizables y admite auto-resolución. Esto no equivale a presencia humana fresca, recibo ligado criptográficamente a la operación, consumo durable de un solo uso ni protección contra replay/rollback.
+5. **Reader:** la ruta de producción protegida y la comprobación inmediata del mismo objeto permanecen sin aceptación demostrada. La fuente candidata de PR #531 no puede tratarse como código ya desplegado en main.
+6. **Móvil/transporte:** con R-07 `loopback-only`, el teléfono no se conecta directamente al listener loopback del equipo. No se encontró evidencia de un callback compatible que transporte una respuesta de Codex Remote hasta el broker de IABV. Codex Remote es un posible canal de interacción con la sesión Codex, no un permiso runtime de IABV. No abrir túneles públicos ni debilitar Host/Origin o DNS-rebinding.
+7. **Identidad candidata:** los registros existentes consideran Entra una posible fuente para autenticar al humano, pero `ENTRA_TRUSTED_BY_IABV=NOT_ESTABLISHED`; GitHub App también es una alternativa no integrada. No repetir el setup de Entra/Authenticator sin evidencia material nueva.
+
+### Decisión histórica que debe reutilizarse
+
+El registro [RQ224 Owner-Identity Trust Options](./CHAT-ARCH-2026-10-10-228-rq224-owner-identity-trust-options-design.md) contiene una decisión del Owner del 2026-10-11: opción A como dirección de diseño —principal de Windows enrolado más confirmación explícita ligada a la intención—. Su alcance declarado fue exclusivamente de diseño y **no** demuestra que exista enrolamiento, una raíz independiente o autoridad runtime. El handoff del 2026-10-24 reabrió el diseño de bootstrap gobernado, también sin aportar por sí mismo nueva evidencia de raíz.
+
+Regla de continuidad: no volver a preguntar al Owner desde cero si ya eligió una dirección conceptual. Reutilizar opción A como decisión de diseño histórica; investigar primero cómo se puede acreditar y hacer cumplir, y solicitar una decisión nueva solo si la implementación o el modelo de confianza exige una elección distinta y concreta.
+
+### Orden mínimo derivado
+
+1. Mantener separados el diseño de experiencia de aprobación, la autenticación del Owner y la autoridad G1/G2/G3.
+2. Conservar el contrato de presentación: instancia/checkout, revisión exacta, operación, destino, datos que se expondrán, destinatario, límites y vencimiento claramente visibles antes de confirmar.
+3. Resolver como pregunta arquitectónica previa el canal móvil→sesión local. No asumir que Remote hace de API del broker ni introducir un relay sin diseño y autorización separados.
+4. Comparar las opciones de identidad solo contra la dirección histórica del Owner, la restricción de coste cero y el modelo de amenazas; validar issuer/audience/subject en servidor y la vinculación explícita al rol Owner.
+5. Solo después diseñar challenge de un solo uso, digest de alcance inequívoco, consumo durable/revocación/anti-rollback y verificación inmediata del reader sobre el objeto que realmente consume.
+6. Cualquier implementación, provisión de identidad/credenciales, tests, runtime, transporte, lecturas protegidas, merge o rebase requiere autorización específica posterior y evidencia propia.
+
+### Estado
+
+```text
+MOBILE_APPROVAL_SOURCE_REVIEW=BOUNDED_REPORT_RECONCILED
+FORMAL_INDEPENDENCE=NOT_ESTABLISHED
+BROKER_AND_DASHBOARD=EXIST
+BROKER_TO_UI_RESPONSE_PATH=NOT_ESTABLISHED
+AUTHENTICATED_OWNER=NOT_ESTABLISHED
+MOBILE_TO_LOCAL_RETURN_PATH=NOT_ESTABLISHED
+ENTRA_TRUSTED_BY_IABV=NOT_ESTABLISHED
+GITHUB_APP_INTEGRATED=NOT_ESTABLISHED
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3=NOT_ESTABLISHED
+PROTECTED_READS=FAIL_CLOSED
+BRIDGE=BRIDGE_NOT_READY
+TESTS=NOT_RUN; BUILD=NOT_RUN; RUNTIME=NOT_RUN; MCP=NOT_RUN; REAL_TRANSPORT=NOT_RUN
+SOURCE_CHANGES=NONE
+CANONICAL_MAIN_CHANGED=FALSE
+PR546=OPEN_DRAFT_UNMERGED; CANDIDATE_ONLY
+NEXT_CANONICAL_ACTION=WAIT_FOR_GENUINELY_NEW_INDEPENDENT_G1_ROOT_AND_MANDATE_EVIDENCE_OR_EXPLICIT_OWNER_DECISION
+```
+
+Este resultado actualiza la trazabilidad del borrador; no cambia el enrutamiento canónico de `CURRENT-STATE.md`, no crea una raíz de confianza y no autoriza automáticamente una fase técnica siguiente.
