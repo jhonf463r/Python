@@ -1,3 +1,17 @@
+<!-- Cross-chat handoff pointer updated on branch chat-continuity-key-recovery-handoff-20261027; CURRENT-STATE.md remains the canonical active route. -->
+
+## LATEST CROSS-CHAT HANDOFF — GitHub App private-key recovery (2026-10-27)
+
+**Read this handoff for the current local-key episode:** [GitHub App key recovery handoff](https://github.com/jhonf463r/Python/blob/chat-continuity-key-recovery-handoff-20261027/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-27-M1A-GITHUB-APP-KEY-RECOVERY-CROSS-CHAT-HANDOFF.md).
+
+- Owner reports GitHub's private-key download has not worked; do not repeat generic download instructions without checking Opera download history and the current UI field label.
+- The selected TXT contained 40 characters without PEM markers. Its meaning is unknown; do not call it a fingerprint/key ID without label evidence and do not treat it as a private key.
+- Codex local correctly passed the text read from the file to `RSA.ImportFromPem`; the API rejected it as non-PEM. No fingerprint, custody or GitHub API preflight has succeeded.
+- Current next action is to consume the pending Codex report about local downloads and the GitHub field label. No repeated read of the 40-character TXT, no key rotation/revocation, no secret in chat.
+- This handoff and pointer are candidate docs on a review branch, not canonical route state. Every session must fetch live `main/CURRENT-STATE.md` first.
+
+---
+
 <!-- Route summary synchronized 2026-10-26. CURRENT-STATE.md is the sole active route authority. -->
 
 ## Latest verified route delta — billing discrepancy and support intake completed (2026-10-26)
