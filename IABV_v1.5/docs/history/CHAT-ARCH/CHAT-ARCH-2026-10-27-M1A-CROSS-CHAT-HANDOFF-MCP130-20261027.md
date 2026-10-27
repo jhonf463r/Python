@@ -1,3 +1,19 @@
+## Latest Owner instruction — automation-first local permissions (2026-10-27)
+
+The Owner explicitly corrected the workflow: do not repeatedly assign manual commands or Windows Settings navigation to the Owner when local Codex can perform the operation. The Owner authorizes the agent to use the normal interactive Windows UAC consent prompt when genuinely needed for the already-authorized, read-only TPM/Secure Boot probe.
+
+Current local result: `ADMIN_CONTEXT=False`; the process stopped before querying TPM/Secure Boot. Those values remain `UNKNOWN`, not false. The reported machine state does not prove TPM absence or lack of account-elevation rights.
+
+### Next discriminating operation
+
+From the existing local Codex session, invoke one standard UAC elevation request for a short-lived PowerShell process, only for the already-specified read-only queries (`Get-Tpm`, exact TPM WMI class fields, `Confirm-SecureBootUEFI`). Capture only the allowed fields, HRESULTs and exit code into a temporary sanitized result; parent process waits, reads the result and cleans up its own temporary script/output files. Do not ask the Owner to open PowerShell, run commands or navigate Settings.
+
+If the consent window is displayed, the Owner's only interaction is to accept or deny that OS request. If elevation is unavailable or denied, record the precise outcome and stop this probe; do not bypass UAC or retry unchanged. This authorization does not cover provisioning, key/certificate creation, TPM configuration, service/IPC/ACL changes, Entra, runtime, tunnel, protected reads or merge.
+
+Do not claim the UAC window has been launched by ChatGPT: the local Codex session is the only currently identified path with access to Windows execution. Keep all gates closed. The method is recorded in [UAAL-CFCP-001](./CHAT-ARCH-2026-10-27-UAAL-EVIDENCE-TO-CAUSAL-FRONTIER-CONTINUITY-PROTOCOL-v1.md) and the automation-first UAC receipt.
+
+---
+
 # Handoff entre chats — IABV / Entra G1 / MCP 1.30 (2026-10-27)
 
 ## Continuity checkpoint for a new chat — current verified route (2026-10-27)
