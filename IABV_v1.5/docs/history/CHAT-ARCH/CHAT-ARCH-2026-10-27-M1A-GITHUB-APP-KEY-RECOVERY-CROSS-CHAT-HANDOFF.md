@@ -157,3 +157,64 @@ BRIDGE=BRIDGE_NOT_READY
 ```
 
 This handoff is a supporting memory and route aid, not a replacement for `CURRENT-STATE.md`. Keep the repository free of secret material.
+
+## 11. Latest Codex result and revised next action (2026-10-27, 10:56–11:00 America/Bogota)
+
+### New Codex report — downloads and browser history
+
+At approximately 10:56 America/Bogota, Codex reported:
+- The Downloads folder for `MSI\\faber` exists and has no `.pem` files and no recent `.txt` filenames suggestive of a GitHub App key.
+- Opera GX's local history database was read-only accessible; it showed no matching download for a `.pem` or this App's settings path since 2026-10-26 UTC.
+- Opera Stable's history database returned `OperationalError: database is locked`; the agent did not bypass the lock.
+- It could not access the authenticated GitHub UI path Credentials → Key pairs, so the label of the visible copyable value remains unknown.
+- No local PEM was located in the bounded locations. This does not establish that no PEM exists elsewhere, nor whether the download failed, was blocked, or never registered in the available history.
+- No keys were generated, read, copied, encrypted, persisted or transmitted, and no repository/browser configuration was changed.
+
+At approximately 11:00, the Owner asked for the selector to be opened again and selected the same text file. The result was unchanged: the content was not accepted as PEM by `RSA.ImportFromPem`. Do not ask the Owner to select the same 40-character TXT again. This step adds no new evidence about the GitHub keypair.
+
+### Architectural decision: a local secret-entry window is a design option, not a substitute for the missing PEM
+
+The Owner asks whether Codex/IABV should open a popup to paste a key and then save it securely, and whether the same mechanism should store credentials for websites administered by IABV.
+
+Decision:
+- A **local-only secret input window** can be a good long-term UX when a human really has the full secret value and the receiving process demonstrably keeps it outside model prompts, transcripts, application logs, crash dumps and remote telemetry.
+- Such a window must submit secret material directly to a local vault/credential service, not back to the model. It must not echo the secret; use a masked input where appropriate, clear the control/clipboard after save, and report only success/failure and a non-secret credential handle. These properties need implementation and security testing; merely calling a window “secure” is not evidence.
+- However, in the present GitHub App case, the full private PEM has not been found. The Owner only has a copyable 40-character value whose UI label is unknown, and the selected TXT contains no PEM markers. **A paste popup cannot turn a fingerprint, key ID or other unknown 40-character value into the private key.** Do not build that popup as a workaround for the missing material and do not ask the Owner to paste that number again.
+- The immediate route is to recover or re-obtain the actual PEM through GitHub's supported private-key generation/download flow, after inspecting the precise UI label and download behavior in an authenticated browser session. Because the Owner already reported the download was not available, do not repeat generic “download it” instructions. Diagnose the browser interaction/download path or use another already-available authenticated browser if the Owner has one; do not change security policies silently.
+- GitHub states that creating a private key downloads a PEM to the computer and that GitHub stores only the public part; its displayed fingerprint is for matching an existing local PEM and cannot reconstruct the private key. Reference: https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/managing-private-keys-for-github-apps.
+
+### Separate the two secret-management cases
+
+1. **GitHub App private key:** machine/application credential. Prefer an OS-backed secret store or encrypted local storage whose consumer identity is proven. Do not expose the raw PEM to the model. A local-only prompt/modal is acceptable only as an input adapter that directly persists to the local vault; it cannot replace obtaining the actual PEM.
+2. **Website/user credentials managed by IABV:** use the existing approved credential-management architecture if one is verified in source. Prefer Windows Credential Manager/DPAPI or a purpose-built vault with least privilege and a non-secret handle returned to IABV; do not create a second ad hoc vault or put passwords/cookies/tokens in GitHub Issues, source files, memory documents or chat. A browser automation profile/session is distinct from storing reusable site passwords. Site-specific consent, scope, revocation and audit need separate rules.
+3. Do not implement either vault or modify runtime/source under this documentation-only handoff. First inspect the existing credential/secret organs and consumers, and choose reuse over creating a new subsystem. Local secret input, vault persistence, runtime access, audit and revocation are separate acceptance stages.
+
+### Revised next discriminating action
+
+The newly supplied Codex report has now been consumed; there is no longer a pending report from the prior search task. Next:
+1. In the user's currently authenticated GitHub session, determine the exact UI label of the 40-character value without asking the Owner to copy the value or exposing it to the model.
+2. Inspect the actual New key/download interaction and its resulting browser state. The bounded Opera history checks found no successful PEM download in GX and Stable history was locked; do not assert a confirmed failure reason.
+3. If the UI identifies the value as a fingerprint/key ID, classify it correctly and stop treating it as candidate key material.
+4. Only pursue a new key generation if the app UI confirms no usable local PEM exists and the download mechanism can be observed/controlled. Prefer a local browser Save As/download flow into a known secure directory, then verify the actual file exists before selecting it. Keep the prior GitHub key entry until a replacement PEM is locally validated and its fingerprint matches; only then plan safe rotation. Never revoke automatically.
+5. On success, perform structural validation plus fingerprint comparison before storage. Then separately assess Windows runtime identity and secret custody. Do not generate a token or call the GitHub App API until those gates are met.
+
+### Updated state
+
+```text
+OPERA_GX_HISTORY=READ_ONLY_CHECKED; NO_MATCHING_PEM_DOWNLOAD_FOUND_SINCE_2026-10-26_UTC
+OPERA_STABLE_HISTORY=DATABASE_LOCKED; NO_BYPASS
+DOWNLOAD_CAUSE=UNKNOWN
+LOCAL_DOWNLOADS_PEM=NONE_FOUND_IN_CHECKED_FOLDER
+GITHUB_KEY_UI_LABEL=NOT_VERIFIED
+OWNER_COPYABLE_40_CHAR_VALUE=SEMANTICS_UNKNOWN; NOT_KEY_MATERIAL_UNLESS_PROVEN
+PEM_FILE_AVAILABLE=NOT_CONFIRMED
+PEM_VALIDITY=NOT_VERIFIED
+FINGERPRINT=NOT_OBTAINED; MATCH=NOT_VERIFIED
+KEY_CUSTODY=NOT_ESTABLISHED
+GITHUB_APP_API_PREFLIGHT=NOT_RUN; INSTALLATION_TOKEN=NOT_CREATED
+NEXT_ACTION=INSPECT_AUTHENTICATED_GITHUB_FIELD_LABEL_AND_DOWNLOAD_INTERACTION
+G1=NOT_ESTABLISHED; G2=NOT_ESTABLISHED; G3=NOT_ESTABLISHED
+PROTECTED_READS=FAIL_CLOSED
+TESTS=NOT_RUN; BUILD=NOT_RUN; RUNTIME=NOT_RUN; REAL_TRANSPORT=NOT_RUN
+BRIDGE=BRIDGE_NOT_READY
+```
