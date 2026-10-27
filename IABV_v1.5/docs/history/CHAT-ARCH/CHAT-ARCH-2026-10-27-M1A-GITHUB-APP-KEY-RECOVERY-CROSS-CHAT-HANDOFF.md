@@ -467,3 +467,99 @@ AUTOMATIC_FOLLOW_ON=FALSE
 BRIDGE=BRIDGE_NOT_READY
 ~~~
 
+
+
+## 16. Latest live UI finding — fingerprint is plain code text (2026-10-27, 11:34 America/Bogota)
+
+### Owner-reported local result
+
+The Owner reported the local Codex result at 11:34:
+
+    LOCAL_EXECUTION=YES
+    CLIPBOARD_RESET=YES
+    COPY_CONTROL_IDENTIFIED=NO
+    CLIPBOARD_LENGTH=UNKNOWN
+    CLIPBOARD_CHAR_CLASS=UNKNOWN
+    CLIPBOARD_FORMAT=UNAVAILABLE
+    MATCH=NOT_VERIFIED
+    FORMAT_MISMATCH=NO
+    SECRET_VALUES_EXPOSED=NO
+    SECRET_MATERIAL_PERSISTED=NO
+
+The local process says the current Windows clipboard was overwritten with a harmless marker without reading the former contents. It could not identify a dedicated copy control. No comparison occurred and no fingerprint match or mismatch was established.
+
+### New read-only inspection on the authenticated GitHub UI
+
+After first re-fetching live `main/CURRENT-STATE.md` (blob still `7a261129c8611cc0b5ed3788fc00c5d90ae189ea`), a separate read-only browser inspection was performed on the saved GitHub-signed-in browser profile at:
+
+`https://github.com/settings/apps/iabv-approval-relay-20261027/key_pairs`
+
+The browser task was constrained to page structure and accessible control metadata only. It did not click any copy/delete control or return the fingerprint value. Its result:
+
+- The literal label **“Copyable key fingerprint” is not present** on the inspected page.
+- The heading immediately above the fingerprint is **“Private key”**.
+- The key entry/card includes a secondary label “Label: Private”.
+- The fingerprint appears as plain text beginning with `SHA256:` inside an HTML `code` element.
+- The entry also shows metadata of when/by whom the key was added.
+- **No dedicated copy button, clipboard icon, or adjacent copy control is present.**
+- The Delete button is disabled because this is the only private key; it was not clicked.
+
+This newer inspection conflicts with the earlier observation that there was a 40-character “Copyable key fingerprint” field. Preserve that earlier observation as historical evidence of a discrepancy, not as the current confirmed UI structure. Do not continue referring to the visible value as a “copyable” field. The 3734-character clipboard result is compatible with an overly broad copy action, but its prior contents remain unknown; do not claim this inference is certain. The current clipboard reset was reported successful.
+
+### Updated conclusion and next bounded action
+
+The UI structure explains why trying to discover an adjacent copy button failed: the inspected page has no such control. Do not copy the page, card, DOM, or entire row, and do not retry ambiguous clipboard interactions.
+
+Next, use Codex locally on Windows to read only the text content of the **specific `code` node whose enclosing card is headed “Private key” and contains the “Label: Private” metadata**, within the existing local authenticated browser session. Use a local accessibility/DOM inspection method that keeps the extracted string solely in the local process. Do not dump the DOM, page text, HTML, screenshot, node value, or fingerprint into Codex's response/transcript. Do not rely on or read the clipboard.
+
+For the comparison:
+1. Calculate/reuse the local public-key SHA-256 digest from the already validated PEM, in memory.
+2. Read the single fingerprint text node locally. Require the `SHA256:` prefix. Remove only that exact prefix and surrounding whitespace.
+3. Accept only the standard Base64 encoding of a 32-byte SHA-256 digest, either unpadded (43 Base64 characters) or with the single expected trailing padding character. Decode strictly and ensure exactly 32 bytes; reject any non-Base64 character or other length. Do not guess alternate hash algorithms or compare only textual lengths.
+4. Compare the decoded bytes to the locally computed digest in memory. Return only `MATCH=YES`, `MATCH=NO`, or `MATCH=NOT_VERIFIED`; never print either value.
+5. If the local browser/DOM/accessibility mechanism cannot unambiguously target that exact code node or keep the content out of the transcript, stop with `FINGERPRINT_NODE_IDENTIFIED=NO` and `MATCH=NOT_VERIFIED`. Do not fall back to clipboard or screenshots.
+
+No PEM custody/storage, JWT, installation token, API call, app mutation, product source/runtime change, tests, protected reads, or transport is authorized by this step. Even a confirmed match is only identity binding for this key; custody and API preflight remain separate phases.
+
+### Replacement prompt for local Codex
+
+~~~text
+Seguimos el diagnóstico de la GitHub App en Windows local. No repitas los intentos anteriores de copiar al portapapeles.
+
+Hechos:
+- El PEM nuevo fue validado localmente como clave privada RSA PKCS#1 de 2048 bits.
+- La huella pública local ya fue calculada en memoria.
+- El portapapeles se limpió con un marcador inocuo. No leas el contenido anterior ni vuelvas a usar clipboard para esta tarea.
+- Una inspección read-only actual de la UI autenticada mostró que la página no tiene un botón de copia adyacente. El encabezado visible es “Private key”; el valor de huella se muestra como texto en un elemento HTML code dentro de la tarjeta “Label: Private” y comienza por “SHA256:”.
+- No uses la antigua suposición “Copyable key fingerprint”; la observación anterior de 40 caracteres fue contradictoria y queda como histórica/no reconciliada.
+
+ÚNICO OBJETIVO: leer localmente el contenido de ese único nodo code y compararlo con la huella pública local, sin que ningún valor aparezca en salida, prompts, logs, transcripción o archivos.
+
+1. Confirma ejecución local en Windows como MSI\faber. Si el navegador no es local o no puedes usar la sesión autenticada existente, detente.
+2. Usa la accesibilidad o DOM del navegador local para identificar la tarjeta cuyo encabezado es “Private key” y metadato secundario “Label: Private”; dentro de esa tarjeta, identifica el único nodo code correspondiente al fingerprint visible. No vuelques el DOM, innerText, HTML, capturas, valor del nodo, ni el texto completo de la página.
+3. Si no puedes identificar con certeza ese único nodo sin mostrar su contenido, devuelve FINGERPRINT_NODE_IDENTIFIED=NO; MATCH=NOT_VERIFIED y detente. No uses clipboard ni copies la página.
+4. Si se identifica el nodo, lee su contenido directamente a una variable local de proceso. Nunca imprimas, registres, persistas ni devuelvas ese valor.
+5. Calcula o reutiliza en memoria el SHA-256 de la clave pública DER SubjectPublicKeyInfo del PEM validado. Mantén el digest como bytes.
+6. Valida estrictamente el valor del nodo: debe comenzar por el prefijo literal “SHA256:”. Quita únicamente ese prefijo y espacios externos. El resto debe ser Base64 estándar que decodifique exactamente a 32 bytes; admite Base64 sin padding de 43 caracteres o con un único “=” final. No aceptes formatos alternativos ni algoritmos distintos.
+7. Compara en memoria los bytes del digest. Informa solo FINGERPRINT_NODE_IDENTIFIED=YES/NO, LOCAL_EXECUTION=YES/NO, PEM_IMPORT=VALID/INVALID, RSA_BITS, LOCAL_FINGERPRINT=COMPUTED/NOT_COMPUTED, PAGE_FINGERPRINT_FORMAT=SHA256_BASE64/OTHER/UNAVAILABLE, MATCH=YES/NO/NOT_VERIFIED, SECRET_VALUES_EXPOSED=NO, SECRET_MATERIAL_PERSISTED=NO.
+8. Si el formato no coincide o el acceso al nodo no es inequívoco, deja MATCH=NOT_VERIFIED; no improvises. Si coincide, detente igualmente tras informar MATCH=YES.
+
+No guardes/cifres el PEM, no generes JWT ni token de instalación, no llames a la API, no cambies GitHub ni archivos, no revokes ni sustituyas claves, no ejecutes tests/build/runtime, lecturas protegidas ni transporte real. No afirmes que el puente está listo. G1/G2/G3 siguen sin establecerse.
+~~~
+
+### Current state after this inspection
+
+    NEW_PEM=RSA_PRIVATE_PKCS1_2048; STRUCTURE_VALID
+    LOCAL_FINGERPRINT=COMPUTED_IN_MEMORY
+    WINDOWS_CLIPBOARD=RESET_MARKER_REPORTED; PRIOR_VALUE_NOT_READ_AGAIN
+    CURRENT_GITHUB_UI=HEADING_PRIVATE_KEY; FINGERPRINT_IN_CODE_NODE_WITH_SHA256_PREFIX
+    ADJACENT_COPY_CONTROL=ABSENT_IN_READ_ONLY_INSPECTION
+    EARLIER_40_CHAR_COPYABLE_LABEL_OBSERVATION=CONTRADICTED_BY_LATER_INSPECTION; HISTORICAL_DISCREPANCY_OPEN
+    GITHUB_FINGERPRINT_MATCH=NOT_VERIFIED
+    PRIVATE_KEY_CUSTODY=NOT_ESTABLISHED
+    GITHUB_APP_AUTH_PREFLIGHT=NOT_RUN; JWT=NOT_CREATED; INSTALLATION_TOKEN=NOT_CREATED
+    G1=NOT_ESTABLISHED; G2=NOT_ESTABLISHED; G3=NOT_ESTABLISHED
+    PROTECTED_READS=FAIL_CLOSED
+    TESTS=NOT_RUN; BUILD=NOT_RUN; RUNTIME=NOT_RUN; REAL_TRANSPORT=NOT_RUN
+    AUTOMATIC_FOLLOW_ON=FALSE
+    BRIDGE=BRIDGE_NOT_READY
