@@ -231,7 +231,64 @@ Si aplica cualquier bloqueo y no existe una release independiente, actual, auten
 
 Una release futura necesitaría diseño y autorización separados y tendría que quedar ligada como mínimo al ID y revisión/contenido del bloqueo, target, operación/scope, autoridad, principal, emisión, expiración y revocación. El reader la verifica independientemente en la frontera protegida. No se presupone que exista hoy un mecanismo de release.
 
-## 13. Ocho gates y evidencia de aceptación
+## 13. Autorización precisa: reducir bloqueos innecesarios sin rebajar garantías
+
+El objetivo operativo es que el órgano pueda avanzar con el mínimo bloqueo necesario **sin convertir una incertidumbre de seguridad en permiso implícito**. La unidad de decisión no debe ser “el proyecto entero está bloqueado” por defecto; debe ser la capacidad concreta solicitada y el límite de confianza que esa capacidad necesita. No obstante, si falta una dependencia que Entry 274 exige para todas las lecturas protegidas (por ejemplo, un ancla confiable aún no establecida), todas esas lecturas siguen denegadas. La granularidad evita bloqueos ajenos; no salta gates requeridos.
+
+### 13.1 Clases de estado que no deben confundirse
+
+| Clase | Cuándo aplica | Comportamiento requerido | Qué no significa |
+|---|---|---|---|
+| **Invariante de confianza global de lectura** | La raíz, el mandato, el issuer confiable, el contexto obligatorio o la política autoritativa no están establecidos para la superficie protegida. | Denegar todas las operaciones protegidas que dependen de esa invariante; exponer solo diagnóstico mínimo no-contento permitido por el contrato. | No significa que se deban detener tareas documentales, diseño, lectura de documentación pública o comprobaciones que no accedan al contenido protegido. |
+| **Bloqueo de gobernanza aplicable al scope** | Un bloqueo autoritativo, vigente y evaluable aplica a la operación/target solicitados. | Evaluar el conjunto completo de bloqueos; denegar esa operación/scope salvo release independiente, válida y actual para cada bloqueo aplicable. | No convierte un bloqueo de scope local en global si el registro autoritativo no lo define como global. No se infiere que bloqueos no consultados no existan. |
+| **Entrada o contexto de solicitud inválido** | Falta principal autenticado, identidad de servidor/checkout/target, operación registrada, binding del objeto o un campo obligatorio no puede derivarse de una fuente confiable. | Denegar ese intento con un código estable y el requisito faltante; no intentar “reparar” la identidad usando valores del caller. | No es un fallo genérico de todo el proyecto salvo que el componente sea una dependencia común y necesaria de la superficie protegida. |
+| **Dependencia obligatoria indisponible** | No se puede verificar el catálogo, frescura, revocación, decisión, ledger, resolver o estado monotónico requerido. | Denegar las operaciones protegidas que necesitan esa dependencia; registrar el motivo y no usar fallback obsoleto salvo que una política gobernada haya definido explícitamente una garantía de freshness acotada. | No autoriza a ignorar la dependencia, usar una respuesta cacheada indefinidamente ni confundir disponibilidad con autoridad. |
+| **Scope, presupuesto o vigencia insuficiente** | El scope es mayor al aprobado, el presupuesto está agotado o la decisión expiró. | No ampliar ni reutilizar la decisión. Permitir una nueva solicitud más estrecha solo mediante el flujo de aprobación fresca exigido por el contrato. | No es un bloqueo del usuario para operaciones futuras que puedan solicitarse legítimamente bajo otra aprobación y un scope compatible. |
+| **Bloqueo de infraestructura/CI** | Por ejemplo, la cuenta/Actions no permite iniciar jobs. | Marcar pruebas y validación CI como no ejecutadas; conservar evidencia del bloqueo y avanzar en trabajo documental no dependiente de CI. | No demuestra ni refuta la raíz de confianza de IABV, no prueba fallo de los tests y no habilita una ejecución alternativa no autorizada. |
+| **Diagnóstico mínimo** | El caller necesita saber por qué una operación se denegó. | Devolver solo códigos, IDs de bloqueo autorizados para exposición, dependencias ausentes y siguiente requisito permitido; no leer contenidos del repositorio ni conceder autoridad. | No equivale a aprobación fresca, decisión de lectura, release de bloqueo ni recibo de entrega. |
+
+Esta clasificación no cambia el estado de la autoridad. Con la evidencia actual, G1 sigue sin establecerse y el acceso protegido al repositorio debe permanecer fail-closed. Sí evita que una carencia de CI o un bloqueo de un scope se convierta por inferencia en prohibición de trabajo documental no relacionado.
+
+### 13.2 Orden determinista de evaluación
+
+Una futura implementación autorizada debe aplicar, en orden, el siguiente contrato lógico:
+
+1. **Clasificar la capacidad pedida** antes de acceder a contenidos: diagnóstico sin contenido, actividad documental no protegida, o lectura/listado protegido. No reclasificar una lectura de contenido como diagnóstico.
+2. **Derivar identidad desde el host**: principal, instancia, operación registrada, workspace/checkout y target. No completar bindings con afirmaciones del caller.
+3. **Validar prerequisites comunes** para esa capacidad. Si falta una invariante obligatoria, denegar esa capacidad protegida y explicar el requisito sin iniciar lecturas.
+4. **Obtener el estado autoritativo completo** de política, catálogo y bloqueos aplicables. Si no se puede acreditar completitud, freshness o revocación, denegar; un snapshot parcial no equivale a “sin bloqueos”.
+5. **Evaluar todos los bloqueos** contra el scope canónico y versionado. La evaluación debe ser determinista e independiente del orden. Si uno o más aplican y carecen de release independiente, denegar terminalmente.
+6. **Crear una decisión server-side** solo después de verificar approval fresca, política, target, scope y presupuestos; el ID de decisión no es portador de permiso.
+7. **Reverificar en el reader** justo antes de actuar y consumir el mismo objeto abierto que se autorizó. Si cambió el binding, la política, la revocación, el presupuesto o la vigencia, denegar y no entregar staging.
+8. **Registrar resultado observado** separado de intento y entrega. El recibo no puede adelantar un resultado ni alterar el bloqueo.
+9. **Emitir un diagnóstico mínimo y accionable**: capacidad denegada, razón estable, evidencia faltante, scope afectado, condición que permitiría reevaluar y si existe o no un cambio de precondición. No presentar todos los fallos como “puente bloqueado” sin causa.
+
+### 13.3 Prevención de bloqueos amplios y bucles
+
+- Las decisiones son por operación y scope. No se comparten permisos entre lectura, listado, diagnóstico, operación de escritura, ni entre sesiones, instancias, checkouts o targets.
+- Un bloqueo se propaga a todo el órgano solo si la política autoritativa lo clasifica como global o si falta una dependencia común necesaria para todas las operaciones protegidas. No se infiere globalidad por comodidad de implementación.
+- La denegación por un requisito desconocido debe conservar el código del requisito desconocido. No se rebaja a advertencia, pero tampoco se inventa un bloqueo de otros scopes que no se evaluaron.
+- Ante la misma combinación de operación, target, conjunto/versiones de bloqueos y precondición faltante, no se repite indefinidamente la misma solicitud, prompt, workflow ni auditoría. Se registra el último resultado y se espera un cambio de precondición verificable o una nueva decisión de gobernanza.
+- Reintentar se permite solo si existe una condición nueva material o una política específica de retry que pruebe que la operación previa no consumió presupuesto, challenge ni estado de un solo uso. En caso de duda, no reusar decisión o nonce.
+- Un error de infraestructura se mantiene en el plano de infraestructura: por ejemplo, la restricción actual de GitHub Actions mantiene `TESTS=NOT_RUN`, pero no altera la decisión G1/G2/G3 y no justifica reabrir el diagnóstico de productores ya cerrado.
+- La salida de diagnóstico debe facilitar el siguiente paso legítimo —obtener la evidencia, reducir scope, corregir una referencia, o solicitar una decisión al Owner— y nunca dar un camino alterno para leer, sortear el reader, evitar revocación o liberar un bloqueo.
+
+### 13.4 Criterios futuros de aceptación de baja fricción
+
+Después de una autorización independiente para implementar y probar, las pruebas de conformidad deberían demostrar tanto seguridad como ausencia de bloqueos innecesarios:
+
+1. Un scope denegado no autoriza ese mismo scope; una petición independiente y más estrecha puede seguir el flujo normal si satisface por sí misma todos los gates.
+2. Un bloqueo no aplicable no se trata como aplicable, pero la autoridad debe acreditar que el conjunto de bloqueos está completo y que sus reglas de scope son compatibles.
+3. Catálogo, revocación, resolver o ledger ausentes no se confunden con listas vacías ni se sustituyen por estado obsoleto.
+4. Diagnóstico devuelve motivos mínimos sin contenido y sin otorgar permiso.
+5. Fallos repetidos con la misma precondición no desencadenan reintentos ilimitados; un cambio de precondición queda ligado a su evidencia.
+6. Los resultados se mantienen iguales ante permutación del orden de bloqueos y no omiten ningún motivo aplicable.
+7. Una denegación por CI bloqueada no se presenta como fallo de prueba; una ejecución no iniciada permanece `NOT_RUN`.
+8. Ningún diagnóstico, recibo o resultado de aprendizaje puede mutar la raíz, la política, el catálogo, el resolver ni el estado de release.
+
+Estos son criterios de diseño futuros, no pruebas ejecutadas ni una autorización para habilitar lecturas.
+
+## 14. Ocho gates y evidencia de aceptación
 
 Los ocho prerrequisitos siguen abiertos para aceptación de implementación. La existencia de tipos o primitivas en fuente solo permite afirmar lo limitado que se ha verificado estáticamente.
 
@@ -250,7 +307,7 @@ Para aceptar una implementación futura se necesita un paquete correlacionado de
 
 Mocks, hashes, fixtures sintéticos, documentación o análisis estático no cierran las garantías de identidad, custodia, IPC, Windows ni anti-rollback. Pruebas, build, runtime, transporte y lecturas protegidas requieren autorización separada.
 
-## 14. Decisiones aún reservadas al Owner/gobernanza
+## 15. Decisiones aún reservadas al Owner/gobernanza
 
 El Owner/gobernanza debe decidir y evidenciar, sin que este documento las tome en su nombre:
 1. Si presenta evidencia que haga admisible A/B, encarga una ceremonia C delegada por una raíz preexistente, o ratifica formalmente D.
@@ -264,7 +321,7 @@ El Owner/gobernanza debe decidir y evidenciar, sin que este documento las tome e
 
 No se debe inventar un actor, custodia, servicio, secreto, raíz, catálogo, registro, release ni canal para cerrar una decisión pendiente.
 
-## 15. Seis precisiones incorporadas en esta revisión
+## 16. Siete precisiones incorporadas en esta revisión
 
 1. **Grafo de autoridad:** el diagrama distingue delegación, comunicación y persistencia.
 2. **Custodia de decisión:** la decisión es server-side y no transferible; IPC no convierte una respuesta en permiso.
@@ -272,8 +329,9 @@ No se debe inventar un actor, custodia, servicio, secreto, raíz, catálogo, reg
 4. **Binding G3/handle:** el target viene de registro autorizado y se consume el mismo objeto abierto, sin segunda resolución por ruta.
 5. **Bloqueos:** una decisión de lectura no libera bloqueos; si no hay release independiente válida, denegar terminalmente.
 6. **Frescura:** se preservan los límites propuestos por Entry 274 como referencia de diseño, expresamente pendientes de ratificación previa a implementación.
+7. **Baja fricción sin bypass:** las denegaciones se atribuyen a su dependencia y scope; diagnóstico no-contento, precondiciones explícitas y reglas anti-loop permiten avanzar por rutas no relacionadas sin rebajar ningún gate de seguridad.
 
-## 16. Disposición y estado terminal
+## 17. Disposición y estado terminal
 
 Este documento solicita revisión del Owner; no adopción automática. La opción D sigue siendo la disposición operativa segura mientras no exista evidencia externa verificable de autoridad.
 
