@@ -1,5 +1,24 @@
 <!-- Canonical route authority; authorization scope reconciled 2026-10-27. Candidate-only source preparation for PR #549 is recorded; tests/runtime/activation/merge remain unauthorized. -->
 
+## Dictamen independiente estático completado — PR #549 HEAD b55a3932 (2026-10-27)
+
+La revisión independiente de solo lectura aportada para esta revisión apunta al HEAD exacto `b55a39322d04eff5fc501629c5f331d8ea22c291`. Referencias reconciliadas: PR #549 `OPEN/DRAFT/UNMERGED`, base `a8624c30744da7f593d6a1c829e48aa229c8efca`; `main` inmediatamente antes de esta actualización documental: `b8e18eb725a951209854e0b0756e88a7c7cbdc88`.
+
+**Resultado de revisión:** `P0=0` defectos críticos demostrados en el delta examinado; `P1=1` bloqueo de aceptación; `P2=3` riesgos/vacíos residuales. No es una certificación de seguridad ni una afirmación sobre código/rutas no examinados.
+
+- **P1:** `G1/G2/G3=NOT_ESTABLISHED`. No existe en la evidencia revisada un proveedor independiente de raíz/mandato, una política G2 revocable ni un resolver G3; tampoco una fuente independiente conectada para revocar el mandato del Owner. Mantener la lista permitida vacía y las operaciones denegadas. No resolverlo añadiendo nombres a una allowlist.
+- **P2:** el guard y el sellado de configuración mejoran las garantías ordinarias, pero no aíslan frente a código hostil que ya controla el mismo proceso Python. Esa resistencia exigiría una frontera de proceso independiente.
+- **P2:** la cobertura añadida existe en la fuente, pero es evidencia estática; no se ha ejecutado ningún test, build, runtime ni CI. La compatibilidad declarada con `mcp==1.30.0` sigue siendo una conclusión estática. El test de operación denegada por autoridad es distinto del `403` HTTP por alcance insuficiente.
+- **P2 de continuidad:** la referencia a una revisión «pendiente» en la entrada histórica inmediata queda supersedida por este dictamen; no cambia la procedencia ni el significado histórico de esa entrada.
+
+La revisión confirmó estáticamente que los wrappers de producción no publican `__iabv_original_handler__` ni `__wrapped__`, no capturan directamente el handler en la clausura, mantienen `MCP_TOOL_ALLOWLIST=EMPTY` y deniegan las invocaciones normales; también confirmó que `write_repo_file`, `apply_text_patch` y `git_commit_and_push` usan el mismo registrador. El mapa de handlers de prueba está limitado a una fixture por prueba. No se afirma que las pruebas pasen ni que se haya demostrado un bypass remoto.
+
+Estado preservado: `TESTS/BUILD/RUNTIME/CI=NOT_RUN`; `G1/G2/G3=NOT_ESTABLISHED`; `MCP_TOOL_ALLOWLIST=EMPTY`; `PROTECTED_READS=FAIL_CLOSED`; `TUNNEL=DISABLED`; `BRIDGE=BRIDGE_NOT_READY`; `MERGE=NOT_AUTHORIZED`; `PRODUCTION_ACTIVATION=NOT_AUTHORIZED`.
+
+Esta actualización cambia solo documentación en `main`. No cambió la candidata PR #549, no se cambió su base, no hubo rebase/merge, instalación, ejecución de tests, acceso a Entra/JWKS ni cambios en `C:\\Python`. Mantener la PR en borrador; cualquier fase de pruebas exige autorización y precondiciones separadas.
+
+---
+
 ## Latest source-candidate follow-up — PR #549 HEAD b55a3932 (2026-10-27)
 
 This entry supersedes the candidate SHA and review-pending details in the preceding candidate-update section. Earlier candidate states remain historical records.

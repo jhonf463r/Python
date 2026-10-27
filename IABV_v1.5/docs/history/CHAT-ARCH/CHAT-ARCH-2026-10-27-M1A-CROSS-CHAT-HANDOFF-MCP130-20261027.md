@@ -1,5 +1,20 @@
 # Handoff entre chats — IABV / Entra G1 / MCP 1.30 (2026-10-27)
 
+## Dictamen independiente completado — PR #549 HEAD b55a3932 (2026-10-27)
+
+Se recibió y contrastó el dictamen estático de solo lectura para el HEAD exacto `b55a39322d04eff5fc501629c5f331d8ea22c291`. PR #549 permanece `OPEN/DRAFT/UNMERGED`, con base `a8624c30744da7f593d6a1c829e48aa229c8efca`; `main` antes de esta actualización era `b8e18eb725a951209854e0b0756e88a7c7cbdc88`.
+
+- Resultado: `P0=0` demostrados en el delta examinado; `P1=1` bloqueo de aceptación; `P2=3` riesgos/vacíos. No es certificación de seguridad.
+- Bloqueo: `G1/G2/G3=NOT_ESTABLISHED`; falta autoridad independiente, política G2 revocable, resolver G3 y fuente independiente de revocación del mandato del Owner. `MCP_TOOL_ALLOWLIST=EMPTY`; llamadas normales siguen denegadas.
+- Confirmación estática: wrappers de producción no exponen `__iabv_original_handler__` ni `__wrapped__`, ni capturan directamente el handler; las tres herramientas tardías de autoactualización usan el mismo registrador.
+- Límites: los sellos Python no son una frontera contra código hostil dentro del mismo proceso; los nuevos contratos de tests y la compatibilidad SDK solo se han revisado estáticamente.
+- La revisión «pendiente» indicada en la sección siguiente queda supersedida por este resultado. La sección y sus referencias históricas permanecen intactas.
+- Sin ejecución: `TESTS/BUILD/RUNTIME/CI=NOT_RUN`. Se mantienen `PROTECTED_READS=FAIL_CLOSED`, `TUNNEL=DISABLED`, `BRIDGE=BRIDGE_NOT_READY`, `MERGE=NOT_AUTHORIZED` y `PRODUCTION_ACTIVATION=NOT_AUTHORIZED`.
+
+La candidata y su base no se modificaron. Mantener PR #549 en borrador; una puerta de tests requiere autorización separada y precondiciones verificadas.
+
+---
+
 ## Latest candidate update — PR #549 HEAD b55a3932 (2026-10-27)
 
 This note supersedes earlier candidate HEAD references only. It does not relax the no-tests/no-runtime/no-merge boundaries.
