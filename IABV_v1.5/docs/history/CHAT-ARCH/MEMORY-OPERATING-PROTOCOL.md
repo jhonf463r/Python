@@ -5148,3 +5148,18 @@ Preferred bounded comparison:
 For the GitHub App key episode, official docs specify SHA-256 of DER SubjectPublicKeyInfo, Base64 encoded. A reported 40-character “Copyable key fingerprint” is an unresolved format discrepancy because that is not the usual Base64 form of a 32-byte SHA-256 digest. The PEM has now been reported by local Codex as a valid RSA PKCS#1 private key of 2048 bits, and its local public fingerprint has been computed in memory; GitHub match remains NOT_VERIFIED.
 
 General principle: a valid cryptographic artifact is not proof of identity binding. A local computation is not a comparison; a comparison with incompatible representations is not evidence of either match or mismatch. Preserve the uncertainty explicitly and stop before secret custody or token/API actions when the exact match gate remains open.
+
+
+## 2026-10-27 METHOD DELTA — Clipboard metadata can reveal a wrong UI copy target
+
+When a supposedly precise UI copy action yields a clipboard length/class that is incompatible with the expected artifact (here, 3734 characters and OTHER instead of a documented SHA-256/Base64 fingerprint), preserve the result as a format mismatch, not as a key mismatch.
+
+Required response:
+- Do not inspect, echo, log, or persist the unknown clipboard content just to identify it.
+- Reset the current clipboard to a harmless marker without reading its prior contents.
+- Inspect the UI accessibility tree or specific control relationship before repeating the action; do not copy the whole page/row/DOM, and do not click ambiguous controls.
+- If the exact adjacent copy control cannot be identified, stop and request only the minimal human intervention needed.
+- Never infer clipboard contents from its length or character class.
+- Keep PEM validity, local fingerprint computation, fingerprint comparison, key custody, JWT/token issuance, and API preflight as separate gates.
+
+This episode's current state: the PEM was reported by Codex as valid RSA PKCS#1 private 2048-bit; its local public fingerprint was computed in memory. Clipboard comparison returned OTHER / 3734 characters; its contents remain unknown, no values were exposed or persisted according to the reported output, and match remains NOT_VERIFIED. Do not store the key, create tokens, or call the App API until exact comparison succeeds and a separate phase is authorized.
