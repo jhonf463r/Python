@@ -1,4 +1,22 @@
-<!-- Canonical route authority; latest Entra G1 design-only continuation recorded 2026-10-27. Option D remains fail-closed operationally. -->
+<!-- Canonical route authority; latest Entra G1 independent design review recorded 2026-10-27. Operational fail-closed remains in force. -->
+
+## Independent technical review — Entra G1 design corrected; no implementation authorized (2026-10-27)
+
+The documentation-only design was independently re-reviewed against current Microsoft Entra guidance, the MCP Authorization specification (2025-11-25) and the MCP Python SDK authorization guide. The design file was updated and verified by fetch-back: [M1A G1 Entra bootstrap design and review](https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-27-M1A-G1-ENTRA-BOOTSTRAP-DESIGN-ONLY.md).
+
+**Corrections now recorded:**
+1. For Entra v2 tokens, do not conflate the canonical MCP URL / Application ID URI / OAuth resource with the token's aud; the expected aud is normally the API's Application (client) ID GUID. Validate the exact URL/resource and token audience independently.
+2. The exact installed MCP/FastMCP SDK versions and their authentication interfaces must be identified before implementation. Do not disable audience/resource validation to work around a mismatch.
+3. HTTP OAuth protection does not automatically protect stdio transport. If stdio remains in use, its local process, identity and mandate boundary needs its own verified controls.
+4. The proposed local enrollment ceremony is not yet proven to be independent of MCP or sufficient to establish G1. A local Windows confirmation alone is not proof of an independent trust channel.
+
+Official sources consulted: [Microsoft's Entra MCP server guidance](https://learn.microsoft.com/en-us/entra/agent-id/secure-mcp-server-with-entra-id), [MCP authorization specification](https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization), [MCP Python SDK authorization](https://py.sdk.modelcontextprotocol.io/run/authorization/).
+
+**Scope and state:** documentary review only. No portal access, app registration, credential, permission, source edit, test, build, runtime, transport, tunnel, protected read, merge or deployment was performed. Option D/no-bootstrap stays operationally fail-closed; G1/G2/G3 remain NOT_ESTABLISHED; the eight implementation prerequisites remain open; protected reads remain FAIL_CLOSED; bridge remains BRIDGE_NOT_READY; automatic follow-on remains FALSE.
+
+**Next action:** Owner review of the corrected design. Any registration, local bootstrap, implementation, testing, tunnel or deployment requires a separate explicit authorization for that exact phase. Do not repeat Entra/Authenticator setup or the earlier broad OIDC feasibility review.
+
+
 
 ## Latest route delta — Entra G1 design documented; operations remain fail-closed (2026-10-27)
 
@@ -20,7 +38,7 @@ This entry reconciles the current conversation into the active route. It is a do
 
 ### Canonical route clarification — prior Owner ratification of Option D (2026-10-27)
 
-The live receipt linked below records the Owner's explicit prior decision to keep no-bootstrap/fail-closed behavior. That decision must not be requested again. It is distinct from evidence that a technical root exists: `OWNER_ROOT_SELECTION=NOT_PROVIDED` remains accurate, and the receipt explicitly says its provenance is an Owner chat message, not an independently authenticated runtime identity event. The active technical frontier remains G1. The Owner has now authorized preparation of a design document only. The next step is review of that document; operational no-bootstrap/fail-closed remains in force unless separately and explicitly authorized and then independently verified. Until then, preserve all G1/G2/G3 and protected-read gates; do not create a root or bypass the blocker.
+The live receipt linked below records the Owner's explicit prior decision to keep no-bootstrap/fail-closed behavior. That decision must not be requested again. It is distinct from evidence that a technical root exists: `OWNER_ROOT_SELECTION=NOT_PROVIDED` remains accurate, and the receipt explicitly says its provenance is an Owner chat message, not an independently authenticated runtime identity event. The active technical frontier remains G1. The design has now passed an independent documentary review and received corrections. The next step is Owner review of the corrected design; operational no-bootstrap/fail-closed remains in force unless a separate phase is explicitly authorized and independently verified. Until then, preserve all G1/G2/G3 and protected-read gates; do not create a root or bypass the blocker.
 
 ### Latest bounded G1 reassessment — Microsoft Entra as pre-existing authority (2026-10-27)
 
@@ -74,21 +92,21 @@ The prior Owner decision to retain Option D/no-bootstrap is already recorded; do
 
 ```text
 CHAT_CONTINUITY=CONSOLIDATED; FETCHBACK_REQUIRED
-ACTIVE_FRONTIER=OWNER_REVIEW_OF_DOCUMENTED_ENTRA_G1_BOOTSTRAP_DESIGN
-LAST_TERMINAL_TASK=M1A_G1_ENTRA_BOOTSTRAP_DESIGN_DOCUMENTATION_ONLY_20261027
-LAST_TERMINAL_RESULT=DESIGN_DOCUMENTED; OWNER_REVIEW_PENDING; NO_IMPLEMENTATION
+ACTIVE_FRONTIER=OWNER_REVIEW_OF_CORRECTED_ENTRA_G1_DESIGN_AND_PHASE_AUTHORIZATION
+LAST_TERMINAL_TASK=M1A_G1_ENTRA_BOOTSTRAP_DESIGN_INDEPENDENT_REVIEW_20261027
+LAST_TERMINAL_RESULT=DESIGN_CORRECTED_AFTER_STATIC_REVIEW; OWNER_REVIEW_PENDING; IMPLEMENTATION_NOT_AUTHORIZED
 OWNER_ROOT_SELECTION=NOT_PROVIDED
 OWNER_DECISION=RATIFIED_OPTION_D_NO_BOOTSTRAP; PROVENANCE=EXPLICIT_CHAT_RECEIPT; NOT_RUNTIME_AUTHENTICATION
 LATEST_OWNER_AUTHORIZATION=ENTRA_G1_DESIGN_DOCUMENTATION_ONLY; PROVENANCE=EXPLICIT_CHAT_RESPONSE; NOT_RUNTIME_AUTHENTICATION
 OWNER_DECISION_SCOPE=DESIGN_DOCUMENTATION_ONLY; OPTION_D_REMAINS_OPERATIONALLY_FAIL_CLOSED
 ENTRA_IDENTITY_PROVIDER_CANDIDATE=PLAUSIBLE_FOR_OWNER_AUTHENTICATION
 ENTRA_AS_STANDALONE_G1_AUTHORITY=NOT_ESTABLISHED
-G1_DESIGN=DOCUMENTED; OWNER_REVIEW_PENDING; DOCUMENTATION_ONLY
+G1_DESIGN=CORRECTED_AFTER_INDEPENDENT_REVIEW; OWNER_REVIEW_PENDING; DOCUMENTATION_ONLY
 ENTRA_APP_REGISTRATION=NOT_CREATED_OR_NOT_REPORTED; PORTAL_NOT_INSPECTED
 ACCESS_TOKEN_VALIDATION=NOT_ESTABLISHED_IN_MAIN
 MCP_HTTP_TOKEN_AUTH=ABSENT_IN_DOCUMENTED_DESIGN
 MCP_PUBLIC_TUNNEL_ACTIVE=UNVERIFIED
-OPTION_D=FAIL_CLOSED_OPERATIONALLY; DOCUMENTATION_ONLY_DESIGN_AUTHORIZED
+OPTION_D=FAIL_CLOSED_OPERATIONALLY; DESIGN_CORRECTED; OWNER_REVIEW_PENDING
 G1=NOT_ESTABLISHED
 G2=NOT_ESTABLISHED
 G3=NOT_ESTABLISHED
@@ -102,7 +120,7 @@ TESTS=NOT_RUN
 RUNTIME=NOT_RUN
 PROTECTED_READS=FAIL_CLOSED
 BRIDGE=BRIDGE_NOT_READY
-NEXT_ACTION=OWNER_REVIEW_OF_DOCUMENTED_ENTRA_G1_BOOTSTRAP_DESIGN; SEPARATE_IMPLEMENTATION_AUTHORIZATION_REQUIRED
+NEXT_ACTION=OWNER_REVIEW_OF_CORRECTED_DESIGN; SEPARATE_PHASE_AUTHORIZATION_REQUIRED
 AUTOMATIC_FOLLOW_ON=FALSE
 ```
 
