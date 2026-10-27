@@ -1086,3 +1086,45 @@ BRIDGE=BRIDGE_NOT_READY
 ```
 
 La sección es evidencia de continuidad en la rama de borrador de PR #546. No cambia `main` ni `CURRENT-STATE.md` y no cierra ningún gate.
+
+
+## 28. Corrección del origen de la clave: el archivo seleccionado era un TXT de 40 caracteres, no el PEM completo (2026-10-27)
+
+### Corrección explícita del malentendido
+
+El Owner aclara que había entregado a Codex un archivo de Bloc de notas con extensión `.txt`, no un archivo PEM descargado directamente de GitHub. La extensión por sí sola no determina la validez: un archivo con extensión `.txt` puede contener texto PEM válido. La observación decisiva es que el proceso local leyó solamente 40 caracteres, sin BOM, saltos de línea ni etiqueta PEM reconocida.
+
+Esto confirma que el contenido seleccionado **no era un PEM completo reconocible** por `RSA.ImportFromPem`. No prueba si se trataba de una cadena parcial, otra clase de valor o el archivo equivocado. No se debe seguir intentando importar ese mismo contenido ni afirmar que la clave privada se recuperó.
+
+### Siguiente acción práctica
+
+La vía menos ambigua es generar una nueva clave desde la interfaz oficial de la GitHub App y permitir que el navegador guarde el archivo que GitHub entrega:
+
+1. Abrir https://github.com/settings/apps/iabv-approval-relay-20261027.
+2. Ir a **Credentials → Key pairs → New key**.
+3. Cuando el navegador descargue el archivo PEM, conservarlo tal cual; no copiar su texto a Bloc de notas ni cambiar manualmente la extensión.
+4. En Opera, revisar `Ctrl+J` y usar el archivo descargado original para el siguiente diagnóstico local de Codex.
+5. Validar la estructura y comparar su huella local con la huella de la nueva clave que muestre GitHub. Solo después considerar la custodia local. No revocar la clave previamente generada ni borrar nada hasta que la nueva haya sido validada y su custodia comprobada; una clave generada anteriormente cuya descarga se perdió puede quedar registrada en GitHub sin que tengamos el archivo privado correspondiente.
+
+La documentación oficial indica que GitHub descarga la clave privada en formato PEM y solo conserva la parte pública. Si no se obtuvo el archivo descargado, no hay un mecanismo para reconstruir ese mismo PEM desde GitHub; debe generarse otra clave. Referencia: https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/managing-private-keys-for-github-apps.
+
+### Estado de seguridad
+
+```text
+OWNER_CLARIFICATION=SELECTED_NOTEPAD_TXT_NOT_DOWNLOADED_PEM
+OBSERVED_FILE_CONTENT_LENGTH=40_CHARACTERS
+PEM_MARKERS=ABSENT
+PRIVATE_KEY_FULL_PEM=NOT_AVAILABLE_FROM_SELECTED_FILE
+PRIVATE_KEY_VALIDITY=NOT_VERIFIED
+PRIVATE_KEY_FINGERPRINT=NOT_OBTAINED; MATCH=NOT_VERIFIED
+PREVIOUS_GITHUB_KEY_REVOCATION=NOT_PERFORMED
+NEW_KEY_GENERATION=OWNER_ACTION_PENDING
+PRIVATE_KEY_CUSTODY=NOT_ESTABLISHED
+GITHUB_APP_AUTH_PREFLIGHT=NOT_RUN
+G1=NOT_ESTABLISHED; G2=NOT_ESTABLISHED; G3=NOT_ESTABLISHED
+PROTECTED_READS=FAIL_CLOSED
+TESTS=NOT_RUN; BUILD=NOT_RUN; RUNTIME=NOT_RUN; REAL_TRANSPORT=NOT_RUN
+BRIDGE=BRIDGE_NOT_READY
+```
+
+Este apartado corrige la hipótesis anterior en la sección 27: primero se debe obtener el archivo PEM completo descargado por GitHub; no volver a diagnosticar métodos de importación sobre el TXT de 40 caracteres. Solo se actualiza la rama de borrador de PR #546; `main` y `CURRENT-STATE.md` no se modifican.
