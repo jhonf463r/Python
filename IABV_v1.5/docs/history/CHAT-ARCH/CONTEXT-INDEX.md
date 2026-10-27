@@ -1,12 +1,12 @@
-<!-- Update 2026-10-27: clipboard comparison returned OTHER / 3734 chars, match not verified. -->
+<!-- Update 2026-10-27: latest authenticated UI inspection found fingerprint as code text; no copy button. -->
 
-## LATEST UPDATE — clipboard content was not the fingerprint; inspect copy control safely (2026-10-27)
+## LATEST UPDATE — Read the exact SHA256 fingerprint node, not clipboard (2026-10-27, 11:34 America/Bogota)
 
-The latest local Codex report confirms the new PEM still imports as a valid RSA private PKCS#1 key (2048 bits) and its public fingerprint is computed in memory. But the clipboard yielded OTHER / 3734 characters, not the documented SHA-256/Base64 fingerprint. The contents are unknown and must not be echoed, inspected in the transcript, persisted or reused. MATCH remains NOT_VERIFIED.
+The Owner reports Codex reset the current Windows clipboard successfully, but could not identify a copy control. A new read-only inspection of the authenticated GitHub Key pairs page contradicts the earlier “Copyable key fingerprint” description: the page heading is “Private key”; the fingerprint is plain text in a `code` element beginning with `SHA256:`; no dedicated adjacent copy button exists. The earlier 40-character field report remains a historical discrepancy, not a current confirmed fact.
 
-Read [handoff section 15](https://github.com/jhonf463r/Python/blob/chat-continuity-key-recovery-handoff-20261027/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-27-M1A-GITHUB-APP-KEY-RECOVERY-CROSS-CHAT-HANDOFF.md). Next, local Codex should overwrite the current Windows clipboard with a harmless marker without reading old contents, then identify the exact copy button adjacent to “Copyable key fingerprint” through local UI accessibility before attempting another copy. If it cannot identify that control with confidence, stop rather than clicking generic controls. No JWT/token/API, secret custody, or GitHub/repo changes.
+Read [handoff section 16](https://github.com/jhonf463r/Python/blob/chat-continuity-key-recovery-handoff-20261027/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-27-M1A-GITHUB-APP-KEY-RECOVERY-CROSS-CHAT-HANDOFF.md). Next local Codex action: target only the fingerprint’s `code` node within the card headed “Private key” and labeled “Label: Private”, read its content into local process memory, compare strictly against the local SHA-256 digest, and return only the outcome. Do not use the clipboard, dump DOM/page content, or expose either fingerprint. If it cannot unambiguously target the node, stop.
 
-This is a supporting continuity pointer on a review branch, not canonical route authority. Fetch live main/CURRENT-STATE.md first in any new session.
+PEM structure remains valid (RSA PKCS#1 2048 bits); local public fingerprint computed; GitHub match NOT_VERIFIED; custody not established; no JWT/token/API call. G1/G2/G3 remain NOT_ESTABLISHED; protected reads fail-closed; bridge not ready. This is supporting continuity on a review branch, not canonical routing authority. Fetch live main/CURRENT-STATE.md first.
 
 ---
 
