@@ -1,4 +1,18 @@
-<!-- Canonical route authority; latest Entra G1 independent design review recorded 2026-10-27. Operational fail-closed remains in force. -->
+<!-- Canonical route authority; MCP 1.30 target ratified and integration plan recorded 2026-10-27. No code/environment change authorized. -->
+
+## Objetivo MCP ratificado y plan de integración documentado — sin código ni cambios de entorno (2026-10-27)
+
+El Owner respondió «ok procede» a la propuesta de fijar un único objetivo para preparar la integración. El alcance ratificado es solo la selección del objetivo y la planificación documental: Miniconda Python 3.13.2; MCP Python SDK mcp==1.30.0 como versión objetivo; Streamable HTTP; bind local 127.0.0.1:8000; sin túnel público. Esto no autoriza instalación/actualización de paquetes, cambios de código, configuración de Entra, ejecución del servidor, pruebas, lecturas protegidas, merge ni despliegue.
+
+Plan versionado: [M1A G1 — objetivo MCP fijado y plan de integración Entra (sin cambios de código)](https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-27-M1A-G1-MCP130-IMPLEMENTATION-PLAN-NO-CODE.md). El plan identifica archivos, dependencias y aceptación futura, separa hallazgos de main de los informes locales aportados por Codex, y mantiene intacto el checkout local reportado como muy sucio.
+
+**Bloqueos previos a cualquier E2E:** el entorno Miniconda informado aún tiene mcp 1.27.0, no 1.30.0; debe resolverse la instalación en un entorno aislado solo tras autorización. La URL canónica HTTPS del recurso MCP aún no está aprobada y no se permite túnel; por eso la combinación loopback solo sirve como objetivo local, no como prueba de OAuth real de Entra. La autenticación por token no está conectada en main, el transporte HTTP debe fallar cerrado si no tiene auth, stdio requiere frontera local propia, y G1/G2/G3 siguen sin establecer.
+
+**Estado terminal:** TARGET=MINICONDA_PYTHON_3_13_2; MCP=1.30.0; TRANSPORT=STREAMABLE_HTTP; BIND=127.0.0.1:8000; TUNNEL=DISABLED; SOURCE_CHANGES=NOT_AUTHORIZED; ENVIRONMENT_CHANGES=NOT_AUTHORIZED; ENTRA_PORTAL_OR_REGISTRATION=NOT_AUTHORIZED; TESTS/BUILD/RUNTIME=NOT_RUN; PROTECTED_READS=FAIL_CLOSED; OPTION_D=UNCHANGED; BRIDGE=BRIDGE_NOT_READY; AUTOMATIC_FOLLOW_ON=FALSE.
+
+**Siguiente puerta:** autorización explícita separada para implementación de código en una worktree/branch/PR aislada. No tocar el checkout sucio ni modificar main directamente. No repetir los análisis ya completados.
+
+
 
 ## Independent technical review — Entra G1 design corrected; no implementation authorized (2026-10-27)
 
@@ -92,13 +106,13 @@ The prior Owner decision to retain Option D/no-bootstrap is already recorded; do
 
 ```text
 CHAT_CONTINUITY=CONSOLIDATED; FETCHBACK_REQUIRED
-ACTIVE_FRONTIER=OWNER_REVIEW_OF_CORRECTED_ENTRA_G1_DESIGN_AND_PHASE_AUTHORIZATION
-LAST_TERMINAL_TASK=M1A_G1_ENTRA_BOOTSTRAP_DESIGN_INDEPENDENT_REVIEW_20261027
-LAST_TERMINAL_RESULT=DESIGN_CORRECTED_AFTER_STATIC_REVIEW; OWNER_REVIEW_PENDING; IMPLEMENTATION_NOT_AUTHORIZED
+ACTIVE_FRONTIER=OWNER_EXPLICIT_AUTHORIZATION_FOR_ISOLATED_CODE_IMPLEMENTATION
+LAST_TERMINAL_TASK=M1A_G1_MCP130_TARGET_AND_IMPLEMENTATION_PLAN_20261027
+LAST_TERMINAL_RESULT=TARGET_RATIFIED; PLAN_DOCUMENTED; SOURCE_AND_ENVIRONMENT_CHANGES_NOT_AUTHORIZED
 OWNER_ROOT_SELECTION=NOT_PROVIDED
 OWNER_DECISION=RATIFIED_OPTION_D_NO_BOOTSTRAP; PROVENANCE=EXPLICIT_CHAT_RECEIPT; NOT_RUNTIME_AUTHENTICATION
 LATEST_OWNER_AUTHORIZATION=ENTRA_G1_DESIGN_DOCUMENTATION_ONLY; PROVENANCE=EXPLICIT_CHAT_RESPONSE; NOT_RUNTIME_AUTHENTICATION
-OWNER_DECISION_SCOPE=DESIGN_DOCUMENTATION_ONLY; OPTION_D_REMAINS_OPERATIONALLY_FAIL_CLOSED
+OWNER_DECISION_SCOPE=TARGET_AND_DOCUMENTATION_PLAN_ONLY; OPTION_D_REMAINS_OPERATIONALLY_FAIL_CLOSED
 ENTRA_IDENTITY_PROVIDER_CANDIDATE=PLAUSIBLE_FOR_OWNER_AUTHENTICATION
 ENTRA_AS_STANDALONE_G1_AUTHORITY=NOT_ESTABLISHED
 G1_DESIGN=CORRECTED_AFTER_INDEPENDENT_REVIEW; OWNER_REVIEW_PENDING; DOCUMENTATION_ONLY
@@ -106,7 +120,7 @@ ENTRA_APP_REGISTRATION=NOT_CREATED_OR_NOT_REPORTED; PORTAL_NOT_INSPECTED
 ACCESS_TOKEN_VALIDATION=NOT_ESTABLISHED_IN_MAIN
 MCP_HTTP_TOKEN_AUTH=ABSENT_IN_DOCUMENTED_DESIGN
 MCP_PUBLIC_TUNNEL_ACTIVE=UNVERIFIED
-OPTION_D=FAIL_CLOSED_OPERATIONALLY; DESIGN_CORRECTED; OWNER_REVIEW_PENDING
+OPTION_D=FAIL_CLOSED_OPERATIONALLY; TARGET_RATIFIED; IMPLEMENTATION_PENDING_AUTHORIZATION
 G1=NOT_ESTABLISHED
 G2=NOT_ESTABLISHED
 G3=NOT_ESTABLISHED
@@ -120,8 +134,13 @@ TESTS=NOT_RUN
 RUNTIME=NOT_RUN
 PROTECTED_READS=FAIL_CLOSED
 BRIDGE=BRIDGE_NOT_READY
-NEXT_ACTION=OWNER_REVIEW_OF_CORRECTED_DESIGN; SEPARATE_PHASE_AUTHORIZATION_REQUIRED
+NEXT_ACTION=OWNER_EXPLICIT_AUTHORIZATION_FOR_ISOLATED_CODE_IMPLEMENTATION
 AUTOMATIC_FOLLOW_ON=FALSE
+TARGET_PYTHON=MINICONDA_3.13.2; LOCAL_PREFLIGHT_REPORTED
+TARGET_MCP_SDK=1.30.0; CURRENT_MINICONDA_VERSION_REPORTED=1.27.0; UPDATE_NOT_AUTHORIZED
+TARGET_TRANSPORT=STREAMABLE_HTTP; TARGET_BIND=127.0.0.1:8000; TUNNEL=DISABLED
+ENTRA_CANONICAL_HTTPS_RESOURCE_URL=NOT_APPROVED; ENTRA_E2E=BLOCKED
+LOCAL_CHECKOUT=DIRTY_DETACHED_REPORTED; PRESERVE; DO_NOT_EDIT
 ```
 
 ```
