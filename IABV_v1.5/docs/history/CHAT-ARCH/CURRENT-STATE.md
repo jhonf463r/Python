@@ -1,4 +1,18 @@
-<!-- Canonical route authority; latest bounded G1/Entra reassessment recorded 2026-10-27. No-bootstrap/fail-closed remains in force. -->
+<!-- Canonical route authority; latest Entra G1 design-only continuation recorded 2026-10-27. Option D remains fail-closed operationally. -->
+
+## Latest route delta — Entra G1 design documented; operations remain fail-closed (2026-10-27)
+
+The Owner answered “sí” to the specific request to prepare an Entra-based G1 bootstrap design **only as documentation**. This is a new, bounded authorization for design writing, not runtime authentication and not permission to create Entra registrations/credentials, change permissions, modify source, run tests/runtime, establish a root, enable protected reads, open a tunnel or deploy.
+
+**Design document:** [M1A G1 — Entra bootstrap design (documentation only)](https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-27-M1A-G1-ENTRA-BOOTSTRAP-DESIGN-ONLY.md). Its design is now saved and verified by fetch-back. It specifies tenant-specific access-token validation, exact API/resource audience, an Owner mandate mapped by immutable identity rather than display name, a proposed independent local enrollment channel, server/revision binding, revocation, transport controls, and future acceptance tests. Those controls remain proposals until separately implemented and proven.
+
+**Interpretation of Option D:** the prior no-bootstrap decision remains active for operations. The new response authorizes the design document only; it does not establish G1, select/provision a trust root, or authorize implementation. No need to repeat the question about whether to prepare the design, and no need to repeat Entra/Authenticator setup.
+
+**Current state:** G1/G2/G3 NOT_ESTABLISHED; the eight implementation prerequisites remain open; protected reads FAIL_CLOSED; app registration NOT_CREATED_OR_NOT_REPORTED and portal NOT_INSPECTED; access-token validation NOT_ESTABLISHED_IN_MAIN; MCP HTTP token authentication remains absent in the documented current design; public tunnel state UNVERIFIED; tests/build/runtime/real transport NOT_RUN; bridge NOT_READY.
+
+**Next action:** Owner review of the documented design. Any subsequent inspection/creation of registrations, identity assignments, source changes, local enrollment, tests, tunnel or deployment requires a separate explicit authorization for that phase. No automatic follow-on. CURRENT-STATE.md remains the sole route authority.
+
+
 
 ## Owner-directed continuity and priority consolidation — 2026-10-26
 
@@ -6,7 +20,7 @@ This entry reconciles the current conversation into the active route. It is a do
 
 ### Canonical route clarification — prior Owner ratification of Option D (2026-10-27)
 
-The live receipt linked below records the Owner's explicit prior decision to keep no-bootstrap/fail-closed behavior. That decision must not be requested again. It is distinct from evidence that a technical root exists: `OWNER_ROOT_SELECTION=NOT_PROVIDED` remains accurate, and the receipt explicitly says its provenance is an Owner chat message, not an independently authenticated runtime identity event. The active technical frontier remains G1. The next step is new independently verifiable evidence of a pre-existing root, mandate and independent verification channel, or a genuinely new Owner decision to change the previous no-bootstrap choice. Until then, preserve all G1/G2/G3 and protected-read gates; do not create a root or bypass the blocker.
+The live receipt linked below records the Owner's explicit prior decision to keep no-bootstrap/fail-closed behavior. That decision must not be requested again. It is distinct from evidence that a technical root exists: `OWNER_ROOT_SELECTION=NOT_PROVIDED` remains accurate, and the receipt explicitly says its provenance is an Owner chat message, not an independently authenticated runtime identity event. The active technical frontier remains G1. The Owner has now authorized preparation of a design document only. The next step is review of that document; operational no-bootstrap/fail-closed remains in force unless separately and explicitly authorized and then independently verified. Until then, preserve all G1/G2/G3 and protected-read gates; do not create a root or bypass the blocker.
 
 ### Latest bounded G1 reassessment — Microsoft Entra as pre-existing authority (2026-10-27)
 
@@ -60,19 +74,21 @@ The prior Owner decision to retain Option D/no-bootstrap is already recorded; do
 
 ```text
 CHAT_CONTINUITY=CONSOLIDATED; FETCHBACK_REQUIRED
-ACTIVE_FRONTIER=G1_INDEPENDENT_ROOT_MANDATE_AND_VERIFICATION_CHANNEL
-LAST_TERMINAL_TASK=M1A_G1_ENTRA_PREEXISTING_AUTHORITY_REASSESSMENT_20261027
-LAST_TERMINAL_RESULT=ENTRA_PLAUSIBLE_FOR_OWNER_AUTHENTICATION; NOT_ESTABLISHED_AS_EXISTING_G1_AUTHORITY; STATIC_REASSESSMENT_ONLY
+ACTIVE_FRONTIER=OWNER_REVIEW_OF_DOCUMENTED_ENTRA_G1_BOOTSTRAP_DESIGN
+LAST_TERMINAL_TASK=M1A_G1_ENTRA_BOOTSTRAP_DESIGN_DOCUMENTATION_ONLY_20261027
+LAST_TERMINAL_RESULT=DESIGN_DOCUMENTED; OWNER_REVIEW_PENDING; NO_IMPLEMENTATION
 OWNER_ROOT_SELECTION=NOT_PROVIDED
 OWNER_DECISION=RATIFIED_OPTION_D_NO_BOOTSTRAP; PROVENANCE=EXPLICIT_CHAT_RECEIPT; NOT_RUNTIME_AUTHENTICATION
-OWNER_DECISION_SCOPE=ENTRA_STATIC_REASSESSMENT_ONLY; OPTION_D_NOT_OVERRIDDEN
+LATEST_OWNER_AUTHORIZATION=ENTRA_G1_DESIGN_DOCUMENTATION_ONLY; PROVENANCE=EXPLICIT_CHAT_RESPONSE; NOT_RUNTIME_AUTHENTICATION
+OWNER_DECISION_SCOPE=DESIGN_DOCUMENTATION_ONLY; OPTION_D_REMAINS_OPERATIONALLY_FAIL_CLOSED
 ENTRA_IDENTITY_PROVIDER_CANDIDATE=PLAUSIBLE_FOR_OWNER_AUTHENTICATION
 ENTRA_AS_STANDALONE_G1_AUTHORITY=NOT_ESTABLISHED
+G1_DESIGN=DOCUMENTED; OWNER_REVIEW_PENDING; DOCUMENTATION_ONLY
 ENTRA_APP_REGISTRATION=NOT_CREATED_OR_NOT_REPORTED; PORTAL_NOT_INSPECTED
 ACCESS_TOKEN_VALIDATION=NOT_ESTABLISHED_IN_MAIN
 MCP_HTTP_TOKEN_AUTH=ABSENT_IN_DOCUMENTED_DESIGN
 MCP_PUBLIC_TUNNEL_ACTIVE=UNVERIFIED
-OPTION_D=RETAIN_FAIL_CLOSED_UNTIL_INDEPENDENT_EVIDENCE_OR_NEW_EXPLICIT_DECISION
+OPTION_D=FAIL_CLOSED_OPERATIONALLY; DOCUMENTATION_ONLY_DESIGN_AUTHORIZED
 G1=NOT_ESTABLISHED
 G2=NOT_ESTABLISHED
 G3=NOT_ESTABLISHED
@@ -86,7 +102,7 @@ TESTS=NOT_RUN
 RUNTIME=NOT_RUN
 PROTECTED_READS=FAIL_CLOSED
 BRIDGE=BRIDGE_NOT_READY
-NEXT_ACTION=OWNER_DECISION_TO_AUTHORIZE_ENTRA_G1_BOOTSTRAP_DESIGN_OR_NEW_INDEPENDENT_AUTHORITY_EVIDENCE
+NEXT_ACTION=OWNER_REVIEW_OF_DOCUMENTED_ENTRA_G1_BOOTSTRAP_DESIGN; SEPARATE_IMPLEMENTATION_AUTHORIZATION_REQUIRED
 AUTOMATIC_FOLLOW_ON=FALSE
 ```
 
