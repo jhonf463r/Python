@@ -79,23 +79,13 @@ The selected TXT’s 40-character content was not a complete PEM private key acc
 
 Changing `.txt` to `.pem` would only change the extension. It cannot turn a fingerprint, ID or partial value into the private key. The private key cannot be reconstructed from the public-key fingerprint.
 
-## 5. Current next action — inspect authenticated GitHub field and download behavior
+## 5. Current next action — validate the newly obtained PEM, not the old TXT
 
-The latest Codex report has now been received and incorporated. Do not wait for or request the same report again. Codex checked the current user’s Downloads folder and Opera histories:
-- No PEM was found in the checked Downloads folder.
-- Opera GX history was accessible read-only and contained no matching PEM/app-key download in the checked period.
-- Opera Stable history returned a database-locked error and was not bypassed.
-- The authenticated GitHub Credentials → Key pairs page could not be inspected, so the label of the Owner’s copyable 40-character value remains unknown.
-- Selecting the same TXT again returned the same non-PEM text. Do not select or validate that same file again.
+The previous Codex browser-history investigation is complete. It found no PEM in the checked Downloads folder or matching Opera GX history; Opera Stable history was locked and was not bypassed. The authenticated GitHub Key pairs page showed that the 40-character value the Owner had copied is labeled **“Copyable key fingerprint”** and that no private-key download action is offered from that page. That visible value is the fingerprint field, not the PEM file. Do not select the old 40-character TXT again.
 
-Next action:
-1. Inspect the exact label next to the copyable value in the authenticated GitHub App UI, without copying its value to chat or transcript.
-2. Inspect the actual New key/download interaction and browser state. The specific cause of the unavailable download remains UNKNOWN; do not assume it was blocked or that a download definitely never occurred.
-3. If the item is a fingerprint or key ID, explain that it is not a private-key PEM and cannot reconstruct the private key.
-4. Only if the UI/download investigation confirms that no usable PEM exists, consider a replacement key and handle download troubleshooting as one bounded action. Preserve existing GitHub key entries until a replacement is validated and safely stored; never revoke automatically.
-5. Do not ask the Owner to repeat generic download instructions, paste any secret into chat, or copy the 40-character value again.
+The Owner now reports they have obtained a `.pem` file through another option. That is a new artifact reported by the Owner; it has not yet been inspected or validated by Codex. The next action is to validate that new file locally and compare its public fingerprint with the registered key pair. Do not repeat the historical download investigation unless new evidence shows a new issue.
 
-A local-only popup for secret input may be a future UX for a complete secret that is genuinely available. It is not a recovery method for a missing PEM or an unknown 40-character value. See section 11 for the complete latest evidence and the distinction between the GitHub App machine key and website credentials managed by IABV.
+Use the focused local Codex prompt in section 13. Do not save/encrypt the key, create a JWT/token, call the App API, or modify the App until structural validity and exact fingerprint correspondence have been established.
 
 ## 6. Local key verification — only after locating a real PEM
 
@@ -148,15 +138,14 @@ GITHUB_APP_PERMISSIONS=METADATA_READ; ISSUES_READ_WRITE; ALL_OTHERS_NONE
 GITHUB_APP_WEBHOOKS=DISABLED; OAUTH=DISABLED; DEVICE_FLOW=DISABLED
 OPERA_GX_HISTORY=CHECKED; NO_MATCHING_PEM_DOWNLOAD_FOUND_IN_CHECKED_PERIOD
 OPERA_STABLE_HISTORY=LOCKED; NOT_BYPASSED
-LOCAL_DOWNLOADS_PEM=NONE_FOUND_IN_CHECKED_FOLDER
-SELECTED_TXT_LENGTH=40; PEM_MARKERS=ABSENT
-SELECTED_VALUE_LABEL=UNKNOWN; VALUE_IS_FINGERPRINT=NOT_CONFIRMED
-DOWNLOAD_CAUSE=UNKNOWN
+GITHUB_KEY_UI_LABEL=Copyable key fingerprint; CONFIRMED_BY_READ_ONLY_BROWSER_INSPECTION
+PRIVATE_KEY_PEM=OWNER_REPORTS_OBTAINED_VIA_ANOTHER_UI_PATH; NOT_YET_VALIDATED
+OLD_SELECTED_TXT=40_CHARACTERS; PEM_MARKERS_ABSENT; DO_NOT_RESELECT
 PRIVATE_KEY_VALIDITY=NOT_VERIFIED
 PRIVATE_KEY_FINGERPRINT=NOT_OBTAINED; MATCH=NOT_VERIFIED
 PRIVATE_KEY_CUSTODY=NOT_ESTABLISHED
 GITHUB_APP_AUTH_PREFLIGHT=NOT_RUN; INSTALLATION_TOKEN=NOT_CREATED
-NEXT_ACTION=INSPECT_AUTHENTICATED_GITHUB_FIELD_LABEL_AND_NEW_KEY_DOWNLOAD_BEHAVIOR
+NEXT_ACTION=VALIDATE_NEW_PEM_LOCALLY_AND_COMPARE_FINGERPRINT
 G1=NOT_ESTABLISHED; G2=NOT_ESTABLISHED; G3=NOT_ESTABLISHED
 IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
 PROTECTED_READS=FAIL_CLOSED
@@ -290,3 +279,44 @@ BRIDGE=BRIDGE_NOT_READY
 ```
 
 This is supporting continuity on a review branch only; it does not replace `CURRENT-STATE.md` or authorize runtime/source changes.
+
+
+## 13. Next Codex prompt — validate the newly obtained PEM (2026-10-27)
+
+The Owner reports a new `.pem` file obtained via another GitHub UI option. This is a new fact reported by the Owner, not yet verified locally. The old TXT of 40 characters was not the key; read-only browser inspection confirmed its GitHub label is “Copyable key fingerprint” and no download action appears on the Key pairs page. Do not select the old TXT or repeat the old download workflow.
+
+Use the following prompt in Codex running locally on Windows. Do not paste key material into the prompt.
+
+```text
+Estamos en el Windows local donde se ejecuta IABV. Quiero validar el archivo PEM nuevo que ya obtuve. No uses el antiguo TXT de 40 caracteres.
+
+Contexto:
+- GitHub App: iabv-approval-relay-20261027; App ID 5496678.
+- Installation ID 175851462.
+- Repositorio único: jhonf463r/Python; repository ID 860009771.
+- La UI de GitHub muestra el campo de 40 caracteres como “Copyable key fingerprint”; ese valor no es el PEM.
+- El nuevo archivo PEM aún no se ha validado.
+
+Seguridad:
+1. Confirma que la ejecución es local en Windows. Si es cloud/remota, detente.
+2. Abre el selector nativo de archivos para que el Owner elija el PEM nuevo. No pidas pegar el contenido en el chat y no imprimas la ruta completa.
+3. Lee el contenido solo en memoria con System.IO.File.ReadAllText($selectedPath), asegurándote de pasar el TEXTO a RSA.ImportFromPem, no la ruta.
+4. Comprueba que el PEM contiene una clave RSA PRIVADA importable. GitHub descarga estas claves en formato PKCS#1 RSAPrivateKey. Informa solo de la etiqueta PEM (por ejemplo RSA PRIVATE KEY o PRIVATE KEY), si la importación funcionó, y el tamaño de clave. No muestres, registres ni transmitas el contenido, el bloque PEM, los parámetros privados, la ruta, el JWT o cualquier token.
+5. Exporta en memoria la clave pública en formato DER SubjectPublicKeyInfo y calcula SHA-256 del DER; codifica el digest en Base64. Esto debe ser equivalente a la verificación oficial de GitHub: openssl rsa -in PATH_TO_PEM_FILE -pubout -outform DER | openssl sha256 -binary | openssl base64. No instales OpenSSL.
+6. Si puedes consultar la UI de GitHub ya autenticada, encuentra la huella de la entrada existente y compara localmente. La inspección read-only de la UI identificó el campo como “Copyable key fingerprint”, pero no uses ni reportes su valor. No asumas que dos cadenas coinciden por longitud o aspecto: compara según el formato exacto que muestre GitHub y la documentación oficial. Si la huella no se puede obtener o los formatos no se pueden reconciliar inequívocamente, reporta la validez estructural por separado y deja MATCH=NOT_VERIFIED.
+7. No imprimas ni registres el valor de ninguna huella completa; devuelve solo MATCH=YES/NO/NOT_VERIFIED. Nunca imprimas contenido o ruta del PEM. Si falla, captura solamente el tipo y mensaje sanitizado de la excepción.
+8. En esta tarea NO cifres ni guardes la clave, no crees JWT ni installation token, no llames a la API de la App, no hagas cambios en GitHub y no revoques/sustituyas claves. El objetivo es solo: validar la estructura y comparar la huella.
+9. No cambies archivos de producto, main, CURRENT-STATE.md, PRs, Issues ni comentarios. No ejecutes tests, build, runtime, lecturas protegidas ni transporte real.
+
+Informe: ejecución local confirmada; tipo/etiqueta de clave; importación válida sí/no; huella local calculada sí/no; comparación exacta con GitHub sí/no/no verificable; error interno sanitizado si existe; confirmación de que el secreto no se expuso y no se guardó.
+
+No afirmes que la clave está lista para IABV ni que el puente está listo. G1/G2/G3 siguen sin establecerse.
+```
+
+Referencia oficial: https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/managing-private-keys-for-github-apps
+
+Estado después del prompt:
+- Si importación/huella pasan y coincide la huella, el siguiente paso será una autorización separada para custodia local y preflight de API.
+- Si la estructura falla, reportar la excepción interna exacta sanitizada y no regenerar/revocar automáticamente.
+- Si la estructura pasa pero la huella no puede compararse, no declarar que la clave pertenece a la App.
+
