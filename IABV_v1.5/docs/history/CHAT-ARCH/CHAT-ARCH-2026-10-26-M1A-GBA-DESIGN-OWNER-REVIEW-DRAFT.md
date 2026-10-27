@@ -940,3 +940,65 @@ Se podrá usar el saldo/perfil de un ayudante solo si el Owner lo autoriza para 
 - BRIDGE=BRIDGE_NOT_READY
 
 Esta sección es un plan de ejecución seguro y un handoff para Codex local. No afirma que la clave sea válida ni cierra G1/G2/G3. Añadida solo a la rama documental de la PR #546; main y CURRENT-STATE.md permanecen sin cambios.
+
+
+## 25. Resultado del primer preflight local de clave: selector bloqueado antes de leer (2026-10-27)
+
+### Hecho observado comunicado por Codex local
+
+La ejecución ocurrió en Windows 10, equipo reportado como `MSI`, usuario `MSI\\faber`. Se observaron dos procesos `python -m iabv_v15` ejecutándose bajo el mismo usuario. Esto es evidencia de que el usuario interactivo observado y los procesos IABV observados coinciden en ese momento; no demuestra todavía que cualquier servicio, tarea futura o proceso de producción use esa misma identidad ni que vaya a poder descifrar un secreto DPAPI CurrentUser.
+
+Codex se detuvo **antes de abrir/leer el archivo de clave** porque la inicialización del controlador de interfaz para el selector falló con:
+
+```text
+failed to write kernel assets: El sistema no puede encontrar la ruta especificada (os error 3)
+```
+
+El agente no intentó una vía alternativa y reportó:
+- PEM no seleccionado ni leído.
+- Validez de la clave y huella: no verificadas.
+- Clave no cifrada, no guardada ni copiada por este intento.
+- Preflight autenticado con GitHub: no ejecutado.
+- Sin cambios en archivos/configuración/ACLs/GitHub.
+- Sin tests, build, runtime, lecturas protegidas ni transporte real.
+
+Esta falla corresponde al mecanismo para abrir el diálogo, no prueba que la clave sea inválida, que GitHub esté mal configurado ni que la identidad local no sea compatible.
+
+### Próxima acción discriminante recomendada
+
+Evitar repetir el mismo controlador de interfaz que falló. Dar a Codex una autorización separada y acotada para implementar un **selector nativo de Windows desde PowerShell/.NET (System.Windows.Forms.OpenFileDialog)**, ejecutado directamente por el proceso local de Codex, sin depender del controlador externo que reportó el error. No es una autorización para saltarse la selección explícita del Owner ni para copiar el secreto al chat.
+
+El selector debe devolver al flujo local únicamente la ruta elegida, no el contenido de la clave. La lectura y validación criptográfica ocurren en memoria dentro del mismo proceso local. Requisitos:
+1. Confirmar localmente Windows y el usuario real antes de abrir el selector.
+2. Invocar el diálogo nativo mediante PowerShell/.NET; si ese método también falla o se detecta entorno remoto, detenerse y conservar este estado sin buscar una ruta insegura.
+3. El Owner selecciona el archivo que ya tiene. El proceso comprueba el PEM sin imprimir su contenido ni reescribir el original.
+4. Calcular la huella local exactamente como indica GitHub y compararla contra la huella que figura en la App. La documentación oficial actual indica que el archivo descargado es PKCS#1 RSAPrivateKey PEM y que la comparación local se hace con `openssl rsa -in PATH_TO_PEM_FILE -pubout -outform DER | openssl sha256 -binary | openssl base64`. La coincidencia exacta es obligatoria antes de guardar o usar la clave.
+5. Solo después de validar la huella, determinar el principal real que consumirá la clave. No asumir que el usuario observado en dos procesos basta para identificar todos los modos de ejecución.
+6. Si la huella coincide, establecer custodia que funcione para el principal runtime; si no coincide o no puede verificarse la huella de GitHub, detenerse y pedir recuperación segura o autorización para generar una clave sustituta. No revocar la clave registrada automáticamente.
+7. Luego, y solo después de validar clave y custodia, realizar un preflight API de identidad/instalación/repositorio con tokens efímeros en memoria. Sin Issues, comentarios, contenido del repositorio, commits, PRs, tests ni lecturas protegidas.
+
+Referencia vigente de GitHub: https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/managing-private-keys-for-github-apps
+
+### Estado actualizado
+
+```text
+LOCAL_WINDOWS=CONFIRMED_BY_CODEX_REPORT; OS=WINDOWS_10; HOST_LABEL=MSI
+OBSERVED_WINDOWS_USER=MSI\\faber
+OBSERVED_IABV_PROCESSES=2; COMMAND=python -m iabv_v15; USER_MATCH=OBSERVED_ONLY
+PRIVATE_KEY_FILE=NOT_SELECTED; NOT_READ
+PRIVATE_KEY_VALIDITY=NOT_VERIFIED
+PRIVATE_KEY_FINGERPRINT_MATCH=NOT_VERIFIED
+PRIVATE_KEY_CUSTODY=NOT_ESTABLISHED
+NATIVE_WINDOWS_PICKER_FALLBACK=PROPOSED_NOT_RUN
+GITHUB_APP_REGISTRATION=CREATED; APP_ID=5496678
+GITHUB_APP_INSTALLATION=INSTALLED; INSTALLATION_ID=175851462
+GITHUB_APP_INSTALLATION_REPOSITORIES=ONLY:jhonf463r/Python; REPOSITORY_ID=860009771
+GITHUB_APP_AUTH_PREFLIGHT=NOT_RUN
+INSTALLATION_TOKEN=NOT_CREATED
+G1=NOT_ESTABLISHED; G2=NOT_ESTABLISHED; G3=NOT_ESTABLISHED
+PROTECTED_READS=FAIL_CLOSED
+TESTS=NOT_RUN; BUILD=NOT_RUN; RUNTIME=NOT_RUN; REAL_TRANSPORT=NOT_RUN
+BRIDGE=BRIDGE_NOT_READY
+```
+
+Esta sección registra el resultado y una siguiente acción acotada. No cambia `main` ni `CURRENT-STATE.md`, no modifica código de producto y no cierra ningún gate de autoridad. La sección pertenece a la rama documental de PR #546 y no es autoridad canónica.
