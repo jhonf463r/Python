@@ -428,13 +428,42 @@ Criterio de éxito: mejora reproducible en relevancia y causal localization sin 
 6. Solo con evidencia positiva y autorización separada, tocar la mínima costura de composición y verificar el ciclo con recibos correlacionados.
 7. Actualizar el linaje y la memoria canónica tras resultados reales, incluidos resultados negativos. No declarar aprendizaje autónomo por haber guardado este documento.
 
-## 13. Tesis condensada
+## 13. Reconciliación crítica de la investigación interdisciplinaria
+
+La investigación profunda amplía el abanico de mecanismos posibles: event sourcing, CQRS, relojes lógicos/vectoriales, gossip, PROV, STDP inspirado, homeostasis, memoria de varios niveles, replay, EWC, observabilidad y tolerancia a nodos maliciosos. Es un mapa de opciones; no es una orden de implementar cada técnica, ni demuestra que todas correspondan a la arquitectura o la topología real de IABV.
+
+| Técnica investigada | Decisión para IABV en esta fase | Razón |
+|---|---|---|
+| IDs de evento, parent/cause/correlation refs e idempotencia | REUTILIZAR / EVALUAR PRIMERO | Se corresponden directamente con D018/D019, RuntimeAuditTracer, DecisionAuditTrail y los IDs de sesión. Primero se comprueba cuánto de esa relación ya está en los registros actuales. |
+| Relojes lógicos o vectoriales en cada evento | DIFERIR | La relación happens-before es valiosa, pero un vector por agente aumenta tamaño y complejidad. Comenzar con secuencia local, timestamps informativos y enlaces causales explícitos; adoptar relojes lógicos/vectoriales solo si un caso de concurrencia no puede resolverse con esas fuentes. Nunca inferir causalidad del timestamp solo. |
+| Event sourcing/CQRS completo | NO ADOPTAR COMO ARQUITECTURA GLOBAL POR AHORA | Es un patrón válido, pero puede duplicar la persistencia, proyecciones y autoridad de registros actuales. Aplicarlo solo a un bounded context con necesidad demostrada, después de mapear los stores y el lifecycle existente. |
+| Gossip entre todas las IAs | NO ADOPTAR | La topología actual es heterogénea y mediada por herramientas, sesiones y adaptadores, no una malla de peers equivalentes con enlaces permanentes. Se necesita entrega explícita con destino, paquete, intento, aceptación, recibo y uso; no difusión automática en todas direcciones. |
+| STDP como fórmula de actualización de confianza | HIPÓTESIS DE LABORATORIO, NO POLÍTICA | La biología no respalda una regla universal lineal y el acoplamiento temporal no es prueba de causalidad. Primero usar outcome verificado y los pesos heurísticos existentes; cualquier regla inspirada en STDP necesita baseline, límites, control de runaway y falsadores. |
+| Homeostasis mediante normalización de scores | HIPÓTESIS POR CALIBRAR | Puede inspirar límites de confianza/carga, pero multiplicadores o rangos no se pueden elegir por analogía fisiológica. Medir estabilidad, falso positivo, saturación, diversidad y efecto de decisiones. |
+| EWC, EVCL, progressive nets o ajuste de pesos paramétricos | DIFERIR FUERA DE ESTA ARQUITECTURA | Son técnicas de aprendizaje continuo cuando realmente se entrena o protege un modelo paramétrico. No deben confundirse con memoria persistente, cambios del retrieval ni AdaptiveWeightLayer. No hay evidencia aquí de que el modelo base de todas las IAs pueda ser entrenado por IABV. |
+| Kafka, vector database o infraestructura de mensajería específica | NO SELECCIONAR AÚN | No se ha demostrado que haga falta un nuevo transporte o almacén. Revisar primero las interfaces, logs y repositorios ya existentes y el coste de su composición. |
+| OpenTelemetry | REFERENCIA DE OBSERVABILIDAD, NO DEPENDENCIA OBLIGATORIA | La correlación entre traces/logs/metrics es útil. La primera costura debe aprovechar RuntimeAuditTracer/DecisionAuditTrail; una instrumentación adicional requiere evidencia de que las fuentes actuales no bastan. |
+| Consenso bizantino y fórmulas de quórum distribuido | NO ADOPTAR SIN THREAT MODEL | No se ha demostrado que IABV opere ahora una red de n nodos servidores que necesite consenso BFT. El problema presente es procedencia, autoridad y cierre causal, no escoger un protocolo de consenso por anticipado. |
+| W3C PROV / PROV-AGENT | VOCABULARIO DE REFERENCIA | Las relaciones Entity/Activity/Agent ayudan a representar procedencia. No implican que haya que convertir todo registro al estándar ni introducir una dependencia antes de mapear a las estructuras ya existentes. |
+
+Una entrega “exactly-once” de extremo a extremo no se puede afirmar solo por tener IDs; los sistemas deben tratar duplicados y reintentos de manera idempotente y conservar receipts por etapa. Del mismo modo, una firma o firma de origen es solo una prueba respecto a una clave: no establece que la clave, agente o mensaje posea autoridad si la raíz no está verificada. Esto mantiene la frontera M1A.
+
+El orden correcto es proporcional al hueco demostrado:
+1. correlación mínima y stage-specific status;
+2. evidencia del productor y consumidor reales;
+3. comprobación de frescura/scope y primera frontera causal;
+4. comparación baseline/treatment;
+5. solo después evaluar si hace falta una nueva estructura de persistencia o coordinación.
+
+Este filtro es una salvaguarda contra el sobre-diseño: una investigación profunda puede producir más opciones, pero la selección de tecnología debe responder a un problema observado y medible, no a similitud metafórica.
+
+## 14. Tesis condensada
 
 > IABV puede tratar su Mente Espacio-Tiempo como un campo distribuido de información, procedencia y causalidad. Un objetivo activa selectivamente conocimiento y capacidades pertinentes; relaciones tipadas propagan contexto a los órganos/agentes capaces de consumirlo; evidence gates y autorización limitan esa propagación; los eventos enlazan producción, transporte, consumo, decisión, acción, observación y verificación; la plasticidad modifica representaciones o recomendaciones únicamente a partir de outcomes verificados; y la consolidación convierte experiencia confirmada en conocimiento reusable. El criterio de aprendizaje no es guardar o repetir un dato, sino que una tarea posterior no idéntica recupere la lección, cambie una decisión y muestre un efecto verificable independientemente.
 
 Es una hipótesis de arquitectura inspirada en neurobiología, no una afirmación de conciencia subjetiva. La implementación propuesta es un grafo temporal-causal objetivo-condicionado, selectivo y auditable.
 
-## 14. Fuentes externas
+## 15. Fuentes externas
 
 1. Purves et al., [The Refractory Period, NCBI Bookshelf](https://www.ncbi.nlm.nih.gov/books/NBK11146/).
 2. [Physiology, Action Potential, NCBI Bookshelf](https://www.ncbi.nlm.nih.gov/books/NBK538143/).
@@ -446,7 +475,7 @@ Es una hipótesis de arquitectura inspirada en neurobiología, no una afirmació
 8. Lamport (1978), [Time, Clocks, and the Ordering of Events in a Distributed System](https://lamport.azurewebsites.net/pubs/time-clocks.pdf).
 9. OpenTelemetry, [Signals](https://opentelemetry.io/docs/concepts/signals/), [Context propagation](https://opentelemetry.io/docs/concepts/context-propagation/) y [Context specification](https://opentelemetry.io/docs/specs/otel/context/).
 
-## 15. Estado de la investigación
+## 16. Estado de la investigación
 
 ~~~text
 TASK=UAAL_SPACE_TIME_NEURAL_ACTIVATION_RESEARCH
