@@ -5132,3 +5132,19 @@ The repair stage must preserve reuse-first and anti-scope-creep:
 - distinguish a semantic necessity from a useful future extension.
 
 This protects the developmental method from ontology inflation while retaining adversarial learning.
+
+
+## 2026-10-27 METHOD DELTA — Compare local key fingerprints without transcript exposure
+
+When a secret/key file is structurally validated but its public fingerprint has not been compared with an external control-plane fingerprint, the state remains “valid artifact; identity match not verified.” Do not claim the key belongs to the expected App.
+
+Preferred bounded comparison:
+1. Keep the private PEM and both fingerprints in local process memory only.
+2. If the external value is available only through an authenticated UI, use the local browser's native Copy control to put it on the local OS clipboard. Never paste the value into a model prompt, chat, terminal expression, issue, repo or file.
+3. Read clipboard text directly into a local variable. Never emit it or include it in exception messages. Compute the local fingerprint in memory using the exact documented algorithm.
+4. Apply only the formatting normalization the official specification supports. If the external value's format contradicts the documented algorithm, return FORMAT_MISMATCH / NOT_VERIFIED; do not silently try alternate algorithms or infer equivalence from length/appearance.
+5. Print only categorical outcome/status. Keep custody, JWT/API preflight and runtime integration as separately authorized stages.
+
+For the GitHub App key episode, official docs specify SHA-256 of DER SubjectPublicKeyInfo, Base64 encoded. A reported 40-character “Copyable key fingerprint” is an unresolved format discrepancy because that is not the usual Base64 form of a 32-byte SHA-256 digest. The PEM has now been reported by local Codex as a valid RSA PKCS#1 private key of 2048 bits, and its local public fingerprint has been computed in memory; GitHub match remains NOT_VERIFIED.
+
+General principle: a valid cryptographic artifact is not proof of identity binding. A local computation is not a comparison; a comparison with incompatible representations is not evidence of either match or mismatch. Preserve the uncertainty explicitly and stop before secret custody or token/API actions when the exact match gate remains open.
