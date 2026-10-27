@@ -677,3 +677,60 @@ TESTS=NOT_RUN; BUILD=NOT_RUN; RUNTIME=NOT_RUN; REAL_TRANSPORT=NOT_RUN
 ```
 
 Esta opción convierte el siguiente bloqueo en una decisión concreta de gobernanza: si el Owner autoriza que la cuenta GitHub que ya posee el repositorio sea la identidad externa que IABV reconocerá para iniciar el enrolamiento. No se registra ninguna App ni se crea credencial hasta que esa decisión se formule expresamente. La decisión de identidad no elimina los gates restantes ni autoriza lecturas protegidas.
+
+## 21. Decisión explícita del Owner: GitHub como identidad externa para la ruta de aprobación (2026-10-27)
+
+### Decisión recibida
+
+El Owner respondió: **“Sí autorizo; procede y ten en cuenta que autorizo todo lo que nos ayude avanzar más rápido”** tras la pregunta específica sobre usar la cuenta GitHub propietaria del repositorio como fuente externa de identidad para las aprobaciones de IABV mediante una GitHub App privada y limitada a ese repositorio.
+
+Se registra como una decisión de gobernanza para adoptar **la identidad de la cuenta GitHub propietaria y el repositorio privado `jhonf463r/Python` como autoridad externa candidata** en la ceremonia de aprobación. No significa que el host Windows, el issuer, el proceso IABV ni el reader ya estén autenticados o enlazados a esa identidad.
+
+### Nueva precondición comprobada
+
+La consulta autenticada de la API de repositorios devolvió para `jhonf463r/Python`:
+- `repository_id=860009771`
+- `owner_id=28608338`
+- `private=true`
+- `has_issues=true`
+- `permissions.admin=true` para la cuenta conectada.
+
+Por tanto, Issues está habilitado; no es necesario volver a investigar esa precondición. No se creó ningún issue ni se publicó contenido de aprobación.
+
+### Alcance permitido y límites de custodia
+
+La autorización permite avanzar con el registro/configuración de una GitHub App privada de aprobación, estrictamente restringida al repositorio anterior, para usar Issues como relay pull-based. Diseño mínimo previsto:
+- `Metadata: read` y `Issues: read/write`; sin permisos adicionales.
+- Sin webhook, sin eventos suscritos, sin callback OAuth/device flow, sin listener ni endpoint entrante.
+- La instalación, si se completa, se limitará mediante “Only select repositories” al repositorio `jhonf463r/Python`.
+- No crear solicitudes/Issues de prueba ni permitir lecturas protegidas hasta completar la cadena local de confianza.
+- La clave privada de la App no se publica en Issues, no se copia al chat ni se confunde con la identidad del Owner; su custodia se debe cerrar en el host Windows autorizado. No se habilitan credenciales improvisadas ni acceso a otros repositorios.
+
+### Reconciliación del estado causal
+
+La selección de identidad externa cierra la decisión de gobernanza que estaba pendiente en §20, pero no cierra los gates técnicos:
+
+```text
+OWNER_ADOPTION_OF_GITHUB_AS_IABV_AUTHORITY=AUTHORIZED; DATE=2026-10-27
+GITHUB_OWNER_ID=28608338; REPOSITORY_ID=860009771
+GITHUB_ISSUES_ENABLED=TRUE; VERIFIED_BY_REPOSITORY_API
+GITHUB_APP_REGISTRATION=NOT_CREATED
+GITHUB_APP_INSTALLATION=NOT_CREATED
+GITHUB_APP_KEY_CUSTODY=NOT_ESTABLISHED
+OWNER_TO_WINDOWS_PRINCIPAL=NOT_ESTABLISHED
+ISSUER_TO_EXACT_SERVER=NOT_ESTABLISHED
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3=NOT_ESTABLISHED
+IMPLEMENTATION_PREREQUISITES=8; CLOSED=0
+PROTECTED_READS=FAIL_CLOSED
+TESTS=NOT_RUN; BUILD=NOT_RUN; RUNTIME=NOT_RUN; REAL_TRANSPORT=NOT_RUN
+BRIDGE=BRIDGE_NOT_READY
+```
+
+### Siguiente paso discriminante
+
+Registrar y configurar la App con los permisos mínimos exactos, instalarla únicamente en el repositorio designado, y luego definir cómo custodiar su clave en Windows sin transmitirla por el chat. Después se debe establecer y verificar el enlace entre Owner GitHub, identidad del host/issuer y la instancia exacta del reader. Solo entonces procede implementación/aceptación de un flujo mínimo de solicitud→comentario→verificación→consumo anti-replay→reader, mediante autorización acotada por revisión y evidencia de ejecución. GitHub Issues no se debe tratar como un sustituto del issuer ni como permiso autónomo para leer archivos.
+
+Esta decisión se incorpora en la rama de diseño de la PR #546 para revisión; no modifica `main`, no fusiona ni rebasa PRs y no activa la ruta del puente.
+
