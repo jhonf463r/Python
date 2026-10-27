@@ -1038,3 +1038,51 @@ BRIDGE=BRIDGE_NOT_READY
 ```
 
 Esta sección es continuidad documental en la rama de borrador de PR #546. No modifica `main` ni `CURRENT-STATE.md`, ni cierra ningún gate.
+
+
+## 27. Diagnóstico dirigido: posible confusión entre ruta del archivo y contenido PEM (2026-10-27)
+
+### Resultado del último intento
+
+Codex reportó PowerShell 7.6.5 y .NET 10.0.11. Se seleccionó el archivo mediante el selector nativo. `RSA.ImportFromPem` lanzó `System.ArgumentException` con este mensaje sanitizado:
+
+```text
+No supported key formats were found. Check that the input represents the contents of a PEM-encoded key file, not the path to such a file. (Parameter 'input')
+```
+
+OpenSSL no está instalado. No se obtuvo huella, no se accedió a GitHub y no se guardó ni cifró la clave. El original no se modificó y no se expuso el secreto.
+
+### Inferencia técnica prioritaria, todavía no prueba definitiva
+
+La documentación de Microsoft especifica que `RSA.ImportFromPem` recibe el **texto PEM**, no una ruta de archivo. La mención explícita del mensaje a “not the path to such a file” hace de la confusión entre ruta y contenido la primera hipótesis que debe comprobarse en el código del pequeño script local. No prueba por sí sola que ese sea el error, porque el texto seleccionado también podría carecer de una etiqueta PEM reconocida o estar incompleto.
+
+No generar otra clave ni volver a editar el archivo. El siguiente intento debe corregir o verificar el argumento de la API, no reiniciar el registro de GitHub.
+
+### Siguiente paso acotado
+
+- Abrir una vez el selector nativo para que el Owner seleccione el archivo.
+- Mantener la ruta en una variable local separada, por ejemplo `$selectedPath`.
+- Leer el contenido en memoria con `[System.IO.File]::ReadAllText($selectedPath)` y pasar ese **contenido** a una importación RSA compatible, nunca `$selectedPath` directamente a `ImportFromPem`.
+- No mostrar contenido ni ruta, no usar `Write-Host`, `Format-List`, transcript o logging sobre el PEM. Si falla, devolver solamente tipo/mensaje interno sanitizado y si el método recibió contenido o ruta (booleano, sin valores).
+- Si la importación tiene éxito, generar localmente la huella según el procedimiento oficial de GitHub sin imprimir el PEM. Comparar la huella con Credentials → Key pairs de la App; si la UI de GitHub no está disponible, detenerse sin asumir correspondencia.
+- Esta fase solo valida estructura y compara huella. Todavía no cifrar/guardar la clave, no crear JWT o tokens y no llamar a la API.
+
+Microsoft documenta el parámetro como “The PEM text of the key to import” y el soporte de las etiquetas `PRIVATE KEY` y `RSA PRIVATE KEY`: https://learn.microsoft.com/en-us/dotnet/api/system.security.cryptography.rsa.importfrompem. GitHub documenta que su clave descargada es PKCS#1 RSAPrivateKey y el método de huella SHA-256/Base64: https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/managing-private-keys-for-github-apps.
+
+```text
+POWERSHELL_VERSION=7.6.5; DOTNET_VERSION=10.0.11
+WINDOWS_NATIVE_PICKER=WORKED; OWNER_SELECTED_FILE=YES
+RSA_IMPORT_API=RSA.ImportFromPem
+ERROR=ArgumentException; PATH_VS_CONTENT=FIRST_HYPOTHESIS_NOT_CONFIRMED
+OPENSSL=NOT_INSTALLED
+PRIVATE_KEY_VALIDITY=NOT_VERIFIED
+PRIVATE_KEY_FINGERPRINT=NOT_OBTAINED; MATCH=NOT_VERIFIED
+PRIVATE_KEY_CUSTODY=NOT_ESTABLISHED
+GITHUB_APP_AUTH_PREFLIGHT=NOT_RUN; INSTALLATION_TOKEN=NOT_CREATED
+G1=NOT_ESTABLISHED; G2=NOT_ESTABLISHED; G3=NOT_ESTABLISHED
+PROTECTED_READS=FAIL_CLOSED
+TESTS=NOT_RUN; BUILD=NOT_RUN; RUNTIME=NOT_RUN; REAL_TRANSPORT=NOT_RUN
+BRIDGE=BRIDGE_NOT_READY
+```
+
+La sección es evidencia de continuidad en la rama de borrador de PR #546. No cambia `main` ni `CURRENT-STATE.md` y no cierra ningún gate.
