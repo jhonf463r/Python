@@ -320,3 +320,75 @@ Estado después del prompt:
 - Si la estructura falla, reportar la excepción interna exacta sanitizada y no regenerar/revocar automáticamente.
 - Si la estructura pasa pero la huella no puede compararse, no declarar que la clave pertenece a la App.
 
+
+
+## 14. Latest Codex execution report — valid PEM; compare fingerprint locally (2026-10-27)
+
+### Result received from local Codex
+
+The Owner supplied the following Codex result. This is an owner-provided execution report; the assistant did not independently run the local Windows process.
+
+- Local execution confirmed on Windows, machine label MSI, user MSI\faber.
+- The native filtered file picker selected a PEM file.
+- RSA.ImportFromPem accepted it as a private RSA PKCS#1 key of 2048 bits.
+- The public fingerprint was computed in memory and neither shown nor persisted.
+- GitHub fingerprint matching was not performed. Codex reported it had no authenticated comparison path that kept the value out of the transcript.
+- No key custody/storage, GitHub changes, JWT, installation token, or API request occurred; repository/files were unchanged.
+
+Supported state transition: PRIVATE_KEY_STRUCTURE=VALID; LOCAL_PUBLIC_FINGERPRINT=COMPUTED_IN_MEMORY; GITHUB_FINGERPRINT_MATCH=NOT_VERIFIED. This does not establish that the PEM belongs to the registered App.
+
+### Important format constraint
+
+Current official GitHub documentation says the App key fingerprint is SHA-256 and specifies this comparison algorithm:
+
+    openssl rsa -in PATH_TO_PEM_FILE -pubout -outform DER | openssl sha256 -binary | openssl base64
+
+Reference: https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/managing-private-keys-for-github-apps
+
+The earlier read-only UI observation reported a 40-character value labeled **“Copyable key fingerprint”**. A 40-character value is not the normal Base64 rendering of a 32-byte SHA-256 digest. Preserve this format discrepancy as unresolved; do not assume the formats match, silently switch algorithms, or report success based only on length/appearance.
+
+### Next bounded action: compare from Windows clipboard, never transcript
+
+Before running Codex, the Owner should open the already authenticated GitHub session in the **local Windows browser**, go to the App's Credentials → Key pairs page, and click GitHub's copy control for the displayed “Copyable key fingerprint”. Leave that copied text only in the Windows clipboard; **do not paste it into Codex, ChatGPT, a terminal command, an issue, or a file**.
+
+Use this prompt in Codex running locally on Windows:
+
+~~~text
+Continuamos el diagnóstico local de GitHub App en Windows. El último resultado ya confirmó que el nuevo PEM es una clave privada RSA PKCS#1 válida de 2048 bits y calculó la huella local en memoria. No repitas pruebas sobre el TXT antiguo.
+
+Preparación humana previa: ya pulsé el botón de copia del campo GitHub “Copyable key fingerprint” en el navegador local autenticado. El valor está únicamente en el portapapeles de Windows; no lo pegaré en Codex ni en el chat.
+
+Objetivo único: comparar localmente la huella del PEM nuevo con el valor copiado desde GitHub, sin mostrar ni persistir ninguno de los dos.
+
+1. Confirma que el proceso está en el Windows local, usuario MSI\faber. Si es remoto/cloud o no puedes confirmar el contexto local, detente.
+2. Abre el selector nativo de archivos y permite seleccionar el PEM nuevo (NO el TXT anterior). Lee el contenido solo en memoria y confirma mediante RSA.ImportFromPem que sigue siendo una clave privada RSA importable. No imprimas la ruta completa ni contenido.
+3. Calcula el formato documentado por GitHub: exporta la clave pública como DER SubjectPublicKeyInfo, aplica SHA-256 y codifica el digest en Base64. Todo en memoria. No instales OpenSSL ni escribas artefactos.
+4. Lee el texto copiado mediante Get-Clipboard -Raw y guárdalo directamente en una variable local. No uses una expresión que lo muestre, no lo interpolas en errores, no lo imprimas, no lo captures en el output de Codex, y no lo escribas a disco. Tampoco imprimas ni registres la huella calculada localmente.
+5. Comparación estricta: permite solo quitar espacios/saltos externos y un prefijo literal “SHA256:” si existe. Para comparar, acepta el Base64 de 32 bytes SHA-256 con o sin padding “=” final; no cambies mayúsculas/minúsculas ni apliques transformaciones heurísticas. Compara los bytes del digest o representaciones Base64 equivalentes en memoria.
+6. Si el contenido del portapapeles tiene 40 caracteres u otro formato que no sea la huella SHA-256/Base64 documentada, NO pruebes algoritmos alternativos silenciosamente y NO declares coincidencia. Devuelve FORMAT_MISMATCH=YES; MATCH=NOT_VERIFIED, con solo metadatos no secretos (por ejemplo longitud y categoría de caracteres), nunca la cadena copiada. Si el formato sí es compatible y coincide, MATCH=YES. Si es compatible pero diferente, MATCH=NO. Si el portapapeles está vacío/no disponible, MATCH=NOT_VERIFIED.
+7. Devuelve solo: LOCAL_EXECUTION=YES/NO; PEM_IMPORT=VALID/INVALID; RSA_BITS; LOCAL_FINGERPRINT=COMPUTED/NOT_COMPUTED; CLIPBOARD_FORMAT=SHA256_BASE64/OTHER/UNAVAILABLE; MATCH=YES/NO/NOT_VERIFIED; FORMAT_MISMATCH=YES/NO; SECRET_VALUES_EXPOSED=NO; SECRET_MATERIAL_PERSISTED=NO. Si falla, informa solo el tipo de excepción y un mensaje sanitizado que no incluya el valor del portapapeles, PEM, huellas o ruta.
+8. No guardes ni cifres el PEM; no generes JWT ni installation token; no llames a ninguna API; no cambies GitHub; no revoques ni reemplaces claves; no cambies archivos/configuración del producto; no ejecutes tests/build/runtime/protected reads ni real transport.
+
+No concluyas que la clave corresponde al App, que la custodia está resuelta, ni que el puente está listo salvo que el formato documentado sea compatible y la comparación exacta resulte MATCH=YES. Incluso entonces, detente aquí: custodia y API preflight son fases separadas y aún no autorizadas.
+~~~
+
+If the copied field remains 40 characters or otherwise cannot be reconciled with the documented SHA-256/Base64 format, stop at MATCH=NOT_VERIFIED and record the format discrepancy as an open question. Do not solve it by exposing the value, guessing its hash algorithm, or moving ahead to JWT/API preflight.
+
+### Current status after this result
+
+~~~text
+LOCAL_WINDOWS_EXECUTION=CONFIRMED_BY_CODEX_REPORT; USER=MSI\faber
+NEW_PEM=RSA_PRIVATE_PKCS1_2048; STRUCTURE_VALID
+LOCAL_FINGERPRINT=COMPUTED_IN_MEMORY; NOT_PRINTED; NOT_PERSISTED
+GITHUB_FINGERPRINT_LABEL=Copyable key fingerprint; READ_ONLY_UI_OBSERVATION
+GITHUB_FINGERPRINT_MATCH=NOT_VERIFIED
+FINGERPRINT_FORMAT_DISCREPANCY=OPEN; 40_CHAR_UI_VALUE_VS_DOCUMENTED_SHA256_BASE64
+PRIVATE_KEY_CUSTODY=NOT_ESTABLISHED
+GITHUB_APP_AUTH_PREFLIGHT=NOT_RUN; JWT=NOT_CREATED; INSTALLATION_TOKEN=NOT_CREATED
+G1=NOT_ESTABLISHED; G2=NOT_ESTABLISHED; G3=NOT_ESTABLISHED
+PROTECTED_READS=FAIL_CLOSED
+TESTS=NOT_RUN; BUILD=NOT_RUN; RUNTIME=NOT_RUN; REAL_TRANSPORT=NOT_RUN
+AUTOMATIC_FOLLOW_ON=FALSE
+BRIDGE=BRIDGE_NOT_READY
+~~~
+
