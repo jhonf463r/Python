@@ -42,7 +42,7 @@ import os
 from dataclasses import asdict, is_dataclass
 from typing import Any, Callable, TypeVar
 
-from iabv_v15.infra.mcp import audit_tools, audit_tools_observation
+from iabv_v15.infra.mcp import audit_tools, audit_tools_observation, windows_handle_reader
 
 logger = logging.getLogger(__name__)
 
@@ -123,10 +123,14 @@ class IABVMCPServer:
         *,
         name: str = DEFAULT_SERVER_NAME,
         mcp: Any | None = None,
+        read_authorization_coordinator: Any | None = None,
     ) -> None:
         if container is None:
             raise ValueError("container no puede ser None")
         self.container = container
+        self._read_authorization_coordinator = self._resolve_read_authorization_coordinator(
+            read_authorization_coordinator,
+        )
         self.name = name
         if mcp is None:
             from mcp.server.fastmcp import FastMCP  # lazy import
@@ -134,32 +138,20 @@ class IABVMCPServer:
             fastmcp_kwargs: dict[str, Any] = {
                 'log_level': 'WARNING',
             }
-            # MCP Python SDK >= 1.x introdujo DNS rebinding protection en
-            # ``streamable-http`` que rechaza cualquier Host distinto a
-            # localhost con ``HTTP/2 421 Invalid Host header`` (issue
-            # modelcontextprotocol/python-sdk#1798). En nuestro flujo de
-            # audit live el MCP se expone detras de un quick-tunnel de
-            # cloudflared, asi que el Host llega como
-            # ``*.trycloudflare.com`` y el server devolveria 421. Para
-            # permitir el audit real desde afuera, inyectamos
-            # ``TransportSecuritySettings`` con hosts/origenes abiertos
-            # cuando la proteccion esta disponible en la version
-            # instalada. Si la dependencia no expone el simbolo (versiones
-            # viejas) seguimos con el constructor por defecto.
+            # Keep HTTP transport local by default. External reachability needs
+            # a separately reviewed exact Host and Origin allowlist; missing
+            # SDK support must not silently weaken transport protections.
             try:
                 from mcp.server.transport_security import TransportSecuritySettings
-
-                fastmcp_kwargs["transport_security"] = TransportSecuritySettings(
-                    enable_dns_rebinding_protection=False,
-                    allowed_hosts=["*"],
-                    allowed_origins=["*"],
-                )
-            except Exception:
-                # Compatibilidad hacia atras: versiones sin
-                # ``TransportSecuritySettings`` tampoco aplican la
-                # proteccion, asi que no hace falta configurar nada.
-                pass
-
+            except ImportError as exc:
+                raise RuntimeError(
+                    "MCP transport security settings are required for server construction"
+                ) from exc
+            fastmcp_kwargs["transport_security"] = TransportSecuritySettings(
+                enable_dns_rebinding_protection=True,
+                allowed_hosts=["localhost", "127.0.0.1", "[::1]"],
+                allowed_origins=["http://localhost", "http://127.0.0.1", "http://[::1]"],
+            )
             mcp = FastMCP(name, **fastmcp_kwargs)
         self.mcp = mcp
         self._register_tools()
@@ -268,6 +260,119 @@ class IABVMCPServer:
         if root is None:
             root = os.getcwd()
         return str(root)
+
+    @staticmethod
+    def _resolve_read_authorization_coordinator(candidate: Any | None) -> Any:
+        """Accept only an explicitly injected concrete coordinator; otherwise deny."""
+
+        try:
+            from iabv_v15.services.security.read_authorization import ReadAuthorizationCoordinator
+        except Exception:
+            logger.exception("Read authorization could not initialize; protected reads remain denied")
+            return None
+
+        if type(candidate) is ReadAuthorizationCoordinator:
+            return candidate
+        if candidate is not None:
+            logger.error("Invalid read authorization coordinator; protected reads remain denied")
+        return ReadAuthorizationCoordinator.unconfigured()
+
+    def _protected_read_authority_block(
+        self,
+        *,
+        operation: str,
+        requested_relative_target: str,
+        opened_target: windows_handle_reader.OpenedTargetCapability,
+    ) -> dict[str, Any] | None:
+        """Return a denial unless the typed permit carries this exact live handle."""
+
+        reason: str | None = None
+        try:
+            from iabv_v15.services.security.read_authorization import (
+                ReadAuthorizationDecision,
+                ReadDecisionEffect,
+                _is_coordinator_issued_permit,
+            )
+
+            if self._read_authorization_coordinator is None:
+                reason = "AUTHORITY_COORDINATOR_UNAVAILABLE"
+            else:
+                decision = self._read_authorization_coordinator.decide_mcp_read(
+                    operation=operation,
+                    requested_relative_target=requested_relative_target,
+                    opened_target=opened_target,
+                )
+                if not isinstance(decision, ReadAuthorizationDecision):
+                    reason = "AUTHORITY_DECISION_INVALID"
+                elif decision.effect is not ReadDecisionEffect.ALLOW or decision.permit is None:
+                    reason = (
+                        decision.reason
+                        if decision.reason != "AUTHORIZED"
+                        else "AUTHORITY_DECISION_INVALID"
+                    )
+                elif (
+                    decision.permit.operation != operation
+                    or decision.permit.requested_relative_target != requested_relative_target
+                ):
+                    reason = "AUTHORITY_DECISION_SCOPE_MISMATCH"
+                elif (
+                    not _is_coordinator_issued_permit(
+                        decision.permit, self._read_authorization_coordinator,
+                    )
+                    or type(decision.permit.canonical_target) is not str
+                    or not decision.permit.canonical_target
+                    or decision.permit.canonical_target != opened_target.canonical_target
+                    or type(decision.permit.workspace_id) is not str
+                    or not decision.permit.workspace_id
+                    or type(decision.permit.checkout_id) is not str
+                    or not decision.permit.checkout_id
+                    or type(decision.permit.resolver_version) is not str
+                    or not decision.permit.resolver_version
+                    or decision.permit.workspace_id != opened_target.workspace_id
+                    or decision.permit.checkout_id != opened_target.checkout_id
+                    or decision.permit.resolver_version != opened_target.resolver_version
+                    or type(decision.permit.policy_version) is not int
+                    or decision.permit.policy_version < 1
+                    or type(decision.permit.issued_at_epoch) is not int
+                    or type(decision.permit.expires_at_epoch) is not int
+                    or decision.permit.issued_at_epoch >= decision.permit.expires_at_epoch
+                    or not self._read_authorization_coordinator.permit_is_current(decision.permit)
+                    or decision.permit.opened_target is not opened_target
+                    or decision.permit.target_binding_id != opened_target.target_binding_id
+                    or decision.permit.root_binding_id != opened_target.root_binding_id
+                    or decision.permit.policy_binding_id != opened_target.policy_binding_id
+                    or decision.permit.coordinator_binding_id
+                    != self._read_authorization_coordinator.coordinator_binding_id
+                    or not opened_target.is_open
+                ):
+                    reason = "AUTHORITY_TARGET_INVALID"
+                else:
+                    return None
+        except Exception:
+            reason = "AUTHORITY_DECISION_INTERNAL_FAILURE"
+        if reason is None:
+            reason = "AUTHORITY_DECISION_INVALID"
+        logger.warning("MCP protected read denied: operation=%s reason=%s", operation, reason)
+        return {
+            "governance_blocked": True,
+            "reason": reason,
+            "operation": operation,
+            "detail": "La decisión de autorización no permite este destino; no se accedió al recurso.",
+        }
+
+    def _approved_workspace_root(self) -> windows_handle_reader.WorkspaceRootCapability:
+        """Get a root capability only from the host's approved provider."""
+
+        provider = getattr(self.container, "approved_workspace_root_provider", None)
+        if provider is None:
+            raise windows_handle_reader.WindowsHandleReaderError("APPROVED_WORKSPACE_ROOT_UNAVAILABLE")
+        get_root = getattr(provider, "current_workspace_root", None)
+        if not callable(get_root):
+            raise windows_handle_reader.WindowsHandleReaderError("APPROVED_WORKSPACE_ROOT_PROVIDER_INVALID")
+        root = get_root()
+        if type(root) is not windows_handle_reader.WorkspaceRootCapability:
+            raise windows_handle_reader.WindowsHandleReaderError("APPROVED_WORKSPACE_ROOT_UNAVAILABLE")
+        return root
 
     def _ui_screenshot_provider(self) -> Any:
         """Devuelve el provider registrado para capturar la ventana IABV.
@@ -942,9 +1047,30 @@ class IABVMCPServer:
             if block is not None:
                 return block
             try:
-                return audit_tools.read_repo_file(self._workspace_root(), relative_path)
-            except audit_tools.AuditToolError as exc:
-                return exc.to_payload()
+                opened = windows_handle_reader.open_target(
+                    self._approved_workspace_root(), relative_path, "read_repo_file",
+                )
+            except windows_handle_reader.WindowsHandleReaderError as exc:
+                payload = exc.to_payload()
+                payload["operation"] = "read_repo_file"
+                return payload
+            try:
+                authority_block = self._protected_read_authority_block(
+                    operation="read_repo_file",
+                    requested_relative_target=relative_path,
+                    opened_target=opened,
+                )
+                if authority_block is not None:
+                    return authority_block
+                return windows_handle_reader.read_opened_file(
+                    opened, max_bytes=audit_tools.MAX_READ_BYTES,
+                )
+            except windows_handle_reader.WindowsHandleReaderError as exc:
+                payload = exc.to_payload()
+                payload["operation"] = "read_repo_file"
+                return payload
+            finally:
+                opened.close()
 
         @mcp.tool()
         def list_repo_directory(
@@ -964,13 +1090,30 @@ class IABVMCPServer:
             if block is not None:
                 return block
             try:
-                return audit_tools.list_repo_directory(
-                    self._workspace_root(),
-                    relative_path,
-                    max_entries=int(max_entries),
+                opened = windows_handle_reader.open_target(
+                    self._approved_workspace_root(), relative_path, "list_repo_directory",
                 )
-            except audit_tools.AuditToolError as exc:
-                return exc.to_payload()
+            except windows_handle_reader.WindowsHandleReaderError as exc:
+                payload = exc.to_payload()
+                payload["operation"] = "list_repo_directory"
+                return payload
+            try:
+                authority_block = self._protected_read_authority_block(
+                    operation="list_repo_directory",
+                    requested_relative_target=relative_path,
+                    opened_target=opened,
+                )
+                if authority_block is not None:
+                    return authority_block
+                return windows_handle_reader.list_opened_directory(
+                    opened, max_entries=max_entries,
+                )
+            except windows_handle_reader.WindowsHandleReaderError as exc:
+                payload = exc.to_payload()
+                payload["operation"] = "list_repo_directory"
+                return payload
+            finally:
+                opened.close()
 
         @mcp.tool()
         def capture_ui_screenshot(region: str = "control_center") -> dict[str, Any]:
