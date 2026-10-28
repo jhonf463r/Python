@@ -1,7 +1,7 @@
 # Canonical continuity, Space-Time cognition, and adaptive neuroplasticity protocol
 
 - Protocol ID: `CONTINUITY_SPACE_TIME_ANTI_LOOP` (stable identity; operating method evolves in place)
-- Living operating revision: `2.3 — ADAPTIVE_SPACE_TIME_NEUROPLASTICITY + OWNER_CONTEXT_AWARE_TURN_ROUTING + VERIFIED_CONTEXT_HANDOFF + OWNER_FACING_DELIVERY_PREFLIGHT`
+- Living operating revision: `2.4 — ADAPTIVE_SPACE_TIME_NEUROPLASTICITY + OWNER_CONTEXT_AWARE_TURN_ROUTING + VERIFIED_CONTEXT_HANDOFF + OWNER_FACING_DELIVERY_PREFLIGHT + DUAL_TRACK_PROGRESS_ROUTING`
 - Evolution rule: integrate new lessons into their owning core rule; preserve dated incidents/history; do not accumulate competing append-only protocols
 - Owner instruction date: 2026-10-23 (America/Bogota)
 - Scope: objective-bound reasoning, temporal evidence graph, adaptive role activation, gated action chains, memory consolidation, delivery receipts and outcome-based protocol evolution
@@ -86,6 +86,12 @@ Execute this compact cycle for every substantive task; use the full version when
 **B. Retrieve.** Query canonical records relevant to the earliest open dependency, prior terminal outcome, Owner decisions and exact route. Reuse settled findings. Do not make the Owner repeat archive work the coordinator can perform through an allowed route.
 
 **C. Diagnose.** Map the blocker to an exact category: `AUTHORITY_GATE`, `EVIDENCE_GAP`, `ROUTE_SURFACE_MISMATCH`, `ACTION_UNEXECUTABLE_NO_EVIDENCE`, `SOURCE_DEFECT`, `CONTRACT_MISMATCH`, `DELIVERY_GAP`, or `AUTHORIZATION_GAP`. Name the object, operation, scope and supporting evidence.
+
+**C2. Localize the terminal result and partition the objective into tracks.** A terminal result closes only the exact task/operation/route and its unchanged preconditions; never promote it to project-wide paralysis. Construct the next-action set from (i) the Owner's current explicit objective/authorization, (ii) the canonical router, and (iii) existing authorized work already recorded in memory. Label each candidate `SAME_TERMINAL_TRACK`, `DEPENDS_ON_BLOCKED_EDGE`, `INDEPENDENT_AUTHORIZED_TRACK`, `UNAUTHORIZED`, or `NO_SUPPORTED_ROUTE`. Do not invent work merely to appear active.
+
+When the Owner says to continue, advance, organize, analyze, or evolve the method after a terminal blocker, interpret that as a request to continue the named project through an admissible independent path—not as permission to repeat the blocked action, bypass a gate, or change authority. First search the already-available canonical memory/backlog and tools; do not ask the Owner to repeat decisions or history already present. If one useful, authorized independent action exists, execute the smallest discriminating step within scope. Enter `WAIT_FOR_EXTERNAL_INPUT` only after this candidate set is exhausted or every candidate is causally dependent on the blocked edge. Name the exact missing input and state which independent tracks remain open.
+
+`AUTOMATIC_FOLLOW_ON=FALSE` prevents an unrequested next task after the current authorization is consumed; it does not cancel work directly requested and authorized by the Owner in the current instruction. A new Owner instruction can authorize a process/documentation task while all technical trust gates remain unchanged.
 
 **D. Activate roles.** Choose the minimum role set based on objective, domain, uncertainty, consequence and permitted capabilities; see section 5. Do not activate every role by default.
 
@@ -218,6 +224,8 @@ Treat each interaction as a possible learning signal, not as truth by itself. Se
 
 Apply this loop:
 `OBSERVE → CLASSIFY → EXPLAIN → GENERALIZE → UPDATE_OWNING_RULE → ADVERSARIAL_REVIEW → MERGE/FETCH_BACK → REUSE_IN_A_NON_IDENTICAL_TASK → MEASURE_OUTCOME → CONFIRM / REFINE / REVERT`.
+
+**Observed method correction (2026-10-28).** The terminal result of one bounded G1 asset assessment (`NOT_RUN; SUPPORTED_ROUTE_NOT_FOUND`) was initially treated as if the whole project had no next action, even after the Owner explicitly asked to continue by evolving the memory/continuity method. The correct behavior is to keep that technical route blocked while opening a new, separately authorized process lane. Section 4 and UAAL-D019 now define the dual-track selection rule. This incident supports a targeted method correction; the document writeback itself does not prove later reuse, automatic runtime enforcement or model-weight learning.
 
 **Evolve in place; preserve history.** When a new lesson overlaps an existing rule, revise or clarify that rule in its owning section instead of stacking another loosely connected appendix. Preserve the incident, decision and old state as dated history; link it to the current rule and record why the change was made. Keep `CURRENT-STATE.md` the only route authority and synchronize its front-door summaries in the same change. If two rules conflict, make the precedence explicit and consolidate the owning rule; do not let multiple summaries become rival policies.
 
