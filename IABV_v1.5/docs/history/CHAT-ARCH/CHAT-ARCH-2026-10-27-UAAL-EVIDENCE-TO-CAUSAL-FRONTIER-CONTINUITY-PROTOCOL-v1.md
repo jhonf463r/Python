@@ -184,3 +184,19 @@ When Codex or another local agent reports a local-only artifact path (for exampl
 - Keep the exact artifact and its checksum together in the handoff record; never substitute a summary when the task requires review of the original contract.
 
 This rule minimizes Owner-mediated file handling and makes the existing Dropbox bridge the default cross-agent artifact path. It does not authorize code changes, protected reads, runtime execution, production activation, or any change to the security gates.
+
+
+### 12.1 Fallback when the local producer lacks Dropbox access
+
+The existence of Dropbox tools in one agent/session does not imply that the local producer has the same connector or access to the local source bytes. Do not loop by asking the Owner to repeat a transfer the local session cannot perform.
+
+When the exact artifact is present only on the local producer and that producer reports that Dropbox MCP is unavailable:
+
+1. Keep Dropbox as the preferred shared bridge and record `ARTIFACT_TRANSFER=BLOCKED` precisely; never claim the file was uploaded.
+2. If the producer has an already-authorized GitHub route, use a separate private, isolated transfer branch based on the freshly verified canonical `main`. Add only the exact artifact at a clearly marked review-inbox path. Do not write to `main`, modify code, create a PR, merge, or alter existing worktrees.
+3. The producer must read the existing local file once, verify the reported source SHA-256 against the actual bytes, and transfer the exact content without regenerating it. Report the exact branch/ref, path, byte length and source SHA-256.
+4. The reviewing agent must fetch the file from that exact branch/ref, compute SHA-256 over the retrieved file bytes (or a byte-preserving decoded representation), and compare it with the source hash. The Git blob SHA alone is not a substitute for the supplied SHA-256. If the connector normalizes line endings or otherwise prevents byte-for-byte confirmation, report `CONTENT_RETRIEVED_INTEGRITY_NOT_PROVEN` and do not claim exact transfer.
+5. After review, leave the transfer branch isolated. Any move of the contract into canonical history, creation of a PR, or deletion of the transfer artifact is a separate, explicit action.
+6. Ask the Owner to attach/upload a file manually only as a last resort after both the Dropbox bridge and the already-authorized private GitHub transfer route are demonstrated unavailable. Do not repeat a connector failure unchanged.
+
+This fallback changes artifact transport only. It does not authorize source implementation, task creation, tests, runtime, protected reads, merge, or production activation.
