@@ -239,6 +239,19 @@ Use the stage ladder `MEMORY_RETRIEVED → METHOD_ACTIVATED → METHOD_APPLIED �
 
 Every handoff names its destination AI, required capability and why it is appropriate now; carries the exact task/revision, relevant memory, provenance, authorization, terminal results and acceptance/stop condition; and requests a result that can be reconciled against the canonical route. Dynamic capability-fit replaces a fixed actor sequence. A method is improved when a later non-identical task demonstrates attributable reuse, not when the file is merely persisted.
 
+### M1B code-candidate evidence gate — applied lesson (2026-10-28)
+
+The R1→R3 reader episode adds a specific correction to cross-agent code handoffs:
+
+1. **Separate evidence stages:** LOCAL_CANDIDATE_REPORTED → EXACT_FINAL_SOURCE_AVAILABLE → STATIC_REVIEWED → TESTS_EXECUTED → SOURCE_PUBLISHED_BRANCH → PR_DIFF_REVIEWED → MAIN_FETCHBACK_VERIFIED.
+2. **Identify exact bytes and Git state.** Record base SHA, branch, git status, path, size and SHA-256 for each file. Untracked files are not part of a normal HEAD diff; do not claim they are in GitHub. A hash is not a substitute for reviewer access to that content.
+3. **Review the final version, not a prior draft.** Re-review changed source and bind the review to final hashes. If exact final content is unavailable, mark the review partial.
+4. **Validate schema against reality.** Compare validators with live model definitions and real artifact shapes. Test malformed and legitimate examples. UTC-labelled dates must include timezone; test Z/offset acceptance and naive-datetime rejection.
+5. **Treat tests as a distinct authorized action.** Record interpreter, version, exact command, scope, counts and exit code. Targeted tests do not prove the full suite, build, runtime, race resistance, publication or bridge authorization.
+6. **Promote evidence, not more preparation.** If a local candidate exists and tests are reported passing, do not reclone/reimplement. Publish that exact candidate to an isolated branch/PR and review its actual diff.
+7. **Preserve provenance.** Keep Codex execution OWNER_CODEX_REPORTED until independently reproduced or corroborated by retrievable CI evidence. A detailed receipt is not independent verification.
+
+This refinement is documented from one bounded case; runtime enforcement and later causal reuse are not proven. See [M1B receipt](https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-28-M1B-CONTEXT-READER-IMPLEMENTATION-AND-TEST-RECEIPT.md).
 ## 13. IDEA PRESERVATION PROTOCOL
 
 When the human produces a new conceptual idea, do not leave it only in the chat.

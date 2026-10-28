@@ -1,3 +1,18 @@
+## Current evidence gate — M1B local candidate (2026-10-28)
+
+The M1B reader candidate exists only in Codex's isolated, untracked local files. Codex reports 34 targeted tests passed; treat the run and final hashes as OWNER_CODEX_REPORTED. The final R3 bytes are not yet in a reviewable GitHub branch. Do not report integration from local hashes. Next: publish the existing candidate to an isolated PR and review its exact diff, not repeat implementation or tests unchanged.
+
+[Receipt and hashes](https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-28-M1B-CONTEXT-READER-IMPLEMENTATION-AND-TEST-RECEIPT.md).
+
+```text
+M1B_TESTS=34_PASSED; OWNER_CODEX_REPORTED
+M1B_SOURCE=LOCAL_UNTRACKED; NOT_IN_GITHUB
+NEXT_ACTION=PUBLISH_EXISTING_CANDIDATE_TO_ISOLATED_CODE_PR
+G1/G2/G3=NOT_ESTABLISHED
+BRIDGE=BRIDGE_NOT_READY
+```
+---
+
 <!-- UAAL-D020 cross-AI application — live CURRENT-STATE.md owns route authority. -->
 ## UAAL-D020 — shared memory must change participating-AI decisions (2026-10-28)
 

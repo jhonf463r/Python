@@ -1,3 +1,38 @@
+## OVERRIDE — M1B reader candidate locally implemented; targeted suite reported passing (2026-10-28)
+
+This entry supersedes earlier top-level M1B NOT_STARTED / blocked-before-modification statements for current status; those entries preserve the earlier time-specific state. The local candidate is reported by Codex, not published to GitHub.
+
+The bounded candidate now has fail-closed target matching, deeper schema-shape validation, timezone-aware internal timestamps and a targeted test suite. Codex reports R3 passed 34 tests with Python 3.13.2 / pytest 9.0.3. Execution and final hashes remain OWNER_CODEX_REPORTED; this ChatGPT session did not execute tests or independently retrieve final R3 bytes. R1/R2 source and R3 delta were reviewed from conversational evidence; final R3 needs exact-source reconciliation through a reviewable Git branch/PR.
+
+The candidate remains local to C:\_w\m1b-20261028, branch codex/m1b-context-reader, base 9a8738565ac2d100bcd4af906081c00f3cf15384, with both files reported untracked. It is not in GitHub main and not integrated. See [M1B receipt](https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-28-M1B-CONTEXT-READER-IMPLEMENTATION-AND-TEST-RECEIPT.md).
+
+Method correction from R1→R3: distinguish local existence, exact final-source availability, static review, executed tests, publication, PR review and main fetch-back. A hash is a byte identity claim, not source publication or proof that a reviewer saw those bytes. Validate schema against domain models and real artifacts; explicitly test timezone-aware dates and fail-closed paths. Do not reimplement or reclone when the candidate can be promoted and reviewed.
+
+```text
+ACTIVE_TASK=M1B_CONTEXT_READER_CANDIDATE_RECONCILIATION
+M1B_IMPLEMENTATION=LOCAL_CANDIDATE_EXISTS; OWNER_CODEX_REPORTED
+M1B_FINAL_HASHES=OWNER_CODEX_REPORTED
+M1B_TARGETED_TESTS=34_PASSED; OWNER_CODEX_REPORTED
+M1B_EXACT_R3_SOURCE=NOT_IN_GITHUB; NOT_INDEPENDENTLY_FETCHED
+M1B_SOURCE_PUBLICATION=NOT_DONE
+M1B_INTEGRATION=NOT_DONE
+M1B_NEXT_ACTION=PUBLISH_EXISTING_LOCAL_FILES_TO_ISOLATED_CODE_PR; REVIEW_EXACT_DIFF_AND_HASHES
+NO_REIMPLEMENTATION=TRUE
+NO_NEW_CLONE=TRUE
+C_PYTHON=DO_NOT_TOUCH
+BUILD/RUNTIME/E2E/CI=NOT_RUN
+OPTION_D=RATIFIED_NO_BOOTSTRAP
+G1/G2/G3=NOT_ESTABLISHED
+MCP_TOOL_ALLOWLIST=EMPTY
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+AUTOMATIC_FOLLOW_ON=FALSE
+```
+
+Evidence details: [M1B receipt](https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-28-M1B-CONTEXT-READER-IMPLEMENTATION-AND-TEST-RECEIPT.md). CURRENT-STATE.md remains the only operational route authority.
+---
+
 ## OVERRIDE — UAAL-D020 clarified as a cross-AI shared-memory method (2026-10-28)
 
 The Owner clarified the intended scope: the Space-Time/Mente method persisted in GitHub is meant to change how participating AI sessions use shared memory and reason together, not merely how IABV software behaves locally. This correction extends the already-adopted UAAL-D020 in the owning cross-AI continuity protocol, Constitution §12, symbiosis map and method lineage; it does not create a second coordinator or memory store.

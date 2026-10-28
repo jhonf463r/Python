@@ -1,3 +1,19 @@
+<!-- Current M1B continuity override 2026-10-28; CURRENT-STATE.md is the sole route authority. -->
+## Current M1B frontier — local candidate, tests reported, not yet published (2026-10-28)
+
+Latest route: [CURRENT-STATE.md](https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CURRENT-STATE.md). M1B has a local candidate and Codex reports 34 targeted tests passed on Python 3.13.2/pytest 9.0.3. The two files remain untracked in C:\_w\m1b-20261028; final R3 hashes are owner/Codex-reported, and exact R3 bytes are not yet available from a GitHub branch/PR. Do not reimplement or reclone. Next: publish the existing candidate as an isolated code PR, review the exact diff and verify source hashes. See [M1B receipt](https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-28-M1B-CONTEXT-READER-IMPLEMENTATION-AND-TEST-RECEIPT.md).
+
+```text
+M1B_LOCAL_CANDIDATE=EXISTS; OWNER_CODEX_REPORTED
+M1B_TARGETED_TESTS=34_PASSED; OWNER_CODEX_REPORTED
+M1B_PUBLISHED_OR_INTEGRATED=FALSE
+G1/G2/G3=NOT_ESTABLISHED
+PROTECTED_READS=FAIL_CLOSED
+BRIDGE=BRIDGE_NOT_READY
+AUTOMATIC_FOLLOW_ON=FALSE
+```
+---
+
 <!-- UAAL-D020 — shared cross-AI method; CURRENT-STATE.md remains the sole route authority. -->
 ## UAAL-D020 — verified progress and cross-AI memory activation (2026-10-28)
 
