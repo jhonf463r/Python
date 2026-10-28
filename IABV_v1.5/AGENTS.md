@@ -1,3 +1,12 @@
+<!-- UAAL-D020 — method delta; the live CURRENT-STATE on main determines adoption. -->
+## Method evolution — verified progress utility and strategy switching (2026-10-28)
+
+The Owner explicitly requested an evolution of the existing universal reasoning/continuity method after a preparation-only loop. See [UAAL-D020 — Verified Progress Utility, Strategy Switching, and Preparation-Debt Control](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-28-UAAL-D020-VERIFIED-PROGRESS-UTILITY-STRATEGY-SWITCH.md).
+
+Operational correction: each action must name the target dependency edge, the observed blocker it addresses, the expected observable, and its stop/switch condition. Prefer a verified target-edge closure; otherwise take the smallest action that changes a decision. A plan, prompt, checkout or handoff is `PREPARATION_ONLY` unless it proves a necessary prerequisite. Two consecutive preparation-only steps require a strategy reset; before a third attempt on the same edge, require material evidence and a causally distinct route.
+
+Reuse the existing D019/router/memory/governance organs. Do not claim runtime learning or bridge readiness from documentation. Confirm D020's current adoption state in the live `CURRENT-STATE.md` on `main`; historical/branch copies do not establish canonical adoption.
+
 <!-- Cross-chat handoff synchronized 2026-10-27. CURRENT-STATE.md remains the sole operational route authority. -->
 
 <!-- OWNER-DIRECTED CONTINUITY METHOD CORRECTION — 2026-10-28; process/docs only; technical gates unchanged -->
