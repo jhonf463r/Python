@@ -1,3 +1,39 @@
+## OVERRIDE — UAAL-D020 verified-progress method candidate (2026-10-28)
+
+The Owner explicitly authorized a documentation-only evolution of the existing Space-Time/UAAL continuity method. This branch contains the proposed D020 refinement and linked front-door/lineage updates; it is not canonical main until the change is independently reviewed, adopted and fetched back from live `main`.
+
+Observed input: Codex reported `M1B_CONTEXT_EXPORT_READONLY_READER_IMPLEMENTATION` stopped before file modification because the target SHA was absent from the local object store and no isolated worktree could be created. The previous clone attempt had reported `Filename too long`. No code was changed; tests/build/runtime were not run. The subsequent proposed local sparse-checkout recipe was not executed and its superiority was not proven.
+
+Method gap: anti-loop detection can prevent the identical retry yet still permit repeated setup work. D020 adds an explicit target-edge utility gate, actual capability-surface comparison, preparation-debt detection and a strategy-switch condition. This correction is process/method documentation only, not progress on the MCP bridge implementation itself.
+
+```text
+ACTIVE_METHOD_CANDIDATE=UAAL-D020_VERIFIED_PROGRESS_UTILITY_AND_STRATEGY_SWITCH
+TASK_ID=UAAL_D020_METHOD_EVOLUTION_20261028
+OWNER_AUTHORIZATION=DOCUMENTATION_ONLY; EXPLICIT
+M1B_RESULT=BLOCKED_BEFORE_FILE_MODIFICATION; OWNER_CODEX_REPORTED
+M1B_IMPLEMENTATION=NOT_STARTED
+TESTS/BUILD/RUNTIME=NOT_RUN
+C_CODEX=UNCHANGED_BY_THIS_CHAT_TASK; PRESERVATION_REPORTED_BY_CODEX
+M1B_RETRY=DO_NOT_REPEAT_PROPOSED_CHECKOUT_ROUTE_WITHOUT_CAUSAL_COMPARISON
+NEXT_ACTION=REVIEW_DOCUMENTARY_DELTA; THEN APPLY METHOD TO A CONCRETE AUTHORIZED TASK
+CANONICAL_ADOPTION=NOT_YET_VERIFIED_ON_MAIN
+TASK_ID_POLICY=NEW_TASK_PER_REVISION
+COMMIT_PROFILE=GATE_COMMIT
+OPTION_D=RATIFIED_NO_BOOTSTRAP
+G1/G2/G3=NOT_ESTABLISHED
+IMPLEMENTATION=NOT_AUTHORIZED
+MCP_TOOL_ALLOWLIST=EMPTY
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+AUTOMATIC_FOLLOW_ON=FALSE
+CAUSAL_REUSE=NOT_TESTED
+```
+
+Full method and falsifiers: [UAAL-D020](./CHAT-ARCH-2026-10-28-UAAL-D020-VERIFIED-PROGRESS-UTILITY-STRATEGY-SWITCH.md).
+
+---
+
 ## OVERRIDE — Dual-track selector result after canonical method adoption (2026-10-28)
 
 The Owner-authorized method correction is adopted and fetch-back verified. The new selector has been applied to the current bridge objective. It preserves the terminal G1 asset-assessment result and does not treat it as a global project stop.
