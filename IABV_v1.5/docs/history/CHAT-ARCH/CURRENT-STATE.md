@@ -1,3 +1,31 @@
+## New Owner-requested architecture improvement — G1/G2/G3 scope and bootstrap boundary (2026-10-28)
+
+This addendum records the subsequent Owner request to analyze why G1/G2/G3 exist, reconcile their traceability with the complete IABV/MCP system, and proceed with durable improvements. It is proposed on this documentation branch only; it is not canonical on main until authorized integration and fetch-back.
+
+New design record: [M1A G1–G3 authority topology, bootstrap boundary, and completion path](./CHAT-ARCH-2026-10-28-M1A-G1-G3-AUTHORITY-TOPOLOGY-AND-BOOTSTRAP-DECISION.md). It distinguishes MCP transport authentication from operation authority; limits G1/G2/G3 to governed protected operations rather than every pure IABV computation; separates OBSERVE, fixed context-artifact read, protected workspace read and execute/mutate profiles; and identifies the bootstrap circularity explicitly.
+
+Decision boundary: the architecture candidate has been documented, but OPTION_D=RATIFIED_NO_BOOTSTRAP remains unchanged. Owner-controlled initial enrollment is proposed as the only identified resolution if no qualified pre-existing root exists; it is NOT authorized by the design task. No trust root, credential, service, ACL, Entra resource, protected read, transport, or tunnel was provisioned or enabled.
+
+```text
+ACTIVE_TASK=M1A_G1_G3_AUTHORITY_TOPOLOGY_AND_BOOTSTRAP_DECISION
+RESULT=DESIGN_CANDIDATE_RECORDED_ON_PR_557_BRANCH
+TARGET_EDGE=INDEPENDENT_G1_TRUST_ANCHOR_AND_AUTHORITY_ENROLLMENT
+NEXT_ACTION=OWNER_DECISION_ON_EXACT_OUT_OF_BAND_ENROLLMENT_AUTHORITY_AND_SCOPE; NO_PROVISIONING
+OPTION_D=RATIFIED_NO_BOOTSTRAP; UNCHANGED
+OWNER_CONTROLLED_ENROLLMENT=PROPOSED; NOT_AUTHORIZED
+G1/G2/G3=NOT_ESTABLISHED
+AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+MCP_TOOL_ALLOWLIST=EMPTY
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+TESTS/BUILD/RUNTIME=NOT_RUN_BY_THIS_DOCUMENT_TASK
+MERGE=NOT_AUTHORIZED
+```
+
+Progress label: PREPARATION_ONLY — the architecture and route were made explicit, but no authority dependency was closed and no runtime behavior changed. This is deliberate; the next implementation cannot safely begin without a supported out-of-band trust source and a separately scoped authorization.
+
+---
 ## Continuity and route-truth correction — M1B current; M1A/R7 parallel (2026-10-28)
 
 `ACTIVE_TASK=M1B_CONTEXT_READER_CANDIDATE_RECONCILIATION` remains the canonical route label, but older routing snapshots were stale. M1B is already published in draft [PR #555](https://github.com/jhonf463r/Python/pull/555), HEAD `6c601c99bb9cc2111f9dde2f6986aefcc0393785`; the current R4 reader and tests match SHA-256 `fcd743a346df4541d9b7cab797b2bb0eba70b8fdf380fc249acf256f08a80e73` and `e86a7c5acb31433f9e2e2864d97c52cfeacb82fe7bd7e8613a7e9463d22b3916`. The older `e3811a...` and `a7459f...` hashes identify R3, not R4; a cross-revision mismatch is not candidate divergence.
