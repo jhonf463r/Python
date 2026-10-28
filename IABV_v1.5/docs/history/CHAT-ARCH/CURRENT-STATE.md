@@ -23,7 +23,7 @@ M1B_TARGETED_TESTS=34_PASSED; OWNER_CODEX_REPORTED
 INDEPENDENT_TESTS=NOT_RUN
 ```
 
-**Supersession boundary:** the following older `OVERRIDE — M1B reader candidate locally implemented` block and its `M1B_SOURCE_PUBLICATION=NOT_DONE` / `M1B_NEXT_ACTION=PUBLISH_EXISTING_LOCAL_FILES...` values are preserved as historical evidence only. They are superseded by this route correction and must not select an action. This does not imply PR approval, merge authorization, runtime verification, or bridge readiness.
+**History boundary (binding):** this addendum is the latest route decision on this branch. All older dated status, `ACTIVE_TASK`, `NEXT_ACTION`, `OVERRIDE`, and task-state blocks below are historical evidence only; their action fields are non-operative unless a newer dated addendum at the top of this file explicitly reactivates them. In particular, the following older `OVERRIDE — M1B reader candidate locally implemented` block and its `M1B_SOURCE_PUBLICATION=NOT_DONE` / `M1B_NEXT_ACTION=PUBLISH_EXISTING_LOCAL_FILES...` values are superseded and must not select an action. This boundary preserves history; it does not imply PR approval, merge authorization, runtime verification, or bridge readiness.
 ---
 
 ## OVERRIDE — M1B reader candidate locally implemented; targeted suite reported passing (2026-10-28)
