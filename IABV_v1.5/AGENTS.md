@@ -5,7 +5,7 @@ Read [CURRENT-STATE.md](https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/
 
 At the verified snapshot `main=79ab8c50eaa7518120d5ebed9db4747d395a21cb`, M1B was already published in [PR #555](https://github.com/jhonf463r/Python/pull/555), commit `6c601c99bb9cc2111f9dde2f6986aefcc0393785`, open/draft/unmerged. Current R4 SHA-256 values are reader `fcd743a346df4541d9b7cab797b2bb0eba70b8fdf380fc249acf256f08a80e73` and tests `e86a7c5acb31433f9e2e2864d97c52cfeacb82fe7bd7e8613a7e9463d22b3916`. The R3 hashes in the older receipt identify a different revision and must not be used as expected hashes for R4. Static review of the published R4 source found no blocking functional defect, with residual limits recorded in the PR review. The 34 targeted tests remain `OWNER_CODEX_REPORTED`, not independently executed in this review.
 
-Before proposing any create/publish/update/reimplement/retest/clone action, discover existing branches, commits, PRs, exact file blobs and reviews. The most recent chat topic is not the task router. Follow proposed [UAAL-D021](https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-28-UAAL-D021-ROUTE-TRUTH-ARTIFACT-IDENTITY-AND-ADVANCE-UTILITY.md) for route truth, revision-bound identity and verified progress. D021 itself is proposed in this documentation branch and is not canonical until integrated and fetched back from `main`.
+Before proposing any create/publish/update/reimplement/retest/clone action, discover existing branches, commits, PRs, exact file blobs and reviews. The most recent chat topic is not the task router. Follow proposed [UAAL-D021](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-28-UAAL-D021-ROUTE-TRUTH-ARTIFACT-IDENTITY-AND-ADVANCE-UTILITY.md) for route truth, revision-bound identity and verified progress. D021 itself is proposed in this documentation branch and is not canonical until integrated and fetched back from `main`.
 
 ```text
 M1B_SOURCE=PR_555_R4_PUBLISHED; DRAFT_UNMERGED
@@ -22,6 +22,8 @@ AUTOMATIC_FOLLOW_ON=FALSE
 MERGE=NOT_AUTHORIZED
 ```
 
+
+Everything below this dated route snapshot is retained historical material. Older headings containing “current”, “active”, “vigente” or “next action” must not override live `CURRENT-STATE.md` unless that file explicitly reactivates them.
 ---
 
 <!-- UAAL-D020 — shared cross-AI method; CURRENT-STATE.md remains the sole route authority. -->

@@ -1,8 +1,8 @@
 # UAAL-D021 — Route Truth, Artifact Identity, and Verified-Progress Selection
 
-**Date:** 2026-10-28  
-**Root:** `UAAL-ROOT-001`  
-**Parents:** `UAAL-D019` — Space-Time Anti-Loop and First-Open Causal Frontier; `UAAL-D020` — Verified Progress Utility, Strategy Switching, and Preparation-Debt Control  
+**Date:** 2026-10-28
+**Root:** `UAAL-ROOT-001`
+**Parents:** `UAAL-D019` — Space-Time Anti-Loop and First-Open Causal Frontier; `UAAL-D020` — Verified Progress Utility, Strategy Switching, and Preparation-Debt Control
 **Status:** `PROPOSED_DOCUMENT_METHOD; NOT_CANONICAL_UNTIL_INTEGRATED; RUNTIME_ENFORCEMENT_AND_LATER_CAUSAL_REUSE_NOT_PROVEN`
 
 ## 1. Why this refinement exists
