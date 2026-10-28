@@ -1,0 +1,387 @@
+# UAAL — Contrato v2 del ciclo de aprobación humana de ToolTask
+
+**Estado:** diseño corregido para revisión; no es implementación ni autorización operativa.  
+**Base viva de `main`:** `0bb37eb047481490885bdb2e9fb8a61834c2b72c`.  
+**Diseño v1:** rama `handoff/uaal-tooltask-approval-design-20261027`, blob `94aba57d8f430fad26cc657504ad429cee264357`.  
+**Revisión independiente:** misma rama, HEAD `4f16c43df052d2b9ff6d28a50b34e1cfe85a1cfa`, blob `8f85a679f96761e8046c826c4b058cc00c85f044`.  
+**Alcance:** tarea persistida → solicitud ligada a la tarea → decisión humana verificable → recuperación de la misma tarea → un único intento de despacho por la ruta existente.
+
+## 1. Propósito y límites
+
+Este contrato define qué tendría que demostrar una implementación futura para continuar una `ToolTask` directa después de una aprobación humana. No afirma que hoy exista una ruta operativa entre la tarea, la UI y `HumanApprovalBroker`.
+
+La ruta de aprobación de `AdaptiveSession`/`ApprovalCheckpoint` es distinta y no puede usarse como sustituto de la continuación de la misma `task_id`. Tampoco son sustitutos `execute_task(approved=True)`, `ApprovalResult.approved`, `approved_by`, una pantalla visible, una sesión iniciada ni una decisión automática de `ApprovalMemory`.
+
+Aun si este contrato se implementara correctamente, **no establecería G1, G2 o G3**, no habilitaría lecturas protegidas y no llenaría la lista permitida MCP.
+
+## 2. Vocabulario de evidencia
+
+Las afirmaciones del ciclo deben conservar estas clases:
+
+- `LIVE_VERIFIED`: SHA, blob, ref o artefacto obtenido directamente de GitHub.
+- `OWNER_CODEX_REPORTED`: resultado local comunicado, no recuperado o reproducido aquí.
+- `INFERENCE`: conclusión derivada de las fuentes inspeccionadas.
+- `HYPOTHESIS`: posibilidad que necesitaría una observación discriminante.
+- `UNKNOWN`: no demostrado o no inspeccionado.
+- `NOT_RUN`: ejecución, prueba o consulta no realizada.
+
+La presencia de una solicitud en la UI solo demuestra presentación observada. Una llamada al broker solo demuestra recepción observada. Ninguna de ellas demuestra por sí sola identidad autorizada, aprobación persistida, despacho, acción externa o captura.
+
+## 3. Propiedad propuesta
+
+| Órgano existente | Responsabilidad prevista | Límite |
+|---|---|---|
+| `ToolTeachService` | Dueño de la tarea directa, su gate, suspensión, recuperación, revalidación y ejecución por la ruta existente. | No acepta un booleano como recibo ni crea una tarea sustituta al reanudar. |
+| `ToolRecordRepository` | Adaptador de persistencia del agregado de tarea y sus eventos. | Su API actual no demuestra transacciones/CAS para el ciclo completo. |
+| `HumanApprovalBroker` | Transporte asíncrono de solicitud y resolución, con correlación estable e idempotencia de entrega. | No es raíz de confianza, almacén canónico ni ejecutor. |
+| UI existente | Mostrar el alcance autorizado y enviar una decisión explícita al broker. | Actualmente no está demostrada la conexión de approve/reject al ciclo de ToolTask directo. |
+| `ApprovalMemory` | Puede producir una sugerencia o decisión automática claramente tipada como tal. | `auto_resolved=true` nunca satisface una aprobación humana obligatoria. |
+
+No se propone un segundo coordinador. El wiring necesario entre `ToolTeachService`, persistencia, broker y UI sigue siendo una brecha.
+
+## 4. Autoridad y recibo tipado
+
+### 4.1 Requisito semántico
+
+Una aprobación válida requiere **autenticación del actor y autorización de ese actor para el alcance concreto**. Son verificaciones distintas:
+
+1. La prueba demuestra qué actor efectuó la interacción.
+2. Una autoridad preestablecida demuestra que ese actor puede aprobar esa operación.
+3. La decisión explícita se vincula a la solicitud exacta.
+4. La validación comprueba vigencia, audiencia, revocación y alcance.
+
+Una firma criptográficamente válida sin una raíz confiable y un mandato aplicable no es prueba suficiente. Una sesión de usuario tampoco lo es.
+
+### 4.2 `HumanApprovalReceiptV2`
+
+El contrato futuro debe representar un recibo tipado, no un `bool`. Debe incluir al menos:
+
+- `receipt_id`, `request_id`, `task_id`, `envelope_digest` y versión del esquema;
+- `decision = APPROVE | REJECT`;
+- actor autenticado, emisor, principal y contexto de autenticación;
+- referencia verificable del mandato que habilita a ese actor para aprobar ese alcance;
+- audiencia y servidor/identidad estable a los que se dirige;
+- nonce de un solo uso, expiración y secuencia o checkpoint de revocación;
+- referencia a la prueba criptográfica y resultado de su validación;
+- clasificación `INTERACTIVE_HUMAN`; los resultados automáticos llevan otra clasificación y no pasan este gate.
+
+El recibo no debe contener secretos. La validación falla cerrada si falta un campo obligatorio, si el actor no tiene mandato para ese alcance, si la prueba está vencida o revocada, o si cualquier binding difiere.
+
+### 4.3 Decisiones de autoridad aún sin resolver
+
+Este diseño **no selecciona ni inventa**:
+
+- proveedor de identidad, emisor o clave raíz;
+- custodio y procedimiento de establecimiento, rotación y revocación de la raíz;
+- principal de Windows autorizado ni vínculo entre ese principal y el Owner;
+- mandato verificable del Owner, autoridad delegada o fuente independiente de revocación;
+- alcance máximo que una aprobación humana puede conceder.
+
+Hasta que esas decisiones y sus pruebas existan, ningún recibo puede elevarse a autorización operativa.
+
+## 5. Envolvente exacta de ejecución y digest
+
+### 5.1 `ToolTaskExecutionEnvelopeV2`
+
+Antes de solicitar aprobación, el servicio construye una envolvente inmutable que contiene todos los valores capaces de cambiar el efecto:
+
+- `task_id`, tipo de operación, alcance normalizado y parámetros;
+- contenido, contexto, instrucciones y datos de entrada que recibirá la herramienta;
+- `tool_id`, adaptador, versión e identidad del código del adaptador;
+- destino/recurso resuelto por el servidor, su versión e identidad;
+- runner/ejecutable, identidad del archivo ejecutable, argumentos y opciones;
+- workspace, ruta y volumen resueltos, identidad del checkout, commit, estado del árbol y contenido relevante, incluidos cambios sin seguimiento que afecten la ejecución;
+- configuración de entorno relevante y configuración/instrucciones efectivas de `CODEX_HOME`;
+- políticas aplicables, versión, allowlist y modo real/dry-run;
+- configuración de timeout, red y límites que puedan cambiar el efecto;
+- contrato de captura, formato, límites y versión;
+- identidad estable del host/servidor y contexto de ejecución requerido.
+
+`request_id` se genera después de fijar la envolvente y se enlaza al digest en la solicitud y el recibo; así se evita una dependencia circular.
+
+### 5.2 Canonicalización
+
+Propuesta técnica: serialización canónica UTF-8 versionada —por ejemplo, JSON Canonicalization Scheme— con claves duplicadas, valores no finitos y campos ambiguos rechazados. El digest se calcula como:
+
+`SHA-256("UAAL-TT-EXEC-ENVELOPE-v2\0" || canonical_bytes)`
+
+La especificación de implementación debe fijar la versión de canonicalización y probar vectores reproducibles. Una normalización que omita un campo que afecta al efecto no cumple el contrato.
+
+Los secretos no se registran en claro. Si un valor secreto influye en la acción, su identidad y versión inmutable deben quedar cubiertas por una referencia/compromiso verificable del proveedor de secretos. Si no existe una referencia versionada o un compromiso seguro y estable, el cálculo está incompleto y la operación se bloquea; el valor no se excluye silenciosamente del digest.
+
+### 5.3 Invalidación
+
+Cualquier cambio en la tarea, contenido, contexto, herramienta/adaptador, destino, runner, argumentos, workspace/checkout, configuración relevante del entorno, `CODEX_HOME`, política o contrato de captura produce un digest distinto e invalida la aprobación. La solicitud anterior no se edita para acomodar el cambio.
+
+## 6. Fuente durable única y transiciones atómicas
+
+### 6.1 Fuente de verdad propuesta
+
+La fuente canónica futura debe ser **un agregado de tarea en una base durable** —la base SQLite existente, si una implementación demuestra que satisface el contrato— con estado, versión, envolvente, solicitud, recibo, claim y evidencia de etapas.
+
+El agregado actualizado y su registro de eventos monotónicos deben cambiar en la misma transacción. Una outbox en esa misma base puede entregar solicitudes al broker; sus reintentos conservan el mismo `request_id`. Los JSON/archivos actuales pueden ser exportaciones o proyecciones reconstruibles, pero no una segunda autoridad de estado.
+
+Esto describe el objetivo futuro. El `save_task()` observado escribe JSON y después ejecuta `INSERT OR REPLACE`; no se considera una transacción del ciclo ni CAS.
+
+### 6.2 Eventos y CAS
+
+Cada transición incluye `expected_version`. En una transacción se valida el estado/versión, se cambia el agregado y se añade el evento con secuencia creciente. Una transición concurrente o una resolución contradictoria se rechaza.
+
+El claim de despacho debe incluir una operación equivalente a:
+
+`UPDATE ... WHERE task_id = ? AND state = READY AND version = ? AND envelope_digest = ? AND claim_id IS NULL`
+
+El cambio de estado y el registro del claim son atómicos. Una restricción única impide dos claims para la misma tarea y digest. No se trata `INSERT OR REPLACE` como compare-and-set.
+
+### 6.3 Límite anti-rollback
+
+La secuencia monotónica dentro de SQLite detecta regresiones mientras se conserva esa base, pero no demuestra que no se restauró una copia antigua. No hay evidencia revisada de un ancla anti-rollback independiente disponible. Si una restauración o regresión de almacenamiento no puede excluirse con una autoridad ya verificada, la recuperación de aprobaciones y claims se bloquea. No se simula un contador TPM, servicio externo ni raíz nueva.
+
+## 7. Solicitud, broker y UI
+
+### 7.1 `ApprovalRequestV2`
+
+El broker publica una solicitud con:
+
+- `request_id` estable y `task_id` existente;
+- digest, resumen legible del destino, operación y alcance;
+- audiencia/identidad estable del servidor;
+- nonce, fecha de expiración y versión esperada del agregado;
+- contenido de presentación derivado de la envolvente, no editable como fuente de autoridad.
+
+La misma solicitud puede entregarse repetidamente; duplicados de entrega no crean autorizaciones nuevas.
+
+### 7.2 Resolución
+
+La UI autenticada devuelve un comando tipado con `request_id`, `task_id`, digest, decisión, nonce y prueba de actor. El broker valida el formato/correlación y lo entrega al dueño de la tarea. La verificación de autoridad debe usar una fuente configurada y revocable, aún no demostrada; el broker no convierte por sí mismo la respuesta en permiso.
+
+Duplicar exactamente la misma resolución es idempotente. Una decisión opuesta para el mismo request se rechaza y se audita. Un timeout de Future no es rechazo ni aprobación.
+
+### 7.3 Estado real del wiring
+
+El dashboard y la página muestran solicitudes, pero la revisión no encontró controles approve/reject conectados a la continuación de la ToolTask directa; en el wiring de `AppBootstrap` tampoco encontró el handler necesario del broker para este ciclo. La propuesta describe el punto de conexión futuro, **no afirma que esté conectado hoy**.
+
+El ciclo debe ser asíncrono: no bloquear el dispatcher de UI o ejecución esperando que el mismo dispatcher procese la respuesta.
+
+## 8. Estados: existentes y propuestos
+
+### 8.1 Estados existentes en la fuente
+
+`ToolTaskStatus` ya enumera `PENDING`, `WAITING_SANDBOX`, `WAITING_APPROVAL`, `READY`, `EXECUTING`, `COMPLETED`, `FAILED`, `ROLLED_BACK` y `DEFERRED`. La revisión observó que el gate informa `waiting_approval` en `ToolResult.execution_state`, pero no persiste una transición correspondiente de `task.status`.
+
+### 8.2 Estados propuestos
+
+La futura máquina única de `ToolTask` debe añadir o formalizar, mediante cambio de contrato y migración:
+
+- `APPROVED_PENDING_RESUME`
+- `REJECTED`
+- `EXPIRED`
+- `CANCELLED`
+- `UNKNOWN_OUTCOME`
+- `FAILED_CLOSED`
+
+No se crea otra máquina de aprobación independiente que pueda divergir. El recibo y los eventos son parte del agregado de tarea.
+
+### 8.3 Transiciones
+
+```text
+PENDING
+  → WAITING_SANDBOX                 (si el sandbox tiene espera propia)
+  → WAITING_APPROVAL                (gate humano; estado durable + outbox atómicos)
+
+WAITING_APPROVAL
+  → APPROVED_PENDING_RESUME         (recibo tipado verificado y persistido)
+  → REJECTED                        (rechazo autenticado)
+  → EXPIRED                         (vence la solicitud)
+  → CANCELLED                       (cancelación autorizada)
+  → FAILED_CLOSED                   (corrupción o inconsistencia)
+
+APPROVED_PENDING_RESUME
+  → READY                           (misma tarea recuperada y revalidada)
+  → FAILED_CLOSED                   (digest, autoridad, revocación o estado no válido)
+
+READY
+  → EXECUTING                       (claim CAS único)
+
+EXECUTING
+  → COMPLETED                       (resultado terminal conocido; etapas se registran aparte)
+  → FAILED                          (fallo terminal conocido)
+  → UNKNOWN_OUTCOME                 (no se puede saber si el efecto llegó a ocurrir)
+
+UNKNOWN_OUTCOME
+  → COMPLETED                       (solo si se recupera evidencia correlacionada del mismo intento)
+  → FAILED_CLOSED                   (si no se puede resolver con evidencia)
+```
+
+`REJECTED`, `EXPIRED`, `CANCELLED` y `FAILED_CLOSED` no retornan a ejecución. Un cambio material del digest cancela/bloquea la tarea anterior; no reescribe su aprobación.
+
+## 9. Idempotencia, claim y proceso/instancia
+
+La clave de idempotencia estable se deriva del dominio, `task_id` y digest, por ejemplo:
+
+`SHA-256("UAAL-TT-DISPATCH-v2\0" || task_id || envelope_digest)`
+
+No se genera una clave nueva para el reintento automático. Cada claim conserva además `dispatch_attempt_id`, versión del agregado, `server_identity`, instancia que hizo el claim, instante, runner y referencias de correlación de proceso.
+
+Para un runner local, la futura evidencia debe correlacionar la invocación con el claim mediante datos observados por el adaptador: identidad estable del host/servidor, instancia de ejecución, identidad del ejecutable, PID junto con hora de creación y relación padre/hijo o handle de proceso, más la captura/sesión devuelta. Un PID o identificador declarado no basta por sí solo. Una instancia nueva tras reinicio puede recuperar la misma tarea solo si la identidad estable del servidor y todos los bindings siguen siendo verificables; se registran separadamente la instancia solicitante y la instancia que reanuda.
+
+SQLite no puede garantizar exactly-once de un efecto externo. Si el adaptador/destino no ofrece idempotencia verificable o reconciliación suficiente, se admite como máximo un intento local reclamado. Una caída tras el claim, antes o después de crear el proceso, deja `UNKNOWN_OUTCOME` si no se demuestra qué ocurrió. **No se vuelve a lanzar automáticamente por falta de captura ni por desaparición del proceso.**
+
+## 10. Sandbox, despacho, efecto y captura son etapas distintas
+
+Persistir evidencia tipada y separada para:
+
+1. `sandbox_passed`
+2. `approval_granted`
+3. `adapter_dispatched`
+4. `external_action_succeeded`
+5. `response_captured`
+
+Cada etapa incluye su procedencia y correlación con `task_id`, digest y, cuando aplique, `dispatch_attempt_id`. El éxito del sandbox significa únicamente que el sandbox permitió o completó su simulación. No es éxito externo, no acredita despacho y no debe incrementar métricas de éxito externo ni alimentar aprendizaje como si el objetivo remoto hubiera ocurrido.
+
+`external_action_succeeded` requiere evidencia del adaptador/destino; `response_captured` exige una captura observada y asociada al mismo intento. El resultado puede ser exitoso aunque la captura falle, pero ambas afirmaciones permanecen separadas.
+
+## 11. Expiración, cancelación y recuperación de caídas
+
+- **Expiración:** la resolución se rechaza después de `expires_at`. La validación requiere una fuente temporal confiable y estado monotónico; un reloj local atrasado no puede revalidar una solicitud. Si la fuente temporal o el checkpoint no es confiable, bloquear.
+- **Cancelación:** CAS serializa cancelación y claim. Antes del claim, una cancelación autorizada lleva a `CANCELLED`. Después del claim, una señal de cancelación no demuestra que el efecto haya cesado; si el resultado es ambiguo, `UNKNOWN_OUTCOME`.
+- **Fallo del broker/UI:** outbox vuelve a entregar la misma solicitud con el mismo ID. El estado permanece durable; no se genera aprobación implícita.
+- **Fallo de persistencia:** no presentar aprobación como aceptada ni despachar. La fuente durable debe confirmar la transacción.
+- **Caída antes del claim:** recuperación desde el agregado; ninguna ejecución se presume.
+- **Caída después del claim:** reconciliar el intento mediante evidencia autoritativa del adaptador. Si no se resuelve si hubo efecto, `UNKNOWN_OUTCOME`; nunca reintentar automáticamente.
+- **Restauración de copia antigua/corrupción:** si la continuidad monotónica no se puede validar, `FAILED_CLOSED`; no reconstruir el recibo desde logs o estados declarativos.
+
+## 12. Migración de tareas antiguas
+
+La migración debe ser no destructiva y fallar cerrada:
+
+- Tarea antigua con `WAITING_APPROVAL` pero sin solicitud/recibo válido: preservar su contenido y marcarla para cuarentena/`FAILED_CLOSED`; no fabricar recibo.
+- Resultado antiguo `waiting_approval` con `ToolTask.status=PENDING`: clasificar como inconsistencia heredada; no inferir que el gate quedó persistido.
+- `approved=true`, `approved_by` o estado `VALIDATED` sin recibo V2 verificable: no autoriza continuación.
+- Tarea antigua `EXECUTING` o con resultado incierto: `UNKNOWN_OUTCOME` hasta reconciliación; nunca relanzar por migración.
+- Sesiones y checkpoints de `AdaptiveSession` permanecen en su ciclo propio; no se convierten en aprobaciones de ToolTask.
+
+La migración conserva estado y evidencia previos, añade versión/procedencia de migración y permite reconstruir proyecciones desde la fuente canónica.
+
+## 13. Auditoría y afirmaciones permitidas
+
+Registrar referencias no secretas: `task_id`, `request_id`, digest, destino/versionado, alcance, actor pseudónimo, emisor/principal mediante referencias verificables, decisión, expiración, versión de estado, eventos/claim, instancia y proceso correlacionados, resultado y captura.
+
+No registrar valores secretos ni claves. Cada evento distingue:
+
+- solicitud creada;
+- solicitud presentada;
+- respuesta recibida;
+- autoridad verificada;
+- recibo aceptado y persistido;
+- claim creado;
+- despacho observado;
+- efecto externo verificado;
+- captura observada.
+
+Una etapa no prueba la siguiente. Los datos de sandbox no alimentan métricas o aprendizaje de éxito externo. `ToolMemory` debe separar esa clasificación antes de que una futura integración use sus resultados para aprendizaje.
+
+## 14. Criterios para futura revisión independiente y E2E
+
+Antes de autorizar implementación, una revisión independiente debe poder verificar:
+
+1. La única fuente durable y sus transacciones cubren tarea, recibo, eventos, outbox y claim.
+2. Las transiciones usan CAS y no hay regresión, recibos duplicados ni decisiones contradictorias.
+3. El recibo comprueba actor **y** mandato con autoridad configurada, vigente y revocable; no hay proveedor/root simulado.
+4. El digest incluye la envolvente canónica completa, incluidos configuración, `CODEX_HOME`, argumentos, checkout, política y captura; cambiar un input invalida el recibo.
+5. `ToolTeachService` recupera la misma `task_id`; UI/broker usan flujo asíncrono y se ve el wiring concreto.
+6. Las pruebas negativas cubren booleano, `approved_by`, auto-resolve, actor/mandato inválido, request/task/digest/destino distinto, expiración, revocación, duplicados, carreras, persistencia parcial, reinicio y migración heredada.
+7. Una caída ambigua conserva `UNKNOWN_OUTCOME` y no produce segundo despacho; las pruebas no simulan una garantía externa que el adaptador no ofrezca.
+8. Sandbox, aprobación, despacho, efecto y captura generan evidencia y métricas separadas.
+9. La prueba E2E futura solo se ejecuta con autorización separada, y no se usa para declarar G1/G2/G3 sin evidencia independiente de esos gates.
+
+## 15. Mapeo de hallazgos R1–R8
+
+| Hallazgo | Corrección incorporada |
+|---|---|
+| R1 — Autoridad | Recibo tipado vincula actor, mandato, audiencia, nonce, alcance, expiración y revocación; proveedor, raíz, principal y mandato permanecen sin seleccionar. |
+| R2 — Persistencia | Una fuente canónica de agregado, eventos y outbox en una transacción; CAS para cambios y claim; se identifica el límite anti-rollback. |
+| R3 — UI/broker | Se define request/resolution asíncronos y se declara el wiring ausente. |
+| R4 — Idempotencia | Clave estable por tarea+digest, correlación de proceso/instancia y `UNKNOWN_OUTCOME` sin reintento automático. |
+| R5 — Digest | Envolvente canónica de inputs que afectan el efecto, con compromiso de secretos o bloqueo si no puede demostrarse. |
+| R6 — Sandbox | Cinco etapas independientes; sandbox no cuenta como éxito externo ni aprendizaje de éxito externo. |
+| R7 — Migración | Tareas antiguas/inconsistentes se preservan y cuarentenan; nunca se inventa recibo. |
+| R8 — Gobernanza | El Owner decide autoridad/mandato/raíz/alcance/retención; ingeniería decide CAS, serialización, transacciones y recuperación técnica. |
+
+## 16. Índice de fuentes y revisión
+
+**Referencias vivas:** `main=0bb37eb047481490885bdb2e9fb8a61834c2b72c`. Los SHA de abajo son blobs consultados en ese `main`; los hallazgos de revisión citados se originan en el documento independiente de la rama indicada.
+
+| Ruta exacta | Blob SHA |
+|---|---|
+| `IABV_v1.5/docs/history/CHAT-ARCH/CURRENT-STATE.md` | `a334ee44500d7d4bf168ae4f43f32bd1348d52f3` |
+| `IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-27-UAAL-EVIDENCE-TO-CAUSAL-FRONTIER-CONTINUITY-PROTOCOL-v1.md` | `7400c23a7c3d175de6f5983bddfd385d818c49a5` |
+| `IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-27-M1A-CROSS-CHAT-HANDOFF-MCP130-20261027.md` | `39dc5b521d0b4e50f8ef29f4754734c1da7c9e4a` |
+| `IABV_v1.5/AGENTS.md` | `0495e680cbe6b83d2310f87276bdc03c1c3fcd08` |
+| `IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-04-051-CODEX-APPROVAL-TASK-CONTINUATION-NOT-PROVEN.md` | `d29755095c8d0ef19a3fc4d6d32da9e5795d6b82` |
+| `IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-04-052-APPROVAL-BRIDGE-CASE-B-CONFIRMED.md` | `7985955984bf41c8e029b5c93e3b3a5b5f602c5a` |
+| `IABV_v1.5/src/iabv_v15/services/tools/tool_teach_service.py` | `7f0412627c98074b1e3df0d0f6e76ab5998e3505` |
+| `IABV_v1.5/src/iabv_v15/services/security/human_approval_broker.py` | `4a447149cf1b2771f6959658338a72b381f00b19` |
+| `IABV_v1.5/src/iabv_v15/services/security/approval_memory.py` | `ed85408d96fb0cdfddb05489d6c38cf714275f91` |
+| `IABV_v1.5/src/iabv_v15/services/tools/tool_memory.py` | `67f13a507e69ca8cd668a01840a048f5f35ba69c` |
+| `IABV_v1.5/src/iabv_v15/infra/persistence/tool_record_repository.py` | `0576b5c91d10319a3b7b81d3d2f07ce4c4c27ffe` |
+| `IABV_v1.5/src/iabv_v15/infra/persistence/database.py` | `cee153ea8901451086b39273c026bbde20427b49` |
+| `IABV_v1.5/src/iabv_v15/services/tools/tool_approval_policy.py` | `b5bd3cba40caa89fcc6a5cd72146281c07c26ea1` |
+| `IABV_v1.5/src/iabv_v15/bootstrap.py` | `e4befa6b683fc87aed7481f377f1332f5753e2c3` |
+| `IABV_v1.5/src/iabv_v15/services/security/proactive_dashboard_service.py` | `08535790507b88f9a36e62cbc02e5fa8f84bf379` |
+| `IABV_v1.5/src/iabv_v15/ui/viewmodels/evolution_center_viewmodel.py` | `af40921e7e56ccb53b059f1b08f19644f4a07a6b` |
+| `IABV_v1.5/src/iabv_v15/ui/qml/pages/EvolutionCenterPage.qml` | `c96a89bebd405af6a1bd8828d9153d5fd0be882b` |
+| `IABV_v1.5/src/iabv_v15/ui/viewmodels/control_center_viewmodel.py` | `628848c631e36b47b4a5b63b9e68d62687625235` |
+| `IABV_v1.5/src/iabv_v15/services/adaptive/adaptive_task_orchestrator.py` | `41f6f7b6157226a1c6004591ddff4e36ff6f6da5` |
+| `IABV_v1.5/src/iabv_v15/services/adaptive/execution_playbook_service.py` | `002c63706f78cdd5ae7109f6a713514d1b0cad41` |
+| `IABV_v1.5/src/iabv_v15/services/tools/tool_operational_executor.py` | `840addd3dd8a017e83788950ad5ed0205e7b0037` |
+| `IABV_v1.5/src/iabv_v15/services/evolution/autonomous_evolution_service.py` | `bf71757e8b90a35ce5c46cc0e6b5a781abbcd7ad` |
+| `IABV_v1.5/src/iabv_v15/domain/models.py` | `a9033d21052c519e09f482097599c704a62ea916` |
+
+El registro 050 no existe en el árbol consultado; no se reconstruye. El diseño v1 y su revisión están en la rama aislada, no en `main`: v1 blob `94aba57d8f430fad26cc657504ad429cee264357`; revisión blob `8f85a679f96761e8046c826c4b058cc00c85f044`. El commit de la revisión `4f16c43df052d2b9ff6d28a50b34e1cfe85a1cfa` añade el archivo de revisión.
+
+## 17. Decisiones pendientes y responsabilidad
+
+**Requieren decisión explícita del Owner/gobernanza:**
+
+- quién puede aprobar y qué evidencia independiente establece ese mandato;
+- cuál es la raíz/custodio y cómo se rota o revoca;
+- qué operaciones y alcance máximo puede aprobar esa autoridad;
+- qué política de privacidad/retención se aplica a los recibos y capturas;
+- qué modelo de pérdida/rollback de almacenamiento es aceptable, una vez presentadas opciones verificables.
+
+**Son decisiones de ingeniería del contrato/implementación futura:**
+
+- esquema de datos y versión de migración;
+- transacciones, CAS, outbox, restricciones únicas y recuperación;
+- canonicalización y campos exactos del digest;
+- algoritmo de clave idempotente, correlación de proceso y estados de resultado incierto;
+- separación de métricas sandbox/externas/captura y pruebas de aceptación.
+
+Resolver estas decisiones técnicas no autoriza escoger una autoridad por el Owner ni crear una raíz.
+
+---
+
+**Estado:** diseño v2 preparado únicamente en esta respuesta. No se escribió archivo ni se modificó GitHub.
+
+`IMPLEMENTATION=NOT_AUTHORIZED`  
+`TESTS/BUILD/RUNTIME=NOT_RUN`  
+`G1/G2/G3=NOT_ESTABLISHED`  
+`PROTECTED_READS=FAIL_CLOSED`  
+`MCP_TOOL_ALLOWLIST=EMPTY`  
+`BRIDGE=BRIDGE_NOT_READY`
+
+</div>
+
+Las fuentes y blobs anteriores se verificaron contra `main` en la sesión. La revisión del diseño v1 se leyó desde la rama aislada; sus hallazgos R1–R8 se incorporaron como requisitos de diseño, no como prueba de ejecución. Las afirmaciones sobre wiring y comportamiento siguen siendo estáticas; el ciclo completo no se ejecutó.
+
+## Decisiones de autoridad pendientes
+
+El Owner/gobernanza debe decidir quién puede aprobar, qué evidencia independiente establece su mandato, quién custodia la raíz y cómo se revoca, qué alcance puede aprobarse y qué política de retención rige los recibos/capturas. También debe decidir el modelo de riesgo aceptable ante restauración de una copia antigua, con opciones técnicas verificables presentadas previamente.
+
+Las elecciones de esquema, CAS, outbox, canonicalización, clave idempotente y recuperación son decisiones de ingeniería; no deben trasladarse al Owner como si fueran decisiones de autoridad.
+
+`IMPLEMENTATION=NOT_AUTHORIZED`  
+`TESTS/BUILD/RUNTIME=NOT_RUN`  
+`G1/G2/G3=NOT_ESTABLISHED`  
+`PROTECTED_READS=FAIL_CLOSED`

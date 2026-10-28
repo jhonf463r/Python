@@ -1,0 +1,68 @@
+## Revisión acotada del contrato v2.1
+
+**Fuentes vivas:** `main` sigue en `0bb37eb047481490885bdb2e9fb8a61834c2b72c`. La rama `handoff/uaal-tooltask-approval-design-20261027` sigue en `4f16c43df052d2b9ff6d28a50b34e1cfe85a1cfa`.
+
+Pude recuperar `CURRENT-STATE.md` mediante GitHub CLI: el blob es `a334ee44500d7d4bf168ae4f43f32bd1348d52f3`, mide 1.065.664 bytes y su contenido no estaba vacío. Leí sus primeras 30 líneas: mantienen la ruta bloqueada, la implementación no autorizada y el diseño sujeto a revisión. Por tanto, la limitación anterior del conector no impidió esta lectura; no afirmo haber revisado aquí el millón de bytes completo.
+
+**Vector idempotente:** lo recalculé localmente con SHA-256 sobre la serialización especificada. Para los valores de prueba, la entrada mide 93 bytes y el resultado es `33b2f9a96a93ea3e6703beedd735f8cf02390a7c6faaebc19b25f9695e78a562`, igual al vector de v2.1. La fórmula no requiere cambios.
+
+## Parche conceptual exacto
+
+Los siguientes textos sustituyen o complementan únicamente las secciones indicadas en v2.1. No constituyen una versión completa nueva del contrato.
+
+### §2 — Añadir después de la tabla de responsabilidades
+
+> **Identidad estable e identidad de ejecución.** El envelope y el recibo distinguen `service_audience_id`, identificador estable del servicio autorizado, de `process_instance_id`, identificador efímero de una instancia de proceso. La audiencia del recibo se vincula al `service_audience_id`; no se vincula al PID ni a un identificador que cambie en cada arranque. La prueba de que el proceso actual puede actuar en nombre de ese servicio requiere verificación de host/proceso y sigue pendiente; un nombre configurado no la demuestra.
+>
+> Cada claim durable tiene un `claim_id` y una `dispatch_key` estables. Al reiniciar, una instancia nueva puede continuar la **misma tarea y el mismo claim** solo después de demostrar que el adaptador de la instancia anterior nunca fue invocado. La continuación registra el nuevo `process_instance_id` y un fencing epoch creciente dentro del claim existente. No cambia `task_id`, `request_id`, recibo, digest, alcance, destino ni `dispatch_key`; tampoco crea otro claim. Si la identidad estable, el destino, el envelope o el estado de despacho no pueden verificarse, la continuación se bloquea.
+
+### §3.3 — Sustituir la regla de audiencia
+
+> El recibo se emite para el `service_audience_id` estable y verificado que recibió la aprobación; no para una instancia efímera. `process_instance_id`, identidad de host observada, fencing epoch, claim y tiempos de ejecución son evidencia del despacho y se registran con este, fuera de la identidad de aprobación. Si el proceso o el host influyen en el efecto autorizado, la política de ejecución estable que los limita debe formar parte del envelope; un PID nuevo no cambia por sí mismo el digest ni amplía la autoridad.
+>
+> Un reinicio solo puede reanudar el mismo agregado cuando identidad del servicio, autoridad, recibo, destino y envelope sigan válidos. El nuevo proceso debe probar el derecho a continuar el claim mediante el mecanismo de host que se establezca; un `process_instance_id` aleatorio o un evento local no constituye esa prueba. El proveedor y esa vinculación permanecen `UNKNOWN` hasta que se definan y verifiquen.
+
+### §7 — Sustituir el orden de aceptación de un recibo
+
+> **Orden transaccional obligatorio:**
+>
+> 1. Abrir una transacción CAS serializable sobre el agregado y buscar primero el `receipt_id`.
+> 2. Si ya existe un recibo aceptado con ese identificador, comparar exactamente su representación canónica almacenada —incluidos payload, identidad del emisor/clave, sujeto, decisión, tarea, solicitud, digest, alcance, nonce y firma— con la representación recibida. Si todo coincide, devolver el resultado durable ya aceptado y terminar sin crear evento de decisión, consumir un nonce nuevo ni crear un claim. Si hay cualquier diferencia, rechazar la repetición; no reinterpretar ni reemplazar el recibo previo.
+> 3. Solo si no existe un recibo aceptado con ese `receipt_id`, validar versión del agregado, solicitud activa, binding de tarea/digest/alcance/destino, autoridad, audiencia, expiración y revocación.
+> 4. En esa misma transacción, comprobar que el nonce no está consumido, insertarlo con restricción de unicidad y su binding, aceptar el recibo, anexar un único evento monotónico y cambiar el estado del agregado mediante CAS.
+> 5. Confirmar todo junto. Ante conflicto de versión o unicidad, reabrir la transacción y repetir la búsqueda inicial por `receipt_id`: solo una coincidencia íntegra con el recibo ya aceptado devuelve el resultado existente. Los demás casos se rechazan.
+>
+> Una coincidencia parcial nunca es idempotencia. Un nonce consumido por otra tarea, digest, alcance o recibo se rechaza. Una decisión contradictoria no reemplaza la decisión aceptada. Puede registrarse como evento de seguridad separado, pero no como segundo evento de decisión ni como autorización.
+>
+> El claim de despacho no se crea al repetir o aceptar una resolución: se crea una sola vez mediante el CAS separado de despacho descrito en §8.
+
+### §10 — Sustituir la recuperación del claim
+
+> **Recuperación de un claim existente:**
+>
+> - La evidencia de “adaptador nunca invocado” debe ser positiva y proceder de una frontera de despacho que haga imposible invocar al adaptador antes de registrar durablemente `ADAPTER_INVOCATION_INTENT`. Deben verificarse la terminación o fencing efectivo de la instancia anterior y la ausencia de ese intent en la fuente durable. La ausencia de un log, una respuesta perdida o un proceso que dejó de responder no bastan.
+> - Si esa evidencia concluyente existe, una instancia nueva puede continuar bajo el mismo `claim_id` y `dispatch_key`, mediante CAS sobre el claim existente. Registra nuevo `process_instance_id` y fencing epoch; no inserta un segundo claim ni otra aprobación. Solo entonces puede cruzar una vez la frontera de invocación.
+> - Si existe `ADAPTER_INVOCATION_INTENT`, no se puede demostrar que el intento no llegó al adaptador, el proceso anterior podría seguir actuando, o el resultado externo es incierto, fijar `UNKNOWN_OUTCOME`. No reintentar automáticamente ni crear otro claim. Una respuesta perdida posterior a la invocación tampoco demuestra fallo externo.
+> - La reanudación tras reinicio conserva los bindings de autorización: misma tarea, solicitud, recibo aceptado, digest, alcance, destino, audiencia estable y clave idempotente. Si cualquiera difiere o no puede comprobarse, denegar y requerir un ciclo autorizado nuevo; no reconstruir la aprobación.
+
+Esta recuperación depende de que la futura implementación haga cumplir la frontera de invocación y el fencing. **`HYPOTHESIS`**: el registro durable de intent más control efectivo de instancias podría proporcionar esa evidencia; aún no está implementado ni probado.
+
+## Dictamen
+
+No encuentro otro defecto contractual bloqueante en estas tres ambigüedades, dentro del alcance acotado. El vector se conserva.
+
+`DESIGN_CONTRACT=ACCEPTABLE_FOR_SEPARATE_IMPLEMENTATION_AUTHORIZATION`
+
+Este es un dictamen de cierre contractual limitado, **no** autorización de implementación ni prueba de seguridad end-to-end. Como la misma conversación produjo v2.1 y revisa ahora sus correcciones, no afirmo independencia de revisor respecto de su autoría; una revisión por otro revisor sigue siendo recomendable antes de tratar el diseño como aprobado por gobernanza.
+
+`LIVE_VERIFIED`: SHA de `main`, SHA de la rama de handoff, blob y contenido recuperado de `CURRENT-STATE.md`, y resultado del vector recalculado.  
+`INFERENCE`: el parche conceptual y el dictamen contractual.  
+`NOT_RUN`: pruebas, build, runtime, MCP, lecturas protegidas y tareas ToolTask.
+
+`IMPLEMENTATION=NOT_AUTHORIZED`  
+`TESTS/BUILD/RUNTIME=NOT_RUN`  
+`G1/G2/G3=NOT_ESTABLISHED`  
+`MCP_TOOL_ALLOWLIST=EMPTY`  
+`PROTECTED_READS=FAIL_CLOSED`  
+`TUNNEL=DISABLED`  
+`BRIDGE=BRIDGE_NOT_READY`
