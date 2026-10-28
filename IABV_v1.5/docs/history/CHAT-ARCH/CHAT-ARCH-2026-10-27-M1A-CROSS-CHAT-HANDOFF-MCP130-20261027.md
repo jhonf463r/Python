@@ -1,3 +1,15 @@
+## Latest local execution result — UAC process blocked before consent UI (2026-10-27)
+
+The Owner/Codex report states that the approved attempt to launch a bounded PowerShell child through `Start-Process -Verb RunAs` was rejected by the execution-tool policy before starting. No UAC window appeared, no child PowerShell process started, no TPM/Secure Boot query ran, no temporary script/output was created, and no machine or repository changes occurred.
+
+Classify as `UAC_REQUEST=BLOCKED_BY_EXECUTION_TOOL_POLICY`, `UAC_UI=NOT_SHOWN`, `ELEVATED_CHILD=NOT_STARTED`. This is not an Owner denial and not a Windows UAC denial. `TPM=UNKNOWN`, `SECURE_BOOT=UNKNOWN`.
+
+Do not retry the same invocation, bypass the policy, or ask the Owner to operate Windows manually. ChatGPT cannot invoke the local desktop UI from this channel. Advance the independent frontier: source-derived G1/G2/G3 authority/bootstrap contract design, revocation/rollback contract and fail-closed composition requirements, with no provider provisioning or protected-read activation. Keep the hardware-backed provider decision open until a supported evidence path exists.
+
+Receipt: [UAAL automation-first UAC discovery receipt](./CHAT-ARCH-2026-10-27-UAAL-AUTOMATION-FIRST-UAC-READONLY-DISCOVERY-RECEIPT.md) (historical authorization scope); current attempt outcome is recorded in `CURRENT-STATE.md` and UAAL-CFCP-001.
+
+---
+
 ## Latest Owner instruction — automation-first local permissions (2026-10-27)
 
 The Owner explicitly corrected the workflow: do not repeatedly assign manual commands or Windows Settings navigation to the Owner when local Codex can perform the operation. The Owner authorizes the agent to use the normal interactive Windows UAC consent prompt when genuinely needed for the already-authorized, read-only TPM/Secure Boot probe.
