@@ -1,3 +1,31 @@
+## UAC attempt blocked by execution policy — current operational state (2026-10-27)
+
+The Owner/Codex report states that `Start-Process -Verb RunAs` was rejected by the execution-tool policy before PowerShell started. No OS consent window was shown, no child process was created, no TPM/Secure Boot query ran, and no temporary artifacts or system changes were produced.
+
+This result is `UAC_REQUEST=BLOCKED_BY_EXECUTION_TOOL_POLICY`, not an Owner denial or a Windows UAC denial. The actual hardware facts remain `TPM=UNKNOWN` and `SECURE_BOOT=UNKNOWN`.
+
+The prior protocol's planned elevated probe is superseded by the observed blocker. Do not retry the same call, try a bypass or ask the Owner to manually drive consoles/settings. Continue independent safe work on source-derived G1/G2/G3 provider contracts and acceptance design while keeping the hardware provider choice unresolved. This ChatGPT session cannot launch local Windows UI itself.
+
+Evidence provenance: `OWNER_CODEX_REPORTED`; no local tool log independently retrieved in this ChatGPT session.
+
+```text
+UAC_REQUEST=BLOCKED_BY_EXECUTION_TOOL_POLICY
+UAC_UI=NOT_SHOWN
+ELEVATED_CHILD=NOT_STARTED
+TPM=UNKNOWN
+SECURE_BOOT=UNKNOWN
+G1/G2/G3=NOT_ESTABLISHED
+MCP_TOOL_ALLOWLIST=EMPTY
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+MERGE=NOT_AUTHORIZED
+```
+
+Protocol: [UAAL-CFCP-001 — evidence-to-causal-frontier continuity](./CHAT-ARCH-2026-10-27-UAAL-EVIDENCE-TO-CAUSAL-FRONTIER-CONTINUITY-PROTOCOL-v1.md).
+
+---
+
 ## Owner preference and automation-first permission protocol — 2026-10-27
 
 This entry supersedes older handoff wording that assigns manual command/UI work to the Owner when an approved local agent can perform it.
