@@ -23,6 +23,12 @@ AUTOMATIC_FOLLOW_ON=FALSE
 ```
 <!-- END OWNER-DIRECTED CONTINUITY METHOD CORRECTION -->
 
+## Fuente/memoria — reconciliación Control Master 2026-10-28
+
+El CLI de exportación y el lazo de resultados aparecen en fuente, pero las descripciones de tres objetivos persistidos están desactualizadas. No declarar esos objetivos completados sin validar su ruta real; tampoco ejecutar `cm export-digest` como si fuera una lectura sin efectos, ya que crea `AppBootstrap`. Véase el [suplemento de auditoría estática](./CHAT-ARCH-2026-10-24-CONTINUITY-ALGORITHMS-STATIC-AUDIT.md) para los SHA, las diferencias y la ruta de diseño recomendada. La ruta vigente y los permisos siguen siendo propiedad exclusiva de `CURRENT-STATE.md`.
+
+
+
 ## Hand-off vigente para iniciar un nuevo chat (2026-10-27)
 
 Leer siempre primero [CURRENT-STATE.md](./docs/history/CHAT-ARCH/CURRENT-STATE.md) desde main. El handoff detallado está en [CHAT-ARCH-2026-10-27-M1A-CROSS-CHAT-HANDOFF-MCP130-20261027.md](https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-27-M1A-CROSS-CHAT-HANDOFF-MCP130-20261027.md); el plan ratificado sin código en [MCP 1.30 implementation plan]( https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-27-M1A-G1-MCP130-IMPLEMENTATION-PLAN-NO-CODE.md ); el diseño Entra corregido en [Entra G1 design]( https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-27-M1A-G1-ENTRA-BOOTSTRAP-DESIGN-ONLY.md ).
