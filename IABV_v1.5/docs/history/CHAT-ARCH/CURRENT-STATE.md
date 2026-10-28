@@ -1,3 +1,28 @@
+## OVERRIDE — ToolTask dispatch and approval bridge continuity (2026-10-27)
+
+Continuity receipt: [UAAL dispatch/approval bridge](./CHAT-ARCH-2026-10-27-UAAL-DISPATCH-APPROVAL-BRIDGE-CONTINUITY.md). The source-derived approval lifecycle design is prepared as an isolated, uncommitted draft; review it before any implementation.
+
+The recorded sequence is:
+TASK_RESULT=BLOCKED_DISPATCH
+TASK_RESULT=BLOCKED_APPROVAL_BRIDGE_MISSING
+The existing interface route is visible in source, but activation from the local session was not achieved. The direct ToolTask-scoped route and same-task continuation are missing in the reviewed path; see the linked receipt for evidence classes and limits.
+
+Reported local blockers: UI automation failed with “failed to write kernel assets … os error 3”; a partial clone checkout stopped on “Filename too long”. Preserve existing directories and the partial clone. Do not repeat either operation without a materially changed precondition.
+
+TASK_SCOPED_APPROVAL_ROUTE=MISSING
+SAME_TASK_CONTINUATION=MISSING
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3=NOT_ESTABLISHED
+MCP_TOOL_ALLOWLIST=EMPTY
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+IMPLEMENTATION=NOT_AUTHORIZED
+AUTOMATIC_FOLLOW_ON=FALSE
+NEXT_ACTION=OWNER_REVIEW_OF_CONTRACTUAL_APPROVAL_DESIGN; NO_IMPLEMENTATION
+
+---
 ## Source-derived authority contract — next causal frontier (2026-10-27)
 
 The local UAC attempt is closed as `BLOCKED_BY_EXECUTION_TOOL_POLICY`; no prompt/process/query occurred. Do not retry or ask the Owner to perform manual Windows work.

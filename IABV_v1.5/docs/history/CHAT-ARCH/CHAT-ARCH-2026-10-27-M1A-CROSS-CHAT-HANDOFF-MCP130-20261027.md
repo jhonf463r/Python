@@ -1,3 +1,15 @@
+## Latest continuity delta — ToolTask approval bridge remains missing (2026-10-27)
+
+Canonical route: [CURRENT-STATE.md](./CURRENT-STATE.md). Process rules: [UAAL-CFCP-001](./CHAT-ARCH-2026-10-27-UAAL-EVIDENCE-TO-CAUSAL-FRONTIER-CONTINUITY-PROTOCOL-v1.md). Evidence and design boundary: [dispatch/approval bridge continuity receipt](./CHAT-ARCH-2026-10-27-UAAL-DISPATCH-APPROVAL-BRIDGE-CONTINUITY.md).
+
+The review of main 0672873489db434322cc1ef762e53c4f3aa0aec6 supports a source-visible UI route but not local activation or a direct task-scoped approval consumer. The missing seam remains ToolTask → verified request/result bound to the same task_id and authorized content → durable recovery → one execution claim. The contract design is a local isolated draft, not an implementation.
+
+Reported blockers: failed UI kernel initialization (“failed to write kernel assets … os error 3”) and partial clone checkout (“Filename too long”). Preserve those directories; do not repeat either unchanged attempt.
+
+G1/G2/G3=NOT_ESTABLISHED; MCP_TOOL_ALLOWLIST=EMPTY; PROTECTED_READS=FAIL_CLOSED; TUNNEL=DISABLED; BRIDGE=BRIDGE_NOT_READY; MERGE=NOT_AUTHORIZED.
+Next action: Owner review of the contractual approval design; implementation remains unauthorized.
+
+---
 ## Latest source-derived frontier after UAC execution-policy blocker (2026-10-27)
 
 The local elevation attempt was rejected before a process/UI existed. `UAC_REQUEST=BLOCKED_BY_EXECUTION_TOOL_POLICY`; `TPM=UNKNOWN`; `SECURE_BOOT=UNKNOWN`. Do not retry the invocation or ask the Owner to operate Windows manually.

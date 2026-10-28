@@ -145,3 +145,17 @@ This is **not** an Owner denial, not an OS/UAC rejection, and not evidence about
 The immediate next operation is not another hardware probe. Prepare a source-derived authority/bootstrap contract from the existing G1/G2/G3 code, identifying mandatory interfaces, trust binding, revocation and rollback requirements, and fail-closed composition tests. It must remain backend-agnostic between a future verified hardware-backed provider and any separately approved alternative, without selecting or provisioning either one. Then perform an exact-HEAD review and identify the first non-hardware decision that genuinely requires Owner consent.
 
 This is a workflow lesson: an agent-side tool policy blocker is a boundary of the execution channel, not an Owner task. Record the blocked action once and advance on the independent safe frontier.
+
+## 11. ToolTask-scoped human approval and same-task continuation (2026-10-27)
+
+1. Keep static source evidence separate from execution: visible UI, a prompt, a broker result, dispatch, external effect, returned result and captured evidence are distinct claims. Record provenance and do not promote a report to verified runtime fact.
+2. Do not retry the failed local UI/kernel initialization or the partial clone checkout that reported Filename too long unless a materially new precondition supports a different attempt. Preserve existing directories. Do not create a new task merely to reach an approval screen.
+3. A task approval must be immutably correlated to request_id, the existing task_id, server-resolved destination, operation/scope and a cryptographic digest of the exact authorized content. Any change invalidates that approval.
+4. An approved boolean, approved_by string, learned policy, VALIDATED state, or auto_resolved result is not proof of interactive human consent. Require a verifiable human actor and authority; auto-approval cannot satisfy a human-required gate.
+5. Prefer asynchronous durable suspension/resumption over blocking the execution/UI thread. The current in-memory synchronous broker wait does not establish safe UI scheduling or restart recovery.
+6. Define monotonic transitions, atomic claim/CAS, idempotent duplicate resolution, and explicit rejection of conflicting decisions. Specify expiry, cancellation races, errors, process restart, recovery of the same task_id and treatment of unknown external outcomes. Never infer approval from timeout or retry an uncertain non-idempotent effect.
+7. Distinguish sandbox success, actual dispatch, external acceptance/effect, returned result and capture. Each needs its own observable evidence and correlation to task_id; one stage does not prove the next.
+8. After any documentation write, verify fetch-back of every changed blob and the exact commit/ref. A successful local/API write request alone does not establish canonical adoption.
+9. Keep G1/G2/G3 unestablished, MCP allowlist empty, protected reads fail-closed, tunnel disabled and bridge not ready until independent evidence and separate authorization change those gates.
+
+This section records process/design requirements only; it does not authorize implementation or runtime activation.
