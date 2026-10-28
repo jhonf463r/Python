@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "concept_root_id": "UAAL-ROOT-001",
-  "updated_at": "2026-10-23",
+  "updated_at": "2026-10-28",
   "authority": {
     "conceptual": "docs/history/CHAT-ARCH/UNIVERSAL-ADAPTIVE-ALGORITHM-CONSTITUTION-2026-10-04.md",
     "routing": "docs/history/CHAT-ARCH/CURRENT-STATE.md",
@@ -315,6 +315,46 @@
       "next_open_edge": "Owner decision followed, only if authorized, by one execution of the exact candidate capture with correlated receipt; later demonstrate reuse by a changed subsequent decision.",
       "timestamp": "2026-10-23T10:23:00-05:00",
       "branch_or_sha": "9746f70f2fd330e9632c80630a844cdd08eb2bed"
+    },
+    {
+      "id": "UAAL-D020",
+      "parent": "UAAL-D019",
+      "type": "DESIGN",
+      "origin_type": "OWNER_DIRECTED_METHOD_CORRECTION_AND_EVIDENCE_DERIVED_COORDINATION",
+      "status": "DOCUMENTED_METHOD_NOT_RUNTIME_PROVEN",
+      "title": "Verified Progress Utility, Strategy Switching, and Preparation-Debt Control",
+      "source_records": [
+        "CHAT-ARCH-2026-10-28-UAAL-D020-VERIFIED-PROGRESS-UTILITY-STRATEGY-SWITCH.md",
+        "CHAT-ARCH-2026-10-26-UAAL-D019-SPACE-TIME-ANTI-LOOP-CAUSAL-FRONTIER.md",
+        "MEMORY-OPERATING-PROTOCOL.md"
+      ],
+      "derivation_reason": "The observed local-reader attempt stopped before changes, and the proposed follow-up focused on another local setup route without proving its superiority to other authorized repository capabilities. Anti-loop detection needs an explicit target-edge utility gate and a mandatory strategy reset when preparation accumulates without verified progress.",
+      "problem_or_objective": "Reduce time to a verified objective by preventing repeated preparation and selecting the shortest admissible route that closes a critical dependency or reduces decision-changing uncertainty.",
+      "new_mechanism_or_distinction": "Require an ADVANCE_CONTRACT, compare actually available authorized realizations after a blocker, mark setup artifacts PREPARATION_ONLY unless they satisfy a demonstrated prerequisite, reset after two consecutive preparation-only steps, and require material causal difference before a third attempt at the same edge.",
+      "dependencies_on_existing_organs": [
+        "UAAL-ROOT-001",
+        "UAAL-D014 Meta-Method Plasticity / Failure-to-Evolution Loop",
+        "UAAL-D018 Execution-to-Evidence Stage Separation and Projection Observability",
+        "UAAL-D019 Space-Time Anti-Loop and First-Open Causal Frontier",
+        "CURRENT-STATE.md as sole routing authority",
+        "Memory Operating Protocol"
+      ],
+      "affected_layer": "universal reasoning loop, task decomposition, strategy selection, cross-agent/tool routing, continuity and evidence reconciliation",
+      "epistemic_status": "DOCUMENTED_METHOD_NOT_RUNTIME_PROVEN; CAUSAL_REUSE_NOT_TESTED",
+      "evidence": "Owner/Codex-reported M1B preparation blocker; current chat's observed preparation-first response; live-main review of D019, Constitution and canonical routing/front-door files; directly inspected available GitHub connector capabilities during this method-update task.",
+      "falsifier": "A later non-identical task shows the method adds repeated overhead without improving target-edge closure or decision-changing information gain, or a direct route selected under the method repeatedly fails while the supposedly necessary preparation proves avoidable.",
+      "implementation_refs": [],
+      "experiment_refs": [
+        "M1B_CONTEXT_EXPORT_READONLY_READER_IMPLEMENTATION",
+        "M1B_CONTEXT_EXPORT_READONLY_READER_ISOLATED_RECOVERY_20261028_R2"
+      ],
+      "verification_refs": [],
+      "knowledge_delta": "Avoiding an identical retry is necessary but not sufficient; an actor can still loop through different preparatory activities unless every step proves causal usefulness to the target edge.",
+      "method_delta": "Advance contract; realization-surface comparison; preparation-debt status; two-step preparation reset; third-attempt causal-difference gate; post-action progress delta.",
+      "routing_delta": "Do not repeat the proposed local checkout recipe unchanged. Review the D020 method candidate, then apply it on the next authorized target action without reopening the terminal G1 asset assessment.",
+      "next_open_edge": "Independent review and canonical adoption of this method delta; subsequently test causal reuse in a non-identical task.",
+      "timestamp": "2026-10-28",
+      "branch_or_sha": "docs/uaal-d020-progress-utility-20261028"
     }
   ],
   "protocol_version": "UAAL-TRACE-1",

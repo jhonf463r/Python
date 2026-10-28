@@ -416,3 +416,24 @@ Outcomes must remain stage-specific: `NOT_INVOKED`, `INVOKED_NO_OBSERVATION`, `S
 **Current application:** a GitHub Actions run with `startup_failure` and `jobs=[]` did not execute IABV tests. Repeating the same workflow while the account billing-lock warning and relevant execution precondition are unchanged is not a discriminating code test. The current route is to resolve or obtain an official explanation for the account restriction; after a material precondition change, refresh live refs and execute the exact focused suites in the approved Windows/Python 3.11 environment. Source authority gates G1/G2/G3 remain separate and open.
 
 This concept reuses the existing memory, evidence, route and governance organs; it does not create another memory store, router, coordinator or agent. It is not proof of automated anti-loop runtime, model-weight changes, consciousness or learning. A future non-identical task must demonstrate the rule was retrieved, changed the chosen action, and produced an independently verified outcome before claiming causal reuse.
+
+
+## 20F. VERIFIED PROGRESS UTILITY AND STRATEGY SWITCHING (UAAL-D020)
+
+- `CONCEPT_ID=UAAL-D020`
+- `PARENT_CONCEPT_ID=UAAL-D019` (Space-Time Anti-Loop and First-Open Causal Frontier)
+- `REFINES=UAAL-D019; UAAL-D018`
+- `ROOT=UAAL-ROOT-001`
+- `CANONICAL_SOURCE=CHAT-ARCH-2026-10-28-UAAL-D020-VERIFIED-PROGRESS-UTILITY-STRATEGY-SWITCH.md`
+- `STATUS=DOCUMENTED_METHOD; RUNTIME_ENFORCEMENT_AND_CAUSAL_REUSE_NOT_PROVEN`
+
+**Problem:** an actor can avoid an identical retry yet still spend repeated cycles generating prompts, checkouts or plans without demonstrating that those preparations are the best authorized route to the North Star.
+
+**Universal invariant:** every action must carry an advance contract naming its target dependency edge, current evidence, authorization/preconditions, predicted observable, acceptance/stop condition and strategy-switch condition. Prefer verified edge closure; otherwise prefer decision-changing information gain. Preparatory work is admissible only when it removes a demonstrated prerequisite and no simpler supported realization is available.
+
+**Realization-independent method:** after a blocker, compare the actually available authorized capability surfaces rather than assuming the last actor, local checkout or transport is the only route. Select using causal fit, target reach, prerequisites, information gain, owner effort, risk/reversibility and independent verification. Do not generate another retry prompt until its causal difference and expected observable are explicit.
+
+**Recursive termination:** two consecutive preparation-only steps on the same objective trigger a mandatory strategy reset. Before a third attempt at the same target edge, require material new evidence and a demonstrably different causal route. A child task that cannot close a parent dependency or reduce decision-relevant uncertainty must not spawn further preparation tasks.
+
+**Required distinction:** a method/document update may be genuine progress when explicitly requested, but it is not product implementation or bridge readiness. The protocol remains documentation-only until a later non-identical task proves the method was retrieved, changed action selection and produced a verified outcome. This refinement reuses the existing route, memory and authorization organs; it creates no new coordinator or memory store.
+
