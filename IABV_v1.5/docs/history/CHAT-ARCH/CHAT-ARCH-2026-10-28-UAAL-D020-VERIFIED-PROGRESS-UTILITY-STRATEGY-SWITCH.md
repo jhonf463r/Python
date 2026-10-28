@@ -129,7 +129,40 @@ CAUSAL_REUSE=NOT_TESTED
 
 The existing G1 terminal result remains terminal under its original conditions. This method correction neither reopens the G1 assessment nor authorizes implementation, tests, runtime, credentials, trust bootstrap, protected reads, tunnel or deployment. The separately authorized task here is documentation-level method evolution only.
 
-## 8. Acceptance and falsification
+## 8. Cross-AI activation and causal reuse contract
+
+UAAL-D020 applies to the **participating AI sessions that consume the shared GitHub memory**, not only to the IABV product or its local runtime. This includes ChatGPT, Codex and other collaborators when they have an actual, permitted way to retrieve the repository context. The shared memory is an external context substrate: it can condition a session's reasoning when retrieved and applied, but does not automatically alter model weights, guarantee delivery to another session or prove that another agent consumed the lesson.
+
+For material routing, implementation-planning, continuity or protocol decisions, use this activation chain:
+
+```text
+VERIFY_LIVE_MAIN
+→ RETRIEVE_CURRENT_ROUTE_AND_OBJECTIVE_RELEVANT_METHOD
+→ BIND_RELEVANT_MEMORY_TO_CURRENT_FRONTIER
+→ COMPARE_CANDIDATE_ACTIONS_WITH_AND_WITHOUT_THE_RULE
+→ SELECT_ONE_AUTHORIZED_DISCRIMINATING_ACTION
+→ OBSERVE_AND_VERIFY_OUTCOME
+→ WRITE_BACK_KNOWLEDGE/METHOD/ROUTING_DELTA
+→ LATER_NONIDENTICAL_REUSE
+```
+
+Keep these stages distinct:
+
+- `MEMORY_RETRIEVED`: the actual live source/ref was retrieved; record exact path/revision or commit/blob when relevant.
+- `METHOD_ACTIVATED`: explain which rule applies to the current objective and why.
+- `METHOD_APPLIED`: state how the rule changed the candidate set, rejected a loop, changed the selected actor/channel or otherwise changed the next decision. When useful, record the plausible action that would have been selected without the rule; do not invent a counterfactual after the result.
+- `OUTCOME_VERIFIED`: the action's result was correlated with the exact target and acceptance condition.
+- `LATER_CAUSAL_REUSE`: only claim this when a later non-identical task, session or context retrieves the durable rule, changes its decision for the relevant reason, and produces an independently supported outcome.
+
+Retrieval is not activation; activation is not application; application is not successful outcome; writeback is not delivery; delivery attempt is not recipient receipt; a similar answer is not proof of causal reuse. If stage evidence is absent, report `UNKNOWN`, `NOT_OBSERVED` or `NOT_TESTED`, rather than infer success.
+
+Every material inter-agent handoff must preserve the exact task/target revision, the relevant evidence classes and terminal results, one target causal edge, authorization boundaries, expected receipt/acceptance, and the reason the destination AI is selected. Specify `IA DESTINO`, `CAPABILITY REQUIRED` and `WHY THIS AI NOW` near the top. Actor order remains dynamic: choose by current frontier, demonstrated capability, actual access and independent-verification need—not by a fixed historical sequence.
+
+Do not make every small task pay the cost of a full archive audit. Use the canonical current route and activate only relevant memory. For a material task, a concise activation/application receipt is sufficient; do not duplicate the entire history. Consolidate verified reusable lessons into the existing owning method and `SYMBIOSIS-MAP.md`, synchronize routing front doors when necessary, and fetch back canonical writeback. Do not create a second memory store, router or agent to solve a memory-use problem.
+
+**Observed scope correction (2026-10-28):** the Owner clarified that the intended developmental target is the shared method used by AIs consulting GitHub memory, not only IABV's local/product algorithms. The previous D020 writeback improved generic task selection but did not make the cross-AI consumption/application contract explicit in the symbiosis method. This extension repairs that connection; it does not prove that another session has consumed or reused the rule.
+
+## 9. Acceptance and falsification
 
 On a later, non-identical task, evaluate this method with a decision trace. Success requires evidence that the selector (a) names the target edge, (b) compares the proposed route with actually available authorized realizations, (c) rejects unsupported preparation loops, (d) chooses a route with a predicted observable, and (e) verifies the outcome before claiming progress. The trace must show that applying the rule changed the chosen action or outcome relative to the prior default.
 
