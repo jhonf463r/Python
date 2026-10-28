@@ -1,6 +1,6 @@
 ## OVERRIDE — UAAL-D020 verified-progress method candidate (2026-10-28)
 
-The Owner explicitly authorized a documentation-only evolution of the existing Space-Time/UAAL continuity method. This branch contains the proposed D020 refinement and linked front-door/lineage updates; it is not canonical main until the change is independently reviewed, adopted and fetched back from live `main`.
+The Owner explicitly authorized a documentation-only evolution of the existing Space-Time/UAAL continuity method. This branch contains the proposed D020 refinement and linked front-door/lineage updates. Canonical status is determined only by independent review, adoption and fetch-back verification of the exact content from live `main`; branch presence alone is not canonical adoption.
 
 Observed input: Codex reported `M1B_CONTEXT_EXPORT_READONLY_READER_IMPLEMENTATION` stopped before file modification because the target SHA was absent from the local object store and no isolated worktree could be created. The previous clone attempt had reported `Filename too long`. No code was changed; tests/build/runtime were not run. The subsequent proposed local sparse-checkout recipe was not executed and its superiority was not proven.
 
@@ -16,7 +16,7 @@ TESTS/BUILD/RUNTIME=NOT_RUN
 C_CODEX=UNCHANGED_BY_THIS_CHAT_TASK; PRESERVATION_REPORTED_BY_CODEX
 M1B_RETRY=DO_NOT_REPEAT_PROPOSED_CHECKOUT_ROUTE_WITHOUT_CAUSAL_COMPARISON
 NEXT_ACTION=REVIEW_DOCUMENTARY_DELTA; THEN APPLY METHOD TO A CONCRETE AUTHORIZED TASK
-CANONICAL_ADOPTION=NOT_YET_VERIFIED_ON_MAIN
+CANONICAL_ADOPTION=LIVE_MAIN_FETCHBACK_GATE
 TASK_ID_POLICY=NEW_TASK_PER_REVISION
 COMMIT_PROFILE=GATE_COMMIT
 OPTION_D=RATIFIED_NO_BOOTSTRAP
