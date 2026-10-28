@@ -1,3 +1,14 @@
+## Continuity update — M1A/R7 parallel track (2026-10-28)
+
+`ACTIVE_TASK=M1B_CONTEXT_READER_CANDIDATE_RECONCILIATION` remains the canonical operational route. M1B remains a local candidate pending publication and exact-source review; its reported tests and hashes are not independent execution evidence. The parallel M1A line is PR [#556](https://github.com/jhonf463r/Python/pull/556), open, draft and unmerged; it does not replace M1B or authorize implementation or dispatch.
+
+R7 (`1ef23ce47fa206fa751d90fd0c92bcab8a902a6b`) is a source-level fail-closed change for `LocalCliToolAdapter`, not runtime verification. The R6-05 finding is recorded at [review](https://github.com/jhonf463r/Python/pull/556#pullrequestreview-5689189939); R7's bounded review is at [review](https://github.com/jhonf463r/Python/pull/556#pullrequestreview-5689291633). The R7 Actions run `40763636904` ended `startup_failure`; its jobs list was empty, so no test job execution is evidenced. `TESTS=NOT_RUN`, `BUILD=NOT_RUN`, `RUNTIME=NOT_RUN`; no global PR acceptance is implied.
+
+Security and operational invariants are unchanged: `OPTION_D=RATIFIED_NO_BOOTSTRAP`; `G1/G2/G3=NOT_ESTABLISHED`; `MCP_TOOL_ALLOWLIST=EMPTY`; `PROTECTED_READS=FAIL_CLOSED`; `TUNNEL=DISABLED`; `BRIDGE=BRIDGE_NOT_READY`; `AUTOMATIC_FOLLOW_ON=FALSE`; `MERGE=NOT_AUTHORIZED`.
+
+This is a dated routing/evidence addendum only. The M1B receipt remains the active route authority; the M1A/R7 references preserve a parallel, source-only line and its evidence limits.
+---
+
 ## OVERRIDE — M1B reader candidate locally implemented; targeted suite reported passing (2026-10-28)
 
 This entry supersedes earlier top-level M1B NOT_STARTED / blocked-before-modification statements for current status; those entries preserve the earlier time-specific state. The local candidate is reported by Codex, not published to GitHub.
