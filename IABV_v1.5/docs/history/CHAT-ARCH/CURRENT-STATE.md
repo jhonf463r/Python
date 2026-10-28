@@ -1,27 +1,28 @@
-## OVERRIDE — Dual-track selector result after canonical method adoption (2026-10-28)
+## OVERRIDE — Owner-directed Control Master memory/source reconciliation (2026-10-28)
 
-The Owner-authorized method correction is adopted and fetch-back verified. The new selector has been applied to the current bridge objective. It preserves the terminal G1 asset-assessment result and does not treat it as a global project stop.
+The Owner explicitly requested continued progress, deeper analysis of the existing memory/algorithm organs, and correction of protocol/memory drift. The dual-track method correction has already been adopted. A separate source-static reconciliation found that three persisted Control Master objective descriptions remain stale relative to source code.
+
+Evidence report: [Continuity algorithms — supplemental Control Master source/backlog reconciliation](./CHAT-ARCH-2026-10-24-CONTINUITY-ALGORITHMS-STATIC-AUDIT.md), dated 2026-10-28. It is source-static evidence only; no local runtime, CLI invocation or tests were executed.
 
 ```text
-METHOD_CORRECTION=CANONICAL_FETCH_BACK_VERIFIED
-METHOD_PR=550
-METHOD_MERGE_COMMIT=ef29cc04e416ac11cbd9e0a3776914d06556666e
-DUAL_TRACK_SELECTION=APPLIED_2026-10-28
-LAST_TERMINAL_TASK=M1A_G1_EXISTING_TRUST_ASSETS_BOUNDED_READ_ONLY_ASSESSMENT
-LAST_TERMINAL_RESULT=NOT_RUN; REASON=SUPPORTED_ROUTE_NOT_FOUND
-G1_TECHNICAL_LANE=BLOCKED; DO_NOT_REPEAT_WITHOUT_NEW_EVIDENCE_OR_CHANGED_PRECONDITIONS
-INDEPENDENT_PROGRESS_LANE=OPEN_WHEN_A_CURRENT_OWNER_OBJECTIVE_OR_CANONICAL_AUTHORIZATION_SUPPORTS_A_CONCRETE_TASK
-PROJECT_WIDE_STOP=FALSE
-ACTIVE_BRIDGE_BLOCKER=NO_SUPPORTED_AUTHORIZED_ROUTE_TO_INSPECT_PREEXISTING_AUTHORITY_METADATA; AUTHORITY_ASSETS_UNKNOWN
-NEXT_ACTION=ON_NEW_OWNER_OBJECTIVE_OR_GENUINELY_NEW_EVIDENCE, APPLY_DUAL_TRACK_SELECTOR; DO_NOT_REOPEN_TERMINAL_G1_TASK_UNCHANGED
-WAIT_SCOPE=BRIDGE_G1_AUTHORITY_DEPENDENCY_ONLY
+OWNER_OBJECTIVE=KEEP_ADVANCING_AND_RECONCILE_MEMORY_ALGORITHMS
+ACTIVE_TASK=CONTROLMASTER_SOURCE_BACKLOG_RECONCILIATION_20261028
+TASK_SCOPE=SOURCE_STATIC_AND_DOCUMENTATION_ONLY
+DUAL_TRACK_ROUTING=CANONICAL; PR550_AND_PR551_MERGED
+CONTROL_MASTER_CLI=SOURCE_PRESENT; RUNTIME_NOT_RUN
+CONTROL_MASTER_WRITE_COMMANDS=SOURCE_PRESENT; UNIVERSAL_EXTERNAL_AI_ACCESS_UNKNOWN
+TASK_OUTCOME_LOOP=WIRING_AND_TEST_SOURCE_PRESENT; TESTS_NOT_RUN
+TRACKED_OBJECTIVE_SUMMARIES=STALE_VS_SOURCE; LIVE_LOCAL_STATE_UNKNOWN
+NEXT_ACTION=DESIGN_SIDE_EFFECT_BOUNDED_CONTEXT_EXPORT_AND_EXPLICIT_CROSS_AGENT_HANDOFF
 TASK_ID_POLICY=NEW_TASK_PER_REVISION
 COMMIT_PROFILE=GATE_COMMIT
 OPTION_D=RATIFIED_NO_BOOTSTRAP
 AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3=NOT_ESTABLISHED
 IMPLEMENTATION=NOT_AUTHORIZED
 TESTS/BUILD/RUNTIME=NOT_RUN
-G1/G2/G3=NOT_ESTABLISHED
 MCP_TOOL_ALLOWLIST=EMPTY
 PROTECTED_READS=FAIL_CLOSED
 TUNNEL=DISABLED
@@ -29,7 +30,7 @@ BRIDGE=BRIDGE_NOT_READY
 AUTOMATIC_FOLLOW_ON=FALSE
 ```
 
-No independent bridge task is currently both useful and authorized: implementation/runtime remain prohibited and the documented independent method task is complete. This is a task-local wait for new qualifying authority evidence or a separately scoped Owner objective, not permission to retry, bootstrap trust, or halt unrelated authorized project work.
+The old G1 asset assessment remains terminal and is not reopened. This independent memory/source reconciliation does not change objective statuses, create an authority root, authorize protected reads, or authorize product code/runtime. Direct GitHub edits to persisted objective state are not a substitute for the established `ControlMasterService` write path.
 
 ---
 
