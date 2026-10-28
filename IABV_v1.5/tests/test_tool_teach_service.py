@@ -158,8 +158,10 @@ def test_tool_teach_service_blocks_cloudflared_before_adapter_or_sandbox(monkeyp
         service.registry.adapters['local_cli'] = adapter
         adapter_calls: list[object] = []
         sandbox_calls: list[object] = []
+        process_calls: list[object] = []
         monkeypatch.setattr(adapter, 'is_available', lambda card: adapter_calls.append(card))
         monkeypatch.setattr(service.sandbox, 'run', lambda **kwargs: sandbox_calls.append(kwargs))
+        monkeypatch.setattr('iabv_v15.services.tools.tool_adapters.subprocess.run', lambda *args, **kwargs: process_calls.append((args, kwargs)))
         task = ToolTask(
             tool_id='cloudflared_cli',
             title='Tunnel launch attempt',
@@ -172,9 +174,10 @@ def test_tool_teach_service_blocks_cloudflared_before_adapter_or_sandbox(monkeyp
 
         assert result.success is False
         assert result.execution_state.state == 'blocked'
-        assert result.error_message == 'cloudflared_command_not_in_exact_read_only_allowlist'
+        assert result.error_message == 'local_cli_executable_identity_unverified'
         assert adapter_calls == []
         assert sandbox_calls == []
+        assert process_calls == []
     finally:
         shutil.rmtree(root, ignore_errors=True)
 

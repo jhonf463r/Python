@@ -4,7 +4,6 @@ import glob
 import logging
 import os
 import re
-import shlex
 import shutil
 import subprocess
 import sys
@@ -30,72 +29,12 @@ from iabv_v15.services.tools.ui_execution_runner import UIExecutionRunner
 
 
 def registered_command_block_reason(card: ToolCard, task: ToolTask) -> str | None:
-    """Fail closed for registered free-form shell and bridge/tunnel launches."""
+    """Fail closed where a registered process path lacks an identity verifier."""
     if card.adapter_key == 'shell':
         return 'free_form_shell_execution_disabled_until_os_isolation_exists'
-    if card.adapter_key != 'local_cli':
-        return None
-
-    args_text = ''
-    for action in task.actions:
-        if action.action_type == ToolActionType.RUN_COMMAND:
-            args_text = str(action.value or action.target or '').strip()
-            if args_text:
-                break
-    if not args_text:
-        args_text = str(task.metadata.get('command_args') or '').strip()
-    if not args_text:
-        args_text = str(card.metadata.get('version_command') or '--version').strip()
-    normalized = args_text.replace('\\', '/').casefold()
-    launch_markers = (
-        'iabv_v15.infra.mcp.server',
-        'mcp_hot_reload',
-        'run_mcp_bridge',
-        'start_iabv',
-    )
-    if any(marker in normalized for marker in launch_markers):
-        return 'mcp_or_tunnel_launcher_blocked'
-
-    configured_programs = [
-        str(card.metadata.get('command_name') or ''),
-        str(card.metadata.get('executable_path') or ''),
-        *(str(value or '') for value in (card.metadata.get('command_aliases') or [])),
-    ]
-    program_names = {
-        program.replace('\\', '/').rsplit('/', 1)[-1].casefold()
-        for program in configured_programs
-        if program.strip()
-    }
-    if program_names.intersection(
-        {
-            'python', 'python.exe', 'pythonw.exe', 'py', 'py.exe',
-            'powershell', 'powershell.exe', 'pwsh', 'pwsh.exe',
-            'cmd', 'cmd.exe', 'bash', 'bash.exe', 'sh', 'sh.exe',
-            'wscript.exe', 'cscript.exe',
-        }
-    ):
-        return 'command_interpreter_launch_blocked'
-
-    is_cloudflared = (
-        card.tool_id.casefold() == 'cloudflared_cli'
-        or str(card.metadata.get('tool_family') or '').casefold() == 'cloudflared'
-        or bool(program_names.intersection({'cloudflared', 'cloudflared.exe'}))
-        or any('/cloudflared/' in program.replace('\\', '/').casefold() for program in configured_programs)
-    )
-    if not is_cloudflared:
-        return None
-    try:
-        tokens = [token.casefold() for token in shlex.split(args_text)]
-    except ValueError:
-        return 'cloudflared_args_malformed'
-
-    # Only these exact read-only shapes are retained. In particular, no
-    # arbitrary `tunnel` subcommand, option, or suffix is accepted.
-    if tokens in (['--version'], ['version'], ['help'], ['tunnel', 'list']):
-        return None
-    if len(tokens) == 3 and tokens[:2] == ['tunnel', 'info'] and not tokens[2].startswith('-'):
-        return None
-    return 'cloudflared_command_not_in_exact_read_only_allowlist'
+    if card.adapter_key == 'local_cli':
+        return 'local_cli_executable_identity_unverified'
+    return None
 
 
 class ToolAdapter:
@@ -2643,178 +2582,32 @@ class SiteExplorerToolAdapter:
 
 
 class LocalCliToolAdapter:
-    """Adapter read-only para CLIs locales (gh, cloudflared, git, winget).
+    """Fail-closed adapter until executable provenance and integrity are verified.
 
-    Mantiene comandos arbitrarios fuera de ``ShellToolAdapter`` (fail-closed):
-    este conoce herramientas concretas, busca su
-    ejecutable en PATH o rutas Windows tipicas, restringe los verbos permitidos
-    y ejecuta con ``shell=False`` para no exponer inyeccion. Es la base que
-    consume ``ToolRegistry`` para ``gh_cli``, ``cloudflared_cli``, ``git_cli``
-    y ``winget_cli``.
-
-    Contratos respetados:
-    - No decide rutas: ``AutonomyGovernancePolicy`` sigue siendo el gate.
-      ``requires_human_approval=True`` en la ``ToolCard`` mantiene cualquier
-      operacion fuera del whitelist detras de ``ToolApprovalPolicy``.
-    - No inventa observaciones: si el binario no existe, ``is_available``
-      devuelve ``False`` y ``run`` corta antes del subprocess.
-    - Read-only por diseno: ``card.metadata['allowed_verbs']`` declara los
-      primeros tokens permitidos; ``BLOCKED_TOKENS`` bloquea tokens
-      destructivos aunque aparezcan listados por error en ``allowed_verbs``.
+    ``command_name``, aliases, ``executable_path``, Windows search paths and
+    ``PATH`` are configuration inputs, not proof of executable identity. No
+    verifier is currently wired for the built-in CLI cards, so this adapter
+    must not resolve or launch any of them.
     """
 
     tool_type = ToolType.SHELL
-
-    # Failsafe sobre la allowlist declarada por cada tool: aunque un operador
-    # agregue un verbo destructivo por error al ``allowed_verbs`` de una
-    # ``ToolCard``, los patrones abajo lo bloquean antes del subprocess.
-    # Defense in depth for the argv-based local CLI path. The free-form shell
-    # adapter is separately disabled until OS-level isolation is available.
-    BLOCKED_TOKENS: tuple[str, ...] = (
-        ' rm ',
-        ' rm -rf',
-        ' del ',
-        ' remove-item ',
-        ' format ',
-        ' shutdown ',
-        ' reboot ',
-        ' mkfs ',
-        ' reset --hard',
-        ' push --force',
-        ' push -f ',
-        ' clean -fd',
-    )
 
     def __init__(self, timeout_seconds: float = 20.0) -> None:
         self.timeout_seconds = timeout_seconds
 
     def is_available(self, card: ToolCard) -> bool:
-        return bool(self._resolve_executable(card))
+        return False
 
     def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False) -> dict[str, Any]:
         start = time.perf_counter()
-        block_reason = registered_command_block_reason(card, task)
-        if block_reason:
-            return self._fail(
-                start,
-                block_reason,
-                sandbox=sandbox,
-                executable='',
-                args=self._extract_args(task),
-                blocked=True,
-            )
-        executable = self._resolve_executable(card)
-        if not executable:
-            return self._fail(
-                start,
-                'executable_not_found',
-                sandbox=sandbox,
-                executable='',
-                args='',
-            )
-
-        args_text = self._extract_args(task)
-        if not args_text:
-            # Version probe por default. Nunca inventa: si la ToolCard declara
-            # otro ``version_command`` respeta esa intencion, sin caer a
-            # verbos destructivos.
-            args_text = str(card.metadata.get('version_command') or '--version').strip()
-
-        allowed = [
-            str(v).strip().lower()
-            for v in (card.metadata.get('allowed_verbs') or [])
-            if str(v or '').strip()
-        ]
-        first_token = args_text.strip().split()[0].lower() if args_text.strip() else ''
-        if allowed and first_token not in allowed:
-            return self._fail(
-                start,
-                f"verb '{first_token}' no esta en allowed_verbs {allowed}",
-                sandbox=sandbox,
-                executable=executable,
-                args=args_text,
-                blocked=True,
-            )
-
-        padded = f' {args_text.lower()} '
-        if any(token in padded for token in self.BLOCKED_TOKENS):
-            return self._fail(
-                start,
-                'argumento bloqueado por politica read-only de LocalCliToolAdapter',
-                sandbox=sandbox,
-                executable=executable,
-                args=args_text,
-                blocked=True,
-            )
-
-        # shlex.split(posix=True) preserva comillas dobles correctamente en
-        # ambos sistemas: ``log --format="%H %s"`` -> ``['log', '--format=%H %s']``.
-        # Usar posix=False romperia esto en Windows (el token quedaria partido
-        # en tres) — verificado empiricamente. Los args que recibe este adapter
-        # son declarados por ToolCards nuestras (no rutas libres del usuario),
-        # asi que el riesgo de backslashes conflictivos con el escape POSIX es
-        # nulo; si apareciera, hay que escapar con `\\\\` o single-quotes como
-        # en cualquier CLI tipo git.
-        try:
-            tokens = shlex.split(args_text)
-        except ValueError as exc:
-            return self._fail(
-                start,
-                f'args malformados: {exc}',
-                sandbox=sandbox,
-                executable=executable,
-                args=args_text,
-                blocked=True,
-            )
-        cmd_list = [executable, *tokens]
-        try:
-            completed = subprocess.run(
-                cmd_list,
-                capture_output=True,
-                text=True,
-                shell=False,
-                check=False,
-                timeout=self.timeout_seconds,
-            )
-        except subprocess.TimeoutExpired:
-            return self._fail(
-                start,
-                f'timeout {self.timeout_seconds}s',
-                sandbox=sandbox,
-                executable=executable,
-                args=args_text,
-            )
-        except (FileNotFoundError, OSError) as exc:
-            return self._fail(
-                start,
-                f'{type(exc).__name__}: {exc}',
-                sandbox=sandbox,
-                executable=executable,
-                args=args_text,
-            )
-
-        success = completed.returncode == 0
-        stderr = (completed.stderr or '').strip()
-        stdout = (completed.stdout or '').strip()
-        return {
-            'success': success,
-            'output_text': stdout,
-            'extracted_data': {
-                'stderr': stderr,
-                'returncode': completed.returncode,
-                'args': args_text,
-                'tool_id': card.tool_id,
-            },
-            'artifacts': [],
-            'error_message': '' if success else (stderr or stdout),
-            'execution_ms': int((time.perf_counter() - start) * 1000),
-            'metadata': {
-                'sandbox': sandbox,
-                'executable': executable,
-                'args': args_text,
-                'blocked': False,
-            },
-        }
+        return self._fail(
+            start,
+            'local_cli_executable_identity_unverified',
+            sandbox=sandbox,
+            executable='',
+            args=self._extract_args(task),
+            blocked=True,
+        )
 
     def _extract_args(self, task: ToolTask) -> str:
         for action in task.actions:
@@ -2826,49 +2619,9 @@ class LocalCliToolAdapter:
         return str(task.metadata.get('command_args') or '').strip()
 
     def _resolve_executable(self, card: ToolCard) -> str:
-        explicit = str(card.metadata.get('executable_path') or '').strip()
-        if explicit and self._path_exists(explicit):
-            return explicit
-        candidates: list[str] = []
-        command_name = str(card.metadata.get('command_name') or '').strip()
-        if command_name:
-            candidates.append(command_name)
-        for alias in card.metadata.get('command_aliases') or []:
-            text = str(alias or '').strip()
-            if text:
-                candidates.append(text)
-        for name in candidates:
-            resolved = shutil.which(name)
-            if resolved:
-                return resolved
-        for pattern in card.metadata.get('windows_default_paths') or []:
-            for cand in self._expand_candidate_paths(str(pattern)):
-                if cand and self._path_exists(cand):
-                    return cand
+        # Retained for callers that inspect resolution, but no source is
+        # accepted as trusted until an identity/integrity verifier is wired.
         return ''
-
-    def _expand_candidate_paths(self, candidate: str) -> list[str]:
-        replacements = {
-            '{localappdata}': os.environ.get('LOCALAPPDATA', ''),
-            '{appdata}': os.environ.get('APPDATA', ''),
-            '{programfiles}': os.environ.get('ProgramFiles', ''),
-            '{programfilesx86}': os.environ.get('ProgramFiles(x86)', ''),
-            '{userprofile}': os.environ.get('USERPROFILE', ''),
-        }
-        expanded = candidate
-        for token, value in replacements.items():
-            expanded = expanded.replace(token, value)
-        if os.sep != '\\':
-            expanded = expanded.replace('\\', os.sep)
-        if any(token in expanded for token in ('*', '?', '[')):
-            return [str(Path(item)) for item in glob.glob(expanded, recursive=True)]
-        return [expanded]
-
-    def _path_exists(self, candidate: str) -> bool:
-        try:
-            return Path(candidate).exists()
-        except OSError:
-            return False
 
     def _fail(
         self,
