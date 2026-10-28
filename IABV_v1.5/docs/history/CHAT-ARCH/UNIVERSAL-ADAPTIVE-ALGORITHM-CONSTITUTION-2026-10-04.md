@@ -459,3 +459,13 @@ This concept reuses the existing memory, evidence, route and governance organs; 
 
 **Required distinction:** a method/document update may be genuine progress when explicitly requested, but it is not product implementation or bridge readiness. The protocol remains documentation-only until a later non-identical task proves the method was retrieved, changed action selection and produced a verified outcome. This refinement reuses the existing route, memory and authorization organs; it creates no new coordinator or memory store.
 
+## 20G. ROUTE TRUTH, ARTIFACT IDENTITY, AND VERIFIED-PROGRESS SELECTION (UAAL-D021)
+
+- `CONCEPT_ID=UAAL-D021`
+- `PARENT_CONCEPT_ID=UAAL-D020; UAAL-D019`
+- `ROOT=UAAL-ROOT-001`
+- `CANONICAL_SOURCE=CHAT-ARCH-2026-10-28-UAAL-D021-ROUTE-TRUTH-ARTIFACT-IDENTITY-AND-ADVANCE-UTILITY.md`
+- `STATUS=PROPOSED_DOCUMENT_METHOD; NOT_CANONICAL_UNTIL_INTEGRATED; RUNTIME_ENFORCEMENT_AND_LATER_CAUSAL_REUSE_NOT_PROVEN`
+
+UAAL-D021 refines progress selection where entry snapshots, current route, remote artifacts and version-specific hashes can disagree. It requires live route retrieval, discovery of existing realizations before new handoffs or publication, revision-bound identity for each digest, correction of stale entry snapshots from verified evidence, and progress labels tied to observable change at the first open edge. It reuses existing organs rather than creating a second router, memory store, coordinator or authorization authority. It must not weaken governance, human authorization, uncertainty labels, or the distinction between a published branch and canonical main.
+

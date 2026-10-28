@@ -27,6 +27,11 @@ This harmonizes the collaboration protocol with the entry contract; it does not 
 
 Relevant prior failures must alter at least one concrete part of the task contract when applicable: object lock, scope exclusions, source requirements, test matrix, evidence requirement, stop condition or acceptance gate. Merely quoting history does not count.
 
+## UAAL-D021 route-realization and artifact-identity gate (proposed, 2026-10-28)
+
+Before constructing a handoff for any publish/update/retest/clone/implementation action, query the live repository for an existing branch, commit, pull request, exact file blobs and reviews that can satisfy the objective. Bind each expected hash to an exact artifact revision and evidence stage; never compare an R3 receipt with R4 bytes as though they were the same candidate. If an entry snapshot conflicts with live `CURRENT-STATE.md`, the canonical route wins and the stale snapshot must be reconciled before action selection. Record existing route alternatives and why the selected action has greater target-edge utility. This refinement is proposed in the current documentation PR and is not canonical on `main` until integrated and fetched back.
+
+
 The current result adjudication examples are:
 - RQ21.55: the report changed the object to research about Deep Research itself;
 - RQ21.56: the report remained in the broad Windows sandbox domain but failed the required seven-guarantee composition and source contract.

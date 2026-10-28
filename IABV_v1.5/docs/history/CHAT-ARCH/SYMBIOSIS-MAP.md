@@ -12,6 +12,8 @@ Select actors dynamically from the current frontier, required capability, demons
 
 UAAL-D020 is the owning progress-utility method: [UAAL-D020](./CHAT-ARCH-2026-10-28-UAAL-D020-VERIFIED-PROGRESS-UTILITY-STRATEGY-SWITCH.md). The live operating details are in the [Space-Time continuity protocol](./CHAT-ARCH-2026-10-23-CONTINUITY-SPACE-TIME-OPERATING-PROTOCOL-v1.md). This overlay does not claim runtime enforcement, universal context delivery, model-weight changes or causal reuse already proven.
 
+[UAAL-D021 — Route Truth, Artifact Identity, and Verified-Progress Selection](./CHAT-ARCH-2026-10-28-UAAL-D021-ROUTE-TRUTH-ARTIFACT-IDENTITY-AND-ADVANCE-UTILITY.md) adds a cross-AI guard against stale route snapshots, revision-unbound hashes and handoffs that skip existing remote artifacts. It is proposed in the current documentation PR; automatic runtime enforcement is not claimed.
+
 ### M1B code-candidate evidence gate — applied lesson (2026-10-28)
 
 The R1→R3 reader episode adds a specific correction to cross-agent code handoffs:
