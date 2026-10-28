@@ -2497,3 +2497,8 @@ La selección sigue siendo dinámica y nunca una secuencia fija, pero el resulta
 `objective → current truth → first open edge → required capability → capability-fit → IA DESTINO CONCRETA → prompt/action`.
 
 Si la IA concreta no puede determinarse con evidencia suficiente, debe declararse explícitamente `DESTINO NO DETERMINABLE` y explicar qué dato falta; no dejar un actor genérico como si fuera un handoff ejecutable.
+
+
+## 2026-10-28 ROUTING ADDENDUM — SOURCE/BACKLOG RECONCILIATION
+
+For the current Control Master context-export and cross-agent handoff gap, first read `docs/history/CHAT-ARCH/CURRENT-STATE.md`, then `CHAT-ARCH-2026-10-24-CONTINUITY-ALGORITHMS-STATIC-AUDIT.md` and its 2026-10-28 supplemental reconciliation. The source shows CLI/write/outcome-loop components that the tracked objective summaries still describe as missing. Treat this as source-static only; do not run `cm export-digest` until its `AppBootstrap` side effects are removed or explicitly authorized. Next task is a side-effect-bounded context-export design and explicit handoff/acknowledgement contract, not another broad memory audit.
