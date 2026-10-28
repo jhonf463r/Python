@@ -5142,40 +5142,26 @@ class AppBootstrap:
                     except Exception:
                         pass
 
-            # --- MCP autostart ---
+            # --- MCP bridge status ---
             if self._splash:
                 self._splash.set_status('Verificando servicios MCP...')
                 try:
                     QGuiApplication.instance().processEvents()
                 except Exception:
                     pass
-
-            skip_mcp = os.environ.get('IABV_SKIP_MCP_AUTOSTART', '') == '1'
-            mcp_port = int(os.environ.get('FASTMCP_PORT', '8000'))
-            if skip_mcp:
-                logger.info('mcp_autostart: skipped (IABV_SKIP_MCP_AUTOSTART=1)')
-            elif not self._is_mcp_port_in_use(mcp_port):
-                if self._splash:
-                    self._splash.set_status('Iniciando servidor MCP...')
-                    try:
-                        QGuiApplication.instance().processEvents()
-                    except Exception:
-                        pass
-                def _deferred_mcp_start() -> None:
-                    self._mcp_proc = self._start_mcp_subprocess()
-                    if self._mcp_proc:
-                        import time
-                        time.sleep(2)
-                        self._tunnel_proc = self._start_tunnel_subprocess()
-                    # Task 8: start supervision after initial launch
-                    self._start_mcp_supervisor()
-                threading.Thread(
-                    target=_deferred_mcp_start,
-                    name='mcp-deferred-start',
-                    daemon=True,
-                ).start()
+            bridge = getattr(self, 'mcp_bridge_service', None)
+            if bridge is None:
+                logger.warning('MCP startup remains blocked: composed bridge is unavailable')
             else:
-                logger.info('mcp_autostart: port %d already in use, skipping MCP launch', mcp_port)
+                try:
+                    status = bridge.ensure_started()
+                    if getattr(status, 'governance_blocked', False):
+                        logger.info(
+                            'MCP startup remains blocked by bridge composition: %s',
+                            getattr(status, 'governance_reason', None),
+                        )
+                except Exception:
+                    logger.exception('MCPBridgeService rejected or failed startup; no legacy fallback is allowed')
 
             # --- Startup evolution: defer until the main event loop is alive ---
             if self._splash:

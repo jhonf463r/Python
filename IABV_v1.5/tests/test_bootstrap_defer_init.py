@@ -140,6 +140,105 @@ def test_legacy_tunnel_autostart_is_disabled() -> None:
     popen.assert_not_called()
 
 
+def test_run_uses_fail_closed_bridge_without_legacy_mcp_subprocess(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from types import SimpleNamespace
+
+    import iabv_v15.bootstrap as bootstrap_module
+    from iabv_v15.bootstrap import AppBootstrap
+    from iabv_v15.services.security.read_authorization import ReadAuthorizationCoordinator
+
+    monkeypatch.delenv('IABV_SKIP_MCP_AUTOSTART', raising=False)
+    monkeypatch.delenv('FASTMCP_PORT', raising=False)
+    monkeypatch.delenv('IABV_MCP_BIND_HOST', raising=False)
+    monkeypatch.delenv('IABV_MCP_BIND_PORT', raising=False)
+    monkeypatch.delenv('IABV_MCP_TRANSPORT', raising=False)
+    monkeypatch.setattr(bootstrap_module, 'PYSIDE_AVAILABLE', False)
+
+    class FakeRunner:
+        def __init__(self) -> None:
+            self.started = 0
+
+        def run_threaded(self, **_kwargs: object) -> object:
+            self.started += 1
+            raise AssertionError('unconfigured bridge must not start the MCP server')
+
+        def stop(self) -> None:
+            return None
+
+    class FakeThread:
+        def __init__(self, *, target, **_kwargs: object) -> None:
+            self._target = target
+
+        def start(self) -> None:
+            self._target()
+
+    class FakeSignal:
+        def connect(self, _callback: object) -> None:
+            return None
+
+    class FakeTimer:
+        def __init__(self) -> None:
+            self.timeout = FakeSignal()
+
+        @staticmethod
+        def singleShot(*_args: object) -> None:
+            return None
+
+        def setInterval(self, _interval: int) -> None:
+            return None
+
+        def start(self) -> None:
+            return None
+
+    fake_runner = FakeRunner()
+    bootstrap = AppBootstrap.__new__(AppBootstrap)
+    bootstrap.config = SimpleNamespace(logs_dir=tmp_path, workspace_root=tmp_path)
+    bootstrap._services_wired = False
+    bootstrap._timeline = SimpleNamespace(mark=lambda *_args, **_kwargs: None)
+    bootstrap._tool_availability_logged = True
+    bootstrap._startup_evolution_initial_delay_ms = lambda: 0
+    bootstrap.read_authorization_coordinator = ReadAuthorizationCoordinator.unconfigured()
+
+    def wire_fail_closed_bridge() -> None:
+        bootstrap.mcp_bridge_service = bootstrap._create_mcp_bridge_service()
+        bootstrap.mcp_bridge_service._server_runner = fake_runner
+        bootstrap.mcp_bridge_service._status.enabled_pref = True
+        status = bootstrap.mcp_bridge_service.ensure_started()
+        assert status.governance_blocked is True
+        bootstrap._services_wired = True
+
+    bootstrap._wire_services = wire_fail_closed_bridge
+    bootstrap.create_engine = lambda **_kwargs: (
+        SimpleNamespace(exec=lambda: 0),
+        SimpleNamespace(rootObjects=lambda: []),
+    )
+    bootstrap.ui_heartbeat_watchdog = SimpleNamespace(
+        DEFAULT_TICK_INTERVAL_MS=1000,
+        tick=lambda: None,
+        start_sampler=lambda: None,
+    )
+    bootstrap._stop_mcp_supervisor = lambda: None
+    bootstrap._start_mcp_supervisor = lambda: None
+    monkeypatch.setattr(bootstrap_module, 'QTimer', FakeTimer)
+    monkeypatch.setattr(bootstrap_module.threading, 'Thread', FakeThread)
+    port_probes: list[int] = []
+    monkeypatch.setattr(
+        bootstrap,
+        '_is_mcp_port_in_use',
+        lambda port: port_probes.append(port) or False,
+    )
+
+    with patch('subprocess.Popen', side_effect=AssertionError('legacy MCP subprocess launch is forbidden')) as popen:
+        assert bootstrap.run() == 0
+
+    popen.assert_not_called()
+    assert port_probes == []
+    assert fake_runner.started == 0
+    assert bootstrap.mcp_bridge_service.status().governance_blocked is True
+
+
 def test_deferred_init_is_fast(tmp_path: Path) -> None:
     """Deferred __init__ should complete in well under 2 seconds."""
     from iabv_v15.bootstrap import AppBootstrap
