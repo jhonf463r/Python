@@ -237,6 +237,19 @@ For each transition retain the supporting evidence and the exact source revision
 
 For agent coordination, use the current frontier to choose the destination by demonstrated capability and actual access. Every handoff identifies `IA DESTINO`, `CAPABILITY REQUIRED`, and `WHY THIS AI NOW`, plus target revision, relevant prior decisions, evidence labels, authorization, expected receipt and stop condition. If a session cannot access GitHub, hand it a bounded relevant context bundle through an actual supported route and do not claim delivery until receipt is observed. Reuse this protocol rather than create a competing cross-AI router or another memory store.
 
+### M1B code-candidate evidence gate — applied lesson (2026-10-28)
+
+The R1→R3 reader episode adds a specific correction to cross-agent code handoffs:
+
+1. **Separate evidence stages:** LOCAL_CANDIDATE_REPORTED → EXACT_FINAL_SOURCE_AVAILABLE → STATIC_REVIEWED → TESTS_EXECUTED → SOURCE_PUBLISHED_BRANCH → PR_DIFF_REVIEWED → MAIN_FETCHBACK_VERIFIED. Do not collapse these into implemented or done.
+2. **Identify exact bytes and Git state.** Record base SHA, branch, git status, path, size and SHA-256 for each file. Untracked files are not part of a normal HEAD diff; do not claim they are in GitHub. A hash is not a substitute for reviewer access to that content.
+3. **Review the final version, not a prior draft.** If source changes after review, re-review the changed lines and bind the review to the final source hash. When the final source is not available in full, label the review partial.
+4. **Validate schema against reality.** Compare validators with live domain-model definitions and actual versioned artifact shapes. Test malformed cases and legitimate examples. Dates labelled UTC must include an explicit timezone; test Z/offset acceptance and naive-datetime rejection.
+5. **Treat tests as an authorized, distinct action.** Record exact interpreter, version, command, scope, counts and exit code. A targeted suite pass does not prove the full suite, build, runtime, race resistance, publication or bridge authorization.
+6. **Promote by verifiable evidence.** When the local candidate exists and tests are reported passing, do not reclone or reimplement. Publish that exact candidate to an isolated branch/PR, review the actual diff and fetch back the exact merged result if/when merge is authorized.
+7. **Preserve provenance.** Mark execution received from Codex OWNER_CODEX_REPORTED until independently reproduced or corroborated by retrievable CI evidence. A detailed receipt alone does not elevate the result to independently VERIFIED.
+
+This method refinement is based on one bounded case; it does not prove runtime enforcement or later causal reuse. A later counterexample showing the gate caused avoidable work or failed to detect a source mismatch must be recorded and used to revise the rule. Receipt: [M1B implementation and test receipt](https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-28-M1B-CONTEXT-READER-IMPLEMENTATION-AND-TEST-RECEIPT.md).
 **Evolve in place; preserve history.** When a new lesson overlaps an existing rule, revise or clarify that rule in its owning section instead of stacking another loosely connected appendix. Preserve the incident, decision and old state as dated history; link it to the current rule and record why the change was made. Keep `CURRENT-STATE.md` the only route authority and synchronize its front-door summaries in the same change. If two rules conflict, make the precedence explicit and consolidate the owning rule; do not let multiple summaries become rival policies.
 
 Promote a candidate lesson into a live operating rule only when:
