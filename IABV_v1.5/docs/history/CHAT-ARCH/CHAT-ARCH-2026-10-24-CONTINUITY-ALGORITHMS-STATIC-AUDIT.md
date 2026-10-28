@@ -66,3 +66,58 @@ These steps need their own bounded authorization and, where execution is necessa
 This audit does not replace or reorder the current trust-organ source task. The immediate source task remains `M1A_G1_REGISTER_READ_AUTHORIZATION_IN_APPBOOTSTRAP`. The audit identifies a separate continuity workstream to schedule after that task reaches a reviewed candidate result and its gates/permissions are reconciled.
 
 The purpose is to prevent two opposite errors: declaring the continuity organs functional from class/wiring existence alone, and disregarding existing architecture by inventing another memory/orchestrator. First verify the existing links end-to-end; then repair the smallest proven gap in the owning component.
+
+
+---
+
+## Supplemental reconciliation — Control Master super-sync source vs persisted backlog (2026-10-28)
+
+- Current verified main at review: `9a8738565ac2d100bcd4af906081c00f3cf15384`.
+- Scope: bounded source/backlog reconciliation; no local Windows access, command execution, tests, build, runtime, MCP invocation or product-code modification.
+- Status: `SOURCE_STATIC_RECONCILIATION`; live local Control Master state remains `UNKNOWN`.
+
+### Findings
+
+| Area | Live source evidence | Persisted objective/backlog claim | Reconciled status |
+|---|---|---|---|
+| Digest CLI | `cli/control_master.py` defines `cm export-digest`, supports JSON/Markdown, and defines `set-vision`, `add-objective`, `mark-objective`, `record-decision`, and `mark-unresolved`. `__main__.py` dispatches the `cm` namespace. | `obj-super-sync-cli-export` says the CLI entrypoint is missing and gives the obsolete command `python -m iabv_v15 export-digest`. | The CLI route is present in source. The documented command should be `python -m iabv_v15 cm export-digest --format markdown`. Runtime behavior is `NOT_RUN`; do not mark the objective completed from source presence alone. |
+| Write bridge | The CLI exposes write commands which call `ControlMasterService` / `ObjectiveRepository`. | `obj-super-sync-write-bridge` says the CLI write affordance is missing. | CLI affordances exist in source. Whether they are safely and automatically callable by each external AI session, and whether the UI path is complete, remains `UNKNOWN`. |
+| Outcome loop | `TaskOutcomeRecorder.record()` persists the session then calls `_propagate_to_control_master()`; `bootstrap.py` injects `control_master_service`. The source test file `tests/test_control_master_outcome_loop.py` specifies terminal-status propagation, unresolved propagation, and recorder resilience. | `obj-super-sync-outcome-loop` says that this wiring is absent. | Wiring and matching tests exist in source. Tests/runtime were not executed in this review; objective completion is not established here. |
+| Active Control Master snapshot | Tracked `data/evolution/control_master/latest.json` still lists `obj-super-sync-cli-export`, `obj-super-sync-write-bridge`, and `obj-super-sync-outcome-loop` as active and has no completed objectives. The three tracked objective JSON files retain summaries describing the missing source functions. | Backlog and source disagree. | This is a verified tracked-data/source inconsistency, not proof of what the live local database currently contains. Do not modify objective status by hand or directly through GitHub. |
+| Context export side effects | `cmd_export_digest()` calls `_bootstrap()`, which creates `AppBootstrap`. Its constructor calls `_auto_load_secrets()`, loads application configuration, creates workspace directories and configures logging before the export method is called. | The CLI docstring describes use without booting the UI; that does not make the path side-effect-free. | Do not execute the command as if it were a pure/read-only export. Runtime remains `NOT_RUN`. Design a narrower, side-effect-bounded export path before authorizing any invocation from an agent workflow. |
+| Cross-agent bridge | The documented Dropbox bridge exists at `/IABV-IA-BRIDGE/`; its observed INBOX/OUTBOX contents are from 2026-10-25/26, with no current 2026-10-28 Control Master handoff in the listed folders. | The vision in tracked `latest.json` expects automatic session-entry reading and structured writeback at session close. | A shared exchange path and historical artifacts exist, but automatic current context injection into every ChatGPT/Codex session and automatic closeout writeback are not established. |
+
+### Source identities fetched from live main
+
+- `src/iabv_v15/cli/control_master.py`: `077557fa07c08d4c00834a03daa5670f97e6bcbd`.
+- `src/iabv_v15/__main__.py`: `6710dd5600fbc35c298b88afc83183ef759615ca`.
+- `src/iabv_v15/services/adaptive/task_outcome_recorder.py`: `fddf3f90e15b4ec74ad813441ceeac18458e0118`.
+- `src/iabv_v15/bootstrap.py`: `e4befa6b683fc87aed7481f377f1332f5753e2c3`.
+- `tests/test_control_master_outcome_loop.py`: `ce106628c8a21d750385dc29f71d2fb9ee055c66`.
+- `tests/test_control_master_integration.py`: `da023e74bb71518cb1ad9b985724d2cb8874e6cf`.
+- `data/evolution/control_master/latest.json`: `d76d521e6f8d73e874a21ffe1b720dcdbcd48293`.
+- `data/evolution/objectives/obj-super-sync-cli-export.json`: `f2bd144eef17d25e7e7a14ca79f1ca39bb9e9d38`.
+- `data/evolution/objectives/obj-super-sync-write-bridge.json`: `03ca22f21981a3be1fe349ecaaadf73a67edf88f`.
+- `data/evolution/objectives/obj-super-sync-outcome-loop.json`: `ea075ba37d4a139e28074b321731f9e722a73ee3`.
+
+### Corrective route
+
+1. Preserve the existing objective IDs and current persisted objective states for now; do not manufacture completion evidence or edit the data files directly around `ControlMasterService`.
+2. Prepare a design for a **bounded, side-effect-free Control Master context export** that does not instantiate the full `AppBootstrap`, load credentials/secrets, create directories, start background services, or mutate objective state.
+3. Define explicit envelope metadata for source state ID, generation/update time, age/freshness, active objective IDs, objective-source links, unresolved state and provenance. Clearly distinguish source data from derived cache/freshness metadata.
+4. Specify an explicit external-agent handoff/acknowledgement and session-close writeback contract. A shared Dropbox folder or CLI alone does not prove every AI session is connected.
+5. Only after a separate implementation/runtime authorization, validate the command in the intended local workspace and use the existing Control Master service path to reconcile objective statuses. No status is changed by this static report.
+
+```text
+CONTROL_MASTER_CLI=SOURCE_PRESENT; RUNTIME_NOT_RUN
+CONTROL_MASTER_WRITE_COMMANDS=SOURCE_PRESENT; UNIVERSAL_EXTERNAL_AI_ACCESS_UNKNOWN
+TASK_OUTCOME_LOOP=WIRING_AND_TEST_SOURCE_PRESENT; TESTS_NOT_RUN
+TRACKED_OBJECTIVE_SUMMARIES=STALE_VS_SOURCE
+LIVE_LOCAL_CONTROL_MASTER_STATE=UNKNOWN
+NEXT_ACTION=DESIGN_SIDE_EFFECT_BOUNDED_CONTEXT_EXPORT_AND_EXPLICIT_CROSS_AGENT_HANDOFF
+IMPLEMENTATION=NOT_AUTHORIZED
+TESTS/BUILD/RUNTIME=NOT_RUN
+G1/G2/G3=NOT_ESTABLISHED
+PROTECTED_READS=FAIL_CLOSED
+BRIDGE=BRIDGE_NOT_READY
+```
