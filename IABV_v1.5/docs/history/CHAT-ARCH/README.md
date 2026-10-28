@@ -3288,3 +3288,7 @@ Authority separation:
 historical records = evidence/history.
 
 Every material human/AI idea should be preserved as a concept or explicit revision/competing interpretation with parent, origin, derivation reason, epistemic status, evidence and next open edge.
+
+## 2026-10-28 CURRENT ROUTING DELTA — CONTROL MASTER MEMORY/SOURCE DRIFT
+
+Current bounded reconciliation: `CHAT-ARCH-2026-10-24-CONTINUITY-ALGORITHMS-STATIC-AUDIT.md` (2026-10-28 supplemental section). It reconciles the source-present CLI/write/outcome-loop against stale tracked objective summaries, and identifies that the current digest command initializes `AppBootstrap`; it is not established as side-effect-free. Next: design a narrow context export plus explicit cross-agent delivery/acknowledgement and closeout writeback. Runtime/tests remain `NOT_RUN`; live local state remains `UNKNOWN`.
