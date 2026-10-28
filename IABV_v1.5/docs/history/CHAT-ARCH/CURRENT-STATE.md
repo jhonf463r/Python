@@ -1,34 +1,35 @@
-## OVERRIDE — Owner-directed dual-track continuity routing (2026-10-28)
+## OVERRIDE — Dual-track selector result after canonical method adoption (2026-10-28)
 
-This route records the Owner's explicit instruction to learn from the current interaction, evolve the existing Space-Time/memory algorithm, and keep useful progress moving. It does not reopen a terminal G1 inspection or relax any technical gate.
+The Owner-authorized method correction is adopted and fetch-back verified. The new selector has been applied to the current bridge objective. It preserves the terminal G1 asset-assessment result and does not treat it as a global project stop.
 
 ```text
-OWNER_INSTRUCTION=EVOLVE_EXISTING_CONTINUITY_AND_MEMORY_ROUTING; EXPLICIT_CHAT_REQUEST
-ACTIVE_TASK=OBJECTIVE_FIRST_DUAL_TRACK_PROGRESS_SELECTION
-TASK_SCOPE=AUTHORIZED_PLANNING_AND_DOCUMENTATION_SELECTION; NO_PRODUCT_IMPLEMENTATION
+METHOD_CORRECTION=CANONICAL_FETCH_BACK_VERIFIED
+METHOD_PR=550
+METHOD_MERGE_COMMIT=ef29cc04e416ac11cbd9e0a3776914d06556666e
+DUAL_TRACK_SELECTION=APPLIED_2026-10-28
 LAST_TERMINAL_TASK=M1A_G1_EXISTING_TRUST_ASSETS_BOUNDED_READ_ONLY_ASSESSMENT
 LAST_TERMINAL_RESULT=NOT_RUN; REASON=SUPPORTED_ROUTE_NOT_FOUND
-METHOD_CORRECTION=DUAL_TRACK_ROUTING; DOCUMENTATION_PR=550
-TECHNICAL_FRONTIER=M1A_G1_TRUST_BOOTSTRAP_AUTHORITY_BOUNDARY
+G1_TECHNICAL_LANE=BLOCKED; DO_NOT_REPEAT_WITHOUT_NEW_EVIDENCE_OR_CHANGED_PRECONDITIONS
+INDEPENDENT_PROGRESS_LANE=OPEN_WHEN_A_CURRENT_OWNER_OBJECTIVE_OR_CANONICAL_AUTHORIZATION_SUPPORTS_A_CONCRETE_TASK
+PROJECT_WIDE_STOP=FALSE
+ACTIVE_BRIDGE_BLOCKER=NO_SUPPORTED_AUTHORIZED_ROUTE_TO_INSPECT_PREEXISTING_AUTHORITY_METADATA; AUTHORITY_ASSETS_UNKNOWN
+NEXT_ACTION=ON_NEW_OWNER_OBJECTIVE_OR_GENUINELY_NEW_EVIDENCE, APPLY_DUAL_TRACK_SELECTOR; DO_NOT_REOPEN_TERMINAL_G1_TASK_UNCHANGED
+WAIT_SCOPE=BRIDGE_G1_AUTHORITY_DEPENDENCY_ONLY
 TASK_ID_POLICY=NEW_TASK_PER_REVISION
 COMMIT_PROFILE=GATE_COMMIT
 OPTION_D=RATIFIED_NO_BOOTSTRAP
-G1=NOT_ESTABLISHED
-G2=NOT_ESTABLISHED
-G3=NOT_ESTABLISHED
 AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
 IMPLEMENTATION=NOT_AUTHORIZED
 TESTS/BUILD/RUNTIME=NOT_RUN
+G1/G2/G3=NOT_ESTABLISHED
 MCP_TOOL_ALLOWLIST=EMPTY
 PROTECTED_READS=FAIL_CLOSED
 TUNNEL=DISABLED
 BRIDGE=BRIDGE_NOT_READY
-NEXT_ACTION=APPLY_OBJECTIVE_FIRST_DUAL_TRACK_SELECTION_TO_THE_CURRENT_OWNER_OBJECTIVE; DO_NOT_TREAT_G1_ASSET_ROUTE_BLOCK_AS_GLOBAL_STOP
-G1_REOPEN_CONDITION=GENUINELY_NEW_INDEPENDENT_AUTHORITY_EVIDENCE_OR_EXPLICIT_OWNER_DECISION_CHANGING_THAT_GATE
 AUTOMATIC_FOLLOW_ON=FALSE
 ```
 
-The G1 asset assessment remains terminal; do not repeat it without a material precondition change. Independently authorized analysis and documentation can proceed without bypassing G1. This route does not authorize trust creation, protected reads, credentials, product implementation, tests, build, runtime, tunnel or deployment.
+No independent bridge task is currently both useful and authorized: implementation/runtime remain prohibited and the documented independent method task is complete. This is a task-local wait for new qualifying authority evidence or a separately scoped Owner objective, not permission to retry, bootstrap trust, or halt unrelated authorized project work.
 
 ---
 
