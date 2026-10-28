@@ -230,6 +230,17 @@ MODEL_WEIGHT_CHANGE=NOT_CLAIMED
 
 Acceptance for the correction: on a later non-identical task, the coordinator must (1) preserve the terminal G1 result, (2) extract the Owner's current objective, (3) enumerate authorized independent candidates from canonical memory, (4) continue a qualifying candidate without repeating an already-answered question, and (5) choose an explicit wait only if no admissible useful action remains. That later behavior—not this writeback—will be evidence of causal reuse.
 
+## 9D. Method refinement — progress utility and strategy switching (2026-10-28)
+
+UAAL-D020 refines this anti-loop method after a reported local-reader task stopped before modification. The failure route was not repeated, but the proposed next step still concentrated on preparing another local checkout without first proving that preparation was the most direct authorized way to advance the target. Anti-loop detection alone is therefore insufficient: route selection must also show target-edge utility.
+
+Before proposing a retry or another setup artifact, require an `ADVANCE_CONTRACT` with target edge, observed blocker, causally different precondition, expected observable, acceptance/stop condition, owner effort and risk. Inspect actually available authorized realizations and prefer the shortest verified path that closes or discriminates the target edge. Two consecutive preparation-only actions trigger a strategy reset; before a third attempt at the same edge, require material new evidence and an explicit causal-difference statement.
+
+Full refinement and acceptance method: [UAAL-D020 — Verified Progress Utility, Strategy Switching, and Preparation-Debt Control](./CHAT-ARCH-2026-10-28-UAAL-D020-VERIFIED-PROGRESS-UTILITY-STRATEGY-SWITCH.md).
+
+This is a documented rule candidate. It does not prove runtime enforcement, causal reuse, automated learning or model-weight change.
+
+
 ## 10. Required new-chat handoff — route from current state, not stale incident snapshots
 
 A new chat must:
