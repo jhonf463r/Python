@@ -12,7 +12,18 @@ R7 (`1ef23ce47fa206fa751d90fd0c92bcab8a902a6b`) is a source-level fail-closed ch
 
 Security and operational invariants are unchanged: `OPTION_D=RATIFIED_NO_BOOTSTRAP`; `G1/G2/G3=NOT_ESTABLISHED`; `MCP_TOOL_ALLOWLIST=EMPTY`; `PROTECTED_READS=FAIL_CLOSED`; `TUNNEL=DISABLED`; `BRIDGE=BRIDGE_NOT_READY`; `AUTOMATIC_FOLLOW_ON=FALSE`; `MERGE=NOT_AUTHORIZED`.
 
-This is a dated routing/evidence addendum only. The M1B receipt remains the active route authority; the M1A/R7 references preserve a parallel, source-only line and its evidence limits.
+This is a dated route/evidence correction. `CURRENT-STATE.md` remains the sole routing authority; M1B is the active workstream, and its receipt is supporting evidence rather than a route authority. The M1A/R7 references remain a parallel, source-only line with separate evidence limits.
+
+```text
+ACTIVE_TASK=M1B_CONTEXT_READER_CANDIDATE_RECONCILIATION
+NEXT_ACTION=OWNER_DECISION_ON_PR_555_INTEGRATION_OR_BOUNDED_REMEDIATION_AFTER_STATIC_REVIEW; MERGE_NOT_AUTHORIZED; NO_AUTO_FOLLOW_ON
+M1B_PUBLICATION=PR_555_OPEN_DRAFT_UNMERGED
+M1B_STATIC_REVIEW=FAVORABLE_WITH_RESIDUAL_LIMITATIONS; NOT_INTEGRATION_APPROVAL
+M1B_TARGETED_TESTS=34_PASSED; OWNER_CODEX_REPORTED
+INDEPENDENT_TESTS=NOT_RUN
+```
+
+**Supersession boundary:** the following older `OVERRIDE — M1B reader candidate locally implemented` block and its `M1B_SOURCE_PUBLICATION=NOT_DONE` / `M1B_NEXT_ACTION=PUBLISH_EXISTING_LOCAL_FILES...` values are preserved as historical evidence only. They are superseded by this route correction and must not select an action. This does not imply PR approval, merge authorization, runtime verification, or bridge readiness.
 ---
 
 ## OVERRIDE — M1B reader candidate locally implemented; targeted suite reported passing (2026-10-28)
