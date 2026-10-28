@@ -119,6 +119,8 @@ objective
 
 The purpose is not to create a universal super-service. The purpose is to make existing organs semantically compatible and reusable.
 
+**UAAL-D021 route/learning correction (proposed, 2026-10-28):** this interaction exposed why the North Star must measure decision-changing feedback rather than stored documentation or activity. The active route and the M1B receipt had drifted from an already-published artifact; version-unbound hashes then triggered a redundant publication task. The proposed [UAAL-D021 method](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-28-UAAL-D021-ROUTE-TRUTH-ARTIFACT-IDENTITY-AND-ADVANCE-UTILITY.md) adds verifiable route discovery, revision-bound identity and a strict difference between persistence, outcome verification and later causal reuse. It remains a documentation proposal until the PR is integrated; no autonomous learning or runtime enforcement is claimed.
+
 Relevant existing IABV organs include:
 
 - PerceptionSnapshot;
