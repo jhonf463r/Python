@@ -142,6 +142,7 @@ A draft PR or its fetch-back proves that the branch artifact is published; it do
 4. **Stale entry snapshots:** if README/MOP/AGENTS disagree with the live canonical route, follow CURRENT-STATE and reconcile stale snapshots before selecting an action.
 5. **Actions without jobs:** workflow `startup_failure` with an empty jobs list means no test execution is evidenced; preserve `TESTS=NOT_RUN`.
 6. **Draft writeback:** changes on a PR branch remain proposed until reviewed/integrated under authorization and fetched back from main.
+7. **Historical route conflict:** when the current top addendum identifies an existing published PR but a retained older block still says `SOURCE_PUBLICATION=NOT_DONE` or prescribes publishing it, the latest explicit route/supersession boundary controls. Preserve the older block as history, but never let its stale action compete with the current `NEXT_ACTION`.
 
 These are documentary acceptance cases. This session did not execute tests, builds or runtime.
 
@@ -152,6 +153,7 @@ Observed:
 - PR #555 has a static review reporting no blocking functional defect and recording residual limitations.
 - M1B's 34 targeted passing tests remain `OWNER_CODEX_REPORTED`; not rerun here.
 - PR #556 remains a separate M1A source-only parallel line.
+- This audit also found that the first M1B route correction left an older `PUBLISH_EXISTING_LOCAL_FILES` action in the historical tail of `CURRENT-STATE.md`. The same PR branch now marks that tail as non-operative history and records the live next action at the top. This is `METHOD_APPLIED` with branch fetch-back evidence for this episode; `LATER_CAUSAL_REUSE=NOT_PROVEN`.
 - This method refinement is proposed in the documentation PR branch. It is not yet on `main`, and automatic runtime enforcement is not established.
 
 Security invariants remain untouched:

@@ -21,6 +21,10 @@ M1B_PUBLICATION=PR_555_OPEN_DRAFT_UNMERGED
 M1B_STATIC_REVIEW=FAVORABLE_WITH_RESIDUAL_LIMITATIONS; NOT_INTEGRATION_APPROVAL
 M1B_TARGETED_TESTS=34_PASSED; OWNER_CODEX_REPORTED
 INDEPENDENT_TESTS=NOT_RUN
+UAAL_D021_STATUS=PROPOSED_ON_PR_557; NOT_CANONICAL_ON_MAIN
+UAAL_D021_METHOD_APPLIED=VERIFIED_FOR_THIS_AUDIT
+UAAL_D021_OUTCOME=STALE_HISTORICAL_NEXT_ACTION_SUPERSEDED; BRANCH_FETCHBACK_VERIFIED
+LATER_CAUSAL_REUSE=NOT_PROVEN
 ```
 
 **History boundary (binding):** this addendum is the latest route decision on this branch. All older dated status, `ACTIVE_TASK`, `NEXT_ACTION`, `OVERRIDE`, and task-state blocks below are historical evidence only; their action fields are non-operative unless a newer dated addendum at the top of this file explicitly reactivates them. In particular, the following older `OVERRIDE — M1B reader candidate locally implemented` block and its `M1B_SOURCE_PUBLICATION=NOT_DONE` / `M1B_NEXT_ACTION=PUBLISH_EXISTING_LOCAL_FILES...` values are superseded and must not select an action. This boundary preserves history; it does not imply PR approval, merge authorization, runtime verification, or bridge readiness.
