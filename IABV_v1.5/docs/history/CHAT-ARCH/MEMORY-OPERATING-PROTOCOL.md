@@ -1,29 +1,14 @@
-<!-- Route snapshot: dated evidence only. CURRENT-STATE.md remains the only active route authority. -->
-## Current M1B route snapshot — exact candidate already published (2026-10-28)
+<!-- Entry contract: pointer to live state, not a duplicated state snapshot. -->
+## Operational entry — one route authority, no copied live-state summaries
 
-Read [CURRENT-STATE.md](https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CURRENT-STATE.md) from live `main` before choosing a task. If the normal contents read returns an unexpectedly empty body, treat it as `RETRIEVAL_FAILED`, recover the blob for the exact verified ref, and record both ref SHA and blob SHA.
+For every material task: verify the live remote `main` SHA → read this `README.md` entry contract → read [`CURRENT-STATE.md`](https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CURRENT-STATE.md) → read `CONTEXT-INDEX.md` → read `MEMORY-OPERATING-PROTOCOL.md` → retrieve only objective-relevant methods and evidence. `CURRENT-STATE.md` is the sole routing authority; this file and the other entry documents must not replicate mutable task status, candidate hashes or `NEXT_ACTION` values.
 
-At the verified snapshot `main=79ab8c50eaa7518120d5ebed9db4747d395a21cb`, M1B was already published in [PR #555](https://github.com/jhonf463r/Python/pull/555), commit `6c601c99bb9cc2111f9dde2f6986aefcc0393785`, open/draft/unmerged. Current R4 SHA-256 values are reader `fcd743a346df4541d9b7cab797b2bb0eba70b8fdf380fc249acf256f08a80e73` and tests `e86a7c5acb31433f9e2e2864d97c52cfeacb82fe7bd7e8613a7e9463d22b3916`. The R3 hashes in the older receipt identify a different revision and must not be used as expected hashes for R4. Static review of the published R4 source found no blocking functional defect, with residual limits recorded in the PR review. The 34 targeted tests remain `OWNER_CODEX_REPORTED`, not independently executed in this review.
+If the normal contents read for `CURRENT-STATE.md` returns an unexpectedly empty body, mark `RETRIEVAL_FAILED` and recover its Git blob at the exact verified ref. Empty transport output is not an empty state. Before proposing any branch, commit, publication, retest, clone or handoff, query existing branches, commits, PRs, changed paths, exact blobs and reviews; reuse an existing route before preparing another.
 
-Before proposing any create/publish/update/reimplement/retest/clone action, discover existing branches, commits, PRs, exact file blobs and reviews. The most recent chat topic is not the task router. Follow proposed [UAAL-D021](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-28-UAAL-D021-ROUTE-TRUTH-ARTIFACT-IDENTITY-AND-ADVANCE-UTILITY.md) for route truth, revision-bound identity and verified progress. D021 itself is proposed in this documentation branch and is not canonical until integrated and fetched back from `main`.
+[UAAL-D021 — proposed route-truth and artifact-identity refinement](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-28-UAAL-D021-ROUTE-TRUTH-ARTIFACT-IDENTITY-AND-ADVANCE-UTILITY.md) records the observed failure and new acceptance checks. It remains a draft-branch proposal, not canonical on `main` until authorized integration and fetch-back.
 
-```text
-M1B_SOURCE=PR_555_R4_PUBLISHED; DRAFT_UNMERGED
-M1B_SOURCE_HASHES=VERIFIED_AGAINST_REMOTE_TEXT
-M1B_TARGETED_TESTS=34_PASSED; OWNER_CODEX_REPORTED
-M1B_STATIC_REVIEW=NO_BLOCKING_FUNCTIONAL_DEFECT; RESIDUAL_LIMITS_RECORDED
-NEXT_ACTION=RECONCILE_EXISTING_PR_555_REVIEW_AND_ACCEPTANCE_GATE; NO_REPUBLICATION
-M1A_PR_556=PARALLEL_DRAFT; NOT_ROUTE_AUTHORITY
-G1/G2/G3=NOT_ESTABLISHED
-PROTECTED_READS=FAIL_CLOSED
-TUNNEL=DISABLED
-BRIDGE=BRIDGE_NOT_READY
-AUTOMATIC_FOLLOW_ON=FALSE
-MERGE=NOT_AUTHORIZED
-```
+Everything below this entry is retained historical knowledge/evidence. Older titles like “current”, “active”, “vigente” or “next action” do not route the live task unless `CURRENT-STATE.md` explicitly reactivates them.
 
-
-Everything below this dated route snapshot is retained historical material. Older headings containing “current”, “active”, “vigente” or “next action” must not override live `CURRENT-STATE.md` unless that file explicitly reactivates them.
 ---
 
 <!-- UAAL-D020 cross-AI application — live CURRENT-STATE.md owns route authority. -->
