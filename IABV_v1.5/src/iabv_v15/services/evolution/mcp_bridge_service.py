@@ -103,7 +103,7 @@ class _TunnelRunner:
 
 
 class FastMCPServerRunner:
-    """Corre `IABVMCPServer.run(transport)` dentro de un hilo daemon."""
+    """Disabled runner; no thread starts before an authorized path exists."""
 
     def __init__(self, container: Any, *, read_authorization_coordinator: Any | None = None) -> None:
         self._container = container
@@ -121,30 +121,7 @@ class FastMCPServerRunner:
         )
 
     def run_threaded(self, transport: str, host: str, port: int) -> threading.Thread:
-        # FastMCP lee host/port de su config / env. Seteamos via env por compatibilidad
-        # con distintos clientes.
-        os.environ["FASTMCP_HOST"] = str(host)
-        os.environ["FASTMCP_PORT"] = str(port)
-
-        self._server = self._build_server()
-        self._stopped.clear()
-
-        def _target() -> None:
-            try:
-                self._server.run(transport=transport)
-            except Exception:  # pragma: no cover - loguea y sale
-                logger.exception("MCP server hilo terminó con excepción")
-            finally:
-                self._stopped.set()
-
-        thread = threading.Thread(
-            target=_target,
-            name="iabv-mcp-server",
-            daemon=True,
-        )
-        thread.start()
-        self._thread = thread
-        return thread
+        raise RuntimeError("MCP_START_AUTHORIZATION_NOT_ESTABLISHED")
 
     def stop(self) -> None:
         # FastMCP no tiene stop() sincrónico público; el hilo daemon muere
@@ -156,7 +133,7 @@ class FastMCPServerRunner:
 
 
 class CloudflaredTunnelRunner:
-    """Lanza `cloudflared tunnel --url http://HOST:PORT --no-autoupdate` y lee la URL pública."""
+    """Disabled tunnel runner; no cloudflared process is authorized to start."""
 
     def __init__(
         self,
@@ -187,56 +164,7 @@ class CloudflaredTunnelRunner:
         return shutil.which(self._bin) is not None
 
     def start(self, bind_host: str, bind_port: int) -> None:
-        with self._lock:
-            if self._proc is not None:
-                return
-            if not self._binary_available():
-                self._last_error = (
-                    f"No se encontró binario '{self._bin}' en PATH. "
-                    "Instalar Cloudflare tunnel (winget install --id Cloudflare.cloudflared)."
-                )
-                return
-
-            if self._named_tunnel:
-                # Named tunnel: el usuario ya corrió `cloudflared tunnel login` y
-                # `cloudflared tunnel create <name>`. Acá sólo lo arrancamos por nombre.
-                argv = [self._bin, "tunnel", "--no-autoupdate", "run", self._named_tunnel]
-            else:
-                # Quick tunnel: URL efímera *.trycloudflare.com; no requiere login.
-                target_url = f"http://{bind_host}:{bind_port}"
-                argv = [
-                    self._bin,
-                    "tunnel",
-                    "--no-autoupdate",
-                    "--loglevel",
-                    "info",
-                    "--url",
-                    target_url,
-                ]
-            argv.extend(self._extra_args)
-
-            try:
-                self._proc = subprocess.Popen(
-                    argv,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT,
-                    text=True,
-                    bufsize=1,
-                )
-            except Exception as exc:
-                self._last_error = f"No se pudo arrancar cloudflared: {exc!r}"
-                self._proc = None
-                return
-
-            self._url = None
-            self._url_event.clear()
-            self._last_error = None
-            self._reader_thread = threading.Thread(
-                target=self._drain_output,
-                name="iabv-cloudflared-reader",
-                daemon=True,
-            )
-            self._reader_thread.start()
+        raise RuntimeError("MCP_TUNNEL_AUTHORIZATION_NOT_ESTABLISHED")
 
     def _drain_output(self) -> None:
         proc = self._proc
@@ -290,11 +218,10 @@ class CloudflaredTunnelRunner:
 
 
 class MCPBridgeService:
-    """Orquesta exclusivamente el servidor MCP local y publica su estado.
+    """Keeps MCP server startup denied until G1/G2/G3 are established.
 
-    El perfil actual escucha sólo en loopback. No inicia cloudflared ni admite
-    un runner de túnel público hasta que exista un perfil remoto autenticado,
-    con hostname y origin exactos.
+    The current state has no established startup authorization path. Local
+    loopback binding and dependency presence do not authorize a server start.
     """
 
     def __init__(
@@ -428,37 +355,16 @@ class MCPBridgeService:
     # Internals
 
     def _authorization_organ_gate_block(self) -> str | None:
-        """Keep the bridge down while the read-authorization composition is incomplete.
+        """Block startup until G1/G2/G3 are established by governance.
 
-        This is a dependency preflight, not proof of G1-G8 acceptance or a
-        substitute for the authorization decision at each protected read.
+        Dependency presence and ``missing_requirements() == ()`` are not
+        evidence of authentic production authority. The current composition
+        has no established startup authorization provider, so every start path
+        remains denied until a separately authorized implementation changes
+        this gate.
         """
 
-        try:
-            from iabv_v15.services.security.read_authorization import ReadAuthorizationCoordinator
-        except Exception:
-            logger.exception("Authorization organ unavailable; MCP bridge remains stopped")
-            return "AUTHORIZATION_COORDINATOR_UNAVAILABLE"
-
-        coordinator = self._read_authorization_coordinator
-        if type(coordinator) is not ReadAuthorizationCoordinator:
-            return "AUTHORIZATION_COORDINATOR_UNAVAILABLE"
-        try:
-            missing = coordinator.missing_requirements()
-        except Exception:
-            logger.exception("Authorization prerequisites could not be checked; MCP bridge remains stopped")
-            return "AUTHORIZATION_PREREQUISITES_UNVERIFIABLE"
-        if type(missing) is not tuple or any(type(item) is not str or not item for item in missing):
-            return "AUTHORIZATION_PREREQUISITES_UNVERIFIABLE"
-        if missing:
-            return "AUTHORIZATION_PREREQUISITES_MISSING:" + ",".join(missing)
-
-        root_provider = getattr(self._container, "approved_workspace_root_provider", None)
-        if root_provider is None:
-            return "APPROVED_WORKSPACE_ROOT_PROVIDER_UNAVAILABLE"
-        if not callable(getattr(root_provider, "current_workspace_root", None)):
-            return "APPROVED_WORKSPACE_ROOT_PROVIDER_INVALID"
-        return None
+        return "G1_G2_G3_NOT_ESTABLISHED"
 
     def _start_locked(self) -> MCPBridgeStatus:
         block = self._authorization_organ_gate_block() or self._governance_gate_block()

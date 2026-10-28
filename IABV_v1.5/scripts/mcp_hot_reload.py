@@ -1,9 +1,7 @@
-"""Hot-reload wrapper para el MCP server de IABV v1.5.
+"""Disabled hot-reload wrapper for the MCP server of IABV v1.5.
 
-Arranca ``python -m iabv_v15.infra.mcp.server`` como subprocess y lo
-reinicia automaticamente cuando detecta cambios en los ``.py`` bajo
-``src/iabv_v15/``. Evita que el usuario tenga que Ctrl+C + re-exportar
-vars + re-arrancar despues de cada ``git pull`` o cada merge.
+The current entry point returns a denial without starting a watcher or
+subprocess. The historical behavior below documents why this wrapper exists.
 
 Uso:
 
@@ -109,12 +107,13 @@ def _resolve_interval() -> float:
     return max(0.2, value)
 
 
-def _spawn_server() -> subprocess.Popen[bytes]:
-    """Arranca un subprocess limpio del MCP server."""
+START_DENIED_EXIT_CODE = 78
 
-    cmd = [sys.executable, "-m", "iabv_v15.infra.mcp.server"]
-    logger.info("spawning MCP server: %s", " ".join(cmd))
-    return subprocess.Popen(cmd)
+
+def _spawn_server() -> subprocess.Popen[bytes]:
+    """Reject subprocess creation until an authorized startup path exists."""
+
+    raise RuntimeError("MCP_START_AUTHORIZATION_NOT_ESTABLISHED")
 
 
 def _terminate_server(proc: subprocess.Popen[bytes], timeout: float = 5.0) -> None:
@@ -137,56 +136,9 @@ def _terminate_server(proc: subprocess.Popen[bytes], timeout: float = 5.0) -> No
 
 
 def run_forever() -> int:
-    """Loop principal: arranca MCP, vigila archivos, reinicia en cambios."""
+    """Fail closed without entering a watcher or respawn loop."""
 
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s [hot_reload] %(levelname)s %(message)s",
-    )
-
-    watch_root = _resolve_watch_root()
-    interval = _resolve_interval()
-    logger.info("watching %s every %.1fs", watch_root, interval)
-    if not watch_root.exists():
-        logger.warning(
-            "watch root no existe; el reload NO va a detectar cambios hasta "
-            "que el path aparezca (IABV_MCP_HOT_RELOAD_ROOT para override)."
-        )
-
-    previous = snapshot_mtimes(iter_watch_files(watch_root))
-    proc = _spawn_server()
-
-    try:
-        while True:
-            time.sleep(interval)
-
-            # Si el server murio solo, lo respawneamos sin esperar cambio.
-            if proc.poll() is not None:
-                logger.warning(
-                    "MCP server exited with code=%s; respawning.",
-                    proc.returncode,
-                )
-                previous = snapshot_mtimes(iter_watch_files(watch_root))
-                proc = _spawn_server()
-                continue
-
-            current = snapshot_mtimes(iter_watch_files(watch_root))
-            changes = changed_paths(previous, current)
-            if not changes:
-                continue
-
-            preview = ", ".join(changes[:3])
-            if len(changes) > 3:
-                preview += f", ... (+{len(changes) - 3})"
-            logger.info("cambio detectado: %s", preview)
-
-            _terminate_server(proc)
-            previous = current
-            proc = _spawn_server()
-    except KeyboardInterrupt:
-        logger.info("KeyboardInterrupt; cerrando MCP server.")
-        _terminate_server(proc)
-        return 0
+    return START_DENIED_EXIT_CODE
 
 
 if __name__ == "__main__":  # pragma: no cover - entry point

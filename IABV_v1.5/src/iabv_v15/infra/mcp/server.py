@@ -77,6 +77,12 @@ DEFAULT_SERVER_NAME = "iabv-v15"
 SUPPORTED_TRANSPORTS = {"stdio", "sse", "streamable-http"}
 
 
+def _deny_unconfigured_start() -> None:
+    """No MCP start authorization is established in the current composition."""
+
+    raise RuntimeError("MCP_START_AUTHORIZATION_NOT_ESTABLISHED")
+
+
 def _to_jsonable(value: Any) -> Any:
     """Convierte dataclasses, pydantic models y contenedores anidados a JSON."""
 
@@ -3313,6 +3319,7 @@ class IABVMCPServer:
     # Ciclo de vida
 
     def run(self, transport: str = "stdio") -> None:
+        _deny_unconfigured_start()
         if transport not in SUPPORTED_TRANSPORTS:
             raise ValueError(f"transport '{transport}' no soportado. Usa {sorted(SUPPORTED_TRANSPORTS)}")
         
@@ -3428,6 +3435,7 @@ def main() -> None:
       - IABV_MCP_NAME: nombre visible del server
       - IABV_WORKSPACE_ROOT: raíz del workspace para AppBootstrap
     """
+    _deny_unconfigured_start()
     logging.basicConfig(
         level=os.environ.get("IABV_MCP_LOG_LEVEL", "INFO"),
         format="%(asctime)s %(levelname)s %(name)s - %(message)s",

@@ -153,7 +153,7 @@ INFERENCE_RULES: list[dict[str, Any]] = [
         'action': 'start_tunnel',
         'severity': 'medium',
         'safe': True,
-        'description': 'Cloudflared instalado pero tunnel no corre — iniciar',
+        'description': 'Inicio de tunnel bloqueado hasta establecer G1/G2/G3',
     },
     # Performance
     {
@@ -768,7 +768,7 @@ def detect_anomalies(
         anomalies.append({
             'type': 'expected_vs_real',
             'severity': 'medium',
-            'description': 'Cloudflared instalado pero tunnel no activo',
+            'description': 'Inicio de tunnel bloqueado hasta establecer G1/G2/G3',
             'action': 'start_tunnel',
             'safe': True,
             'evidence': {'expected': 'tunnel_running', 'real': 'tunnel_stopped'},
@@ -1383,27 +1383,13 @@ def _exec_diagnose_network(rule: dict[str, Any]) -> dict[str, Any]:
 
 
 def _exec_start_tunnel(rule: dict[str, Any]) -> dict[str, Any]:
-    """Start cloudflared tunnel."""
-    try:
-        if os.name == 'nt':
-            tunnel_path = os.path.join(
-                os.path.expanduser('~'), '.iabv', 'tools', 'cloudflared.exe',
-            )
-            if os.path.exists(tunnel_path):
-                subprocess.Popen(
-                    [tunnel_path, 'tunnel', 'run'],
-                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                )
-                return {'executed': True, 'detail': 'Tunnel cloudflared iniciado'}
-            return {'executed': False, 'detail': 'cloudflared no encontrado en ~/.iabv/tools/'}
-        else:
-            subprocess.Popen(
-                ['cloudflared', 'tunnel', 'run'],
-                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-            )
-            return {'executed': True, 'detail': 'Tunnel cloudflared iniciado'}
-    except Exception as exc:
-        return {'executed': False, 'error': str(exc)}
+    """Keep the legacy tunnel action blocked while G1/G2/G3 are unestablished."""
+
+    return {
+        'executed': False,
+        'blocked_by_policy': True,
+        'reason': 'G1_G2_G3_NOT_ESTABLISHED',
+    }
 
 
 def _exec_github_rate_check(rule: dict[str, Any]) -> dict[str, Any]:

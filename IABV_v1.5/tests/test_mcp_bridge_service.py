@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import json
 import threading
-import time
 from pathlib import Path
 
 import pytest
@@ -23,6 +22,7 @@ from iabv_v15.domain.models import (
 )
 from iabv_v15.services.security.read_authorization import ReadAuthorizationCoordinator
 from iabv_v15.services.evolution.mcp_bridge_service import (
+    CloudflaredTunnelRunner,
     FastMCPServerRunner,
     MCPBridgeService,
     MCPBridgeStatus,
@@ -118,8 +118,8 @@ def _default_snapshot(
 _USE_TEST_COORDINATOR = object()
 
 
-def _fully_wired_test_coordinator() -> ReadAuthorizationCoordinator:
-    """Satisfy the dependency-presence preflight only; never used to authorize a read."""
+def _dependency_only_test_coordinator() -> ReadAuthorizationCoordinator:
+    """Test sentinels are dependency presence only, never startup authority."""
 
     return ReadAuthorizationCoordinator(
         trust_provider=object(),  # type: ignore[arg-type]
@@ -143,7 +143,7 @@ def _build_service(
     # Sentinel only: the service does not receive or start a tunnel runner.
     tunnel = _FakeTunnelRunner()
     coordinator = (
-        _fully_wired_test_coordinator()
+        _dependency_only_test_coordinator()
         if read_authorization_coordinator is _USE_TEST_COORDINATOR
         else read_authorization_coordinator
     )
@@ -169,7 +169,7 @@ def test_bridge_stays_stopped_without_read_authorization_coordinator(tmp_path: P
     assert status.running is False
     assert status.state == "failed"
     assert status.governance_blocked is True
-    assert status.governance_reason == "AUTHORIZATION_COORDINATOR_UNAVAILABLE"
+    assert status.governance_reason == "G1_G2_G3_NOT_ESTABLISHED"
 
 
 def test_bridge_stays_stopped_when_authorization_coordinator_is_unconfigured(tmp_path: Path) -> None:
@@ -185,9 +185,7 @@ def test_bridge_stays_stopped_when_authorization_coordinator_is_unconfigured(tmp
     assert status.running is False
     assert status.state == "failed"
     assert status.governance_blocked is True
-    assert status.governance_reason is not None
-    assert status.governance_reason.startswith("AUTHORIZATION_PREREQUISITES_MISSING:")
-    assert "INDEPENDENT_TRUST_ROOT_PROVIDER" in status.governance_reason
+    assert status.governance_reason == "G1_G2_G3_NOT_ESTABLISHED"
 
 
 def test_bridge_stays_stopped_without_approved_workspace_root_provider(tmp_path: Path) -> None:
@@ -201,7 +199,7 @@ def test_bridge_stays_stopped_without_approved_workspace_root_provider(tmp_path:
     assert status.running is False
     assert status.state == "failed"
     assert status.governance_blocked is True
-    assert status.governance_reason == "APPROVED_WORKSPACE_ROOT_PROVIDER_UNAVAILABLE"
+    assert status.governance_reason == "G1_G2_G3_NOT_ESTABLISHED"
 
 
 def test_bridge_stays_stopped_with_invalid_approved_workspace_root_provider(tmp_path: Path) -> None:
@@ -215,7 +213,7 @@ def test_bridge_stays_stopped_with_invalid_approved_workspace_root_provider(tmp_
     assert status.running is False
     assert status.state == "failed"
     assert status.governance_blocked is True
-    assert status.governance_reason == "APPROVED_WORKSPACE_ROOT_PROVIDER_INVALID"
+    assert status.governance_reason == "G1_G2_G3_NOT_ESTABLISHED"
 
 
 def test_enabled_pref_starts_false_when_no_config(tmp_path: Path) -> None:
@@ -245,13 +243,14 @@ def test_config_file_shape(tmp_path: Path) -> None:
 # Lifecycle
 
 
-def test_set_enabled_true_starts_local_server_without_public_tunnel(tmp_path: Path) -> None:
+def test_set_enabled_true_is_denied_without_established_start_authority(tmp_path: Path) -> None:
     svc, server, tunnel = _build_service(tmp_path)
     status = svc.set_enabled(True)
-    assert server.started == 1
+    assert server.started == 0
     assert tunnel.started == 0
-    assert status.running is True
-    assert status.state == "running"
+    assert status.running is False
+    assert status.state == "failed"
+    assert status.governance_reason == "G1_G2_G3_NOT_ESTABLISHED"
     assert status.tunnel_url is None
     assert status.bind_host == "127.0.0.1"
 
@@ -268,13 +267,14 @@ def test_set_enabled_false_stops_local_server_without_tunnel(tmp_path: Path) -> 
     assert status.tunnel_url is None
 
 
-def test_ensure_started_is_idempotent_when_already_running(tmp_path: Path) -> None:
+def test_ensure_started_cannot_start_with_dependency_only_fixtures(tmp_path: Path) -> None:
     svc, server, tunnel = _build_service(tmp_path)
     svc.set_enabled(True)
-    # Un segundo ensure_started no debe re-arrancar nada.
     svc.ensure_started()
-    assert server.started == 1
+    svc.ensure_started()
+    assert server.started == 0
     assert tunnel.started == 0
+    assert svc.status().governance_reason == "G1_G2_G3_NOT_ESTABLISHED"
 
 
 def test_ensure_started_does_nothing_when_pref_false(tmp_path: Path) -> None:
@@ -303,7 +303,7 @@ def test_bridge_blocked_when_world_model_has_active_block(tmp_path: Path) -> Non
     svc, server, tunnel = _build_service(tmp_path, snapshot=snapshot)
     status = svc.set_enabled(True)
     assert status.governance_blocked is True
-    assert "Autonomía" in (status.governance_reason or "")
+    assert status.governance_reason == "G1_G2_G3_NOT_ESTABLISHED"
     assert server.started == 0
     assert tunnel.started == 0
     assert status.state == "failed"
@@ -326,7 +326,7 @@ def test_global_block_also_blocks_bridge(tmp_path: Path) -> None:
     assert svc.status().governance_blocked is True
 
 
-def test_block_for_unrelated_assistant_kind_does_not_block(tmp_path: Path) -> None:
+def test_block_for_unrelated_assistant_kind_does_not_override_missing_start_authority(tmp_path: Path) -> None:
     snapshot = _default_snapshot(
         blocks=[
             OperationalBlockRecord(
@@ -338,11 +338,12 @@ def test_block_for_unrelated_assistant_kind_does_not_block(tmp_path: Path) -> No
     )
     svc, server, _ = _build_service(tmp_path, snapshot=snapshot)
     svc.set_enabled(True)
-    assert server.started == 1
-    assert svc.status().running is True
+    assert server.started == 0
+    assert svc.status().running is False
+    assert svc.status().governance_reason == "G1_G2_G3_NOT_ESTABLISHED"
 
 
-def test_inactive_block_does_not_stop_bridge(tmp_path: Path) -> None:
+def test_inactive_block_does_not_establish_start_authority(tmp_path: Path) -> None:
     snapshot = _default_snapshot(
         blocks=[
             OperationalBlockRecord(
@@ -354,7 +355,8 @@ def test_inactive_block_does_not_stop_bridge(tmp_path: Path) -> None:
     )
     svc, server, _ = _build_service(tmp_path, snapshot=snapshot)
     svc.set_enabled(True)
-    assert server.started == 1
+    assert server.started == 0
+    assert svc.status().governance_reason == "G1_G2_G3_NOT_ESTABLISHED"
 
 
 # ----------------------------------------------------------------------
@@ -370,9 +372,9 @@ def test_listeners_receive_initial_state_and_transitions(tmp_path: Path) -> None
     events.clear()
     svc.set_enabled(True)
     states = [e["state"] for e in events]
-    # starting -> running al menos (stopped puede no emitirse si pref ya era False).
-    assert "starting" in states
-    assert "running" in states
+    assert "failed" in states
+    assert "starting" not in states
+    assert "running" not in states
 
 
 # ----------------------------------------------------------------------
@@ -384,10 +386,46 @@ def test_public_tunnel_injection_is_rejected_until_remote_profile_exists(tmp_pat
         MCPBridgeService(
             container=_FakeContainer(_default_snapshot()),
             workspace_root=tmp_path,
-            read_authorization_coordinator=_fully_wired_test_coordinator(),
+            read_authorization_coordinator=_dependency_only_test_coordinator(),
             server_runner=_FakeServerRunner(),
             tunnel_runner=_FakeTunnelRunner(),
         )
+
+
+def test_direct_cloudflared_runner_start_is_denied_before_popen(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    from iabv_v15.services.evolution import mcp_bridge_service as bridge_module
+
+    popen_calls: list[object] = []
+    monkeypatch.setattr(
+        bridge_module.subprocess,
+        "Popen",
+        lambda *args, **kwargs: popen_calls.append((args, kwargs)),
+    )
+    runner = CloudflaredTunnelRunner()
+
+    with pytest.raises(RuntimeError, match="MCP_TUNNEL_AUTHORIZATION_NOT_ESTABLISHED"):
+        runner.start("127.0.0.1", 8765)
+    assert popen_calls == []
+
+
+def test_common_sense_tunnel_action_is_denied_before_popen(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    from iabv_v15.services import common_sense_engine
+
+    popen_calls: list[object] = []
+    monkeypatch.setattr(
+        common_sense_engine.subprocess,
+        "Popen",
+        lambda *args, **kwargs: popen_calls.append((args, kwargs)),
+    )
+
+    result = common_sense_engine._exec_start_tunnel({})
+
+    assert result == {
+        "executed": False,
+        "blocked_by_policy": True,
+        "reason": "G1_G2_G3_NOT_ESTABLISHED",
+    }
+    assert popen_calls == []
 
 
 def test_non_loopback_bind_host_is_rejected(tmp_path: Path) -> None:
@@ -395,17 +433,14 @@ def test_non_loopback_bind_host_is_rejected(tmp_path: Path) -> None:
         MCPBridgeService(
             container=_FakeContainer(_default_snapshot()),
             workspace_root=tmp_path,
-            read_authorization_coordinator=_fully_wired_test_coordinator(),
+            read_authorization_coordinator=_dependency_only_test_coordinator(),
             server_runner=_FakeServerRunner(),
             bind_host="0.0.0.0",
         )
 
 
-def test_block_for_empty_assistant_kind_does_not_block_bridge(tmp_path: Path) -> None:
-    """`assistant_kind=""` es el default del modelo y se usa para condiciones
-    operativas generales (network_slow, ram_pressure, focus_unresolved, etc.)
-    que NO deben bloquear el MCP bridge. Sólo `*` o `mcp_bridge` bloquean.
-    """
+def test_block_for_empty_assistant_kind_does_not_establish_start_authority(tmp_path: Path) -> None:
+    """Generic world-model records do not replace the missing start authority."""
 
     snapshot = _default_snapshot(
         blocks=[
@@ -419,9 +454,10 @@ def test_block_for_empty_assistant_kind_does_not_block_bridge(tmp_path: Path) ->
     )
     svc, server, _ = _build_service(tmp_path, snapshot=snapshot)
     status = svc.set_enabled(True)
-    assert status.governance_blocked is False
-    assert server.started == 1
-    assert status.state == "running"
+    assert status.governance_blocked is True
+    assert server.started == 0
+    assert status.state == "failed"
+    assert status.governance_reason == "G1_G2_G3_NOT_ESTABLISHED"
 
 
 # ----------------------------------------------------------------------
@@ -461,19 +497,41 @@ def test_status_is_a_copy_not_internal_ref(tmp_path: Path) -> None:
 # Transport / bind overrides
 
 
-def test_service_passes_transport_and_loopback_bind_to_server_runner(tmp_path: Path) -> None:
+def test_dependency_only_coordinator_does_not_reach_server_runner(tmp_path: Path) -> None:
     server = _FakeServerRunner()
     svc = MCPBridgeService(
         container=_FakeContainer(_default_snapshot()),
         workspace_root=tmp_path,
-        read_authorization_coordinator=_fully_wired_test_coordinator(),
+        read_authorization_coordinator=_dependency_only_test_coordinator(),
         server_runner=server,
         transport="sse",
         bind_host="127.0.0.1",
         bind_port=9123,
     )
-    svc.set_enabled(True)
-    assert server.last_args == {"transport": "sse", "host": "127.0.0.1", "port": 9123}
+    status = svc.set_enabled(True)
+    assert server.last_args is None
+    assert server.started == 0
+    assert status.governance_reason == "G1_G2_G3_NOT_ESTABLISHED"
+
+
+def test_direct_server_runner_denies_before_env_or_thread(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    from iabv_v15.services.evolution import mcp_bridge_service as bridge_module
+
+    monkeypatch.setenv("FASTMCP_HOST", "unchanged-host")
+    monkeypatch.setenv("FASTMCP_PORT", "1234")
+    thread_calls: list[object] = []
+    monkeypatch.setattr(
+        bridge_module.threading,
+        "Thread",
+        lambda *args, **kwargs: thread_calls.append((args, kwargs)),
+    )
+    runner = FastMCPServerRunner(_FakeContainer())
+
+    with pytest.raises(RuntimeError, match="MCP_START_AUTHORIZATION_NOT_ESTABLISHED"):
+        runner.run_threaded("stdio", "127.0.0.1", 8765)
+    assert thread_calls == []
+    assert bridge_module.os.environ["FASTMCP_HOST"] == "unchanged-host"
+    assert bridge_module.os.environ["FASTMCP_PORT"] == "1234"
 
 
 def test_mcp_bridge_passes_registered_read_authority_explicitly_to_server(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
@@ -513,102 +571,19 @@ def test_invalid_transport_falls_back_to_default(tmp_path: Path) -> None:
     assert svc.status().transport == "streamable-http"
 
 
-# ----------------------------------------------------------------------
-# Race: set_enabled(False) concurrente con server start en vuelo
+def test_concurrent_disable_candidate_cannot_reach_server_runner(tmp_path: Path) -> None:
+    svc, server, _ = _build_service(tmp_path)
+    svc.set_enabled(True)
+    assert server.started == 0
+    assert svc.status().governance_reason == "G1_G2_G3_NOT_ESTABLISHED"
 
 
-class _SlowServerRunner(_FakeServerRunner):
-    """Runner de prueba que permite observar el toggle OFF durante el start."""
-
-    def __init__(self) -> None:
-        super().__init__()
-        self.start_entered = threading.Event()
-        self.release_start = threading.Event()
-
-    def run_threaded(self, transport: str, host: str, port: int) -> threading.Thread:
-        self.start_entered.set()
-        if not self.release_start.wait(timeout=3.0):
-            raise TimeoutError("test did not release local server start")
-        return super().run_threaded(transport, host, port)
-
-
-def test_concurrent_disable_during_local_start_leaves_bridge_stopped(tmp_path: Path) -> None:
-    server = _SlowServerRunner()
-    svc = MCPBridgeService(
-        container=_FakeContainer(_default_snapshot()),
-        workspace_root=tmp_path,
-        read_authorization_coordinator=_fully_wired_test_coordinator(),
-        server_runner=server,
-    )
-    start_done = threading.Event()
-    disable_done = threading.Event()
-
-    def _start_worker() -> None:
-        svc.set_enabled(True)
-        start_done.set()
-
-    threading.Thread(target=_start_worker, daemon=True, name="test-local-start").start()
-    assert server.start_entered.wait(timeout=1.0), "server start did not begin"
-
-    def _disable_worker() -> None:
-        svc.set_enabled(False)
-        disable_done.set()
-
-    threading.Thread(target=_disable_worker, daemon=True, name="test-local-disable").start()
-    deadline = time.monotonic() + 2.0
-    while svc.status().enabled_pref and time.monotonic() < deadline:
-        time.sleep(0.005)
-    assert svc.status().enabled_pref is False, "OFF preference was not persisted during start"
-    assert not disable_done.is_set(), "disable should wait on the in-flight start operation"
-    server.release_start.set()
-
-    assert start_done.wait(timeout=3.0), "start thread never completed"
-    assert disable_done.wait(timeout=3.0), "disable thread never completed"
-    final = svc.status()
-    assert final.enabled_pref is False
-    assert final.running is False
-    assert final.state == "stopped"
-    assert server.started == 1
-    assert server.stopped >= 1
-
-
-def test_stop_serialized_after_local_start_in_flight(tmp_path: Path) -> None:
-    server = _SlowServerRunner()
-    svc = MCPBridgeService(
-        container=_FakeContainer(_default_snapshot()),
-        workspace_root=tmp_path,
-        read_authorization_coordinator=_fully_wired_test_coordinator(),
-        server_runner=server,
-    )
-    svc._status.enabled_pref = True
-    svc._persist_enabled_preference(True)
-    start_done = threading.Event()
-    stop_entered = threading.Event()
-    stop_done = threading.Event()
-
-    def _start_worker() -> None:
-        svc.ensure_started()
-        start_done.set()
-
-    threading.Thread(target=_start_worker, daemon=True, name="test-local-start").start()
-    assert server.start_entered.wait(timeout=1.0), "server start did not begin"
-
-    def _stop_worker() -> None:
-        stop_entered.set()
-        svc.stop()
-        stop_done.set()
-
-    threading.Thread(target=_stop_worker, daemon=True, name="test-local-stop").start()
-    assert stop_entered.wait(timeout=1.0), "stop thread did not start"
-    assert not stop_done.is_set(), "stop should wait while start owns the operation lock"
-    server.release_start.set()
-
-    assert start_done.wait(timeout=3.0)
-    assert stop_done.wait(timeout=3.0)
-    final = svc.status()
-    assert final.running is False
-    assert final.state == "stopped"
-    assert server.stopped >= 1
+def test_stop_after_denied_start_keeps_bridge_stopped(tmp_path: Path) -> None:
+    svc, server, _ = _build_service(tmp_path)
+    svc.set_enabled(True)
+    svc.stop()
+    assert server.started == 0
+    assert svc.status().running is False
 
 
 if __name__ == "__main__":  # pragma: no cover - debugging helper

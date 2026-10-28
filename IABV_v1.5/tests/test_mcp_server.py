@@ -303,6 +303,23 @@ def test_fastmcp_transport_keeps_sdk_dns_rebinding_defaults(monkeypatch) -> None
     assert security.enable_dns_rebinding_protection is True
     assert "*" not in security.allowed_hosts
     assert "*" not in security.allowed_origins
+
+
+def test_direct_module_entry_denies_before_bootstrap() -> None:
+    from iabv_v15.infra.mcp import server as server_module
+
+    with pytest.raises(RuntimeError, match="MCP_START_AUTHORIZATION_NOT_ESTABLISHED"):
+        server_module.main()
+
+
+def test_server_run_denies_before_transport(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    server = IABVMCPServer(_build_container())
+    transport_calls: list[str] = []
+    monkeypatch.setattr(server.mcp, "run", lambda **kwargs: transport_calls.append(str(kwargs)))
+
+    with pytest.raises(RuntimeError, match="MCP_START_AUTHORIZATION_NOT_ESTABLISHED"):
+        server.run(transport="stdio")
+    assert transport_calls == []
     assert set(security.allowed_hosts) == {"localhost", "127.0.0.1", "[::1]"}
 
 

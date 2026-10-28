@@ -140,6 +140,15 @@ def test_legacy_tunnel_autostart_is_disabled() -> None:
     popen.assert_not_called()
 
 
+def test_legacy_mcp_autostart_helper_is_disabled_before_subprocess() -> None:
+    from iabv_v15.bootstrap import AppBootstrap
+
+    bootstrap = AppBootstrap.__new__(AppBootstrap)
+    with patch('subprocess.Popen', side_effect=AssertionError('MCP process launch is disabled')) as popen:
+        assert bootstrap._start_mcp_subprocess() is None
+    popen.assert_not_called()
+
+
 def test_run_uses_fail_closed_bridge_without_legacy_mcp_subprocess(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:

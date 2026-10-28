@@ -4384,95 +4384,17 @@ class AppBootstrap:
         return app, engine
 
     # ------------------------------------------------------------------
-    # Legacy integrated MCP server auto-start; public tunnel remains disabled
+    # Legacy integrated MCP server auto-start and public tunnel are disabled
     # ------------------------------------------------------------------
-    # This compatibility path may launch the local MCP subprocess. The
-    # unauthenticated legacy tunnel route is disabled until an authenticated
-    # remote profile is reviewed and implemented.
+    # These compatibility helpers remain fail-closed until G1/G2/G3 and an
+    # authorized bridge start path are established.
     # ------------------------------------------------------------------
 
     def _start_mcp_subprocess(self) -> 'subprocess.Popen[bytes] | None':
-        """Launch the MCP server as a background subprocess."""
-        import shutil
-        import subprocess
+        """Keep the legacy subprocess path disabled until G1/G2/G3 exist."""
 
-        python_exe = sys.executable
-        if os.name == 'nt' and python_exe.lower().endswith('pythonw.exe'):
-            python_candidate = Path(python_exe).with_name('python.exe')
-            if python_candidate.is_file():
-                python_exe = str(python_candidate)
-        workspace = str(self.config.workspace_root)
-        src_dir = str(Path(workspace) / 'src')
-
-        env = {**os.environ}
-        if 'PYTHONPATH' not in env or src_dir not in env.get('PYTHONPATH', ''):
-            env['PYTHONPATH'] = src_dir + os.pathsep + env.get('PYTHONPATH', '')
-        env.setdefault('IABV_MCP_TRANSPORT', 'streamable-http')
-        env.setdefault('IABV_MCP_NAME', 'iabv-v15')
-        env.setdefault('FASTMCP_HOST', '127.0.0.1')
-        env.setdefault('FASTMCP_PORT', '8000')
-        env.setdefault('PYTHONUNBUFFERED', '1')
-        env['IABV_WORKSPACE_ROOT'] = workspace
-        # Signal that this bootstrap runs inside the MCP subprocess so it
-        # can reduce redundant scans and log noise.
-        env['IABV_MCP_SUBPROCESS'] = '1'
-        # The startup timeline audits visible UI boot. If the MCP child writes
-        # into the same JSONL, it contaminates phase ordering and breaks the
-        # metacognitive snapshot for splash -> shell timings.
-        env['IABV_STARTUP_TIMELINE'] = '0'
-
-        # Inject portable CLI tools into PATH (same as run_mcp_bridge.ps1)
-        iabv_tools = Path.home() / '.iabv' / 'tools'
-        if iabv_tools.is_dir():
-            extra_paths = []
-            for candidate in ['gh/bin', 'cloudflared']:
-                p = iabv_tools / candidate
-                if p.is_dir():
-                    extra_paths.append(str(p))
-            if extra_paths:
-                env['PATH'] = os.pathsep.join(extra_paths) + os.pathsep + env.get('PATH', '')
-
-        creationflags = 0
-        startupinfo = None
-        if os.name == 'nt':
-            creationflags = getattr(subprocess, 'CREATE_NO_WINDOW', 0)
-            startupinfo = subprocess.STARTUPINFO()
-            startupinfo.dwFlags |= getattr(subprocess, 'STARTF_USESHOWWINDOW', 0)
-            startupinfo.wShowWindow = 0
-
-        previous_handle = getattr(self, '_mcp_runtime_log_handle', None)
-        if previous_handle is not None:
-            try:
-                previous_handle.close()
-            except Exception:
-                pass
-            self._mcp_runtime_log_handle = None
-        log_handle = None
-        try:
-            log_path = Path(self.config.logs_dir) / 'mcp_server_runtime.log'
-            log_path.parent.mkdir(parents=True, exist_ok=True)
-            log_handle = log_path.open('ab')
-            proc = subprocess.Popen(
-                [python_exe, '-m', 'iabv_v15.infra.mcp.server'],
-                cwd=workspace,
-                env=env,
-                stdin=subprocess.DEVNULL,
-                stdout=log_handle,
-                stderr=subprocess.STDOUT,
-                creationflags=creationflags,
-                startupinfo=startupinfo,
-            )
-            self._mcp_runtime_log_handle = log_handle
-            logger.info('mcp_autostart: MCP server launched (PID %d)', proc.pid)
-            return proc
-        except Exception as exc:
-            if log_handle is not None:
-                try:
-                    log_handle.close()
-                except Exception:
-                    pass
-            logger.warning('mcp_autostart: failed to launch MCP server: %s', exc)
-            return None
+        logger.warning("mcp_autostart: denied; G1/G2/G3 are not established")
+        return None
 
     def _start_tunnel_subprocess(self) -> 'subprocess.Popen[bytes] | None':
         """Keep the legacy auto-start route from opening a public tunnel."""
