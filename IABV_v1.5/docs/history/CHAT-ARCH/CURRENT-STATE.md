@@ -1,3 +1,34 @@
+## Source-derived authority contract — next causal frontier (2026-10-27)
+
+The local UAC attempt is closed as `BLOCKED_BY_EXECUTION_TOOL_POLICY`; no prompt/process/query occurred. Do not retry or ask the Owner to perform manual Windows work.
+
+A bounded source read of PR #531 HEAD `bc2baf525a70d66628809360a197f25a069aa328` confirms the structural blocker is independent of TPM status:
+- `AppBootstrap` creates `ReadAuthorizationCoordinator.unconfigured()`.
+- `OwnerControlledBootstrapBoundary` is a `Protocol`, not a production enrollment implementation.
+- GitHub merge/manifest verification establishes bounded merge evidence, not durable challenge consumption, protected trust-registry persistence, independent Owner assertion verification or authenticated OS peer identity.
+- G2 policy signature/scope/expiry checks exist as source contracts, but there is no production provider or demonstrated monotonic latest-version/revocation source.
+- `SQLiteReplayConsumer` provides transactional consume-once but explicitly lacks protection against restoring an older valid snapshot.
+- The protected-read handler's same-object path exists at source level, but no approved workspace-root provider or production G3 resolver is wired. Native Windows behavior remains unverified.
+
+Source-derived contract and acceptance matrix: [M1A Authority Producer Contract Design after UAC blocker](./CHAT-ARCH-2026-10-27-M1A-AUTHORITY-PRODUCER-CONTRACT-DESIGN-AFTER-UAC-BLOCKER.md).
+
+Next route: use a fresh isolated candidate from current `main` for bounded contract/composition work only if a specific source mismatch is demonstrated; do not reuse the divergent PR #531 as the base, fabricate providers, select a root by inference, or move any positive authorization gate. If all remaining changes require a real Owner credential/root choice or native OS evidence, state that exact dependency and stop the affected subtask rather than repeat an inventory.
+
+```text
+UAC_REQUEST=BLOCKED_BY_EXECUTION_TOOL_POLICY
+TPM=UNKNOWN
+SECURE_BOOT=UNKNOWN
+SOURCE_DESIGN=RECORDED
+G1/G2/G3=NOT_ESTABLISHED
+MCP_TOOL_ALLOWLIST=EMPTY
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+MERGE=NOT_AUTHORIZED
+```
+
+---
+
 ## UAC attempt blocked by execution policy — current operational state (2026-10-27)
 
 The Owner/Codex report states that `Start-Process -Verb RunAs` was rejected by the execution-tool policy before PowerShell started. No OS consent window was shown, no child process was created, no TPM/Secure Boot query ran, and no temporary artifacts or system changes were produced.
