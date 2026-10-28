@@ -1,3 +1,38 @@
+## OVERRIDE — UAAL-D020 clarified as a cross-AI shared-memory method (2026-10-28)
+
+The Owner clarified the intended scope: the Space-Time/Mente method persisted in GitHub is meant to change how participating AI sessions use shared memory and reason together, not merely how IABV software behaves locally. This correction extends the already-adopted UAAL-D020 in the owning cross-AI continuity protocol, Constitution §12, symbiosis map and method lineage; it does not create a second coordinator or memory store.
+
+The relevant distinction is between external-memory persistence and actual use by an AI session. The session must retrieve the live route and relevant method, activate it against the current objective, show how it changes its action selection, verify the resulting action, and only claim cross-session causal reuse after a later non-identical application. A link, commit or stored file does not prove receipt or consumption by another session.
+
+Observed in this conversation: live `main`, D020, the continuity protocol, Constitution §12 and relevant symbiosis/knowledge-field records were retrieved. That evidence corrected the scope of the prior D020 change and selected a cross-AI method integration rather than another local checkout recipe. Because the Owner's explicit correction is also a direct cause of the change, the independent causal contribution of stored D020 is not isolated; future cross-session reuse remains untested.
+
+```text
+ACTIVE_METHOD=UAAL-D020_VERIFIED_PROGRESS_UTILITY_AND_CROSS_AI_MEMORY_ACTIVATION
+TASK_ID=UAAL_D020_CROSS_AI_SYMBIOSIS_APPLICATION_20261028
+METHOD_SCOPE=SHARED_EXTERNAL_MEMORY_FOR_PARTICIPATING_AI_SESSIONS; NOT_IABV_RUNTIME_ONLY
+MEMORY_RETRIEVED=VERIFIED_IN_CURRENT_SESSION
+METHOD_ACTIVATED=VERIFIED_FOR_CURRENT_OBJECTIVE
+METHOD_APPLIED=OBSERVED_SCOPE_CORRECTION; OWNER_INSTRUCTION_ALSO_CAUSAL
+OUTCOME_VERIFIED=DOCUMENTARY_FETCHBACK_ONLY; NO_PRODUCT_RUNTIME
+LATER_CAUSAL_REUSE=NOT_TESTED
+M1B_RESULT=BLOCKED_BEFORE_FILE_MODIFICATION; OWNER_CODEX_REPORTED
+M1B_IMPLEMENTATION=NOT_STARTED
+DO_NOT_REPEAT=LOCAL_CHECKOUT_PREPARATION_WITHOUT_NEW_CAUSAL_COMPARISON
+NEXT_ACTION=APPLY_CROSS_AI_CONTRACT_TO_THE_NEXT_CODEX_RESULT_AND_RECOMPUTE_THE_TECHNICAL_PATH
+TASK_ID_POLICY=NEW_TASK_PER_REVISION
+COMMIT_PROFILE=GATE_COMMIT
+OPTION_D=RATIFIED_NO_BOOTSTRAP
+G1/G2/G3=NOT_ESTABLISHED
+IMPLEMENTATION=NOT_AUTHORIZED
+MCP_TOOL_ALLOWLIST=EMPTY
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+AUTOMATIC_FOLLOW_ON=FALSE
+```
+
+---
+
 ## OVERRIDE — UAAL-D020 progress-utility method adopted and fetch-back verified (2026-10-28)
 
 The Owner explicitly authorized this documentation-only evolution of the existing Space-Time/UAAL method. PR #552 was squash-merged in commit 8845d011cb1d55abe9f8c0c94882f978e88b6e92. After the merge, the exact D020 document, D019 refinement, conceptual Constitution, machine-readable lineage, and four continuity front doors were fetched from live `main` and checked. This router entry is the post-merge adoption record.
