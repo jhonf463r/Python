@@ -1,3 +1,15 @@
+## Latest source-derived frontier after UAC execution-policy blocker (2026-10-27)
+
+The local elevation attempt was rejected before a process/UI existed. `UAC_REQUEST=BLOCKED_BY_EXECUTION_TOOL_POLICY`; `TPM=UNKNOWN`; `SECURE_BOOT=UNKNOWN`. Do not retry the invocation or ask the Owner to operate Windows manually.
+
+A bounded static review of PR #531 HEAD `bc2baf525a70d66628809360a197f25a069aa328` reconfirmed that `AppBootstrap` uses `ReadAuthorizationCoordinator.unconfigured()`, `OwnerControlledBootstrapBoundary` is only a `Protocol`, no production G1/G2/G3 or issuer providers are wired, merge evidence does not prove protected enrollment effects, and the SQLite replay consumer has no anti-rollback guarantee. Source includes a same-open-target route, but the approved workspace-root provider and G3 resolver remain absent.
+
+Use the new source-grounded design and acceptance matrix: [M1A Authority Producer Contract Design after UAC blocker](./CHAT-ARCH-2026-10-27-M1A-AUTHORITY-PRODUCER-CONTRACT-DESIGN-AFTER-UAC-BLOCKER.md). This is not a new trust anchor or implementation. The next independent work is bounded contract/composition source work only; no hardware inference, provider fabrication, provisioning, runtime, tests or merge. Do not use divergent PR #531 as a new base; any candidate must start from the refreshed current main and remain isolated.
+
+Preserve all gates: `G1/G2/G3=NOT_ESTABLISHED`; `MCP_TOOL_ALLOWLIST=EMPTY`; `PROTECTED_READS=FAIL_CLOSED`; `TUNNEL=DISABLED`; `BRIDGE=BRIDGE_NOT_READY`; `MERGE=NOT_AUTHORIZED`.
+
+---
+
 ## Latest local execution result — UAC process blocked before consent UI (2026-10-27)
 
 The Owner/Codex report states that the approved attempt to launch a bounded PowerShell child through `Start-Process -Verb RunAs` was rejected by the execution-tool policy before starting. No UAC window appeared, no child PowerShell process started, no TPM/Secure Boot query ran, no temporary script/output was created, and no machine or repository changes occurred.
