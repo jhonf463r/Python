@@ -159,3 +159,28 @@ This is a workflow lesson: an agent-side tool policy blocker is a boundary of th
 9. Keep G1/G2/G3 unestablished, MCP allowlist empty, protected reads fail-closed, tunnel disabled and bridge not ready until independent evidence and separate authorization change those gates.
 
 This section records process/design requirements only; it does not authorize implementation or runtime activation.
+
+
+## 12. Cross-agent artifact exchange through the shared Dropbox bridge (2026-10-27)
+
+### Normative rule
+
+When Codex or another local agent reports a local-only artifact path (for example, `C:\\Users\\...\\Temp\\...`), ChatGPT MUST NOT ask the Owner to attach/upload the same file before checking the existing shared artifact bridge. A local path is not itself readable by another agent/session; it is a locator for the producing environment, not a transferable artifact.
+
+### Required handoff order
+
+1. Search the connected Dropbox bridge for the exact filename, known hash prefix, and a short semantic title. For the current IABV collaboration, the established shared exchange root is `/IABV-IA-BRIDGE/`; Codex-produced artifacts intended for ChatGPT review go in `/IABV-IA-BRIDGE/OUTBOX/`. Use `INBOX` only when an artifact is being passed in the opposite direction to the local agent. Preserve the existing folder contract unless a newer verified handoff changes it.
+2. If the artifact is present, inspect metadata and fetch it through Dropbox MCP. Prefer tool-returned `path`/file ID values exactly as returned; do not infer IDs or URLs.
+3. If the artifact is absent, instruct the producing local agent to transfer the already-existing file through its available authorized Dropbox connector to `OUTBOX`, preserving bytes and the reported SHA-256. This is a local-agent handoff step, not an Owner file-upload task. Do not recreate the artifact from a summary when the exact original is needed.
+4. Use an unambiguous unique filename and destination. Do not overwrite or retry a Dropbox name conflict with guessed alternate names; stop and reconcile the conflict first. Do not create public links when the connected account's MCP fetch route suffices.
+5. After transfer, independently list/search the destination and fetch the uploaded artifact back. Verify metadata and, where byte integrity matters, compare SHA-256 computed over the exact file bytes on the producer and a downloaded copy. Text extraction may normalize line endings; extracted text or equal displayed size alone is not cryptographic proof of byte identity.
+6. Only after fetch-back, report `ARTIFACT_TRANSFER=VERIFIED` with exact path, metadata, and the verification method. If the artifact is not found and the local-agent upload path is unavailable, report the concrete blocker and ask for manual intervention only as a last resort.
+
+### Integrity and confidentiality
+
+- Do not place credentials, tokens, private keys, user secrets or unrelated local data in the bridge.
+- Do not treat a filename, local path or producer-reported hash as proof of upload. Distinguish `OWNER_CODEX_REPORTED`, `LIVE_VERIFIED`, `INFERENCE`, and `NOT_RUN`.
+- Do not create a new copy of a document merely because its local path is inaccessible. Transfer the existing artifact and verify the fetched copy.
+- Keep the exact artifact and its checksum together in the handoff record; never substitute a summary when the task requires review of the original contract.
+
+This rule minimizes Owner-mediated file handling and makes the existing Dropbox bridge the default cross-agent artifact path. It does not authorize code changes, protected reads, runtime execution, production activation, or any change to the security gates.
