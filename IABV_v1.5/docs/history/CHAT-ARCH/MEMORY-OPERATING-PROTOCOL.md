@@ -5201,3 +5201,10 @@ The repair stage must preserve reuse-first and anti-scope-creep:
 - distinguish a semantic necessity from a useful future extension.
 
 This protects the developmental method from ontology inflation while retaining adversarial learning.
+
+
+## 2026-10-28 METHOD AMENDMENT — DUAL-TRACK CAUSAL PROGRESS
+
+When a previously terminal blocker cannot be resolved because its authorized route is absent, do not loop on it and do not infer global impossibility. Preserve its terminal status and fork one independent, low-risk workstream that advances the same user objective. Reconcile current source against persisted memory/backlog before proposing new architecture; classify `VERIFIED`, `OWNER_REPORTED`, `INFERENCE`, `HYPOTHESIS`, `UNKNOWN`, and `NOT_RUN`; reuse prior evidence unless a source identity or precondition changed. Correct stale memory by documenting the discrepancy first; do not hand-edit objective completion states or infer runtime success from source presence.
+
+For external-AI continuity, distinguish (a) an artifact exchange folder existing, (b) a particular agent reading/writing it, and (c) every session receiving automatic context. Require an explicit envelope, delivery acknowledgement, freshness/objective binding, and closeout receipt before calling the loop operational. Inspect command side effects before execution; a command named `export` is not necessarily read-only. Current applied example: the 2026-10-28 Control Master source/backlog reconciliation in `CHAT-ARCH-2026-10-24-CONTINUITY-ALGORITHMS-STATIC-AUDIT.md`.
