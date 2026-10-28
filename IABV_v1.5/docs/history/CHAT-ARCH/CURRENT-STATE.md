@@ -1,22 +1,25 @@
-## OVERRIDE — UAAL-D020 verified-progress method candidate (2026-10-28)
+## OVERRIDE — UAAL-D020 progress-utility method adopted and fetch-back verified (2026-10-28)
 
-The Owner explicitly authorized a documentation-only evolution of the existing Space-Time/UAAL continuity method. This branch contains the proposed D020 refinement and linked front-door/lineage updates. Canonical status is determined only by independent review, adoption and fetch-back verification of the exact content from live `main`; branch presence alone is not canonical adoption.
+The Owner explicitly authorized this documentation-only evolution of the existing Space-Time/UAAL method. PR #552 was squash-merged in commit 8845d011cb1d55abe9f8c0c94882f978e88b6e92. After the merge, the exact D020 document, D019 refinement, conceptual Constitution, machine-readable lineage, and four continuity front doors were fetched from live `main` and checked. This router entry is the post-merge adoption record.
 
-Observed input: Codex reported `M1B_CONTEXT_EXPORT_READONLY_READER_IMPLEMENTATION` stopped before file modification because the target SHA was absent from the local object store and no isolated worktree could be created. The previous clone attempt had reported `Filename too long`. No code was changed; tests/build/runtime were not run. The subsequent proposed local sparse-checkout recipe was not executed and its superiority was not proven.
+Use UAAL-D020 as active method guidance when selecting future work: every action must identify the target dependency edge, observed blocker, expected observable and stop/switch condition; prefer verified edge closure or decision-changing information gain; compare actually available authorized realizations before preparing another route; two consecutive preparation-only steps require a strategy reset; a third attempt at the same edge requires a material evidence/causal delta.
 
-Method gap: anti-loop detection can prevent the identical retry yet still permit repeated setup work. D020 adds an explicit target-edge utility gate, actual capability-surface comparison, preparation-debt detection and a strategy-switch condition. This correction is process/method documentation only, not progress on the MCP bridge implementation itself.
+This is a documented algorithmic-method update, not proof that the algorithm is automatically enforced at runtime, that any model weights changed, or that causal reuse has already occurred.
 
 ```text
-ACTIVE_METHOD_CANDIDATE=UAAL-D020_VERIFIED_PROGRESS_UTILITY_AND_STRATEGY_SWITCH
+ACTIVE_METHOD=UAAL-D020_VERIFIED_PROGRESS_UTILITY_AND_STRATEGY_SWITCH
 TASK_ID=UAAL_D020_METHOD_EVOLUTION_20261028
 OWNER_AUTHORIZATION=DOCUMENTATION_ONLY; EXPLICIT
+METHOD_UPDATE=MERGED_AND_FETCHBACK_VERIFIED
+METHOD_PR=552
+METHOD_MERGE_COMMIT=8845d011cb1d55abe9f8c0c94882f978e88b6e92
 M1B_RESULT=BLOCKED_BEFORE_FILE_MODIFICATION; OWNER_CODEX_REPORTED
 M1B_IMPLEMENTATION=NOT_STARTED
 TESTS/BUILD/RUNTIME=NOT_RUN
-C_CODEX=UNCHANGED_BY_THIS_CHAT_TASK; PRESERVATION_REPORTED_BY_CODEX
-M1B_RETRY=DO_NOT_REPEAT_PROPOSED_CHECKOUT_ROUTE_WITHOUT_CAUSAL_COMPARISON
-NEXT_ACTION=REVIEW_DOCUMENTARY_DELTA; THEN APPLY METHOD TO A CONCRETE AUTHORIZED TASK
-CANONICAL_ADOPTION=LIVE_MAIN_FETCHBACK_GATE
+C_PYTHON=NOT_TOUCHED_BY_THIS_METHOD_TASK
+LOCAL_CHECKOUT_PRESERVATION=OWNER_CODEX_REPORTED
+M1B_RETRY=DO_NOT_REPEAT_PREPARATION_ROUTE_UNCHANGED; RECOMPUTE_WITH_D020_ON_NEW_EVIDENCE_OR_AUTHORIZED_RESUMPTION
+NEXT_ACTION=APPLY_D020_TO_NEXT_AUTHORIZED_CONCRETE_TASK; NO_AUTOMATIC_FOLLOW_ON
 TASK_ID_POLICY=NEW_TASK_PER_REVISION
 COMMIT_PROFILE=GATE_COMMIT
 OPTION_D=RATIFIED_NO_BOOTSTRAP
@@ -31,6 +34,7 @@ CAUSAL_REUSE=NOT_TESTED
 ```
 
 Full method and falsifiers: [UAAL-D020](./CHAT-ARCH-2026-10-28-UAAL-D020-VERIFIED-PROGRESS-UTILITY-STRATEGY-SWITCH.md).
+
 
 ---
 
