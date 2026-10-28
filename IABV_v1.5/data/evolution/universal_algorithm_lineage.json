@@ -324,6 +324,7 @@
       "status": "DOCUMENTED_METHOD_NOT_RUNTIME_PROVEN",
       "title": "Verified Progress Utility, Strategy Switching, and Preparation-Debt Control",
       "source_records": [
+        "CHAT-ARCH-2026-10-28-M1B-CONTEXT-READER-IMPLEMENTATION-AND-TEST-RECEIPT.md",
         "CHAT-ARCH-2026-10-28-UAAL-D020-VERIFIED-PROGRESS-UTILITY-STRATEGY-SWITCH.md",
         "CHAT-ARCH-2026-10-26-UAAL-D019-SPACE-TIME-ANTI-LOOP-CAUSAL-FRONTIER.md",
         "MEMORY-OPERATING-PROTOCOL.md"
@@ -346,17 +347,18 @@
       "implementation_refs": [],
       "experiment_refs": [
         "M1B_CONTEXT_EXPORT_READONLY_READER_IMPLEMENTATION",
-        "M1B_CONTEXT_EXPORT_READONLY_READER_ISOLATED_RECOVERY_20261028_R2"
+        "M1B_CONTEXT_EXPORT_READONLY_READER_ISOLATED_RECOVERY_20261028_R2",
+        "M1B_CONTEXT_READER_TIMEZONE_SHAPE_AND_TEST_GATE_20261028_R3"
       ],
       "verification_refs": [],
-      "knowledge_delta": "Avoiding an identical retry is necessary but not sufficient; an actor can still loop through different preparatory activities unless every step proves causal usefulness to the target edge.",
-      "method_delta": "Advance contract and preparation-debt reset plus cross-AI memory activation ladder: MEMORY_RETRIEVED → METHOD_ACTIVATED → METHOD_APPLIED → OUTCOME_VERIFIED → LATER_CAUSAL_REUSE; explicit per-stage evidence and no claim of model-weight change.",
-      "routing_delta": "Current-session use of the GitHub method is required where repository access exists; dynamically select AI by frontier/capability/actual access; never infer another AI's receipt from persistence; next apply the shared contract to the next supplied Codex result.",
-      "next_open_edge": "A later non-identical cross-AI task must retrieve this rule, change agent/action selection for a relevant reason, and yield an independently supported outcome before claiming causal reuse.",
+      "knowledge_delta": "Anti-loop avoidance must be paired with an exact-source evidence gate: local implementation, accessible final bytes, static review, executed tests, source publication, PR review and main fetch-back are distinct. For M1B, R1/R2 reviews caught target-match/schema flaws, R3 tightened timezone validation and Codex reported 34 targeted tests passing; source publication and independent confirmation remain outstanding.",
+      "method_delta": "Advance contract and preparation-debt reset plus cross-AI memory activation ladder: MEMORY_RETRIEVED → METHOD_ACTIVATED → METHOD_APPLIED → OUTCOME_VERIFIED → LATER_CAUSAL_REUSE; explicit per-stage evidence and no claim of model-weight change. Add code evidence ladder LOCAL_CANDIDATE_REPORTED → EXACT_FINAL_SOURCE_AVAILABLE → STATIC_REVIEWED → TESTS_EXECUTED → SOURCE_PUBLISHED_BRANCH → PR_DIFF_REVIEWED → MAIN_FETCHBACK_VERIFIED; compare validators to live models and real artifact shapes; enforce timezone-aware timestamps; hashes alone never imply review or publication.",
+      "routing_delta": "M1B applied the shared method: review supplied R1/R2 source, identify a concrete timezone edge, and require targeted test evidence. Avoid reimplementation/reclone; next publish exact R3 candidate to isolated code PR and review/hash-check exact diff. Test result remains OWNER_CODEX_REPORTED; bridge gates unchanged.",
+      "next_open_edge": "Publish exact R3 local files in an isolated branch/PR, match published source to reported hashes, and independently review/fetch back the exact diff. Only then can M1B be considered published; G1/G2/G3 and bridge authorization remain separate open dependencies.",
       "timestamp": "2026-10-28",
       "branch_or_sha": "docs/uaal-d020-progress-utility-20261028",
       "cross_ai_application_contract": "For every material session using repository memory, track retrieval, activation, application, verified outcome and later causal reuse separately. Apply to ChatGPT, Codex and other participating agents when actual authorized context access exists. External memory is not model-weight training or proof of automatic delivery.",
-      "current_session_application": "2026-10-28: relevant live-main method/protocol/map fetched and scope correction applied; Owner instruction is also a direct cause, so this is not an isolated test of autonomous memory reuse."
+      "current_session_application": "2026-10-28: source review identified target-binding and partial-schema defects; follow-up found timezone-naive internal-date acceptance; Codex reported the narrow fix and 34 passing targeted tests. Exact R3 bytes and execution were not independently retrieved; no runtime or later causal reuse is proven."
     }
   ],
   "protocol_version": "UAAL-TRACE-1",
