@@ -1,7 +1,7 @@
 <!-- Entry contract: pointer to live state, not a duplicated state snapshot. -->
 ## Operational entry — one route authority, no copied live-state summaries
 
-For every material task: verify the live remote `main` SHA → read this `README.md` entry contract → read [`CURRENT-STATE.md`](https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CURRENT-STATE.md) → read `CONTEXT-INDEX.md` → read `MEMORY-OPERATING-PROTOCOL.md` → retrieve only objective-relevant methods and evidence. `CURRENT-STATE.md` is the sole routing authority; this file and the other entry documents must not replicate mutable task status, candidate hashes or `NEXT_ACTION` values.
+For every material task: verify the live remote `main` SHA → read the canonical `README.md` entry contract → read [`CURRENT-STATE.md`](https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CURRENT-STATE.md) → read `CONTEXT-INDEX.md` → read `MEMORY-OPERATING-PROTOCOL.md` → retrieve only objective-relevant methods and evidence. `CURRENT-STATE.md` is the sole routing authority; this file and the other entry documents must not replicate mutable task status, candidate hashes or `NEXT_ACTION` values.
 
 If the normal contents read for `CURRENT-STATE.md` returns an unexpectedly empty body, mark `RETRIEVAL_FAILED` and recover its Git blob at the exact verified ref. Empty transport output is not an empty state. Before proposing any branch, commit, publication, retest, clone or handoff, query existing branches, commits, PRs, changed paths, exact blobs and reviews; reuse an existing route before preparing another.
 
