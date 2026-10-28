@@ -6,7 +6,7 @@
 **Refines:** `UAAL-D018` — Execution-to-Evidence Stage Separation / Observability  
 **Status:** `DOCUMENTED_METHOD; RUNTIME_ENFORCEMENT_AND_CAUSAL_REUSE_NOT_PROVEN`  
 **Observed baseline:** live `main=54c3e45ec497c83e839bdd6971d33fadbd4ec644`  
-**Active technical candidate:** PR #531, `OPEN/DRAFT/UNMERGED`, HEAD `bc2baf525a70d66628809360a197f25a069aa328`.
+**Historical technical candidate at the 2026-10-26 observation:** PR #531, `OPEN/DRAFT/UNMERGED`, HEAD `bc2baf525a70d66628809360a197f25a069aa328`.
 
 ## 1. Why this refinement exists
 
@@ -106,15 +106,18 @@ Avoid collapsing a route into a generic `FAILED` or `SUCCESS`. Record the furthe
 
 No stage inherits success from the one before or after it. A visible blocker may be verified while its underlying root cause remains unknown.
 
-## 6. Selection policy
+## 6. Selection policy — localized blocker, dual-track progress
 
-1. Exclude actions lacking authorization or hard prerequisites.
-2. Select the earliest open causal dependency blocking the active objective.
-3. Among admissible actions, prefer the smallest reversible action that distinguishes live hypotheses, produces attributable evidence and uses the least justified cost.
-4. State expected observations, stop condition, and how each likely result changes the route.
-5. If no admissible action can reduce uncertainty, enter an explicit wait state and name the missing external input.
+1. Exclude every action lacking authorization or an essential prerequisite; this filter cannot be overridden by a productivity score or explicit desire to move faster.
+2. Identify the first open causal edge **for the specific target operation**, not a project-wide generic blocker. Record the terminal fingerprint and do not retry that same edge unchanged.
+3. Build two lanes:
+   - **Lane A — blocked technical frontier:** preserve its terminal result and wait for the exact changed precondition/evidence/authority needed to reopen it. Do not retry a terminal asset assessment, reconfigure Entra, substitute a tool/transport or infer that a local route failure proves global absence.
+   - **Lane B — independent authorized progress:** scan the current Owner instruction, canonical router, relevant memory/backlog and permitted tool surfaces for work that advances the same North Star without crossing or depending on Lane A's gate. Include process/memory/documentation work only when directly requested or otherwise authorized. Prefer an existing work item over inventing a new one.
+4. Rank admissible Lane B candidates by: relevance to the Owner's current objective; independence from the blocked edge; expected discriminating value; reversibility/safety; cost and time; reduction in Owner burden. Authorization and hard gates are filters, never soft scores.
+5. For the selected action, record exact input/revision, prior-result fingerprint, why it is not the prohibited repeat, expected observation, stop condition and how each plausible result changes the route. Carry out one bounded action, then reconcile.
+6. Wait only when no action is both authorized and usefully independent. The wait record must name the precise missing external input and distinguish it from other work that remains possible. Never manufacture an action just to avoid waiting; never use a blocked subtask to avoid doing an already authorized independent task.
 
-A blocked route is not a global stop when an already-authorized independent action exists. Conversely, switching tools, AIs, branches, transports, workflows or prompts does not make a prohibited or causally identical action admissible.
+**Owner continuation intent:** a request to “continue/proceed/evolve/organize” after a terminal result reopens selection for a new, explicitly bounded task in the requested scope. It does not reopen the same terminal task unless its decision-relevant preconditions changed, and it does not create trust authority or product implementation permission by implication.
 
 ## 7. Worked application — IABV-to-Codex bridge on 2026-10-26
 
@@ -206,16 +209,37 @@ UNCHANGED_WORKFLOW_RETRY=NOT_JUSTIFIED
 
 The method was explicitly applied in this session to avoid repeating the zero-job workflow and instead verify the changed external precondition. Because the Owner also directly instructed this browser check, the method's exclusive causal contribution is not isolated. Record one observed application, not autonomous learning or general runtime enforcement.
 
-## 10. Required new-chat handoff
+## 9C. Observed coordination failure — task-local blocker was treated as project-wide stop (2026-10-28)
 
-The next chat should start from live `main` and the canonical front doors, then:
+The Owner-provided terminal result for `M1A_G1_EXISTING_TRUST_ASSETS_BOUNDED_READ_ONLY_ASSESSMENT` was `NOT_RUN; SUPPORTED_ROUTE_NOT_FOUND`. The result correctly closed that inspection route; it did not establish that all project progress was impossible. The Owner then explicitly requested deeper analysis and evolution of the existing memory/continuity algorithms. The coordinator initially repeated the wait conclusion rather than first evaluating this newly authorized process/documentation lane.
 
-1. Reconstruct only the bridge-relevant state from the current router and linked receipts.
-2. Verify whether the account-level Actions billing-lock warning has changed; do not assume an old observation is current.
-3. If unchanged, keep validation blocked and do not repeat the same failed zero-job workflow.
-4. If the warning or execution precondition has changed, refresh live `main`, PR #531 and exact candidate HEAD before the three focused suites on the approved Windows/Python 3.11 executor.
-5. Keep source authority gates G1/G2/G3 open unless their own evidence contracts are independently met.
-6. Record the observed stage, evidence delta and one next action. No merge/rebase or protected-read enablement follows automatically.
+This is a directly observed coordination defect in the assistant's response, not evidence of runtime algorithm enforcement or autonomous model learning. The core protocol already said that a blocked route is not a global stop; the failure was incomplete application of that rule and failure to honor the Owner's explicit continuation intent. The corrective change therefore strengthens the owning selection rule in place rather than creating a second orchestrator or memory store.
+
+```text
+INCIDENT=OWNER_CONTINUATION_AFTER_TASK_LOCAL_TERMINAL_BLOCKER
+TERMINAL_TASK=M1A_G1_EXISTING_TRUST_ASSETS_BOUNDED_READ_ONLY_ASSESSMENT
+TERMINAL_RESULT=NOT_RUN; SUPPORTED_ROUTE_NOT_FOUND
+COORDINATOR_MISS=PROJECT_LEVEL_PROGRESS_NOT_RECONSIDERED
+OWNER_SCOPE_CHANGE=EVOLVE_EXISTING_CONTINUITY_AND_MEMORY_METHOD
+CORRECTION=DUAL_TRACK_SELECTION; ROUTE_LOCALIZATION; OWNER_INTENT_PARSER
+G1_REOPENED=FALSE
+PRODUCT_IMPLEMENTATION_AUTHORIZED=FALSE
+CAUSAL_REUSE=NOT_TESTED
+MODEL_WEIGHT_CHANGE=NOT_CLAIMED
+```
+
+Acceptance for the correction: on a later non-identical task, the coordinator must (1) preserve the terminal G1 result, (2) extract the Owner's current objective, (3) enumerate authorized independent candidates from canonical memory, (4) continue a qualifying candidate without repeating an already-answered question, and (5) choose an explicit wait only if no admissible useful action remains. That later behavior—not this writeback—will be evidence of causal reuse.
+
+## 10. Required new-chat handoff — route from current state, not stale incident snapshots
+
+A new chat must:
+
+1. Refresh live `main` and read the canonical five front doors in the order defined by the living continuity protocol. `CURRENT-STATE.md` alone owns the active route and permissions.
+2. Reconstruct the current objective, fixed Owner decisions, terminal-result fingerprint and exact open causal edge. Treat dates and route labels in historical sections as historical unless current state reactivates them.
+3. Partition the objective into a blocked technical lane and any independently authorized lanes. Do not repeat the G1 existing-asset assessment, Entra setup, closed TPM/source scans or the old Actions workflow path without genuinely new evidence and a changed precondition.
+4. If the Owner has explicitly asked to continue or improve the method, search the canonical memory/backlog for a useful authorized task independent of the blocked gate and act within scope; do not treat `AUTOMATIC_FOLLOW_ON=FALSE` as cancellation of that current request.
+5. If no authorized independent action can make useful progress, enter `WAIT_FOR_EXTERNAL_INPUT` and identify the exact evidence/decision needed. Do not claim that the underlying asset is absent merely because a route was unavailable.
+6. After any meaningful outcome, update the owning living rule and the current route/front-door pointers as justified, preserve the terminal incident, and fetch back canonical content. A later non-identical application must establish causal reuse; document existence alone is not learning evidence.
 
 ```text
 CONCEPT_ID=UAAL-D019
@@ -223,9 +247,15 @@ PARENT_CONCEPT_ID=UAAL-D014
 REFINES=UAAL-D018
 ROOT=UAAL-ROOT-001
 STATUS=DOCUMENTED_METHOD; RUNTIME_ENFORCEMENT=NOT_PROVEN
-ACTIVE_ROUTE=OWNER_RESOLVE_OR_GET_EXPLANATION_FOR_VISIBLE_GITHUB_ACTIONS_BILLING_LOCK
-TESTS=NOT_RUN
-CAUSAL_REUSE=NOT_ESTABLISHED
+METHOD_UPDATE=DUAL_TRACK_CONTINUATION_AND_OWNER_INTENT_ROUTING; 2026-10-28
+CURRENT_ROUTE_AUTHORITY=CURRENT-STATE.md
+TASK_ID_POLICY=NEW_TASK_PER_REVISION
+COMMIT_PROFILE=GATE_COMMIT
+G1/G2/G3=NOT_ESTABLISHED
+PROTECTED_READS=FAIL_CLOSED
+BRIDGE=BRIDGE_NOT_READY
+AUTOMATIC_FOLLOW_ON=FALSE
+CAUSAL_REUSE=NOT_TESTED
 ALGORITHM_LEARNED=NOT_PROVEN
-NEXT_ACTION=CHECK_CURRENT_BILLING_LOCK_STATE_THEN_FOLLOW_CURRENT_STATE_MD
+MODEL_WEIGHT_CHANGE=NOT_CLAIMED
 ```

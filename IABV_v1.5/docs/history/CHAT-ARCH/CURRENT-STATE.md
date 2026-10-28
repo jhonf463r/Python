@@ -1,3 +1,37 @@
+## OVERRIDE — Owner-directed dual-track continuity routing (2026-10-28)
+
+This route records the Owner's explicit instruction to learn from the current interaction, evolve the existing Space-Time/memory algorithm, and keep useful progress moving. It does not reopen a terminal G1 inspection or relax any technical gate.
+
+```text
+OWNER_INSTRUCTION=EVOLVE_EXISTING_CONTINUITY_AND_MEMORY_ROUTING; EXPLICIT_CHAT_REQUEST
+ACTIVE_TASK=OBJECTIVE_FIRST_DUAL_TRACK_PROGRESS_SELECTION
+TASK_SCOPE=AUTHORIZED_PLANNING_AND_DOCUMENTATION_SELECTION; NO_PRODUCT_IMPLEMENTATION
+LAST_TERMINAL_TASK=M1A_G1_EXISTING_TRUST_ASSETS_BOUNDED_READ_ONLY_ASSESSMENT
+LAST_TERMINAL_RESULT=NOT_RUN; REASON=SUPPORTED_ROUTE_NOT_FOUND
+METHOD_CORRECTION=DUAL_TRACK_ROUTING; DOCUMENTATION_PR=550
+TECHNICAL_FRONTIER=M1A_G1_TRUST_BOOTSTRAP_AUTHORITY_BOUNDARY
+TASK_ID_POLICY=NEW_TASK_PER_REVISION
+COMMIT_PROFILE=GATE_COMMIT
+OPTION_D=RATIFIED_NO_BOOTSTRAP
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3=NOT_ESTABLISHED
+AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+IMPLEMENTATION=NOT_AUTHORIZED
+TESTS/BUILD/RUNTIME=NOT_RUN
+MCP_TOOL_ALLOWLIST=EMPTY
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+NEXT_ACTION=APPLY_OBJECTIVE_FIRST_DUAL_TRACK_SELECTION_TO_THE_CURRENT_OWNER_OBJECTIVE; DO_NOT_TREAT_G1_ASSET_ROUTE_BLOCK_AS_GLOBAL_STOP
+G1_REOPEN_CONDITION=GENUINELY_NEW_INDEPENDENT_AUTHORITY_EVIDENCE_OR_EXPLICIT_OWNER_DECISION_CHANGING_THAT_GATE
+AUTOMATIC_FOLLOW_ON=FALSE
+```
+
+The G1 asset assessment remains terminal; do not repeat it without a material precondition change. Independently authorized analysis and documentation can proceed without bypassing G1. This route does not authorize trust creation, protected reads, credentials, product implementation, tests, build, runtime, tunnel or deployment.
+
+---
+
 ## OVERRIDE — ToolTask dispatch and approval bridge continuity (2026-10-27)
 
 Continuity receipt: [UAAL dispatch/approval bridge](./CHAT-ARCH-2026-10-27-UAAL-DISPATCH-APPROVAL-BRIDGE-CONTINUITY.md). The source-derived approval lifecycle design is prepared as an isolated, uncommitted draft; review it before any implementation.

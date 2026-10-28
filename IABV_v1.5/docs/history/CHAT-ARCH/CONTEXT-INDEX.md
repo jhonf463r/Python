@@ -1,5 +1,28 @@
 <!-- Cross-chat handoff synchronized 2026-10-27. CURRENT-STATE.md remains the sole operational route authority. -->
 
+<!-- OWNER-DIRECTED CONTINUITY METHOD CORRECTION — 2026-10-28; process/docs only; technical gates unchanged -->
+## Continuidad tras bloqueo local: progreso en dos carriles (2026-10-28)
+
+El Owner pidió explícitamente analizar esta interacción, mejorar el algoritmo de continuidad/memoria y seguir avanzando sin repetir tareas cerradas. La evaluación acotada de activos de autoridad terminó en `NOT_RUN; SUPPORTED_ROUTE_NOT_FOUND`: esto cierra esa ruta de inspección en sus precondiciones actuales, no el proyecto entero ni las tareas independientes autorizadas.
+
+Usar siempre `CURRENT-STATE.md` como único router. Aplicar el protocolo vivo de Espacio-Tiempo rev. 2.4 y UAAL-D019: aislar el bloqueo en su arista causal; inventariar acciones ya autorizadas y útiles que no dependan de ella; continuar por la mejor vía independiente si existe; esperar solo cuando no quede ninguna acción admisible con utilidad real. Una instrucción explícita del Owner para continuar/corregir el método cambia la prioridad de trabajo dentro del alcance pedido, pero no concede autoridad técnica, no levanta Option D, y no habilita lectores protegidos, credenciales, implementación, pruebas ni runtime.
+
+Decisiones ya fijadas: `TASK_ID_POLICY=NEW_TASK_PER_REVISION`; `COMMIT_PROFILE=GATE_COMMIT`. No repetir la configuración de Entra, la evaluación de activos ya terminal ni auditorías generales sin evidencia nueva.
+
+```text
+METHOD_UPDATE=OWNER_AUTHORIZED_DOCUMENTATION_ONLY
+LAST_G1_ASSET_ASSESSMENT=NOT_RUN; SUPPORTED_ROUTE_NOT_FOUND
+OPTION_D=RATIFIED_NO_BOOTSTRAP
+G1/G2/G3=NOT_ESTABLISHED
+IMPLEMENTATION=NOT_AUTHORIZED
+TESTS/BUILD/RUNTIME=NOT_RUN
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+AUTOMATIC_FOLLOW_ON=FALSE
+```
+<!-- END OWNER-DIRECTED CONTINUITY METHOD CORRECTION -->
+
 ## Hand-off vigente para iniciar un nuevo chat (2026-10-27)
 
 Leer siempre primero [CURRENT-STATE.md](./docs/history/CHAT-ARCH/CURRENT-STATE.md) desde main. El handoff detallado está en [CHAT-ARCH-2026-10-27-M1A-CROSS-CHAT-HANDOFF-MCP130-20261027.md](https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-27-M1A-CROSS-CHAT-HANDOFF-MCP130-20261027.md); el plan ratificado sin código en [MCP 1.30 implementation plan]( https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-27-M1A-G1-MCP130-IMPLEMENTATION-PLAN-NO-CODE.md ); el diseño Entra corregido en [Entra G1 design]( https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-27-M1A-G1-ENTRA-BOOTSTRAP-DESIGN-ONLY.md ).
