@@ -1,3 +1,36 @@
+## OVERRIDE — Owner-directed continuity protocol repair after a terminal subtask (2026-10-28)
+
+This override records the Owner's explicit instruction in this conversation to analyze the coordination failure, evolve the existing Space-Time/memory selection algorithm, and preserve useful project progress. It supersedes the former wait as the next **documentation/process task only**; it does not supersede Option D, the authority gates, or the implementation prohibition.
+
+```text
+OWNER_INSTRUCTION=EVOLVE_EXISTING_CONTINUITY_AND_MEMORY_ROUTING; EXPLICIT_CHAT_REQUEST
+ACTIVE_TASK=SPACE_TIME_DUAL_TRACK_PROGRESS_PROTOCOL_REPAIR_20261028
+TASK_SCOPE=DOCUMENTATION_METHOD_AND_ROUTING_RECONCILIATION_ONLY
+LAST_TERMINAL_TASK=M1A_G1_EXISTING_TRUST_ASSETS_BOUNDED_READ_ONLY_ASSESSMENT
+LAST_TERMINAL_RESULT=NOT_RUN; REASON=SUPPORTED_ROUTE_NOT_FOUND
+TECHNICAL_FRONTIER=M1A_G1_TRUST_BOOTSTRAP_AUTHORITY_BOUNDARY
+TASK_ID_POLICY=NEW_TASK_PER_REVISION
+COMMIT_PROFILE=GATE_COMMIT
+OPTION_D=RATIFIED_NO_BOOTSTRAP
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3=NOT_ESTABLISHED
+AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+IMPLEMENTATION=NOT_AUTHORIZED
+TESTS/BUILD/RUNTIME=NOT_RUN
+MCP_TOOL_ALLOWLIST=EMPTY
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+NEXT_ACTION=CONSOLIDATE_DUAL_TRACK_SELECTION_IN_EXISTING_CORE_PROTOCOL_AND_FRONT_DOORS; THEN_ROUTE_ONLY_TO_AUTHORIZED_INDEPENDENT_WORK
+G1_REOPEN_CONDITION=GENUINELY_NEW_INDEPENDENT_AUTHORITY_EVIDENCE_OR_EXPLICIT_OWNER_DECISION_CHANGING_THAT_GATE
+AUTOMATIC_FOLLOW_ON=FALSE
+```
+
+The new route authorizes only the continuity-method/documentation correction. The existing G1 asset assessment remains terminal; do not repeat it, and do not convert the new documentation authorization into permission to create trust, inspect protected assets, implement or run the bridge.
+
+---
+
 ## OVERRIDE — ToolTask dispatch and approval bridge continuity (2026-10-27)
 
 Continuity receipt: [UAAL dispatch/approval bridge](./CHAT-ARCH-2026-10-27-UAAL-DISPATCH-APPROVAL-BRIDGE-CONTINUITY.md). The source-derived approval lifecycle design is prepared as an isolated, uncommitted draft; review it before any implementation.
