@@ -248,6 +248,100 @@ def test_cloudflared_card_does_not_whitelist_update_verb(tmp_path: Path) -> None
     )
 
 
+def test_cloudflared_launch_and_non_exact_commands_are_blocked_before_subprocess(monkeypatch) -> None:
+    from iabv_v15.services.tools.tool_adapters import subprocess
+
+    card = _card(
+        tool_id='cloudflared_cli',
+        metadata={
+            'tool_family': 'cloudflared',
+            'command_name': 'cloudflared',
+            'command_aliases': ['cloudflared.exe'],
+            'allowed_verbs': ['--version', 'version', 'tunnel', 'access', 'help'],
+        },
+    )
+    calls: list[object] = []
+    monkeypatch.setattr(subprocess, 'run', lambda *args, **kwargs: calls.append((args, kwargs)))
+    adapter = LocalCliToolAdapter()
+
+    for command in (
+        'tunnel run',
+        'TUNNEL --url http://127.0.0.1:8000',
+        'tunnel   run extra',
+        'service install',
+        'service install --no-autoupdate',
+        'access tcp --hostname example.com --url localhost:22',
+    ):
+        result = adapter.run(card, _task(command))
+        assert result['success'] is False, command
+        assert result['metadata']['blocked'] is True, command
+
+    assert calls == []
+
+
+def test_cloudflared_allows_only_exact_read_only_shapes(monkeypatch) -> None:
+    from types import SimpleNamespace
+    from iabv_v15.services.tools.tool_adapters import subprocess
+
+    card = _card(
+        tool_id='cloudflared_cli',
+        metadata={
+            'tool_family': 'cloudflared',
+            'command_name': 'cloudflared',
+            'command_aliases': ['cloudflared.exe'],
+            'allowed_verbs': ['--version', 'version', 'tunnel', 'help'],
+        },
+    )
+    calls: list[tuple[object, object]] = []
+    monkeypatch.setattr(subprocess, 'run', lambda *args, **kwargs: (calls.append((args, kwargs)) or SimpleNamespace(returncode=0, stderr='', stdout='ok')))
+    adapter = LocalCliToolAdapter()
+    monkeypatch.setattr(adapter, '_resolve_executable', lambda _card: 'cloudflared.exe')
+
+    for command in ('--version', 'version', 'help', 'tunnel list', 'tunnel info named-tunnel'):
+        result = adapter.run(card, _task(command))
+        assert result['success'] is True, command
+
+    assert len(calls) == 5
+
+
+def test_local_cli_blocks_direct_mcp_and_hot_reload_launches_before_subprocess(monkeypatch) -> None:
+    from iabv_v15.services.tools.tool_adapters import subprocess
+
+    card = _card(metadata={
+        'command_name': 'python.exe',
+        'allowed_verbs': ['-m', 'scripts'],
+    })
+    calls: list[object] = []
+    monkeypatch.setattr(subprocess, 'run', lambda *args, **kwargs: calls.append((args, kwargs)))
+    adapter = LocalCliToolAdapter()
+
+    for command in (
+        '-m iabv_v15.infra.mcp.server',
+        'scripts/mcp_hot_reload.py',
+        'python -m iabv_v15.infra.mcp.server',
+        r'C:\\repo\\scripts\\mcp_hot_reload.py',
+    ):
+        result = adapter.run(card, _task(command))
+        assert result['success'] is False, command
+        assert result['metadata']['blocked'] is True, command
+
+    assert calls == []
+
+
+def test_shell_adapter_direct_calls_are_fail_closed(monkeypatch) -> None:
+    from iabv_v15.services.tools.tool_adapters import ShellToolAdapter, subprocess
+
+    card = _card(tool_id='shell_command', adapter_key='shell')
+    calls: list[object] = []
+    monkeypatch.setattr(subprocess, 'run', lambda *args, **kwargs: calls.append((args, kwargs)))
+
+    result = ShellToolAdapter().run(card, _task('cloudflared tunnel run'))
+
+    assert result['success'] is False
+    assert result['metadata']['blocked'] is True
+    assert calls == []
+
+
 def test_seed_defaults_registers_four_local_cli_cards(tmp_path: Path) -> None:
     from iabv_v15.infra.persistence.database import AppDatabase
     from iabv_v15.infra.persistence.storage import ArtifactStorage

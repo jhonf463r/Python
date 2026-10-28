@@ -190,11 +190,11 @@ class ToolRegistry:
                 tool_id='shell_command',
                 title='Shell local seguro',
                 tool_type=ToolType.SHELL,
-                description='Wrapper controlado para comandos locales no destructivos y observables.',
+                description='La ejecución shell de comandos libres queda bloqueada hasta disponer de aislamiento del sistema operativo; no usar para iniciar procesos MCP o túneles.',
                 adapter_key='shell',
-                supports_sandbox=True,
-                supports_rollback=True,
-                capabilities=['run_command', 'inspect_environment'],
+                supports_sandbox=False,
+                supports_rollback=False,
+                capabilities=[],
             ),
             ToolCard(
                 tool_id='desktop_human_runner',
@@ -582,7 +582,7 @@ class ToolRegistry:
                     'allowed_verbs': [
                         '--version', 'version', 'tunnel', 'access', 'help',
                     ],
-                    'notes': 'Verbos de inspeccion (tunnel list, tunnel info) quedan permitidos; arranque real del tunnel sigue corriendo via run_mcp_bridge.ps1. `cloudflared update` queda fuera del allowlist por read-only: pasa por ToolApprovalPolicy si hace falta.',
+                    'notes': 'LocalCliToolAdapter limita Cloudflared a formas exactas de solo lectura (--version, version, help, tunnel list, tunnel info <id>); cualquier otro subcomando, argumento o sufijo queda bloqueado antes de subprocess.run. No existe una ruta aprobable de inicio de túnel mientras G1/G2/G3 no estén establecidos.',
                 },
             ),
             ToolCard(

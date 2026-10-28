@@ -29,6 +29,75 @@ from iabv_v15.services.providers.base import LLMProvider
 from iabv_v15.services.tools.ui_execution_runner import UIExecutionRunner
 
 
+def registered_command_block_reason(card: ToolCard, task: ToolTask) -> str | None:
+    """Fail closed for registered free-form shell and bridge/tunnel launches."""
+    if card.adapter_key == 'shell':
+        return 'free_form_shell_execution_disabled_until_os_isolation_exists'
+    if card.adapter_key != 'local_cli':
+        return None
+
+    args_text = ''
+    for action in task.actions:
+        if action.action_type == ToolActionType.RUN_COMMAND:
+            args_text = str(action.value or action.target or '').strip()
+            if args_text:
+                break
+    if not args_text:
+        args_text = str(task.metadata.get('command_args') or '').strip()
+    if not args_text:
+        args_text = str(card.metadata.get('version_command') or '--version').strip()
+    normalized = args_text.replace('\\', '/').casefold()
+    launch_markers = (
+        'iabv_v15.infra.mcp.server',
+        'mcp_hot_reload',
+        'run_mcp_bridge',
+        'start_iabv',
+    )
+    if any(marker in normalized for marker in launch_markers):
+        return 'mcp_or_tunnel_launcher_blocked'
+
+    configured_programs = [
+        str(card.metadata.get('command_name') or ''),
+        str(card.metadata.get('executable_path') or ''),
+        *(str(value or '') for value in (card.metadata.get('command_aliases') or [])),
+    ]
+    program_names = {
+        program.replace('\\', '/').rsplit('/', 1)[-1].casefold()
+        for program in configured_programs
+        if program.strip()
+    }
+    if program_names.intersection(
+        {
+            'python', 'python.exe', 'pythonw.exe', 'py', 'py.exe',
+            'powershell', 'powershell.exe', 'pwsh', 'pwsh.exe',
+            'cmd', 'cmd.exe', 'bash', 'bash.exe', 'sh', 'sh.exe',
+            'wscript.exe', 'cscript.exe',
+        }
+    ):
+        return 'command_interpreter_launch_blocked'
+
+    is_cloudflared = (
+        card.tool_id.casefold() == 'cloudflared_cli'
+        or str(card.metadata.get('tool_family') or '').casefold() == 'cloudflared'
+        or bool(program_names.intersection({'cloudflared', 'cloudflared.exe'}))
+        or any('/cloudflared/' in program.replace('\\', '/').casefold() for program in configured_programs)
+    )
+    if not is_cloudflared:
+        return None
+    try:
+        tokens = [token.casefold() for token in shlex.split(args_text)]
+    except ValueError:
+        return 'cloudflared_args_malformed'
+
+    # Only these exact read-only shapes are retained. In particular, no
+    # arbitrary `tunnel` subcommand, option, or suffix is accepted.
+    if tokens in (['--version'], ['version'], ['help'], ['tunnel', 'list']):
+        return None
+    if len(tokens) == 3 and tokens[:2] == ['tunnel', 'info'] and not tokens[2].startswith('-'):
+        return None
+    return 'cloudflared_command_not_in_exact_read_only_allowlist'
+
+
 class ToolAdapter:
     tool_type: ToolType
 
@@ -1732,50 +1801,25 @@ class OllamaToolAdapter:
 
 
 class ShellToolAdapter:
+    """Fail-closed placeholder for the unisolated free-form shell route."""
+
     tool_type = ToolType.SHELL
-    BLOCKED_TOKENS = ('rm ', ' del ', 'remove-item', 'format ', 'shutdown', 'reboot', 'mkfs', 'git reset --hard')
 
     def is_available(self, card: ToolCard) -> bool:
-        return True
+        return False
 
     def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False) -> dict[str, Any]:
         start = time.perf_counter()
-        command = next((action.value or action.target for action in task.actions if action.action_type == ToolActionType.RUN_COMMAND), '')
-        if not command:
-            command = str(task.metadata.get('command') or '')
-        lowered = f' {command.lower()} '
-        if any(token in lowered for token in self.BLOCKED_TOKENS):
-            return {
-                'success': False,
-                'output_text': '',
-                'extracted_data': {},
-                'artifacts': [],
-                'error_message': 'Comando bloqueado por politica de seguridad.',
-                'execution_ms': 0,
-                'metadata': {'sandbox': sandbox, 'blocked': True},
-            }
-        try:
-            completed = subprocess.run(command, capture_output=True, text=True, shell=True, check=False)
-            success = completed.returncode == 0
-            return {
-                'success': success,
-                'output_text': (completed.stdout or '').strip(),
-                'extracted_data': {'stderr': (completed.stderr or '').strip(), 'returncode': completed.returncode},
-                'artifacts': [],
-                'error_message': '' if success else (completed.stderr or completed.stdout).strip(),
-                'execution_ms': int((time.perf_counter() - start) * 1000),
-                'metadata': {'sandbox': sandbox, 'command': command},
-            }
-        except Exception as exc:
-            return {
-                'success': False,
-                'output_text': '',
-                'extracted_data': {},
-                'artifacts': [],
-                'error_message': str(exc),
-                'execution_ms': int((time.perf_counter() - start) * 1000),
-                'metadata': {'sandbox': sandbox, 'command': command},
-            }
+        block_reason = 'free_form_shell_execution_disabled_until_os_isolation_exists'
+        return {
+            'success': False,
+            'output_text': '',
+            'extracted_data': {},
+            'artifacts': [],
+            'error_message': block_reason,
+            'execution_ms': 0,
+            'metadata': {'sandbox': sandbox, 'blocked': True, 'reason': block_reason},
+        }
 
 
 class DesktopHumanToolAdapter:
@@ -2601,8 +2645,8 @@ class SiteExplorerToolAdapter:
 class LocalCliToolAdapter:
     """Adapter read-only para CLIs locales (gh, cloudflared, git, winget).
 
-    Complementa a ``ShellToolAdapter`` sin reemplazarlo: ese corre comandos
-    libres con ``shell=True``; este conoce herramientas concretas, busca su
+    Mantiene comandos arbitrarios fuera de ``ShellToolAdapter`` (fail-closed):
+    este conoce herramientas concretas, busca su
     ejecutable en PATH o rutas Windows tipicas, restringe los verbos permitidos
     y ejecuta con ``shell=False`` para no exponer inyeccion. Es la base que
     consume ``ToolRegistry`` para ``gh_cli``, ``cloudflared_cli``, ``git_cli``
@@ -2624,8 +2668,8 @@ class LocalCliToolAdapter:
     # Failsafe sobre la allowlist declarada por cada tool: aunque un operador
     # agregue un verbo destructivo por error al ``allowed_verbs`` de una
     # ``ToolCard``, los patrones abajo lo bloquean antes del subprocess.
-    # Alineado con ``ShellToolAdapter.BLOCKED_TOKENS`` para no dejar un bypass
-    # en el adapter nuevo. Los patrones se chequean con padding de espacios.
+    # Defense in depth for the argv-based local CLI path. The free-form shell
+    # adapter is separately disabled until OS-level isolation is available.
     BLOCKED_TOKENS: tuple[str, ...] = (
         ' rm ',
         ' rm -rf',
@@ -2649,6 +2693,16 @@ class LocalCliToolAdapter:
 
     def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False) -> dict[str, Any]:
         start = time.perf_counter()
+        block_reason = registered_command_block_reason(card, task)
+        if block_reason:
+            return self._fail(
+                start,
+                block_reason,
+                sandbox=sandbox,
+                executable='',
+                args=self._extract_args(task),
+                blocked=True,
+            )
         executable = self._resolve_executable(card)
         if not executable:
             return self._fail(
