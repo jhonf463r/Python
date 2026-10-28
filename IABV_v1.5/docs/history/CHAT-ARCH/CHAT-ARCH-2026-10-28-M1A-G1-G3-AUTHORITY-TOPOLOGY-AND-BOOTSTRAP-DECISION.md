@@ -107,6 +107,25 @@ Do not apply the maximum authority machinery indiscriminately to every IABV func
 
 These profiles are proposed policy design, not a present allowlist. Existing fail-closed gates remain authoritative until a separate, exact acceptance/release decision. No test-running/merge/tunnel capability can piggyback on read-only authorization.
 
+## 5A. Source-level route map of the actual MCP surface
+
+Static source trace on PR #556 HEAD 1ef23ce47fa206fa751d90fd0c92bcab8a902a6b, server.py blob 9a9f3a7f31c1da091279b8403d72089546217c9c (not runtime evidence):
+
+| Actual tool/call-site family | Observed source behavior | Required route before any enablement |
+|---|---|---|
+| world_model_snapshot | Reads the current model by default; refresh=true invokes request_refresh | Split passive observation from refresh/scan capability; bound output and authorize refresh separately |
+| autonomy_status, runtime_trace_summary/events, runtime_boot_report, orchestrator_preview, self_examination_current | Mostly diagnostic/preview paths in the handlers inspected; some accept refresh or expose detailed local operational state | Classify output sensitivity and refresh side effects; do not automatically equate them with generic file-read authority |
+| portable_context_get | Reads a context package and may rebuild/refresh it; can expose rich internal context | Treat as CONTEXT_ARTIFACT_READ only after fixed-target, freshness, disclosure and provenance rules are connected; refresh is a separate capability |
+| read_repo_file, list_repo_directory | Explicitly call the protected-read gate and approved-workspace-root/handle reader path in the PR #556 candidate | Full G1/G2/G3 plus exact target-to-same-handle consumption; remain denied until providers are real |
+| M1B ControlMasterContextReader | PR #555 publishes a fixed-path, schema/freshness/target-bounded Python reader and tests; its two-file PR does not itself register an MCP tool in server.py | Useful narrow component, not a live MCP authorization route and not a replacement for G1; wire only through explicit approved composition |
+| capture_ui_screenshot, list_open_windows, list_running_processes, read_clipboard, dump_qml_tree, git_status_and_log, probe_assistant_login | Can disclose local screen, process, clipboard, UI, repository metadata or network/browser state | A distinct observe/sensitive-observe permission, explicit scope/output limits and network/consent controls; do not assume all are harmless because they are read-only |
+| run_pytest, gpu_model_benchmark, site_exploration_explore, chatgpt_web_capture | Execute test/model/browser/network paths; some persist artifacts or interact with external services | EXECUTE_OR_MUTATE profile, narrow allowlist, exact environment/target, budgets, user approval, receipts and separate network permission |
+| autonomy_update_task, report_freeze, register_audit_finding, register_audit_round, github_remote_publish_branch_as_pr, ui_bridge_send_message, ui_bridge_navigate and other state-changing handlers | Mutate queues, write evidence, initiate a push/PR or interact with the local UI | Separate per-operation authorization and explicit approval; never inherit permission from a read-only capability |
+
+Important limitation: this is a bounded static mapping of selected source handlers, not a proof that the entire registry is exhaustively classified or that downstream services have no extra guards. Some handlers inspected do not invoke the server's generic _governance_block_for_route directly; their exact downstream control path must be reviewed before enablement. This is not a claim that those operations are currently reachable: PR #556 blocks server startup while authorization is unconfigured.
+
+Therefore the first future composition change must NOT simply replace ReadAuthorizationCoordinator.unconfigured() and unblock the server. It must also verify a complete per-tool registry/call-site inventory, make each handler's required capability explicit, and prove there is no alternate launcher/fallback. The startup gate is a necessary whole-server fail-closed control today, but it is not a substitute for per-operation authorization once startup is allowed.
+
 ## 6. Recommended implementation order
 
 1. Close the architecture decision before another code patch. Confirm the exact permitted initial-trust mechanism and who/what outside the IABV issuer is allowed to approve it. If no independent trust mechanism can be evidenced, report BLOCKED_NO_INDEPENDENT_BOOTSTRAP_AUTHORITY; do not manufacture one.
