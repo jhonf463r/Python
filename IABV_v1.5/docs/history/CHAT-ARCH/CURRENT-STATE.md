@@ -1,13 +1,14 @@
-## OVERRIDE — Owner-directed continuity protocol repair after a terminal subtask (2026-10-28)
+## OVERRIDE — Owner-directed dual-track continuity routing (2026-10-28)
 
-This override records the Owner's explicit instruction in this conversation to analyze the coordination failure, evolve the existing Space-Time/memory selection algorithm, and preserve useful project progress. It supersedes the former wait as the next **documentation/process task only**; it does not supersede Option D, the authority gates, or the implementation prohibition.
+This route records the Owner's explicit instruction to learn from the current interaction, evolve the existing Space-Time/memory algorithm, and keep useful progress moving. It does not reopen a terminal G1 inspection or relax any technical gate.
 
 ```text
 OWNER_INSTRUCTION=EVOLVE_EXISTING_CONTINUITY_AND_MEMORY_ROUTING; EXPLICIT_CHAT_REQUEST
-ACTIVE_TASK=SPACE_TIME_DUAL_TRACK_PROGRESS_PROTOCOL_REPAIR_20261028
-TASK_SCOPE=DOCUMENTATION_METHOD_AND_ROUTING_RECONCILIATION_ONLY
+ACTIVE_TASK=OBJECTIVE_FIRST_DUAL_TRACK_PROGRESS_SELECTION
+TASK_SCOPE=AUTHORIZED_PLANNING_AND_DOCUMENTATION_SELECTION; NO_PRODUCT_IMPLEMENTATION
 LAST_TERMINAL_TASK=M1A_G1_EXISTING_TRUST_ASSETS_BOUNDED_READ_ONLY_ASSESSMENT
 LAST_TERMINAL_RESULT=NOT_RUN; REASON=SUPPORTED_ROUTE_NOT_FOUND
+METHOD_CORRECTION=DUAL_TRACK_ROUTING; DOCUMENTATION_PR=550
 TECHNICAL_FRONTIER=M1A_G1_TRUST_BOOTSTRAP_AUTHORITY_BOUNDARY
 TASK_ID_POLICY=NEW_TASK_PER_REVISION
 COMMIT_PROFILE=GATE_COMMIT
@@ -22,12 +23,12 @@ MCP_TOOL_ALLOWLIST=EMPTY
 PROTECTED_READS=FAIL_CLOSED
 TUNNEL=DISABLED
 BRIDGE=BRIDGE_NOT_READY
-NEXT_ACTION=CONSOLIDATE_DUAL_TRACK_SELECTION_IN_EXISTING_CORE_PROTOCOL_AND_FRONT_DOORS; THEN_ROUTE_ONLY_TO_AUTHORIZED_INDEPENDENT_WORK
+NEXT_ACTION=APPLY_OBJECTIVE_FIRST_DUAL_TRACK_SELECTION_TO_THE_CURRENT_OWNER_OBJECTIVE; DO_NOT_TREAT_G1_ASSET_ROUTE_BLOCK_AS_GLOBAL_STOP
 G1_REOPEN_CONDITION=GENUINELY_NEW_INDEPENDENT_AUTHORITY_EVIDENCE_OR_EXPLICIT_OWNER_DECISION_CHANGING_THAT_GATE
 AUTOMATIC_FOLLOW_ON=FALSE
 ```
 
-The new route authorizes only the continuity-method/documentation correction. The existing G1 asset assessment remains terminal; do not repeat it, and do not convert the new documentation authorization into permission to create trust, inspect protected assets, implement or run the bridge.
+The G1 asset assessment remains terminal; do not repeat it without a material precondition change. Independently authorized analysis and documentation can proceed without bypassing G1. This route does not authorize trust creation, protected reads, credentials, product implementation, tests, build, runtime, tunnel or deployment.
 
 ---
 
