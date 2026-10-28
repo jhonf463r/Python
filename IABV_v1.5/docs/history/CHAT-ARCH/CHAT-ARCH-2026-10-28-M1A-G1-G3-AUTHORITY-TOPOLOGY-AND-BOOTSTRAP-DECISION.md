@@ -2,7 +2,7 @@
 
 - Date: 2026-10-28 (America/Bogota).
 - Repository: jhonf463r/Python.
-- Evidence baseline: live main 79ab8c50eaa7518120d5ebed9db4747d395a21cb; PR #549 519c55a5b96a5e0b3826b54bf92726ef7f1b9c28; PR #555 6c601c99bb9cc2111f9dde2f6986aefcc0393785; PR #556 1ef23ce47fa206fa751d90fd0c92bcab8a902a6b; PR #557 a5ca0e88eed5d80eaa9d7a1e9c535ffe5f960b9f.
+- Evidence baseline immediately before this design addendum was written into PR #557: live main 79ab8c50eaa7518120d5ebed9db4747d395a21cb; PR #549 HEAD 519c55a5b96a5e0b3826b54bf92726ef7f1b9c28; PR #555 HEAD 6c601c99bb9cc2111f9dde2f6986aefcc0393785; PR #556 HEAD 1ef23ce47fa206fa751d90fd0c92bcab8a902a6b; PR #557 pre-write HEAD a5ca0e88eed5d80eaa9d7a1e9c535ffe5f960b9f.
 - Status: OWNER_REQUESTED_ARCHITECTURE_AND_TRACEABILITY_IMPROVEMENT; DESIGN_PROPOSAL_ONLY; NOT_CANONICAL; NOT_IMPLEMENTED.
 - Permission boundary: this document does not provision a trust root, create keys/credentials, configure Entra or Windows, execute tests/runtime, enable protected reads, enable the MCP tool allowlist, enable the tunnel, merge a PR, or authorize bridge activation.
 - Governing policy remains OPTION_D=RATIFIED_NO_BOOTSTRAP. This proposal does not change its meaning or ask for re-ratification. A change from absolute prohibition to Owner-controlled enrollment is a distinct policy decision, not an implementation detail.
