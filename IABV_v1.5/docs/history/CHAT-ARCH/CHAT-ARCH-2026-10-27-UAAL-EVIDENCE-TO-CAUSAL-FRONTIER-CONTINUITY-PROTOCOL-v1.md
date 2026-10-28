@@ -110,3 +110,38 @@ Record the exact scope, whether the UAC prompt was invoked (not merely planned),
 The local Codex report says `ADMIN_CONTEXT=False` and correctly stopped before TPM/Secure Boot queries. Next action is one automated, user-consented, read-only elevation attempt for the exact prior query set. No manual console opening is required if the local agent can display the normal UAC prompt. If no interactive local execution channel exists, record `UAC_UI_UNAVAILABLE_IN_AGENT` and stop; do not claim a hardware result.
 
 This rule changes workflow ergonomics only. It does not establish G1/G2/G3 or authorize any product operation.
+
+
+## 10. UAC invocation blocked before UI — no manual fallback or retry loop (2026-10-27)
+
+### Evidence
+
+The approved local Codex attempt to launch a bounded PowerShell child using `Start-Process -Verb RunAs` returned `exec_command failed: Rejected … blocked by policy`. The process did not start; no UAC window appeared; no TPM/Secure Boot query ran; no temporary script or output artifact was created. No machine/repository change occurred.
+
+Classify this precisely as:
+
+```text
+UAC_REQUEST=BLOCKED_BY_EXECUTION_TOOL_POLICY
+UAC_UI=NOT_SHOWN
+ELEVATED_CHILD=NOT_STARTED
+TPM=UNKNOWN
+SECURE_BOOT=UNKNOWN
+OWNER_CONSENT=NOT_REQUESTED_BY_OS
+```
+
+This is **not** an Owner denial, not an OS/UAC rejection, and not evidence about hardware.
+
+### Required response
+
+- Do not repeat the same invocation or try an alternate elevation route after the execution policy explicitly blocked it.
+- Do not ask the Owner to open consoles or navigate Windows Settings. The Owner explicitly prefers local-agent execution; preserve that preference.
+- Do not claim a normal UAC prompt can be shown when the tool policy rejected the process before launch.
+- Continue work that does not depend on this observation: static analysis, provider-composition tracing, threat-model/contract design, and draft implementation planning within existing authorization.
+- Keep any hardware-dependent choice unresolved. A UI result can be obtained only if a supported local execution route later becomes available or policy changes; the Owner should not be made the operator by default.
+- Do not treat this obstacle as authorization to provision a software key, weaken trust requirements, enable protected reads, or promote any acceptance gate.
+
+### Next discriminating route
+
+The immediate next operation is not another hardware probe. Prepare a source-derived authority/bootstrap contract from the existing G1/G2/G3 code, identifying mandatory interfaces, trust binding, revocation and rollback requirements, and fail-closed composition tests. It must remain backend-agnostic between a future verified hardware-backed provider and any separately approved alternative, without selecting or provisioning either one. Then perform an exact-HEAD review and identify the first non-hardware decision that genuinely requires Owner consent.
+
+This is a workflow lesson: an agent-side tool policy blocker is a boundary of the execution channel, not an Owner task. Record the blocked action once and advance on the independent safe frontier.
