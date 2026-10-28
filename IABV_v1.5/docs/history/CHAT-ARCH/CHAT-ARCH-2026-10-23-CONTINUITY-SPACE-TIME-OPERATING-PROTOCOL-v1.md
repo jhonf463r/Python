@@ -33,11 +33,11 @@ For every new chat and every material hand-off:
 
 1. Refresh live GitHub `refs/heads/main`; a remembered SHA is historical until revalidated.
 2. Read these files from live `main`, strictly in this order:
-   1. `IABV_v1.5/AGENTS.md`
-   2. `IABV_v1.5/docs/history/CHAT-ARCH/README.md`
-   3. `IABV_v1.5/docs/history/CHAT-ARCH/CURRENT-STATE.md`
-   4. `IABV_v1.5/docs/history/CHAT-ARCH/CONTEXT-INDEX.md`
-   5. `IABV_v1.5/docs/history/CHAT-ARCH/MEMORY-OPERATING-PROTOCOL.md`
+   1. `IABV_v1.5/docs/history/CHAT-ARCH/README.md`
+   2. `IABV_v1.5/docs/history/CHAT-ARCH/CURRENT-STATE.md`
+   3. `IABV_v1.5/docs/history/CHAT-ARCH/CONTEXT-INDEX.md`
+   4. `IABV_v1.5/docs/history/CHAT-ARCH/MEMORY-OPERATING-PROTOCOL.md`
+   5. `IABV_v1.5/AGENTS.md` — read before any repository mutation or command execution. It supplies repository-specific constraints, but does not supersede `CURRENT-STATE.md` as the task router.
 3. `CURRENT-STATE.md` is the sole current route authority for `ACTIVE_TASK`, `NEXT_ACTION`, technical gates and current permissions. The other four files provide method and navigation; they cannot supersede it.
 4. Follow only relevant current receipts, contracts and historical records. Select sources by the current unresolved dependency, not by recency alone or by indiscriminate archive volume.
 5. Distinguish live-main truth from a local report, branch, draft PR or proposed memory update. A candidate is not canonical until the permitted merge is complete and the exact state is fetched back from live `main`.

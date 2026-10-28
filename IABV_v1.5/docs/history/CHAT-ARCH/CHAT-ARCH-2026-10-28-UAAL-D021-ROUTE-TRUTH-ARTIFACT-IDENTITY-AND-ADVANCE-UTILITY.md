@@ -38,7 +38,7 @@ Apply this before any material handoff, publication, retest, new branch or proto
 ### Gate A — current route and source integrity
 
 1. Read the live `main` SHA.
-2. Read `README.md`, then `CURRENT-STATE.md`, then `CONTEXT-INDEX.md`, then `MEMORY-OPERATING-PROTOCOL.md`; retrieve only the objective-relevant protocol lineage after that.
+2. Read `README.md`, then `CURRENT-STATE.md`, then `CONTEXT-INDEX.md`, then `MEMORY-OPERATING-PROTOCOL.md`. Read `AGENTS.md` before any repository mutation or command execution. Retrieve only objective-relevant protocol lineage after the four-file route intake.
 3. Bind each read to the exact ref and blob. If the normal file endpoint returns empty content unexpectedly, fetch the identified blob. Empty transport output is `RETRIEVAL_FAILED`, not an empty canonical state.
 4. Treat `CURRENT-STATE.md` as the only routing authority. Other entry blocks are navigational snapshots; repeated stale copies do not gain authority by majority.
 5. Keep entry documents as pointers rather than synchronized copies of volatile task status or hashes. The only task status/`NEXT_ACTION` record belongs in `CURRENT-STATE.md`; if an entry copy is needed for a dated receipt, label it as a timestamped snapshot and never as a parallel authority.
