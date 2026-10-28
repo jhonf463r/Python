@@ -1,11 +1,9 @@
-<!-- UAAL-D020 — method delta; the live CURRENT-STATE on main determines adoption. -->
-## Method evolution — verified progress utility and strategy switching (2026-10-28)
+<!-- UAAL-D020 — shared cross-AI method; CURRENT-STATE.md remains the sole route authority. -->
+## UAAL-D020 — verified progress and cross-AI memory activation (2026-10-28)
 
-The Owner explicitly requested an evolution of the existing universal reasoning/continuity method after a preparation-only loop. See [UAAL-D020 — Verified Progress Utility, Strategy Switching, and Preparation-Debt Control](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-28-UAAL-D020-VERIFIED-PROGRESS-UTILITY-STRATEGY-SWITCH.md).
+UAAL-D020 applies to participating AI sessions that retrieve this GitHub memory, not only to the IABV product/runtime. For material tasks, refresh the canonical route, activate relevant memory, compare actually available authorized actions, and show how the method changes action selection. Distinguish `MEMORY_RETRIEVED`, `METHOD_ACTIVATED`, `METHOD_APPLIED`, `OUTCOME_VERIFIED`, and `LATER_CAUSAL_REUSE`; do not infer another session consumed context from a link or commit. Two preparation-only steps require a strategy reset; a third attempt at the same edge needs a material causal delta.
 
-Operational correction: each action must name the target dependency edge, the observed blocker it addresses, the expected observable, and its stop/switch condition. Prefer a verified target-edge closure; otherwise take the smallest action that changes a decision. A plan, prompt, checkout or handoff is `PREPARATION_ONLY` unless it proves a necessary prerequisite. Two consecutive preparation-only steps require a strategy reset; before a third attempt on the same edge, require material evidence and a causally distinct route.
-
-Reuse the existing D019/router/memory/governance organs. Do not claim runtime learning or bridge readiness from documentation. Confirm D020's current adoption state in the live `CURRENT-STATE.md` on `main`; historical/branch copies do not establish canonical adoption.
+See [UAAL-D020](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-28-UAAL-D020-VERIFIED-PROGRESS-UTILITY-STRATEGY-SWITCH.md), [Cross-AI symbiosis map](docs/history/CHAT-ARCH/SYMBIOSIS-MAP.md), and the [living Space-Time continuity protocol](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-23-CONTINUITY-SPACE-TIME-OPERATING-PROTOCOL-v1.md).
 
 <!-- Cross-chat handoff synchronized 2026-10-27. CURRENT-STATE.md remains the sole operational route authority. -->
 

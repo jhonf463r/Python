@@ -1,7 +1,7 @@
 # Canonical continuity, Space-Time cognition, and adaptive neuroplasticity protocol
 
 - Protocol ID: `CONTINUITY_SPACE_TIME_ANTI_LOOP` (stable identity; operating method evolves in place)
-- Living operating revision: `2.4 — ADAPTIVE_SPACE_TIME_NEUROPLASTICITY + OWNER_CONTEXT_AWARE_TURN_ROUTING + VERIFIED_CONTEXT_HANDOFF + OWNER_FACING_DELIVERY_PREFLIGHT + DUAL_TRACK_PROGRESS_ROUTING`
+- Living operating revision: `2.5 — ADAPTIVE_SPACE_TIME_NEUROPLASTICITY + OWNER_CONTEXT_AWARE_TURN_ROUTING + VERIFIED_CONTEXT_HANDOFF + OWNER_FACING_DELIVERY_PREFLIGHT + DUAL_TRACK_PROGRESS_ROUTING + UAAL_D020_PROGRESS_UTILITY + CROSS_AI_MEMORY_ACTIVATION`
 - Evolution rule: integrate new lessons into their owning core rule; preserve dated incidents/history; do not accumulate competing append-only protocols
 - Owner instruction date: 2026-10-23 (America/Bogota)
 - Scope: objective-bound reasoning, temporal evidence graph, adaptive role activation, gated action chains, memory consolidation, delivery receipts and outcome-based protocol evolution
@@ -226,6 +226,16 @@ Apply this loop:
 `OBSERVE → CLASSIFY → EXPLAIN → GENERALIZE → UPDATE_OWNING_RULE → ADVERSARIAL_REVIEW → MERGE/FETCH_BACK → REUSE_IN_A_NON_IDENTICAL_TASK → MEASURE_OUTCOME → CONFIRM / REFINE / REVERT`.
 
 **Observed method correction (2026-10-28).** The terminal result of one bounded G1 asset assessment (`NOT_RUN; SUPPORTED_ROUTE_NOT_FOUND`) was initially treated as if the whole project had no next action, even after the Owner explicitly asked to continue by evolving the memory/continuity method. The correct behavior is to keep that technical route blocked while opening a new, separately authorized process lane. Section 4 and UAAL-D019 now define the dual-track selection rule. This incident supports a targeted method correction; the document writeback itself does not prove later reuse, automatic runtime enforcement or model-weight learning.
+
+### Cross-AI memory activation contract — applies to every participating session
+
+The continuity loop is shared across the AIs that work from the repository; it is not an IABV-runtime-only feature. On a material task, a participant that can access GitHub must refresh the live route, retrieve only the relevant memory, identify the method that applies, and let it change its own action selection. Do not assume another participant received the same context.
+
+Record the actual level reached when it affects routing or a handoff:
+`MEMORY_RETRIEVED` → `METHOD_ACTIVATED` → `METHOD_APPLIED` → `OUTCOME_VERIFIED` → `LATER_CAUSAL_REUSE`.
+For each transition retain the supporting evidence and the exact source revision. `METHOD_APPLIED` must point to a concrete changed selection or rejected loop. `OUTCOME_VERIFIED` requires target-correlated evidence. `LATER_CAUSAL_REUSE` requires a later non-identical task and attributable outcome; it must never be inferred from memory persistence or a response echo.
+
+For agent coordination, use the current frontier to choose the destination by demonstrated capability and actual access. Every handoff identifies `IA DESTINO`, `CAPABILITY REQUIRED`, and `WHY THIS AI NOW`, plus target revision, relevant prior decisions, evidence labels, authorization, expected receipt and stop condition. If a session cannot access GitHub, hand it a bounded relevant context bundle through an actual supported route and do not claim delivery until receipt is observed. Reuse this protocol rather than create a competing cross-AI router or another memory store.
 
 **Evolve in place; preserve history.** When a new lesson overlaps an existing rule, revise or clarify that rule in its owning section instead of stacking another loosely connected appendix. Preserve the incident, decision and old state as dated history; link it to the current rule and record why the change was made. Keep `CURRENT-STATE.md` the only route authority and synchronize its front-door summaries in the same change. If two rules conflict, make the precedence explicit and consolidate the owning rule; do not let multiple summaries become rival policies.
 

@@ -230,6 +230,15 @@ Each AI must preserve:
 
 The AI identity is secondary to the capability and provenance.
 
+
+### Shared-memory use is an operational obligation, not an assumed property
+
+For material work, every participating AI session that has an authorized repository path must apply UAAL-D020 to its own selection of reasoning and action. GitHub is the shared external memory substrate; the content reaches an agent only if that agent or its runtime actually retrieves/inherits it. The method is intended to alter **this session's task framing, route selection, action and verification**, not merely the contents of IABV's product code.
+
+Use the stage ladder `MEMORY_RETRIEVED → METHOD_ACTIVATED → METHOD_APPLIED → OUTCOME_VERIFIED → LATER_CAUSAL_REUSE`. Keep the stages separate. A method-use claim should identify the retrieved source, applicable rule, changed decision and outcome evidence. Do not infer receipt/consumption by Codex, ChatGPT or any other session from a link, commit, upload or handoff alone.
+
+Every handoff names its destination AI, required capability and why it is appropriate now; carries the exact task/revision, relevant memory, provenance, authorization, terminal results and acceptance/stop condition; and requests a result that can be reconciled against the canonical route. Dynamic capability-fit replaces a fixed actor sequence. A method is improved when a later non-identical task demonstrates attributable reuse, not when the file is merely persisted.
+
 ## 13. IDEA PRESERVATION PROTOCOL
 
 When the human produces a new conceptual idea, do not leave it only in the chat.

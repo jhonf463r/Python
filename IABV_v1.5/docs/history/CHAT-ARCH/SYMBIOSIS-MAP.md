@@ -1,3 +1,19 @@
+## ACTIVE SYMBIOSIS METHOD OVERLAY — shared-memory activation and cross-AI reuse (2026-10-28)
+
+**Scope:** this map supports the shared developmental field across participating AI sessions, not only algorithms inside the IABV product. ChatGPT, Codex and other agents may use this field when the current session actually retrieves the relevant GitHub memory. Repository persistence alone does not prove a session received or applied it.
+
+`CURRENT-STATE.md` remains the sole routing authority; this overlay defines the cross-AI method boundary, not a competing task router. The dated routing/handoff entries below are historical evidence unless the live CURRENT-STATE explicitly reactivates them. On every material task, retrieve the current route first and use only the relevant slice of this map.
+
+Use the activation ladder:
+`MEMORY_RETRIEVED → METHOD_ACTIVATED → METHOD_APPLIED → OUTCOME_VERIFIED → LATER_CAUSAL_REUSE`.
+Require source/revision evidence for retrieval, a concrete decision changed for application, target-correlated evidence for outcome verification, and a later non-identical task for causal-reuse claims. Never equate a saved file, actor handoff, similar response or commit with learned behavior.
+
+Select actors dynamically from the current frontier, required capability, demonstrated fit, actual access and independent-verification needs. Each material handoff identifies `IA DESTINO`, `CAPABILITY REQUIRED`, and `WHY THIS AI NOW`; it carries the exact objective/revision, relevant prior lessons, evidence status, authorization, expected return and stop condition. Prefer existing capability and supported repository/connector surfaces over creating local setup work; use a new preparation step only when its causal necessity is demonstrated.
+
+UAAL-D020 is the owning progress-utility method: [UAAL-D020](./CHAT-ARCH-2026-10-28-UAAL-D020-VERIFIED-PROGRESS-UTILITY-STRATEGY-SWITCH.md). The live operating details are in the [Space-Time continuity protocol](./CHAT-ARCH-2026-10-23-CONTINUITY-SPACE-TIME-OPERATING-PROTOCOL-v1.md). This overlay does not claim runtime enforcement, universal context delivery, model-weight changes or causal reuse already proven.
+
+---
+
 ## OVERRIDING LATEST ROUTING — New-chat continuity handoff after UAAL-D018 (2026-10-23)
 
 The canonical startup handoff is [here](./CHAT-ARCH-2026-10-23-new-chat-continuity-handoff-after-UAAL-D018.md), blob `71f0ef6911bf6f67f7fb8f6249bf7ce5b4963589`. Current baseline at preparation: `8c453dbdd0b3bb0b606fb46f6b243df525ac10f8`. Verify remote `main` again before executing any action.

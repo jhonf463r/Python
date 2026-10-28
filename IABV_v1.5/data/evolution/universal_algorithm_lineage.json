@@ -328,9 +328,9 @@
         "CHAT-ARCH-2026-10-26-UAAL-D019-SPACE-TIME-ANTI-LOOP-CAUSAL-FRONTIER.md",
         "MEMORY-OPERATING-PROTOCOL.md"
       ],
-      "derivation_reason": "The observed local-reader attempt stopped before changes, and the proposed follow-up focused on another local setup route without proving its superiority to other authorized repository capabilities. Anti-loop detection needs an explicit target-edge utility gate and a mandatory strategy reset when preparation accumulates without verified progress.",
-      "problem_or_objective": "Reduce time to a verified objective by preventing repeated preparation and selecting the shortest admissible route that closes a critical dependency or reduces decision-changing uncertainty.",
-      "new_mechanism_or_distinction": "Require an ADVANCE_CONTRACT, compare actually available authorized realizations after a blocker, mark setup artifacts PREPARATION_ONLY unless they satisfy a demonstrated prerequisite, reset after two consecutive preparation-only steps, and require material causal difference before a third attempt at the same edge.",
+      "derivation_reason": "The observed preparation-only blocker showed that anti-loop detection can still permit successive setup tasks without proof of target utility. The Owner then clarified that the developmental target includes all participating AI sessions using GitHub as shared external memory, not only IABV product/runtime. The method therefore needs both a target-edge utility gate and an explicit retrieve/activate/apply/verify/later-reuse contract across agents.",
+      "problem_or_objective": "Improve the time and quality of shared human–AI and AI-to-AI work by ensuring verified repository memory changes current-session framing/routing and future cross-session decisions, rather than only accumulating documentation.",
+      "new_mechanism_or_distinction": "Require an ADVANCE_CONTRACT and capability-surface comparison; mark preparation-only activity; require strategy reset after two preparation-only steps; and distinguish memory retrieved, method activated, method applied, outcome verified and later causal reuse for every material cross-AI decision.",
       "dependencies_on_existing_organs": [
         "UAAL-ROOT-001",
         "UAAL-D014 Meta-Method Plasticity / Failure-to-Evolution Loop",
@@ -339,9 +339,9 @@
         "CURRENT-STATE.md as sole routing authority",
         "Memory Operating Protocol"
       ],
-      "affected_layer": "universal reasoning loop, task decomposition, strategy selection, cross-agent/tool routing, continuity and evidence reconciliation",
+      "affected_layer": "shared external memory and cross-AI symbiosis, ChatGPT/Codex/other-agent task selection, Space-Time continuity, IABV architecture and future runtime transfer only after demonstrated reusable mechanisms",
       "epistemic_status": "DOCUMENTED_METHOD_NOT_RUNTIME_PROVEN; CAUSAL_REUSE_NOT_TESTED",
-      "evidence": "Owner/Codex-reported M1B preparation blocker; current chat's observed preparation-first response; live-main review of D019, Constitution and canonical routing/front-door files; directly inspected available GitHub connector capabilities during this method-update task.",
+      "evidence": "Owner/Codex-reported M1B setup blocker; observed assistant correction failure; live-main retrieval of UAAL-D020, Constitution §12, the living Space-Time protocol, SYMBIOSIS-MAP and shared developmental knowledge-field record; explicit Owner clarification of intended cross-AI scope. Independent causal contribution of stored memory remains unisolated.",
       "falsifier": "A later non-identical task shows the method adds repeated overhead without improving target-edge closure or decision-changing information gain, or a direct route selected under the method repeatedly fails while the supposedly necessary preparation proves avoidable.",
       "implementation_refs": [],
       "experiment_refs": [
@@ -350,11 +350,13 @@
       ],
       "verification_refs": [],
       "knowledge_delta": "Avoiding an identical retry is necessary but not sufficient; an actor can still loop through different preparatory activities unless every step proves causal usefulness to the target edge.",
-      "method_delta": "Advance contract; realization-surface comparison; preparation-debt status; two-step preparation reset; third-attempt causal-difference gate; post-action progress delta.",
-      "routing_delta": "Do not repeat the proposed local checkout recipe unchanged. Review the D020 method candidate, then apply it on the next authorized target action without reopening the terminal G1 asset assessment.",
-      "next_open_edge": "Independent review and canonical adoption of this method delta; subsequently test causal reuse in a non-identical task.",
+      "method_delta": "Advance contract and preparation-debt reset plus cross-AI memory activation ladder: MEMORY_RETRIEVED → METHOD_ACTIVATED → METHOD_APPLIED → OUTCOME_VERIFIED → LATER_CAUSAL_REUSE; explicit per-stage evidence and no claim of model-weight change.",
+      "routing_delta": "Current-session use of the GitHub method is required where repository access exists; dynamically select AI by frontier/capability/actual access; never infer another AI's receipt from persistence; next apply the shared contract to the next supplied Codex result.",
+      "next_open_edge": "A later non-identical cross-AI task must retrieve this rule, change agent/action selection for a relevant reason, and yield an independently supported outcome before claiming causal reuse.",
       "timestamp": "2026-10-28",
-      "branch_or_sha": "docs/uaal-d020-progress-utility-20261028"
+      "branch_or_sha": "docs/uaal-d020-progress-utility-20261028",
+      "cross_ai_application_contract": "For every material session using repository memory, track retrieval, activation, application, verified outcome and later causal reuse separately. Apply to ChatGPT, Codex and other participating agents when actual authorized context access exists. External memory is not model-weight training or proof of automatic delivery.",
+      "current_session_application": "2026-10-28: relevant live-main method/protocol/map fetched and scope correction applied; Owner instruction is also a direct cause, so this is not an isolated test of autonomous memory reuse."
     }
   ],
   "protocol_version": "UAAL-TRACE-1",

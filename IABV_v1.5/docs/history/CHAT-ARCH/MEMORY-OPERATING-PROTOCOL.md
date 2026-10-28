@@ -1,11 +1,9 @@
-<!-- UAAL-D020 — method delta; the live CURRENT-STATE on main determines adoption. -->
-## Method evolution — verified progress utility and strategy switching (2026-10-28)
+<!-- UAAL-D020 cross-AI application — live CURRENT-STATE.md owns route authority. -->
+## UAAL-D020 — shared memory must change participating-AI decisions (2026-10-28)
 
-The Owner explicitly requested an evolution of the existing universal reasoning/continuity method after a preparation-only loop. See [UAAL-D020 — Verified Progress Utility, Strategy Switching, and Preparation-Debt Control](CHAT-ARCH-2026-10-28-UAAL-D020-VERIFIED-PROGRESS-UTILITY-STRATEGY-SWITCH.md).
+UAAL-D020 applies to the AIs that use this GitHub repository as shared external memory, not only to IABV's local/product algorithm. Each participating session with an authorized repository route must retrieve the live current state, activate only objective-relevant methods, compare available authorized actions, and select by verified progress utility.
 
-Operational correction: each action must name the target dependency edge, the observed blocker it addresses, the expected observable, and its stop/switch condition. Prefer a verified target-edge closure; otherwise take the smallest action that changes a decision. A plan, prompt, checkout or handoff is `PREPARATION_ONLY` unless it proves a necessary prerequisite. Two consecutive preparation-only steps require a strategy reset; before a third attempt on the same edge, require material evidence and a causally distinct route.
-
-Reuse the existing D019/router/memory/governance organs. Do not claim runtime learning or bridge readiness from documentation. Confirm D020's current adoption state in the live `CURRENT-STATE.md` on `main`; historical/branch copies do not establish canonical adoption.
+For material handoffs, distinguish `MEMORY_RETRIEVED`, `METHOD_ACTIVATED`, `METHOD_APPLIED`, `OUTCOME_VERIFIED` and `LATER_CAUSAL_REUSE`. Identify the concrete decision changed by the method and the evidence supporting the result. Do not infer another session's receipt/consumption from a GitHub link or writeback. See [UAAL-D020](CHAT-ARCH-2026-10-28-UAAL-D020-VERIFIED-PROGRESS-UTILITY-STRATEGY-SWITCH.md), its cross-AI contract, and the living [Space-Time continuity protocol](CHAT-ARCH-2026-10-23-CONTINUITY-SPACE-TIME-OPERATING-PROTOCOL-v1.md).
 
 <!-- Cross-chat handoff synchronized 2026-10-27. CURRENT-STATE.md remains the sole operational route authority. -->
 
