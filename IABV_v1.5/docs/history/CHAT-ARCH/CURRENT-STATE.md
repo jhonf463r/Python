@@ -1,3 +1,28 @@
+## OVERRIDE — Claude M1A Windows reader R1 adjudicated; F-556-01/F-556-02 are the first open repair edge (2026-10-29)
+
+Claude/Sonnet's bounded static-review return has been received and adjudicated against the exact live candidate. PR #556 remains open/draft/unmerged at HEAD `e1b430956146c4aa0cadc1df2c3df92150b7f7ea`, base `79ab8c50eaa7518120d5ebed9db4747d395a21cb`. Seven assigned file Git blobs were independently fetched and matched. The exact `windows_handle_reader.py` source returns a partial, unsorted listing on cap overflow (F-556-01), and declares but never enforces `NumberOfLinks` (F-556-02). See [the adjudication receipt](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-M1A-G1-WINDOWS-HANDLE-READER-CLAUDE-R1-ADJUDICATION-RECEIPT.md).
+
+The first open technical edge is a bounded source/test candidate correction for F-556-01 and F-556-02, followed by targeted static/read-only review of the relevant connection bodies if the corrected diff warrants it. No code edits or tests were executed during adjudication. The currently recorded permission remains read-only/documentation; source/test mutation requires explicit Owner authorization. Do not ask Claude to repeat this static review or open a duplicate PR. Do not infer exploitability/runtime behavior from static evidence alone.
+
+```text
+M1A_CANDIDATE=PR_556; HEAD=e1b430956146c4aa0cadc1df2c3df92150b7f7ea
+CLAUDE_R1=RECEIVED_AND_ADJUDICATED_STATIC_ONLY
+F556_01=STATIC_DEFECT_CONFIRMED
+F556_02=STATIC_GAP_CONFIRMED; CONTAINMENT_IMPACT=INFERENCE
+TESTS_BUILD_NATIVE_WINDOWS_RUNTIME=NOT_RUN
+CODE_CHANGE_AND_TEST_EXECUTION=NOT_AUTHORIZED_IN_THIS_STEP
+NEXT_ACTION=PREPARE_BOUNDED_CODEX_REPAIR_HANDOFF
+G1/G2/G3=NOT_ESTABLISHED
+MCP_TOOL_ALLOWLIST=EMPTY
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+PRODUCT_CANDIDATE_MERGE=NOT_AUTHORIZED
+C:\\Python=DO_NOT_TOUCH
+```
+
+The proposed method and this receipt remain on PR #557. Canonical `main` still has the older M1B opening snapshot; do not silently amend it or claim adoption. This route update records the result and selects the next frontier without modifying product code, testing, credentials, enrollment, protected reads or runtime.
+
 ## OVERRIDE — cross-chat result adjudication method added on draft PR #557 (2026-10-29)
 
 This is a documentation/method update on the existing draft PR #557 branch; `main` and the active technical route are unchanged. The living Space-Time protocol now contains an incoming-AI-result adjudication gate, and UAAL-D021 §8.6 defines reasoning acceptance cases. Before the next material handoff, rebind Claude/Codex output to the live target revision and exact files; distinguish direct source evidence, actor-reported execution, inference, unknown and not-run; compare the receipt to its original acceptance oracle; update the provisional world model; and only then choose the first authorized, discriminating next action. Incomplete receipts require targeted evidence completion, not repetition of the whole task. The README, CONTEXT-INDEX, AGENTS, MEMORY-OPERATING-PROTOCOL and SYMBIOSIS-MAP entry pointers have been aligned with this proposed gate.
@@ -66,17 +91,21 @@ Previously issued bounded handoff; response pending per the Owner: **Claude/Sonn
 ### Current route contract
 
 ```text
-ACTIVE_TASK=M1A_G1_CURRENT_HEAD_STATIC_REVIEW_REMAINING_WINDOWS_SECURITY_SURFACE_20261029
+ACTIVE_TASK=M1A_G1_F556_01_02_BOUNDED_REPAIR_HANDOFF_PREPARATION_20261029
 M1B_F01_F02=CLOSED_BY_STATIC_REVIEW_ON_C36EE5ED
 M1B_TESTS=3_FOCUSED_AND_37_FULL_FILE_PASSED; OWNER_CODEX_REPORTED_MINIMAL_HARNESS
 M1B_INTEGRATION=OWNER_DECISION_REQUIRED; MERGE_NOT_AUTHORIZED
 M1A_PR=556
 M1A_EXPECTED_HEAD=e1b430956146c4aa0cadc1df2c3df92150b7f7ea
-NEXT_ACTOR=CLAUDE_SONNET
-CLAUDE_RECEIPT_STATUS=OWNER_REPORTED_PENDING
-NEXT_ACTION=ADJUDICATE_CLAUDE_RECEIPT_THEN_SELECT_FIRST_OPEN_G1_EDGE
+CLAUDE_RECEIPT_STATUS=RECEIVED_AND_ADJUDICATED_STATIC_ONLY
+F556_01=STATIC_DEFECT_CONFIRMED; OVERFLOW_RETURNS_PARTIAL_UNSORTED_NAMES
+F556_02=STATIC_GAP_CONFIRMED; NUMBEROFLINKS_NOT_ENFORCED
+F556_02_CONTAINMENT_IMPACT=INFERENCE; NATIVE_VALIDATION_NOT_RUN
+NEXT_ACTOR=CODEX_IF_SOURCE_TEST_CHANGES_ARE_AUTHORIZED
+NEXT_ACTION=PREPARE_BOUNDED_REPAIR_PROMPT; CODE_CHANGE_AND_TEST_EXECUTION_NOT_AUTHORIZED_IN_THIS_STEP
+RECEIPT=https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-M1A-G1-WINDOWS-HANDLE-READER-CLAUDE-R1-ADJUDICATION-RECEIPT.md
 NO_CODE_CHANGE=TRUE
-TESTS_BUILD_RUNTIME=NOT_RUN_FOR_NEXT_TASK
+TESTS_BUILD_RUNTIME=NOT_RUN_FOR_CURRENT_STEP
 OPTION_D=RATIFIED_NO_BOOTSTRAP
 G1/G2/G3=NOT_ESTABLISHED
 MCP_TOOL_ALLOWLIST=EMPTY
