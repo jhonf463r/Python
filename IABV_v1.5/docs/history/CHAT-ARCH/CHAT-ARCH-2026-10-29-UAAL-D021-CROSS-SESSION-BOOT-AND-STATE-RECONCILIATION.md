@@ -131,15 +131,77 @@ SESSION_RECEIPT:
 
 Do not append a full duplicate history on every turn. Update the owning entry in place, retain dated evidence receipts, and keep the active route at the top. Front doors should only contain the short activation recipe and a link to `CURRENT-STATE.md` and this contract.
 
-## 7. Current application and falsifiable checks
+## 6A. Objective-conditioned perception and task-local world model
 
-Observed while preparing this revision:
+Memory retrieval is an input to perception, not a substitute for building a model of the current task. Before a material action or cross-AI handoff, construct the smallest source-grounded model that can distinguish the leading explanations for the current objective. This is a provisional operational model, not a complete digital twin or a claim of subjective consciousness.
+
+The model must bind:
+
+1. **Objective and acceptance oracle:** the requested observable transition, success condition and failure condition.
+2. **Source identity and time:** exact repository/ref/commit/blob or object identity; event time, observation time, record time and currentness.
+3. **Effective causal path:** producer/source → transformation or contract → consumer/decision → effective operation → observed outcome, limited to the path capable of changing the objective.
+4. **Authority and environment:** applicable permissions, prerequisites, exact scope, tool/actor capability, resources and prohibited effects.
+5. **Epistemic separation:** directly verified facts, Owner/actor reports, inferences, competing hypotheses, unknowns and actions not run.
+6. **Discriminating evidence:** for each material hypothesis, its predicted distinguishing observation and falsifier.
+
+Do not expand into a broad repository inventory if a smaller observation can decide the next action. A retrieved document proves the bytes at that reference, not that every assertion in it is true or that a later consumer loaded it. A static source path does not prove runtime execution. An abnormal empty or truncated response is `RETRIEVAL_FAILED`, not evidence of an empty or nonexistent source.
+
+For material tasks, use this compact representation:
+
+```text
+WORLD_MODEL_SNAPSHOT = {
+  objective_and_acceptance_oracle,
+  observed_at_and_currentness,
+  exact_source_refs_and_artifact_identity,
+  verified_observations_and_owner_reports,
+  inferences_and_competing_hypotheses,
+  predicted_observations_and_falsifiers,
+  unknowns_and_not_run_actions,
+  scope_authority_environment_and_no_go_constraints,
+  producer_transformation_consumer_operation_chain,
+  first_open_causal_or_evidential_edge,
+  selected_action_and_actor_fit_reason,
+  expected_observation_and_stop_or_switch_condition,
+  actual_result_stage_and_model_delta,
+  writeback_ref_and_fetchback_status,
+  later_causal_reuse_status
+}
+```
+
+This snapshot does not become another router: `CURRENT-STATE.md` remains the sole owner of `ACTIVE_TASK` and `NEXT_ACTION`. Do not duplicate those fields as competing instructions. Update the model only when a source-bound observation or explicitly classified report changes it; retain unresolved contradictions rather than blending them into a confident narrative.
+
+## 6B. Adjudicate incoming results before preparing another handoff
+
+A returned result from Codex, another AI, a tool or a reviewer is evidence to be adjudicated, not an instruction to continue blindly. Before any new cross-AI handoff:
+
+1. Rebind the receipt to the original task contract, acceptance oracle, current live route, exact target HEAD/ref, exact file paths and artifact identities. A verdict for HEAD A stays bound to A; if the live target is HEAD B, inspect the delta or obtain a bounded review of the changed scope.
+2. Split the receipt into direct observations, actor-reported execution, inference, hypotheses, unknowns and not-run actions. Preserve the source and provenance for every material claim.
+3. Compare the reported outcome with the original acceptance oracle and the expected distinguishing observation. Do not silently substitute a more convenient success criterion after seeing the result.
+4. Adjudicate each dependency edge independently as `CLOSED_AT_REVIEW_SCOPE`, `PARTIAL`, `OPEN`, `BLOCKED` or `UNKNOWN`. Static closure, synthetic tests, native execution, exact-HEAD tests, authenticated fetch-back, authority acceptance and operational activation are different stages.
+5. Update the task-local world model with what changed, what did not, contradictions, residual unknowns and the first remaining open edge.
+6. Only then select one authorized next action from that earliest open edge. If evidence is missing, retrieve or request only the specific missing item; do not restart the whole review or generate another broad handoff.
+7. Keep branch persistence distinct from canonical adoption. A draft PR or branch fetch-back is not a change to `main`; adoption requires permitted integration and exact fetch-back from live `main`.
+
+| Returned condition | Required route update | Prohibited conclusion |
+|---|---|---|
+| Review says PASS on HEAD A, but the candidate is HEAD B | Bind PASS to A; inspect or review only the B delta | Claim B is reviewed without checking it |
+| Static finding closed; tests are reported from a reduced harness | Close only the static finding; preserve test provenance and harness limits | Claim full-suite, native-runtime or production acceptance |
+| Source retrieval returns empty, but the exact blob is retrievable | Record the transport failure and use the verified blob bytes | Treat the source as empty or ask the Owner to recreate the record |
+| Receipt omits a digest, target revision or test command/output needed for acceptance | Mark that claim `UNKNOWN` and retrieve only the missing evidence | Infer success from a headline or repeat the entire task |
+| A draft branch contains an apparently useful method, while live `main` has moved | Compare the branch with current `main`; reuse only the compatible bounded delta | Merge a stale broad branch or create a duplicate method without comparison |
+| A technical route is blocked, but a separate documentation task is explicitly authorized | Keep the technical gate closed and perform only that bounded documentation task | Treat documentation progress as technical authorization |
+
+**Pass criterion:** all applicable checks have been adjudicated, or each unsatisfied check is explicitly `UNKNOWN`/`NOT_RUN` with the exact missing evidence and a justified stop condition. This is a reasoning-method acceptance check; it does not prove automatic enforcement, delivery to another chat or model-weight learning.
+
+## 7. Historical authoring snapshot and per-session falsifiable checks
+
+The values below are the original D021 authoring snapshot, not current route authority. Each material session must refresh live `main` and current PR metadata before reuse. Observed while preparing the initial revision:
 - `main` baseline: `79ab8c50eaa7518120d5ebed9db4747d395a21cb`.
 - PR #555: open/draft/unmerged; HEAD `c36ee5ed177a3b5afee764c277cc4a8b243594c8`; M1B candidate source is published in a reviewable PR, contradicting older “local-only/unpublished” headers.
 - PR #556: open/draft/unmerged; HEAD `fb635aab18d9c2ef19b20d48e3625d52383fe6af`.
 - `G1/G2/G3=NOT_ESTABLISHED`; `AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED`; `PROTECTED_READS=FAIL_CLOSED`; `BRIDGE=BRIDGE_NOT_READY`.
 
-Acceptance checklist for this documentation change:
+Per-session method acceptance checklist:
 - [ ] Live `main` and PR HEADs refreshed, not copied from an old chat.
 - [ ] The active header no longer calls PR #555 local/unpublished.
 - [ ] All continuity front doors use the same short route and treat old snapshots as history.
