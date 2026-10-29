@@ -27,6 +27,22 @@ This harmonizes the collaboration protocol with the entry contract; it does not 
 
 Relevant prior failures must alter at least one concrete part of the task contract when applicable: object lock, scope exclusions, source requirements, test matrix, evidence requirement, stop condition or acceptance gate. Merely quoting history does not count.
 
+### UAAL-D021 Gate D0 — objective-conditioned landscape and cross-domain transfer (proposed, 2026-10-29)
+
+Before choosing a fix, normalize the Owner's objective into the observable target, acceptance/failure oracle, target revision, scope/no-go constraints, authorized effects, current evidence and stop/switch condition. Do not let the most recent conversational topic silently replace the active objective.
+
+Build only the minimum sufficient causal map for the claim being decided:
+
+`desired outcome ← acceptance oracle ← effective operation/realization ← normal consumer/decision ← transformation/contract ← actual producer/source`
+
+Attach the relevant prerequisites, identity, authority and environment edges. A named class, protocol, registry item, source comment or isolated test is not proof that the ordinary caller reaches the claimed producer/consumer. Record which paths were read in depth and mark the remainder `UNKNOWN`; do not expand a bounded review into a claimed full-system audit.
+
+Classify the discrepancy using whichever lenses fit: semantics/acceptance; state/route; artifact/identity/provenance; schema/contract; capability/realization; authorization/preconditions; effective operation/side effects; execution/observation/oracle; persistence/feedback. These are diagnostic lenses, not mutually exclusive failure types. For each material hypothesis give the source, affected edge, predicted distinguishing observation and a falsifier.
+
+When transferring a lesson between domains, transfer a mapped invariant rather than copying the surface recipe. State the mapping and at least one non-match, counterexample or falsifier; absent that, keep the transfer `HYPOTHESIS`. After each bounded action, record the actual evidence stage, recompute the first open edge, and continue on another authorized independent lane if the current edge is terminal. Do not use process documentation to weaken technical authorization gates.
+
+This gate operationalizes D019's causal map and dual-track continuation, D020's progress utility, D021's route/artifact truth and D022's effective-operation contract. It creates no additional coordinator, router, memory store or authority. It remains a method proposal on this branch until authorized integration and canonical fetch-back.
+
 ## UAAL-D021 route-realization and artifact-identity gate (proposed, 2026-10-28)
 
 Before constructing a handoff for any publish/update/retest/clone/implementation action, query the live repository for an existing branch, commit, pull request, exact file blobs and reviews that can satisfy the objective. Bind each expected hash to an exact artifact revision and evidence stage; never compare an R3 receipt with R4 bytes as though they were the same candidate. If an entry snapshot conflicts with live `CURRENT-STATE.md`, the canonical route wins and the stale snapshot must be reconciled before action selection. Record existing route alternatives and why the selected action has greater target-edge utility. This refinement is proposed in the current documentation PR and is not canonical on `main` until integrated and fetched back.
