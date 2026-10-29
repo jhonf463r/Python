@@ -1,60 +1,88 @@
-## ACTIVE ROUTE — UAAL-D021 continuity-lane closeout with source-provenance limit (2026-10-29)
+## ACTIVE ROUTE — IABV_M1A_ROOT_BOUND_AUTHORIZATION_COMPOSITION_R4_20261029 (2026-10-29)
 
-**Sole routing authority:** this file owns the current `ACTIVE_TASK`, `NEXT_ACTION`, technical gates and permissions. Dated blocks below this first `---` are historical evidence unless this header explicitly reactivates them. Read this header from live `main` on each new material session. If the normal read returns empty, retrieve the exact blob by its returned SHA; empty transport output is `RETRIEVAL_FAILED`, not an empty route.
+**Sole routing authority:** this header owns the current task, next action, evidence state and permissions. The historical suffix beginning at the first line containing three hyphens is preserved byte-for-byte and is not an active instruction unless this header explicitly reactivates it. On every material task, refresh live main and retrieve this header from the exact current blob; a normal fetch returning an empty body is a retrieval limitation, not an empty file.
 
-### Live source snapshot at start of continuity-lane closeout
-- `refs/heads/main` observed before this route refresh: `40f297d2cba64ff55153dfa8e8b8d84dea04ee60`, the squash merge of documentation-only PR #567. This is a point-in-time observation; refresh refs on every later material session.
-- PR #567 integrated the pre-search-context baseline receipt and linked it from canonical UAAL-D021. The receipt's live-main blob at this observation was `7279031163c0c070c0748e4014a977c046a0d01b`; the updated UAAL-D021 blob was `338adc6e5a2df1303af0ca21d321b05a3a013c5d`.
-- Canonical contract: [UAAL-D021](./CHAT-ARCH-2026-10-29-UAAL-D021-CROSS-SESSION-BOOT-AND-STATE-RECONCILIATION.md). New receipt: [pre-search context baseline](./CHAT-ARCH-2026-10-29-UAAL-D021-PRE-SEARCH-CONTEXT-BASELINE-RECEIPT.md).
-- The pre-search transcript provides limited evidence that a separate conversation had IABV-specific information before new searches. It does not authenticate the initial context payload or distinguish GitHub from ChatGPT memory, prior chats, summaries or other context sources. `SOURCE_PROVENANCE=UNKNOWN`.
-- PR #565 still supplies the bounded receipt for explicit connector-mediated retrieval/application in one separately opened session. Neither that receipt nor the pre-search baseline proves automatic external GitHub boot.
-- `CURRENT-STATE.md` normal read returned zero characters; blob `e9e651005d24b9afed2d1b05a0d9a9117680c5fa` was fetched exactly as 1,070,222 characters before this route refresh. Preserve the complete historical suffix starting at the first `---` byte-for-byte.
+### Live source snapshot and writeback boundary
 
-### Current point-in-time status of product candidates (compared with observed main above)
-- PR #555: OPEN/DRAFT/UNMERGED, HEAD `c36ee5ed177a3b5afee764c277cc4a8b243594c8`, diverged, 3 ahead / 18 behind. Do not merge from this continuity lane.
-- PR #556: OPEN/DRAFT/UNMERGED, HEAD `fb635aab18d9c2ef19b20d48e3625d52383fe6af`, diverged, 15 ahead / 14 behind. Do not merge from this continuity lane.
-- PR #557: OPEN/DRAFT/UNMERGED, HEAD `2e16e259001aa671b7ddc2c43763880543e459ad`, diverged, 100 ahead / 14 behind and not mergeable according to current PR metadata. Do not merge this broad stale proposal.
-- Counts are tied to the exact main SHA recorded above; refresh before any later candidate review.
+- Live main observed for this route update: 27b3fa52fe552463fc0e0e5ded6da564afba07d7.
+- Current-state blob at that revision before this update: b5fbf879e95d92869e51fa2ae29d4fce5ca56bdb. Normal fetch returned zero characters; exact blob retrieval returned 1,071,502 characters. Only this active header is being replaced. The suffix beginning at the first separator is preserved exactly.
+- Relevant commits after the old route snapshot: 1c1c5380b364fd92d96555c7b9a77851715048c9 updated navigation pointers; a235bd0d28b5188bfbd75f8038077b21cf681ae4 recorded the parent/child coordination proposal; 27b3fa52fe552463fc0e0e5ded6da564afba07d7 recorded Owner acceptance of that coordination policy. These are documentation/coordination changes, not product authorization or code acceptance.
+- The Owner-accepted parent/child policy keeps serial work as the default. Acceptance does not authorize parallel dispatch or a pilot by itself. One active task remains the default; do not launch concurrent workers.
+- This writeback is a continuity-route correction requested by the Owner. It does not merge or modify a product candidate, grant implementation authority beyond the current R4 bounded local task, or change any technical gate.
 
-### Active objective and acceptance
-Close the bounded UAAL-D019/D020/D021 continuity-documentation task with accurate evidence boundaries and one canonical route. The explicit-retrieval procedure is documented and has bounded independent-session evidence. The latest baseline transcript reports prior context before search, but source attribution is unknown.
+### Active objective
 
-Acceptance for this closeout:
-1. The pre-search baseline receipt and its provenance limitation are integrated and fetch-backed from canonical `main`.
-2. UAAL-D021 explicitly links the receipt and states the source-attribution ceiling and stop condition.
-3. This sole active route reflects the latest result, its evidence stage, the first remaining evidential limit and the next authorized step.
-4. The historical suffix from the first `---` is preserved exactly.
-5. No product code, tests, runtime, authorization, bridge or technical gate is changed.
+Advance the authorization organ through the first unresolved causal edge: a host-owned approved root must be bound to the native object opened beneath it, and the exact capability used for the G3 decision must be consumed by the reader without path re-resolution.
 
-### Outcome, boundary and stop condition
-The documentation portion of this continuity task is complete after this route refresh is reviewed, integrated and fetched back. Do not repeat text-only baseline tests or create another explanatory PR while the same source-provenance blind spot remains. Reopen the automatic-GitHub-boot hypothesis only if new trustworthy provenance observability or a controlled source-isolation capability becomes available. A separate Owner objective may be handled through its own authorized lane; it does not derive code-change permission from this receipt.
+The active bounded task is IABV_M1A_ROOT_BOUND_AUTHORIZATION_COMPOSITION_R4_20261029. A detailed Codex task prompt was issued in this conversation. The actual Codex R4 result has not yet been provided in this session; do not presume it has run or succeeded. The immediate next action is to receive the result and adjudicate its exact evidence against the acceptance criteria, not to generate another prompt or repeat R1–R3.
 
-```text
-ACTIVE_TASK=UAAL_D021_CONTINUITY_LANE_CLOSEOUT_DOCUMENTATION_ONLY
+### Trajectory ledger — preserve provenance
+
+| Step | Result and evidence class | Edge changed | Residual |
+|---|---|---|---|
+| R1 — deny-only increment | Claude/Sonnet static review classified SAFE_DENY_ONLY_INCREMENT_BUT_ORGAN_NOT_COMPLETE after EV-1 was resolved. Local identity and hashes were Codex-reported. | Confirmed that two reviewed MCP handlers deny before invoking their readers. | Did not compose real G1/G2/G3 providers or establish the authorization organ. |
+| R1 preflight retry | Codex reported BLOCKED because live main had moved beyond the isolated candidate base. No files or tests changed in that attempt. | Closed the stale-base route fingerprint; no implementation progress in that attempt. | Required a fresh isolated worktree based on a reconciled main. Do not repeat the same preflight-only action. |
+| R2 — code contract | Codex reported four changed files, clean diff check and 81 passing focused tests. | Added typed deny-only contract and tests; kept production reads blocked. | R2 identified that readers still resolve/open a path internally and cannot consume the authorized object directly. |
+| R3 — opened-target capability | Codex reported seven files, clean diff check and 155 passing focused tests. A temporary fixture demonstrated handle-derived identity and reading from the same opened object without path re-open. | Established a limited lower-level open-object-to-reader path in a test fixture. | The fixture did not establish root binding or an authorized decision-to-consumption sequence. Root binding remains EVIDENCE_NOT_ESTABLISHED. |
+| R4 — root-bound composition | Prompt issued; result pending. | Target edge is different from prior work: root-handle provenance and containment, then exact capability identity across decision and consumption. | No success may be claimed before the actual R4 artifacts and test results are adjudicated. |
+
+**Evidence rule:** R2/R3 test results, local file identities and preservation of R1/R2/R3 remain OWNER_REPORTED from the supplied Codex report unless independently rechecked against the local worktrees. GitHub main and canonical documentation blobs were independently retrieved in this session. This ChatGPT session has not executed the local pytest commands.
+
+### UAAL-D019 / D020 / D021 application audit
+
+- **D019 — anti-loop:** EV-1 remains RESOLVED and must not be reopened. The old stale-base preflight is terminal for that exact base. R2 and R3 produced material implementation/test deltas, so do not classify the whole trajectory as repeated preparation. R4 must not re-review or re-package the same R2/R3 diff.
+- **D020 — verified-progress utility and strategy switch:** select work by whether it closes the root-binding/decision-to-consumption edge or materially discriminates a native-API blocker. The next result must identify the actual operation, exact command, exit code and what changed. A plan or type declaration alone is PREPARATION_ONLY. Two consecutive preparation-only actions on this edge require a strategy reset before a third.
+- **D021 — live reconciliation and incoming-result adjudication:** main and the route blob were refreshed; evidence classes are explicit; the next handoff remains single-owner and revision-bound. After the Codex result, compare the actual diff with the exact base, adjudicate the claim against the test output, and only then select one subsequent action.
+- Method status: RETRIEVED_AND_APPLIED_IN_THIS_SESSION. Its automatic enforcement in every future AI session is NOT_PROVEN. The accepted parent/child coordination policy does not enable parallel dispatch.
+- This route refresh is requested housekeeping and is not product progress. The technical progress claims remain bounded to the R1–R3 artifacts and reports recorded above.
+
+### First open causal edge and R4 acceptance
+
+**OPEN_EDGE:** ROOT_BOUND_AUTHORIZATION_COMPOSITION_NOT_ESTABLISHED.
+
+R4 must establish or specifically refute each of these links:
+1. A host-owned approved root is represented by a live native directory handle and identity derived from that handle.
+2. The target is opened component-by-component relative to the already-open root, with escape, invalid identity, and unvalidated reparse-point conditions denied.
+3. The G3 decision is bound to that exact opened-target capability and operation.
+4. The successful test-only decision and consumer receive the same capability instance; the consumer does not re-resolve or re-open by name.
+5. Production composition has no real root provider or G1/G2 authority yet, so it still denies before protected filesystem access.
+
+If the native API or its guarantees cannot support the required proof, report the exact unproven condition and stop; do not approximate root containment with path prefixes or a second path open. The same-object fixture by itself is not root-binding evidence.
+
+Directory enumeration is a separate edge. STABLE_ENUMERATION_VIEW remains NOT_ESTABLISHED. Keep list_repo_directory and protected reads fail-closed, and do not reopen the previously exhausted oplock investigation without new primary evidence. git_status_and_log remains a separately governed operation.
+
+After R4 is supplied, one independent Claude/Sonnet static review may inspect the new diff and actual test evidence. Do not ask it to repeat R2/R3 review. No publication or merge follows automatically.
+
+### Current gates and permissions
+
+ACTIVE_TASK=IABV_M1A_ROOT_BOUND_AUTHORIZATION_COMPOSITION_R4_20261029
 ACTIVE_METHOD=UAAL-D019+D020+D021
-METHOD_STATUS=DOCUMENTED_METHOD; EXPLICIT_RETRIEVAL_VERIFIED_FOR_BOUNDED_TASKS; AUTOMATIC_ENFORCEMENT_NOT_PROVEN
-LATER_CAUSAL_REUSE=VERIFIED_FOR_TWO_NON_IDENTICAL_TASKS_WITHIN_PRIOR_CONTINUING_SESSION
-INDEPENDENT_SESSION_EXPLICIT_RETRIEVAL=VERIFIED_FOR_ONE_BOUNDED_TASK; SEE_PR565_RECEIPT
-PRE_SEARCH_CONTEXT_AVAILABILITY=LIMITED_EVIDENCE_FROM_SUBMITTED_TRANSCRIPT
-INITIAL_CONTEXT_SOURCE_PROVENANCE=UNKNOWN
-METHOD_APPLICATION=PARTIAL_FOR_PRESEARCH_EXPERIMENT; EXCLUSIVE_CAUSAL_EFFECT_NOT_ISOLATED
-AUTOMATIC_CROSS_SESSION_BOOT=NOT_PROVEN
-GENERALIZATION=NOT_TESTED
-CONTINUITY_DOCUMENTATION_CLOSEOUT=COMPLETE_AFTER_ROUTE_FETCHBACK
-AUTOMATIC_BOOT_HYPOTHESIS=STOPPED_UNTIL_NEW_PROVENANCE_OBSERVABILITY_OR_CONTROLLED_SOURCE_ISOLATION
-OPTION_D=RATIFIED_NO_BOOTSTRAP
+METHOD_STATUS=RETRIEVED_AND_APPLIED; AUTOMATIC_ENFORCEMENT_NOT_PROVEN
+BASE_MAIN_FOR_ROUTE_UPDATE=27b3fa52fe552463fc0e0e5ded6da564afba07d7
+R1/R2/R3=LOCAL_CANDIDATE_ARTIFACTS; OWNER_REPORTED_PRESERVATION
+R4=TASK_PROMPT_ISSUED; CODEX_RESULT_PENDING
+EV1=RESOLVED_NOT_REOPENED
+ROOT_BINDING=NOT_ESTABLISHED
+SAME_OBJECT_AUTHORIZATION_TO_CONSUMPTION=NOT_ESTABLISHED
 AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+OWNER_ROOT_SELECTION=NOT_PROVIDED
 G1/G2/G3=NOT_ESTABLISHED
 MCP_TOOL_ALLOWLIST=EMPTY
 PROTECTED_READS=FAIL_CLOSED
+DIRECTORY_ENUMERATION=FAIL_CLOSED
+STABLE_ENUMERATION_VIEW=NOT_ESTABLISHED
+OPTION_D=RATIFIED_NO_BOOTSTRAP
 TUNNEL=DISABLED
 BRIDGE=BRIDGE_NOT_READY
+BUILD=NOT_RUN
+PRODUCT_RUNTIME=NOT_RUN
+ENTRA_SETUP=NOT_RUN
 AUTOMATIC_FOLLOW_ON=FALSE
-C_PYTHON=DO_NOT_TOUCH
-PRODUCT_PR_MERGE=NOT_AUTHORIZED_BY_THIS_DOCUMENTATION_TASK
-PRODUCT_TESTS_BUILD_RUNTIME=NOT_RUN
-NEXT_ACTION=ON_NEXT_MATERIAL_TASK_REFRESH_LIVE_MAIN_AND_APPLY_D019_D020_D021; REOPEN_AUTO_BOOT_ONLY_ON_NEW_PROVENANCE_OBSERVABILITY_OR_CONTROLLED_SOURCE_ISOLATION; NO_PRODUCT_ACTION
-```
+PARALLEL_DISPATCH=NOT_AUTHORIZED
+PRODUCT_PR_MERGE=NOT_AUTHORIZED
+C:/Python=DO_NOT_TOUCH
+NEXT_ACTION=RECEIVE_CODEX_R4_RESULT; ADJUDICATE_EXACT_DIFF_AND_TEST_EVIDENCE; ONE_STATIC_REVIEW_OF_NEW_DIFF_ONLY
+
 ---
 
 ## OVERRIDE — UAAL-D020 clarified as a cross-AI shared-memory method (2026-10-28)
