@@ -162,19 +162,43 @@ Do not make every small task pay the cost of a full archive audit. Use the canon
 
 **Observed scope correction (2026-10-28):** the Owner clarified that the intended developmental target is the shared method used by AIs consulting GitHub memory, not only IABV's local/product algorithms. The previous D020 writeback improved generic task selection but did not make the cross-AI consumption/application contract explicit in the symbiosis method. This extension repairs that connection; it does not prove that another session has consumed or reused the rule.
 
-### M1B code-candidate evidence gate — applied lesson (2026-10-28)
+### Code-candidate evidence and security-boundary gate — applied lessons from M1B/M1A (2026-10-28/29)
 
-The R1→R3 reader episode adds a specific correction to cross-agent code handoffs:
+The M1B reader and M1A authorization-composition episodes show that a staged source/test gate needs a claim-by-claim security-boundary vector. Do not promote a narrow fixture success into a wider trust or production claim.
 
 1. **Separate evidence stages:** LOCAL_CANDIDATE_REPORTED → EXACT_FINAL_SOURCE_AVAILABLE → STATIC_REVIEWED → TESTS_EXECUTED → SOURCE_PUBLISHED_BRANCH → PR_DIFF_REVIEWED → MAIN_FETCHBACK_VERIFIED. Do not collapse these into implemented or done.
 2. **Identify exact bytes and Git state.** Record base SHA, branch, git status, path, size and SHA-256 for each file. Untracked files are not part of a normal HEAD diff; do not claim they are in GitHub. A hash is not a substitute for reviewer access to that content.
 3. **Review the final version, not a prior draft.** If source changes after review, re-review the changed lines and bind the review to the final source hash. When the final source is not available in full, label the review partial.
 4. **Validate schema against reality.** Compare validators with live domain-model definitions and actual versioned artifact shapes. Test malformed cases and legitimate examples. Dates labelled UTC must include an explicit timezone; test Z/offset acceptance and naive-datetime rejection.
-5. **Treat tests as an authorized, distinct action.** Record exact interpreter, version, command, scope, counts and exit code. A targeted suite pass does not prove the full suite, build, runtime, race resistance, publication or bridge authorization.
+5. **Treat tests as an authorized, distinct action.** Record exact interpreter, version, command, scope, counts and exit code. A targeted suite pass does not prove the full suite, build, runtime, race resistance, publication or bridge authorization. The final command and collection count must refer to the final source bytes; preserve intermediate contradictory results as history instead of blending them into the final result.
 6. **Promote by verifiable evidence.** When the local candidate exists and tests are reported passing, do not reclone or reimplement. Publish that exact candidate to an isolated branch/PR, review the actual diff and fetch back the exact merged result if/when merge is authorized.
 7. **Preserve provenance.** Mark execution received from Codex OWNER_CODEX_REPORTED until independently reproduced or corroborated by retrievable CI evidence. A detailed receipt alone does not elevate the result to independently VERIFIED.
 
-This method refinement is based on one bounded case; it does not prove runtime enforcement or later causal reuse. A later counterexample showing the gate caused avoidable work or failed to detect a source mismatch must be recorded and used to revise the rule. Receipt: [M1B implementation and test receipt](https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-28-M1B-CONTEXT-READER-IMPLEMENTATION-AND-TEST-RECEIPT.md).
+#### Security-boundary vector — required for authorization, file and directory capabilities
+
+For a security-sensitive code change, freeze the acceptance oracle before implementation and adjudicate each claim separately:
+
+| Claim | Evidence needed | Must not infer |
+|---|---|---|
+| OPENED_OBJECT_IDENTITY | Native identity derived from the exact live handle | That the object is under an approved root |
+| ROOT_PROVENANCE | Host-owned root provider with independently justified trust/custody | That a temporary test root is the Owner-approved production root |
+| ROOT_TO_TARGET_CONTAINMENT | Source-backed opening/containment mechanism relative to the trusted root; escape and reparse-point failure semantics covered | That path normalization, a textual prefix or the target's file ID proves containment |
+| AUTHORIZATION_BOUND_TO_CAPABILITY | The decision evaluates the same operation/context and capability later supplied to the consumer | That a deny-only coordinator or a type declaration proves a positive authorization sequence |
+| SAME_CAPABILITY_CONSUMED | An observable identity/instance binding plus tests that the consumer does not resolve or reopen by name | That a low-level handle-read fixture proves the whole authorization-to-consumption chain |
+| PRODUCTION_PROVIDER_AUTHENTICITY | Real host-owned providers and mandatory bindings validated at composition | That synthetic providers or passing unit tests establish G1/G2/G3 |
+| NATIVE_ACCEPTANCE | Authorized native-platform acceptance evidence on the exact final candidate | That a simulated ABI, fixture or source inspection proves native behavior |
+| STABLE_DIRECTORY_VIEW | Separate, documented proof for stable enumeration under the stated threat model | That opening a directory handle or proving target identity establishes an atomic/stable listing |
+
+Use only the vector entries applicable to the change, but never merge adjacent claims into one. In particular, R3's reported temporary-fixture result supports only the limited OPENED_OBJECT_IDENTITY and low-level same-handle consumption claims. It does not close ROOT_PROVENANCE, ROOT_TO_TARGET_CONTAINMENT, or AUTHORIZATION_BOUND_TO_CAPABILITY; consequently it cannot establish production readiness.
+
+#### Authority edge versus implementation edge
+
+When the next unresolved dependency requires an Owner-held trust choice (for example OWNER_ROOT_SELECTION=NOT_PROVIDED), do not fabricate a root or provider to keep coding moving. Continue only with bounded mechanics/tests whose result is useful regardless of the real choice, keep production deny-only, and state the exact Owner/authority prerequisite. Conversely, do not use that missing production decision to stop independent, authorized contract work that can still discriminate an engineering question.
+
+Before directing an actor to implement a native security boundary, verify the primary API contract and name the exact property the experiment will prove. If the experiment can prove only a fixture-level mechanism, scope its acceptance accordingly; do not request a full root-bound-composition closure from a test that lacks a trusted root or production decision path.
+
+The episode is bounded evidence of this method correction, not proof that the protocol is automatically enforced or that the model has changed weights. Receipt for the original reader-specific gate: [M1B implementation and test receipt](https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-28-M1B-CONTEXT-READER-IMPLEMENTATION-AND-TEST-RECEIPT.md).
+
 ## 10. Acceptance and falsification
 
 On a later, non-identical task, evaluate this method with a decision trace. Success requires evidence that the selector (a) names the target edge, (b) compares the proposed route with actually available authorized realizations, (c) rejects unsupported preparation loops, (d) chooses a route with a predicted observable, and (e) verifies the outcome before claiming progress. The trace must show that applying the rule changed the chosen action or outcome relative to the prior default.
