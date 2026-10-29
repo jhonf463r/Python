@@ -50,7 +50,6 @@ NEXT_ACTION=OWNER_REVIEW_AND_EXPLICIT_DECISION_ON_THIS_DOCUMENT_PR; DO_NOT_CREAT
 ```
 
 ---
----
 
 ## OVERRIDE — UAAL-D020 clarified as a cross-AI shared-memory method (2026-10-28)
 
