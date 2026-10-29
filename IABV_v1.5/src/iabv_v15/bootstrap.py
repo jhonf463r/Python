@@ -471,6 +471,16 @@ class AppBootstrap:
         _auto_load_secrets()
 
         self.config = load_app_config(workspace_root)
+        # Observe host enrollment context only when explicitly requested by a
+        # host-owned caller. This provider is descriptive and does not feed
+        # the protected-read coordinator or approve a workspace root.
+        from iabv_v15.services.security.host_enrollment_context import (
+            HostEnrollmentContextProvider,
+        )
+
+        self.observed_local_enrollment_context_provider = HostEnrollmentContextProvider(
+            self.config, workspace_root,
+        )
         self.theme = load_theme_config()
         self._ensure_directories()
         configure_logging(self.config.logs_dir)
