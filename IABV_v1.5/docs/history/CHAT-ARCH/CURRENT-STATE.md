@@ -6,7 +6,7 @@ New design record: [M1A G1–G3 authority topology, bootstrap boundary, and comp
 
 Decision boundary: the Owner has now selected the initial trust mechanism and bounded the one-time enrollment effects. This supersedes the pending *mechanism-choice* item; it does not claim that the key has been created or that enrollment has run. The exact selected mechanism and effect budget are recorded in [M1A G1–G3 authority topology and bootstrap decision](./CHAT-ARCH-2026-10-28-M1A-G1-G3-AUTHORITY-TOPOLOGY-AND-BOOTSTRAP-DECISION.md).
 
-The selected out-of-band authorizer is an explicit Owner-approved, version-pinned enrollment manifest merged into canonical `main`, with a non-exportable user-scope Windows CNG key as subordinate issuer identity. The new key is untrusted until the exact manifest is approved, merged, fetched back from the exact canonical commit, and matched to the local receipt. Entra remains HTTP caller authentication; the GitHub App PEM remains GitHub API authentication only. The exact repo ruleset/branch-protection status remains UNKNOWN and must not be claimed without evidence. The repository is private; the local authenticated GitHub manifest fetch-back route is not yet verified.
+The selected out-of-band authorizer is an explicit Owner-approved, version-pinned enrollment manifest merged into canonical `main`, with a non-exportable user-scope Windows CNG key as subordinate issuer identity. The new key is untrusted until the exact manifest is approved, merged, fetched back from the exact canonical commit, and matched to the local receipt. Entra remains HTTP caller authentication; the GitHub App PEM remains GitHub API authentication only. The exact repo ruleset/branch-protection status remains UNKNOWN and must not be claimed without evidence. The private-repository read preflight is now closed for existing canonical content: OWNER_CODEX_REPORTED confirms authenticated `gh api` and non-interactive `git ls-remote` both read `main=79ab8c50eaa7518120d5ebed9db4747d395a21cb` and fetched `CURRENT-STATE.md` (blob `5945b23fdb5c13ce1068ca5d2d9e6513a1a06b95`). This ChatGPT session independently verified the repository metadata, live main SHA and blob identifier through GitHub. A future manifest does not exist yet; manifest-specific byte verification is not applicable yet. Codex reports branch protection and ruleset API checks returned HTTP 403, leaving those guarantees UNKNOWN.
 
 The bounded enrollment effect set permits one local key, one receipt and one public manifest PR/merge/fetch-back, all bound to one Windows SID, one exact server/code revision and one canonical workspace root. It grants no MCP capability. Automatic/self-bootstrap remains prohibited; G2/G3 are not established; protected reads, tool allowlist, tunnel and bridge activation remain blocked.
 
@@ -31,7 +31,23 @@ PRODUCT_TESTS/BUILD/RUNTIME=NOT_RUN_BY_THIS_DOCUMENT_TASK
 PRODUCT_CANDIDATE_MERGE=NOT_AUTHORIZED
 ```
 
-Progress label: DESIGN_DECISION_CLOSED; ENROLLMENT_EXECUTION_NOT_RUN. Do not restart the general trust-asset inventory or ask the Owner to choose the mechanism again. First close one exact dependency: use the existing local agent to verify read-only that an already-authenticated GitHub route can fetch the private canonical manifest and exact main SHA. Do not create new credentials or retry the unvalidated PEM route unchanged. Once fetch-back is proven, implement/review the bounded enrollment candidate and then perform only the one-time enrollment operation.
+Progress label: DESIGN_DECISION_CLOSED; LOCAL_GITHUB_FETCHBACK_ROUTE_VERIFIED_FOR_EXISTING_FILE; ENROLLMENT_EXECUTION_NOT_RUN.
+
+Preflight receipt (Owner/Codex reported; 2026-10-28):
+```text
+TASK_ID=M1A_G1_PRIVATE_GITHUB_FETCHBACK_PREFLIGHT_20261028
+GITHUB_API_READ=VERIFIED; OWNER_CODEX_REPORTED
+GIT_PRIVATE_REPO_READ=VERIFIED; OWNER_CODEX_REPORTED
+LIVE_MAIN_SHA=79ab8c50eaa7518120d5ebed9db4747d395a21cb; MATCHES_GITHUB_API_VERIFIED_HERE
+CURRENT_STATE_BLOB=5945b23fdb5c13ce1068ca5d2d9e6513a1a06b95; MATCHES_GITHUB_API_VERIFIED_HERE
+BRANCH_RULESET=UNKNOWN; HTTP_403_OWNER_CODEX_REPORTED
+LOCAL_AUTHENTICATED_FETCHBACK=VERIFIED_FOR_CURRENT_STATE; OWNER_CODEX_REPORTED
+MANIFEST_FETCHBACK=NOT_APPLICABLE_YET
+C_PYTHON=NOT_TOUCHED
+KEY_CREATED=NOT_RUN
+MANIFEST_CREATED_OR_MERGED=NOT_RUN
+TESTS/BUILD/RUNTIME/PROTECTED_READS=NOT_RUN
+``` Do not restart the general trust-asset inventory or ask the Owner to choose the mechanism again. The existing authenticated route is verified for canonical repository metadata and CURRENT-STATE fetch-back. Do not repeat that preflight or create credentials. NEXT: use the existing M1A source-candidate route (PR #556) in an isolated checkout, first verifying its live head, to implement and review the bounded enrollment path plus synthetic positive/negative tests only. Do not create a key or manifest during this source/test step. After the candidate and tests pass review, execute only the already-authorized one-time enrollment effect budget; verify the exact manifest commit and bytes afterward. If CNG or future manifest fetch-back fails, stop at that exact edge. Do not touch C:\\Python, enable any MCP tools, perform protected reads, activate runtime/tunnel, or merge product code.
 ---
 ## Continuity and route-truth correction — M1B current; M1A/R7 parallel (2026-10-28)
 
