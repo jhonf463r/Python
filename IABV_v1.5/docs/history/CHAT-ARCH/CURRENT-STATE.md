@@ -2,6 +2,8 @@
 
 This route update supersedes the prior Codex task to correct the three request-contract findings at the preceding R3 candidate. It records the newly observed live head and focused static review. It changes only the proposed continuity branch, not canonical main, and does not activate any security gate.
 
+The algorithmic learning delta is proposed as [UAAL-D022 — Effective Operation Semantics and Evidence-Producer Integrity](./CHAT-ARCH-2026-10-29-UAAL-D022-EFFECTIVE-OPERATION-AND-EVIDENCE-PRODUCER-INTEGRITY.md). It generalizes the three adapter findings into a reusable check of effective method, destination, endpoint form, environment, producer identity and exact-head evidence. UAAL-D022 is a proposed method on this branch, not canonical on main.
+
 ### Live truth at preflight
 
 - Canonical main base reported by both live PRs: 79ab8c50eaa7518120d5ebed9db4747d395a21cb.
