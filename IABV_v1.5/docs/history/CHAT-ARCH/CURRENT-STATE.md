@@ -1,3 +1,78 @@
+## Owner authorization — pinned GitHub CLI Authenticode policy approved; candidate implementation routed (2026-10-29)
+
+The Owner explicitly authorized the proposed policy in chat with “sí autorizo”, in direct response to this exact proposal: require Windows Authenticode status `Valid`, pin the observed signer certificate thumbprint and exact installed-binary SHA-256, and block acceptance until any change is explicitly reviewed. This resolves the previous decision blocker `OWNER_TRUST_POLICY=NOT_APPROVED` for implementing the **source candidate policy** below. It does not authorize merging a product candidate, executing `gh.exe`, doing a repository fetchback, enrolling G1, or activating the bridge.
+
+### Owner-approved source-candidate policy (exact literals)
+
+- Policy identifier: `IABV_GITHUB_CLI_AUTHENTICODE_PIN_V1`
+- Expected absolute path from the reported inspection: `C:\\Program Files\\GitHub CLI\\gh.exe`
+- Required Authenticode result: `Valid`
+- Required signer certificate thumbprint (normalized uppercase, whitespace-free): `9A483710566AC7B58A19D32B4A64E44361EA7350`
+- Required SHA-256 of exact executable bytes (normalized uppercase, whitespace-free): `249613CC9DFB61EB267ACFA08C2253EDEA271BBBEC8F3CA3BF8D949A6575D60B`
+- Any path, signer, hash, or signature-status change is a rejection until a separately reviewed policy update is explicitly approved.
+- The fixed policy must come from a versioned source-controlled policy object, not an API caller argument, environment variable, mutable runtime option, or unchecked configuration file. The three observed identifiers are allowed now because the Owner explicitly approved this exact policy; earlier observations alone were not authorization.
+
+Evidence boundary: the local hash, signer and Authenticode result remain `OWNER_CODEX_REPORTED`; the Owner approval is `VERIFIED` as an explicit statement in this chat. This does not retroactively make the local binary bytes independently inspected by ChatGPT. The separate chain check previously reported `NotTimeValid` remains documented; the candidate must not silently override or misrepresent it. Authenticode does not prove build workflow provenance.
+
+### Next task — Codex, source/test candidate only
+
+```TASK_ID=M1A_G1_AUTHENTICODE_PINNED_POLICY_IMPLEMENTATION_R1_20261029
+NEXT_ACTOR=CODEX
+TARGET_PR=556
+BASE_HEAD_EXPECTED=668f7d62cf70a50fe27aa4d946fae66a8b4e1a64
+WORKTREE=C:\\_w\\m1a-composition-r3-20261028
+MODE=BOUNDED_SOURCE_IMPLEMENTATION_AND_SYNTHETIC_TESTS
+OWNER_TRUST_POLICY=EXPLICITLY_APPROVED_FOR_CANDIDATE
+NO_C_PYTHON_ACCESS=TRUE
+NO_GH_EXECUTION=TRUE
+NO_FETCHBACK=TRUE
+NO_REAL_CNG_KEY_OR_MANIFEST=TRUE
+NO_MAIN_OR_PR557_PRODUCT_CODE_CHANGE=TRUE
+NO_MERGE=TRUE
+```
+
+#### Required implementation behavior
+
+1. Read the canonical `CURRENT-STATE.md` from `main` first, recover via its exact blob if ordinary fetch returns empty, then verify live `main`, PR #556, PR #557 and the exact isolated worktree HEAD/status before editing. Stop if the expected candidate branch, HEAD, base or dirty state does not match; never reset, clean, sync, or touch `C:\\Python`.
+2. Add a versioned internal policy object with the exact approved path, Authenticode status, thumbprint and SHA-256 above. No caller, injected API, env var or untrusted configuration may replace policy values or choose another executable.
+3. Implement an independent Windows Authenticode verifier for the absolute approved path. Require status exactly `Valid`, the exact signer thumbprint, and the exact SHA-256. Reject missing policy, absent/malformed verifier output, errors, file absence, non-absolute/unexpected path, hash mismatch, signer mismatch, non-Valid status, and any unexpected verifier result.
+4. Review and address the verification-to-execution substitution race explicitly. Bind the verification result to the executable that will be invoked as strongly as the Windows implementation allows (for example, a read handle preventing write/delete replacement while hashing/verifying and while the approved process is launched). If a defensible binding cannot be implemented, keep the production path fail-closed rather than claim exact-byte binding.
+5. Integrate the verified executable into the production adapter only after verification; remove caller-controlled executable and arbitrary-API bypasses from the public entry. Synthetic injection must remain confined to a private test core/factory. A failing verification must cause zero API/client subprocess calls.
+6. Do not attempt release-attestation verification in this task. The accepted policy is Authenticode + the exact certificate thumbprint + the exact binary SHA-256; do not claim repository/workflow provenance.
+7. Add synthetic tests for policy constants, absent/malformed verifier result, wrong signer, wrong hash, non-Valid status, missing/changed executable, verifier exception, public API-injection bypass, executable path override, and no process/API invocation after a failed check. Do not run `gh.exe` during tests. Label synthetic results as synthetic, never as native Windows verification.
+8. Run the narrow relevant tests and any directly affected tests feasible in the existing isolated worktree. No native CNG, private fetchback, product runtime, MCP, tunnel, protected read, Entra/config/ACL/IPC/service changes. Report any suite that cannot be run and why.
+
+#### Publication rule
+
+If the tree starts in the exact expected clean candidate state, only the bounded files change, review and tests pass, and the production entry remains fail-closed against all bypasses, commit and push to the existing PR #556 branch with normal fast-forward only. Never force-push. If any precondition fails or the Windows executable-byte binding is unresolved, do not publish: return the exact blocker and safe local delta. Never merge PR #556.
+
+#### Receipt required
+
+Return exact base/head commit, changed file list and SHA-256 values, test commands/results, diff-check result, any untested/native-only claims, and the independent evidence for the Authenticode verifier and file-race treatment. Classify each item as `VERIFIED`, `OWNER_REPORTED`, `INFERENCE`, `HYPOTHESIS`, `UNKNOWN` or `NOT_RUN`. Preserve:
+
+```
+GITHUB_CLIENT_PROVENANCE=FAIL_CLOSED_UNTIL_CANDIDATE_REVIEW
+OWNER_TRUST_POLICY=APPROVED_FOR_EXACT_CANDIDATE_POLICY
+FETCHBACK=NOT_RUN
+G1/G2/G3=NOT_ESTABLISHED
+MCP_TOOL_ALLOWLIST=EMPTY
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+AUTOMATIC_BOOTSTRAP=FALSE
+AUTOMATIC_FOLLOW_ON=FALSE
+PRODUCT_CANDIDATE_MERGE=NOT_AUTHORIZED
+C:\\Python=DO_NOT_TOUCH
+MEMORY_RETRIEVED=VERIFIED
+METHOD_ACTIVATED=VERIFIED
+METHOD_APPLIED=IN_PROGRESS_UNTIL_RECEIPT
+OUTCOME_VERIFIED=NOT_RUN
+LATER_CAUSAL_REUSE=NOT_PROVEN
+```
+
+This is authorization to implement and test the versioned candidate policy, not authority activation. G1/G2/G3 and the production gate stay closed until the resulting code is separately reviewed and later authorized for integration.
+---
+
 ## Owner-directed route update — Authenticode route observed; Owner trust policy still unresolved (2026-10-29)
 
 This is the newest continuity route on the proposed PR #557 branch. It supersedes the prior next action to search for an independent verifier: the latest Codex receipt reports that the native Windows Authenticode route accepts the exact installed GitHub CLI executable. It does not authorize the publisher, enable the production client, change canonical `main`, or alter any security invariant.
