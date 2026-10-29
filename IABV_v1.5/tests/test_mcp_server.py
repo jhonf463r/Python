@@ -28,6 +28,36 @@ from iabv_v15.domain.models import (  # noqa: E402
     IATraceEntry,
 )
 from iabv_v15.infra.mcp.server import IABVMCPServer, _to_jsonable  # noqa: E402
+from iabv_v15.infra.mcp import server as _mcp_server_module  # noqa: E402
+
+# Legacy handler-body contracts use test-only state. Production MCP tool objects
+# must not expose the original handler or a functools __wrapped__ reference.
+_TEST_ORIGINAL_HANDLERS = {}
+_PRODUCTION_TOOL_DECORATOR = _mcp_server_module._FailClosedMCPToolRegistrar.tool
+
+
+def _capture_handler_for_unit_tests(registrar, *args, **kwargs):  # type: ignore[no-untyped-def]
+    register_guarded = _PRODUCTION_TOOL_DECORATOR(registrar, *args, **kwargs)
+
+    def capture(handler):  # type: ignore[no-untyped-def]
+        _TEST_ORIGINAL_HANDLERS[(registrar, handler.__name__)] = handler
+        return register_guarded(handler)
+
+    return capture
+
+
+@pytest.fixture(autouse=True)
+def _isolate_test_original_handlers(monkeypatch):  # type: ignore[no-untyped-def]
+    _TEST_ORIGINAL_HANDLERS.clear()
+    monkeypatch.setattr(
+        _mcp_server_module._FailClosedMCPToolRegistrar,
+        "tool",
+        _capture_handler_for_unit_tests,
+    )
+    yield
+    _TEST_ORIGINAL_HANDLERS.clear()
+
+
 from iabv_v15.services.tools.site_exploration_service import (  # noqa: E402
     SiteExplorationResult,
     SitePageSnapshot,
@@ -38,6 +68,7 @@ class _FakeWorldModelService:
     def __init__(self, snapshot: WorldModelSnapshot) -> None:
         self._snapshot = snapshot
         self.calls: list[tuple[str, bool]] = []
+        self.scan_stats: dict[str, object] = {}
 
     def current_model(self) -> WorldModelSnapshot:
         self.calls.append(("current", False))
@@ -239,9 +270,546 @@ def _get_tool(server: IABVMCPServer, name: str):
 
 
 def _call_tool(server: IABVMCPServer, name: str, **kwargs: object) -> object:
-    tool = _get_tool(server, name)
-    return tool.fn(**kwargs)
+    """Exercise the body from test-only state, not from the production MCP tool."""
+    handler = _TEST_ORIGINAL_HANDLERS[(server._tool_registrar, name)]
+    return handler(**kwargs)
 
+
+def test_registered_tools_deny_before_invoking_every_handler() -> None:
+    server = IABVMCPServer(_build_container())
+    tools = server.mcp._tool_manager._tools
+    assert tools
+    for name, tool in tools.items():
+        assert not hasattr(tool.fn, "__iabv_original_handler__")
+        assert not hasattr(tool.fn, "__wrapped__")
+        with pytest.raises(PermissionError, match=f"operation_authority_unavailable:{name}"):
+            tool.fn()
+
+
+def test_late_self_update_tools_use_the_same_deny_gate() -> None:
+    from iabv_v15.infra.mcp.self_update_tools import register_self_update_tools
+
+    server = IABVMCPServer(_build_container())
+    count = register_self_update_tools(
+        mcp=server._tool_registrar,
+        workspace_root_fn=lambda: pytest.fail("write tool reached workspace resolver"),
+        governance_fn=lambda **_: None,
+        to_jsonable_fn=_to_jsonable,
+    )
+    assert count == 3
+    for name in ("write_repo_file", "apply_text_patch", "git_commit_and_push"):
+        with pytest.raises(PermissionError, match=f"operation_authority_unavailable:{name}"):
+            _get_tool(server, name).fn()
+
+
+def test_url_binding_key_preserves_exact_url_identity() -> None:
+    from iabv_v15.infra.mcp.server import _url_binding_key
+
+    canonical = "https://mcp.example.test/iabv"
+    variants = (
+        "https://MCP.example.test/iabv",
+        "https://mcp.example.test:443/iabv",
+        "https://mcp.example.test:8443/iabv",
+        "https://mcp.example.test/iabv/",
+        "https://mcp.example.test/iabv?mode=1",
+        "https://mcp.example.test/iabv#fragment",
+    )
+    assert _url_binding_key(canonical) == canonical
+    assert all(_url_binding_key(candidate) != canonical for candidate in variants)
+
+
+def test_startup_auth_settings_snapshot_is_not_mutable_through_sdk_copy(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    from mcp.server.auth.settings import AuthSettings
+    from iabv_v15.infra.mcp.entra_token_verifier import EntraAuthConfig, EntraTokenVerifier
+
+    config = EntraAuthConfig(
+        tenant_id="11111111-1111-4111-8111-111111111111",
+        api_client_id="22222222-2222-4222-8222-222222222222",
+        owner_object_id="33333333-3333-4333-8333-333333333333",
+        required_app_role="IABV.Owner",
+        allowed_client_ids=frozenset({"44444444-4444-4444-8444-444444444444"}),
+        application_id_uri="https://mcp.example.test/iabv",
+        resource_server_url="https://mcp.example.test/iabv",
+    )
+    verifier = EntraTokenVerifier(config)
+    settings = AuthSettings(
+        issuer_url=config.issuer_url,
+        resource_server_url=config.resource_server_url,
+        required_scopes=["IABV.Owner"],
+        validate_token_resource=False,
+    )
+    monkeypatch.setattr(_mcp_server_module, "_validate_entra_auth_pair", lambda pair: pair)
+    preflight = _mcp_server_module._ValidatedMCPStartup(
+        transport="streamable-http",
+        bind_host="127.0.0.1",
+        bind_port=8000,
+        token_verifier=verifier,
+        auth_settings=settings,
+        _seal=_mcp_server_module._STARTUP_PREFLIGHT_SEAL,
+    )
+    settings_copy = preflight.auth_settings
+    settings_copy.required_scopes.clear()
+    assert preflight.auth_settings.required_scopes == ["IABV.Owner"]
+    with pytest.raises(AttributeError):
+        verifier.config = config
+    with pytest.raises(AttributeError, match="_config is immutable"):
+        verifier._config = config
+    with pytest.raises(AttributeError, match="_config is immutable"):
+        del verifier._config
+    with pytest.raises(AttributeError, match="startup state is immutable"):
+        del preflight.transport
+
+
+def test_run_requires_the_sealed_preflight_before_exposing_http() -> None:
+    server = IABVMCPServer(_build_container())
+    with pytest.raises(RuntimeError, match="sealed startup preflight"):
+        server.validate_transport_configuration("streamable-http")
+
+
+def test_http_auth_middleware_rejects_before_tool_and_exposes_prm(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    pytest.importorskip("starlette.testclient")
+    from starlette.testclient import TestClient
+    from mcp.server.auth.settings import AuthSettings
+    from iabv_v15.infra.mcp.entra_token_verifier import EntraAuthConfig, EntraTokenVerifier
+
+    config = EntraAuthConfig(
+        tenant_id="11111111-1111-4111-8111-111111111111",
+        api_client_id="22222222-2222-4222-8222-222222222222",
+        owner_object_id="33333333-3333-4333-8333-333333333333",
+        required_app_role="IABV.Owner",
+        allowed_client_ids=frozenset({"44444444-4444-4444-8444-444444444444"}),
+        application_id_uri="https://mcp.example.test/iabv",
+        resource_server_url="https://mcp.example.test/iabv",
+    )
+
+    class RejectingVerifier(EntraTokenVerifier):
+        def __init__(self) -> None:
+            super().__init__(config)
+            self.calls = 0
+
+        async def verify_token(self, token: str):
+            self.calls += 1
+            return None
+
+    verifier = RejectingVerifier()
+    auth_settings = AuthSettings(
+        issuer_url=config.issuer_url,
+        resource_server_url=config.resource_server_url,
+        required_scopes=[config.required_app_role],
+        validate_token_resource=False,
+    )
+    monkeypatch.setattr(_mcp_server_module, "_validate_entra_auth_pair", lambda pair: pair)
+    startup = _mcp_server_module._ValidatedMCPStartup(
+        transport="streamable-http",
+        bind_host="127.0.0.1",
+        bind_port=8000,
+        token_verifier=verifier,
+        auth_settings=auth_settings,
+        _seal=_mcp_server_module._STARTUP_PREFLIGHT_SEAL,
+    )
+    container = _build_container()
+    world_model = container.world_model_service
+    server = IABVMCPServer(container, _startup_preflight=startup)
+    with TestClient(
+        server.mcp.streamable_http_app(),
+        base_url="http://127.0.0.1:8000",
+    ) as client:
+        request_body = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "tools/call",
+            "params": {"name": "world_model_snapshot", "arguments": {}},
+        }
+        unauthenticated = client.post("/mcp", json=request_body)
+        assert unauthenticated.status_code == 401
+        assert "Bearer" in unauthenticated.headers.get("www-authenticate", "")
+        assert "oauth-protected-resource" in unauthenticated.headers.get("www-authenticate", "")
+        assert world_model.calls == []
+
+        invalid = client.post(
+            "/mcp",
+            json=request_body,
+            headers={"Authorization": "Bearer invalid-synthetic-token"},
+        )
+        assert invalid.status_code == 401
+        assert verifier.calls == 1
+        assert world_model.calls == []
+
+        metadata = client.get("/.well-known/oauth-protected-resource/iabv")
+        assert metadata.status_code == 200
+        assert metadata.json()["resource"] == "https://mcp.example.test/iabv"
+        assert metadata.json()["authorization_servers"] == [config.issuer_url]
+
+
+def test_valid_scoped_token_still_cannot_invoke_tool_without_operation_authority(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    pytest.importorskip("starlette.testclient")
+    import json
+    import time
+    from starlette.testclient import TestClient
+    from mcp.server.auth.provider import AccessToken
+    from mcp.server.auth.settings import AuthSettings
+    from iabv_v15.infra.mcp.entra_token_verifier import EntraAuthConfig, EntraTokenVerifier
+
+    config = EntraAuthConfig(
+        tenant_id="11111111-1111-4111-8111-111111111111",
+        api_client_id="22222222-2222-4222-8222-222222222222",
+        owner_object_id="33333333-3333-4333-8333-333333333333",
+        required_app_role="IABV.Owner",
+        allowed_client_ids=frozenset({"44444444-4444-4444-8444-444444444444"}),
+        application_id_uri="https://mcp.example.test/iabv",
+        resource_server_url="https://mcp.example.test/iabv",
+    )
+
+    class AcceptingVerifier(EntraTokenVerifier):
+        def __init__(self) -> None:
+            super().__init__(config)
+            self.calls = 0
+
+        async def verify_token(self, token: str) -> AccessToken:
+            self.calls += 1
+            return AccessToken(
+                token=token,
+                client_id=next(iter(config.allowed_client_ids)),
+                scopes=[config.required_app_role],
+                expires_at=int(time.time()) + 300,
+                resource=config.api_client_id,
+                subject=config.owner_object_id,
+                claims={"iss": config.issuer_url, "tid": config.tenant_id, "oid": config.owner_object_id},
+            )
+
+    verifier = AcceptingVerifier()
+    auth_settings = AuthSettings(
+        issuer_url=config.issuer_url,
+        resource_server_url=config.resource_server_url,
+        required_scopes=[config.required_app_role],
+        validate_token_resource=False,
+    )
+    monkeypatch.setattr(_mcp_server_module, "_validate_entra_auth_pair", lambda pair: pair)
+    startup = _mcp_server_module._ValidatedMCPStartup(
+        transport="streamable-http",
+        bind_host="127.0.0.1",
+        bind_port=8000,
+        token_verifier=verifier,
+        auth_settings=auth_settings,
+        _seal=_mcp_server_module._STARTUP_PREFLIGHT_SEAL,
+    )
+    container = _build_container()
+    world_model = container.world_model_service
+    server = IABVMCPServer(container, _startup_preflight=startup)
+    auth_headers = {
+        "Authorization": "Bearer valid-synthetic-token",
+        "Accept": "application/json, text/event-stream",
+    }
+    with TestClient(
+        server.mcp.streamable_http_app(),
+        base_url="http://127.0.0.1:8000",
+    ) as client:
+        initialized = client.post(
+            "/mcp",
+            json={
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "initialize",
+                "params": {
+                    "protocolVersion": "2025-03-26",
+                    "capabilities": {},
+                    "clientInfo": {"name": "m1a-contract-test", "version": "1.0"},
+                },
+            },
+            headers=auth_headers,
+        )
+        assert initialized.status_code == 200
+        session_id = initialized.headers.get("mcp-session-id")
+        assert session_id
+
+        session_headers = {
+            **auth_headers,
+            "Mcp-Session-Id": session_id,
+            "MCP-Protocol-Version": "2025-03-26",
+        }
+        notified = client.post(
+            "/mcp",
+            json={"jsonrpc": "2.0", "method": "notifications/initialized"},
+            headers=session_headers,
+        )
+        assert notified.status_code in (200, 202)
+
+        result = client.post(
+            "/mcp",
+            json={
+                "jsonrpc": "2.0",
+                "id": 2,
+                "method": "tools/call",
+                "params": {"name": "world_model_snapshot", "arguments": {}},
+            },
+            headers=session_headers,
+        )
+        assert result.status_code == 200
+        # Streamable HTTP responds with an SSE message even when Accept also
+        # allows JSON; decode the JSON-RPC payload from its data frame.
+        payload = json.loads(result.text.split("data:", 1)[1].strip())
+        assert payload.get("result", {}).get("isError") is True
+        assert "operation_authority_unavailable:world_model_snapshot" in json.dumps(payload)
+        assert verifier.calls >= 3
+        assert world_model.calls == []
+
+
+def test_http_middleware_returns_403_for_missing_required_app_role_scope(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    pytest.importorskip("starlette.testclient")
+    import time
+    from starlette.testclient import TestClient
+    from mcp.server.auth.provider import AccessToken
+    from mcp.server.auth.settings import AuthSettings
+    from iabv_v15.infra.mcp.entra_token_verifier import EntraAuthConfig, EntraTokenVerifier
+
+    config = EntraAuthConfig(
+        tenant_id="11111111-1111-4111-8111-111111111111",
+        api_client_id="22222222-2222-4222-8222-222222222222",
+        owner_object_id="33333333-3333-4333-8333-333333333333",
+        required_app_role="IABV.Owner",
+        allowed_client_ids=frozenset({"44444444-4444-4444-8444-444444444444"}),
+        application_id_uri="https://mcp.example.test/iabv",
+        resource_server_url="https://mcp.example.test/iabv",
+    )
+
+    class MissingScopeVerifier(EntraTokenVerifier):
+        def __init__(self) -> None:
+            super().__init__(config)
+            self.calls = 0
+
+        async def verify_token(self, token: str) -> AccessToken:
+            self.calls += 1
+            return AccessToken(
+                token=token,
+                client_id=next(iter(config.allowed_client_ids)),
+                scopes=[],
+                expires_at=int(time.time()) + 300,
+                resource=config.api_client_id,
+                subject=config.owner_object_id,
+                claims={"iss": config.issuer_url, "tid": config.tenant_id, "oid": config.owner_object_id},
+            )
+
+    verifier = MissingScopeVerifier()
+    settings = AuthSettings(
+        issuer_url=config.issuer_url,
+        resource_server_url=config.resource_server_url,
+        required_scopes=[config.required_app_role],
+        validate_token_resource=False,
+    )
+    monkeypatch.setattr(_mcp_server_module, "_validate_entra_auth_pair", lambda pair: pair)
+    startup = _mcp_server_module._ValidatedMCPStartup(
+        transport="streamable-http",
+        bind_host="127.0.0.1",
+        bind_port=8000,
+        token_verifier=verifier,
+        auth_settings=settings,
+        _seal=_mcp_server_module._STARTUP_PREFLIGHT_SEAL,
+    )
+    container = _build_container()
+    world_model = container.world_model_service
+    server = IABVMCPServer(container, _startup_preflight=startup)
+    with TestClient(server.mcp.streamable_http_app()) as client:
+        response = client.post(
+            "/mcp",
+            json={
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "tools/call",
+                "params": {"name": "world_model_snapshot", "arguments": {}},
+            },
+            headers={
+                "Authorization": "Bearer valid-but-insufficient-synthetic-token",
+                "Accept": "application/json, text/event-stream",
+            },
+        )
+        assert response.status_code == 403
+        assert "insufficient_scope" in response.headers.get("www-authenticate", "")
+        assert verifier.calls == 1
+        assert world_model.calls == []
+
+
+def test_preflight_rejects_stdio_before_any_bootstrap_work(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    for name in (
+        "IABV_ENTRA_TENANT_ID",
+        "IABV_ENTRA_API_CLIENT_ID",
+        "IABV_ENTRA_OWNER_OBJECT_ID",
+        "IABV_ENTRA_REQUIRED_APP_ROLE",
+        "IABV_ENTRA_ALLOWED_CLIENT_IDS",
+        "IABV_ENTRA_APPLICATION_ID_URI",
+        "IABV_MCP_RESOURCE_SERVER_URL",
+    ):
+        monkeypatch.delenv(name, raising=False)
+    with pytest.raises(RuntimeError, match="independent authorization boundary"):
+        _mcp_server_module.preflight_mcp_startup_configuration("stdio")
+
+
+@pytest.mark.parametrize(
+    ("bind_host", "bind_port"),
+    [
+        ("0.0.0.0", 8000),
+        ("127.0.0.1", 8001),
+        ("127.0.0.1", True),
+        ("127.0.0.1 ", 8000),
+    ],
+)
+def test_preflight_rejects_noncanonical_bind_before_loading_auth(
+    monkeypatch,
+    bind_host: str,
+    bind_port: object,
+) -> None:  # type: ignore[no-untyped-def]
+    import iabv_v15.infra.mcp.entra_token_verifier as entra_module
+
+    def forbidden_auth_load():
+        pytest.fail("bind mismatch must be rejected before loading auth configuration")
+
+    monkeypatch.setattr(entra_module, "build_entra_auth_from_environment", forbidden_auth_load)
+    with pytest.raises(RuntimeError, match="127.0.0.1:8000|invalid MCP bind"):
+        _mcp_server_module.preflight_mcp_startup_configuration(
+            "streamable-http",
+            bind_host=bind_host,
+            bind_port=bind_port,  # type: ignore[arg-type]
+        )
+
+
+def test_preflight_rejects_missing_entra_config_before_bootstrap(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    for name in (
+        "IABV_ENTRA_TENANT_ID",
+        "IABV_ENTRA_API_CLIENT_ID",
+        "IABV_ENTRA_OWNER_OBJECT_ID",
+        "IABV_ENTRA_REQUIRED_APP_ROLE",
+        "IABV_ENTRA_ALLOWED_CLIENT_IDS",
+        "IABV_ENTRA_APPLICATION_ID_URI",
+        "IABV_MCP_RESOURCE_SERVER_URL",
+    ):
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setenv("FASTMCP_HOST", "127.0.0.1")
+    monkeypatch.setenv("FASTMCP_PORT", "8000")
+    with pytest.raises(RuntimeError, match="before AppBootstrap initialization"):
+        _mcp_server_module.preflight_mcp_startup_configuration("streamable-http")
+
+
+def test_create_server_runs_preflight_before_constructing_appbootstrap(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    import sys
+    import types
+
+    def forbidden_bootstrap(*args, **kwargs):
+        pytest.fail("AppBootstrap must not be constructed before MCP preflight")
+
+    bootstrap_module = types.ModuleType("iabv_v15.bootstrap")
+    bootstrap_module.AppBootstrap = forbidden_bootstrap
+    monkeypatch.setitem(sys.modules, "iabv_v15.bootstrap", bootstrap_module)
+
+    def deny_preflight(transport: str):
+        raise RuntimeError("preflight-denied")
+
+    monkeypatch.setattr(_mcp_server_module, "preflight_mcp_startup_configuration", deny_preflight)
+    with pytest.raises(RuntimeError, match="preflight-denied"):
+        _mcp_server_module.create_server(container=None)
+
+
+def test_server_rejects_arbitrary_prevalidated_entra_tuple() -> None:
+    with pytest.raises(TypeError, match="sealed _ValidatedMCPStartup"):
+        IABVMCPServer(
+            _build_container(),
+            _startup_preflight=(object(), object()),
+        )
+
+
+def test_validated_startup_cannot_be_created_without_preflight_seal() -> None:
+    with pytest.raises(TypeError, match="must be created by preflight"):
+        _mcp_server_module._ValidatedMCPStartup(
+            transport="streamable-http",
+            bind_host="127.0.0.1",
+            bind_port=8000,
+            token_verifier=object(),
+            auth_settings=object(),
+            _seal=object(),
+        )
+
+
+def test_validated_startup_state_is_immutable(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    from mcp.server.auth.settings import AuthSettings
+    from iabv_v15.infra.mcp.entra_token_verifier import EntraAuthConfig, EntraTokenVerifier
+
+    config = EntraAuthConfig(
+        tenant_id="11111111-1111-4111-8111-111111111111",
+        api_client_id="22222222-2222-4222-8222-222222222222",
+        owner_object_id="33333333-3333-4333-8333-333333333333",
+        required_app_role="IABV.Owner",
+        allowed_client_ids=frozenset({"44444444-4444-4444-8444-444444444444"}),
+        application_id_uri="https://mcp.example.test/iabv",
+        resource_server_url="https://mcp.example.test/iabv",
+    )
+    verifier = EntraTokenVerifier(config)
+    settings = AuthSettings(
+        issuer_url=config.issuer_url,
+        resource_server_url=config.resource_server_url,
+        required_scopes=[config.required_app_role],
+        validate_token_resource=False,
+    )
+    preflight = _mcp_server_module._ValidatedMCPStartup(
+        transport="streamable-http",
+        bind_host="127.0.0.1",
+        bind_port=8000,
+        token_verifier=verifier,
+        auth_settings=settings,
+        _seal=_mcp_server_module._STARTUP_PREFLIGHT_SEAL,
+    )
+    with pytest.raises(AttributeError, match="immutable"):
+        preflight.transport = "stdio"
+
+
+def test_streamable_http_requires_complete_entra_configuration(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    for name in (
+        "IABV_ENTRA_TENANT_ID",
+        "IABV_ENTRA_API_CLIENT_ID",
+        "IABV_ENTRA_OWNER_OBJECT_ID",
+        "IABV_ENTRA_REQUIRED_APP_ROLE",
+        "IABV_ENTRA_ALLOWED_CLIENT_IDS",
+        "IABV_ENTRA_APPLICATION_ID_URI",
+        "IABV_MCP_RESOURCE_SERVER_URL",
+    ):
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setenv("FASTMCP_HOST", "127.0.0.1")
+    monkeypatch.setenv("FASTMCP_PORT", "8000")
+    server = IABVMCPServer(_build_container())
+    with pytest.raises(RuntimeError, match="sealed startup preflight"):
+        server.validate_transport_configuration("streamable-http")
+
+
+def test_stdio_and_sse_are_rejected_without_independent_local_boundary(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    for name in (
+        "IABV_ENTRA_TENANT_ID",
+        "IABV_ENTRA_API_CLIENT_ID",
+        "IABV_ENTRA_OWNER_OBJECT_ID",
+        "IABV_ENTRA_REQUIRED_APP_ROLE",
+        "IABV_ENTRA_ALLOWED_CLIENT_IDS",
+        "IABV_ENTRA_APPLICATION_ID_URI",
+        "IABV_MCP_RESOURCE_SERVER_URL",
+    ):
+        monkeypatch.delenv(name, raising=False)
+    server = IABVMCPServer(_build_container())
+    for transport in ("stdio", "sse"):
+        with pytest.raises(RuntimeError, match="independent authorization boundary"):
+            server.validate_transport_configuration(transport)
+
+
+def test_non_loopback_or_non_target_port_is_rejected(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    for name in (
+        "IABV_ENTRA_TENANT_ID",
+        "IABV_ENTRA_API_CLIENT_ID",
+        "IABV_ENTRA_OWNER_OBJECT_ID",
+        "IABV_ENTRA_REQUIRED_APP_ROLE",
+        "IABV_ENTRA_ALLOWED_CLIENT_IDS",
+        "IABV_ENTRA_APPLICATION_ID_URI",
+        "IABV_MCP_RESOURCE_SERVER_URL",
+    ):
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setenv("FASTMCP_HOST", "0.0.0.0")
+    monkeypatch.setenv("FASTMCP_PORT", "8000")
+    server = IABVMCPServer(_build_container())
+    with pytest.raises(RuntimeError, match="sealed startup preflight"):
+        server.validate_transport_configuration("streamable-http")
 
 def test_server_registers_core_tools() -> None:
     server = IABVMCPServer(_build_container())
@@ -408,9 +976,9 @@ def test_chatgpt_web_capture_uses_official_selectors_by_default() -> None:
 
 def test_container_missing_world_model_raises() -> None:
     server = IABVMCPServer(_build_container(world_model_service=None))
-    tool = _get_tool(server, "world_model_snapshot")
+    handler = _TEST_ORIGINAL_HANDLERS[(server._tool_registrar, "world_model_snapshot")]
     with pytest.raises(RuntimeError, match="world_model_service"):
-        tool.fn()
+        handler()
 
 
 def test_to_jsonable_handles_dataclass_and_pydantic() -> None:
@@ -549,29 +1117,23 @@ def test_server_registers_audit_tools() -> None:
     assert audit <= registered, f"faltan audit tools: {audit - registered}"
 
 
-def test_read_repo_file_happy_path_via_server(tmp_path) -> None:  # type: ignore[no-untyped-def]
+def test_read_repo_file_fails_closed_via_server(tmp_path) -> None:  # type: ignore[no-untyped-def]
     (tmp_path / "docs").mkdir()
-    (tmp_path / "docs" / "hello.md").write_text("hola", encoding="utf-8")
+    (tmp_path / "docs" / "hello.md").write_text("must-not-be-disclosed", encoding="utf-8")
     server = IABVMCPServer(_build_container(workspace_root=str(tmp_path)))
     payload = _call_tool(server, "read_repo_file", relative_path="docs/hello.md")
-    assert payload["content"] == "hola"
-    assert payload["path"] == "docs/hello.md"
+    assert payload["error"] == "scoped_read_authority_unavailable"
+    assert "content" not in payload
+    assert "must-not-be-disclosed" not in str(payload)
 
 
-def test_read_repo_file_returns_error_payload_on_invalid(tmp_path) -> None:  # type: ignore[no-untyped-def]
-    server = IABVMCPServer(_build_container(workspace_root=str(tmp_path)))
-    payload = _call_tool(server, "read_repo_file", relative_path="/etc/passwd")
-    assert payload["error"] == "absolute_path_forbidden"
-
-
-def test_list_repo_directory_via_server(tmp_path) -> None:  # type: ignore[no-untyped-def]
-    (tmp_path / "a.txt").write_text("x")
-    (tmp_path / ".env").write_text("S")
+def test_list_repo_directory_fails_closed_via_server(tmp_path) -> None:  # type: ignore[no-untyped-def]
+    (tmp_path / "secret-name.txt").write_text("x", encoding="utf-8")
     server = IABVMCPServer(_build_container(workspace_root=str(tmp_path)))
     payload = _call_tool(server, "list_repo_directory", relative_path="")
-    names = {entry["name"]: entry for entry in payload["entries"]}
-    assert ".env" in names and names[".env"]["sensitive"] is True
-
+    assert payload["error"] == "scoped_read_authority_unavailable"
+    assert "entries" not in payload
+    assert "secret-name.txt" not in str(payload)
 
 def test_capture_ui_screenshot_without_provider_degrades_via_server() -> None:
     server = IABVMCPServer(_build_container())
@@ -638,7 +1200,8 @@ def test_audit_tools_allow_when_only_unrelated_block(tmp_path) -> None:  # type:
     )
     payload = _call_tool(server, "read_repo_file", relative_path="file.md")
     assert "governance_blocked" not in payload
-    assert payload["content"] == "contenido"
+    assert payload["error"] == "scoped_read_authority_unavailable"
+    assert "content" not in payload
 
 
 def test_run_pytest_tool_signature_rejects_python_executable() -> None:
