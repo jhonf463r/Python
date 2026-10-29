@@ -1,3 +1,71 @@
+## OVERRIDE — Owner authorizes commit and push of exactly two reviewed M1A repair files to existing PR #556 (2026-10-29)
+
+The Owner has explicitly authorized Codex to commit and push **only** the two previously reviewed local repair files to the existing PR #556 branch. This supersedes the earlier statement that code publication still required a separate Owner decision. It authorizes no merge and no other repository/source mutations.
+
+### Authorized exact target and content identity
+
+- Worktree: `C:\\_w\\m1a-composition-r3-20261028`
+- Local branch: `codex/m1a-current-main-fail-closed-20261028`
+- Expected parent HEAD: `e1b430956146c4aa0cadc1df2c3df92150b7f7ea`
+- Existing PR #556 base: `79ab8c50eaa7518120d5ebed9db4747d395a21cb`
+- Only authorized paths:
+  1. `IABV_v1.5/src/iabv_v15/infra/mcp/windows_handle_reader.py`; expected candidate blob `2facf2a4447d1acff69b1845390355902160dbfa`; reported SHA-256 `59ede3b64cc20bb71fc6e0300572aab174221e8e9d5abd723b6b62efad46690e`.
+  2. `IABV_v1.5/tests/test_windows_handle_reader.py`; expected candidate blob `1e72fc6e50a91678964bed38b05b82a9d8a4683f`; reported SHA-256 `ac8b5c101f2cb832debce53586bbffc6dc8272e9cc75e15897479235d56237ff`.
+
+These identities are expected preconditions, not permission to stage substitute content. If local source hashes, HEAD, branch or changed-path set differs, stop before staging/commit/push. Do not reset, stash, checkout, rebase or clean.
+
+### Review and evidence already available
+
+- `F-556-01=CLOSED_AT_STATIC_REVIEW_SCOPE`: cap+1 raises `AUTHORIZED_DIRECTORY_ENTRY_LIMIT_EXCEEDED`; no partial directory list is returned; normal completed lists are sorted.
+- `F-556-02=CLOSED_AT_STATIC_REVIEW_SCOPE`: `NumberOfLinks != 1` raises `HARD_LINK_DENIED` within the existing cleanup boundary.
+- The owner-provided diff was statically adjudicated. Codex reported 30 focused tests pass and clean `git diff --check`; this task does not require rerunning tests.
+- Codex reported a bounded native Windows 11 build 10.0.26300 / NTFS fixture: ordinary sampled directories and one-link file had `NumberOfLinks=1` and were accepted; a real hard-linked file pair had `NumberOfLinks=2`, was denied, and the denied handle was closed. This native result is scoped to that fixture/build and remains `OWNER_CODEX_REPORTED` in the coordinator session. The forced invalid-information-class error 87 proves that path's cleanup, not a spontaneous failure of a valid FileStandardInfo query.
+- Receipts: [static diff adjudication](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-M1A-G1-F556-01-02-INDEPENDENT-STATIC-DIFF-ADJUDICATION.md); [native probe receipt](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-M1A-G1-NATIVE-LINK-COUNT-CONFORMANCE-RECEIPT.md).
+
+### Mandatory publication protocol
+
+1. Verify preconditions and exact hashes. Verify current remote PR branch tip/upstream so a concurrent remote update cannot be overwritten.
+2. Confirm all worktree changes are exactly the two allowed paths. Inspect cached and unstaged diff scopes before mutation.
+3. Stage **only** the two literal paths using explicit path arguments. Never use `git add -A`, `git add .`, or a broad pathspec.
+4. Verify the staged names equal exactly the two authorized paths; verify the staged blobs equal the expected candidate blob identities and the diff contains only the reviewed changes. If any unrelated staged/unstaged/untracked state would be included or overwritten, stop and ask the Owner instead of cleaning it.
+5. Create one focused commit with an explicit message, e.g. `Fix fail-closed Windows handle directory listing and hard-link policy`.
+6. Push fast-forward only to the existing branch `codex/m1a-current-main-fail-closed-20261028` that backs PR #556. Never force-push, create a second PR, change the base, or push to main.
+7. Fetch the new remote target files and verify both Git blob SHAs match the committed file contents. Record commit SHA, parent SHA, changed file list/statistics, local final tree/status, remote branch tip and both remote blob hashes. Confirm PR #556 remains open/draft/unmerged.
+8. If push rejects due to remote movement, stop; do not rebase/force-push or replay the commit without new authorization. Report the observed branch movement.
+9. Do not run tests/build/native probe again in this publication task. Do not alter the source beyond the reviewed two-file diff.
+
+### No-go boundaries
+
+- No merge, PR-ready transition, main mutation, code changes beyond the two exact paths, CI rerun, build or test suite rerun.
+- No server/MCP product runtime, protected reads, credentials, enrollment, tunnel or bridge activation.
+- No cleanup or removal of existing files.
+- `C:\\Python` remains forbidden.
+- No claim that G1/G2/G3 or bridge readiness is established.
+
+```text
+ACTIVE_TASK=M1A_G1_F556_01_02_COMMIT_PUSH_EXISTING_PR_556_20261029
+OWNER_AUTHORIZATION=EXPLICIT_COMMIT_AND_PUSH_TWO_EXACT_PATHS
+TARGET_BRANCH=codex/m1a-current-main-fail-closed-20261028
+EXPECTED_PARENT=e1b430956146c4aa0cadc1df2c3df92150b7f7ea
+TARGET_PR=556
+BASE=79ab8c50eaa7518120d5ebed9db4747d395a21cb
+CHANGED_PATH_ALLOWLIST=2_EXACT_FILES
+FORCE_PUSH=FORBIDDEN
+MERGE=NOT_AUTHORIZED
+TESTS/BUILD/RUNTIME=NOT_RUN_FOR_PUBLICATION_TASK
+G1/G2/G3=NOT_ESTABLISHED
+MCP_TOOL_ALLOWLIST=EMPTY
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+C:\\Python=DO_NOT_TOUCH
+AUTOMATIC_FOLLOW_ON=FALSE
+```
+
+Canonical `main` remains unchanged. This task is an authorized publication step for a reviewable draft PR, not production activation or product approval.
+
+---
+
 ## OVERRIDE — GitHub fetch-back confirms the repaired M1A files are still local-only (2026-10-29)
 
 After the native probe receipt was adjudicated, the remote PR #556 branch was read directly via GitHub for both target paths at branch codex/m1a-current-main-fail-closed-20261028. The remote blobs remain the pre-repair base blobs:
