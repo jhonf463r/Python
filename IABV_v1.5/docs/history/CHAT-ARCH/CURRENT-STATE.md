@@ -14,7 +14,7 @@
 ### Active objective and acceptance
 Continue making cross-session memory use more reliable without creating a second router, memory store, coordinator or hidden-authority mechanism. For each material task, retrieve the live route, build the minimum source-bound world model, identify the first open causal/evidential edge, select one authorized discriminating action, adjudicate its outcome, and verify canonical writeback.
 
-The method is documented and has one verified non-identical-task application. Generalization to repeated tasks is NOT_TESTED. Automatic delivery/boot into every future ChatGPT session and runtime enforcement remain NOT_PROVEN. A URL, PR, saved summary or prior chat does not prove a later session retrieved or applied this method.
+The method has two verified bounded later-task applications in this continuing conversation. This is evidence of repeat use, not independent fresh-chat retrieval or broad generalization. Generalization beyond these two tasks is NOT_TESTED. Automatic delivery/boot into every future ChatGPT session and runtime enforcement remain NOT_PROVEN. A URL, PR, saved summary or prior chat does not prove a later session retrieved or applied this method.
 
 ```text
 ACTIVE_METHOD=UAAL-D019+D020+D021
