@@ -114,6 +114,17 @@ Persistence, later retrieval and feedback are downstream edges when the objectiv
 
 This is a *minimum sufficient landscape*, not permission to launch another broad inventory. Stop expanding when the required claim can be adjudicated or when a specific missing edge is identified. Record excluded surfaces and coverage, for example `13/33 files inspected in depth; remaining files UNKNOWN`, so a bounded review cannot silently become a claim about the full system.
 
+#### Bounded evidence acquisition
+
+For every material claim, make a small retrieval plan: `CLAIM → REQUIRED_SOURCE → EXACT_REF/IDENTITY → DEPTH_NEEDED → STOP_CONDITION`. Retrieve only enough source to decide the claim or expose the next missing edge.
+
+- Verify the source ref and blob/object identity before interpreting content. An empty, truncated or failed response is `RETRIEVAL_FAILED`, not proof that the source is empty or absent.
+- For large files, retrieve the exact blob once and extract the relevant headings, line ranges or symbols. Do not repeatedly dump an entire large continuity file or historical corpus when the task needs only one current route field.
+- Batch only modest independent reads. If a bulk request returns a transport/protocol error, classify the result as retrieval failure and retry with smaller batches or targeted ranges; do not repeat the same oversized request unchanged.
+- Maintain a claim-scoped coverage ledger: `READ_EXACT`, `READ_TARGETED`, `SEARCH_ONLY`, `NOT_READ`, `RETRIEVAL_FAILED`. Only `READ_EXACT` or a sufficiently documented `READ_TARGETED` scope can support claims about the portions actually inspected. Search excerpts discover locations; they do not substitute for required full-source review.
+- Stop when the decision is supported. If a review is limited to high-risk paths, label it scoped and retain the unread paths as `UNKNOWN`; do not broaden its verdict by implication.
+
+
 #### C. Classify the failure using diagnostic lenses, not a single rigid taxonomy
 
 Apply only the lenses relevant to the objective, allowing several at once:
