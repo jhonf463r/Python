@@ -112,7 +112,7 @@ No numeric metric is scored. The matrix's runtime expected candidate sets, exact
 
 **Decision:** accept this as a source-pinned static preflight result. Treat B and C as supported bounded diagnoses; keep D (new organ required) unproven. The next discriminating action, when an admissible execution path is available, is to run the frozen fixture/query/consumer combinations against an isolated current-main test environment and record actual candidate IDs, source references, exclusions, ranking rationale and final answer/decision. Do not substitute this static report for that run.
 
-The current canonical route keeps G1/G2/G3 not established, MCP allowlist empty, protected reads fail-closed and bridge not ready. This task did not touch those controls. The available GitHub source interface supports source retrieval and documentation commits, not execution of the product's SQLite-backed application in its deployed environment. No claim is made that a runtime integration test was executed in GitHub.
+The current canonical route keeps G1/G2/G3 not established, MCP allowlist empty, protected reads fail-closed and bridge not ready. This task did not touch those controls. The current `IABV_v1.5/AGENTS.md` blob `d3f727d24fb17a5a696181f1dea465d460e890ec` (lines 246–257) independently closes bounded runtime discovery for this environment: it says not to repeat the same searches, substitute another Python minor version, install a runtime as a workaround, create more clones, or blindly retry an unassigned hosted workflow. It permits resumption only when an approved isolated Windows executor already has Python 3.11 or a hosted runner is genuinely assigned and executes steps; it also says not to modify source or merge the candidate. For the current documentation commit, GitHub returned an empty combined-status list and no associated PR workflow runs. That is not evidence that workflows are absent; it is evidence that no test execution is available from the observed results. Accordingly, no product test/runner was launched and no source code was modified. No claim is made that a runtime integration test was executed.
 
 ## 9. State
 
@@ -132,7 +132,7 @@ PRODUCT_CODE=NOT_MODIFIED
 CURRENT_STATE=NOT_MODIFIED
 COORD_OVERLAP_LANE=NOT_TOUCHED
 PR_MERGE=NOT_REQUESTED
-NEXT_ACTION=AUTHORIZED_EXECUTION_ENVIRONMENT_REQUIRED_FOR_RUNTIME_MATRIX; THEN_ADJUDICATE_BEFORE_IMPLEMENTATION
+NEXT_ACTION=RESUME_ONLY_ON_APPROVED_PYTHON311_ISOLATED_WINDOWS_EXECUTOR_OR_ASSIGNED_HOSTED_RUNNER_THAT_ACTUALLY_EXECUTES_STEPS; THEN_RUN_MATRIX_AND_ADJUDICATE_BEFORE_IMPLEMENTATION
 ```
 
 This is the end of the static preflight, not the end of RSK-01. The lane's product-level acceptance remains open until the real candidate-set behavior is observed through an authorized execution route or the Owner deliberately closes the lane at this documented evidence boundary.
