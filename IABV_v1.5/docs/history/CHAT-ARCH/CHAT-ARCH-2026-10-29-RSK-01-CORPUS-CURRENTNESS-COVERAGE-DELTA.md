@@ -127,9 +127,9 @@ The exact missing contract is not “more memory”. It is **consistent, verifia
 
 ## 6. Next discriminating action
 
-The next useful action should be a bounded, read-only design-and-fixture plan, not a new service implementation.
+The bounded, read-only fixture plan has now been prepared in the companion [RSK-01 candidate-set currentness and provenance matrix](./CHAT-ARCH-2026-10-29-RSK-01-CANDIDATE-SET-CURRENTNESS-FIXTURE-MATRIX.md). It is a specification only and has **not** been executed.
 
-Prepare a candidate matrix containing at least:
+The matrix covers at least:
 
 1. one current routing-authoritative claim from `CURRENT-STATE.md`;
 2. one negative/unresolved claim from `UNRESOLVED-KNOWLEDGE.md`;
@@ -140,7 +140,7 @@ Prepare a candidate matrix containing at least:
 
 For every item and each relevant retrieval entry point, specify the expected candidate inclusion/exclusion, exact source/revision identity, authority/currentness label, relation to other items, ranking rationale, consumer and evidence needed for verification. This fixture matrix must make stale-current, duplicate-amplification, missing-provenance and “similarity overrides authority” failures observable.
 
-After the contract is reviewed, a separate authorized implementation/test task may assess the smallest composition change using existing services. Until then:
+After the matrix/contract is reviewed, a separate authorized execution or implementation task may assess the smallest composition change using existing services. Until then:
 - no new index/graph/brain/service;
 - no changes to `CURRENT-STATE.md` or the other chat's canonical lane;
 - no runtime/bridge/stdio setup;
@@ -177,7 +177,8 @@ CANONICAL_ROUTE_MODIFIED=NO
 G1/G2/G3=NOT_TOUCHED
 MCO01_AND_COORD_OVERLAP=NOT_REPLACED
 RESULT=STATIC_DELTA_DOCUMENTED; PRODUCT_FIX_NOT_IMPLEMENTED
-NEXT_ACTION=REVIEW_FIXTURE_MATRIX_CONTRACT_BEFORE_ANY_SEPARATE_IMPLEMENTATION_AUTHORIZATION
+FIXTURE_MATRIX=SPECIFIED_NOT_EXECUTED
+NEXT_ACTION=REVIEW_FIXTURE_MATRIX_CONTRACT_BEFORE_ANY_SEPARATE_EXECUTION_OR_IMPLEMENTATION_AUTHORIZATION
 ```
 
 ## 9. Stop condition
