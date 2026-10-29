@@ -1,3 +1,73 @@
+## Owner-directed route update — request-shaping fixes statically reviewed; exact-head validation next (2026-10-29)
+
+This route update supersedes the prior Codex task to correct the three request-contract findings at the preceding R3 candidate. It records the newly observed live head and focused static review. It changes only the proposed continuity branch, not canonical main, and does not activate any security gate.
+
+### Live truth at preflight
+
+- Canonical main base reported by both live PRs: 79ab8c50eaa7518120d5ebed9db4747d395a21cb.
+- Canonical CURRENT-STATE.md blob: 5945b23fdb5c13ce1068ca5d2d9e6513a1a06b95. Ordinary Contents reads continue returning an empty body; exact blob retrieval returned 1,068,486 characters.
+- PR #556: open/draft/unmerged, base 79ab8c50..., live HEAD 3d29c0c0f4af657a889c44198d46fa59f07f021a.
+- PR #557 was at 7abce405cecdfa1041ca225ddb00d0cde65df4e5 before this protocol writeback. It remains a separate draft proposal; this note is not canonical until authorized integration and main fetch-back.
+- Exact source blob at PR #556 HEAD: 86ee5f87b2ae3c822696d2b6ead7b39f7ad9b9cb.
+- Exact test blob at PR #556 HEAD: df1376643979f53050b70558101307a0a556935f.
+- Latest source commit message: Pin GitHub API request host and method; it changes only the focal client module and tests.
+
+### Static review outcome — three defects closed at source level
+
+The preceding exact head c8177ea205a7046557b6f2fbaaf13c62b8f8aa77 had three review findings:
+1. gh api -f key=value without explicit --method GET could select POST.
+2. The API host could depend on inherited GH_HOST because --hostname github.com was not fixed.
+3. The internally validated /repos/... endpoint was passed with a leading slash, incompatible with the Windows gh api target form.
+
+The current commit 3d29c0c0f4af657a889c44198d46fa59f07f021a fixes these in source: a fixed --method GET, fixed --hostname github.com, child GH_HOST=github.com, rejection of caller parameters named method/host, and removal of exactly one leading slash only after internal path validation. The test source asserts exact argv, the relative endpoint and canonical host despite an attacker-controlled inherited GH_HOST. Focused static review considers all three source findings addressed.
+
+Review comment recording this result and remaining validation: https://github.com/jhonf463r/Python/pull/556#pullrequestreview-5691884276.
+
+### Evidence boundary — do not carry tests across a changed head
+
+Codex previously reported 50 passed on Python 3.13.2 / pytest 9.0.3 for parent c8177ea. That report is OWNER_CODEX_REPORTED for the parent only and is not evidence that the added tests pass at 3d29c0c. No new exact-head local test receipt was available to this static review. GitHub Actions run 40801815380 ended startup_failure; combined status reported no checks. Therefore EXACT_HEAD_TESTS=NOT_VERIFIED and CI_TEST_EVIDENCE=NONE.
+
+One small non-interactive hardening request remains: set GH_PROMPT_DISABLED=1 and GIT_TERMINAL_PROMPT=0 in the child environment and assert them synthetically. It is not evidence of an authorization failure, and no CLI call should be run to test it.
+
+### Next causal action for Codex
+
+TASK_ID=M1A_G1_AUTHENTICATED_GH_ADAPTER_EXACT_HEAD_VALIDATION_R2_20261029
+NEXT_ACTOR=CODEX
+TARGET_PR=556
+EXPECTED_HEAD=3d29c0c0f4af657a889c44198d46fa59f07f021a
+WORKTREE=C:/_w/m1a-composition-r3-20261028
+MODE=BOUNDED_NONINTERACTIVE_HARDENING_AND_EXACT_HEAD_TESTS
+NO_GH_EXECUTION=TRUE
+NO_PRIVATE_FETCHBACK=TRUE
+NO_C_PYTHON_ACCESS=TRUE
+NO_MAIN_OR_PR557_PRODUCT_CODE_CHANGE=TRUE
+NO_MERGE=TRUE
+
+Codex must verify the live refs and worktree before action. If the isolated candidate worktree is at the expected head and clean, add GH_PROMPT_DISABLED=1 and GIT_TERMINAL_PROMPT=0 to the per-child environment, add assertions to the synthetic invocation test, run the focused suite with the existing Python 3.13.2 / pytest 9.0.3 environment, and run git diff --check. Do not invoke gh.exe, run an authenticated request, fetch the private manifest/repository through this adapter, or activate any gate. If the current head differs, reconcile its exact source and prior changes rather than resetting, cleaning or replaying the task against stale code. If code changes, publish only to the existing PR #556 branch through normal fast-forward, then independently review the new exact head.
+
+### Preserved invariants
+
+OPTION_D=RATIFIED_NO_BOOTSTRAP
+OWNER_TRUST_POLICY=APPROVED_FOR_EXACT_CANDIDATE_POLICY
+GITHUB_CLIENT_PROVENANCE=FAIL_CLOSED_UNTIL_CANDIDATE_REVIEW
+FETCHBACK=NOT_RUN
+G1/G2/G3=NOT_ESTABLISHED
+MCP_TOOL_ALLOWLIST=EMPTY
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+AUTOMATIC_BOOTSTRAP=FALSE
+AUTOMATIC_FOLLOW_ON=FALSE
+PRODUCT_CANDIDATE_MERGE=NOT_AUTHORIZED
+C:\Python=DO_NOT_TOUCH
+MEMORY_RETRIEVED=VERIFIED
+METHOD_ACTIVATED=VERIFIED
+METHOD_APPLIED=VERIFIED (live refs, exact source/test blob retrieval, focused static re-review and review comment)
+OUTCOME_VERIFIED=REQUEST_SHAPING_FIXES_STATICALLY_CONFIRMED; EXACT_HEAD_TESTS=NOT_VERIFIED; ACTIONS=STARTUP_FAILURE
+LATER_CAUSAL_REUSE=NOT_PROVEN
+
+---
+
 ## Independent review of pinned Authenticode client candidate — request contract blockers recorded (2026-10-29)
 
 This route entry follows Codex's reported implementation and normal publication to the existing PR #556 branch. The current exact candidate source was fetched through GitHub for static review. No source changes were made by this review, no local tests were run, and no executable, authenticated API request, private fetchback, protected read or product runtime was invoked.
