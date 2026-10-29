@@ -1,3 +1,39 @@
+## OVERRIDE — Owner authorizes bounded native NumberOfLinks conformance probe (2026-10-29)
+
+The Owner explicitly authorized a single native Windows/filesystem conformance probe after the static adjudication of the F-556 repair diff. Authorization and exact execution boundaries are persisted in [M1A native link-count probe authorization](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-M1A-G1-NATIVE-LINK-COUNT-CONFORMANCE-AUTHORIZATION.md).
+
+This is an execution authorization for the probe only, not a general authorization for code changes, server/runtime, credentials, protected reads, tunnel, publication, merge or bridge activation.
+
+The discriminating question is whether the actual Windows filesystem reports NumberOfLinks != 1 for ordinary directory components that the new unconditional guard would reject. The probe must also measure a single-link file and, if supported on the same volume, a real two-name hard-linked file, then call the uncommitted _open_component only against its own temporary fixture. It must report native values/errors, path/branch/HEAD and the exact reader hash first; no automatic retargeting.
+
+\`\`\`text
+ACTIVE_TASK=M1A_G1_NATIVE_LINK_COUNT_CONFORMANCE_20261029
+OWNER_AUTHORIZATION=EXPLICIT
+EXECUTION=AUTHORIZED; NOT_RUN_AT_THIS_RECORD
+TARGET_WORKTREE=C:\\_w\\m1a-composition-r3-20261028
+TARGET_BRANCH=codex/m1a-current-main-fail-closed-20261028
+EXPECTED_HEAD=e1b430956146c4aa0cadc1df2c3df92150b7f7ea
+TARGET_READER_SHA256=59ede3b64cc20bb71fc6e0300572aab174221e8e9d5abd723b6b62efad46690e
+PROBE_SCOPE=TEMP_FIXTURE; DIRECT_NATIVE_FILE_STANDARD_INFO; _open_component
+SOURCE_CHANGES=FORBIDDEN
+TEST_SUITE_RERUN=FORBIDDEN_UNLESS_SEPARATELY_AUTHORIZED
+SERVER/MCP/PROTECTED_READS/CREDENTIALS/ENROLLMENT/TUNNEL=FORBIDDEN
+C:\\Python=DO_NOT_TOUCH
+NEXT_ACTION=CODEX_RUN_BOUNDED_NATIVE_PROBE_AND_RETURN_OBSERVATION_RECEIPT
+G1/G2/G3=NOT_ESTABLISHED
+MCP_TOOL_ALLOWLIST=EMPTY
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+PRODUCT_CANDIDATE_MERGE=NOT_AUTHORIZED
+\`\`\`
+
+The runtime observation is required because the static patch applies the single-link condition to directories as well as ordinary files. If ordinary directory metadata does not satisfy the guard, report the resulting traversal/listing incompatibility; do not silently weaken or rewrite the guard during the probe. A failed or unavailable hard-link operation is a partial result, not a pass.
+
+Canonical main remains unchanged; this task route is proposed on draft PR #557 only.
+
+---
+
 ## OVERRIDE — F-556-01/F-556-02 repair diff independently adjudicated at static scope (2026-10-29)
 
 The Owner supplied the complete 1,555-line diff in eight consecutive code blocks from Codex's external patch artifact. The reviewer inspected the visible patch text and persisted the bounded adjudication receipt: [M1A F-556-01/F-556-02 independent static diff adjudication](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-M1A-G1-F556-01-02-INDEPENDENT-STATIC-DIFF-ADJUDICATION.md).
