@@ -1,3 +1,33 @@
+## Addendum after independent static review of Codex's exact F-556 repair diff — 2026-10-29
+
+The Owner delivered the complete patch text in eight consecutive blocks. It was reviewed statically and recorded in the [independent adjudication receipt](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-M1A-G1-F556-01-02-INDEPENDENT-STATIC-DIFF-ADJUDICATION.md).
+
+- `F-556-01=CLOSED_AT_STATIC_REVIEW_SCOPE`: cap+1 now raises a reader denial instead of returning partial entries; the sorted success path remains after complete enumeration. New tests cover a synthetic exact cap, cap+1 denial, and the server-stub denial response with no entry names.
+- `F-556-02=CLOSED_AT_STATIC_REVIEW_SCOPE`: the source checks `NumberOfLinks != 1` immediately after standard metadata query and before return/type acceptance; the existing exception cleanup boundary closes a rejected handle. Added synthetic tests cover one-link pass-through, multi-link rejection/close and metadata-query failure/close.
+- Codex's 30-test result, `git diff --check`, local artifact path, 61,881-byte size, 1,555-line count and SHA-256 remain `OWNER_CODEX_REPORTED`. The reviewer did not re-run tests or open the binary patch file. The actual local source is not published; PR #556 remote HEAD remains expected at `e1b430956146c4aa0cadc1df2c3df92150b7f7ea`.
+- There is no basis to claim native Windows conformance. `NumberOfLinks` is checked on directories as well as files, while the added synthetic cases exercise file components only. The actual Windows/filesystem values and any relevant concurrent link-count race remain unvalidated.
+- The visible paste renders a few added blank lines as `+ ` while the supplied receipt says `git diff --check=0`; since the patch was not attached as a binary artifact and its digest was not recomputed, literal-byte identity of those spaces remains `UNKNOWN`, not a confirmed code defect.
+
+The first open technical edge is a separately authorized native Windows/filesystem conformance gate focused on `FILE_STANDARD_INFO.NumberOfLinks` for ordinary files and intermediate/final directories. Do not repeat the same 30-test suite unchanged, republish the source merely for review, or activate protected reads as part of this gate. This review does not establish G1/G2/G3, bridge readiness or protected-read capability.
+
+```text
+ACTIVE_TASK=M1A_G1_NATIVE_LINK_COUNT_CONFORMANCE_GATE_DESIGN_20261029
+F556_01=CLOSED_AT_STATIC_REVIEW_SCOPE
+F556_02=CLOSED_AT_STATIC_REVIEW_SCOPE
+LOCAL_TESTS=30_PASSED; OWNER_CODEX_REPORTED
+NATIVE_WINDOWS_CONFORMANCE=NOT_RUN
+PR_556_SOURCE_PUBLICATION=NOT_DONE
+G1/G2/G3=NOT_ESTABLISHED
+MCP_TOOL_ALLOWLIST=EMPTY
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+MERGE=NOT_AUTHORIZED
+C:\\Python=DO_NOT_TOUCH
+```
+
+---
+
 ## Addendum after Codex F-556-01/F-556-02 local repair receipt — 2026-10-29
 
 Codex has returned a receipt for task `M1A_G1_F556_01_02_BOUNDED_REPAIR_AND_CONFORMANCE_20261029`. It reports a two-file uncommitted local diff at worktree `C:\\_w\\m1a-composition-r3-20261028`, local HEAD still `e1b430956146c4aa0cadc1df2c3df92150b7f7ea`, and 30 focused tests passing. The changed files and hashes, test command and results are retained in the [local repair receipt](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-M1A-G1-F556-01-02-CODEX-LOCAL-REPAIR-RECEIPT.md).
