@@ -1,0 +1,2554 @@
+diff --git a/IABV_v1.5/src/iabv_v15/infra/mcp/audit_tools/__init__.py b/IABV_v1.5/src/iabv_v15/infra/mcp/audit_tools/__init__.py
+index c1e468f4..3c339fc4 100644
+--- a/IABV_v1.5/src/iabv_v15/infra/mcp/audit_tools/__init__.py
++++ b/IABV_v1.5/src/iabv_v15/infra/mcp/audit_tools/__init__.py
+@@ -1,13 +1,12 @@
+-"""Helpers puros para las tools de auditoría humana del MCP server.
++"""Helpers para las tools de auditoría humana del MCP server.
+ 
+ Esta capa concentra la lógica que NO depende de FastMCP:
+ 
+-- normalización/validación de rutas dentro del `workspace_root`
+-  (rechaza `..`, paths absolutos, o subir fuera del workspace);
+-- blacklist de archivos sensibles (secrets, credenciales, llaves);
++- resolución de rutas para utilidades que no acceden a lecturas protegidas;
++- lectura de archivos únicamente desde una capacidad de handle ya abierta;
++- denegación de enumeración hasta que exista una vista estable;
+ - whitelist y ejecución segura de la batería `pytest` oficial;
+ - inspección read-only de `git` (`status --porcelain` + `log`);
+-- listado de directorios con `{name, type, size, mtime}`;
+ - captura de screenshot con degradación explícita cuando la UI no está
+   mapeada (el caso típico de los tests Linux headless).
+ 
+@@ -16,7 +15,7 @@ ni levantar el container; eso es parte del contrato "fácil de testear".
+ 
+ El paquete contiene submódulos adicionales para tools nuevas (ej.
+ ``probe_assistant_login``); los helpers core viven en este ``__init__``
+-para preservar la API pública existente (``audit_tools.run_pytest``,
++para preservar la API de herramientas existente (``audit_tools.run_pytest``,
+ ``audit_tools.AuditToolError``, etc.).
+ """
+ 
+@@ -53,6 +52,7 @@ from iabv_v15.infra.mcp.audit_tools.audit_capability import (  # noqa: E402,F401
+ from iabv_v15.infra.mcp.audit_tools.compare_perception_vs_ground_truth import (  # noqa: E402,F401
+     compare_perception_vs_ground_truth,
+ )
++from iabv_v15.infra.mcp.audit_tools.opened_target import NativeOpenedTargetCapability
+ 
+ 
+ # ----------------------------------------------------------------------
+@@ -204,49 +204,60 @@ def is_sensitive_path(relative_path: str | os.PathLike[str]) -> bool:
+ 
+ 
+ def read_repo_file(
+-    workspace_root: str | os.PathLike[str],
+-    relative_path: str,
++    opened_target: object,
++    relative_path: object | None = None,
+     *,
+     max_bytes: int = MAX_READ_BYTES,
+ ) -> dict[str, Any]:
+-    """Lee un archivo dentro del workspace como texto UTF-8.
++    """Consume el handle abierto ya vinculado; nunca resuelve ni abre una ruta.
+ 
+-    Devuelve `{path, size, content}` si es seguro; levanta `AuditToolError`
+-    en cualquier otra ruta.
++    Esta función es un consumidor interno de una capacidad de handle y no
++    establece G1/G2/G3 ni contención del workspace. El handler MCP permanece
++    denegado mientras esas evidencias y el abridor de confianza no existan.
+     """
+-
+-    resolved = resolve_workspace_path(workspace_root, relative_path)
+-    relative_norm = str(relative_path).replace(os.sep, "/")
++    if type(opened_target) is not NativeOpenedTargetCapability or relative_path is not None:
++        raise AuditToolError(
++            "opened_target_capability_required",
++            "El lector requiere una capacidad interna asociada a un handle OS abierto.",
++        )
++    if opened_target.operation.value != "read_repo_file":
++        raise AuditToolError("operation_mismatch", "La capacidad no corresponde a read_repo_file.")
++    if opened_target.native_identity.object_kind.value != "FILE":
++        raise AuditToolError("not_a_regular_file", "La capacidad no identifica un archivo regular.")
++    if type(max_bytes) is not int or max_bytes < 0:
++        raise AuditToolError("invalid_max_bytes", "max_bytes debe ser un entero no negativo.")
++
++    raw_target = opened_target.requested_target.raw_value
++    if type(raw_target) is not str or not raw_target:
++        raise AuditToolError("invalid_path_label", "La etiqueta del destino debe ser texto no vacío.")
++    relative_norm = raw_target.replace("\\", "/")
+     while relative_norm.startswith("./"):
+         relative_norm = relative_norm[2:]
+-    if is_sensitive_path(relative_norm) or is_sensitive_path(resolved.name):
++    if relative_norm.startswith("/") or any(part == ".." for part in relative_norm.split("/")):
++        raise AuditToolError("invalid_path_label", "La etiqueta del destino debe ser relativa.")
++    if is_sensitive_path(relative_norm):
+         raise AuditToolError(
+             "sensitive_file_blocked",
+-            f"Lectura bloqueada por blacklist de secrets: {relative_path!r}",
+-        )
+-    if not resolved.exists():
+-        raise AuditToolError("not_found", f"Archivo no existe: {relative_path!r}")
+-    if resolved.is_dir():
+-        raise AuditToolError(
+-            "is_directory",
+-            f"{relative_path!r} es un directorio; usá list_repo_directory.",
+-        )
+-    size = resolved.stat().st_size
+-    if size > max_bytes:
+-        raise AuditToolError(
+-            "file_too_large",
+-            f"Archivo {relative_path!r} pesa {size} bytes; tope {max_bytes}.",
++            f"Lectura bloqueada por blacklist de secrets: {relative_norm!r}",
+         )
+     try:
+-        content = resolved.read_text(encoding="utf-8")
++        raw_content = opened_target.read_bytes(max_bytes)
++    except ValueError as exc:
++        if str(exc) == "file_too_large":
++            raise AuditToolError("file_too_large", f"El archivo excede el tope de {max_bytes} bytes.") from exc
++        raise AuditToolError("opened_target_consumption_failed", str(exc)) from exc
++    except (OSError, TypeError) as exc:
++        raise AuditToolError("opened_target_consumption_failed", str(exc)) from exc
++    try:
++        content = raw_content.decode("utf-8")
+     except UnicodeDecodeError as exc:
+         raise AuditToolError(
+             "binary_not_supported",
+-            f"Archivo {relative_path!r} no es UTF-8 decodable ({exc.reason}).",
++            f"El objeto abierto no es UTF-8 decodable ({exc.reason}).",
+         ) from exc
+     return {
+         "path": relative_norm,
+-        "size": size,
++        "size": len(raw_content),
+         "content": content,
+     }
+ 
+@@ -275,62 +286,11 @@ def list_repo_directory(
+     *,
+     max_entries: int = DEFAULT_LIST_MAX,
+ ) -> dict[str, Any]:
+-    """Lista entradas de un directorio dentro del workspace."""
+-
+-    rel = relative_path.strip() if relative_path else ""
+-    if rel in ("", "."):
+-        resolved = Path(workspace_root).resolve()
+-    else:
+-        resolved = resolve_workspace_path(workspace_root, rel)
+-    if not resolved.exists():
+-        raise AuditToolError("not_found", f"Directorio no existe: {rel!r}")
+-    if not resolved.is_dir():
+-        raise AuditToolError("not_a_directory", f"{rel!r} no es un directorio.")
+-
+-    cap = max(1, min(int(max_entries or DEFAULT_LIST_MAX), MAX_LIST_ENTRIES))
+-    entries: list[dict[str, Any]] = []
+-    names = sorted(os.listdir(resolved))
+-    truncated = False
+-    for name in names:
+-        if len(entries) >= cap:
+-            truncated = True
+-            break
+-        child = resolved / name
+-        sensitive = is_sensitive_path(name)
+-        try:
+-            st = child.lstat()
+-            size = int(st.st_size) if stat.S_ISREG(st.st_mode) else 0
+-            mtime = float(st.st_mtime)
+-        except OSError:
+-            size = 0
+-            mtime = 0.0
+-        entries.append(
+-            {
+-                "name": name,
+-                "type": _entry_type(child),
+-                "size": size,
+-                "mtime": mtime,
+-                "sensitive": bool(sensitive),
+-            }
+-        )
+-
+-    root = Path(workspace_root).resolve()
+-    # Normalizar a forward slash para ser consistentes con read_repo_file
+-    # (en Windows `Path.relative_to` devuelve backslashes; el contrato MCP
+-    # expone siempre `/` y los clientes que comparan ambos tools no
+-    # deberían ver formatos distintos).
+-    path_field = (
+-        str(resolved.relative_to(root)).replace(os.sep, "/")
+-        if resolved != root
+-        else ""
++    """Deny directory enumeration until a stable authorized view exists."""
++    raise AuditToolError(
++        "READ_AUTHORIZATION_NOT_ESTABLISHED",
++        "Directory enumeration remains blocked; an open directory handle does not prove a stable view.",
+     )
+-    return {
+-        "path": path_field,
+-        "entries": entries,
+-        "truncated": truncated,
+-        "total_listed": len(entries),
+-        "total_available": len(names),
+-    }
+ 
+ 
+ # ----------------------------------------------------------------------
+diff --git a/IABV_v1.5/src/iabv_v15/infra/mcp/server.py b/IABV_v1.5/src/iabv_v15/infra/mcp/server.py
+index 17b87a15..0f5baebb 100644
+--- a/IABV_v1.5/src/iabv_v15/infra/mcp/server.py
++++ b/IABV_v1.5/src/iabv_v15/infra/mcp/server.py
+@@ -14,12 +14,14 @@ Tools expuestas:
+ 
+ Audit tools (capa humana para que Devin observe la laptop del usuario):
+   - run_pytest: ejecuta la batería oficial (o una suite whitelisted) read-only
+-  - read_repo_file: lee archivos dentro del workspace, respetando blacklist
+-                    de secrets y tope de tamaño
+-  - list_repo_directory: lista entries con {name, type, size, mtime}
++  - read_repo_file: actualmente denegada hasta que G1/G2/G3 tengan
++                    proveedores de evidencia verificados
++  - list_repo_directory: actualmente denegada hasta que G1/G2/G3 tengan
++                         proveedores de evidencia verificados
+   - capture_ui_screenshot: captura ventana IABV vía provider del container
+                            (degrada explícito a `ui_not_running` si no hay)
+-  - git_status_and_log: read-only `git status --porcelain -b` + `git log`
++  - git_status_and_log: actualmente denegada hasta que G1/G2/G3 tengan
++                        proveedores de evidencia verificados
+   - probe_assistant_login: comprueba si el usuario está logueado en un
+                            asistente externo (ChatGPT/Claude/Codex/Gemini)
+                            abriendo la URL declarada con Playwright; primer
+@@ -43,6 +45,13 @@ from dataclasses import asdict, is_dataclass
+ from typing import Any, Callable, TypeVar
+ 
+ from iabv_v15.infra.mcp import audit_tools, audit_tools_observation
++from iabv_v15.infra.mcp.audit_tools.protected_read_composition import ProtectedReadComposer
++from iabv_v15.services.security.read_authorization import (
++    ProtectedReadOperation,
++    ProtectedReadRequest,
++    RequestedReadTarget,
++    ReadAuthorizationCoordinator,
++)
+ 
+ logger = logging.getLogger(__name__)
+ 
+@@ -128,6 +137,13 @@ class IABVMCPServer:
+             raise ValueError("container no puede ser None")
+         self.container = container
+         self.name = name
++        # Protected repository reads remain deny-only in this candidate. The
++        # container cannot supply or override an allow-capable coordinator.
++        self._read_authorization = ReadAuthorizationCoordinator.unconfigured()
++        # No root provider is configured or taken from the container, MCP
++        # arguments, environment, or user settings. The production path fails
++        # at the authorization preflight before any native open.
++        self._root_capability_provider = None
+         if mcp is None:
+             from mcp.server.fastmcp import FastMCP  # lazy import
+ 
+@@ -164,6 +180,26 @@ class IABVMCPServer:
+         self.mcp = mcp
+         self._register_tools()
+ 
++    def _protected_read_authorization_block(
++        self,
++        operation: ProtectedReadOperation,
++        target: object | None = None,
++    ) -> dict[str, object]:
++        """Deny protected reads without resolving or inspecting their target."""
++        request = ProtectedReadRequest(
++            operation=operation,
++            target=RequestedReadTarget(target) if target is not None else None,
++        )
++        return self._read_authorization.assess(request).to_payload()
++
++    def _compose_protected_file_read(self, raw_target: object) -> dict[str, object]:
++        """Run the internal deny-first composition; production has no root issuer."""
++        return ProtectedReadComposer(
++            self._read_authorization,
++            self._root_capability_provider,
++            reader=audit_tools.read_repo_file,
++        ).read_file(raw_target)
++
+     # ------------------------------------------------------------------
+     # Helpers de acceso a servicios del container
+ 
+@@ -928,11 +964,10 @@ class IABVMCPServer:
+ 
+         @mcp.tool()
+         def read_repo_file(relative_path: str) -> dict[str, Any]:
+-            """Lee un archivo dentro del workspace como texto UTF-8.
++            """Read is blocked until G1/G2/G3 evidence providers are established.
+ 
+-            Rechaza paths absolutos, ``..``, archivos fuera del workspace,
+-            archivos sensibles (``.env*``, ``credentials*.json``, ``*.key``,
+-            ``*.pem``, ...) y archivos > 1 MiB.
++            The raw target is passed to the deny-only gate before path
++            resolution or invocation of the legacy file reader.
+             """
+ 
+             block = self._governance_block_for_route(
+@@ -941,20 +976,17 @@ class IABVMCPServer:
+             )
+             if block is not None:
+                 return block
+-            try:
+-                return audit_tools.read_repo_file(self._workspace_root(), relative_path)
+-            except audit_tools.AuditToolError as exc:
+-                return exc.to_payload()
++            return self._compose_protected_file_read(relative_path)
+ 
+         @mcp.tool()
+         def list_repo_directory(
+             relative_path: str = "",
+             max_entries: int = audit_tools.DEFAULT_LIST_MAX,
+         ) -> dict[str, Any]:
+-            """Lista entries de un directorio dentro del workspace.
++            """Directory listing is blocked until G1/G2/G3 are established.
+ 
+-            Devuelve ``{name, type, size, mtime, sensitive}`` por entry.
+-            ``max_entries`` se capea a ``MAX_LIST_ENTRIES`` (200).
++            The raw target reaches the deny-only gate before path resolution
++            or directory enumeration.
+             """
+ 
+             block = self._governance_block_for_route(
+@@ -963,14 +995,10 @@ class IABVMCPServer:
+             )
+             if block is not None:
+                 return block
+-            try:
+-                return audit_tools.list_repo_directory(
+-                    self._workspace_root(),
+-                    relative_path,
+-                    max_entries=int(max_entries),
+-                )
+-            except audit_tools.AuditToolError as exc:
+-                return exc.to_payload()
++            return self._protected_read_authorization_block(
++                ProtectedReadOperation.LIST_REPO_DIRECTORY,
++                relative_path,
++            )
+ 
+         @mcp.tool()
+         def capture_ui_screenshot(region: str = "control_center") -> dict[str, Any]:
+@@ -992,11 +1020,9 @@ class IABVMCPServer:
+ 
+         @mcp.tool()
+         def git_status_and_log(limit: int = audit_tools.DEFAULT_GIT_LOG_LIMIT) -> dict[str, Any]:
+-            """Lee ``git status --porcelain -b`` + ``git log -n <limit>``.
++            """Git workspace metadata is blocked until G1/G2/G3 are established.
+ 
+-            Read-only. Devuelve ``{branch, ahead, behind, dirty_files,
+-            dirty_count, last_commits}`` o ``{error}`` si algo falla (ej.
+-            el workspace no es repo).
++            Denial occurs before resolving the workspace root or launching git.
+             """
+ 
+             block = self._governance_block_for_route(
+@@ -1005,13 +1031,10 @@ class IABVMCPServer:
+             )
+             if block is not None:
+                 return block
+-            try:
+-                return audit_tools.git_status_and_log(
+-                    self._workspace_root(),
+-                    limit=int(limit),
+-                )
+-            except audit_tools.AuditToolError as exc:
+-                return exc.to_payload()
++            return self._protected_read_authorization_block(
++                ProtectedReadOperation.GIT_STATUS_AND_LOG,
++                ".",
++            )
+ 
+         # ------------------------------------------------------------
+         # === F1.3 observation tools ===
+@@ -1609,8 +1632,8 @@ class IABVMCPServer:
+                     {"question": "¿estado de ventanas/foco?", "tool": "world_model_snapshot"},
+                     {"question": "¿salud del sistema?", "tool": "self_examination_current"},
+                     {"question": "¿tests pasan?", "tool": "run_pytest"},
+-                    {"question": "¿contenido de archivo?", "tool": "read_repo_file"},
+-                    {"question": "¿listar directorio?", "tool": "list_repo_directory"},
++                    {"question": "¿contenido de archivo? (bloqueado hasta establecer G1/G2/G3)", "tool": "read_repo_file"},
++                    {"question": "¿listar directorio? (bloqueado hasta establecer G1/G2/G3)", "tool": "list_repo_directory"},
+                     {"question": "¿clipboard usuario?", "tool": "read_clipboard"},
+                     {"question": "¿ventanas abiertas?", "tool": "list_open_windows"},
+                     {"question": "¿procesos corriendo?", "tool": "list_running_processes"},
+@@ -1619,7 +1642,7 @@ class IABVMCPServer:
+                     {"question": "¿captura DOM de ChatGPT?", "tool": "chatgpt_web_capture"},
+                     {"question": "¿auditoría global?", "tool": "run_self_audit"},
+                     {"question": "¿contexto portable?", "tool": "portable_context_get"},
+-                    {"question": "¿historia de git?", "tool": "git_status_and_log"},
++                    {"question": "¿historia de git? (bloqueada hasta establecer G1/G2/G3)", "tool": "git_status_and_log"},
+                 ],
+                 "violations_tracked": True,
+                 "violation_reporting_channel": "operational_self_examination_service",
+diff --git a/IABV_v1.5/tests/test_mcp_audit_tools.py b/IABV_v1.5/tests/test_mcp_audit_tools.py
+index f43b2112..63fe0ce0 100644
+--- a/IABV_v1.5/tests/test_mcp_audit_tools.py
++++ b/IABV_v1.5/tests/test_mcp_audit_tools.py
+@@ -34,6 +34,17 @@ from iabv_v15.infra.mcp.audit_tools import (
+     validate_pytest_keyword,
+     validate_pytest_suite,
+ )
++from iabv_v15.infra.mcp.audit_tools.opened_target import NativeOpenedTargetCapability
++from iabv_v15.services.security.read_authorization import (
++    ApprovedWorkspaceRoot,
++    AuthorizationEvidenceBundle,
++    ProtectedReadOperation,
++    ReadDestination,
++    ReadAuthorizationCoordinator,
++    ProtectedReadRequest,
++    RequestedReadTarget,
++    ServerProcessIdentity,
++)
+ 
+ 
+ # ----------------------------------------------------------------------
+@@ -119,64 +130,194 @@ def test_is_sensitive_path_ignores_regular_files() -> None:
+ # read_repo_file
+ 
+ 
+-def test_read_repo_file_happy_path(tmp_path: Path) -> None:
++def _opened_capability(tmp_path: Path, relative_path: str) -> NativeOpenedTargetCapability:
++    source = (tmp_path / relative_path).open("rb")
++    try:
++        capability = NativeOpenedTargetCapability._from_open_handle(
++            source,
++            operation=ProtectedReadOperation.READ_REPO_FILE,
++            approved_workspace_root=ApprovedWorkspaceRoot("test-root", "v1", "test-digest"),
++            destination=ReadDestination("test-destination", "v1", "test-digest"),
++            requested_target=RequestedReadTarget(relative_path),
++            server_process=ServerProcessIdentity("unit-test", 1, "test-executable-digest"),
++            evidence=AuthorizationEvidenceBundle(),
++        )
++    finally:
++        source.close()
++    return capability
++
++
++def test_read_repo_file_happy_path_consumes_open_handle(tmp_path: Path) -> None:
+     (tmp_path / "docs").mkdir()
+     target = tmp_path / "docs" / "note.md"
+     target.write_text("hola mundo", encoding="utf-8")
+-    payload = read_repo_file(tmp_path, "docs/note.md")
+-    assert payload["path"] == "docs/note.md"
+-    assert payload["size"] == len("hola mundo".encode("utf-8"))
+-    assert payload["content"] == "hola mundo"
++    capability = _opened_capability(tmp_path, "docs/note.md")
++    try:
++        payload = read_repo_file(capability)
++        assert payload["path"] == "docs/note.md"
++        assert payload["size"] == len("hola mundo".encode("utf-8"))
++        assert payload["content"] == "hola mundo"
++    finally:
++        capability.close()
++
++
++def test_capability_identity_comes_from_open_handle_and_reader_uses_no_path_open(
++    tmp_path: Path,
++    monkeypatch,
++) -> None:  # type: ignore[no-untyped-def]
++    target = tmp_path / "note.md"
++    target.write_text("opened object", encoding="utf-8")
++    capability = _opened_capability(tmp_path, "note.md")
++    identity = capability.native_identity
++    replacement_path = tmp_path / "replacement.md"
++    replacement_path.write_text("replacement object", encoding="utf-8")
++    replacement = _opened_capability(tmp_path, "replacement.md")
++    try:
++        assert capability.native_identity == identity
++        assert replacement.native_identity != identity
++        assert capability.root_binding_state.value == "EVIDENCE_NOT_ESTABLISHED"
++        with pytest.raises(AttributeError, match="metadata is immutable"):
++            capability.native_identity = replacement.native_identity  # type: ignore[misc]
++        monkeypatch.setattr(Path, "open", lambda *_a, **_k: (_ for _ in ()).throw(AssertionError("path reopened")))
++        monkeypatch.setattr(Path, "read_text", lambda *_a, **_k: (_ for _ in ()).throw(AssertionError("path read")))
++        monkeypatch.setattr(audit_tools, "resolve_workspace_path", lambda *_: (_ for _ in ()).throw(AssertionError("path resolved")))
++        payload = read_repo_file(capability)
++        assert payload["content"] == "opened object"
++    finally:
++        capability.close()
++        replacement.close()
++
++
++def test_capability_is_carried_by_decision_but_unconfigured_gate_still_denies(tmp_path: Path) -> None:
++    target = tmp_path / "note.md"
++    target.write_text("not consumed by denied decision", encoding="utf-8")
++    capability = _opened_capability(tmp_path, "note.md")
++    try:
++        decision = ReadAuthorizationCoordinator.unconfigured().assess(
++            ProtectedReadRequest(
++                operation=ProtectedReadOperation.READ_REPO_FILE,
++                target=RequestedReadTarget("note.md"),
++                opened_target=capability,
++            )
++        )
++        assert decision.opened_target is capability
++        assert decision.authorized is False
++        assert decision.to_payload()["authorized"] is False
++    finally:
++        capability.close()
++
++
++def test_open_failure_or_closed_handle_never_produces_authorization(tmp_path: Path) -> None:
++    target = tmp_path / "note.md"
++    target.write_text("test", encoding="utf-8")
++    source = target.open("rb")
++    source.close()
++    with pytest.raises(OSError, match="duplicate an open target handle"):
++        NativeOpenedTargetCapability._from_open_handle(
++            source,
++            operation=ProtectedReadOperation.READ_REPO_FILE,
++            approved_workspace_root=ApprovedWorkspaceRoot("test-root", "v1", "test-digest"),
++            destination=ReadDestination("test-destination", "v1", "test-digest"),
++            requested_target=RequestedReadTarget("note.md"),
++            server_process=ServerProcessIdentity("unit-test", 1, "test-executable-digest"),
++            evidence=AuthorizationEvidenceBundle(),
++        )
++
++    capability = _opened_capability(tmp_path, "note.md")
++    capability.close()
++    decision = ReadAuthorizationCoordinator.unconfigured().assess(
++        ProtectedReadRequest(ProtectedReadOperation.READ_REPO_FILE, opened_target=capability)
++    )
++    assert decision.authorized is False
++    with pytest.raises(AuditToolError) as exc:
++        read_repo_file(capability)
++    assert exc.value.code == "opened_target_consumption_failed"
++
++
++def test_reader_rejects_path_and_forged_capability_inputs(tmp_path: Path) -> None:
++    with pytest.raises(AuditToolError) as path_error:
++        read_repo_file(tmp_path, "note.md")
++    assert path_error.value.code == "opened_target_capability_required"
++
++    forged = type("ForgedCapability", (), {"authorized": True, "read_bytes": lambda *_: b"secret"})()
++    with pytest.raises(AuditToolError) as forged_error:
++        read_repo_file(forged)
++    assert forged_error.value.code == "opened_target_capability_required"
+ 
+ 
+ def test_read_repo_file_blocks_secrets(tmp_path: Path) -> None:
+     (tmp_path / ".env").write_text("SECRET=abc")
+-    with pytest.raises(AuditToolError) as exc:
+-        read_repo_file(tmp_path, ".env")
+-    assert exc.value.code == "sensitive_file_blocked"
++    capability = _opened_capability(tmp_path, ".env")
++    try:
++        with pytest.raises(AuditToolError) as exc:
++            read_repo_file(capability)
++        assert exc.value.code == "sensitive_file_blocked"
++    finally:
++        capability.close()
+ 
+ 
+ def test_read_repo_file_blocks_credentials_in_subdir(tmp_path: Path) -> None:
+     (tmp_path / "data").mkdir()
+     (tmp_path / "data" / "credentials.json").write_text("{}")
+-    with pytest.raises(AuditToolError) as exc:
+-        read_repo_file(tmp_path, "data/credentials.json")
+-    assert exc.value.code == "sensitive_file_blocked"
++    capability = _opened_capability(tmp_path, "data/credentials.json")
++    try:
++        with pytest.raises(AuditToolError) as exc:
++            read_repo_file(capability)
++        assert exc.value.code == "sensitive_file_blocked"
++    finally:
++        capability.close()
+ 
+ 
+ def test_read_repo_file_rejects_directory(tmp_path: Path) -> None:
+     (tmp_path / "docs").mkdir()
+     with pytest.raises(AuditToolError) as exc:
+         read_repo_file(tmp_path, "docs")
+-    assert exc.value.code == "is_directory"
++    assert exc.value.code == "opened_target_capability_required"
++
++
++def test_read_repo_file_path_only_call_is_denied_without_resolution(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
++    calls: list[str] = []
++    monkeypatch.setattr(audit_tools, "resolve_workspace_path", lambda *_: calls.append("resolve"))
++    with pytest.raises(AuditToolError) as exc:
++        read_repo_file(tmp_path, "docs")
++    assert exc.value.code == "opened_target_capability_required"
++    assert calls == []
+ 
+ 
+ def test_read_repo_file_not_found(tmp_path: Path) -> None:
+     with pytest.raises(AuditToolError) as exc:
+         read_repo_file(tmp_path, "does/not/exist.txt")
+-    assert exc.value.code == "not_found"
++    assert exc.value.code == "opened_target_capability_required"
+ 
+ 
+ def test_read_repo_file_rejects_too_large(tmp_path: Path) -> None:
+     target = tmp_path / "big.bin"
+     target.write_bytes(b"A" * 32)
+-    with pytest.raises(AuditToolError) as exc:
+-        read_repo_file(tmp_path, "big.bin", max_bytes=8)
+-    assert exc.value.code == "file_too_large"
++    capability = _opened_capability(tmp_path, "big.bin")
++    try:
++        with pytest.raises(AuditToolError) as exc:
++            read_repo_file(capability, max_bytes=8)
++        assert exc.value.code == "file_too_large"
++    finally:
++        capability.close()
+ 
+ 
+ def test_read_repo_file_rejects_non_utf8(tmp_path: Path) -> None:
+     target = tmp_path / "bin.dat"
+     target.write_bytes(b"\x80\x81\x82")
+-    with pytest.raises(AuditToolError) as exc:
+-        read_repo_file(tmp_path, "bin.dat")
+-    assert exc.value.code == "binary_not_supported"
++    capability = _opened_capability(tmp_path, "bin.dat")
++    try:
++        with pytest.raises(AuditToolError) as exc:
++            read_repo_file(capability)
++        assert exc.value.code == "binary_not_supported"
++    finally:
++        capability.close()
+ 
+ 
+ def test_read_repo_file_rejects_absolute(tmp_path: Path) -> None:
+     with pytest.raises(AuditToolError) as exc:
+         read_repo_file(tmp_path, "/etc/passwd")
+-    assert exc.value.code == "absolute_path_forbidden"
++    assert exc.value.code == "opened_target_capability_required"
+ 
+ 
+ def test_read_repo_file_preserves_dotfile_names(tmp_path: Path) -> None:
+@@ -184,69 +325,72 @@ def test_read_repo_file_preserves_dotfile_names(tmp_path: Path) -> None:
+     (tmp_path / ".config").mkdir()
+     (tmp_path / ".config" / "settings.yml").write_text("key: 1", encoding="utf-8")
+ 
+-    payload = read_repo_file(tmp_path, ".gitignore")
+-    assert payload["path"] == ".gitignore"
+-    assert payload["content"] == "*.pyc"
+-
+-    payload = read_repo_file(tmp_path, ".config/settings.yml")
+-    assert payload["path"] == ".config/settings.yml"
+-    assert payload["content"] == "key: 1"
++    for relative_path, expected in ((".gitignore", "*.pyc"), (".config/settings.yml", "key: 1")):
++        capability = _opened_capability(tmp_path, relative_path)
++        try:
++            payload = read_repo_file(capability)
++            assert payload["path"] == relative_path
++            assert payload["content"] == expected
++        finally:
++            capability.close()
+ 
+ 
+ def test_read_repo_file_strips_only_leading_dot_slash(tmp_path: Path) -> None:
+     (tmp_path / "docs").mkdir()
+     (tmp_path / "docs" / "note.md").write_text("hola", encoding="utf-8")
+ 
+-    payload = read_repo_file(tmp_path, "./docs/note.md")
+-    assert payload["path"] == "docs/note.md"
+-
+-    payload = read_repo_file(tmp_path, "././docs/note.md")
+-    assert payload["path"] == "docs/note.md"
++    for relative_path in ("./docs/note.md", "././docs/note.md"):
++        capability = _opened_capability(tmp_path, relative_path)
++        try:
++            payload = read_repo_file(capability)
++            assert payload["path"] == "docs/note.md"
++        finally:
++            capability.close()
+ 
+ 
+ # ----------------------------------------------------------------------
+ # list_repo_directory
+ 
+ 
+-def test_list_repo_directory_enumerates_entries(tmp_path: Path) -> None:
++def test_list_repo_directory_denies_without_stable_enumeration_view(tmp_path: Path) -> None:
+     (tmp_path / "a.txt").write_text("1")
+     (tmp_path / "b.txt").write_text("22")
+     (tmp_path / ".env").write_text("S")
+     (tmp_path / "docs").mkdir()
+-    payload = list_repo_directory(tmp_path, "")
+-    names = {e["name"]: e for e in payload["entries"]}
+-    assert set(names) == {"a.txt", "b.txt", ".env", "docs"}
+-    assert names["docs"]["type"] == "dir"
+-    assert names["a.txt"]["type"] == "file"
+-    assert names["a.txt"]["size"] == 1
+-    assert names[".env"]["sensitive"] is True
+-    assert names["a.txt"]["sensitive"] is False
+-    assert payload["truncated"] is False
+-    assert payload["total_listed"] == 4
+-    assert payload["total_available"] == 4
++    with pytest.raises(AuditToolError) as exc:
++        list_repo_directory(tmp_path, "")
++    assert exc.value.code == "READ_AUTHORIZATION_NOT_ESTABLISHED"
+ 
+ 
+ def test_list_repo_directory_truncates_at_max_entries(tmp_path: Path) -> None:
+     for i in range(5):
+         (tmp_path / f"f{i}.txt").write_text("x")
+-    payload = list_repo_directory(tmp_path, "", max_entries=2)
+-    assert len(payload["entries"]) == 2
+-    assert payload["truncated"] is True
+-    assert payload["total_listed"] == 2
+-    assert payload["total_available"] == 5
++    with pytest.raises(AuditToolError) as exc:
++        list_repo_directory(tmp_path, "", max_entries=2)
++    assert exc.value.code == "READ_AUTHORIZATION_NOT_ESTABLISHED"
+ 
+ 
+ def test_list_repo_directory_not_a_directory(tmp_path: Path) -> None:
+     (tmp_path / "a.txt").write_text("1")
+     with pytest.raises(AuditToolError) as exc:
+         list_repo_directory(tmp_path, "a.txt")
+-    assert exc.value.code == "not_a_directory"
++    assert exc.value.code == "READ_AUTHORIZATION_NOT_ESTABLISHED"
+ 
+ 
+ def test_list_repo_directory_not_found(tmp_path: Path) -> None:
+     with pytest.raises(AuditToolError) as exc:
+         list_repo_directory(tmp_path, "does/not/exist")
+-    assert exc.value.code == "not_found"
++    assert exc.value.code == "READ_AUTHORIZATION_NOT_ESTABLISHED"
++
++
++def test_list_repo_directory_denies_before_resolving_or_enumerating(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
++    calls: list[str] = []
++    monkeypatch.setattr(audit_tools, "resolve_workspace_path", lambda *_: calls.append("resolve"))
++    monkeypatch.setattr(audit_tools.os, "listdir", lambda *_: calls.append("listdir"))
++    with pytest.raises(AuditToolError) as exc:
++        list_repo_directory(tmp_path, "")
++    assert exc.value.code == "READ_AUTHORIZATION_NOT_ESTABLISHED"
++    assert calls == []
+ 
+ 
+ # ----------------------------------------------------------------------
+diff --git a/IABV_v1.5/tests/test_mcp_server.py b/IABV_v1.5/tests/test_mcp_server.py
+index 93c11837..a1fc1961 100644
+--- a/IABV_v1.5/tests/test_mcp_server.py
++++ b/IABV_v1.5/tests/test_mcp_server.py
+@@ -47,6 +47,16 @@ class _FakeWorldModelService:
+         self.calls.append(("refresh", full))
+         return self._snapshot
+ 
++    @property
++    def scan_stats(self) -> dict[str, float | int | None]:
++        return {
++            "scan_count": 1,
++            "scan_count_full": 0,
++            "scan_interval_s": 30.0,
++            "full_scan_interval_s": 600.0,
++            "last_scan_ago_s": 0.0,
++        }
++
+ 
+ class _FakePortableContextService:
+     def __init__(self, package: PortableContextPackage) -> None:
+@@ -549,28 +559,164 @@ def test_server_registers_audit_tools() -> None:
+     assert audit <= registered, f"faltan audit tools: {audit - registered}"
+ 
+ 
+-def test_read_repo_file_happy_path_via_server(tmp_path) -> None:  # type: ignore[no-untyped-def]
++def test_read_repo_file_denies_before_legacy_reader(tmp_path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
++    from iabv_v15.infra.mcp import audit_tools
++
+     (tmp_path / "docs").mkdir()
+     (tmp_path / "docs" / "hello.md").write_text("hola", encoding="utf-8")
++    calls: list[tuple[object, ...]] = []
++    monkeypatch.setattr(
++        audit_tools,
++        "read_repo_file",
++        lambda *args: calls.append(args) or {"content": "unexpected"},
++    )
+     server = IABVMCPServer(_build_container(workspace_root=str(tmp_path)))
+     payload = _call_tool(server, "read_repo_file", relative_path="docs/hello.md")
+-    assert payload["content"] == "hola"
+-    assert payload["path"] == "docs/hello.md"
++    assert payload["authorized"] is False
++    assert payload["error"] == "READ_AUTHORIZATION_NOT_ESTABLISHED"
++    assert payload["reason"] == "G1_G2_G3_NOT_ESTABLISHED"
++    assert [item["gate"] for item in payload["missing_requirements"]] == ["G1", "G2", "G3"]
++    assert calls == []
++
+ 
++def test_read_repo_file_invalid_path_still_denies_before_reader(tmp_path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
++    from iabv_v15.infra.mcp import audit_tools
+ 
+-def test_read_repo_file_returns_error_payload_on_invalid(tmp_path) -> None:  # type: ignore[no-untyped-def]
++    calls: list[tuple[object, ...]] = []
++    monkeypatch.setattr(audit_tools, "read_repo_file", lambda *args: calls.append(args) or {})
+     server = IABVMCPServer(_build_container(workspace_root=str(tmp_path)))
+     payload = _call_tool(server, "read_repo_file", relative_path="/etc/passwd")
+-    assert payload["error"] == "absolute_path_forbidden"
++    assert payload["error"] == "READ_AUTHORIZATION_NOT_ESTABLISHED"
++    assert calls == []
++
++
++def test_read_handler_passes_raw_target_without_path_resolution(tmp_path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
++    from iabv_v15.services.security.read_authorization import ReadAuthorizationCoordinator
++
++    captured: list[object] = []
++    coordinator = ReadAuthorizationCoordinator.unconfigured()
+ 
++    class _CapturingCoordinator:
++        def assess(self, request):  # type: ignore[no-untyped-def]
++            captured.append(request.target.raw_value)
++            return coordinator.assess(request)
++
++    server = IABVMCPServer(_build_container(workspace_root=str(tmp_path)))
++    server._read_authorization = _CapturingCoordinator()
++
++    payload = _call_tool(server, "read_repo_file", relative_path="folder/../secret.txt")
++
++    assert payload["authorized"] is False
++    assert captured == ["folder/../secret.txt"]
++
++
++def test_list_repo_directory_denies_before_legacy_reader(tmp_path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
++    from iabv_v15.infra.mcp import audit_tools
+ 
+-def test_list_repo_directory_via_server(tmp_path) -> None:  # type: ignore[no-untyped-def]
+     (tmp_path / "a.txt").write_text("x")
+     (tmp_path / ".env").write_text("S")
++    calls: list[tuple[object, ...]] = []
++    monkeypatch.setattr(
++        audit_tools,
++        "list_repo_directory",
++        lambda *args, **kwargs: calls.append(args) or {"entries": ["unexpected"]},
++    )
+     server = IABVMCPServer(_build_container(workspace_root=str(tmp_path)))
+     payload = _call_tool(server, "list_repo_directory", relative_path="")
+-    names = {entry["name"]: entry for entry in payload["entries"]}
+-    assert ".env" in names and names[".env"]["sensitive"] is True
++    assert payload["authorized"] is False
++    assert payload["error"] == "READ_AUTHORIZATION_NOT_ESTABLISHED"
++    assert payload["operation"] == "list_repo_directory"
++    assert calls == []
++
++
++def test_git_status_and_log_denies_before_workspace_resolution_or_subprocess(tmp_path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
++    from iabv_v15.infra.mcp import audit_tools
++
++    calls: list[tuple[object, ...]] = []
++    monkeypatch.setattr(
++        audit_tools,
++        "git_status_and_log",
++        lambda *args, **kwargs: calls.append(args) or {"branch": "unexpected"},
++    )
++    server = IABVMCPServer(_build_container(workspace_root=str(tmp_path)))
++    monkeypatch.setattr(
++        server,
++        "_workspace_root",
++        lambda: (_ for _ in ()).throw(AssertionError("workspace root resolved before gate")),
++    )
++
++    payload = _call_tool(server, "git_status_and_log")
++
++    assert payload["authorized"] is False
++    assert payload["operation"] == "git_status_and_log"
++    assert payload["error"] == "READ_AUTHORIZATION_NOT_ESTABLISHED"
++    assert calls == []
++
++
++def test_all_protected_read_routes_deny_before_path_or_handle_access(tmp_path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
++    from iabv_v15.infra.mcp import audit_tools
++
++    calls: list[str] = []
++    monkeypatch.setattr(audit_tools, "resolve_workspace_path", lambda *_: calls.append("resolve"))
++    monkeypatch.setattr(audit_tools.os, "listdir", lambda *_: calls.append("listdir"))
++    monkeypatch.setattr(audit_tools, "read_repo_file", lambda *_args, **_kwargs: calls.append("read_file"))
++    monkeypatch.setattr(audit_tools, "list_repo_directory", lambda *_args, **_kwargs: calls.append("list_dir"))
++    monkeypatch.setattr(audit_tools, "git_status_and_log", lambda *_args, **_kwargs: calls.append("git"))
++    server = IABVMCPServer(_build_container(workspace_root=str(tmp_path)))
++    monkeypatch.setattr(server, "_workspace_root", lambda: calls.append("workspace_root"))
++
++    results = [
++        _call_tool(server, "read_repo_file", relative_path="docs/file.md"),
++        _call_tool(server, "list_repo_directory", relative_path="docs"),
++        _call_tool(server, "git_status_and_log"),
++    ]
++
++    assert all(result.get("authorized") is False for result in results)
++    assert calls == []
++
++
++def test_audit_governance_block_precedes_protected_read_authorization(tmp_path) -> None:  # type: ignore[no-untyped-def]
++    block = OperationalBlockRecord(
++        block_type="audit_paused",
++        assistant_kind="audit",
++        title="Auditoría pausada manualmente",
++        status="active",
++    )
++    server = IABVMCPServer(
++        _build_container(
++            world_model_service=_FakeWorldModelService(_default_snapshot(blocks=[block])),
++            workspace_root=str(tmp_path),
++        ),
++    )
++    server._read_authorization = SimpleNamespace(
++        assess=lambda *_args, **_kwargs: (_ for _ in ()).throw(
++            AssertionError("authorization gate called before governance")
++        ),
++    )
++
++    payload = _call_tool(server, "read_repo_file", relative_path="README.md")
++
++    assert payload["governance_blocked"] is True
++    assert payload["reason"] == "operational_block_active"
++
++
++def test_protected_read_handler_docstrings_disclose_deny_only_state() -> None:
++    import inspect
++
++    server = IABVMCPServer(_build_container())
++    for name in ("read_repo_file", "list_repo_directory", "git_status_and_log"):
++        doc = inspect.getdoc(_get_tool(server, name).fn) or ""
++        assert "blocked" in doc.lower()
++        assert "G1/G2/G3" in doc
++
++
++def test_mcp_read_handlers_do_not_expose_open_target_capability_arguments() -> None:
++    import inspect
++
++    server = IABVMCPServer(_build_container())
++    for name in ("read_repo_file", "list_repo_directory", "git_status_and_log"):
++        parameters = inspect.signature(_get_tool(server, name).fn).parameters
++        assert not any("capability" in parameter or "opened_target" in parameter for parameter in parameters)
+ 
+ 
+ def test_capture_ui_screenshot_without_provider_degrades_via_server() -> None:
+@@ -624,7 +770,7 @@ def test_audit_tools_blocked_when_global_wildcard_block_active(tmp_path) -> None
+ 
+ 
+ def test_audit_tools_allow_when_only_unrelated_block(tmp_path) -> None:  # type: ignore[no-untyped-def]
+-    """Si el block es para otra ruta (ej. chatgpt_web), audit debe pasar."""
++    """El gate operativo no bloquea, pero G1/G2/G3 siguen cerrando la lectura."""
+ 
+     (tmp_path / "file.md").write_text("contenido")
+     unrelated = OperationalBlockRecord(
+@@ -637,8 +783,40 @@ def test_audit_tools_allow_when_only_unrelated_block(tmp_path) -> None:  # type:
+         _build_container(world_model_service=wm, workspace_root=str(tmp_path)),
+     )
+     payload = _call_tool(server, "read_repo_file", relative_path="file.md")
+-    assert "governance_blocked" not in payload
+-    assert payload["content"] == "contenido"
++    assert payload["error"] == "READ_AUTHORIZATION_NOT_ESTABLISHED"
++    assert payload["authorized"] is False
++
++
++def test_container_coordinator_cannot_bypass_deny_only_read_gate(tmp_path) -> None:  # type: ignore[no-untyped-def]
++    container = _build_container(workspace_root=str(tmp_path))
++    container.read_authorization_coordinator = SimpleNamespace(
++        assess=lambda *_args, **_kwargs: SimpleNamespace(
++            authorized=True,
++            to_payload=lambda: {"authorized": True, "content": "bypass"},
++        ),
++    )
++    server = IABVMCPServer(container)
++
++    payload = _call_tool(server, "read_repo_file", relative_path="README.md")
++
++    assert payload["authorized"] is False
++    assert payload["error"] == "READ_AUTHORIZATION_NOT_ESTABLISHED"
++
++
++def test_container_root_provider_cannot_enable_protected_reads(tmp_path) -> None:  # type: ignore[no-untyped-def]
++    container = _build_container(workspace_root=str(tmp_path))
++    provider_calls: list[str] = []
++    container.root_capability_provider = SimpleNamespace(
++        acquire=lambda: provider_calls.append("acquire")
++    )
++    server = IABVMCPServer(container)
++
++    payload = _call_tool(server, "read_repo_file", relative_path="README.md")
++
++    assert server._root_capability_provider is None
++    assert payload["authorized"] is False
++    assert payload["error"] == "READ_AUTHORIZATION_NOT_ESTABLISHED"
++    assert provider_calls == []
+ 
+ 
+ def test_run_pytest_tool_signature_rejects_python_executable() -> None:
+diff --git a/IABV_v1.5/src/iabv_v15/infra/mcp/audit_tools/opened_target.py b/IABV_v1.5/src/iabv_v15/infra/mcp/audit_tools/opened_target.py
+new file mode 100644
+index 00000000..3e3035bd
+--- /dev/null
++++ b/IABV_v1.5/src/iabv_v15/infra/mcp/audit_tools/opened_target.py
+@@ -0,0 +1,272 @@
++"""Internal same-handle capability for reading one already-open regular file.
++
++This module does not open paths, prove workspace containment, or authorize a
++protected read. A trusted opener would have to establish those facts after the
++G1/G2 preflight. The MCP server currently has no such providers and stays
++deny-only. Tests may use temporary files to verify that this reader consumes
++the OS object behind the handle rather than resolving its name again.
++"""
++
++from __future__ import annotations
++
++import os
++import stat
++import sys
++from typing import BinaryIO
++
++from iabv_v15.services.security.read_authorization import (
++    ApprovedWorkspaceRoot,
++    AuthorizationEvidenceBundle,
++    NativeObjectIdentity,
++    ProtectedReadOperation,
++    ReadDestination,
++    RequestedReadTarget,
++    ServerProcessIdentity,
++    TargetObjectKind,
++)
++
++_CAPABILITY_SEAL = object()
++
++
++class NativeOpenedTargetCapability:
++    """Owns a duplicate of an OS handle and its identity obtained from that handle.
++
++    Construction is intentionally private to internal code. The class is not
++    an MCP argument and its metadata alone never establishes G1/G2/G3 or root
++    containment. ``_from_open_handle`` duplicates an existing descriptor; it
++    never opens or resolves a path.
++    """
++
++    __slots__ = (
++        "_fd",
++        "_closed",
++        "operation",
++        "approved_workspace_root",
++        "workspace_root_identity",
++        "destination",
++        "requested_target",
++        "native_identity",
++        "server_process",
++        "evidence",
++        "root_binding_state",
++        "_retained_handles",
++        "_sealed",
++    )
++
++    def __init__(
++        self,
++        *,
++        fd: int,
++        operation: ProtectedReadOperation,
++        approved_workspace_root: ApprovedWorkspaceRoot,
++        destination: ReadDestination,
++        requested_target: RequestedReadTarget,
++        native_identity: NativeObjectIdentity,
++        server_process: ServerProcessIdentity,
++        evidence: AuthorizationEvidenceBundle,
++        workspace_root_identity: NativeObjectIdentity | None = None,
++        root_binding_state: object | None = None,
++        retained_handles: tuple[int, ...] = (),
++        _seal: object,
++    ) -> None:
++        if _seal is not _CAPABILITY_SEAL:
++            raise TypeError("opened-target capabilities must come from an internal open handle")
++        self._fd = fd
++        self._closed = False
++        self.operation = operation
++        self.approved_workspace_root = approved_workspace_root
++        self.workspace_root_identity = workspace_root_identity
++        self.destination = destination
++        self.requested_target = requested_target
++        self.native_identity = native_identity
++        self.server_process = server_process
++        self.evidence = evidence
++        from iabv_v15.services.security.read_authorization import GateEvidenceState
++
++        if workspace_root_identity is not None and type(workspace_root_identity) is not NativeObjectIdentity:
++            raise TypeError("workspace_root_identity must be native identity evidence")
++        if root_binding_state is None:
++            root_binding_state = GateEvidenceState.EVIDENCE_NOT_ESTABLISHED
++        if type(root_binding_state) is not GateEvidenceState:
++            raise TypeError("root_binding_state must be a GateEvidenceState")
++        self.root_binding_state = root_binding_state
++        self._retained_handles = retained_handles
++        self._sealed = True
++
++    def __setattr__(self, name: str, value: object) -> None:
++        if getattr(self, "_sealed", False):
++            raise AttributeError("opened-target capability metadata is immutable")
++        object.__setattr__(self, name, value)
++
++    @classmethod
++    def _from_open_handle(
++        cls,
++        handle: BinaryIO,
++        *,
++        operation: ProtectedReadOperation,
++        approved_workspace_root: ApprovedWorkspaceRoot,
++        destination: ReadDestination,
++        requested_target: RequestedReadTarget,
++        server_process: ServerProcessIdentity,
++        evidence: AuthorizationEvidenceBundle,
++        workspace_root_identity: NativeObjectIdentity | None = None,
++        root_binding_state: object | None = None,
++        retained_handles: tuple[int, ...] = (),
++    ) -> NativeOpenedTargetCapability:
++        """Take an existing binary handle, duplicate it, and query OS identity."""
++        if operation is not ProtectedReadOperation.READ_REPO_FILE:
++            raise ValueError("opened-file capability supports READ_REPO_FILE only")
++        if not callable(getattr(handle, "fileno", None)):
++            raise TypeError("handle must expose a native file descriptor")
++        if type(approved_workspace_root) is not ApprovedWorkspaceRoot:
++            raise TypeError("approved_workspace_root must be typed")
++        if type(destination) is not ReadDestination:
++            raise TypeError("destination must be typed")
++        if type(requested_target) is not RequestedReadTarget:
++            raise TypeError("requested_target must be typed")
++        if type(server_process) is not ServerProcessIdentity:
++            raise TypeError("server_process must be typed")
++        if type(evidence) is not AuthorizationEvidenceBundle:
++            raise TypeError("evidence must be typed")
++
++        try:
++            fd = os.dup(handle.fileno())
++        except (AttributeError, OSError, ValueError) as exc:
++            raise OSError("cannot duplicate an open target handle") from exc
++        try:
++            identity = _identity_from_open_fd(fd)
++            if identity.object_kind is not TargetObjectKind.FILE:
++                raise OSError("opened target is not a regular file")
++            return cls(
++                fd=fd,
++                operation=operation,
++                approved_workspace_root=approved_workspace_root,
++                destination=destination,
++                requested_target=requested_target,
++                native_identity=identity,
++                server_process=server_process,
++                evidence=evidence,
++                workspace_root_identity=workspace_root_identity,
++                root_binding_state=root_binding_state,
++                retained_handles=retained_handles,
++                _seal=_CAPABILITY_SEAL,
++            )
++        except Exception:
++            os.close(fd)
++            raise
++
++    @property
++    def is_open(self) -> bool:
++        return not self._closed
++
++    def read_bytes(self, max_bytes: int) -> bytes:
++        """Read from the owned handle only; never reopen the target by name."""
++        if self._closed:
++            raise OSError("opened target capability is closed")
++        if type(max_bytes) is not int or max_bytes < 0:
++            raise ValueError("max_bytes must be a non-negative integer")
++        before = _identity_from_open_fd(self._fd)
++        if before != self.native_identity:
++            raise OSError("native object identity changed on the owned handle")
++        if os.fstat(self._fd).st_size > max_bytes:
++            raise ValueError("file_too_large")
++        os.lseek(self._fd, 0, os.SEEK_SET)
++        chunks: list[bytes] = []
++        remaining = max_bytes + 1
++        while remaining:
++            chunk = os.read(self._fd, min(64 * 1024, remaining))
++            if not chunk:
++                break
++            chunks.append(chunk)
++            remaining -= len(chunk)
++        content = b"".join(chunks)
++        if len(content) > max_bytes:
++            raise ValueError("file_too_large")
++        after = _identity_from_open_fd(self._fd)
++        if after != self.native_identity:
++            raise OSError("native object identity changed during consumption")
++        return content
++
++    def close(self) -> None:
++        if not self._closed:
++            error: BaseException | None = None
++            try:
++                os.close(self._fd)
++            except BaseException as exc:  # close every retained native handle
++                error = exc
++            if self._retained_handles and sys.platform == "win32":
++                import ctypes
++
++                close_handle = ctypes.WinDLL("kernel32", use_last_error=True).CloseHandle
++                close_handle.argtypes = [ctypes.c_void_p]
++                close_handle.restype = ctypes.c_int
++                for handle in reversed(self._retained_handles):
++                    if not close_handle(ctypes.c_void_p(handle)) and error is None:
++                        error = OSError(ctypes.get_last_error(), "CloseHandle failed")
++            object.__setattr__(self, "_closed", True)
++            if error is not None:
++                raise error
++
++    def __enter__(self) -> NativeOpenedTargetCapability:
++        if self._closed:
++            raise OSError("opened target capability is closed")
++        return self
++
++    def __exit__(self, *_exc: object) -> None:
++        self.close()
++
++
++def _identity_from_open_fd(fd: int) -> NativeObjectIdentity:
++    """Read stable object identity from the open descriptor, not its pathname."""
++    info = os.fstat(fd)
++    if stat.S_ISREG(info.st_mode):
++        kind = TargetObjectKind.FILE
++    elif stat.S_ISDIR(info.st_mode):
++        kind = TargetObjectKind.DIRECTORY
++    else:
++        kind = TargetObjectKind.OTHER
++
++    if sys.platform == "win32":
++        import ctypes
++        import msvcrt
++
++        class _FileIdInfo(ctypes.Structure):
++            _fields_ = [
++                ("VolumeSerialNumber", ctypes.c_ulonglong),
++                ("FileId", ctypes.c_ubyte * 16),
++            ]
++
++        class _FileStandardInfo(ctypes.Structure):
++            _fields_ = [
++                ("AllocationSize", ctypes.c_longlong),
++                ("EndOfFile", ctypes.c_longlong),
++                ("NumberOfLinks", ctypes.c_ulong),
++                ("DeletePending", ctypes.c_ubyte),
++                ("Directory", ctypes.c_ubyte),
++            ]
++
++        handle = ctypes.c_void_p(msvcrt.get_osfhandle(fd))
++        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
++        query = kernel32.GetFileInformationByHandleEx
++        query.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_void_p, ctypes.c_ulong]
++        query.restype = ctypes.c_int
++
++        file_id = _FileIdInfo()
++        if not query(handle, 18, ctypes.byref(file_id), ctypes.sizeof(file_id)):
++            raise OSError(ctypes.get_last_error(), "FileIdInfo query failed")
++        standard = _FileStandardInfo()
++        if not query(handle, 1, ctypes.byref(standard), ctypes.sizeof(standard)):
++            raise OSError(ctypes.get_last_error(), "FileStandardInfo query failed")
++        native_kind = TargetObjectKind.DIRECTORY if standard.Directory else kind
++        return NativeObjectIdentity(
++            volume_serial=int(file_id.VolumeSerialNumber),
++            file_id=bytes(file_id.FileId),
++            object_kind=native_kind,
++        )
++
++    file_id = int(info.st_ino).to_bytes(16, "little", signed=False)
++    return NativeObjectIdentity(
++        volume_serial=int(info.st_dev),
++        file_id=file_id,
++        object_kind=kind,
++    )
+diff --git a/IABV_v1.5/src/iabv_v15/infra/mcp/audit_tools/protected_read_composition.py b/IABV_v1.5/src/iabv_v15/infra/mcp/audit_tools/protected_read_composition.py
+new file mode 100644
+index 00000000..5c53f0d0
+--- /dev/null
++++ b/IABV_v1.5/src/iabv_v15/infra/mcp/audit_tools/protected_read_composition.py
+@@ -0,0 +1,136 @@
++"""Deny-first sequencing for a future root-bound protected file read.
++
++The MCP server constructs this flow with an unconfigured coordinator and no
++root provider. The configurable collaborators exist only as internal seams;
++they are not constructor arguments, MCP inputs, container fields or settings.
++Python object privacy is not a boundary against arbitrary in-process code.
++"""
++
++from __future__ import annotations
++
++from typing import Any, Protocol
++
++from iabv_v15.infra.mcp.audit_tools.opened_target import NativeOpenedTargetCapability
++from iabv_v15.infra.mcp.audit_tools.rooted_open import (
++    NativeWorkspaceRootCapability,
++    open_target_relative_to_root,
++)
++from iabv_v15.services.security.read_authorization import (
++    AuthorizationEvidenceBundle,
++    ProtectedReadOperation,
++    ProtectedReadRequest,
++    ReadDestination,
++    ReadAuthorizationCoordinator,
++    RequestedReadTarget,
++)
++
++
++class _RootProvider(Protocol):
++    def acquire(self) -> NativeWorkspaceRootCapability: ...
++
++
++class ProtectedReadComposer:
++    """Compose G1/G2 preflight, rooted open, final decision and same-cap read."""
++
++    __slots__ = ("_coordinator", "_root_provider", "_opener", "_reader")
++
++    def __init__(
++        self,
++        coordinator: Any,
++        root_provider: _RootProvider | None,
++        *,
++        opener: Any = open_target_relative_to_root,
++        reader: Any,
++    ) -> None:
++        self._coordinator = coordinator
++        self._root_provider = root_provider
++        self._opener = opener
++        self._reader = reader
++
++    def read_file(self, raw_target: object) -> dict[str, object]:
++        request = ProtectedReadRequest(
++            operation=ProtectedReadOperation.READ_REPO_FILE,
++            target=RequestedReadTarget(raw_target),
++        )
++        # The configured production coordinator has no G1/G2 providers and
++        # denies here, before the root provider or target path is touched.
++        try:
++            preflight = self._coordinator.assess(request)
++        except Exception:
++            return _blocked("AUTHORIZATION_PREFLIGHT_FAILED")
++        if not bool(getattr(preflight, "authorized", False)):
++            return preflight.to_payload()
++        if self._root_provider is None:
++            return _blocked("HOST_ROOT_PROVIDER_NOT_CONFIGURED")
++
++        root: NativeWorkspaceRootCapability | None = None
++        target: NativeOpenedTargetCapability | None = None
++        try:
++            root = self._root_provider.acquire()
++            if type(root) is not NativeWorkspaceRootCapability or not root.is_open:
++                return _blocked("HOST_ROOT_PROVIDER_INVALID")
++            target = self._opener(
++                root,
++                request.target,
++                operation=request.operation,
++                destination=ReadDestination(
++                    root.approved_workspace_root.root_id,
++                    root.approved_workspace_root.root_version,
++                    root.approved_workspace_root.root_digest,
++                ),
++                evidence=AuthorizationEvidenceBundle(),
++            )
++            if type(target) is not NativeOpenedTargetCapability or not target.is_open:
++                return _blocked("OPENED_TARGET_CAPABILITY_INVALID")
++            final_request = ProtectedReadRequest(
++                operation=request.operation,
++                target=request.target,
++                opened_target=target,
++                evidence=target.evidence,
++            )
++            decision = self._coordinator.assess(final_request)
++            if (
++                not bool(getattr(decision, "authorized", False))
++                or getattr(decision, "opened_target", None) is not target
++            ):
++                payload = decision.to_payload()
++                payload["authorized"] = False
++                return payload
++            # The exact object assessed above is the only object passed to the
++            # reader; there is no pathname resolution or second open here.
++            return self._reader(target)
++        except Exception:
++            return _blocked("ROOTED_READ_COMPOSITION_FAILED")
++        finally:
++            try:
++                if target is not None and target.is_open:
++                    target.close()
++            finally:
++                if root is not None and root.is_open:
++                    root.close()
++
++
++def _blocked(reason: str) -> dict[str, object]:
++    from iabv_v15.services.security.read_authorization import (
++        AuthorizationGate,
++        AuthorizationOutcome,
++        AuthorizationRequirement,
++        GateAssessment,
++        GateEvidenceState,
++        ReadAuthorizationDecision,
++    )
++
++    decision = ReadAuthorizationDecision(
++        ProtectedReadOperation.READ_REPO_FILE,
++        AuthorizationOutcome.DENIED,
++        reason,
++        tuple(
++            GateAssessment(gate, requirement, GateEvidenceState.EVIDENCE_NOT_ESTABLISHED)
++            for gate, requirement in (
++                (AuthorizationGate.G1, AuthorizationRequirement.G1_PRINCIPAL_MANDATE),
++                (AuthorizationGate.G2, AuthorizationRequirement.G2_VERSIONED_POLICY_FRESHNESS_REVOCATION),
++                (AuthorizationGate.G3, AuthorizationRequirement.G3_ROOT_DESTINATION_OBJECT_AND_SERVER_BINDING),
++            )
++        ),
++    )
++    return decision.to_payload()
+diff --git a/IABV_v1.5/src/iabv_v15/infra/mcp/audit_tools/rooted_open.py b/IABV_v1.5/src/iabv_v15/infra/mcp/audit_tools/rooted_open.py
+new file mode 100644
+index 00000000..746af235
+--- /dev/null
++++ b/IABV_v1.5/src/iabv_v15/infra/mcp/audit_tools/rooted_open.py
+@@ -0,0 +1,431 @@
++"""Fail-closed Windows component opener rooted at an already-open directory.
++
++There is deliberately no production root provider in this module or in the
++MCP bootstrap. A future host-owned provider must supply a live directory
++handle that it opened without delete sharing and bind its provenance to the
++approved workspace and server. This module only consumes that capability.
++"""
++
++from __future__ import annotations
++
++import ctypes
++import os
++import re
++import sys
++from ctypes import wintypes
++from typing import BinaryIO
++
++from iabv_v15.infra.mcp.audit_tools.opened_target import NativeOpenedTargetCapability
++from iabv_v15.services.security.read_authorization import (
++    ApprovedWorkspaceRoot,
++    AuthorizationEvidenceBundle,
++    GateEvidenceState,
++    NativeObjectIdentity,
++    ProtectedReadOperation,
++    ReadDestination,
++    RequestedReadTarget,
++    ServerProcessIdentity,
++    TargetObjectKind,
++)
++
++_ROOT_ISSUER_SEAL = object()
++_FILE_OPEN = 0x00000001
++_FILE_OPEN_REPARSE_POINT = 0x00200000
++_FILE_SYNCHRONOUS_IO_NONALERT = 0x00000020
++_OBJ_CASE_INSENSITIVE = 0x00000040
++_FILE_READ_DATA = 0x00000001
++_FILE_READ_ATTRIBUTES = 0x00000080
++_FILE_TRAVERSE = 0x00000020
++_SYNCHRONIZE = 0x00100000
++_FILE_SHARE_READ = 0x00000001
++_FILE_SHARE_WRITE = 0x00000002
++_FILE_ATTRIBUTE_REPARSE_POINT = 0x00000400
++_FILE_INFO_STANDARD = 1
++_FILE_INFO_ATTRIBUTE_TAG = 9
++_FILE_INFO_ID = 18
++_INVALID_COMPONENT_CHARS = re.compile(r'[<>:"/\\|?*\x00-\x1f]')
++_DOS_DEVICE_NAME = re.compile(
++    r"(?i)^(?:CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\..*)?$"
++)
++
++
++class _UnicodeString(ctypes.Structure):
++    _fields_ = [
++        ("Length", wintypes.USHORT),
++        ("MaximumLength", wintypes.USHORT),
++        ("Buffer", ctypes.c_void_p),
++    ]
++
++
++class _ObjectAttributes(ctypes.Structure):
++    _fields_ = [
++        ("Length", wintypes.ULONG),
++        ("RootDirectory", wintypes.HANDLE),
++        ("ObjectName", ctypes.POINTER(_UnicodeString)),
++        ("Attributes", wintypes.ULONG),
++        ("SecurityDescriptor", ctypes.c_void_p),
++        ("SecurityQualityOfService", ctypes.c_void_p),
++    ]
++
++
++class _IoStatusBlock(ctypes.Structure):
++    _fields_ = [("Status", ctypes.c_void_p), ("Information", ctypes.c_size_t)]
++
++
++class _FileIdInfo(ctypes.Structure):
++    _fields_ = [("VolumeSerialNumber", ctypes.c_ulonglong), ("FileId", ctypes.c_ubyte * 16)]
++
++
++class _FileStandardInfo(ctypes.Structure):
++    _fields_ = [
++        ("AllocationSize", ctypes.c_longlong),
++        ("EndOfFile", ctypes.c_longlong),
++        ("NumberOfLinks", wintypes.DWORD),
++        ("DeletePending", ctypes.c_ubyte),
++        ("Directory", ctypes.c_ubyte),
++    ]
++
++
++class _FileAttributeTagInfo(ctypes.Structure):
++    _fields_ = [("FileAttributes", wintypes.DWORD), ("ReparseTag", wintypes.DWORD)]
++
++
++class NativeWorkspaceRootCapability:
++    """Owns a duplicate root handle and provider-bound root identity.
++
++    The private issuer seal prevents ordinary callers from manufacturing this
++    capability through the public API. It is not a security boundary against
++    arbitrary code already executing in this Python process.
++    """
++
++    __slots__ = (
++        "_handle",
++        "_closed",
++        "approved_workspace_root",
++        "identity",
++        "provider_id",
++        "workspace_context_id",
++        "server_process",
++        "mutation_sharing_denied",
++        "_sealed",
++    )
++
++    def __init__(
++        self,
++        *,
++        handle: int,
++        approved_workspace_root: ApprovedWorkspaceRoot,
++        identity: NativeObjectIdentity,
++        provider_id: str,
++        workspace_context_id: str,
++        server_process: ServerProcessIdentity,
++        mutation_sharing_denied: bool,
++        _issuer_seal: object,
++    ) -> None:
++        if _issuer_seal is not _ROOT_ISSUER_SEAL:
++            raise TypeError("workspace roots must be issued by the host-owned provider")
++        if not mutation_sharing_denied:
++            raise ValueError("root handle must deny write and delete sharing while in use")
++        if type(approved_workspace_root) is not ApprovedWorkspaceRoot:
++            raise TypeError("approved_workspace_root must be typed")
++        if type(identity) is not NativeObjectIdentity or identity.object_kind is not TargetObjectKind.DIRECTORY:
++            raise TypeError("identity must describe a native directory handle")
++        if type(server_process) is not ServerProcessIdentity:
++            raise TypeError("server_process must be typed")
++        if any(type(value) is not str or not value for value in (provider_id, workspace_context_id)):
++            raise ValueError("provider and workspace context identities must be non-empty")
++        self._handle = handle
++        self._closed = False
++        self.approved_workspace_root = approved_workspace_root
++        self.identity = identity
++        self.provider_id = provider_id
++        self.workspace_context_id = workspace_context_id
++        self.server_process = server_process
++        self.mutation_sharing_denied = mutation_sharing_denied
++        self._sealed = True
++
++    def __setattr__(self, name: str, value: object) -> None:
++        if getattr(self, "_sealed", False):
++            raise AttributeError("workspace-root capability metadata is immutable")
++        object.__setattr__(self, name, value)
++
++    @classmethod
++    def _from_host_provider_handle(
++        cls,
++        handle: int,
++        *,
++        approved_workspace_root: ApprovedWorkspaceRoot,
++        provider_id: str,
++        workspace_context_id: str,
++        server_process: ServerProcessIdentity,
++        mutation_sharing_denied: bool,
++        _issuer_seal: object,
++    ) -> NativeWorkspaceRootCapability:
++        if _issuer_seal is not _ROOT_ISSUER_SEAL:
++            raise TypeError("workspace roots must be issued by the host-owned provider")
++        native = _WindowsNative()
++        duplicate = native.duplicate_handle(handle)
++        try:
++            identity, standard, attributes = native.query_identity(duplicate)
++            if not standard.Directory:
++                raise OSError("workspace root handle is not a directory")
++            if attributes.FileAttributes & _FILE_ATTRIBUTE_REPARSE_POINT:
++                raise OSError("workspace root cannot be a reparse point")
++            return cls(
++                handle=duplicate,
++                approved_workspace_root=approved_workspace_root,
++                identity=identity,
++                provider_id=provider_id,
++                workspace_context_id=workspace_context_id,
++                server_process=server_process,
++                mutation_sharing_denied=mutation_sharing_denied,
++                _issuer_seal=_issuer_seal,
++            )
++        except Exception:
++            native.close_handle(duplicate)
++            raise
++
++    @property
++    def is_open(self) -> bool:
++        return not self._closed
++
++    def close(self) -> None:
++        if self._closed:
++            return
++        _WindowsNative().close_handle(self._handle)
++        object.__setattr__(self, "_closed", True)
++
++
++class _WindowsNative:
++    """Small, explicitly typed binding to documented user-mode Winternl APIs."""
++
++    def __init__(self) -> None:
++        if sys.platform != "win32":
++            raise OSError("root-relative native opens are Windows-only")
++        self.kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
++        self.ntdll = ctypes.WinDLL("ntdll")
++        self._set_prototypes()
++
++    def _set_prototypes(self) -> None:
++        self.kernel32.GetCurrentProcess.argtypes = []
++        self.kernel32.GetCurrentProcess.restype = wintypes.HANDLE
++        self.kernel32.DuplicateHandle.argtypes = [
++            wintypes.HANDLE, wintypes.HANDLE, wintypes.HANDLE,
++            ctypes.POINTER(wintypes.HANDLE), wintypes.DWORD,
++            wintypes.BOOL, wintypes.DWORD,
++        ]
++        self.kernel32.DuplicateHandle.restype = wintypes.BOOL
++        self.kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
++        self.kernel32.CloseHandle.restype = wintypes.BOOL
++        self.kernel32.GetFileInformationByHandleEx.argtypes = [
++            wintypes.HANDLE, ctypes.c_int, ctypes.c_void_p, wintypes.DWORD,
++        ]
++        self.kernel32.GetFileInformationByHandleEx.restype = wintypes.BOOL
++        self.ntdll.NtCreateFile.argtypes = [
++            ctypes.POINTER(wintypes.HANDLE), wintypes.DWORD,
++            ctypes.POINTER(_ObjectAttributes), ctypes.POINTER(_IoStatusBlock),
++            ctypes.c_void_p, wintypes.ULONG, wintypes.ULONG, wintypes.ULONG,
++            wintypes.ULONG, ctypes.c_void_p, wintypes.ULONG,
++        ]
++        self.ntdll.NtCreateFile.restype = ctypes.c_long
++
++    def duplicate_handle(self, handle: int) -> int:
++        duplicate = wintypes.HANDLE()
++        current = self.kernel32.GetCurrentProcess()
++        if not self.kernel32.DuplicateHandle(
++            current, wintypes.HANDLE(handle), current, ctypes.byref(duplicate),
++            0, False, 0x00000002,  # DUPLICATE_SAME_ACCESS
++        ):
++            raise ctypes.WinError(ctypes.get_last_error())
++        return int(duplicate.value)
++
++    def close_handle(self, handle: int) -> None:
++        if not self.kernel32.CloseHandle(wintypes.HANDLE(handle)):
++            raise ctypes.WinError(ctypes.get_last_error())
++
++    def query_identity(
++        self, handle: int
++    ) -> tuple[NativeObjectIdentity, _FileStandardInfo, _FileAttributeTagInfo]:
++        file_id = _FileIdInfo()
++        standard = _FileStandardInfo()
++        attributes = _FileAttributeTagInfo()
++        for info_class, instance in (
++            (_FILE_INFO_ID, file_id),
++            (_FILE_INFO_STANDARD, standard),
++            (_FILE_INFO_ATTRIBUTE_TAG, attributes),
++        ):
++            if not self.kernel32.GetFileInformationByHandleEx(
++                wintypes.HANDLE(handle), info_class, ctypes.byref(instance), ctypes.sizeof(instance)
++            ):
++                raise ctypes.WinError(ctypes.get_last_error())
++        kind = TargetObjectKind.DIRECTORY if standard.Directory else TargetObjectKind.FILE
++        identity = NativeObjectIdentity(
++            volume_serial=int(file_id.VolumeSerialNumber),
++            file_id=bytes(file_id.FileId),
++            object_kind=kind,
++        )
++        return identity, standard, attributes
++
++    def open_component(self, parent_handle: int, component: str, *, final: bool) -> int:
++        encoded = ctypes.create_unicode_buffer(component)
++        byte_length = len(component.encode("utf-16-le"))
++        name = _UnicodeString(byte_length, byte_length, ctypes.cast(encoded, ctypes.c_void_p))
++        attributes = _ObjectAttributes(
++            ctypes.sizeof(_ObjectAttributes),
++            wintypes.HANDLE(parent_handle),
++            ctypes.pointer(name),
++            _OBJ_CASE_INSENSITIVE,
++            None,
++            None,
++        )
++        io_status = _IoStatusBlock()
++        result = wintypes.HANDLE()
++        status = int(
++            self.ntdll.NtCreateFile(
++                ctypes.byref(result),
++                (_FILE_READ_DATA if final else _FILE_TRAVERSE)
++                | _FILE_READ_ATTRIBUTES
++                | _SYNCHRONIZE,
++                ctypes.byref(attributes),
++                ctypes.byref(io_status),
++                None,
++                0,
++                _FILE_SHARE_READ,  # deny concurrent write and delete opens
++                _FILE_OPEN,
++                _FILE_OPEN_REPARSE_POINT | _FILE_SYNCHRONOUS_IO_NONALERT,
++                None,
++                0,
++            )
++        )
++        if status < 0:
++            raise OSError(f"NtCreateFile failed with NTSTATUS 0x{status & 0xffffffff:08X}")
++        if not result.value:
++            raise OSError("NtCreateFile succeeded without returning a handle")
++        return int(result.value)
++
++
++def _validated_components(raw_target: object) -> tuple[str, ...]:
++    if type(raw_target) is not str or not raw_target:
++        raise ValueError("target must be a non-empty relative string")
++    if raw_target.startswith(("/", "\\")) or re.match(r"(?i)^[a-z]:", raw_target):
++        raise ValueError("absolute target paths are forbidden")
++    parts = tuple(raw_target.replace("\\", "/").split("/"))
++    if any(
++        not part
++        or part in (".", "..")
++        or part.endswith((".", " "))
++        or _INVALID_COMPONENT_CHARS.search(part)
++        or _DOS_DEVICE_NAME.match(part)
++        for part in parts
++    ):
++        raise ValueError("target contains an invalid or non-component path element")
++    return parts
++
++
++def open_target_relative_to_root(
++    root: NativeWorkspaceRootCapability,
++    target: RequestedReadTarget,
++    *,
++    operation: ProtectedReadOperation,
++    destination: ReadDestination,
++    evidence: AuthorizationEvidenceBundle,
++) -> NativeOpenedTargetCapability:
++    """Open every name relative to its validated parent handle, then bind final.
++
++    Every component is opened with FILE_OPEN_REPARSE_POINT and inspected from
++    that handle. Intermediate handles omit FILE_SHARE_DELETE and stay alive
++    through reader consumption, preventing concurrent rename while held on
++    filesystems that honor Windows share-access semantics.
++    """
++    if type(root) is not NativeWorkspaceRootCapability or not root.is_open:
++        raise OSError("trusted workspace root capability is unavailable")
++    if operation is not ProtectedReadOperation.READ_REPO_FILE:
++        raise ValueError("rooted opener supports READ_REPO_FILE only")
++    if type(target) is not RequestedReadTarget:
++        raise TypeError("target must be a RequestedReadTarget")
++    if type(destination) is not ReadDestination or type(evidence) is not AuthorizationEvidenceBundle:
++        raise TypeError("destination and evidence must be typed")
++    components = _validated_components(target.raw_value)
++    native = _WindowsNative()
++    observed_root, root_standard, root_attributes = native.query_identity(root._handle)
++    if (
++        observed_root != root.identity
++        or not root_standard.Directory
++        or root_attributes.FileAttributes & _FILE_ATTRIBUTE_REPARSE_POINT
++        or not root.mutation_sharing_denied
++    ):
++        raise OSError("root handle binding is invalid")
++
++    retained: list[int] = [native.duplicate_handle(root._handle)]
++    parent = retained[0]
++    final_handle: int | None = None
++    try:
++        for index, component in enumerate(components):
++            final = index == len(components) - 1
++            opened = native.open_component(parent, component, final=final)
++            try:
++                identity, standard, attributes = native.query_identity(opened)
++                if attributes.FileAttributes & _FILE_ATTRIBUTE_REPARSE_POINT:
++                    raise OSError("reparse points are forbidden")
++                if identity.volume_serial != root.identity.volume_serial:
++                    raise OSError("component crossed the workspace root volume")
++                if final:
++                    if standard.Directory:
++                        raise OSError("target is not a regular file")
++                    if standard.NumberOfLinks != 1:
++                        raise OSError("target hard links are forbidden")
++                    final_handle = opened
++                    break
++                if not standard.Directory:
++                    raise OSError("intermediate component is not a directory")
++                retained.append(opened)
++                parent = opened
++            except Exception:
++                if opened != final_handle and opened not in retained:
++                    native.close_handle(opened)
++                raise
++
++        assert final_handle is not None
++        import msvcrt
++
++        fd = msvcrt.open_osfhandle(final_handle, os.O_RDONLY | os.O_BINARY)
++        final_handle = None  # ownership transferred to the CRT descriptor
++        source: BinaryIO = os.fdopen(fd, "rb")
++        try:
++            return NativeOpenedTargetCapability._from_open_handle(
++                source,
++                operation=operation,
++                approved_workspace_root=root.approved_workspace_root,
++                destination=destination,
++                requested_target=target,
++                server_process=root.server_process,
++                evidence=evidence,
++                workspace_root_identity=root.identity,
++                # Native relative traversal was observed, but no production
++                # host-owned root issuer establishes the authority of this
++                # root. Do not represent the synthetic binding as G3 evidence.
++                root_binding_state=GateEvidenceState.EVIDENCE_NOT_ESTABLISHED,
++                retained_handles=tuple(retained),
++            )
++        except Exception:
++            for handle in reversed(retained):
++                try:
++                    native.close_handle(handle)
++                except OSError:
++                    pass
++            retained.clear()
++            raise
++        finally:
++            source.close()
++    except Exception:
++        if final_handle is not None:
++            try:
++                native.close_handle(final_handle)
++            except OSError:
++                pass
++        for handle in reversed(retained):
++            try:
++                native.close_handle(handle)
++            except OSError:
++                pass
++        raise
+diff --git a/IABV_v1.5/src/iabv_v15/services/security/read_authorization.py b/IABV_v1.5/src/iabv_v15/services/security/read_authorization.py
+new file mode 100644
+index 00000000..ef0726bf
+--- /dev/null
++++ b/IABV_v1.5/src/iabv_v15/services/security/read_authorization.py
+@@ -0,0 +1,275 @@
++"""Typed, deny-only contract for protected repository observations.
++
++This module intentionally has no evidence providers and no authorized result.
++Its data classes describe bindings that a future governed implementation
++would have to prove; caller-supplied values are never trusted as proof.
++"""
++
++from __future__ import annotations
++
++from dataclasses import dataclass, field
++from enum import Enum
++from typing import Protocol
++
++
++class ProtectedReadOperation(str, Enum):
++    READ_REPO_FILE = "read_repo_file"
++    LIST_REPO_DIRECTORY = "list_repo_directory"
++    GIT_STATUS_AND_LOG = "git_status_and_log"
++
++
++class AuthorizationGate(str, Enum):
++    G1 = "G1"
++    G2 = "G2"
++    G3 = "G3"
++
++
++class GateEvidenceState(str, Enum):
++    CONFIGURATION_ABSENT = "CONFIGURATION_ABSENT"
++    EVIDENCE_NOT_ESTABLISHED = "EVIDENCE_NOT_ESTABLISHED"
++    EVIDENCE_INVALID = "EVIDENCE_INVALID"
++    EXPIRED = "EXPIRED"
++    REVOKED = "REVOKED"
++
++
++class AuthorizationRequirement(str, Enum):
++    G1_PRINCIPAL_MANDATE = "G1_PRINCIPAL_MANDATE"
++    G2_VERSIONED_POLICY_FRESHNESS_REVOCATION = "G2_VERSIONED_POLICY_FRESHNESS_REVOCATION"
++    G3_ROOT_DESTINATION_OBJECT_AND_SERVER_BINDING = "G3_ROOT_DESTINATION_OBJECT_AND_SERVER_BINDING"
++
++
++class AuthorizationOutcome(str, Enum):
++    DENIED = "DENIED"
++    ERROR = "ERROR"
++
++
++class TargetObjectKind(str, Enum):
++    FILE = "FILE"
++    DIRECTORY = "DIRECTORY"
++    OTHER = "OTHER"
++
++
++@dataclass(frozen=True, slots=True)
++class NativeObjectIdentity:
++    """Identity read from an open OS handle, never inferred from a path string."""
++
++    volume_serial: int
++    file_id: bytes
++    object_kind: TargetObjectKind
++
++    def __post_init__(self) -> None:
++        if type(self.volume_serial) is not int or self.volume_serial < 0:
++            raise ValueError("volume_serial must be a non-negative integer")
++        if type(self.file_id) is not bytes or not self.file_id:
++            raise ValueError("file_id must be non-empty bytes obtained from the OS")
++        if type(self.object_kind) is not TargetObjectKind:
++            raise TypeError("object_kind must be a TargetObjectKind")
++
++
++@dataclass(frozen=True, slots=True)
++class PrincipalMandateEvidence:
++    """Untrusted shape for a principal and its mandate; not evidence by itself."""
++
++    principal_id: str
++    mandate_id: str
++    mandate_version: str
++    issuer_id: str
++
++
++@dataclass(frozen=True, slots=True)
++class PolicyEvidence:
++    """Immutable policy identity and version expected by a future verifier."""
++
++    policy_id: str
++    policy_version: str
++    policy_digest: str
++
++
++@dataclass(frozen=True, slots=True)
++class ApprovedWorkspaceRoot:
++    """Root binding; the path is descriptive and is never resolved here."""
++
++    root_id: str
++    root_version: str
++    root_digest: str
++
++
++@dataclass(frozen=True, slots=True)
++class RequestedReadTarget:
++    """Raw target supplied to a handler, before any path resolution."""
++
++    raw_value: object
++
++
++@dataclass(frozen=True, slots=True)
++class ReadDestination:
++    """Destination identity expected in an authorization binding."""
++
++    destination_id: str
++    destination_version: str
++    destination_digest: str
++
++
++@dataclass(frozen=True, slots=True)
++class ReadTargetBinding:
++    """A future proof binding an approved root to an exact requested target."""
++
++    root_id: str
++    root_version: str
++    target_digest: str
++
++
++@dataclass(frozen=True, slots=True)
++class OpenObjectCapability:
++    """Identity of an already-open object a reader would consume directly."""
++
++    object_id: str
++    object_version: str
++    handle_identity: str
++
++
++@dataclass(frozen=True, slots=True)
++class ServerProcessIdentity:
++    """Server/process identity that a future decision must bind."""
++
++    server_id: str
++    process_id: int
++    executable_digest: str
++
++
++class OpenedTargetCapability(Protocol):
++    """Internal handle capability; its metadata is not authorization evidence."""
++
++    operation: ProtectedReadOperation
++    approved_workspace_root: ApprovedWorkspaceRoot
++    workspace_root_identity: NativeObjectIdentity | None
++    destination: ReadDestination
++    requested_target: RequestedReadTarget
++    native_identity: NativeObjectIdentity
++    server_process: ServerProcessIdentity
++    evidence: AuthorizationEvidenceBundle
++    root_binding_state: GateEvidenceState
++
++    @property
++    def is_open(self) -> bool: ...
++
++    def read_bytes(self, max_bytes: int) -> bytes: ...
++
++
++@dataclass(frozen=True, slots=True)
++class AuthorizationEvidenceBundle:
++    """Caller-shaped evidence fields, explicitly ignored by this deny-only gate."""
++
++    principal_mandate: PrincipalMandateEvidence | None = None
++    policy: PolicyEvidence | None = None
++    workspace_root: ApprovedWorkspaceRoot | None = None
++    destination: ReadDestination | None = None
++    target_binding: ReadTargetBinding | None = None
++    open_object: OpenObjectCapability | None = None
++    server_process: ServerProcessIdentity | None = None
++
++
++@dataclass(frozen=True, slots=True)
++class ProtectedReadRequest:
++    operation: ProtectedReadOperation
++    target: RequestedReadTarget | None = None
++    opened_target: OpenedTargetCapability | None = None
++    evidence: AuthorizationEvidenceBundle = field(default_factory=AuthorizationEvidenceBundle)
++
++
++@dataclass(frozen=True, slots=True)
++class GateAssessment:
++    gate: AuthorizationGate
++    requirement: AuthorizationRequirement
++    state: GateEvidenceState
++
++
++@dataclass(frozen=True, slots=True)
++class ReadAuthorizationDecision:
++    operation: ProtectedReadOperation | None
++    outcome: AuthorizationOutcome
++    reason: str
++    assessments: tuple[GateAssessment, ...]
++    opened_target: OpenedTargetCapability | None = None
++
++    def __post_init__(self) -> None:
++        if type(self.outcome) is not AuthorizationOutcome:
++            raise TypeError("outcome must be an AuthorizationOutcome")
++        if type(self.reason) is not str or not self.reason:
++            raise ValueError("reason must be a non-empty string")
++        if type(self.assessments) is not tuple:
++            raise TypeError("assessments must be a tuple")
++        if self.outcome in (AuthorizationOutcome.DENIED, AuthorizationOutcome.ERROR):
++            gates = tuple(item.gate for item in self.assessments)
++            if gates != (AuthorizationGate.G1, AuthorizationGate.G2, AuthorizationGate.G3):
++                raise ValueError("denial/error must report G1, G2, and G3 exactly once in order")
++
++    @property
++    def authorized(self) -> bool:
++        """No constructor-controlled or positive authorization state exists."""
++        return False
++
++    @property
++    def missing_requirements(self) -> tuple[GateAssessment, ...]:
++        return self.assessments
++
++    def to_payload(self) -> dict[str, object]:
++        return {
++            "authorized": False,
++            "decision": self.outcome.value,
++            "error": "READ_AUTHORIZATION_INVALID_REQUEST" if self.outcome is AuthorizationOutcome.ERROR else "READ_AUTHORIZATION_NOT_ESTABLISHED",
++            "reason": self.reason,
++            "operation": self.operation.value if self.operation is not None else None,
++            "missing_requirements": [
++                {"gate": item.gate.value, "requirement": item.requirement.value, "state": item.state.value}
++                for item in self.assessments
++            ],
++        }
++
++
++_GATE_REQUIREMENTS = (
++    (AuthorizationGate.G1, AuthorizationRequirement.G1_PRINCIPAL_MANDATE),
++    (AuthorizationGate.G2, AuthorizationRequirement.G2_VERSIONED_POLICY_FRESHNESS_REVOCATION),
++    (AuthorizationGate.G3, AuthorizationRequirement.G3_ROOT_DESTINATION_OBJECT_AND_SERVER_BINDING),
++)
++
++
++class ReadAuthorizationCoordinator:
++    """Fixed unconfigured coordinator; no provider or positive path is exposed."""
++
++    __slots__ = ()
++
++    @classmethod
++    def unconfigured(cls) -> ReadAuthorizationCoordinator:
++        return cls()
++
++    def assess(self, request: ProtectedReadRequest) -> ReadAuthorizationDecision:
++        if type(request) is not ProtectedReadRequest or type(request.operation) is not ProtectedReadOperation:
++            return self._decision(None, AuthorizationOutcome.ERROR, GateEvidenceState.EVIDENCE_INVALID, "INVALID_READ_AUTHORIZATION_REQUEST")
++        if request.target is not None and type(request.target) is not RequestedReadTarget:
++            return self._decision(request.operation, AuthorizationOutcome.ERROR, GateEvidenceState.EVIDENCE_INVALID, "INVALID_READ_AUTHORIZATION_TARGET")
++        # Neither caller-shaped evidence nor a container can configure this coordinator.
++        return self._decision(
++            request.operation,
++            AuthorizationOutcome.DENIED,
++            GateEvidenceState.CONFIGURATION_ABSENT,
++            "G1_G2_G3_NOT_ESTABLISHED",
++            opened_target=request.opened_target,
++        )
++
++    @staticmethod
++    def _decision(
++        operation: ProtectedReadOperation | None,
++        outcome: AuthorizationOutcome,
++        state: GateEvidenceState,
++        reason: str,
++        *,
++        opened_target: OpenedTargetCapability | None = None,
++    ) -> ReadAuthorizationDecision:
++        return ReadAuthorizationDecision(
++            operation=operation,
++            outcome=outcome,
++            reason=reason,
++            assessments=tuple(GateAssessment(gate, requirement, state) for gate, requirement in _GATE_REQUIREMENTS),
++            opened_target=opened_target,
++        )
+diff --git a/IABV_v1.5/tests/test_read_authorization.py b/IABV_v1.5/tests/test_read_authorization.py
+new file mode 100644
+index 00000000..ff849b21
+--- /dev/null
++++ b/IABV_v1.5/tests/test_read_authorization.py
+@@ -0,0 +1,135 @@
++from __future__ import annotations
++
++from dataclasses import fields
++
++from iabv_v15.services.security.read_authorization import (
++    ApprovedWorkspaceRoot,
++    AuthorizationEvidenceBundle,
++    AuthorizationGate,
++    AuthorizationOutcome,
++    AuthorizationRequirement,
++    GateAssessment,
++    GateEvidenceState,
++    OpenObjectCapability,
++    PolicyEvidence,
++    PrincipalMandateEvidence,
++    ProtectedReadOperation,
++    ProtectedReadRequest,
++    ReadAuthorizationCoordinator,
++    ReadAuthorizationDecision,
++    ReadDestination,
++    ReadTargetBinding,
++    RequestedReadTarget,
++    ServerProcessIdentity,
++)
++
++
++def test_unconfigured_coordinator_denies_each_gate_independently() -> None:
++    decision = ReadAuthorizationCoordinator.unconfigured().assess(
++        ProtectedReadRequest(ProtectedReadOperation.READ_REPO_FILE)
++    )
++
++    assert decision.outcome is AuthorizationOutcome.DENIED
++    assert decision.authorized is False
++    assert [(item.gate, item.state) for item in decision.assessments] == [
++        (AuthorizationGate.G1, GateEvidenceState.CONFIGURATION_ABSENT),
++        (AuthorizationGate.G2, GateEvidenceState.CONFIGURATION_ABSENT),
++        (AuthorizationGate.G3, GateEvidenceState.CONFIGURATION_ABSENT),
++    ]
++    assert [item.requirement for item in decision.assessments] == [
++        AuthorizationRequirement.G1_PRINCIPAL_MANDATE,
++        AuthorizationRequirement.G2_VERSIONED_POLICY_FRESHNESS_REVOCATION,
++        AuthorizationRequirement.G3_ROOT_DESTINATION_OBJECT_AND_SERVER_BINDING,
++    ]
++
++
++def test_gate_states_keep_absent_invalid_expired_and_revoked_distinct() -> None:
++    states = (
++        GateEvidenceState.CONFIGURATION_ABSENT,
++        GateEvidenceState.EVIDENCE_NOT_ESTABLISHED,
++        GateEvidenceState.EVIDENCE_INVALID,
++        GateEvidenceState.EXPIRED,
++        GateEvidenceState.REVOKED,
++    )
++    assert len(set(states)) == 5
++
++    assessments = (
++        GateAssessment(AuthorizationGate.G1, AuthorizationRequirement.G1_PRINCIPAL_MANDATE, GateEvidenceState.REVOKED),
++        GateAssessment(AuthorizationGate.G2, AuthorizationRequirement.G2_VERSIONED_POLICY_FRESHNESS_REVOCATION, GateEvidenceState.EXPIRED),
++        GateAssessment(AuthorizationGate.G3, AuthorizationRequirement.G3_ROOT_DESTINATION_OBJECT_AND_SERVER_BINDING, GateEvidenceState.EVIDENCE_NOT_ESTABLISHED),
++    )
++    decision = ReadAuthorizationDecision(
++        ProtectedReadOperation.READ_REPO_FILE,
++        AuthorizationOutcome.DENIED,
++        "gate evidence unavailable",
++        assessments,
++    )
++    assert [item["state"] for item in decision.to_payload()["missing_requirements"]] == [
++        "REVOKED",
++        "EXPIRED",
++        "EVIDENCE_NOT_ESTABLISHED",
++    ]
++
++
++def test_authorization_outcome_has_no_positive_member_and_payload_is_fail_closed() -> None:
++    assert not hasattr(AuthorizationOutcome, "AUTHORIZED")
++    decision = ReadAuthorizationCoordinator.unconfigured().assess(
++        ProtectedReadRequest(ProtectedReadOperation.LIST_REPO_DIRECTORY)
++    )
++    payload = decision.to_payload()
++    assert payload["authorized"] is False
++    assert payload["decision"] == "DENIED"
++    assert payload["error"] == "READ_AUTHORIZATION_NOT_ESTABLISHED"
++    assert payload["operation"] == "list_repo_directory"
++
++
++def test_caller_supplied_complete_synthetic_evidence_does_not_authorize() -> None:
++    evidence = AuthorizationEvidenceBundle(
++        principal_mandate=PrincipalMandateEvidence("owner", "mandate", "v1", "issuer"),
++        policy=PolicyEvidence("policy", "v1", "digest"),
++        workspace_root=ApprovedWorkspaceRoot("root", "v1", "digest"),
++        destination=ReadDestination("workspace", "v1", "destination-digest"),
++        target_binding=ReadTargetBinding("root", "v1", "target-digest"),
++        open_object=OpenObjectCapability("object", "v1", "handle"),
++        server_process=ServerProcessIdentity("server", 100, "exe-digest"),
++    )
++    request = ProtectedReadRequest(
++        ProtectedReadOperation.READ_REPO_FILE,
++        RequestedReadTarget("docs/a.md"),
++        evidence,
++    )
++
++    decision = ReadAuthorizationCoordinator.unconfigured().assess(request)
++
++    assert decision.outcome is AuthorizationOutcome.DENIED
++    assert decision.authorized is False
++    assert all(item.state is GateEvidenceState.CONFIGURATION_ABSENT for item in decision.assessments)
++
++
++def test_malformed_request_is_typed_error_and_cannot_claim_authorized() -> None:
++    decision = ReadAuthorizationCoordinator.unconfigured().assess(object())  # type: ignore[arg-type]
++
++    assert decision.outcome is AuthorizationOutcome.ERROR
++    assert decision.authorized is False
++    payload = decision.to_payload()
++    assert payload["error"] == "READ_AUTHORIZATION_INVALID_REQUEST"
++    assert payload["operation"] is None
++    assert all(item.state is GateEvidenceState.EVIDENCE_INVALID for item in decision.assessments)
++
++
++def test_decision_authorized_is_not_a_constructor_field() -> None:
++    decision = ReadAuthorizationDecision(
++        ProtectedReadOperation.READ_REPO_FILE,
++        AuthorizationOutcome.DENIED,
++        "test denial",
++        tuple(
++            GateAssessment(gate, requirement, GateEvidenceState.EVIDENCE_NOT_ESTABLISHED)
++            for gate, requirement in (
++                (AuthorizationGate.G1, AuthorizationRequirement.G1_PRINCIPAL_MANDATE),
++                (AuthorizationGate.G2, AuthorizationRequirement.G2_VERSIONED_POLICY_FRESHNESS_REVOCATION),
++                (AuthorizationGate.G3, AuthorizationRequirement.G3_ROOT_DESTINATION_OBJECT_AND_SERVER_BINDING),
++            )
++        ),
++    )
++    assert "authorized" not in {item.name for item in fields(decision)}
++    assert decision.authorized is False
+diff --git a/IABV_v1.5/tests/test_rooted_open.py b/IABV_v1.5/tests/test_rooted_open.py
+new file mode 100644
+index 00000000..986adf7c
+--- /dev/null
++++ b/IABV_v1.5/tests/test_rooted_open.py
+@@ -0,0 +1,300 @@
++from __future__ import annotations
++
++import ctypes
++import os
++import sys
++from pathlib import Path
++from types import SimpleNamespace
++from types import SimpleNamespace
++
++import pytest
++
++from iabv_v15.infra.mcp.audit_tools import read_repo_file
++from iabv_v15.infra.mcp.audit_tools import rooted_open
++from iabv_v15.infra.mcp.audit_tools.protected_read_composition import ProtectedReadComposer
++from iabv_v15.services.security.read_authorization import (
++    ApprovedWorkspaceRoot,
++    AuthorizationEvidenceBundle,
++    ProtectedReadOperation,
++    ReadDestination,
++    ReadAuthorizationCoordinator,
++    NativeObjectIdentity,
++    TargetObjectKind,
++    RequestedReadTarget,
++    ServerProcessIdentity,
++)
++
++pytestmark = pytest.mark.skipif(sys.platform != "win32", reason="native relative open is Windows-only")
++
++_FILE_READ_ATTRIBUTES = 0x00000080
++_FILE_TRAVERSE = 0x00000020
++_FILE_SHARE_READ = 1
++_FILE_SHARE_WRITE = 2
++_OPEN_EXISTING = 3
++_FILE_FLAG_OPEN_REPARSE_POINT = 0x00200000
++_FILE_FLAG_BACKUP_SEMANTICS = 0x02000000
++
++
++def _root_capability(path: Path) -> rooted_open.NativeWorkspaceRootCapability:
++    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
++    create_file = kernel32.CreateFileW
++    create_file.argtypes = [
++        ctypes.c_wchar_p, ctypes.c_uint32, ctypes.c_uint32, ctypes.c_void_p,
++        ctypes.c_uint32, ctypes.c_uint32, ctypes.c_void_p,
++    ]
++    create_file.restype = ctypes.c_void_p
++    handle = create_file(
++        str(path), _FILE_READ_ATTRIBUTES | _FILE_TRAVERSE,
++        _FILE_SHARE_READ, None, _OPEN_EXISTING,
++        _FILE_FLAG_BACKUP_SEMANTICS | _FILE_FLAG_OPEN_REPARSE_POINT, None,
++    )
++    if not handle or handle == ctypes.c_void_p(-1).value:
++        raise ctypes.WinError(ctypes.get_last_error())
++    try:
++        return rooted_open.NativeWorkspaceRootCapability._from_host_provider_handle(
++            int(handle),
++            approved_workspace_root=ApprovedWorkspaceRoot("test-root", "v1", "test-root-digest"),
++            provider_id="test-only-open-handle-provider",
++            workspace_context_id="unit-test-workspace",
++            server_process=ServerProcessIdentity("unit-test", os.getpid(), "test-process-digest"),
++            mutation_sharing_denied=True,
++            _issuer_seal=rooted_open._ROOT_ISSUER_SEAL,
++        )
++    finally:
++        kernel32.CloseHandle.argtypes = [ctypes.c_void_p]
++        kernel32.CloseHandle.restype = ctypes.c_int
++        kernel32.CloseHandle(handle)
++
++
++def _open_file(root: rooted_open.NativeWorkspaceRootCapability, relative: str):
++    return rooted_open.open_target_relative_to_root(
++        root,
++        RequestedReadTarget(relative),
++        operation=ProtectedReadOperation.READ_REPO_FILE,
++        destination=ReadDestination("workspace", "v1", "workspace-digest"),
++        evidence=AuthorizationEvidenceBundle(),
++    )
++
++
++def test_root_identity_and_file_identity_are_derived_from_open_handles(tmp_path: Path) -> None:
++    (tmp_path / "nested").mkdir()
++    (tmp_path / "nested" / "note.md").write_text("rooted bytes", encoding="utf-8")
++    root = _root_capability(tmp_path)
++    try:
++        assert root.is_open
++        assert root.identity.object_kind.value == "DIRECTORY"
++        capability = _open_file(root, "nested/note.md")
++        try:
++            assert capability.workspace_root_identity == root.identity
++            assert capability.root_binding_state.value == "EVIDENCE_NOT_ESTABLISHED"
++            assert capability.native_identity.object_kind.value == "FILE"
++            assert read_repo_file(capability)["content"] == "rooted bytes"
++        finally:
++            capability.close()
++    finally:
++        root.close()
++
++
++@pytest.mark.parametrize("target", ["../outside.txt", "/outside.txt", r"C:\outside.txt", "a/../outside.txt", "a//b.txt"])
++def test_invalid_components_are_rejected_before_native_open(tmp_path: Path, monkeypatch, target: str) -> None:  # type: ignore[no-untyped-def]
++    root = _root_capability(tmp_path)
++    calls: list[str] = []
++    original = rooted_open._WindowsNative.open_component
++
++    def observe(self, parent_handle: int, component: str, *, final: bool) -> int:
++        calls.append(component)
++        return original(self, parent_handle, component, final=final)
++
++    monkeypatch.setattr(rooted_open._WindowsNative, "open_component", observe)
++    try:
++        with pytest.raises(ValueError):
++            _open_file(root, target)
++        assert calls == []
++    finally:
++        root.close()
++
++
++def test_each_native_component_open_is_relative_to_a_held_parent_handle(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
++    (tmp_path / "one").mkdir()
++    (tmp_path / "one" / "two").mkdir()
++    (tmp_path / "one" / "two" / "file.txt").write_text("x")
++    root = _root_capability(tmp_path)
++    calls: list[tuple[int, str, bool]] = []
++    original = rooted_open._WindowsNative.open_component
++
++    def observe(self, parent_handle: int, component: str, *, final: bool) -> int:
++        calls.append((parent_handle, component, final))
++        return original(self, parent_handle, component, final=final)
++
++    monkeypatch.setattr(rooted_open._WindowsNative, "open_component", observe)
++    try:
++        capability = _open_file(root, "one/two/file.txt")
++        try:
++            assert [item[1:] for item in calls] == [
++                ("one", False), ("two", False), ("file.txt", True)
++            ]
++            assert calls[0][0] != root._handle
++            assert calls[1][0] != calls[0][0]
++            assert calls[2][0] != calls[1][0]
++        finally:
++            capability.close()
++    finally:
++        root.close()
++
++
++def test_open_intermediate_handle_prevents_directory_replacement(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
++    (tmp_path / "parent").mkdir()
++    (tmp_path / "parent" / "child.txt").write_text("inside")
++    outside = tmp_path.parent / f"{tmp_path.name}_replacement"
++    outside.mkdir(exist_ok=True)
++    (outside / "child.txt").write_text("outside")
++    root = _root_capability(tmp_path)
++    original = rooted_open._WindowsNative.open_component
++    substitution_attempts: list[str] = []
++
++    def observe(self, parent_handle: int, component: str, *, final: bool) -> int:
++        if component == "child.txt":
++            try:
++                os.rename(tmp_path / "parent", tmp_path / "parent-held")
++            except OSError:
++                substitution_attempts.append("blocked")
++            else:
++                substitution_attempts.append("unexpectedly-renamed")
++                os.rename(tmp_path / "parent-held", tmp_path / "parent")
++        return original(self, parent_handle, component, final=final)
++
++    monkeypatch.setattr(rooted_open._WindowsNative, "open_component", observe)
++    try:
++        capability = _open_file(root, "parent/child.txt")
++        try:
++            assert substitution_attempts == ["blocked"]
++            assert read_repo_file(capability)["content"] == "inside"
++        finally:
++            capability.close()
++    finally:
++        root.close()
++
++
++def test_reparse_component_is_opened_without_following_then_denied(tmp_path: Path) -> None:
++    outside = tmp_path.parent / f"{tmp_path.name}_outside"
++    outside.mkdir(exist_ok=True)
++    (outside / "secret.txt").write_text("outside")
++    link = tmp_path / "jump"
++    try:
++        os.symlink(outside, link, target_is_directory=True)
++    except (OSError, NotImplementedError):
++        pytest.skip("Windows symlink creation is unavailable in this test environment")
++    root = _root_capability(tmp_path)
++    try:
++        with pytest.raises(OSError, match="reparse points are forbidden"):
++            _open_file(root, "jump/secret.txt")
++    finally:
++        root.close()
++
++
++def test_opened_component_and_parent_handles_close_after_reparse_denial(
++    tmp_path: Path, monkeypatch
++) -> None:  # type: ignore[no-untyped-def]
++    root = _root_capability(tmp_path)
++    fake_component_handle = 0x765432
++    closed: list[int] = []
++    original_query = rooted_open._WindowsNative.query_identity
++    original_close = rooted_open._WindowsNative.close_handle
++
++    def query(self, handle: int):  # type: ignore[no-untyped-def]
++        if handle == fake_component_handle:
++            return (
++                NativeObjectIdentity(1, b"component-id", TargetObjectKind.FILE),
++                SimpleNamespace(Directory=0, NumberOfLinks=1),
++                SimpleNamespace(FileAttributes=rooted_open._FILE_ATTRIBUTE_REPARSE_POINT),
++            )
++        return original_query(self, handle)
++
++    def close(self, handle: int) -> None:
++        closed.append(handle)
++        if handle != fake_component_handle:
++            original_close(self, handle)
++
++    monkeypatch.setattr(
++        rooted_open._WindowsNative,
++        "open_component",
++        lambda *_args, **_kwargs: fake_component_handle,
++    )
++    monkeypatch.setattr(rooted_open._WindowsNative, "query_identity", query)
++    monkeypatch.setattr(rooted_open._WindowsNative, "close_handle", close)
++    try:
++        with pytest.raises(OSError, match="reparse points are forbidden"):
++            _open_file(root, "blocked.txt")
++        assert fake_component_handle in closed
++        assert len(closed) == 2  # rejected component plus duplicated root handle
++    finally:
++        root.close()
++
++
++def test_composition_uses_same_opened_capability_for_decision_and_reader(tmp_path: Path) -> None:
++    (tmp_path / "note.md").write_text("same object", encoding="utf-8")
++    root = _root_capability(tmp_path)
++    assessed: list[object] = []
++    read: list[object] = []
++
++    class _TestCoordinator:
++        def assess(self, request):  # type: ignore[no-untyped-def]
++            cap = request.opened_target
++            assessed.append(cap)
++            return SimpleNamespace(
++                authorized=True,
++                opened_target=cap,
++                to_payload=lambda: {"authorized": False, "reason": "test denial"},
++            )
++
++    def reader(capability):  # type: ignore[no-untyped-def]
++        read.append(capability)
++        return read_repo_file(capability)
++
++    class _TestRootProvider:
++        def acquire(self):
++            return root
++
++    try:
++        result = ProtectedReadComposer(
++            _TestCoordinator(), _TestRootProvider(), reader=reader
++        ).read_file("note.md")
++        # First assessment is pre-open (None); second is the exact final object.
++        assert assessed[0] is None
++        assert assessed[1] is read[0]
++        assert result["content"] == "same object"
++        assert read[0].is_open is False  # composer closes it after consumption
++        assert root.is_open is False  # composer owns and closes the acquired root
++    finally:
++        if root.is_open:
++            root.close()
++
++
++def test_unconfigured_production_preflight_denies_before_provider_or_open(tmp_path: Path) -> None:
++    calls: list[str] = []
++
++    class _ForbiddenProvider:
++        def acquire(self):
++            calls.append("provider")
++            raise AssertionError("root provider must not be called")
++
++    def forbidden_opener(*_args, **_kwargs):  # type: ignore[no-untyped-def]
++        calls.append("open")
++        raise AssertionError("native opener must not be called")
++
++    def forbidden_reader(*_args, **_kwargs):  # type: ignore[no-untyped-def]
++        calls.append("reader")
++        raise AssertionError("reader must not be called")
++
++    result = ProtectedReadComposer(
++        ReadAuthorizationCoordinator.unconfigured(),
++        _ForbiddenProvider(),
++        opener=forbidden_opener,
++        reader=forbidden_reader,
++    ).read_file("anything.txt")
++
++    assert result["authorized"] is False
++    assert result["error"] == "READ_AUTHORIZATION_NOT_ESTABLISHED"
++    assert calls == []
++
++
