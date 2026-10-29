@@ -20,6 +20,12 @@ Memory retrieval supplies candidate evidence; perception establishes source iden
 
 Use the [Space-Time world-model / M1A handoff](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-NEW-CHAT-HANDOFF-SPACE-TIME-WORLD-MODEL-IABV.md) for the complete new-chat snapshot. It is not a route authority. Canonical main still opens with stale M1B local/unpublished status; PR #557 is a proposal and has not been merged. Runtime enforcement and later causal reuse remain unproven.
 
+
+
+### Return adjudication before selecting the next domino (proposed; 2026-10-29)
+
+Extend the existing activation ladder for material cross-AI work with a mandatory per-return transition: `RETURN_RECEIVED → TARGET_REBOUND → CLAIMS_ADJUDICATED → WORLD_MODEL_UPDATED → NEXT_EDGE_SELECTED`. This is not a second memory/router ladder; it is the step that connects a completed delegated task to the next decision. The task coordinator must verify the live HEAD and exact files, separate static review from reported execution, compare the receipt against its original acceptance oracle, preserve unknowns and residual limitations, close only the supported edge, and only then choose the next authorized action. If the receipt is stale or incomplete, perform the minimum scope-specific reconciliation rather than rerunning the whole job. A draft branch writeback is not canonical adoption; later causal reuse remains unproven until a distinct task demonstrates attributable improvement. Acceptance cases: [UAAL-D021 §8.6](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-28-UAAL-D021-ROUTE-TRUTH-ARTIFACT-IDENTITY-AND-ADVANCE-UTILITY.md#86-cross-chat-response-adjudication-and-state-transition-acceptance).
+
 ### M1B code-candidate evidence gate — applied lesson (2026-10-28)
 
 The R1→R3 reader episode adds a specific correction to cross-agent code handoffs:
