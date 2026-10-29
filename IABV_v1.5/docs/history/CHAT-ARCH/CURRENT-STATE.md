@@ -1,3 +1,66 @@
+## Owner-directed route update — M1A R2 local repair reported; independent source review still open (2026-10-28)
+
+This entry supersedes the previous R1-only next step. Codex reports a second repair pass in the existing isolated worktree, but the changed bytes remain local and have not been published to PR #556. Do not promote its claims to independently verified source facts until the exact new commit/blobs are fetched and reviewed.
+
+### Live remote truth
+
+- `main`: `79ab8c50eaa7518120d5ebed9db4747d395a21cb` — independently checked live ref.
+- PR #556: open/draft/unmerged; HEAD `7bb5960feb7975de848fe3351657932ff687ace8`; base `main` at that SHA. Remote source still represents R1, not Codex's uncommitted R2 changes.
+- PR #557: open/draft/unmerged; its continuity branch is separate from `main`. This R2 handoff is being recorded on that existing proposal branch only.
+- Codex reports local worktree `C:\\_w\\m1a-composition-r3-20261028` began clean and ended with four modified files, HEAD unchanged at R1, no commit/push. Files: `windows_cng_key_store.py`, `authenticated_github_enrollment.py`, `owner_enrollment_manifest.py`, `test_g1_owner_enrollment_candidate.py`.
+- Codex reports `git diff --check` clean and `127 passed in 0.89s` with Miniconda Python 3.13.2 / pytest 9.0.3. Classification: `OWNER_CODEX_REPORTED`; ChatGPT did not run those tests or inspect R2 source bytes.
+
+### R2 outcome claims — not independently verified yet
+
+Codex reports: CNG handle cleanup now respects successful `NCryptDeleteKey` freeing the handle and frees it after deletion failure; a `read_existing_key()` method reads the public key from a persisted key; the fetchback verifier compares the persisted-key result with its DTO; the production GitHub CLI path fails closed with `GITHUB_CLIENT_PROVENANCE_UNVERIFIED`; the initial manifest requires PR file status `added`; tests cover synthetic CNG failure/cleanup, persisted-key mismatch, unverified GitHub client, replacement attempts, receipt conflicts and storage failures.
+
+The reported SHA-256 values identify Codex's local files, not remote source: 
+- `windows_cng_key_store.py`: `CA59B26A79E195A08C5B3EE6DFA1A879A1FF51BE5D09ACCC04DB3CC7BFF739BE`
+- `authenticated_github_enrollment.py`: `2DA355EFF1EA0CBD73A66D2586405D6190E7296C722D7DD722611E310B851D40`
+- `owner_enrollment_manifest.py`: `464057D2039339B3667DC1698C41E8394998CA5BB62DCB4D7A471381A7509D77`
+- `test_g1_owner_enrollment_candidate.py`: `266E6F727AD63EBC3004C0406E10BFBC92081065AF2C35DDF887B82E43171D20`
+
+These SHA-256 values are `OWNER_REPORTED` until the exact same bytes are fetched independently. The test result is not evidence of native CNG behavior or productive authorization.
+
+### Remaining causal blockers
+
+- `GITHUB_CLIENT_PROVENANCE=BLOCKED_FAIL_CLOSED`: no trusted verifier for the executable/transport has been established. Do not weaken the gate just to permit fetchback.
+- `OWNER_IDENTITY_PROVENANCE=UNKNOWN`; `PROCESS_SID_PROVENANCE=UNKNOWN`; `SERVER_REVISION_PROVENANCE=UNKNOWN`; `WORKSPACE_ROOT_PROVENANCE=UNKNOWN`.
+- `OWNER_MANIFEST_RECEIPT_STORE=UNKNOWN`: `OwnerManifestReceiptStore` remains a contract until a durable, protected, rollback-resistant realization is demonstrated.
+- `REVOCATION_SOURCE=UNKNOWN`; therefore `G2=NOT_ESTABLISHED`.
+- Native Windows CNG tests, real key creation, manifest creation/merge/fetchback, build, runtime, MCP and protected reads are `NOT_RUN`.
+
+### Next causal frontier
+
+```TASK_ID=M1A_G1_BOUNDED_ENROLLMENT_R2_EXACT_SOURCE_RECONCILIATION_20261028
+MEMORY_RETRIEVED=VERIFIED
+METHOD_ACTIVATED=VERIFIED
+METHOD_APPLIED=VERIFIED (existing PR/worktree reused; no duplicate PR or unchanged retest)
+OUTCOME_VERIFIED=OWNER_CODEX_REPORTED_127_PASSED; R2 SOURCE NOT YET INDEPENDENTLY VERIFIED
+LATER_CAUSAL_REUSE=NOT_PROVEN
+NEXT_ACTOR=CODEX
+NEXT_ACTION=RECHECK_LIVE_MAIN_AND_PR556_HEAD_BASE; VERIFY_THE_FOUR_FILE_DIFF_AND_HASHES; COMMIT_AND_PUSH_THE_EXISTING_WORKTREE_CHANGES_TO_THE_EXISTING_PR556_BRANCH_ONLY; THEN_REQUEST_INDEPENDENT_REVIEW_OF_EXACT_NEW_HEAD
+EXPECTED_OBSERVABLE=REMOTE_COMMIT_AND_BLOBS_MATCH_ALL_FOUR_LOCAL_SHA256_VALUES; EXACT_DIFF_REVIEWABLE; PR556_STAYS_DRAFT_AND_UNMERGED
+STOP_IF=HEAD_BASE_CHANGED_UNRESOLVED; UNEXPECTED_FILE_CHANGES; HASH_MISMATCH; NO_SAFE_GITHUB_CLIENT_PROVENANCE; NO_PROTECTED_RECEIPT_STORE_OR_TRUSTED_BINDING_PRODUCERS
+OPTION_D=RATIFIED_NO_BOOTSTRAP
+G1/G2/G3=NOT_ESTABLISHED
+MCP_TOOL_ALLOWLIST=EMPTY
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+ENROLLMENT=NOT_PERFORMED
+REAL_CNG_KEY=NOT_CREATED
+MANIFEST=NOT_CREATED_OR_PUBLISHED
+BUILD/PRODUCT_RUNTIME/PROTECTED_READS=NOT_RUN
+PRODUCT_CANDIDATE_MERGE=NOT_AUTHORIZED
+C_PYTHON=DO_NOT_TOUCH
+AUTOMATIC_FOLLOW_ON=FALSE
+```
+
+The next step is source publication and independent review of the already-corrected local candidate, not another implementation round, broad inventory, or retest of unchanged bytes. Publishing to the existing PR #556 branch is not a merge and does not authorize enrolment. Do not merge PR #556/#557 or weaken any fail-closed gate.
+
+---
+
 ## Owner-directed route update — M1A bounded-enrollment candidate R1 reviewed; source corrections required (2026-10-28)
 
 This entry supersedes the older NEXT_ACTION that routed directly to implementation: Codex has now published an isolated source candidate, and its next gate is independent static correction/review. It does not supersede the preserved security invariants.
