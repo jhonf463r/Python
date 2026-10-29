@@ -459,3 +459,39 @@ This concept reuses the existing memory, evidence, route and governance organs; 
 
 **Required distinction:** a method/document update may be genuine progress when explicitly requested, but it is not product implementation or bridge readiness. The protocol remains documentation-only until a later non-identical task proves the method was retrieved, changed action selection and produced a verified outcome. This refinement reuses the existing route, memory and authorization organs; it creates no new coordinator or memory store.
 
+## 20G. ROUTE TRUTH, ARTIFACT IDENTITY, AND VERIFIED-PROGRESS SELECTION (UAAL-D021)
+
+- `CONCEPT_ID=UAAL-D021`
+- `PARENT_CONCEPT_ID=UAAL-D020; UAAL-D019`
+- `ROOT=UAAL-ROOT-001`
+- `CANONICAL_SOURCE=CHAT-ARCH-2026-10-28-UAAL-D021-ROUTE-TRUTH-ARTIFACT-IDENTITY-AND-ADVANCE-UTILITY.md`
+- `STATUS=PROPOSED_DOCUMENT_METHOD; NOT_CANONICAL_UNTIL_INTEGRATED; RUNTIME_ENFORCEMENT_AND_LATER_CAUSAL_REUSE_NOT_PROVEN`
+
+UAAL-D021 refines progress selection where entry snapshots, current route, remote artifacts and version-specific hashes can disagree. It requires live route retrieval, discovery of existing realizations before new handoffs or publication, revision-bound identity for each digest, correction of stale entry snapshots from verified evidence, and progress labels tied to observable change at the first open edge. It reuses existing organs rather than creating a second router, memory store, coordinator or authorization authority. It must not weaken governance, human authorization, uncertainty labels, or the distinction between a published branch and canonical main.
+
+UAAL-D021 also includes an objective-conditioned landscape gate. Before selecting a fix, normalize the Owner's desired observable outcome, acceptance oracle, target revision, scope/no-go boundary, authorized effects and stop/switch condition. Map the minimum causal path through the actual source/producer, transformation/contract, normal consumer/decision, effective operation and independent observation; record inspection coverage and leave uninspected paths UNKNOWN. This distinguishes a component's existence from its operative role in the current route.
+
+For cross-domain generalization, transfer an invariant only after stating the semantic mapping and domain-specific constraints, plus a non-match, counterexample or falsifier. Similarity and analogy generate hypotheses; they do not establish equivalence. A later non-identical application must demonstrate which decision changed because the invariant was retrieved and what evidence supports the outcome. This is a proposed method refinement, not an additional coordinator or runtime-enforced capability.
+
+The 2026-10-28 G1 enrollment preflight adds a concrete epistemic rule: evidence is claim-scoped. Access to a private repository and fetch-back of one existing file do not prove future manifest bytes, branch-protection configuration, local key custody, G1, G2, G3, or per-tool authorization. An HTTP 403 while reading branch rules leaves the matter UNKNOWN; it does not prove that protection exists or does not exist. A report from Codex remains OWNER_CODEX_REPORTED unless the relevant result is independently fetched or observed.
+
+Enrollment-manifest identity must be non-circular. Do not embed the containing commit SHA, Git blob SHA, or whole-manifest digest in the manifest itself. Bind the Owner-approved manifest to stable enrollment and identity attributes; after merge, independently retrieve the exact canonical commit and bytes and record the commit SHA, blob SHA and SHA-256 in a separate local receipt. The receipt is evidence of the fetch-back, not the source of Owner authority.
+
+The method also separates stages: design decision → isolated source/tests → one-time enrollment → G1 verification → G2/G3 closure → per-tool authorization → operational activation. Evidence or authorization at one stage cannot be promoted to the next. A successful G1 enrollment must not automatically populate a tool allowlist or permit protected reads. These refinements are proposed on the documentation branch; canonical adoption and runtime enforcement remain unproven.
+
+## 20H. EFFECTIVE OPERATION SEMANTICS AND EVIDENCE-PRODUCER INTEGRITY (UAAL-D022)
+
+- CONCEPT_ID=UAAL-D022
+- PARENT_CONCEPT_ID=UAAL-D021; UAAL-D020; UAAL-D019
+- ROOT=UAAL-ROOT-001
+- CANONICAL_SOURCE=CHAT-ARCH-2026-10-29-UAAL-D022-EFFECTIVE-OPERATION-AND-EVIDENCE-PRODUCER-INTEGRITY.md
+- STATUS=PROPOSED_DOCUMENT_METHOD; NOT_CANONICAL_UNTIL_INTEGRATED; RUNTIME_ENFORCEMENT_AND_LATER_CAUSAL_REUSE_NOT_PROVEN
+
+UAAL-D022 adds the realization-independent invariant that declared intent is not effective behavior. The algorithm must resolve CLI/library defaults, caller parameters, environment variables, destination, method, endpoint normalization and executable identity before accepting output as evidence. Read-only intent must be an explicit GET; the destination must be fixed against host-selection variables; endpoint paths must use the target platform's valid form; failure paths must not invoke the producer.
+
+Acceptance relies on exact invocation-contract tests (argv/environment) and no-call negative assertions, not only fake responses from a semantic core. Every test report is attached to the exact tested commit. A parent's passing tests cannot be carried forward as proof for a changed head; an Actions run with startup_failure and no test jobs is not test evidence.
+
+For the M1A candidate, source review observed that a parameterized gh api call lacked explicit GET, host selection could inherit GH_HOST, and endpoint paths retained a leading slash on Windows. The new head 3d29c0c0f4af657a889c44198d46fa59f07f021a fixes those three source-level issues; exact-head tests still need evidence. This is a proposed method update on a draft documentation branch, not a claim of runtime enforcement or that G1/G2/G3 are established.
+
+The method composes with D019 causal-frontier selection, D020 verified-progress utility and D021 route/artifact truth. It creates no new coordinator, memory store or authority.
+

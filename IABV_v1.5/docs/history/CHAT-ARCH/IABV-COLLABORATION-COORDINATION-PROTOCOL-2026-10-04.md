@@ -27,6 +27,75 @@ This harmonizes the collaboration protocol with the entry contract; it does not 
 
 Relevant prior failures must alter at least one concrete part of the task contract when applicable: object lock, scope exclusions, source requirements, test matrix, evidence requirement, stop condition or acceptance gate. Merely quoting history does not count.
 
+### UAAL-D021 Gate D0 — objective-conditioned landscape and cross-domain transfer (proposed, 2026-10-29)
+
+Before choosing a fix, normalize the Owner's objective into the observable target, acceptance/failure oracle, target revision, scope/no-go constraints, authorized effects, current evidence and stop/switch condition. Do not let the most recent conversational topic silently replace the active objective.
+
+Build only the minimum sufficient causal map for the claim being decided:
+
+`desired outcome ← acceptance oracle ← effective operation/realization ← normal consumer/decision ← transformation/contract ← actual producer/source`
+
+Attach the relevant prerequisites, identity, authority and environment edges. A named class, protocol, registry item, source comment or isolated test is not proof that the ordinary caller reaches the claimed producer/consumer. Record which paths were read in depth and mark the remainder `UNKNOWN`; do not expand a bounded review into a claimed full-system audit.
+
+Classify the discrepancy using whichever lenses fit: semantics/acceptance; state/route; artifact/identity/provenance; schema/contract; capability/realization; authorization/preconditions; effective operation/side effects; execution/observation/oracle; persistence/feedback. These are diagnostic lenses, not mutually exclusive failure types. For each material hypothesis give the source, affected edge, predicted distinguishing observation and a falsifier.
+
+When transferring a lesson between domains, transfer a mapped invariant rather than copying the surface recipe. State the mapping and at least one non-match, counterexample or falsifier; absent that, keep the transfer `HYPOTHESIS`. After each bounded action, record the actual evidence stage, recompute the first open edge, and continue on another authorized independent lane if the current edge is terminal. Do not use process documentation to weaken technical authorization gates.
+
+This gate operationalizes D019's causal map and dual-track continuation, D020's progress utility, D021's route/artifact truth and D022's effective-operation contract. It creates no additional coordinator, router, memory store or authority. It remains a method proposal on this branch until authorized integration and canonical fetch-back.
+
+## Resource-bounded validation switch after acquisition failure (UAAL-D021 application; proposed 2026-10-28)
+
+A resource failure in one acquisition method is evidence about that method and environment, not automatically about the objective or the target code. Before retrying, compare the exact failed operation and preconditions with prior attempts. If the failure is unchanged and the resource condition has not changed, do not repeat the same terminal action.
+
+When the validation claim genuinely requires only a small set of self-contained source/test files, a bounded alternate realization may be admissible:
+1. Pin the exact repository, candidate HEAD/ref, Git blob IDs and expected byte hashes.
+2. Retrieve only the necessary file bytes through an existing authenticated source path; verify the hashes before test execution.
+3. Build the smallest harness that preserves package imports and fixture behavior, without rewriting the target files or installing new dependencies.
+4. Run the discriminating test first, then the bounded test file only if the focused test passes.
+5. Report differences from a full checkout, including omitted repository configuration, pytest rootdir/config discovery, fixtures, dependencies and test scope. Do not generalize a harness pass to the full repository or to untested integration paths.
+6. Treat test execution and temporary-artifact cleanup as separate stages. If cleanup is rejected by policy, report the exact retained artifact as CLEANUP_BLOCKED; do not attempt an unapproved alternate deletion method.
+
+This route change is admissible only when the smaller realization is adequate for the claim and identity is preserved. If the suite depends on repository-wide configuration or unavailable files, the harness cannot replace the full-checkout requirement; record NOT_RUN and the precise blocker instead. The M1B F-01/F-02 receipt records a successful use of this strategy on the exact PR #555 HEAD, with Codex-reported 3/3 focused and 37/37 test-file cases passing. The result is scoped to the harness, not a full repository execution.
+
+Actor fit in this episode: Codex was selected for Windows/Python execution and authenticated GitHub access; Claude/Sonnet's earlier role was independent static analysis. Actor selection follows required capability and access, not a permanent model identity. No bridge authorization follows from this test result.
+
+This is a method proposal on the documentation branch, not canonical main state or proof of runtime enforcement.
+
+## UAAL-D021 route-realization and artifact-identity gate (proposed, 2026-10-28)
+
+Before constructing a handoff for any publish/update/retest/clone/implementation action, query the live repository for an existing branch, commit, pull request, exact file blobs and reviews that can satisfy the objective. Bind each expected hash to an exact artifact revision and evidence stage; never compare an R3 receipt with R4 bytes as though they were the same candidate. If an entry snapshot conflicts with live `CURRENT-STATE.md`, the canonical route wins and the stale snapshot must be reconciled before action selection. Record existing route alternatives and why the selected action has greater target-edge utility. This refinement is proposed in the current documentation PR and is not canonical on `main` until integrated and fetched back.
+
+
+## Return-adjudication gate before the next handoff (proposed 2026-10-29)
+
+A returned review/execution receipt is not just an answer to summarize; it is an evidence package that must be adjudicated before another task is selected. On every material Claude/Sonnet, Codex or other actor return:
+
+1. Rebind the receipt to the current route and exact PR/ref/HEAD/base/files; preserve the verdict's original revision if the target moved.
+2. Decompose its claims into direct source evidence, static-review judgments, actor-reported execution, independently verified observations, inference, hypothesis, unknown and not-run.
+3. Compare the evidence with the original acceptance oracle, not with the headline `PASS`/`FAIL`.
+4. Mark each edge closed only at its demonstrated scope; static closure does not imply tests, runtime, integration, native Windows behavior, authority or bridge readiness.
+5. Update the world model and identify the first still-open causal/evidential edge. If the receipt lacks a necessary hash, line, command, output or scope detail, retrieve/request that detail only; do not rerun or re-prompt the entire task by default.
+6. Choose the next role/action only after adjudication, explain why that actor fits the live edge, and preserve authorization and stop conditions.
+
+The living [Space-Time protocol](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-23-CONTINUITY-SPACE-TIME-OPERATING-PROTOCOL-v1.md) defines the transition mechanics; [UAAL-D021 §8.6](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-28-UAAL-D021-ROUTE-TRUTH-ARTIFACT-IDENTITY-AND-ADVANCE-UTILITY.md#86-cross-chat-response-adjudication-and-state-transition-acceptance) defines discriminating acceptance cases. The README, CONTEXT-INDEX, AGENTS, CURRENT-STATE, MEMORY-OPERATING-PROTOCOL and SYMBIOSIS-MAP now point at this proposed rule. This is documentation-only on draft PR #557 and does not change the active M1A route or establish automatic cross-session enforcement. Canonical adoption requires authorized integration and exact `main` fetch-back.
+
+## G1 enrollment handoff correction — exact evidence, no circular manifest (proposed 2026-10-28)
+
+When the current route concerns an initial trust enrollment, the coordinator must make a task contract that separates source/test implementation from one-time enrollment execution. A prompt for Codex must state which of these stages is authorized, its exact side-effect budget, prohibited actions, evidence to return and stop condition. Do not let “proceed” expand the scope to bridge activation, protected reads or tool grants.
+
+The just-completed preflight illustrates scoped proof:
+- the existing private GitHub repository and main reference were readable via the Owner/Codex-reported authenticated route, and this session independently verified the repository metadata, main SHA and CURRENT-STATE blob identifier through GitHub;
+- manifest-specific byte verification remains not applicable until the manifest exists;
+- branch protection/ruleset status remains UNKNOWN because the reported API inspection returned HTTP 403;
+- neither a successful existing-file fetch nor the presence of a GitHub App PEM proves G1, branch protection or the existence of a usable future manifest route.
+
+Do not ask the Owner to choose the trust mechanism again: it has been selected as an Owner-approved, version-pinned enrollment manifest with a subordinate local Windows CNG key. The manifest must not contain its own containing commit SHA, Git blob SHA or whole-file digest; store those post-merge identities in a separate local receipt after exact canonical fetch-back. The manifest must contain public-key metadata only, never a private key or credential.
+
+For source/test work, reuse and inspect the existing PR #556 M1A composition candidate before writing. Verify its live head and exact base; do not fork a duplicate security-organ candidate. Do not create the local key or enrollment manifest in the source/test task. Exercise positive and negative enrollment contracts with synthetic fixtures only, and keep:
+G1=NOT_ESTABLISHED; G2/G3=NOT_ESTABLISHED; MCP_TOOL_ALLOWLIST=EMPTY; PROTECTED_READS=FAIL_CLOSED; TUNNEL=DISABLED; BRIDGE=BRIDGE_NOT_READY.
+A later one-time enrollment operation is a separate, narrowly authorized step. An approved G1 identity alone grants no tool capability.
+
+
 The current result adjudication examples are:
 - RQ21.55: the report changed the object to research about Deep Research itself;
 - RQ21.56: the report remained in the broad Windows sandbox domain but failed the required seven-guarantee composition and source contract.
@@ -34,6 +103,18 @@ The current result adjudication examples are:
 Historical actor order and historical `NEXT ACTOR` fields are not routing authority. Recompute from the first current open edge. Use existing organs; do not create another coordinator brain.
 
 ---
+
+## UAAL-D022 effective-operation handoff gate (proposed, 2026-10-29)
+
+Before using a CLI/API adapter to produce evidence about authority, merges, manifests or canonical source, verify its effective operation:
+- fixed executable identity and caller-independent policy;
+- explicit HTTP method and canonical hostname;
+- platform-valid endpoint after internal scope validation;
+- environment settings that cannot redirect the destination, with non-interactive fail-closed behavior;
+- synthetic assertions over actual argv/environment and zero-call negative paths;
+- evidence bound to the exact HEAD, without borrowing a parent's test result.
+
+The M1A review found a CLI default that changed an intended GET to POST, an environment-selected API host, and a Windows-invalid leading-slash endpoint. Those were corrected in source at PR #556 HEAD 3d29c0c0f4af657a889c44198d46fa59f07f021a. The current review has not established tests at that exact head; Actions reports startup_failure. Codex must verify the live head before the next operation. This is a control-method proposal, not production activation. Full method: UAAL-D022.
 
 ## DEFAULT OPERATING MODE — NORMAL IABV WORK
 

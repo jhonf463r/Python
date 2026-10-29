@@ -1,16 +1,20 @@
-## Current evidence gate — M1B local candidate (2026-10-28)
+<!-- Entry contract: pointer to live state, not a duplicated state snapshot. -->
+## Operational entry — one route authority, no copied live-state summaries
 
-The M1B reader candidate exists only in Codex's isolated, untracked local files. Codex reports 34 targeted tests passed; treat the run and final hashes as OWNER_CODEX_REPORTED. The final R3 bytes are not yet in a reviewable GitHub branch. Do not report integration from local hashes. Next: publish the existing candidate to an isolated PR and review its exact diff, not repeat implementation or tests unchanged.
+For every material task: verify the live remote `main` SHA → read the canonical `README.md` entry contract → read [`CURRENT-STATE.md`](https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CURRENT-STATE.md) → read `CONTEXT-INDEX.md` → read `MEMORY-OPERATING-PROTOCOL.md` → retrieve only objective-relevant methods and evidence. `CURRENT-STATE.md` is the sole routing authority; this file and the other entry documents must not replicate mutable task status, candidate hashes or `NEXT_ACTION` values.
 
-[Receipt and hashes](https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-28-M1B-CONTEXT-READER-IMPLEMENTATION-AND-TEST-RECEIPT.md).
+If the normal contents read for `CURRENT-STATE.md` returns an unexpectedly empty body, mark `RETRIEVAL_FAILED` and recover its Git blob at the exact verified ref. Empty transport output is not an empty state. Before proposing any branch, commit, publication, retest, clone or handoff, query existing branches, commits, PRs, changed paths, exact blobs and reviews; reuse an existing route before preparing another.
 
-```text
-M1B_TESTS=34_PASSED; OWNER_CODEX_REPORTED
-M1B_SOURCE=LOCAL_UNTRACKED; NOT_IN_GITHUB
-NEXT_ACTION=PUBLISH_EXISTING_CANDIDATE_TO_ISOLATED_CODE_PR
-G1/G2/G3=NOT_ESTABLISHED
-BRIDGE=BRIDGE_NOT_READY
-```
+[UAAL-D021 — proposed route-truth and artifact-identity refinement](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-28-UAAL-D021-ROUTE-TRUTH-ARTIFACT-IDENTITY-AND-ADVANCE-UTILITY.md) records the observed failure and new acceptance checks. It remains a draft-branch proposal, not canonical on `main` until authorized integration and fetch-back.
+
+[UAAL-D022 — proposed effective-operation contract](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-UAAL-D022-EFFECTIVE-OPERATION-AND-EVIDENCE-PRODUCER-INTEGRITY.md) adds the invariant that declared read-only intent must be checked against effective argv, environment, method, destination, endpoint form and producer identity. It remains proposed on this branch, not canonical policy on main.
+
+### Latest cross-chat handoff snapshot (2026-10-29)
+
+[Space-Time world-model / M1A handoff](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-NEW-CHAT-HANDOFF-SPACE-TIME-WORLD-MODEL-IABV.md) consolidates the latest deductions, exact refs, evidence limits, closed/open edges, method evolution and new-chat intake rules. It is a dated snapshot, not routing authority; refresh `CURRENT-STATE.md` and live refs before acting.
+
+Everything below this entry is retained historical knowledge/evidence. Older titles like “current”, “active”, “vigente” or “next action” do not route the live task unless `CURRENT-STATE.md` explicitly reactivates them.
+
 ---
 
 <!-- UAAL-D020 cross-AI application — live CURRENT-STATE.md owns route authority. -->
@@ -19,6 +23,34 @@ BRIDGE=BRIDGE_NOT_READY
 UAAL-D020 applies to the AIs that use this GitHub repository as shared external memory, not only to IABV's local/product algorithm. Each participating session with an authorized repository route must retrieve the live current state, activate only objective-relevant methods, compare available authorized actions, and select by verified progress utility.
 
 For material handoffs, distinguish `MEMORY_RETRIEVED`, `METHOD_ACTIVATED`, `METHOD_APPLIED`, `OUTCOME_VERIFIED` and `LATER_CAUSAL_REUSE`. Identify the concrete decision changed by the method and the evidence supporting the result. Do not infer another session's receipt/consumption from a GitHub link or writeback. See [UAAL-D020](CHAT-ARCH-2026-10-28-UAAL-D020-VERIFIED-PROGRESS-UTILITY-STRATEGY-SWITCH.md), its cross-AI contract, and the living [Space-Time continuity protocol](CHAT-ARCH-2026-10-23-CONTINUITY-SPACE-TIME-OPERATING-PROTOCOL-v1.md).
+
+## UAAL-D022 — effective-operation and evidence-producer contract (proposed, 2026-10-29)
+
+A security-relevant handoff must audit the exact operation that the receiving program will perform, not merely the stated intent. For CLI/API adapters, explicitly fix the HTTP method, canonical destination, endpoint syntax, executable identity and security-relevant environment; resolve hidden defaults and platform-specific argument rules before treating output as evidence. Test the exact argv/environment with synthetic doubles, assert that failures make zero calls, and bind every test result to the exact commit it tested.
+
+A read-only request is not read-only if a CLI default silently turns a parameterized request into POST. A canonical repository is not the response source if an inherited environment variable redirects the host. An internally valid path is not an executable endpoint if its platform-specific form is wrong.
+
+This protocol is reusable across domains: declare the intended operation, resolve effective defaults, normalize and validate destination/path, bind the producer, assert invocation contract, test negative paths, and preserve claim-scoped evidence. Synthetic tests do not prove real CLI execution, authenticated fetchback, or authority establishment. See UAAL-D022. This remains a proposed method and does not supersede CURRENT-STATE as the route authority.
+
+## Perception and task-local world model — proposed cross-AI refinement (2026-10-29)
+
+
+
+Before selecting a solution for any material task, use the living Space-Time protocol's task-local perception/model rule and [UAAL-D021 §8](CHAT-ARCH-2026-10-28-UAAL-D021-ROUTE-TRUTH-ARTIFACT-IDENTITY-AND-ADVANCE-UTILITY.md#8-perception-provisional-world-model-and-discriminating-feedback-2026-10-29). Retrieved memory is evidence input; it is not itself an updated model of current reality.
+
+
+
+Construct only the minimum model needed for the objective: exact target and revision/time, source-bound observations, producer → transformation → consumer/effective operation, authority/environment constraints, competing hypotheses with predictions/falsifiers, unknowns and the first open causal edge. Keep `VERIFIED`, `OWNER_REPORTED`, `INFERENCE`, `HYPOTHESIS`, `UNKNOWN` and `NOT_RUN` distinct. Select the smallest authorized observation that changes the decision; observe and verify the result before updating the route.
+
+
+
+For every delegated prompt explicitly name `DESTINO: CLAUDE/SONNET` or `DESTINO: CODEX` and explain why that actor is best suited to the current open edge. Include exact revision-bound inputs, permitted/prohibited actions, expected receipt and stop condition. This is an operational coordination contract, not proof of consciousness, automatic shared memory, runtime enforcement or model-weight learning. The method remains proposed on PR #557 until authorized integration and canonical fetch-back.
+
+
+
+## Incoming AI result adjudication — required before the next handoff (proposed; 2026-10-29)
+
+When Claude, Codex or another actor returns a substantive result, do not treat its headline or the existence of the receipt as a new world state. First rebind the result to the original TASK_ID, live route, exact target HEAD/base and file identities; classify each claim by what was directly retrieved, statically inspected, reported as executed, independently verified, or not run; compare the evidence with the original acceptance oracle; and mark each dependency CLOSED_AT_REVIEW_SCOPE, PARTIAL, OPEN, BLOCKED or UNKNOWN. Then update the provisional world model and select only the first authorized, discriminating next move. If an essential receipt field is missing, retrieve or ask only for that specific missing evidence instead of repeating the entire task. Never transfer a verdict to a changed HEAD without checking the intervening delta. Use the [UAAL-D021 §8.6 acceptance cases](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-28-UAAL-D021-ROUTE-TRUTH-ARTIFACT-IDENTITY-AND-ADVANCE-UTILITY.md#86-cross-chat-response-adjudication-and-state-transition-acceptance) and the living Space-Time protocol's incoming-result transition gate. This rule is proposed on PR #557; `CURRENT-STATE.md` remains the sole route authority, and later causal reuse is not yet proven. First applied case: [Claude M1A R1 adjudication receipt](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-M1A-G1-WINDOWS-HANDLE-READER-CLAUDE-R1-ADJUDICATION-RECEIPT.md) and [UAAL-D021 §8.7](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-28-UAAL-D021-ROUTE-TRUTH-ARTIFACT-IDENTITY-AND-ADVANCE-UTILITY.md#87-applied-adjudication-case--claude-m1a-windows-reader-r1-2026-10-29) record that application: two scoped source findings were rebound to the exact HEAD; code/tests remain not run and source/test changes remain outside this documentation step.
 
 <!-- Cross-chat handoff synchronized 2026-10-27. CURRENT-STATE.md remains the sole operational route authority. -->
 

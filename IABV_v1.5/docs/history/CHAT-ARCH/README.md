@@ -1,17 +1,24 @@
-<!-- Current M1B continuity override 2026-10-28; CURRENT-STATE.md is the sole route authority. -->
-## Current M1B frontier — local candidate, tests reported, not yet published (2026-10-28)
+<!-- Entry contract: pointer to live state, not a duplicated state snapshot. -->
+## Operational entry — one route authority, no copied live-state summaries
 
-Latest route: [CURRENT-STATE.md](https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CURRENT-STATE.md). M1B has a local candidate and Codex reports 34 targeted tests passed on Python 3.13.2/pytest 9.0.3. The two files remain untracked in C:\_w\m1b-20261028; final R3 hashes are owner/Codex-reported, and exact R3 bytes are not yet available from a GitHub branch/PR. Do not reimplement or reclone. Next: publish the existing candidate as an isolated code PR, review the exact diff and verify source hashes. See [M1B receipt](https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-28-M1B-CONTEXT-READER-IMPLEMENTATION-AND-TEST-RECEIPT.md).
+For every material task: verify the live remote `main` SHA → read the canonical `README.md` entry contract → read [`CURRENT-STATE.md`](https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CURRENT-STATE.md) → read `CONTEXT-INDEX.md` → read `MEMORY-OPERATING-PROTOCOL.md` → retrieve only objective-relevant methods and evidence. `CURRENT-STATE.md` is the sole routing authority; this file and the other entry documents must not replicate mutable task status, candidate hashes or `NEXT_ACTION` values.
 
-```text
-M1B_LOCAL_CANDIDATE=EXISTS; OWNER_CODEX_REPORTED
-M1B_TARGETED_TESTS=34_PASSED; OWNER_CODEX_REPORTED
-M1B_PUBLISHED_OR_INTEGRATED=FALSE
-G1/G2/G3=NOT_ESTABLISHED
-PROTECTED_READS=FAIL_CLOSED
-BRIDGE=BRIDGE_NOT_READY
-AUTOMATIC_FOLLOW_ON=FALSE
-```
+If the normal contents read for `CURRENT-STATE.md` returns an unexpectedly empty body, mark `RETRIEVAL_FAILED` and recover its Git blob at the exact verified ref. Empty transport output is not an empty state. Before proposing any branch, commit, publication, retest, clone or handoff, query existing branches, commits, PRs, changed paths, exact blobs and reviews; reuse an existing route before preparing another.
+
+[UAAL-D021 — proposed route-truth and artifact-identity refinement](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-28-UAAL-D021-ROUTE-TRUTH-ARTIFACT-IDENTITY-AND-ADVANCE-UTILITY.md) records the observed failure and new acceptance checks. It remains a draft-branch proposal, not canonical on `main` until authorized integration and fetch-back.
+
+### Cross-chat return adjudication gate (proposed on PR #557; 2026-10-29)
+
+Before a new material handoff after Claude/Codex or another actor responds, rebind the receipt to the live revision, separate source-verified facts from actor-reported execution, compare the result to the original acceptance oracle, update the task-local world model, and identify the first remaining causal edge. Do not repeat a completed task or transfer a verdict to a new HEAD without new evidence. Apply [Cross-chat response adjudication and state-transition gate](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-28-UAAL-D021-ROUTE-TRUTH-ARTIFACT-IDENTITY-AND-ADVANCE-UTILITY.md#86-cross-chat-response-adjudication-and-state-transition-acceptance) and the living Space-Time protocol's incoming-result transition gate. This is a draft-branch method proposal; CURRENT-STATE.md remains the sole route authority, and canonical adoption/later causal reuse are not established.
+
+[UAAL-D022 — proposed effective-operation contract](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-UAAL-D022-EFFECTIVE-OPERATION-AND-EVIDENCE-PRODUCER-INTEGRITY.md) adds the invariant that declared read-only intent must be checked against effective argv, environment, method, destination, endpoint form and producer identity. It remains proposed on this branch, not canonical policy on main.
+
+### Latest cross-chat handoff snapshot (2026-10-29)
+
+[Space-Time world-model / M1A handoff](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-NEW-CHAT-HANDOFF-SPACE-TIME-WORLD-MODEL-IABV.md) consolidates the latest deductions, exact refs, evidence limits, closed/open edges, method evolution and new-chat intake rules. It is a dated snapshot, not routing authority; refresh `CURRENT-STATE.md` and live refs before acting.
+
+Everything below this entry is retained historical knowledge/evidence. Older titles like “current”, “active”, “vigente” or “next action” do not route the live task unless `CURRENT-STATE.md` explicitly reactivates them.
+
 ---
 
 <!-- UAAL-D020 — shared cross-AI method; CURRENT-STATE.md remains the sole route authority. -->

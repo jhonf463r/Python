@@ -1,3 +1,1061 @@
+## OVERRIDE — Exact two-file repair is published and fetch-back verified on PR #556; PR-level gates remain open (2026-10-29)
+
+The Owner-authorized commit/push task has completed. GitHub independently confirms commit c00c1677e7b1f891e757f141450672b04443eba4 on the existing candidate branch and both target file blobs at refs/pull/556/head match the exact static-reviewed patch:
+- windows_handle_reader.py = 2facf2a4447d1acff69b1845390355902160dbfa
+- test_windows_handle_reader.py = 1e72fc6e50a91678964bed38b05b82a9d8a4683f
+
+Commit comparison from parent e1b430956146c4aa0cadc1df2c3df92150b7f7ea to c00c1677e7b1f891e757f141450672b04443eba4 is ahead_by=1, behind_by=0 and contains exactly the two authorized paths. Full adjudication: [M1A F-556 publication/fetch-back receipt](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-M1A-G1-F556-PUBLICATION-FETCHBACK-ADJUDICATION.md).
+
+### PR state and remaining blockers
+
+- PR issue state is open and closed_at is null; the fetched issue title retains a [Draft] prefix. The API shape used here did not expose the authoritative draft boolean or a merged boolean. Keep PR_OPEN=VERIFIED, PR_DRAFT_FLAG=UNKNOWN, MERGED_BOOLEAN=UNKNOWN_BY_DIRECT_FIELD; do not claim the draft bit was independently verified.
+- Review API returned 12 COMMENTED reviews and no APPROVED review. Four inline threads remain unresolved; three outdated and one current thread concerns GH_PROMPT_DISABLED/GIT_TERMINAL_PROMPT. Exact source and test files at c00c do set the two child environment variables and assert them; the current thread still needs an authorized reconciliation, not a source reimplementation.
+- PR-associated workflow run 40895256777 has conclusion startup_failure and zero jobs. Combined commit statuses are empty. This is not a successful CI result; root cause remains UNKNOWN. Do not retry Actions or alter billing/workflow settings without explicit authorization.
+- F-556-01/F-556-02 remain closed at static-review scope; the native result is reported only for one Windows 11 build 10.0.26300 / NTFS fixture. Codex's 30 focused tests were not rerun for the publication task.
+- The commit only publishes this two-file delta; it does not approve or complete the wider 34-file M1A/M1F candidate, establish G1/G2/G3, or authorize a merge. Canonical main remains 79ab8c50eaa7518120d5ebed9db4747d395a21cb and has not changed.
+
+~~~text
+ACTIVE_TASK=M1A_G1_PR556_POST_PUBLICATION_REVIEW_GATES_20261029
+PUBLICATION=COMMIT_PUSH_FETCHBACK_VERIFIED
+COMMIT=c00c1677e7b1f891e757f141450672b04443eba4
+PARENT=e1b430956146c4aa0cadc1df2c3df92150b7f7ea
+REMOTE_TARGET_BLOBS=MATCHED_AT_REFS_PULL_556_HEAD
+PR_OPEN=VERIFIED
+PR_DRAFT_FLAG=UNKNOWN
+MERGED_BOOLEAN=UNKNOWN_BY_DIRECT_FIELD
+REVIEWS=12_COMMENTED; NONE_APPROVED
+UNRESOLVED_THREADS=4; 3_OUTDATED; 1_CURRENT
+CURRENT_THREAD_SOURCE_AND_TEST_ASSERTIONS=OBSERVED_PRESENT_AT_C00C; THREAD_UNRESOLVED
+ACTIONS_RUN=40895256777; STARTUP_FAILURE; ZERO_JOBS
+COMBINED_STATUS=EMPTY
+TESTS/BUILD/RUNTIME=NOT_RUN_FOR_PUBLICATION_TASK
+NEXT_ACTION=RECONCILE_PR_REVIEW_THREAD_AND_STARTUP_FAILURE_WITHOUT_UNAUTHORIZED_MUTATION
+G1/G2/G3=NOT_ESTABLISHED
+MCP_TOOL_ALLOWLIST=EMPTY
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+PRODUCT_CANDIDATE_MERGE=NOT_AUTHORIZED
+C:\\Python=DO_NOT_TOUCH
+AUTOMATIC_FOLLOW_ON=FALSE
+~~~
+
+---
+
+## OVERRIDE — Owner authorizes commit and push of exactly two reviewed M1A repair files to existing PR #556 (2026-10-29)
+
+The Owner has explicitly authorized Codex to commit and push **only** the two previously reviewed local repair files to the existing PR #556 branch. This supersedes the earlier statement that code publication still required a separate Owner decision. It authorizes no merge and no other repository/source mutations.
+
+### Authorized exact target and content identity
+
+- Worktree: `C:\\_w\\m1a-composition-r3-20261028`
+- Local branch: `codex/m1a-current-main-fail-closed-20261028`
+- Expected parent HEAD: `e1b430956146c4aa0cadc1df2c3df92150b7f7ea`
+- Existing PR #556 base: `79ab8c50eaa7518120d5ebed9db4747d395a21cb`
+- Only authorized paths:
+  1. `IABV_v1.5/src/iabv_v15/infra/mcp/windows_handle_reader.py`; expected candidate blob `2facf2a4447d1acff69b1845390355902160dbfa`; reported SHA-256 `59ede3b64cc20bb71fc6e0300572aab174221e8e9d5abd723b6b62efad46690e`.
+  2. `IABV_v1.5/tests/test_windows_handle_reader.py`; expected candidate blob `1e72fc6e50a91678964bed38b05b82a9d8a4683f`; reported SHA-256 `ac8b5c101f2cb832debce53586bbffc6dc8272e9cc75e15897479235d56237ff`.
+
+These identities are expected preconditions, not permission to stage substitute content. If local source hashes, HEAD, branch or changed-path set differs, stop before staging/commit/push. Do not reset, stash, checkout, rebase or clean.
+
+### Review and evidence already available
+
+- `F-556-01=CLOSED_AT_STATIC_REVIEW_SCOPE`: cap+1 raises `AUTHORIZED_DIRECTORY_ENTRY_LIMIT_EXCEEDED`; no partial directory list is returned; normal completed lists are sorted.
+- `F-556-02=CLOSED_AT_STATIC_REVIEW_SCOPE`: `NumberOfLinks != 1` raises `HARD_LINK_DENIED` within the existing cleanup boundary.
+- The owner-provided diff was statically adjudicated. Codex reported 30 focused tests pass and clean `git diff --check`; this task does not require rerunning tests.
+- Codex reported a bounded native Windows 11 build 10.0.26300 / NTFS fixture: ordinary sampled directories and one-link file had `NumberOfLinks=1` and were accepted; a real hard-linked file pair had `NumberOfLinks=2`, was denied, and the denied handle was closed. This native result is scoped to that fixture/build and remains `OWNER_CODEX_REPORTED` in the coordinator session. The forced invalid-information-class error 87 proves that path's cleanup, not a spontaneous failure of a valid FileStandardInfo query.
+- Receipts: [static diff adjudication](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-M1A-G1-F556-01-02-INDEPENDENT-STATIC-DIFF-ADJUDICATION.md); [native probe receipt](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-M1A-G1-NATIVE-LINK-COUNT-CONFORMANCE-RECEIPT.md).
+
+### Mandatory publication protocol
+
+1. Verify preconditions and exact hashes. Verify current remote PR branch tip/upstream so a concurrent remote update cannot be overwritten.
+2. Confirm all worktree changes are exactly the two allowed paths. Inspect cached and unstaged diff scopes before mutation.
+3. Stage **only** the two literal paths using explicit path arguments. Never use `git add -A`, `git add .`, or a broad pathspec.
+4. Verify the staged names equal exactly the two authorized paths; verify the staged blobs equal the expected candidate blob identities and the diff contains only the reviewed changes. If any unrelated staged/unstaged/untracked state would be included or overwritten, stop and ask the Owner instead of cleaning it.
+5. Create one focused commit with an explicit message, e.g. `Fix fail-closed Windows handle directory listing and hard-link policy`.
+6. Push fast-forward only to the existing branch `codex/m1a-current-main-fail-closed-20261028` that backs PR #556. Never force-push, create a second PR, change the base, or push to main.
+7. Fetch the new remote target files and verify both Git blob SHAs match the committed file contents. Record commit SHA, parent SHA, changed file list/statistics, local final tree/status, remote branch tip and both remote blob hashes. Confirm PR #556 remains open/draft/unmerged.
+8. If push rejects due to remote movement, stop; do not rebase/force-push or replay the commit without new authorization. Report the observed branch movement.
+9. Do not run tests/build/native probe again in this publication task. Do not alter the source beyond the reviewed two-file diff.
+
+### No-go boundaries
+
+- No merge, PR-ready transition, main mutation, code changes beyond the two exact paths, CI rerun, build or test suite rerun.
+- No server/MCP product runtime, protected reads, credentials, enrollment, tunnel or bridge activation.
+- No cleanup or removal of existing files.
+- `C:\\Python` remains forbidden.
+- No claim that G1/G2/G3 or bridge readiness is established.
+
+```text
+ACTIVE_TASK=M1A_G1_F556_01_02_COMMIT_PUSH_EXISTING_PR_556_20261029
+OWNER_AUTHORIZATION=EXPLICIT_COMMIT_AND_PUSH_TWO_EXACT_PATHS
+TARGET_BRANCH=codex/m1a-current-main-fail-closed-20261028
+EXPECTED_PARENT=e1b430956146c4aa0cadc1df2c3df92150b7f7ea
+TARGET_PR=556
+BASE=79ab8c50eaa7518120d5ebed9db4747d395a21cb
+CHANGED_PATH_ALLOWLIST=2_EXACT_FILES
+FORCE_PUSH=FORBIDDEN
+MERGE=NOT_AUTHORIZED
+TESTS/BUILD/RUNTIME=NOT_RUN_FOR_PUBLICATION_TASK
+G1/G2/G3=NOT_ESTABLISHED
+MCP_TOOL_ALLOWLIST=EMPTY
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+C:\\Python=DO_NOT_TOUCH
+AUTOMATIC_FOLLOW_ON=FALSE
+```
+
+Canonical `main` remains unchanged. This task is an authorized publication step for a reviewable draft PR, not production activation or product approval.
+
+---
+
+## OVERRIDE — GitHub fetch-back confirms the repaired M1A files are still local-only (2026-10-29)
+
+After the native probe receipt was adjudicated, the remote PR #556 branch was read directly via GitHub for both target paths at branch codex/m1a-current-main-fail-closed-20261028. The remote blobs remain the pre-repair base blobs:
+- IABV_v1.5/src/iabv_v15/infra/mcp/windows_handle_reader.py = cf3045be70e6824bdcc627ccefa14ea33faf6342
+- IABV_v1.5/tests/test_windows_handle_reader.py = 9f273f5bac57b3eed6fa3e9253b526f690b9766a
+
+This directly verifies that the two local final blobs (reported as 2facf2a4447d1acff69b1845390355902160dbfa and 1e72fc6e50a91678964bed38b05b82a9d8a4683f) have **not** been published to those PR paths. This check confirms those two file identities, not the complete remote PR HEAD or all other files.
+
+Remote fetch-back status:
+- REMOTE_PR556_TARGET_FILE_FETCHBACK=VERIFIED
+- REMOTE_READER_BLOB=cf3045be70e6824bdcc627ccefa14ea33faf6342
+- REMOTE_TEST_BLOB=9f273f5bac57b3eed6fa3e9253b526f690b9766a
+- LOCAL_FINAL_REPAIR_BLOBS=NOT_PRESENT_AT_REMOTE_TARGET_PATHS
+- CODE_PUBLICATION=NOT_DONE
+- NEXT_ACTION=OWNER_DECISION_REQUIRED_FOR_CODE_PUBLICATION_TO_EXISTING_PR_556
+- NATIVE_CONFORMANCE=PASS_FOR_REPORTED_NTFS_FIXTURE_ONLY
+- F556_01/F556_02=CLOSED_AT_STATIC_REVIEW_SCOPE
+- G1/G2/G3=NOT_ESTABLISHED
+- MCP_TOOL_ALLOWLIST=EMPTY
+- PROTECTED_READS=FAIL_CLOSED
+- TUNNEL=DISABLED
+- BRIDGE=BRIDGE_NOT_READY
+- PRODUCT_CANDIDATE_MERGE=NOT_AUTHORIZED
+- C:\Python=DO_NOT_TOUCH
+
+This observation does not authorize a commit, push, branch mutation or merge. Canonical main remains unchanged, and the route update is only proposed on draft PR #557.
+
+---
+
+## OVERRIDE — Native link-count probe reported passing on one Windows 11 / NTFS fixture (2026-10-29)
+
+The Owner supplied Codex's receipt for the explicitly authorized task M1A_G1_NATIVE_LINK_COUNT_CONFORMANCE_20261029. The bounded result is recorded in the [native conformance receipt](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-M1A-G1-NATIVE-LINK-COUNT-CONFORMANCE-RECEIPT.md). This update is proposed on draft PR #557 only.
+
+Codex reports Windows 11 build 10.0.26300, Python 3.13.2, NTFS on volume C: (serial ecb2f3eb). Native FileStandardInfo values were NumberOfLinks=1 for the sampled root and three directories; NumberOfLinks=1 for single.txt; and NumberOfLinks=2 for both names of a file successfully hard-linked with CreateHardLinkW. The uncommitted reader candidate reportedly accepted the single-link file and all sampled directories, denied the multiply-linked file with HARD_LINK_DENIED, and closed rejected handles. The fixture and temporary directories were reportedly removed after all handles were closed.
+
+This is OWNER_CODEX_REPORTED in this session; the local operation and hashes were not independently rerun or recalculated here. The supported conclusion is bounded: no directory traversal incompatibility was observed on the one tested NTFS fixture/build. Other filesystems, volumes, builds and concurrency behavior remain UNKNOWN.
+
+The receipt also reports a query-error exercise using invalid information class 0x7fffffff, which returned Windows error 87 and caused WINDOWS_HANDLE_METADATA_QUERY_FAILED with handle cleanup. This establishes only the exercised forced invalid-class error path; it does not represent a spontaneous failure of a valid FileStandardInfo query. The valid-class failure case remains covered only by the earlier reported synthetic test.
+
+The native probe changed no source. PR #556 remains unchanged remotely at its prior expected HEAD; the two-file repair is still local, uncommitted and unpublished. The next product-candidate decision is whether the Owner explicitly authorizes publishing the already-reviewed two-file repair to the existing PR #556 for a new exact-HEAD review. The authorization to run this native probe does not itself authorize code commit, push, publication or merge.
+
+~~~text
+ACTIVE_TASK=M1A_G1_F556_01_02_CODE_CANDIDATE_PUBLICATION_DECISION_20261029
+NATIVE_PROBE=COMPLETE; OWNER_CODEX_REPORTED
+NATIVE_CONFORMANCE=PASS_FOR_SAMPLED_NTFS_FIXTURE_ONLY
+F556_01=CLOSED_AT_STATIC_REVIEW_SCOPE
+F556_02=CLOSED_AT_STATIC_REVIEW_SCOPE; NATIVE_POLICY_SUPPORTED_FOR_SAMPLED_CASES
+DIRECTORY_TRAVERSAL_COMPATIBILITY_FAILURE=NOT_OBSERVED_IN_SAMPLED_FIXTURE
+VALID_FILESTANDARDINFO_QUERY_FAILURE=NATIVE_FAILURE_NOT_INDUCED; SYNTHETIC_TEST_REPORTED
+TESTS=30_PASSED; OWNER_CODEX_REPORTED; NOT_RERUN
+LOCAL_REPAIR=UNCOMMITTED; UNPUBLISHED
+PR_556_REMOTE_HEAD=e1b430956146c4aa0cadc1df2c3df92150b7f7ea; OWNER/CODEX_REPORTED
+NEXT_ACTION=OWNER_DECISION_ON_PUBLISHING_EXISTING_TWO_FILE_REPAIR_TO_PR_556; NO_AUTOMATIC_PUSH
+OPTION_D=RATIFIED_NO_BOOTSTRAP
+G1/G2/G3=NOT_ESTABLISHED
+MCP_TOOL_ALLOWLIST=EMPTY
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+PRODUCT_CANDIDATE_MERGE=NOT_AUTHORIZED
+C:\Python=DO_NOT_TOUCH
+AUTOMATIC_FOLLOW_ON=FALSE
+~~~
+
+---
+
+## OVERRIDE — Owner authorizes bounded native NumberOfLinks conformance probe (2026-10-29)
+
+The Owner explicitly authorized a single native Windows/filesystem conformance probe after the static adjudication of the F-556 repair diff. Authorization and exact execution boundaries are persisted in [M1A native link-count probe authorization](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-M1A-G1-NATIVE-LINK-COUNT-CONFORMANCE-AUTHORIZATION.md).
+
+This is an execution authorization for the probe only, not a general authorization for code changes, server/runtime, credentials, protected reads, tunnel, publication, merge or bridge activation.
+
+The discriminating question is whether the actual Windows filesystem reports NumberOfLinks != 1 for ordinary directory components that the new unconditional guard would reject. The probe must also measure a single-link file and, if supported on the same volume, a real two-name hard-linked file, then call the uncommitted _open_component only against its own temporary fixture. It must report native values/errors, path/branch/HEAD and the exact reader hash first; no automatic retargeting.
+
+\`\`\`text
+ACTIVE_TASK=M1A_G1_NATIVE_LINK_COUNT_CONFORMANCE_20261029
+OWNER_AUTHORIZATION=EXPLICIT
+EXECUTION=AUTHORIZED; NOT_RUN_AT_THIS_RECORD
+TARGET_WORKTREE=C:\\_w\\m1a-composition-r3-20261028
+TARGET_BRANCH=codex/m1a-current-main-fail-closed-20261028
+EXPECTED_HEAD=e1b430956146c4aa0cadc1df2c3df92150b7f7ea
+TARGET_READER_SHA256=59ede3b64cc20bb71fc6e0300572aab174221e8e9d5abd723b6b62efad46690e
+PROBE_SCOPE=TEMP_FIXTURE; DIRECT_NATIVE_FILE_STANDARD_INFO; _open_component
+SOURCE_CHANGES=FORBIDDEN
+TEST_SUITE_RERUN=FORBIDDEN_UNLESS_SEPARATELY_AUTHORIZED
+SERVER/MCP/PROTECTED_READS/CREDENTIALS/ENROLLMENT/TUNNEL=FORBIDDEN
+C:\\Python=DO_NOT_TOUCH
+NEXT_ACTION=CODEX_RUN_BOUNDED_NATIVE_PROBE_AND_RETURN_OBSERVATION_RECEIPT
+G1/G2/G3=NOT_ESTABLISHED
+MCP_TOOL_ALLOWLIST=EMPTY
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+PRODUCT_CANDIDATE_MERGE=NOT_AUTHORIZED
+\`\`\`
+
+The runtime observation is required because the static patch applies the single-link condition to directories as well as ordinary files. If ordinary directory metadata does not satisfy the guard, report the resulting traversal/listing incompatibility; do not silently weaken or rewrite the guard during the probe. A failed or unavailable hard-link operation is a partial result, not a pass.
+
+Canonical main remains unchanged; this task route is proposed on draft PR #557 only.
+
+---
+
+## OVERRIDE — F-556-01/F-556-02 repair diff independently adjudicated at static scope (2026-10-29)
+
+The Owner supplied the complete 1,555-line diff in eight consecutive code blocks from Codex's external patch artifact. The reviewer inspected the visible patch text and persisted the bounded adjudication receipt: [M1A F-556-01/F-556-02 independent static diff adjudication](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-M1A-G1-F556-01-02-INDEPENDENT-STATIC-DIFF-ADJUDICATION.md).
+
+**Result at the demonstrated evidence stage:**
+- `F-556-01=CLOSED_AT_STATIC_REVIEW_SCOPE`: cap+1 raises `AUTHORIZED_DIRECTORY_ENTRY_LIMIT_EXCEEDED`; there is no partial-list return on that branch, successful lists are sorted, and the new stub-path test asserts no names/`entries` in the denial response.
+- `F-556-02=CLOSED_AT_STATIC_REVIEW_SCOPE`: after `_FILE_STANDARD_INFO` query, `NumberOfLinks != 1` raises `HARD_LINK_DENIED` inside the existing handle-cleanup boundary; the provided synthetic tests cover one-link success, multiple-link denial/close and query-failure denial/close.
+- These are source-level closures only. The reported `30 passed` and `git diff --check=0` remain `OWNER_CODEX_REPORTED`; no tests were run by the reviewer. The local source changes remain uncommitted/unpublished and are not present in PR #556 at its expected remote HEAD.
+- Native Windows/filesystem behavior is still unknown. The hard-link rule runs on intermediate/final directory components too; validate native `NumberOfLinks` values for ordinary directories and files and any relevant race/handle-sharing semantics before treating the containment policy as operational.
+- The patch's reported file digest/size and exact byte identity remain `OWNER_CODEX_REPORTED`; no .patch file attachment was available to independently recompute the artifact digest. The visibly pasted diff showed a few `+ ` blank-line markers despite the reported clean diff check, so literal-byte versus transcript-rendering status remains `UNKNOWN`, not a confirmed source defect.
+
+The next open edge is **authorized native Windows/filesystem conformance for the hard-link policy**, not another unchanged static review or immediate rerun of the 30-test suite. No native/runtime action is authorized by this adjudication. The source-level findings may be considered fixed for review scope; G1/G2/G3 remain unestablished.
+
+```text
+ACTIVE_TASK=M1A_G1_NATIVE_LINK_COUNT_CONFORMANCE_GATE_DESIGN_20261029
+M1A_PR=556
+M1A_EXPECTED_REMOTE_HEAD=e1b430956146c4aa0cadc1df2c3df92150b7f7ea
+F556_01=CLOSED_AT_STATIC_REVIEW_SCOPE
+F556_02=CLOSED_AT_STATIC_REVIEW_SCOPE
+SOURCE_DIFF_REVIEW=INSPECTED_FROM_OWNER_PASTED_PATCH
+PATCH_DIGEST_INDEPENDENTLY_RECOMPUTED=FALSE
+TARGETED_TESTS=30_PASSED; OWNER_CODEX_REPORTED; NOT_RERUN_BY_REVIEWER
+GIT_DIFF_CHECK=PASS; OWNER_CODEX_REPORTED
+NATIVE_WINDOWS_CONFORMANCE=NOT_RUN
+LOCAL_CODE_PUBLICATION=NOT_DONE
+OPTION_D=RATIFIED_NO_BOOTSTRAP
+G1/G2/G3=NOT_ESTABLISHED
+MCP_TOOL_ALLOWLIST=EMPTY
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+PRODUCT_CANDIDATE_MERGE=NOT_AUTHORIZED
+C:\\Python=DO_NOT_TOUCH
+AUTOMATIC_FOLLOW_ON=FALSE
+```
+
+This is a proposed update on draft PR #557 only. Canonical `main` has not adopted this route.
+
+---
+
+## OVERRIDE — Codex reports bounded F-556-01/F-556-02 local repair and 30 focused tests pass; independent diff remains open (2026-10-29)
+
+This update is a continuity proposal on draft PR #557 only. It records the Owner-supplied Codex receipt for the uncommitted local worktree; the exact changed source/test bytes remain unavailable to this session and are **not** published to GitHub. It does not convert the local report into an independently verified source review or test execution claim.
+
+- Existing code candidate: [PR #556](https://github.com/jhonf463r/Python/pull/556), still tracked at base `79ab8c50eaa7518120d5ebed9db4747d395a21cb`, source HEAD reported unchanged at `e1b430956146c4aa0cadc1df2c3df92150b7f7ea`.
+- Local Codex worktree reported at `C:\\_w\\m1a-composition-r3-20261028`, branch `codex/m1a-current-main-fail-closed-20261028`; two files changed, 235 insertions / 3 deletions, uncommitted and unpublished.
+- F-556-01: cap+1 now reportedly raises `AUTHORIZED_DIRECTORY_ENTRY_LIMIT_EXCEEDED` rather than returning partial directory names. Effective cap 200 and sorting of successful results are reported intact.
+- F-556-02: `NumberOfLinks != 1` reportedly raises `HARD_LINK_DENIED`; query failure reportedly remains fail-closed, with handle cleanup tested.
+- Codex reports `30 passed in 0.85s` on Python 3.13.2 / pytest 9.0.3 and `git diff --check` exit 0. The session has not independently run those tests, fetched the final local source, verified the local blobs/hashes, or inspected the final diff.
+- Detailed evidence and hashes: [Codex local repair receipt](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-M1A-G1-F556-01-02-CODEX-LOCAL-REPAIR-RECEIPT.md).
+
+The first open causal edge is not another test run and not a second broad review. It is to make the **exact final two-file unified diff** available to an independent reviewer without changing/publishing the worktree. After that, review the actual final bytes against the F-556-01/F-556-02 oracle, including error-vocabulary/response mapping, no partial-name disclosure, exact-cap sorting, hard-link rejection order, and handle closure. Avoid treating synthetic native-call stubs as native Windows conformance.
+
+```text
+ACTIVE_TASK=M1A_G1_F556_01_02_EXACT_DIFF_EXPOSURE_AND_INDEPENDENT_ADJUDICATION_20261029
+M1A_PR=556
+M1A_REMOTE_EXPECTED_HEAD=e1b430956146c4aa0cadc1df2c3df92150b7f7ea
+M1A_BASE=79ab8c50eaa7518120d5ebed9db4747d395a21cb
+LOCAL_REPAIR=OWNER_CODEX_REPORTED; UNCOMMITTED; UNPUBLISHED
+CHANGED_FILES=2; DIFF_STATS=235_INSERTIONS_3_DELETIONS; OWNER_CODEX_REPORTED
+F556_01=FIX_REPORTED_LOCAL; INDEPENDENT_DIFF_REVIEW_PENDING
+F556_02=FIX_REPORTED_LOCAL; INDEPENDENT_DIFF_REVIEW_PENDING
+TARGETED_TESTS=30_PASSED; OWNER_CODEX_REPORTED
+DIFF_CHECK=PASS; OWNER_CODEX_REPORTED
+FINAL_BYTES_INDEPENDENTLY_FETCHED=FALSE
+NATIVE_WINDOWS_CONFORMANCE=NOT_RUN
+NEXT_ACTION=EXPOSE_EXACT_UNIFIED_DIFF_FOR_INDEPENDENT_REVIEW; DO_NOT_REPEAT_TESTS_UNCHANGED
+OPTION_D=RATIFIED_NO_BOOTSTRAP
+G1/G2/G3=NOT_ESTABLISHED
+MCP_TOOL_ALLOWLIST=EMPTY
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+PRODUCT_CANDIDATE_MERGE=NOT_AUTHORIZED
+C:\\Python=DO_NOT_TOUCH
+AUTOMATIC_FOLLOW_ON=FALSE
+```
+
+This route is proposed on PR #557 only. Canonical `main` still opens with the stale M1B-local/unpublished override and must not be described as updated or adopting this route.
+
+---
+
+## OVERRIDE — Claude M1A Windows reader R1 adjudicated; F-556-01/F-556-02 are the first open repair edge (2026-10-29)
+
+Claude/Sonnet's bounded static-review return has been received and adjudicated against the exact live candidate. PR #556 remains open/draft/unmerged at HEAD `e1b430956146c4aa0cadc1df2c3df92150b7f7ea`, base `79ab8c50eaa7518120d5ebed9db4747d395a21cb`. Seven assigned file Git blobs were independently fetched and matched. The exact `windows_handle_reader.py` source returns a partial, unsorted listing on cap overflow (F-556-01), and declares but never enforces `NumberOfLinks` (F-556-02). See [the adjudication receipt](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-M1A-G1-WINDOWS-HANDLE-READER-CLAUDE-R1-ADJUDICATION-RECEIPT.md).
+
+The first open technical edge is a bounded source/test candidate correction for F-556-01 and F-556-02, followed by targeted static/read-only review of the relevant connection bodies if the corrected diff warrants it. No code edits or tests were executed during adjudication. The currently recorded permission remains read-only/documentation; source/test mutation requires explicit Owner authorization. Do not ask Claude to repeat this static review or open a duplicate PR. Do not infer exploitability/runtime behavior from static evidence alone.
+
+```text
+M1A_CANDIDATE=PR_556; HEAD=e1b430956146c4aa0cadc1df2c3df92150b7f7ea
+CLAUDE_R1=RECEIVED_AND_ADJUDICATED_STATIC_ONLY
+F556_01=STATIC_DEFECT_CONFIRMED
+F556_02=STATIC_GAP_CONFIRMED; CONTAINMENT_IMPACT=INFERENCE
+TESTS_BUILD_NATIVE_WINDOWS_RUNTIME=NOT_RUN
+CODE_CHANGE_AND_TEST_EXECUTION=NOT_AUTHORIZED_IN_THIS_STEP
+NEXT_ACTION=PREPARE_BOUNDED_CODEX_REPAIR_HANDOFF
+G1/G2/G3=NOT_ESTABLISHED
+MCP_TOOL_ALLOWLIST=EMPTY
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+PRODUCT_CANDIDATE_MERGE=NOT_AUTHORIZED
+C:\\Python=DO_NOT_TOUCH
+```
+
+The proposed method and this receipt remain on PR #557. Canonical `main` still has the older M1B opening snapshot; do not silently amend it or claim adoption. This route update records the result and selects the next frontier without modifying product code, testing, credentials, enrollment, protected reads or runtime.
+
+## OVERRIDE — cross-chat result adjudication method added on draft PR #557 (2026-10-29)
+
+This is a documentation/method update on the existing draft PR #557 branch; `main` and the active technical route are unchanged. The living Space-Time protocol now contains an incoming-AI-result adjudication gate, and UAAL-D021 §8.6 defines reasoning acceptance cases. Before the next material handoff, rebind Claude/Codex output to the live target revision and exact files; distinguish direct source evidence, actor-reported execution, inference, unknown and not-run; compare the receipt to its original acceptance oracle; update the provisional world model; and only then choose the first authorized, discriminating next action. Incomplete receipts require targeted evidence completion, not repetition of the whole task. The README, CONTEXT-INDEX, AGENTS, MEMORY-OPERATING-PROTOCOL and SYMBIOSIS-MAP entry pointers have been aligned with this proposed gate.
+
+```text
+METHOD_DELTA=RETURN_ADJUDICATION_GATE_PROPOSED_ON_PR_557
+ACTIVE_TASK=UNCHANGED; M1A_G1_CURRENT_HEAD_STATIC_REVIEW_REMAINING_WINDOWS_SECURITY_SURFACE_20261029
+NEXT_ACTION=AWAIT_AND_ADJUDICATE_CLAUDE_RECEIPT; NO_DUPLICATE_REVIEW
+CANONICAL_MAIN_ADOPTION=NOT_ESTABLISHED
+RUNTIME_ENFORCEMENT=NOT_PROVEN
+LATER_CAUSAL_REUSE=NOT_PROVEN
+G1/G2/G3=NOT_ESTABLISHED
+MCP_TOOL_ALLOWLIST=EMPTY
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+```
+
+This does not authorize code changes, tests, enrollment, credential creation, protected reads, runtime, tunnel or merge. The existing M1A review route and Owner authorization boundaries remain unchanged. Canonical adoption requires the explicitly authorized integration and exact live-main fetch-back.
+
+## OVERRIDE — M1B F-01/F-02 closed; next bounded G1 review pinned to live M1A HEAD (2026-10-29)
+
+This is a proposed route update on draft PR #557 only. Canonical `main` remains `79ab8c50eaa7518120d5ebed9db4747d395a21cb`, and its `CURRENT-STATE.md` blob `5945b23fdb5c13ce1068ca5d2d9e6513a1a06b95` still opens with the obsolete M1B local/unpublished status. This addendum does not alter `main` and is not canonical until the proposal is reconciled, authorized, integrated, and fetched back.
+
+### Perception / task-local world-model refinement — documentation proposal (2026-10-29)
+
+The Owner authorized consolidating the symbiosis method. The proposal strengthens the existing Space-Time protocol and UAAL-D021: reconstruct a provisional, objective-conditioned model from source-bound observations; distinguish facts/reports/inference/hypotheses/unknown/not-run; make material hypotheses predictive and falsifiable; map the minimum producer-to-consumer causal path; identify the first open edge; select the smallest authorized discriminating action; observe and verify the transition; then update the owning rule and evidence graph.
+
+- Living protocol core delta: [Space-Time cognition and adaptive continuity protocol](./CHAT-ARCH-2026-10-23-CONTINUITY-SPACE-TIME-OPERATING-PROTOCOL-v1.md), proposed revision 2.6, sections 1, 3 and 4.
+- Incident-specific algorithm and acceptance checks: [UAAL-D021 §8 — perception and provisional world model](./CHAT-ARCH-2026-10-28-UAAL-D021-ROUTE-TRUTH-ARTIFACT-IDENTITY-AND-ADVANCE-UTILITY.md#8-perception-provisional-world-model-and-discriminating-feedback-2026-10-29).
+- Cross-AI entry rule: [MEMORY-OPERATING-PROTOCOL.md](./MEMORY-OPERATING-PROTOCOL.md), proposed refinement 2026-10-29.
+
+```text
+METHOD_SCOPE=DOCUMENTATION_ONLY
+STATUS=PROPOSED_ON_DRAFT_PR_557; NOT_CANONICAL_ON_MAIN
+ACTIVE_TASK_AND_NEXT_ACTION=UNCHANGED; M1A_WINDOWS_SECURITY_STATIC_REVIEW_ROUTE
+RUNTIME_ENFORCEMENT=NOT_PROVEN
+OUTCOME_VERIFIED=BRANCH_FETCHBACK_VERIFIED
+CANONICAL_MAIN_ADOPTION=NOT_ESTABLISHED
+LATER_CAUSAL_REUSE=NOT_PROVEN
+```
+
+This method note does not change the M1A route below, authorize code edits/tests/runtime/enrollment/protected reads/tunnel/merge, or alter `OPTION_D` and G1/G2/G3. Canonical adoption requires authorized integration and exact live-`main` fetch-back.
+
+### New-chat continuity handoff — 2026-10-29
+
+Use the timestamped [Space-Time world-model / M1A handoff](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-NEW-CHAT-HANDOFF-SPACE-TIME-WORLD-MODEL-IABV.md) for this conversation's exact refs, deductions, evidence boundaries, M1B closed findings, proposed cognitive-method update and next-chat intake rule. It is a snapshot, not another router. The proposed route below remains on PR #557; reconcile it with live `main`, whose opening M1B snapshot is stale, without claiming canonical adoption.
+
+### M1B result — F-01/F-02 closed within exact reviewed delta
+
+- Existing code PR: [#555](https://github.com/jhonf463r/Python/pull/555), open/draft/unmerged; exact HEAD `c36ee5ed177a3b5afee764c277cc4a8b243594c8`, base `79ab8c50eaa7518120d5ebed9db4747d395a21cb`.
+- Reader blob `6ca2bdd8a62e3748ae902da754ffd377f0724623`, SHA-256 `8b4a6d4d161551562587415d8cfb4a4860db6d29804c432283d039893345d19b`.
+- Test blob `593991a818f2be547e97d6904f3a111f64d62562`, SHA-256 `f2f9f53b4782c64aa1f5a8a00108c52e2b68aa25aef58439ad36040e4e679587`.
+- Claude/Sonnet R2: `PASS`; `F01_DISPOSITION=CLOSED_BY_STATIC_REVIEW`; `F02_DISPOSITION=CLOSED_BY_STATIC_REVIEW`; no regressions found within the exact two-file delta. Review receipt: [M1B F-01/F-02 static review R2](./CHAT-ARCH-2026-10-28-M1B-F01-F02-STATIC-REVIEW-R2-RECEIPT.md).
+- Codex reports the focused test as 3 passed / 34 deselected and the full reader test file as 37 passed in an API-backed minimal harness. These remain `OWNER_CODEX_REPORTED`; the harness did not load repository pytest configuration, and neither Claude nor this ChatGPT session ran pytest.
+- Residual `resolve() -> open()` filesystem TOCTOU limitation remains unchanged. `CLEANUP_BLOCKED` for the harness is recorded in the validation receipt. No merge or bridge activation is authorized by these results.
+
+### Route for progressing toward G1/G2/G3 — existing M1A candidate only
+
+Live PR #556 is [the existing M1A/M1F fail-closed authorization candidate](https://github.com/jhonf463r/Python/pull/556), open/draft/unmerged, base `79ab8c50eaa7518120d5ebed9db4747d395a21cb`, current HEAD `e1b430956146c4aa0cadc1df2c3df92150b7f7ea`, with 33 changed files. Do not use an older route/task bound to HEAD `3d29c0c0f4af657a889c44198d46fa59f07f021a` without re-binding it to the live current HEAD.
+
+The prior independent M1A static review receipt at the live M1A candidate covered 13 of 33 files in depth and left the remaining 20 unknown; it recorded H-01 about Authenticode revocation/cache-only retrieval flags and H-02 about a hardcoded owner ID whose reviewed provider chain remained fail-closed. The remaining high-risk source surface includes `IABV_v1.5/src/iabv_v15/services/security/windows_crypto.py`, `IABV_v1.5/src/iabv_v15/services/security/windows_cng_key_store.py`, and `IABV_v1.5/src/iabv_v15/infra/mcp/windows_handle_reader.py`, together with their directly relevant tests. This is a candidate review scope, not a claim those files are defective.
+
+Previously issued bounded handoff; response pending per the Owner: **Claude/Sonnet read-only static review of those three exact current-HEAD files and directly related tests**, with live PR #556 HEAD, blobs, and the delta from its prior receipt bound to the review. Do not issue a duplicate prompt while this receipt is pending. It must identify any already-reviewed lines as closed, retain unread coverage as `UNKNOWN`, and return the first unresolved G1 trust-boundary edge. No code edits, test execution, enrollment, key/manifest creation, protected reads, MCP/runtime, tunnels, merge, or branch rebase are part of this task.
+
+### Current route contract
+
+```text
+ACTIVE_TASK=M1A_G1_F556_01_02_BOUNDED_REPAIR_HANDOFF_PREPARATION_20261029
+M1B_F01_F02=CLOSED_BY_STATIC_REVIEW_ON_C36EE5ED
+M1B_TESTS=3_FOCUSED_AND_37_FULL_FILE_PASSED; OWNER_CODEX_REPORTED_MINIMAL_HARNESS
+M1B_INTEGRATION=OWNER_DECISION_REQUIRED; MERGE_NOT_AUTHORIZED
+M1A_PR=556
+M1A_EXPECTED_HEAD=e1b430956146c4aa0cadc1df2c3df92150b7f7ea
+CLAUDE_RECEIPT_STATUS=RECEIVED_AND_ADJUDICATED_STATIC_ONLY
+F556_01=STATIC_DEFECT_CONFIRMED; OVERFLOW_RETURNS_PARTIAL_UNSORTED_NAMES
+F556_02=STATIC_GAP_CONFIRMED; NUMBEROFLINKS_NOT_ENFORCED
+F556_02_CONTAINMENT_IMPACT=INFERENCE; NATIVE_VALIDATION_NOT_RUN
+NEXT_ACTOR=CODEX_IF_SOURCE_TEST_CHANGES_ARE_AUTHORIZED
+NEXT_ACTION=PREPARE_BOUNDED_REPAIR_PROMPT; CODE_CHANGE_AND_TEST_EXECUTION_NOT_AUTHORIZED_IN_THIS_STEP
+RECEIPT=https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-M1A-G1-WINDOWS-HANDLE-READER-CLAUDE-R1-ADJUDICATION-RECEIPT.md
+NO_CODE_CHANGE=TRUE
+TESTS_BUILD_RUNTIME=NOT_RUN_FOR_CURRENT_STEP
+OPTION_D=RATIFIED_NO_BOOTSTRAP
+G1/G2/G3=NOT_ESTABLISHED
+MCP_TOOL_ALLOWLIST=EMPTY
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+AUTOMATIC_BOOTSTRAP=FALSE
+AUTOMATIC_FOLLOW_ON=FALSE
+PRODUCT_CANDIDATE_MERGE=NOT_AUTHORIZED
+C:\Python=DO_NOT_TOUCH
+```
+
+History below is retained verbatim. This override is proposed on the draft branch only; it does not supersede canonical `main` before authorized integration and fetch-back.
+
+---
+## Owner-directed route update — request-shaping fixes statically reviewed; exact-head validation next (2026-10-29)
+
+This route update supersedes the prior Codex task to correct the three request-contract findings at the preceding R3 candidate. It records the newly observed live head and focused static review. It changes only the proposed continuity branch, not canonical main, and does not activate any security gate.
+
+The algorithmic learning delta is proposed as [UAAL-D022 — Effective Operation Semantics and Evidence-Producer Integrity](./CHAT-ARCH-2026-10-29-UAAL-D022-EFFECTIVE-OPERATION-AND-EVIDENCE-PRODUCER-INTEGRITY.md). It generalizes the three adapter findings into a reusable check of effective method, destination, endpoint form, environment, producer identity and exact-head evidence. UAAL-D022 is a proposed method on this branch, not canonical on main.
+
+### Live truth at preflight
+
+- Canonical main base reported by both live PRs: 79ab8c50eaa7518120d5ebed9db4747d395a21cb.
+- Canonical CURRENT-STATE.md blob: 5945b23fdb5c13ce1068ca5d2d9e6513a1a06b95. Ordinary Contents reads continue returning an empty body; exact blob retrieval returned 1,068,486 characters.
+- PR #556: open/draft/unmerged, base 79ab8c50..., live HEAD 3d29c0c0f4af657a889c44198d46fa59f07f021a.
+- PR #557 was at 7abce405cecdfa1041ca225ddb00d0cde65df4e5 before this protocol writeback. It remains a separate draft proposal; this note is not canonical until authorized integration and main fetch-back.
+- Exact source blob at PR #556 HEAD: 86ee5f87b2ae3c822696d2b6ead7b39f7ad9b9cb.
+- Exact test blob at PR #556 HEAD: df1376643979f53050b70558101307a0a556935f.
+- Latest source commit message: Pin GitHub API request host and method; it changes only the focal client module and tests.
+
+### Static review outcome — three defects closed at source level
+
+The preceding exact head c8177ea205a7046557b6f2fbaaf13c62b8f8aa77 had three review findings:
+1. gh api -f key=value without explicit --method GET could select POST.
+2. The API host could depend on inherited GH_HOST because --hostname github.com was not fixed.
+3. The internally validated /repos/... endpoint was passed with a leading slash, incompatible with the Windows gh api target form.
+
+The current commit 3d29c0c0f4af657a889c44198d46fa59f07f021a fixes these in source: a fixed --method GET, fixed --hostname github.com, child GH_HOST=github.com, rejection of caller parameters named method/host, and removal of exactly one leading slash only after internal path validation. The test source asserts exact argv, the relative endpoint and canonical host despite an attacker-controlled inherited GH_HOST. Focused static review considers all three source findings addressed.
+
+Review comment recording this result and remaining validation: https://github.com/jhonf463r/Python/pull/556#pullrequestreview-5691884276.
+
+### Evidence boundary — do not carry tests across a changed head
+
+Codex previously reported 50 passed on Python 3.13.2 / pytest 9.0.3 for parent c8177ea. That report is OWNER_CODEX_REPORTED for the parent only and is not evidence that the added tests pass at 3d29c0c. No new exact-head local test receipt was available to this static review. GitHub Actions run 40801815380 ended startup_failure; combined status reported no checks. Therefore EXACT_HEAD_TESTS=NOT_VERIFIED and CI_TEST_EVIDENCE=NONE.
+
+One small non-interactive hardening request remains: set GH_PROMPT_DISABLED=1 and GIT_TERMINAL_PROMPT=0 in the child environment and assert them synthetically. It is not evidence of an authorization failure, and no CLI call should be run to test it.
+
+### Next causal action for Codex
+
+TASK_ID=M1A_G1_AUTHENTICATED_GH_ADAPTER_EXACT_HEAD_VALIDATION_R2_20261029
+NEXT_ACTOR=CODEX
+TARGET_PR=556
+EXPECTED_HEAD=3d29c0c0f4af657a889c44198d46fa59f07f021a
+WORKTREE=C:/_w/m1a-composition-r3-20261028
+MODE=BOUNDED_NONINTERACTIVE_HARDENING_AND_EXACT_HEAD_TESTS
+NO_GH_EXECUTION=TRUE
+NO_PRIVATE_FETCHBACK=TRUE
+NO_C_PYTHON_ACCESS=TRUE
+NO_MAIN_OR_PR557_PRODUCT_CODE_CHANGE=TRUE
+NO_MERGE=TRUE
+
+Codex must verify the live refs and worktree before action. If the isolated candidate worktree is at the expected head and clean, add GH_PROMPT_DISABLED=1 and GIT_TERMINAL_PROMPT=0 to the per-child environment, add assertions to the synthetic invocation test, run the focused suite with the existing Python 3.13.2 / pytest 9.0.3 environment, and run git diff --check. Do not invoke gh.exe, run an authenticated request, fetch the private manifest/repository through this adapter, or activate any gate. If the current head differs, reconcile its exact source and prior changes rather than resetting, cleaning or replaying the task against stale code. If code changes, publish only to the existing PR #556 branch through normal fast-forward, then independently review the new exact head.
+
+### Preserved invariants
+
+OPTION_D=RATIFIED_NO_BOOTSTRAP
+OWNER_TRUST_POLICY=APPROVED_FOR_EXACT_CANDIDATE_POLICY
+GITHUB_CLIENT_PROVENANCE=FAIL_CLOSED_UNTIL_CANDIDATE_REVIEW
+FETCHBACK=NOT_RUN
+G1/G2/G3=NOT_ESTABLISHED
+MCP_TOOL_ALLOWLIST=EMPTY
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+AUTOMATIC_BOOTSTRAP=FALSE
+AUTOMATIC_FOLLOW_ON=FALSE
+PRODUCT_CANDIDATE_MERGE=NOT_AUTHORIZED
+C:\Python=DO_NOT_TOUCH
+MEMORY_RETRIEVED=VERIFIED
+METHOD_ACTIVATED=VERIFIED
+METHOD_APPLIED=VERIFIED (live refs, exact source/test blob retrieval, focused static re-review and review comment)
+OUTCOME_VERIFIED=REQUEST_SHAPING_FIXES_STATICALLY_CONFIRMED; EXACT_HEAD_TESTS=NOT_VERIFIED; ACTIONS=STARTUP_FAILURE
+LATER_CAUSAL_REUSE=NOT_PROVEN
+
+---
+
+## Independent review of pinned Authenticode client candidate — request contract blockers recorded (2026-10-29)
+
+This route entry follows Codex's reported implementation and normal publication to the existing PR #556 branch. The current exact candidate source was fetched through GitHub for static review. No source changes were made by this review, no local tests were run, and no executable, authenticated API request, private fetchback, protected read or product runtime was invoked.
+
+### Exact live state and artifacts
+
+- Canonical `main=79ab8c50eaa7518120d5ebed9db4747d395a21cb`; the canonical `CURRENT-STATE.md` blob remains `5945b23fdb5c13ce1068ca5d2d9e6513a1a06b95`. Normal Contents reads return an empty body; the exact blob is available and was retrieved.
+- PR #556 is open/draft/unmerged at `c8177ea205a7046557b6f2fbaaf13c62b8f8aa77`, base `main=79ab8c50eaa7518120d5ebed9db4747d395a21cb`.
+- PR #557 continuity is open/draft/unmerged at `d764ff84d50fc9d442b4e2b068835bc0630d0794` before this note; this note remains noncanonical.
+- Exact R3 code blob fetched: `authenticated_github_enrollment.py` Git blob `b621eff1e137a3758613ac2275491ad922177006`.
+- Exact R3 test blob fetched: `test_g1_owner_enrollment_candidate.py` Git blob `fac331c9ed2c818ff43222ecd0f86fd93bd66276`.
+- The commit metadata shows the candidate commit `c8177ea205a7046557b6f2fbaaf13c62b8f8aa77` changed only these two files in its final commit. Codex-reported local SHA-256 values: module `41CB7322B7061F00AA3DB04F9743748CAD4F239703C6B267D1369064621A75F3`; tests `992BB37793632D57A5DEE2CBF8490ECE1C77344C66F434873EC5383E12958130`. GitHub object retrieval confirms exact remote text is available; the above local SHA-256 values remain `OWNER_CODEX_REPORTED` rather than independently recomputed here.
+- Codex reports `50 passed` on Python 3.13.2 / pytest 9.0.3. This was not rerun in this review. GitHub Actions run `40801094246` concluded `startup_failure`; combined status lists no checks. No CI success is established.
+
+### Static review findings posted to PR #556
+
+The pinned policy constants are present. The native verifier source calls `WinVerifyTrust` with the opened file handle; the code hashes the same pinned handle and keeps it open while subprocess creation occurs. The public `verify_owner_manifest_fetchback()` still rejects with `GITHUB_CLIENT_PROVENANCE_UNVERIFIED`. These are bounded candidate improvements, not production approval.
+
+Three independent request-construction blockers were found and posted as COMMENT reviews anchored to the exact candidate head:
+
+1. [Review comment 5691834810](https://github.com/jhonf463r/Python/pull/556#pullrequestreview-5691834810): `get_json()` uses `-f key=value` without explicitly fixing `--method GET`. The official [GitHub CLI API manual](https://cli.github.com/manual/gh_api) states that adding parameters switches the default method to POST unless `--method GET` is supplied. The private-fetchback verifier's files-list call supplies `per_page=100`, so the adapter would issue POST instead of the intended GET. Because the adapter permits repository-scoped paths beyond that one endpoint, this also violates its read-only contract and can turn a generic call with parameters into an unintended write request.
+2. [Review comment 5691839628](https://github.com/jhonf463r/Python/pull/556#pullrequestreview-5691839628): the invocation does not pin `--hostname github.com` and inherits the process environment. The official [GitHub CLI environment reference](https://cli.github.com/manual/gh_help_environment) documents `GH_HOST` as capable of selecting a different host. Responses are intended as evidence for the canonical GitHub repository; the host must be fixed, not environment-dependent.
+3. [Review comment 5691843892](https://github.com/jhonf463r/Python/pull/556#pullrequestreview-5691843892): internal API paths begin with `/repos/...` and are passed verbatim as the `gh api` endpoint. GitHub CLI source rejects an absolute endpoint path on Windows and instructs callers to omit the leading slash; see [the API command implementation](https://github.com/cli/cli/blob/trunk/pkg/cmd/api/api.go) and [Windows leading-slash issue](https://github.com/cli/cli/issues/6415). The current target is Windows, so the endpoint must be transformed to the CLI's relative form after internal validation.
+
+These are source-derived compatibility/control-contract findings. No CLI invocation was performed to reproduce them. The first two are security-significant; the third is a Windows compatibility blocker. All three need correction and tests before the adapter can be considered reviewable for a future production boundary.
+
+### Next bounded Codex action
+
+```TASK_ID=M1A_G1_AUTHENTICATED_GH_READONLY_REQUEST_SHAPING_R1_20261029
+NEXT_ACTOR=CODEX
+TARGET_PR=556
+BASE_HEAD_EXPECTED=c8177ea205a7046557b6f2fbaaf13c62b8f8aa77
+WORKTREE=C:\\_w\\m1a-composition-r3-20261028
+SCOPE=ONLY_AUTHENTICATED_GITHUB_ENROLLMENT_MODULE_AND_FOCAL_TESTS
+MODE=BOUNDED_SOURCE_CORRECTION_AND_SYNTHETIC_TESTS
+NO_GH_EXECUTION=TRUE
+NO_FETCHBACK=TRUE
+NO_C_PYTHON_ACCESS=TRUE
+NO_MAIN_OR_PR557_PRODUCT_CODE_CHANGE=TRUE
+NO_MERGE=TRUE
+```
+
+Required changes on the existing isolated worktree only:
+
+- Construct a fixed read-only command with an explicit `--method GET` and explicit `--hostname github.com`. Caller parameters must not override method/host.
+- Keep path validation in a canonical internal form if useful, but pass a relative API endpoint with exactly no leading slash to `gh api` on Windows.
+- Keep the fixed approved executable/policy, same-handle Authenticode/hash check, and public fetchback's unconditional fail-closed behavior.
+- Add synthetic assertions that parameterized calls include explicit GET, every call pins `github.com`, no endpoint begins with `/`, and validation errors/failing verification cause no subprocess invocation. Add a test demonstrating a parameter cannot change the HTTP method and that an inherited `GH_HOST` cannot override the explicit canonical host.
+- Prefer setting `GH_PROMPT_DISABLED=1` and `GIT_TERMINAL_PROMPT=0` in the per-child environment to ensure noninteractive failure. Do not print, inspect, retrieve, or copy credentials; preserve the already-authorized credential mechanism. Do not execute `gh.exe` in any test.
+- Run the focal synthetic suite and diff checks. Distinguish tests from native verification. No private fetchback, enrollment, real CNG key, runtime, protected reads, tunnel, Entra/ACL/IPC/service changes.
+- If the exact base/worktree state differs, stop and report rather than reset/clean. If bounded tests and review pass, publish to the existing PR #556 branch by normal fast-forward only; never force-push and never merge.
+
+### Preserved state
+
+```
+OWNER_TRUST_POLICY=APPROVED_FOR_EXACT_CANDIDATE_POLICY
+GITHUB_CLIENT_PROVENANCE=FAIL_CLOSED_UNTIL_CANDIDATE_REVIEW
+FETCHBACK=NOT_RUN
+G1/G2/G3=NOT_ESTABLISHED
+MCP_TOOL_ALLOWLIST=EMPTY
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+AUTOMATIC_BOOTSTRAP=FALSE
+AUTOMATIC_FOLLOW_ON=FALSE
+PRODUCT_CANDIDATE_MERGE=NOT_AUTHORIZED
+C:\\Python=DO_NOT_TOUCH
+MEMORY_RETRIEVED=VERIFIED
+METHOD_ACTIVATED=VERIFIED
+METHOD_APPLIED=VERIFIED (exact HEAD/blob static inspection and review comments submitted)
+OUTCOME_VERIFIED=SOURCE_REVIEW_FOUND_3_REQUEST_CONTRACT_BLOCKERS; 50 TESTS=OWNER_CODEX_REPORTED; ACTIONS=STARTUP_FAILURE
+LATER_CAUSAL_REUSE=NOT_PROVEN
+```
+
+Do not promote the client to trusted production or run fetchback until these request contract findings are repaired and the exact new HEAD has been independently reviewed.
+---
+
+## Owner authorization — pinned GitHub CLI Authenticode policy approved; candidate implementation routed (2026-10-29)
+
+The Owner explicitly authorized the proposed policy in chat with “sí autorizo”, in direct response to this exact proposal: require Windows Authenticode status `Valid`, pin the observed signer certificate thumbprint and exact installed-binary SHA-256, and block acceptance until any change is explicitly reviewed. This resolves the previous decision blocker `OWNER_TRUST_POLICY=NOT_APPROVED` for implementing the **source candidate policy** below. It does not authorize merging a product candidate, executing `gh.exe`, doing a repository fetchback, enrolling G1, or activating the bridge.
+
+### Owner-approved source-candidate policy (exact literals)
+
+- Policy identifier: `IABV_GITHUB_CLI_AUTHENTICODE_PIN_V1`
+- Expected absolute path from the reported inspection: `C:\\Program Files\\GitHub CLI\\gh.exe`
+- Required Authenticode result: `Valid`
+- Required signer certificate thumbprint (normalized uppercase, whitespace-free): `9A483710566AC7B58A19D32B4A64E44361EA7350`
+- Required SHA-256 of exact executable bytes (normalized uppercase, whitespace-free): `249613CC9DFB61EB267ACFA08C2253EDEA271BBBEC8F3CA3BF8D949A6575D60B`
+- Any path, signer, hash, or signature-status change is a rejection until a separately reviewed policy update is explicitly approved.
+- The fixed policy must come from a versioned source-controlled policy object, not an API caller argument, environment variable, mutable runtime option, or unchecked configuration file. The three observed identifiers are allowed now because the Owner explicitly approved this exact policy; earlier observations alone were not authorization.
+
+Evidence boundary: the local hash, signer and Authenticode result remain `OWNER_CODEX_REPORTED`; the Owner approval is `VERIFIED` as an explicit statement in this chat. This does not retroactively make the local binary bytes independently inspected by ChatGPT. The separate chain check previously reported `NotTimeValid` remains documented; the candidate must not silently override or misrepresent it. Authenticode does not prove build workflow provenance.
+
+### Next task — Codex, source/test candidate only
+
+```TASK_ID=M1A_G1_AUTHENTICODE_PINNED_POLICY_IMPLEMENTATION_R1_20261029
+NEXT_ACTOR=CODEX
+TARGET_PR=556
+BASE_HEAD_EXPECTED=668f7d62cf70a50fe27aa4d946fae66a8b4e1a64
+WORKTREE=C:\\_w\\m1a-composition-r3-20261028
+MODE=BOUNDED_SOURCE_IMPLEMENTATION_AND_SYNTHETIC_TESTS
+OWNER_TRUST_POLICY=EXPLICITLY_APPROVED_FOR_CANDIDATE
+NO_C_PYTHON_ACCESS=TRUE
+NO_GH_EXECUTION=TRUE
+NO_FETCHBACK=TRUE
+NO_REAL_CNG_KEY_OR_MANIFEST=TRUE
+NO_MAIN_OR_PR557_PRODUCT_CODE_CHANGE=TRUE
+NO_MERGE=TRUE
+```
+
+#### Required implementation behavior
+
+1. Read the canonical `CURRENT-STATE.md` from `main` first, recover via its exact blob if ordinary fetch returns empty, then verify live `main`, PR #556, PR #557 and the exact isolated worktree HEAD/status before editing. Stop if the expected candidate branch, HEAD, base or dirty state does not match; never reset, clean, sync, or touch `C:\\Python`.
+2. Add a versioned internal policy object with the exact approved path, Authenticode status, thumbprint and SHA-256 above. No caller, injected API, env var or untrusted configuration may replace policy values or choose another executable.
+3. Implement an independent Windows Authenticode verifier for the absolute approved path. Require status exactly `Valid`, the exact signer thumbprint, and the exact SHA-256. Reject missing policy, absent/malformed verifier output, errors, file absence, non-absolute/unexpected path, hash mismatch, signer mismatch, non-Valid status, and any unexpected verifier result.
+4. Review and address the verification-to-execution substitution race explicitly. Bind the verification result to the executable that will be invoked as strongly as the Windows implementation allows (for example, a read handle preventing write/delete replacement while hashing/verifying and while the approved process is launched). If a defensible binding cannot be implemented, keep the production path fail-closed rather than claim exact-byte binding.
+5. Integrate the verified executable into the production adapter only after verification; remove caller-controlled executable and arbitrary-API bypasses from the public entry. Synthetic injection must remain confined to a private test core/factory. A failing verification must cause zero API/client subprocess calls.
+6. Do not attempt release-attestation verification in this task. The accepted policy is Authenticode + the exact certificate thumbprint + the exact binary SHA-256; do not claim repository/workflow provenance.
+7. Add synthetic tests for policy constants, absent/malformed verifier result, wrong signer, wrong hash, non-Valid status, missing/changed executable, verifier exception, public API-injection bypass, executable path override, and no process/API invocation after a failed check. Do not run `gh.exe` during tests. Label synthetic results as synthetic, never as native Windows verification.
+8. Run the narrow relevant tests and any directly affected tests feasible in the existing isolated worktree. No native CNG, private fetchback, product runtime, MCP, tunnel, protected read, Entra/config/ACL/IPC/service changes. Report any suite that cannot be run and why.
+
+#### Publication rule
+
+If the tree starts in the exact expected clean candidate state, only the bounded files change, review and tests pass, and the production entry remains fail-closed against all bypasses, commit and push to the existing PR #556 branch with normal fast-forward only. Never force-push. If any precondition fails or the Windows executable-byte binding is unresolved, do not publish: return the exact blocker and safe local delta. Never merge PR #556.
+
+#### Receipt required
+
+Return exact base/head commit, changed file list and SHA-256 values, test commands/results, diff-check result, any untested/native-only claims, and the independent evidence for the Authenticode verifier and file-race treatment. Classify each item as `VERIFIED`, `OWNER_REPORTED`, `INFERENCE`, `HYPOTHESIS`, `UNKNOWN` or `NOT_RUN`. Preserve:
+
+```
+GITHUB_CLIENT_PROVENANCE=FAIL_CLOSED_UNTIL_CANDIDATE_REVIEW
+OWNER_TRUST_POLICY=APPROVED_FOR_EXACT_CANDIDATE_POLICY
+FETCHBACK=NOT_RUN
+G1/G2/G3=NOT_ESTABLISHED
+MCP_TOOL_ALLOWLIST=EMPTY
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+AUTOMATIC_BOOTSTRAP=FALSE
+AUTOMATIC_FOLLOW_ON=FALSE
+PRODUCT_CANDIDATE_MERGE=NOT_AUTHORIZED
+C:\\Python=DO_NOT_TOUCH
+MEMORY_RETRIEVED=VERIFIED
+METHOD_ACTIVATED=VERIFIED
+METHOD_APPLIED=IN_PROGRESS_UNTIL_RECEIPT
+OUTCOME_VERIFIED=NOT_RUN
+LATER_CAUSAL_REUSE=NOT_PROVEN
+```
+
+This is authorization to implement and test the versioned candidate policy, not authority activation. G1/G2/G3 and the production gate stay closed until the resulting code is separately reviewed and later authorized for integration.
+---
+
+## Owner-directed route update — Authenticode route observed; Owner trust policy still unresolved (2026-10-29)
+
+This is the newest continuity route on the proposed PR #557 branch. It supersedes the prior next action to search for an independent verifier: the latest Codex receipt reports that the native Windows Authenticode route accepts the exact installed GitHub CLI executable. It does not authorize the publisher, enable the production client, change canonical `main`, or alter any security invariant.
+
+### Live references and authority boundary
+
+- Canonical `CURRENT-STATE.md` on `main` was retrieved from the exact blob `5945b23fdb5c13ce1068ca5d2d9e6513a1a06b95`; ordinary Contents API reads returned an empty body, while the exact blob fetch returned 1,068,486 characters. The current-state text still preserves the fail-closed G1/G2/G3 route.
+- At this writeback preflight, PR #556 is open/draft/unmerged at `668f7d62cf70a50fe27aa4d946fae66a8b4e1a64`, with base SHA `79ab8c50eaa7518120d5ebed9db4747d395a21cb`.
+- PR #557 is open/draft/unmerged at `617d4b5ee01f4f5b237d4d807f05c17935dbc0ba` before this documentation-only writeback. This update remains proposed continuity, not canonical policy.
+- PR #556 production entry points in `authenticated_github_enrollment.py` remain fail-closed with `GITHUB_CLIENT_PROVENANCE_UNVERIFIED`; no local policy was wired and no fetchback was performed.
+
+### New receipt — classify the Authenticode claim narrowly
+
+Codex/Owner reported the following local inspection, without executing `gh.exe`:
+
+- Exact reported path: `C:\\Program Files\\GitHub CLI\\gh.exe`
+- Reported size: 40,381,240 bytes
+- Reported SHA-256: `249613CC9DFB61EB267ACFA08C2253EDEA271BBBEC8F3CA3BF8D949A6575D60B`
+- Reported version: GitHub CLI 2.90.0
+- `Get-AuthenticodeSignature`: `Status=Valid`, signer text `GitHub, Inc.`, thumbprint `9A483710566AC7B58A19D32B4A64E44361EA7350`
+- Separate `X509Chain.Build` with revocation set to `NoCheck`: `ChainBuild=false`, `NotTimeValid`.
+- No installed independent Sigstore/Cosign/Notation verifier was found in the reported PATH inventory. No release attestation, repository/workflow provenance, or authenticated fetchback was verified.
+
+Evidence classification: the local file metadata, hash, signature result, signer, and chain result above are `OWNER_CODEX_REPORTED` in this ChatGPT route; they were not independently reproduced here. The separate chain result is retained as a limitation, not rewritten as a successful current-time chain. Authenticode acceptance is not the same claim as owner authorization of that publisher, nor proof that a repository/workflow produced the binary.
+
+### Decision boundary — no implicit publisher allowlist
+
+The receipt correctly declines to choose the trust policy implicitly. Do not put the observed publisher name, thumbprint, or binary hash into an allowlist merely because the local verifier reported them. An explicit Owner policy must identify:
+- the trusted policy source and how it is protected against caller override;
+- whether the permitted identity is a particular signing-certificate thumbprint, a broader publisher identity with controlled certificate rotation, and/or an exact binary SHA-256 pin;
+- the required Windows Authenticode status and treatment of timestamp, certificate expiry, revocation, and verifier errors;
+- the policy version/change process so an ordinary API caller cannot alter it.
+
+Until that decision is explicit and represented in a trusted source, production construction/fetchback remains disabled. Do not execute `gh.exe`, perform private fetchback, create keys/manifests/receipts, run product runtime, or change Entra, ACL, IPC, services, or tunnels as part of this frontier.
+
+### Next causal frontier
+
+Stop repeating the local executable inventory: the new evidence changes the blocker. The blocker is now `OWNER_TRUST_POLICY=NOT_APPROVED`, not absence of an independent Authenticode verifier. The next admissible step is a narrow Owner decision about the client-verification policy and trusted source. Only after that decision may Codex implement the gated verifier and synthetic negative tests in the existing isolated M1A candidate, while preserving the public fail-closed behavior until source review and explicit integration authorization.
+
+```
+TASK_ID=M1A_G1_AUTHENTICODE_GATED_CLIENT_VERIFIER_R1_20261029
+OUTCOME=NO_CODE_CHANGE_NO_PUBLICATION
+AUTHENTICODE_ROUTE=OWNER_CODEX_REPORTED_VALID_FOR_EXACT_REPORTED_BYTES
+OWNER_TRUST_POLICY=NOT_APPROVED
+CLIENT_PRODUCTION_INTEGRATION=FAIL_CLOSED
+FETCHBACK=NOT_RUN
+TESTS=NOT_RUN_IN_THIS_TASK
+G1/G2/G3=NOT_ESTABLISHED
+MCP_TOOL_ALLOWLIST=EMPTY
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+AUTOMATIC_BOOTSTRAP=FALSE
+AUTOMATIC_FOLLOW_ON=FALSE
+PRODUCT_CANDIDATE_MERGE=NOT_AUTHORIZED
+C:\\Python=DO_NOT_TOUCH
+MEMORY_RETRIEVED=VERIFIED
+METHOD_ACTIVATED=VERIFIED
+METHOD_APPLIED=VERIFIED (live PR/blob preflight and documentation-only route writeback)
+OUTCOME_VERIFIED=ROUTE_RECEIPT_RECORDED; NO_CODE_CHANGE
+LATER_CAUSAL_REUSE=NOT_PROVEN
+```
+
+---
+
+## Owner-directed route update — R2 exact source independently reviewed; provenance preflight is next (2026-10-28)
+
+This is the latest route record on the proposed continuity branch. It supersedes the immediately preceding R2-local-publication handoff. It does not change canonical `main`, authorize a product-candidate merge, or alter the fail-closed invariants.
+
+### Live refs and exact artifacts
+
+- `main=79ab8c50eaa7518120d5ebed9db4747d395a21cb` — live GitHub ref verified.
+- PR #556 remains open/draft/unmerged at `668f7d62cf70a50fe27aa4d946fae66a8b4e1a64`, base `main` at the SHA above. The R2 commit's exact changed-file list is the four intended files; its parent is R1 `7bb5960feb7975de848fe3351657932ff687ace8`. Remote blobs for the edited modules/tests were fetched and statically inspected.
+- PR #557 remains a separate open/draft/unmerged proposal. Its update remains non-canonical until authorized merge and canonical fetchback.
+- Codex reports the four local/remote SHA-256 values match and the focal tests yielded `127 passed in 0.89s` under Python 3.13.2 / pytest 9.0.3. Treat the test execution as `OWNER_CODEX_REPORTED` in this session; this reviewer did not rerun it or execute native CNG.
+- The associated GitHub Actions run is `startup_failure`; no successful CI job exists for this commit. This does not invalidate the owner-reported local run, but CI is not independent test evidence.
+
+### Independent static review disposition
+
+A GitHub review was posted as `COMMENT`, not `APPROVE` or `REQUEST_CHANGES`, anchored to commit `668f7d62cf70a50fe27aa4d946fae66a8b4e1a64`: https://github.com/jhonf463r/Python/pull/556#pullrequestreview-5691625020.
+
+Static source review confirmed the intended R2 changes:
+- `windows_cng_key_store.py` separates successful `NCryptDeleteKey` (which frees the handle) from fallback `NCryptFreeObject` on delete failure; cleanup failures are reported.
+- `read_existing_key()` derives the public key identity from an opened persisted CNG provider handle, and the private synthetic verifier compares it to the provided DTO.
+- The initial enrollment path requires the manifest file to be `added`, not `modified`.
+- Public GitHub client and fetchback entries fail closed with `GITHUB_CLIENT_PROVENANCE_UNVERIFIED`; the injectable core is expressly marked as test-only, not a production trust path.
+
+No new material defect was found in those bounded R2 changes during this static pass. This is not a production approval: native CNG remains `NOT_RUN`, and the public fetchback is deliberately unavailable until a trusted GitHub response producer is implemented.
+
+### Still-open dependencies — do not recast as defects already solved
+
+- `GITHUB_CLIENT_PROVENANCE=BLOCKED_FAIL_CLOSED`: no local trusted verifier has been established for the installed GitHub CLI/executable. Do not use the candidate executable to verify its own provenance.
+- `OWNER_IDENTITY_PROVENANCE=UNKNOWN`; `PROCESS_SID_PROVENANCE=UNKNOWN`; `SERVER_REVISION_PROVENANCE=UNKNOWN`; `WORKSPACE_ROOT_PROVENANCE=UNKNOWN`.
+- `OWNER_MANIFEST_RECEIPT_STORE=UNKNOWN`: interface only; no durable protected anti-rollback realization was demonstrated.
+- `REVOCATION_SOURCE=UNKNOWN`; `G2=NOT_ESTABLISHED`.
+- Therefore `G1/G2/G3=NOT_ESTABLISHED`; no real key/manifest/enrollment, build, product runtime, MCP launch, tunnel, or protected read has run.
+
+### Next causal frontier — one bounded, read-only provenance check
+
+Do not run another broad inventory or repeat the same source/test implementation. Examine only whether the existing Windows environment has an **independent, already-installed verifier** capable of authenticating the exact installed `gh.exe` binary and its release provenance (for example, an existing standalone Sigstore/Cosign verifier and its trusted roots, or a valid native Windows signature-verification route). A verifier must not be `gh.exe` itself, nor depend solely on claims returned by the candidate binary.
+
+Official GitHub CLI documentation says releases from v2.50.0 produce build-provenance attestations and describes verification with Sigstore/Cosign as an independent route; this is a lead to test against the actual installed binary, not proof that the user’s local installation is verified. See https://github.com/cli/cli and https://docs.github.com/en/code-security/how-tos/secure-your-supply-chain/secure-your-dependencies/verify-release-integrity.
+
+```TASK_ID=M1A_G1_EXISTING_GITHUB_CLIENT_PROVENANCE_PREFLIGHT_20261028
+NEXT_ACTOR=CODEX
+MODE=READ_ONLY_LOCAL_PROVENANCE_PREFLIGHT
+NEXT_ACTION=IDENTIFY_INSTALLED_GH_ABSOLUTE_PATH_VERSION_SHA256_AND_INSTALL_SOURCE; CHECK_ONLY_ALREADY_INSTALLED_INDEPENDENT_VERIFIERS; VERIFY_RELEASE_ATTESTATION_OR_SIGNATURE_ONLY_IF_A_VERIFIED_INDEPENDENT_TOOL_AND_TRUST_ROOT_ALREADY_EXIST
+NO_INSTALL=TRUE
+NO_NEW_CREDENTIALS=TRUE
+NO_GH_SELF_VERIFICATION=TRUE
+NO_SOURCE_CHANGES=TRUE
+NO_C_PYTHON_ACCESS=TRUE
+EXPECTED_OBSERVABLE=EXACT_BINARY_IDENTITY+INDEPENDENT_VERIFIER_IDENTITY+VERIFICATION_RESULT_OR_EXPLICIT_BLOCKER
+STOP_IF=ONLY_GH_ITSELF_CAN_VERIFY; TRUST_ROOT/EXPECTED_ARTIFACT_DIGEST_UNAVAILABLE; SIGNATURE/ATTESTATION_DOES_NOT_MATCH_EXACT_INSTALLED_BYTES; VERIFICATION_REQUIRES_INSTALL/LOGIN/NEW_CREDENTIAL
+```
+
+If no independent verifier is already present, stop and record the exact missing trust boundary; do not install one, replace the CLI, extract tokens, or weaken fail-closed behavior. After client provenance, the separate Owner/SID/revision/workspace producers and protected durable receipt store still need their own bounded composition/verification. Do not implement all of those in the same task.
+
+```MEMORY_RETRIEVED=VERIFIED
+METHOD_ACTIVATED=VERIFIED
+METHOD_APPLIED=VERIFIED (exact PR/commit/blob inspection; existing R2 reused; no unchanged retest requested)
+OUTCOME_VERIFIED=STATIC_SOURCE_REVIEW_VERIFIED; 127 TESTS=OWNER_CODEX_REPORTED; CI=STARTUP_FAILURE
+LATER_CAUSAL_REUSE=NOT_PROVEN
+OPTION_D=RATIFIED_NO_BOOTSTRAP
+G1/G2/G3=NOT_ESTABLISHED
+MCP_TOOL_ALLOWLIST=EMPTY
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+ENROLLMENT=NOT_PERFORMED
+REAL_CNG_KEY=NOT_CREATED
+MANIFEST=NOT_CREATED_OR_PUBLISHED
+BUILD/PRODUCT_RUNTIME=NOT_RUN
+MERGE=NOT_AUTHORIZED
+AUTOMATIC_FOLLOW_ON=FALSE
+C_PYTHON=DO_NOT_TOUCH
+```
+
+---
+
+## Owner-directed route update — M1A R2 local repair reported; independent source review still open (2026-10-28)
+
+This entry supersedes the previous R1-only next step. Codex reports a second repair pass in the existing isolated worktree, but the changed bytes remain local and have not been published to PR #556. Do not promote its claims to independently verified source facts until the exact new commit/blobs are fetched and reviewed.
+
+### Live remote truth
+
+- `main`: `79ab8c50eaa7518120d5ebed9db4747d395a21cb` — independently checked live ref.
+- PR #556: open/draft/unmerged; HEAD `7bb5960feb7975de848fe3351657932ff687ace8`; base `main` at that SHA. Remote source still represents R1, not Codex's uncommitted R2 changes.
+- PR #557: open/draft/unmerged; its continuity branch is separate from `main`. This R2 handoff is being recorded on that existing proposal branch only.
+- Codex reports local worktree `C:\\_w\\m1a-composition-r3-20261028` began clean and ended with four modified files, HEAD unchanged at R1, no commit/push. Files: `windows_cng_key_store.py`, `authenticated_github_enrollment.py`, `owner_enrollment_manifest.py`, `test_g1_owner_enrollment_candidate.py`.
+- Codex reports `git diff --check` clean and `127 passed in 0.89s` with Miniconda Python 3.13.2 / pytest 9.0.3. Classification: `OWNER_CODEX_REPORTED`; ChatGPT did not run those tests or inspect R2 source bytes.
+
+### R2 outcome claims — not independently verified yet
+
+Codex reports: CNG handle cleanup now respects successful `NCryptDeleteKey` freeing the handle and frees it after deletion failure; a `read_existing_key()` method reads the public key from a persisted key; the fetchback verifier compares the persisted-key result with its DTO; the production GitHub CLI path fails closed with `GITHUB_CLIENT_PROVENANCE_UNVERIFIED`; the initial manifest requires PR file status `added`; tests cover synthetic CNG failure/cleanup, persisted-key mismatch, unverified GitHub client, replacement attempts, receipt conflicts and storage failures.
+
+The reported SHA-256 values identify Codex's local files, not remote source: 
+- `windows_cng_key_store.py`: `CA59B26A79E195A08C5B3EE6DFA1A879A1FF51BE5D09ACCC04DB3CC7BFF739BE`
+- `authenticated_github_enrollment.py`: `2DA355EFF1EA0CBD73A66D2586405D6190E7296C722D7DD722611E310B851D40`
+- `owner_enrollment_manifest.py`: `464057D2039339B3667DC1698C41E8394998CA5BB62DCB4D7A471381A7509D77`
+- `test_g1_owner_enrollment_candidate.py`: `266E6F727AD63EBC3004C0406E10BFBC92081065AF2C35DDF887B82E43171D20`
+
+These SHA-256 values are `OWNER_REPORTED` until the exact same bytes are fetched independently. The test result is not evidence of native CNG behavior or productive authorization.
+
+### Remaining causal blockers
+
+- `GITHUB_CLIENT_PROVENANCE=BLOCKED_FAIL_CLOSED`: no trusted verifier for the executable/transport has been established. Do not weaken the gate just to permit fetchback.
+- `OWNER_IDENTITY_PROVENANCE=UNKNOWN`; `PROCESS_SID_PROVENANCE=UNKNOWN`; `SERVER_REVISION_PROVENANCE=UNKNOWN`; `WORKSPACE_ROOT_PROVENANCE=UNKNOWN`.
+- `OWNER_MANIFEST_RECEIPT_STORE=UNKNOWN`: `OwnerManifestReceiptStore` remains a contract until a durable, protected, rollback-resistant realization is demonstrated.
+- `REVOCATION_SOURCE=UNKNOWN`; therefore `G2=NOT_ESTABLISHED`.
+- Native Windows CNG tests, real key creation, manifest creation/merge/fetchback, build, runtime, MCP and protected reads are `NOT_RUN`.
+
+### Next causal frontier
+
+```TASK_ID=M1A_G1_BOUNDED_ENROLLMENT_R2_EXACT_SOURCE_RECONCILIATION_20261028
+MEMORY_RETRIEVED=VERIFIED
+METHOD_ACTIVATED=VERIFIED
+METHOD_APPLIED=VERIFIED (existing PR/worktree reused; no duplicate PR or unchanged retest)
+OUTCOME_VERIFIED=OWNER_CODEX_REPORTED_127_PASSED; R2 SOURCE NOT YET INDEPENDENTLY VERIFIED
+LATER_CAUSAL_REUSE=NOT_PROVEN
+NEXT_ACTOR=CODEX
+NEXT_ACTION=RECHECK_LIVE_MAIN_AND_PR556_HEAD_BASE; VERIFY_THE_FOUR_FILE_DIFF_AND_HASHES; COMMIT_AND_PUSH_THE_EXISTING_WORKTREE_CHANGES_TO_THE_EXISTING_PR556_BRANCH_ONLY; THEN_REQUEST_INDEPENDENT_REVIEW_OF_EXACT_NEW_HEAD
+EXPECTED_OBSERVABLE=REMOTE_COMMIT_AND_BLOBS_MATCH_ALL_FOUR_LOCAL_SHA256_VALUES; EXACT_DIFF_REVIEWABLE; PR556_STAYS_DRAFT_AND_UNMERGED
+STOP_IF=HEAD_BASE_CHANGED_UNRESOLVED; UNEXPECTED_FILE_CHANGES; HASH_MISMATCH; NO_SAFE_GITHUB_CLIENT_PROVENANCE; NO_PROTECTED_RECEIPT_STORE_OR_TRUSTED_BINDING_PRODUCERS
+OPTION_D=RATIFIED_NO_BOOTSTRAP
+G1/G2/G3=NOT_ESTABLISHED
+MCP_TOOL_ALLOWLIST=EMPTY
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+ENROLLMENT=NOT_PERFORMED
+REAL_CNG_KEY=NOT_CREATED
+MANIFEST=NOT_CREATED_OR_PUBLISHED
+BUILD/PRODUCT_RUNTIME/PROTECTED_READS=NOT_RUN
+PRODUCT_CANDIDATE_MERGE=NOT_AUTHORIZED
+C_PYTHON=DO_NOT_TOUCH
+AUTOMATIC_FOLLOW_ON=FALSE
+```
+
+The next step is source publication and independent review of the already-corrected local candidate, not another implementation round, broad inventory, or retest of unchanged bytes. Publishing to the existing PR #556 branch is not a merge and does not authorize enrolment. Do not merge PR #556/#557 or weaken any fail-closed gate.
+
+---
+
+## Owner-directed route update — M1A bounded-enrollment candidate R1 reviewed; source corrections required (2026-10-28)
+
+This entry supersedes the older NEXT_ACTION that routed directly to implementation: Codex has now published an isolated source candidate, and its next gate is independent static correction/review. It does not supersede the preserved security invariants.
+
+### Exact source and route truth
+
+- Live canonical `main`: `79ab8c50eaa7518120d5ebed9db4747d395a21cb` — independently fetched from the GitHub ref.
+- PR #556: open/draft/unmerged; base `main` at that SHA; candidate HEAD `7bb5960feb7975de848fe3351657932ff687ace8` — exact commit and implementation blobs were fetched from GitHub.
+- PR #557: open/draft/unmerged; current HEAD before this writeback: `b3dcce246e1137a473f8c50a18cb113b8329d417`. This memory change is proposed on PR #557 only, not canonical on main.
+- Codex reports 114 focused tests passed with Python 3.13.2 / pytest 9.0.3. Classification: `OWNER_CODEX_REPORTED`; this session did not rerun tests and did not execute native Windows CNG or a live GitHub manifest fetchback.
+
+### Independent static review — material findings
+
+```text
+TASK_ID=M1A_G1_BOUNDED_ENROLLMENT_STATIC_REVIEW_R1_20261028
+SOURCE_AI=CODEX
+INDEPENDENT_REVIEWER=CHATGPT_STATIC_SOURCE_REVIEW
+CANDIDATE_STATUS=REVIEW_REQUIRED; REQUEST_CHANGES_RECOMMENDED
+```
+
+- `R1 CNG_HANDLE_LIFECYCLE`: `windows_cng_key_store.py:96-101` calls `NCryptDeleteKey` on a pre-finalized key in the exception path and then unconditionally calls `NCryptFreeObject` on the same handle in `finally`. Microsoft documents that a successful `NCryptDeleteKey` also frees the handle; callers must not free it twice. Make cleanup branch on the delete result and handle ownership. Source: https://learn.microsoft.com/en-us/windows/win32/api/ncrypt/nf-ncrypt-ncryptdeletekey and https://learn.microsoft.com/windows/win32/api/ncrypt/nf-ncrypt-ncryptcreatepersistedkey.
+- `R2 PARTIAL_KEY_CREATION_RECOVERY`: if finalization succeeds but public export/PEM conversion then fails, `finalized=True` bypasses deletion and leaves the deterministic key name persisted, while a retry fails with `ENROLLMENT_KEY_ALREADY_EXISTS`. Add a safe, explicit cleanup-or-recovery path; synthetic tests must cover every failure point and ensure no double free.
+- `R3 CNG_KEY_PROVENANCE`: `verify_owner_manifest_fetchback()` accepts a constructible `CngPublicKey` data object and compares its fields to the manifest, but does not re-open the named persisted CNG key or prove possession. Before an enrollment receipt can claim local-key binding, source the public key from the actual provider/key handle or establish a provider-backed proof; don't treat a matching Python DTO as proof that the private key exists.
+- `R4 GITHUB_CLIENT_PROVENANCE`: `AuthenticatedGitHubCliApi.__init__()` resolves `gh` through `shutil.which` and permits an executable override. Since this output is used as evidence of Owner merge and canonical bytes, the executable/transport must be a trusted, pinned or verified realization; otherwise a substituted binary can fabricate API responses. Preserve use of the already-authorized identity; do not create credentials.
+- `R5 ONE_TIME_MANIFEST_SEMANTICS`: the fetchback check accepts PR file status `modified` as well as `added` (`authenticated_github_enrollment.py:209-211`). The agreed effect budget is one-time enrollment. Require a first-time `added` manifest for this path or define a separately authorized rotation protocol; don't silently reuse this one-time verifier to replace an enrolled key.
+- `R6 REVOCATION_SOURCE_UNRESOLVED`: `revocation_source_id` is checked only for a non-empty string. No source resolution, authenticity, revocation status or failure behavior is implemented. Keep this as `UNKNOWN`; it is not evidence of revocation support and cannot close G2.
+
+The implementation also still takes Owner ID, Windows SID, code revision and workspace root as parameters. Their production provenance is not yet connected/verified. The `OwnerManifestReceiptStore` is a protocol, not a protected durable implementation. Those are explicit remaining prerequisites, not completed capabilities.
+
+### Next causal frontier
+
+```MEMORY_RETRIEVED=VERIFIED
+METHOD_ACTIVATED=VERIFIED (UAAL-D019/D020 + proposed UAAL-D021 route-truth checks)
+METHOD_APPLIED=VERIFIED (reused existing PR #556; compared exact live refs/blobs; rejected promotion from synthetic tests to production authority)
+OUTCOME_VERIFIED=STATIC_FINDINGS_VERIFIED; TESTS=OWNER_CODEX_REPORTED_114_PASSED; CHATGPT_TESTS=NOT_RUN
+LATER_CAUSAL_REUSE=NOT_PROVEN
+NEXT_ACTOR=CODEX
+NEXT_ACTION=REPAIR_R1_R5_IN_EXISTING_PR_556_CANDIDATE; ADD_TARGETED_NEGATIVE_TESTS; THEN_TRACE_EXISTING_DURABLE_RECEIPT_STORE_AND_TRUSTED_BINDING_PRODUCERS_BEFORE_ENROLLMENT
+EXPECTED_OBSERVABLE=EXACT_DIFF+TEST_RECEIPT_BOUND_TO_NEW_HEAD+FETCHED_SOURCE_HASHES; NO_REAL_KEY_OR_MANIFEST
+STOP_IF=LIVE_HEAD_OR_BASE_CHANGED_UNRESOLVED; KEY_PROVENANCE_UNPROVEN; NO_SAFE_RECEIPT_BACKEND; OWNER/SID/REVISION/WORKSPACE_PROVENANCE_UNRESOLVED
+PR556=OPEN_DRAFT_UNMERGED
+PR557=OPEN_DRAFT_UNMERGED
+BRANCH_RULESET=UNKNOWN
+KEY_CREATED=NOT_RUN
+MANIFEST_CREATED_OR_MERGED=NOT_RUN
+G1/G2/G3=NOT_ESTABLISHED
+MCP_TOOL_ALLOWLIST=EMPTY
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+PRODUCT_CANDIDATE_MERGE=NOT_AUTHORIZED
+C_PYTHON=DO_NOT_TOUCH
+BUILD/RUNTIME/PROTECTED_READS=NOT_RUN
+AUTOMATIC_FOLLOW_ON=FALSE
+```
+
+Do not merge PR #556 or #557. Do not create a key/manifest, change Entra/ACL/IPC/services, start MCP/tunnels, or perform protected reads. The next code task is correction and source-composition in existing isolated artifacts only; if a trusted source/back-end does not already exist, document the exact missing boundary rather than inventing a synthetic authority.
+
+---
+
+## Owner-directed cross-chat continuity evolution — G1 fetchback preflight closed (2026-10-28)
+
+This is the newest route decision for the continuation of the current M1A trust-enrollment work. It supersedes older action fields below when they conflict, but does not alter canonical main or authorize product-candidate merge/bridge activation.
+
+### Current result and provenance
+
+The Owner/Codex-reported preflight closed the existing-private-repository read route using the already-authenticated local GitHub CLI/API and non-interactive HTTPS Git access. This ChatGPT session independently rechecked the repository metadata, current main SHA and CURRENT-STATE blob identifier through GitHub. The evidence is claim-scoped: the main SHA and blob identifier are verified here; successful local CLI use remains OWNER_CODEX_REPORTED.
+
+- Repository: `jhonf463r/Python`, ID `860009771`, private, default branch `main`.
+- Canonical main at this check: `79ab8c50eaa7518120d5ebed9db4747d395a21cb`.
+- CURRENT-STATE blob on main: `5945b23fdb5c13ce1068ca5d2d9e6513a1a06b95`.
+- Existing-file fetchback: `VERIFIED_FOR_CURRENT_STATE` (Owner/Codex reports full authenticated Contents/blob retrieval; this session verified metadata/blob ID but the ordinary contents call returned an empty body, so exact blob fallback was used).
+- Branch protection/rulesets: `UNKNOWN`; Owner/Codex reports API HTTP 403. This is not evidence that protections are absent, present, bypassable, or enforced.
+- Manifest-specific fetchback: `NOT_APPLICABLE_YET`; the enrollment manifest does not exist. Do not confuse fetchback of CURRENT-STATE with a later manifest proof.
+
+### Method learning now recorded in the proposed protocol branch
+
+The updated [UAAL-D021 method](./CHAT-ARCH-2026-10-28-UAAL-D021-ROUTE-TRUTH-ARTIFACT-IDENTITY-AND-ADVANCE-UTILITY.md), [collaboration protocol](./IABV-COLLABORATION-COORDINATION-PROTOCOL-2026-10-04.md), and [Universal Adaptive Algorithm Constitution §20G](./UNIVERSAL-ADAPTIVE-ALGORITHM-CONSTITUTION-2026-10-04.md) now state that:
+1. Evidence for one resource/claim cannot be promoted to a different resource/claim. Existing-file access does not prove future manifest bytes, branch rules, key custody or operation authorization.
+2. A manifest must not embed its own commit SHA, Git blob SHA or whole-content digest. Those values are recorded in a post-merge local receipt after exact canonical fetchback.
+3. A completed preflight is not repeated unchanged; its closure is scoped to the exact repository/ref/file/route tested.
+4. A chosen G1 enrollment identity does not establish G2/G3 and grants no tool capability.
+5. Cross-AI writeback is proposed until the change is authorized for integration and fetched back from canonical main; linking or saving a document is not proof of later causal reuse.
+
+These edits live on the existing [draft PR #557](https://github.com/jhonf463r/Python/pull/557), not main. They are not canonical yet.
+
+### Next actor and first open edge
+
+```text
+ACTIVE_TASK=M1A_G1_BOUNDED_ENROLLMENT_SOURCE_AND_SYNTHETIC_TESTS_20261028
+CLOSED_EDGE=EXISTING_AUTHENTICATED_GITHUB_FETCHBACK_FOR_CANONICAL_CURRENT_STATE
+FIRST_OPEN_EDGE=REVIEWABLE_ENROLLMENT_CONTRACT_AND_PROVIDER_COMPOSITION_IN_EXISTING_M1A_CANDIDATE
+NEXT_ACTOR=CODEX
+NEXT_ACTION=VERIFY_LIVE_PR_556_HEAD_AND_BASE; REUSE_ITS_ISOLATED_M1A_CANDIDATE; IMPLEMENT_BOUNDED_ENROLLMENT_CONTRACT_AND_SYNTHETIC_POSITIVE_NEGATIVE_TESTS_ONLY
+EXPECTED_OBSERVABLE=EXACT_DIFF_AND_TEST_RECEIPT_BOUND_TO_EXACT_HEAD; NO_KEY_OR_MANIFEST_CREATED
+STOP_IF=LIVE_HEAD_OR_BASE_UNRESOLVED; CNG_CONTRACT_UNSUPPORTED; EFFECTS_EXCEED_BUDGET; TESTS_FAIL
+BRANCH_RULESET=UNKNOWN
+MANIFEST_FETCHBACK=NOT_APPLICABLE_YET
+KEY_CREATED=NOT_RUN
+MANIFEST_CREATED_OR_MERGED=NOT_RUN
+G1/G2/G3=NOT_ESTABLISHED
+MCP_TOOL_ALLOWLIST=EMPTY
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+PRODUCT_RUNTIME=NOT_RUN
+PRODUCT_CANDIDATE_MERGE=NOT_AUTHORIZED
+C_PYTHON=DO_NOT_TOUCH
+```
+
+The source/test task must not generate a key, create/merge a manifest, make local security-setting changes, execute the product runtime, perform protected reads, enable a tool, start a tunnel, or merge a candidate. Those are separate stages. Only after the isolated enrollment contract has passed exact-source review and synthetic positive/negative acceptance may the previously bounded one-time enrollment operation be scheduled as a distinct action. Owner approval of the exact manifest PR remains mandatory; an approved manifest does not automatically authorize any MCP tool.
+
+### Anti-loop / continuity rule applied
+
+Do not repeat the trust-source selection or the existing-file fetchback preflight. Do not revive old historical NEXT_ACTION fields that conflict with this entry. Do not use the most recent conversation topic alone as a route selector. The first open edge is the bounded implementation/review in the existing M1A candidate (PR #556), after verifying that PR's live head and base. Keep PR #555/M1B untouched. Report method stages distinctly: `MEMORY_RETRIEVED`, `METHOD_ACTIVATED`, `METHOD_APPLIED`, `OUTCOME_VERIFIED`, and `LATER_CAUSAL_REUSE`; the last remains `NOT_PROVEN` until a later non-identical task demonstrates it.
+
+```text
+TASK_RESULT=PREPARATION_AND_PROTOCOL_WRITEBACK_COMPLETE
+METHOD_RETRIEVED=VERIFIED_IN_THIS_SESSION
+METHOD_APPLIED=VERIFIED_FOR_ROUTE_SELECTION_AND_CLAIM_SCOPING
+OUTCOME_VERIFIED=DOCUMENTARY_BRANCH_FETCHBACK_ONLY
+LATER_CAUSAL_REUSE=NOT_PROVEN
+CANONICAL_ADOPTION=NOT_DONE; PR_557_DRAFT
+```
+
+---
+
+## New Owner-requested architecture improvement — G1/G2/G3 scope and bootstrap boundary (2026-10-28)
+
+This addendum records the subsequent Owner request to analyze why G1/G2/G3 exist, reconcile their traceability with the complete IABV/MCP system, and proceed with durable improvements. It is proposed on this documentation branch only; it is not canonical on main until authorized integration and fetch-back.
+
+New design record: [M1A G1–G3 authority topology, bootstrap boundary, and completion path](./CHAT-ARCH-2026-10-28-M1A-G1-G3-AUTHORITY-TOPOLOGY-AND-BOOTSTRAP-DECISION.md). It distinguishes MCP transport authentication from operation authority; limits G1/G2/G3 to governed protected operations rather than every pure IABV computation; separates OBSERVE, fixed context-artifact read, protected workspace read and execute/mutate profiles; and identifies the bootstrap circularity explicitly.
+
+Decision boundary: the Owner has now selected the initial trust mechanism and bounded the one-time enrollment effects. This supersedes the pending *mechanism-choice* item; it does not claim that the key has been created or that enrollment has run. The exact selected mechanism and effect budget are recorded in [M1A G1–G3 authority topology and bootstrap decision](./CHAT-ARCH-2026-10-28-M1A-G1-G3-AUTHORITY-TOPOLOGY-AND-BOOTSTRAP-DECISION.md).
+
+The selected out-of-band authorizer is an explicit Owner-approved, version-pinned enrollment manifest merged into canonical `main`, with a non-exportable user-scope Windows CNG key as subordinate issuer identity. The new key is untrusted until the exact manifest is approved, merged, fetched back from the exact canonical commit, and matched to the local receipt. Entra remains HTTP caller authentication; the GitHub App PEM remains GitHub API authentication only. The exact repo ruleset/branch-protection status remains UNKNOWN and must not be claimed without evidence. The private-repository read preflight is now closed for existing canonical content: OWNER_CODEX_REPORTED confirms authenticated `gh api` and non-interactive `git ls-remote` both read `main=79ab8c50eaa7518120d5ebed9db4747d395a21cb` and fetched `CURRENT-STATE.md` (blob `5945b23fdb5c13ce1068ca5d2d9e6513a1a06b95`). This ChatGPT session independently verified the repository metadata, live main SHA and blob identifier through GitHub. A future manifest does not exist yet; manifest-specific byte verification is not applicable yet. Codex reports branch protection and ruleset API checks returned HTTP 403, leaving those guarantees UNKNOWN. Design correction before implementation: the manifest must not embed its own containing commit SHA, blob SHA or whole-content digest. The post-merge local receipt will bind those identifiers and SHA-256 to the exact authenticated bytes and local CNG key; the receipt does not substitute for Owner approval.
+
+The bounded enrollment effect set permits one local key, one receipt and one enrollment-manifest PR/Owner merge/fetch-back containing public-key metadata only (the repository remains private), all bound to one Windows SID, one exact server/code revision and one canonical workspace root. It grants no MCP capability. Automatic/self-bootstrap remains prohibited; G2/G3 are not established; protected reads, tool allowlist, tunnel and bridge activation remain blocked.
+
+```text
+ACTIVE_TASK=M1A_G1_G3_BOUNDED_OWNER_ENROLLMENT_MECHANISM
+RESULT=MECHANISM_SELECTED; EFFECT_BUDGET_DEFINED; DOCUMENTED_ON_PR_557
+TARGET_EDGE=ONE_TIME_G1_ISSUER_ENROLLMENT
+INITIAL_TRUST_SOURCE=OWNER_APPROVED_GITHUB_ENROLLMENT_MANIFEST
+LOCAL_KEY_CUSTODY=WINDOWS_CNG_NONEXPORTABLE; TPM_PROVIDER_PREFERRED; ASSURANCE_RECORDED
+OWNER_CONTROLLED_ONE_TIME_ENROLLMENT=AUTHORIZED_WITHIN_EXACT_EFFECT_BUDGET; NOT_RUN
+AUTOMATIC_BOOTSTRAP=FALSE
+KEY_CREATED=NOT_RUN
+MANIFEST_MERGED=NOT_RUN
+G1=NOT_ESTABLISHED
+G2/G3=NOT_ESTABLISHED
+AUTHORITY_ASSETS=NOT_YET_BOUND_TO_THE_NEW_ENROLLMENT
+MCP_TOOL_ALLOWLIST=EMPTY
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+PRODUCT_TESTS/BUILD/RUNTIME=NOT_RUN_BY_THIS_DOCUMENT_TASK
+PRODUCT_CANDIDATE_MERGE=NOT_AUTHORIZED
+```
+
+Progress label: DESIGN_DECISION_CLOSED; LOCAL_GITHUB_FETCHBACK_ROUTE_VERIFIED_FOR_EXISTING_FILE; ENROLLMENT_EXECUTION_NOT_RUN.
+
+Preflight receipt (Owner/Codex reported; 2026-10-28):
+```text
+TASK_ID=M1A_G1_PRIVATE_GITHUB_FETCHBACK_PREFLIGHT_20261028
+GITHUB_API_READ=VERIFIED; OWNER_CODEX_REPORTED
+GIT_PRIVATE_REPO_READ=VERIFIED; OWNER_CODEX_REPORTED
+LIVE_MAIN_SHA=79ab8c50eaa7518120d5ebed9db4747d395a21cb; MATCHES_GITHUB_API_VERIFIED_HERE
+CURRENT_STATE_BLOB=5945b23fdb5c13ce1068ca5d2d9e6513a1a06b95; MATCHES_GITHUB_API_VERIFIED_HERE
+BRANCH_RULESET=UNKNOWN; HTTP_403_OWNER_CODEX_REPORTED
+LOCAL_AUTHENTICATED_FETCHBACK=VERIFIED_FOR_CURRENT_STATE; OWNER_CODEX_REPORTED
+MANIFEST_FETCHBACK=NOT_APPLICABLE_YET
+C_PYTHON=NOT_TOUCHED
+KEY_CREATED=NOT_RUN
+MANIFEST_CREATED_OR_MERGED=NOT_RUN
+TESTS/BUILD/RUNTIME/PROTECTED_READS=NOT_RUN
+```
+
+Do not restart the general trust-asset inventory or ask the Owner to choose the mechanism again. The existing authenticated route is verified for canonical repository metadata and CURRENT-STATE fetch-back. Do not repeat that preflight or create credentials. NEXT: use the existing M1A source-candidate route (PR #556) in an isolated checkout, first verifying its live head, to implement and review the bounded enrollment path plus synthetic positive/negative tests only. Do not create a key or manifest during this source/test step. After the candidate and tests pass review, execute only the already-authorized one-time enrollment effect budget; verify the exact manifest commit and bytes afterward. If CNG or future manifest fetch-back fails, stop at that exact edge. Do not touch C:\\Python, enable any MCP tools, perform protected reads, activate runtime/tunnel, or merge product code.
+---
+## Continuity and route-truth correction — M1B current; M1A/R7 parallel (2026-10-28)
+
+`ACTIVE_TASK=M1B_CONTEXT_READER_CANDIDATE_RECONCILIATION` remains the canonical route label, but older routing snapshots were stale. M1B is already published in draft [PR #555](https://github.com/jhonf463r/Python/pull/555), HEAD `6c601c99bb9cc2111f9dde2f6986aefcc0393785`; the current R4 reader and tests match SHA-256 `fcd743a346df4541d9b7cab797b2bb0eba70b8fdf380fc249acf256f08a80e73` and `e86a7c5acb31433f9e2e2864d97c52cfeacb82fe7bd7e8613a7e9463d22b3916`. The older `e3811a...` and `a7459f...` hashes identify R3, not R4; a cross-revision mismatch is not candidate divergence.
+
+An exact-source static review of PR #555 found no blocking functional defect and recorded residual limitations. The 34 passing tests remain `OWNER_CODEX_REPORTED`, not independently re-executed here. PR #555 remains draft and unmerged; do not recreate or republish it. Recheck its live state before any later action.
+
+The parallel M1A line is [PR #556](https://github.com/jhonf463r/Python/pull/556), open/draft/unmerged. It must not outrank M1B solely because it was the latest conversational topic. UAAL-D021 is a proposed documentary refinement on this branch, not a canonical rule on `main` until integrated and fetched back.
+
+Proposed method correction: [UAAL-D021](./CHAT-ARCH-2026-10-28-UAAL-D021-ROUTE-TRUTH-ARTIFACT-IDENTITY-AND-ADVANCE-UTILITY.md) formalizes the stale-snapshot, revision-unbound hash and skipped existing-PR discovery failures observed in this interaction. This change is proposed on this documentation branch; it does not become canonical until integrated and fetched back from `main`.
+
+R7 (`1ef23ce47fa206fa751d90fd0c92bcab8a902a6b`) is a source-level fail-closed change for `LocalCliToolAdapter`, not runtime verification. The R6-05 finding is recorded at [review](https://github.com/jhonf463r/Python/pull/556#pullrequestreview-5689189939); R7's bounded review is at [review](https://github.com/jhonf463r/Python/pull/556#pullrequestreview-5689291633). The R7 Actions run `40763636904` ended `startup_failure`; its jobs list was empty, so no test job execution is evidenced. `TESTS=NOT_RUN`, `BUILD=NOT_RUN`, `RUNTIME=NOT_RUN`; no global PR acceptance is implied.
+
+Security and operational invariants are unchanged: `OPTION_D=RATIFIED_NO_BOOTSTRAP`; `G1/G2/G3=NOT_ESTABLISHED`; `MCP_TOOL_ALLOWLIST=EMPTY`; `PROTECTED_READS=FAIL_CLOSED`; `TUNNEL=DISABLED`; `BRIDGE=BRIDGE_NOT_READY`; `AUTOMATIC_FOLLOW_ON=FALSE`; `MERGE=NOT_AUTHORIZED`.
+
+This is a dated route/evidence correction. `CURRENT-STATE.md` remains the sole routing authority; M1B is the active workstream, and its receipt is supporting evidence rather than a route authority. The M1A/R7 references remain a parallel, source-only line with separate evidence limits.
+
+```text
+ACTIVE_TASK=M1B_CONTEXT_READER_CANDIDATE_RECONCILIATION
+NEXT_ACTION=OWNER_DECISION_ON_PR_555_INTEGRATION_OR_BOUNDED_REMEDIATION_AFTER_STATIC_REVIEW; MERGE_NOT_AUTHORIZED; NO_AUTO_FOLLOW_ON
+M1B_PUBLICATION=PR_555_OPEN_DRAFT_UNMERGED
+M1B_STATIC_REVIEW=FAVORABLE_WITH_RESIDUAL_LIMITATIONS; NOT_INTEGRATION_APPROVAL
+M1B_TARGETED_TESTS=34_PASSED; OWNER_CODEX_REPORTED
+INDEPENDENT_TESTS=NOT_RUN
+UAAL_D021_STATUS=PROPOSED_ON_PR_557; NOT_CANONICAL_ON_MAIN
+UAAL_D021_METHOD_APPLIED=VERIFIED_FOR_THIS_AUDIT
+UAAL_D021_OUTCOME=STALE_HISTORICAL_NEXT_ACTION_SUPERSEDED; BRANCH_FETCHBACK_VERIFIED
+LATER_CAUSAL_REUSE=NOT_PROVEN
+```
+
+**History boundary (binding):** this addendum is the latest route decision on this branch. All older dated status, `ACTIVE_TASK`, `NEXT_ACTION`, `OVERRIDE`, and task-state blocks below are historical evidence only; their action fields are non-operative unless a newer dated addendum at the top of this file explicitly reactivates them. In particular, the following older `OVERRIDE — M1B reader candidate locally implemented` block and its `M1B_SOURCE_PUBLICATION=NOT_DONE` / `M1B_NEXT_ACTION=PUBLISH_EXISTING_LOCAL_FILES...` values are superseded and must not select an action. This boundary preserves history; it does not imply PR approval, merge authorization, runtime verification, or bridge readiness.
+---
+
 ## OVERRIDE — M1B reader candidate locally implemented; targeted suite reported passing (2026-10-28)
 
 This entry supersedes earlier top-level M1B NOT_STARTED / blocked-before-modification statements for current status; those entries preserve the earlier time-specific state. The local candidate is reported by Codex, not published to GitHub.
