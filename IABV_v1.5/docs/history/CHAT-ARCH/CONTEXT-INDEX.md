@@ -48,9 +48,9 @@ AUTOMATIC_FOLLOW_ON=FALSE
 ```
 <!-- END OWNER-DIRECTED CONTINUITY METHOD CORRECTION -->
 
-## Hand-off vigente para iniciar un nuevo chat (2026-10-27)
+## Hand-off histórico para iniciar un nuevo chat (2026-10-27; conservado por procedencia)
 
-Leer siempre primero [CURRENT-STATE.md](./docs/history/CHAT-ARCH/CURRENT-STATE.md) desde main. El handoff detallado está en [CHAT-ARCH-2026-10-27-M1A-CROSS-CHAT-HANDOFF-MCP130-20261027.md](https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-27-M1A-CROSS-CHAT-HANDOFF-MCP130-20261027.md); el plan ratificado sin código en [MCP 1.30 implementation plan]( https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-27-M1A-G1-MCP130-IMPLEMENTATION-PLAN-NO-CODE.md ); el diseño Entra corregido en [Entra G1 design]( https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-27-M1A-G1-ENTRA-BOOTSTRAP-DESIGN-ONLY.md ).
+Leer siempre primero [CURRENT-STATE.md](./CURRENT-STATE.md) desde main. El handoff detallado está en [CHAT-ARCH-2026-10-27-M1A-CROSS-CHAT-HANDOFF-MCP130-20261027.md](https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-27-M1A-CROSS-CHAT-HANDOFF-MCP130-20261027.md); el plan ratificado sin código en [MCP 1.30 implementation plan]( https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-27-M1A-G1-MCP130-IMPLEMENTATION-PLAN-NO-CODE.md ); el diseño Entra corregido en [Entra G1 design]( https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-27-M1A-G1-ENTRA-BOOTSTRAP-DESIGN-ONLY.md ).
 
 Owner ratificó el objetivo de planificación: Miniconda Python 3.13.2, mcp==1.30.0 como objetivo, Streamable HTTP, 127.0.0.1:8000 y sin túnel. El consentimiento cubre objetivo y plan documental, NO implementación, instalación de paquetes, portal Entra, registros, credenciales, permisos, tests/runtime, túnel, merge ni lecturas protegidas. Option D/no-bootstrap sigue vigente; no pedir que lo ratifique otra vez.
 
