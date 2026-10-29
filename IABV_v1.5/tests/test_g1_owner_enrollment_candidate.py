@@ -10,6 +10,7 @@ from typing import Any
 
 import pytest
 
+import iabv_v15.services.security.authenticated_github_enrollment as _github_enrollment
 from iabv_v15.services.security.authenticated_github_enrollment import (
     AuthenticatedGitHubCliApi,
     _verify_owner_manifest_fetchback_with_api,
@@ -523,22 +524,185 @@ def test_fetchback_rejects_receipt_conflict_and_storage_failure(store_error: Exc
         )
 
 
-def test_authenticated_gh_api_rejects_unverified_executable_without_running_it() -> None:
-    observed: list[Any] = []
-    def runner(args, **kwargs):
-        observed.append((args, kwargs))
+class _FakePinnedExecutable(_github_enrollment._PinnedExecutable):
+    def __init__(self, digests: list[str] | None = None, error: Exception | None = None) -> None:
+        self.file_id = (1, 2, 3)
+        self.digests = list(digests or [_github_enrollment._APPROVED_EXECUTABLE_SHA256])
+        self.error = error
+        self._closed = False
+
+    def sha256(self) -> str:
+        if self.error:
+            raise self.error
+        if len(self.digests) > 1:
+            return self.digests.pop(0)
+        return self.digests[0]
+
+    def close(self) -> None:
+        self._closed = True
+
+
+def test_authenticode_policy_is_versioned_and_fixed() -> None:
+    policy = _github_enrollment._approved_github_cli_policy()
+    assert policy.policy_id == "IABV_GITHUB_CLI_AUTHENTICODE_PIN_V1"
+    assert policy.executable_path == r"C:\Program Files\GitHub CLI\gh.exe"
+    assert policy.signature_status == "Valid"
+    assert policy.signer_thumbprint == "9A483710566AC7B58A19D32B4A64E44361EA7350"
+    assert policy.executable_sha256 == "249613CC9DFB61EB267ACFA08C2253EDEA271BBBEC8F3CA3BF8D949A6575D60B"
+    assert policy.__dataclass_params__.frozen is True
+
+
+@pytest.mark.parametrize(
+    "policy,verdict,error_code",
+    [
+        (None, {"status": "Valid", "thumbprint": "9A483710566AC7B58A19D32B4A64E44361EA7350"}, "GITHUB_CLIENT_POLICY_INVALID"),
+        (_github_enrollment._GitHubCliTrustPolicy("altered", r"C:\Program Files\GitHub CLI\gh.exe", "Valid", "9A483710566AC7B58A19D32B4A64E44361EA7350", "249613CC9DFB61EB267ACFA08C2253EDEA271BBBEC8F3CA3BF8D949A6575D60B"), {"status": "Valid", "thumbprint": "9A483710566AC7B58A19D32B4A64E44361EA7350"}, "GITHUB_CLIENT_POLICY_INVALID"),
+        (_github_enrollment._approved_github_cli_policy(), None, "GITHUB_CLIENT_SIGNATURE_RESULT_INVALID"),
+        (_github_enrollment._approved_github_cli_policy(), {"status": "Invalid", "thumbprint": "9A483710566AC7B58A19D32B4A64E44361EA7350"}, "GITHUB_CLIENT_SIGNATURE_INVALID"),
+        (_github_enrollment._approved_github_cli_policy(), {"status": "Valid", "thumbprint": "0" * 40}, "GITHUB_CLIENT_SIGNER_MISMATCH"),
+        (_github_enrollment._approved_github_cli_policy(), {"status": "Valid", "thumbprint": "9A483710566AC7B58A19D32B4A64E44361EA7350", "extra": True}, "GITHUB_CLIENT_SIGNATURE_RESULT_INVALID"),
+    ],
+)
+def test_authenticode_verification_rejects_bad_policy_or_verdict(policy, verdict, error_code) -> None:
+    pin = _FakePinnedExecutable()
+    with pytest.raises(OwnerMergeVerificationError, match=error_code):
+        _github_enrollment._verify_pinned_executable(pin, policy=policy, verifier=lambda _path: verdict)
+
+
+def test_authenticode_verification_rejects_hash_mismatch_and_file_change() -> None:
+    policy = _github_enrollment._approved_github_cli_policy()
+    good = {"status": "Valid", "thumbprint": policy.signer_thumbprint}
+    with pytest.raises(OwnerMergeVerificationError, match="GITHUB_CLIENT_HASH_MISMATCH"):
+        _github_enrollment._verify_pinned_executable(
+            _FakePinnedExecutable(["0" * 64]), policy=policy, verifier=lambda _path: good,
+        )
+    with pytest.raises(OwnerMergeVerificationError, match="GITHUB_CLIENT_FILE_CHANGED"):
+        _github_enrollment._verify_pinned_executable(
+            _FakePinnedExecutable([policy.executable_sha256, "0" * 64]),
+            policy=policy, verifier=lambda _path: good,
+        )
+
+
+def test_authenticode_verification_rejects_missing_file_and_verifier_error(monkeypatch) -> None:
+    policy = _github_enrollment._approved_github_cli_policy()
+    process_calls: list[Any] = []
+    monkeypatch.setattr(_github_enrollment.subprocess, "run", lambda *args, **kwargs: process_calls.append((args, kwargs)))
+    monkeypatch.setattr(_github_enrollment, "_open_pinned_executable", lambda _path: (_ for _ in ()).throw(OwnerMergeVerificationError("GITHUB_CLIENT_FILE_UNAVAILABLE")))
+    with pytest.raises(OwnerMergeVerificationError, match="GITHUB_CLIENT_FILE_UNAVAILABLE"):
+        AuthenticatedGitHubCliApi()
+    pin = _FakePinnedExecutable()
+    with pytest.raises(OwnerMergeVerificationError, match="GITHUB_CLIENT_VERIFIER_FAILED"):
+        _github_enrollment._verify_pinned_executable(
+            pin, policy=policy, verifier=lambda _path: (_ for _ in ()).throw(RuntimeError("synthetic")),
+        )
+    assert process_calls == []
+
+
+@pytest.mark.parametrize("stdout", [b"not-json", b"null", b'{"status":"Valid","thumbprint":"x","unexpected":1}'])
+def test_windows_verifier_rejects_malformed_authenticode_output_without_gh(stdout, monkeypatch) -> None:
+    calls: list[Any] = []
+    def fake_run(args, **kwargs):
+        calls.append((args, kwargs))
+        return SimpleNamespace(returncode=0, stdout=stdout, stderr=b"")
+    monkeypatch.setattr(_github_enrollment.subprocess, "run", fake_run)
+    with pytest.raises(OwnerMergeVerificationError, match="GITHUB_CLIENT_VERIFIER_FAILED"):
+        _github_enrollment._windows_authenticode_verifier(_github_enrollment._APPROVED_EXECUTABLE)
+    assert len(calls) == 1
+    assert calls[0][0][0].casefold().endswith(r"\system32\windowspowershell\v1.0\powershell.exe")
+    assert calls[0][0][0] != _github_enrollment._APPROVED_EXECUTABLE
+
+
+@pytest.mark.parametrize(
+    "verdict,digests,error_code",
+    [
+        (None, None, "GITHUB_CLIENT_SIGNATURE_RESULT_INVALID"),
+        ({"status": "Unknown", "thumbprint": "9A483710566AC7B58A19D32B4A64E44361EA7350"}, None, "GITHUB_CLIENT_SIGNATURE_INVALID"),
+        ({"status": "Valid", "thumbprint": "0" * 40}, None, "GITHUB_CLIENT_SIGNER_MISMATCH"),
+        ({"status": "Valid", "thumbprint": "9A483710566AC7B58A19D32B4A64E44361EA7350"}, ["0" * 64], "GITHUB_CLIENT_HASH_MISMATCH"),
+        ({"status": "Valid", "thumbprint": "9A483710566AC7B58A19D32B4A64E44361EA7350", "extra": 1}, None, "GITHUB_CLIENT_SIGNATURE_RESULT_INVALID"),
+    ],
+)
+def test_failed_authenticode_candidate_never_starts_client_process(monkeypatch, verdict, digests, error_code) -> None:
+    calls: list[Any] = []
+    policy = _github_enrollment._approved_github_cli_policy()
+    pin = _FakePinnedExecutable(digests)
+    monkeypatch.setattr(_github_enrollment, "_open_pinned_executable", lambda _path: pin)
+    monkeypatch.setattr(_github_enrollment, "_windows_authenticode_verifier", lambda _path: verdict)
+    monkeypatch.setattr(_github_enrollment.subprocess, "run", lambda *args, **kwargs: calls.append((args, kwargs)))
+    with pytest.raises(OwnerMergeVerificationError, match=error_code):
+        AuthenticatedGitHubCliApi()
+    assert calls == []
+    assert pin._closed is True
+
+
+def test_authenticode_adapter_rejects_path_override_and_injected_runner_without_process(monkeypatch) -> None:
+    calls: list[Any] = []
+    monkeypatch.setattr(_github_enrollment.subprocess, "run", lambda *args, **kwargs: calls.append((args, kwargs)))
+    with pytest.raises(TypeError):
+        AuthenticatedGitHubCliApi(executable="C:\\other\\gh.exe")
+    with pytest.raises(TypeError):
+        AuthenticatedGitHubCliApi(runner=lambda *_args, **_kwargs: calls.append("injected"))
+    policy = _github_enrollment._approved_github_cli_policy()
+    alternate = _github_enrollment._GitHubCliTrustPolicy(
+        policy.policy_id, r"C:\other\gh.exe", policy.signature_status,
+        policy.signer_thumbprint, policy.executable_sha256,
+    )
+    with pytest.raises(OwnerMergeVerificationError, match="GITHUB_CLIENT_POLICY_INVALID"):
+        _github_enrollment._verify_pinned_executable(
+            _FakePinnedExecutable(), policy=alternate,
+            verifier=lambda _path: {"status": "Valid", "thumbprint": policy.signer_thumbprint},
+        )
+    assert calls == []
+
+
+def test_verified_adapter_holds_pin_during_subprocess_creation_without_running_gh(monkeypatch) -> None:
+    policy = _github_enrollment._approved_github_cli_policy()
+    pin = _FakePinnedExecutable()
+    process_calls: list[Any] = []
+    monkeypatch.setattr(_github_enrollment, "_open_pinned_executable", lambda _path: pin)
+    monkeypatch.setattr(
+        _github_enrollment,
+        "_windows_authenticode_verifier",
+        lambda _path: {"status": "Valid", "thumbprint": policy.signer_thumbprint},
+    )
+    def fake_run(args, **kwargs):
+        assert not pin._closed
+        process_calls.append((args, kwargs))
         return SimpleNamespace(returncode=0, stdout=b"{}", stderr=b"")
-    with pytest.raises(OwnerMergeVerificationError, match="GITHUB_CLIENT_PROVENANCE_UNVERIFIED"):
-        AuthenticatedGitHubCliApi(executable="gh", runner=runner)
-    assert observed == []
+    monkeypatch.setattr(_github_enrollment.subprocess, "run", fake_run)
+    with AuthenticatedGitHubCliApi() as client:
+        assert client.get_json("/repos/jhonf463r/Python") == {}
+        with pytest.raises(OwnerMergeVerificationError, match="GITHUB_CLIENT_REQUEST_INVALID"):
+            client.get_json("/repos/other/repo")
+    assert len(process_calls) == 1
+    assert process_calls[0][0][0] == policy.executable_path
+    assert process_calls[0][1]["executable"] == policy.executable_path
+    assert process_calls[0][1]["shell"] is False
+    assert pin._closed is True
 
 
-def test_authenticated_gh_api_candidate_is_unavailable_until_provenance_exists() -> None:
-    with pytest.raises(OwnerMergeVerificationError, match="GITHUB_CLIENT_PROVENANCE_UNVERIFIED"):
-        AuthenticatedGitHubCliApi(executable="gh", runner=lambda *_args, **_kwargs: None)
+def test_windows_pinned_handle_blocks_write_and_rename_on_synthetic_file(tmp_path) -> None:
+    import os
+
+    path = tmp_path / "synthetic-gh.exe"
+    payload = b"synthetic executable bytes; never executed"
+    path.write_bytes(payload)
+    pin = _github_enrollment._open_pinned_executable(str(path.resolve()))
+    try:
+        assert pin.sha256() == hashlib.sha256(payload).hexdigest().upper()
+        with pytest.raises(OSError):
+            with path.open("ab") as stream:
+                stream.write(b"changed")
+        replacement = tmp_path / "replacement.exe"
+        with pytest.raises(OSError):
+            os.replace(path, replacement)
+        assert path.exists()
+        assert not replacement.exists()
+    finally:
+        pin.close()
 
 
-def test_public_fetchback_rejects_unverified_injected_client_before_call() -> None:
+def test_public_fetchback_does_not_accept_injected_client() -> None:
     class Client:
         def __init__(self) -> None:
             self.called = False
@@ -549,7 +713,7 @@ def test_public_fetchback_rejects_unverified_injected_client_before_call() -> No
     client = Client()
     key = CngPublicKey("IABV-G1-" + manifest.enrollment_id, PLATFORM_PROVIDER,
                        "PLATFORM_PROVIDER_SELECTED; HARDWARE_BACKING_NOT_INDEPENDENTLY_VERIFIED", KEY, THUMBPRINT)
-    with pytest.raises(OwnerMergeVerificationError, match="GITHUB_CLIENT_PROVENANCE_UNVERIFIED"):
+    with pytest.raises(TypeError):
         _public_verify_owner_manifest_fetchback(
             PR_NUMBER, expected_manifest=manifest, expected_owner_id=EXPECTED_OWNER_ID,
             expected_server_code_revision=CODE_SHA, expected_workspace_root=r"C:\Python\IABV_v1.5",

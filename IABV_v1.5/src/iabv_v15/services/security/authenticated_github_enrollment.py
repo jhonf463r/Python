@@ -1,12 +1,17 @@
 """Fail-closed candidate logic for read-only enrollment-manifest fetch-back.
 
-The current GitHub CLI path has no trusted executable-provenance check and is
-therefore disabled. The pure verifier core is not a production trust path.
+The fixed Authenticode-pinned CLI adapter is a source candidate. Public
+fetch-back stays disabled pending exact candidate review and separate
+production-boundary evidence. The injectable verifier core is test-only.
 """
 from __future__ import annotations
 
 import hashlib
+import json
+import os
 import re
+import subprocess
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Callable, Mapping, Protocol
 
@@ -29,6 +34,37 @@ from iabv_v15.services.security.windows_cng_key_store import CngKeyReader, CngPu
 from iabv_v15.services.security.windows_cng_key_store import PLATFORM_PROVIDER, SOFTWARE_PROVIDER
 
 _SHA1 = re.compile(r"^[0-9a-f]{40}$")
+_POLICY_ID = "IABV_GITHUB_CLI_AUTHENTICODE_PIN_V1"
+_APPROVED_EXECUTABLE = r"C:\Program Files\GitHub CLI\gh.exe"
+_APPROVED_SIGNATURE_STATUS = "Valid"
+_APPROVED_SIGNER_THUMBPRINT = "9A483710566AC7B58A19D32B4A64E44361EA7350"
+_APPROVED_EXECUTABLE_SHA256 = "249613CC9DFB61EB267ACFA08C2253EDEA271BBBEC8F3CA3BF8D949A6575D60B"
+
+
+@dataclass(frozen=True, slots=True)
+class _GitHubCliTrustPolicy:
+    policy_id: str
+    executable_path: str
+    signature_status: str
+    signer_thumbprint: str
+    executable_sha256: str
+
+
+@dataclass(frozen=True, slots=True)
+class _AuthenticodeEvidence:
+    status: str
+    signer_thumbprint: str
+
+
+def _approved_github_cli_policy() -> _GitHubCliTrustPolicy:
+    """Return the source-versioned policy approved for this candidate only."""
+    return _GitHubCliTrustPolicy(
+        policy_id=_POLICY_ID,
+        executable_path=_APPROVED_EXECUTABLE,
+        signature_status=_APPROVED_SIGNATURE_STATUS,
+        signer_thumbprint=_APPROVED_SIGNER_THUMBPRINT,
+        executable_sha256=_APPROVED_EXECUTABLE_SHA256,
+    )
 
 
 class OwnerManifestReceiptStore(Protocol):
@@ -44,26 +80,286 @@ class OwnerManifestReceiptStore(Protocol):
 
 
 class AuthenticatedGitHubCliApi:
-    """Disabled candidate: no trusted identity check exists for the gh binary."""
+    """Fixed-policy GitHub CLI adapter; verification precedes every request.
 
-    def __init__(
-        self,
-        *,
-        executable: str | None = None,
-        runner: Callable[..., Any] | None = None,
-    ) -> None:
-        del executable, runner
-        raise OwnerMergeVerificationError("GITHUB_CLIENT_PROVENANCE_UNVERIFIED")
+    The pinned file handle denies write/delete sharing and remains open while
+    subprocess creation resolves the approved absolute path. This prevents a
+    normal user-mode replacement between verification and launch. It does not
+    defend against a privileged/kernel actor or prove build-workflow provenance.
+    """
+
+    __slots__ = ("_policy", "_pin", "_identity", "_runner", "_closed", "_initialized")
+
+    def __setattr__(self, name: str, value: object) -> None:
+        if getattr(self, "_initialized", False):
+            raise AttributeError("verified GitHub client identity is immutable")
+        object.__setattr__(self, name, value)
+
+    def __init__(self) -> None:
+        policy = _approved_github_cli_policy()
+        pin = _open_pinned_executable(policy.executable_path)
+        try:
+            self._identity = _verify_pinned_executable(
+                pin, policy=policy, verifier=_windows_authenticode_verifier,
+            )
+        except Exception:
+            pin.close()
+            raise
+        self._policy = policy
+        self._pin = pin
+        self._runner = subprocess.run
+        self._closed = False
+        self._initialized = True
 
     def __enter__(self) -> "AuthenticatedGitHubCliApi":
         return self
 
     def __exit__(self, *_: object) -> None:
-        return None
+        self.close()
+
+    def close(self) -> None:
+        if not self._closed:
+            object.__setattr__(self, "_closed", True)
+            self._pin.close()
 
     def get_json(self, path: str, *, params: Mapping[str, object] | None = None) -> Any:
-        del path, params
+        repo_root = f"/repos/{EXPECTED_REPOSITORY}"
+        if (
+            self._closed or not isinstance(path, str)
+            or (path != repo_root and not path.startswith(repo_root + "/"))
+            or any(token in path for token in ("\\", "//", "?", "#", "\r", "\n"))
+            or any(segment in {".", ".."} for segment in path.split("/"))
+        ):
+            raise OwnerMergeVerificationError("GITHUB_CLIENT_REQUEST_INVALID")
+        args = [self._policy.executable_path, "api", path]
+        if params is not None:
+            if not isinstance(params, Mapping):
+                raise OwnerMergeVerificationError("GITHUB_CLIENT_REQUEST_INVALID")
+            for key, value in params.items():
+                if (
+                    not isinstance(key, str) or not re.fullmatch(r"[A-Za-z0-9_-]+", key)
+                    or type(value) not in {str, int, bool}
+                ):
+                    raise OwnerMergeVerificationError("GITHUB_CLIENT_REQUEST_INVALID")
+                args.extend(("-f", f"{key}={str(value).lower() if type(value) is bool else value}"))
+        if self._pin.sha256() != self._identity.executable_sha256:
+            raise OwnerMergeVerificationError("GITHUB_CLIENT_PROVENANCE_UNVERIFIED")
+        try:
+            result = self._runner(
+                args,
+                executable=self._policy.executable_path,
+                capture_output=True,
+                check=False,
+                shell=False,
+                stdin=subprocess.DEVNULL,
+                timeout=30,
+            )
+        except Exception:
+            raise OwnerMergeVerificationError("GITHUB_CLIENT_CALL_FAILED") from None
+        if getattr(result, "returncode", None) != 0:
+            raise OwnerMergeVerificationError("GITHUB_CLIENT_CALL_FAILED")
+        stdout = getattr(result, "stdout", None)
+        if not isinstance(stdout, bytes):
+            raise OwnerMergeVerificationError("GITHUB_CLIENT_RESPONSE_INVALID")
+        try:
+            return json.loads(stdout.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            raise OwnerMergeVerificationError("GITHUB_CLIENT_RESPONSE_INVALID") from None
+
+
+@dataclass(frozen=True, slots=True)
+class _ExecutableIdentity:
+    executable_sha256: str
+    file_id: tuple[int, int, int]
+
+
+class _PinnedExecutable:
+    """A Windows read handle opened without write/delete sharing."""
+
+    def __init__(self, file_object: Any, file_id: tuple[int, int, int]) -> None:
+        self._file = file_object
+        self.file_id = file_id
+        self._closed = False
+
+    def sha256(self) -> str:
+        if self._closed:
+            raise OwnerMergeVerificationError("GITHUB_CLIENT_PROVENANCE_UNVERIFIED")
+        try:
+            self._file.seek(0)
+            digest = hashlib.sha256()
+            for chunk in iter(lambda: self._file.read(1024 * 1024), b""):
+                digest.update(chunk)
+            self._file.seek(0)
+            return digest.hexdigest().upper()
+        except Exception:
+            raise OwnerMergeVerificationError("GITHUB_CLIENT_FILE_CHANGED_OR_UNREADABLE") from None
+
+    def close(self) -> None:
+        if not self._closed:
+            self._closed = True
+            self._file.close()
+
+
+def _open_pinned_executable(path: str) -> _PinnedExecutable:
+    """Open the approved image while denying later write/delete handles."""
+    if os.name != "nt" or not isinstance(path, str) or not os.path.isabs(path):
+        raise OwnerMergeVerificationError("GITHUB_CLIENT_FILE_UNAVAILABLE")
+    try:
+        import ctypes
+        import msvcrt
+        from ctypes import wintypes
+
+        class _ByHandleFileInformation(ctypes.Structure):
+            _fields_ = [
+                ("dwFileAttributes", wintypes.DWORD),
+                ("ftCreationTime", wintypes.FILETIME),
+                ("ftLastAccessTime", wintypes.FILETIME),
+                ("ftLastWriteTime", wintypes.FILETIME),
+                ("dwVolumeSerialNumber", wintypes.DWORD),
+                ("nFileSizeHigh", wintypes.DWORD),
+                ("nFileSizeLow", wintypes.DWORD),
+                ("nNumberOfLinks", wintypes.DWORD),
+                ("nFileIndexHigh", wintypes.DWORD),
+                ("nFileIndexLow", wintypes.DWORD),
+            ]
+
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        create_file = kernel32.CreateFileW
+        create_file.argtypes = [wintypes.LPCWSTR, wintypes.DWORD, wintypes.DWORD,
+                                wintypes.LPVOID, wintypes.DWORD, wintypes.DWORD, wintypes.HANDLE]
+        create_file.restype = wintypes.HANDLE
+        get_info = kernel32.GetFileInformationByHandle
+        get_info.argtypes = [wintypes.HANDLE, ctypes.POINTER(_ByHandleFileInformation)]
+        get_info.restype = wintypes.BOOL
+        get_final_path = kernel32.GetFinalPathNameByHandleW
+        get_final_path.argtypes = [wintypes.HANDLE, wintypes.LPWSTR, wintypes.DWORD, wintypes.DWORD]
+        get_final_path.restype = wintypes.DWORD
+        close_handle = kernel32.CloseHandle
+        close_handle.argtypes = [wintypes.HANDLE]
+        close_handle.restype = wintypes.BOOL
+        handle = create_file(path, 0x80000000, 0x00000001, None, 3, 0x00000080, None)
+        invalid = ctypes.c_void_p(-1).value
+        if handle == invalid:
+            raise OSError(ctypes.get_last_error())
+        info = _ByHandleFileInformation()
+        if not get_info(handle, ctypes.byref(info)) or info.dwFileAttributes & 0x00000400:
+            raise OSError("file identity unavailable or reparse point")
+        final_buffer = ctypes.create_unicode_buffer(32768)
+        final_length = get_final_path(handle, final_buffer, len(final_buffer), 0)
+        if not final_length or final_length >= len(final_buffer):
+            raise OSError("final path unavailable")
+        final_path = final_buffer.value
+        if final_path.startswith("\\\\?\\"):
+            final_path = final_path[4:]
+        if os.path.normcase(os.path.abspath(final_path)) != os.path.normcase(os.path.abspath(path)):
+            raise OSError("resolved file path differs")
+        file_id = (
+            int(info.dwVolumeSerialNumber),
+            (int(info.nFileIndexHigh) << 32) | int(info.nFileIndexLow),
+            (int(info.nFileSizeHigh) << 32) | int(info.nFileSizeLow),
+        )
+        fd = msvcrt.open_osfhandle(int(handle), os.O_RDONLY | os.O_BINARY)
+        handle = None  # ownership transferred to the CRT descriptor
+        file_object = os.fdopen(fd, "rb", closefd=True)
+        fd = None  # ownership transferred to the Python file object
+        return _PinnedExecutable(file_object, file_id)
+    except OwnerMergeVerificationError:
+        raise
+    except Exception:
+        raise OwnerMergeVerificationError("GITHUB_CLIENT_FILE_UNAVAILABLE") from None
+    finally:
+        try:
+            if "handle" in locals() and handle is not None and handle != invalid:
+                close_handle(handle)
+        except Exception:
+            pass
+        try:
+            if "fd" in locals() and fd is not None:
+                os.close(fd)
+        except Exception:
+            pass
+
+
+def _windows_authenticode_verifier(path: str) -> Mapping[str, object]:
+    """Ask the Windows PowerShell Authenticode provider; never run gh here."""
+    if os.name != "nt" or path != _APPROVED_EXECUTABLE:
+        raise OwnerMergeVerificationError("GITHUB_CLIENT_VERIFIER_UNAVAILABLE")
+    try:
+        import ctypes
+        from ctypes import wintypes
+
+        get_windows_directory = ctypes.WinDLL("kernel32", use_last_error=True).GetWindowsDirectoryW
+        get_windows_directory.argtypes = [wintypes.LPWSTR, wintypes.UINT]
+        get_windows_directory.restype = wintypes.UINT
+        buffer = ctypes.create_unicode_buffer(32768)
+        length = get_windows_directory(buffer, len(buffer))
+        if not length or length >= len(buffer):
+            raise OSError("Windows directory unavailable")
+        powershell = os.path.join(buffer.value, "System32", "WindowsPowerShell", "v1.0", "powershell.exe")
+        script = (
+            "$ErrorActionPreference='Stop'; $s=Get-AuthenticodeSignature -LiteralPath '"
+            + path.replace("'", "''")
+            + "'; if ($null -eq $s.SignerCertificate) { throw 'Signer missing' }; "
+            + "[ordered]@{status=$s.Status.ToString();thumbprint=$s.SignerCertificate.Thumbprint}|ConvertTo-Json -Compress"
+        )
+        result = subprocess.run(
+            [powershell, "-NoLogo", "-NoProfile", "-NonInteractive", "-Command", script],
+            capture_output=True,
+            check=False,
+            shell=False,
+            stdin=subprocess.DEVNULL,
+            timeout=15,
+        )
+        if result.returncode != 0 or not isinstance(result.stdout, bytes):
+            raise ValueError("Authenticode verifier failed")
+        value = json.loads(result.stdout.decode("utf-8"))
+        if not isinstance(value, dict) or set(value) != {"status", "thumbprint"}:
+            raise ValueError("Malformed Authenticode result")
+        if not isinstance(value["status"], str) or not isinstance(value["thumbprint"], str):
+            raise ValueError("Malformed Authenticode fields")
+        return _AuthenticodeEvidence(value["status"], value["thumbprint"].replace(" ", "").upper())
+    except Exception:
+        raise OwnerMergeVerificationError("GITHUB_CLIENT_VERIFIER_FAILED") from None
+
+
+def _verify_pinned_executable(
+    pin: _PinnedExecutable,
+    *,
+    policy: _GitHubCliTrustPolicy,
+    verifier: Callable[[str], object],
+) -> _ExecutableIdentity:
+    approved = _approved_github_cli_policy()
+    if type(policy) is not _GitHubCliTrustPolicy or policy != approved:
+        raise OwnerMergeVerificationError("GITHUB_CLIENT_POLICY_INVALID")
+    if not isinstance(pin, _PinnedExecutable) or not callable(verifier):
         raise OwnerMergeVerificationError("GITHUB_CLIENT_PROVENANCE_UNVERIFIED")
+    if not os.path.isabs(policy.executable_path) or os.path.normcase(os.path.abspath(policy.executable_path)) != os.path.normcase(os.path.abspath(_APPROVED_EXECUTABLE)):
+        raise OwnerMergeVerificationError("GITHUB_CLIENT_PATH_MISMATCH")
+    try:
+        digest_before = pin.sha256()
+        result = verifier(policy.executable_path)
+        if type(result) is _AuthenticodeEvidence:
+            status, thumbprint = result.status, result.signer_thumbprint
+        elif isinstance(result, Mapping) and set(result) == {"status", "thumbprint"}:
+            status, thumbprint = result["status"], result["thumbprint"]
+        else:
+            raise OwnerMergeVerificationError("GITHUB_CLIENT_SIGNATURE_RESULT_INVALID")
+        if type(status) is not str or type(thumbprint) is not str:
+            raise OwnerMergeVerificationError("GITHUB_CLIENT_SIGNATURE_RESULT_INVALID")
+        if status != policy.signature_status:
+            raise OwnerMergeVerificationError("GITHUB_CLIENT_SIGNATURE_INVALID")
+        if thumbprint.replace(" ", "").upper() != policy.signer_thumbprint:
+            raise OwnerMergeVerificationError("GITHUB_CLIENT_SIGNER_MISMATCH")
+        digest_after = pin.sha256()
+        if digest_before != digest_after:
+            raise OwnerMergeVerificationError("GITHUB_CLIENT_FILE_CHANGED")
+        if digest_after != policy.executable_sha256:
+            raise OwnerMergeVerificationError("GITHUB_CLIENT_HASH_MISMATCH")
+        return _ExecutableIdentity(digest_after, pin.file_id)
+    except OwnerMergeVerificationError:
+        raise
+    except Exception:
+        raise OwnerMergeVerificationError("GITHUB_CLIENT_VERIFIER_FAILED") from None
 
 
 def verify_owner_manifest_fetchback(
@@ -76,14 +372,13 @@ def verify_owner_manifest_fetchback(
     windows_sid: str,
     cng_key: CngPublicKey,
     receipt_store: OwnerManifestReceiptStore,
-    api: AuthenticatedGitHubCliApi | Any | None = None,
     clock: Callable[[], datetime] | None = None,
 ) -> OwnerManifestFetchbackReceipt:
-    """Reject fetch-back until the GitHub response producer is trusted."""
+    """Keep public fetch-back closed until the candidate is independently reviewed."""
     del (
         pull_request_number, expected_manifest, expected_owner_id,
         expected_server_code_revision, expected_workspace_root, windows_sid,
-        cng_key, receipt_store, api, clock,
+        cng_key, receipt_store, clock,
     )
     raise OwnerMergeVerificationError("GITHUB_CLIENT_PROVENANCE_UNVERIFIED")
 
