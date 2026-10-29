@@ -262,6 +262,13 @@ UAAL-D021 route truth and revision binding extend to the actual command that pro
 10. **Non-self-referential manifest:** reject a design that embeds its own containing commit SHA, Git blob SHA or whole-content digest. Store those identities in a post-merge receipt.
 11. **G1 vs capability:** a valid Owner-approved enrollment may establish a narrow local issuer identity only; it must not populate the MCP tool allowlist or imply G2/G3/read authorization.
 
+12. **Objective normalization and route fidelity:** when the latest topic differs from the active objective, state the desired observable outcome and acceptance oracle, then route by CURRENT-STATE and the Owner's explicit scope—not conversational recency.
+13. **Minimum sufficient landscape:** trace the relevant producer → transformation/contract → normal caller/consumer → effective operation → observation/oracle path; record untouched surfaces as UNKNOWN instead of implying a full-system audit.
+14. **Cross-domain transfer:** when reusing a method in another domain, supply a semantic mapping plus a non-match, counterexample or falsifier. Without that, keep the transfer a hypothesis rather than treating analogy as proof.
+15. **Review coverage:** a result based on 13 of 33 files inspected in depth must remain a scoped review; list unread files as UNKNOWN and never upgrade it to a full-PR audit.
+16. **Task-local blocker:** after a route is terminal, preserve that result while checking for a separately authorized independent lane. Wait globally only when no admissible useful action remains.
+17. **Method activation:** mentioning or linking D019/D020/D021/D022 is insufficient. The task receipt must show which decision the activated rule changed, why the chosen action differed from the prior route, and the evidence for the resulting outcome.
+
 These are documentary acceptance cases. This session did not execute tests, builds or runtime.
 
 ## 5. Outcome of this audit and limits
