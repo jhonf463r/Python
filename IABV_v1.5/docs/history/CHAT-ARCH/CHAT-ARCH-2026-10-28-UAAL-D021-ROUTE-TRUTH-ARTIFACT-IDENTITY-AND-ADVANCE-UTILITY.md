@@ -78,7 +78,7 @@ ARTIFACT_ID = {
 
 D019 already supplies the causal-frontier loop and D020 supplies progress-utility selection. This gate makes them portable across different problem domains by requiring a minimum sufficient model of the *specific system path* affected by the Owner's objective. It is a diagnostic frame, not a new router, memory store, universal service, or claim that the system is conscious.
 
-#### A. Normalize the objective before diagnosing the solution
+#### Normalize the objective before diagnosing the solution
 
 Create a compact `OBJECTIVE_CONTRACT` before choosing a tool, actor, code change or research branch:
 
@@ -96,7 +96,7 @@ OBJECTIVE_CONTRACT = {
 
 Use the Owner's actual objective, not merely the latest noun/topic in conversation. Do not silently replace a desired outcome with a convenient subtask. If a field is not needed for this decision, mark it not applicable; if material and unknown, keep it unknown and select a bounded discriminating read or ask one necessary question. Do not invent an acceptance oracle.
 
-#### B. Map the minimum sufficient causal landscape
+#### Map the minimum sufficient causal landscape
 
 Trace only the path capable of changing the target outcome, but trace it end to end far enough to distinguish a local symptom from an operative cause:
 
@@ -125,7 +125,7 @@ For every material claim, make a small retrieval plan: `CLAIM → REQUIRED_SOURC
 - Stop when the decision is supported. If a review is limited to high-risk paths, label it scoped and retain the unread paths as `UNKNOWN`; do not broaden its verdict by implication.
 
 
-#### C. Classify the failure using diagnostic lenses, not a single rigid taxonomy
+#### Classify the failure using diagnostic lenses, not a single rigid taxonomy
 
 Apply only the lenses relevant to the objective, allowing several at once:
 
@@ -141,7 +141,7 @@ Apply only the lenses relevant to the objective, allowing several at once:
 
 For each candidate explanation, record `OBSERVED`, `INFERENCE`, `HYPOTHESIS` or `UNKNOWN`, the exact affected edge, supporting source, expected distinguishing observation and a falsifier. Do not promote the most narratively plausible explanation to root cause without discriminating evidence.
 
-#### D. Transfer invariants, not recipes
+#### Transfer invariants, not recipes
 
 When moving from one domain to another, preserve the structure of a proven rule only after mapping its semantics into the new domain:
 
@@ -159,7 +159,7 @@ Example: “declared intent is not effective behavior” can transfer from CLI i
 
 A later non-identical application must show which decision changed because of the invariant, what evidence supported that decision, and what outcome followed. Retrieval, agreement, a link or a new document does not establish transfer or learning.
 
-#### E. Choose the smallest action that changes the decision
+#### Choose the smallest action that changes the decision
 
 For each admissible candidate route, state: target edge; prior attempt and terminal stage; causal difference; predicted observation for each plausible result; verification source; cost/Owner burden; reversibility; and stop/switch condition. Hard authorization and safety constraints filter candidates first. Among the rest, prioritize direct edge closure, then decision-changing information gain, reuse of an existing realization, and minimum side effects/preparation.
 
