@@ -1,7 +1,7 @@
 # Canonical continuity, Space-Time cognition, and adaptive neuroplasticity protocol
 
 - Protocol ID: `CONTINUITY_SPACE_TIME_ANTI_LOOP` (stable identity; operating method evolves in place)
-- Living operating revision: `2.5 — ADAPTIVE_SPACE_TIME_NEUROPLASTICITY + OWNER_CONTEXT_AWARE_TURN_ROUTING + VERIFIED_CONTEXT_HANDOFF + OWNER_FACING_DELIVERY_PREFLIGHT + DUAL_TRACK_PROGRESS_ROUTING + UAAL_D020_PROGRESS_UTILITY + CROSS_AI_MEMORY_ACTIVATION`
+- Living operating revision: `2.6 — ADAPTIVE_SPACE_TIME_NEUROPLASTICITY + OWNER_CONTEXT_AWARE_TURN_ROUTING + VERIFIED_CONTEXT_HANDOFF + OWNER_FACING_DELIVERY_PREFLIGHT + DUAL_TRACK_PROGRESS_ROUTING + UAAL_D020_PROGRESS_UTILITY + CROSS_AI_MEMORY_ACTIVATION + OBJECTIVE_CONDITIONED_WORLD_MODEL + INCOMING_RESULT_ADJUDICATION`
 - Evolution rule: integrate new lessons into their owning core rule; preserve dated incidents/history; do not accumulate competing append-only protocols
 - Owner instruction date: 2026-10-23 (America/Bogota)
 - Scope: objective-bound reasoning, temporal evidence graph, adaptive role activation, gated action chains, memory consolidation, delivery receipts and outcome-based protocol evolution
@@ -76,6 +76,16 @@ The current state is a derived, reconciled view; historical events and receipts 
 Before reasoning from Portable Context or another package, bind its package ID/digest, creation/update time, source revision, active objective/session, freshness and refresh outcome. If those fields or the delivery route are not observable, label currentness or receipt status `UNKNOWN` / `UNVERIFIED`. Do not claim a newly opened ChatGPT/Codex session consumed a package just because it exists in GitHub or a send was attempted.
 
 Treat the Owner's immediate objective and explicit operating constraints as task context, not optional conversational color. Capture project-relevant constraints such as `ZERO_BUDGET`, free/connected tools, available access surfaces, intended output and manual-step cost. Mark each as Owner-stated, inferred or unknown, with source/time where material. Reuse answers already available in the conversation or canonical record instead of asking the Owner to repeat them. Minimize human effort without bypassing authorization. Public GitHub is not a private transport; free does not mean safe or authorized.
+
+### Objective-conditioned perception and incoming-result adjudication (revision 2.6; active)
+
+UAAL-D021 is the owning operational contract for this refinement; see [D021 §6A — task-local world model](CHAT-ARCH-2026-10-29-UAAL-D021-CROSS-SESSION-BOOT-AND-STATE-RECONCILIATION.md#6a-objective-conditioned-perception-and-task-local-world-model) and [D021 §6B — result adjudication](CHAT-ARCH-2026-10-29-UAAL-D021-CROSS-SESSION-BOOT-AND-STATE-RECONCILIATION.md#6b-adjudicate-incoming-results-before-preparing-another-handoff). These controls are now active guidance, not an unmerged revision-2.6 proposal.
+
+Before a material action, build the minimum objective-conditioned world model: success oracle; exact source/ref/blob and observation time; effective producer → transformation → consumer/operation path; authority and environmental constraints; verified observations versus reports/inferences/hypotheses/unknowns/NOT_RUN; rival hypotheses with predicted observations and falsifiers; first open causal edge; and the expected result/stop condition. Do not create another router, memory store or full-repository inventory.
+
+Before any new AI/reviewer handoff, adjudicate the incoming result against the original task and acceptance oracle. Rebind it to the exact live target HEAD and affected paths, separate evidence stages, close only the edge that the evidence demonstrates, record what remains unknown, and choose the next authorized action from the earliest remaining open edge. Do not silently retarget a verdict from one revision to another.
+
+This documents a method and its evidence discipline; it does not prove automatic delivery to future chats, runtime enforcement or model-weight learning. Each participating session must produce its own retrieval/application evidence. The latest canonical D021 receipt records one verified non-identical-task reuse only; generalization remains NOT_TESTED.
 
 ## 4. Adaptive reasoning cycle — from intent to verified state transition
 
