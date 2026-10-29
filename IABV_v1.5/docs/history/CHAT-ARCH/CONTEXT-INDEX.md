@@ -18,6 +18,8 @@ UAAL-D020 applies to participating AI sessions that retrieve this GitHub memory,
 
 See [UAAL-D020](CHAT-ARCH-2026-10-28-UAAL-D020-VERIFIED-PROGRESS-UTILITY-STRATEGY-SWITCH.md), [Cross-AI symbiosis map](SYMBIOSIS-MAP.md), and the [living Space-Time continuity protocol](CHAT-ARCH-2026-10-23-CONTINUITY-SPACE-TIME-OPERATING-PROTOCOL-v1.md).
 
+[UAAL-D022 — proposed effective-operation contract](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-UAAL-D022-EFFECTIVE-OPERATION-AND-EVIDENCE-PRODUCER-INTEGRITY.md) adds the invariant that declared read-only intent must be checked against effective argv, environment, method, destination, endpoint form and producer identity. It remains proposed on this branch, not canonical policy on main.
+
 <!-- Cross-chat handoff synchronized 2026-10-27. CURRENT-STATE.md remains the sole operational route authority. -->
 
 <!-- OWNER-DIRECTED CONTINUITY METHOD CORRECTION — 2026-10-28; process/docs only; technical gates unchanged -->
