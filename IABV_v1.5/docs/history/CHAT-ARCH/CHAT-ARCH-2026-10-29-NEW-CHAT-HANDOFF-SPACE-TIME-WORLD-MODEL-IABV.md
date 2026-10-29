@@ -1,3 +1,42 @@
+## Addendum — publication receipt adjudicated; PR-level review gate now active (2026-10-29)
+
+The exact two-file repair has been pushed to the existing PR #556 and independently fetched back in this session. The new commit is c00c1677e7b1f891e757f141450672b04443eba4, parent e1b430956146c4aa0cadc1df2c3df92150b7f7ea. Comparing those commits showed exactly one new commit and exactly two changed paths. Both target blobs fetched through refs/pull/556/head match the previously reviewed identities. Receipt: [M1A F-556 publication/fetch-back adjudication](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-M1A-G1-F556-PUBLICATION-FETCHBACK-ADJUDICATION.md).
+
+This is real forward progress: the reviewed local-only candidate is now a stable remote PR candidate. It does not establish PR approval, merge readiness, G1/G2/G3 or product runtime.
+
+Current PR-level evidence:
+- GitHub issue query reports PR #556 as open and closed_at=null. The title carries a [Draft] prefix, but the query did not expose a direct draft boolean. Preserve PR_OPEN=VERIFIED and PR_DRAFT_FLAG=UNKNOWN.
+- Twelve review submissions were returned, all COMMENTED and none APPROVED. Four inline review threads remain unresolved (three outdated and one current).
+- The current non-outdated thread asks for GH_PROMPT_DISABLED=1 and GIT_TERMINAL_PROMPT=0 plus synthetic assertions. A direct fetch of commit c00c confirmed the source sets both variables and the test asserts both; do not repeat the implementation. The review thread still needs explicit reconciliation via an authorized PR action.
+- PR-associated Actions run 40895256777 ended startup_failure with zero jobs; combined status is empty. No successful CI evidence exists for this commit from that query. Root cause remains UNKNOWN; do not rerun/repair Actions or alter billing settings without authorization.
+- The wider PR remains a 34-file M1A/M1F candidate. The current two-file commit does not resolve the entire PR's review or validation obligations.
+
+**Next open edge:** reconcile the still-unresolved current review thread (without new source changes) and decide how to investigate the CI startup_failure using read-only evidence first. Do not merge or mark the PR ready. No automatic follow-on is authorized by the commit/push authorization.
+
+~~~text
+ACTIVE_TASK=M1A_G1_PR556_POST_PUBLICATION_REVIEW_GATES_20261029
+PUBLICATION=COMMIT_PUSH_FETCHBACK_VERIFIED
+COMMIT=c00c1677e7b1f891e757f141450672b04443eba4
+REMOTE_TARGET_BLOBS=MATCHED_AT_REFS_PULL_556_HEAD
+PR_OPEN=VERIFIED
+PR_DRAFT_FLAG=UNKNOWN
+REVIEWS=12_COMMENTED; NONE_APPROVED
+UNRESOLVED_THREADS=4; 3_OUTDATED; 1_CURRENT
+CURRENT_THREAD_REQUEST_ALREADY_PRESENT_IN_SOURCE_AND_TEST=TRUE
+CURRENT_THREAD_GITHUB_RESOLUTION=NOT_DONE
+ACTIONS_RUN=40895256777; STARTUP_FAILURE; ZERO_JOBS
+COMBINED_STATUS=EMPTY
+NEXT_ACTION=READ_ONLY_PR_GATE_RECONCILIATION; NO_MERGE
+G1/G2/G3=NOT_ESTABLISHED
+MCP_TOOL_ALLOWLIST=EMPTY
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+C:\\Python=DO_NOT_TOUCH
+~~~
+
+---
+
 ## Addendum — Owner authorizes exact two-file commit/push to existing PR #556 (2026-10-29)
 
 The Owner explicitly authorized Codex to commit and push only the two reviewed M1A files to the existing branch backing PR #556. See the authorized exact-scope contract at [proposed CURRENT-STATE](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CURRENT-STATE.md). This is publication to a draft PR, not a merge or product activation.
