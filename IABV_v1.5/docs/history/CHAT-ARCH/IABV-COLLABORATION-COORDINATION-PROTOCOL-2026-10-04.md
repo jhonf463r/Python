@@ -77,6 +77,61 @@ Typical capability observations:
 
 These are capability observations, not permanent assignments. Recompute after material reconciliation.
 
+## PROPOSED OWNER-DECISION GATE — BOUNDED PARENT/CHILD WORK PACKETS
+
+**Status: PROPOSAL ONLY — NOT EFFECTIVE UNTIL EXPLICIT OWNER ACCEPTANCE AND CANONICAL FETCH-BACK.** This section is a review candidate in an isolated branch. It must not be treated as operational permission while this PR is draft/unmerged. It does not change the active route, current permissions, the one-task default, G1/G2/G3, bridge readiness, or execution gates.
+
+### Why this amendment is proposed
+
+The existing protocol already defines one routing authority, capability-fit actor selection, prior-experience activation, frame entry/exit, evidence reconciliation and writeback. The focus protocol retains one active user-facing task by default. A static review of current `PlatformPendingQueue` and `ToolTask` found no first-class claim/lease or repository path-ownership contract in the inspected surfaces. This is a bounded source observation, not proof that no other concurrency control exists anywhere.
+
+Earlier draft PRs #522 (conversation-intent/collective coordination), #523 (collective-coordination audit checkpoint), and #569 (MCO-01 branch/path non-interference) cover overlapping portions of this problem. They remain proposals, not canonical authority. This amendment consolidates their compatible policy into this owning coordination protocol instead of adding another coordinator, router, memory store or scheduler.
+
+### Proposed policy
+
+1. **One root route remains authoritative.** `CURRENT-STATE.md` continues to identify the active user-facing project task, gates, permissions and next action. No child packet may edit that route, redefine the north star, grant itself authority, or declare itself integrated.
+
+2. **Serial is still the default.** The coordinator may propose multiple child packets only when the Owner explicitly authorizes a bounded parallel-work pilot or accepts this amendment and separately authorizes the specific pilot. A conversation about coordination, a draft PR, or an available assistant is not itself a dispatch instruction. Without that separate authorization, work remains one active task and optional findings stay queued.
+
+3. **A child packet is admissible only with a complete contract.** Each packet must state: `CHILD_TASK_ID`, `PARENT_TASK_ID`, exact base `main` SHA, actor/capability and why it fits, one objective and acceptance criterion, dependencies, action class, allowed and forbidden paths, explicit permissions/non-goals, expected artifact and evidence, independent verification, stop condition, and return schema. Missing baseline, scope, authorization or acceptance means `BLOCKED_NOT_ADMISSIBLE_FOR_PARALLEL_WORK`.
+
+4. **One owner per writable resource.** Every child uses a branch isolated from the declared base. Where local execution is involved, it also requires an already-approved isolated worktree/executor. Two packets may work concurrently only when both path sets and semantic responsibilities are disjoint and their dependencies permit it. Canonical route files, shared contracts, common ownership surfaces and any overlapping path have one writer at a time; other workers may review them read-only.
+
+5. **Collision and stale-base behavior fail closed.** Before writing and before integration, compare the declared base and path scope against active packets and live `main`. An overlap, stale base, unclear dependency, missing evidence, canceled parent, duplicated task identity or unavailable required capability blocks that child until the single coordinator resolves the conflict. A branch name or GitHub isolation alone is not proof of OS sandboxing, authorization or semantic compatibility.
+
+6. **Workers report; the coordinator adjudicates.** A child returns exact branch/HEAD, changed paths, actions observed, artifacts/digests, tests actually run (or `NOT_RUN`), what the evidence proves/does not prove, unresolved risks, and the first open edge. A report does not change the canonical route or mark a result `VERIFIED` without checking the acceptance criterion.
+
+7. **Integration remains serialized.** One integration activity at a time re-fetches live `main`, rechecks staleness and path overlap, reviews the final diff, checks required approvals and authorized validation, then accepts or rejects the result. No worker directly merges to `main`, rewrites another branch/worktree, or starts an automatic follow-on. After an authorized merge, fetch back the exact main state.
+
+8. **Do not infer runtime orchestration.** This contract is a human/GitHub-mediated workflow policy. It does not claim that IABV automatically creates, dispatches, leases, cancels, monitors or integrates child work. No scheduler, lock service or new organ should be implemented unless a separately authorized, discriminating evaluation proves an irreducible ownership gap.
+
+### Minimum conflict matrix before a pilot
+
+| Situation | Required decision |
+|---|---|
+| Different branches, disjoint files and semantic owners | Potentially parallel, only after explicit pilot authorization and dependency check |
+| Same file or shared semantic contract | Serialize; one writer, others read-only |
+| Child base behind live main | Mark stale; revalidate/rebase only through approved workflow |
+| Parent objective or permission changes | Stop affected children and re-adjudicate scope before resumption |
+| Required executor/capability unavailable | Block; do not invent a replacement route |
+| Duplicate child packet or unclear task identity | Deduplicate against the existing packet; do not dispatch twice |
+| Missing evidence or unreviewed final diff | `COMPLETED_UNVERIFIED`, not `VERIFIED` or integrated |
+| Candidate conflicts with `CURRENT-STATE.md` or G1/G2/G3 boundary | Reject/hold; the canonical route and technical controls prevail |
+
+### Acceptance and stop conditions
+
+This amendment may become operational only after:
+- explicit Owner acceptance of the parent/child refinement;
+- review that the amendment does not duplicate or conflict with the owning Space-Time/MOP protocols;
+- adoption through an authorized canonical change and exact fetch-back from live `main`;
+- a separately authorized, low-risk pilot with predeclared conflict/staleness/cancellation cases and an admissible executor.
+
+Until all applicable conditions are met:
+`PARENT_CHILD_POLICY=PROPOSED_NOT_EFFECTIVE`;
+`PARALLEL_DISPATCH=NOT_AUTHORIZED`;
+`AUTOMATIC_COORDINATION=NOT_PROVEN`;
+`G1/G2/G3=UNCHANGED`.
+
 ## USING IABV TO WORK WITH CODEX
 
 When the current frontier requires Codex, the ordinary flow is:
