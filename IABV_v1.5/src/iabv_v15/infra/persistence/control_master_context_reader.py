@@ -92,6 +92,10 @@ def _reject_duplicate_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
     return result
 
 
+def _reject_nonstandard_json_constant(token: str) -> Any:
+    raise ValueError(f"non-standard JSON constant: {token}")
+
+
 def _parse_source_timestamp(value: Any) -> datetime | None:
     if not isinstance(value, str) or not value.strip():
         return None
@@ -390,6 +394,7 @@ class ControlMasterContextReader:
             payload = json.loads(
                 raw.decode("utf-8", errors="strict"),
                 object_pairs_hook=_reject_duplicate_keys,
+                parse_constant=_reject_nonstandard_json_constant,
             )
             if not isinstance(payload, dict):
                 raise ValueError("artifact root must be a JSON object")
