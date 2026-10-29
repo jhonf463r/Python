@@ -1,16 +1,17 @@
-## Current evidence gate — M1B local candidate (2026-10-28)
+<!-- UAAL-D021 cross-session boot overlay; detailed method is in D021. -->
+## Current route — fresh state, not a copied snapshot (2026-10-29)
 
-The M1B reader candidate exists only in Codex's isolated, untracked local files. Codex reports 34 targeted tests passed; treat the run and final hashes as OWNER_CODEX_REPORTED. The final R3 bytes are not yet in a reviewable GitHub branch. Do not report integration from local hashes. Next: publish the existing candidate to an isolated PR and review its exact diff, not repeat implementation or tests unchanged.
+[CURRENT-STATE.md](./CURRENT-STATE.md) is the sole operational router. This heading is only an entry point; it is not a second state store. Dated blocks below are historical evidence unless CURRENT-STATE explicitly reactivates them.
 
-[Receipt and hashes](https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-28-M1B-CONTEXT-READER-IMPLEMENTATION-AND-TEST-RECEIPT.md).
+The live source snapshot used for this correction was `main=79ab8c50eaa7518120d5ebed9db4747d395a21cb`. Live GitHub showed:
+- [PR #555](https://github.com/jhonf463r/Python/pull/555): `OPEN/DRAFT/UNMERGED`, HEAD `c36ee5ed177a3b5afee764c277cc4a8b243594c8`. M1B source is published to a reviewable PR, not exclusively local. Codex's 37-test minimal-harness result is `OWNER_CODEX_REPORTED`; the full repository suite was not run.
+- [PR #556](https://github.com/jhonf463r/Python/pull/556): `OPEN/DRAFT/UNMERGED`, HEAD `fb635aab18d9c2ef19b20d48e3625d52383fe6af`. The 31 targeted passing tests and `git diff --check` are `OWNER_CODEX_REPORTED`, not executed by this session.
+- Neither PR is merged. `G1/G2/G3=NOT_ESTABLISHED`; `AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED`; `PROTECTED_READS=FAIL_CLOSED`; `BRIDGE=BRIDGE_NOT_READY`.
 
-```text
-M1B_TESTS=34_PASSED; OWNER_CODEX_REPORTED
-M1B_SOURCE=LOCAL_UNTRACKED; NOT_IN_GITHUB
-NEXT_ACTION=PUBLISH_EXISTING_CANDIDATE_TO_ISOLATED_CODE_PR
-G1/G2/G3=NOT_ESTABLISHED
-BRIDGE=BRIDGE_NOT_READY
-```
+**For every new session or material transition:** refresh live `main` SHA; retrieve the CURRENT-STATE active header (use blob-by-SHA if the normal file call returns empty); compare live PR/commit status; activate D019 (anti-loop), D020 (verified utility/strategy switch), and D021 (boot/reconciliation); choose one authorized target-closing or decision-discriminating action; verify stage and fetch back the owning record. Never infer context delivery, merge, product acceptance or later causal reuse from a link or saved document alone.
+
+See [UAAL-D021 — Cross-session boot and state reconciliation](./CHAT-ARCH-2026-10-29-UAAL-D021-CROSS-SESSION-BOOT-AND-STATE-RECONCILIATION.md). Cross-session memory is external persisted state; it is not automatic transfer of hidden chat context or model-weight learning.
+
 ---
 
 <!-- UAAL-D020 cross-AI application — live CURRENT-STATE.md owns route authority. -->
