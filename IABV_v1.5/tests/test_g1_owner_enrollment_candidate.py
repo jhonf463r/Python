@@ -623,12 +623,19 @@ def test_failed_authenticode_candidate_never_starts_client_process(monkeypatch, 
 
 def test_authenticode_adapter_rejects_path_override_and_injected_runner_without_process(monkeypatch) -> None:
     calls: list[Any] = []
+    policy = _github_enrollment._approved_github_cli_policy()
+    pin = _FakePinnedExecutable()
     monkeypatch.setattr(_github_enrollment.subprocess, "run", lambda *args, **kwargs: calls.append((args, kwargs)))
+    monkeypatch.setattr(_github_enrollment, "_open_pinned_executable", lambda _path: pin)
+    monkeypatch.setattr(
+        _github_enrollment,
+        "_windows_authenticode_verifier",
+        lambda _path, _pin: {"status": "Valid", "thumbprint": policy.signer_thumbprint},
+    )
     with pytest.raises(TypeError):
         AuthenticatedGitHubCliApi(executable="C:\\other\\gh.exe")
     with pytest.raises(TypeError):
         AuthenticatedGitHubCliApi(runner=lambda *_args, **_kwargs: calls.append("injected"))
-    policy = _github_enrollment._approved_github_cli_policy()
     alternate = _github_enrollment._GitHubCliTrustPolicy(
         policy.policy_id, r"C:\other\gh.exe", policy.signature_status,
         policy.signer_thumbprint, policy.executable_sha256,
@@ -638,7 +645,15 @@ def test_authenticode_adapter_rejects_path_override_and_injected_runner_without_
             _FakePinnedExecutable(), policy=alternate,
             verifier=lambda _path, _pin: {"status": "Valid", "thumbprint": policy.signer_thumbprint},
         )
+    with AuthenticatedGitHubCliApi() as client:
+        for bad_path in ("https://attacker.invalid/repos/jhonf463r/Python", "/repos/jhonf463r/Python?host=attacker.invalid"):
+            with pytest.raises(OwnerMergeVerificationError, match="GITHUB_CLIENT_REQUEST_INVALID"):
+                client.get_json(bad_path)
+        for bad_params in ({"method": "POST"}, {"hostname": "attacker.invalid"}, {"GH_HOST": "attacker.invalid"}):
+            with pytest.raises(OwnerMergeVerificationError, match="GITHUB_CLIENT_REQUEST_INVALID"):
+                client.get_json("/repos/jhonf463r/Python", params=bad_params)
     assert calls == []
+    assert pin._closed is True
 
 
 def test_verified_adapter_holds_pin_during_subprocess_creation_without_running_gh(monkeypatch) -> None:
@@ -651,19 +666,27 @@ def test_verified_adapter_holds_pin_during_subprocess_creation_without_running_g
         "_windows_authenticode_verifier",
         lambda _path, _pin: {"status": "Valid", "thumbprint": policy.signer_thumbprint},
     )
+    monkeypatch.setenv("GH_HOST", "attacker.invalid")
     def fake_run(args, **kwargs):
         assert not pin._closed
         process_calls.append((args, kwargs))
         return SimpleNamespace(returncode=0, stdout=b"{}", stderr=b"")
     monkeypatch.setattr(_github_enrollment.subprocess, "run", fake_run)
     with AuthenticatedGitHubCliApi() as client:
-        assert client.get_json("/repos/jhonf463r/Python") == {}
+        assert client.get_json("/repos/jhonf463r/Python", params={"per_page": 100}) == {}
         with pytest.raises(OwnerMergeVerificationError, match="GITHUB_CLIENT_REQUEST_INVALID"):
             client.get_json("/repos/other/repo")
     assert len(process_calls) == 1
-    assert process_calls[0][0][0] == policy.executable_path
-    assert process_calls[0][1]["executable"] == policy.executable_path
-    assert process_calls[0][1]["shell"] is False
+    args, kwargs = process_calls[0]
+    assert args[0] == policy.executable_path
+    assert args[1] == "api"
+    assert args[2] == "repos/jhonf463r/Python"
+    assert not args[2].startswith("/")
+    assert args[3:7] == ["--method", "GET", "--hostname", "github.com"]
+    assert args[7:] == ["-f", "per_page=100"]
+    assert kwargs["executable"] == policy.executable_path
+    assert kwargs["env"]["GH_HOST"] == "github.com"
+    assert kwargs["shell"] is False
     assert pin._closed is True
 
 

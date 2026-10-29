@@ -131,13 +131,23 @@ class AuthenticatedGitHubCliApi:
             or any(segment in {".", ".."} for segment in path.split("/"))
         ):
             raise OwnerMergeVerificationError("GITHUB_CLIENT_REQUEST_INVALID")
-        args = [self._policy.executable_path, "api", path]
+        endpoint = path[1:]
+        args = [
+            self._policy.executable_path,
+            "api",
+            endpoint,
+            "--method",
+            "GET",
+            "--hostname",
+            "github.com",
+        ]
         if params is not None:
             if not isinstance(params, Mapping):
                 raise OwnerMergeVerificationError("GITHUB_CLIENT_REQUEST_INVALID")
             for key, value in params.items():
                 if (
                     not isinstance(key, str) or not re.fullmatch(r"[A-Za-z0-9_-]+", key)
+                    or key.casefold() in {"method", "http_method", "host", "hostname", "gh_host"}
                     or type(value) not in {str, int, bool}
                 ):
                     raise OwnerMergeVerificationError("GITHUB_CLIENT_REQUEST_INVALID")
@@ -145,9 +155,12 @@ class AuthenticatedGitHubCliApi:
         if self._pin.sha256() != self._identity.executable_sha256:
             raise OwnerMergeVerificationError("GITHUB_CLIENT_PROVENANCE_UNVERIFIED")
         try:
+            child_env = os.environ.copy()
+            child_env["GH_HOST"] = "github.com"
             result = self._runner(
                 args,
                 executable=self._policy.executable_path,
+                env=child_env,
                 capture_output=True,
                 check=False,
                 shell=False,
