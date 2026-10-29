@@ -77,9 +77,9 @@ Typical capability observations:
 
 These are capability observations, not permanent assignments. Recompute after material reconciliation.
 
-## PROPOSED OWNER-DECISION GATE — BOUNDED PARENT/CHILD WORK PACKETS
+## OWNER-ACCEPTED POLICY — BOUNDED PARENT/CHILD WORK PACKETS
 
-**Status: PROPOSAL ONLY — NOT EFFECTIVE UNTIL EXPLICIT OWNER ACCEPTANCE AND CANONICAL FETCH-BACK.** This section is a review candidate in an isolated branch. It must not be treated as operational permission while this PR is draft/unmerged. It does not change the active route, current permissions, the one-task default, G1/G2/G3, bridge readiness, or execution gates.
+**Status: OWNER ACCEPTED; MERGED AND FETCHED BACK FROM LIVE MAIN (2026-10-29).** The Owner explicitly accepted the bounded parent/child policy, and its amendment has been merged and fetched back from live `main`. This is a coordination policy only: it does not authorize parallel dispatch or a pilot by itself. It does not change the active route, current permissions, the one-task default, G1/G2/G3, bridge readiness, or execution gates.
 
 ### Why this amendment is proposed
 
