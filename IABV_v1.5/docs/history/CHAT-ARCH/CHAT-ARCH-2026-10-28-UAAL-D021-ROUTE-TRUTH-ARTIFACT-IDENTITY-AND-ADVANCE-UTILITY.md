@@ -532,3 +532,35 @@ This is a planned execution, not an observation:
 
 The controlled fixture is allowed only under a newly created unique TEMP subdirectory and may be removed only after all test-owned handles are closed. If the hard-link API is unsupported or creation fails, the multi-link case is partial, not a pass. If ordinary directories have a native link count other than one and the candidate rejects them, record the compatibility finding and stop; do not change source during this probe. Later causal reuse of this rule remains \`NOT_PROVEN\`.
 
+
+### 8.11 Applied adjudication case — native link-count conformance result (2026-10-29)
+
+After the static review of the F-556 repair, the Owner explicitly authorized a bounded native Windows/filesystem probe. Codex returned a detailed receipt, persisted at [M1A native link-count conformance receipt](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-M1A-G1-NATIVE-LINK-COUNT-CONFORMANCE-RECEIPT.md).
+
+**Reported observation:** Windows 11 build 10.0.26300, Python 3.13.2, NTFS on C: with volume serial ecb2f3eb. Native FileStandardInfo returned NumberOfLinks=1 and Directory=True for the sampled root and ordinary directories; NumberOfLinks=1/Directory=False for the single-link file; and NumberOfLinks=2/Directory=False for both names of a real file created with CreateHardLinkW. The candidate reportedly accepted the sampled directories and single-link file, rejected the multiply-linked file with HARD_LINK_DENIED, and closed rejected handles. Temporary fixtures were reportedly removed after all owned handles were closed.
+
+This result is `OWNER_CODEX_REPORTED` in the adjudication session. The reviewer did not rerun the native calls or independently calculate the local hashes. Therefore `NATIVE_CONFORMANCE=PASS_FOR_REPORTED_FIXTURE_AND_FILESYSTEM_ONLY`; the result supports the guard's behavior on the one observed fixture/build, not a universal claim.
+
+A separate forced invalid information class 0x7fffffff returned Windows error 87 and led to WINDOWS_HANDLE_METADATA_QUERY_FAILED plus handle closure. That exercise does not emulate a spontaneous failure of a valid FileStandardInfo query; the valid-class failure case remains synthetic-test evidence reported by Codex.
+
+The discriminating observation closes the previously open directory-compatibility question only within the sampled environment: ordinary tested directories reported one link and were accepted, including the intermediate parent directory. Other filesystems, volumes, Windows builds and concurrent changes remain UNKNOWN. No build, test suite, server, MCP product runtime or protected read was executed during this probe.
+
+```text
+METHOD_APPLIED=USED_NATIVE_OBSERVATION_TO_SEPARATE_DIRECTORY_COMPATIBILITY_FROM_HARDLINK_DENIAL
+OUTCOME_VERIFIED=RECEIPT_ADJUDICATED; LOCAL_NATIVE_CALLS=OWNER_CODEX_REPORTED
+NATIVE_CONFORMANCE=PASS_FOR_REPORTED_FIXTURE_ONLY
+F556_01=CLOSED_AT_STATIC_REVIEW_SCOPE
+F556_02=CLOSED_AT_STATIC_REVIEW_SCOPE; NATIVE_POLICY_SUPPORTED_FOR_SAMPLED_CASES
+NEXT_EDGE=OWNER_DECISION_ON_PUBLISHING_EXISTING_TWO_FILE_REPAIR_TO_PR_556
+PUBLICATION_AUTHORIZATION=NOT_GRANTED_BY_NATIVE_PROBE_AUTHORIZATION
+CANONICAL_MAIN_ADOPTION=NOT_ESTABLISHED
+G1/G2/G3=NOT_ESTABLISHED
+MCP_TOOL_ALLOWLIST=EMPTY
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+LATER_CAUSAL_REUSE=NOT_PROVEN
+```
+
+This applied-method case records the task-local decision improvement: the native report did not reveal directory rejection on the tested volume, and it did not justify a universal compatibility claim. Cross-session causal reuse remains NOT_PROVEN.
+
