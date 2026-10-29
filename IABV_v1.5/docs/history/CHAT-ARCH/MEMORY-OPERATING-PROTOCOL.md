@@ -7,6 +7,8 @@ If the normal contents read for `CURRENT-STATE.md` returns an unexpectedly empty
 
 [UAAL-D021 — proposed route-truth and artifact-identity refinement](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-28-UAAL-D021-ROUTE-TRUTH-ARTIFACT-IDENTITY-AND-ADVANCE-UTILITY.md) records the observed failure and new acceptance checks. It remains a draft-branch proposal, not canonical on `main` until authorized integration and fetch-back.
 
+[UAAL-D022 — proposed effective-operation contract](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-UAAL-D022-EFFECTIVE-OPERATION-AND-EVIDENCE-PRODUCER-INTEGRITY.md) adds the invariant that declared read-only intent must be checked against effective argv, environment, method, destination, endpoint form and producer identity. It remains proposed on this branch, not canonical policy on main.
+
 Everything below this entry is retained historical knowledge/evidence. Older titles like “current”, “active”, “vigente” or “next action” do not route the live task unless `CURRENT-STATE.md` explicitly reactivates them.
 
 ---
@@ -17,6 +19,14 @@ Everything below this entry is retained historical knowledge/evidence. Older tit
 UAAL-D020 applies to the AIs that use this GitHub repository as shared external memory, not only to IABV's local/product algorithm. Each participating session with an authorized repository route must retrieve the live current state, activate only objective-relevant methods, compare available authorized actions, and select by verified progress utility.
 
 For material handoffs, distinguish `MEMORY_RETRIEVED`, `METHOD_ACTIVATED`, `METHOD_APPLIED`, `OUTCOME_VERIFIED` and `LATER_CAUSAL_REUSE`. Identify the concrete decision changed by the method and the evidence supporting the result. Do not infer another session's receipt/consumption from a GitHub link or writeback. See [UAAL-D020](CHAT-ARCH-2026-10-28-UAAL-D020-VERIFIED-PROGRESS-UTILITY-STRATEGY-SWITCH.md), its cross-AI contract, and the living [Space-Time continuity protocol](CHAT-ARCH-2026-10-23-CONTINUITY-SPACE-TIME-OPERATING-PROTOCOL-v1.md).
+
+## UAAL-D022 — effective-operation and evidence-producer contract (proposed, 2026-10-29)
+
+A security-relevant handoff must audit the exact operation that the receiving program will perform, not merely the stated intent. For CLI/API adapters, explicitly fix the HTTP method, canonical destination, endpoint syntax, executable identity and security-relevant environment; resolve hidden defaults and platform-specific argument rules before treating output as evidence. Test the exact argv/environment with synthetic doubles, assert that failures make zero calls, and bind every test result to the exact commit it tested.
+
+A read-only request is not read-only if a CLI default silently turns a parameterized request into POST. A canonical repository is not the response source if an inherited environment variable redirects the host. An internally valid path is not an executable endpoint if its platform-specific form is wrong.
+
+This protocol is reusable across domains: declare the intended operation, resolve effective defaults, normalize and validate destination/path, bind the producer, assert invocation contract, test negative paths, and preserve claim-scoped evidence. Synthetic tests do not prove real CLI execution, authenticated fetchback, or authority establishment. See UAAL-D022. This remains a proposed method and does not supersede CURRENT-STATE as the route authority.
 
 <!-- Cross-chat handoff synchronized 2026-10-27. CURRENT-STATE.md remains the sole operational route authority. -->
 
