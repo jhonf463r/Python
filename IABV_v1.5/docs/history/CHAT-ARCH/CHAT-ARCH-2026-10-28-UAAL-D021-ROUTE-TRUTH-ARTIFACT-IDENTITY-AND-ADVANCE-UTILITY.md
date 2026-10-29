@@ -596,3 +596,38 @@ BRIDGE=BRIDGE_NOT_READY
 LATER_CAUSAL_REUSE=NOT_PROVEN
 ```
 
+
+### 8.13 Applied adjudication case — publication and independent remote identity (2026-10-29)
+
+The Owner-authorized publication task returned COMMIT_PUSH_FETCHBACK_VERIFIED. The coordinator did not stop at the sender's receipt: it fetched commit c00c1677e7b1f891e757f141450672b04443eba4 from GitHub, compared parent e1b430956146c4aa0cadc1df2c3df92150b7f7ea to the commit, fetched both paths through refs/pull/556/head, and matched the exact static-reviewed blobs. This verifies publication of the intended two-file diff. Receipt: [M1A F-556 publication/fetch-back adjudication](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-M1A-G1-F556-PUBLICATION-FETCHBACK-ADJUDICATION.md).
+
+The next-edge selection was then informed by live PR data rather than by assuming that commit publication means the PR is ready:
+- PR issue state open and closed_at null are verified. The explicit draft boolean was not returned; preserve draft state as UNKNOWN.
+- Twelve review submissions were fetched; all are COMMENTED and none is APPROVED.
+- Four inline threads remain unresolved (three outdated and one current). The current thread asks for environment prompt-disable settings and synthetic assertions; the exact committed source contains GH_PROMPT_DISABLED=1 and GIT_TERMINAL_PROMPT=0, and the exact committed test contains assertions for both. This suggests the code request is satisfied, but the thread itself remains unresolved and requires an authorized PR conversation action; don't reimplement or silently resolve it.
+- PR-associated Actions run 40895256777 is completed with startup_failure; the jobs endpoint returned zero jobs and combined statuses are empty. This provides no passing CI evidence and does not reveal the root cause. Do not retry the same terminal workflow run, infer billing-lock root cause, or change workflow settings without new evidence/authorization.
+
+Thus the correct advancement is not merge and not another identical test run. It is reconciliation of the remaining PR governance/check gate, beginning with the current unresolved review thread and read-only diagnosis of the startup_failure. The broader PR still contains 34 changed files; the two-file commit only closes its exact local publication edge.
+
+~~~text
+MEMORY_RETRIEVED=VERIFIED
+METHOD_ACTIVATED=VERIFIED
+METHOD_APPLIED=INDEPENDENT_COMMIT_AND_REFS_PULL_556_FETCHBACK
+OUTCOME_VERIFIED=REMOTE_BLOBS_MATCH_REVIEWED_CANDIDATE
+PUBLICATION=COMPLETE
+PR_OPEN=VERIFIED
+PR_DRAFT_FLAG=UNKNOWN
+REVIEWS=12_COMMENTED; NONE_APPROVED
+CURRENT_THREAD=UNRESOLVED; REQUESTED_ENV_GUARDS_OBSERVED_IN_COMMIT
+ACTIONS_RUN=40895256777; STARTUP_FAILURE; ZERO_JOBS
+NEXT_EDGE=PR_REVIEW_AND_CI_RECONCILIATION; NO_MERGE
+G1/G2/G3=NOT_ESTABLISHED
+MCP_TOOL_ALLOWLIST=EMPTY
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+LATER_CAUSAL_REUSE=NOT_PROVEN
+~~~
+
+This is an applied method example within the same session: the next action changed from local publication to PR-level review/check reconciliation based on independently observed remote state. It is not yet proof of later cross-session causal reuse.
+
