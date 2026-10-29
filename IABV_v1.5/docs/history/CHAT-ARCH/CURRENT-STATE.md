@@ -1,3 +1,23 @@
+## OVERRIDE — cross-chat result adjudication method added on draft PR #557 (2026-10-29)
+
+This is a documentation/method update on the existing draft PR #557 branch; `main` and the active technical route are unchanged. The living Space-Time protocol now contains an incoming-AI-result adjudication gate, and UAAL-D021 §8.6 defines reasoning acceptance cases. Before the next material handoff, rebind Claude/Codex output to the live target revision and exact files; distinguish direct source evidence, actor-reported execution, inference, unknown and not-run; compare the receipt to its original acceptance oracle; update the provisional world model; and only then choose the first authorized, discriminating next action. Incomplete receipts require targeted evidence completion, not repetition of the whole task. The README, CONTEXT-INDEX, AGENTS, MEMORY-OPERATING-PROTOCOL and SYMBIOSIS-MAP entry pointers have been aligned with this proposed gate.
+
+```text
+METHOD_DELTA=RETURN_ADJUDICATION_GATE_PROPOSED_ON_PR_557
+ACTIVE_TASK=UNCHANGED; M1A_G1_CURRENT_HEAD_STATIC_REVIEW_REMAINING_WINDOWS_SECURITY_SURFACE_20261029
+NEXT_ACTION=AWAIT_AND_ADJUDICATE_CLAUDE_RECEIPT; NO_DUPLICATE_REVIEW
+CANONICAL_MAIN_ADOPTION=NOT_ESTABLISHED
+RUNTIME_ENFORCEMENT=NOT_PROVEN
+LATER_CAUSAL_REUSE=NOT_PROVEN
+G1/G2/G3=NOT_ESTABLISHED
+MCP_TOOL_ALLOWLIST=EMPTY
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+```
+
+This does not authorize code changes, tests, enrollment, credential creation, protected reads, runtime, tunnel or merge. The existing M1A review route and Owner authorization boundaries remain unchanged. Canonical adoption requires the explicitly authorized integration and exact live-main fetch-back.
+
 ## OVERRIDE — M1B F-01/F-02 closed; next bounded G1 review pinned to live M1A HEAD (2026-10-29)
 
 This is a proposed route update on draft PR #557 only. Canonical `main` remains `79ab8c50eaa7518120d5ebed9db4747d395a21cb`, and its `CURRENT-STATE.md` blob `5945b23fdb5c13ce1068ca5d2d9e6513a1a06b95` still opens with the obsolete M1B local/unpublished status. This addendum does not alter `main` and is not canonical until the proposal is reconciled, authorized, integrated, and fetched back.
