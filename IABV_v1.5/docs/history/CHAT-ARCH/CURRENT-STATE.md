@@ -1,3 +1,32 @@
+## OVERRIDE — GitHub fetch-back confirms the repaired M1A files are still local-only (2026-10-29)
+
+After the native probe receipt was adjudicated, the remote PR #556 branch was read directly via GitHub for both target paths at branch codex/m1a-current-main-fail-closed-20261028. The remote blobs remain the pre-repair base blobs:
+- IABV_v1.5/src/iabv_v15/infra/mcp/windows_handle_reader.py = cf3045be70e6824bdcc627ccefa14ea33faf6342
+- IABV_v1.5/tests/test_windows_handle_reader.py = 9f273f5bac57b3eed6fa3e9253b526f690b9766a
+
+This directly verifies that the two local final blobs (reported as 2facf2a4447d1acff69b1845390355902160dbfa and 1e72fc6e50a91678964bed38b05b82a9d8a4683f) have **not** been published to those PR paths. This check confirms those two file identities, not the complete remote PR HEAD or all other files.
+
+Remote fetch-back status:
+- REMOTE_PR556_TARGET_FILE_FETCHBACK=VERIFIED
+- REMOTE_READER_BLOB=cf3045be70e6824bdcc627ccefa14ea33faf6342
+- REMOTE_TEST_BLOB=9f273f5bac57b3eed6fa3e9253b526f690b9766a
+- LOCAL_FINAL_REPAIR_BLOBS=NOT_PRESENT_AT_REMOTE_TARGET_PATHS
+- CODE_PUBLICATION=NOT_DONE
+- NEXT_ACTION=OWNER_DECISION_REQUIRED_FOR_CODE_PUBLICATION_TO_EXISTING_PR_556
+- NATIVE_CONFORMANCE=PASS_FOR_REPORTED_NTFS_FIXTURE_ONLY
+- F556_01/F556_02=CLOSED_AT_STATIC_REVIEW_SCOPE
+- G1/G2/G3=NOT_ESTABLISHED
+- MCP_TOOL_ALLOWLIST=EMPTY
+- PROTECTED_READS=FAIL_CLOSED
+- TUNNEL=DISABLED
+- BRIDGE=BRIDGE_NOT_READY
+- PRODUCT_CANDIDATE_MERGE=NOT_AUTHORIZED
+- C:\Python=DO_NOT_TOUCH
+
+This observation does not authorize a commit, push, branch mutation or merge. Canonical main remains unchanged, and the route update is only proposed on draft PR #557.
+
+---
+
 ## OVERRIDE — Native link-count probe reported passing on one Windows 11 / NTFS fixture (2026-10-29)
 
 The Owner supplied Codex's receipt for the explicitly authorized task M1A_G1_NATIVE_LINK_COUNT_CONFORMANCE_20261029. The bounded result is recorded in the [native conformance receipt](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-M1A-G1-NATIVE-LINK-COUNT-CONFORMANCE-RECEIPT.md). This update is proposed on draft PR #557 only.
