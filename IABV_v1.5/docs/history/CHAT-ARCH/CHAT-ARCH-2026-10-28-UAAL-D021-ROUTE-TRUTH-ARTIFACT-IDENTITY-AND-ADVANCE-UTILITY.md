@@ -564,3 +564,35 @@ LATER_CAUSAL_REUSE=NOT_PROVEN
 
 This applied-method case records the task-local decision improvement: the native report did not reveal directory rejection on the tested volume, and it did not justify a universal compatibility claim. Cross-session causal reuse remains NOT_PROVEN.
 
+
+### 8.12 Owner authorization transition — exact M1A repair publication (2026-10-29)
+
+Following adjudication of the native conformance report, the Owner explicitly authorized Codex to commit and push exactly the previously reviewed two-file M1A repair to the existing PR #556 branch. The authorization transition is recorded in the proposed [CURRENT-STATE](CURRENT-STATE.md) and [new-chat handoff](CHAT-ARCH-2026-10-29-NEW-CHAT-HANDOFF-SPACE-TIME-WORLD-MODEL-IABV.md).
+
+The action selector changes from OWNER_DECISION_REQUIRED to AUTHORIZED_BOUNDED_PUBLICATION. The causal objective is to make the already-reviewed bytes a stable, independently fetchable remote candidate; it is not to activate the product.
+
+Required invariants:
+- exact existing local worktree, branch and parent HEAD must match the recorded identities;
+- source SHA-256 and staged blob identities must match the already adjudicated artifacts;
+- only the reader module and its test file may be staged/committed;
+- inspect remote branch tip and only push fast-forward to the existing PR branch;
+- fetch back both remote files, commit/parent and PR status after push;
+- if identity, scope or remote tip differs, stop without cleaning, resetting, rebasing or force-pushing;
+- no test rerun is required for this publication step; no merge, main mutation, extra source edit, runtime, protected read, credentials or tunnel is authorized.
+
+This is an explicit Owner authorization, not a task inferred from the successful native probe. Publication and fetch-back still must be observed before claiming that the candidate is remotely available. PR merge and canonical adoption remain distinct later decisions.
+
+```text
+OWNER_AUTHORIZATION=EXPLICIT
+ACTIVE_TASK=M1A_G1_F556_01_02_COMMIT_PUSH_EXISTING_PR_556_20261029
+NEXT_ACTION=CODEX_COMMIT_AND_FAST_FORWARD_PUSH_TWO_EXACT_PATHS
+EXPECTED_PARENT=e1b430956146c4aa0cadc1df2c3df92150b7f7ea
+TARGET_PR=556
+MERGE=NOT_AUTHORIZED
+REMOTE_FETCHBACK=NOT_RUN_FOR_NEW_COMMIT
+G1/G2/G3=NOT_ESTABLISHED
+PROTECTED_READS=FAIL_CLOSED
+BRIDGE=BRIDGE_NOT_READY
+LATER_CAUSAL_REUSE=NOT_PROVEN
+```
+
