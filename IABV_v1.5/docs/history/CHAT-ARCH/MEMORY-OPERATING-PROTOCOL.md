@@ -10,7 +10,7 @@ Activate the existing operating lineage as relevant to the objective:
 
 For each material handoff, rebind evidence to exact source/ref/blob and time; distinguish verified observations, actor reports, inference, hypotheses, unknowns and not-run actions; define an observable and stop condition; then verify the outcome and fetch back authorized writeback. A link or saved file does not prove another chat received or used the memory.
 
-Canonical method: [UAAL-D021]([UAAL-D021](./CHAT-ARCH-2026-10-29-UAAL-D021-CROSS-SESSION-BOOT-AND-STATE-RECONCILIATION.md)). First recorded bounded later-task application: [reuse receipt]([recibo de reutilización](./CHAT-ARCH-2026-10-29-UAAL-D021-FIRST-LATER-TASK-REUSE-RECEIPT.md)).
+Canonical method: [UAAL-D021](./CHAT-ARCH-2026-10-29-UAAL-D021-CROSS-SESSION-BOOT-AND-STATE-RECONCILIATION.md). First recorded bounded later-task application: [reuse receipt](./CHAT-ARCH-2026-10-29-UAAL-D021-FIRST-LATER-TASK-REUSE-RECEIPT.md).
 
 Current method status: one non-identical-task reuse is verified; generalization and automatic boot in every future chat remain unproven. Technical gates and permissions are controlled only by CURRENT-STATE.
 
