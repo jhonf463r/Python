@@ -1,3 +1,45 @@
+## OVERRIDE — Codex reports bounded F-556-01/F-556-02 local repair and 30 focused tests pass; independent diff remains open (2026-10-29)
+
+This update is a continuity proposal on draft PR #557 only. It records the Owner-supplied Codex receipt for the uncommitted local worktree; the exact changed source/test bytes remain unavailable to this session and are **not** published to GitHub. It does not convert the local report into an independently verified source review or test execution claim.
+
+- Existing code candidate: [PR #556](https://github.com/jhonf463r/Python/pull/556), still tracked at base `79ab8c50eaa7518120d5ebed9db4747d395a21cb`, source HEAD reported unchanged at `e1b430956146c4aa0cadc1df2c3df92150b7f7ea`.
+- Local Codex worktree reported at `C:\\_w\\m1a-composition-r3-20261028`, branch `codex/m1a-current-main-fail-closed-20261028`; two files changed, 235 insertions / 3 deletions, uncommitted and unpublished.
+- F-556-01: cap+1 now reportedly raises `AUTHORIZED_DIRECTORY_ENTRY_LIMIT_EXCEEDED` rather than returning partial directory names. Effective cap 200 and sorting of successful results are reported intact.
+- F-556-02: `NumberOfLinks != 1` reportedly raises `HARD_LINK_DENIED`; query failure reportedly remains fail-closed, with handle cleanup tested.
+- Codex reports `30 passed in 0.85s` on Python 3.13.2 / pytest 9.0.3 and `git diff --check` exit 0. The session has not independently run those tests, fetched the final local source, verified the local blobs/hashes, or inspected the final diff.
+- Detailed evidence and hashes: [Codex local repair receipt](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-M1A-G1-F556-01-02-CODEX-LOCAL-REPAIR-RECEIPT.md).
+
+The first open causal edge is not another test run and not a second broad review. It is to make the **exact final two-file unified diff** available to an independent reviewer without changing/publishing the worktree. After that, review the actual final bytes against the F-556-01/F-556-02 oracle, including error-vocabulary/response mapping, no partial-name disclosure, exact-cap sorting, hard-link rejection order, and handle closure. Avoid treating synthetic native-call stubs as native Windows conformance.
+
+```text
+ACTIVE_TASK=M1A_G1_F556_01_02_EXACT_DIFF_EXPOSURE_AND_INDEPENDENT_ADJUDICATION_20261029
+M1A_PR=556
+M1A_REMOTE_EXPECTED_HEAD=e1b430956146c4aa0cadc1df2c3df92150b7f7ea
+M1A_BASE=79ab8c50eaa7518120d5ebed9db4747d395a21cb
+LOCAL_REPAIR=OWNER_CODEX_REPORTED; UNCOMMITTED; UNPUBLISHED
+CHANGED_FILES=2; DIFF_STATS=235_INSERTIONS_3_DELETIONS; OWNER_CODEX_REPORTED
+F556_01=FIX_REPORTED_LOCAL; INDEPENDENT_DIFF_REVIEW_PENDING
+F556_02=FIX_REPORTED_LOCAL; INDEPENDENT_DIFF_REVIEW_PENDING
+TARGETED_TESTS=30_PASSED; OWNER_CODEX_REPORTED
+DIFF_CHECK=PASS; OWNER_CODEX_REPORTED
+FINAL_BYTES_INDEPENDENTLY_FETCHED=FALSE
+NATIVE_WINDOWS_CONFORMANCE=NOT_RUN
+NEXT_ACTION=EXPOSE_EXACT_UNIFIED_DIFF_FOR_INDEPENDENT_REVIEW; DO_NOT_REPEAT_TESTS_UNCHANGED
+OPTION_D=RATIFIED_NO_BOOTSTRAP
+G1/G2/G3=NOT_ESTABLISHED
+MCP_TOOL_ALLOWLIST=EMPTY
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+PRODUCT_CANDIDATE_MERGE=NOT_AUTHORIZED
+C:\\Python=DO_NOT_TOUCH
+AUTOMATIC_FOLLOW_ON=FALSE
+```
+
+This route is proposed on PR #557 only. Canonical `main` still opens with the stale M1B-local/unpublished override and must not be described as updated or adopting this route.
+
+---
+
 ## OVERRIDE — Claude M1A Windows reader R1 adjudicated; F-556-01/F-556-02 are the first open repair edge (2026-10-29)
 
 Claude/Sonnet's bounded static-review return has been received and adjudicated against the exact live candidate. PR #556 remains open/draft/unmerged at HEAD `e1b430956146c4aa0cadc1df2c3df92150b7f7ea`, base `79ab8c50eaa7518120d5ebed9db4747d395a21cb`. Seven assigned file Git blobs were independently fetched and matched. The exact `windows_handle_reader.py` source returns a partial, unsorted listing on cap overflow (F-556-01), and declares but never enforces `NumberOfLinks` (F-556-02). See [the adjudication receipt](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-M1A-G1-WINDOWS-HANDLE-READER-CLAUDE-R1-ADJUDICATION-RECEIPT.md).
