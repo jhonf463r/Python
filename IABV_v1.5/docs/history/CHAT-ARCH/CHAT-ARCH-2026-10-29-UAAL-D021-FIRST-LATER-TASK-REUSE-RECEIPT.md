@@ -23,10 +23,9 @@ D019_blob_sha=6341f9600bd43040f807cba8d86ee3534fd7d498
 D020_blob_sha=7c1875e9bfef0065ecb96cb50157aff9c3760f6c
 D021_blob_sha_at_task_boot=f3dba3bdaad276f9ec2ca38d89fff9e7ed4430ef
 D021_blob_sha_after_world_model_update=819c525ce6993a4f2e1ae36287b620db57765cf1
-D021_blob_sha_after_world_model_update=819c525ce6993a4f2e1ae36287b620db57765cf1
 ```
 
-D021 was updated once after the pre-update read; the first value above identifies the canonical version that existed at task start. The resulting post-merge blob is recorded in the integration section below.
+At task boot, canonical main was 3c88333a7be0c733bc0db01c13a8d7121f033846 and the D021 blob was f3dba3bdaad276f9ec2ca38d89fff9e7ed4430ef. PR #560 later merged the world-model update as 599781582e1648d3affb6a70821578c978405d2c, producing D021 blob 819c525ce6993a4f2e1ae36287b620db57765cf1.
 
 ## Compacted world-model snapshot
 
