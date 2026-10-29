@@ -1,0 +1,917 @@
+diff --git a/IABV_v1.5/src/iabv_v15/infra/mcp/server.py b/IABV_v1.5/src/iabv_v15/infra/mcp/server.py
+index 9a9f3a7f..80198499 100644
+--- a/IABV_v1.5/src/iabv_v15/infra/mcp/server.py
++++ b/IABV_v1.5/src/iabv_v15/infra/mcp/server.py
+@@ -289,6 +289,7 @@ class IABVMCPServer:
+         operation: str,
+         requested_relative_target: str,
+         opened_target: windows_handle_reader.OpenedTargetCapability,
++        preflight: Any,
+     ) -> dict[str, Any] | None:
+         """Return a denial unless the typed permit carries this exact live handle."""
+ 
+@@ -307,6 +308,7 @@ class IABVMCPServer:
+                     operation=operation,
+                     requested_relative_target=requested_relative_target,
+                     opened_target=opened_target,
++                    preflight=preflight,
+                 )
+                 if not isinstance(decision, ReadAuthorizationDecision):
+                     reason = "AUTHORITY_DECISION_INVALID"
+@@ -366,7 +368,51 @@ class IABVMCPServer:
+             "detail": "La decisión de autorización no permite este destino; no se accedió al recurso.",
+         }
+ 
+-    def _approved_workspace_root(self) -> windows_handle_reader.WorkspaceRootCapability:
++    def _protected_read_preflight_block(
++        self,
++        *,
++        operation: str,
++        requested_relative_target: str,
++    ) -> tuple[Any | None, dict[str, Any] | None]:
++        """Validate request and G1/G2 before root acquisition or target open."""
++        try:
++            from iabv_v15.services.security.read_authorization import (
++                ReadAuthorizationPreflightDecision,
++                ReadDecisionEffect,
++                _is_coordinator_issued_preflight,
++            )
++
++            coordinator = self._read_authorization_coordinator
++            if coordinator is None:
++                reason = "AUTHORITY_COORDINATOR_UNAVAILABLE"
++            else:
++                decision = coordinator.preflight_mcp_read(
++                    operation=operation,
++                    requested_relative_target=requested_relative_target,
++                )
++                if not isinstance(decision, ReadAuthorizationPreflightDecision):
++                    reason = "AUTHORITY_PREFLIGHT_INVALID"
++                elif decision.effect is not ReadDecisionEffect.ALLOW or decision.preflight is None:
++                    reason = decision.reason
++                elif not _is_coordinator_issued_preflight(decision.preflight, coordinator):
++                    reason = "AUTHORITY_PREFLIGHT_INVALID"
++                else:
++                    return decision.preflight, None
++        except Exception:
++            reason = "AUTHORITY_PREFLIGHT_INTERNAL_FAILURE"
++        logger.warning("MCP protected read denied before root acquisition: operation=%s reason=%s", operation, reason)
++        return None, {
++            "governance_blocked": True,
++            "reason": reason,
++            "operation": operation,
++            "detail": "El request o la evidencia G1/G2 no permite continuar; no se adquirió la raíz.",
++        }
++
++    def _approved_workspace_root(
++        self,
++        *,
++        preflight: Any,
++    ) -> windows_handle_reader.WorkspaceRootCapability:
+         """Get a root capability only from the host's approved provider."""
+ 
+         provider = getattr(self.container, "approved_workspace_root_provider", None)
+@@ -378,6 +424,9 @@ class IABVMCPServer:
+         root = get_root()
+         if type(root) is not windows_handle_reader.WorkspaceRootCapability:
+             raise windows_handle_reader.WindowsHandleReaderError("APPROVED_WORKSPACE_ROOT_UNAVAILABLE")
++        coordinator = self._read_authorization_coordinator
++        if coordinator is None or not coordinator.preflight_matches_root(preflight, root):
++            raise windows_handle_reader.WindowsHandleReaderError("APPROVED_WORKSPACE_ROOT_BINDING_MISMATCH")
+         return root
+ 
+     def _ui_screenshot_provider(self) -> Any:
+@@ -1050,11 +1099,17 @@ class IABVMCPServer:
+                 assistant_kind="audit",
+                 requires_network=False,
+             )
++            if block is not None:
++                return block
++            preflight, block = self._protected_read_preflight_block(
++                operation="read_repo_file",
++                requested_relative_target=relative_path,
++            )
+             if block is not None:
+                 return block
+             try:
+                 opened = windows_handle_reader.open_target(
+-                    self._approved_workspace_root(), relative_path, "read_repo_file",
++                    self._approved_workspace_root(preflight=preflight), relative_path, "read_repo_file",
+                 )
+             except windows_handle_reader.WindowsHandleReaderError as exc:
+                 payload = exc.to_payload()
+@@ -1065,6 +1120,7 @@ class IABVMCPServer:
+                     operation="read_repo_file",
+                     requested_relative_target=relative_path,
+                     opened_target=opened,
++                    preflight=preflight,
+                 )
+                 if authority_block is not None:
+                     return authority_block
+@@ -1093,11 +1149,17 @@ class IABVMCPServer:
+                 assistant_kind="audit",
+                 requires_network=False,
+             )
++            if block is not None:
++                return block
++            preflight, block = self._protected_read_preflight_block(
++                operation="list_repo_directory",
++                requested_relative_target=relative_path,
++            )
+             if block is not None:
+                 return block
+             try:
+                 opened = windows_handle_reader.open_target(
+-                    self._approved_workspace_root(), relative_path, "list_repo_directory",
++                    self._approved_workspace_root(preflight=preflight), relative_path, "list_repo_directory",
+                 )
+             except windows_handle_reader.WindowsHandleReaderError as exc:
+                 payload = exc.to_payload()
+@@ -1108,6 +1170,7 @@ class IABVMCPServer:
+                     operation="list_repo_directory",
+                     requested_relative_target=relative_path,
+                     opened_target=opened,
++                    preflight=preflight,
+                 )
+                 if authority_block is not None:
+                     return authority_block
+@@ -1154,13 +1217,12 @@ class IABVMCPServer:
+             )
+             if block is not None:
+                 return block
+-            try:
+-                return audit_tools.git_status_and_log(
+-                    self._workspace_root(),
+-                    limit=int(limit),
+-                )
+-            except audit_tools.AuditToolError as exc:
+-                return exc.to_payload()
++            return {
++                "governance_blocked": True,
++                "reason": "STABLE_DIRECTORY_VIEW_NOT_ESTABLISHED",
++                "operation": "git_status_and_log",
++                "detail": "La enumeración estable del workspace no está establecida.",
++            }
+ 
+         # ------------------------------------------------------------
+         # === F1.3 observation tools ===
+@@ -3319,9 +3381,9 @@ class IABVMCPServer:
+     # Ciclo de vida
+ 
+     def run(self, transport: str = "stdio") -> None:
+-        _deny_unconfigured_start()
+         if transport not in SUPPORTED_TRANSPORTS:
+             raise ValueError(f"transport '{transport}' no soportado. Usa {sorted(SUPPORTED_TRANSPORTS)}")
++        _deny_unconfigured_start()
+         
+         # Register self-update (write) tools for autonomous self-modification
+         try:
+diff --git a/IABV_v1.5/src/iabv_v15/services/security/read_authorization.py b/IABV_v1.5/src/iabv_v15/services/security/read_authorization.py
+index 3a57d114..a81466d5 100644
+--- a/IABV_v1.5/src/iabv_v15/services/security/read_authorization.py
++++ b/IABV_v1.5/src/iabv_v15/services/security/read_authorization.py
+@@ -276,6 +276,41 @@ class ReadAuthorizationDecision:
+         return cls(ReadDecisionEffect.ALLOW, "AUTHORIZED", permit)
+ 
+ 
++@dataclass(frozen=True)
++class ReadAuthorizationPreflight:
++    """G1/G2 evidence checked for one request; it is not a read permit."""
++
++    request: ReadRequest
++    root_binding_id: str
++    policy_binding_id: str
++    coordinator_binding_id: str
++    _issuance_seal: object
++
++
++@dataclass(frozen=True)
++class ReadAuthorizationPreflightDecision:
++    """Pre-open result that cannot authorize reading or consume a target."""
++
++    effect: ReadDecisionEffect
++    reason: str
++    preflight: ReadAuthorizationPreflight | None = None
++
++    def __post_init__(self) -> None:
++        if self.effect is ReadDecisionEffect.ALLOW:
++            if type(self.preflight) is not ReadAuthorizationPreflight or self.reason != "G1_G2_PREFLIGHT_VALID":
++                raise ValueError("ALLOW requires a G1/G2 preflight and G1_G2_PREFLIGHT_VALID reason")
++        elif self.preflight is not None or not self.reason:
++            raise ValueError("DENY requires a reason and cannot carry a preflight")
++
++    @classmethod
++    def deny(cls, reason: str) -> "ReadAuthorizationPreflightDecision":
++        return cls(ReadDecisionEffect.DENY, reason)
++
++    @classmethod
++    def allow(cls, preflight: ReadAuthorizationPreflight) -> "ReadAuthorizationPreflightDecision":
++        return cls(ReadDecisionEffect.ALLOW, "G1_G2_PREFLIGHT_VALID", preflight)
++
++
+ def _is_coordinator_issued_permit(permit: object, coordinator: object) -> bool:
+     return (
+         type(permit) is ReadPermit
+@@ -285,6 +320,15 @@ def _is_coordinator_issued_permit(permit: object, coordinator: object) -> bool:
+     )
+ 
+ 
++def _is_coordinator_issued_preflight(preflight: object, coordinator: object) -> bool:
++    return (
++        type(preflight) is ReadAuthorizationPreflight
++        and isinstance(coordinator, ReadAuthorizationCoordinator)
++        and preflight._issuance_seal is coordinator._preflight_issuance_seal
++        and preflight.coordinator_binding_id == coordinator.coordinator_binding_id
++    )
++
++
+ class TrustAnchorProvider(Protocol):
+     """Must retrieve the independently provisioned active root, not MCP input."""
+ 
+@@ -480,6 +524,7 @@ class ReadAuthorizationCoordinator:
+         self._clock = clock or (lambda: int(datetime.now(timezone.utc).timestamp()))
+         self.coordinator_binding_id = uuid.uuid4().hex
+         self._permit_issuance_seal = object()
++        self._preflight_issuance_seal = object()
+ 
+     def missing_requirements(self) -> tuple[str, ...]:
+         """Return absent production-boundary dependencies without relaxing policy."""
+@@ -512,12 +557,90 @@ class ReadAuthorizationCoordinator:
+             and permit.issued_at_epoch <= now < permit.expires_at_epoch
+         )
+ 
++    def preflight_mcp_read(
++        self,
++        *,
++        operation: str,
++        requested_relative_target: str,
++    ) -> ReadAuthorizationPreflightDecision:
++        """Validate request, G1 and G2 before root acquisition or target open.
++
++        The returned sealed object carries the host-created request and the
++        exact root/policy bindings. It is not a permit; G3, issuer decision,
++        and replay consumption still run after the target is opened.
++        """
++
++        if operation not in {"read_repo_file", "list_repo_directory"}:
++            return ReadAuthorizationPreflightDecision.deny("READ_OPERATION_NOT_ALLOWED")
++        if not isinstance(requested_relative_target, str):
++            return ReadAuthorizationPreflightDecision.deny("READ_REQUEST_TARGET_INVALID")
++        try:
++            missing = self.missing_requirements()
++            if missing:
++                return ReadAuthorizationPreflightDecision.deny(
++                    "AUTHORITY_REQUIREMENTS_MISSING:" + ",".join(missing),
++                )
++            request = self._request_context.create_request(  # type: ignore[union-attr]
++                operation=operation,
++                requested_relative_target=requested_relative_target,
++            )
++            if (
++                type(request) is not ReadRequest
++                or request.operation != operation
++                or request.requested_relative_target != requested_relative_target
++                or request.opened_target is not None
++            ):
++                return ReadAuthorizationPreflightDecision.deny("HOST_READ_REQUEST_CONTEXT_MISMATCH")
++            now = self._clock()
++            if type(now) is not int:
++                return ReadAuthorizationPreflightDecision.deny("AUTHORIZATION_CLOCK_OR_CHALLENGE_INVALID")
++            anchor, _mandate, policy = self._validate_g1_g2(request, now=now)
++            preflight = ReadAuthorizationPreflight(
++                request=request,
++                root_binding_id=policy.root_binding_id,
++                policy_binding_id=policy.policy_binding_id,
++                coordinator_binding_id=self.coordinator_binding_id,
++                _issuance_seal=self._preflight_issuance_seal,
++            )
++            del anchor
++            return ReadAuthorizationPreflightDecision.allow(preflight)
++        except ReadAuthorizationDenied as exc:
++            return ReadAuthorizationPreflightDecision.deny(exc.reason)
++        except Exception:
++            return ReadAuthorizationPreflightDecision.deny("AUTHORITY_PREFLIGHT_INTERNAL_FAILURE")
++
++    def preflight_matches_root(self, preflight: object, root: object) -> bool:
++        """Bind the approved root identity labels to the preflight's G2 scope."""
++
++        if not _is_coordinator_issued_preflight(preflight, self):
++            return False
++        try:
++            from iabv_v15.infra.mcp.windows_handle_reader import (
++                OwnedWindowsHandle,
++                WorkspaceRootCapability,
++            )
++
++            request = preflight.request
++            return (
++                type(root) is WorkspaceRootCapability
++                and type(root.handle) is OwnedWindowsHandle
++                and root.handle.is_open
++                and root.workspace_id == request.workspace_id
++                and root.checkout_id == request.checkout_id
++                and root.root_binding_id == preflight.root_binding_id
++                and root.policy_binding_id == preflight.policy_binding_id
++                and bool(root.resolver_version)
++            )
++        except Exception:
++            return False
++
+     def decide_mcp_read(
+         self,
+         *,
+         operation: str,
+         requested_relative_target: str,
+         opened_target: Any | None = None,
++        preflight: ReadAuthorizationPreflight | None = None,
+     ) -> ReadAuthorizationDecision:
+         """Create a host-context request and return an explicit ALLOW or DENY.
+ 
+@@ -542,6 +665,16 @@ class ReadAuthorizationCoordinator:
+         if missing:
+             return ReadAuthorizationDecision.deny("AUTHORITY_REQUIREMENTS_MISSING:" + ",".join(missing))
+         try:
++            if preflight is not None:
++                if (
++                    not _is_coordinator_issued_preflight(preflight, self)
++                    or preflight.request.operation != operation
++                    or preflight.request.requested_relative_target != requested_relative_target
++                    or not self.preflight_matches_opened_target(preflight, opened_target)
++                ):
++                    return ReadAuthorizationDecision.deny("G1_G2_PREFLIGHT_TARGET_MISMATCH")
++                request = replace(preflight.request, opened_target=opened_target)
++                return self.decide(request)
+             request = self._request_context.create_request(  # type: ignore[union-attr]
+                 operation=operation,
+                 requested_relative_target=requested_relative_target,
+@@ -557,6 +690,23 @@ class ReadAuthorizationCoordinator:
+         except Exception:
+             return ReadAuthorizationDecision.deny("HOST_READ_REQUEST_CONTEXT_UNAVAILABLE")
+ 
++    def preflight_matches_opened_target(self, preflight: object, opened_target: object) -> bool:
++        if not _is_coordinator_issued_preflight(preflight, self):
++            return False
++        try:
++            request = preflight.request
++            return (
++                getattr(opened_target, "is_open", False) is True
++                and getattr(opened_target, "operation", None) == request.operation
++                and getattr(opened_target, "relative_target", None) == request.requested_relative_target
++                and getattr(opened_target, "workspace_id", None) == request.workspace_id
++                and getattr(opened_target, "checkout_id", None) == request.checkout_id
++                and getattr(opened_target, "root_binding_id", None) == preflight.root_binding_id
++                and getattr(opened_target, "policy_binding_id", None) == preflight.policy_binding_id
++            )
++        except Exception:
++            return False
++
+     def decide(self, request: ReadRequest) -> ReadAuthorizationDecision:
+         """Convert the validated composition into a typed MCP decision."""
+ 
+@@ -592,88 +742,12 @@ class ReadAuthorizationCoordinator:
+         if any(provider is None for provider in providers):
+             raise ReadAuthorizationDenied("AUTHORITY_PROVIDER_UNAVAILABLE")
+         now = self._clock()
+-        if type(now) is not int or type(request.challenge_expires_at_epoch) is not int:
+-            raise ReadAuthorizationDenied("AUTHORIZATION_CLOCK_OR_CHALLENGE_INVALID")
+-        if now >= request.challenge_expires_at_epoch:
+-            raise ReadAuthorizationDenied("CHALLENGE_EXPIRED")
+-        if now < request.challenge_issued_at_epoch:
+-            raise ReadAuthorizationDenied("CHALLENGE_NOT_YET_VALID")
+-        _validate_request(request)
+-
+         try:
+-            anchor = self._trust.current_anchor()  # type: ignore[union-attr]
+-            if (
+-                not isinstance(anchor.anchor_id, str)
+-                or not anchor.anchor_id
+-                or not isinstance(anchor.policy_source_id, str)
+-                or not anchor.policy_source_id
+-                or type(anchor.valid_from_epoch) is not int
+-                or type(anchor.expires_at_epoch) is not int
+-                or anchor.valid_from_epoch > now
+-                or anchor.expires_at_epoch <= now
+-                or anchor.revoked is not False
+-            ):
+-                raise ReadAuthorizationDenied("TRUST_ANCHOR_UNAVAILABLE_OR_EXPIRED")
+-            mandate = self._mandates.current_mandate(anchor.anchor_id)  # type: ignore[union-attr]
+-            if type(mandate.revoked) is not bool:
+-                raise ReadAuthorizationDenied("OWNER_MANDATE_INVALID_OR_UNTRUSTED")
+-            if mandate.revoked is not False:
+-                raise ReadAuthorizationDenied("OWNER_MANDATE_INVALID_OR_UNTRUSTED")
+-            merge = self._merges.verified_merge(mandate.merged_pr_number)  # type: ignore[union-attr]
+-            if (
+-                mandate.anchor_id != anchor.anchor_id
+-                or type(mandate.repository_id) is not int
+-                or mandate.repository_id != EXPECTED_REPOSITORY_ID
+-                or type(mandate.owner_id) is not int
+-                or mandate.owner_id != EXPECTED_OWNER_ID
+-                or type(mandate.merged_pr_number) is not int
+-                or mandate.merged_pr_number < 1
+-                or type(mandate.policy_version) is not int
+-                or mandate.policy_version < 1
+-                or not isinstance(mandate.mandate_id, str)
+-                or not mandate.mandate_id
+-                or not isinstance(mandate.issuer_id, str)
+-                or not mandate.issuer_id
+-                or mandate.server_id != request.server_id
+-                or mandate.instance_id != request.instance_id
+-                or mandate.service_fingerprint != request.service_fingerprint
+-                or mandate.local_principal_commitment != request.local_principal_commitment
+-                or type(mandate.issued_at_epoch) is not int
+-                or type(mandate.expires_at_epoch) is not int
+-                or mandate.expires_at_epoch <= mandate.issued_at_epoch
+-                or merge.pull_request_number != mandate.merged_pr_number
+-                or merge.merge_commit_sha != mandate.merge_commit_sha
+-                or merge.merged_by_id != EXPECTED_OWNER_ID
+-                or merge.challenge_id != request.challenge_id
+-                or merge.policy_version != mandate.policy_version
+-                or type(mandate.allowed_operations) is not tuple
+-                or len(set(mandate.allowed_operations)) != len(mandate.allowed_operations)
+-                or request.operation not in mandate.allowed_operations
+-                or not (mandate.issued_at_epoch <= now < mandate.expires_at_epoch)
+-                or not verify_rsa_sha256(anchor.public_key_pem, mandate.signed_bytes(), mandate.signature)
+-            ):
+-                raise ReadAuthorizationDenied("OWNER_MANDATE_INVALID_OR_UNTRUSTED")
+-
+-            policy = self._policies.current_policy(anchor.policy_source_id)  # type: ignore[union-attr]
+-            if (
+-                policy.source_id != anchor.policy_source_id
+-                or policy.anchor_id != anchor.anchor_id
+-                or policy.version != mandate.policy_version
+-                or policy.root_binding_id != getattr(opened_target, "root_binding_id", None)
+-                or policy.policy_binding_id != getattr(opened_target, "policy_binding_id", None)
+-                or type(policy.version) is not int
+-                or type(policy.issued_at_epoch) is not int
+-                or type(policy.expires_at_epoch) is not int
+-                or policy.expires_at_epoch <= policy.issued_at_epoch
+-                or type(policy.allowed_operations) is not tuple
+-                or type(policy.revoked_mandate_ids) is not tuple
+-                or request.operation not in policy.allowed_operations
+-                or mandate.mandate_id in policy.revoked_mandate_ids
+-                or not (policy.issued_at_epoch <= now < policy.expires_at_epoch)
+-                or policy.expires_at_epoch - policy.issued_at_epoch > MAX_POLICY_TTL_SECONDS
+-                or not verify_rsa_sha256(anchor.public_key_pem, policy.signed_bytes(), policy.signature)
+-            ):
+-                raise ReadAuthorizationDenied("G2_POLICY_MISSING_STALE_REVOKED_OR_INVALID")
++            anchor, mandate, policy = self._validate_g1_g2(
++                request,
++                now=now,
++                opened_target=opened_target,
++            )
+ 
+             target = self._targets.resolve(request)  # type: ignore[union-attr]
+             if (
+@@ -739,6 +813,101 @@ class ReadAuthorizationCoordinator:
+         except Exception as exc:
+             raise ReadAuthorizationDenied("AUTHORITY_DEPENDENCY_FAILED") from exc
+ 
++    def _validate_g1_g2(
++        self,
++        request: ReadRequest,
++        *,
++        now: int,
++        opened_target: Any | None = None,
++    ) -> tuple[TrustAnchor, OwnerMandate, G2PolicySnapshot]:
++        if type(now) is not int or type(request.challenge_expires_at_epoch) is not int:
++            raise ReadAuthorizationDenied("AUTHORIZATION_CLOCK_OR_CHALLENGE_INVALID")
++        if now >= request.challenge_expires_at_epoch:
++            raise ReadAuthorizationDenied("CHALLENGE_EXPIRED")
++        if now < request.challenge_issued_at_epoch:
++            raise ReadAuthorizationDenied("CHALLENGE_NOT_YET_VALID")
++        _validate_request(request)
++        anchor = self._trust.current_anchor()  # type: ignore[union-attr]
++        if (
++            not isinstance(anchor.anchor_id, str)
++            or not anchor.anchor_id
++            or not isinstance(anchor.policy_source_id, str)
++            or not anchor.policy_source_id
++            or type(anchor.valid_from_epoch) is not int
++            or type(anchor.expires_at_epoch) is not int
++            or anchor.valid_from_epoch > now
++            or anchor.expires_at_epoch <= now
++            or anchor.revoked is not False
++        ):
++            raise ReadAuthorizationDenied("TRUST_ANCHOR_UNAVAILABLE_OR_EXPIRED")
++        mandate = self._mandates.current_mandate(anchor.anchor_id)  # type: ignore[union-attr]
++        if type(mandate.revoked) is not bool or mandate.revoked is not False:
++            raise ReadAuthorizationDenied("OWNER_MANDATE_INVALID_OR_UNTRUSTED")
++        merge = self._merges.verified_merge(mandate.merged_pr_number)  # type: ignore[union-attr]
++        if (
++            mandate.anchor_id != anchor.anchor_id
++            or type(mandate.repository_id) is not int
++            or mandate.repository_id != EXPECTED_REPOSITORY_ID
++            or type(mandate.owner_id) is not int
++            or mandate.owner_id != EXPECTED_OWNER_ID
++            or type(mandate.merged_pr_number) is not int
++            or mandate.merged_pr_number < 1
++            or type(mandate.policy_version) is not int
++            or mandate.policy_version < 1
++            or not isinstance(mandate.mandate_id, str)
++            or not mandate.mandate_id
++            or not isinstance(mandate.issuer_id, str)
++            or not mandate.issuer_id
++            or mandate.server_id != request.server_id
++            or mandate.instance_id != request.instance_id
++            or mandate.service_fingerprint != request.service_fingerprint
++            or mandate.local_principal_commitment != request.local_principal_commitment
++            or type(mandate.issued_at_epoch) is not int
++            or type(mandate.expires_at_epoch) is not int
++            or mandate.expires_at_epoch <= mandate.issued_at_epoch
++            or merge.pull_request_number != mandate.merged_pr_number
++            or merge.merge_commit_sha != mandate.merge_commit_sha
++            or merge.merged_by_id != EXPECTED_OWNER_ID
++            or merge.challenge_id != request.challenge_id
++            or merge.policy_version != mandate.policy_version
++            or type(mandate.allowed_operations) is not tuple
++            or len(set(mandate.allowed_operations)) != len(mandate.allowed_operations)
++            or request.operation not in mandate.allowed_operations
++            or not (mandate.issued_at_epoch <= now < mandate.expires_at_epoch)
++            or not verify_rsa_sha256(anchor.public_key_pem, mandate.signed_bytes(), mandate.signature)
++        ):
++            raise ReadAuthorizationDenied("OWNER_MANDATE_INVALID_OR_UNTRUSTED")
++        policy = self._policies.current_policy(anchor.policy_source_id)  # type: ignore[union-attr]
++        if (
++            policy.source_id != anchor.policy_source_id
++            or policy.anchor_id != anchor.anchor_id
++            or policy.version != mandate.policy_version
++            or type(policy.root_binding_id) is not str
++            or not policy.root_binding_id
++            or type(policy.policy_binding_id) is not str
++            or not policy.policy_binding_id
++            or (
++                opened_target is not None
++                and (
++                    policy.root_binding_id != getattr(opened_target, "root_binding_id", None)
++                    or policy.policy_binding_id != getattr(opened_target, "policy_binding_id", None)
++                )
++            )
++            or type(policy.version) is not int
++            or type(policy.issued_at_epoch) is not int
++            or type(policy.expires_at_epoch) is not int
++            or policy.expires_at_epoch <= policy.issued_at_epoch
++            or type(policy.allowed_operations) is not tuple
++            or type(policy.revoked_mandate_ids) is not tuple
++            or request.operation not in policy.allowed_operations
++            or mandate.mandate_id in policy.revoked_mandate_ids
++            or not (policy.issued_at_epoch <= now < policy.expires_at_epoch)
++            or policy.expires_at_epoch - policy.issued_at_epoch > MAX_POLICY_TTL_SECONDS
++            or not verify_rsa_sha256(anchor.public_key_pem, policy.signed_bytes(), policy.signature)
++        ):
++            raise ReadAuthorizationDenied("G2_POLICY_MISSING_STALE_REVOKED_OR_INVALID")
++        return anchor, mandate, policy
++
+ 
+ def _validate_request(request: ReadRequest) -> None:
+     values = (
+diff --git a/IABV_v1.5/tests/test_mcp_server.py b/IABV_v1.5/tests/test_mcp_server.py
+index 82354220..dbd9c6bd 100644
+--- a/IABV_v1.5/tests/test_mcp_server.py
++++ b/IABV_v1.5/tests/test_mcp_server.py
+@@ -285,6 +285,19 @@ def _install_synthetic_open_targets(monkeypatch, container, targets):  # type: i
+     monkeypatch.setattr("iabv_v15.infra.mcp.server.windows_handle_reader.open_target", open_target)
+ 
+ 
++def _allow_synthetic_authority_preflight(monkeypatch, server) -> None:  # type: ignore[no-untyped-def]
++    """Let focused handler tests reach the final gate with synthetic fixtures."""
++    provider = server.container.approved_workspace_root_provider
++    root = provider.current_workspace_root()
++    preflight = object()
++    monkeypatch.setattr(
++        server,
++        "_protected_read_preflight_block",
++        lambda **_kwargs: (preflight, None),
++    )
++    monkeypatch.setattr(server, "_approved_workspace_root", lambda **_kwargs: root)
++
++
+ def _get_tool(server: IABVMCPServer, name: str):
+     registry = server.mcp._tool_manager._tools  # fastmcp exposed internal
+     assert name in registry, f"tool {name} no registrada (existentes: {sorted(registry)})"
+@@ -647,7 +660,7 @@ def test_read_repo_file_denies_before_invoking_reader(tmp_path, monkeypatch) ->
+     server = IABVMCPServer(_build_container(workspace_root=str(tmp_path)))
+     payload = _call_tool(server, "read_repo_file", relative_path="docs/hello.md")
+     assert payload["governance_blocked"] is True
+-    assert payload["reason"] == "APPROVED_WORKSPACE_ROOT_UNAVAILABLE"
++    assert payload["reason"].startswith("AUTHORITY_REQUIREMENTS_MISSING:")
+     assert payload["operation"] == "read_repo_file"
+ 
+ 
+@@ -655,7 +668,7 @@ def test_read_repo_file_denies_before_path_resolution_without_authority(tmp_path
+     server = IABVMCPServer(_build_container(workspace_root=str(tmp_path)))
+     payload = _call_tool(server, "read_repo_file", relative_path="/etc/passwd")
+     assert payload["governance_blocked"] is True
+-    assert payload["reason"] == "APPROVED_WORKSPACE_ROOT_UNAVAILABLE"
++    assert payload["reason"].startswith("AUTHORITY_REQUIREMENTS_MISSING:")
+ 
+ 
+ def test_list_repo_directory_denies_before_invoking_reader(tmp_path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+@@ -666,11 +679,11 @@ def test_list_repo_directory_denies_before_invoking_reader(tmp_path, monkeypatch
+     server = IABVMCPServer(_build_container(workspace_root=str(tmp_path)))
+     payload = _call_tool(server, "list_repo_directory", relative_path="")
+     assert payload["governance_blocked"] is True
+-    assert payload["reason"] == "APPROVED_WORKSPACE_ROOT_UNAVAILABLE"
++    assert payload["reason"].startswith("AUTHORITY_REQUIREMENTS_MISSING:")
+     assert payload["operation"] == "list_repo_directory"
+ 
+ 
+-def test_mcp_read_routes_delegate_to_authorizer_before_resource_helpers(tmp_path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
++def test_mcp_read_routes_deny_missing_authority_before_open_or_resource_helpers(tmp_path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+     def forbidden_reader(*args: object, **kwargs: object) -> dict[str, object]:
+         pytest.fail("el helper de recurso fue invocado antes de una decisión ALLOW")
+ 
+@@ -682,25 +695,40 @@ def test_mcp_read_routes_delegate_to_authorizer_before_resource_helpers(tmp_path
+         ("list_repo_directory", "docs"): _synthetic_opened_target("list_repo_directory", "docs"),
+     }
+     _install_synthetic_open_targets(monkeypatch, container, targets)
++
++    def forbidden_open(*args: object, **kwargs: object):
++        pytest.fail("el destino se abrió antes del preflight de autoridad")
++
++    monkeypatch.setattr("iabv_v15.infra.mcp.server.windows_handle_reader.open_target", forbidden_open)
+     server = IABVMCPServer(container)
+     calls: list[tuple[str, str]] = []
+     coordinator = server._read_authorization_coordinator
+-    original_decide = coordinator.decide_mcp_read
+-
+-    def record_and_decide(*, operation: str, requested_relative_target: str, opened_target: object):
+-        calls.append((operation, requested_relative_target))
+-        return original_decide(
+-            operation=operation,
+-            requested_relative_target=requested_relative_target,
+-            opened_target=opened_target,
+-        )
+ 
+-    monkeypatch.setattr(coordinator, "decide_mcp_read", record_and_decide)
++    def record_decision(**kwargs: object) -> None:
++        calls.append((kwargs["operation"], kwargs["requested_relative_target"]))
++
++    monkeypatch.setattr(coordinator, "decide_mcp_read", record_decision)
+     read_result = _call_tool(server, "read_repo_file", relative_path="docs/a.txt")
+     list_result = _call_tool(server, "list_repo_directory", relative_path="docs")
+     assert read_result["governance_blocked"] is True
+     assert list_result["governance_blocked"] is True
+-    assert calls == [("read_repo_file", "docs/a.txt"), ("list_repo_directory", "docs")]
++    assert read_result["reason"].startswith("AUTHORITY_REQUIREMENTS_MISSING:")
++    assert list_result["reason"].startswith("AUTHORITY_REQUIREMENTS_MISSING:")
++    assert calls == []
++
++
++def test_git_status_and_log_denies_until_stable_directory_view(tmp_path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
++    def forbidden_git_reader(*args: object, **kwargs: object) -> dict[str, object]:
++        pytest.fail("git_status_and_log se ejecutó sin una vista estable")
++
++    monkeypatch.setattr("iabv_v15.infra.mcp.server.audit_tools.git_status_and_log", forbidden_git_reader)
++    server = IABVMCPServer(_build_container(workspace_root=str(tmp_path)))
++
++    payload = _call_tool(server, "git_status_and_log")
++
++    assert payload["governance_blocked"] is True
++    assert payload["reason"] == "STABLE_DIRECTORY_VIEW_NOT_ESTABLISHED"
++    assert payload["operation"] == "git_status_and_log"
+ 
+ 
+ @pytest.mark.parametrize(
+@@ -740,6 +768,7 @@ def test_mcp_read_target_mismatch_or_unbound_canonical_target_denies_before_help
+     opened_target = _synthetic_opened_target(operation, requested_path)
+     _install_synthetic_open_targets(monkeypatch, container, {(operation, requested_path): opened_target})
+     server = IABVMCPServer(container)
++    _allow_synthetic_authority_preflight(monkeypatch, server)
+     permit = ReadPermit(
+         decision_id="synthetic-decision",
+         requested_relative_target=permit_path,
+@@ -797,6 +826,7 @@ def test_mcp_invalid_authorized_target_returns_exact_denial_before_helpers(
+     opened_target = _synthetic_opened_target(operation, relative_path)
+     _install_synthetic_open_targets(monkeypatch, container, {(operation, relative_path): opened_target})
+     server = IABVMCPServer(container)
++    _allow_synthetic_authority_preflight(monkeypatch, server)
+     permit = ReadPermit(
+         decision_id="synthetic-invalid-target",
+         requested_relative_target=relative_path,
+@@ -854,6 +884,7 @@ def test_mcp_handlers_deny_well_formed_allow_until_authorized_object_is_consumed
+     opened_target = _synthetic_opened_target(operation, relative_path)
+     _install_synthetic_open_targets(monkeypatch, container, {(operation, relative_path): opened_target})
+     server = IABVMCPServer(container)
++    _allow_synthetic_authority_preflight(monkeypatch, server)
+     permit = ReadPermit(
+         decision_id="synthetic-decision",
+         requested_relative_target=relative_path,
+@@ -905,6 +936,7 @@ def test_mcp_authorizer_initialization_or_decision_failure_denies(tmp_path, monk
+         {("read_repo_file", "docs/a.txt"): _synthetic_opened_target("read_repo_file", "docs/a.txt")},
+     )
+     server = IABVMCPServer(container)
++    _allow_synthetic_authority_preflight(monkeypatch, server)
+ 
+     def failed_decision(**kwargs: object):
+         raise RuntimeError("synthetic coordinator failure")
+diff --git a/IABV_v1.5/tests/test_read_authorization.py b/IABV_v1.5/tests/test_read_authorization.py
+index e796237a..bd1b3694 100644
+--- a/IABV_v1.5/tests/test_read_authorization.py
++++ b/IABV_v1.5/tests/test_read_authorization.py
+@@ -317,6 +317,7 @@ class _RequestContext:
+             _request(),
+             operation=operation,
+             requested_relative_target=requested_relative_target,
++            opened_target=None,
+         )
+ 
+ 
+@@ -426,11 +427,17 @@ def test_mcp_guard_rejects_permit_identity_not_bound_to_opened_target(
+ 
+     monkeypatch.setattr(coordinator, "decide_mcp_read", return_mismatched_permit)
+     server, _ = _mcp_server(coordinator, str(tmp_path))
++    preflight = coordinator.preflight_mcp_read(
++        operation="read_repo_file",
++        requested_relative_target="docs/readme.md",
++    )
++    assert preflight.preflight is not None
+ 
+     block = server._protected_read_authority_block(
+         operation="read_repo_file",
+         requested_relative_target="docs/readme.md",
+         opened_target=permit.opened_target,
++        preflight=preflight.preflight,
+     )
+ 
+     assert block is not None
+@@ -534,6 +541,180 @@ def test_mcp_authorized_helper_consumes_the_same_opened_object(
+     assert helper_calls == [opened]
+ 
+ 
++def _assert_preflight_denies_invalid_g1_g2_evidence_before_root_or_target_open(
++    tmp_path,
++    monkeypatch: pytest.MonkeyPatch,
++    invalid_case: str,
++) -> None:  # type: ignore[no-untyped-def]
++    trust = _Trust()
++    mandates = _Mandates()
++    policies = _Policies()
++    request_context = _RequestContext()
++    expected_reason: str
++    if invalid_case == "expired_anchor":
++        trust = _Trust(replace(trust.anchor, expires_at_epoch=NOW))
++        expected_reason = "TRUST_ANCHOR_UNAVAILABLE_OR_EXPIRED"
++    elif invalid_case == "revoked_mandate":
++        mandates = _Mandates(replace(mandates.mandate, revoked=True))
++        expected_reason = "OWNER_MANDATE_INVALID_OR_UNTRUSTED"
++    elif invalid_case == "expired_policy":
++        policies = _Policies(replace(policies.policy, expires_at_epoch=NOW))
++        expected_reason = "G2_POLICY_MISSING_STALE_REVOKED_OR_INVALID"
++    elif invalid_case == "revoked_policy":
++        policies = _Policies(replace(policies.policy, revoked_mandate_ids=("test-mandate",)))
++        expected_reason = "G2_POLICY_MISSING_STALE_REVOKED_OR_INVALID"
++    elif invalid_case == "invalid_policy_signature":
++        signed_policy = policies.policy
++
++        class InvalidSignaturePolicy:
++            def current_policy(self, _source_id: str) -> G2PolicySnapshot:
++                return replace(signed_policy, signature=b"invalid")
++
++        policies = InvalidSignaturePolicy()
++        expected_reason = "G2_POLICY_MISSING_STALE_REVOKED_OR_INVALID"
++    elif invalid_case == "incompatible_process_context":
++        class IncompatibleRequestContext(_RequestContext):
++            def create_request(self, *, operation: str, requested_relative_target: str) -> ReadRequest:
++                return replace(
++                    super().create_request(
++                        operation=operation,
++                        requested_relative_target=requested_relative_target,
++                    ),
++                    local_principal_commitment="0" * 64,
++                )
++
++        request_context = IncompatibleRequestContext()
++        expected_reason = "OWNER_MANDATE_INVALID_OR_UNTRUSTED"
++    elif invalid_case == "incompatible_server_revision":
++        class IncompatibleRevisionContext(_RequestContext):
++            def create_request(self, *, operation: str, requested_relative_target: str) -> ReadRequest:
++                return replace(
++                    super().create_request(
++                        operation=operation,
++                        requested_relative_target=requested_relative_target,
++                    ),
++                    service_fingerprint="0" * 64,
++                )
++
++        request_context = IncompatibleRevisionContext()
++        expected_reason = "OWNER_MANDATE_INVALID_OR_UNTRUSTED"
++    else:  # pragma: no cover - parameter contract
++        raise AssertionError(invalid_case)
++
++    coordinator = _coordinator(
++        trust=trust,
++        mandates=mandates,
++        policies=policies,
++        request_context=request_context,
++    )
++    server, mcp_stub = _mcp_server(coordinator, str(tmp_path))
++
++    class ForbiddenRootProvider:
++        def current_workspace_root(self):
++            pytest.fail("G1/G2 inválido alcanzó al proveedor de raíz")
++
++    server.container.approved_workspace_root_provider = ForbiddenRootProvider()
++    monkeypatch.setattr(
++        "iabv_v15.infra.mcp.server.windows_handle_reader.open_target",
++        lambda *_args, **_kwargs: pytest.fail("G1/G2 inválido abrió el objetivo"),
++    )
++
++    result = mcp_stub.tools["read_repo_file"](relative_path="docs/readme.md")  # type: ignore[operator]
++
++    assert result["governance_blocked"] is True  # type: ignore[index]
++    assert result["reason"] == expected_reason  # type: ignore[index]
++    assert coordinator._replay.consumed == []
++
++
++@requires_cng
++@pytest.mark.parametrize("invalid_case", [
++    "expired_anchor",
++    "revoked_mandate",
++    "expired_policy",
++    "revoked_policy",
++    "invalid_policy_signature",
++    "incompatible_process_context",
++    "incompatible_server_revision",
++])
++def test_preflight_denies_invalid_g1_g2_evidence_before_root_or_target_open_parametrized(
++    tmp_path,
++    monkeypatch: pytest.MonkeyPatch,
++    invalid_case: str,
++) -> None:  # type: ignore[no-untyped-def]
++    _assert_preflight_denies_invalid_g1_g2_evidence_before_root_or_target_open(
++        tmp_path,
++        monkeypatch,
++        invalid_case,
++    )
++
++
++@requires_cng
++def test_preflight_bound_to_a_different_opened_target_cannot_authorize_consumption() -> None:
++    coordinator = _coordinator(request_context=_RequestContext())
++    checked = coordinator.preflight_mcp_read(
++        operation="read_repo_file",
++        requested_relative_target="docs/readme.md",
++    )
++    assert checked.effect is ReadDecisionEffect.ALLOW
++    assert checked.preflight is not None
++
++    other_target = _opened_target(relative_target="docs/other.md")
++    decision = coordinator.decide_mcp_read(
++        operation="read_repo_file",
++        requested_relative_target="docs/readme.md",
++        opened_target=other_target,
++        preflight=checked.preflight,
++    )
++
++    assert decision.effect is ReadDecisionEffect.DENY
++    assert decision.permit is None
++    assert decision.reason == "G3_OPEN_TARGET_CAPABILITY_REQUIRED"
++    assert coordinator._replay.consumed == []
++
++
++@requires_cng
++@pytest.mark.parametrize("mismatch", ["workspace_id", "checkout_id", "root_binding_id", "policy_binding_id", "missing_handle"])
++def test_root_binding_mismatch_denies_before_target_open(
++    tmp_path,
++    monkeypatch: pytest.MonkeyPatch,
++    mismatch: str,
++) -> None:  # type: ignore[no-untyped-def]
++    from iabv_v15.infra.mcp.windows_handle_reader import (
++        OwnedWindowsHandle,
++        WorkspaceRootCapability,
++    )
++
++    coordinator = _coordinator(request_context=_RequestContext())
++    server, mcp_stub = _mcp_server(coordinator, str(tmp_path))
++    root_values = {
++        "handle": OwnedWindowsHandle(735),
++        "workspace_id": "workspace-7",
++        "checkout_id": "checkout-7",
++        "expected_volume_serial": 1,
++        "expected_file_id": b"\x00" * 16,
++        "root_binding_id": "synthetic-root-binding",
++        "policy_binding_id": "synthetic-policy-binding",
++        "resolver_version": "resolver-test-v1",
++    }
++    if mismatch == "missing_handle":
++        root_values["handle"] = None
++    else:
++        root_values[mismatch] = "other-binding"
++    root = WorkspaceRootCapability(**root_values)
++    server.container.approved_workspace_root_provider = SimpleNamespace(
++        current_workspace_root=lambda: root,
++    )
++    monkeypatch.setattr(
++        "iabv_v15.infra.mcp.server.windows_handle_reader.open_target",
++        lambda *_args, **_kwargs: pytest.fail("raíz incompatible alcanzó la apertura del objetivo"),
++    )
++
++    result = mcp_stub.tools["read_repo_file"](relative_path="docs/readme.md")  # type: ignore[operator]
++
++    assert result["governance_blocked"] is True  # type: ignore[index]
++    assert result["reason"] == "APPROVED_WORKSPACE_ROOT_BINDING_MISMATCH"  # type: ignore[index]
++
++
+ def test_mcp_decision_denies_when_production_boundary_providers_are_missing() -> None:
+     coordinator = ReadAuthorizationCoordinator(
+         trust_provider=None,
