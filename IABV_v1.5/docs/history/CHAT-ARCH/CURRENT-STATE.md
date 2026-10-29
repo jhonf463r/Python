@@ -17,11 +17,14 @@ ACTIVE_TASK_AND_NEXT_ACTION=UNCHANGED; M1A_WINDOWS_SECURITY_STATIC_REVIEW_ROUTE
 RUNTIME_ENFORCEMENT=NOT_PROVEN
 OUTCOME_VERIFIED=BRANCH_FETCHBACK_VERIFIED
 CANONICAL_MAIN_ADOPTION=NOT_ESTABLISHED
-RUNTIME_ENFORCEMENT=NOT_PROVEN
 LATER_CAUSAL_REUSE=NOT_PROVEN
 ```
 
 This method note does not change the M1A route below, authorize code edits/tests/runtime/enrollment/protected reads/tunnel/merge, or alter `OPTION_D` and G1/G2/G3. Canonical adoption requires authorized integration and exact live-`main` fetch-back.
+
+### New-chat continuity handoff — 2026-10-29
+
+Use the timestamped [Space-Time world-model / M1A handoff](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-NEW-CHAT-HANDOFF-SPACE-TIME-WORLD-MODEL-IABV.md) for this conversation's exact refs, deductions, evidence boundaries, M1B closed findings, proposed cognitive-method update and next-chat intake rule. It is a snapshot, not another router. The proposed route below remains on PR #557; reconcile it with live `main`, whose opening M1B snapshot is stale, without claiming canonical adoption.
 
 ### M1B result — F-01/F-02 closed within exact reviewed delta
 

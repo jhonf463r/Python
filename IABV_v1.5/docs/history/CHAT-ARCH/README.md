@@ -9,6 +9,10 @@ If the normal contents read for `CURRENT-STATE.md` returns an unexpectedly empty
 
 [UAAL-D022 — proposed effective-operation contract](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-UAAL-D022-EFFECTIVE-OPERATION-AND-EVIDENCE-PRODUCER-INTEGRITY.md) adds the invariant that declared read-only intent must be checked against effective argv, environment, method, destination, endpoint form and producer identity. It remains proposed on this branch, not canonical policy on main.
 
+### Latest cross-chat handoff snapshot (2026-10-29)
+
+[Space-Time world-model / M1A handoff](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-NEW-CHAT-HANDOFF-SPACE-TIME-WORLD-MODEL-IABV.md) consolidates the latest deductions, exact refs, evidence limits, closed/open edges, method evolution and new-chat intake rules. It is a dated snapshot, not routing authority; refresh `CURRENT-STATE.md` and live refs before acting.
+
 Everything below this entry is retained historical knowledge/evidence. Older titles like “current”, “active”, “vigente” or “next action” do not route the live task unless `CURRENT-STATE.md` explicitly reactivates them.
 
 ---

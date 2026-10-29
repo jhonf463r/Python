@@ -14,6 +14,12 @@ UAAL-D020 is the owning progress-utility method: [UAAL-D020](./CHAT-ARCH-2026-10
 
 [UAAL-D021 — Route Truth, Artifact Identity, and Verified-Progress Selection](./CHAT-ARCH-2026-10-28-UAAL-D021-ROUTE-TRUTH-ARTIFACT-IDENTITY-AND-ADVANCE-UTILITY.md) adds a cross-AI guard against stale route snapshots, revision-unbound hashes and handoffs that skip existing remote artifacts. It is proposed in the current documentation PR; automatic runtime enforcement is not claimed.
 
+### Current cross-chat method delta — perception and task-local world model (2026-10-29)
+
+Memory retrieval supplies candidate evidence; perception establishes source identity/scope/time; the provisional world model reconciles it into a task-specific causal picture before action selection. Material hypotheses need a rival, a predicted distinguishing observation and a falsifier. Select the smallest authorized action that changes the decision or closes the first open edge, then observe and verify before updating the method.
+
+Use the [Space-Time world-model / M1A handoff](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-NEW-CHAT-HANDOFF-SPACE-TIME-WORLD-MODEL-IABV.md) for the complete new-chat snapshot. It is not a route authority. Canonical main still opens with stale M1B local/unpublished status; PR #557 is a proposal and has not been merged. Runtime enforcement and later causal reuse remain unproven.
+
 ### M1B code-candidate evidence gate — applied lesson (2026-10-28)
 
 The R1→R3 reader episode adds a specific correction to cross-agent code handoffs:
