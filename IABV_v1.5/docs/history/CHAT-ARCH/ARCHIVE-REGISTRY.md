@@ -1,3 +1,14 @@
+<!-- UAAL-D021 current-route pointer; this reference file is not a task router. Historical routing entries below are preserved. -->
+## Canonical route pointer — live CURRENT-STATE and UAAL-D021 (2026-10-29)
+
+This archive registry is a supporting reference, not the source of current task routing. `IABV_v1.5/docs/history/CHAT-ARCH/CURRENT-STATE.md` remains the sole authority for `ACTIVE_TASK`, `NEXT_ACTION`, technical gates and current permissions. Re-read it from live `main` for every material decision. At the reconciliation that added this pointer, live `main` was `1430ad5062298a8dd5719ccb2882e2ce4877b283`; its ordinary `CURRENT-STATE.md` fetch returned empty, and the exact route blob `b5fbf879e95d92869e51fa2ae29d4fce5ca56bdb` was retrieved. The recovered active header identifies the UAAL-D021 continuity-documentation closeout; it does not grant product implementation, test, runtime, bridge or protected-read permission.
+
+Apply [UAAL-D021 — cross-session boot, state reconciliation and incoming-result adjudication](./CHAT-ARCH-2026-10-29-UAAL-D021-CROSS-SESSION-BOOT-AND-STATE-RECONCILIATION.md), with UAAL-D019/D020 as relevant. All dated route/next-action blocks that follow in this file are retained for historical evidence and must not override the live `CURRENT-STATE.md` header. Similarity, file order or an older `NEXT_ACTION` string is not current authorization.
+
+This pointer synchronizes discovery/navigation only; it does not copy or replace the active route.
+
+---
+
 ## OVERRIDING LATEST ROUTING — New-chat continuity handoff after UAAL-D018 (2026-10-23)
 
 The canonical startup handoff is [here](./CHAT-ARCH-2026-10-23-new-chat-continuity-handoff-after-UAAL-D018.md), blob `71f0ef6911bf6f67f7fb8f6249bf7ce5b4963589`. Current baseline at preparation: `8c453dbdd0b3bb0b606fb46f6b243df525ac10f8`. Verify remote `main` again before executing any action.
