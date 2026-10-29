@@ -74,6 +74,12 @@ GENERALIZATION=NOT_TESTED
 - `H2`: an external GitHub source was automatically loaded before search. Not established: there is no pre-search GitHub retrieval trace or source-injection provenance in the artifact.
 - `H3`: some of the baseline could be inaccurate or generated from incomplete summaries. Not fully falsified without access to the separate session's initial context and the source conversations.
 
+## Platform memory-source limitation
+
+The official [OpenAI Memory in ChatGPT documentation](https://help.openai.com/en/articles/8590148-memory-in-chatgpt) explains that, depending on settings and availability, ChatGPT memory/personalization can use past chats, saved memories, custom instructions, Library files and connected apps. It also notes that visible Memory Sources may not show every factor that influenced a response.
+
+This supports the conclusion that a baseline response containing IABV facts cannot by itself identify GitHub as their source. It does not establish that no automatic external retrieval occurred; it means source attribution is unavailable in the submitted transcript.
+
 ## First open evidential edge
 
 The open edge is **provenance of the pre-search context**: what exact information was present at the separate session's start, and whether any of it came from an automatic GitHub retrieval rather than from ChatGPT memory or conversation summaries.
