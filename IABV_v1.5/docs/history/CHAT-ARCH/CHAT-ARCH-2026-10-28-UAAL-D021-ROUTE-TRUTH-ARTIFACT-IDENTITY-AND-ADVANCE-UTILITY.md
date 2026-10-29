@@ -24,6 +24,7 @@ The biosophy/organ metaphor is a functional systems map, not a claim of consciou
 | Functional organ | Evidence in this episode | Failure mode | Required control |
 |---|---|---|---|
 | Perception / ingress | The normal contents read for `CURRENT-STATE.md` returned an empty body; fetching its exact blob recovered the content. | Transport failure can be misread as empty state. | Require source/ref/blob identity; recover the exact blob before interpreting empty output. |
+| Task-local world model / inference | The exact source showed that the route, memory intake and action selector can disagree about the same live project state; the conversation's recent topic was not the active dependency. | Stored records can be retrieved without being reconciled into a time-aware causal model; plausible narrative can outrank a discriminating observation. | Build the minimum objective-conditioned state/causal model, retain competing hypotheses and falsifiers, and choose the smallest authorized observation that changes the decision. |
 | State representation / routing | `CURRENT-STATE.md`, `README.md`, `CONTEXT-INDEX.md`, `MEMORY-OPERATING-PROTOCOL.md` and `AGENTS.md` retained the old M1B R3 “local/unpublished” snapshot. | Duplicated entry snapshots drifted together and looked authoritative by repetition. | Canonical route wins; snapshots are caches. Detect mismatch and correct entry overlays from verified evidence. |
 | Identity / provenance | R3 hashes `e3811a…` / `a7459f…` differed from R4 hashes `fcd743…` / `e86a7c…`. | Hashes were used without binding each digest to an artifact revision and evidence stage. | Bind each digest to repository, path, commit/ref, byte count, hash algorithm, digest, revision label and evidence stage (R1/R2/R3/R4). |
 | Selector / action | PR #555 already existed, but the proposed prompt asked to publish the candidate again. | Existing realization discovery was omitted; the latest topic outranked the active objective. | Enumerate existing branches, commits, PRs, paths, reviews and statuses before create/publish/retest/prompt actions. |
@@ -330,3 +331,72 @@ Evidence boundary: the review did not run pytest or the module. Codex reports th
 
 The next project question is not whether to reimplement F-01/F-02. It is the authorized lifecycle decision for the existing candidate and the distinct G1 prerequisites. No static review or passing reader-test result establishes G1/G2/G3, authorizes protected reads, or activates the bridge. This is evidence and method documentation on the draft branch; canonical adoption requires separate authorized integration and main fetch-back.
 
+
+
+## 8. Perception, provisional world model, and discriminating feedback (2026-10-29)
+
+This amendment consolidates the organ-level lesson that surfaced after the R2 static review. The failure was not just stale storage: the coordinator had access to multiple records but did not consistently construct a current task-local representation from source identity, temporal validity, causal dependencies and allowed effects before selecting the next action. That diagnosis is an inference from this bounded episode, not a measured claim about every session or a runtime defect finding.
+
+### 8.1 What this organ is responsible for
+
+**Perception** gathers observations from authorized sources and establishes their identity, scope, time and retrieval outcome. **The world model** organizes those observations into a provisional explanation of the task-relevant system: what objects/actors exist, which exact versions are current, how the effective operation reaches its producer/consumer, what dependencies and constraints govern the desired outcome, and which claims remain uncertain.
+
+Memory supplies candidate evidence; it does not decide current truth by recency or repetition. The model must reconcile source revisions, contradictions, current route and prior terminal results. Treat the most recent conversational topic as an observation about conversation order, not proof of the project's active objective. A hypothesis is useful only when it can affect the next decision and exposes an observation that could support or falsify it.
+
+### 8.2 Perception-to-action loop
+
+```text
+OWNER OBJECTIVE + ACCEPTANCE ORACLE
+  -> exact, authorized observation plan
+  -> retrieve relevant sources and bind ref/blob/identity/time/scope
+  -> construct minimum task-local state and producer/consumer causal path
+  -> distinguish VERIFIED / OWNER_REPORTED / INFERENCE / HYPOTHESIS / UNKNOWN / NOT_RUN
+  -> retain plausible rival hypotheses and a falsifier for each material one
+  -> identify the first open causal/evidential edge
+  -> filter out unauthorized or prerequisite-missing actions
+  -> select the smallest discriminating realization and capability-fit actor
+  -> observe the actual transition and compare to the acceptance oracle
+  -> update the world model, evidence graph, route and owning method
+  -> prove later causal reuse before claiming cross-chat learning
+```
+
+The loop is objective-conditioned and bounded. It is not a request to scan the whole repository or produce a full digital twin. Expand the model only until it distinguishes the leading explanations, exposes the first open edge, or reaches an explicitly evidenced wait condition. If no admissible observation separates the hypotheses, retain `UNKNOWN` and state the exact missing input.
+
+### 8.3 Minimal world-model receipt
+
+For material tasks and actor handoffs, use the compact fields defined in the living [Space-Time continuity protocol, §3–4](CHAT-ARCH-2026-10-23-CONTINUITY-SPACE-TIME-OPERATING-PROTOCOL-v1.md):
+
+- `OBJECTIVE_AND_ACCEPTANCE`: concrete wanted transition and observable acceptance/failure condition.
+- `SOURCE_IDENTITY_AND_TIME`: exact repo/ref/commit/blob or other object identity, provenance, event time, observed time and currentness.
+- `OBSERVATIONS`: claims actually seen, preserving `VERIFIED` versus `OWNER_REPORTED` and exact coverage.
+- `MODEL`: causal/dependency chain, current constraints, competing `HYPOTHESIS` values, predicted observation and falsifier.
+- `UNCERTAINTY`: `UNKNOWN` facts, `NOT_RUN` operations, failed acquisition routes and alternative source/realization candidates.
+- `FIRST_OPEN_EDGE`: exact unresolved boundary that blocks the outcome; previously closed edges stay closed unless evidence changes.
+- `ACTION_CONTRACT`: authorized actor and why that actor fits, exact bounded inputs, side effects/no-go constraints, expected observable and stop/switch condition.
+- `RESULT_AND_UPDATE`: what was actually executed/observed/verified, which model claim changed, where the record was written and whether canonical fetch-back occurred.
+- `REUSE`: `NOT_PROVEN` until a later non-identical task demonstrates causal reuse and an attributable improvement.
+
+Do not copy the live `ACTIVE_TASK`/`NEXT_ACTION` into the receipt as an alternative authority. Link to `CURRENT-STATE.md`; update the router only through its authorized write path. For handoff prompts, explicitly put `DESTINO: CLAUDE/SONNET` or `DESTINO: CODEX` in the header and give the capability-fit reason; never leave the recipient implicit.
+
+### 8.4 Required interpretation controls
+
+1. **Observation is scoped.** A file fetch proves the fetched bytes at that ref, not that a consumer loaded them. A static code path does not prove the route executed. A reported test run stays `OWNER_REPORTED` until separately verified.
+2. **Failure is route-bounded.** Empty/truncated transport response means `RETRIEVAL_FAILED`, not an empty source. Lack of a supported route is not global absence. A task-local authorization blocker is not project-wide paralysis.
+3. **Hypotheses make predictions.** When two explanations imply different actions, record what each predicts and test the smallest permitted observation that separates them. Do not use invented numerical confidence to hide missing evidence.
+4. **World model and authority are separate.** A better explanation cannot authorize credentials, enrollment, protected reads, code activation, tests/runtime, tunnel or merge. Apply hard authorization and precondition gates before ranking candidate actions.
+5. **Writeback is not learning.** Keep `MEMORY_RETRIEVED → METHOD_ACTIVATED → METHOD_APPLIED → OUTCOME_VERIFIED → LATER_CAUSAL_REUSE` as separate claims, each with its own evidence.
+6. **Transfer is not analogy-only.** To reuse a rule in another domain, map the semantics, name a non-match/falsifier and seek a domain-specific discriminating observation. Otherwise retain `HYPOTHESIS`.
+
+### 8.5 Acceptance checks for this protocol refinement
+
+- [ ] The current objective and acceptance oracle were set before action selection.
+- [ ] Each material claim is linked to an exact source/object revision and observation scope.
+- [ ] Reports, inferences, hypotheses, unknowns and unrun actions remain distinct.
+- [ ] The model exposes the relevant producer/consumer path, current constraints and first open edge.
+- [ ] Material competing hypotheses include predictions and falsifiers.
+- [ ] The chosen action is authorized and can reduce the identified uncertainty or close an edge.
+- [ ] The expected observation, stop/switch condition and result stage were recorded.
+- [ ] Any writeback is fetched back from the exact branch/ref; canonical adoption is not claimed before authorized `main` integration.
+- [ ] Later causal reuse remains `NOT_PROVEN` until a non-identical later task shows the method changes a decision and improves the outcome.
+
+These checks are documentation-level acceptance criteria. This PR does not provide runtime enforcement, does not change G1/G2/G3, and does not prove that any later session will retrieve or use the method.

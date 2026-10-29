@@ -28,6 +28,20 @@ A read-only request is not read-only if a CLI default silently turns a parameter
 
 This protocol is reusable across domains: declare the intended operation, resolve effective defaults, normalize and validate destination/path, bind the producer, assert invocation contract, test negative paths, and preserve claim-scoped evidence. Synthetic tests do not prove real CLI execution, authenticated fetchback, or authority establishment. See UAAL-D022. This remains a proposed method and does not supersede CURRENT-STATE as the route authority.
 
+## Perception and task-local world model — proposed cross-AI refinement (2026-10-29)
+
+
+
+Before selecting a solution for any material task, use the living Space-Time protocol's task-local perception/model rule and [UAAL-D021 §8](CHAT-ARCH-2026-10-28-UAAL-D021-ROUTE-TRUTH-ARTIFACT-IDENTITY-AND-ADVANCE-UTILITY.md#8-perception-provisional-world-model-and-discriminating-feedback). Retrieved memory is evidence input; it is not itself an updated model of current reality.
+
+
+
+Construct only the minimum model needed for the objective: exact target and revision/time, source-bound observations, producer → transformation → consumer/effective operation, authority/environment constraints, competing hypotheses with predictions/falsifiers, unknowns and the first open causal edge. Keep `VERIFIED`, `OWNER_REPORTED`, `INFERENCE`, `HYPOTHESIS`, `UNKNOWN` and `NOT_RUN` distinct. Select the smallest authorized observation that changes the decision; observe and verify the result before updating the route.
+
+
+
+For every delegated prompt explicitly name `DESTINO: CLAUDE/SONNET` or `DESTINO: CODEX` and explain why that actor is best suited to the current open edge. Include exact revision-bound inputs, permitted/prohibited actions, expected receipt and stop condition. This is an operational coordination contract, not proof of consciousness, automatic shared memory, runtime enforcement or model-weight learning. The method remains proposed on PR #557 until authorized integration and canonical fetch-back.
+
 <!-- Cross-chat handoff synchronized 2026-10-27. CURRENT-STATE.md remains the sole operational route authority. -->
 
 <!-- OWNER-DIRECTED CONTINUITY METHOD CORRECTION — 2026-10-28; process/docs only; technical gates unchanged -->

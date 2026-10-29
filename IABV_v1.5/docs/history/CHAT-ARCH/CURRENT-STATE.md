@@ -2,6 +2,25 @@
 
 This is a proposed route update on draft PR #557 only. Canonical `main` remains `79ab8c50eaa7518120d5ebed9db4747d395a21cb`, and its `CURRENT-STATE.md` blob `5945b23fdb5c13ce1068ca5d2d9e6513a1a06b95` still opens with the obsolete M1B local/unpublished status. This addendum does not alter `main` and is not canonical until the proposal is reconciled, authorized, integrated, and fetched back.
 
+### Perception / task-local world-model refinement — documentation proposal (2026-10-29)
+
+The Owner authorized consolidating the symbiosis method. The proposal strengthens the existing Space-Time protocol and UAAL-D021: reconstruct a provisional, objective-conditioned model from source-bound observations; distinguish facts/reports/inference/hypotheses/unknown/not-run; make material hypotheses predictive and falsifiable; map the minimum producer-to-consumer causal path; identify the first open edge; select the smallest authorized discriminating action; observe and verify the transition; then update the owning rule and evidence graph.
+
+- Living protocol core delta: [Space-Time cognition and adaptive continuity protocol](./CHAT-ARCH-2026-10-23-CONTINUITY-SPACE-TIME-OPERATING-PROTOCOL-v1.md), proposed revision 2.6, sections 1, 3 and 4.
+- Incident-specific algorithm and acceptance checks: [UAAL-D021 §8 — perception and provisional world model](./CHAT-ARCH-2026-10-28-UAAL-D021-ROUTE-TRUTH-ARTIFACT-IDENTITY-AND-ADVANCE-UTILITY.md#8-perception-provisional-world-model-and-discriminating-feedback).
+- Cross-AI entry rule: [MEMORY-OPERATING-PROTOCOL.md](./MEMORY-OPERATING-PROTOCOL.md), proposed refinement 2026-10-29.
+
+```text
+METHOD_SCOPE=DOCUMENTATION_ONLY
+STATUS=PROPOSED_ON_DRAFT_PR_557; NOT_CANONICAL_ON_MAIN
+ACTIVE_TASK_AND_NEXT_ACTION=UNCHANGED; M1A_WINDOWS_SECURITY_STATIC_REVIEW_ROUTE
+RUNTIME_ENFORCEMENT=NOT_PROVEN
+OUTCOME_VERIFIED=BRANCH_FETCHBACK_PENDING_AT_AUTHORING
+LATER_CAUSAL_REUSE=NOT_PROVEN
+```
+
+This method note does not change the M1A route below, authorize code edits/tests/runtime/enrollment/protected reads/tunnel/merge, or alter `OPTION_D` and G1/G2/G3. Canonical adoption requires authorized integration and exact live-`main` fetch-back.
+
 ### M1B result — F-01/F-02 closed within exact reviewed delta
 
 - Existing code PR: [#555](https://github.com/jhonf463r/Python/pull/555), open/draft/unmerged; exact HEAD `c36ee5ed177a3b5afee764c277cc4a8b243594c8`, base `79ab8c50eaa7518120d5ebed9db4747d395a21cb`.

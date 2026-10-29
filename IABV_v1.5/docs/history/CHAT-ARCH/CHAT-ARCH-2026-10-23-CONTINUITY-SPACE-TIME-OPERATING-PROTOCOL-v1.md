@@ -2,6 +2,7 @@
 
 - Protocol ID: `CONTINUITY_SPACE_TIME_ANTI_LOOP` (stable identity; operating method evolves in place)
 - Living operating revision: `2.5 — ADAPTIVE_SPACE_TIME_NEUROPLASTICITY + OWNER_CONTEXT_AWARE_TURN_ROUTING + VERIFIED_CONTEXT_HANDOFF + OWNER_FACING_DELIVERY_PREFLIGHT + DUAL_TRACK_PROGRESS_ROUTING + UAAL_D020_PROGRESS_UTILITY + CROSS_AI_MEMORY_ACTIVATION`
+- Proposed next revision on draft PR #557: `2.6 — OBJECTIVE_CONDITIONED_PERCEPTION + PROVISIONAL_WORLD_MODEL + DISCRIMINATING_HYPOTHESES`; `NOT_CANONICAL_UNTIL_AUTHORIZED_INTEGRATION_AND_MAIN_FETCHBACK`.
 - Evolution rule: integrate new lessons into their owning core rule; preserve dated incidents/history; do not accumulate competing append-only protocols
 - Owner instruction date: 2026-10-23 (America/Bogota)
 - Scope: objective-bound reasoning, temporal evidence graph, adaptive role activation, gated action chains, memory consolidation, delivery receipts and outcome-based protocol evolution
@@ -14,14 +15,15 @@
 
 Keep the project moving toward `PRIMARY_OUTCOME` by turning distributed interactions into a coherent, time-aware, evidence-grounded operating picture. Treat **“Mente/Supermente Espacio-Tiempo” as an architectural metaphor for coordinated cognition across chats, actors, tools and time**, not as a claim of consciousness, universal shared memory, or autonomous model-weight learning.
 
-The system has six connected layers that must operate as one loop, not as parallel memory projects:
+The system has seven connected layers that must operate as one loop, not as parallel memory projects:
 
 1. **Objective and boundary:** define the wanted outcome, success condition, non-goals, authority limits and hard safety gates.
-2. **Space-Time evidence graph:** bind facts, decisions, tasks, artifacts, failures and lessons to source, scope, event time, observation time, validity and causal/dependency edges.
-3. **Adaptive role activation:** select the smallest set of reasoning roles needed for the objective, uncertainty and risk.
-4. **Gated action chain:** choose and sequence actions through explicit prerequisites, permissions, expected evidence and stop conditions.
-5. **Outcome and learning review:** compare intended transition with observed result; distinguish a failed plan, unavailable route, missing evidence and implementation defect.
-6. **Memory consolidation and delivery:** update the owning rule and canonical route, preserve the historical event, fetch back accepted changes, and prove later reuse instead of assuming it.
+2. **Perception and task-local world model:** gather source-bound observations and construct a provisional, objective-conditioned representation of the relevant system state; explicitly separate observations, reports, inference, hypotheses and unknowns.
+3. **Space-Time evidence graph:** bind the model's claims and the underlying facts, decisions, tasks, artifacts, failures and lessons to source, scope, revision, event/observation/record times, validity and justified dependency/causal edges.
+4. **Adaptive role activation:** select the smallest set of reasoning roles needed for the objective, uncertainty and risk.
+5. **Gated action chain:** choose and sequence actions through explicit prerequisites, permissions, expected evidence and stop conditions.
+6. **Outcome and learning review:** compare intended transition with observed result; distinguish a failed plan, unavailable route, missing evidence and implementation defect.
+7. **Memory consolidation and delivery:** update the owning rule and canonical route, preserve the historical event, fetch back accepted changes, and prove later reuse instead of assuming it.
 
 The operating method is **evolutionary and consolidating**: when a lesson changes an existing rule, revise that rule in its owning section and preserve the prior event as history. Do not create a new appendix, memory service, orchestrator or competing router for every incident. Keep this existing protocol and current project memory as the shared coordination layer.
 
@@ -69,6 +71,51 @@ For each material item retain:
 - related objective, dependency edges, authorization and expected state transition;
 - what would falsify or supersede the claim.
 
+### Objective-conditioned perception and provisional world model (proposed revision 2.6)
+
+Retrieving memory is an input to perception, not perception itself. Before selecting an actor, tool or solution for a material task, construct the smallest evidence-grounded model of the *current task-relevant reality*. This is a provisional model of sources, objects, state, relationships and constraints—not a claim that the coordinator has a complete digital twin, that the metaphorical organ is conscious, or that any underlying model weights have changed.
+
+The model must connect:
+
+1. **Goal and oracle:** the requested observable outcome, acceptance condition and what would count as failure.
+2. **Object and identity:** the exact repository/ref/blob, process/executable, API resource, workspace, actor or other target involved.
+3. **Time and state:** when the event happened, when it was observed, when it was persisted, and whether the observation is still current for this decision.
+4. **Effective path:** actual producer/source → transformation or contract → consumer/decision → effective operation → outcome; include only the minimum path that can change the requested outcome.
+5. **Capability and boundaries:** required capability, current access/authorization, environment/resources, side effects and explicit no-go constraints.
+6. **Epistemic separation:** facts supported by exact evidence, Owner/actor reports, inferences, competing hypotheses, unknowns and actions not run.
+
+Retain the required evidence labels `VERIFIED`, `OWNER_REPORTED`, `INFERENCE`, `HYPOTHESIS`, `UNKNOWN` and `NOT_RUN`. A successful retrieval verifies only the retrieved object and scope; it does not make every claim inside it independently true. An empty response from a failed/abnormal transport is `RETRIEVAL_FAILED`, not evidence that the source is empty or nonexistent.
+
+For every material hypothesis, record the claim, evidence basis, plausible rival explanation, predicted distinguishing observation, falsifier and the consequence of being wrong. Imagination generates candidate explanations; it does not promote them to facts. When rival hypotheses change the action choice, select the smallest authorized observation that can discriminate between them rather than choosing whichever story sounds most coherent. Do not invent precise probabilities without a calibrated basis.
+
+Update the model only from a source-bound observation or an explicitly classified report. Preserve contradictions and supersession edges instead of blending them. A terminal result closes only the exact object/operation/route and unchanged preconditions. A missing access route is not proof of global absence; a static source path is not proof of runtime invocation; a persisted note is not proof that another AI consumed or applied it.
+
+Use the full record below only when the task's uncertainty, risk or cross-chat handoff justifies it; ordinary tasks may use a compact form. This is a representation contract, not a new store or competing router:
+
+```text
+WORLD_MODEL_SNAPSHOT = {
+  objective_and_acceptance_oracle,
+  observed_at_and_currentness,
+  source_refs_and_exact_artifact_identity,
+  verified_observations_and_owner_reports,
+  inferences_and_competing_hypotheses,
+  predicted_observations_and_falsifiers,
+  unknowns_and_not_run_actions,
+  target_scope_authority_resource_and_environment_constraints,
+  producer_transformation_consumer_operation_chain,
+  first_open_causal_or_evidential_edge,
+  selected_action_and_actor_fit_reason,
+  expected_observation_and_stop_or_switch_condition,
+  actual_result_stage_and_model_delta,
+  writeback_ref_and_fetchback_status,
+  later_causal_reuse_status
+}
+```
+
+Do not duplicate `ACTIVE_TASK` or `NEXT_ACTION` in this snapshot: `CURRENT-STATE.md` remains the sole router. For every cross-AI handoff, name the explicit destination (for example `DESTINO: CLAUDE/SONNET` or `DESTINO: CODEX`), why that actor fits the unresolved capability, the exact bounded inputs, allowed/prohibited actions, expected receipt and stop condition.
+
+See the proposed incident-specific integration in [UAAL-D021, §8](CHAT-ARCH-2026-10-28-UAAL-D021-ROUTE-TRUTH-ARTIFACT-IDENTITY-AND-ADVANCE-UTILITY.md#8-perception-provisional-world-model-and-discriminating-feedback). D021 remains a proposal on this branch until authorized integration and canonical fetch-back.
+
 Keep two time axes explicit: **when something happened** versus **when and where it was observed or persisted**. A local Codex statement remains `OWNER_REPORTED` until independently available evidence supports a stronger classification. A timestamped GitHub snapshot proves the age of that snapshot, not the age of the active local workspace.
 
 The current state is a derived, reconciled view; historical events and receipts are retained. Do not delete history to make the current summary neat, and do not leave stale operational commands at the top merely because they remain true as historical records. Put the current route at the front, date and label prior snapshots, and link them to their replacement.
@@ -86,6 +133,8 @@ Execute this compact cycle for every substantive task; use the full version when
 **B. Retrieve.** Query canonical records relevant to the earliest open dependency, prior terminal outcome, Owner decisions and exact route. Reuse settled findings. Do not make the Owner repeat archive work the coordinator can perform through an allowed route.
 
 **C. Diagnose.** Map the blocker to an exact category: `AUTHORITY_GATE`, `EVIDENCE_GAP`, `ROUTE_SURFACE_MISMATCH`, `ACTION_UNEXECUTABLE_NO_EVIDENCE`, `SOURCE_DEFECT`, `CONTRACT_MISMATCH`, `DELIVERY_GAP`, or `AUTHORIZATION_GAP`. Name the object, operation, scope and supporting evidence.
+
+**C1. Construct and challenge the task-local model.** Before choosing the intervention, map the minimum producer → transformation/contract → consumer/decision → effective operation → outcome path; bind it to exact identity, revision, time, environment and authorization. Separate `VERIFIED` evidence from `OWNER_REPORTED`, `INFERENCE`, `HYPOTHESIS`, `UNKNOWN` and `NOT_RUN`. For a hypothesis that would change the route, name at least one plausible rival, the observation that distinguishes them and a falsifier. Keep the first open causal/evidential edge explicit. If a source/retrieval route failed, do not infer that the target is absent; if an action is unauthorized, treat that as a constraint, not a defect in the world model to be bypassed.
 
 **C2. Localize the terminal result and partition the objective into tracks.** A terminal result closes only the exact task/operation/route and its unchanged preconditions; never promote it to project-wide paralysis. Construct the next-action set from (i) the Owner's current explicit objective/authorization, (ii) the canonical router, and (iii) existing authorized work already recorded in memory. Label each candidate `SAME_TERMINAL_TRACK`, `DEPENDS_ON_BLOCKED_EDGE`, `INDEPENDENT_AUTHORIZED_TRACK`, `UNAUTHORIZED`, or `NO_SUPPORTED_ROUTE`. Do not invent work merely to appear active.
 
