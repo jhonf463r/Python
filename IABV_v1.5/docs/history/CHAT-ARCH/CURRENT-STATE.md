@@ -114,7 +114,9 @@ C_PYTHON=NOT_TOUCHED
 KEY_CREATED=NOT_RUN
 MANIFEST_CREATED_OR_MERGED=NOT_RUN
 TESTS/BUILD/RUNTIME/PROTECTED_READS=NOT_RUN
-``` Do not restart the general trust-asset inventory or ask the Owner to choose the mechanism again. The existing authenticated route is verified for canonical repository metadata and CURRENT-STATE fetch-back. Do not repeat that preflight or create credentials. NEXT: use the existing M1A source-candidate route (PR #556) in an isolated checkout, first verifying its live head, to implement and review the bounded enrollment path plus synthetic positive/negative tests only. Do not create a key or manifest during this source/test step. After the candidate and tests pass review, execute only the already-authorized one-time enrollment effect budget; verify the exact manifest commit and bytes afterward. If CNG or future manifest fetch-back fails, stop at that exact edge. Do not touch C:\\Python, enable any MCP tools, perform protected reads, activate runtime/tunnel, or merge product code.
+```
+
+Do not restart the general trust-asset inventory or ask the Owner to choose the mechanism again. The existing authenticated route is verified for canonical repository metadata and CURRENT-STATE fetch-back. Do not repeat that preflight or create credentials. NEXT: use the existing M1A source-candidate route (PR #556) in an isolated checkout, first verifying its live head, to implement and review the bounded enrollment path plus synthetic positive/negative tests only. Do not create a key or manifest during this source/test step. After the candidate and tests pass review, execute only the already-authorized one-time enrollment effect budget; verify the exact manifest commit and bytes afterward. If CNG or future manifest fetch-back fails, stop at that exact edge. Do not touch C:\\Python, enable any MCP tools, perform protected reads, activate runtime/tunnel, or merge product code.
 ---
 ## Continuity and route-truth correction — M1B current; M1A/R7 parallel (2026-10-28)
 
