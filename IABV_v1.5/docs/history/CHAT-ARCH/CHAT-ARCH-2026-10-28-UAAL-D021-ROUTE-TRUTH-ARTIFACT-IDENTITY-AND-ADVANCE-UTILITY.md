@@ -400,3 +400,43 @@ Do not copy the live `ACTIVE_TASK`/`NEXT_ACTION` into the receipt as an alternat
 - [ ] Later causal reuse remains `NOT_PROVEN` until a non-identical later task shows the method changes a decision and improves the outcome.
 
 These checks are documentation-level acceptance criteria. This PR does not provide runtime enforcement, does not change G1/G2/G3, and does not prove that any later session will retrieve or use the method.
+
+### 8.6 Cross-chat response adjudication and state-transition acceptance
+
+This section makes the cross-chat handoff testable. It tests the operating method, not product code, and cannot establish runtime enforcement or model-weight learning.
+
+**Required transition algorithm**
+
+- Input: the original task contract, last world-model snapshot, live route, and one returned actor receipt.
+- Rebind the receipt to the exact target revision, source paths/blobs, scope and evidence stage. If the target differs, mark the old verdict revision-bound and stop any silent retargeting.
+- Split the receipt into directly observed source facts, actor-reported execution, inference, hypotheses, unknowns and not-run items.
+- Compare the reported outcome with the original acceptance oracle and expected distinguishing observation.
+- Decide each claimed edge independently: CLOSED_AT_REVIEW_SCOPE, PARTIAL, OPEN, BLOCKED, or UNKNOWN. A static closure does not imply runtime, integration or authority closure.
+- Update the task-local model and preserve prior terminal results. Select one next action from the earliest open edge, after hard authorization and prerequisite filters; name the actor only if its capability and access fit that edge.
+- Permit another handoff only after this adjudication is complete. If a receipt is incomplete, request or retrieve only the missing evidence, rather than repeating the whole task.
+- Record the transition in the owning receipt/method. Keep branch-only changes candidate-only; only authorized merge plus exact live-main fetch-back establishes canonical adoption.
+
+**Discriminating reasoning cases**
+
+| Input condition | Required model/route update | Prohibited conclusion or action |
+|---|---|---|
+| Reviewer reports PASS on HEAD A, while the live candidate is now HEAD B | Bind the verdict to A; inspect the delta or re-review only the changed scope on B | Claim that B is reviewed without revalidation |
+| Static reviewer closes a source defect; another actor reports tests passed in a reduced harness | Close the source finding at static scope; keep execution status OWNER_REPORTED unless corroborated; retain harness/configuration limits | Promote to full repository, native runtime or authorization pass |
+| Targeted action is NOT_RUN because a large checkout ran out of space | Close that acquisition attempt; identify the minimum evidence needed and only then choose an alternate authorized acquisition route | Retry the same full clone without a changed resource/precondition |
+| A receipt omits exact target hashes or says tests passed without commands/output/scope | Mark the corresponding claim incomplete/UNKNOWN and seek the precise missing evidence from the producer when feasible | Create a new broad task or infer success from the headline |
+| A draft-branch method update is fetched back but main has not changed | Mark writeback verified on branch; retain canonical adoption as NOT_ESTABLISHED | State that all new chats or the product runtime now consume the rule |
+| A terminal technical route remains blocked while the Owner explicitly authorizes a documentation-method task | Keep technical route blocked and execute only the bounded documentary task; return to the active technical route afterward | Retry the blocked technical operation or infer new technical authority |
+
+**Acceptance checklist**
+
+- [ ] The returned receipt was reconciled before any new unrelated handoff was prepared.
+- [ ] The task identity and exact revision were checked against live refs.
+- [ ] Every material result stayed within its demonstrated evidence stage and scope.
+- [ ] The original acceptance oracle was explicitly compared with the observed result.
+- [ ] The world model records what changed, what did not, contradictions and the first open edge.
+- [ ] The next action is the smallest authorized discriminating step, not a duplicate terminal action.
+- [ ] The receiving actor is explicitly named with a capability/access rationale.
+- [ ] Canonical state and branch proposal are not conflated; later causal reuse remains NOT_PROVEN.
+
+**Pass criterion:** all applicable checks above are satisfied, or each unsatisfied check is explicitly represented as UNKNOWN/NOT_RUN with the exact missing evidence and a justified stop condition. This is a reasoning-method acceptance check only; it does not claim that a later session has consumed the rule or improved its behavior.
+
