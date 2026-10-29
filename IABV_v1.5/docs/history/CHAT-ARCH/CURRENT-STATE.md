@@ -1,3 +1,52 @@
+## OVERRIDE — M1B F-01/F-02 closed; next bounded G1 review pinned to live M1A HEAD (2026-10-29)
+
+This is a proposed route update on draft PR #557 only. Canonical `main` remains `79ab8c50eaa7518120d5ebed9db4747d395a21cb`, and its `CURRENT-STATE.md` blob `5945b23fdb5c13ce1068ca5d2d9e6513a1a06b95` still opens with the obsolete M1B local/unpublished status. This addendum does not alter `main` and is not canonical until the proposal is reconciled, authorized, integrated, and fetched back.
+
+### M1B result — F-01/F-02 closed within exact reviewed delta
+
+- Existing code PR: [#555](https://github.com/jhonf463r/Python/pull/555), open/draft/unmerged; exact HEAD `c36ee5ed177a3b5afee764c277cc4a8b243594c8`, base `79ab8c50eaa7518120d5ebed9db4747d395a21cb`.
+- Reader blob `6ca2bdd8a62e3748ae902da754ffd377f0724623`, SHA-256 `8b4a6d4d161551562587415d8cfb4a4860db6d29804c432283d039893345d19b`.
+- Test blob `593991a818f2be547e97d6904f3a111f64d62562`, SHA-256 `f2f9f53b4782c64aa1f5a8a00108c52e2b68aa25aef58439ad36040e4e679587`.
+- Claude/Sonnet R2: `PASS`; `F01_DISPOSITION=CLOSED_BY_STATIC_REVIEW`; `F02_DISPOSITION=CLOSED_BY_STATIC_REVIEW`; no regressions found within the exact two-file delta. Review receipt: [M1B F-01/F-02 static review R2](./CHAT-ARCH-2026-10-28-M1B-F01-F02-STATIC-REVIEW-R2-RECEIPT.md).
+- Codex reports the focused test as 3 passed / 34 deselected and the full reader test file as 37 passed in an API-backed minimal harness. These remain `OWNER_CODEX_REPORTED`; the harness did not load repository pytest configuration, and neither Claude nor this ChatGPT session ran pytest.
+- Residual `resolve() -> open()` filesystem TOCTOU limitation remains unchanged. `CLEANUP_BLOCKED` for the harness is recorded in the validation receipt. No merge or bridge activation is authorized by these results.
+
+### Route for progressing toward G1/G2/G3 — existing M1A candidate only
+
+Live PR #556 is [the existing M1A/M1F fail-closed authorization candidate](https://github.com/jhonf463r/Python/pull/556), open/draft/unmerged, base `79ab8c50eaa7518120d5ebed9db4747d395a21cb`, current HEAD `e1b430956146c4aa0cadc1df2c3df92150b7f7ea`, with 33 changed files. Do not use an older route/task bound to HEAD `3d29c0c0f4af657a889c44198d46fa59f07f021a` without re-binding it to the live current HEAD.
+
+The prior independent M1A static review receipt at the live M1A candidate covered 13 of 33 files in depth and left the remaining 20 unknown; it recorded H-01 about Authenticode revocation/cache-only retrieval flags and H-02 about a hardcoded owner ID whose reviewed provider chain remained fail-closed. The remaining high-risk source surface includes `IABV_v1.5/src/iabv_v15/services/security/windows_crypto.py`, `IABV_v1.5/src/iabv_v15/services/security/windows_cng_key_store.py`, and `IABV_v1.5/src/iabv_v15/infra/mcp/windows_handle_reader.py`, together with their directly relevant tests. This is a candidate review scope, not a claim those files are defective.
+
+Next bounded action: **Claude/Sonnet read-only static review of those three exact current-HEAD files and directly related tests**, after it verifies live PR #556 HEAD, blobs, and the exact delta since its previous receipt. It must identify any already-reviewed lines as closed, retain unread coverage as `UNKNOWN`, and return the first unresolved G1 trust-boundary edge. No code edits, test execution, enrollment, key/manifest creation, protected reads, MCP/runtime, tunnels, merge, or branch rebase are part of this task.
+
+### Current route contract
+
+```text
+ACTIVE_TASK=M1A_G1_CURRENT_HEAD_STATIC_REVIEW_REMAINING_WINDOWS_SECURITY_SURFACE_20261029
+M1B_F01_F02=CLOSED_BY_STATIC_REVIEW_ON_C36EE5ED
+M1B_TESTS=3_FOCUSED_AND_37_FULL_FILE_PASSED; OWNER_CODEX_REPORTED_MINIMAL_HARNESS
+M1B_INTEGRATION=OWNER_DECISION_REQUIRED; MERGE_NOT_AUTHORIZED
+M1A_PR=556
+M1A_EXPECTED_HEAD=e1b430956146c4aa0cadc1df2c3df92150b7f7ea
+NEXT_ACTOR=CLAUDE_SONNET
+NEXT_ACTION=READ_ONLY_STATIC_REVIEW_OF_EXACT_HEAD_WINDOWS_CRYPTO_CNG_KEY_STORE_AND_HANDLE_READER_PLUS_RELEVANT_TESTS
+NO_CODE_CHANGE=TRUE
+TESTS_BUILD_RUNTIME=NOT_RUN_FOR_NEXT_TASK
+OPTION_D=RATIFIED_NO_BOOTSTRAP
+G1/G2/G3=NOT_ESTABLISHED
+MCP_TOOL_ALLOWLIST=EMPTY
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+AUTOMATIC_BOOTSTRAP=FALSE
+AUTOMATIC_FOLLOW_ON=FALSE
+PRODUCT_CANDIDATE_MERGE=NOT_AUTHORIZED
+C:\Python=DO_NOT_TOUCH
+```
+
+History below is retained verbatim. This override is proposed on the draft branch only; it does not supersede canonical `main` before authorized integration and fetch-back.
+
+---
 ## Owner-directed route update — request-shaping fixes statically reviewed; exact-head validation next (2026-10-29)
 
 This route update supersedes the prior Codex task to correct the three request-contract findings at the preceding R3 candidate. It records the newly observed live head and focused static review. It changes only the proposed continuity branch, not canonical main, and does not activate any security gate.
