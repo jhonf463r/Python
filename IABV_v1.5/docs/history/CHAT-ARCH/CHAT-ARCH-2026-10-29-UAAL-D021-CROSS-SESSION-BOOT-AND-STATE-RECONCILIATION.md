@@ -7,6 +7,8 @@
 
 **Reuse evidence boundary:** the first two bounded receipts document applications within the prior continuing conversation. The [independent second-session receipt](./CHAT-ARCH-2026-10-29-UAAL-D021-SECOND-SESSION-REUSE-RECEIPT.md) records one separately opened ChatGPT session that explicitly retrieved the canonical sources and applied the method. This verifies the explicit retrieval path for that bounded task only. Automatic delivery/boot into arbitrary future chats remains `NOT_PROVEN`, generalization remains `NOT_TESTED`, and this result does not authorize technical bootstrap.
 
+**Pre-search context baseline (2026-10-29):** [the baseline receipt](./CHAT-ARCH-2026-10-29-UAAL-D021-PRE-SEARCH-CONTEXT-BASELINE-RECEIPT.md) records a supplied transcript whose author reports IABV-specific context before new searches in that conversation. The underlying initial-context payload and its source attribution were not independently available. Classify this as `PRE_SEARCH_CONTEXT_AVAILABILITY=LIMITED_EVIDENCE_FROM_SUBMITTED_TRANSCRIPT; SOURCE_PROVENANCE=UNKNOWN`; it does not prove that GitHub memory loaded automatically. Keep `AUTOMATIC_CROSS_SESSION_BOOT=NOT_PROVEN` and `GENERALIZATION=NOT_TESTED`.
+
 **First later-task application:** [UAAL-D021 first reuse receipt](./CHAT-ARCH-2026-10-29-UAAL-D021-FIRST-LATER-TASK-REUSE-RECEIPT.md). This is one bounded demonstration, not proof of universal automatic boot or repeatability.  
 **Baseline observed while preparing this revision:** `main=79ab8c50eaa7518120d5ebed9db4747d395a21cb`
 
@@ -212,6 +214,21 @@ Per-session method acceptance checklist:
 - [ ] D019/D020 remain the owning causal-selection methods; D021 adds activation/reconciliation rather than another router.
 - [ ] Exact edited files are fetch-backed from the proposal branch and the PR diff is reviewed.
 - [ ] Once adopted, a later non-identical task validates causal reuse; until then it stays `NOT_TESTED`.
+
+## 7A. Pre-search context and source-provenance ceiling (2026-10-29)
+
+The [pre-search baseline receipt](./CHAT-ARCH-2026-10-29-UAAL-D021-PRE-SEARCH-CONTEXT-BASELINE-RECEIPT.md) records an owner-supplied transcript that reports project-specific information was available before new searches. The transcript itself acknowledges that the session had prior context and does not authenticate the initial context payload or its source.
+
+This limitation matters because the official [OpenAI Memory in ChatGPT documentation](https://help.openai.com/en/articles/8590148-memory-in-chatgpt) says available memory/personalization can draw from multiple sources, including past chats, saved memories, custom instructions, Library files and connected apps (depending on plan/settings), and that visible Memory Sources may not show every factor. Thus, correctly naming IABV before a new search cannot identify GitHub as the source.
+
+For this experiment, the evidence supports only:
+- `PRE_SEARCH_CONTEXT_AVAILABILITY=LIMITED_EVIDENCE_FROM_SUBMITTED_TRANSCRIPT`
+- `SOURCE_PROVENANCE=UNKNOWN`
+- `EXPLICIT_EXTERNAL_GITHUB_RETRIEVAL=VERIFIED_IN_THE_PRESENT_RECONCILIATION`
+- `AUTOMATIC_CROSS_SESSION_BOOT=NOT_PROVEN`
+- `GENERALIZATION=NOT_TESTED`
+
+Do not repeat text-only baseline tests as if they solve source attribution. Reopen the automatic-boot hypothesis only if new, trustworthy provenance observability or a controlled source-isolation capability becomes available. Until then, the supported operational path is explicit retrieval and verification of canonical external state. This is an epistemic stop condition, not an implementation of automatic bootstrap and not a change to `OPTION_D=RATIFIED_NO_BOOTSTRAP` or any technical gate.
 
 ## 8. Scope and non-goals
 
