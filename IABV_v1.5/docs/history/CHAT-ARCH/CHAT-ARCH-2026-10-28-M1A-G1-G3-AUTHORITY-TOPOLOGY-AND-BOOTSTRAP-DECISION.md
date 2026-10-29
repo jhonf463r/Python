@@ -180,6 +180,8 @@ Local key custody uses Windows CNG, user-scope and non-exportable. Prefer the Pl
 
 The existing repository branch-protection/ruleset configuration has not been verified in this task. The enrollment verifier must not claim required-review or no-bypass guarantees until those settings are independently checked. The trust model assumes the Owner's GitHub control-plane account and HTTPS trust chain are not compromised; compromise of that account is outside this bootstrap mechanism's protection.
 
+The repository is `private` (verified from live GitHub repository metadata). Therefore local manifest fetch-back must use an already-authenticated, supported GitHub route and verify the immutable repository ID, exact canonical `main` commit and manifest bytes. A public/anonymous fetch route is not assumed. The local GitHub App key-recovery path is still unvalidated in the recorded state; do not treat the PEM's presence as proof, copy it into source or use it as the trust root. If no existing local authenticated route is already available, stop at `GITHUB_MANIFEST_FETCHBACK=NOT_ESTABLISHED`; do not create a new credential or repeat an unmodified authentication attempt.
+
 ### 9.2 One-time enrollment effect budget
 
 The newly selected enrollment mechanism is limited to a single explicit operation bound to one machine/user and one exact server/workspace binding.
