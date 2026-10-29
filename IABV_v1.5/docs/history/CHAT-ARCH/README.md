@@ -7,6 +7,10 @@ If the normal contents read for `CURRENT-STATE.md` returns an unexpectedly empty
 
 [UAAL-D021 — proposed route-truth and artifact-identity refinement](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-28-UAAL-D021-ROUTE-TRUTH-ARTIFACT-IDENTITY-AND-ADVANCE-UTILITY.md) records the observed failure and new acceptance checks. It remains a draft-branch proposal, not canonical on `main` until authorized integration and fetch-back.
 
+### Cross-chat return adjudication gate (proposed on PR #557; 2026-10-29)
+
+Before a new material handoff after Claude/Codex or another actor responds, rebind the receipt to the live revision, separate source-verified facts from actor-reported execution, compare the result to the original acceptance oracle, update the task-local world model, and identify the first remaining causal edge. Do not repeat a completed task or transfer a verdict to a new HEAD without new evidence. Apply [Cross-chat response adjudication and state-transition gate](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-28-UAAL-D021-ROUTE-TRUTH-ARTIFACT-IDENTITY-AND-ADVANCE-UTILITY.md#86-cross-chat-response-adjudication-and-state-transition-acceptance) and the living Space-Time protocol's incoming-result transition gate. This is a draft-branch method proposal; CURRENT-STATE.md remains the sole route authority, and canonical adoption/later causal reuse are not established.
+
 [UAAL-D022 — proposed effective-operation contract](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-UAAL-D022-EFFECTIVE-OPERATION-AND-EVIDENCE-PRODUCER-INTEGRITY.md) adds the invariant that declared read-only intent must be checked against effective argv, environment, method, destination, endpoint form and producer identity. It remains proposed on this branch, not canonical policy on main.
 
 ### Latest cross-chat handoff snapshot (2026-10-29)
