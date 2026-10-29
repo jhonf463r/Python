@@ -39,6 +39,16 @@ class _FakeWorldModelService:
         self._snapshot = snapshot
         self.calls: list[tuple[str, bool]] = []
 
+    @property
+    def scan_stats(self) -> dict[str, int | float | None]:
+        return {
+            "scan_count": 0,
+            "scan_count_full": 0,
+            "scan_interval_s": 60.0,
+            "full_scan_interval_s": 300.0,
+            "last_scan_ago_s": None,
+        }
+
     def current_model(self) -> WorldModelSnapshot:
         self.calls.append(("current", False))
         return self._snapshot
@@ -301,6 +311,7 @@ def test_fastmcp_transport_keeps_sdk_dns_rebinding_defaults(monkeypatch) -> None
     assert set(captured) == {"log_level", "transport_security"}
     security = captured["transport_security"]
     assert security.enable_dns_rebinding_protection is True
+    assert set(security.allowed_hosts) == {"localhost", "127.0.0.1", "[::1]"}
     assert "*" not in security.allowed_hosts
     assert "*" not in security.allowed_origins
 
@@ -320,7 +331,6 @@ def test_server_run_denies_before_transport(monkeypatch) -> None:  # type: ignor
     with pytest.raises(RuntimeError, match="MCP_START_AUTHORIZATION_NOT_ESTABLISHED"):
         server.run(transport="stdio")
     assert transport_calls == []
-    assert set(security.allowed_hosts) == {"localhost", "127.0.0.1", "[::1]"}
 
 
 def test_server_registers_core_tools() -> None:
