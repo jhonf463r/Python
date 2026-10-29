@@ -1,3 +1,9 @@
+## 2026-10-29 continuity delta — M1A F-556-01 / M1B publication
+
+At proposal creation, the M1B “local-only” status below was historical and superseded by PR #555, published at `c36ee5ed177a3b5afee764c277cc4a8b243594c8`; `M1B_SOURCE_PUBLICATION=PR_PUBLISHED`, `M1B_MAIN_INTEGRATION=NOT_DONE`. PR #556 contains the F-556-01 correction at `fb635aab18d9c2ef19b20d48e3625d52383fe6af`; independent review of `c00c1677...` → `fb635aab...` is pending. The earlier text is retained as history, not a description of current status. The route authority remains [CURRENT-STATE.md](./CURRENT-STATE.md); this protocol summary does not create a separate route. The proposed update becomes canonical only after its documentation PR is merged and fetched back. [Receipt](./CHAT-ARCH-2026-10-29-IABV-M1A-F556-CONTINUITY-PROMOTION.md).
+
+---
+
 ## Current evidence gate — M1B local candidate (2026-10-28)
 
 The M1B reader candidate exists only in Codex's isolated, untracked local files. Codex reports 34 targeted tests passed; treat the run and final hashes as OWNER_CODEX_REPORTED. The final R3 bytes are not yet in a reviewable GitHub branch. Do not report integration from local hashes. Next: publish the existing candidate to an isolated PR and review its exact diff, not repeat implementation or tests unchanged.

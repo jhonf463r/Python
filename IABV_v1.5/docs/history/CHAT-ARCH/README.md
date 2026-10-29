@@ -1,3 +1,9 @@
+## 2026-10-29 continuity delta — M1A F-556-01 / M1B publication
+
+At proposal creation, the M1B “local-only” status below was historical and superseded by PR #555, published at `c36ee5ed177a3b5afee764c277cc4a8b243594c8`; `M1B_SOURCE_PUBLICATION=PR_PUBLISHED`, `M1B_MAIN_INTEGRATION=NOT_DONE`. PR #556 contains the F-556-01 correction at `fb635aab18d9c2ef19b20d48e3625d52383fe6af`; independent review of `c00c1677...` → `fb635aab...` is pending. The earlier text is retained as history, not a description of current status. [CURRENT-STATE.md](./CURRENT-STATE.md) remains the sole operational route authority; this branch becomes canonical only after its documentation PR is merged and fetched back. [Receipt](./CHAT-ARCH-2026-10-29-IABV-M1A-F556-CONTINUITY-PROMOTION.md).
+
+---
+
 <!-- Current M1B continuity override 2026-10-28; CURRENT-STATE.md is the sole route authority. -->
 ## Current M1B frontier — local candidate, tests reported, not yet published (2026-10-28)
 

@@ -1,3 +1,34 @@
+## PROPOSED ROUTE OVERLAY — M1A F-556-01 published; independent delta review pending (2026-10-29)
+
+Prepared on an isolated documentation branch. At proposal creation, canonical `main` remains at `79ab8c50eaa7518120d5ebed9db4747d395a21cb` with the previous M1B-local route. This overlay becomes canonical only after the documentation PR is merged and fetched back.
+
+**M1A / PR #556 (`VERIFIED`).** GitHub metadata reports open, draft, unmerged, base `main`, HEAD `fb635aab18d9c2ef19b20d48e3625d52383fe6af`. Commit `c00c1677e7b1f891e757f141450672b04443eba4` replaced partial directory-name disclosure on overflow with whole-list denial. Its child `fb635aab18d9c2ef19b20d48e3625d52383fe6af` aligns the reason with Entry 274 `LIST_LIMIT_EXCEEDED` and adds a synthetic 201-entry case with `max_entries=250`. The published head and file blobs were fetched and matched. Codex reported 31 focused tests passed under Python 3.13.2 / pytest 9.0.3 and `git diff --check` success; this test result remains `OWNER_CODEX_REPORTED`, not independently rerun.
+
+**Independent review (`OWNER_REPORTED`).** The earlier Claude R1 report reviewed HEAD `e1b430956146c4aa0cadc1df2c3df92150b7f7ea` and described G1-WIN-02 partial-name disclosure there. Independent static review of `c00c1677...` → `fb635aab...` is pending. G1-WIN-01 and G1-WIN-03 remain separate open findings.
+
+**M1B / PR #555 (`VERIFIED` status; test execution `OWNER_CODEX_REPORTED`).** PR #555 is open, draft, unmerged, base `main`, HEAD `c36ee5ed177a3b5afee764c277cc4a8b243594c8`. Its description reports 37 tests from an API-backed minimal harness that did not load repository pytest configuration; this is not a full-checkout suite run. `M1B_SOURCE_PUBLICATION=PR_PUBLISHED`; `M1B_MAIN_INTEGRATION=NOT_DONE`. This supersedes the historical local-only statement below; that record is retained.
+
+**Repeated repair attempt (`VERIFIED`).** The repeated task stopped on its `c00c1677...` baseline mismatch; it changed no files, ran no tests and published nothing. This was scope control, not a product regression.
+
+**Next causal edge:** independent static review of the exact `c00c1677...` → `fb635aab...` delta. No follow-on is started by this proposal.
+
+```text
+OPTION_D=RATIFIED_NO_BOOTSTRAP
+G1/G2/G3=NOT_ESTABLISHED
+MCP_TOOL_ALLOWLIST=EMPTY
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+AUTOMATIC_FOLLOW_ON=FALSE
+MERGE=NOT_AUTHORIZED
+C:\Python=DO_NOT_TOUCH
+CANONICAL_MAIN_UPDATE=PENDING_DOCUMENTATION_PR_MERGE_AND_FETCHBACK
+```
+
+Receipt: [M1A F-556 continuity promotion](./CHAT-ARCH-2026-10-29-IABV-M1A-F556-CONTINUITY-PROMOTION.md).
+
+---
+
 ## OVERRIDE — M1B reader candidate locally implemented; targeted suite reported passing (2026-10-28)
 
 This entry supersedes earlier top-level M1B NOT_STARTED / blocked-before-modification statements for current status; those entries preserve the earlier time-specific state. The local candidate is reported by Codex, not published to GitHub.
