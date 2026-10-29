@@ -157,6 +157,8 @@ class AuthenticatedGitHubCliApi:
         try:
             child_env = os.environ.copy()
             child_env["GH_HOST"] = "github.com"
+            child_env["GH_PROMPT_DISABLED"] = "1"
+            child_env["GIT_TERMINAL_PROMPT"] = "0"
             result = self._runner(
                 args,
                 executable=self._policy.executable_path,

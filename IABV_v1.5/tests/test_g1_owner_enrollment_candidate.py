@@ -667,6 +667,8 @@ def test_verified_adapter_holds_pin_during_subprocess_creation_without_running_g
         lambda _path, _pin: {"status": "Valid", "thumbprint": policy.signer_thumbprint},
     )
     monkeypatch.setenv("GH_HOST", "attacker.invalid")
+    monkeypatch.setenv("GH_PROMPT_DISABLED", "0")
+    monkeypatch.setenv("GIT_TERMINAL_PROMPT", "1")
     def fake_run(args, **kwargs):
         assert not pin._closed
         process_calls.append((args, kwargs))
@@ -686,6 +688,8 @@ def test_verified_adapter_holds_pin_during_subprocess_creation_without_running_g
     assert args[7:] == ["-f", "per_page=100"]
     assert kwargs["executable"] == policy.executable_path
     assert kwargs["env"]["GH_HOST"] == "github.com"
+    assert kwargs["env"]["GH_PROMPT_DISABLED"] == "1"
+    assert kwargs["env"]["GIT_TERMINAL_PROMPT"] == "0"
     assert kwargs["shell"] is False
     assert pin._closed is True
 
