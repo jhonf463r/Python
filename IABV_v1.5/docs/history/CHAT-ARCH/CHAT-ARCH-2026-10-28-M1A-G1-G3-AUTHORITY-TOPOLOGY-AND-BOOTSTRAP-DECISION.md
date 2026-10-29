@@ -1,0 +1,278 @@
+# M1A G1–G3 — Authority topology, bootstrap boundary, and completion path
+
+- Date: 2026-10-28 (America/Bogota).
+- Repository: jhonf463r/Python.
+- Evidence baseline immediately before this design addendum was written into PR #557: live main 79ab8c50eaa7518120d5ebed9db4747d395a21cb; PR #549 HEAD 519c55a5b96a5e0b3826b54bf92726ef7f1b9c28; PR #555 HEAD 6c601c99bb9cc2111f9dde2f6986aefcc0393785; PR #556 HEAD 1ef23ce47fa206fa751d90fd0c92bcab8a902a6b; PR #557 pre-write HEAD a5ca0e88eed5d80eaa9d7a1e9c535ffe5f960b9f.
+- Status: OWNER_REQUESTED_ARCHITECTURE_AND_TRACEABILITY_IMPROVEMENT; DESIGN_PROPOSAL_ONLY; NOT_CANONICAL; NOT_IMPLEMENTED.
+- Permission boundary: this document records the selected initial-trust mechanism and the one-time enrollment effect budget. This documentation update does not itself create a key, enroll a root, run tests/runtime, enable protected reads or the MCP tool allowlist, enable the tunnel, merge a product PR, or activate the bridge.
+- Governing policy is narrowed only to permit the expressly Owner-controlled, one-time enrollment effect budget in §9; automatic/self-bootstrap and all operational capabilities remain prohibited. No re-ratification of the prior Option D decision is requested.
+
+## 1. Executive finding
+
+G1/G2/G3 are not redundant obstacles to every IABV operation. They are an authorization boundary for bridge-mediated operations that cross into governed local resources or side effects. IABV can continue internal computation and explicitly bounded observation without treating every internal function as an authority-gated read. But any MCP-reachable operation that reads protected workspace/repository content or causes a governed side effect must be mapped to a policy and enforcement class; it must not inherit authority merely because it is exposed by an authenticated MCP server.
+
+The main architectural problem is not a lack of Python classes. The source already contains authority contracts, policy verification and replay-consumer concepts. The production composition intentionally has no trusted G1 provider, G2 policy/revocation provider or G3 approved-root/versioned-target provider. ReadAuthorizationCoordinator.unconfigured() therefore correctly denies requests. Replacing None with a fake provider, treating a Protocol as an implementation, using a GitHub blob hash as authority, or loosening the denial would manufacture readiness rather than establish it.
+
+The previous work has proved that some fail-closed source paths can deny; it has not supplied a legitimate trust-enrollment authority or demonstrated the actual Windows security boundary. The terminal BLOCKED_MISSING_G1_TRUST_ANCHOR and APPROVED_WORKSPACE_ROOT_UNAVAILABLE results must be reused as causal evidence, not repeated as open-ended inventory tasks.
+
+## 2. Why the gates exist and where they should apply
+
+| Layer | Question answered | Applies to | Does not prove |
+|---|---|---|---|
+| MCP transport authentication, e.g. Entra token validation for Streamable HTTP | Which authenticated client/user is making this request to this API? | HTTP endpoint admission | Permission to read a particular file or execute an operation |
+| G1 — governance trust and issuer | Who has legitimate authority to issue IABV mandates, who controls it, and which exact server/principal is bound to it? | Governed operations and their authorizations | Which operations are currently permitted |
+| G2 — policy/catalogue and revocation | Which operation classes/producers/targets are allowed under a current, integrity-checked and revocable policy? | Each governed decision | That the implementation consumed the object that was authorized |
+| G3 — server-side target binding | What exact operation and target will be consumed, and is the target derived from an approved root rather than caller-supplied scope? | Protected file/directory reads and other target-bound actions | That the caller has authority or the policy is valid |
+| Enforcement/receipt | Did the real handler reject before access or consume the same opened object under the current decision? | Every relevant enforcement point | That mocks reproduce Windows kernel semantics |
+
+Consequences:
+1. A valid Entra token is necessary for a protected HTTP endpoint but is not a G1/G2/G3 substitute.
+2. A pure computation or bounded, non-sensitive observation does not automatically need the same target/handle workflow as arbitrary repository reads. It still needs the correct transport boundary and explicit tool-risk classification.
+3. read_repo_file, list_repo_directory, test execution, agent/task dispatch, writing, merge and tunnel operations have different risk. They must not be merged into one allow/deny rule. A low-risk class must not become a hidden path to a higher-risk capability.
+4. M1B's fixed-path JSON context reader is narrower than a generic repository-file tool. Its target/schema/freshness checks improve that narrow contract, but do not establish G1 and do not authorize generic protected reads. Reuse/review the existing PR; do not republish it.
+5. The tool allowlist must stay empty for governed operations until their own policy and enforcement acceptance criteria are satisfied. This document does not authorize any tool.
+
+## 3. Bootstrap circularity and valid resolution
+
+The present policy correctly rejects implicit/self-issued bootstrap. However, if interpreted as no authority can ever be installed or enrolled by any controlled procedure, the first trust anchor can never exist. That is a design deadlock, not a test failure.
+
+There are only two honest resolution families:
+
+- Existing-root route: discover and verify an already-established independent governance root, Owner mandate and trusted provider. Historical bounded attempts did not find such evidence and explicitly prohibit repeating that inventory without a material change.
+- Owner-controlled initial enrollment route: an explicit, separately authorized ceremony uses a trust mechanism that exists outside the new IABV issuer itself to approve the initial authority. This is not automatic bootstrap and must not run from ordinary MCP requests. The canonical `main` rule remains `OPTION_D=RATIFIED_NO_BOOTSTRAP` and does not currently authorize provisioning. The Owner-selected mechanism and effect budget in §9 are a proposal on draft PR #557, not canonical authority. Only explicit Owner approval and merge of a documentary exception into canonical `main` can authorize the exact bounded effects in §9.2. Until that merge, none of those enrollment effects may run under this exception. After that merge, only the Owner-controlled one-time procedure is permitted, subject to its stop conditions; automatic or server self-bootstrap remains prohibited. The later approval and authenticated merge of the exact enrollment manifest is a separate identity-specific authorization event, not an effect of merging this design document.
+
+An application cannot create the fact that its own first key is trusted merely by generating that key. The initial trust decision must rest on an already trusted control plane, such as a deliberately approved local administrator/install ceremony bound to the exact reviewed artifact and displayed key fingerprint, an independently trusted code-signing/enterprise deployment root, or another Owner-selected pre-existing mechanism. Entra can authenticate the Owner, subject to exact issuer/tenant/audience/client/role checks, but Entra login alone does not prove that the local executable is trustworthy or entitled to issue IABV mandates.
+
+The selected route is the Owner-approved, version-pinned GitHub enrollment manifest described in §9, with a local CNG key as a subordinate issuer identity; this does not reopen mechanism selection. Future implementation must verify the exact Owner approval/merge and manifest provenance and bytes. A TPM is a possible key-protection provider, not the governance authority; if a selected or required provider is unavailable, the route reports the exact blocker rather than silently degrading.
+
+## 4. Proposed minimum topology
+
+Owner/governance decision
+  -> explicit, out-of-band initial trust enrollment
+  -> G1 trust anchor + mandate + independently authenticated issuer
+  -> G2 versioned policy/catalogue + freshness/revocation
+  -> authenticated MCP transport (Entra for HTTP)
+  -> server-created operation request
+  -> G3 approved root + versioned target resolver; open target once without reading content
+  -> G1 mandate + G2 policy decide over the exact operation/target
+  -> short-lived permit bound to the same open handle, server instance, policy version, nonce and expiry
+  -> same-handle reader/enumerator consumes the object
+  -> protected replay/rollback state and durable operation receipt
+
+This is a component topology, not a claim that these production components are already wired. The source candidates contain parts of the contracts, not the whole operational route.
+
+### G1 — evidence and production contract
+
+Required evidence:
+- Independently grounded trust-anchor provenance and designated custodian.
+- Explicit Owner/governance mandate bound to the Owner's authenticated local principal, issuer key, repository/workspace scope and exact server instance.
+- Protected issuer credential and authenticated IPC peer identity; a peer_identity response field is not proof of the IPC peer.
+- Fresh challenges, atomic one-use consumption, expiry, rotation and revocation.
+- Process/OS separation so an ordinary MCP request, reader, or the same untrusted Python process cannot mint an issuer or rewrite the authority registry.
+
+G1 is not closed by token tests, successful login, a GitHub PR merge, a public-key fingerprint alone, a class named TrustAnchor, or a Protocol without a production provider.
+
+### G2 — evidence and production contract
+
+Required evidence:
+- Versioned catalogue/policy signed under the independently established G1 authority.
+- Authenticated publisher and producer-class allowlist.
+- Integrity, issue/expiry and policy-to-mandate version binding.
+- Current authoritative revocation evidence and explicit failure behavior if unavailable.
+- Anti-rollback state that cannot be defeated by restoring an older valid SQLite/database snapshot.
+
+GitHub can distribute and review policy bytes, but availability, branch history or blob hash alone is not runtime authority for ALLOW. A bounded SQLite consume-once transaction is not proof of rollback resistance. Use independently governed durable/monotonic state appropriate to the declared threat model, or keep the decision denied.
+
+### G3 — evidence and production contract
+
+Required evidence:
+- Production composition wiring an approved-workspace-root provider and versioned server-side operation-to-target resolver.
+- Operation and target are derived server-side; caller-provided scope cannot override them.
+- Target is opened relative to the approved root and the exact opened object is bound into the authorization decision/permit.
+- Final reader/enumerator consumes that same handle, not a re-resolved path.
+- Verified handle ownership/lifetime, reparse-point and path substitution policy, cleanup, concurrency and supported filesystem semantics on actual Windows.
+
+A workspace root is a containment anchor, not the independent G1 trust root. Unit tests with synthetic handles/mocks are necessary but do not prove real Windows behavior.
+
+## 5. Tool profiles to prevent over-engineering
+
+Do not apply the maximum authority machinery indiscriminately to every IABV function, but do not create an informal bypass. Define explicit policy classes before enabling tools:
+
+| Profile | Intended scope | Required controls |
+|---|---|---|
+| OBSERVE | Pure computation and clearly non-sensitive, bounded status only | Explicit tool registration; no file/secret reads or side effects; HTTP transport authentication where HTTP is used; bounded output |
+| CONTEXT_ARTIFACT_READ | Fixed, schema-validated, freshness-checked control/portable context artifacts | Explicit artifact IDs; fixed paths; no arbitrary caller path; source identity/freshness checks; governed permission to disclose the selected artifact |
+| PROTECTED_WORKSPACE_READ | Generic repository files/directories or other protected local resources | Full G1 + G2 + G3 and same-object reader path |
+| EXECUTE_OR_MUTATE | Test/command execution, writing, remote task dispatch, merge, tunnel or other side effect | Separate operation-specific authority, interactive approval/budgets/audit/revocation; never inherit permission from a read profile |
+
+These profiles are proposed policy design, not a present allowlist. Existing fail-closed gates remain authoritative until a separate, exact acceptance/release decision. No test-running/merge/tunnel capability can piggyback on read-only authorization.
+
+## 5A. Source-level route map of the actual MCP surface
+
+Static source trace on PR #556 HEAD 1ef23ce47fa206fa751d90fd0c92bcab8a902a6b, server.py blob 9a9f3a7f31c1da091279b8403d72089546217c9c (not runtime evidence):
+
+| Actual tool/call-site family | Observed source behavior | Required route before any enablement |
+|---|---|---|
+| world_model_snapshot | Reads the current model by default; refresh=true invokes request_refresh | Split passive observation from refresh/scan capability; bound output and authorize refresh separately |
+| autonomy_status, runtime_trace_summary/events, runtime_boot_report, orchestrator_preview, self_examination_current | Mostly diagnostic/preview paths in the handlers inspected; some accept refresh or expose detailed local operational state | Classify output sensitivity and refresh side effects; do not automatically equate them with generic file-read authority |
+| portable_context_get | Reads a context package and may rebuild/refresh it; can expose rich internal context | Treat as CONTEXT_ARTIFACT_READ only after fixed-target, freshness, disclosure and provenance rules are connected; refresh is a separate capability |
+| read_repo_file, list_repo_directory | Explicitly call the protected-read gate and approved-workspace-root/handle reader path in the PR #556 candidate | Full G1/G2/G3 plus exact target-to-same-handle consumption; remain denied until providers are real |
+| M1B ControlMasterContextReader | PR #555 publishes a fixed-path, schema/freshness/target-bounded Python reader and tests; its two-file PR does not itself register an MCP tool in server.py | Useful narrow component, not a live MCP authorization route and not a replacement for G1; wire only through explicit approved composition |
+| capture_ui_screenshot, list_open_windows, list_running_processes, read_clipboard, dump_qml_tree, git_status_and_log, probe_assistant_login | Can disclose local screen, process, clipboard, UI, repository metadata or network/browser state | A distinct observe/sensitive-observe permission, explicit scope/output limits and network/consent controls; do not assume all are harmless because they are read-only |
+| run_pytest, gpu_model_benchmark, site_exploration_explore, chatgpt_web_capture | Execute test/model/browser/network paths; some persist artifacts or interact with external services | EXECUTE_OR_MUTATE profile, narrow allowlist, exact environment/target, budgets, user approval, receipts and separate network permission |
+| autonomy_update_task, report_freeze, register_audit_finding, register_audit_round, github_remote_publish_branch_as_pr, ui_bridge_send_message, ui_bridge_navigate and other state-changing handlers | Mutate queues, write evidence, initiate a push/PR or interact with the local UI | Separate per-operation authorization and explicit approval; never inherit permission from a read-only capability |
+
+Important limitation: this is a bounded static mapping of selected source handlers, not a proof that the entire registry is exhaustively classified or that downstream services have no extra guards. Some handlers inspected do not invoke the server's generic _governance_block_for_route directly; their exact downstream control path must be reviewed before enablement. This is not a claim that those operations are currently reachable: PR #556 blocks server startup while authorization is unconfigured.
+
+Therefore the first future composition change must NOT simply replace ReadAuthorizationCoordinator.unconfigured() and unblock the server. It must also verify a complete per-tool registry/call-site inventory, make each handler's required capability explicit, and prove there is no alternate launcher/fallback. The startup gate is a necessary whole-server fail-closed control today, but it is not a substitute for per-operation authorization once startup is allowed.
+
+## 6. Recommended implementation order
+
+1. Close the architecture decision before another code patch. Confirm the exact permitted initial-trust mechanism and who/what outside the IABV issuer is allowed to approve it. If no independent trust mechanism can be evidenced, report BLOCKED_NO_INDEPENDENT_BOOTSTRAP_AUTHORITY; do not manufacture one.
+2. Implement and verify G1 composition only in a fresh isolated branch from then-live main, after explicit authorization for the chosen enrollment mechanism. Connect a real provider, not a protocol stub. Keep protected reads denied.
+3. Implement G2 against that G1 provider. Policy publication, version freshness, revocation and anti-rollback must use one consistent authority source.
+4. Complete G3 against a concrete approved-root provider. Connect target resolver -> open handle -> decision/permit -> same-handle reader without path re-resolution.
+5. Wire the operation-class registry and MCP enforcement points. Confirm every reader/tool/launcher entry path maps to a profile; no fallback launch or alternate path can bypass its gate.
+6. Use separately authorized acceptance testing, not an indefinite -x cycle. First deterministic unit contracts; then approved isolated Windows-native tests; then, only after all gates/configuration are accepted, a narrowly scoped localhost integration test. No tunnel.
+7. Independently fetch back and review the exact revision and report G1, G2, G3, transport authentication and each tool profile separately.
+
+The reported test failure test_server_rejects_unknown_transport is not a G1/G2/G3 dependency. The test expects transport validation before authorization gating, but the server denied startup because authorization was unavailable. Review the test contract before changing it; do not make it pass by weakening denial. Keep that test issue in M1A validation and do not represent it as authority progress.
+
+## 7. Alternative technologies and selection
+
+- Local Windows issuer + CNG/TPM + restricted service identity + named pipe: preferred when the boundary is this workstation and a genuinely independent approved installation/enrollment path exists. TPM is optional only if the accepted profile permits a software-backed protected key; it is not silently optional if hardware backing is mandatory.
+- External managed authorization service/Key Vault: viable if an organization-controlled identity, network/service and budget are approved. It adds operational and financial dependencies and is not assumed available or authorized.
+- FIDO2/PIV/Windows Hello: useful Owner-presence/authentication factor; not, by itself, the G1 root, G2 catalogue authority or G3 target resolver.
+- GitHub App/protected PRs: useful for source provenance and policy distribution. Merge authority is not automatically runtime read authority.
+- In-process Python object or SQLite alone: useful as a local contract/ledger component, insufficient for independent issuer isolation and rollback resistance under the stronger declared threat model.
+- A separate MCP extension/client changes the calling surface, not the trust model.
+
+Choose the smallest topology that satisfies the declared threat model, then prove its properties. Do not require TPM, Azure hosting, multiple agents or a new plugin merely because they exist. Do not drop a mandatory gate merely to simplify implementation.
+
+## 8. Exact closure matrix
+
+| Gate | Closure evidence | Fail-closed state until then |
+|---|---|---|
+| G1 | Verified independent root/custodian/mandate; Owner-to-Windows principal; protected issuer/process/instance binding; lifecycle/revocation | BLOCKED_MISSING_G1_TRUST_ANCHOR |
+| G2 | Trusted signed catalogue; authorized publisher/producer classes; fresh policy; authoritative revocation; rollback-resistant policy epoch | BLOCKED_MISSING_G2_POLICY_OR_REVOCATION_AUTHORITY |
+| G3 | Approved-root provider; versioned target resolver; native same-handle read evidence on supported Windows/filesystem | APPROVED_WORKSPACE_ROOT_UNAVAILABLE or precise native-platform blocker |
+| Transport | Correct token/API audience, issuer/tenant, client and role checks for HTTP; loopback bind; no tunnel | HTTP unavailable |
+| Tool profiles | Each tool/call site mapped to explicit risk class; no hidden route/fallback | MCP_TOOL_ALLOWLIST=EMPTY for governed operations |
+| Acceptance | Exact revision, reproducible bounded test receipts, independent review and native evidence where required | NOT_ESTABLISHED; no positive release |
+
+A test-suite pass is necessary for implementation quality, not sufficient for authority closure. A design document, branch or PR does not establish a deployed authority provider.
+
+## 9. Owner decision — selected initial trust mechanism and bounded effects (2026-10-28)
+
+The Owner directed selection of the initial trust mechanism and definition of its effect budget, closing the design-choice edge. That direction records the selected design; it does not make this draft canonical or make the exception effective. Only explicit approval and merge of this exact documentary exception into canonical `main` can authorize the bounded effects in §9.2. This does not claim that a key exists or enrollment has run. Approval and merge of the later exact enrollment manifest remains a separate identity-specific authorization event.
+
+### 9.1 Selected mechanism
+
+**Selected: an Owner-approved, version-pinned GitHub enrollment manifest, with a local Windows CNG key as a subordinate G1 issuer identity.**
+
+The out-of-band authority is the Owner's explicit authenticated action on a dedicated enrollment pull request and its exact merge into the canonical `jhonf463r/Python` `main` branch. The local IABV runtime cannot approve its own root: before the manifest is explicitly approved and fetched back from the exact canonical commit, a newly generated key has **zero IABV authority**.
+
+The manifest must bind, at minimum: immutable repository ID and canonical manifest path; a stable enrollment ID and schema/version; the public key and its thumbprint/key identifier; the Windows user SID binding; the exact IABV server/code revision; one canonical workspace root; an explicit `ROOT_ENROLLMENT_ONLY` profile (not an MCP capability grant); issue/expiry state; and the authoritative revocation/version source. It contains **no private key, GitHub App PEM, access token, client secret, or other credential**. Crucially, the manifest must **not** contain its own containing commit SHA, Git blob SHA, or whole-content digest: those values would be self-referential because the containing commit/blob depends on the manifest bytes. After the Owner merges the exact manifest PR, a separate local enrollment receipt records the authenticated `main` merge commit SHA, PR/merge metadata and actor, manifest blob SHA, SHA-256 of the exact fetched bytes, and their match to the local CNG public key and identity bindings. Those post-merge identifiers belong in the receipt, not inside the manifest. The receipt is evidence of what was fetched; it does not replace the Owner-approved merge as the external authorization event.
+
+Local key custody uses Windows CNG, user-scope and non-exportable. Prefer the Platform Crypto Provider when available; if only the Software Key Storage Provider is available, record that lower assurance explicitly and keep the scope local/single-user. This software-provider mode does not protect against compromise of the same Windows user's session or a malicious process already running as that user. No TPM/Secure Boot presence is assumed or claimed. The CNG key is not directly exposed as a generic MCP tool and cannot itself grant a capability: every mandate must still be constrained by current G2 policy and G3 target binding.
+
+**Not selected as the trust root:** Entra login/token alone; the GitHub App's PEM; a key generated by IABV and trusted without Owner approval; a fingerprint displayed only by the process being enrolled; or a file/hash alone without its Owner-approved canonical commit. Entra remains HTTP caller authentication. The GitHub App key remains GitHub API authentication only.
+
+The existing repository branch-protection/ruleset configuration has not been verified in this task. The enrollment verifier must not claim required-review or no-bypass guarantees until those settings are independently checked. The trust model assumes the Owner's GitHub control-plane account and HTTPS trust chain are not compromised; compromise of that account is outside this bootstrap mechanism's protection.
+
+At the time of the original 2026-10-28 design note, repository metadata was recorded as `private`; the live GitHub repository metadata checked on 2026-10-29 reports `public`. Do not rely on confidentiality or an authenticated-only read path. Any future fetch-back, public or authenticated, must verify the immutable repository ID, exact canonical `main` commit and merge provenance, manifest path/blob and exact bytes. Public availability or a blob hash alone is not authority. The authenticated Owner approval and merge remain the external authorization event. The local GitHub App key-recovery path remains unvalidated; do not treat a PEM's presence as proof, copy it into source or use it as the trust root. If the required repository/commit/provenance/byte checks cannot be performed, stop at `GITHUB_MANIFEST_FETCHBACK=NOT_ESTABLISHED`; do not create a credential or repeat an unchanged failed attempt.
+
+### 9.2 One-time enrollment effect budget
+
+The newly selected enrollment mechanism is limited to a single explicit operation bound to one machine/user and one exact server/workspace binding.
+
+**Effects in scope for the one-time enrollment operation:**
+1. Generate one local Windows CNG key pair and retain the private key in the Windows key store; only the public key/thumbprint may leave the host.
+2. Produce one local enrollment receipt recording the manifest digest, public-key identifier, current Windows SID, exact code/checkout identity, workspace root, policy version and result.
+3. Prepare one enrollment manifest containing public-key metadata through a dedicated PR in the private repository. The Owner must explicitly approve/merge that exact manifest; no local success message substitutes for the merge. The manifest does not embed its own future commit SHA, blob SHA or content digest.
+4. Fetch the exact merged manifest from canonical `main`; independently verify repository identity, merge/PR provenance, commit SHA, manifest path/blob SHA and exact bytes. Store the commit SHA, blob SHA and SHA-256 in the local receipt, compare the fetched public key/bindings with the pre-existing CNG key and receipt, and only then adjudicate the bounded G1 enrollment result.
+5. Keep all generated local state inside the dedicated IABV authority store; do not change the project checkout, Windows ACLs, registry, services, IPC endpoints or system security settings.
+
+A retry may not generate a second active root or silently replace a key. If a key already exists, reconcile its identifier and receipt; do not overwrite. A provider, repository, identity or exact-commit mismatch is a hard stop. If the manifest cannot be fetched or its current version/revocation state cannot be checked, enrollment stays inactive.
+
+### 9.3 Effects explicitly excluded
+
+This decision does **not** grant an MCP operation capability. During and after enrollment:
+
+- `MCP_TOOL_ALLOWLIST=EMPTY`; no tool receives an operation grant merely because G1 was enrolled.
+- `G2=NOT_ESTABLISHED` and `G3=NOT_ESTABLISHED` until independently implemented and verified.
+- `PROTECTED_READS=FAIL_CLOSED`: no protected repository/workspace content read, no use of `read_repo_file` or `list_repo_directory`, and no assumption that the M1B context-artifact reader closes G3.
+- No screenshots, clipboard reads, window/process enumeration, browser/login probing, arbitrary directory listing, subprocess execution, pytest/build/runtime, UI interaction, state-mutating tool, PR merge, service installation, ACL/IPC change, Entra resource/configuration change or tunnel.
+- No edits to `C:\Python`; no private key or credential copied to GitHub, chat, log or receipt.
+
+Thus the selected enrollment can establish only the identity and provenance of one local G1 issuer, not authorization to read content or perform side effects. Operation grants remain empty until G2 policy, G3 same-object target binding and per-tool enforcement are all established.
+
+### 9.4 State transition and stop rules
+
+Before this exact documentary exception is explicitly approved and merged into canonical `main`, the prior absolute no-bootstrap rule remains in force and none of the effects below are authorized by this proposal. After that merge, the rule is narrowed only for the explicit Owner-controlled one-time enrollment effect set in §9.2 and only subject to its stated stop conditions. Automatic/self-bootstrap remains prohibited. No protected-read, G2/G3, tool, or bridge-activation permission is implied. The later Owner approval and authenticated merge of the exact manifest is a separate authorization event for the specific initial identity; it is not supplied by this document merge.
+
+```text
+OWNER_DECISION=INITIAL_TRUST_MECHANISM_SELECTED; EFFECT_BUDGET_DEFINED; DOCUMENTARY_EXCEPTION_PENDING
+INITIAL_TRUST_SOURCE=OWNER_APPROVED_GITHUB_ENROLLMENT_MANIFEST
+MANIFEST_SELF_REFERENCE=PROHIBITED
+COMMIT_SHA_BLOB_SHA_CONTENT_SHA256=POST_MERGE_LOCAL_RECEIPT_ONLY
+LOCAL_KEY_CUSTODY=WINDOWS_CNG_NONEXPORTABLE; TPM_PROVIDER_PREFERRED; ASSURANCE_RECORDED
+OWNER_CONTROLLED_ONE_TIME_ENROLLMENT=PROPOSED; EFFECTIVE_ONLY_AFTER_EXACT_DOCUMENTARY_EXCEPTION_MERGES_TO_MAIN
+AUTOMATIC_BOOTSTRAP=FALSE
+KEY_CREATED=NOT_RUN
+MANIFEST_MERGED=NOT_RUN
+G1=NOT_ESTABLISHED_UNTIL_EXACT_MAIN_FETCHBACK_AND_LOCAL_BINDING_VERIFY
+G2/G3=NOT_ESTABLISHED
+MCP_TOOL_ALLOWLIST=EMPTY
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+MANIFEST_OWNER_APPROVAL_AND_MERGE=SEPARATE_FUTURE_IDENTITY_AUTHORIZATION_EVENT
+MERGE_OF_PRODUCT_CANDIDATE=NOT_AUTHORIZED
+TESTS/BUILD/RUNTIME=NOT_RUN_BY_THIS_DOCUMENT_TASK
+```
+
+Evidence reconciliation (2026-10-29): the 2026-10-28 note that Codex reported an authenticated `gh api`/Contents route and that GitHub metadata was `private` is historical and was not reverified as a credential route here. Current GitHub metadata verifies repository ID `860009771` and visibility `public`; the live `main` is `20755570e078f132e44de3af7d235b48b63a98ae`, and its `CURRENT-STATE.md` blob is `3aa7acb595103009d38c5cb0c67d131a172dfaa6`. The PR #557 head is `2e16e259001aa671b7ddc2c43763880543e459ad`, where this decision document is blob `4ab1dc596d2f64a9aa9015e86a687f5889acc737`. This session verified public GitHub API/blob reads and noninteractive Git ref reads only: `PUBLIC_CANONICAL_READ=VERIFIED`; `LOCAL_AUTHENTICATED_GITHUB_CLI=NOT_REVERIFIED`; `MANIFEST_FETCHBACK=NOT_APPLICABLE_YET`. Exact future manifest merge provenance and bytes must still be verified; public availability is not authority. Branch-protection/rulesets were not checked in this task and remain `UNKNOWN`.
+
+This does **not** prove that a future manifest exists or that its exact bytes have been fetched; `MANIFEST_FETCHBACK=NOT_APPLICABLE_YET`. The original 2026-10-28 note records a Codex-reported HTTP 403 for branch-protection/ruleset reads. This task did not recheck those settings; `BRANCH_RULESET=UNKNOWN`, and required-review/no-bypass guarantees must not be claimed.
+
+After this documentary exception is explicitly approved and merged into canonical `main`, the next technical action may be to implement and review the bounded enrollment path in an isolated candidate with synthetic positive and negative tests, reusing the existing M1A composition route rather than creating a duplicate design PR. Until then, do not create a key or manifest or run enrollment. Once the exact candidate source and tests have been reviewed and accepted, any later enrollment must remain within the effect budget and require the separate Owner approval/merge of the exact manifest, followed by verification of its exact canonical commit and bytes against the local receipt. If Windows CNG provider access, safe key custody or exact manifest provenance/fetch-back fails, stop at that named edge; do not bypass it, create replacement credentials, or broaden the scope.
+
+## 10. Evidence and references
+
+- [PR #549 — Entra HTTP authentication candidate](https://github.com/jhonf463r/Python/pull/549): authentication-only; does not establish G1/G2/G3.
+- [PR #555 — bounded context artifact reader](https://github.com/jhonf463r/Python/pull/555): reuse/review this existing candidate; do not republish.
+- [PR #556 — fail-closed M1A/M1F composition](https://github.com/jhonf463r/Python/pull/556): intentionally retains an unconfigured coordinator and no positive authority providers.
+- [PR #557 — UAAL-D021 route-truth proposal](https://github.com/jhonf463r/Python/pull/557): this design addendum is proposed on that branch, not canonical until authorized integration and fetch-back.
+- [Authority Producer Contract after UAC blocker](./CHAT-ARCH-2026-10-27-M1A-AUTHORITY-PRODUCER-CONTRACT-DESIGN-AFTER-UAC-BLOCKER.md).
+- [G1–G3 implementation prerequisite matrix](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-implementation-prerequisite-evidence-gate-matrix.md).
+- [Microsoft Entra claim validation](https://learn.microsoft.com/en-us/entra/identity-platform/claims-validation).
+- [Windows CNG key storage providers](https://learn.microsoft.com/en-us/windows/win32/seccertenroll/cng-key-storage-providers).
+- [Windows named-pipe security](https://learn.microsoft.com/en-us/windows/win32/ipc/named-pipe-security-and-access-rights).
+
+## 11. Current evidence boundary
+
+DESIGN=PROPOSED_ON_DRAFT_PR; NOT_CANONICAL
+REPOSITORY_ID=860009771; VISIBILITY=PUBLIC; GITHUB_API_VERIFIED
+INITIAL_TRUST_MECHANISM=OWNER_APPROVED_GITHUB_ENROLLMENT_MANIFEST
+LOCAL_AUTHENTICATED_GITHUB_CLI=NOT_REVERIFIED; PRIOR_ROUTE_REPORT=OWNER_CODEX_REPORTED
+LIVE_MAIN_SHA=20755570e078f132e44de3af7d235b48b63a98ae; GITHUB_API_AND_GIT_REF_VERIFIED
+CURRENT_STATE_BLOB=3aa7acb595103009d38c5cb0c67d131a172dfaa6; GITHUB_BLOB_API_VERIFIED
+BRANCH_RULESET=UNKNOWN; ORIGINAL_2026-10-28_HTTP_403_OWNER_CODEX_REPORTED; NOT_RECHECKED_HERE
+MANIFEST_FETCHBACK=NOT_APPLICABLE_YET
+OWNER_CONTROLLED_ONE_TIME_ENROLLMENT=PROPOSED; EFFECTIVE_ONLY_AFTER_DOCUMENTARY_EXCEPTION_MERGES_TO_MAIN; NOT_RUN
+AUTOMATIC_BOOTSTRAP=FALSE
+KEY_CREATED=NOT_RUN
+MANIFEST_MERGED=NOT_RUN
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3=NOT_ESTABLISHED
+AUTHORITY_ASSETS=NOT_YET_BOUND_TO_NEW_ENROLLMENT
+MCP_TOOL_ALLOWLIST=EMPTY
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+ENROLLMENT_CANDIDATE_TESTS=NOT_RUN_IN_THIS_DOCUMENT_TASK
+PRODUCT_RUNTIME=NOT_RUN
+DOCUMENTARY_EXCEPTION_APPROVAL=NOT_YET_EFFECTIVE
+MERGE_OF_PRODUCT_CANDIDATE=NOT_AUTHORIZED
