@@ -1,7 +1,7 @@
 <!-- UAAL-D021 boot overlay, observed against main 79ab8c50eaa7518120d5ebed9db4747d395a21cb; detailed rules live in D021. -->
 ## Ruta operativa vigente — reconciliación entre sesiones (2026-10-29)
 
-**Fuente de ruta:** [CURRENT-STATE.md](./docs/history/CHAT-ARCH/CURRENT-STATE.md) es la única autoridad de enrutamiento. Los bloques fechados que siguen debajo son evidencia histórica salvo que la ruta actual los reactive explícitamente. Si un encabezado antiguo contradice el estado de GitHub en vivo, se clasifica como obsoleto/conflictivo; no se ejecuta como instrucción vigente.
+**Fuente de ruta:** [CURRENT-STATE.md](./CURRENT-STATE.md) es la única autoridad de enrutamiento. Los bloques fechados que siguen debajo son evidencia histórica salvo que la ruta actual los reactive explícitamente. Si un encabezado antiguo contradice el estado de GitHub en vivo, se clasifica como obsoleto/conflictivo; no se ejecuta como instrucción vigente.
 
 ### Estado reconciliado con GitHub en vivo al preparar esta revisión
 
