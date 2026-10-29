@@ -411,6 +411,8 @@ def _open_component(parent: int, name: str, *, directory: bool) -> OwnedWindowsH
             raise WindowsHandleReaderError("REPARSE_POINT_DENIED")
         standard = _FILE_STANDARD_INFO()
         _query(result.borrow(), _FILE_STANDARD_INFO_CLASS, standard)
+        if standard.NumberOfLinks != 1:
+            raise WindowsHandleReaderError("HARD_LINK_DENIED")
         if bool(standard.Directory) is not directory:
             raise WindowsHandleReaderError("TARGET_TYPE_MISMATCH")
         return result
@@ -623,9 +625,7 @@ def _list_opened_directory_handle(target: OpenedTargetCapability, raw: int, *, m
                     "sensitive": audit_name_is_sensitive(name),
                 })
                 if len(entries) > cap:
-                    entries.pop()
-                    truncated = True
-                    return {"path": target.relative_target, "entries": entries, "truncated": truncated}
+                    raise WindowsHandleReaderError("AUTHORIZED_DIRECTORY_ENTRY_LIMIT_EXCEEDED")
             if next_offset == 0:
                 break
             if next_offset < _FILE_ID_BOTH_DIR_INFO.FileName.offset or offset + next_offset >= len(buffer):

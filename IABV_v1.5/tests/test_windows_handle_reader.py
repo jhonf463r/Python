@@ -461,6 +461,238 @@ def test_directory_enumerator_queries_the_authorized_handle(monkeypatch: pytest.
     assert observed_handles == [authorized_handle]
 
 
+def _directory_records(names: list[str]) -> ctypes.Array[ctypes.c_char]:
+    buffer = ctypes.create_string_buffer(64 * 1024)
+    record_size = reader._FILE_ID_BOTH_DIR_INFO.FileName.offset
+    offsets: list[int] = []
+    offset = 0
+    for name in names:
+        offsets.append(offset)
+        encoded_size = len(name.encode("utf-16-le"))
+        offset += (record_size + encoded_size + 7) & ~7
+    for index, (name, offset) in enumerate(zip(names, offsets, strict=True)):
+        record = reader._FILE_ID_BOTH_DIR_INFO.from_buffer(buffer, offset)
+        encoded = name.encode("utf-16-le")
+        record.FileNameLength = len(encoded)
+        record.FileAttributes = 0
+        ctypes.memmove(ctypes.addressof(buffer) + offset + record_size, encoded, len(encoded))
+        if index + 1 < len(offsets):
+            record.NextEntryOffset = offsets[index + 1] - offset
+    return buffer
+
+
+def _directory_target(handle: int = 948) -> reader.OpenedTargetCapability:
+    return reader.OpenedTargetCapability(
+        handle=reader.OwnedWindowsHandle(handle),
+        operation="list_repo_directory",
+        relative_target="docs",
+        workspace_id="synthetic-workspace",
+        checkout_id="synthetic-checkout",
+        resolver_version="synthetic-resolver-v1",
+        root_binding_id="synthetic-root-binding",
+        policy_binding_id="synthetic-policy-binding",
+    )
+
+
+def _install_directory_query(monkeypatch: pytest.MonkeyPatch, names: list[str]) -> None:
+    buffer = _directory_records(names)
+    calls = 0
+
+    def query(_handle, _kind, output, _size):
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            ctypes.memmove(output, buffer, len(buffer))
+            return 1
+        monkeypatch.setattr(reader.ctypes, "get_last_error", lambda: reader._ERROR_NO_MORE_FILES)
+        return 0
+
+    class NativeCall:
+        argtypes = None
+        restype = None
+
+        def __call__(self, *args):
+            return query(*args)
+
+    monkeypatch.setattr(
+        reader, "_windows_apis",
+        lambda: (SimpleNamespace(GetFileInformationByHandleEx=NativeCall()), object()),
+    )
+
+
+def _install_native_close(monkeypatch: pytest.MonkeyPatch, close_calls: list[int]) -> None:
+    class CloseHandle:
+        argtypes = None
+        restype = None
+
+        def __call__(self, handle):
+            close_calls.append(int(handle.value))
+            return 1
+
+    monkeypatch.setattr(reader, "os", SimpleNamespace(name="nt"))
+    monkeypatch.setattr(reader.ctypes, "WinDLL", lambda *_args, **_kwargs: SimpleNamespace(CloseHandle=CloseHandle()), raising=False)
+
+
+def test_directory_enumerator_returns_sorted_complete_result_at_exact_cap(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _install_directory_query(monkeypatch, ["z.txt", "a.txt", "m.txt"])
+
+    result = reader.list_opened_directory(_directory_target(), max_entries=3)
+
+    assert [entry["name"] for entry in result["entries"]] == ["a.txt", "m.txt", "z.txt"]
+    assert result["truncated"] is False
+
+
+def test_directory_enumerator_denies_without_partial_names_at_cap_plus_one(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _install_directory_query(monkeypatch, ["secret-a.txt", "secret-b.txt", "secret-c.txt"])
+    target = _directory_target()
+
+    with pytest.raises(reader.WindowsHandleReaderError) as exc:
+        reader.list_opened_directory(target, max_entries=2)
+
+    assert exc.value.reason == "AUTHORIZED_DIRECTORY_ENTRY_LIMIT_EXCEEDED"
+    payload = exc.value.to_payload()
+    payload["operation"] = "list_repo_directory"  # same denial envelope added by the MCP route
+    assert "entries" not in payload
+    assert payload["governance_blocked"] is True
+    assert payload["operation"] == "list_repo_directory"
+    assert all(name not in repr(payload) for name in ("secret-a.txt", "secret-b.txt", "secret-c.txt"))
+
+
+def test_mcp_directory_response_omits_entries_when_reader_denies(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from iabv_v15.infra.mcp import server as server_module
+
+    names = ["secret-a.txt", "secret-b.txt", "secret-c.txt"]
+    _install_directory_query(monkeypatch, names)
+    target = _directory_target()
+    closed: list[bool] = []
+    target.close = lambda: closed.append(True)
+
+    class ToolRegistryStub:
+        def __init__(self) -> None:
+            self.tools: dict[str, object] = {}
+
+        def tool(self):
+            def register(function):
+                self.tools[function.__name__] = SimpleNamespace(fn=function)
+                return function
+            return register
+
+    registry = ToolRegistryStub()
+    server = server_module.IABVMCPServer(SimpleNamespace(), mcp=registry)
+    monkeypatch.setattr(server, "_governance_block_for_route", lambda **_kwargs: None)
+    monkeypatch.setattr(server, "_approved_workspace_root", lambda: object())
+    monkeypatch.setattr(server, "_protected_read_authority_block", lambda **_kwargs: None)
+    monkeypatch.setattr(server_module.windows_handle_reader, "open_target", lambda *_args: target)
+
+    response = registry.tools["list_repo_directory"].fn(relative_path="docs", max_entries=2)
+
+    assert response["governance_blocked"] is True
+    assert response["reason"] == "AUTHORIZED_DIRECTORY_ENTRY_LIMIT_EXCEEDED"
+    assert response["operation"] == "list_repo_directory"
+    assert "entries" not in response
+    assert all(name not in repr(response) for name in names)
+    assert closed == [True]
+
+
+@pytest.mark.parametrize("link_count", [1, 2])
+def test_open_component_enforces_single_link_policy_and_closes_denied_handle(
+    monkeypatch: pytest.MonkeyPatch, link_count: int,
+) -> None:
+    handle_value = 949
+    close_calls: list[int] = []
+
+    class NativeCall:
+        argtypes = None
+        restype = None
+
+        def __init__(self, callback):
+            self.callback = callback
+
+        def __call__(self, *args):
+            return self.callback(*args)
+
+    def nt_create(output_pointer, *_args):
+        ctypes.cast(output_pointer, ctypes.POINTER(reader.wintypes.HANDLE)).contents.value = handle_value
+        return 0
+
+    monkeypatch.setattr(
+        reader, "_windows_apis",
+        lambda: (object(), SimpleNamespace(NtCreateFile=NativeCall(nt_create))),
+    )
+    _install_native_close(monkeypatch, close_calls)
+
+    def query(_handle, info_class, info):
+        if info_class == reader._FILE_ATTRIBUTE_TAG_INFO_CLASS:
+            info.FileAttributes = 0
+            return
+        info.NumberOfLinks = link_count
+        info.Directory = 0
+
+    monkeypatch.setattr(reader, "_query", query)
+
+    if link_count == 1:
+        opened = reader._open_component(700, "a.txt", directory=False)
+        assert opened.borrow() == handle_value
+        opened.close()
+        assert close_calls == [handle_value]
+        assert not opened.is_open
+    else:
+        with pytest.raises(reader.WindowsHandleReaderError) as exc:
+            reader._open_component(700, "a.txt", directory=False)
+        assert exc.value.reason == "HARD_LINK_DENIED"
+        assert close_calls == [handle_value]
+
+
+def test_open_component_denies_when_standard_metadata_query_fails_and_closes_handle(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    handle_value = 950
+    close_calls: list[int] = []
+
+    class NativeCall:
+        argtypes = None
+        restype = None
+
+        def __init__(self, callback):
+            self.callback = callback
+
+        def __call__(self, *args):
+            return self.callback(*args)
+
+    def nt_create(output_pointer, *_args):
+        ctypes.cast(output_pointer, ctypes.POINTER(reader.wintypes.HANDLE)).contents.value = handle_value
+        return 0
+
+    monkeypatch.setattr(
+        reader, "_windows_apis",
+        lambda: (object(), SimpleNamespace(NtCreateFile=NativeCall(nt_create))),
+    )
+    _install_native_close(monkeypatch, close_calls)
+    calls: list[int] = []
+
+    def query(_handle, info_class, info):
+        calls.append(info_class)
+        if info_class == reader._FILE_ATTRIBUTE_TAG_INFO_CLASS:
+            info.FileAttributes = 0
+            return
+        raise reader.WindowsHandleReaderError("WINDOWS_HANDLE_METADATA_QUERY_FAILED")
+
+    monkeypatch.setattr(reader, "_query", query)
+
+    with pytest.raises(reader.WindowsHandleReaderError) as exc:
+        reader._open_component(700, "a.txt", directory=False)
+
+    assert exc.value.reason == "WINDOWS_HANDLE_METADATA_QUERY_FAILED"
+    assert calls == [reader._FILE_ATTRIBUTE_TAG_INFO_CLASS, reader._FILE_STANDARD_INFO_CLASS]
+    assert close_calls == [handle_value]
+
+
 def _set_file_info(info: ctypes.Structure, size: int) -> None:
     info.Directory = 0
     info.EndOfFile = size
