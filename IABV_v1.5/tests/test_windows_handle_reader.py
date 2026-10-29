@@ -553,13 +553,28 @@ def test_directory_enumerator_denies_without_partial_names_at_cap_plus_one(
     with pytest.raises(reader.WindowsHandleReaderError) as exc:
         reader.list_opened_directory(target, max_entries=2)
 
-    assert exc.value.reason == "AUTHORIZED_DIRECTORY_ENTRY_LIMIT_EXCEEDED"
+    assert exc.value.reason == "LIST_LIMIT_EXCEEDED"
     payload = exc.value.to_payload()
     payload["operation"] = "list_repo_directory"  # same denial envelope added by the MCP route
     assert "entries" not in payload
     assert payload["governance_blocked"] is True
     assert payload["operation"] == "list_repo_directory"
     assert all(name not in repr(payload) for name in ("secret-a.txt", "secret-b.txt", "secret-c.txt"))
+
+
+def test_directory_enumerator_enforces_effective_200_entry_limit(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    names = [f"entry-{index:03d}.txt" for index in range(201)]
+    _install_directory_query(monkeypatch, names)
+
+    with pytest.raises(reader.WindowsHandleReaderError) as exc:
+        reader.list_opened_directory(_directory_target(), max_entries=250)
+
+    assert exc.value.reason == "LIST_LIMIT_EXCEEDED"
+    payload = exc.value.to_payload()
+    assert "entries" not in payload
+    assert all(name not in repr(payload) for name in names)
 
 
 def test_mcp_directory_response_omits_entries_when_reader_denies(
@@ -593,7 +608,7 @@ def test_mcp_directory_response_omits_entries_when_reader_denies(
     response = registry.tools["list_repo_directory"].fn(relative_path="docs", max_entries=2)
 
     assert response["governance_blocked"] is True
-    assert response["reason"] == "AUTHORIZED_DIRECTORY_ENTRY_LIMIT_EXCEEDED"
+    assert response["reason"] == "LIST_LIMIT_EXCEEDED"
     assert response["operation"] == "list_repo_directory"
     assert "entries" not in response
     assert all(name not in repr(response) for name in names)

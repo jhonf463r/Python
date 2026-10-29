@@ -625,7 +625,7 @@ def _list_opened_directory_handle(target: OpenedTargetCapability, raw: int, *, m
                     "sensitive": audit_name_is_sensitive(name),
                 })
                 if len(entries) > cap:
-                    raise WindowsHandleReaderError("AUTHORIZED_DIRECTORY_ENTRY_LIMIT_EXCEEDED")
+                    raise WindowsHandleReaderError("LIST_LIMIT_EXCEEDED")
             if next_offset == 0:
                 break
             if next_offset < _FILE_ID_BOTH_DIR_INFO.FileName.offset or offset + next_offset >= len(buffer):
