@@ -66,6 +66,19 @@ This is a method proposal on the documentation branch, not canonical main state 
 Before constructing a handoff for any publish/update/retest/clone/implementation action, query the live repository for an existing branch, commit, pull request, exact file blobs and reviews that can satisfy the objective. Bind each expected hash to an exact artifact revision and evidence stage; never compare an R3 receipt with R4 bytes as though they were the same candidate. If an entry snapshot conflicts with live `CURRENT-STATE.md`, the canonical route wins and the stale snapshot must be reconciled before action selection. Record existing route alternatives and why the selected action has greater target-edge utility. This refinement is proposed in the current documentation PR and is not canonical on `main` until integrated and fetched back.
 
 
+## Return-adjudication gate before the next handoff (proposed 2026-10-29)
+
+A returned review/execution receipt is not just an answer to summarize; it is an evidence package that must be adjudicated before another task is selected. On every material Claude/Sonnet, Codex or other actor return:
+
+1. Rebind the receipt to the current route and exact PR/ref/HEAD/base/files; preserve the verdict's original revision if the target moved.
+2. Decompose its claims into direct source evidence, static-review judgments, actor-reported execution, independently verified observations, inference, hypothesis, unknown and not-run.
+3. Compare the evidence with the original acceptance oracle, not with the headline `PASS`/`FAIL`.
+4. Mark each edge closed only at its demonstrated scope; static closure does not imply tests, runtime, integration, native Windows behavior, authority or bridge readiness.
+5. Update the world model and identify the first still-open causal/evidential edge. If the receipt lacks a necessary hash, line, command, output or scope detail, retrieve/request that detail only; do not rerun or re-prompt the entire task by default.
+6. Choose the next role/action only after adjudication, explain why that actor fits the live edge, and preserve authorization and stop conditions.
+
+The living [Space-Time protocol](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-23-CONTINUITY-SPACE-TIME-OPERATING-PROTOCOL-v1.md) defines the transition mechanics; [UAAL-D021 §8.6](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-28-UAAL-D021-ROUTE-TRUTH-ARTIFACT-IDENTITY-AND-ADVANCE-UTILITY.md#86-cross-chat-response-adjudication-and-state-transition-acceptance) defines discriminating acceptance cases. The README, CONTEXT-INDEX, AGENTS, CURRENT-STATE, MEMORY-OPERATING-PROTOCOL and SYMBIOSIS-MAP now point at this proposed rule. This is documentation-only on draft PR #557 and does not change the active M1A route or establish automatic cross-session enforcement. Canonical adoption requires authorized integration and exact `main` fetch-back.
+
 ## G1 enrollment handoff correction — exact evidence, no circular manifest (proposed 2026-10-28)
 
 When the current route concerns an initial trust enrollment, the coordinator must make a task contract that separates source/test implementation from one-time enrollment execution. A prompt for Codex must state which of these stages is authorized, its exact side-effect budget, prohibited actions, evidence to return and stop condition. Do not let “proceed” expand the scope to bridge activation, protected reads or tool grants.
