@@ -1,3 +1,43 @@
+## OVERRIDE — F-556-01/F-556-02 repair diff independently adjudicated at static scope (2026-10-29)
+
+The Owner supplied the complete 1,555-line diff in eight consecutive code blocks from Codex's external patch artifact. The reviewer inspected the visible patch text and persisted the bounded adjudication receipt: [M1A F-556-01/F-556-02 independent static diff adjudication](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-M1A-G1-F556-01-02-INDEPENDENT-STATIC-DIFF-ADJUDICATION.md).
+
+**Result at the demonstrated evidence stage:**
+- `F-556-01=CLOSED_AT_STATIC_REVIEW_SCOPE`: cap+1 raises `AUTHORIZED_DIRECTORY_ENTRY_LIMIT_EXCEEDED`; there is no partial-list return on that branch, successful lists are sorted, and the new stub-path test asserts no names/`entries` in the denial response.
+- `F-556-02=CLOSED_AT_STATIC_REVIEW_SCOPE`: after `_FILE_STANDARD_INFO` query, `NumberOfLinks != 1` raises `HARD_LINK_DENIED` inside the existing handle-cleanup boundary; the provided synthetic tests cover one-link success, multiple-link denial/close and query-failure denial/close.
+- These are source-level closures only. The reported `30 passed` and `git diff --check=0` remain `OWNER_CODEX_REPORTED`; no tests were run by the reviewer. The local source changes remain uncommitted/unpublished and are not present in PR #556 at its expected remote HEAD.
+- Native Windows/filesystem behavior is still unknown. The hard-link rule runs on intermediate/final directory components too; validate native `NumberOfLinks` values for ordinary directories and files and any relevant race/handle-sharing semantics before treating the containment policy as operational.
+- The patch's reported file digest/size and exact byte identity remain `OWNER_CODEX_REPORTED`; no .patch file attachment was available to independently recompute the artifact digest. The visibly pasted diff showed a few `+ ` blank-line markers despite the reported clean diff check, so literal-byte versus transcript-rendering status remains `UNKNOWN`, not a confirmed source defect.
+
+The next open edge is **authorized native Windows/filesystem conformance for the hard-link policy**, not another unchanged static review or immediate rerun of the 30-test suite. No native/runtime action is authorized by this adjudication. The source-level findings may be considered fixed for review scope; G1/G2/G3 remain unestablished.
+
+```text
+ACTIVE_TASK=M1A_G1_NATIVE_LINK_COUNT_CONFORMANCE_GATE_DESIGN_20261029
+M1A_PR=556
+M1A_EXPECTED_REMOTE_HEAD=e1b430956146c4aa0cadc1df2c3df92150b7f7ea
+F556_01=CLOSED_AT_STATIC_REVIEW_SCOPE
+F556_02=CLOSED_AT_STATIC_REVIEW_SCOPE
+SOURCE_DIFF_REVIEW=INSPECTED_FROM_OWNER_PASTED_PATCH
+PATCH_DIGEST_INDEPENDENTLY_RECOMPUTED=FALSE
+TARGETED_TESTS=30_PASSED; OWNER_CODEX_REPORTED; NOT_RERUN_BY_REVIEWER
+GIT_DIFF_CHECK=PASS; OWNER_CODEX_REPORTED
+NATIVE_WINDOWS_CONFORMANCE=NOT_RUN
+LOCAL_CODE_PUBLICATION=NOT_DONE
+OPTION_D=RATIFIED_NO_BOOTSTRAP
+G1/G2/G3=NOT_ESTABLISHED
+MCP_TOOL_ALLOWLIST=EMPTY
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+PRODUCT_CANDIDATE_MERGE=NOT_AUTHORIZED
+C:\\Python=DO_NOT_TOUCH
+AUTOMATIC_FOLLOW_ON=FALSE
+```
+
+This is a proposed update on draft PR #557 only. Canonical `main` has not adopted this route.
+
+---
+
 ## OVERRIDE — Codex reports bounded F-556-01/F-556-02 local repair and 30 focused tests pass; independent diff remains open (2026-10-29)
 
 This update is a continuity proposal on draft PR #557 only. It records the Owner-supplied Codex receipt for the uncommitted local worktree; the exact changed source/test bytes remain unavailable to this session and are **not** published to GitHub. It does not convert the local report into an independently verified source review or test execution claim.
