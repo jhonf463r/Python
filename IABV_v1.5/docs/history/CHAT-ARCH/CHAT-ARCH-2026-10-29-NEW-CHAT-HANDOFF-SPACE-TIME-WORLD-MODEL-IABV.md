@@ -1,3 +1,36 @@
+## Addendum — Owner authorizes exact two-file commit/push to existing PR #556 (2026-10-29)
+
+The Owner explicitly authorized Codex to commit and push only the two reviewed M1A files to the existing branch backing PR #556. See the authorized exact-scope contract at [proposed CURRENT-STATE](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CURRENT-STATE.md). This is publication to a draft PR, not a merge or product activation.
+
+Preflight identity:
+- Worktree: `C:\\_w\\m1a-composition-r3-20261028`
+- Local branch: `codex/m1a-current-main-fail-closed-20261028`
+- Expected parent HEAD: `e1b430956146c4aa0cadc1df2c3df92150b7f7ea`
+- PR #556 base: `79ab8c50eaa7518120d5ebed9db4747d395a21cb`
+- Source file final blob expected: `2facf2a4447d1acff69b1845390355902160dbfa`, SHA-256 `59ede3b64cc20bb71fc6e0300572aab174221e8e9d5abd723b6b62efad46690e`.
+- Test file final blob expected: `1e72fc6e50a91678964bed38b05b82a9d8a4683f`, SHA-256 `ac8b5c101f2cb832debce53586bbffc6dc8272e9cc75e15897479235d56237ff`.
+
+Only these two paths may be staged, committed and pushed:
+1. `IABV_v1.5/src/iabv_v15/infra/mcp/windows_handle_reader.py`
+2. `IABV_v1.5/tests/test_windows_handle_reader.py`
+
+Codex must verify all preconditions, check the current remote branch tip before pushing, use explicit path-only staging (never `git add .` or `git add -A`), verify the staged list and diff, create one focused commit, push fast-forward only to the existing PR branch, then independently fetch back the remote blobs and record the commit/parent and final PR state. If HEAD/hash/scope differs, or remote movement makes a fast-forward unsafe, stop without cleaning, resetting, rebasing or force pushing.
+
+No tests/build/native probe rerun is required for this publication task. No merge, main mutation, extra source edits, server/MCP, protected reads, credentials, enrollment, tunnel or bridge activation are authorized. `C:\\Python` remains forbidden.
+
+The native conformance receipt reported a pass only for its sampled Windows 11 build 10.0.26300 / NTFS fixture; F-556-01 and F-556-02 remain closed at static review scope, with native behavior bounded to those observations. Regardless of successful publication, `G1/G2/G3=NOT_ESTABLISHED`, `PROTECTED_READS=FAIL_CLOSED`, `BRIDGE=BRIDGE_NOT_READY`.
+
+```text
+ACTIVE_TASK=M1A_G1_F556_01_02_COMMIT_PUSH_EXISTING_PR_556_20261029
+OWNER_AUTHORIZATION=EXPLICIT_TWO_PATH_COMMIT_AND_PUSH
+TESTS/BUILD/RUNTIME=NOT_RUN_FOR_PUBLICATION_TASK
+MERGE=NOT_AUTHORIZED
+NEXT_ACTION=CODEX_PUBLISH_EXACT_TWO_PATHS_AND_VERIFY_REMOTE_FETCHBACK
+C:\\Python=DO_NOT_TOUCH
+```
+
+---
+
 ## Addendum — native link-count conformance receipt adjudicated (2026-10-29)
 
 Codex returned NATIVE_PROBE_COMPLETE for the Owner-authorized native conformance task. The receipt has been persisted at [M1A native link-count conformance receipt](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-M1A-G1-NATIVE-LINK-COUNT-CONFORMANCE-RECEIPT.md).
