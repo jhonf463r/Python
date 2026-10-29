@@ -1,4 +1,4 @@
-<!-- UAAL-D021 activation overlay refreshed against main 0691d5ff1b2a4a72ebde012c864625b354fad16a; volatile route status belongs only to CURRENT-STATE.md. -->
+<!-- UAAL-D021 activation pointer; CURRENT-STATE.md owns live routing and volatile status. -->
 ## Memory Operating Protocol — live route — fresh route, no copied state (2026-10-29)
 
 [CURRENT-STATE.md](./CURRENT-STATE.md) is the sole authority for ACTIVE_TASK, NEXT_ACTION, technical gates and current permissions. This entry is a pointer, not a second state store. Refresh live refs/heads/main at the start of each new material session; read the active route from that exact revision. If its normal read returns empty, retrieve the exact blob by SHA.
@@ -10,9 +10,9 @@ Activate the existing operating lineage as relevant to the objective:
 
 For each material handoff, rebind evidence to exact source/ref/blob and time; distinguish verified observations, actor reports, inference, hypotheses, unknowns and not-run actions; define an observable and stop condition; then verify the outcome and fetch back authorized writeback. A link or saved file does not prove another chat received or used the memory.
 
-Canonical method: [UAAL-D021](./CHAT-ARCH-2026-10-29-UAAL-D021-CROSS-SESSION-BOOT-AND-STATE-RECONCILIATION.md). First recorded bounded later-task application: [reuse receipt](./CHAT-ARCH-2026-10-29-UAAL-D021-FIRST-LATER-TASK-REUSE-RECEIPT.md).
+Canonical method: [UAAL-D021](./CHAT-ARCH-2026-10-29-UAAL-D021-CROSS-SESSION-BOOT-AND-STATE-RECONCILIATION.md). First bounded reuse receipt: [first receipt](./CHAT-ARCH-2026-10-29-UAAL-D021-FIRST-LATER-TASK-REUSE-RECEIPT.md). Second bounded reuse receipt: [second receipt](./CHAT-ARCH-2026-10-29-UAAL-D021-SECOND-LATER-TASK-REUSE-RECEIPT.md). Fresh-chat boot test: [independent-session handoff](./CHAT-ARCH-2026-10-29-UAAL-D021-INDEPENDENT-FRESH-CHAT-BOOT-TEST.md).
 
-Current method status: one non-identical-task reuse is verified; generalization and automatic boot in every future chat remain unproven. Technical gates and permissions are controlled only by CURRENT-STATE.
+Current method status, reuse evidence, next action, technical gates and permissions are owned only by CURRENT-STATE.md; this entry is a pointer, not a second state store.
 
 ---
 
