@@ -1,3 +1,29 @@
+## Addendum after Codex F-556-01/F-556-02 local repair receipt — 2026-10-29
+
+Codex has returned a receipt for task `M1A_G1_F556_01_02_BOUNDED_REPAIR_AND_CONFORMANCE_20261029`. It reports a two-file uncommitted local diff at worktree `C:\\_w\\m1a-composition-r3-20261028`, local HEAD still `e1b430956146c4aa0cadc1df2c3df92150b7f7ea`, and 30 focused tests passing. The changed files and hashes, test command and results are retained in the [local repair receipt](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-M1A-G1-F556-01-02-CODEX-LOCAL-REPAIR-RECEIPT.md).
+
+This is an `OWNER_CODEX_REPORTED` local result, not an independent final-source review. No final source/test bytes have been published or fetched by this session. F-556-01 and F-556-02 remain `FIX_REPORTED_LOCAL; INDEPENDENT_DIFF_REVIEW_PENDING`. Do not rerun the already reported focused suite without a changed candidate or a specific new test concern.
+
+**Next open dependency:** obtain the exact final unified diff for the two files from the existing worktree and provide that exact text to an independent reviewer, without modifying or publishing the worktree. Review the actual changed bytes, specifically overflow denial and no partial-name disclosure, exact-cap sorted success, `NumberOfLinks` enforcement before access, error reason compatibility, query-failure behavior, and handle closure. Synthetic tests do not establish native Windows conformance.
+
+```text
+ACTIVE_TASK=M1A_G1_F556_01_02_EXACT_DIFF_EXPOSURE_AND_INDEPENDENT_ADJUDICATION_20261029
+CODE_CANDIDATE=PR_556; REMOTE_HEAD=e1b430956146c4aa0cadc1df2c3df92150b7f7ea
+LOCAL_WORKTREE=OWNER_REPORTED; UNCOMMITTED; UNPUBLISHED
+TESTS=30_PASSED; OWNER_CODEX_REPORTED
+EXACT_DIFF_AVAILABLE_TO_REVIEWER=FALSE
+NEXT_ACTION=EXPORT_OR_PRINT_EXACT_UNIFIED_DIFF; INDEPENDENT_REVIEW
+G1/G2/G3=NOT_ESTABLISHED
+MCP_TOOL_ALLOWLIST=EMPTY
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+MERGE=NOT_AUTHORIZED
+C:\\Python=DO_NOT_TOUCH
+```
+
+---
+
 ## Addendum after Claude M1A R1 result — 2026-10-29
 
 This addendum supersedes only the M1A review-pending/next-action statements in the snapshot below; it does not rewrite their historical meaning. Always follow the live proposed [`CURRENT-STATE.md`](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CURRENT-STATE.md) before acting.
