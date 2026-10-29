@@ -127,20 +127,11 @@ The exact missing contract is not “more memory”. It is **consistent, verifia
 
 ## 6. Next discriminating action
 
-The bounded, read-only fixture plan has now been prepared in the companion [RSK-01 candidate-set currentness and provenance matrix](./CHAT-ARCH-2026-10-29-RSK-01-CANDIDATE-SET-CURRENTNESS-FIXTURE-MATRIX.md). It is a specification only and has **not** been executed.
+The read-only fixture plan is now prepared in the companion [RSK-01 candidate-set currentness and provenance matrix](./CHAT-ARCH-2026-10-29-RSK-01-CANDIDATE-SET-CURRENTNESS-FIXTURE-MATRIX.md). It contains six frozen-source candidates, eight objective queries, expected adjudications, falsifiers, consumer-by-consumer coverage and the evidence/metrics to collect. It is a specification only; it has **not** been executed.
 
-The matrix covers at least:
+The next causal step is to review that matrix/contract and obtain a separate, explicit authorization for any execution or implementation. Do not automatically turn the design into code. If execution is later authorized, pin the then-live main and re-fetch the listed fixtures first; record the actual candidate IDs, source SHAs, consumer path, exclusions, ranking rationale and resulting answer for every query.
 
-1. one current routing-authoritative claim from `CURRENT-STATE.md`;
-2. one negative/unresolved claim from `UNRESOLVED-KNOWLEDGE.md`;
-3. one historical or explicitly superseded route;
-4. one current code/subsystem record from `SystemIdentityRegistry` or `SelfCodeAnalysis`;
-5. one decision/audit record with an exact evidence reference;
-6. one duplicate or contradictory record.
-
-For every item and each relevant retrieval entry point, specify the expected candidate inclusion/exclusion, exact source/revision identity, authority/currentness label, relation to other items, ranking rationale, consumer and evidence needed for verification. This fixture matrix must make stale-current, duplicate-amplification, missing-provenance and “similarity overrides authority” failures observable.
-
-After the matrix/contract is reviewed, a separate authorized execution or implementation task may assess the smallest composition change using existing services. Until then:
+Until such authorization:
 - no new index/graph/brain/service;
 - no changes to `CURRENT-STATE.md` or the other chat's canonical lane;
 - no runtime/bridge/stdio setup;
