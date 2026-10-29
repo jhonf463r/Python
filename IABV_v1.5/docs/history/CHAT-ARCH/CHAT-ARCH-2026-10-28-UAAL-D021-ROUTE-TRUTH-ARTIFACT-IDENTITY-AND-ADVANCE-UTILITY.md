@@ -74,6 +74,86 @@ ARTIFACT_ID = {
 - Do not publish, rewrite, reformat or reimplement until the mismatch class is known and a minimal authorized correction is justified.
 - Git blob SHA and file SHA-256 identify different things; record their algorithms and do not conflate them.
 
+### Gate D0 — objective-conditioned system landscape and cross-domain transfer
+
+D019 already supplies the causal-frontier loop and D020 supplies progress-utility selection. This gate makes them portable across different problem domains by requiring a minimum sufficient model of the *specific system path* affected by the Owner's objective. It is a diagnostic frame, not a new router, memory store, universal service, or claim that the system is conscious.
+
+#### A. Normalize the objective before diagnosing the solution
+
+Create a compact `OBJECTIVE_CONTRACT` before choosing a tool, actor, code change or research branch:
+
+```text
+OBJECTIVE_CONTRACT = {
+  desired_observable_outcome,
+  acceptance_oracle_and_failure_condition,
+  target_object_or_system_and_revision,
+  scope_and_explicit_no_go,
+  authorized_effect_budget_and_hard_constraints,
+  current_observation_and_provenance,
+  stop_or_switch_condition
+}
+```
+
+Use the Owner's actual objective, not merely the latest noun/topic in conversation. Do not silently replace a desired outcome with a convenient subtask. If a field is not needed for this decision, mark it not applicable; if material and unknown, keep it unknown and select a bounded discriminating read or ask one necessary question. Do not invent an acceptance oracle.
+
+#### B. Map the minimum sufficient causal landscape
+
+Trace only the path capable of changing the target outcome, but trace it end to end far enough to distinguish a local symptom from an operative cause:
+
+```text
+DESIRED_OUTCOME
+  <- ACCEPTANCE_ORACLE / OBSERVATION
+  <- EFFECTIVE_OPERATION / SELECTED_REALIZATION
+  <- CONSUMER_OR_DECISION
+  <- TRANSFORMATION / CONTRACT
+  <- PRODUCER / SOURCE_OF_TRUTH
+  <- PRECONDITIONS / IDENTITY / AUTHORITY / ENVIRONMENT
+```
+
+Persistence, later retrieval and feedback are downstream edges when the objective concerns continuity, learning or coordination. Include them only when they affect the target outcome. Name the actual producer, transformation and consumer; a class, registry entry, document, protocol, comment or test double proves existence at its own layer, not that the normal caller reaches it or consumes its result.
+
+This is a *minimum sufficient landscape*, not permission to launch another broad inventory. Stop expanding when the required claim can be adjudicated or when a specific missing edge is identified. Record excluded surfaces and coverage, for example `13/33 files inspected in depth; remaining files UNKNOWN`, so a bounded review cannot silently become a claim about the full system.
+
+#### C. Classify the failure using diagnostic lenses, not a single rigid taxonomy
+
+Apply only the lenses relevant to the objective, allowing several at once:
+
+- objective/domain semantics and acceptance;
+- canonical state, route and temporal freshness;
+- artifact, actor, executable or evidence provenance;
+- data/schema/contract shape and identity binding;
+- required capability versus selected realization and caller-to-consumer wiring;
+- authorization, prerequisites and resource/environment constraints;
+- effective operation, hidden defaults and side effects;
+- execution stage, observation and independent oracle;
+- persistence, reconciliation, feedback and later reuse.
+
+For each candidate explanation, record `OBSERVED`, `INFERENCE`, `HYPOTHESIS` or `UNKNOWN`, the exact affected edge, supporting source, expected distinguishing observation and a falsifier. Do not promote the most narratively plausible explanation to root cause without discriminating evidence.
+
+#### D. Transfer invariants, not recipes
+
+When moving from one domain to another, preserve the structure of a proven rule only after mapping its semantics into the new domain:
+
+```text
+SOURCE_EPISODE
+  -> CANDIDATE_INVARIANT
+  -> TARGET_DOMAIN_MAPPING
+  -> DOMAIN_SPECIFIC_CONSTRAINTS
+  -> POSITIVE_CASE_AND_NON_MATCH_OR_FALSIFIER
+  -> BOUNDED_DISCRIMINATING_CHECK
+  -> VERIFIED_TRANSFER_OR_RETAINED_HYPOTHESIS
+```
+
+Example: “declared intent is not effective behavior” can transfer from CLI invocation to a different adapter, but the actual fields that define effective behavior must be re-derived for that adapter. GitHub host/argv details do not transfer literally to a database, a file reader or a planning problem. Similar names and analogies are candidate-generation aids, not equivalence proof. If the semantic mapping cannot be demonstrated, keep the proposed transfer as `HYPOTHESIS`, not an active invariant.
+
+A later non-identical application must show which decision changed because of the invariant, what evidence supported that decision, and what outcome followed. Retrieval, agreement, a link or a new document does not establish transfer or learning.
+
+#### E. Choose the smallest action that changes the decision
+
+For each admissible candidate route, state: target edge; prior attempt and terminal stage; causal difference; predicted observation for each plausible result; verification source; cost/Owner burden; reversibility; and stop/switch condition. Hard authorization and safety constraints filter candidates first. Among the rest, prioritize direct edge closure, then decision-changing information gain, reuse of an existing realization, and minimum side effects/preparation.
+
+If a task-local edge is terminal, keep it closed while selecting independent authorized progress under D019's dual-track rule. Do not treat the blocked edge as a project-wide stop, and do not manufacture activity when all remaining actions are unauthorized or low-information.
+
 ### Gate D — advance contract and action choice
 
 Extend UAAL-D020's `ADVANCE_CONTRACT` with:
