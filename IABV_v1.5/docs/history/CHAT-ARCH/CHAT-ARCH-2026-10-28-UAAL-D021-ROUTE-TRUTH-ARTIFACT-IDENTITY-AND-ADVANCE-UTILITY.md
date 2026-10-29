@@ -287,7 +287,7 @@ These are documentary acceptance cases. This session did not execute tests, buil
 
 Observed:
 - M1B R4 is published in draft PR #555; exact source SHA-256 values were independently computed from remote text and match the R4 values in that PR.
-- PR #555 has a static review reporting no blocking functional defect and recording residual limitations.
+- Claude/Sonnet R2 independently reviewed the exact delta from `6c601c99bb9cc2111f9dde2f6986aefcc0393785` to `c36ee5ed177a3b5afee764c277cc4a8b243594c8` and returned `PASS`, with F-01 and F-02 `CLOSED_BY_STATIC_REVIEW`. The result is limited to the two exact files; the reported Codex pytest results remain `OWNER_REPORTED`, and the residual TOCTOU limitation is unchanged. The full receipt is [M1B F-01/F-02 static review R2](CHAT-ARCH-2026-10-28-M1B-F01-F02-STATIC-REVIEW-R2-RECEIPT.md).
 - The original M1B R4 receipt reported 34 passing cases before F-01/F-02. After the exact-head correction at c36ee5ed177a3b5afee764c277cc4a8b243594c8, Codex reports 3/3 focused cases and 37/37 full reader-file cases passing through an API-backed minimal harness. This session independently reconciled the published HEAD and file identities but did not rerun pytest; the result remains OWNER_CODEX_REPORTED, scoped to that harness rather than a full repository checkout. See [the exact-head validation receipt](CHAT-ARCH-2026-10-28-M1B-F01-F02-TARGETED-VALIDATION-RECEIPT.md).
 - PR #556 remains a separate M1A source-only parallel line.
 - This audit also found that the first M1B route correction left an older `PUBLISH_EXISTING_LOCAL_FILES` action in the historical tail of `CURRENT-STATE.md`. The same PR branch now marks that tail as non-operative history and records the live next action at the top. This is `METHOD_APPLIED` with branch fetch-back evidence for this episode; `LATER_CAUSAL_REUSE=NOT_PROVEN`.
@@ -317,3 +317,16 @@ Codex switched to a bounded realization: retrieve only the exact reader and test
 The method change is the important reusable delta: a blocked realization does not automatically close the objective. Choose the smallest valid alternate realization only when its coverage is adequate for the claim, preserve exact-source provenance, disclose environmental/configuration differences, and keep the original failed route closed. Do not bypass cleanup policy to improve the receipt.
 
 This is reported execution evidence from Codex, not an independent pytest rerun in this session. The test result does not address the residual filesystem TOCTOU limitation or establish bridge authority/readiness. This section and D021 remain proposals on the draft documentation branch until authorized integration and canonical fetch-back.
+
+## 7. Independent static delta review R2 (2026-10-28)
+
+Claude/Sonnet reports a read-only static comparison of the exact R1 and R2 contents from GitHub. The declared/current HEAD is `c36ee5ed177a3b5afee764c277cc4a8b243594c8`, base `79ab8c50eaa7518120d5ebed9db4747d395a21cb`; both SHA-256 identities match the published source and test blobs recorded in the detailed receipt.
+
+The reviewer reports that the complete two-file diff consists only of the `parse_constant` rejection function and parser argument in the reader, plus the three-value parametrized test. The `ValueError` falls into the pre-existing R1 fail-closed handler, producing `UNAVAILABLE`, `ARTIFACT_INVALID_OR_UNREADABLE`, and no content. No regressions were found within the reviewed delta.
+
+Disposition: `F01=CLOSED_BY_STATIC_REVIEW`; `F02=CLOSED_BY_STATIC_REVIEW`; `VERDICT=PASS` for the bounded delta. This closes the two R1 findings within the reviewed scope; it does not certify the full reader's security properties or the whole PR.
+
+Evidence boundary: the review did not run pytest or the module. Codex reports the focused three cases and the full reader test file passed in a minimal harness, but those results remain `OWNER_REPORTED` and are not full-repository verification. The harness omitted repository pytest configuration. The `resolve() -> open()` TOCTOU issue remains a previously known residual limitation; the new test lines' exact CRLF/LF status remains `UNKNOWN` in Claude's receipt.
+
+The next project question is not whether to reimplement F-01/F-02. It is the authorized lifecycle decision for the existing candidate and the distinct G1 prerequisites. No static review or passing reader-test result establishes G1/G2/G3, authorizes protected reads, or activates the bridge. This is evidence and method documentation on the draft branch; canonical adoption requires separate authorized integration and main fetch-back.
+
