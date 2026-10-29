@@ -1,17 +1,43 @@
-<!-- Current M1B continuity override 2026-10-28; CURRENT-STATE.md is the sole route authority. -->
-## Current M1B frontier — local candidate, tests reported, not yet published (2026-10-28)
+<!-- UAAL-D021 boot overlay, observed against main 79ab8c50eaa7518120d5ebed9db4747d395a21cb; detailed rules live in D021. -->
+## Ruta operativa vigente — reconciliación entre sesiones (2026-10-29)
 
-Latest route: [CURRENT-STATE.md](https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CURRENT-STATE.md). M1B has a local candidate and Codex reports 34 targeted tests passed on Python 3.13.2/pytest 9.0.3. The two files remain untracked in C:\_w\m1b-20261028; final R3 hashes are owner/Codex-reported, and exact R3 bytes are not yet available from a GitHub branch/PR. Do not reimplement or reclone. Next: publish the existing candidate as an isolated code PR, review the exact diff and verify source hashes. See [M1B receipt](https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-28-M1B-CONTEXT-READER-IMPLEMENTATION-AND-TEST-RECEIPT.md).
+**Fuente de ruta:** [CURRENT-STATE.md](./docs/history/CHAT-ARCH/CURRENT-STATE.md) es la única autoridad de enrutamiento. Los bloques fechados que siguen debajo son evidencia histórica salvo que la ruta actual los reactive explícitamente. Si un encabezado antiguo contradice el estado de GitHub en vivo, se clasifica como obsoleto/conflictivo; no se ejecuta como instrucción vigente.
+
+### Estado reconciliado con GitHub en vivo al preparar esta revisión
+
+- `main` observado en `79ab8c50eaa7518120d5ebed9db4747d395a21cb`. Esto es la línea base de esta revisión, no una caché permanente: cada sesión material debe volver a consultar `refs/heads/main`.
+- [PR #555](https://github.com/jhonf463r/Python/pull/555): `OPEN / DRAFT / UNMERGED`, rama `codex/m1b-context-reader`, HEAD `c36ee5ed177a3b5afee764c277cc4a8b243594c8`. El código ya está publicado en un PR revisable; no es correcto describirlo como exclusivamente local/no publicado. Codex informó 37 pruebas en un harness mínimo; no se completó la suite integral del repositorio por falta de espacio. Estado de ejecución: `OWNER_CODEX_REPORTED`, no reproducido por esta sesión.
+- [PR #556](https://github.com/jhonf463r/Python/pull/556): `OPEN / DRAFT / UNMERGED`, rama `codex/m1a-current-main-fail-closed-20261028`, HEAD `fb635aab18d9c2ef19b20d48e3625d52383fe6af`. Codex informó 31 pruebas dirigidas aprobadas y `git diff --check` sin errores; esta sesión verificó el HEAD y el cambio en GitHub, pero no ejecutó esas pruebas.
+- Los dos PR siguen fuera de `main`; su existencia y los resultados de pruebas no cierran por sí solos autoridad de producción ni las puertas G1/G2/G3.
 
 ```text
-M1B_LOCAL_CANDIDATE=EXISTS; OWNER_CODEX_REPORTED
-M1B_TARGETED_TESTS=34_PASSED; OWNER_CODEX_REPORTED
-M1B_PUBLISHED_OR_INTEGRATED=FALSE
+ACTIVE_METHOD=UAAL-D021_CROSS_SESSION_BOOT_AND_STATE_RECONCILIATION
+METHOD_STATUS=DOCUMENTED_METHOD; AUTOMATIC_ENFORCEMENT_NOT_PROVEN
+MEMORY_RETRIEVAL=PER_SESSION; NEVER_ASSUME_AUTOMATIC_DELIVERY
+M1B_SOURCE=PR_555_OPEN_DRAFT; NOT_MERGED
+M1A_CANDIDATE=PR_556_OPEN_DRAFT; NOT_MERGED
+OPTION_D=RATIFIED_NO_BOOTSTRAP
+AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
 G1/G2/G3=NOT_ESTABLISHED
+MCP_TOOL_ALLOWLIST=EMPTY
 PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
 BRIDGE=BRIDGE_NOT_READY
 AUTOMATIC_FOLLOW_ON=FALSE
+C_PYTHON=DO_NOT_TOUCH
 ```
+
+### Arranque obligatorio para toda decisión material
+
+1. Leer el `main` vivo y registrar su SHA; no reutilizar el de una charla anterior.
+2. Leer este bloque de `CURRENT-STATE.md`; marcar cualquier dato de otro archivo como histórico, conflictivo o vigente con su propia revisión.
+3. Consultar metadatos vivos de los PR/commits implicados y recuperar solo la evidencia necesaria para la primera arista causal abierta.
+4. Activar UAAL-D019 + UAAL-D020 + UAAL-D021: fingerprint del experimento, precondiciones/autoridad, resultado terminal, utilidad esperada, evidencia observable y condición de cambio de estrategia.
+5. Elegir **una** acción autorizada que cierre la arista, reduzca una incertidumbre que pueda cambiar la decisión o demuestre un prerrequisito necesario. Si no existe, registrar el dato externo exacto que falta y parar esa ruta.
+6. Verificar el resultado en su etapa real; actualizar el registro que posee ese estado; recuperar la escritura de vuelta y comprobarla. No atribuir adopción a una rama/PR sin merge y lectura de vuelta desde `main`.
+7. Distinguir `MEMORY_RETRIEVED`, `METHOD_ACTIVATED`, `METHOD_APPLIED`, `OUTCOME_VERIFIED` y `LATER_CAUSAL_REUSE`. No afirmar conciencia compartida, aprendizaje entre pesos ni reutilización causal si solo existe un documento.
+
+Véase [UAAL-D021 — Cross-session boot and state reconciliation](./CHAT-ARCH-2026-10-29-UAAL-D021-CROSS-SESSION-BOOT-AND-STATE-RECONCILIATION.md). Esta corrección es documental y se vuelve canónica solo si se adopta en `main) y se verifica por fetch-back.
 ---
 
 <!-- UAAL-D020 — shared cross-AI method; CURRENT-STATE.md remains the sole route authority. -->

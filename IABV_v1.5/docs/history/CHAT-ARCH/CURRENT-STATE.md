@@ -1,36 +1,45 @@
-## OVERRIDE — M1B reader candidate locally implemented; targeted suite reported passing (2026-10-28)
+## ACTIVE ROUTE — Space-Time cross-session boot and live state reconciliation (2026-10-29)
 
-This entry supersedes earlier top-level M1B NOT_STARTED / blocked-before-modification statements for current status; those entries preserve the earlier time-specific state. The local candidate is reported by Codex, not published to GitHub.
+**Routing authority:** this file remains the sole operational router. This header is the active summary; lower dated records are evidence/history unless explicitly reactivated here. When a historical snapshot conflicts with live GitHub, mark the claim `CONFLICTED/STALE` and reconcile it instead of following it.
 
-The bounded candidate now has fail-closed target matching, deeper schema-shape validation, timezone-aware internal timestamps and a targeted test suite. Codex reports R3 passed 34 tests with Python 3.13.2 / pytest 9.0.3. Execution and final hashes remain OWNER_CODEX_REPORTED; this ChatGPT session did not execute tests or independently retrieve final R3 bytes. R1/R2 source and R3 delta were reviewed from conversational evidence; final R3 needs exact-source reconciliation through a reviewable Git branch/PR.
+### Verified live baseline used for this reconciliation
+- The live `main` reference was `79ab8c50eaa7518120d5ebed9db4747d395a21cb` at the start of this documentation task. Always refresh the ref at each new material session.
+- [PR #555](https://github.com/jhonf463r/Python/pull/555) is `OPEN/DRAFT/UNMERGED`, HEAD `c36ee5ed177a3b5afee764c277cc4a8b243594c8`. Thus M1B source is published to a reviewable PR; old claims saying “local only”, “untracked”, or “not published” are historical and no longer the current publication state. Codex reported 37 tests in a minimal harness; the full repository suite was not run due to the storage constraint. This remains `OWNER_CODEX_REPORTED`.
+- [PR #556](https://github.com/jhonf463r/Python/pull/556) is `OPEN/DRAFT/UNMERGED`, HEAD `fb635aab18d9c2ef19b20d48e3625d52383fe6af`. Codex reported 31 targeted tests passing and `git diff --check` clean; this session verified the live HEAD/diff but did not execute tests.
+- Neither candidate is integrated in `main`. Product PR state, test receipts, source review and acceptance of the authority chain are separate evidence stages.
 
-The candidate remains local to C:\_w\m1b-20261028, branch codex/m1b-context-reader, base 9a8738565ac2d100bcd4af906081c00f3cf15384, with both files reported untracked. It is not in GitHub main and not integrated. See [M1B receipt](https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-28-M1B-CONTEXT-READER-IMPLEMENTATION-AND-TEST-RECEIPT.md).
-
-Method correction from R1→R3: distinguish local existence, exact final-source availability, static review, executed tests, publication, PR review and main fetch-back. A hash is a byte identity claim, not source publication or proof that a reviewer saw those bytes. Validate schema against domain models and real artifacts; explicitly test timezone-aware dates and fail-closed paths. Do not reimplement or reclone when the candidate can be promoted and reviewed.
+### Active objective and safety envelope
+The active method task is to repair cross-session retrieval, stale-state reconciliation and action selection. This documentation work does **not** close a technical gate or grant new technical authority.
 
 ```text
-ACTIVE_TASK=M1B_CONTEXT_READER_CANDIDATE_RECONCILIATION
-M1B_IMPLEMENTATION=LOCAL_CANDIDATE_EXISTS; OWNER_CODEX_REPORTED
-M1B_FINAL_HASHES=OWNER_CODEX_REPORTED
-M1B_TARGETED_TESTS=34_PASSED; OWNER_CODEX_REPORTED
-M1B_EXACT_R3_SOURCE=NOT_IN_GITHUB; NOT_INDEPENDENTLY_FETCHED
-M1B_SOURCE_PUBLICATION=NOT_DONE
-M1B_INTEGRATION=NOT_DONE
-M1B_NEXT_ACTION=PUBLISH_EXISTING_LOCAL_FILES_TO_ISOLATED_CODE_PR; REVIEW_EXACT_DIFF_AND_HASHES
-NO_REIMPLEMENTATION=TRUE
-NO_NEW_CLONE=TRUE
-C_PYTHON=DO_NOT_TOUCH
-BUILD/RUNTIME/E2E/CI=NOT_RUN
+ACTIVE_METHOD=UAAL-D021_CROSS_SESSION_BOOT_AND_STATE_RECONCILIATION
+METHOD_STATUS=DOCUMENTED_METHOD; AUTOMATIC_ENFORCEMENT_NOT_PROVEN
+MAIN_AT_RECONCILIATION=79ab8c50eaa7518120d5ebed9db4747d395a21cb; REFRESH_REQUIRED_PER_MATERIAL_SESSION
 OPTION_D=RATIFIED_NO_BOOTSTRAP
+AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
 G1/G2/G3=NOT_ESTABLISHED
+IMPLEMENTATION_AUTHORITY=ONLY_EXACT_OWNER_AUTHORIZED_SCOPE
 MCP_TOOL_ALLOWLIST=EMPTY
 PROTECTED_READS=FAIL_CLOSED
 TUNNEL=DISABLED
 BRIDGE=BRIDGE_NOT_READY
 AUTOMATIC_FOLLOW_ON=FALSE
+C_PYTHON=DO_NOT_TOUCH
+MERGE_PRODUCT_PRS=NOT_AUTHORIZED
 ```
 
-Evidence details: [M1B receipt](https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-28-M1B-CONTEXT-READER-IMPLEMENTATION-AND-TEST-RECEIPT.md). CURRENT-STATE.md remains the only operational route authority.
+### Cross-session boot algorithm
+1. **Refresh:** read live `refs/heads/main` and record SHA/time; an old chat summary is a lead, never a current-state proof.
+2. **Orient:** extract objective, success condition and explicit constraints from the current Owner request; preserve decisions already made.
+3. **Retrieve:** read the relevant slices of this file and UAAL-D019/D020/D021 plus the exact owning receipt/PR; use the returned source revision and exact result, not remembered paraphrases.
+4. **Reconcile:** compare claims against live refs, PR states, source revisions and evidence provenance; label each `VERIFIED`, `OWNER_REPORTED`, `INFERENCE`, `HYPOTHESIS`, `UNKNOWN`, `NOT_RUN`, `CONFLICTED` or `STALE`.
+5. **Causal frontier:** build the smallest dependency graph and identify the earliest open edge for the user's target, with its required evidence and unchanged preconditions. Fingerprint any proposed experiment to prevent same-action retries.
+6. **Select:** first filter by authorization and hard preconditions; then rank target-edge closure, decision-changing information gain, a demonstrably necessary prerequisite, reversibility/cost and Owner effort. One action per cycle; no preparation-only recursion without demonstrated causal utility.
+7. **Observe:** predeclare the expected observable, stop condition and route change for each possible result. Report the furthest proven execution stage only.
+8. **Persist:** update the owning route/receipt, fetch the exact written bytes back, and keep branch/PR proposals explicitly non-canonical until merged and verified from `main`.
+9. **Prove reuse:** on a later non-identical task, test whether the retrieved method changes the chosen action and prevents a known repeat. Before that event, `LATER_CAUSAL_REUSE=NOT_TESTED`.
+
+Full contract: [UAAL-D021](./CHAT-ARCH-2026-10-29-UAAL-D021-CROSS-SESSION-BOOT-AND-STATE-RECONCILIATION.md). This header's baseline SHA documents the snapshot used to write it; it does not replace a future live-ref refresh.
 ---
 
 ## OVERRIDE — UAAL-D020 clarified as a cross-AI shared-memory method (2026-10-28)
