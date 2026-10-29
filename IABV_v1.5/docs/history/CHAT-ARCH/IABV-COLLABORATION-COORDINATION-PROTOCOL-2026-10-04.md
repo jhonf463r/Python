@@ -43,6 +43,24 @@ When transferring a lesson between domains, transfer a mapped invariant rather t
 
 This gate operationalizes D019's causal map and dual-track continuation, D020's progress utility, D021's route/artifact truth and D022's effective-operation contract. It creates no additional coordinator, router, memory store or authority. It remains a method proposal on this branch until authorized integration and canonical fetch-back.
 
+## Resource-bounded validation switch after acquisition failure (UAAL-D021 application; proposed 2026-10-28)
+
+A resource failure in one acquisition method is evidence about that method and environment, not automatically about the objective or the target code. Before retrying, compare the exact failed operation and preconditions with prior attempts. If the failure is unchanged and the resource condition has not changed, do not repeat the same terminal action.
+
+When the validation claim genuinely requires only a small set of self-contained source/test files, a bounded alternate realization may be admissible:
+1. Pin the exact repository, candidate HEAD/ref, Git blob IDs and expected byte hashes.
+2. Retrieve only the necessary file bytes through an existing authenticated source path; verify the hashes before test execution.
+3. Build the smallest harness that preserves package imports and fixture behavior, without rewriting the target files or installing new dependencies.
+4. Run the discriminating test first, then the bounded test file only if the focused test passes.
+5. Report differences from a full checkout, including omitted repository configuration, pytest rootdir/config discovery, fixtures, dependencies and test scope. Do not generalize a harness pass to the full repository or to untested integration paths.
+6. Treat test execution and temporary-artifact cleanup as separate stages. If cleanup is rejected by policy, report the exact retained artifact as CLEANUP_BLOCKED; do not attempt an unapproved alternate deletion method.
+
+This route change is admissible only when the smaller realization is adequate for the claim and identity is preserved. If the suite depends on repository-wide configuration or unavailable files, the harness cannot replace the full-checkout requirement; record NOT_RUN and the precise blocker instead. The M1B F-01/F-02 receipt records a successful use of this strategy on the exact PR #555 HEAD, with Codex-reported 3/3 focused and 37/37 test-file cases passing. The result is scoped to the harness, not a full repository execution.
+
+Actor fit in this episode: Codex was selected for Windows/Python execution and authenticated GitHub access; Claude/Sonnet's earlier role was independent static analysis. Actor selection follows required capability and access, not a permanent model identity. No bridge authorization follows from this test result.
+
+This is a method proposal on the documentation branch, not canonical main state or proof of runtime enforcement.
+
 ## UAAL-D021 route-realization and artifact-identity gate (proposed, 2026-10-28)
 
 Before constructing a handoff for any publish/update/retest/clone/implementation action, query the live repository for an existing branch, commit, pull request, exact file blobs and reviews that can satisfy the objective. Bind each expected hash to an exact artifact revision and evidence stage; never compare an R3 receipt with R4 bytes as though they were the same candidate. If an entry snapshot conflicts with live `CURRENT-STATE.md`, the canonical route wins and the stale snapshot must be reconciled before action selection. Record existing route alternatives and why the selected action has greater target-edge utility. This refinement is proposed in the current documentation PR and is not canonical on `main` until integrated and fetched back.
