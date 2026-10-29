@@ -35,9 +35,9 @@ Sources:
 - [Canonical routing authority](./CURRENT-STATE.md)
 - [Focus and coordination protocol](./CHAT-ARCH-2026-10-22-adhd-aware-project-coordination-and-space-time-focus-protocol.md)
 - [GitHub-backed collaboration protocol](./IABV-COLLABORATION-COORDINATION-PROTOCOL-2026-10-04.md)
-- [PlatformPendingQueue source](../../src/iabv_v15/services/evolution/platform_pending_queue.py)
-- [Task model source](../../src/iabv_v15/domain/models.py)
-- [Task/result repository source](../../src/iabv_v15/infra/persistence/tool_record_repository.py)
+- [PlatformPendingQueue source](../../../src/iabv_v15/services/evolution/platform_pending_queue.py)
+- [Task model source](../../../src/iabv_v15/domain/models.py)
+- [Task/result repository source](../../../src/iabv_v15/infra/persistence/tool_record_repository.py)
 
 ## 3. Diagnosis
 
