@@ -3,7 +3,9 @@
 **Date:** 2026-10-29  
 **Parent:** UAAL-D019 — Space-Time Anti-Loop and First-Open Causal Frontier; UAAL-D020 — Verified Progress Utility and Strategy Switch  
 **Scope:** shared external memory across participating ChatGPT/Codex/other AI sessions  
-**Status:** `DOCUMENTED_METHOD; AUTOMATIC_ENFORCEMENT_NOT_PROVEN; LATER_CAUSAL_REUSE_NOT_TESTED`  
+**Status:** `DOCUMENTED_METHOD; AUTOMATIC_ENFORCEMENT_NOT_PROVEN; LATER_CAUSAL_REUSE_VERIFIED_FOR_ONE_NON_IDENTICAL_TASK; GENERALIZATION_NOT_TESTED`
+
+**First later-task application:** [UAAL-D021 first reuse receipt](./CHAT-ARCH-2026-10-29-UAAL-D021-FIRST-LATER-TASK-REUSE-RECEIPT.md). This is one bounded demonstration, not proof of universal automatic boot or repeatability.  
 **Baseline observed while preparing this revision:** `main=79ab8c50eaa7518120d5ebed9db4747d395a21cb`
 
 ## 1. Diagnosis: the algorithm existed, but its control loop did not reliably execute
