@@ -1,3 +1,70 @@
+## Owner-directed cross-chat continuity evolution — G1 fetchback preflight closed (2026-10-28)
+
+This is the newest route decision for the continuation of the current M1A trust-enrollment work. It supersedes older action fields below when they conflict, but does not alter canonical main or authorize product-candidate merge/bridge activation.
+
+### Current result and provenance
+
+The Owner/Codex-reported preflight closed the existing-private-repository read route using the already-authenticated local GitHub CLI/API and non-interactive HTTPS Git access. This ChatGPT session independently rechecked the repository metadata, current main SHA and CURRENT-STATE blob identifier through GitHub. The evidence is claim-scoped: the main SHA and blob identifier are verified here; successful local CLI use remains OWNER_CODEX_REPORTED.
+
+- Repository: `jhonf463r/Python`, ID `860009771`, private, default branch `main`.
+- Canonical main at this check: `79ab8c50eaa7518120d5ebed9db4747d395a21cb`.
+- CURRENT-STATE blob on main: `5945b23fdb5c13ce1068ca5d2d9e6513a1a06b95`.
+- Existing-file fetchback: `VERIFIED_FOR_CURRENT_STATE` (Owner/Codex reports full authenticated Contents/blob retrieval; this session verified metadata/blob ID but the ordinary contents call returned an empty body, so exact blob fallback was used).
+- Branch protection/rulesets: `UNKNOWN`; Owner/Codex reports API HTTP 403. This is not evidence that protections are absent, present, bypassable, or enforced.
+- Manifest-specific fetchback: `NOT_APPLICABLE_YET`; the enrollment manifest does not exist. Do not confuse fetchback of CURRENT-STATE with a later manifest proof.
+
+### Method learning now recorded in the proposed protocol branch
+
+The updated [UAAL-D021 method](./CHAT-ARCH-2026-10-28-UAAL-D021-ROUTE-TRUTH-ARTIFACT-IDENTITY-AND-ADVANCE-UTILITY.md), [collaboration protocol](./IABV-COLLABORATION-COORDINATION-PROTOCOL-2026-10-04.md), and [Universal Adaptive Algorithm Constitution §20G](./UNIVERSAL-ADAPTIVE-ALGORITHM-CONSTITUTION-2026-10-04.md) now state that:
+1. Evidence for one resource/claim cannot be promoted to a different resource/claim. Existing-file access does not prove future manifest bytes, branch rules, key custody or operation authorization.
+2. A manifest must not embed its own commit SHA, Git blob SHA or whole-content digest. Those values are recorded in a post-merge local receipt after exact canonical fetchback.
+3. A completed preflight is not repeated unchanged; its closure is scoped to the exact repository/ref/file/route tested.
+4. A chosen G1 enrollment identity does not establish G2/G3 and grants no tool capability.
+5. Cross-AI writeback is proposed until the change is authorized for integration and fetched back from canonical main; linking or saving a document is not proof of later causal reuse.
+
+These edits live on the existing [draft PR #557](https://github.com/jhonf463r/Python/pull/557), not main. They are not canonical yet.
+
+### Next actor and first open edge
+
+```text
+ACTIVE_TASK=M1A_G1_BOUNDED_ENROLLMENT_SOURCE_AND_SYNTHETIC_TESTS_20261028
+CLOSED_EDGE=EXISTING_AUTHENTICATED_GITHUB_FETCHBACK_FOR_CANONICAL_CURRENT_STATE
+FIRST_OPEN_EDGE=REVIEWABLE_ENROLLMENT_CONTRACT_AND_PROVIDER_COMPOSITION_IN_EXISTING_M1A_CANDIDATE
+NEXT_ACTOR=CODEX
+NEXT_ACTION=VERIFY_LIVE_PR_556_HEAD_AND_BASE; REUSE_ITS_ISOLATED_M1A_CANDIDATE; IMPLEMENT_BOUNDED_ENROLLMENT_CONTRACT_AND_SYNTHETIC_POSITIVE_NEGATIVE_TESTS_ONLY
+EXPECTED_OBSERVABLE=EXACT_DIFF_AND_TEST_RECEIPT_BOUND_TO_EXACT_HEAD; NO_KEY_OR_MANIFEST_CREATED
+STOP_IF=LIVE_HEAD_OR_BASE_UNRESOLVED; CNG_CONTRACT_UNSUPPORTED; EFFECTS_EXCEED_BUDGET; TESTS_FAIL
+BRANCH_RULESET=UNKNOWN
+MANIFEST_FETCHBACK=NOT_APPLICABLE_YET
+KEY_CREATED=NOT_RUN
+MANIFEST_CREATED_OR_MERGED=NOT_RUN
+G1/G2/G3=NOT_ESTABLISHED
+MCP_TOOL_ALLOWLIST=EMPTY
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+PRODUCT_RUNTIME=NOT_RUN
+PRODUCT_CANDIDATE_MERGE=NOT_AUTHORIZED
+C_PYTHON=DO_NOT_TOUCH
+```
+
+The source/test task must not generate a key, create/merge a manifest, make local security-setting changes, execute the product runtime, perform protected reads, enable a tool, start a tunnel, or merge a candidate. Those are separate stages. Only after the isolated enrollment contract has passed exact-source review and synthetic positive/negative acceptance may the previously bounded one-time enrollment operation be scheduled as a distinct action. Owner approval of the exact manifest PR remains mandatory; an approved manifest does not automatically authorize any MCP tool.
+
+### Anti-loop / continuity rule applied
+
+Do not repeat the trust-source selection or the existing-file fetchback preflight. Do not revive old historical NEXT_ACTION fields that conflict with this entry. Do not use the most recent conversation topic alone as a route selector. The first open edge is the bounded implementation/review in the existing M1A candidate (PR #556), after verifying that PR's live head and base. Keep PR #555/M1B untouched. Report method stages distinctly: `MEMORY_RETRIEVED`, `METHOD_ACTIVATED`, `METHOD_APPLIED`, `OUTCOME_VERIFIED`, and `LATER_CAUSAL_REUSE`; the last remains `NOT_PROVEN` until a later non-identical task demonstrates it.
+
+```text
+TASK_RESULT=PREPARATION_AND_PROTOCOL_WRITEBACK_COMPLETE
+METHOD_RETRIEVED=VERIFIED_IN_THIS_SESSION
+METHOD_APPLIED=VERIFIED_FOR_ROUTE_SELECTION_AND_CLAIM_SCOPING
+OUTCOME_VERIFIED=DOCUMENTARY_BRANCH_FETCHBACK_ONLY
+LATER_CAUSAL_REUSE=NOT_PROVEN
+CANONICAL_ADOPTION=NOT_DONE; PR_557_DRAFT
+```
+
+---
+
 ## New Owner-requested architecture improvement — G1/G2/G3 scope and bootstrap boundary (2026-10-28)
 
 This addendum records the subsequent Owner request to analyze why G1/G2/G3 exist, reconcile their traceability with the complete IABV/MCP system, and proceed with durable improvements. It is proposed on this documentation branch only; it is not canonical on main until authorized integration and fetch-back.
