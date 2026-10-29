@@ -32,6 +32,23 @@ Relevant prior failures must alter at least one concrete part of the task contra
 Before constructing a handoff for any publish/update/retest/clone/implementation action, query the live repository for an existing branch, commit, pull request, exact file blobs and reviews that can satisfy the objective. Bind each expected hash to an exact artifact revision and evidence stage; never compare an R3 receipt with R4 bytes as though they were the same candidate. If an entry snapshot conflicts with live `CURRENT-STATE.md`, the canonical route wins and the stale snapshot must be reconciled before action selection. Record existing route alternatives and why the selected action has greater target-edge utility. This refinement is proposed in the current documentation PR and is not canonical on `main` until integrated and fetched back.
 
 
+## G1 enrollment handoff correction — exact evidence, no circular manifest (proposed 2026-10-28)
+
+When the current route concerns an initial trust enrollment, the coordinator must make a task contract that separates source/test implementation from one-time enrollment execution. A prompt for Codex must state which of these stages is authorized, its exact side-effect budget, prohibited actions, evidence to return and stop condition. Do not let “proceed” expand the scope to bridge activation, protected reads or tool grants.
+
+The just-completed preflight illustrates scoped proof:
+- the existing private GitHub repository and main reference were readable via the Owner/Codex-reported authenticated route, and this session independently verified the repository metadata, main SHA and CURRENT-STATE blob identifier through GitHub;
+- manifest-specific byte verification remains not applicable until the manifest exists;
+- branch protection/ruleset status remains UNKNOWN because the reported API inspection returned HTTP 403;
+- neither a successful existing-file fetch nor the presence of a GitHub App PEM proves G1, branch protection or the existence of a usable future manifest route.
+
+Do not ask the Owner to choose the trust mechanism again: it has been selected as an Owner-approved, version-pinned enrollment manifest with a subordinate local Windows CNG key. The manifest must not contain its own containing commit SHA, Git blob SHA or whole-file digest; store those post-merge identities in a separate local receipt after exact canonical fetch-back. The manifest must contain public-key metadata only, never a private key or credential.
+
+For source/test work, reuse and inspect the existing PR #556 M1A composition candidate before writing. Verify its live head and exact base; do not fork a duplicate security-organ candidate. Do not create the local key or enrollment manifest in the source/test task. Exercise positive and negative enrollment contracts with synthetic fixtures only, and keep:
+G1=NOT_ESTABLISHED; G2/G3=NOT_ESTABLISHED; MCP_TOOL_ALLOWLIST=EMPTY; PROTECTED_READS=FAIL_CLOSED; TUNNEL=DISABLED; BRIDGE=BRIDGE_NOT_READY.
+A later one-time enrollment operation is a separate, narrowly authorized step. An approved G1 identity alone grants no tool capability.
+
+
 The current result adjudication examples are:
 - RQ21.55: the report changed the object to research about Deep Research itself;
 - RQ21.56: the report remained in the broad Windows sandbox domain but failed the required seven-guarantee composition and source contract.
