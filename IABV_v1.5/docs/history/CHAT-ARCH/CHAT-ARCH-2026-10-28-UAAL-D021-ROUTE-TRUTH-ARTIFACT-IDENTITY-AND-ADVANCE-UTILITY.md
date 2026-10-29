@@ -452,3 +452,34 @@ The return-adjudication gate was applied to `M1A_G1_REMAINING_WINDOWS_SECURITY_S
 
 This case demonstrates `MEMORY_RETRIEVED` and `METHOD_APPLIED` for this session (the route changed from awaiting Claude to a bounded repair handoff). Branch receipt fetch-back is verified. `RUNTIME_ENFORCEMENT=NOT_PROVEN`, `CANONICAL_ADOPTION=NOT_ESTABLISHED`, and `LATER_CAUSAL_REUSE=NOT_PROVEN`.
 
+
+### 8.8 Applied adjudication case — Codex local F-556 repair receipt (2026-10-29)
+
+The method was applied to the Owner-provided result for `M1A_G1_F556_01_02_BOUNDED_REPAIR_AND_CONFORMANCE_20261029`. The result reports both focal fixes and 30 targeted tests passing in the existing isolated worktree. The final source/test diff remains local, uncommitted and unavailable to the independent reviewer through GitHub. Receipt: [M1A F-556 Codex local repair](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-M1A-G1-F556-01-02-CODEX-LOCAL-REPAIR-RECEIPT.md).
+
+**Adjudication**
+- `F-556-01` and `F-556-02` move from `CONFIRMED_STATIC_DEFECT/GAP` to `FIX_REPORTED_LOCAL; INDEPENDENT_DIFF_REVIEW_PENDING`, not CLOSED. The report's code snippet and test summary are not a substitute for reading the exact final diff.
+- `30 passed`, environment, SHA-256 values, local Git blob IDs, the CRLF/LF normalization explanation and `git diff --check=0` are `OWNER_CODEX_REPORTED` in this session. Do not relabel them as independently executed or byte-verified.
+- The minimal causal gap is artifact visibility, not the absence of another test run: the exact final local bytes must be made visible to a reviewer without mutating or publishing the candidate. Therefore the next action is to print/export the complete two-file unified diff from the existing worktree and review that exact text. Do not rerun the same focused suite unless the diff exposes a specific new concern or the candidate changes.
+- The final diff review must verify that cap+1 cannot leak partial names on any path; exactly-cap success remains sorted; `NumberOfLinks` is enforced before the sensitive operation; query failure stays fail-closed; handles close on every rejection path; and `AUTHORIZED_DIRECTORY_ENTRY_LIMIT_EXCEEDED` follows the existing error/response contract. Confirm what caller stubs prove and what they do not.
+- Native Windows semantics remain `UNKNOWN`; synthetic native-call simulations do not establish OS-level hard-link containment. No G1/G2/G3, protected-read or bridge claim is elevated.
+
+```text
+METHOD_RETRIEVED=VERIFIED_IN_CURRENT_SESSION
+METHOD_ACTIVATED=VERIFIED_FOR_RECEIPT_ADJUDICATION
+METHOD_APPLIED=NEXT_EDGE_CHANGED_FROM_TEST_RERUN_TO_EXACT_DIFF_VISIBILITY
+OUTCOME_VERIFIED=DOCUMENTARY_FETCHBACK_ONLY; LOCAL_TESTS=OWNER_CODEX_REPORTED
+F556_01/F556_02=FIX_REPORTED_LOCAL; INDEPENDENT_DIFF_REVIEW_PENDING
+NEXT_ACTION=EXPOSE_EXACT_UNIFIED_DIFF; REVIEW_ACTUAL_BYTES; NO_REPEATED_TESTS_WITHOUT_CAUSAL_DELTA
+NATIVE_WINDOWS_VALIDATION=NOT_RUN
+CANONICAL_MAIN_ADOPTION=NOT_ESTABLISHED
+LATER_CAUSAL_REUSE=NOT_PROVEN
+G1/G2/G3=NOT_ESTABLISHED
+MCP_TOOL_ALLOWLIST=EMPTY
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+```
+
+This is a second same-session application of the adjudication method, not evidence that a future AI session will reuse it. Cross-session causal reuse remains `NOT_PROVEN`.
+
