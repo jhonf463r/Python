@@ -2,28 +2,26 @@
 
 **Sole routing authority:** this file owns the current ACTIVE_TASK, NEXT_ACTION, technical gates and permissions. Dated blocks below this active header are historical evidence unless this header explicitly reactivates them. Read this header from live main on every new material session. If the normal file read is empty, retrieve the exact blob by its returned SHA; empty transport output is RETRIEVAL_FAILED, not an empty route.
 
-### Live repository snapshot verified for this route refresh (2026-10-29)
-- Live `main` at task start: `c0bca083620cdd8628365ca6cb1f60b7e8a39ad0` (post-merge state for PR #562). This is the exact baseline for this bounded route-only patch, not a permanent current SHA; each later material session must refresh `main`.
-- The canonical D021 method is at blob `d44a4e1866229a484ed78e807ae6645ba43176a2`; the first later-task reuse receipt is at blob `8a9d3d6942972de5d7e6670ec57b112f59e0cdab`. The live revision-2.6 operating protocol is at blob `b5ea0645b2489ed3d56fb0eda2f97c14637ac14d`.
-- PR #560 is merged; it added the objective-conditioned `WORLD_MODEL_SNAPSHOT` and incoming-result adjudication to canonical D021.
-- PR #561 is merged; it records one non-identical-task reuse. Generalization remains untested and automatic boot remains unproven.
-- PR #562 is merged; this is the route/protocol reconciliation now present on live `main`.
-- PR #555 remains OPEN/DRAFT/UNMERGED at HEAD `c36ee5ed177a3b5afee764c277cc4a8b243594c8`; comparison against this live main is `diverged`, 3 commits ahead / 8 behind. Its reader/test candidate is not canonical; reported harness tests remain OWNER_REPORTED, not independently executed here.
-- PR #556 remains OPEN/DRAFT/UNMERGED at HEAD `fb635aab18d9c2ef19b20d48e3625d52383fe6af`; comparison against this live main is `diverged`, 15 commits ahead / 4 behind. It affects authorization/MCP paths; no merge is authorized by this documentation lane.
-- PR #557 remains OPEN/DRAFT/UNMERGED at HEAD `2e16e259001aa671b7ddc2c43763880543e459ad`; comparison against this live main is `diverged`, 100 commits ahead / 4 behind and the PR is reported not mergeable. It is a broad stale proposal, not canonical state; do not merge it wholesale or use its copied CURRENT-STATE snapshot as live truth.
-- These ahead/behind counts are a point-in-time comparison of each exact candidate HEAD with live `main=c0bca083620cdd8628365ca6cb1f60b7e8a39ad0`; they must be refreshed before any later branch review. This route patch makes no changes to those product candidates.
+### Live repository snapshot verified for second-task writeback (2026-10-29)
+- Live `main` observed at this task's start: `f10f60bba8d8bd1c9863ce6cb58ba04a9305ddc1`, after PR #563. This is the exact baseline for this bounded documentation task, not a permanent current SHA; every later material session must refresh `main`.
+- PR #563 is merged at `f10f60bba8d8bd1c9863ce6cb58ba04a9305ddc1`. The refreshed route blob `897c1fa51100bb87d570f500889cd2083b43bf79` was fetched from live `main`; its content matched the expected branch bytes exactly, and `refs/heads/main` matched the merge commit.
+- PR #560 added the objective-conditioned `WORLD_MODEL_SNAPSHOT` and incoming-result adjudication to canonical D021; PR #561 records the first bounded reuse; PR #562 reconciled the living route/protocol; PR #563 reconciled the stale active snapshot after #562.
+- PR #555 remains OPEN/DRAFT/UNMERGED at HEAD `c36ee5ed177a3b5afee764c277cc4a8b243594c8`; comparison against this live main is `diverged`, 3 commits ahead / 10 behind. Its reader/test candidate is not canonical; reported harness tests remain OWNER_REPORTED, not independently executed here.
+- PR #556 remains OPEN/DRAFT/UNMERGED at HEAD `fb635aab18d9c2ef19b20d48e3625d52383fe6af`; comparison against this live main is `diverged`, 15 commits ahead / 6 behind. It affects authorization/MCP paths; no merge is authorized by this documentation lane.
+- PR #557 remains OPEN/DRAFT/UNMERGED at HEAD `2e16e259001aa671b7ddc2c43763880543e459ad`; comparison against this live main is `diverged`, 100 commits ahead / 6 behind and the PR is reported not mergeable. It is a broad stale proposal, not canonical state; do not merge it wholesale or use its copied CURRENT-STATE snapshot as live truth.
+- These are point-in-time comparisons of each exact candidate HEAD against `main=f10f60bba8d8bd1c9863ce6cb58ba04a9305ddc1`; refresh them before any later branch review. This continuity lane has not changed candidate branches.
 
 ### Active objective and acceptance
 Continue making cross-session memory use more reliable without creating a second router, memory store, coordinator or hidden-authority mechanism. For each material task, retrieve the live route, build the minimum source-bound world model, identify the first open causal/evidential edge, select one authorized discriminating action, adjudicate its outcome, and verify canonical writeback.
 
-The method is documented and has one verified non-identical-task application. Generalization to repeated tasks is NOT_TESTED. Automatic delivery/boot into every future ChatGPT session and runtime enforcement remain NOT_PROVEN. A URL, PR, saved summary or prior chat does not prove a later session retrieved or applied this method.
+The method has two verified bounded later-task applications in this continuing conversation. This is evidence of repeat use, not independent fresh-chat retrieval or broad generalization. Generalization beyond these two tasks is NOT_TESTED. Automatic delivery/boot into every future ChatGPT session and runtime enforcement remain NOT_PROVEN. A URL, PR, saved summary or prior chat does not prove a later session retrieved or applied this method.
 
 ```text
 ACTIVE_METHOD=UAAL-D019+D020+D021
 METHOD_STATUS=DOCUMENTED_METHOD; AUTOMATIC_ENFORCEMENT_NOT_PROVEN
-LATER_CAUSAL_REUSE=VERIFIED_FOR_ONE_NON_IDENTICAL_TASK
-GENERALIZATION=NOT_TESTED
-AUTOMATIC_CROSS_SESSION_BOOT=NOT_PROVEN
+LATER_CAUSAL_REUSE=VERIFIED_FOR_TWO_NON_IDENTICAL_TASKS_WITHIN_CONTINUING_SESSION
+GENERALIZATION=NOT_TESTED_BEYOND_TWO_BOUNDED_TASKS
+AUTOMATIC_CROSS_SESSION_BOOT=NOT_PROVEN; INDEPENDENT_FRESH_CHAT_REUSE=NOT_TESTED
 OPTION_D=RATIFIED_NO_BOOTSTRAP
 AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
 G1/G2/G3=NOT_ESTABLISHED
@@ -34,7 +32,7 @@ BRIDGE=BRIDGE_NOT_READY
 AUTOMATIC_FOLLOW_ON=FALSE
 C_PYTHON=DO_NOT_TOUCH
 PRODUCT_PR_MERGE=NOT_AUTHORIZED_BY_THIS_DOCUMENTATION_TASK
-NEXT_ACTION=VERIFY_METHOD_REUSE_ON_A_SECOND_NON_IDENTICAL_TASK; NO_AUTOMATIC_BOOT_CLAIM
+NEXT_ACTION=TEST_INDEPENDENT_FRESH_CHAT_RETRIEVAL_AND_METHOD_APPLICATION; NO_AUTOMATIC_BOOT_CLAIM; OWNER_SESSION_REQUIRED
 ```
 
 ### Mandatory boot/action loop
@@ -47,7 +45,7 @@ NEXT_ACTION=VERIFY_METHOD_REUSE_ON_A_SECOND_NON_IDENTICAL_TASK; NO_AUTOMATIC_BOO
 7. Persist to the owning record, fetch exact bytes back, and do not claim canonical adoption until it is integrated and re-fetched from live main.
 8. Record reuse separately from automatic delivery. Do not claim a new chat consumed memory until its own retrieval/application evidence exists.
 
-Full operating contract: [UAAL-D021](./CHAT-ARCH-2026-10-29-UAAL-D021-CROSS-SESSION-BOOT-AND-STATE-RECONCILIATION.md). First reuse receipt: [UAAL-D021 first later-task reuse](./CHAT-ARCH-2026-10-29-UAAL-D021-FIRST-LATER-TASK-REUSE-RECEIPT.md).
+Full operating contract: [UAAL-D021](./CHAT-ARCH-2026-10-29-UAAL-D021-CROSS-SESSION-BOOT-AND-STATE-RECONCILIATION.md). First reuse receipt: [UAAL-D021 first later-task reuse](./CHAT-ARCH-2026-10-29-UAAL-D021-FIRST-LATER-TASK-REUSE-RECEIPT.md). Second bounded reuse receipt: [UAAL-D021 second later-task reuse](./CHAT-ARCH-2026-10-29-UAAL-D021-SECOND-LATER-TASK-REUSE-RECEIPT.md). Independent fresh-chat test handoff: [boot test](./CHAT-ARCH-2026-10-29-UAAL-D021-INDEPENDENT-FRESH-CHAT-BOOT-TEST.md).
 
 ---
 
