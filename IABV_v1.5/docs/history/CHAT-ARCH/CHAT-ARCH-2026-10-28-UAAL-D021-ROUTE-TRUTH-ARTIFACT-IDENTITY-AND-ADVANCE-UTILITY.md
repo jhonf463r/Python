@@ -483,3 +483,34 @@ BRIDGE=BRIDGE_NOT_READY
 
 This is a second same-session application of the adjudication method, not evidence that a future AI session will reuse it. Cross-session causal reuse remains `NOT_PROVEN`.
 
+
+### 8.9 Applied adjudication case — Codex's exact F-556 repair diff (2026-10-29)
+
+The Owner then supplied the full patch text previously exported in eight consecutive blocks. It was adjudicated against the original acceptance oracle and the exact shown source changes. Receipt: [Independent static diff adjudication — F-556-01/F-556-02](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-M1A-G1-F556-01-02-INDEPENDENT-STATIC-DIFF-ADJUDICATION.md).
+
+- The cap+1 branch raises `AUTHORIZED_DIRECTORY_ENTRY_LIMIT_EXCEEDED` rather than returning accumulated entries. The complete-success path sorts only after enumeration completes. The added synthetic server-stub test asserts the denial response includes no `entries` and no tested secret names. `F556_01=CLOSED_AT_STATIC_REVIEW_SCOPE`.
+- `_open_component` now checks `NumberOfLinks != 1` after standard-info query and before accepting the target. The existing exception handler closes the handle on rejection/query failure; synthetic tests cover one-link file success, multi-link denial/closure and metadata query error/closure. `F556_02=CLOSED_AT_STATIC_REVIEW_SCOPE`.
+- Codex's `30 passed`, `git diff --check=0`, external patch hash, size and line count remain `OWNER_CODEX_REPORTED`. They were not rerun or recomputed by the static reviewer.
+- The source fix is not published to the remote code candidate. The reviewer did not execute tests, native Windows API calls or runtime. The static policy gate is distinct from native conformance.
+- The check is applied to directory components as well as files; added tests use a file component, not real Windows directories. Native `NumberOfLinks` observations across supported filesystems and relevant concurrency assumptions remain `UNKNOWN`. Microsoft documents the field as the number of links and says NTFS hard links cannot reference directories, but that doesn't replace platform conformance evidence.
+- A few added blank-line markers visibly appear as `+ ` in the pasted diff, while Codex reports a clean `git diff --check`. Without the actual binary artifact in this session, this remains a transport-versus-bytes uncertainty, not a confirmed source defect.
+
+The method correctly changes the state from a generic "diff still needed" to a static-scope disposition and a distinct native-conformance frontier. It does not authorize runtime. This remains another same-session application, not evidence that a later AI session will consume the method or improve behavior.
+
+```text
+F556_01=CLOSED_AT_STATIC_REVIEW_SCOPE
+F556_02=CLOSED_AT_STATIC_REVIEW_SCOPE
+LOCAL_TESTS=30_PASSED; OWNER_CODEX_REPORTED
+TESTS_RERUN_BY_REVIEWER=FALSE
+PATCH_SHA256_RECOMPUTED=FALSE
+NATIVE_WINDOWS_CONFORMANCE=NOT_RUN
+NEXT_EDGE=NATIVE_NUMBEROFLINKS_CONFORMANCE_FOR_FILES_AND_DIRECTORIES; AUTHORIZATION_REQUIRED
+CANONICAL_MAIN_ADOPTION=NOT_ESTABLISHED
+G1/G2/G3=NOT_ESTABLISHED
+MCP_TOOL_ALLOWLIST=EMPTY
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+LATER_CAUSAL_REUSE=NOT_PROVEN
+```
+
