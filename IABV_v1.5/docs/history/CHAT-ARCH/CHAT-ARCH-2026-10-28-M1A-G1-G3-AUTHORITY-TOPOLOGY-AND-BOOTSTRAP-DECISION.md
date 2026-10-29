@@ -189,7 +189,7 @@ The newly selected enrollment mechanism is limited to a single explicit operatio
 **Effects in scope for the one-time enrollment operation:**
 1. Generate one local Windows CNG key pair and retain the private key in the Windows key store; only the public key/thumbprint may leave the host.
 2. Produce one local enrollment receipt recording the manifest digest, public-key identifier, current Windows SID, exact code/checkout identity, workspace root, policy version and result.
-3. Prepare one public enrollment manifest through a dedicated PR. The Owner must explicitly approve/merge that exact manifest; no local success message substitutes for the merge.
+3. Prepare one enrollment manifest containing public-key metadata through a dedicated PR. The Owner must explicitly approve/merge that exact manifest; no local success message substitutes for the merge.
 4. Fetch the exact merged manifest from canonical `main`, verify its repository/commit/content identity, and compare it with the local receipt before reporting G1 enrollment as established.
 5. Keep all generated local state inside the dedicated IABV authority store; do not change the project checkout, Windows ACLs, registry, services, IPC endpoints or system security settings.
 
@@ -229,7 +229,11 @@ MERGE_OF_PRODUCT_CANDIDATE=NOT_AUTHORIZED
 TESTS/BUILD/RUNTIME=NOT_RUN_BY_THIS_DOCUMENT_TASK
 ```
 
-The next technical action is no longer another architecture survey or another request to choose a trust source. It is to implement/review the bounded one-time enrollment path in an isolated candidate and synthetic tests, then execute only the exact enrollment operation above through the supported local agent. If local CNG access or authenticated GitHub fetch-back is unavailable, report that exact edge and stop; do not bypass the boundary or expand the scope.
+The local authenticated GitHub route preflight is now closed for reading existing canonical data: Codex reports `gh api` and non-interactive `git ls-remote` both read the private repository and agree on `main=79ab8c50eaa7518120d5ebed9db4747d395a21cb`; Codex reports the authenticated Contents/blob route retrieved `CURRENT-STATE.md` (blob `5945b23fdb5c13ce1068ca5d2d9e6513a1a06b95`). This ChatGPT session separately re-queried GitHub and confirmed the repository is private, the live `main` SHA, and the same CURRENT-STATE blob identifier. Provenance is separated: the local `gh`/Git access is `OWNER_CODEX_REPORTED`; repository metadata, main SHA and blob identifier are independently `VERIFIED` in this session.
+
+This does **not** prove that a future manifest exists or that its exact bytes have been fetched; `MANIFEST_FETCHBACK=NOT_APPLICABLE_YET`. Repository branch-protection/rulesets remain `UNKNOWN`: Codex reports HTTP 403 from the available API routes, so required-review/no-bypass guarantees must not be claimed.
+
+The next technical action is to implement and review the bounded enrollment path in an isolated candidate with synthetic positive and negative tests, reusing the existing M1A composition route rather than creating a duplicate design PR. Keep key generation and actual manifest enrollment out of that implementation/test-only step. Once the exact candidate source and tests have been reviewed and accepted, perform only the already-authorized one-time enrollment, then verify the exact merged manifest commit and bytes against the local receipt. If Windows CNG provider access, safe key custody or exact manifest fetch-back fails, stop at that named edge; do not bypass it, create replacement credentials, or broaden the scope.
 
 ## 10. Evidence and references
 
@@ -247,15 +251,23 @@ The next technical action is no longer another architecture survey or another re
 
 DESIGN=PROPOSED_ON_DRAFT_PR; NOT_CANONICAL
 INITIAL_TRUST_MECHANISM=OWNER_APPROVED_GITHUB_ENROLLMENT_MANIFEST
+LOCAL_AUTHENTICATED_GITHUB_FETCHBACK=VERIFIED_FOR_EXISTING_CANONICAL_FILE; OWNER_CODEX_REPORTED
+LIVE_MAIN_SHA=79ab8c50eaa7518120d5ebed9db4747d395a21cb; CHATGPT_GITHUB_API_VERIFIED
+CURRENT_STATE_BLOB=5945b23fdb5c13ce1068ca5d2d9e6513a1a06b95; CHATGPT_GITHUB_API_VERIFIED
+BRANCH_RULESET=UNKNOWN; HTTP_403_OWNER_CODEX_REPORTED
+MANIFEST_FETCHBACK=NOT_APPLICABLE_YET
 OWNER_CONTROLLED_ONE_TIME_ENROLLMENT=AUTHORIZED_WITHIN_EXACT_EFFECT_BUDGET; NOT_RUN
 AUTOMATIC_BOOTSTRAP=FALSE
+KEY_CREATED=NOT_RUN
+MANIFEST_MERGED=NOT_RUN
 G1=NOT_ESTABLISHED
 G2=NOT_ESTABLISHED
 G3=NOT_ESTABLISHED
-AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+AUTHORITY_ASSETS=NOT_YET_BOUND_TO_NEW_ENROLLMENT
 MCP_TOOL_ALLOWLIST=EMPTY
 PROTECTED_READS=FAIL_CLOSED
 TUNNEL=DISABLED
 BRIDGE=BRIDGE_NOT_READY
-TESTS/BUILD/RUNTIME=NOT_RUN_BY_THIS_DOCUMENT_TASK
-MERGE=NOT_AUTHORIZED
+ENROLLMENT_CANDIDATE_TESTS=NOT_RUN_IN_THIS_DOCUMENT_TASK
+PRODUCT_RUNTIME=NOT_RUN
+MERGE_OF_PRODUCT_CANDIDATE=NOT_AUTHORIZED
