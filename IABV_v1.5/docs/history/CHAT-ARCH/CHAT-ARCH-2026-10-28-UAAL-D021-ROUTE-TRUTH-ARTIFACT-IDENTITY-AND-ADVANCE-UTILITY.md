@@ -279,6 +279,7 @@ UAAL-D021 route truth and revision binding extend to the actual command that pro
 15. **Review coverage:** a result based on 13 of 33 files inspected in depth must remain a scoped review; list unread files as UNKNOWN and never upgrade it to a full-PR audit.
 16. **Task-local blocker:** after a route is terminal, preserve that result while checking for a separately authorized independent lane. Wait globally only when no admissible useful action remains.
 17. **Method activation:** mentioning or linking D019/D020/D021/D022 is insufficient. The task receipt must show which decision the activated rule changed, why the chosen action differed from the prior route, and the evidence for the resulting outcome.
+18. **Resource-constrained realization switch:** a terminal acquisition failure such as “No space left on device” closes that exact acquisition attempt, not automatically the objective. Before repeating it, compare the operation and preconditions against the failed attempt. Where the claim is limited to two exact, self-contained source/test files, a smaller API-backed harness may be used only after verifying exact ref, Git blob IDs, byte hashes, dependencies, and the limits imposed by the absent repository configuration. A harness pass supports only the files and execution context actually tested; it must not be promoted to a full-checkout/repository result. A cleanup attempt rejected by policy remains CLEANUP_BLOCKED; do not silently bypass it.
 
 These are documentary acceptance cases. This session did not execute tests, builds or runtime.
 
@@ -287,7 +288,7 @@ These are documentary acceptance cases. This session did not execute tests, buil
 Observed:
 - M1B R4 is published in draft PR #555; exact source SHA-256 values were independently computed from remote text and match the R4 values in that PR.
 - PR #555 has a static review reporting no blocking functional defect and recording residual limitations.
-- M1B's 34 targeted passing tests remain `OWNER_CODEX_REPORTED`; not rerun here.
+- The original M1B R4 receipt reported 34 passing cases before F-01/F-02. After the exact-head correction at c36ee5ed177a3b5afee764c277cc4a8b243594c8, Codex reports 3/3 focused cases and 37/37 full reader-file cases passing through an API-backed minimal harness. This session independently reconciled the published HEAD and file identities but did not rerun pytest; the result remains OWNER_CODEX_REPORTED, scoped to that harness rather than a full repository checkout. See [the exact-head validation receipt](CHAT-ARCH-2026-10-28-M1B-F01-F02-TARGETED-VALIDATION-RECEIPT.md).
 - PR #556 remains a separate M1A source-only parallel line.
 - This audit also found that the first M1B route correction left an older `PUBLISH_EXISTING_LOCAL_FILES` action in the historical tail of `CURRENT-STATE.md`. The same PR branch now marks that tail as non-operative history and records the live next action at the top. This is `METHOD_APPLIED` with branch fetch-back evidence for this episode; `LATER_CAUSAL_REUSE=NOT_PROVEN`.
 - This method refinement is proposed in the documentation PR branch. It is not yet on `main`, and automatic runtime enforcement is not established.
@@ -306,3 +307,13 @@ MERGE=NOT_AUTHORIZED
 ```
 
 **Routing boundary:** this document defines a method; it does not choose the currently active project task. Always consult the newest top entry in `CURRENT-STATE.md`. For the current M1A enrollment work, the existing authenticated fetchback for an existing canonical file is closed, while manifest-specific fetchback is not applicable until a manifest exists; see the current route record. Do not revive this document's historical M1B examples as the active task.
+
+## 6. M1B F-01/F-02 validation and resource-bound method delta (2026-10-28)
+
+The first isolated full clone failed before materializing the two target files because the Windows volumes reported insufficient free space. That is an acquisition/environment failure, not a source-test failure. Repeating the same full clone without changed resource conditions would not be a discriminating action.
+
+Codex switched to a bounded realization: retrieve only the exact reader and test file bytes through the authenticated GitHub API, bind them to the candidate HEAD and Git blob IDs, verify SHA-256, and assemble a minimal package-shaped harness. The focused test then reported 3 passed / 34 deselected, and the entire reader test file reported 37 passed. The harness did not load repository-level pytest configuration; this evidence does not claim a full checkout or full repository test run. The precise receipt captures the commands, environment, hashes, residual cleanup block and evidence labels.
+
+The method change is the important reusable delta: a blocked realization does not automatically close the objective. Choose the smallest valid alternate realization only when its coverage is adequate for the claim, preserve exact-source provenance, disclose environmental/configuration differences, and keep the original failed route closed. Do not bypass cleanup policy to improve the receipt.
+
+This is reported execution evidence from Codex, not an independent pytest rerun in this session. The test result does not address the residual filesystem TOCTOU limitation or establish bridge authority/readiness. This section and D021 remain proposals on the draft documentation branch until authorized integration and canonical fetch-back.
