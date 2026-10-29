@@ -4,8 +4,8 @@
 - Repository: jhonf463r/Python.
 - Evidence baseline immediately before this design addendum was written into PR #557: live main 79ab8c50eaa7518120d5ebed9db4747d395a21cb; PR #549 HEAD 519c55a5b96a5e0b3826b54bf92726ef7f1b9c28; PR #555 HEAD 6c601c99bb9cc2111f9dde2f6986aefcc0393785; PR #556 HEAD 1ef23ce47fa206fa751d90fd0c92bcab8a902a6b; PR #557 pre-write HEAD a5ca0e88eed5d80eaa9d7a1e9c535ffe5f960b9f.
 - Status: OWNER_REQUESTED_ARCHITECTURE_AND_TRACEABILITY_IMPROVEMENT; DESIGN_PROPOSAL_ONLY; NOT_CANONICAL; NOT_IMPLEMENTED.
-- Permission boundary: this document does not provision a trust root, create keys/credentials, configure Entra or Windows, execute tests/runtime, enable protected reads, enable the MCP tool allowlist, enable the tunnel, merge a PR, or authorize bridge activation.
-- Governing policy remains OPTION_D=RATIFIED_NO_BOOTSTRAP. This proposal does not change its meaning or ask for re-ratification. A change from absolute prohibition to Owner-controlled enrollment is a distinct policy decision, not an implementation detail.
+- Permission boundary: this document records the selected initial-trust mechanism and the one-time enrollment effect budget. This documentation update does not itself create a key, enroll a root, run tests/runtime, enable protected reads or the MCP tool allowlist, enable the tunnel, merge a product PR, or activate the bridge.
+- Governing policy is narrowed only to permit the expressly Owner-controlled, one-time enrollment effect budget in §9; automatic/self-bootstrap and all operational capabilities remain prohibited. No re-ratification of the prior Option D decision is requested.
 
 ## 1. Executive finding
 
@@ -162,11 +162,72 @@ Choose the smallest topology that satisfies the declared threat model, then prov
 
 A test-suite pass is necessary for implementation quality, not sufficient for authority closure. A design document, branch or PR does not establish a deployed authority provider.
 
-## 9. Decisions and authorization boundaries
+## 9. Owner decision — selected initial trust mechanism and bounded effects (2026-10-28)
 
-Current Option D remains unchanged. Owner-controlled initial enrollment is the only identified path that can resolve the deadlock if no qualifying pre-existing root exists, but it is not authorized by this design record. Before implementation, the Owner/governance policy must explicitly select the trusted out-of-band authority mechanism and permit exactly its enrollment effects. That policy decision is distinct from permission to open protected files, activate the MCP server or enable tunnel/side-effect tools.
+The Owner has now directed the coordinator to select the initial trust mechanism and define its authorized effects. This closes the previous open *design-choice* edge. It does not claim that a key exists or that an enrollment has already run.
 
-No further generic trust-asset inventory, Entra setup, TPM/Hello feasibility survey or broad test rerun is the next action. New technical work must attach to a selected, evidence-backed trust boundary. If the actual runtime/OS authority route is unavailable to the current actor, report that actor/tool boundary and name the exact external producer needed; do not retry alternate readers or invent a new agent.
+### 9.1 Selected mechanism
+
+**Selected: an Owner-approved, version-pinned GitHub enrollment manifest, with a local Windows CNG key as a subordinate G1 issuer identity.**
+
+The out-of-band authority is the Owner's explicit authenticated action on a dedicated enrollment pull request and its exact merge into the canonical `jhonf463r/Python` `main` branch. The local IABV runtime cannot approve its own root: before the manifest is explicitly approved and fetched back from the exact canonical commit, a newly generated key has **zero IABV authority**.
+
+The manifest must bind, at minimum: immutable repository ID and path; exact merged commit SHA; manifest version and content digest; public-key thumbprint/key identifier; the Windows user SID; the exact IABV server/code revision; one canonical workspace root; the approved initial capability profile; issue/expiry state; and the authoritative revocation/version source. It contains **no private key, GitHub App PEM, access token, client secret, or other credential**.
+
+Local key custody uses Windows CNG, user-scope and non-exportable. Prefer the Platform Crypto Provider when available; if only the Software Key Storage Provider is available, record that lower assurance explicitly and keep the scope local/single-user. This software-provider mode does not protect against compromise of the same Windows user's session or a malicious process already running as that user. No TPM/Secure Boot presence is assumed or claimed. The CNG key is not directly exposed as a generic MCP tool and cannot itself grant a capability: every mandate must still be constrained by current G2 policy and G3 target binding.
+
+**Not selected as the trust root:** Entra login/token alone; the GitHub App's PEM; a key generated by IABV and trusted without Owner approval; a fingerprint displayed only by the process being enrolled; or a file/hash alone without its Owner-approved canonical commit. Entra remains HTTP caller authentication. The GitHub App key remains GitHub API authentication only.
+
+The existing repository branch-protection/ruleset configuration has not been verified in this task. The enrollment verifier must not claim required-review or no-bypass guarantees until those settings are independently checked. The trust model assumes the Owner's GitHub control-plane account and HTTPS trust chain are not compromised; compromise of that account is outside this bootstrap mechanism's protection.
+
+### 9.2 One-time enrollment effect budget
+
+The newly selected enrollment mechanism is limited to a single explicit operation bound to one machine/user and one exact server/workspace binding.
+
+**Effects in scope for the one-time enrollment operation:**
+1. Generate one local Windows CNG key pair and retain the private key in the Windows key store; only the public key/thumbprint may leave the host.
+2. Produce one local enrollment receipt recording the manifest digest, public-key identifier, current Windows SID, exact code/checkout identity, workspace root, policy version and result.
+3. Prepare one public enrollment manifest through a dedicated PR. The Owner must explicitly approve/merge that exact manifest; no local success message substitutes for the merge.
+4. Fetch the exact merged manifest from canonical `main`, verify its repository/commit/content identity, and compare it with the local receipt before reporting G1 enrollment as established.
+5. Keep all generated local state inside the dedicated IABV authority store; do not change the project checkout, Windows ACLs, registry, services, IPC endpoints or system security settings.
+
+A retry may not generate a second active root or silently replace a key. If a key already exists, reconcile its identifier and receipt; do not overwrite. A provider, repository, identity or exact-commit mismatch is a hard stop. If the manifest cannot be fetched or its current version/revocation state cannot be checked, enrollment stays inactive.
+
+### 9.3 Effects explicitly excluded
+
+This decision does **not** grant an MCP operation capability. During and after enrollment:
+
+- `MCP_TOOL_ALLOWLIST=EMPTY`; no tool receives an operation grant merely because G1 was enrolled.
+- `G2=NOT_ESTABLISHED` and `G3=NOT_ESTABLISHED` until independently implemented and verified.
+- `PROTECTED_READS=FAIL_CLOSED`: no protected repository/workspace content read, no use of `read_repo_file` or `list_repo_directory`, and no assumption that the M1B context-artifact reader closes G3.
+- No screenshots, clipboard reads, window/process enumeration, browser/login probing, arbitrary directory listing, subprocess execution, pytest/build/runtime, UI interaction, state-mutating tool, PR merge, service installation, ACL/IPC change, Entra resource/configuration change or tunnel.
+- No edits to `C:\Python`; no private key or credential copied to GitHub, chat, log or receipt.
+
+Thus the selected enrollment can establish only the identity and provenance of one local G1 issuer, not authorization to read content or perform side effects. Operation grants remain empty until G2 policy, G3 same-object target binding and per-tool enforcement are all established.
+
+### 9.4 State transition and stop rules
+
+The prior absolute no-bootstrap state is narrowed **only** for the explicit Owner-controlled one-time enrollment effect set above. Automatic/self-bootstrap remains prohibited. No protected-read or bridge-activation permission is implied.
+
+```text
+OWNER_DECISION=INITIAL_TRUST_MECHANISM_SELECTED; EFFECT_BUDGET_DEFINED
+INITIAL_TRUST_SOURCE=OWNER_APPROVED_GITHUB_ENROLLMENT_MANIFEST
+LOCAL_KEY_CUSTODY=WINDOWS_CNG_NONEXPORTABLE; TPM_PROVIDER_PREFERRED; ASSURANCE_RECORDED
+OWNER_CONTROLLED_ONE_TIME_ENROLLMENT=AUTHORIZED_WITHIN_EXACT_EFFECT_BUDGET
+AUTOMATIC_BOOTSTRAP=FALSE
+KEY_CREATED=NOT_RUN
+MANIFEST_MERGED=NOT_RUN
+G1=NOT_ESTABLISHED_UNTIL_EXACT_MAIN_FETCHBACK_AND_LOCAL_BINDING_VERIFY
+G2/G3=NOT_ESTABLISHED
+MCP_TOOL_ALLOWLIST=EMPTY
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+MERGE_OF_PRODUCT_CANDIDATE=NOT_AUTHORIZED
+TESTS/BUILD/RUNTIME=NOT_RUN_BY_THIS_DOCUMENT_TASK
+```
+
+The next technical action is no longer another architecture survey or another request to choose a trust source. It is to implement/review the bounded one-time enrollment path in an isolated candidate and synthetic tests, then execute only the exact enrollment operation above through the supported local agent. If local CNG access or authenticated GitHub fetch-back is unavailable, report that exact edge and stop; do not bypass the boundary or expand the scope.
 
 ## 10. Evidence and references
 
@@ -182,9 +243,10 @@ No further generic trust-asset inventory, Entra setup, TPM/Hello feasibility sur
 
 ## 11. Current evidence boundary
 
-DESIGN=PROPOSED; NOT_CANONICAL
-OPTION_D=RATIFIED_NO_BOOTSTRAP; UNCHANGED
-OWNER_CONTROLLED_ENROLLMENT=PROPOSED; NOT_AUTHORIZED
+DESIGN=PROPOSED_ON_DRAFT_PR; NOT_CANONICAL
+INITIAL_TRUST_MECHANISM=OWNER_APPROVED_GITHUB_ENROLLMENT_MANIFEST
+OWNER_CONTROLLED_ONE_TIME_ENROLLMENT=AUTHORIZED_WITHIN_EXACT_EFFECT_BUDGET; NOT_RUN
+AUTOMATIC_BOOTSTRAP=FALSE
 G1=NOT_ESTABLISHED
 G2=NOT_ESTABLISHED
 G3=NOT_ESTABLISHED
