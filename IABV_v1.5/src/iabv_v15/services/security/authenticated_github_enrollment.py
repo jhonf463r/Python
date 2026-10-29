@@ -1,16 +1,12 @@
-"""Authenticated, read-only GitHub fetch-back for the enrollment manifest.
+"""Fail-closed candidate logic for read-only enrollment-manifest fetch-back.
 
-Authentication is delegated to the existing GitHub CLI login. This module
-never asks for, prints, or stores a token. It is not wired to MCP or startup.
+The current GitHub CLI path has no trusted executable-provenance check and is
+therefore disabled. The pure verifier core is not a production trust path.
 """
 from __future__ import annotations
 
 import hashlib
-import json
-import os
 import re
-import shutil
-import subprocess
 from datetime import datetime, timezone
 from typing import Any, Callable, Mapping, Protocol
 
@@ -19,7 +15,6 @@ from iabv_v15.services.security.github_owner_merge_bootstrap import (
     EXPECTED_BASE_BRANCH,
     EXPECTED_REPOSITORY,
     EXPECTED_REPOSITORY_ID,
-    MAX_API_RESPONSE_BYTES,
     OwnerMergeVerificationError,
     _fetch_manifest,
     _require_object,
@@ -30,11 +25,10 @@ from iabv_v15.services.security.owner_enrollment_manifest import (
     parse_owner_manifest,
     sid_commitment,
 )
-from iabv_v15.services.security.windows_cng_key_store import CngPublicKey
+from iabv_v15.services.security.windows_cng_key_store import CngKeyReader, CngPublicKey
 from iabv_v15.services.security.windows_cng_key_store import PLATFORM_PROVIDER, SOFTWARE_PROVIDER
 
 _SHA1 = re.compile(r"^[0-9a-f]{40}$")
-_API_PATH_SUFFIX = re.compile(r"(?:/[A-Za-z0-9._~-]+)*$")
 
 
 class OwnerManifestReceiptStore(Protocol):
@@ -50,19 +44,16 @@ class OwnerManifestReceiptStore(Protocol):
 
 
 class AuthenticatedGitHubCliApi:
-    """Small API adapter that uses gh's existing credential store internally."""
+    """Disabled candidate: no trusted identity check exists for the gh binary."""
 
     def __init__(
         self,
         *,
         executable: str | None = None,
-        runner: Callable[..., Any] = subprocess.run,
+        runner: Callable[..., Any] | None = None,
     ) -> None:
-        self.executable = executable or shutil.which("gh")
-        self._runner = runner
-        self.last_link_relations: set[str] = set()
-        if not self.executable:
-            raise OwnerMergeVerificationError("GITHUB_CLI_UNAVAILABLE")
+        del executable, runner
+        raise OwnerMergeVerificationError("GITHUB_CLIENT_PROVENANCE_UNVERIFIED")
 
     def __enter__(self) -> "AuthenticatedGitHubCliApi":
         return self
@@ -71,59 +62,8 @@ class AuthenticatedGitHubCliApi:
         return None
 
     def get_json(self, path: str, *, params: Mapping[str, object] | None = None) -> Any:
-        root = f"/repos/{EXPECTED_REPOSITORY}"
-        if (
-            not isinstance(path, str)
-            or len(path) > 1024
-            or not path.startswith(root)
-            or _API_PATH_SUFFIX.fullmatch(path[len(root):]) is None
-            or any(part in {".", ".."} for part in path.split("/"))
-            or any(char in path for char in "?#\\")
-        ):
-            raise OwnerMergeVerificationError("API_PATH_OUT_OF_SCOPE")
-        args = [self.executable, "api", path, "--method", "GET"]
-        query = params or {}
-        for name, value in query.items():
-            if not re.fullmatch(r"[a-z_]+", name) or isinstance(value, bool) or not isinstance(value, (str, int)):
-                raise OwnerMergeVerificationError("API_QUERY_INVALID")
-            if isinstance(value, str) and (len(value) > 256 or re.fullmatch(r"[A-Za-z0-9._~-]+", value) is None):
-                raise OwnerMergeVerificationError("API_QUERY_INVALID")
-            args.extend(["-f", f"{name}={value}"])
-        paginate = path.endswith("/files") or ("/commits/" in path and path.endswith("/pulls"))
-        if paginate:
-            args.extend(["--paginate", "--slurp"])
-        env = os.environ.copy()
-        env["GH_PROMPT_DISABLED"] = "1"
-        env["GIT_TERMINAL_PROMPT"] = "0"
-        try:
-            result = self._runner(
-                args,
-                capture_output=True,
-                check=False,
-                timeout=20,
-                env=env,
-                shell=False,
-                stdin=subprocess.DEVNULL,
-            )
-        except (OSError, subprocess.TimeoutExpired):
-            raise OwnerMergeVerificationError("AUTHENTICATED_GITHUB_REQUEST_FAILED") from None
-        raw = result.stdout if isinstance(result.stdout, bytes) else str(result.stdout or "").encode("utf-8")
-        error = result.stderr if isinstance(result.stderr, bytes) else str(result.stderr or "").encode("utf-8", errors="replace")
-        if result.returncode != 0:
-            text = error.decode("utf-8", errors="replace").casefold()
-            code = "GITHUB_AUTHENTICATION_OR_PERMISSION_FAILED" if any(x in text for x in ("http 401", "http 403", "http 404")) else "AUTHENTICATED_GITHUB_REQUEST_FAILED"
-            raise OwnerMergeVerificationError(code)
-        if len(raw) > MAX_API_RESPONSE_BYTES:
-            raise OwnerMergeVerificationError("GITHUB_API_RESPONSE_TOO_LARGE")
-        try:
-            payload = json.loads(raw.decode("utf-8"))
-        except (UnicodeDecodeError, json.JSONDecodeError):
-            raise OwnerMergeVerificationError("GITHUB_API_JSON_INVALID") from None
-        if paginate:
-            if not isinstance(payload, list) or any(not isinstance(page, list) for page in payload):
-                raise OwnerMergeVerificationError("GITHUB_API_PAGINATION_INVALID")
-            return [item for page in payload for item in page]
-        return payload
+        del path, params
+        raise OwnerMergeVerificationError("GITHUB_CLIENT_PROVENANCE_UNVERIFIED")
 
 
 def verify_owner_manifest_fetchback(
@@ -139,12 +79,36 @@ def verify_owner_manifest_fetchback(
     api: AuthenticatedGitHubCliApi | Any | None = None,
     clock: Callable[[], datetime] | None = None,
 ) -> OwnerManifestFetchbackReceipt:
-    """Verify an Owner-merged manifest at the merge commit and current main.
+    """Reject fetch-back until the GitHub response producer is trusted."""
+    del (
+        pull_request_number, expected_manifest, expected_owner_id,
+        expected_server_code_revision, expected_workspace_root, windows_sid,
+        cng_key, receipt_store, api, clock,
+    )
+    raise OwnerMergeVerificationError("GITHUB_CLIENT_PROVENANCE_UNVERIFIED")
+
+
+def _verify_owner_manifest_fetchback_with_api(
+    pull_request_number: int,
+    *,
+    expected_manifest: OwnerEnrollmentManifest,
+    expected_owner_id: int,
+    expected_server_code_revision: str,
+    expected_workspace_root: str,
+    windows_sid: str,
+    cng_key: CngPublicKey,
+    key_store: CngKeyReader,
+    receipt_store: OwnerManifestReceiptStore,
+    api: Any,
+    clock: Callable[[], datetime] | None = None,
+) -> OwnerManifestFetchbackReceipt:
+    """Pure verifier core for synthetic tests; not a production trust path.
 
     Returns evidence only after the explicitly supplied receipt-store boundary
     records it idempotently. No production store is supplied here. This does
     not consume a challenge, enroll a G1 root, enable a gate, or change runtime
-    authorization state.
+    authorization state. Production entry is separately fail-closed until a
+    trusted GitHub response producer is implemented.
     """
     if type(pull_request_number) is not int or pull_request_number < 1 or type(expected_owner_id) is not int or expected_owner_id < 1:
         raise OwnerMergeVerificationError("ENROLLMENT_CONTEXT_INVALID")
@@ -167,9 +131,14 @@ def verify_owner_manifest_fetchback(
         or (cng_key.provider_name == SOFTWARE_PROVIDER and cng_key.assurance != "SOFTWARE_PROVIDER_LOWER_ASSURANCE")
     ):
         raise OwnerMergeVerificationError("LOCAL_CNG_KEY_BINDING_MISMATCH")
+    try:
+        persisted_key = key_store.read_existing_key(expected_manifest.enrollment_id, cng_key.provider_name)
+    except Exception:
+        raise OwnerMergeVerificationError("LOCAL_CNG_PERSISTED_KEY_UNAVAILABLE") from None
+    if persisted_key != cng_key:
+        raise OwnerMergeVerificationError("LOCAL_CNG_PERSISTED_KEY_MISMATCH")
     now_fn = clock or (lambda: datetime.now(timezone.utc))
-    own_api = api is None
-    client = AuthenticatedGitHubCliApi() if own_api else api
+    client = api
     try:
         now = now_fn()
         if now.tzinfo is None or now.utcoffset() is None:
@@ -207,7 +176,7 @@ def verify_owner_manifest_fetchback(
         if merged_time.tzinfo is None or merged_time.utcoffset() is None or int(merged_time.timestamp()) < expected_manifest.issued_at_epoch or int(merged_time.timestamp()) >= expected_manifest.expires_at_epoch:
             raise OwnerMergeVerificationError("MERGE_OUTSIDE_MANIFEST_VALIDITY")
         files = client.get_json(f"{root}/pulls/{pull_request_number}/files", params={"per_page": 100})
-        if not isinstance(files, list) or len(files) != 1 or not isinstance(files[0], dict) or files[0].get("filename") != BOOTSTRAP_MANIFEST_PATH or files[0].get("status") not in {"added", "modified"}:
+        if not isinstance(files, list) or len(files) != 1 or not isinstance(files[0], dict) or files[0].get("filename") != BOOTSTRAP_MANIFEST_PATH or files[0].get("status") != "added":
             raise OwnerMergeVerificationError("MANIFEST_NOT_EXCLUSIVE_PR_CHANGE")
         branch = client.get_json(f"{root}/branches/{EXPECTED_BASE_BRANCH}")
         _require_object(branch, "MAIN_BRANCH_RESPONSE_INVALID")
@@ -284,5 +253,4 @@ def verify_owner_manifest_fetchback(
             raise OwnerMergeVerificationError("LOCAL_RECEIPT_CONFLICT")
         return recorded
     finally:
-        if own_api:
-            client.__exit__(None, None, None)
+        pass

@@ -50,6 +50,12 @@ class _CngApi(Protocol):
     def free(self, handle: int) -> int: ...
 
 
+class CngKeyReader(Protocol):
+    """Reads public identity from a persisted provider key handle."""
+
+    def read_existing_key(self, enrollment_id: str, provider_name: str) -> CngPublicKey: ...
+
+
 class WindowsCngKeyStore:
     """Creates one current-user RSA key, preferring Platform KSP.
 
@@ -67,11 +73,11 @@ class WindowsCngKeyStore:
         key_name = "IABV-G1-" + enrollment_id
         provider_name, provider = self._select_provider()
         key = 0
-        finalized = False
         try:
             status, existing = self._api.open_key(provider, key_name)
             if status == 0:
-                self._api.free(existing)
+                if not existing or self._api.free(existing) != 0:
+                    raise CngEnrollmentError("CNG_EXISTING_KEY_HANDLE_RELEASE_FAILED")
                 raise CngEnrollmentError("ENROLLMENT_KEY_ALREADY_EXISTS")
             if status not in {_NTE_BAD_KEYSET, _NTE_NOT_FOUND}:
                 raise CngEnrollmentError("CNG_EXISTING_KEY_CHECK_FAILED")
@@ -84,22 +90,119 @@ class WindowsCngKeyStore:
                 raise CngEnrollmentError("CNG_NONEXPORTABLE_POLICY_FAILED")
             if self._api.finalize(key) != 0:
                 raise CngEnrollmentError("CNG_KEY_FINALIZE_FAILED")
-            finalized = True
-            status, blob = self._api.export_public_blob(key)
-            if status != 0:
-                raise CngEnrollmentError("CNG_PUBLIC_KEY_EXPORT_FAILED")
-            pem = _public_blob_to_pem(blob)
-            der = base64.b64decode("".join(pem.strip().splitlines()[1:-1]), validate=True)
-            assurance = "PLATFORM_PROVIDER_SELECTED; HARDWARE_BACKING_NOT_INDEPENDENTLY_VERIFIED" if provider_name == PLATFORM_PROVIDER else "SOFTWARE_PROVIDER_LOWER_ASSURANCE"
-            return CngPublicKey(key_name, provider_name, assurance, pem, hashlib.sha256(der).hexdigest())
-        except CngEnrollmentError:
-            if key and not finalized:
-                self._api.delete_key(key)
-            raise
-        finally:
+            result = self._public_key_from_handle(provider_name, key_name, key)
+        except Exception as primary:
+            cleanup_errors: list[str] = []
             if key:
-                self._api.free(key)
-            self._api.free(provider)
+                try:
+                    delete_status = self._api.delete_key(key)
+                except Exception:
+                    delete_status = None
+                if delete_status == 0:
+                    # NCryptDeleteKey releases the key handle on success.
+                    key = 0
+                else:
+                    cleanup_errors.append("CNG_KEY_DELETE_FAILED")
+                    try:
+                        free_status = self._api.free(key)
+                        key = 0
+                        if free_status != 0:
+                            cleanup_errors.append("CNG_KEY_HANDLE_RELEASE_FAILED")
+                    except Exception:
+                        key = 0
+                        cleanup_errors.append("CNG_KEY_HANDLE_RELEASE_FAILED")
+            try:
+                if self._api.free(provider) != 0:
+                    cleanup_errors.append("CNG_PROVIDER_HANDLE_RELEASE_FAILED")
+            except Exception:
+                cleanup_errors.append("CNG_PROVIDER_HANDLE_RELEASE_FAILED")
+            if cleanup_errors:
+                raise CngEnrollmentError("CNG_CREATION_CLEANUP_FAILED:" + ",".join(cleanup_errors)) from primary
+            raise
+
+        release_errors: list[str] = []
+        try:
+            if self._api.free(key) != 0:
+                release_errors.append("CNG_KEY_HANDLE_RELEASE_FAILED")
+        except Exception:
+            release_errors.append("CNG_KEY_HANDLE_RELEASE_FAILED")
+        try:
+            if self._api.free(provider) != 0:
+                release_errors.append("CNG_PROVIDER_HANDLE_RELEASE_FAILED")
+        except Exception:
+            release_errors.append("CNG_PROVIDER_HANDLE_RELEASE_FAILED")
+        if release_errors:
+            raise CngEnrollmentError("CNG_HANDLE_RELEASE_FAILED:" + ",".join(release_errors))
+        return result
+
+    def read_existing_key(self, enrollment_id: str, provider_name: str) -> CngPublicKey:
+        """Reconstruct key identity from the actual persisted provider object.
+
+        This is a recovery/read path only: it never creates or overwrites a key.
+        """
+        if not isinstance(enrollment_id, str) or len(enrollment_id) != 32 or any(c not in "0123456789abcdef" for c in enrollment_id):
+            raise CngEnrollmentError("ENROLLMENT_ID_INVALID")
+        if provider_name not in {PLATFORM_PROVIDER, SOFTWARE_PROVIDER}:
+            raise CngEnrollmentError("CNG_PROVIDER_NOT_APPROVED")
+        if os.name != "nt" and type(self._api).__name__ == "_NativeCngApi":
+            raise CngEnrollmentError("CNG_UNAVAILABLE_ON_THIS_PLATFORM")
+        status, providers = self._api.enumerate_providers()
+        if status != 0:
+            raise CngEnrollmentError("CNG_PROVIDER_ENUMERATION_FAILED")
+        if provider_name not in providers:
+            raise CngEnrollmentError("CNG_PERSISTED_KEY_PROVIDER_UNAVAILABLE")
+        status, provider = self._api.open_provider(provider_name)
+        if status != 0 or not provider:
+            if provider:
+                try:
+                    if self._api.free(provider) != 0:
+                        raise CngEnrollmentError("CNG_PROVIDER_OPEN_CLEANUP_FAILED")
+                except CngEnrollmentError:
+                    raise
+                except Exception:
+                    raise CngEnrollmentError("CNG_PROVIDER_OPEN_CLEANUP_FAILED") from None
+            raise CngEnrollmentError("CNG_SELECTED_PROVIDER_OPEN_FAILED")
+        key = 0
+        try:
+            status, key = self._api.open_key(provider, "IABV-G1-" + enrollment_id)
+            if status != 0 or not key:
+                raise CngEnrollmentError("CNG_PERSISTED_KEY_OPEN_FAILED")
+            result = self._public_key_from_handle(provider_name, "IABV-G1-" + enrollment_id, key)
+        except Exception as primary:
+            cleanup_errors: list[str] = []
+            if key:
+                try:
+                    if self._api.free(key) != 0:
+                        cleanup_errors.append("CNG_KEY_HANDLE_RELEASE_FAILED")
+                except Exception:
+                    cleanup_errors.append("CNG_KEY_HANDLE_RELEASE_FAILED")
+            try:
+                if self._api.free(provider) != 0:
+                    cleanup_errors.append("CNG_PROVIDER_HANDLE_RELEASE_FAILED")
+            except Exception:
+                cleanup_errors.append("CNG_PROVIDER_HANDLE_RELEASE_FAILED")
+            if cleanup_errors:
+                raise CngEnrollmentError("CNG_READ_CLEANUP_FAILED:" + ",".join(cleanup_errors)) from primary
+            raise
+        release_errors: list[str] = []
+        for handle, code in ((key, "CNG_KEY_HANDLE_RELEASE_FAILED"), (provider, "CNG_PROVIDER_HANDLE_RELEASE_FAILED")):
+            try:
+                if self._api.free(handle) != 0:
+                    release_errors.append(code)
+            except Exception:
+                release_errors.append(code)
+        if release_errors:
+            raise CngEnrollmentError("CNG_READ_CLEANUP_FAILED:" + ",".join(release_errors))
+        return result
+
+    def _public_key_from_handle(self, provider_name: str, key_name: str, key: int) -> CngPublicKey:
+        status, blob = self._api.export_public_blob(key)
+        if status != 0:
+            raise CngEnrollmentError("CNG_PUBLIC_KEY_EXPORT_FAILED")
+        pem = _public_blob_to_pem(blob)
+        der = base64.b64decode("".join(pem.strip().splitlines()[1:-1]), validate=True)
+        assurance = "PLATFORM_PROVIDER_SELECTED; HARDWARE_BACKING_NOT_INDEPENDENTLY_VERIFIED" if provider_name == PLATFORM_PROVIDER else "SOFTWARE_PROVIDER_LOWER_ASSURANCE"
+        return CngPublicKey(key_name, provider_name, assurance, pem, hashlib.sha256(der).hexdigest())
 
     def _select_provider(self) -> tuple[str, int]:
         if os.name != "nt" and type(self._api).__name__ == "_NativeCngApi":
@@ -112,6 +215,14 @@ class WindowsCngKeyStore:
             raise CngEnrollmentError("NO_APPROVED_CNG_PROVIDER_AVAILABLE")
         status, handle = self._api.open_provider(selected)
         if status != 0 or not handle:
+            cleanup_failed = False
+            if handle:
+                try:
+                    cleanup_failed = self._api.free(handle) != 0
+                except Exception:
+                    cleanup_failed = True
+            if cleanup_failed:
+                raise CngEnrollmentError("CNG_PROVIDER_OPEN_CLEANUP_FAILED")
             # Do not silently downgrade when a registered preferred provider
             # exists but is unavailable or blocked by policy.
             raise CngEnrollmentError("CNG_SELECTED_PROVIDER_OPEN_FAILED")

@@ -37,7 +37,12 @@ _CREDENTIAL_FIELD_NAMES = frozenset({
 
 @dataclass(frozen=True)
 class OwnerEnrollmentManifest:
-    """Versioned public bindings approved out-of-band in a dedicated PR."""
+    """Versioned public bindings approved out-of-band in a dedicated PR.
+
+    ``revocation_source_id`` is only a future provider reference. This model
+    does not resolve it or establish current revocation status; G2 remains
+    unestablished until a separately trusted provider exists.
+    """
 
     enrollment_id: str
     public_key_pem: str
