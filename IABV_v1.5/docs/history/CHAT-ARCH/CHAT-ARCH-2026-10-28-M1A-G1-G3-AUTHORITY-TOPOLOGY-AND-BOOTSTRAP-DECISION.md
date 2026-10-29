@@ -172,7 +172,7 @@ The Owner has now directed the coordinator to select the initial trust mechanism
 
 The out-of-band authority is the Owner's explicit authenticated action on a dedicated enrollment pull request and its exact merge into the canonical `jhonf463r/Python` `main` branch. The local IABV runtime cannot approve its own root: before the manifest is explicitly approved and fetched back from the exact canonical commit, a newly generated key has **zero IABV authority**.
 
-The manifest must bind, at minimum: immutable repository ID and path; exact merged commit SHA; manifest version and content digest; public-key thumbprint/key identifier; the Windows user SID; the exact IABV server/code revision; one canonical workspace root; the approved initial capability profile; issue/expiry state; and the authoritative revocation/version source. It contains **no private key, GitHub App PEM, access token, client secret, or other credential**.
+The manifest must bind, at minimum: immutable repository ID and canonical manifest path; a stable enrollment ID and schema/version; the public key and its thumbprint/key identifier; the Windows user SID binding; the exact IABV server/code revision; one canonical workspace root; an explicit `ROOT_ENROLLMENT_ONLY` profile (not an MCP capability grant); issue/expiry state; and the authoritative revocation/version source. It contains **no private key, GitHub App PEM, access token, client secret, or other credential**. Crucially, the manifest must **not** contain its own containing commit SHA, Git blob SHA, or whole-content digest: those values would be self-referential because the containing commit/blob depends on the manifest bytes. After the Owner merges the exact manifest PR, a separate local enrollment receipt records the authenticated `main` merge commit SHA, PR/merge metadata and actor, manifest blob SHA, SHA-256 of the exact fetched bytes, and their match to the local CNG public key and identity bindings. Those post-merge identifiers belong in the receipt, not inside the manifest. The receipt is evidence of what was fetched; it does not replace the Owner-approved merge as the external authorization event.
 
 Local key custody uses Windows CNG, user-scope and non-exportable. Prefer the Platform Crypto Provider when available; if only the Software Key Storage Provider is available, record that lower assurance explicitly and keep the scope local/single-user. This software-provider mode does not protect against compromise of the same Windows user's session or a malicious process already running as that user. No TPM/Secure Boot presence is assumed or claimed. The CNG key is not directly exposed as a generic MCP tool and cannot itself grant a capability: every mandate must still be constrained by current G2 policy and G3 target binding.
 
@@ -189,8 +189,8 @@ The newly selected enrollment mechanism is limited to a single explicit operatio
 **Effects in scope for the one-time enrollment operation:**
 1. Generate one local Windows CNG key pair and retain the private key in the Windows key store; only the public key/thumbprint may leave the host.
 2. Produce one local enrollment receipt recording the manifest digest, public-key identifier, current Windows SID, exact code/checkout identity, workspace root, policy version and result.
-3. Prepare one enrollment manifest containing public-key metadata through a dedicated PR. The Owner must explicitly approve/merge that exact manifest; no local success message substitutes for the merge.
-4. Fetch the exact merged manifest from canonical `main`, verify its repository/commit/content identity, and compare it with the local receipt before reporting G1 enrollment as established.
+3. Prepare one enrollment manifest containing public-key metadata through a dedicated PR in the private repository. The Owner must explicitly approve/merge that exact manifest; no local success message substitutes for the merge. The manifest does not embed its own future commit SHA, blob SHA or content digest.
+4. Fetch the exact merged manifest from canonical `main`; independently verify repository identity, merge/PR provenance, commit SHA, manifest path/blob SHA and exact bytes. Store the commit SHA, blob SHA and SHA-256 in the local receipt, compare the fetched public key/bindings with the pre-existing CNG key and receipt, and only then adjudicate the bounded G1 enrollment result.
 5. Keep all generated local state inside the dedicated IABV authority store; do not change the project checkout, Windows ACLs, registry, services, IPC endpoints or system security settings.
 
 A retry may not generate a second active root or silently replace a key. If a key already exists, reconcile its identifier and receipt; do not overwrite. A provider, repository, identity or exact-commit mismatch is a hard stop. If the manifest cannot be fetched or its current version/revocation state cannot be checked, enrollment stays inactive.
@@ -214,6 +214,8 @@ The prior absolute no-bootstrap state is narrowed **only** for the explicit Owne
 ```text
 OWNER_DECISION=INITIAL_TRUST_MECHANISM_SELECTED; EFFECT_BUDGET_DEFINED
 INITIAL_TRUST_SOURCE=OWNER_APPROVED_GITHUB_ENROLLMENT_MANIFEST
+MANIFEST_SELF_REFERENCE=PROHIBITED
+COMMIT_SHA_BLOB_SHA_CONTENT_SHA256=POST_MERGE_LOCAL_RECEIPT_ONLY
 LOCAL_KEY_CUSTODY=WINDOWS_CNG_NONEXPORTABLE; TPM_PROVIDER_PREFERRED; ASSURANCE_RECORDED
 OWNER_CONTROLLED_ONE_TIME_ENROLLMENT=AUTHORIZED_WITHIN_EXACT_EFFECT_BUDGET
 AUTOMATIC_BOOTSTRAP=FALSE
