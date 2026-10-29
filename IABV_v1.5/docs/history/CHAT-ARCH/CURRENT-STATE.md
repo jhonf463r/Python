@@ -1,3 +1,63 @@
+## Owner-directed route update — M1A bounded-enrollment candidate R1 reviewed; source corrections required (2026-10-28)
+
+This entry supersedes the older NEXT_ACTION that routed directly to implementation: Codex has now published an isolated source candidate, and its next gate is independent static correction/review. It does not supersede the preserved security invariants.
+
+### Exact source and route truth
+
+- Live canonical `main`: `79ab8c50eaa7518120d5ebed9db4747d395a21cb` — independently fetched from the GitHub ref.
+- PR #556: open/draft/unmerged; base `main` at that SHA; candidate HEAD `7bb5960feb7975de848fe3351657932ff687ace8` — exact commit and implementation blobs were fetched from GitHub.
+- PR #557: open/draft/unmerged; current HEAD before this writeback: `b3dcce246e1137a473f8c50a18cb113b8329d417`. This memory change is proposed on PR #557 only, not canonical on main.
+- Codex reports 114 focused tests passed with Python 3.13.2 / pytest 9.0.3. Classification: `OWNER_CODEX_REPORTED`; this session did not rerun tests and did not execute native Windows CNG or a live GitHub manifest fetchback.
+
+### Independent static review — material findings
+
+```text
+TASK_ID=M1A_G1_BOUNDED_ENROLLMENT_STATIC_REVIEW_R1_20261028
+SOURCE_AI=CODEX
+INDEPENDENT_REVIEWER=CHATGPT_STATIC_SOURCE_REVIEW
+CANDIDATE_STATUS=REVIEW_REQUIRED; REQUEST_CHANGES_RECOMMENDED
+```
+
+- `R1 CNG_HANDLE_LIFECYCLE`: `windows_cng_key_store.py:96-101` calls `NCryptDeleteKey` on a pre-finalized key in the exception path and then unconditionally calls `NCryptFreeObject` on the same handle in `finally`. Microsoft documents that a successful `NCryptDeleteKey` also frees the handle; callers must not free it twice. Make cleanup branch on the delete result and handle ownership. Source: https://learn.microsoft.com/en-us/windows/win32/api/ncrypt/nf-ncrypt-ncryptdeletekey and https://learn.microsoft.com/windows/win32/api/ncrypt/nf-ncrypt-ncryptcreatepersistedkey.
+- `R2 PARTIAL_KEY_CREATION_RECOVERY`: if finalization succeeds but public export/PEM conversion then fails, `finalized=True` bypasses deletion and leaves the deterministic key name persisted, while a retry fails with `ENROLLMENT_KEY_ALREADY_EXISTS`. Add a safe, explicit cleanup-or-recovery path; synthetic tests must cover every failure point and ensure no double free.
+- `R3 CNG_KEY_PROVENANCE`: `verify_owner_manifest_fetchback()` accepts a constructible `CngPublicKey` data object and compares its fields to the manifest, but does not re-open the named persisted CNG key or prove possession. Before an enrollment receipt can claim local-key binding, source the public key from the actual provider/key handle or establish a provider-backed proof; don't treat a matching Python DTO as proof that the private key exists.
+- `R4 GITHUB_CLIENT_PROVENANCE`: `AuthenticatedGitHubCliApi.__init__()` resolves `gh` through `shutil.which` and permits an executable override. Since this output is used as evidence of Owner merge and canonical bytes, the executable/transport must be a trusted, pinned or verified realization; otherwise a substituted binary can fabricate API responses. Preserve use of the already-authorized identity; do not create credentials.
+- `R5 ONE_TIME_MANIFEST_SEMANTICS`: the fetchback check accepts PR file status `modified` as well as `added` (`authenticated_github_enrollment.py:209-211`). The agreed effect budget is one-time enrollment. Require a first-time `added` manifest for this path or define a separately authorized rotation protocol; don't silently reuse this one-time verifier to replace an enrolled key.
+- `R6 REVOCATION_SOURCE_UNRESOLVED`: `revocation_source_id` is checked only for a non-empty string. No source resolution, authenticity, revocation status or failure behavior is implemented. Keep this as `UNKNOWN`; it is not evidence of revocation support and cannot close G2.
+
+The implementation also still takes Owner ID, Windows SID, code revision and workspace root as parameters. Their production provenance is not yet connected/verified. The `OwnerManifestReceiptStore` is a protocol, not a protected durable implementation. Those are explicit remaining prerequisites, not completed capabilities.
+
+### Next causal frontier
+
+```MEMORY_RETRIEVED=VERIFIED
+METHOD_ACTIVATED=VERIFIED (UAAL-D019/D020 + proposed UAAL-D021 route-truth checks)
+METHOD_APPLIED=VERIFIED (reused existing PR #556; compared exact live refs/blobs; rejected promotion from synthetic tests to production authority)
+OUTCOME_VERIFIED=STATIC_FINDINGS_VERIFIED; TESTS=OWNER_CODEX_REPORTED_114_PASSED; CHATGPT_TESTS=NOT_RUN
+LATER_CAUSAL_REUSE=NOT_PROVEN
+NEXT_ACTOR=CODEX
+NEXT_ACTION=REPAIR_R1_R5_IN_EXISTING_PR_556_CANDIDATE; ADD_TARGETED_NEGATIVE_TESTS; THEN_TRACE_EXISTING_DURABLE_RECEIPT_STORE_AND_TRUSTED_BINDING_PRODUCERS_BEFORE_ENROLLMENT
+EXPECTED_OBSERVABLE=EXACT_DIFF+TEST_RECEIPT_BOUND_TO_NEW_HEAD+FETCHED_SOURCE_HASHES; NO_REAL_KEY_OR_MANIFEST
+STOP_IF=LIVE_HEAD_OR_BASE_CHANGED_UNRESOLVED; KEY_PROVENANCE_UNPROVEN; NO_SAFE_RECEIPT_BACKEND; OWNER/SID/REVISION/WORKSPACE_PROVENANCE_UNRESOLVED
+PR556=OPEN_DRAFT_UNMERGED
+PR557=OPEN_DRAFT_UNMERGED
+BRANCH_RULESET=UNKNOWN
+KEY_CREATED=NOT_RUN
+MANIFEST_CREATED_OR_MERGED=NOT_RUN
+G1/G2/G3=NOT_ESTABLISHED
+MCP_TOOL_ALLOWLIST=EMPTY
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+PRODUCT_CANDIDATE_MERGE=NOT_AUTHORIZED
+C_PYTHON=DO_NOT_TOUCH
+BUILD/RUNTIME/PROTECTED_READS=NOT_RUN
+AUTOMATIC_FOLLOW_ON=FALSE
+```
+
+Do not merge PR #556 or #557. Do not create a key/manifest, change Entra/ACL/IPC/services, start MCP/tunnels, or perform protected reads. The next code task is correction and source-composition in existing isolated artifacts only; if a trusted source/back-end does not already exist, document the exact missing boundary rather than inventing a synthetic authority.
+
+---
+
 ## Owner-directed cross-chat continuity evolution — G1 fetchback preflight closed (2026-10-28)
 
 This is the newest route decision for the continuation of the current M1A trust-enrollment work. It supersedes older action fields below when they conflict, but does not alter canonical main or authorize product-candidate merge/bridge activation.
