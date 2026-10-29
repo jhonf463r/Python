@@ -466,3 +466,26 @@ def test_malformed_control_master_structure_is_unavailable(tmp_path, updates):
     assert result.availability is Availability.UNAVAILABLE
     assert result.reason == "ARTIFACT_INVALID_OR_UNREADABLE"
     assert result.content is None
+
+@pytest.mark.parametrize("constant", ["NaN", "Infinity", "-Infinity"])
+def test_nonstandard_json_numeric_constants_are_unavailable(tmp_path, constant):
+    payload = _portable_package(
+        sections=[{"section_id": "section-1", "confidence": 0.5}]
+    )
+    raw = json.dumps(payload).replace(
+        '"confidence": 0.5',
+        f'"confidence": {constant}',
+        1,
+    ).encode("utf-8")
+    assert f'"confidence": {constant}'.encode("ascii") in raw
+    _write_artifact(tmp_path, ContextArtifact.PORTABLE_CONTEXT, raw)
+
+    result = _reader().read_existing(
+        workspace_root=tmp_path,
+        artifact=ContextArtifact.PORTABLE_CONTEXT,
+        freshness_policy=_policy(),
+    )
+
+    assert result.availability is Availability.UNAVAILABLE
+    assert result.reason == "ARTIFACT_INVALID_OR_UNREADABLE"
+    assert result.content is None
