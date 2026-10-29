@@ -1,45 +1,51 @@
-## ACTIVE ROUTE — Space-Time cross-session boot and live state reconciliation (2026-10-29)
+## ACTIVE ROUTE — Cross-session Space-Time memory, world model, and causal continuity (2026-10-29)
 
-**Routing authority:** this file remains the sole operational router. This header is the active summary; lower dated records are evidence/history unless explicitly reactivated here. When a historical snapshot conflicts with live GitHub, mark the claim `CONFLICTED/STALE` and reconcile it instead of following it.
+**Sole routing authority:** this file owns the current ACTIVE_TASK, NEXT_ACTION, technical gates and permissions. Dated blocks below this active header are historical evidence unless this header explicitly reactivates them. Read this header from live main on every new material session. If the normal file read is empty, retrieve the exact blob by its returned SHA; empty transport output is RETRIEVAL_FAILED, not an empty route.
 
-### Verified live baseline used for this reconciliation
-- The live `main` reference was `79ab8c50eaa7518120d5ebed9db4747d395a21cb` at the start of this documentation task. Always refresh the ref at each new material session.
-- [PR #555](https://github.com/jhonf463r/Python/pull/555) is `OPEN/DRAFT/UNMERGED`, HEAD `c36ee5ed177a3b5afee764c277cc4a8b243594c8`. Thus M1B source is published to a reviewable PR; old claims saying “local only”, “untracked”, or “not published” are historical and no longer the current publication state. Codex reported 37 tests in a minimal harness; the full repository suite was not run due to the storage constraint. This remains `OWNER_CODEX_REPORTED`.
-- [PR #556](https://github.com/jhonf463r/Python/pull/556) is `OPEN/DRAFT/UNMERGED`, HEAD `fb635aab18d9c2ef19b20d48e3625d52383fe6af`. Codex reported 31 targeted tests passing and `git diff --check` clean; this session verified the live HEAD/diff but did not execute tests.
-- Neither candidate is integrated in `main`. Product PR state, test receipts, source review and acceptance of the authority chain are separate evidence stages.
+### Live repository snapshot observed before this route reconciliation
+- main observed at task start: 0691d5ff1b2a4a72ebde012c864625b354fad16a. This is the pre-change baseline for this edit, not a permanent current SHA; after integration every material session must refresh main again.
+- PR #560 is merged at 599781582e1648d3affb6a70821578c978405d2c. It integrated the objective-conditioned WORLD_MODEL_SNAPSHOT and the incoming-result adjudication gate into canonical UAAL-D021.
+- PR #561 is merged at 0691d5ff1b2a4a72ebde012c864625b354fad16a. It records the first bounded later-task reuse and exact fetch-back.
+- PR #555 remains OPEN/DRAFT/UNMERGED at HEAD c36ee5ed177a3b5afee764c277cc4a8b243594c8; relative to this main it is 3 commits ahead and 7 behind. Its candidate is not canonical; reported harness tests remain OWNER_REPORTED, not independently executed here.
+- PR #556 remains OPEN/DRAFT/UNMERGED at HEAD fb635aab18d9c2ef19b20d48e3625d52383fe6af; relative to this main it is 15 commits ahead and 3 behind. It changes technical authorization/MCP paths and is not to be merged without exact-head reconciliation and the required review/authorization.
+- PR #557 remains OPEN/DRAFT/UNMERGED at HEAD 2e16e259001aa671b7ddc2c43763880543e459ad; relative to this main it is 100 commits ahead and 3 behind and was reported not mergeable. It is broad historical proposal material, not canonical state; do not merge it wholesale or reuse its CURRENT-STATE snapshot as live truth.
 
-### Active objective and safety envelope
-The active method task is to repair cross-session retrieval, stale-state reconciliation and action selection. This documentation work does **not** close a technical gate or grant new technical authority.
+### Active objective and acceptance
+Continue making cross-session memory use more reliable without creating a second router, memory store, coordinator or hidden-authority mechanism. For each material task, retrieve the live route, build the minimum source-bound world model, identify the first open causal/evidential edge, select one authorized discriminating action, adjudicate its outcome, and verify canonical writeback.
+
+The method is documented and has one verified non-identical-task application. Generalization to repeated tasks is NOT_TESTED. Automatic delivery/boot into every future ChatGPT session and runtime enforcement remain NOT_PROVEN. A URL, PR, saved summary or prior chat does not prove a later session retrieved or applied this method.
 
 ```text
-ACTIVE_METHOD=UAAL-D021_CROSS_SESSION_BOOT_AND_STATE_RECONCILIATION
+ACTIVE_METHOD=UAAL-D019+D020+D021
 METHOD_STATUS=DOCUMENTED_METHOD; AUTOMATIC_ENFORCEMENT_NOT_PROVEN
-MAIN_AT_RECONCILIATION=79ab8c50eaa7518120d5ebed9db4747d395a21cb; REFRESH_REQUIRED_PER_MATERIAL_SESSION
+LATER_CAUSAL_REUSE=VERIFIED_FOR_ONE_NON_IDENTICAL_TASK
+GENERALIZATION=NOT_TESTED
+AUTOMATIC_CROSS_SESSION_BOOT=NOT_PROVEN
 OPTION_D=RATIFIED_NO_BOOTSTRAP
 AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
 G1/G2/G3=NOT_ESTABLISHED
-IMPLEMENTATION_AUTHORITY=ONLY_EXACT_OWNER_AUTHORIZED_SCOPE
 MCP_TOOL_ALLOWLIST=EMPTY
 PROTECTED_READS=FAIL_CLOSED
 TUNNEL=DISABLED
 BRIDGE=BRIDGE_NOT_READY
 AUTOMATIC_FOLLOW_ON=FALSE
 C_PYTHON=DO_NOT_TOUCH
-MERGE_PRODUCT_PRS=NOT_AUTHORIZED
+PRODUCT_PR_MERGE=NOT_AUTHORIZED_BY_THIS_DOCUMENTATION_TASK
+NEXT_ACTION=VERIFY_METHOD_REUSE_ON_A_SECOND_NON_IDENTICAL_TASK; NO_AUTOMATIC_BOOT_CLAIM
 ```
 
-### Cross-session boot algorithm
-1. **Refresh:** read live `refs/heads/main` and record SHA/time; an old chat summary is a lead, never a current-state proof.
-2. **Orient:** extract objective, success condition and explicit constraints from the current Owner request; preserve decisions already made.
-3. **Retrieve:** read the relevant slices of this file and UAAL-D019/D020/D021 plus the exact owning receipt/PR; use the returned source revision and exact result, not remembered paraphrases.
-4. **Reconcile:** compare claims against live refs, PR states, source revisions and evidence provenance; label each `VERIFIED`, `OWNER_REPORTED`, `INFERENCE`, `HYPOTHESIS`, `UNKNOWN`, `NOT_RUN`, `CONFLICTED` or `STALE`.
-5. **Causal frontier:** build the smallest dependency graph and identify the earliest open edge for the user's target, with its required evidence and unchanged preconditions. Fingerprint any proposed experiment to prevent same-action retries.
-6. **Select:** first filter by authorization and hard preconditions; then rank target-edge closure, decision-changing information gain, a demonstrably necessary prerequisite, reversibility/cost and Owner effort. One action per cycle; no preparation-only recursion without demonstrated causal utility.
-7. **Observe:** predeclare the expected observable, stop condition and route change for each possible result. Report the furthest proven execution stage only.
-8. **Persist:** update the owning route/receipt, fetch the exact written bytes back, and keep branch/PR proposals explicitly non-canonical until merged and verified from `main`.
-9. **Prove reuse:** on a later non-identical task, test whether the retrieved method changes the chosen action and prevents a known repeat. Before that event, `LATER_CAUSAL_REUSE=NOT_TESTED`.
+### Mandatory boot/action loop
+1. Refresh live main SHA and the PR/commit refs relevant to the objective.
+2. Read this active route and the five canonical front doors. Bind each returned artifact to its exact ref/blob; use blob-by-SHA if a large file read is empty.
+3. Activate UAAL-D019 (first open causal edge and anti-loop), D020 (verified-progress utility and strategy switch), and D021 (route reconciliation, task-local world model, incoming-result adjudication).
+4. Before action, bind objective/oracle, source identity/time, producer-to-consumer operation path, authority/environment constraints, competing hypotheses/falsifiers and expected observation.
+5. Before another AI handoff, rebind the returned receipt to the original acceptance oracle, live HEAD, exact paths and evidence stage. Close only the edge the evidence demonstrates.
+6. Choose one authorized target-closing or decision-discriminating action. After two preparation-only steps, reset strategy; a third attempt at the same edge requires a material causal delta.
+7. Persist to the owning record, fetch exact bytes back, and do not claim canonical adoption until it is integrated and re-fetched from live main.
+8. Record reuse separately from automatic delivery. Do not claim a new chat consumed memory until its own retrieval/application evidence exists.
 
-Full contract: [UAAL-D021](./CHAT-ARCH-2026-10-29-UAAL-D021-CROSS-SESSION-BOOT-AND-STATE-RECONCILIATION.md). This header's baseline SHA documents the snapshot used to write it; it does not replace a future live-ref refresh.
+Full operating contract: [UAAL-D021](./CHAT-ARCH-2026-10-29-UAAL-D021-CROSS-SESSION-BOOT-AND-STATE-RECONCILIATION.md). First reuse receipt: [UAAL-D021 first later-task reuse](./CHAT-ARCH-2026-10-29-UAAL-D021-FIRST-LATER-TASK-REUSE-RECEIPT.md).
+
 ---
 
 ## OVERRIDE — UAAL-D020 clarified as a cross-AI shared-memory method (2026-10-28)
