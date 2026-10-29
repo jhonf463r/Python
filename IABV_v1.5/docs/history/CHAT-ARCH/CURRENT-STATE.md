@@ -1,3 +1,47 @@
+## OVERRIDE — Exact two-file repair is published and fetch-back verified on PR #556; PR-level gates remain open (2026-10-29)
+
+The Owner-authorized commit/push task has completed. GitHub independently confirms commit c00c1677e7b1f891e757f141450672b04443eba4 on the existing candidate branch and both target file blobs at refs/pull/556/head match the exact static-reviewed patch:
+- windows_handle_reader.py = 2facf2a4447d1acff69b1845390355902160dbfa
+- test_windows_handle_reader.py = 1e72fc6e50a91678964bed38b05b82a9d8a4683f
+
+Commit comparison from parent e1b430956146c4aa0cadc1df2c3df92150b7f7ea to c00c1677e7b1f891e757f141450672b04443eba4 is ahead_by=1, behind_by=0 and contains exactly the two authorized paths. Full adjudication: [M1A F-556 publication/fetch-back receipt](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-M1A-G1-F556-PUBLICATION-FETCHBACK-ADJUDICATION.md).
+
+### PR state and remaining blockers
+
+- PR issue state is open and closed_at is null; the fetched issue title retains a [Draft] prefix. The API shape used here did not expose the authoritative draft boolean or a merged boolean. Keep PR_OPEN=VERIFIED, PR_DRAFT_FLAG=UNKNOWN, MERGED_BOOLEAN=UNKNOWN_BY_DIRECT_FIELD; do not claim the draft bit was independently verified.
+- Review API returned 12 COMMENTED reviews and no APPROVED review. Four inline threads remain unresolved; three outdated and one current thread concerns GH_PROMPT_DISABLED/GIT_TERMINAL_PROMPT. Exact source and test files at c00c do set the two child environment variables and assert them; the current thread still needs an authorized reconciliation, not a source reimplementation.
+- PR-associated workflow run 40895256777 has conclusion startup_failure and zero jobs. Combined commit statuses are empty. This is not a successful CI result; root cause remains UNKNOWN. Do not retry Actions or alter billing/workflow settings without explicit authorization.
+- F-556-01/F-556-02 remain closed at static-review scope; the native result is reported only for one Windows 11 build 10.0.26300 / NTFS fixture. Codex's 30 focused tests were not rerun for the publication task.
+- The commit only publishes this two-file delta; it does not approve or complete the wider 34-file M1A/M1F candidate, establish G1/G2/G3, or authorize a merge. Canonical main remains 79ab8c50eaa7518120d5ebed9db4747d395a21cb and has not changed.
+
+~~~text
+ACTIVE_TASK=M1A_G1_PR556_POST_PUBLICATION_REVIEW_GATES_20261029
+PUBLICATION=COMMIT_PUSH_FETCHBACK_VERIFIED
+COMMIT=c00c1677e7b1f891e757f141450672b04443eba4
+PARENT=e1b430956146c4aa0cadc1df2c3df92150b7f7ea
+REMOTE_TARGET_BLOBS=MATCHED_AT_REFS_PULL_556_HEAD
+PR_OPEN=VERIFIED
+PR_DRAFT_FLAG=UNKNOWN
+MERGED_BOOLEAN=UNKNOWN_BY_DIRECT_FIELD
+REVIEWS=12_COMMENTED; NONE_APPROVED
+UNRESOLVED_THREADS=4; 3_OUTDATED; 1_CURRENT
+CURRENT_THREAD_SOURCE_AND_TEST_ASSERTIONS=OBSERVED_PRESENT_AT_C00C; THREAD_UNRESOLVED
+ACTIONS_RUN=40895256777; STARTUP_FAILURE; ZERO_JOBS
+COMBINED_STATUS=EMPTY
+TESTS/BUILD/RUNTIME=NOT_RUN_FOR_PUBLICATION_TASK
+NEXT_ACTION=RECONCILE_PR_REVIEW_THREAD_AND_STARTUP_FAILURE_WITHOUT_UNAUTHORIZED_MUTATION
+G1/G2/G3=NOT_ESTABLISHED
+MCP_TOOL_ALLOWLIST=EMPTY
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+PRODUCT_CANDIDATE_MERGE=NOT_AUTHORIZED
+C:\\Python=DO_NOT_TOUCH
+AUTOMATIC_FOLLOW_ON=FALSE
+~~~
+
+---
+
 ## OVERRIDE — Owner authorizes commit and push of exactly two reviewed M1A repair files to existing PR #556 (2026-10-29)
 
 The Owner has explicitly authorized Codex to commit and push **only** the two previously reviewed local repair files to the existing PR #556 branch. This supersedes the earlier statement that code publication still required a separate Owner decision. It authorizes no merge and no other repository/source mutations.
