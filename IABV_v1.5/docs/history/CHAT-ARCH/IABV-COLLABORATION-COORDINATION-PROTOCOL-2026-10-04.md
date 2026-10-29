@@ -57,6 +57,18 @@ Historical actor order and historical `NEXT ACTOR` fields are not routing author
 
 ---
 
+## UAAL-D022 effective-operation handoff gate (proposed, 2026-10-29)
+
+Before using a CLI/API adapter to produce evidence about authority, merges, manifests or canonical source, verify its effective operation:
+- fixed executable identity and caller-independent policy;
+- explicit HTTP method and canonical hostname;
+- platform-valid endpoint after internal scope validation;
+- environment settings that cannot redirect the destination, with non-interactive fail-closed behavior;
+- synthetic assertions over actual argv/environment and zero-call negative paths;
+- evidence bound to the exact HEAD, without borrowing a parent's test result.
+
+The M1A review found a CLI default that changed an intended GET to POST, an environment-selected API host, and a Windows-invalid leading-slash endpoint. Those were corrected in source at PR #556 HEAD 3d29c0c0f4af657a889c44198d46fa59f07f021a. The current review has not established tests at that exact head; Actions reports startup_failure. Codex must verify the live head before the next operation. This is a control-method proposal, not production activation. Full method: UAAL-D022.
+
 ## DEFAULT OPERATING MODE — NORMAL IABV WORK
 
 `HUMAN OBJECTIVE → IABV CANONICAL FRAME → RELEVANT KNOWLEDGE → CURRENT VERIFIED TRUTH → CLOSED EDGES → FIRST OPEN CAUSAL/EVIDENTIAL EDGE → REQUIRED CAPABILITY → CAPABILITY-FIT ACTOR/REALIZATION → EXACT TASK/PROMPT → ACTION → OBSERVATION → INDEPENDENT VERIFICATION → RECONCILIATION → KNOWLEDGE / METHOD / RELATION / ROUTING DELTA → WRITEBACK → NEXT FRONTIER`
