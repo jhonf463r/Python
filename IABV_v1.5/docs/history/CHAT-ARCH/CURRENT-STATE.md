@@ -1,3 +1,68 @@
+## Owner-directed route update — Authenticode route observed; Owner trust policy still unresolved (2026-10-29)
+
+This is the newest continuity route on the proposed PR #557 branch. It supersedes the prior next action to search for an independent verifier: the latest Codex receipt reports that the native Windows Authenticode route accepts the exact installed GitHub CLI executable. It does not authorize the publisher, enable the production client, change canonical `main`, or alter any security invariant.
+
+### Live references and authority boundary
+
+- Canonical `CURRENT-STATE.md` on `main` was retrieved from the exact blob `5945b23fdb5c13ce1068ca5d2d9e6513a1a06b95`; ordinary Contents API reads returned an empty body, while the exact blob fetch returned 1,068,486 characters. The current-state text still preserves the fail-closed G1/G2/G3 route.
+- At this writeback preflight, PR #556 is open/draft/unmerged at `668f7d62cf70a50fe27aa4d946fae66a8b4e1a64`, with base SHA `79ab8c50eaa7518120d5ebed9db4747d395a21cb`.
+- PR #557 is open/draft/unmerged at `617d4b5ee01f4f5b237d4d807f05c17935dbc0ba` before this documentation-only writeback. This update remains proposed continuity, not canonical policy.
+- PR #556 production entry points in `authenticated_github_enrollment.py` remain fail-closed with `GITHUB_CLIENT_PROVENANCE_UNVERIFIED`; no local policy was wired and no fetchback was performed.
+
+### New receipt — classify the Authenticode claim narrowly
+
+Codex/Owner reported the following local inspection, without executing `gh.exe`:
+
+- Exact reported path: `C:\\Program Files\\GitHub CLI\\gh.exe`
+- Reported size: 40,381,240 bytes
+- Reported SHA-256: `249613CC9DFB61EB267ACFA08C2253EDEA271BBBEC8F3CA3BF8D949A6575D60B`
+- Reported version: GitHub CLI 2.90.0
+- `Get-AuthenticodeSignature`: `Status=Valid`, signer text `GitHub, Inc.`, thumbprint `9A483710566AC7B58A19D32B4A64E44361EA7350`
+- Separate `X509Chain.Build` with revocation set to `NoCheck`: `ChainBuild=false`, `NotTimeValid`.
+- No installed independent Sigstore/Cosign/Notation verifier was found in the reported PATH inventory. No release attestation, repository/workflow provenance, or authenticated fetchback was verified.
+
+Evidence classification: the local file metadata, hash, signature result, signer, and chain result above are `OWNER_CODEX_REPORTED` in this ChatGPT route; they were not independently reproduced here. The separate chain result is retained as a limitation, not rewritten as a successful current-time chain. Authenticode acceptance is not the same claim as owner authorization of that publisher, nor proof that a repository/workflow produced the binary.
+
+### Decision boundary — no implicit publisher allowlist
+
+The receipt correctly declines to choose the trust policy implicitly. Do not put the observed publisher name, thumbprint, or binary hash into an allowlist merely because the local verifier reported them. An explicit Owner policy must identify:
+- the trusted policy source and how it is protected against caller override;
+- whether the permitted identity is a particular signing-certificate thumbprint, a broader publisher identity with controlled certificate rotation, and/or an exact binary SHA-256 pin;
+- the required Windows Authenticode status and treatment of timestamp, certificate expiry, revocation, and verifier errors;
+- the policy version/change process so an ordinary API caller cannot alter it.
+
+Until that decision is explicit and represented in a trusted source, production construction/fetchback remains disabled. Do not execute `gh.exe`, perform private fetchback, create keys/manifests/receipts, run product runtime, or change Entra, ACL, IPC, services, or tunnels as part of this frontier.
+
+### Next causal frontier
+
+Stop repeating the local executable inventory: the new evidence changes the blocker. The blocker is now `OWNER_TRUST_POLICY=NOT_APPROVED`, not absence of an independent Authenticode verifier. The next admissible step is a narrow Owner decision about the client-verification policy and trusted source. Only after that decision may Codex implement the gated verifier and synthetic negative tests in the existing isolated M1A candidate, while preserving the public fail-closed behavior until source review and explicit integration authorization.
+
+```
+TASK_ID=M1A_G1_AUTHENTICODE_GATED_CLIENT_VERIFIER_R1_20261029
+OUTCOME=NO_CODE_CHANGE_NO_PUBLICATION
+AUTHENTICODE_ROUTE=OWNER_CODEX_REPORTED_VALID_FOR_EXACT_REPORTED_BYTES
+OWNER_TRUST_POLICY=NOT_APPROVED
+CLIENT_PRODUCTION_INTEGRATION=FAIL_CLOSED
+FETCHBACK=NOT_RUN
+TESTS=NOT_RUN_IN_THIS_TASK
+G1/G2/G3=NOT_ESTABLISHED
+MCP_TOOL_ALLOWLIST=EMPTY
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+AUTOMATIC_BOOTSTRAP=FALSE
+AUTOMATIC_FOLLOW_ON=FALSE
+PRODUCT_CANDIDATE_MERGE=NOT_AUTHORIZED
+C:\\Python=DO_NOT_TOUCH
+MEMORY_RETRIEVED=VERIFIED
+METHOD_ACTIVATED=VERIFIED
+METHOD_APPLIED=VERIFIED (live PR/blob preflight and documentation-only route writeback)
+OUTCOME_VERIFIED=ROUTE_RECEIPT_RECORDED; NO_CODE_CHANGE
+LATER_CAUSAL_REUSE=NOT_PROVEN
+```
+
+---
+
 ## Owner-directed route update — R2 exact source independently reviewed; provenance preflight is next (2026-10-28)
 
 This is the latest route record on the proposed continuity branch. It supersedes the immediately preceding R2-local-publication handoff. It does not change canonical `main`, authorize a product-candidate merge, or alter the fail-closed invariants.
