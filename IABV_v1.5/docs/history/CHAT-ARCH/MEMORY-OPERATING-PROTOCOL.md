@@ -46,6 +46,12 @@ Construct only the minimum model needed for the objective: exact target and revi
 
 For every delegated prompt explicitly name `DESTINO: CLAUDE/SONNET` or `DESTINO: CODEX` and explain why that actor is best suited to the current open edge. Include exact revision-bound inputs, permitted/prohibited actions, expected receipt and stop condition. This is an operational coordination contract, not proof of consciousness, automatic shared memory, runtime enforcement or model-weight learning. The method remains proposed on PR #557 until authorized integration and canonical fetch-back.
 
+
+
+## Incoming AI result adjudication — required before the next handoff (proposed; 2026-10-29)
+
+When Claude, Codex or another actor returns a substantive result, do not treat its headline or the existence of the receipt as a new world state. First rebind the result to the original TASK_ID, live route, exact target HEAD/base and file identities; classify each claim by what was directly retrieved, statically inspected, reported as executed, independently verified, or not run; compare the evidence with the original acceptance oracle; and mark each dependency CLOSED_AT_REVIEW_SCOPE, PARTIAL, OPEN, BLOCKED or UNKNOWN. Then update the provisional world model and select only the first authorized, discriminating next move. If an essential receipt field is missing, retrieve or ask only for that specific missing evidence instead of repeating the entire task. Never transfer a verdict to a changed HEAD without checking the intervening delta. Use the [UAAL-D021 §8.6 acceptance cases](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-28-UAAL-D021-ROUTE-TRUTH-ARTIFACT-IDENTITY-AND-ADVANCE-UTILITY.md#86-cross-chat-response-adjudication-and-state-transition-acceptance) and the living Space-Time protocol's incoming-result transition gate. This rule is proposed on PR #557; `CURRENT-STATE.md` remains the sole route authority, and later causal reuse is not yet proven.
+
 <!-- Cross-chat handoff synchronized 2026-10-27. CURRENT-STATE.md remains the sole operational route authority. -->
 
 <!-- OWNER-DIRECTED CONTINUITY METHOD CORRECTION — 2026-10-28; process/docs only; technical gates unchanged -->
