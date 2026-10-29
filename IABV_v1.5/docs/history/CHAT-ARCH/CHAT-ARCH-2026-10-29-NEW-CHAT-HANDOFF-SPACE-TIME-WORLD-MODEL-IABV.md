@@ -1,3 +1,31 @@
+## Addendum — native link-count conformance receipt adjudicated (2026-10-29)
+
+Codex returned NATIVE_PROBE_COMPLETE for the Owner-authorized native conformance task. The receipt has been persisted at [M1A native link-count conformance receipt](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-M1A-G1-NATIVE-LINK-COUNT-CONFORMANCE-RECEIPT.md).
+
+Reported environment: Windows 11 build 10.0.26300, Python 3.13.2, NTFS volume C: serial ecb2f3eb. Native FileStandardInfo returned NumberOfLinks=1 for the sampled root and ordinary directories and the single-link file; both names of a real CreateHardLinkW file reported NumberOfLinks=2. The uncommitted code reportedly accepted each sampled directory and the single-link file, denied the multiply-linked file with HARD_LINK_DENIED, and closed its rejected handle. Temporary fixtures were reportedly removed after all owned handles closed.
+
+Adjudication: NATIVE_CONFORMANCE=PASS_FOR_REPORTED_FIXTURE_AND_FILESYSTEM_ONLY. This is OWNER_CODEX_REPORTED to this session, not an independently rerun native experiment. The tested result supports compatibility only for the sampled NTFS/build; other volumes/filesystems/builds and concurrency assumptions remain UNKNOWN.
+
+The failure-path caveat is preserved: the native query-error exercise forced invalid information class 0x7fffffff and observed error 87 plus WINDOWS_HANDLE_METADATA_QUERY_FAILED and handle cleanup. It is evidence for that forced query error, not for a spontaneous failure of the valid FileStandardInfo query. That valid-class failure remains covered only by the earlier reported synthetic test. No tests, build, server or product runtime were run during the probe. Source was not changed, and the repair is still uncommitted/unpublished; PR #556 remote source is unchanged.
+
+**Next open decision:** whether the Owner explicitly authorizes publication of the already-reviewed two-file repair to the existing PR #556 so it can receive a new exact-HEAD review. The native probe authorization is not a publication authorization. Do not repeat the 30-test suite unchanged or automatically commit/push.
+
+~~~text
+NATIVE_PROBE=COMPLETE; OWNER_CODEX_REPORTED
+NATIVE_CONFORMANCE=PASS_FOR_SAMPLED_NTFS_FIXTURE_ONLY
+F556_01=CLOSED_AT_STATIC_REVIEW_SCOPE
+F556_02=CLOSED_AT_STATIC_REVIEW_SCOPE; NATIVE_POLICY_SUPPORTED_FOR_SAMPLED_CASES
+LOCAL_REPAIR=UNCOMMITTED; UNPUBLISHED
+NEXT_ACTION=OWNER_DECISION_ON_EXISTING_PR_556_CODE_PUBLICATION
+G1/G2/G3=NOT_ESTABLISHED
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+C:\\Python=DO_NOT_TOUCH
+~~~
+
+---
+
 ## Addendum — Owner authorizes native link-count conformance probe (2026-10-29)
 
 The Owner explicitly authorized Codex to run the bounded native Windows/filesystem probe. Scope and acceptance conditions are persisted in [M1A native link-count probe authorization](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-M1A-G1-NATIVE-LINK-COUNT-CONFORMANCE-AUTHORIZATION.md); the proposed route entry is in branch CURRENT-STATE.
