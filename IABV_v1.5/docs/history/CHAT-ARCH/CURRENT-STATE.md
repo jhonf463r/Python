@@ -1,3 +1,78 @@
+## Owner-directed route update — R2 exact source independently reviewed; provenance preflight is next (2026-10-28)
+
+This is the latest route record on the proposed continuity branch. It supersedes the immediately preceding R2-local-publication handoff. It does not change canonical `main`, authorize a product-candidate merge, or alter the fail-closed invariants.
+
+### Live refs and exact artifacts
+
+- `main=79ab8c50eaa7518120d5ebed9db4747d395a21cb` — live GitHub ref verified.
+- PR #556 remains open/draft/unmerged at `668f7d62cf70a50fe27aa4d946fae66a8b4e1a64`, base `main` at the SHA above. The R2 commit's exact changed-file list is the four intended files; its parent is R1 `7bb5960feb7975de848fe3351657932ff687ace8`. Remote blobs for the edited modules/tests were fetched and statically inspected.
+- PR #557 remains a separate open/draft/unmerged proposal. Its update remains non-canonical until authorized merge and canonical fetchback.
+- Codex reports the four local/remote SHA-256 values match and the focal tests yielded `127 passed in 0.89s` under Python 3.13.2 / pytest 9.0.3. Treat the test execution as `OWNER_CODEX_REPORTED` in this session; this reviewer did not rerun it or execute native CNG.
+- The associated GitHub Actions run is `startup_failure`; no successful CI job exists for this commit. This does not invalidate the owner-reported local run, but CI is not independent test evidence.
+
+### Independent static review disposition
+
+A GitHub review was posted as `COMMENT`, not `APPROVE` or `REQUEST_CHANGES`, anchored to commit `668f7d62cf70a50fe27aa4d946fae66a8b4e1a64`: https://github.com/jhonf463r/Python/pull/556#pullrequestreview-5691625020.
+
+Static source review confirmed the intended R2 changes:
+- `windows_cng_key_store.py` separates successful `NCryptDeleteKey` (which frees the handle) from fallback `NCryptFreeObject` on delete failure; cleanup failures are reported.
+- `read_existing_key()` derives the public key identity from an opened persisted CNG provider handle, and the private synthetic verifier compares it to the provided DTO.
+- The initial enrollment path requires the manifest file to be `added`, not `modified`.
+- Public GitHub client and fetchback entries fail closed with `GITHUB_CLIENT_PROVENANCE_UNVERIFIED`; the injectable core is expressly marked as test-only, not a production trust path.
+
+No new material defect was found in those bounded R2 changes during this static pass. This is not a production approval: native CNG remains `NOT_RUN`, and the public fetchback is deliberately unavailable until a trusted GitHub response producer is implemented.
+
+### Still-open dependencies — do not recast as defects already solved
+
+- `GITHUB_CLIENT_PROVENANCE=BLOCKED_FAIL_CLOSED`: no local trusted verifier has been established for the installed GitHub CLI/executable. Do not use the candidate executable to verify its own provenance.
+- `OWNER_IDENTITY_PROVENANCE=UNKNOWN`; `PROCESS_SID_PROVENANCE=UNKNOWN`; `SERVER_REVISION_PROVENANCE=UNKNOWN`; `WORKSPACE_ROOT_PROVENANCE=UNKNOWN`.
+- `OWNER_MANIFEST_RECEIPT_STORE=UNKNOWN`: interface only; no durable protected anti-rollback realization was demonstrated.
+- `REVOCATION_SOURCE=UNKNOWN`; `G2=NOT_ESTABLISHED`.
+- Therefore `G1/G2/G3=NOT_ESTABLISHED`; no real key/manifest/enrollment, build, product runtime, MCP launch, tunnel, or protected read has run.
+
+### Next causal frontier — one bounded, read-only provenance check
+
+Do not run another broad inventory or repeat the same source/test implementation. Examine only whether the existing Windows environment has an **independent, already-installed verifier** capable of authenticating the exact installed `gh.exe` binary and its release provenance (for example, an existing standalone Sigstore/Cosign verifier and its trusted roots, or a valid native Windows signature-verification route). A verifier must not be `gh.exe` itself, nor depend solely on claims returned by the candidate binary.
+
+Official GitHub CLI documentation says releases from v2.50.0 produce build-provenance attestations and describes verification with Sigstore/Cosign as an independent route; this is a lead to test against the actual installed binary, not proof that the user’s local installation is verified. See https://github.com/cli/cli and https://docs.github.com/en/code-security/how-tos/secure-your-supply-chain/secure-your-dependencies/verify-release-integrity.
+
+```TASK_ID=M1A_G1_EXISTING_GITHUB_CLIENT_PROVENANCE_PREFLIGHT_20261028
+NEXT_ACTOR=CODEX
+MODE=READ_ONLY_LOCAL_PROVENANCE_PREFLIGHT
+NEXT_ACTION=IDENTIFY_INSTALLED_GH_ABSOLUTE_PATH_VERSION_SHA256_AND_INSTALL_SOURCE; CHECK_ONLY_ALREADY_INSTALLED_INDEPENDENT_VERIFIERS; VERIFY_RELEASE_ATTESTATION_OR_SIGNATURE_ONLY_IF_A_VERIFIED_INDEPENDENT_TOOL_AND_TRUST_ROOT_ALREADY_EXIST
+NO_INSTALL=TRUE
+NO_NEW_CREDENTIALS=TRUE
+NO_GH_SELF_VERIFICATION=TRUE
+NO_SOURCE_CHANGES=TRUE
+NO_C_PYTHON_ACCESS=TRUE
+EXPECTED_OBSERVABLE=EXACT_BINARY_IDENTITY+INDEPENDENT_VERIFIER_IDENTITY+VERIFICATION_RESULT_OR_EXPLICIT_BLOCKER
+STOP_IF=ONLY_GH_ITSELF_CAN_VERIFY; TRUST_ROOT/EXPECTED_ARTIFACT_DIGEST_UNAVAILABLE; SIGNATURE/ATTESTATION_DOES_NOT_MATCH_EXACT_INSTALLED_BYTES; VERIFICATION_REQUIRES_INSTALL/LOGIN/NEW_CREDENTIAL
+```
+
+If no independent verifier is already present, stop and record the exact missing trust boundary; do not install one, replace the CLI, extract tokens, or weaken fail-closed behavior. After client provenance, the separate Owner/SID/revision/workspace producers and protected durable receipt store still need their own bounded composition/verification. Do not implement all of those in the same task.
+
+```MEMORY_RETRIEVED=VERIFIED
+METHOD_ACTIVATED=VERIFIED
+METHOD_APPLIED=VERIFIED (exact PR/commit/blob inspection; existing R2 reused; no unchanged retest requested)
+OUTCOME_VERIFIED=STATIC_SOURCE_REVIEW_VERIFIED; 127 TESTS=OWNER_CODEX_REPORTED; CI=STARTUP_FAILURE
+LATER_CAUSAL_REUSE=NOT_PROVEN
+OPTION_D=RATIFIED_NO_BOOTSTRAP
+G1/G2/G3=NOT_ESTABLISHED
+MCP_TOOL_ALLOWLIST=EMPTY
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+ENROLLMENT=NOT_PERFORMED
+REAL_CNG_KEY=NOT_CREATED
+MANIFEST=NOT_CREATED_OR_PUBLISHED
+BUILD/PRODUCT_RUNTIME=NOT_RUN
+MERGE=NOT_AUTHORIZED
+AUTOMATIC_FOLLOW_ON=FALSE
+C_PYTHON=DO_NOT_TOUCH
+```
+
+---
+
 ## Owner-directed route update — M1A R2 local repair reported; independent source review still open (2026-10-28)
 
 This entry supersedes the previous R1-only next step. Codex reports a second repair pass in the existing isolated worktree, but the changed bytes remain local and have not been published to PR #556. Do not promote its claims to independently verified source facts until the exact new commit/blobs are fetched and reviewed.
