@@ -440,3 +440,15 @@ This section makes the cross-chat handoff testable. It tests the operating metho
 
 **Pass criterion:** all applicable checks above are satisfied, or each unsatisfied check is explicitly represented as UNKNOWN/NOT_RUN with the exact missing evidence and a justified stop condition. This is a reasoning-method acceptance check only; it does not claim that a later session has consumed the rule or improved its behavior.
 
+### 8.7 Applied adjudication case — Claude M1A Windows reader R1 (2026-10-29)
+
+The return-adjudication gate was applied to `M1A_G1_REMAINING_WINDOWS_SECURITY_SURFACE_STATIC_REVIEW_R1_20261029`. The coordinator rebound the report to live PR #556 HEAD `e1b430956146c4aa0cadc1df2c3df92150b7f7ea`, independently fetched all seven expected Git blobs, inspected the exact overflow branch and `_FILE_STANDARD_INFO` use, and followed the directory-listing result into the server call site. Receipt: [Claude R1 M1A Windows reader adjudication](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-M1A-G1-WINDOWS-HANDLE-READER-CLAUDE-R1-ADJUDICATION-RECEIPT.md).
+
+- `F-556-01=STATIC_DEFECT_CONFIRMED`: the cap+1 branch returns `cap` collected names with `truncated=True` before sorting; the caller returns that result. The test file has no cap+1 conformance case. Prior-art contract documents require whole-list denial/no names beyond the 200-entry ceiling; those documents are cited as prior design evidence, not promoted to canonical runtime truth.
+- `F-556-02=STATIC_GAP_CONFIRMED`: `NumberOfLinks` is declared but not evaluated after `_FILE_STANDARD_INFO` is queried. The precise native exploitability/containment impact remains `INFERENCE` pending contract-specific and native-Windows validation. Prior-art design requires hard-link denial unless containment is proved.
+- `F-556-03=is_sensitive_path` and the private-key possession behavior of external consumers remain `UNKNOWN` in this bounded adjudication. H-01/H-02 are not reopened.
+- `TESTS=NOT_RUN`; no source edit, native Windows execution, MCP/runtime, protected read, credential/enrollment, merge, tunnel or bridge activation was performed.
+- `FIRST_OPEN_EDGE=F-556-01/F-556-02`. The next useful step is a narrow Codex repair/test handoff on the same PR #556 candidate, but the present coordinator scope is read-only/documentation. Therefore `CODE_CHANGE_AND_TEST_EXECUTION=NOT_AUTHORIZED_IN_THIS_STEP`; prepare the exact bounded task but do not execute source edits or tests until the Owner explicitly authorizes those effects.
+
+This case demonstrates `MEMORY_RETRIEVED` and `METHOD_APPLIED` for this session (the route changed from awaiting Claude to a bounded repair handoff). Branch receipt fetch-back is verified. `RUNTIME_ENFORCEMENT=NOT_PROVEN`, `CANONICAL_ADOPTION=NOT_ESTABLISHED`, and `LATER_CAUSAL_REUSE=NOT_PROVEN`.
+
