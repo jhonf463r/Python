@@ -1,3 +1,15 @@
+## Addendum — Owner authorizes native link-count conformance probe (2026-10-29)
+
+The Owner explicitly authorized Codex to run the bounded native Windows/filesystem probe. Scope and acceptance conditions are persisted in [M1A native link-count probe authorization](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-M1A-G1-NATIVE-LINK-COUNT-CONFORMANCE-AUTHORIZATION.md); the proposed route entry is in branch CURRENT-STATE.
+
+The probe must confirm exact worktree/branch/HEAD and the final reader SHA-256 before executing. Use a fresh disposable fixture under the existing TEMP directory; directly query FILE_STANDARD_INFO for root and ordinary directories, a single-link file, and (if supported on that filesystem) a real two-link file. Call the exact uncommitted _open_component only against fixture-owned names; observe return/denial reason and actual handle closure. Report Windows version/build, filesystem, native values/errors and cleanup. No product or test source modifications, no suite rerun, no MCP server, protected reads, credentials, enrollment, tunnel, publication or merge. Do not touch C:\Python.
+
+Critical discriminator: the single-link check is unconditional and thus also runs for directories. If ordinary directories report NumberOfLinks != 1 and are denied, record the native compatibility defect; do not patch it during this probe. If the hard-link API is unsupported or cannot produce a real second link, the multi-link case is PARTIAL/NOT_RUN, not PASS.
+
+Current status is authorization granted, execution not yet observed. Continue with the task ID M1A_G1_NATIVE_LINK_COUNT_CONFORMANCE_20261029. Keep G1/G2/G3 NOT_ESTABLISHED and protected reads fail-closed regardless of probe outcome.
+
+---
+
 ## Addendum after independent static review of Codex's exact F-556 repair diff — 2026-10-29
 
 The Owner delivered the complete patch text in eight consecutive blocks. It was reviewed statically and recorded in the [independent adjudication receipt](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-M1A-G1-F556-01-02-INDEPENDENT-STATIC-DIFF-ADJUDICATION.md).
