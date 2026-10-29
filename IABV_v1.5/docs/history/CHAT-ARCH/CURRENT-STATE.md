@@ -6,7 +6,7 @@ New design record: [M1A G1–G3 authority topology, bootstrap boundary, and comp
 
 Decision boundary: the Owner has now selected the initial trust mechanism and bounded the one-time enrollment effects. This supersedes the pending *mechanism-choice* item; it does not claim that the key has been created or that enrollment has run. The exact selected mechanism and effect budget are recorded in [M1A G1–G3 authority topology and bootstrap decision](./CHAT-ARCH-2026-10-28-M1A-G1-G3-AUTHORITY-TOPOLOGY-AND-BOOTSTRAP-DECISION.md).
 
-The selected out-of-band authorizer is an explicit Owner-approved, version-pinned enrollment manifest merged into canonical `main`, with a non-exportable user-scope Windows CNG key as subordinate issuer identity. The new key is untrusted until the exact manifest is approved, merged, fetched back from the exact canonical commit, and matched to the local receipt. Entra remains HTTP caller authentication; the GitHub App PEM remains GitHub API authentication only. The exact repo ruleset/branch-protection status remains UNKNOWN and must not be claimed without evidence.
+The selected out-of-band authorizer is an explicit Owner-approved, version-pinned enrollment manifest merged into canonical `main`, with a non-exportable user-scope Windows CNG key as subordinate issuer identity. The new key is untrusted until the exact manifest is approved, merged, fetched back from the exact canonical commit, and matched to the local receipt. Entra remains HTTP caller authentication; the GitHub App PEM remains GitHub API authentication only. The exact repo ruleset/branch-protection status remains UNKNOWN and must not be claimed without evidence. The repository is private; the local authenticated GitHub manifest fetch-back route is not yet verified.
 
 The bounded enrollment effect set permits one local key, one receipt and one public manifest PR/merge/fetch-back, all bound to one Windows SID, one exact server/code revision and one canonical workspace root. It grants no MCP capability. Automatic/self-bootstrap remains prohibited; G2/G3 are not established; protected reads, tool allowlist, tunnel and bridge activation remain blocked.
 
@@ -31,7 +31,7 @@ PRODUCT_TESTS/BUILD/RUNTIME=NOT_RUN_BY_THIS_DOCUMENT_TASK
 PRODUCT_CANDIDATE_MERGE=NOT_AUTHORIZED
 ```
 
-Progress label: DESIGN_DECISION_CLOSED; ENROLLMENT_EXECUTION_NOT_RUN. Do not restart the general trust-asset inventory or ask the Owner to choose the mechanism again. The next step is the isolated bounded enrollment implementation/review and then the exact enrollment operation; stop on a specific supported-route blocker without bypassing it.
+Progress label: DESIGN_DECISION_CLOSED; ENROLLMENT_EXECUTION_NOT_RUN. Do not restart the general trust-asset inventory or ask the Owner to choose the mechanism again. First close one exact dependency: use the existing local agent to verify read-only that an already-authenticated GitHub route can fetch the private canonical manifest and exact main SHA. Do not create new credentials or retry the unvalidated PEM route unchanged. Once fetch-back is proven, implement/review the bounded enrollment candidate and then perform only the one-time enrollment operation.
 ---
 ## Continuity and route-truth correction — M1B current; M1A/R7 parallel (2026-10-28)
 
