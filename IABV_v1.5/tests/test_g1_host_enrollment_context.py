@@ -113,6 +113,21 @@ def test_mutated_config_root_is_denied(monkeypatch, tmp_path) -> None:
     assert "WORKSPACE_ROOT_CONFIG_CHANGED" in context.integrity_errors
 
 
+def test_requested_root_must_match_configured_root(monkeypatch, tmp_path) -> None:
+    requested_root = tmp_path / "requested"
+    configured_root = tmp_path / "configured"
+    requested_root.mkdir()
+    configured_root.mkdir()
+    monkeypatch.setattr(context_module, "_read_windows_process_identity", lambda: _native_result())
+
+    context = _provider(str(requested_root), config_root=str(configured_root)).observe()
+
+    assert context.status is ContextStatus.DENIED
+    assert "WORKSPACE_ROOT_ARGUMENT_CONFIG_MISMATCH" in context.integrity_errors
+    assert context.workspace_root_candidate is None
+    assert context.is_complete_observation is False
+
+
 def test_request_cannot_replace_root_or_process_identity(monkeypatch, tmp_path) -> None:
     calls = []
     monkeypatch.setattr(context_module, "_read_windows_process_identity", lambda: (calls.append(True) or _native_result()))

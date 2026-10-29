@@ -231,18 +231,52 @@ class HostEnrollmentContextProvider:
         elif not isinstance(configured, str) or not configured:
             errors.append("WORKSPACE_ROOT_CONFIG_INVALID")
         else:
+            requested_resolved: Path | None = None
+            configured_resolved: Path | None = None
+            root_paths_valid = True
             try:
-                resolved = Path(configured).resolve(strict=True)
-                if not resolved.is_absolute():
-                    errors.append("WORKSPACE_ROOT_NOT_ABSOLUTE")
-                elif not resolved.is_dir():
-                    errors.append("WORKSPACE_ROOT_NOT_DIRECTORY")
-                else:
-                    root_candidate = str(resolved)
+                requested_resolved = Path(self._requested_workspace_root).resolve(strict=True)
+            except FileNotFoundError:
+                errors.append("WORKSPACE_ROOT_ARGUMENT_NOT_FOUND")
+                root_paths_valid = False
+            except (OSError, RuntimeError, ValueError):
+                errors.append("WORKSPACE_ROOT_ARGUMENT_INVALID")
+                root_paths_valid = False
+
+            try:
+                configured_resolved = Path(configured).resolve(strict=True)
             except FileNotFoundError:
                 errors.append("WORKSPACE_ROOT_NOT_FOUND")
+                root_paths_valid = False
             except (OSError, RuntimeError, ValueError):
                 errors.append("WORKSPACE_ROOT_INVALID")
+                root_paths_valid = False
+
+            if requested_resolved is not None:
+                if not requested_resolved.is_absolute():
+                    errors.append("WORKSPACE_ROOT_ARGUMENT_NOT_ABSOLUTE")
+                    root_paths_valid = False
+                elif not requested_resolved.is_dir():
+                    errors.append("WORKSPACE_ROOT_ARGUMENT_NOT_DIRECTORY")
+                    root_paths_valid = False
+            if configured_resolved is not None:
+                if not configured_resolved.is_absolute():
+                    errors.append("WORKSPACE_ROOT_NOT_ABSOLUTE")
+                    root_paths_valid = False
+                elif not configured_resolved.is_dir():
+                    errors.append("WORKSPACE_ROOT_NOT_DIRECTORY")
+                    root_paths_valid = False
+
+            if root_paths_valid and requested_resolved is not None and configured_resolved is not None:
+                try:
+                    roots_match = os.path.samefile(requested_resolved, configured_resolved)
+                except (OSError, RuntimeError, ValueError):
+                    errors.append("WORKSPACE_ROOT_COMPARISON_FAILED")
+                else:
+                    if not roots_match:
+                        errors.append("WORKSPACE_ROOT_ARGUMENT_CONFIG_MISMATCH")
+                    else:
+                        root_candidate = str(configured_resolved)
 
         errors_tuple = tuple(dict.fromkeys(errors))
         status = ContextStatus.OBSERVED if not errors_tuple else ContextStatus.DENIED
