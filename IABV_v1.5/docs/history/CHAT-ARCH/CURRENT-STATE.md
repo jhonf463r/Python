@@ -1,3 +1,40 @@
+## OVERRIDE — Native link-count probe reported passing on one Windows 11 / NTFS fixture (2026-10-29)
+
+The Owner supplied Codex's receipt for the explicitly authorized task M1A_G1_NATIVE_LINK_COUNT_CONFORMANCE_20261029. The bounded result is recorded in the [native conformance receipt](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-M1A-G1-NATIVE-LINK-COUNT-CONFORMANCE-RECEIPT.md). This update is proposed on draft PR #557 only.
+
+Codex reports Windows 11 build 10.0.26300, Python 3.13.2, NTFS on volume C: (serial ecb2f3eb). Native FileStandardInfo values were NumberOfLinks=1 for the sampled root and three directories; NumberOfLinks=1 for single.txt; and NumberOfLinks=2 for both names of a file successfully hard-linked with CreateHardLinkW. The uncommitted reader candidate reportedly accepted the single-link file and all sampled directories, denied the multiply-linked file with HARD_LINK_DENIED, and closed rejected handles. The fixture and temporary directories were reportedly removed after all handles were closed.
+
+This is OWNER_CODEX_REPORTED in this session; the local operation and hashes were not independently rerun or recalculated here. The supported conclusion is bounded: no directory traversal incompatibility was observed on the one tested NTFS fixture/build. Other filesystems, volumes, builds and concurrency behavior remain UNKNOWN.
+
+The receipt also reports a query-error exercise using invalid information class 0x7fffffff, which returned Windows error 87 and caused WINDOWS_HANDLE_METADATA_QUERY_FAILED with handle cleanup. This establishes only the exercised forced invalid-class error path; it does not represent a spontaneous failure of a valid FileStandardInfo query. The valid-class failure case remains covered only by the earlier reported synthetic test.
+
+The native probe changed no source. PR #556 remains unchanged remotely at its prior expected HEAD; the two-file repair is still local, uncommitted and unpublished. The next product-candidate decision is whether the Owner explicitly authorizes publishing the already-reviewed two-file repair to the existing PR #556 for a new exact-HEAD review. The authorization to run this native probe does not itself authorize code commit, push, publication or merge.
+
+~~~text
+ACTIVE_TASK=M1A_G1_F556_01_02_CODE_CANDIDATE_PUBLICATION_DECISION_20261029
+NATIVE_PROBE=COMPLETE; OWNER_CODEX_REPORTED
+NATIVE_CONFORMANCE=PASS_FOR_SAMPLED_NTFS_FIXTURE_ONLY
+F556_01=CLOSED_AT_STATIC_REVIEW_SCOPE
+F556_02=CLOSED_AT_STATIC_REVIEW_SCOPE; NATIVE_POLICY_SUPPORTED_FOR_SAMPLED_CASES
+DIRECTORY_TRAVERSAL_COMPATIBILITY_FAILURE=NOT_OBSERVED_IN_SAMPLED_FIXTURE
+VALID_FILESTANDARDINFO_QUERY_FAILURE=NATIVE_FAILURE_NOT_INDUCED; SYNTHETIC_TEST_REPORTED
+TESTS=30_PASSED; OWNER_CODEX_REPORTED; NOT_RERUN
+LOCAL_REPAIR=UNCOMMITTED; UNPUBLISHED
+PR_556_REMOTE_HEAD=e1b430956146c4aa0cadc1df2c3df92150b7f7ea; OWNER/CODEX_REPORTED
+NEXT_ACTION=OWNER_DECISION_ON_PUBLISHING_EXISTING_TWO_FILE_REPAIR_TO_PR_556; NO_AUTOMATIC_PUSH
+OPTION_D=RATIFIED_NO_BOOTSTRAP
+G1/G2/G3=NOT_ESTABLISHED
+MCP_TOOL_ALLOWLIST=EMPTY
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+PRODUCT_CANDIDATE_MERGE=NOT_AUTHORIZED
+C:\Python=DO_NOT_TOUCH
+AUTOMATIC_FOLLOW_ON=FALSE
+~~~
+
+---
+
 ## OVERRIDE — Owner authorizes bounded native NumberOfLinks conformance probe (2026-10-29)
 
 The Owner explicitly authorized a single native Windows/filesystem conformance probe after the static adjudication of the F-556 repair diff. Authorization and exact execution boundaries are persisted in [M1A native link-count probe authorization](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-M1A-G1-NATIVE-LINK-COUNT-CONFORMANCE-AUTHORIZATION.md).
