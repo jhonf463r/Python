@@ -32,7 +32,7 @@ This protocol is reusable across domains: declare the intended operation, resolv
 
 
 
-Before selecting a solution for any material task, use the living Space-Time protocol's task-local perception/model rule and [UAAL-D021 §8](CHAT-ARCH-2026-10-28-UAAL-D021-ROUTE-TRUTH-ARTIFACT-IDENTITY-AND-ADVANCE-UTILITY.md#8-perception-provisional-world-model-and-discriminating-feedback). Retrieved memory is evidence input; it is not itself an updated model of current reality.
+Before selecting a solution for any material task, use the living Space-Time protocol's task-local perception/model rule and [UAAL-D021 §8](CHAT-ARCH-2026-10-28-UAAL-D021-ROUTE-TRUTH-ARTIFACT-IDENTITY-AND-ADVANCE-UTILITY.md#8-perception-provisional-world-model-and-discriminating-feedback-2026-10-29). Retrieved memory is evidence input; it is not itself an updated model of current reality.
 
 
 

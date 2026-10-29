@@ -114,7 +114,7 @@ WORLD_MODEL_SNAPSHOT = {
 
 Do not duplicate `ACTIVE_TASK` or `NEXT_ACTION` in this snapshot: `CURRENT-STATE.md` remains the sole router. For every cross-AI handoff, name the explicit destination (for example `DESTINO: CLAUDE/SONNET` or `DESTINO: CODEX`), why that actor fits the unresolved capability, the exact bounded inputs, allowed/prohibited actions, expected receipt and stop condition.
 
-See the proposed incident-specific integration in [UAAL-D021, §8](CHAT-ARCH-2026-10-28-UAAL-D021-ROUTE-TRUTH-ARTIFACT-IDENTITY-AND-ADVANCE-UTILITY.md#8-perception-provisional-world-model-and-discriminating-feedback). D021 remains a proposal on this branch until authorized integration and canonical fetch-back.
+See the proposed incident-specific integration in [UAAL-D021, §8](CHAT-ARCH-2026-10-28-UAAL-D021-ROUTE-TRUTH-ARTIFACT-IDENTITY-AND-ADVANCE-UTILITY.md#8-perception-provisional-world-model-and-discriminating-feedback-2026-10-29). D021 remains a proposal on this branch until authorized integration and canonical fetch-back.
 
 Keep two time axes explicit: **when something happened** versus **when and where it was observed or persisted**. A local Codex statement remains `OWNER_REPORTED` until independently available evidence supports a stronger classification. A timestamped GitHub snapshot proves the age of that snapshot, not the age of the active local workspace.
 

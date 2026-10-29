@@ -7,7 +7,7 @@ This is a proposed route update on draft PR #557 only. Canonical `main` remains 
 The Owner authorized consolidating the symbiosis method. The proposal strengthens the existing Space-Time protocol and UAAL-D021: reconstruct a provisional, objective-conditioned model from source-bound observations; distinguish facts/reports/inference/hypotheses/unknown/not-run; make material hypotheses predictive and falsifiable; map the minimum producer-to-consumer causal path; identify the first open edge; select the smallest authorized discriminating action; observe and verify the transition; then update the owning rule and evidence graph.
 
 - Living protocol core delta: [Space-Time cognition and adaptive continuity protocol](./CHAT-ARCH-2026-10-23-CONTINUITY-SPACE-TIME-OPERATING-PROTOCOL-v1.md), proposed revision 2.6, sections 1, 3 and 4.
-- Incident-specific algorithm and acceptance checks: [UAAL-D021 §8 — perception and provisional world model](./CHAT-ARCH-2026-10-28-UAAL-D021-ROUTE-TRUTH-ARTIFACT-IDENTITY-AND-ADVANCE-UTILITY.md#8-perception-provisional-world-model-and-discriminating-feedback).
+- Incident-specific algorithm and acceptance checks: [UAAL-D021 §8 — perception and provisional world model](./CHAT-ARCH-2026-10-28-UAAL-D021-ROUTE-TRUTH-ARTIFACT-IDENTITY-AND-ADVANCE-UTILITY.md#8-perception-provisional-world-model-and-discriminating-feedback-2026-10-29).
 - Cross-AI entry rule: [MEMORY-OPERATING-PROTOCOL.md](./MEMORY-OPERATING-PROTOCOL.md), proposed refinement 2026-10-29.
 
 ```text
@@ -15,7 +15,9 @@ METHOD_SCOPE=DOCUMENTATION_ONLY
 STATUS=PROPOSED_ON_DRAFT_PR_557; NOT_CANONICAL_ON_MAIN
 ACTIVE_TASK_AND_NEXT_ACTION=UNCHANGED; M1A_WINDOWS_SECURITY_STATIC_REVIEW_ROUTE
 RUNTIME_ENFORCEMENT=NOT_PROVEN
-OUTCOME_VERIFIED=BRANCH_FETCHBACK_PENDING_AT_AUTHORING
+OUTCOME_VERIFIED=BRANCH_FETCHBACK_VERIFIED
+CANONICAL_MAIN_ADOPTION=NOT_ESTABLISHED
+RUNTIME_ENFORCEMENT=NOT_PROVEN
 LATER_CAUSAL_REUSE=NOT_PROVEN
 ```
 
