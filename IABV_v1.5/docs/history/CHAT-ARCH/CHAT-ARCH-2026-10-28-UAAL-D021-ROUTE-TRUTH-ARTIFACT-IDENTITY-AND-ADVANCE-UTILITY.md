@@ -514,3 +514,21 @@ BRIDGE=BRIDGE_NOT_READY
 LATER_CAUSAL_REUSE=NOT_PROVEN
 ```
 
+
+### 8.10 Owner-authorized native link-count conformance probe — pre-execution state (2026-10-29)
+
+The Owner explicitly authorized a single bounded native Windows/filesystem observation after static review closed the F-556 findings at source scope. Exact preconditions, allowed observations and stop conditions are recorded in [M1A native link-count probe authorization](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-M1A-G1-NATIVE-LINK-COUNT-CONFORMANCE-AUTHORIZATION.md).
+
+The action was selected for decision-changing information gain: the code checks \`NumberOfLinks != 1\` unconditionally, including directory components. A controlled native fixture can distinguish a successful single-link file path, denial of an actual hard-linked file, and whether ordinary directories are rejected by the same predicate. Microsoft describes \`NumberOfLinks\` as the count of links to the file, and \`CreateHardLink\` is documented as supporting files rather than directories. Native observations must be bound to the actual Windows version, filesystem and exact uncommitted reader bytes; no conclusion can be transferred to other filesystems without evidence.
+
+This is a planned execution, not an observation:
+- \`OWNER_AUTHORIZATION=EXPLICIT\`
+- \`METHOD_APPLIED=SELECTED_NATIVE_DISCRIMINATING_PROBE_OVER_REPEATING_STATIC_REVIEW\`
+- \`NATIVE_PROBE=AUTHORIZED; NOT_RUN_AT_THIS_RECORD\`
+- \`SOURCE_CHANGES=FORBIDDEN\`
+- \`SERVER/MCP/PROTECTED_READS/CREDENTIALS/ENROLLMENT/TUNNEL/PUBLICATION/MERGE=FORBIDDEN\`
+- \`C:\\Python=DO_NOT_TOUCH\`
+- \`G1/G2/G3=NOT_ESTABLISHED\`
+
+The controlled fixture is allowed only under a newly created unique TEMP subdirectory and may be removed only after all test-owned handles are closed. If the hard-link API is unsupported or creation fails, the multi-link case is partial, not a pass. If ordinary directories have a native link count other than one and the candidate rejects them, record the compatibility finding and stop; do not change source during this probe. Later causal reuse of this rule remains \`NOT_PROVEN\`.
+
