@@ -61,7 +61,7 @@ Live PR #556 is [the existing M1A/M1F fail-closed authorization candidate](https
 
 The prior independent M1A static review receipt at the live M1A candidate covered 13 of 33 files in depth and left the remaining 20 unknown; it recorded H-01 about Authenticode revocation/cache-only retrieval flags and H-02 about a hardcoded owner ID whose reviewed provider chain remained fail-closed. The remaining high-risk source surface includes `IABV_v1.5/src/iabv_v15/services/security/windows_crypto.py`, `IABV_v1.5/src/iabv_v15/services/security/windows_cng_key_store.py`, and `IABV_v1.5/src/iabv_v15/infra/mcp/windows_handle_reader.py`, together with their directly relevant tests. This is a candidate review scope, not a claim those files are defective.
 
-Next bounded action: **Claude/Sonnet read-only static review of those three exact current-HEAD files and directly related tests**, after it verifies live PR #556 HEAD, blobs, and the exact delta since its previous receipt. It must identify any already-reviewed lines as closed, retain unread coverage as `UNKNOWN`, and return the first unresolved G1 trust-boundary edge. No code edits, test execution, enrollment, key/manifest creation, protected reads, MCP/runtime, tunnels, merge, or branch rebase are part of this task.
+Previously issued bounded handoff; response pending per the Owner: **Claude/Sonnet read-only static review of those three exact current-HEAD files and directly related tests**, with live PR #556 HEAD, blobs, and the delta from its prior receipt bound to the review. Do not issue a duplicate prompt while this receipt is pending. It must identify any already-reviewed lines as closed, retain unread coverage as `UNKNOWN`, and return the first unresolved G1 trust-boundary edge. No code edits, test execution, enrollment, key/manifest creation, protected reads, MCP/runtime, tunnels, merge, or branch rebase are part of this task.
 
 ### Current route contract
 
@@ -73,7 +73,8 @@ M1B_INTEGRATION=OWNER_DECISION_REQUIRED; MERGE_NOT_AUTHORIZED
 M1A_PR=556
 M1A_EXPECTED_HEAD=e1b430956146c4aa0cadc1df2c3df92150b7f7ea
 NEXT_ACTOR=CLAUDE_SONNET
-NEXT_ACTION=READ_ONLY_STATIC_REVIEW_OF_EXACT_HEAD_WINDOWS_CRYPTO_CNG_KEY_STORE_AND_HANDLE_READER_PLUS_RELEVANT_TESTS
+CLAUDE_RECEIPT_STATUS=OWNER_REPORTED_PENDING
+NEXT_ACTION=ADJUDICATE_CLAUDE_RECEIPT_THEN_SELECT_FIRST_OPEN_G1_EDGE
 NO_CODE_CHANGE=TRUE
 TESTS_BUILD_RUNTIME=NOT_RUN_FOR_NEXT_TASK
 OPTION_D=RATIFIED_NO_BOOTSTRAP
