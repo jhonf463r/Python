@@ -1,3 +1,18 @@
+## Addendum after Claude M1A R1 result — 2026-10-29
+
+This addendum supersedes only the M1A review-pending/next-action statements in the snapshot below; it does not rewrite their historical meaning. Always follow the live proposed [`CURRENT-STATE.md`](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CURRENT-STATE.md) before acting.
+
+Claude/Sonnet returned `M1A_G1_REMAINING_WINDOWS_SECURITY_SURFACE_STATIC_REVIEW_R1_20261029` against PR #556 HEAD `e1b430956146c4aa0cadc1df2c3df92150b7f7ea`. This session independently fetched all seven assigned Git blobs and confirmed the exact handle-reader overflow branch and missing `NumberOfLinks` enforcement. Adjudication receipt: [M1A G1 Windows handle-reader R1](https://github.com/jhonf463r/Python/blob/codex/iabv-m1a-r7-continuity-r8-20261028/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-M1A-G1-WINDOWS-HANDLE-READER-CLAUDE-R1-ADJUDICATION-RECEIPT.md).
+
+- `F-556-01=STATIC_DEFECT_CONFIRMED`: overflow returns partial unsorted names instead of denying the whole listing; existing test coverage does not exercise cap+1.
+- `F-556-02=STATIC_GAP_CONFIRMED`: link count is not checked. The containment impact remains `INFERENCE` pending contract-specific/native validation.
+- Static review only; all tests/build/native runtime remain `NOT_RUN`. H-01/H-02 are not reopened. Unread consumer files remain `UNKNOWN`.
+- First open edge: bounded F-556-01/F-556-02 source/test correction in the existing PR #556 candidate. Current scope remains read-only/documentary, so source/test mutation is not executed by this handoff update and requires explicit Owner authorization. Do not duplicate Claude's review or open a new PR.
+
+The main invariants remain `G1/G2/G3=NOT_ESTABLISHED`, `MCP_TOOL_ALLOWLIST=EMPTY`, `PROTECTED_READS=FAIL_CLOSED`, `TUNNEL=DISABLED`, `BRIDGE=BRIDGE_NOT_READY`, `PRODUCT_CANDIDATE_MERGE=NOT_AUTHORIZED`, and `C:\\Python=DO_NOT_TOUCH`.
+
+---
+
 # New-chat handoff — IABV, Mente Espacio-Tiempo and world-model cognition
 
 **Snapshot:** 2026-10-29, America/Bogota. **Status:** dated continuity snapshot on draft PR #557 only; not canonical on main and not a second router.
