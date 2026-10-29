@@ -1,3 +1,80 @@
+## Independent review of pinned Authenticode client candidate — request contract blockers recorded (2026-10-29)
+
+This route entry follows Codex's reported implementation and normal publication to the existing PR #556 branch. The current exact candidate source was fetched through GitHub for static review. No source changes were made by this review, no local tests were run, and no executable, authenticated API request, private fetchback, protected read or product runtime was invoked.
+
+### Exact live state and artifacts
+
+- Canonical `main=79ab8c50eaa7518120d5ebed9db4747d395a21cb`; the canonical `CURRENT-STATE.md` blob remains `5945b23fdb5c13ce1068ca5d2d9e6513a1a06b95`. Normal Contents reads return an empty body; the exact blob is available and was retrieved.
+- PR #556 is open/draft/unmerged at `c8177ea205a7046557b6f2fbaaf13c62b8f8aa77`, base `main=79ab8c50eaa7518120d5ebed9db4747d395a21cb`.
+- PR #557 continuity is open/draft/unmerged at `d764ff84d50fc9d442b4e2b068835bc0630d0794` before this note; this note remains noncanonical.
+- Exact R3 code blob fetched: `authenticated_github_enrollment.py` Git blob `b621eff1e137a3758613ac2275491ad922177006`.
+- Exact R3 test blob fetched: `test_g1_owner_enrollment_candidate.py` Git blob `fac331c9ed2c818ff43222ecd0f86fd93bd66276`.
+- The commit metadata shows the candidate commit `c8177ea205a7046557b6f2fbaaf13c62b8f8aa77` changed only these two files in its final commit. Codex-reported local SHA-256 values: module `41CB7322B7061F00AA3DB04F9743748CAD4F239703C6B267D1369064621A75F3`; tests `992BB37793632D57A5DEE2CBF8490ECE1C77344C66F434873EC5383E12958130`. GitHub object retrieval confirms exact remote text is available; the above local SHA-256 values remain `OWNER_CODEX_REPORTED` rather than independently recomputed here.
+- Codex reports `50 passed` on Python 3.13.2 / pytest 9.0.3. This was not rerun in this review. GitHub Actions run `40801094246` concluded `startup_failure`; combined status lists no checks. No CI success is established.
+
+### Static review findings posted to PR #556
+
+The pinned policy constants are present. The native verifier source calls `WinVerifyTrust` with the opened file handle; the code hashes the same pinned handle and keeps it open while subprocess creation occurs. The public `verify_owner_manifest_fetchback()` still rejects with `GITHUB_CLIENT_PROVENANCE_UNVERIFIED`. These are bounded candidate improvements, not production approval.
+
+Three independent request-construction blockers were found and posted as COMMENT reviews anchored to the exact candidate head:
+
+1. [Review comment 5691834810](https://github.com/jhonf463r/Python/pull/556#pullrequestreview-5691834810): `get_json()` uses `-f key=value` without explicitly fixing `--method GET`. The official [GitHub CLI API manual](https://cli.github.com/manual/gh_api) states that adding parameters switches the default method to POST unless `--method GET` is supplied. The private-fetchback verifier's files-list call supplies `per_page=100`, so the adapter would issue POST instead of the intended GET. Because the adapter permits repository-scoped paths beyond that one endpoint, this also violates its read-only contract and can turn a generic call with parameters into an unintended write request.
+2. [Review comment 5691839628](https://github.com/jhonf463r/Python/pull/556#pullrequestreview-5691839628): the invocation does not pin `--hostname github.com` and inherits the process environment. The official [GitHub CLI environment reference](https://cli.github.com/manual/gh_help_environment) documents `GH_HOST` as capable of selecting a different host. Responses are intended as evidence for the canonical GitHub repository; the host must be fixed, not environment-dependent.
+3. [Review comment 5691843892](https://github.com/jhonf463r/Python/pull/556#pullrequestreview-5691843892): internal API paths begin with `/repos/...` and are passed verbatim as the `gh api` endpoint. GitHub CLI source rejects an absolute endpoint path on Windows and instructs callers to omit the leading slash; see [the API command implementation](https://github.com/cli/cli/blob/trunk/pkg/cmd/api/api.go) and [Windows leading-slash issue](https://github.com/cli/cli/issues/6415). The current target is Windows, so the endpoint must be transformed to the CLI's relative form after internal validation.
+
+These are source-derived compatibility/control-contract findings. No CLI invocation was performed to reproduce them. The first two are security-significant; the third is a Windows compatibility blocker. All three need correction and tests before the adapter can be considered reviewable for a future production boundary.
+
+### Next bounded Codex action
+
+```TASK_ID=M1A_G1_AUTHENTICATED_GH_READONLY_REQUEST_SHAPING_R1_20261029
+NEXT_ACTOR=CODEX
+TARGET_PR=556
+BASE_HEAD_EXPECTED=c8177ea205a7046557b6f2fbaaf13c62b8f8aa77
+WORKTREE=C:\\_w\\m1a-composition-r3-20261028
+SCOPE=ONLY_AUTHENTICATED_GITHUB_ENROLLMENT_MODULE_AND_FOCAL_TESTS
+MODE=BOUNDED_SOURCE_CORRECTION_AND_SYNTHETIC_TESTS
+NO_GH_EXECUTION=TRUE
+NO_FETCHBACK=TRUE
+NO_C_PYTHON_ACCESS=TRUE
+NO_MAIN_OR_PR557_PRODUCT_CODE_CHANGE=TRUE
+NO_MERGE=TRUE
+```
+
+Required changes on the existing isolated worktree only:
+
+- Construct a fixed read-only command with an explicit `--method GET` and explicit `--hostname github.com`. Caller parameters must not override method/host.
+- Keep path validation in a canonical internal form if useful, but pass a relative API endpoint with exactly no leading slash to `gh api` on Windows.
+- Keep the fixed approved executable/policy, same-handle Authenticode/hash check, and public fetchback's unconditional fail-closed behavior.
+- Add synthetic assertions that parameterized calls include explicit GET, every call pins `github.com`, no endpoint begins with `/`, and validation errors/failing verification cause no subprocess invocation. Add a test demonstrating a parameter cannot change the HTTP method and that an inherited `GH_HOST` cannot override the explicit canonical host.
+- Prefer setting `GH_PROMPT_DISABLED=1` and `GIT_TERMINAL_PROMPT=0` in the per-child environment to ensure noninteractive failure. Do not print, inspect, retrieve, or copy credentials; preserve the already-authorized credential mechanism. Do not execute `gh.exe` in any test.
+- Run the focal synthetic suite and diff checks. Distinguish tests from native verification. No private fetchback, enrollment, real CNG key, runtime, protected reads, tunnel, Entra/ACL/IPC/service changes.
+- If the exact base/worktree state differs, stop and report rather than reset/clean. If bounded tests and review pass, publish to the existing PR #556 branch by normal fast-forward only; never force-push and never merge.
+
+### Preserved state
+
+```
+OWNER_TRUST_POLICY=APPROVED_FOR_EXACT_CANDIDATE_POLICY
+GITHUB_CLIENT_PROVENANCE=FAIL_CLOSED_UNTIL_CANDIDATE_REVIEW
+FETCHBACK=NOT_RUN
+G1/G2/G3=NOT_ESTABLISHED
+MCP_TOOL_ALLOWLIST=EMPTY
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+AUTOMATIC_BOOTSTRAP=FALSE
+AUTOMATIC_FOLLOW_ON=FALSE
+PRODUCT_CANDIDATE_MERGE=NOT_AUTHORIZED
+C:\\Python=DO_NOT_TOUCH
+MEMORY_RETRIEVED=VERIFIED
+METHOD_ACTIVATED=VERIFIED
+METHOD_APPLIED=VERIFIED (exact HEAD/blob static inspection and review comments submitted)
+OUTCOME_VERIFIED=SOURCE_REVIEW_FOUND_3_REQUEST_CONTRACT_BLOCKERS; 50 TESTS=OWNER_CODEX_REPORTED; ACTIONS=STARTUP_FAILURE
+LATER_CAUSAL_REUSE=NOT_PROVEN
+```
+
+Do not promote the client to trusted production or run fetchback until these request contract findings are repaired and the exact new HEAD has been independently reviewed.
+---
+
 ## Owner authorization — pinned GitHub CLI Authenticode policy approved; candidate implementation routed (2026-10-29)
 
 The Owner explicitly authorized the proposed policy in chat with “sí autorizo”, in direct response to this exact proposal: require Windows Authenticode status `Valid`, pin the observed signer certificate thumbprint and exact installed-binary SHA-256, and block acceptance until any change is explicitly reviewed. This resolves the previous decision blocker `OWNER_TRUST_POLICY=NOT_APPROVED` for implementing the **source candidate policy** below. It does not authorize merging a product candidate, executing `gh.exe`, doing a repository fetchback, enrolling G1, or activating the bridge.
