@@ -164,6 +164,10 @@ For a private repository, use only an already-authenticated supported Git/API ro
 
 Even a successful G1 enrollment authorizes no MCP tool by itself. Keep `G2`, `G3`, each tool's operation-specific capability checks, protected reads, side effects, transport and bridge activation as separate acceptance gates. The one-time enrollment implementation and its synthetic tests must not create a key, merge a manifest, launch the bridge or read protected content; the actual one-time enrollment is a separate precisely bounded operation after the candidate has been reviewed.
 
+## 3B. Extension — effective operation semantics and evidence producer (UAAL-D022)
+
+UAAL-D021 route truth and revision binding extend to the actual command that produces evidence. Before a CLI/API adapter may serve as a trust producer, resolve defaults and environment semantics, fix method and destination, normalize platform-specific endpoint syntax after validating the internal path, bind executable identity, and assert exact argv/environment with synthetic tests. See UAAL-D022. This is a proposed method; no runtime enforcement is implied.
+
 ## 4. Acceptance tests for the method (reasoning checks, not product tests)
 
 1. **Existing publication:** when PR #555 already contains the candidate, select reuse/review; do not ask Codex to publish a duplicate.
