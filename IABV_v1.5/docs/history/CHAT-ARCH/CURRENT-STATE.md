@@ -2,13 +2,16 @@
 
 **Sole routing authority:** this file owns the current ACTIVE_TASK, NEXT_ACTION, technical gates and permissions. Dated blocks below this active header are historical evidence unless this header explicitly reactivates them. Read this header from live main on every new material session. If the normal file read is empty, retrieve the exact blob by its returned SHA; empty transport output is RETRIEVAL_FAILED, not an empty route.
 
-### Live repository snapshot observed before this route reconciliation
-- main observed at task start: 0691d5ff1b2a4a72ebde012c864625b354fad16a. This is the pre-change baseline for this edit, not a permanent current SHA; after integration every material session must refresh main again.
-- PR #560 is merged at 599781582e1648d3affb6a70821578c978405d2c. It integrated the objective-conditioned WORLD_MODEL_SNAPSHOT and the incoming-result adjudication gate into canonical UAAL-D021.
-- PR #561 is merged at 0691d5ff1b2a4a72ebde012c864625b354fad16a. It records the first bounded later-task reuse and exact fetch-back.
-- PR #555 remains OPEN/DRAFT/UNMERGED at HEAD c36ee5ed177a3b5afee764c277cc4a8b243594c8; relative to this main it is 3 commits ahead and 7 behind. Its candidate is not canonical; reported harness tests remain OWNER_REPORTED, not independently executed here.
-- PR #556 remains OPEN/DRAFT/UNMERGED at HEAD fb635aab18d9c2ef19b20d48e3625d52383fe6af; relative to this main it is 15 commits ahead and 3 behind. It changes technical authorization/MCP paths and is not to be merged without exact-head reconciliation and the required review/authorization.
-- PR #557 remains OPEN/DRAFT/UNMERGED at HEAD 2e16e259001aa671b7ddc2c43763880543e459ad; relative to this main it is 100 commits ahead and 3 behind and was reported not mergeable. It is broad historical proposal material, not canonical state; do not merge it wholesale or reuse its CURRENT-STATE snapshot as live truth.
+### Live repository snapshot verified for this route refresh (2026-10-29)
+- Live `main` at task start: `c0bca083620cdd8628365ca6cb1f60b7e8a39ad0` (post-merge state for PR #562). This is the exact baseline for this bounded route-only patch, not a permanent current SHA; each later material session must refresh `main`.
+- The canonical D021 method is at blob `d44a4e1866229a484ed78e807ae6645ba43176a2`; the first later-task reuse receipt is at blob `8a9d3d6942972de5d7e6670ec57b112f59e0cdab`. The live revision-2.6 operating protocol is at blob `b5ea0645b2489ed3d56fb0eda2f97c14637ac14d`.
+- PR #560 is merged; it added the objective-conditioned `WORLD_MODEL_SNAPSHOT` and incoming-result adjudication to canonical D021.
+- PR #561 is merged; it records one non-identical-task reuse. Generalization remains untested and automatic boot remains unproven.
+- PR #562 is merged; this is the route/protocol reconciliation now present on live `main`.
+- PR #555 remains OPEN/DRAFT/UNMERGED at HEAD `c36ee5ed177a3b5afee764c277cc4a8b243594c8`; comparison against this live main is `diverged`, 3 commits ahead / 8 behind. Its reader/test candidate is not canonical; reported harness tests remain OWNER_REPORTED, not independently executed here.
+- PR #556 remains OPEN/DRAFT/UNMERGED at HEAD `fb635aab18d9c2ef19b20d48e3625d52383fe6af`; comparison against this live main is `diverged`, 15 commits ahead / 4 behind. It affects authorization/MCP paths; no merge is authorized by this documentation lane.
+- PR #557 remains OPEN/DRAFT/UNMERGED at HEAD `2e16e259001aa671b7ddc2c43763880543e459ad`; comparison against this live main is `diverged`, 100 commits ahead / 4 behind and the PR is reported not mergeable. It is a broad stale proposal, not canonical state; do not merge it wholesale or use its copied CURRENT-STATE snapshot as live truth.
+- These ahead/behind counts are a point-in-time comparison of each exact candidate HEAD with live `main=c0bca083620cdd8628365ca6cb1f60b7e8a39ad0`; they must be refreshed before any later branch review. This route patch makes no changes to those product candidates.
 
 ### Active objective and acceptance
 Continue making cross-session memory use more reliable without creating a second router, memory store, coordinator or hidden-authority mechanism. For each material task, retrieve the live route, build the minimum source-bound world model, identify the first open causal/evidential edge, select one authorized discriminating action, adjudicate its outcome, and verify canonical writeback.
