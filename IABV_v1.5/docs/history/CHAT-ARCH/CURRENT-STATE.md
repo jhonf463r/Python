@@ -4,27 +4,34 @@ This addendum records the subsequent Owner request to analyze why G1/G2/G3 exist
 
 New design record: [M1A G1–G3 authority topology, bootstrap boundary, and completion path](./CHAT-ARCH-2026-10-28-M1A-G1-G3-AUTHORITY-TOPOLOGY-AND-BOOTSTRAP-DECISION.md). It distinguishes MCP transport authentication from operation authority; limits G1/G2/G3 to governed protected operations rather than every pure IABV computation; separates OBSERVE, fixed context-artifact read, protected workspace read and execute/mutate profiles; and identifies the bootstrap circularity explicitly.
 
-Decision boundary: the architecture candidate has been documented, but OPTION_D=RATIFIED_NO_BOOTSTRAP remains unchanged. Owner-controlled initial enrollment is proposed as the only identified resolution if no qualified pre-existing root exists; it is NOT authorized by the design task. No trust root, credential, service, ACL, Entra resource, protected read, transport, or tunnel was provisioned or enabled.
+Decision boundary: the Owner has now selected the initial trust mechanism and bounded the one-time enrollment effects. This supersedes the pending *mechanism-choice* item; it does not claim that the key has been created or that enrollment has run. The exact selected mechanism and effect budget are recorded in [M1A G1–G3 authority topology and bootstrap decision](./CHAT-ARCH-2026-10-28-M1A-G1-G3-AUTHORITY-TOPOLOGY-AND-BOOTSTRAP-DECISION.md).
+
+The selected out-of-band authorizer is an explicit Owner-approved, version-pinned enrollment manifest merged into canonical `main`, with a non-exportable user-scope Windows CNG key as subordinate issuer identity. The new key is untrusted until the exact manifest is approved, merged, fetched back from the exact canonical commit, and matched to the local receipt. Entra remains HTTP caller authentication; the GitHub App PEM remains GitHub API authentication only. The exact repo ruleset/branch-protection status remains UNKNOWN and must not be claimed without evidence.
+
+The bounded enrollment effect set permits one local key, one receipt and one public manifest PR/merge/fetch-back, all bound to one Windows SID, one exact server/code revision and one canonical workspace root. It grants no MCP capability. Automatic/self-bootstrap remains prohibited; G2/G3 are not established; protected reads, tool allowlist, tunnel and bridge activation remain blocked.
 
 ```text
-ACTIVE_TASK=M1A_G1_G3_AUTHORITY_TOPOLOGY_AND_BOOTSTRAP_DECISION
-RESULT=DESIGN_CANDIDATE_RECORDED_ON_PR_557_BRANCH
-TARGET_EDGE=INDEPENDENT_G1_TRUST_ANCHOR_AND_AUTHORITY_ENROLLMENT
-NEXT_ACTION=OWNER_DECISION_ON_EXACT_OUT_OF_BAND_ENROLLMENT_AUTHORITY_AND_SCOPE; NO_PROVISIONING
-OPTION_D=RATIFIED_NO_BOOTSTRAP; UNCHANGED
-OWNER_CONTROLLED_ENROLLMENT=PROPOSED; NOT_AUTHORIZED
-G1/G2/G3=NOT_ESTABLISHED
-AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
+ACTIVE_TASK=M1A_G1_G3_BOUNDED_OWNER_ENROLLMENT_MECHANISM
+RESULT=MECHANISM_SELECTED; EFFECT_BUDGET_DEFINED; DOCUMENTED_ON_PR_557
+TARGET_EDGE=ONE_TIME_G1_ISSUER_ENROLLMENT
+INITIAL_TRUST_SOURCE=OWNER_APPROVED_GITHUB_ENROLLMENT_MANIFEST
+LOCAL_KEY_CUSTODY=WINDOWS_CNG_NONEXPORTABLE; TPM_PROVIDER_PREFERRED; ASSURANCE_RECORDED
+OWNER_CONTROLLED_ONE_TIME_ENROLLMENT=AUTHORIZED_WITHIN_EXACT_EFFECT_BUDGET; NOT_RUN
+AUTOMATIC_BOOTSTRAP=FALSE
+KEY_CREATED=NOT_RUN
+MANIFEST_MERGED=NOT_RUN
+G1=NOT_ESTABLISHED
+G2/G3=NOT_ESTABLISHED
+AUTHORITY_ASSETS=NOT_YET_BOUND_TO_THE_NEW_ENROLLMENT
 MCP_TOOL_ALLOWLIST=EMPTY
 PROTECTED_READS=FAIL_CLOSED
 TUNNEL=DISABLED
 BRIDGE=BRIDGE_NOT_READY
-TESTS/BUILD/RUNTIME=NOT_RUN_BY_THIS_DOCUMENT_TASK
-MERGE=NOT_AUTHORIZED
+PRODUCT_TESTS/BUILD/RUNTIME=NOT_RUN_BY_THIS_DOCUMENT_TASK
+PRODUCT_CANDIDATE_MERGE=NOT_AUTHORIZED
 ```
 
-Progress label: PREPARATION_ONLY — the architecture and route were made explicit, but no authority dependency was closed and no runtime behavior changed. This is deliberate; the next implementation cannot safely begin without a supported out-of-band trust source and a separately scoped authorization.
-
+Progress label: DESIGN_DECISION_CLOSED; ENROLLMENT_EXECUTION_NOT_RUN. Do not restart the general trust-asset inventory or ask the Owner to choose the mechanism again. The next step is the isolated bounded enrollment implementation/review and then the exact enrollment operation; stop on a specific supported-route blocker without bypassing it.
 ---
 ## Continuity and route-truth correction — M1B current; M1A/R7 parallel (2026-10-28)
 
