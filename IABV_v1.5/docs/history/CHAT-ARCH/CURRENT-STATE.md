@@ -1,30 +1,47 @@
-## ACTIVE ROUTE — Cross-session Space-Time memory and explicit independent-session reuse (2026-10-29)
+## ACTIVE ROUTE — UAAL-D021 continuity-lane closeout with source-provenance limit (2026-10-29)
 
-**Sole routing authority:** this file owns the current ACTIVE_TASK, NEXT_ACTION, technical gates and permissions. Dated blocks below this active header are historical evidence unless this header explicitly reactivates them. Read this header from live main on every new material session. If the normal file read is empty, retrieve the exact blob by its returned SHA; empty transport output is RETRIEVAL_FAILED, not an empty route.
+**Sole routing authority:** this file owns the current `ACTIVE_TASK`, `NEXT_ACTION`, technical gates and permissions. Dated blocks below this first `---` are historical evidence unless this header explicitly reactivates them. Read this header from live `main` on each new material session. If the normal read returns empty, retrieve the exact blob by its returned SHA; empty transport output is `RETRIEVAL_FAILED`, not an empty route.
 
-### Live repository snapshot verified for independent-session adjudication (2026-10-29)
-- Live `main` observed at the start of this bounded documentation task: `799e6f6e1b9e5fc63c468772e34c28c447fecef1`, after PR #565. This is a point-in-time baseline, not a permanent current SHA; every later material session must refresh `main`.
-- PR #565 is merged at this baseline. Its canonical receipt `CHAT-ARCH-2026-10-29-UAAL-D021-SECOND-SESSION-REUSE-RECEIPT.md` was fetched from `main` as blob `e627c23fc544fc9386cd1e85437800c02955d573` (11,528 characters). It records one explicit connector-mediated retrieval/application in a separately opened session; automatic boot is explicitly not proven.
-- PRs #560–#564 are merged documentation work. Their receipts document two later-task applications within the prior continuing conversation; they must not be conflated with the independent-session receipt from #565.
-- PR #555 remains OPEN/DRAFT/UNMERGED at HEAD `c36ee5ed177a3b5afee764c277cc4a8b243594c8`; comparison against this exact baseline is `diverged`, 3 commits ahead / 15 behind. Its reader/test candidate is not canonical; previously reported harness tests are not independently executed here.
-- PR #556 remains OPEN/DRAFT/UNMERGED at HEAD `fb635aab18d9c2ef19b20d48e3625d52383fe6af`; comparison against this exact baseline is `diverged`, 15 commits ahead / 11 behind. It affects authorization/MCP paths; this lane does not authorize merge or technical changes.
-- PR #557 remains OPEN/DRAFT/UNMERGED at HEAD `2e16e259001aa671b7ddc2c43763880543e459ad`; comparison against this exact baseline is `diverged`, 100 commits ahead / 11 behind and current PR metadata reports it not mergeable. It is a broad stale proposal; do not merge it wholesale or use its copied route as live truth.
-- These comparisons are point-in-time values against the exact baseline above; refresh them before any future branch review.
-- The independent audit reproduced three broken relative destinations in a dated 2026-10-27 hand-off block in README.md, CONTEXT-INDEX.md and MEMORY-OPERATING-PROTOCOL.md. This bounded change relabels that block as historical and changes only the route destination to `./CURRENT-STATE.md` in those three files. It does not modify product candidate branches.
+### Live source snapshot at start of continuity-lane closeout
+- `refs/heads/main` observed before this route refresh: `40f297d2cba64ff55153dfa8e8b8d84dea04ee60`, the squash merge of documentation-only PR #567. This is a point-in-time observation; refresh refs on every later material session.
+- PR #567 integrated the pre-search-context baseline receipt and linked it from canonical UAAL-D021. The receipt's live-main blob at this observation was `7279031163c0c070c0748e4014a977c046a0d01b`; the updated UAAL-D021 blob was `338adc6e5a2df1303af0ca21d321b05a3a013c5d`.
+- Canonical contract: [UAAL-D021](./CHAT-ARCH-2026-10-29-UAAL-D021-CROSS-SESSION-BOOT-AND-STATE-RECONCILIATION.md). New receipt: [pre-search context baseline](./CHAT-ARCH-2026-10-29-UAAL-D021-PRE-SEARCH-CONTEXT-BASELINE-RECEIPT.md).
+- The pre-search transcript provides limited evidence that a separate conversation had IABV-specific information before new searches. It does not authenticate the initial context payload or distinguish GitHub from ChatGPT memory, prior chats, summaries or other context sources. `SOURCE_PROVENANCE=UNKNOWN`.
+- PR #565 still supplies the bounded receipt for explicit connector-mediated retrieval/application in one separately opened session. Neither that receipt nor the pre-search baseline proves automatic external GitHub boot.
+- `CURRENT-STATE.md` normal read returned zero characters; blob `e9e651005d24b9afed2d1b05a0d9a9117680c5fa` was fetched exactly as 1,070,222 characters before this route refresh. Preserve the complete historical suffix starting at the first `---` byte-for-byte.
+
+### Current point-in-time status of product candidates (compared with observed main above)
+- PR #555: OPEN/DRAFT/UNMERGED, HEAD `c36ee5ed177a3b5afee764c277cc4a8b243594c8`, diverged, 3 ahead / 18 behind. Do not merge from this continuity lane.
+- PR #556: OPEN/DRAFT/UNMERGED, HEAD `fb635aab18d9c2ef19b20d48e3625d52383fe6af`, diverged, 15 ahead / 14 behind. Do not merge from this continuity lane.
+- PR #557: OPEN/DRAFT/UNMERGED, HEAD `2e16e259001aa671b7ddc2c43763880543e459ad`, diverged, 100 ahead / 14 behind and not mergeable according to current PR metadata. Do not merge this broad stale proposal.
+- Counts are tied to the exact main SHA recorded above; refresh before any later candidate review.
 
 ### Active objective and acceptance
-Keep the canonical external-memory method usable across participating sessions while maintaining one route authority and strict evidence boundaries. The explicit-retrieval path is verified for one bounded, separately opened session. The present documentation reconciliation closes the three confirmed historic-link defects and updates D021 to cite the canonical independent-session receipt.
+Close the bounded UAAL-D019/D020/D021 continuity-documentation task with accurate evidence boundaries and one canonical route. The explicit-retrieval procedure is documented and has bounded independent-session evidence. The latest baseline transcript reports prior context before search, but source attribution is unknown.
 
-Acceptance for this route snapshot: fix the three exact relative targets; preserve the CURRENT-STATE historical suffix byte-for-byte from the first `---`; keep the independent-session result distinct from automatic boot; fetch all changed documents back from the exact branch and, after authorized integration, from live `main`.
+Acceptance for this closeout:
+1. The pre-search baseline receipt and its provenance limitation are integrated and fetch-backed from canonical `main`.
+2. UAAL-D021 explicitly links the receipt and states the source-attribution ceiling and stop condition.
+3. This sole active route reflects the latest result, its evidence stage, the first remaining evidential limit and the next authorized step.
+4. The historical suffix from the first `---` is preserved exactly.
+5. No product code, tests, runtime, authorization, bridge or technical gate is changed.
+
+### Outcome, boundary and stop condition
+The documentation portion of this continuity task is complete after this route refresh is reviewed, integrated and fetched back. Do not repeat text-only baseline tests or create another explanatory PR while the same source-provenance blind spot remains. Reopen the automatic-GitHub-boot hypothesis only if new trustworthy provenance observability or a controlled source-isolation capability becomes available. A separate Owner objective may be handled through its own authorized lane; it does not derive code-change permission from this receipt.
 
 ```text
+ACTIVE_TASK=UAAL_D021_CONTINUITY_LANE_CLOSEOUT_DOCUMENTATION_ONLY
 ACTIVE_METHOD=UAAL-D019+D020+D021
-METHOD_STATUS=DOCUMENTED_METHOD; AUTOMATIC_ENFORCEMENT_NOT_PROVEN
+METHOD_STATUS=DOCUMENTED_METHOD; EXPLICIT_RETRIEVAL_VERIFIED_FOR_BOUNDED_TASKS; AUTOMATIC_ENFORCEMENT_NOT_PROVEN
 LATER_CAUSAL_REUSE=VERIFIED_FOR_TWO_NON_IDENTICAL_TASKS_WITHIN_PRIOR_CONTINUING_SESSION
 INDEPENDENT_SESSION_EXPLICIT_RETRIEVAL=VERIFIED_FOR_ONE_BOUNDED_TASK; SEE_PR565_RECEIPT
-INDEPENDENT_SESSION_METHOD_APPLICATION=VERIFIED_FOR_ONE_BOUNDED_TASK
+PRE_SEARCH_CONTEXT_AVAILABILITY=LIMITED_EVIDENCE_FROM_SUBMITTED_TRANSCRIPT
+INITIAL_CONTEXT_SOURCE_PROVENANCE=UNKNOWN
+METHOD_APPLICATION=PARTIAL_FOR_PRESEARCH_EXPERIMENT; EXCLUSIVE_CAUSAL_EFFECT_NOT_ISOLATED
 AUTOMATIC_CROSS_SESSION_BOOT=NOT_PROVEN
 GENERALIZATION=NOT_TESTED
+CONTINUITY_DOCUMENTATION_CLOSEOUT=COMPLETE_AFTER_ROUTE_FETCHBACK
+AUTOMATIC_BOOT_HYPOTHESIS=STOPPED_UNTIL_NEW_PROVENANCE_OBSERVABILITY_OR_CONTROLLED_SOURCE_ISOLATION
 OPTION_D=RATIFIED_NO_BOOTSTRAP
 AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
 G1/G2/G3=NOT_ESTABLISHED
@@ -35,7 +52,8 @@ BRIDGE=BRIDGE_NOT_READY
 AUTOMATIC_FOLLOW_ON=FALSE
 C_PYTHON=DO_NOT_TOUCH
 PRODUCT_PR_MERGE=NOT_AUTHORIZED_BY_THIS_DOCUMENTATION_TASK
-NEXT_ACTION=ON_NEXT_MATERIAL_TASK_REFRESH_LIVE_MAIN_AND_APPLY_D019_D020_D021; NO_AUTOMATIC_BOOTSTRAP; NO_PRODUCT_ACTION
+PRODUCT_TESTS_BUILD_RUNTIME=NOT_RUN
+NEXT_ACTION=ON_NEXT_MATERIAL_TASK_REFRESH_LIVE_MAIN_AND_APPLY_D019_D020_D021; REOPEN_AUTO_BOOT_ONLY_ON_NEW_PROVENANCE_OBSERVABILITY_OR_CONTROLLED_SOURCE_ISOLATION; NO_PRODUCT_ACTION
 ```
 ---
 
