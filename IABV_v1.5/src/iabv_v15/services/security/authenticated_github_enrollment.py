@@ -194,6 +194,15 @@ class _PinnedExecutable:
         except Exception:
             raise OwnerMergeVerificationError("GITHUB_CLIENT_FILE_CHANGED_OR_UNREADABLE") from None
 
+    def native_handle(self) -> int:
+        if self._closed:
+            raise OwnerMergeVerificationError("GITHUB_CLIENT_PROVENANCE_UNVERIFIED")
+        try:
+            import msvcrt
+            return int(msvcrt.get_osfhandle(self._file.fileno()))
+        except Exception:
+            raise OwnerMergeVerificationError("GITHUB_CLIENT_FILE_CHANGED_OR_UNREADABLE") from None
+
     def close(self) -> None:
         if not self._closed:
             self._closed = True
@@ -280,44 +289,95 @@ def _open_pinned_executable(path: str) -> _PinnedExecutable:
             pass
 
 
-def _windows_authenticode_verifier(path: str) -> Mapping[str, object]:
-    """Ask the Windows PowerShell Authenticode provider; never run gh here."""
-    if os.name != "nt" or path != _APPROVED_EXECUTABLE:
+def _windows_authenticode_verifier(path: str, pin: _PinnedExecutable) -> Mapping[str, object]:
+    """Use WinVerifyTrust on the same pinned handle used for SHA-256."""
+    if os.name != "nt" or path != _APPROVED_EXECUTABLE or not isinstance(pin, _PinnedExecutable):
         raise OwnerMergeVerificationError("GITHUB_CLIENT_VERIFIER_UNAVAILABLE")
     try:
         import ctypes
         from ctypes import wintypes
 
-        get_windows_directory = ctypes.WinDLL("kernel32", use_last_error=True).GetWindowsDirectoryW
-        get_windows_directory.argtypes = [wintypes.LPWSTR, wintypes.UINT]
-        get_windows_directory.restype = wintypes.UINT
-        buffer = ctypes.create_unicode_buffer(32768)
-        length = get_windows_directory(buffer, len(buffer))
-        if not length or length >= len(buffer):
-            raise OSError("Windows directory unavailable")
-        powershell = os.path.join(buffer.value, "System32", "WindowsPowerShell", "v1.0", "powershell.exe")
-        script = (
-            "$ErrorActionPreference='Stop'; $s=Get-AuthenticodeSignature -LiteralPath '"
-            + path.replace("'", "''")
-            + "'; if ($null -eq $s.SignerCertificate) { throw 'Signer missing' }; "
-            + "[ordered]@{status=$s.Status.ToString();thumbprint=$s.SignerCertificate.Thumbprint}|ConvertTo-Json -Compress"
+        class _Guid(ctypes.Structure):
+            _fields_ = [("Data1", wintypes.DWORD), ("Data2", wintypes.WORD), ("Data3", wintypes.WORD), ("Data4", ctypes.c_ubyte * 8)]
+
+        class _WinTrustFileInfo(ctypes.Structure):
+            _fields_ = [("cbStruct", wintypes.DWORD), ("pcwszFilePath", wintypes.LPCWSTR),
+                        ("hFile", wintypes.HANDLE), ("pgKnownSubject", ctypes.POINTER(_Guid))]
+
+        class _WinTrustData(ctypes.Structure):
+            _fields_ = [
+                ("cbStruct", wintypes.DWORD), ("pPolicyCallbackData", wintypes.LPVOID),
+                ("pSIPClientData", wintypes.LPVOID), ("dwUIChoice", wintypes.DWORD),
+                ("fdwRevocationChecks", wintypes.DWORD), ("dwUnionChoice", wintypes.DWORD),
+                ("pFile", ctypes.POINTER(_WinTrustFileInfo)), ("dwStateAction", wintypes.DWORD),
+                ("hWVTStateData", wintypes.HANDLE), ("pwszURLReference", wintypes.LPWSTR),
+                ("dwProvFlags", wintypes.DWORD), ("dwUIContext", wintypes.DWORD),
+            ]
+
+        class _CertContext(ctypes.Structure):
+            _fields_ = [("dwCertEncodingType", wintypes.DWORD), ("pbCertEncoded", ctypes.POINTER(ctypes.c_ubyte)),
+                        ("cbCertEncoded", wintypes.DWORD), ("pCertInfo", wintypes.LPVOID),
+                        ("hCertStore", wintypes.HANDLE)]
+
+        class _CryptProviderCert(ctypes.Structure):
+            _fields_ = [
+                ("cbStruct", wintypes.DWORD), ("pCert", ctypes.POINTER(_CertContext)),
+                ("fCommercial", wintypes.BOOL), ("fTrustedRoot", wintypes.BOOL),
+                ("fSelfSigned", wintypes.BOOL), ("fTestCert", wintypes.BOOL),
+                ("dwRevokedReason", wintypes.DWORD), ("dwConfidence", wintypes.DWORD),
+                ("dwError", wintypes.DWORD), ("pTrustListContext", wintypes.LPVOID),
+                ("fTrustListSignerCert", wintypes.BOOL), ("pCtlEntry", wintypes.LPVOID),
+                ("pCertChainElement", wintypes.LPVOID),
+            ]
+
+        class _CryptProviderSigner(ctypes.Structure):
+            _fields_ = [
+                ("cbStruct", wintypes.DWORD), ("sftVerifyAsOf", wintypes.FILETIME),
+                ("csCertChain", wintypes.DWORD), ("pasCertChain", ctypes.POINTER(_CryptProviderCert)),
+                ("dwSignerType", wintypes.DWORD), ("psSigner", wintypes.LPVOID),
+                ("dwError", wintypes.DWORD), ("csCounterSigners", wintypes.DWORD),
+                ("pasCounterSigners", wintypes.LPVOID), ("pChainContext", wintypes.LPVOID),
+            ]
+
+        trust_action = _Guid(0x00AAC56B, 0xCD44, 0x11D0,
+                             (ctypes.c_ubyte * 8)(0x8C, 0xC2, 0x00, 0xC0, 0x4F, 0xC2, 0x95, 0xEE))
+        file_info = _WinTrustFileInfo(
+            ctypes.sizeof(_WinTrustFileInfo), path, wintypes.HANDLE(pin.native_handle()), None,
         )
-        result = subprocess.run(
-            [powershell, "-NoLogo", "-NoProfile", "-NonInteractive", "-Command", script],
-            capture_output=True,
-            check=False,
-            shell=False,
-            stdin=subprocess.DEVNULL,
-            timeout=15,
+        data = _WinTrustData(
+            ctypes.sizeof(_WinTrustData), None, None, 2, 0, 1,
+            ctypes.pointer(file_info), 1, None, None, 0x00001000, 0,
         )
-        if result.returncode != 0 or not isinstance(result.stdout, bytes):
-            raise ValueError("Authenticode verifier failed")
-        value = json.loads(result.stdout.decode("utf-8"))
-        if not isinstance(value, dict) or set(value) != {"status", "thumbprint"}:
-            raise ValueError("Malformed Authenticode result")
-        if not isinstance(value["status"], str) or not isinstance(value["thumbprint"], str):
-            raise ValueError("Malformed Authenticode fields")
-        return _AuthenticodeEvidence(value["status"], value["thumbprint"].replace(" ", "").upper())
+        wintrust = ctypes.WinDLL("wintrust", use_last_error=True)
+        verify = wintrust.WinVerifyTrust
+        verify.argtypes = [wintypes.HWND, ctypes.POINTER(_Guid), ctypes.POINTER(_WinTrustData)]
+        verify.restype = ctypes.c_long
+        close_data = False
+        try:
+            status = verify(wintypes.HWND(-1), ctypes.byref(trust_action), ctypes.byref(data))
+            close_data = bool(data.hWVTStateData)
+            if status != 0:
+                return _AuthenticodeEvidence(f"WinVerifyTrust:{status & 0xFFFFFFFF:08X}", "")
+            helper_data = wintrust.WTHelperProvDataFromStateData
+            helper_data.argtypes = [wintypes.HANDLE]
+            helper_data.restype = wintypes.LPVOID
+            helper_signer = wintrust.WTHelperGetProvSignerFromChain
+            helper_signer.argtypes = [wintypes.LPVOID, wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
+            helper_signer.restype = ctypes.POINTER(_CryptProviderSigner)
+            provider = helper_data(data.hWVTStateData)
+            signer = helper_signer(provider, 0, False, 0) if provider else None
+            if not signer or signer.contents.csCertChain < 1 or not signer.contents.pasCertChain:
+                raise ValueError("signer certificate unavailable")
+            cert_ptr = signer.contents.pasCertChain[0].pCert
+            if not cert_ptr or not cert_ptr.contents.pbCertEncoded or not cert_ptr.contents.cbCertEncoded:
+                raise ValueError("encoded signer certificate unavailable")
+            cert_der = ctypes.string_at(cert_ptr.contents.pbCertEncoded, cert_ptr.contents.cbCertEncoded)
+            thumbprint = hashlib.sha1(cert_der).hexdigest().upper()
+            return _AuthenticodeEvidence("Valid", thumbprint)
+        finally:
+            if close_data:
+                data.dwStateAction = 2
+                verify(wintypes.HWND(-1), ctypes.byref(trust_action), ctypes.byref(data))
     except Exception:
         raise OwnerMergeVerificationError("GITHUB_CLIENT_VERIFIER_FAILED") from None
 
@@ -326,7 +386,7 @@ def _verify_pinned_executable(
     pin: _PinnedExecutable,
     *,
     policy: _GitHubCliTrustPolicy,
-    verifier: Callable[[str], object],
+    verifier: Callable[[str, _PinnedExecutable], object],
 ) -> _ExecutableIdentity:
     approved = _approved_github_cli_policy()
     if type(policy) is not _GitHubCliTrustPolicy or policy != approved:
@@ -337,7 +397,7 @@ def _verify_pinned_executable(
         raise OwnerMergeVerificationError("GITHUB_CLIENT_PATH_MISMATCH")
     try:
         digest_before = pin.sha256()
-        result = verifier(policy.executable_path)
+        result = verifier(policy.executable_path, pin)
         if type(result) is _AuthenticodeEvidence:
             status, thumbprint = result.status, result.signer_thumbprint
         elif isinstance(result, Mapping) and set(result) == {"status", "thumbprint"}:

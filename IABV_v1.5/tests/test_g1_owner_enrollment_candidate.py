@@ -566,7 +566,7 @@ def test_authenticode_policy_is_versioned_and_fixed() -> None:
 def test_authenticode_verification_rejects_bad_policy_or_verdict(policy, verdict, error_code) -> None:
     pin = _FakePinnedExecutable()
     with pytest.raises(OwnerMergeVerificationError, match=error_code):
-        _github_enrollment._verify_pinned_executable(pin, policy=policy, verifier=lambda _path: verdict)
+        _github_enrollment._verify_pinned_executable(pin, policy=policy, verifier=lambda _path, _pin: verdict)
 
 
 def test_authenticode_verification_rejects_hash_mismatch_and_file_change() -> None:
@@ -574,12 +574,12 @@ def test_authenticode_verification_rejects_hash_mismatch_and_file_change() -> No
     good = {"status": "Valid", "thumbprint": policy.signer_thumbprint}
     with pytest.raises(OwnerMergeVerificationError, match="GITHUB_CLIENT_HASH_MISMATCH"):
         _github_enrollment._verify_pinned_executable(
-            _FakePinnedExecutable(["0" * 64]), policy=policy, verifier=lambda _path: good,
+            _FakePinnedExecutable(["0" * 64]), policy=policy, verifier=lambda _path, _pin: good,
         )
     with pytest.raises(OwnerMergeVerificationError, match="GITHUB_CLIENT_FILE_CHANGED"):
         _github_enrollment._verify_pinned_executable(
             _FakePinnedExecutable([policy.executable_sha256, "0" * 64]),
-            policy=policy, verifier=lambda _path: good,
+            policy=policy, verifier=lambda _path, _pin: good,
         )
 
 
@@ -593,23 +593,9 @@ def test_authenticode_verification_rejects_missing_file_and_verifier_error(monke
     pin = _FakePinnedExecutable()
     with pytest.raises(OwnerMergeVerificationError, match="GITHUB_CLIENT_VERIFIER_FAILED"):
         _github_enrollment._verify_pinned_executable(
-            pin, policy=policy, verifier=lambda _path: (_ for _ in ()).throw(RuntimeError("synthetic")),
+            pin, policy=policy, verifier=lambda _path, _pin: (_ for _ in ()).throw(RuntimeError("synthetic")),
         )
     assert process_calls == []
-
-
-@pytest.mark.parametrize("stdout", [b"not-json", b"null", b'{"status":"Valid","thumbprint":"x","unexpected":1}'])
-def test_windows_verifier_rejects_malformed_authenticode_output_without_gh(stdout, monkeypatch) -> None:
-    calls: list[Any] = []
-    def fake_run(args, **kwargs):
-        calls.append((args, kwargs))
-        return SimpleNamespace(returncode=0, stdout=stdout, stderr=b"")
-    monkeypatch.setattr(_github_enrollment.subprocess, "run", fake_run)
-    with pytest.raises(OwnerMergeVerificationError, match="GITHUB_CLIENT_VERIFIER_FAILED"):
-        _github_enrollment._windows_authenticode_verifier(_github_enrollment._APPROVED_EXECUTABLE)
-    assert len(calls) == 1
-    assert calls[0][0][0].casefold().endswith(r"\system32\windowspowershell\v1.0\powershell.exe")
-    assert calls[0][0][0] != _github_enrollment._APPROVED_EXECUTABLE
 
 
 @pytest.mark.parametrize(
@@ -627,7 +613,7 @@ def test_failed_authenticode_candidate_never_starts_client_process(monkeypatch, 
     policy = _github_enrollment._approved_github_cli_policy()
     pin = _FakePinnedExecutable(digests)
     monkeypatch.setattr(_github_enrollment, "_open_pinned_executable", lambda _path: pin)
-    monkeypatch.setattr(_github_enrollment, "_windows_authenticode_verifier", lambda _path: verdict)
+    monkeypatch.setattr(_github_enrollment, "_windows_authenticode_verifier", lambda _path, _pin: verdict)
     monkeypatch.setattr(_github_enrollment.subprocess, "run", lambda *args, **kwargs: calls.append((args, kwargs)))
     with pytest.raises(OwnerMergeVerificationError, match=error_code):
         AuthenticatedGitHubCliApi()
@@ -650,7 +636,7 @@ def test_authenticode_adapter_rejects_path_override_and_injected_runner_without_
     with pytest.raises(OwnerMergeVerificationError, match="GITHUB_CLIENT_POLICY_INVALID"):
         _github_enrollment._verify_pinned_executable(
             _FakePinnedExecutable(), policy=alternate,
-            verifier=lambda _path: {"status": "Valid", "thumbprint": policy.signer_thumbprint},
+            verifier=lambda _path, _pin: {"status": "Valid", "thumbprint": policy.signer_thumbprint},
         )
     assert calls == []
 
@@ -663,7 +649,7 @@ def test_verified_adapter_holds_pin_during_subprocess_creation_without_running_g
     monkeypatch.setattr(
         _github_enrollment,
         "_windows_authenticode_verifier",
-        lambda _path: {"status": "Valid", "thumbprint": policy.signer_thumbprint},
+        lambda _path, _pin: {"status": "Valid", "thumbprint": policy.signer_thumbprint},
     )
     def fake_run(args, **kwargs):
         assert not pin._closed
