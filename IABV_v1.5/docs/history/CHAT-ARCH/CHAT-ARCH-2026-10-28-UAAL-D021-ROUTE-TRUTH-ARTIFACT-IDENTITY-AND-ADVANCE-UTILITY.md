@@ -134,6 +134,36 @@ LOCAL_CHANGE
 
 A draft PR or its fetch-back proves that the branch artifact is published; it does not make the rule canonical for sessions entering from `main`. A method is not proven learned or causally reused until a later non-identical task shows that the retrieved method changed selection and the resulting outcome is independently evidenced.
 
+
+## 3A. Extension from the G1 enrollment preflight — scoped fetch evidence and non-circular identity
+
+This interaction added one precise case to the route-truth contract: closing an authenticated fetch route for an existing canonical file is not the same as proving an as-yet-uncreated enrollment manifest, the repository's branch rules, or the resulting authority.
+
+### Evidence must be scoped to the exact object and claim
+
+Record separate assertions rather than collapsing them into `GITHUB_ACCESS=TRUE`:
+
+- `REPOSITORY_METADATA`: repository ID, private/public visibility and default branch.
+- `MAIN_REF`: exact live canonical `main` commit SHA, preferably confirmed by two independent supported read routes when available.
+- `EXISTING_FILE_FETCHBACK`: path, exact ref, Git blob SHA, byte length and whether the exact bytes were actually recovered. If the Contents endpoint returns an empty body, fetch its blob; the blob read closes the retrieval problem only for that file/ref.
+- `BRANCH_RULESET`: independently inspectable configuration. HTTP 403 means `UNKNOWN / NOT_AUTHORIZED_TO_INSPECT`, not “rules absent”, “rules disabled”, or “Owner can bypass”.
+- `FUTURE_MANIFEST_FETCHBACK`: `NOT_APPLICABLE_YET` until the manifest exists at an exact canonical commit. A CURRENT-STATE read is not a proxy for this later proof.
+- `AUTHORITY_ESTABLISHED`: a separate G1 decision requiring the approved manifest, verified key/identity binding, freshness/version/revocation semantics and local receipt. Fetch access alone never establishes G1.
+
+Keep provenance per assertion: `VERIFIED`, `OWNER_CODEX_REPORTED`, `INFERENCE`, `UNKNOWN`, or `NOT_RUN`. If two actors report the same local event, do not label it independently verified unless another actor actually fetched the relevant data. Do not claim the ChatGPT session executed a local command.
+
+### Non-circular enrollment-manifest contract
+
+A manifest cannot truthfully contain its own containing commit SHA, Git blob SHA, or whole-content digest: those identifiers depend on the bytes/commit that would contain the value, creating a self-reference. The manifest should instead contain a stable enrollment ID and schema/version, repository ID and canonical path, public-key identity/thumbprint, Windows SID, exact server/code revision, one workspace root, `ROOT_ENROLLMENT_ONLY` profile, and policy freshness/revocation references. It must contain no private key or credential.
+
+After the exact manifest PR is merged, the local receipt records independently observed metadata: canonical merge commit SHA, PR/merge actor metadata, manifest blob SHA, SHA-256 of the exact fetched bytes, key identifier, Windows SID, code revision and workspace binding. Then compare the fetched public key/bindings to the local CNG key and enrollment request. The receipt records what was verified; it does not replace Owner approval or create authority by itself.
+
+For a private repository, use only an already-authenticated supported Git/API route. Do not expose secrets in tool output, logs, source, chat or manifest. A blocked ruleset API, a public-key fingerprint, an Entra login, or possession of a GitHub App PEM is not interchangeable evidence for the other claims.
+
+### Effect boundaries remain distinct
+
+Even a successful G1 enrollment authorizes no MCP tool by itself. Keep `G2`, `G3`, each tool's operation-specific capability checks, protected reads, side effects, transport and bridge activation as separate acceptance gates. The one-time enrollment implementation and its synthetic tests must not create a key, merge a manifest, launch the bridge or read protected content; the actual one-time enrollment is a separate precisely bounded operation after the candidate has been reviewed.
+
 ## 4. Acceptance tests for the method (reasoning checks, not product tests)
 
 1. **Existing publication:** when PR #555 already contains the candidate, select reuse/review; do not ask Codex to publish a duplicate.
@@ -143,6 +173,10 @@ A draft PR or its fetch-back proves that the branch artifact is published; it do
 5. **Actions without jobs:** workflow `startup_failure` with an empty jobs list means no test execution is evidenced; preserve `TESTS=NOT_RUN`.
 6. **Draft writeback:** changes on a PR branch remain proposed until reviewed/integrated under authorization and fetched back from main.
 7. **Historical route conflict:** when the current top addendum identifies an existing published PR but a retained older block still says `SOURCE_PUBLICATION=NOT_DONE` or prescribes publishing it, the latest explicit route/supersession boundary controls. Preserve the older block as history, but never let its stale action compete with the current `NEXT_ACTION`.
+8. **Scoped fetch-back:** verifying authenticated access to CURRENT-STATE does not verify bytes of a future manifest, branch-protection rules or G1 authority.
+9. **403 on governance metadata:** classify unavailable branch protection/ruleset inspection as `UNKNOWN`; do not infer either the presence or absence of protection.
+10. **Non-self-referential manifest:** reject a design that embeds its own containing commit SHA, Git blob SHA or whole-content digest. Store those identities in a post-merge receipt.
+11. **G1 vs capability:** a valid Owner-approved enrollment may establish a narrow local issuer identity only; it must not populate the MCP tool allowlist or imply G2/G3/read authorization.
 
 These are documentary acceptance cases. This session did not execute tests, builds or runtime.
 
@@ -169,4 +203,4 @@ AUTOMATIC_FOLLOW_ON=FALSE
 MERGE=NOT_AUTHORIZED
 ```
 
-**Next operational edge:** reuse PR #555 and its recorded review/limitations; do not republish or re-run unchanged tests. Any integration decision remains separate and unauthorized by this method document.
+**Routing boundary:** this document defines a method; it does not choose the currently active project task. Always consult the newest top entry in `CURRENT-STATE.md`. For the current M1A enrollment work, the existing authenticated fetchback for an existing canonical file is closed, while manifest-specific fetchback is not applicable until a manifest exists; see the current route record. Do not revive this document's historical M1B examples as the active task.
