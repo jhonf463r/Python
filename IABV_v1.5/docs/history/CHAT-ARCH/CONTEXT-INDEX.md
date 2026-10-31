@@ -7803,3 +7803,8 @@ Next actor:
 SONNET/CLAUDE.
 
 No implementation/runtime/scoring change.
+
+
+## Domain capability pointer — laser-cut vector topology (2026-10-31)
+
+Objective-conditioned retrieval trigger: laser cutting, SVG/DXF/CAM, through-cut vs engraving, retained material vs detached slugs, kerf, bridges, face integrity or manufacturability. Retrieve [LASER_VECTOR_TOPOLOGY](../../runbooks/laser-cut-vector-topology-skill.md), its [runbook catalog](../../runbooks/README.md), and the [BURVE learning receipt](./CHAT-ARCH-2026-10-31-LASER-CUT-VECTOR-TOPOLOGY-KNOWLEDGE-ABSORPTION.md). Apply only the relevant sections and record the exact revision and changed decision. This is external documented memory; automatic delivery/use is not proven.
