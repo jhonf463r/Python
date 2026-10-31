@@ -39,6 +39,16 @@ class _FakeWorldModelService:
         self._snapshot = snapshot
         self.calls: list[tuple[str, bool]] = []
 
+    @property
+    def scan_stats(self) -> dict[str, int | float | None]:
+        return {
+            "scan_count": 0,
+            "scan_count_full": 0,
+            "scan_interval_s": 60.0,
+            "full_scan_interval_s": 300.0,
+            "last_scan_ago_s": None,
+        }
+
     def current_model(self) -> WorldModelSnapshot:
         self.calls.append(("current", False))
         return self._snapshot
@@ -232,6 +242,49 @@ def _build_container(**overrides: object) -> _FakeContainer:
     return _FakeContainer(**defaults)
 
 
+def _synthetic_opened_target(operation: str, relative_target: str):
+    from iabv_v15.infra.mcp.windows_handle_reader import OpenedTargetCapability, OwnedWindowsHandle
+
+    target = OpenedTargetCapability(
+        handle=OwnedWindowsHandle(123),
+        operation=operation,
+        relative_target=relative_target,
+        workspace_id="synthetic-workspace",
+        checkout_id="synthetic-checkout",
+        resolver_version="synthetic-resolver-v1",
+        root_binding_id="synthetic-root-binding",
+        policy_binding_id="synthetic-policy-binding",
+    )
+    target.close = lambda: None
+    return target
+
+
+def _install_synthetic_open_targets(monkeypatch, container, targets):  # type: ignore[no-untyped-def]
+    from types import SimpleNamespace
+
+    from iabv_v15.infra.mcp.windows_handle_reader import (
+        OwnedWindowsHandle,
+        WorkspaceRootCapability,
+    )
+
+    root = WorkspaceRootCapability(
+        handle=OwnedWindowsHandle(123),
+        workspace_id="synthetic-workspace",
+        checkout_id="synthetic-checkout",
+        expected_volume_serial=1,
+        expected_file_id=b"\x00" * 16,
+        root_binding_id="synthetic-root-binding",
+        policy_binding_id="synthetic-policy-binding",
+        resolver_version="synthetic-resolver-v1",
+    )
+    container.approved_workspace_root_provider = SimpleNamespace(current_workspace_root=lambda: root)
+
+    def open_target(_root, relative_target: str, operation: str):
+        return targets[(operation, relative_target)]
+
+    monkeypatch.setattr("iabv_v15.infra.mcp.server.windows_handle_reader.open_target", open_target)
+
+
 def _get_tool(server: IABVMCPServer, name: str):
     registry = server.mcp._tool_manager._tools  # fastmcp exposed internal
     assert name in registry, f"tool {name} no registrada (existentes: {sorted(registry)})"
@@ -241,6 +294,43 @@ def _get_tool(server: IABVMCPServer, name: str):
 def _call_tool(server: IABVMCPServer, name: str, **kwargs: object) -> object:
     tool = _get_tool(server, name)
     return tool.fn(**kwargs)
+
+
+def test_fastmcp_transport_keeps_sdk_dns_rebinding_defaults(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    captured: dict[str, object] = {}
+
+    class FastMCPStub:
+        def __init__(self, name: str, **kwargs: object) -> None:
+            captured.update(kwargs)
+
+        def tool(self):
+            return lambda function: function
+
+    monkeypatch.setattr("mcp.server.fastmcp.FastMCP", FastMCPStub)
+    IABVMCPServer(_build_container())
+    assert set(captured) == {"log_level", "transport_security"}
+    security = captured["transport_security"]
+    assert security.enable_dns_rebinding_protection is True
+    assert set(security.allowed_hosts) == {"localhost", "127.0.0.1", "[::1]"}
+    assert "*" not in security.allowed_hosts
+    assert "*" not in security.allowed_origins
+
+
+def test_direct_module_entry_denies_before_bootstrap() -> None:
+    from iabv_v15.infra.mcp import server as server_module
+
+    with pytest.raises(RuntimeError, match="MCP_START_AUTHORIZATION_NOT_ESTABLISHED"):
+        server_module.main()
+
+
+def test_server_run_denies_before_transport(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    server = IABVMCPServer(_build_container())
+    transport_calls: list[str] = []
+    monkeypatch.setattr(server.mcp, "run", lambda **kwargs: transport_calls.append(str(kwargs)))
+
+    with pytest.raises(RuntimeError, match="MCP_START_AUTHORIZATION_NOT_ESTABLISHED"):
+        server.run(transport="stdio")
+    assert transport_calls == []
 
 
 def test_server_registers_core_tools() -> None:
@@ -549,28 +639,312 @@ def test_server_registers_audit_tools() -> None:
     assert audit <= registered, f"faltan audit tools: {audit - registered}"
 
 
-def test_read_repo_file_happy_path_via_server(tmp_path) -> None:  # type: ignore[no-untyped-def]
-    (tmp_path / "docs").mkdir()
-    (tmp_path / "docs" / "hello.md").write_text("hola", encoding="utf-8")
+def test_read_repo_file_denies_before_invoking_reader(tmp_path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    def forbidden_reader(*args: object, **kwargs: object) -> dict[str, object]:
+        pytest.fail("read_repo_file se invocó sin autoridad protegida")
+
+    monkeypatch.setattr("iabv_v15.infra.mcp.server.audit_tools.read_repo_file", forbidden_reader)
     server = IABVMCPServer(_build_container(workspace_root=str(tmp_path)))
     payload = _call_tool(server, "read_repo_file", relative_path="docs/hello.md")
-    assert payload["content"] == "hola"
-    assert payload["path"] == "docs/hello.md"
+    assert payload["governance_blocked"] is True
+    assert payload["reason"] == "APPROVED_WORKSPACE_ROOT_UNAVAILABLE"
+    assert payload["operation"] == "read_repo_file"
 
 
-def test_read_repo_file_returns_error_payload_on_invalid(tmp_path) -> None:  # type: ignore[no-untyped-def]
+def test_read_repo_file_denies_before_path_resolution_without_authority(tmp_path) -> None:  # type: ignore[no-untyped-def]
     server = IABVMCPServer(_build_container(workspace_root=str(tmp_path)))
     payload = _call_tool(server, "read_repo_file", relative_path="/etc/passwd")
-    assert payload["error"] == "absolute_path_forbidden"
+    assert payload["governance_blocked"] is True
+    assert payload["reason"] == "APPROVED_WORKSPACE_ROOT_UNAVAILABLE"
 
 
-def test_list_repo_directory_via_server(tmp_path) -> None:  # type: ignore[no-untyped-def]
-    (tmp_path / "a.txt").write_text("x")
-    (tmp_path / ".env").write_text("S")
+def test_list_repo_directory_denies_before_invoking_reader(tmp_path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    def forbidden_reader(*args: object, **kwargs: object) -> dict[str, object]:
+        pytest.fail("list_repo_directory se invocó sin autoridad protegida")
+
+    monkeypatch.setattr("iabv_v15.infra.mcp.server.audit_tools.list_repo_directory", forbidden_reader)
     server = IABVMCPServer(_build_container(workspace_root=str(tmp_path)))
     payload = _call_tool(server, "list_repo_directory", relative_path="")
-    names = {entry["name"]: entry for entry in payload["entries"]}
-    assert ".env" in names and names[".env"]["sensitive"] is True
+    assert payload["governance_blocked"] is True
+    assert payload["reason"] == "APPROVED_WORKSPACE_ROOT_UNAVAILABLE"
+    assert payload["operation"] == "list_repo_directory"
+
+
+def test_mcp_read_routes_delegate_to_authorizer_before_resource_helpers(tmp_path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    def forbidden_reader(*args: object, **kwargs: object) -> dict[str, object]:
+        pytest.fail("el helper de recurso fue invocado antes de una decisión ALLOW")
+
+    monkeypatch.setattr("iabv_v15.infra.mcp.server.audit_tools.read_repo_file", forbidden_reader)
+    monkeypatch.setattr("iabv_v15.infra.mcp.server.audit_tools.list_repo_directory", forbidden_reader)
+    container = _build_container(workspace_root=str(tmp_path))
+    targets = {
+        ("read_repo_file", "docs/a.txt"): _synthetic_opened_target("read_repo_file", "docs/a.txt"),
+        ("list_repo_directory", "docs"): _synthetic_opened_target("list_repo_directory", "docs"),
+    }
+    _install_synthetic_open_targets(monkeypatch, container, targets)
+    server = IABVMCPServer(container)
+    calls: list[tuple[str, str]] = []
+    coordinator = server._read_authorization_coordinator
+    original_decide = coordinator.decide_mcp_read
+
+    def record_and_decide(*, operation: str, requested_relative_target: str, opened_target: object):
+        calls.append((operation, requested_relative_target))
+        return original_decide(
+            operation=operation,
+            requested_relative_target=requested_relative_target,
+            opened_target=opened_target,
+        )
+
+    monkeypatch.setattr(coordinator, "decide_mcp_read", record_and_decide)
+    read_result = _call_tool(server, "read_repo_file", relative_path="docs/a.txt")
+    list_result = _call_tool(server, "list_repo_directory", relative_path="docs")
+    assert read_result["governance_blocked"] is True
+    assert list_result["governance_blocked"] is True
+    assert calls == [("read_repo_file", "docs/a.txt"), ("list_repo_directory", "docs")]
+
+
+@pytest.mark.parametrize(
+    ("tool_name", "operation", "requested_path", "permit_path", "canonical_target", "expected_reason"),
+    [
+        (
+            "read_repo_file", "read_repo_file", "docs/a.txt", "docs/other.txt",
+            "repo://checkout/docs/other.txt", "AUTHORITY_DECISION_SCOPE_MISMATCH",
+        ),
+        (
+            "list_repo_directory", "list_repo_directory", "docs", "docs",
+            "docs-rewritten", "AUTHORITY_TARGET_INVALID",
+        ),
+    ],
+)
+def test_mcp_read_target_mismatch_or_unbound_canonical_target_denies_before_helpers(
+    tmp_path,
+    monkeypatch,
+    tool_name: str,
+    operation: str,
+    requested_path: str,
+    permit_path: str,
+    canonical_target: str,
+    expected_reason: str,
+) -> None:  # type: ignore[no-untyped-def]
+    from iabv_v15.services.security.read_authorization import (
+        ReadAuthorizationDecision,
+        ReadPermit,
+    )
+
+    def forbidden_reader(*args: object, **kwargs: object) -> dict[str, object]:
+        pytest.fail("un destino divergente o no enlazado alcanzó un helper de lectura")
+
+    monkeypatch.setattr("iabv_v15.infra.mcp.server.audit_tools.read_repo_file", forbidden_reader)
+    monkeypatch.setattr("iabv_v15.infra.mcp.server.audit_tools.list_repo_directory", forbidden_reader)
+    container = _build_container(workspace_root=str(tmp_path))
+    opened_target = _synthetic_opened_target(operation, requested_path)
+    _install_synthetic_open_targets(monkeypatch, container, {(operation, requested_path): opened_target})
+    server = IABVMCPServer(container)
+    permit = ReadPermit(
+        decision_id="synthetic-decision",
+        requested_relative_target=permit_path,
+        canonical_target=canonical_target,
+        operation=operation,
+        workspace_id="synthetic-workspace",
+        checkout_id="synthetic-checkout",
+        policy_version=1,
+        resolver_version="synthetic-resolver-v1",
+        expires_at_epoch=2_000_000_000,
+        issued_at_epoch=1_800_000_000,
+        opened_target=opened_target,
+        target_binding_id=opened_target.target_binding_id,
+        root_binding_id=opened_target.root_binding_id,
+        policy_binding_id=opened_target.policy_binding_id,
+    )
+    monkeypatch.setattr(
+        server._read_authorization_coordinator,
+        "decide_mcp_read",
+        lambda **kwargs: ReadAuthorizationDecision.allow(permit),
+    )
+
+    payload = _call_tool(server, tool_name, relative_path=requested_path)
+
+    assert payload["governance_blocked"] is True
+    assert payload["reason"] == expected_reason
+    assert payload["operation"] == operation
+
+
+@pytest.mark.parametrize(
+    ("tool_name", "operation", "relative_path"),
+    [
+        ("read_repo_file", "read_repo_file", "docs/a.txt"),
+        ("list_repo_directory", "list_repo_directory", "docs"),
+    ],
+)
+def test_mcp_invalid_authorized_target_returns_exact_denial_before_helpers(
+    tmp_path,
+    monkeypatch,
+    tool_name: str,
+    operation: str,
+    relative_path: str,
+) -> None:  # type: ignore[no-untyped-def]
+    from iabv_v15.services.security.read_authorization import (
+        ReadAuthorizationDecision,
+        ReadPermit,
+    )
+
+    def forbidden_reader(*args: object, **kwargs: object) -> dict[str, object]:
+        pytest.fail("un destino autorizado inválido alcanzó un helper de lectura")
+
+    monkeypatch.setattr("iabv_v15.infra.mcp.server.audit_tools.read_repo_file", forbidden_reader)
+    monkeypatch.setattr("iabv_v15.infra.mcp.server.audit_tools.list_repo_directory", forbidden_reader)
+    container = _build_container(workspace_root=str(tmp_path))
+    opened_target = _synthetic_opened_target(operation, relative_path)
+    _install_synthetic_open_targets(monkeypatch, container, {(operation, relative_path): opened_target})
+    server = IABVMCPServer(container)
+    permit = ReadPermit(
+        decision_id="synthetic-invalid-target",
+        requested_relative_target=relative_path,
+        canonical_target="",
+        operation=operation,
+        workspace_id="synthetic-workspace",
+        checkout_id="synthetic-checkout",
+        policy_version=1,
+        resolver_version="synthetic-resolver-v1",
+        expires_at_epoch=2_000_000_000,
+        issued_at_epoch=1_800_000_000,
+        opened_target=opened_target,
+        target_binding_id=opened_target.target_binding_id,
+        root_binding_id=opened_target.root_binding_id,
+        policy_binding_id=opened_target.policy_binding_id,
+    )
+    monkeypatch.setattr(
+        server._read_authorization_coordinator,
+        "decide_mcp_read",
+        lambda **kwargs: ReadAuthorizationDecision.allow(permit),
+    )
+
+    payload = _call_tool(server, tool_name, relative_path=relative_path)
+
+    assert payload["governance_blocked"] is True
+    assert payload["reason"] == "AUTHORITY_TARGET_INVALID"
+    assert payload["operation"] == operation
+
+
+@pytest.mark.parametrize(
+    ("tool_name", "operation", "relative_path"),
+    [
+        ("read_repo_file", "read_repo_file", "docs/a.txt"),
+        ("list_repo_directory", "list_repo_directory", "docs"),
+    ],
+)
+def test_mcp_handlers_deny_well_formed_allow_until_authorized_object_is_consumed(
+    tmp_path,
+    monkeypatch,
+    tool_name: str,
+    operation: str,
+    relative_path: str,
+) -> None:  # type: ignore[no-untyped-def]
+    from iabv_v15.services.security.read_authorization import (
+        ReadAuthorizationDecision,
+        ReadPermit,
+    )
+
+    def forbidden_reader(*args: object, **kwargs: object) -> dict[str, object]:
+        pytest.fail("el handler operó una ruta re-resuelta en vez del objeto autorizado")
+
+    monkeypatch.setattr("iabv_v15.infra.mcp.server.audit_tools.read_repo_file", forbidden_reader)
+    monkeypatch.setattr("iabv_v15.infra.mcp.server.audit_tools.list_repo_directory", forbidden_reader)
+    container = _build_container(workspace_root=str(tmp_path))
+    opened_target = _synthetic_opened_target(operation, relative_path)
+    _install_synthetic_open_targets(monkeypatch, container, {(operation, relative_path): opened_target})
+    server = IABVMCPServer(container)
+    permit = ReadPermit(
+        decision_id="synthetic-decision",
+        requested_relative_target=relative_path,
+        canonical_target=relative_path,
+        operation=operation,
+        workspace_id="synthetic-workspace",
+        checkout_id="synthetic-checkout",
+        policy_version=1,
+        resolver_version="synthetic-resolver-v1",
+        expires_at_epoch=2_000_000_000,
+        issued_at_epoch=1_800_000_000,
+        opened_target=opened_target,
+        target_binding_id=opened_target.target_binding_id,
+        root_binding_id=opened_target.root_binding_id,
+        policy_binding_id=opened_target.policy_binding_id,
+    )
+    monkeypatch.setattr(
+        server._read_authorization_coordinator,
+        "decide_mcp_read",
+        lambda **kwargs: ReadAuthorizationDecision.allow(permit),
+    )
+
+    payload = _call_tool(server, tool_name, relative_path=relative_path)
+
+    assert payload["governance_blocked"] is True
+    assert payload["reason"] == "AUTHORITY_TARGET_INVALID"
+    assert payload["operation"] == operation
+
+
+def test_mcp_read_arguments_cannot_supply_authority_or_host_identity() -> None:
+    import inspect
+
+    server = IABVMCPServer(_build_container())
+    read_parameters = set(inspect.signature(_get_tool(server, "read_repo_file").fn).parameters)
+    list_parameters = set(inspect.signature(_get_tool(server, "list_repo_directory").fn).parameters)
+    assert read_parameters == {"relative_path"}
+    assert list_parameters == {"relative_path", "max_entries"}
+
+
+def test_mcp_authorizer_initialization_or_decision_failure_denies(tmp_path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    def forbidden_reader(*args: object, **kwargs: object) -> dict[str, object]:
+        pytest.fail("un fallo de autorización invocó un helper de recursos")
+
+    monkeypatch.setattr("iabv_v15.infra.mcp.server.audit_tools.read_repo_file", forbidden_reader)
+    container = _build_container(workspace_root=str(tmp_path))
+    _install_synthetic_open_targets(
+        monkeypatch,
+        container,
+        {("read_repo_file", "docs/a.txt"): _synthetic_opened_target("read_repo_file", "docs/a.txt")},
+    )
+    server = IABVMCPServer(container)
+
+    def failed_decision(**kwargs: object):
+        raise RuntimeError("synthetic coordinator failure")
+
+    monkeypatch.setattr(server._read_authorization_coordinator, "decide_mcp_read", failed_decision)
+    payload = _call_tool(server, "read_repo_file", relative_path="docs/a.txt")
+    assert payload["governance_blocked"] is True
+    assert payload["reason"] == "AUTHORITY_DECISION_INTERNAL_FAILURE"
+
+
+def test_mcp_reader_ignores_unverified_container_approval_claim(tmp_path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    def forbidden_reader(*args: object, **kwargs: object) -> dict[str, object]:
+        pytest.fail("el lector MCP aceptó una afirmación local no autenticada")
+
+    monkeypatch.setattr("iabv_v15.infra.mcp.server.audit_tools.read_repo_file", forbidden_reader)
+    monkeypatch.setattr("iabv_v15.infra.mcp.server.audit_tools.list_repo_directory", forbidden_reader)
+    container = _build_container(workspace_root=str(tmp_path))
+    container.read_authorization = {"approved": True, "approved_by": "owner"}
+    container.protected_read_decision = {"decision": "allow"}
+    container.read_authorization_coordinator = {"decision": "ALLOW"}
+    _install_synthetic_open_targets(
+        monkeypatch,
+        container,
+        {
+            ("read_repo_file", "docs/readme.md"): _synthetic_opened_target("read_repo_file", "docs/readme.md"),
+            ("list_repo_directory", "docs"): _synthetic_opened_target("list_repo_directory", "docs"),
+        },
+    )
+    server = IABVMCPServer(
+        container,
+        read_authorization_coordinator=container.read_authorization_coordinator,
+    )
+
+    for tool_name, arguments in (
+        ("read_repo_file", {"relative_path": "docs/readme.md"}),
+        ("list_repo_directory", {"relative_path": "docs"}),
+    ):
+        payload = _call_tool(server, tool_name, **arguments)
+        assert payload["governance_blocked"] is True
+        assert payload["reason"].startswith("AUTHORITY_REQUIREMENTS_MISSING:")
 
 
 def test_capture_ui_screenshot_without_provider_degrades_via_server() -> None:
@@ -624,9 +998,8 @@ def test_audit_tools_blocked_when_global_wildcard_block_active(tmp_path) -> None
 
 
 def test_audit_tools_allow_when_only_unrelated_block(tmp_path) -> None:  # type: ignore[no-untyped-def]
-    """Si el block es para otra ruta (ej. chatgpt_web), audit debe pasar."""
+    """Un block ajeno no suplanta ni habilita la autoridad protegida."""
 
-    (tmp_path / "file.md").write_text("contenido")
     unrelated = OperationalBlockRecord(
         block_type="cloudflare",
         assistant_kind="chatgpt_web",
@@ -637,8 +1010,8 @@ def test_audit_tools_allow_when_only_unrelated_block(tmp_path) -> None:  # type:
         _build_container(world_model_service=wm, workspace_root=str(tmp_path)),
     )
     payload = _call_tool(server, "read_repo_file", relative_path="file.md")
-    assert "governance_blocked" not in payload
-    assert payload["content"] == "contenido"
+    assert payload["governance_blocked"] is True
+    assert payload["reason"].startswith("AUTHORITY_REQUIREMENTS_MISSING:")
 
 
 def test_run_pytest_tool_signature_rejects_python_executable() -> None:

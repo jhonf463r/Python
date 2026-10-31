@@ -181,59 +181,22 @@ class TestAutoOptimizeBrain:
 
 class TestBackgroundSubprocessLaunch:
 
-    @pytest.mark.skipif(
-        __import__('os').name != 'nt',
-        reason='pythonw.exe→python.exe substitution only applies on Windows',
-    )
-    def test_start_mcp_subprocess_uses_python_exe_and_hidden_runtime_log(self) -> None:
-        bootstrap, workspace = _make_bootstrap()
-        try:
-            fake_proc = MagicMock()
-            fake_proc.pid = 4242
-            with patch('subprocess.Popen', return_value=fake_proc) as popen_mock, \
-                 patch('iabv_v15.bootstrap.sys.executable', 'C:\\Users\\faber\\miniconda3\\pythonw.exe'), \
-                 patch.object(Path, 'is_file', return_value=True):
-                    proc = bootstrap._start_mcp_subprocess()
+    def test_start_mcp_subprocess_is_denied_without_authority(self) -> None:
+        from iabv_v15.bootstrap import AppBootstrap
 
-            assert proc is fake_proc
-            args, kwargs = popen_mock.call_args
-            command = args[0]
-            assert command[0].lower().endswith('python.exe')
-            assert command[1:] == ['-m', 'iabv_v15.infra.mcp.server']
-            assert kwargs['env']['IABV_MCP_SUBPROCESS'] == '1'
-            assert kwargs['env']['IABV_STARTUP_TIMELINE'] == '0'
-            assert kwargs['stdin'] is not None
-            assert kwargs['stderr'] == __import__('subprocess').STDOUT
-            assert kwargs['stdout'].name.endswith('mcp_server_runtime.log')
-            assert kwargs.get('creationflags', 0) == getattr(__import__('subprocess'), 'CREATE_NO_WINDOW', 0)
-            kwargs['stdout'].close()
-        finally:
-            if getattr(bootstrap, '_mcp_runtime_log_handle', None) is not None:
-                bootstrap._mcp_runtime_log_handle.close()
-                bootstrap._mcp_runtime_log_handle = None
-            shutil.rmtree(workspace, ignore_errors=True)
+        bootstrap = AppBootstrap.__new__(AppBootstrap)
+        with patch('subprocess.Popen', side_effect=AssertionError('MCP process launch is disabled')) as popen:
+            assert bootstrap._start_mcp_subprocess() is None
+        popen.assert_not_called()
 
-    def test_start_tunnel_subprocess_hides_console_and_redirects_logs(self) -> None:
-        bootstrap, workspace = _make_bootstrap()
-        try:
-            fake_proc = MagicMock()
-            fake_proc.pid = 9898
-            with patch('shutil.which', return_value='C:\\Users\\faber\\.iabv\\tools\\cloudflared\\cloudflared.exe'):
-                with patch('subprocess.Popen', return_value=fake_proc) as popen_mock:
-                    proc = bootstrap._start_tunnel_subprocess()
+    def test_start_tunnel_subprocess_is_denied_without_authority(self) -> None:
+        from iabv_v15.bootstrap import AppBootstrap
 
-            assert proc is fake_proc
-            args, kwargs = popen_mock.call_args
-            command = args[0]
-            assert command[0].lower().endswith('cloudflared.exe')
-            assert 'tunnel' in command
-            assert kwargs['stdin'] is not None
-            assert kwargs['stderr'] == __import__('subprocess').STDOUT
-            assert kwargs['stdout'].name.endswith('cloudflared_runtime.log')
-            assert kwargs.get('creationflags', 0) == getattr(__import__('subprocess'), 'CREATE_NO_WINDOW', 0)
-            kwargs['stdout'].close()
-        finally:
-            if getattr(bootstrap, '_tunnel_runtime_log_handle', None) is not None:
-                bootstrap._tunnel_runtime_log_handle.close()
-                bootstrap._tunnel_runtime_log_handle = None
-            shutil.rmtree(workspace, ignore_errors=True)
+        bootstrap = AppBootstrap.__new__(AppBootstrap)
+        with (
+            patch('shutil.which', side_effect=AssertionError('cloudflared lookup is disabled')) as which,
+            patch('subprocess.Popen', side_effect=AssertionError('tunnel process launch is disabled')) as popen,
+        ):
+            assert bootstrap._start_tunnel_subprocess() is None
+        which.assert_not_called()
+        popen.assert_not_called()
