@@ -5220,3 +5220,8 @@ The repair stage must preserve reuse-first and anti-scope-creep:
 - distinguish a semantic necessity from a useful future extension.
 
 This protects the developmental method from ontology inflation while retaining adversarial learning.
+
+
+## Objective-conditioned skill retrieval — laser-cut vector topology (2026-10-31)
+
+When the task involves laser-cut vectors, through-cut/engraving semantics, topology, kerf, bridges, dropped slugs or CAM preparation, retrieve [LASER_VECTOR_TOPOLOGY](../../runbooks/laser-cut-vector-topology-skill.md) before choosing an action. Its discovery entry is [docs/runbooks/README.md](../../runbooks/README.md), and the case-specific learning record is [here](./CHAT-ARCH-2026-10-31-LASER-CUT-VECTOR-TOPOLOGY-KNOWLEDGE-ABSORPTION.md). Distinguish retrieval, activation, application, verified outcome and later causal reuse; a link or commit proves storage, not consumption.
