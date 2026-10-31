@@ -459,3 +459,27 @@ This concept reuses the existing memory, evidence, route and governance organs; 
 
 **Required distinction:** a method/document update may be genuine progress when explicitly requested, but it is not product implementation or bridge readiness. The protocol remains documentation-only until a later non-identical task proves the method was retrieved, changed action selection and produced a verified outcome. This refinement reuses the existing route, memory and authorization organs; it creates no new coordinator or memory store.
 
+
+## 20G. CROSS-SESSION BOOT, STATE RECONCILIATION AND CAUSAL REUSE (UAAL-D021)
+
+- CONCEPT_ID=UAAL-D021
+- PARENT_CONCEPT_ID=UAAL-D019; UAAL-D020
+- REFINES=UAAL-D019; UAAL-D020
+- ROOT=UAAL-ROOT-001
+- CANONICAL_SOURCE=CHAT-ARCH-2026-10-29-UAAL-D021-CROSS-SESSION-BOOT-AND-STATE-RECONCILIATION.md
+- STATUS=DOCUMENTED_METHOD
+- AUTOMATIC_ENFORCEMENT=AUTOMATIC_ENFORCEMENT_NOT_PROVEN
+- LATER_CAUSAL_REUSE=LATER_CAUSAL_REUSE_VERIFIED_FOR_TWO_NON_IDENTICAL_TASKS_WITHIN_CONTINUING_SESSION
+- INDEPENDENT_SESSION=INDEPENDENT_SESSION_EXPLICIT_RETRIEVAL_AND_METHOD_APPLICATION_VERIFIED_FOR_ONE_BOUNDED_TASK
+- AUTOMATIC_CROSS_SESSION_BOOT=AUTOMATIC_CROSS_SESSION_BOOT_NOT_PROVEN
+- GENERALIZATION=GENERALIZATION_NOT_TESTED
+
+**Purpose:** reconcile current task state with the live canonical route before action, so relevant memory changes a bounded decision instead of being mistaken for automatic boot or operational authority.
+
+**Method:** refresh live main and retrieve the exact CURRENT-STATE.md blob; if an ordinary read is empty, treat that as a retrieval limitation and recover the same revision's blob. Bind retrieval to the Owner's objective, acceptance conditions, scope, constraints and authority. Retrieve only relevant D019/D020/D021 material, owning records and live candidate references. Reconcile stale or conflicting claims at claim level; do not average conflicts or promote reports into verified outcomes.
+
+Construct the minimum task-local world model and identify the first open causal edge. Fingerprint prior terminal attempts and select one bounded, authorized action with a predicted observable, acceptance condition and stop condition. Act only within that boundary; observe and adjudicate the incoming AI/tool result before another handoff. Preserve claim-level provenance and stage-specific acceptance: invocation, observation, verification, canonical writeback/fetch-back and causal reuse are distinct. Update the owning record, then retrieve the exact canonical bytes/revision to verify writeback.
+
+A later, non-identical task must show that retrieved knowledge changed the selected action and contributed to a separately verified outcome before causal reuse is claimed. This refines D019's anti-loop frontier and D020's verified-progress utility; it creates no second router, coordinator, memory store or capability schema.
+
+**Nonclaims:** D021 is a documented method, not proof of automatic enforcement, automatic cross-session boot, product runtime behavior or generalization. The stated later-reuse and bounded independent-session evidence retain the distinct scopes recorded above.
