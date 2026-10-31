@@ -1,39 +1,42 @@
-## ACTIVE ROUTE — IABV_UAAL_D021_CANONICAL_LINEAGE_AND_CURRENT_STATE_RECONCILIATION_R1_20261030
+## ACTIVE ROUTE — IABV_M1A_OWNER_ISSUER_MECHANISM_INPUT_GATE_R1_20261030
 
-**Routing authority:** this active header is the current task route. The historical suffix beginning at the first standalone --- is retained byte-for-byte and is not an active instruction unless reactivated here.
+**Routing authority:** this header is the active task route. The historical suffix beginning at the first standalone --- remains byte-for-byte history and is not active unless this header reactivates it.
 
-### Source and evidence boundary
+### Post-merge documentary state
 
-- BASE_MAIN=20755570e078f132e44de3af7d235b48b63a98ae
-- CURRENT_STATE_BASE_BLOB=3aa7acb595103009d38c5cb0c67d131a172dfaa6
-- D021_SOURCE_BLOB=338adc6e5a2df1303af0ca21d321b05a3a013c5d
-- The D021 source is CHAT-ARCH-2026-10-29-UAAL-D021-CROSS-SESSION-BOOT-AND-STATE-RECONCILIATION.md. The Constitution change below records lineage; this work is a documentation-only candidate and does not itself adopt changes canonically or authorize operations.
+- BASE_MAIN=274deccd4f1d70c932c0a067e45b1bd41e5b4da7
+- CURRENT_STATE_BASE_BLOB=f9cc65d204a4183702adc1ef3d511812ce4a4000
+- PR_577=MERGED; MERGE_COMMIT=274deccd4f1d70c932c0a067e45b1bd41e5b4da7
+- PR_577_DOCUMENTS_FETCHBACK=VERIFIED; CURRENT_STATE_BLOB=f9cc65d204a4183702adc1ef3d511812ce4a4000; CONSTITUTION_BLOB=3f920f4ec71a172bc74c87de764de25e5d603674
+- D021_AND_SECTION_20G=INCORPORATED_IN_MAIN
+- DOCUMENTARY_APPROVAL_AND_REVIEW=COMPLETE
+- PRODUCT_M1A_APPROVAL=NOT_GRANTED; DOCUMENTARY_MERGE_DOES_NOT_CHANGE_PRODUCT_AUTHORIZATION
+- G1/G2/G3 and the production authority gates did not advance as a result of PR #577.
 
-### Candidate lineage and adjudicated reports
+### Evidence and unresolved root provenance
 
-- M1A R4: CLAUDE_REPORTED_APPROVE_WITH_LIMITATIONS; root provenance remains unresolved. This is review evidence, not proof of integration or authority.
-- M1A R5: CODEX_REPORTED=106_FOCUSED_TESTS; CLAUDE_REPORTED=REQUEST_REPAIR.
-- M1A R5 Repair R1: CODEX_REPORTED=180_PASSED; EXIT_CODE=0; PYTHON=3.13.2; PYTEST=9.0.3; repair confirmation remains CLAUDE_REPORTED.
-- The R5 repair patch, inventory and test log were reported recovered from Dropbox. These are source/report and reported-execution claims; no fresh test run is asserted here.
-- The root provenance census was reported as PARTIAL_EXISTING_MECHANISM. Report path: /IABV-IA-BRIDGE/OUTBOX/IABV_M1A_ROOT_PROVENANCE_SOURCE_CENSUS_R1_20261030_REPORT.md; Dropbox file ID id:5f9kJIcSlJAAAAAAAAAD1A; revision 65f191480edeaf1c0f630.
-- The coordinator reported fetching and reading the census report as text. The producer-reported local SHA-256 is not independently verified, and the text readback does not prove byte-for-byte identity. Keep source-code evidence, reported test execution, Dropbox metadata/text readback, and cryptographic artifact identity as separate evidence classes.
-- The exact local candidate state is not verified as integrated. No adoption, merge, runtime, or authority claim follows from these reports.
+- R5 Host Root Provider report: /IABV-IA-BRIDGE/OUTBOX/IABV_M1A_R5_HOST_ROOT_PROVIDER_20261030_REPORT.md. It describes a local candidate with explicit root selection, native handles and relative opening; associated test results remain CODEX_REPORTED.
+- R5 Repair R1 reported 180 passed, exit code 0; Claude's repair review remains CLAUDE_REPORTED. These are not new test execution in this reconciliation.
+- R1 source census report: /IABV-IA-BRIDGE/OUTBOX/IABV_M1A_ROOT_PROVENANCE_SOURCE_CENSUS_R1_20261030_REPORT.md. Its reported result is PARTIAL_EXISTING_MECHANISM. The census reported no authenticated Owner decision producer or independent trust anchor/issuer bound to the root selection before handle acquisition. The census did not run tests.
+- The census is a bounded report, not authority provisioning. Do not repeat it unchanged or reconstruct another variant of the same candidate.
 
-### First open causal edge
+### First open technical edge
 
 OWNER_ROOT_DECISION_AUTHENTICATION_AND_ROOT_HANDLE_PROVENANCE_NOT_ESTABLISHED
 
-Explicit path selection is not Owner authority. A native handle or object identity is not Owner authority. PrincipalMandateEvidence is an untrusted input shape. The host root provider supplies a resource/capability; it is not a trust issuer. The generic HumanApprovalBroker does not prove authenticated authorization of a specific production root.
+The Owner must identify an existing, supported and verifiable mechanism that binds principal, mandate and trusted issuer to an exact root selection, and explicitly authorize a bounded review of that reference. A technical reference plus review authorization is sufficient to start that review.
 
-Do not repeat the source census unchanged. If that track is reopened, the next technical input is an existing, supported and verifiable Owner/issuer mechanism identified and authorized by the Owner.
+Do not request credentials, tokens, keys, production-root selection or provisioning, access to protected authority stores, administrative operations, or host changes. If no such mechanism exists or can be identified, retain this block; do not invent one.
 
-### Active task, gates and next action
+### Active route and guardrails
 
-ACTIVE_TASK=IABV_UAAL_D021_CANONICAL_LINEAGE_AND_CURRENT_STATE_RECONCILIATION_R1_20261030
-ACTIVE_TASK_STATUS=DOCUMENTATION_ONLY_CANDIDATE; INDEPENDENT_REVIEW_PENDING
-NEXT_ACTION=ONE_INDEPENDENT_STATIC_REVIEW_OF_THIS_EXACT_TWO_FILE_DIFF; NO_MERGE
+ACTIVE_TASK=IABV_M1A_OWNER_ISSUER_MECHANISM_INPUT_GATE_R1_20261030
+ACTIVE_TASK_STATUS=BLOCKED_WAITING_FOR_OWNER_IDENTIFIED_EXISTING_MECHANISM
+OPEN_EDGE=OWNER_ROOT_DECISION_AUTHENTICATION_AND_ROOT_HANDLE_PROVENANCE_NOT_ESTABLISHED
+NEXT_ACTION=OWNER_IDENTIFY_EXISTING_SUPPORTED_VERIFIABLE_OWNER_ISSUER_MECHANISM_AND_AUTHORIZE_BOUNDED_REVIEW
 
-CANONICAL_ADOPTION=NOT_PERFORMED
+CANONICAL_ADOPTION=DOCUMENTARY_D021_INCORPORATED_IN_MAIN
+PRODUCT_AUTHORIZATION=NOT_AUTHORIZED
 OPTION_D=RATIFIED_NO_BOOTSTRAP
 AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED
 OWNER_ROOT_SELECTION=NOT_PROVIDED_FOR_PRODUCTION
@@ -51,8 +54,6 @@ PRODUCT_PR_MERGE=NOT_AUTHORIZED
 PARALLEL_DISPATCH=NOT_AUTHORIZED
 TESTS/BUILD/RUNTIME=NOT_RUN
 AUTOMATIC_FOLLOW_ON=FALSE
-
-This candidate changes documentation only. It is not a product candidate and does not establish G1/G2/G3, protected-read enforcement, an Owner root, or production readiness.
 ---
 
 ## OVERRIDE — UAAL-D020 clarified as a cross-AI shared-memory method (2026-10-28)
