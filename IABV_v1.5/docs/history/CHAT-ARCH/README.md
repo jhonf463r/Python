@@ -1,3 +1,10 @@
+<!-- Objective-conditioned route pointer; CURRENT-STATE remains the sole route authority. -->
+## Objective entry — BURVE four-face lantern
+
+For a new session continuing BURVE “María: Luz que acompaña”, read [CURRENT-STATE](./CURRENT-STATE.md) from the selected live revision, then activate the [four-face product case](../../product-design/BURVE-MARIA-LUZ-QUE-ACOMPANA-FOUR-FACE-DESIGN-CASE.md) and [laser topology skill](../../runbooks/laser-cut-vector-topology-skill.md). Current candidate: two opposite Mary panels + two opposite coordinated Marian-emblem panels. Do not mix the historic Mary+Child fabrication export with the newer Mary-alone concept.
+
+---
+
 <!-- UAAL-D021 activation pointer; CURRENT-STATE.md owns live routing and volatile status. -->
 ## Continuidad Espacio-Tiempo — fresh route, no copied state (2026-10-29)
 
@@ -3307,8 +3314,3 @@ Authority separation:
 historical records = evidence/history.
 
 Every material human/AI idea should be preserved as a concept or explicit revision/competing interpretation with parent, origin, derivation reason, epistemic status, evidence and next open edge.
-
-
-## Reusable manufacturing capability — laser vector topology (2026-10-31)
-
-For any task involving SVG/DXF laser cutting, engraving, CAM interpretation, kerf, bridges, islands, cutouts or material that remains/falls away, activate [LASER_VECTOR_TOPOLOGY](../../runbooks/laser-cut-vector-topology-skill.md). See the [runbook catalog](../../runbooks/README.md) and [BURVE learning receipt](./CHAT-ARCH-2026-10-31-LASER-CUT-VECTOR-TOPOLOGY-KNOWLEDGE-ABSORPTION.md). Retrieve the live skill revision; do not infer that another session has used it merely because it is stored in GitHub. CURRENT-STATE.md remains the only task router.

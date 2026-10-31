@@ -1,3 +1,10 @@
+<!-- Objective-conditioned retrieval; not a competing task router. -->
+## BURVE — four-face lantern retrieval
+
+For the BURVE “María: Luz que acompaña” objective, retrieve [the living case dossier](../../product-design/BURVE-MARIA-LUZ-QUE-ACOMPANA-FOUR-FACE-DESIGN-CASE.md), [the original trapezoidal panel SVG](../../product-design/assets/1FarolPVirgen3-owner-source.svg) and [LASER_VECTOR_TOPOLOGY](../../runbooks/laser-cut-vector-topology-skill.md). The dossier records the 2+2 hypothesis, visual evidence, artifact discrepancies and next action. CURRENT-STATE alone supplies live route and permissions.
+
+---
+
 <!-- UAAL-D021 activation pointer; CURRENT-STATE.md owns live routing and volatile status. -->
 ## Índice operativo de contexto Espacio-Tiempo — fresh route, no copied state (2026-10-29)
 
@@ -7803,8 +7810,3 @@ Next actor:
 SONNET/CLAUDE.
 
 No implementation/runtime/scoring change.
-
-
-## Domain capability pointer — laser-cut vector topology (2026-10-31)
-
-Objective-conditioned retrieval trigger: laser cutting, SVG/DXF/CAM, through-cut vs engraving, retained material vs detached slugs, kerf, bridges, face integrity or manufacturability. Retrieve [LASER_VECTOR_TOPOLOGY](../../runbooks/laser-cut-vector-topology-skill.md), its [runbook catalog](../../runbooks/README.md), and the [BURVE learning receipt](./CHAT-ARCH-2026-10-31-LASER-CUT-VECTOR-TOPOLOGY-KNOWLEDGE-ABSORPTION.md). Apply only the relevant sections and record the exact revision and changed decision. This is external documented memory; automatic delivery/use is not proven.

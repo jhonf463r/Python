@@ -1,6 +1,62 @@
-## ACTIVE ROUTE — IABV_M1A_OWNER_ISSUER_MECHANISM_INPUT_GATE_R1_20261030
+## ACTIVE ROUTE — BURVE_FOUR_FACE_LANTERN_DESIGN_AND_MARKET_FIT_20261031
 
-**Routing authority:** this header is the active task route. The historical suffix beginning at the first standalone --- remains byte-for-byte history and is not active unless this header reactivates it.
+**Routing authority:** this top snapshot is the current Owner-selected objective for this episode. This file remains the sole live task/permission router. This lane is documented on PR #579's branch and has not yet been integrated into `main`.
+
+### Owner objective
+
+Complete the four lateral faces of BURVE — “María: Luz que acompaña” as one coherent decorative, warm-LED, laser-cut MDF lantern. Determine the visual architecture and develop two coordinated master designs for four panels, supported by current product-design/perception research and a bounded market scan.
+
+### Active route
+
+```text
+ACTIVE_TASK=BURVE_FOUR_FACE_LANTERN_DESIGN_AND_MARKET_FIT_20261031
+ACTIVE_TASK_STATUS=ACTIVE_DOCUMENTATION_AND_CONCEPT_DESIGN
+OPEN_EDGE=FOUR_PANEL_GEOMETRY_AND_TWO_MASTER_VISUALS_NOT_YET_RECONCILED
+NEXT_ACTION=CREATE_A1_A3_MARY_AND_B1_B3_MARIAN_LILY_CONCEPT_SHEET_USING_OWNER_PANEL_PROFILE
+RECOMMENDED_ARCHITECTURE=TWO_OPPOSITE_PAIRS_2_PLUS_2
+OWNER_SELECTION_OF_FINAL_ART=NOT_YET_RECORDED
+PRODUCT_VECTOR_MASTER=NOT_ESTABLISHED
+```
+
+### Scope and guardrails
+
+- Current scope: documentation, research synthesis, design direction and visual concept imagery.
+- Not authorized / not established: CAM release, laser parameters, physical cutting, coupon testing, production certification, product-code/runtime changes, IABV security/authority operations, protected reads or PR merge.
+- MDF nominal 6 mm belongs to the BURVE brief; do not import 3 mm triplex assumptions from other products.
+- Preserve the owner-supplied red trapezoidal panel geometry; it is not the Mary halo.
+- The face remains opaque/continuous; facial traits are surface engraving, never through-cut.
+- The 2+2 arrangement is the working hypothesis, not owner-approved final art or a proven sales result.
+- The Mary-alone front image is a concept PNG; no matching editable validated production master has been established.
+- Prior Mary+Child fabrication SVG/DXF outputs conflict with the newer Mary-alone visual; do not mix them as one master.
+- Kerf, minimum bridges, assembly fit, LED diffusion and thermal behavior remain unverified.
+
+### Canonical product case and reusable method
+
+- Product-specific facts and decisions: [BURVE four-face case](../product-design/BURVE-MARIA-LUZ-QUE-ACOMPANA-FOUR-FACE-DESIGN-CASE.md).
+- General vector/CAM/topology method: [LASER_VECTOR_TOPOLOGY](../runbooks/laser-cut-vector-topology-skill.md).
+- Source geometry: [owner original panel SVG](../product-design/assets/1FarolPVirgen3-owner-source.svg).
+
+### Cross-session status
+
+```text
+MEMORY_RETRIEVED=VERIFIED_IN_THIS_SESSION
+METHOD_ACTIVATED=LASER_VECTOR_TOPOLOGY_AND_PRODUCT_DESIGN_RESEARCH
+METHOD_APPLIED=ARTIFACT_MISMATCH_AND_RASTER_TOPOLOGY_RISK_IDENTIFIED
+OUTCOME_VERIFIED=DOCUMENTARY_RECONCILIATION; NO_PHYSICAL_VALIDATION
+LATER_CAUSAL_REUSE=NOT_TESTED
+CANONICAL_MAIN_ADOPTION=PENDING_REVIEW_AND_MERGE_OF_PR_579
+MAIN_BRANCH_ROUTE=PREVIOUS_M1A_SNAPSHOT_UNCHANGED
+```
+
+### Prior IABV route status
+
+The M1A Owner/issuer/root-provenance route is retained immediately below as a paused background gate. Its blocker remains unresolved; this independent design lane does not authorize or imply any M1A bootstrap, implementation, protected access, runtime, tests or bridge operation.
+
+---
+
+## PAUSED ROUTE SNAPSHOT — IABV_M1A_OWNER_ISSUER_MECHANISM_INPUT_GATE_R1_20261030
+
+**Paused status:** the Owner selected the independent BURVE product-design objective for this episode on 2026-10-31. This retained M1A snapshot does not close its blocker or change its technical/security gates.
 
 ### Post-merge documentary state
 
@@ -28,12 +84,12 @@ The Owner must identify an existing, supported and verifiable mechanism that bin
 
 Do not request credentials, tokens, keys, production-root selection or provisioning, access to protected authority stores, administrative operations, or host changes. If no such mechanism exists or can be identified, retain this block; do not invent one.
 
-### Active route and guardrails
+### Preserved M1A blocker and unchanged guardrails
 
-ACTIVE_TASK=IABV_M1A_OWNER_ISSUER_MECHANISM_INPUT_GATE_R1_20261030
-ACTIVE_TASK_STATUS=BLOCKED_WAITING_FOR_OWNER_IDENTIFIED_EXISTING_MECHANISM
-OPEN_EDGE=OWNER_ROOT_DECISION_AUTHENTICATION_AND_ROOT_HANDLE_PROVENANCE_NOT_ESTABLISHED
-NEXT_ACTION=OWNER_IDENTIFY_EXISTING_SUPPORTED_VERIFIABLE_OWNER_ISSUER_MECHANISM_AND_AUTHORIZE_BOUNDED_REVIEW
+PAUSED_TASK=IABV_M1A_OWNER_ISSUER_MECHANISM_INPUT_GATE_R1_20261030
+PAUSED_TASK_STATUS=BLOCKED_WAITING_FOR_OWNER_IDENTIFIED_EXISTING_MECHANISM
+PAUSED_OPEN_EDGE=OWNER_ROOT_DECISION_AUTHENTICATION_AND_ROOT_HANDLE_PROVENANCE_NOT_ESTABLISHED
+PAUSED_NEXT_ACTION=OWNER_IDENTIFY_EXISTING_SUPPORTED_VERIFIABLE_OWNER_ISSUER_MECHANISM_AND_AUTHORIZE_BOUNDED_REVIEW
 
 CANONICAL_ADOPTION=DOCUMENTARY_D021_INCORPORATED_IN_MAIN
 PRODUCT_AUTHORIZATION=NOT_AUTHORIZED
@@ -54,7 +110,9 @@ PRODUCT_PR_MERGE=NOT_AUTHORIZED
 PARALLEL_DISPATCH=NOT_AUTHORIZED
 TESTS/BUILD/RUNTIME=NOT_RUN
 AUTOMATIC_FOLLOW_ON=FALSE
+
 ---
+
 
 ## OVERRIDE — UAAL-D020 clarified as a cross-AI shared-memory method (2026-10-28)
 
