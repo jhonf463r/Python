@@ -1,3 +1,10 @@
+<!-- Objective-conditioned cross-chat entry; CURRENT-STATE remains the sole route authority. -->
+## Current objective entry — BURVE four-face lantern
+
+When the Owner's current task is BURVE “María: Luz que acompaña”, read live [CURRENT-STATE](docs/history/CHAT-ARCH/CURRENT-STATE.md), then the [four-face design case](docs/product-design/BURVE-MARIA-LUZ-QUE-ACOMPANA-FOUR-FACE-DESIGN-CASE.md), and activate [LASER_VECTOR_TOPOLOGY](docs/runbooks/laser-cut-vector-topology-skill.md). The current candidate is two opposite Mary panels plus two opposite coordinated Marian-emblem panels (2+2), not approved production art. The case records source mismatches and manufacturing stops. A pointer is not automatic retrieval or CAM authorization.
+
+---
+
 <!-- UAAL-D021 activation pointer; CURRENT-STATE.md owns live routing and volatile status. -->
 ## Repository continuity contract — fresh route, no copied state (2026-10-29)
 

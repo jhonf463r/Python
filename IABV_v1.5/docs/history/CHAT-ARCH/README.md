@@ -1,3 +1,10 @@
+<!-- Objective-conditioned route pointer; CURRENT-STATE remains the sole route authority. -->
+## Objective entry — BURVE four-face lantern
+
+For a new session continuing BURVE “María: Luz que acompaña”, read [CURRENT-STATE](./CURRENT-STATE.md) from the selected live revision, then activate the [four-face product case](../../product-design/BURVE-MARIA-LUZ-QUE-ACOMPANA-FOUR-FACE-DESIGN-CASE.md) and [laser topology skill](../../runbooks/laser-cut-vector-topology-skill.md). Current candidate: two opposite Mary panels + two opposite coordinated Marian-emblem panels. Do not mix the historic Mary+Child fabrication export with the newer Mary-alone concept.
+
+---
+
 <!-- UAAL-D021 activation pointer; CURRENT-STATE.md owns live routing and volatile status. -->
 ## Continuidad Espacio-Tiempo — fresh route, no copied state (2026-10-29)
 
