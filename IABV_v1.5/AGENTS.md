@@ -2516,3 +2516,8 @@ La selección sigue siendo dinámica y nunca una secuencia fija, pero el resulta
 `objective → current truth → first open edge → required capability → capability-fit → IA DESTINO CONCRETA → prompt/action`.
 
 Si la IA concreta no puede determinarse con evidencia suficiente, debe declararse explícitamente `DESTINO NO DETERMINABLE` y explicar qué dato falta; no dejar un actor genérico como si fuera un handoff ejecutable.
+
+
+## Reusable capability activation — laser-cut vector topology
+
+When a task involves laser-cut SVG/DXF/CAM design, engraving, material retention/removal, detached islands, kerf, bridges or cut-path optimization, retrieve and apply [LASER_VECTOR_TOPOLOGY](docs/runbooks/laser-cut-vector-topology-skill.md) before producing or reviewing geometry. The discovery catalog is [docs/runbooks/README.md](docs/runbooks/README.md); the BURVE learning receipt is [CHAT-ARCH-2026-10-31-LASER-CUT-VECTOR-TOPOLOGY-KNOWLEDGE-ABSORPTION.md](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-31-LASER-CUT-VECTOR-TOPOLOGY-KNOWLEDGE-ABSORPTION.md). This is documented cross-AI knowledge, not proof of runtime automation or physical validation. Keep CURRENT-STATE.md as the sole route and authorization authority.
