@@ -7347,3 +7347,8 @@ Sonnet/Claude now challenges the proposed code-facing seam; Codex returns only a
 
 Current edge:
 proposed code-facing demand/capability contract → source-aware adversarial challenge.
+
+
+## Domain knowledge route — laser-cut vector topology (2026-10-31)
+
+For manufacturing / digital-fabrication objectives involving SVG, DXF, CAM, retained stock, cutouts, dropped islands, kerf, structural bridges or engraving, the relevant shared capability is [LASER_VECTOR_TOPOLOGY](../../runbooks/laser-cut-vector-topology-skill.md). Retrieve it from the objective and current live revision; use [runbooks catalog](../../runbooks/README.md) and [BURVE learning receipt](./CHAT-ARCH-2026-10-31-LASER-CUT-VECTOR-TOPOLOGY-KNOWLEDGE-ABSORPTION.md). Future participating AI sessions must establish MEMORY_RETRIEVED → METHOD_ACTIVATED → METHOD_APPLIED → OUTCOME_VERIFIED → LATER_CAUSAL_REUSE separately.
