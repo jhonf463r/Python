@@ -32,9 +32,9 @@ PRODUCT_VECTOR_MASTER=NOT_ESTABLISHED
 
 ### Canonical product case and reusable method
 
-- Product-specific facts and decisions: [BURVE four-face case](../product-design/BURVE-MARIA-LUZ-QUE-ACOMPANA-FOUR-FACE-DESIGN-CASE.md).
-- General vector/CAM/topology method: [LASER_VECTOR_TOPOLOGY](../runbooks/laser-cut-vector-topology-skill.md).
-- Source geometry: [owner original panel SVG](../product-design/assets/1FarolPVirgen3-owner-source.svg).
+- Product-specific facts and decisions: [BURVE four-face case](../../product-design/BURVE-MARIA-LUZ-QUE-ACOMPANA-FOUR-FACE-DESIGN-CASE.md).
+- General vector/CAM/topology method: [LASER_VECTOR_TOPOLOGY](../../runbooks/laser-cut-vector-topology-skill.md).
+- Source geometry: [owner original panel SVG](../../product-design/assets/1FarolPVirgen3-owner-source.svg).
 
 ### Cross-session status
 
