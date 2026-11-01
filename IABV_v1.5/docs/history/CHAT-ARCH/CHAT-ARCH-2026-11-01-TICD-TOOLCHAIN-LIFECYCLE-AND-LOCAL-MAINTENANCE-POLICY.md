@@ -30,7 +30,7 @@ The current-main source shows the following distinct responsibilities:
 
 The external discovery gap is the intake and reconciliation of trustworthy external catalog/release/advisory evidence into these existing owners. Keep external candidates quarantined until provenance, license, permissions, compatibility and security are established. Do not add a second ToolDiscoveryService or a parallel technology database.
 
-A current-main design seam also remains: the task's required capability/readiness identity must be bound to a viable realization and the operative authorized route. Existing components may be composed, but do not claim the semantic join is complete until a source-level call path and evidence prove it.
+A prior static report at baseline `07ebffc8f866fc99a3f78091dcd1edd456a0da00` identified a required-capability-to-realization selection gap. That report is historical. The current-main inspection in this task confirmed the relevant components but did not trace every normal request path end-to-end; therefore the present status is `NEEDS_REVALIDATION`, not a verified current defect. Re-run bounded source archaeology at the active main before proposing a repair; do not implement or add a new selector based only on the older report.
 
 ## 3. Tool classes and inventory model
 
