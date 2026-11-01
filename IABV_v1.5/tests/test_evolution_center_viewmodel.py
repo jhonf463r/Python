@@ -942,11 +942,14 @@ def test_evolution_center_publish_pr_status_formatter() -> None:
         shutil.rmtree(workspace, ignore_errors=True)
 
 
-def test_evolution_center_manual_control_master_signal_publish_uses_wired_action() -> None:
+def test_evolution_center_manual_control_master_signal_publish_uses_wired_action(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """Only the explicit slot publishes; a normal refresh is not a publisher trigger."""
     import threading as _threading
 
     os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
+    monkeypatch.setattr('iabv_v15.bootstrap._auto_load_secrets', lambda: 0)
     workspace = _workspace('test_evolution_center_control_master_signal_publish')
     shutil.rmtree(workspace, ignore_errors=True)
     workspace.mkdir(parents=True, exist_ok=True)
