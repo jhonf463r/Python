@@ -95,3 +95,26 @@ These values are a dated snapshot, not perpetual facts: the next session must re
 ## Codex approvals (2026-10-26)
 
 OpenAI documents approval controls for eligible Codex actions and mobile access to compatible desktop Codex chats through Remote. This may let the already-authorized task run in the existing local session if connected. Codex action approval does not establish IABV G1 root or Owner-to-Windows/issuer binding. Reuse the [existing task receipt/prompt](./CHAT-ARCH-2026-10-25-M1A-G1-OWNER-DECISION-EXISTING-TRUST-ASSETS-READONLY-ASSESSMENT-RECEIPT.md); no broad rescan or cloud substitute. Ref: https://help.openai.com/es-419/articles/20001275-chatgpt-work-and-codex
+
+
+---
+
+## Owner-known mobile authentication and approval channels — no-repeat correction (2026-10-31)
+
+The project history already contains the Owner's reported setup; the coordinator must reuse it and must not ask the Owner to identify or repeat it:
+
+- `MICROSOFT_ENTRA_DIRECTORY=OWNER_REPORTED_CREATED`
+- `DEDICATED_IABV_OWNER_ACCOUNT=OWNER_REPORTED_CREATED`
+- `MICROSOFT_AUTHENTICATOR=OWNER_REPORTED_ENROLLED_AND_SIGN_IN_VERIFIED`
+- `ENTRA_IDENTITY_PROVIDER_CANDIDATE=PLAUSIBLE_FOR_HUMAN_OWNER_AUTHENTICATION; NOT_YET_TRUSTED_BY_IABV`
+
+This is the known phone-based authentication route. The prior record explicitly prohibits repeating Entra/Authenticator setup. The Owner's primary ChatGPT phone app is also recorded as a human communication channel; Codex Remote/mobile approvals are a possible approval interface for an already-open local Codex session when the connection exists. These are distinct functions and must not be merged into one vague "phone app" mechanism.
+
+**Required classification:**
+
+1. Microsoft Authenticator/Microsoft Entra MFA authenticates the human Owner to the identity provider. It does not by itself establish an IABV app registration, token verifier, role-to-mandate mapping, trusted IABV issuer, production-root selection, Owner-to-Windows-principal binding or issuer-to-exact-server binding.
+2. ChatGPT mobile/Codex Remote can carry human decisions or approvals through the supported product interface. That interaction is not itself an IABV production trust root or proof of operation-bound authorization at the protected reader.
+3. A phone approval of a displayed fingerprint/challenge is not an independent root proof where the value comes solely from the potentially untrusted target and no prior IABV-to-root binding exists.
+
+On 2026-10-31 the Owner clarified that no additional mechanism is identified beyond the existing phone authentication/approval app. Record `OWNER_INPUT_RECONCILED=NO_ADDITIONAL_MECHANISM_IDENTIFIED`. Do not ask the Owner to repeat account creation, phone enrollment, successful MFA, or to invent another mechanism. Preserve `G1/G2/G3=NOT_ESTABLISHED`, `AUTHORITY_ASSETS=UNKNOWN; NOT_INSPECTED` for uninspected production/host trust assets, `PROTECTED_READS=FAIL_CLOSED`, `OPTION_D=RATIFIED_NO_BOOTSTRAP` and `BRIDGE=BRIDGE_NOT_READY`. Reopen only on genuinely new independent evidence or a newly authorized, narrowly scoped decision.
+

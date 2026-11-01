@@ -199,6 +199,36 @@ A returned result from Codex, another AI, a tool or a reviewer is evidence to be
 
 **Pass criterion:** all applicable checks have been adjudicated, or each unsatisfied check is explicitly `UNKNOWN`/`NOT_RUN` with the exact missing evidence and a justified stop condition. This is a reasoning-method acceptance check; it does not prove automatic enforcement, delivery to another chat or model-weight learning.
 
+### 6B.1. Mandatory Owner-known-input ledger and no-repeat gate (2026-10-31)
+
+Before asking the Owner to identify, confirm, configure or repeat any mechanism, the coordinator must first recover the relevant Owner-input history from the live project sources and current conversation context. A question is not justified merely because the latest task receipt omitted a fact that an earlier canonical receipt already recorded.
+
+For every material Owner-dependent decision, construct a compact `OWNER_INPUT_REUSE_LEDGER` with:
+- the exact fact or decision already supplied;
+- its source reference and recorded date;
+- evidence class (`OWNER_REPORTED`, `INDEPENDENTLY_VERIFIED`, `INFERENCE`, or `UNKNOWN`);
+- the scope it applies to;
+- any explicit `DO_NOT_REPEAT` instruction;
+- the exact unresolved claim that the fact does not establish.
+
+Apply these rules:
+
+1. **Reuse known input as an existing candidate.** An Owner-reported setup is valid project context and must be evaluated; lack of independent verification does not erase it or justify asking the Owner to repeat it.
+2. **Do not conflate functions.** Separate human identity/MFA, a conversational or mobile approval interface, an IABV runtime issuer/trust anchor, Owner mandate, machine principal, exact host/server binding, and operation-level authorization. A mechanism may satisfy one layer and not another.
+3. **Investigate before asking.** Compare known candidates against current source, design and gate evidence. Ask only for a genuinely missing fact that cannot be recovered from project history and whose answer would change the next authorized action. Never ask the Owner to invent or design the technical solution.
+4. **Close the input question when answered.** When the Owner says no additional mechanism is identified, record `OWNER_INPUT_RECONCILED=NO_ADDITIONAL_MECHANISM_IDENTIFIED`. Do not rephrase the same question. Keep technical gates blocked where evidence is insufficient; do not infer that uninspected assets do not exist.
+5. **Use a material-delta rule.** Reopen the same question or review only after new independent evidence, a changed precondition, or an explicitly authorized new scope. Do not repeat an unchanged census, Entra setup, mobile-authenticator enrollment, or broad feasibility review.
+
+#### Case-specific continuity facts already recorded
+
+- The Owner reported an organizational Microsoft Entra directory, a dedicated `IABV Owner` account, Microsoft Authenticator enrollment and a successful sign-in verification. Classify this as `ENTRA_DIRECTORY_AND_AUTHENTICATOR=OWNER_REPORTED_READY`; `IDENTITY_PROVIDER_CANDIDATE=MICROSOFT_ENTRA_ID`; `PLAUSIBLE_FOR_HUMAN_OWNER_AUTHENTICATION`; `NOT_YET_TRUSTED_BY_IABV`. **Do not repeat setup or ask whether this identity provider exists.**
+- The existing record says that no IABV app registration, token verifier, role-to-mandate mapping or protected Owner-to-Windows / issuer-to-exact-server binding was established in the inspected main path. Successful MFA is not IABV runtime authorization and does not independently bind a production root selection.
+- The Owner primarily uses the ChatGPT phone app; the 2026-10-26 approval protocol also records Codex Remote/mobile approval as a possible interface to the already-open local session when connected. Treat these as human interaction/approval channels, not as an established IABV issuer, runtime trust root, or proof that a response reached and was enforced by the exact protected process.
+- A phone approval, QR code, displayed challenge or copied fingerprint is not independent proof of the target root when the value originates only from the target and no prior trusted binding exists.
+- For the 2026-10-31 reconciliation, the Owner stated that no additional mechanism is identified beyond the phone authentication/approval app. The correct result is that the known Entra/Authenticator and mobile approval channels are already in memory, no additional independent root/issuer mechanism is identified, and the technical root-provenance gate remains open. This resolves the Owner-input question; it does not close G1 or prove that other uninspected authority assets are absent.
+
+**Acceptance rule:** no further Owner question is permitted until the ledger shows that the proposed question is not answered by an existing source and identifies the precise new decision/evidence it would change.
+
 ## 6C. Distinct operating contexts and memory-scope isolation (Owner clarification; 2026-10-31)
 
 The shared UAAL method is intended to help the Owner across different subjects and projects while preserving continuity between chats and participating AIs. This does not mean every project fact belongs in one undifferentiated memory, or that every deployment of IABV has the same capabilities.

@@ -24,16 +24,24 @@
 
 OWNER_ROOT_DECISION_AUTHENTICATION_AND_ROOT_HANDLE_PROVENANCE_NOT_ESTABLISHED
 
-The Owner must identify an existing, supported and verifiable mechanism that binds principal, mandate and trusted issuer to an exact root selection, and explicitly authorize a bounded review of that reference. A technical reference plus review authorization is sufficient to start that review.
+**Owner-input reconciliation (2026-10-31):** The Owner has already reported an organizational Microsoft Entra directory, a dedicated `IABV Owner` account, Microsoft Authenticator enrollment and successful sign-in verification. This is the known human-authentication candidate; `ENTRA_DIRECTORY_AND_AUTHENTICATOR=OWNER_REPORTED_READY`; `ENTRA_IDENTITY_PROVIDER_CANDIDATE=PLAUSIBLE_FOR_HUMAN_OWNER_AUTHENTICATION; NOT_YET_TRUSTED_BY_IABV`. The Owner also uses the ChatGPT phone app as a human interaction channel; Codex Remote/mobile approval is a possible interface for an already-open local session when connected. Neither channel is established IABV runtime authority or an independently verified issuer-to-root binding.
 
-Do not request credentials, tokens, keys, production-root selection or provisioning, access to protected authority stores, administrative operations, or host changes. If no such mechanism exists or can be identified, retain this block; do not invent one.
+The Owner has now stated that no additional mechanism is identified. Therefore `OWNER_INPUT_RECONCILED=NO_ADDITIONAL_MECHANISM_IDENTIFIED`; the Owner-input question is closed and must not be repeated in different words. The previous source/design assessment already found no IABV app registration/token verifier, role-to-mandate mapping, or protected Owner-to-Windows / issuer-to-exact-server binding in the inspected main path. Authenticator MFA and conversational/mobile approval do not independently prove the production root selection or authorize protected reads.
+
+The technical edge remains open because the known mobile channels do not satisfy the complete G1/root-provenance claim. This is not evidence that uninspected trust assets do not exist. Do not ask the Owner to invent another mechanism; do not repeat Entra/Authenticator setup or the prior source census. Reopen only upon genuinely new independent evidence or a separately authorized, materially new scope.
+
+Do not request credentials, tokens, keys, production-root selection or provisioning, access to protected authority stores, administrative operations, or host changes. Retain Option D and the fail-closed boundary.
 
 ### Active route and guardrails
 
 ACTIVE_TASK=IABV_M1A_OWNER_ISSUER_MECHANISM_INPUT_GATE_R1_20261030
-ACTIVE_TASK_STATUS=BLOCKED_WAITING_FOR_OWNER_IDENTIFIED_EXISTING_MECHANISM
+ACTIVE_TASK_STATUS=BLOCKED_NO_ADDITIONAL_INDEPENDENT_MECHANISM_IDENTIFIED; OWNER_INPUT_RECONCILED
 OPEN_EDGE=OWNER_ROOT_DECISION_AUTHENTICATION_AND_ROOT_HANDLE_PROVENANCE_NOT_ESTABLISHED
-NEXT_ACTION=OWNER_IDENTIFY_EXISTING_SUPPORTED_VERIFIABLE_OWNER_ISSUER_MECHANISM_AND_AUTHORIZE_BOUNDED_REVIEW
+NEXT_ACTION=WAIT_FOR_GENUINELY_NEW_INDEPENDENT_ROOT_ISSUER_BINDING_EVIDENCE; DO_NOT_REPEAT_OWNER_INPUT_OR_ENTRA_AUTHENTICATOR_SETUP
+OWNER_INPUT_RECONCILED=NO_ADDITIONAL_MECHANISM_IDENTIFIED
+KNOWN_HUMAN_AUTH_CANDIDATE=MICROSOFT_ENTRA_ID+AUTHENTICATOR; OWNER_REPORTED_READY; NOT_YET_TRUSTED_BY_IABV
+KNOWN_MOBILE_APPROVAL_CHANNEL=CHATGPT_PHONE_APP; CODEX_REMOTE_POSSIBLE_WHEN_CONNECTED; NOT_IABV_RUNTIME_AUTHORITY
+ENTRA_APP_REGISTRATION_AND_IABV_TOKEN_VERIFIER=NOT_ESTABLISHED_IN_INSPECTED_MAIN_PATH
 
 CANONICAL_ADOPTION=DOCUMENTARY_D021_INCORPORATED_IN_MAIN
 PRODUCT_AUTHORIZATION=NOT_AUTHORIZED
