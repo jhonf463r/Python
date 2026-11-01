@@ -1,7 +1,14 @@
 <!-- CHATGPT_PROJECT_NATIVE_CONTEXT_R1 -->
 ## Shared-context transport update — ChatGPT Projects + GitHub (2026-10-31)
 
-The symbiosis model now distinguishes two existing shared substrates rather than assuming every chat has the same private context: (1) a single owner-controlled ChatGPT Project shares its own instructions, files and chats among ChatGPT conversations inside that Project; (2) the owning GitHub repository remains the versioned common store for Codex, Claude and other AI products that have an authorized repository route. This creates no new coordinator, memory database or router.
+The symbiosis model distinguishes three coordinated memory layers and two existing shared substrates:
+
+- **GLOBAL_CORE:** stable cross-project operating principles and general preferences, stored in account Memory or reusable method records when appropriate.
+- **PROJECT:** project-specific context, decisions, files and chats. One owner-controlled ChatGPT Project shares its own instructions, files and chats among ChatGPT conversations inside that Project.
+- **CANONICAL_PROJECT_STATE:** exact active route, configuration, permissions, decisions, evidence and provenance remain in the project's owning GitHub/source-of-truth records.
+- **CROSS_PRODUCT_SUBSTRATE:** the owning GitHub repository remains the versioned common store for Codex, Claude and other AI products that have an authorized repository route.
+
+ChatGPT Memory is selective, not an exhaustive transcript store. Project-only memory isolates a Project but excludes account-level memories and chats outside it; Default memory may provide broader account context where plan/settings permit, with cross-project mixing risk. The Project's mode must be selected according to the Owner's intended scope. This creates no new coordinator, memory database or router.
 
 For every receiver, distinguish artifact availability, actual retrieval, acknowledgement, decision application and verified outcome. A Project or GitHub link is not proof of consumption. Before involving the Owner in a manual file relay, query the shared Project sources and the canonical repository. Ask only for an exact local-only artifact that cannot be read through any existing authorized route. Project instructions are behavioral guidance, not technical enforcement; local runtime and protected-state boundaries remain unchanged. Operational detail: UAAL-D021 §6E and CHAT-ARCH-2026-10-31-CHATGPT-PROJECT-INSTRUCTIONS-R1.md.
 
