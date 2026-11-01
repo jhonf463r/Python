@@ -140,7 +140,7 @@ The inventory is historical evidence, not a live reading of today's machine. The
 
 ## 8. Monthly operating loop and metrics
 
-The cloud review researches public changes and adjusts priorities; the local T3 task observes the installed MSI stack. Reconcile their outputs by source, project, version, environment and time, not by assuming that one report updates the other.
+The cloud review researches public changes and adjusts priorities; the selected local MSI maintenance task (T3 only when its required cadence/host lifecycle is verified, otherwise a suitable OS-native scheduler) observes the installed stack. Reconcile their outputs by source, project, version, environment and time, not by assuming that one report updates the other.
 
 Measure at minimum:
 - installed versus latest stable version and release age;
@@ -154,15 +154,30 @@ Measure at minimum:
 
 Do not invent historical baselines where telemetry is absent. Distinguish observed figures, actor reports, inference and forecast. Re-rank tools using the existing TICD rubric and hard safety gates; never let a high utility score override provenance, license, permission or security failure.
 
-## 9. Acceptance conditions for a real maintenance capability
+## 9. Acceptance conditions for local maintenance and the end-to-end TICD loop
 
-A recurring task is not proven merely because it was saved. Require:
-1. task exists in T3 and names the MSI/local environment and correct project;
-2. a real run is observed with a durable task/run ID;
-3. the run reads local installed versions and records observation times;
-4. official release/advisory sources are cited and exact versions compared;
-5. no out-of-scope installation or permission change occurs;
-6. report and manifest are produced and read back;
-7. a later run demonstrates that the process is reusable and reduces manual work.
+Do not collapse local task creation, a successful local inventory, cloud/local transport, cloud adjudication and recurring reliability into one success flag. They are separate milestones.
+
+**A. Local scheduler and runner acceptance**
+1. The selected scheduler (T3 Scheduled Tasks or Windows Task Scheduler) contains exactly one intended task, with the correct local host/environment, project/workspace, identity, trigger, timezone and next-run time.
+2. The exact registered task is started for an immediate test and produces a durable task/run ID, start/end times, process exit code and scheduler result.
+3. The run reads actual local installed versions and records observation timestamps and source paths, while respecting the declared read-only inventory scope.
+4. The runner writes the authorized report and manifest, reads both back, recomputes SHA-256 and verifies the values.
+5. The observed changes are confined to the explicitly authorized runner/task/report paths; no unrelated task, IABV code, dependency, credential, permission or runtime is modified.
+6. The report clearly distinguishes VERIFIED, OWNER_OR_ACTOR_REPORTED, UNKNOWN, NOT_CHECKED and NOT_RUN.
+
+**B. Controlled transport and coordinator acceptance**
+1. The local report/manifest remain in an access-controlled private route; do not publish MSI inventory or personal runtime details to the public repository.
+2. The receiving cloud coordinator retrieves the exact artifacts through an authorized route, verifies their revision/size/digest where bytes are available, and returns a correlated receiver acknowledgement.
+3. The coordinator reconciles the local inventory with the cloud research cut by tool ID, installed version, release version, security advisory, compatibility, license, environment and observation time.
+4. A decision is explicitly bound to the exact evidence and records whether it means retain, investigate, approve an update, hold, or discard. A local inventory alone does not authorize an update.
+
+**C. Recurrence and benefit acceptance**
+1. IMMEDIATE_RUN_VERIFIED is recorded separately from MONTHLY_RECURRENCE_REPEATED.
+2. A later monthly occurrence is observed with a new task/run ID and produces a comparable, valid report before recurring reliability is claimed.
+3. Measure manual file relays avoided, Owner interventions, failed/mismatched handoffs, inventory freshness, task success/failure, time saved, rollback and post-update regressions. Do not invent baselines before observations exist.
+4. Promote the process from a successful local task to an end-to-end autonomous TICD capability only after the local run, private transport, receiver acknowledgement, cloud/local decision binding and later recurrence are all evidenced.
+
+A task saved is not a run; an immediate run is not proof of recurrence; a local report is not a cloud receipt; a cloud receipt is not a verified decision; and an approved recommendation is not an executed update.
 
 **Non-claim:** this document does not implement TICD's external adapter, connect local IABV runtime to cloud memory, enable automatic installation, or prove an unattended maintenance task. It defines the minimum contract for those future steps.
