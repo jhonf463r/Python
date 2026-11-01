@@ -512,7 +512,7 @@ This follow-up applies to the exact PR #591 candidate branch, not to `main`. The
 |---|---|
 | `src/iabv_v15/services/evolution/control_master_signal_projector.py` | `7888a07d90e864058fc738bc0c653039c7f63237` |
 | `src/iabv_v15/services/evolution/control_master_signal_publisher.py` | `70a9005c4a69100c32187ccfe40c0c01578c817b` |
-| `tests/test_control_master_signal_projector.py` | `34b7aa25f6a35d5e2478eff26623c4e974fbc7a2` |
+| `tests/test_control_master_signal_projector.py` | `19b78b47201bb902918e8c571d3b069f7c4cb472` |
 | `src/iabv_v15/ui/viewmodels/evolution_center_viewmodel.py` | `9f4f24a6ca075cfe8684dac3be03db32d482c927` |
 | `tests/test_evolution_center_viewmodel.py` | `f1f52506041f723178813834041fec67706094b1` |
 
