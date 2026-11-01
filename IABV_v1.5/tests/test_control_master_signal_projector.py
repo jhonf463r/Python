@@ -188,3 +188,20 @@ def test_projection_rejects_unhashable_source_value_without_raising() -> None:
     )
     assert signal["signal_status"] == "UNAVAILABLE"
     assert signal["reason_codes"] == ["QUEUE_ITEM_NOT_PORTABLE"]
+
+
+def test_publisher_rejects_non_directory_path_component(tmp_path) -> None:
+    from iabv_v15.services.evolution.control_master_signal_publisher import (
+        ControlMasterSignalPublisher,
+    )
+
+    checkout = tmp_path / "clone"
+    checkout.mkdir()
+    (checkout / "IABV_v1.5").write_text("not a directory", encoding="utf-8")
+
+    try:
+        ControlMasterSignalPublisher._safe_signal_target(checkout)
+    except RuntimeError as exc:
+        assert str(exc) == "SIGNAL_PATH_COMPONENT_NOT_DIRECTORY"
+    else:
+        raise AssertionError("publisher must reject a non-directory signal path component")
