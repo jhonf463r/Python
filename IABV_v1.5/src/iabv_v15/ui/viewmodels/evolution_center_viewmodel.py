@@ -529,6 +529,18 @@ class EvolutionCenterViewModel(QObject):
         if not digest:
             return ''
         parts: list[str] = []
+        source_state_id = str(digest.get('source_state_id') or '').strip()
+        digest_id = str(digest.get('digest_id') or '').strip()
+        generated_at = str(digest.get('generated_at_utc') or '').strip()
+        provenance: list[str] = []
+        if source_state_id:
+            provenance.append(f'state_id={source_state_id}')
+        if digest_id:
+            provenance.append(f'digest_id={digest_id}')
+        if generated_at:
+            provenance.append(f'generated_at_utc={generated_at}')
+        if provenance:
+            parts.append('Procedencia Control Master: ' + '; '.join(provenance))
         signal_status = str(digest.get('signal_status') or 'UNVERIFIED').strip()
         queue_status = str(digest.get('work_queue_status') or 'UNVERIFIED').strip()
         parts.append(f'Control Master: señal {signal_status}; cola {queue_status}')
