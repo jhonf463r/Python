@@ -61,6 +61,7 @@ class SystemPromptBuilder:
         env_self_model: EnvironmentSelfModel | None,
         *,
         governance_rules: dict[str, Any] | None = None,
+        control_master_digest: ControlMasterDigest | None = None,
         max_chars: int = 3500,
     ) -> str:
         """Build a compact prompt for small local models."""
@@ -70,7 +71,8 @@ class SystemPromptBuilder:
         sections.append((1, self._section_compact_reasoning_contract()))
         sections.append((2, self._section_live_state(world_model)))
         sections.append((3, self._section_hardware(env_self_model)))
-        sections.append((4, self._section_governance(governance_rules)))
+        sections.append((4, self._section_control_master(control_master_digest)))
+        sections.append((5, self._section_governance(governance_rules)))
         return self._truncate(sections, max_chars=max_chars)
 
     @staticmethod
@@ -224,8 +226,14 @@ class SystemPromptBuilder:
     @staticmethod
     def _section_control_master(digest: ControlMasterDigest | None) -> str:
         if digest is None:
-            return '## Control Maestro\nNo disponible en esta sesion.'
+            return '## Control Maestro\nSeñal UNAVAILABLE: no se recibió un digest en esta sesión.'
+        if digest.signal_status == 'UNAVAILABLE':
+            reason = digest.signal_reason or 'SOURCE_UNAVAILABLE'
+            return f'## Control Maestro\nSeñal UNAVAILABLE: {reason}. No interpretes esto como una cola vacía.'
         parts: list[str] = ['## Control Maestro (digest)']
+        parts.append(f'Señal: {digest.signal_status}; cola: {digest.work_queue_status}.')
+        if digest.work_queue_status == 'EMPTY_QUEUE':
+            parts.append('Cola verificada sin elementos pendientes en las fuentes consultadas.')
         if digest.current_vision:
             parts.append(f'Vision: {digest.current_vision}')
         if digest.rules_brief:
@@ -252,6 +260,8 @@ class SystemPromptBuilder:
             parts.append('UNRESOLVED:')
             for item in digest.unresolved:
                 parts.append(f'- {item}')
+        if digest.signal_reason and digest.signal_status != 'UNAVAILABLE':
+            parts.append(f'Advertencias de señal: {digest.signal_reason}')
         if digest.tests_state_brief:
             parts.append(f'Tests: {digest.tests_state_brief}')
         return '\n'.join(parts)
