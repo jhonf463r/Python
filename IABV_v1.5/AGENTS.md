@@ -1,3 +1,14 @@
+<!-- CHATGPT_PROJECT_NATIVE_CONTEXT_R1: shared ChatGPT transport; guidance only, not enforcement. -->
+## Native ChatGPT cross-chat context — one project, one source chain
+
+For ChatGPT participants, use one owner-controlled ChatGPT Project for IABV coordination (recommended name: **IABV — Coordinación compartida**). Keep material IABV chats inside that project and install the copy-ready instructions from [CHATGPT Project Instructions R1](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-31-CHATGPT-PROJECT-INSTRUCTIONS-R1.md) in Project settings. Prefer project-only memory for project isolation when available. The project shares its own instructions, files and chats; it does not share private context with chats outside it, external AI products, or the Owner's local filesystem.
+
+Before asking the Owner to upload, paste, export or repeat an artifact, first inspect the current Project sources/chats and use the available authorized GitHub/repository connector to retrieve the canonical artifact. Ask for a file only when the required evidence is genuinely local-only or absent from every authorized shared source; identify that exact missing artifact and why no connector can retrieve it. Never ask for an already-present canonical file to be re-uploaded.
+
+A connected GitHub app retrieves permitted repository content on demand; it is not a continuously synchronized local runtime feed. Each receiving account/session must have its own available, authorized repository route. An external AI outside the ChatGPT Project uses the shared repository as the common store. A Project instruction is behavioral guidance, not a hard tool/permission enforcement layer; inspect actual capabilities and gates in every session.
+
+This transport layer does not alter CURRENT-STATE.md ownership, D019/D020/D021, M1A gates, Option D, or the ban on unauthorized local/runtime/protected operations. See D021 §6E and the [ChatGPT Project setup artifact](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-31-CHATGPT-PROJECT-INSTRUCTIONS-R1.md).
+
 <!-- UAAL-D021 activation pointer; CURRENT-STATE.md owns live routing and volatile status. -->
 ## Repository continuity contract — fresh route, no copied state (2026-10-29)
 
