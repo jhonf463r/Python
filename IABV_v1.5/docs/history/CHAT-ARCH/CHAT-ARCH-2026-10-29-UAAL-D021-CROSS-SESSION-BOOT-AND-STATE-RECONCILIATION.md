@@ -209,7 +209,7 @@ The Owner's phrase "states of consciousness" may be used as a design metaphor. I
 
 Every material session/action must declare the actual context in which it is operating:
 
-\`\`\`text
+```text
 OPERATING_CONTEXT =
   CLOUD_SHARED_COORDINATION
   | LOCAL_IABV_RUNTIME
@@ -223,7 +223,7 @@ SOURCE_REVISION_OR_ARTIFACT=
 OBSERVED_AT=
 AVAILABLE_CAPABILITIES=
 AUTHORITY_AND_NO_GO_SCOPE=
-\`\`\`
+```
 
 - **CLOUD_SHARED_COORDINATION** is the GitHub-backed developmental/method layer used by participating ChatGPT, Codex and other AI sessions. It coordinates objectives, retrieves versioned external memory, selects relevant methods/actors, adjudicates reports and prepares bounded handoffs. It may claim local machine, GPU, file, process, device or physical-world facts only when an actual connected tool/agent supplies a correlated observation. A cloud chat's access to GitHub is not access to the Owner's laptop.
 - **AI session/agent** is a temporary participant in the cloud coordination process. Its hidden conversational context is not the shared memory. It must explicitly retrieve the relevant sources or receive a bounded package through a supported route; receipt and use must be evidenced separately.
@@ -238,24 +238,24 @@ Classify each durable record into one owning scope:
 
 | Scope | Contents | Owner / rule |
 |---|---|---|
-| \`GLOBAL_CORE\` | Reusable UAAL methods, evidence rules, safety invariants and cross-domain coordination lessons | Existing canonical method lineage; promote only through the learning gate in §6C.4 |
-| \`PORTFOLIO_POINTER\` | Project identifiers, high-level status, priority and links to each project's owning state | Navigation only; never a second task router or source of technical permissions |
-| \`PROJECT\` | That project's objectives, requirements, decisions, research, files, versions, risks and open dependencies | The project's own canonical folder/repository/private workspace |
-| \`TASK_EPISODE\` | One bounded action, experiment, actor handoff, evidence receipt, outcome and next dependency | The task's owning project record |
-| \`SESSION\` | Temporary discussion context and unsaved working notes | Non-canonical; consolidate material outcomes before the session is abandoned |
-| \`RUNTIME\` | Time-sensitive host, GPU, process, model, device, local file and environment observations | Local runtime record with source, machine/runtime identity and freshness; never infer from cloud state |
+| `GLOBAL_CORE` | Reusable UAAL methods, evidence rules, safety invariants and cross-domain coordination lessons | Existing canonical method lineage; promote only through the learning gate in §6C.4 |
+| `PORTFOLIO_POINTER` | Project identifiers, high-level status, priority and links to each project's owning state | Navigation only; never a second task router or source of technical permissions |
+| `PROJECT` | That project's objectives, requirements, decisions, research, files, versions, risks and open dependencies | The project's own canonical folder/repository/private workspace |
+| `TASK_EPISODE` | One bounded action, experiment, actor handoff, evidence receipt, outcome and next dependency | The task's owning project record |
+| `SESSION` | Temporary discussion context and unsaved working notes | Non-canonical; consolidate material outcomes before the session is abandoned |
+| `RUNTIME` | Time-sensitive host, GPU, process, model, device, local file and environment observations | Local runtime record with source, machine/runtime identity and freshness; never infer from cloud state |
 
 Default rule: a fact remains in its narrowest valid scope. Project-specific discoveries do not become global rules merely because they are useful or interesting. Cross-project transfer may reuse a method without importing the source project's facts, artifacts, assumptions or permissions.
 
-The portfolio pointer, where maintained, is a directory of project-owned records. It may show that a project is active, parked, blocked or awaiting input, but must not duplicate each project's full state. Each project has its own \`PROJECT_ID\`, owning state record and bounded active task. Multiple projects may remain open in the portfolio; within each project's foreground execution lane, keep one active bounded task and one next action. The Owner may reprioritize projects explicitly; otherwise, capture new ideas and triage them rather than allowing every new idea to displace the current task.
+The portfolio pointer, where maintained, is a directory of project-owned records. It may show that a project is active, parked, blocked or awaiting input, but must not duplicate each project's full state. Each project has its own `PROJECT_ID`, owning state record and bounded active task. Multiple projects may remain open in the portfolio; within each project's foreground execution lane, keep one active bounded task and one next action. The Owner may reprioritize projects explicitly; otherwise, capture new ideas and triage them rather than allowing every new idea to displace the current task.
 
-\`CURRENT-STATE.md\` remains the sole authority for IABV's own \`ACTIVE_TASK\`, \`NEXT_ACTION\`, technical gates and permissions. It is not the Owner's all-project portfolio, and this section does not create a replacement. Other projects must retain their own state and evidence. The IABV development route, a BURVE/farol task, a business task and a future local-runtime task must never overwrite one another's route.
+`CURRENT-STATE.md` remains the sole authority for IABV's own `ACTIVE_TASK`, `NEXT_ACTION`, technical gates and permissions. It is not the Owner's all-project portfolio, and this section does not create a replacement. Other projects must retain their own state and evidence. The IABV development route, a BURVE/farol task, a business task and a future local-runtime task must never overwrite one another's route.
 
 ### 6C.3 Space-Time identity: scope plus provenance plus temporal validity
 
 For each material record, "space" means its owning scope and object identity; "time" means the sequence and validity of observations and decisions. Bind at least:
 
-\`\`\`text
+```text
 PROJECT_ID
 TASK_ID
 ACTOR_SESSION_ID
@@ -268,7 +268,7 @@ RECORDED_AT=
 VERIFIED_AT=
 SUPERSEDES_OR_CONFLICTS_WITH=
 FRESHNESS_OR_VALIDITY=
-\`\`\`
+```
 
 Do not use a current laptop/GPU/process observation as a permanent fact. Do not use a project file from one version as evidence about another. Keep event time, observation time and record time distinct. Mark stale or foreign-context observations explicitly. A context transition requires a handoff receipt, not an assumption that two contexts share one clock, process state or hidden memory.
 
@@ -276,22 +276,22 @@ Do not use a current laptop/GPU/process observation as a permanent fact. Do not 
 
 Use this staged path:
 
-\`\`\`text
+```text
 RAW_OBSERVATION
   -> PROJECT_FACT_OR_DECISION
   -> LESSON_CANDIDATE
   -> NONIDENTICAL_CROSS_CONTEXT_OR_CROSS_DOMAIN_TRIAL
   -> SHARED_METHOD_ADOPTION
   -> LATER_CAUSAL_REUSE_VERIFIED
-\`\`\`
+```
 
-A candidate lesson must state its evidence/provenance, original scope, proposed transferable principle, conditions where it applies, counterexample/falsifier, decision it changed and observed outcome. Promote it to \`GLOBAL_CORE\` only when the abstraction is justified; retain the original project record and link it rather than copying its full history into the core. One successful case may supply provisional evidence, not universal validation. A write to a branch/PR is a proposal; canonical adoption requires permitted integration and exact fetch-back from live \`main\`.
+A candidate lesson must state its evidence/provenance, original scope, proposed transferable principle, conditions where it applies, counterexample/falsifier, decision it changed and observed outcome. Promote it to `GLOBAL_CORE` only when the abstraction is justified; retain the original project record and link it rather than copying its full history into the core. One successful case may supply provisional evidence, not universal validation. A write to a branch/PR is a proposal; canonical adoption requires permitted integration and exact fetch-back from live `main`.
 
 ### 6C.5 Standard chat/agent handoff envelope
 
 A new chat is a new session, not a continuation by assumption. Start with a small, project-scoped envelope and retrieve only the relevant shared methods:
 
-\`\`\`text
+```text
 HANDOFF_ID=
 PARENT_OBJECTIVE=
 PROJECT_ID=
@@ -313,13 +313,13 @@ NEXT_SINGLE_ACTION=
 EXPECTED_RETURN_ARTIFACT_OR_RECEIPT=
 STOP_CONDITION=
 WRITEBACK_TARGET_AND_PRIVACY_CLASS=
-\`\`\`
+```
 
 The sender provides the minimum context needed; the receiver acknowledges the project/task identity, sources actually retrieved, context actually available and any missing artifacts before acting. The receiver returns a correlated result to the owning project space. The coordinator adjudicates it under §6B before any next handoff. Do not make the Owner relay entire histories when one producer-generated, provenance-bound package can carry the necessary evidence; do not claim delivery until receipt is observed.
 
 ### 6C.6 Privacy and storage boundary
 
-The repository \`jhonf463r/Python\` was checked on 2026-10-31 and its visibility was \`public\`. Therefore, this public repository is suitable for public-safe method contracts and sanitized/generalizable lessons only. Do not write private project archives, personal data, private designs/source files, customer information, credentials, keys, tokens, account identifiers or other restricted material here. Keep such project material in an appropriately private, access-controlled project store and place only a sanitized pointer or transferable method in the public core. Never weaken a project's privacy boundary for convenience of cross-chat retrieval.
+The repository `jhonf463r/Python` was checked on 2026-10-31 and its visibility was `public`. Therefore, this public repository is suitable for public-safe method contracts and sanitized/generalizable lessons only. Do not write private project archives, personal data, private designs/source files, customer information, credentials, keys, tokens, account identifiers or other restricted material here. Keep such project material in an appropriately private, access-controlled project store and place only a sanitized pointer or transferable method in the public core. Never weaken a project's privacy boundary for convenience of cross-chat retrieval.
 
 ## 7. Historical authoring snapshot and per-session falsifiable checks
 
