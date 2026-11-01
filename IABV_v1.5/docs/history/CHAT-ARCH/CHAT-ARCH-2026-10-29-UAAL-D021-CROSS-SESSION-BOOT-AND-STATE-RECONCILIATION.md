@@ -380,6 +380,28 @@ The existing IABV Control Master is a governance/priority signal that must be co
 
 For every material IABV development/coordination session, attempt the narrowest already-available, authorized read of the Control Master signal when it is relevant to the objective. Do not start IABV, launch the runtime, run a CLI, access protected data or inspect credentials merely to manufacture a signal.
 
+#### 6D.2.1 Dedicated GitHub signal snapshot (when published)
+
+The implementation candidate publishes an explicitly requested, privacy-minimised snapshot to the dedicated non-default branch `control-master-live`, at:
+
+`IABV_v1.5/data/evolution/control_master/shared_signal.json`
+
+This is an optional, source-bound retrieval path for participating sessions; it is not an automatic feed or proof that the local runtime is currently connected. The runtime publisher must be invoked deliberately from an already-running, authorized `AppBootstrap` instance. No second bootstrap, CLI launch, protected read or credential inspection is needed or permitted merely to fetch the snapshot. A missing branch/file, inaccessible ref, malformed payload or failed verification is `UNAVAILABLE` / `UNVERIFIED`, never an empty queue.
+
+A receiving session should fetch the file from the exact `control-master-live` branch commit using its already-available authorized GitHub connector/API, then record the branch commit SHA, file blob SHA, retrieval time and source URL. Validate all of the following before treating the signal as usable:
+
+1. `schema_version=iabv.control_master_signal.v1`, `project_id=IABV`, and `transport=READY_FOR_DEDICATED_BRANCH_PUBLICATION`.
+2. `signal_status` is `AVAILABLE` or `EMPTY_QUEUE`; an `UNAVAILABLE` payload is deliberately marked non-publishable and must not be promoted to a valid snapshot.
+3. `content_sha256` equals SHA-256 of canonical UTF-8 JSON containing every top-level field except `content_sha256`, serialized with sorted keys, separators `,` and `:`, and `ensure_ascii=true`.
+4. `signal_id` equals `cms-` plus the first 24 hex characters of SHA-256 over the same canonical JSON after removing `content_sha256` and setting `signal_id` to the empty string.
+5. `generated_at_utc` and `expires_at_utc` are timezone-aware, generation is not in the future, expiry is still in the future, and the interval is at most the declared 900-second freshness window. An expired snapshot is `STALE`, even if its hash is valid.
+6. The source component is `ControlMasterService`; capture `source.state_id` and `source.state_observed_at_utc`. This timestamp denotes the producer's state projection observation, not a claim that a persisted object was modified at that time.
+7. Queue status, signal status, item count and actual item list agree. `EMPTY_QUEUE` is valid only when the verified item list is empty; an `AVAILABLE` queue must contain at least one item.
+
+Queue item IDs are privacy-minimised stable references: `item-` plus the first 24 hex characters of SHA-256 over the original source item ID encoded as UTF-8. They are not the original objective/task IDs and do not independently authorize or resolve an operation. The snapshot deliberately omits titles, free-form summaries, next actions, reason text, evidence paths, logs and user content. It carries only allowlisted status/source/priority metadata and aggregate counts. The repository is public: do not expand this payload with private or protected fields.
+
+The snapshot is subordinate to the route and must be reconciled with the pinned `main` `CURRENT-STATE.md`; it cannot establish task authority, permissions, Option D changes, M1A/G1/G2/G3 acceptance, or approval for implementation/tests/runtime/merge. Do not call the branch a live runtime view beyond its recorded generation and expiry. Do not claim automatic cross-chat delivery: each recipient must retrieve, verify and acknowledge the exact published commit independently.
+
 Record at least:
 
 ```text
