@@ -19,6 +19,7 @@ from __future__ import annotations
 import hashlib
 import re
 from pathlib import Path
+from threading import local
 from typing import Any
 
 from iabv_v15.domain.models import (
@@ -64,16 +65,20 @@ class ControlMasterService:
         self.platform_pending_queue = platform_pending_queue
         self.workspace_root = workspace_root
         self.recent_decisions_limit = recent_decisions_limit
-        self._last_work_queue_errors: list[str] = []
+        self._work_queue_diagnostics = local()
 
     @property
     def last_work_queue_errors(self) -> tuple[str, ...]:
-        """Stable error codes from the most recent queue projection."""
-        return tuple(self._last_work_queue_errors)
+        """Stable error codes for this thread's most recent queue projection."""
+        return tuple(getattr(self._work_queue_diagnostics, "errors", ()))
 
     def _record_work_queue_error(self, code: str) -> None:
-        if code not in self._last_work_queue_errors:
-            self._last_work_queue_errors.append(code)
+        errors = getattr(self._work_queue_diagnostics, "errors", None)
+        if errors is None:
+            errors = []
+            self._work_queue_diagnostics.errors = errors
+        if code not in errors:
+            errors.append(code)
 
     # ------------------------------------------------------------------
     # Read API
@@ -305,7 +310,7 @@ class ControlMasterService:
 
         COMPLETED items are excluded.  Projection is idempotent.
         """
-        self._last_work_queue_errors = []
+        self._work_queue_diagnostics.errors = []
         items: list[dict[str, Any]] = []
         seen_ids: set[str] = set()
 
