@@ -90,20 +90,13 @@ class ControlMasterSignalProjector:
             )
         if not isinstance(state.state_id, str) or not _TOKEN.fullmatch(state.state_id):
             return cls.unavailable("SOURCE_STATE_ID_INVALID")
-        if (
-            not isinstance(state.last_updated, datetime)
-            or state.last_updated.tzinfo is None
-            or state.last_updated.utcoffset() is None
-        ):
-            return cls.unavailable("SOURCE_TIMESTAMP_UNKNOWN", source_state_id=state.state_id)
-
         observed = observed_at_utc or utc_now()
         if observed.tzinfo is None or observed.utcoffset() is None:
             return cls.unavailable("READER_CLOCK_UNKNOWN", source_state_id=state.state_id)
+        # This is when the producer observed the state/queue projection.
+        # It is deliberately not ControlMasterState.last_updated, which is
+        # the persisted object's modification timestamp.
         observed = observed.astimezone(timezone.utc)
-        source_updated = state.last_updated.astimezone(timezone.utc)
-        if source_updated > observed:
-            return cls.unavailable("SOURCE_TIMESTAMP_IN_FUTURE", source_state_id=state.state_id)
 
         safe_items: list[dict[str, Any]] = []
         for position, item in enumerate(work_queue[:_MAX_ITEMS]):
@@ -147,7 +140,7 @@ class ControlMasterSignalProjector:
             "source": {
                 "component": "ControlMasterService",
                 "state_id": state.state_id,
-                "state_observed_at_utc": source_updated.isoformat(),
+                "state_observed_at_utc": observed.isoformat(),
             },
             "generated_at_utc": observed.isoformat(),
             "expires_at_utc": (observed + timedelta(seconds=FRESHNESS_WINDOW_SECONDS)).isoformat(),
