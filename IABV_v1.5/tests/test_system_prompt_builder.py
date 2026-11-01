@@ -124,6 +124,9 @@ def test_prompt_includes_control_master_section_when_digest_present() -> None:
     builder = SystemPromptBuilder()
     digest = ControlMasterDigest(
         current_vision='IABV v1.5 local-first',
+        digest_id='digest-prompt-contract-01',
+        source_state_id='state-prompt-contract-01',
+        generated_at_utc='2026-10-31T20:00:00+00:00',
         rules_brief=['[IRREVOCABLE] No crear otro cerebro'],
         active_objectives_brief=['obj-1: Cerrar capa world model'],
         top_backlog=['Integrar digest en prompt'],
