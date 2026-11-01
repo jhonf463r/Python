@@ -105,6 +105,9 @@ class ControlMasterSignalPublisher:
             return "TRANSPORT_STATE_REJECTED"
         if signal.get("freshness_window_seconds") != 900:
             return "FRESHNESS_POLICY_REJECTED"
+        signal_id = signal.get("signal_id")
+        if not isinstance(signal_id, str) or not _TOKEN.fullmatch(signal_id):
+            return "SIGNAL_ID_INVALID"
         supplied_hash = signal.get("content_sha256")
         unhashed = {key: value for key, value in signal.items() if key != "content_sha256"}
         canonical = json.dumps(unhashed, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
