@@ -3574,6 +3574,7 @@ class AppBootstrap:
             self_examination_service=self.operational_self_examination_service,
             control_master_service=self.control_master_service,
             control_master_digest_builder=self.control_master_digest_builder,
+            control_master_signal_publish_action=self.publish_control_master_signal,
             github_remote_service=self.github_remote_service,
             defer_initial_refresh=True,
         )
