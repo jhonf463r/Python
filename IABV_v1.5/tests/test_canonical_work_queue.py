@@ -668,3 +668,35 @@ class TestDigestWorkQueueInOrchestrator:
         assert 'Orchestrator sees this' in digest.work_queue_brief[0]
         md = render_digest_markdown(digest)
         assert 'Orchestrator sees this' in md
+
+
+class TestQueueSourceFailureVisibility:
+    """Failed source reads remain visible and cannot masquerade as empty queues."""
+
+    def test_objective_source_failures_are_recorded(self) -> None:
+        ws = _workspace()
+        try:
+            repo = MagicMock()
+            repo.list_recent.side_effect = RuntimeError("source unavailable")
+            svc = ControlMasterService(
+                repository=_fake_repo(),
+                objective_repository=repo,
+                workspace_root=str(ws),
+            )
+            queue = svc.current_work_queue()
+            assert queue == []
+            assert "OBJECTIVES_READ_FAILED:active" in svc.last_work_queue_errors
+            assert "OBJECTIVES_READ_FAILED:pending" in svc.last_work_queue_errors
+            assert "OBJECTIVES_READ_FAILED:blocked" in svc.last_work_queue_errors
+        finally:
+            shutil.rmtree(ws, ignore_errors=True)
+
+    def test_digest_distinguishes_empty_queue_from_missing_queue(self) -> None:
+        state = ControlMasterState()
+        builder = ControlMasterDigestBuilder(max_chars=4000)
+        empty = builder.build(state, work_queue=[])
+        unavailable = builder.build(state, work_queue=None)
+        assert empty.signal_status == "AVAILABLE"
+        assert empty.work_queue_status == "EMPTY_QUEUE"
+        assert unavailable.signal_status == "UNAVAILABLE"
+        assert unavailable.work_queue_status == "UNAVAILABLE"
