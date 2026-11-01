@@ -1,7 +1,9 @@
 <!-- CHATGPT_PROJECT_NATIVE_CONTEXT_R1 -->
-## ChatGPT shared Project context and artifact retrieval
+## ChatGPT two-level memory and artifact retrieval
 
-For participating ChatGPT sessions, use the same owner-controlled IABV Project and its shared instructions, files and chats; prefer Project-only memory when available for scope isolation. External AI products continue to use the existing GitHub repository as their shared versioned source. Before asking the Owner to copy, paste or upload a canonical artifact, first inspect the Project's shared Sources/chats and retrieve the exact repository artifact through the available authorized connector. Ask only for a specific local-only artifact when all existing shared routes have been checked and cannot expose it. A ChatGPT Project does not provide local-runtime access or automatic cross-vendor delivery. Apply the full transport states, limitations and one-time setup in UAAL-D021 §6E and CHAT-ARCH-2026-10-31-CHATGPT-PROJECT-INSTRUCTIONS-R1.md.
+Treat ChatGPT Memory as selective personalization, not the source of truth for every project fact. Use account Memory for durable global preferences and reusable coordination rules when enabled; use one ChatGPT Project for the full context of each project; use that project's canonical GitHub state for exact decisions, configs, evidence and permissions. Choose Project-only memory when project isolation is desired; it excludes global saved memories and outside chats. Choose Default memory when account-wide cross-chat context is desired and broader context mixing is acceptable. Neither mode guarantees perfect recall of every message.
+
+Before asking the Owner to copy, paste or upload canonical material, inspect the Project's shared Sources/chats and retrieve the exact GitHub artifact through the available authorized connector. Request only a specific local-only artifact after shared routes have been checked. A Project does not provide local-runtime access or automatic cross-vendor delivery. Apply UAAL-D021 §6E and the copy-ready Project instructions.
 
 <!-- UAAL-D021 activation pointer; CURRENT-STATE.md owns live routing and volatile status. -->
 ## Memory Operating Protocol — live route — fresh route, no copied state (2026-10-29)
