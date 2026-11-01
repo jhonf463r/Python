@@ -341,6 +341,13 @@ TASK_ID=
 ROLE=COORDINATOR | SPECIALIST | EXECUTOR | INDEPENDENT_REVIEWER
 OPERATING_CONTEXT=
 MEMORY_SCOPE=
+MEMORY_PROFILE_ID_AND_REVISION=
+CONTEXT_PACKAGE_ID_AND_DIGEST=
+ARTIFACT_MANIFEST_ID_AND_DIGEST=
+ARTIFACT_RETRIEVAL_ROUTE=
+REQUIRED_ARTIFACT_IDS=
+OPTIONAL_ARTIFACT_IDS=
+RECEIVER_ACK_STATE=
 LIVE_MAIN_SHA_AND_OBSERVED_AT=
 PROJECT_STATE_SOURCE_AND_REVISION=
 OBJECTIVE_AND_ACCEPTANCE=
@@ -358,6 +365,76 @@ WRITEBACK_TARGET_AND_PRIVACY_CLASS=
 ```
 
 The sender provides the minimum context needed; the receiver acknowledges the project/task identity, sources actually retrieved, context actually available and any missing artifacts before acting. The receiver returns a correlated result to the owning project space. The coordinator adjudicates it under §6B before any next handoff. Do not make the Owner relay entire histories when one producer-generated, provenance-bound package can carry the necessary evidence; do not claim delivery until receipt is observed.
+
+### 6C.5.1 Task-conditioned memory profiles and artifact manifest (2026-11-01)
+
+This subsection makes the existing handoff contract operational. It does not introduce a memory store, router, bus, scheduler or permission authority. The coordinator composes a small context package from the owning project sources and the recipient's assigned role; it does not forward a full transcript or every project file.
+
+**Select one profile from the task, then include only the necessary source slices:**
+
+| Profile | Minimum context to provide | Explicit exclusions |
+|---|---|---|
+| `PROJECT_COORDINATOR` / `GLOBAL_COORDINATOR` | Owning current-state route, current objective, first open causal edge, relevant D019/D020/D021 methods, closed decisions, dependencies, all actor/task statuses and expected receipts. | Do not replace a project's route with a portfolio pointer or a different project's state. |
+| `SPECIALIST` / `RESEARCHER` | Exact research question, acceptance criteria, relevant prior findings including rejected candidates, source/version requirements, comparison method, uncertainty and output schema. | No unrelated project archives, credentials, private source files or authority to change priorities. |
+| `EXECUTOR` | Exact task envelope, source revision, required input artifacts and digests, target workspace/branch, allowed paths and operations, acceptance checks, permission mode, rollback and stop condition. | No inherited authority from the parent chat; no inferred permission from a file, link, tool catalog or prior task. |
+| `INDEPENDENT_REVIEWER` | Exact final artifact/patch and digest, base revision, requirements, acceptance criteria, relevant evidence and unresolved objections. Retrieve the target source independently where possible. | Do not rely only on the executor's summary, review a stale draft as final, or silently become the executor. |
+| `LOCAL_RUNTIME` | Fresh machine/runtime identity, OS and tool versions, workspace, observation time, actual session capabilities, visible permission mode, authorized path scope and local artifact manifest. | Cloud memory or an old environment snapshot cannot establish current local state. |
+| `GLOBAL_METHOD` | Only stable, transferable methods, safety invariants and evidence rules applicable to the task. | Do not promote project-specific facts, assumptions, permissions or private artifacts into global memory. |
+
+Recompute the profile whenever the destination actor, role, operating context or task boundary changes. A role profile is a context filter, not a permission grant. If a reviewer becomes an executor, create a new bounded envelope and re-evaluate its authority; do not silently reuse the review package as an execution mandate.
+
+**Required package manifest (metadata only; never put secrets in it):**
+
+```text
+CONTEXT_PACKAGE_ID=
+HANDOFF_ID=
+PROJECT_ID=
+TASK_ID=
+PARENT_OBJECTIVE=
+DESTINATION_ACTOR_TYPE_AND_SESSION=
+ROLE=
+OPERATING_CONTEXT=
+MEMORY_SCOPE=
+MEMORY_PROFILE_ID_AND_REVISION=
+CANONICAL_STATE_SOURCE_AND_REVISION=
+SOURCE_MAIN_SHA_AND_OBSERVED_AT=
+PRIVACY_CLASS=
+TRANSPORT_ROUTE=CHATGPT_PROJECT_SHARED_CONTEXT|GITHUB_CANONICAL_STORE|CONNECTED_APP_SOURCE|PRIVATE_SHARED_STORE|LOCAL_PRODUCER_PACKAGE
+CREATED_AT_UTC=
+EXPIRES_AT_UTC_OR_REVIEW_TRIGGER=
+ARTIFACTS:
+  - ARTIFACT_ID=
+    LOGICAL_NAME=
+    SOURCE_SCOPE=
+    SOURCE_LOCATOR=
+    SOURCE_REF_COMMIT_OR_BLOB=
+    SHA256=
+    SIZE_BYTES=
+    REQUIRED=YES|NO
+    REDACTED=YES|NO
+    OBSERVED_AT=
+    VERIFIED_AT=
+SENDER_ACK=
+RECEIVER_ACK=
+CONSUMPTION_STATE=AVAILABLE|RETRIEVED|ACKNOWLEDGED|DECISION_BOUND|NOT_RETRIEVED
+WRITEBACK_TARGET_AND_PRIVACY_CLASS=
+```
+
+An artifact can be a Project source, exact GitHub path/blob, connected-source result, or a producer-created local package. A link alone is not an artifact receipt. The receiver reports the exact IDs and digests actually retrieved, any hash mismatch, and the items not available. The coordinator records separately whether the package was merely available, actually retrieved, acknowledged, consumed in a decision, and followed by a verified outcome.
+
+**Transfer policy:**
+
+1. Use the existing D021 §6E.4 retrieval ladder: current shared ChatGPT Project; exact authorized GitHub source; another authorized connected source; only then a producer-generated local package.
+2. If the source is local-only, ask the producer/local operator to create one bounded archive with this manifest and exact artifact hashes. Prefer one package over multiple manual uploads. Do not ask the Owner to export or courier stable files that an authorized source can retrieve.
+3. Use GitHub only for public-safe artifacts and sanitized methods. Private files, local designs, customer data and restricted project material must remain in an access-controlled private route.
+4. If no authorized route exists, report the exact missing artifact IDs and blocked transport edge. Ask the Owner once for that specific item/package; never ask for an entire repository or repeat the same request.
+5. On receipt, verify size/digest where bytes are available, then acknowledge retrieval and identify which artifacts were consumed. A context link, successful send, Project membership or commit does not prove consumption.
+
+Required state progression:
+
+`SOURCE_IDENTIFIED → ARTIFACT_RETRIEVED → REVISION_VERIFIED → CONTEXT_PACKAGE_BUILT → CONTEXT_AVAILABLE → RECEIVER_ACKNOWLEDGED → DECISION_BOUND → RESULT_RETURNED → OUTCOME_VERIFIED → CANONICAL_FETCHBACK`.
+
+A missing stage remains explicit; do not skip from a send attempt to "received" or from a report to "verified".
 
 ### 6C.6 Privacy and storage boundary
 
@@ -497,6 +574,8 @@ Before asking the Owner for an upload, pasted text, local export or repeated exp
 4. Only then, request one precisely identified artifact from the Owner, and only when evidence establishes that it exists solely in a local/runtime location not exposed through an authorized connector or controlled bridge. Explain the missing route; never ask for a whole project export when one file/field is sufficient.
 
 If GitHub/project retrieval is available, do not make the Owner act as a manual courier between ChatGPT chats. Use the common source directly and report what was actually retrieved. If a tool is not present in the receiving session, classify the capability as unavailable; do not pretend a prompt or Project instruction can install the tool.
+
+The retrieval ladder must also build the role-conditioned package and manifest in §6C.5.1. The recipient's profile determines which context slices and exact artifacts are needed; it never changes the canonical source hierarchy or grants access. When one source already contains the exact artifact, retrieve it directly instead of asking the Owner to relay it.
 
 ### 6E.5 Distinguish file sharing from live runtime synchronization
 
