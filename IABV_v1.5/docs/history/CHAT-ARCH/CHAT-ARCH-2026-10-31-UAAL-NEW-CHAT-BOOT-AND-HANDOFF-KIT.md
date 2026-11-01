@@ -252,6 +252,22 @@ When a workflow has an outer operator and a child process, state both explicitly
 
 Do not claim a handoff is automatic when the Owner must paste it. Mark `MANUAL_HANDOFF_REQUIRED`, give one exact copy-ready block, and continue to prefer shared Project/GitHub/authorized connected-source retrieval for artifacts so the Owner is not asked to relay files already available elsewhere.
 
+### 6.5 Version-pinned CLI capability and approval/sandbox contract
+
+For any delegated CLI runner, identify the exact installed version and subcommand. Separate interactive/TUI global flags from the flags actually accepted by a non-interactive command. A flag shown by `codex --help` is not automatically an argument of `codex exec`; inspect `codex exec --help` and, where necessary, the exact release tag's parser/source. Do not make a flag mandatory merely because a generic permissions document mentions it.
+
+Keep the controls separate:
+
+- `approval_policy=never`: the agent does not pause for an approval prompt. This is not a grant of file/network permissions.
+- `sandbox_mode=read-only`: the agent's generated commands are confined to the read-only sandbox. This does not constrain the outer PowerShell runner or the Windows task registrar.
+- The outer runner's file and scheduler writes require their own exact Owner authorization.
+
+**Codex CLI 0.166.0 case rule:** the release-pinned `codex exec` source sets `approval_policy=Never` by default for headless execution, while its `exec` argument parser exposes `--sandbox` but not the interactive `--ask-for-approval` flag. `--approve-for-me` configures `on-request` plus `workspace-write` and is not a read-only alternative. Use `--sandbox read-only`; do not add a non-existent `--ask-for-approval never` requirement to this release's `exec` command. Re-check exact source when the installed version changes.
+
+Before creating a scheduled runner, use a bounded no-write smoke test with the exact final invocation. Capture the CLI version, exact command (without secrets), exit code, approval-policy source/default and sandbox selection. Help availability alone does not prove that an execution occurred or that the OS sandbox was effectively enforced.
+
+On Windows, if `Get-Command codex` resolves to a `.ps1` npm shim, verify how the runner will invoke it. Use a tested PowerShell host or a verified native shim and confirm stdin forwarding. Do not call a `.ps1` path as though it were a native executable, and do not bypass the execution policy.
+
 ## 7. Standard return receipt
 
 ```text
