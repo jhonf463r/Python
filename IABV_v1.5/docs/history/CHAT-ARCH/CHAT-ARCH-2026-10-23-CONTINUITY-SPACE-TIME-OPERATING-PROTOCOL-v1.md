@@ -726,3 +726,10 @@ LATER_CAUSAL_REUSE_REQUIRED_FOR_LEARNING_CLAIM=TRUE
 ```
 
 A repeat/reopen is allowed only with its own new bounded authorization and a stated new evidential premise or correction. A new chat, a new task number, or pressure to progress does not count as new evidence. The protocol is coordination guidance, not automatic model-weight training or proof that a runtime learning loop has changed.
+
+
+## ChatGPT Project as the session-context substrate (2026-10-31)
+
+For ChatGPT-to-ChatGPT continuity, one owner-controlled ChatGPT Project can make Project instructions, files and chats available to conversations inside that Project. It is a context substrate, not a second memory/router and not a broadcast bus. Prefer Project-only memory when available for IABV scope isolation. For Codex, Claude or other AI products, use the existing GitHub repository as the shared versioned substrate. Keep the active project state in its owning CURRENT-STATE.md; the Project and GitHub transport/retrieve that state rather than replacing it.
+
+The coordinator must prefer already-available Project sources and repository retrieval over asking the Owner to re-upload stable files. A Project does not expose local C:/Python, a live local database, protected data or runtime state. No runtime synchronization is implied. Source availability, retrieval, receiver acknowledgement, decision influence and verified outcome remain separate temporal events under UAAL-D021 §6E. Project instructions guide assistant behavior but do not enforce tool availability, permissions or technical gates.
