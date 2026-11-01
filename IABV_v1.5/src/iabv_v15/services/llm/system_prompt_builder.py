@@ -228,6 +228,23 @@ class SystemPromptBuilder:
         if digest is None:
             return '## Control Maestro\nNo disponible en esta sesion; señal UNAVAILABLE: no se recibió un digest en esta sesión.'
         parts: list[str] = ['## Control Maestro (digest)']
+        provenance: list[str] = []
+        source_state_id = str(digest.source_state_id or '').strip()
+        digest_id = str(digest.digest_id or '').strip()
+        if source_state_id:
+            provenance.append(f'state_id={source_state_id}')
+        if digest_id:
+            provenance.append(f'digest_id={digest_id}')
+        generated_at = getattr(digest, 'generated_at_utc', None)
+        if generated_at is not None:
+            generated_at_text = (
+                generated_at.isoformat()
+                if callable(getattr(generated_at, 'isoformat', None))
+                else str(generated_at)
+            )
+            provenance.append(f'generated_at_utc={generated_at_text}')
+        if provenance:
+            parts.append('Procedencia Control Master: ' + '; '.join(provenance))
         if digest.signal_status == 'UNAVAILABLE':
             reason = digest.signal_reason or 'SOURCE_UNAVAILABLE'
             parts.append(
