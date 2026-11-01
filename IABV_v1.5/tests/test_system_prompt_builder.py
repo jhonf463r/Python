@@ -231,7 +231,8 @@ def test_compact_prompt_includes_control_master_signal() -> None:
         work_queue_status='NON_EMPTY_QUEUE',
         current_vision='Continuidad gobernada',
         active_objectives_brief=['active:obj-super-sync'],
-        work_queue_brief=['[high] objective:obj-super-sync'],
+        work_queue_brief=['[high] objective:obj-super-sync Continuar reconciliación'],
+        work_queue_counts={'active': 2, 'blocked': 1},
     )
     prompt = builder.build_compact(
         world_model=None,
@@ -241,6 +242,8 @@ def test_compact_prompt_includes_control_master_signal() -> None:
     assert 'Control Maestro (digest)' in prompt
     assert 'Señal: AVAILABLE' in prompt
     assert 'obj-super-sync' in prompt
+    assert 'Cola priorizada' in prompt
+    assert 'Recuentos de cola: active=2, blocked=1' in prompt
 
 
 def test_compact_prompt_does_not_treat_unavailable_signal_as_empty_queue() -> None:
