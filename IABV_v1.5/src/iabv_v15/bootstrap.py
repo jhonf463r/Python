@@ -305,6 +305,8 @@ from iabv_v15.services.evolution.embodiment_violation_detector import Embodiment
 from iabv_v15.infra.persistence.control_master_repository import ControlMasterRepository
 from iabv_v15.services.evolution.control_master_digest_builder import ControlMasterDigestBuilder
 from iabv_v15.services.evolution.control_master_service import ControlMasterService
+from iabv_v15.services.evolution.control_master_signal_projector import ControlMasterSignalProjector
+from iabv_v15.services.evolution.control_master_signal_publisher import ControlMasterSignalPublisher
 from iabv_v15.services.evolution.git_sync_service import GitSyncService
 from iabv_v15.services.evolution.mcp_bridge_service import (
     MCPBridgeService,
@@ -4143,16 +4145,56 @@ class AppBootstrap:
         return package.model_dump(mode='json')
 
     def export_control_master_digest(self, *, refresh: bool = False) -> dict[str, object]:
+        from iabv_v15.domain.models import ControlMasterDigest
+
         service = getattr(self, 'control_master_service', None)
         builder = getattr(self, 'control_master_digest_builder', None)
         if service is None or builder is None:
-            return {}
-        state = service.current_state(refresh=refresh)
+            return ControlMasterDigest(
+                signal_status='UNAVAILABLE',
+                signal_reason='CONTROL_MASTER_SERVICE_NOT_CONFIGURED',
+                work_queue_status='UNAVAILABLE',
+            ).model_dump(mode='json')
         try:
+            state = service.current_state(refresh=refresh)
             work_queue = service.current_work_queue(limit=10)
-        except Exception:
-            work_queue = []
-        return builder.build(state, work_queue=work_queue).model_dump(mode='json')
+            source_errors = tuple(getattr(service, 'last_work_queue_errors', ()) or ())
+            if source_errors:
+                return ControlMasterDigest(
+                    source_state_id=state.state_id,
+                    signal_status='UNAVAILABLE',
+                    signal_reason='QUEUE_SOURCE_ERRORS:' + ','.join(source_errors),
+                    work_queue_status='UNAVAILABLE',
+                ).model_dump(mode='json')
+            return builder.build(state, work_queue=work_queue).model_dump(mode='json')
+        except Exception as exc:
+            return ControlMasterDigest(
+                signal_status='UNAVAILABLE',
+                signal_reason='CONTROL_MASTER_READ_FAILED:' + type(exc).__name__,
+                work_queue_status='UNAVAILABLE',
+            ).model_dump(mode='json')
+
+    def export_control_master_signal(self, *, refresh: bool = False) -> dict[str, object]:
+        service = getattr(self, 'control_master_service', None)
+        if service is None:
+            return ControlMasterSignalProjector.unavailable('CONTROL_MASTER_SERVICE_NOT_CONFIGURED')
+        try:
+            state = service.current_state(refresh=refresh)
+            work_queue = service.current_work_queue(limit=10)
+            source_errors = tuple(getattr(service, 'last_work_queue_errors', ()) or ())
+            return ControlMasterSignalProjector.project(
+                state=state,
+                work_queue=work_queue,
+                source_errors=source_errors,
+            )
+        except Exception as exc:
+            return ControlMasterSignalProjector.unavailable(
+                'CONTROL_MASTER_READ_FAILED:' + type(exc).__name__
+            )
+
+    def publish_control_master_signal(self, *, refresh: bool = False) -> dict[str, object]:
+        signal = self.export_control_master_signal(refresh=refresh)
+        return ControlMasterSignalPublisher().publish(signal)
 
     def _seed_control_master_from_agents_md(self) -> None:
         service = getattr(self, 'control_master_service', None)
