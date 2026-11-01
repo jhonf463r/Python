@@ -205,3 +205,138 @@ def test_publisher_rejects_non_directory_path_component(tmp_path) -> None:
         assert str(exc) == "SIGNAL_PATH_COMPONENT_NOT_DIRECTORY"
     else:
         raise AssertionError("publisher must reject a non-directory signal path component")
+
+
+def test_projection_timestamp_is_observation_not_persisted_modification_time() -> None:
+    observed = datetime(2026, 11, 1, 12, 0, tzinfo=timezone.utc)
+    persisted_modified = observed - timedelta(days=120)
+    state = _state().model_copy(update={"last_updated": persisted_modified})
+
+    signal = ControlMasterSignalProjector.project(
+        state=state,
+        work_queue=[],
+        observed_at_utc=observed,
+    )
+
+    assert signal["source"]["state_observed_at_utc"] == observed.isoformat()
+    assert signal["source"]["state_observed_at_utc"] != persisted_modified.isoformat()
+
+
+def test_publisher_rejects_public_branch_with_non_signal_tree_changes() -> None:
+    from iabv_v15.services.evolution.control_master_signal_publisher import (
+        ControlMasterSignalPublisher,
+    )
+
+    signal_path = "IABV_v1.5/data/evolution/control_master/shared_signal.json"
+    assert ControlMasterSignalPublisher._public_branch_delta_is_allowlisted([])
+    assert ControlMasterSignalPublisher._public_branch_delta_is_allowlisted([signal_path])
+    assert not ControlMasterSignalPublisher._public_branch_delta_is_allowlisted(["README.md"])
+    assert not ControlMasterSignalPublisher._public_branch_delta_is_allowlisted(
+        [signal_path, "README.md"]
+    )
+
+
+def test_publisher_verifies_exact_remote_ref_commit_and_content(
+    tmp_path, monkeypatch
+) -> None:
+    from types import SimpleNamespace
+
+    from iabv_v15.services.evolution.control_master_signal_publisher import (
+        ControlMasterSignalPublisher,
+    )
+
+    publisher = ControlMasterSignalPublisher()
+    expected_commit = "a" * 40
+    expected_content = '{"signal_status":"AVAILABLE"}\\n'
+    remote_ref = "refs/heads/control-master-live"
+    commands: list[list[str]] = []
+
+    def fake_run(args, *, cwd=None, allow_returncodes=(0,)):
+        commands.append(list(args))
+        if args[0] == "ls-remote":
+            return SimpleNamespace(stdout=f"{expected_commit}\\t{remote_ref}\\n")
+        if args[0] == "fetch":
+            return SimpleNamespace(stdout="")
+        if args[0] == "rev-parse":
+            return SimpleNamespace(stdout=f"{expected_commit}\\n")
+        if args[0] == "show":
+            return SimpleNamespace(stdout=expected_content)
+        raise AssertionError(f"Unexpected git command: {args}")
+
+    monkeypatch.setattr(publisher, "_run_git", fake_run)
+
+    result = publisher._verify_remote_publication(
+        checkout=tmp_path,
+        expected_commit=expected_commit,
+        expected_content=expected_content,
+    )
+
+    assert result is None
+    assert any(command[0] == "fetch" for command in commands)
+    assert any(command[0] == "show" for command in commands)
+
+
+def test_publisher_reports_remote_content_mismatch_after_push(
+    tmp_path, monkeypatch
+) -> None:
+    from types import SimpleNamespace
+
+    from iabv_v15.services.evolution.control_master_signal_publisher import (
+        ControlMasterSignalPublisher,
+    )
+
+    publisher = ControlMasterSignalPublisher()
+    expected_commit = "b" * 40
+    remote_ref = "refs/heads/control-master-live"
+
+    def fake_run(args, *, cwd=None, allow_returncodes=(0,)):
+        if args[0] == "ls-remote":
+            return SimpleNamespace(stdout=f"{expected_commit}\\t{remote_ref}\\n")
+        if args[0] == "fetch":
+            return SimpleNamespace(stdout="")
+        if args[0] == "rev-parse":
+            return SimpleNamespace(stdout=f"{expected_commit}\\n")
+        if args[0] == "show":
+            return SimpleNamespace(stdout='{"signal_status":"DIFFERENT"}\\n')
+        raise AssertionError(f"Unexpected git command: {args}")
+
+    monkeypatch.setattr(publisher, "_run_git", fake_run)
+
+    result = publisher._verify_remote_publication(
+        checkout=tmp_path,
+        expected_commit=expected_commit,
+        expected_content='{"signal_status":"AVAILABLE"}\\n',
+    )
+
+    assert result == "REMOTE_CONTENT_MISMATCH"
+
+
+def test_publisher_reports_remote_head_mismatch_after_push(
+    tmp_path, monkeypatch
+) -> None:
+    from types import SimpleNamespace
+
+    from iabv_v15.services.evolution.control_master_signal_publisher import (
+        ControlMasterSignalPublisher,
+    )
+
+    publisher = ControlMasterSignalPublisher()
+    remote_ref = "refs/heads/control-master-live"
+    commands: list[list[str]] = []
+
+    def fake_run(args, *, cwd=None, allow_returncodes=(0,)):
+        commands.append(list(args))
+        if args[0] == "ls-remote":
+            return SimpleNamespace(stdout=f"{'c' * 40}\\t{remote_ref}\\n")
+        raise AssertionError(f"Unexpected git command after mismatched head: {args}")
+
+    monkeypatch.setattr(publisher, "_run_git", fake_run)
+
+    result = publisher._verify_remote_publication(
+        checkout=tmp_path,
+        expected_commit="d" * 40,
+        expected_content="{}\\n",
+    )
+
+    assert result == "REMOTE_HEAD_MISMATCH"
+    assert len(commands) == 1
