@@ -1,3 +1,8 @@
+<!-- CHATGPT_PROJECT_NATIVE_CONTEXT_R1: shared ChatGPT transport; guidance only, not enforcement. -->
+## ChatGPT native continuity and file sharing
+
+For IABV work inside ChatGPT, use the same owner-controlled Project for every participating IABV chat, with the Project instructions in [CHATGPT Project Instructions R1](./CHAT-ARCH-2026-10-31-CHATGPT-PROJECT-INSTRUCTIONS-R1.md). A Project shares its own instructions, uploaded files and chats among its chats; it is not an automatic bridge to Codex/Claude, other projects or local C:/Python. For other AI products, GitHub remains the cross-product common store. Before requesting an upload or pasted handoff, first search the current Project sources and retrieve the canonical repository file through the currently available authorized connector. Request only a concrete artifact that is proven to exist solely in an inaccessible local/runtime source. Full transport semantics and limitations are in UAAL-D021 §6E and the New-Chat Boot Kit.
+
 <!-- UAAL-D021 activation pointer; CURRENT-STATE.md owns live routing and volatile status. -->
 ## Continuidad Espacio-Tiempo — fresh route, no copied state (2026-10-29)
 
