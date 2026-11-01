@@ -37,7 +37,10 @@ class ControlMasterSignalPublisher:
     """Publish only a validated allowlist signal to a dedicated public branch."""
 
     def publish(self, signal: dict[str, Any]) -> dict[str, Any]:
-        reason = self._validate_signal(signal)
+        try:
+            reason = self._validate_signal(signal)
+        except Exception:
+            reason = "SIGNAL_VALIDATION_FAILED"
         if reason:
             return {"status": "BLOCKED", "reason": reason, "branch": _SIGNAL_BRANCH}
         try:
@@ -155,19 +158,21 @@ class ControlMasterSignalPublisher:
         except (TypeError, ValueError):
             return "SOURCE_TIMESTAMP_INVALID"
         expected_counts = {"queue_items_published"}
+        queue = signal.get("queue")
+        if not isinstance(queue, dict) or set(queue) != _ALLOWED_QUEUE_KEYS:
+            return "QUEUE_SCHEMA_REJECTED"
+        items = queue.get("items")
+        if not isinstance(items, list):
+            return "QUEUE_ITEM_SCHEMA_REJECTED"
         counts = signal.get("counts")
         if (
             not isinstance(counts, dict)
             or set(counts) != expected_counts
             or any(isinstance(value, bool) or not isinstance(value, int) or value < 0 for value in counts.values())
-            or counts.get("queue_items_published") != len(signal.get("queue", {}).get("items", []))
+            or counts.get("queue_items_published") != len(items)
             or signal.get("reason_codes") != []
         ):
             return "SIGNAL_COUNTS_OR_REASONS_INVALID"
-        queue = signal.get("queue")
-        if not isinstance(queue, dict) or set(queue) != _ALLOWED_QUEUE_KEYS:
-            return "QUEUE_SCHEMA_REJECTED"
-        items = queue.get("items")
         if not isinstance(items, list) or any(
             not isinstance(item, dict)
             or set(item) != _ALLOWED_ITEM_KEYS
