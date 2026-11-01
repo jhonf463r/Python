@@ -10,6 +10,8 @@ from __future__ import annotations
 import json
 import subprocess
 import tempfile
+import hashlib
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -99,12 +101,42 @@ class ControlMasterSignalPublisher:
             return "SIGNAL_NOT_AVAILABLE"
         if signal.get("transport") != "READY_FOR_DEDICATED_BRANCH_PUBLICATION":
             return "TRANSPORT_STATE_REJECTED"
+        supplied_hash = signal.get("content_sha256")
+        unhashed = {key: value for key, value in signal.items() if key != "content_sha256"}
+        canonical = json.dumps(unhashed, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
+        if not isinstance(supplied_hash, str) or hashlib.sha256(canonical.encode("utf-8")).hexdigest() != supplied_hash:
+            return "SIGNAL_HASH_MISMATCH"
+        try:
+            generated = datetime.fromisoformat(str(signal.get("generated_at_utc")).replace("Z", "+00:00"))
+            expires = datetime.fromisoformat(str(signal.get("expires_at_utc")).replace("Z", "+00:00"))
+            now = datetime.now(timezone.utc)
+            if generated.tzinfo is None or expires.tzinfo is None or expires <= now:
+                return "SIGNAL_EXPIRED_OR_TIME_UNVERIFIED"
+            if (expires - generated).total_seconds() > 900:
+                return "SIGNAL_EXPIRY_WINDOW_INVALID"
+        except (TypeError, ValueError):
+            return "SIGNAL_TIME_INVALID"
+        source = signal.get("source")
+        if not isinstance(source, dict) or set(source) != {"component", "state_id", "state_updated_at_utc"}:
+            return "SOURCE_SCHEMA_REJECTED"
+        if source.get("component") != "ControlMasterService" or not isinstance(source.get("state_id"), str):
+            return "SOURCE_IDENTITY_REJECTED"
+        if not isinstance(signal.get("counts"), dict) or not isinstance(signal.get("reason_codes"), list):
+            return "SIGNAL_COUNTS_OR_REASONS_INVALID"
         queue = signal.get("queue")
         if not isinstance(queue, dict) or set(queue) != _ALLOWED_QUEUE_KEYS:
             return "QUEUE_SCHEMA_REJECTED"
         items = queue.get("items")
         if not isinstance(items, list) or any(
-            not isinstance(item, dict) or set(item) != _ALLOWED_ITEM_KEYS for item in items
+            not isinstance(item, dict)
+            or set(item) != _ALLOWED_ITEM_KEYS
+            or not isinstance(item.get("item_id"), str)
+            or not isinstance(item.get("status"), str)
+            or not isinstance(item.get("source"), str)
+            or not isinstance(item.get("priority_label"), str)
+            or isinstance(item.get("priority_score"), bool)
+            or not isinstance(item.get("priority_score"), int)
+            for item in items
         ):
             return "QUEUE_ITEM_SCHEMA_REJECTED"
         if queue.get("item_count") != len(items):
