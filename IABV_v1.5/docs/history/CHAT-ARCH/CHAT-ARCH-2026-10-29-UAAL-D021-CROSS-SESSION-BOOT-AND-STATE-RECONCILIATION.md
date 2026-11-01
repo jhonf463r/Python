@@ -783,6 +783,43 @@ A pass requires at least one child to complete and its result to be consumed by 
 
 **Learning status:** source-grounded correction plus one reported failure episode. The inheritance interpretation is verified against the v0.1.6 release-tagged T3 documentation; local Claude authentication, a successful delegated child and real code-workspace binding remain `NOT_VERIFIED`. Do not mark multi-provider coordination as operational until a child task completes and the parent consumes its result.
 
+
+### 6C.5.6 Provider economics, local-model boundary and account integrity (2026-11-01)
+
+**R2 episode:** the owner expected T3 Code to orchestrate models installed on the MSI and/or freely available agents, and asked whether another borrowed email could supply an additional free quota. The R2 receipt reports Codex authenticated in T3, Claude enabled but not authenticated in the exact `C:\\Users\\faber\\.claude` config directory, the code workspace added as `C:\\IABV-TICD-CODE`, current draft permission `FULL_ACCESS` (not revalidated), no delegated child or terminal result, no billing changes, and T3 Connect still disabled. These are actor-reported facts; preserve the failed state and do not claim a functioning team.
+
+**T3 is a harness orchestrator, not a free model host:**
+
+- T3 Code v0.1.6 FAQ describes T3 as using provider harnesses (Codex, Claude Code, OpenCode, Antigravity, etc.), not as hosting its own inference quota. It explicitly says T3 does not support local models as a first-class capability. T3 itself is free/open source; the selected model provider's plan or API billing still applies. This resolves the Owner's misconception: installing a model on Windows does not automatically make it a T3 provider.
+- T3 v0.1.6 nevertheless provides a native Google Antigravity provider using Google's official ACP agent and a Google sign-in. Google's individual Antigravity tier advertises a $0 plan with a meaningful weekly baseline quota for Gemini models, and rate/model availability can change with Google's capacity and policy. This is the preferred second free cloud-agent candidate to verify before paying for Claude or adding more providers.
+- The Antigravity provider's actual `canRunChildTask` must be checked using the local T3 `orchestrator_capabilities` result. If it is not child-capable, use T3's documented independent-thread operations only if the parent can actually start, wait for, read and reconcile those threads; otherwise classify it as a useful separately usable provider, not as a delegated child.
+- OpenRouter currently lists free model variants (`:free`) with a plan-level limit of 20 requests/minute and 50 requests/day for accounts below the credit-purchase threshold; failed attempts count toward the daily cap. T3 v0.1.6 has a documented OpenRouter recipe for a separate Claude-compatible provider instance. Treat this as a bounded, optional fallback/reviewer: verify that the chosen free model supports the required tool calling and context, and never assume a free chat endpoint is a working coding-agent harness.
+- Indirect local-model candidate: OpenCode supports Ollama through an OpenAI-compatible local endpoint, while T3 can run the OpenCode harness locally. However, this is not T3's advertised first-class local-model support; T3's v0.1.6 FAQ explicitly says local models are not supported. Keep this as an experimental, hardware-gated route only. Before download, inventory RAM, GPU/VRAM, CPU, architecture and fresh free disk. Do not install Ollama or download weights until capacity is verified. The earlier owner-reported C: free-space figure is stale and cannot authorize a download. Also note T3 v0.1.6 OpenCode documentation says its `Auto` behavior is equivalent to `Supervised` because OpenCode lacks an AI approval reviewer; do not promise approval-light operation on that harness.
+
+**Free/low-cost provider priority:**
+
+1. Keep the existing Codex provider authenticated with the Owner's own ChatGPT account. OpenAI currently includes limited Codex access on Free; usage caps apply, and Codex Cloud is not included on Free/Go. Treat the free allowance as limited and variable, not as infinite capacity.
+2. Add/verify Google's native Antigravity provider using the Owner's own Google account and individual free tier. Start with its free Gemini models and inspect quota/availability in T3. Use it as the primary second-provider candidate for independent review or research, subject to actual child/thread capability.
+3. Consider OpenRouter `:free` as a third, optional auxiliary route with a separately owned key, subject to daily request limits and tool compatibility.
+4. Retest Claude only if the exact T3 provider configuration completes its own authentication and status check. T3 v0.1.6 Claude uses Claude Code's login/configuration; an unrelated or default CLI config status is not sufficient unless it is the exact `CLAUDE_CONFIG_DIR` used by that provider. Do not buy Anthropic API credits to make an OAuth/subscription path work. Check for API-key environment overrides by variable name/presence only; never expose values.
+
+**Account integrity and multi-account policy:**
+
+- T3 v0.1.6 supports a separate provider instance/account for legitimate work/personal separation; Codex documents a separate account instance and (for CLI sessions) a shadow-home arrangement, while Claude uses separate config directories. These are separate identities and their own usage limits, not a license to share logins or evade quota enforcement.
+- Never use, store or automate a friend's/borrowed person's OpenAI or Anthropic credentials in the Owner's T3 environment. OpenAI and Anthropic consumer account rules make accounts individual and prohibit sharing credentials or making the account available to someone else. Do not set up a proxy/auto-switcher to rotate borrowed/free accounts or circumvent provider rate/usage limits. T3's own FAQ warns that a pile-of-accounts auto-switcher risks provider ToS enforcement.
+- A collaborator may contribute using their own account on their own device and authorized repository access, returning work through a branch/PR or a sanitized artifact; they must not hand over their personal login/token. A separate work account may be configured only when it is genuinely provisioned for and controlled by the same authorized user or organization under the provider's terms; it must not be used as a quota-evasion mechanism.
+
+**R2 corrective actions and safety gates:**
+
+- Preserve `IABV-TICD-LAB`; preserve the separate `IABV-TICD-CODE` workspace. Do not rename/move paths or alter the repo until local T3 project binding is verified.
+- Correct the new code project's draft permission from the reported `FULL_ACCESS` to `AUTO` before any agent is allowed to operate; verify both project defaults and the target thread. `FULL_ACCESS` was observed in a draft and no prompt was sent from it, so do not treat it as a tested active permission.
+- Do not launch Claude or any child while its exact provider config reports `loggedIn=false`.
+- First execute a free-capability pilot: Codex parent → Antigravity child if `canRunChildTask=true`; otherwise use independent T3 threads only if read/wait/reconciliation works. Require actual terminal result and parent retrieval. Keep all tasks read-only.
+- Do not enable T3 Connect until a free provider path completes a real result-return test and the project Auto boundary is verified. T3 Connect is a separate remote-control feature, not a model provider or orchestration prerequisite.
+- Keep `C:\\Python=DO_NOT_TOUCH`, no billing changes, no borrowed credentials, no account pooling, no public tunnel, no MCP bridge, and no product-code writes during provider setup.
+
+**Acceptance states:** `FREE_SECOND_PROVIDER=VERIFIED` requires successful provider status plus a usable model. `CROSS_PROVIDER_COORDINATION=VERIFIED` additionally requires a child/independent thread to complete and its exact result to be retrieved and reconciled by the parent without Owner relay. `LOCAL_MODEL=EXPERIMENTAL` until the indirect OpenCode+Ollama route passes a hardware and tool-use test. Never infer success from a provider appearing enabled in the UI.
+
 ## 7. Historical authoring snapshot and per-session falsifiable checks
 
 The values below are the original D021 authoring snapshot, not current route authority. Each material session must refresh live `main` and current PR metadata before reuse. Observed while preparing the initial revision:
