@@ -4,7 +4,7 @@
 **Task episode:** `TICD_LOCAL_MSI_MAINTENANCE_SETUP_2026_11_01` → R2 correction → R3 proposal
 **Project:** `IABV-TICD-LAB` / `jhonf463r/Python`
 **Status:** `TRANSCRIPT_RECONCILED; ROOT_CAUSE_IDENTIFIED; DOCUMENTATION_PROPOSAL_ADDED_TO_DRAFT_PR; LOCAL_TASK_NOT_CREATED; R3_RESULT_NOT_RECEIVED; LATER_CAUSAL_REUSE_NOT_TESTED`
-**Source artifact:** `Texto pegado(2).txt`, 85,461 bytes, 2,312 lines, SHA-256 `bfbd38053cb00214445b422e39abf6d0a22e2500541c3da614f0307ca7fd2028`.
+**Source artifact:** owner-supplied chat transcript, inspected in the originating private conversation; source content/digest verified there but the private attachment hash and payload are not republished in this public repository.
 **Evidence class:** the pasted conversation is directly available to this coordinator; local observations and Codex results inside it remain actor-reported unless independently inspected from the MSI.
 
 ## 1. Episode reconstruction
