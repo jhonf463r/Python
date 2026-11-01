@@ -2554,3 +2554,10 @@ For T3 provider selection, do not assume local model files are automatically ava
 Never share, borrow or pool another person's ChatGPT/Anthropic credentials to extend free quotas. Use separate provider instances only for legitimate, separately controlled work/personal accounts consistent with provider terms. A collaborator may work from their own account/device and contribute through authorized GitHub branches/PRs, without disclosing credentials.
 
 Before any child agent runs, verify the specific project and thread permission. A reported `FULL_ACCESS` draft must be corrected to the intended `AUTO` mode and re-verified. Require actual task completion and parent result retrieval; a visible provider card is not evidence of working coordination.
+
+
+## 2026-11-01 R3 PROJECT IDENTITY AND FREE-PROVIDER GATES
+
+Before changing a project-scoped permission, verify the exact T3 project identity and root. A prior approval naming `IABV-CODE` must not be applied to a different displayed project `IABV-TICD-CODE` until the Owner confirms it is the intended same project. Do not alter global settings or launch agents while the identity is unresolved.
+
+A T3 provider being visible/enabled does not prove authentication, child-task capability, quota or runtime readiness. Antigravity requires its managed provider runtime and verified Google sign-in; do not install with insufficient disk margin. Codex Free remains the current known route; do not borrow another person's credentials, pool accounts or purchase API credits without a separate decision. T3 Connect is separate remote access and follows a successful local provider/delegation proof.
