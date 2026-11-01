@@ -2,9 +2,9 @@
 
 **Routing authority:** this header is the active task route. The historical suffix beginning at the first standalone --- remains byte-for-byte history and is not active unless this header reactivates it.
 
-### Latest coordinator reconciliation — PR #581 (2026-10-31, America/Bogota)
+### Latest coordinator reconciliation — PR #586 (2026-10-31, America/Bogota)
 
-The Owner-known-input correction was merged and fetched back before this checkpoint. This records documentary provenance; it does not change the M1A technical gate.
+The documentation precision update was merged and fetched back after exact four-path review. It corrects D021 §6B.1 evidence classification, limits the M1A wait to G1, preserves the independently authorized progress lane, and states the G1/G2/G3 acceptance contract. It does not change the M1A technical gate.
 
 ```text
 PR_581=MERGED
@@ -21,6 +21,27 @@ PROTECTED_READS=FAIL_CLOSED
 OPTION_D=RATIFIED_NO_BOOTSTRAP
 PRODUCT_IMPLEMENTATION=NOT_AUTHORIZED
 ```
+
+```text
+PR_586=MERGED
+PR_586_MERGE_COMMIT=cb5b13af0c06bacaa71e355d5b2baeb79e0d3226
+PR_586_CHANGED_FILES=4_DOCUMENTATION_FILES_ONLY
+PR_586_BASE_MAIN=b0f8032bf7914de983607c5247010f8b94276e0e
+PR_586_HEAD=7e0270ace5cada4e185ecccd5ce5efddab7e019e
+POST_MERGE_FETCHBACK=VERIFIED
+CURRENT_STATE_BLOB=b792ef0575e1998451467c07fd2e3a1a7e368b2e
+D021_BLOB=c8873bf82653a27278ff335b9dccdd7e56aaa7e1
+CONTEXT_INDEX_BLOB=306bce5932e543069db1a5326314b41cac266168
+RECEIPT_BLOB=d2758197e6eccb5484cf3dbf9c22b4c351dc04d8
+D021_6B1=ONE_PARTIAL_REPORTED_WITH_LIMITATIONS; CAUSAL_ATTRIBUTION_NOT_ISOLATED
+M1A_G1_WAIT=TASK_LOCAL; NOT_PROJECT_WIDE_STOP
+G1/G2/G3=NOT_ESTABLISHED
+PROTECTED_READS=FAIL_CLOSED
+OPTION_D=RATIFIED_NO_BOOTSTRAP
+PRODUCT_IMPLEMENTATION=NOT_AUTHORIZED
+```
+
+The ordinary contents read of `CURRENT-STATE.md` returned an empty body; the exact blob was fetched and decoded (1,073,713 characters). The historical suffix beginning at the first standalone `---` was byte-for-byte unchanged from the PR #586 base. No product source, permission, branch-protection setting, test, build or runtime was changed.
 
 The front-door synchronization now points to D021 §6B.1 as a mandatory pre-question check. Its post-adoption evidence is one separately reported partial application with limitations; causal attribution to the stored rule is not isolated, formal independent causal reuse remains pending, and automatic retrieval/runtime enforcement are not proven. Do not describe this partial application as no application, or as a causal pass.
 

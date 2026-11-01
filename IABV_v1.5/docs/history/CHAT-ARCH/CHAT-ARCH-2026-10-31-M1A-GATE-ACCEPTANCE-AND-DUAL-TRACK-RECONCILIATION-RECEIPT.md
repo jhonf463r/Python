@@ -82,4 +82,13 @@ Only these paths are in scope for this documentary update:
 
 No product source, authorization implementation, credentials, permissions, branch-protection settings, protected reads, tests, build, runtime, tunnel or deployment are in scope.
 
-The PR must be checked for exactly these four paths, exact base, preservation of the CURRENT-STATE historical suffix, consistency of gate status and correct fetch-back. A successful documentation merge is not technical M1A authorization or evidence of runtime enforcement.
+**Completed verification:** PR #586 was merged as `cb5b13af0c06bacaa71e355d5b2baeb79e0d3226` from head `7e0270ace5cada4e185ecccd5ce5efddab7e019e`, based on `b0f8032bf7914de983607c5247010f8b94276e0e`. The exact diff contained the four paths listed above; the PR was mergeable and the merge was reported successful. Fetch-back from live `main` confirmed the following blobs:
+
+- `CURRENT-STATE.md`: `b792ef0575e1998451467c07fd2e3a1a7e368b2e` (exact blob decoded; ordinary content read blank).
+- D021: `c8873bf82653a27278ff335b9dccdd7e56aaa7e1`.
+- `CONTEXT-INDEX.md`: `306bce5932e543069db1a5326314b41cac266168`.
+- This receipt: `d2758197e6eccb5484cf3dbf9c22b4c351dc04d8`.
+
+The `CURRENT-STATE.md` historical suffix after the first standalone `---` was compared against the PR base and was byte-for-byte equal. The active header contains the D021 status correction, task-local Lane A, conditional Lane B, G1/G2/G3 criteria and unchanged fail-closed controls.
+
+A successful documentation merge is not technical M1A authorization or evidence of runtime enforcement.
