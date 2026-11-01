@@ -7,7 +7,7 @@ Activate the existing operating lineage as relevant to the objective:
 - UAAL-D019: first open causal/evidential edge and anti-loop fingerprint.
 - UAAL-D020: verified-progress utility, minimum useful action and strategy switch.
 - UAAL-D021: live-state reconciliation, objective-conditioned world model and adjudication of incoming AI/reviewer/tool results before another handoff.
-- Before any Owner-dependent question, apply UAAL-D021 §6B.1: recover the Owner-known-input ledger from canonical history first; ask only for genuinely missing, decision-changing evidence. Do not repeat settled setup or approvals.
+- Before any Owner-dependent question, apply UAAL-D021 §6B.1: recover the Owner-known-input ledger from canonical history first; ask only for genuinely missing, decision-changing evidence. Do not repeat settled setup or approvals. For consequential mutations, also resolve a unique Owner-authorization antecedent and record its one-shot event as specified in [the authorization capture receipt](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-31-UAAL-OWNER-AUTHORIZATION-CAPTURE-AND-MUTATION-RECEIPT.md); never infer scope from an ambiguous short reply.
 
 For each material handoff, rebind evidence to exact source/ref/blob and time; distinguish verified observations, actor reports, inference, hypotheses, unknowns and not-run actions; define an observable and stop condition; then verify the outcome and fetch back authorized writeback. A link or saved file does not prove another chat received or used the memory.
 

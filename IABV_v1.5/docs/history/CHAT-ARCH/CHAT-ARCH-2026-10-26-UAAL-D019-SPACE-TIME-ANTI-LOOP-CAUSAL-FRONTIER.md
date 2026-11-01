@@ -270,3 +270,35 @@ CAUSAL_REUSE=NOT_TESTED
 ALGORITHM_LEARNED=NOT_PROVEN
 MODEL_WEIGHT_CHANGE=NOT_CLAIMED
 ```
+
+## 10. Owner authorization capture and one-shot mutation continuity (2026-10-31)
+
+A short affirmative reply may authorize a mutation only by resolving to one **immediately preceding, complete and unambiguous proposal** in the same active conversational context. The reply inherits that proposal's exact target, action, method, revision pins, exclusions and stop conditions; it does not authorize adjacent optional work, a different target, later tasks or an open-ended class of mutations. Do not ask the Owner to repeat a confirmation whose antecedent is uniquely recoverable. If more than one live proposal or action could be meant, ask one targeted disambiguation question.
+
+This refinement preserves the existing rule that missing authorization is a hard stop. It does not turn “continue”, “go ahead”, “evolve” or a general preference for progress into permission for an unrelated side effect. A current Owner request can authorize the bounded process/documentation work it explicitly names without changing product/runtime authority.
+
+Use the authorization-bound transaction in the [Owner authorization capture receipt](./CHAT-ARCH-2026-10-31-UAAL-OWNER-AUTHORIZATION-CAPTURE-AND-MUTATION-RECEIPT.md):
+
+1. **Resolve antecedent.** Bind the Owner reply to the exact proposal text/turn, target object, operation, method and limits. Record the reply verbatim or by a privacy-safe source reference.
+2. **Create an authorization event.** Record AUTHORIZATION_ID, TASK_ID, source/turn, target identity and revision, action, method, explicit inclusions/exclusions, expected effect, expiry/invalidators and OWNER_AUTHORIZED status.
+3. **Preflight the live target.** Re-read the target and compare the expected base/head/revision and changed scope. A stale or moved target invalidates the event for that mutation; stop and request a renewed decision only when the material target/scope changed.
+4. **Execute one bounded action.** Pass the expected revision/HEAD as a compare-and-swap guard where supported. Do not silently broaden paths, operations or effects.
+5. **Verify postconditions.** Fetch back the exact resulting object, ref, artifact or state; verify the intended transition and absence of out-of-scope changes.
+6. **Consume and close.** Record the actual result and set AUTHORIZATION_CONSUMED=TRUE only after the authorized action has been executed. Keep authorization, preflight, execution and postcondition verification as separate states.
+
+The event is single-use for its named mutation. A permission to merge one named PR does not authorize a later PR merge, branch-protection change, rule-set change, product implementation, test/build/runtime, deployment or another repository mutation. Read-only preflight and post-action verification are included only where the proposal said they were part of the transaction.
+
+**Incident calibration:** PR #588's merge proposal named one PR, squash, exact expected head 4afe1749201175ffc5acfd388f1dd05f2c1e0b07 and fetch-back verification. The Owner's immediate “si autorizo” had one unambiguous antecedent and was bound to that operation. The merge then passed live preflight and was fetched back. Asking for confirmation before that reply was correct; the method gap was the absence of a durable antecedent-bound authorization event and explicit single-use lifecycle, not the existence of the approval gate.
+
+~~~text
+CONCEPT_ID=UAAL-D019
+METHOD_UPDATE=OWNER_AUTHORIZATION_ANTECEDENT_BINDING_AND_SINGLE_USE_MUTATION
+AUTHORIZATION=HARD_FILTER; NOT_A_PROGRESS_SCORE
+ELLIPTICAL_CONFIRMATION=INHERIT_ONLY_ONE_IMMEDIATE_UNAMBIGUOUS_PROPOSAL
+AMBIGUOUS_ANTECEDENT=ASK_ONE_TARGETED_QUESTION
+MUTATION=ONE_ACTION; EXPECTED_REVISION_GUARD_WHERE_SUPPORTED
+POSTCONDITION=FETCH_BACK_REQUIRED
+AUTHORIZATION_REUSE=NOT_PERMITTED_FOR_A_DIFFERENT_MUTATION
+RUNTIME_ENFORCEMENT=NOT_PROVEN
+CAUSAL_REUSE=NOT_TESTED
+~~~
