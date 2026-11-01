@@ -28,6 +28,15 @@ _ALLOWED_SOURCES = {
     "tests_state",
 }
 _ALLOWED_PRIORITY_LABELS = {"critical", "high", "medium", "low", "info", "unknown"}
+_ALLOWED_ITEM_STATUSES = {
+    "active", "pending", "blocked", "unresolved", "needs_fix",
+    "observed", "open", "resolved", "failed", "abandoned", "unknown",
+}
+
+
+def _opaque_item_id(item_id: str) -> str:
+    """Stable cross-session reference that does not publish the descriptive source ID."""
+    return "item-" + hashlib.sha256(item_id.encode("utf-8")).hexdigest()[:24]
 
 
 class ControlMasterSignalProjector:
@@ -45,7 +54,7 @@ class ControlMasterSignalProjector:
             "source": {
                 "component": "ControlMasterService",
                 "state_id": source_state_id if _TOKEN.fullmatch(source_state_id or "") else "",
-                "state_updated_at_utc": None,
+                "state_observed_at_utc": None,
             },
             "generated_at_utc": observed.astimezone(timezone.utc).isoformat(),
             "expires_at_utc": (observed + timedelta(seconds=FRESHNESS_WINDOW_SECONDS)).astimezone(timezone.utc).isoformat(),
@@ -106,7 +115,8 @@ class ControlMasterSignalProjector:
                 return cls.unavailable("QUEUE_ITEM_INVALID", source_state_id=state.state_id)
             item_id = item.get("id")
             source = item.get("source")
-            status = item.get("status")
+            raw_status = str(item.get("status") or "unknown").lower()
+            status = raw_status if raw_status in _ALLOWED_ITEM_STATUSES else "unknown"
             label = str(item.get("priority_label") or "unknown").lower()
             score = item.get("priority_score", 0)
             if (
@@ -123,7 +133,7 @@ class ControlMasterSignalProjector:
             ):
                 return cls.unavailable("QUEUE_ITEM_NOT_PORTABLE", source_state_id=state.state_id)
             safe_items.append({
-                "item_id": item_id,
+                "item_id": _opaque_item_id(item_id),
                 "status": status,
                 "source": source,
                 "priority_label": label,
@@ -140,7 +150,7 @@ class ControlMasterSignalProjector:
             "source": {
                 "component": "ControlMasterService",
                 "state_id": state.state_id,
-                "state_updated_at_utc": source_updated.isoformat(),
+                "state_observed_at_utc": source_updated.isoformat(),
             },
             "generated_at_utc": observed.isoformat(),
             "expires_at_utc": (observed + timedelta(seconds=FRESHNESS_WINDOW_SECONDS)).isoformat(),
