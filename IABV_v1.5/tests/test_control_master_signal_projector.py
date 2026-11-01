@@ -147,3 +147,17 @@ def test_publisher_rejects_signal_id_mismatch_even_with_recomputed_content_hash(
     signal["content_sha256"] = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
     assert ControlMasterSignalPublisher._validate_signal(signal) == "SIGNAL_ID_HASH_MISMATCH"
+
+
+def test_projection_counts_only_items_present_in_verified_payload() -> None:
+    signal = ControlMasterSignalProjector.project(
+        state=_state(),
+        work_queue=[{
+            "id": "objective:obj-control-master-super-sync",
+            "status": "active",
+            "source": "objective_repository",
+            "priority_score": 80,
+            "priority_label": "high",
+        }],
+    )
+    assert signal["counts"] == {"queue_items_published": 1}
