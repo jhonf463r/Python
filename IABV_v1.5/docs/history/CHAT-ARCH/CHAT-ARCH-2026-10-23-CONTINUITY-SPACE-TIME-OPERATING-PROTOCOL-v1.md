@@ -1,7 +1,7 @@
 # Canonical continuity, Space-Time cognition, and adaptive neuroplasticity protocol
 
 - Protocol ID: `CONTINUITY_SPACE_TIME_ANTI_LOOP` (stable identity; operating method evolves in place)
-- Living operating revision: `2.6 — ADAPTIVE_SPACE_TIME_NEUROPLASTICITY + OWNER_CONTEXT_AWARE_TURN_ROUTING + VERIFIED_CONTEXT_HANDOFF + OWNER_FACING_DELIVERY_PREFLIGHT + DUAL_TRACK_PROGRESS_ROUTING + UAAL_D020_PROGRESS_UTILITY + CROSS_AI_MEMORY_ACTIVATION + OBJECTIVE_CONDITIONED_WORLD_MODEL + INCOMING_RESULT_ADJUDICATION`
+- Living operating revision: `2.7 — ADAPTIVE_SPACE_TIME_NEUROPLASTICITY + OWNER_CONTEXT_AWARE_TURN_ROUTING + VERIFIED_CONTEXT_HANDOFF + OWNER_FACING_DELIVERY_PREFLIGHT + DUAL_TRACK_PROGRESS_ROUTING + UAAL_D020_PROGRESS_UTILITY + CROSS_AI_MEMORY_ACTIVATION + OBJECTIVE_CONDITIONED_WORLD_MODEL + INCOMING_RESULT_ADJUDICATION + PROJECT_SCOPED_NEW_CHAT_BOOT_AND_ROLE_BOUND_HANDOFF`
 - Evolution rule: integrate new lessons into their owning core rule; preserve dated incidents/history; do not accumulate competing append-only protocols
 - Owner instruction date: 2026-10-23 (America/Bogota)
 - Scope: objective-bound reasoning, temporal evidence graph, adaptive role activation, gated action chains, memory consolidation, delivery receipts and outcome-based protocol evolution
@@ -44,6 +44,8 @@ For every new chat and every material hand-off:
 6. On conflict, construct a dated comparison: source/version, event date, record date, scope, adoption status and authority. Do not average conflicting instructions. Keep the stricter current gate until the conflict is resolved.
 
 GitHub is the durable source for records actually committed there; it is not a magical transcript of all chats or local runtime. A new chat does not automatically inherit an old chat's hidden context. The coordinator must fetch and bind the records it uses, while marking what was unavailable.
+
+**Operational boot and handoff entry (revision 2.7):** use the [UAAL New-Chat Boot and Handoff Kit](./CHAT-ARCH-2026-10-31-UAAL-NEW-CHAT-BOOT-AND-HANDOFF-KIT.md) for the copy-ready startup sequence, role boundaries, project-scoped memory selection, Owner-input reuse ledger and correlated return receipt. The kit operationalizes this protocol; it does not create a second router, grant permissions or imply automatic context injection.
 
 ### Turn-boundary refresh and route-drift prevention (revision 2.2)
 

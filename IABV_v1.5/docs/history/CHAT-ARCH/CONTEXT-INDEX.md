@@ -7,12 +7,15 @@ Activate the existing operating lineage as relevant to the objective:
 - UAAL-D019: first open causal/evidential edge and anti-loop fingerprint.
 - UAAL-D020: verified-progress utility, minimum useful action and strategy switch.
 - UAAL-D021: live-state reconciliation, objective-conditioned world model and adjudication of incoming AI/reviewer/tool results before another handoff.
+- Before an Owner-dependent question, apply D021 §6B.1: recover the Owner-known-input ledger from canonical history; ask only for genuinely missing, decision-changing evidence.
 
 For each material handoff, rebind evidence to exact source/ref/blob and time; distinguish verified observations, actor reports, inference, hypotheses, unknowns and not-run actions; define an observable and stop condition; then verify the outcome and fetch back authorized writeback. A link or saved file does not prove another chat received or used the memory.
 
 Canonical method: [UAAL-D021](./CHAT-ARCH-2026-10-29-UAAL-D021-CROSS-SESSION-BOOT-AND-STATE-RECONCILIATION.md). First bounded reuse receipt: [first receipt](./CHAT-ARCH-2026-10-29-UAAL-D021-FIRST-LATER-TASK-REUSE-RECEIPT.md). Second bounded reuse receipt: [second receipt](./CHAT-ARCH-2026-10-29-UAAL-D021-SECOND-LATER-TASK-REUSE-RECEIPT.md). Fresh-chat boot test: [independent-session handoff](./CHAT-ARCH-2026-10-29-UAAL-D021-INDEPENDENT-FRESH-CHAT-BOOT-TEST.md).
 
 Current method status, reuse evidence, next action, technical gates and permissions are owned only by CURRENT-STATE.md; this entry is a pointer, not a second state store.
+
+**New-chat activation:** follow the [UAAL New-Chat Boot and Handoff Kit](./CHAT-ARCH-2026-10-31-UAAL-NEW-CHAT-BOOT-AND-HANDOFF-KIT.md) after refreshing the live route. This is an operational aid, not a second router.
 
 ---
 
