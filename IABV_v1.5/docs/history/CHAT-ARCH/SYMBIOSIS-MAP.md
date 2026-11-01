@@ -1,3 +1,10 @@
+<!-- CHATGPT_PROJECT_NATIVE_CONTEXT_R1 -->
+## Shared-context transport update — ChatGPT Projects + GitHub (2026-10-31)
+
+The symbiosis model now distinguishes two existing shared substrates rather than assuming every chat has the same private context: (1) a single owner-controlled ChatGPT Project shares its own instructions, files and chats among ChatGPT conversations inside that Project; (2) the owning GitHub repository remains the versioned common store for Codex, Claude and other AI products that have an authorized repository route. This creates no new coordinator, memory database or router.
+
+For every receiver, distinguish artifact availability, actual retrieval, acknowledgement, decision application and verified outcome. A Project or GitHub link is not proof of consumption. Before involving the Owner in a manual file relay, query the shared Project sources and the canonical repository. Ask only for an exact local-only artifact that cannot be read through any existing authorized route. Project instructions are behavioral guidance, not technical enforcement; local runtime and protected-state boundaries remain unchanged. Operational detail: UAAL-D021 §6E and CHAT-ARCH-2026-10-31-CHATGPT-PROJECT-INSTRUCTIONS-R1.md.
+
 ## ACTIVE SYMBIOSIS METHOD OVERLAY — shared-memory activation and cross-AI reuse (2026-10-28)
 
 **Scope:** this map supports the shared developmental field across participating AI sessions, not only algorithms inside the IABV product. ChatGPT, Codex and other agents may use this field when the current session actually retrieves the relevant GitHub memory. Repository persistence alone does not prove a session received or applied it.
