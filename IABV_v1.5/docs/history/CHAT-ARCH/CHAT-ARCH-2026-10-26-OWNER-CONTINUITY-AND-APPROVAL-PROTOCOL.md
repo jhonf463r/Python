@@ -3,6 +3,7 @@
 - Date: 2026-10-26, America/Bogota.
 - Purpose: preserve the Owner's intent and correct the collaboration protocol across IABV → Codex → ChatGPT sessions.
 - Status: supporting protocol; not a replacement for the canonical route.
+- New-chat startup and bounded actor transfer: use the [UAAL New-Chat Boot and Handoff Kit](./CHAT-ARCH-2026-10-31-UAAL-NEW-CHAT-BOOT-AND-HANDOFF-KIT.md); this approval protocol remains authoritative for Owner decision requests and does not grant runtime authority.
 - Canonical route authority remains [CURRENT-STATE.md](./CURRENT-STATE.md). Every new session must fetch it from live `main` before material action.
 - This document does not authorize code changes, protected reads, trust-root provisioning, tests/runtime, merge/rebase, or deployment.
 
