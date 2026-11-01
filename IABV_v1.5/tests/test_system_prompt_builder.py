@@ -253,6 +253,9 @@ def test_compact_prompt_includes_control_master_signal() -> None:
     assert 'obj-super-sync' in prompt
     assert 'Cola priorizada' in prompt
     assert 'Recuentos de cola: active=2, blocked=1' in prompt
+    assert 'state_id=state-compact-contract-01' in prompt
+    assert 'digest_id=digest-compact-contract-01' in prompt
+    assert 'generated_at_utc=2026-10-31T20:01:00+00:00' in prompt
 
 
 def test_compact_prompt_does_not_treat_unavailable_signal_as_empty_queue() -> None:
