@@ -25,55 +25,74 @@ class _EmptyEvolutionReviewService:
         return []
 
 
-def test_evolution_center_viewmodel_imports_without_app_bootstrap() -> None:
-    assert EvolutionCenterViewModel.__name__ == "EvolutionCenterViewModel"
-
-
-def test_refresh_does_not_publish_and_manual_action_uses_injected_action() -> None:
-    completed = threading.Event()
-    calls: list[dict[str, object]] = []
-
-    def fake_publish_action(*, refresh: bool = False) -> dict[str, object]:
-        calls.append({"refresh": refresh})
-        result = {
-            "status": "PUBLISHED",
-            "branch": "control-master-test-only",
-            "commit_sha": "b" * 40,
-            "main_modified": False,
-            "force_push": False,
-        }
-        completed.set()
-        return result
-
-    viewmodel = EvolutionCenterViewModel(
+def _viewmodel(*, github_remote_service: Any) -> EvolutionCenterViewModel:
+    return EvolutionCenterViewModel(
         dossier_repository=_EmptyRepository(),  # type: ignore[arg-type]
         hidden_incident_repository=_EmptyRepository(),  # type: ignore[arg-type]
         evolution_review_service=_EmptyEvolutionReviewService(),  # type: ignore[arg-type]
         incident_packet_service=None,  # type: ignore[arg-type]
         self_check_orchestrator=None,  # type: ignore[arg-type]
-        control_master_signal_publish_action=fake_publish_action,
+        github_remote_service=github_remote_service,
     )
 
-    # A normal refresh must never trigger the explicit publication action.
+
+def test_evolution_center_viewmodel_imports_without_app_bootstrap() -> None:
+    assert EvolutionCenterViewModel.__name__ == "EvolutionCenterViewModel"
+
+
+def test_refresh_does_not_publish_and_manual_action_uses_fake_remote_service() -> None:
+    completed = threading.Event()
+    calls: list[dict[str, object]] = []
+    fake_result = {
+        "success": True,
+        "branch": "feature/viewmodel-import-regression",
+        "base": "main",
+        "pr_number": 421,
+        "pr_url": "https://example.invalid/pull/421",
+        "pushed": False,
+    }
+
+    class _FakeGitHubRemoteService:
+        def publish_branch_as_pr(self, **kwargs: object) -> dict[str, object]:
+            calls.append(dict(kwargs))
+            completed.set()
+            return dict(fake_result)
+
+    viewmodel = _viewmodel(github_remote_service=_FakeGitHubRemoteService())
+
+    # A normal refresh must not trigger the manually requested action.
     viewmodel.refresh()
     assert calls == []
 
-    # Only the explicit ViewModel slot invokes the injected fake action.
-    viewmodel.publishControlMasterSignal()
-    assert completed.wait(timeout=5.0), "the injected fake action was not invoked"
-    assert calls == [{"refresh": False}]
+    # Exercise the existing manual ViewModel action with a fake service only.
+    viewmodel.publishBranchAsPR(
+        "feature/viewmodel-import-regression",
+        "ViewModel import regression",
+        "synthetic body",
+        "main",
+        3,
+        True,
+    )
+    assert completed.wait(timeout=5.0), "the fake remote service was not invoked"
+    assert calls == [{
+        "branch": "feature/viewmodel-import-regression",
+        "title": "ViewModel import regression",
+        "body": "synthetic body",
+        "base": "main",
+        "diff_lines": 3,
+        "draft": True,
+    }]
 
-    # Apply a synthetic result directly; no real publisher or Git operation runs.
-    viewmodel._apply_result("publish_control_master_signal", {
-        "status": "PUBLISHED",
-        "branch": "control-master-test-only",
-        "commit_sha": "b" * 40,
-        "main_modified": False,
-        "force_push": False,
-    })
-
-    status = viewmodel.get_control_master_signal_publish_status()
-    assert "control-master-test-only" in status
-    assert "bbbbbbbb" in status
+    # Apply a synthetic response; no network or GitHub write occurs.
+    viewmodel._apply_result("publish_pr", fake_result)
+    assert "PR #421" in viewmodel.get_publish_pr_status()
+    assert "example.invalid/pull/421" in viewmodel.get_publish_pr_status()
     assert viewmodel.get_working() is False
-    assert calls == [{"refresh": False}]
+    assert calls == [{
+        "branch": "feature/viewmodel-import-regression",
+        "title": "ViewModel import regression",
+        "body": "synthetic body",
+        "base": "main",
+        "diff_lines": 3,
+        "draft": True,
+    }]
