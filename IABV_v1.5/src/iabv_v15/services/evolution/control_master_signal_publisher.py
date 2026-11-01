@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import subprocess
 import tempfile
 from datetime import datetime, timezone
@@ -25,6 +26,7 @@ _ALLOWED_TOP_LEVEL = {
 }
 _ALLOWED_QUEUE_KEYS = {"status", "item_count", "items"}
 _ALLOWED_ITEM_KEYS = {"item_id", "status", "source", "priority_label", "priority_score"}
+_TOKEN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
 
 
 class ControlMasterSignalPublisher:
@@ -101,6 +103,8 @@ class ControlMasterSignalPublisher:
             return "SIGNAL_NOT_AVAILABLE"
         if signal.get("transport") != "READY_FOR_DEDICATED_BRANCH_PUBLICATION":
             return "TRANSPORT_STATE_REJECTED"
+        if signal.get("freshness_window_seconds") != 900:
+            return "FRESHNESS_POLICY_REJECTED"
         supplied_hash = signal.get("content_sha256")
         unhashed = {key: value for key, value in signal.items() if key != "content_sha256"}
         canonical = json.dumps(unhashed, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
@@ -110,7 +114,12 @@ class ControlMasterSignalPublisher:
             generated = datetime.fromisoformat(str(signal.get("generated_at_utc")).replace("Z", "+00:00"))
             expires = datetime.fromisoformat(str(signal.get("expires_at_utc")).replace("Z", "+00:00"))
             now = datetime.now(timezone.utc)
-            if generated.tzinfo is None or expires.tzinfo is None or expires <= now:
+            if (
+                generated.tzinfo is None
+                or expires.tzinfo is None
+                or generated > now
+                or expires <= now
+            ):
                 return "SIGNAL_EXPIRED_OR_TIME_UNVERIFIED"
             if (expires - generated).total_seconds() > 900:
                 return "SIGNAL_EXPIRY_WINDOW_INVALID"
@@ -119,8 +128,19 @@ class ControlMasterSignalPublisher:
         source = signal.get("source")
         if not isinstance(source, dict) or set(source) != {"component", "state_id", "state_updated_at_utc"}:
             return "SOURCE_SCHEMA_REJECTED"
-        if source.get("component") != "ControlMasterService" or not isinstance(source.get("state_id"), str):
+        if (
+            source.get("component") != "ControlMasterService"
+            or not isinstance(source.get("state_id"), str)
+            or not _TOKEN.fullmatch(source.get("state_id") or "")
+        ):
             return "SOURCE_IDENTITY_REJECTED"
+        source_timestamp = source.get("state_updated_at_utc")
+        try:
+            parsed_source_time = datetime.fromisoformat(str(source_timestamp).replace("Z", "+00:00"))
+            if parsed_source_time.tzinfo is None or parsed_source_time.utcoffset() is None or parsed_source_time > generated:
+                return "SOURCE_TIMESTAMP_INVALID"
+        except (TypeError, ValueError):
+            return "SOURCE_TIMESTAMP_INVALID"
         expected_counts = {
             "active_objectives", "completed_objectives", "unresolved_items",
             "current_risks", "recent_decisions",
@@ -141,7 +161,9 @@ class ControlMasterSignalPublisher:
             not isinstance(item, dict)
             or set(item) != _ALLOWED_ITEM_KEYS
             or not isinstance(item.get("item_id"), str)
+            or not _TOKEN.fullmatch(item.get("item_id") or "")
             or not isinstance(item.get("status"), str)
+            or not _TOKEN.fullmatch(item.get("status") or "")
             or not isinstance(item.get("source"), str)
             or not isinstance(item.get("priority_label"), str)
             or isinstance(item.get("priority_score"), bool)
