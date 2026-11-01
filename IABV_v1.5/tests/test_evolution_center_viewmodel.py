@@ -988,8 +988,18 @@ def test_evolution_center_manual_control_master_signal_publish_uses_wired_action
             'main_modified': False,
             'force_push': False,
         })
-        assert 'Señal publicada' in vm.get_control_master_signal_publish_status()
+        assert 'Señal publicada y verificada' in vm.get_control_master_signal_publish_status()
         assert 'control-master-live' in vm.get_control_master_signal_publish_status()
+        assert vm.get_working() is False
+
+        vm._apply_result('publish_control_master_signal', {
+            'status': 'PUBLISHED_UNVERIFIED',
+            'branch': 'control-master-live',
+            'reason': 'REMOTE_CONTENT_MISMATCH',
+            'commit_sha': 'b' * 40,
+        })
+        assert 'no se verificó la lectura de retorno' in vm.get_control_master_signal_publish_status()
+        assert 'REMOTE_CONTENT_MISMATCH' in vm.get_control_master_signal_publish_status()
         assert vm.get_working() is False
     finally:
         shutil.rmtree(workspace, ignore_errors=True)
