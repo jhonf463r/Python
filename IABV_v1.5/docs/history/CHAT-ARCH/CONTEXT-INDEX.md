@@ -14,6 +14,7 @@ For each material handoff, rebind evidence to exact source/ref/blob and time; di
 Canonical method: [UAAL-D021](./CHAT-ARCH-2026-10-29-UAAL-D021-CROSS-SESSION-BOOT-AND-STATE-RECONCILIATION.md). First bounded reuse receipt: [first receipt](./CHAT-ARCH-2026-10-29-UAAL-D021-FIRST-LATER-TASK-REUSE-RECEIPT.md). Second bounded reuse receipt: [second receipt](./CHAT-ARCH-2026-10-29-UAAL-D021-SECOND-LATER-TASK-REUSE-RECEIPT.md). Fresh-chat boot test: [independent-session handoff](./CHAT-ARCH-2026-10-29-UAAL-D021-INDEPENDENT-FRESH-CHAT-BOOT-TEST.md).
 
 Post-adoption D021 §6B.1 evidence: [Owner-input reuse validation receipt (partial application; causal attribution not isolated)](./CHAT-ARCH-2026-10-31-UAAL-D021-OWNER-INPUT-REUSE-VALIDATION-RECEIPT.md).
+M1A gate/scope clarification: [M1A authority-gate acceptance and dual-track continuation receipt](./CHAT-ARCH-2026-10-31-M1A-GATE-ACCEPTANCE-AND-DUAL-TRACK-RECONCILIATION-RECEIPT.md).
 
 Current method status, reuse evidence, next action, technical gates and permissions are owned only by CURRENT-STATE.md; this entry is a pointer, not a second state store.
 
