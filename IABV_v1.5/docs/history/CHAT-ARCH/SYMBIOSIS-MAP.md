@@ -12,6 +12,10 @@ ChatGPT Memory is selective, not an exhaustive transcript store. Project-only me
 
 For every receiver, distinguish artifact availability, actual retrieval, acknowledgement, decision application and verified outcome. A Project or GitHub link is not proof of consumption. Before involving the Owner in a manual file relay, query the shared Project sources and the canonical repository. Ask only for an exact local-only artifact that cannot be read through any existing authorized route. Project instructions are behavioral guidance, not technical enforcement; local runtime and protected-state boundaries remain unchanged. Operational detail: UAAL-D021 §6E and CHAT-ARCH-2026-10-31-CHATGPT-PROJECT-INSTRUCTIONS-R1.md.
 
+## Task-conditioned memory packets and artifact receipts (2026-11-01)
+
+For each specialist, executor, reviewer, coordinator or local-runtime handoff, use the role-conditioned memory profile and manifest in UAAL-D021 §6C.5.1 and the New-Chat Boot and Handoff Kit §6.3. The sender retrieves and assembles exact shared artifacts; the Owner is not the default file courier. Require receiver acknowledgement and separate retrieval, consumption and outcome evidence. This is a refinement of the existing Project/GitHub/connected-source transport, not a new memory or router.
+
 ## ACTIVE SYMBIOSIS METHOD OVERLAY — shared-memory activation and cross-AI reuse (2026-10-28)
 
 **Scope:** this map supports the shared developmental field across participating AI sessions, not only algorithms inside the IABV product. ChatGPT, Codex and other agents may use this field when the current session actually retrieves the relevant GitHub memory. Repository persistence alone does not prove a session received or applied it.
