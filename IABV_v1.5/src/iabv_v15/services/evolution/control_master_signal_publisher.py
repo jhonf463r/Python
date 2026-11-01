@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 import subprocess
 import tempfile
@@ -54,14 +55,22 @@ class ControlMasterSignalPublisher:
                     "clone", "--quiet", "--depth", "1", "--single-branch",
                     "--branch", source_branch, _REPOSITORY_URL, str(checkout),
                 ])
-                target = checkout / _SIGNAL_PATH
-                target.parent.mkdir(parents=True, exist_ok=True)
-                temporary_target = target.with_suffix(".json.tmp")
-                temporary_target.write_text(
-                    json.dumps(signal, ensure_ascii=False, sort_keys=True, indent=2) + "\n",
-                    encoding="utf-8",
+                target = self._safe_signal_target(checkout)
+                descriptor, temporary_name = tempfile.mkstemp(
+                    prefix=".control-master-signal-",
+                    suffix=".tmp",
+                    dir=str(target.parent),
                 )
-                temporary_target.replace(target)
+                temporary_target = Path(temporary_name)
+                try:
+                    with os.fdopen(descriptor, "w", encoding="utf-8", newline="\n") as stream:
+                        stream.write(
+                            json.dumps(signal, ensure_ascii=False, sort_keys=True, indent=2) + "\n"
+                        )
+                    temporary_target.replace(target)
+                except Exception:
+                    temporary_target.unlink(missing_ok=True)
+                    raise
 
                 self._run_git(["add", "--", _SIGNAL_PATH.as_posix()], cwd=checkout)
                 staged = self._run_git(
@@ -75,6 +84,9 @@ class ControlMasterSignalPublisher:
                 if diff.returncode == 0:
                     return {"status": "UNCHANGED", "branch": _SIGNAL_BRANCH, "path": _SIGNAL_PATH.as_posix()}
 
+                empty_hooks = Path(tmp) / "empty-git-hooks"
+                empty_hooks.mkdir()
+                self._run_git(["config", "core.hooksPath", str(empty_hooks)], cwd=checkout)
                 self._run_git(["config", "user.name", "IABV Control Master Signal"], cwd=checkout)
                 self._run_git(["config", "user.email", "iabv-signal@users.noreply.github.com"], cwd=checkout)
                 self._run_git([
@@ -97,6 +109,32 @@ class ControlMasterSignalPublisher:
         except (OSError, RuntimeError, subprocess.TimeoutExpired):
             # Do not expose command output that might contain environment details.
             return {"status": "BLOCKED", "reason": "GIT_TRANSPORT_FAILED_OR_REJECTED", "branch": _SIGNAL_BRANCH}
+
+    @staticmethod
+    def _safe_signal_target(checkout: Path) -> Path:
+        """Create/validate the signal path without following symlink components."""
+        root = checkout.resolve()
+        current = root
+        for component in _SIGNAL_PATH.parts[:-1]:
+            candidate = current / component
+            if candidate.is_symlink():
+                raise RuntimeError("SIGNAL_PATH_SYMLINK_REJECTED")
+            if candidate.exists():
+                if not candidate.is_dir():
+                    raise RuntimeError("SIGNAL_PATH_COMPONENT_NOT_DIRECTORY")
+            else:
+                candidate.mkdir()
+            resolved = candidate.resolve()
+            if not resolved.is_relative_to(root):
+                raise RuntimeError("SIGNAL_PATH_ESCAPES_TEMP_CHECKOUT")
+            current = resolved
+
+        target = current / _SIGNAL_PATH.name
+        if target.is_symlink():
+            raise RuntimeError("SIGNAL_TARGET_SYMLINK_REJECTED")
+        if target.exists() and not target.is_file():
+            raise RuntimeError("SIGNAL_TARGET_NOT_REGULAR_FILE")
+        return target
 
     @staticmethod
     def _validate_signal(signal: dict[str, Any]) -> str | None:
