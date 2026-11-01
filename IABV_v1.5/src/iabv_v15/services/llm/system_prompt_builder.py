@@ -227,13 +227,16 @@ class SystemPromptBuilder:
     def _section_control_master(digest: ControlMasterDigest | None) -> str:
         if digest is None:
             return '## Control Maestro\nNo disponible en esta sesion; señal UNAVAILABLE: no se recibió un digest en esta sesión.'
+        parts: list[str] = ['## Control Maestro (digest)']
         if digest.signal_status == 'UNAVAILABLE':
             reason = digest.signal_reason or 'SOURCE_UNAVAILABLE'
-            return f'## Control Maestro\nSeñal UNAVAILABLE: {reason}. No interpretes esto como una cola vacía.'
-        parts: list[str] = ['## Control Maestro (digest)']
-        parts.append(f'Señal: {digest.signal_status}; cola: {digest.work_queue_status}.')
-        if digest.work_queue_status == 'EMPTY_QUEUE':
-            parts.append('Cola verificada sin elementos pendientes en las fuentes consultadas.')
+            parts.append(
+                f'Señal UNAVAILABLE: {reason}. No interpretes esto como una cola vacía.'
+            )
+        else:
+            parts.append(f'Señal: {digest.signal_status}; cola: {digest.work_queue_status}.')
+            if digest.work_queue_status == 'EMPTY_QUEUE':
+                parts.append('Cola verificada sin elementos pendientes en las fuentes consultadas.')
         if digest.current_vision:
             parts.append(f'Vision: {digest.current_vision}')
         if digest.rules_brief:
