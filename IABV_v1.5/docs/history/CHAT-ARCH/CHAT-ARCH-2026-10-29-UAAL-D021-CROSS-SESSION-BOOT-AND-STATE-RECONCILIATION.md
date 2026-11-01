@@ -495,6 +495,46 @@ Those 11 tests exercise the projector/publisher contracts only. The prompt-build
 
 
 
+### 6D.5B PR #591 publication-integrity follow-up (2026-11-01; branch-only)
+
+This follow-up applies to the exact PR #591 candidate branch, not to `main`. The source HEAD immediately before this receipt was `1766861e7a279ee04305b22e51913e6fcb611997`; the branch remains an isolated, unmerged Draft. This is a source-level correction and test-authoring receipt, not runtime acceptance.
+
+**Corrections made in the candidate:**
+
+- `ControlMasterSignalProjector` now sets `source.state_observed_at_utc` from the timestamp captured when the producer projects the state/queue. It no longer substitutes `ControlMasterState.last_updated`, which describes the persisted object's modification time. The field therefore means projection observation time only; it does not independently prove that every underlying repository/cache was fresh.
+- Before writing to an existing public `control-master-live` branch, the publisher fetches the current `main` tree and compares complete commit trees. The branch is rejected unless its delta from current `main` is empty or exactly `IABV_v1.5/data/evolution/control_master/shared_signal.json`. This prevents carrying unrelated pre-existing public branch changes into the publication.
+- After push, the publisher checks the exact remote branch head, fetches that ref, checks the fetched commit SHA and compares the returned file bytes with the exact serialized payload. If push may have succeeded but read-back is not verified, the result is `PUBLISHED_UNVERIFIED`, not `PUBLISHED` or `BLOCKED`.
+- The Evolution Center ViewModel now renders `PUBLISHED` as published-and-verified and reports `PUBLISHED_UNVERIFIED` distinctly, preserving the fact that a push may have happened without a verified remote postcondition.
+
+**Changed source/test blob identities at this review point:**
+
+| Path | Blob |
+|---|---|
+| `src/iabv_v15/services/evolution/control_master_signal_projector.py` | `7888a07d90e864058fc738bc0c653039c7f63237` |
+| `src/iabv_v15/services/evolution/control_master_signal_publisher.py` | `70a9005c4a69100c32187ccfe40c0c01578c817b` |
+| `tests/test_control_master_signal_projector.py` | `34b7aa25f6a35d5e2478eff26623c4e974fbc7a2` |
+| `src/iabv_v15/ui/viewmodels/evolution_center_viewmodel.py` | `9f4f24a6ca075cfe8684dac3be03db32d482c927` |
+| `tests/test_evolution_center_viewmodel.py` | `f1f52506041f723178813834041fec67706094b1` |
+
+Five focused tests were added for observation-time semantics, the public-branch delta allowlist, exact remote ref/commit/content read-back, and the mismatch stop states; the ViewModel test also asserts the distinct `PUBLISHED_UNVERIFIED` presentation.
+
+```text
+SOURCE_REVIEW=STATIC_BRANCH_FETCH_BACK
+TESTS_AUTHORED=5_FOCUSED_PLUS_VIEWMODEL_ASSERTION
+TESTS_EXECUTED=NOT_RUN
+BUILD=NOT_RUN
+QML_LOAD=NOT_RUN
+APPBOOTSTRAP=NOT_RUN
+LOCAL_RUNTIME=NOT_OBSERVED
+PUBLIC_SIGNAL_PUBLISHED=FALSE
+MAIN_MODIFIED=FALSE
+M1A_GATES_CHANGED=FALSE
+```
+
+**Limitations retained:** this code does not create a signature, authenticated issuer, independent trust root or M1A/G1 evidence. Observation time is not a guarantee that underlying persisted inputs were freshly regenerated. No public signal was generated or published in this review, and the real local Control Master remains unavailable. The pre-existing checksum remains an integrity checksum only. Branch-level source correction, static review and authored tests do not establish integrated runtime acceptance.
+
+---
+
 ### 6D.6 Cross-chat handoff and causal reuse
 
 A handoff that materially depends on the Control Master must carry the fields in §6D.2 and the exact source refs. The receiving chat must independently acknowledge whether it retrieved the digest, reconcile it with its own live `CURRENT-STATE.md`, and state how it affected the selected action. A pasted digest or a link proves availability of content, not that it was consumed or causally influential.
