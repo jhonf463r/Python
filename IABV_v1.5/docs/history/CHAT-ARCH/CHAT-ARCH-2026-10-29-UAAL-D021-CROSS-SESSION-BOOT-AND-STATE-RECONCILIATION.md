@@ -755,6 +755,34 @@ A pass requires at least one child to complete and its result to be consumed by 
 
 **Learning status:** this is a source-grounded routing decision and a proposed operating method, not proof that local orchestration is active. Promotion to an operational capability requires the initial acceptance gate above and later causal reuse in a non-identical IABV task.
 
+
+### 6C.5.5 R1 coordination pilot adjudication: inheritance, Claude auth and code workspace (2026-11-01)
+
+**Observed pilot receipt:** `IABV_T3_COMPLETE_MULTI_AGENT_CONFIGURATION_R1` reported project and coordinator permissions `AUTO`; T3 Connect remained disabled; no files or Git refs changed. The Codex-parent → Claude-child test did not call `delegate_task` because the preflight treated the absence of an explicit `runtimeMode=inherit` capability announcement as a blocker. The Claude-parent → Codex-child test failed before delegation with `Credit balance is too low`. The local project bound to `C:\\IABV-TICD-LAB` was reported not to be a Git checkout and to contain lab documentation rather than product code. These are actor-reported local observations; no local artifact was independently retrieved in this documentation episode.
+
+**Correct interpretation of T3 Code v0.1.6 Orchestrator V2 contract (release-tagged source):**
+
+- `delegate_task.runtimeMode` is optional and accepts `inherit`, `approval-required`, `auto-accept-edits` or `full-access`.
+- Provider, model, runtime mode and interaction mode inherit from the parent when omitted. Therefore, for normal inheritance, omit `runtimeMode` and `interactionMode`; do not require a child provider to announce the literal word `inherit`.
+- `orchestrator_capabilities` exposes `runtimeModes` only when a provider supports a subset of modes. If that list is omitted, the provider supports all modes. If a list is present, an explicit unsupported request is refused and an inherited mode steps down to the broadest mode the target supports.
+- An unsupported runtime mode resolves to `approval-required`, which can cause one approval prompt per command. The parent must inspect the child's effective runtime mode/result rather than infer it from a missing string in the capability response.
+- Delegation requires an active parent run owned by the provider session. A test must call the native tool during that active run and record `taskId`, `childThreadId`, terminal state and consumed result.
+
+**Claude authentication path:** T3's v0.1.6 Claude provider guide says the native provider uses Claude Code's login and configuration. Diagnose `claude auth status`, the exact `CLAUDE_CONFIG_DIR` selected by the provider and only the *presence/names* of provider environment overrides. Never print key/token values. Anthropic documents that `ANTHROPIC_API_KEY` can override a Claude subscription login; a depleted API balance is therefore not proof that the subscription itself is unavailable. If an existing Claude subscription OAuth login is confirmed and an unintended per-instance API-key override is the cause, remove only that T3 provider-instance override and restart/recheck the instance; do not alter the global Windows environment or delete the underlying secret. If the provider is intentionally API-key authenticated and lacks funds, stop without purchasing credits or enabling auto-reload; billing requires a separate Owner decision. If OAuth is missing or expired, use the official Claude Code login flow in the same config directory and request only that one-time account sign-in.
+
+**Workspace boundary:** the existing `C:\\IABV-TICD-LAB` is a documentation/lab workspace, not the product Git checkout. Keep it intact. `C:\\Python` remains `DO_NOT_TOUCH`. For source-level coordination, create a separate dedicated local clone/project (for example `C:\\IABV-TICD-CODE`) of the authorized `jhonf463r/Python` repository after checking free disk space and the exact remote branch SHA. Do not bind code agents to the documentation-only folder or clone into the protected path. Use the existing PR branch for read-only source archaeology until a later task has its own implementation authorization.
+
+**Corrected next pilot:**
+
+1. Use Codex as parent in an active T3 run with project/thread mode `Auto`.
+2. Call `orchestrator_capabilities` and record Claude's exact provider instance, `canRunChildTask`, availability and any `runtimeModes` list. A missing `runtimeModes` list is not a blocker.
+3. Call `delegate_task` with exact `providerInstanceId`, `mode: "async"`, and omit `runtimeMode` and `interactionMode` so they inherit from the active parent.
+4. Verify the child's effective mode and terminal state. If it still falls to `approval-required`, record the provider's advertised subset and stop to diagnose; do not use `full-access`.
+5. Run only after Claude's authentication path is corrected. Use read-only research/review tasks and consume the result in the Codex parent without Owner relay.
+6. Enable T3 Connect only after local delegated result delivery passes; phone sign-in/pairing remains a separate Owner-operated device step.
+
+**Learning status:** source-grounded correction plus one reported failure episode. The inheritance interpretation is verified against the v0.1.6 release-tagged T3 documentation; local Claude authentication, a successful delegated child and real code-workspace binding remain `NOT_VERIFIED`. Do not mark multi-provider coordination as operational until a child task completes and the parent consumes its result.
+
 ## 7. Historical authoring snapshot and per-session falsifiable checks
 
 The values below are the original D021 authoring snapshot, not current route authority. Each material session must refresh live `main` and current PR metadata before reuse. Observed while preparing the initial revision:
