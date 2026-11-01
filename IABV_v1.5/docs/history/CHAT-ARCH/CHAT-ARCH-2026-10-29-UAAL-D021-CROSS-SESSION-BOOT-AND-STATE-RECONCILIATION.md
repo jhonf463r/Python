@@ -695,6 +695,66 @@ The coordinator performs retrieval, reconciliation, source navigation, file comp
 - Connected apps in ChatGPT: https://help.openai.com/en/articles/11487775-connected-apps-in-chatgpt
 - Memory in ChatGPT: https://help.openai.com/en/articles/8590148-memory-in-chatgpt
 
+
+### 6C.5.4 T3 Code as the multi-provider execution coordination plane (2026-11-01)
+
+**Decision:** prefer the existing T3 Code Orchestrator V2 for operational collaboration among configured coding-agent providers before designing or implementing another IABV-specific agent router, scheduler, message bus or MCP bridge. T3 is an execution/control plane, not IABV's canonical memory, project router or permission authority.
+
+**Release/source basis and evidence ceiling:**
+
+- The official T3 Code v0.1.0 release on 2026-10-15 explicitly declares Orchestrator V2 stable and documents `delegate_task` as the way for one agent to start child agents on another provider/model, await or receive their results, and coordinate multiple harnesses. It also documents the T3 Code MCP for creating, launching, messaging, waiting on, reading, searching and interrupting threads.
+- The official T3 Code v0.1.6 stable release was published 2026-10-31, after the V2 stable release. The release lineage therefore provides a stable implementation path; this does not prove the Owner's local provider instances, authentication, or child-task capabilities are configured or healthy.
+- The Owner's earlier context reports T3 Code 0.1.6 on the MSI. Treat that as `OWNER_REPORTED` until the actual local T3 instance and its connected providers are inspected.
+- Current T3 Orchestrator MCP documentation describes the `orchestrator_capabilities` tool, provider-instance availability, per-provider child-task capability, runtime-mode constraints, `delegate_task`, task status, thread operations and authenticated app-owned MCP endpoint. Recheck the local installed version's behavior before relying on any current-main detail.
+- T3's own v0.1.0 release warns that switching providers mid-thread is a lossy context handoff; use `delegate_task` for multi-harness collaboration instead.
+
+**Required activation sequence (capability-driven; no provider assumptions):**
+
+1. Start one T3 parent/coordinator thread bound to the correct IABV workspace.
+2. During an active parent run, call `orchestrator_capabilities` before delegation. Record provider instance IDs, driver kinds, models, whether each provider can run child tasks, availability constraints, authentication/executable gaps, and supported runtime modes. Do not guess provider IDs or assume Claude/Codex is configured because its CLI exists elsewhere on the machine.
+3. Select recipients only from currently available instances with child-task capability. Preserve the narrowest supported runtime/interaction mode. T3 providers and external Codex Desktop/CLI are distinct execution surfaces; verify which actual provider instance T3 launches.
+4. Use `delegate_task` to hand off bounded research, source audit, design challenge, implementation or review to a child on the selected provider. Do not use provider switching as a substitute for delegation.
+5. Build every child prompt as a self-contained task-conditioned package under §6C.5.1. T3's Orchestrator MCP contract states that a delegated child receives the supplied task prompt plus optional role instruction; parent conversation history is not copied. Include exact project/repository, source revision, required files, acceptance criteria, allowed operations, permission mode, evidence format and stop condition.
+6. Use asynchronous delegation for work that should not block the coordinator; retain the task ID and child-thread ID, then consume the durable result through the parent wake/status/lineage path. Do not claim success from task creation alone.
+7. For initial activation, delegate read-only, independent tasks in parallel (for example: Codex source/state audit and Claude adversarial architecture review). The parent reconciles disagreements against exact source evidence and returns one synthesis. This proves agent-to-agent result delivery without introducing write conflicts.
+8. Permit only one writer per workspace/branch at a time unless separate worktree isolation is positively verified. A review/research child must not edit. For parallel implementation, require independently bound worktrees/branches and explicit merge-back review; never assume child sessions have isolated filesystems merely because their provider histories are separate.
+9. Have the parent return one correlated orchestration receipt containing parent thread/run, child task/thread IDs, provider instance/model/version, exact artifact refs/digests, terminal statuses, retrieved result evidence, conflicts, synthesis, and confirmation that the Owner did not relay child outputs.
+
+**Initial acceptance gate:**
+
+```text
+T3_VERSION_AND_PROJECT_BINDING=VERIFIED
+ORCHESTRATOR_CAPABILITIES=RETRIEVED
+CODEX_CHILD_CAPABILITY=AVAILABLE|UNAVAILABLE|UNKNOWN
+CLAUDE_CHILD_CAPABILITY=AVAILABLE|UNAVAILABLE|UNKNOWN
+OTHER_PROVIDER_CHILD_CAPABILITIES=
+PARENT_THREAD_AND_RUN_ID=
+CHILD_TASK_IDS=
+CHILD_PROVIDER_INSTANCES=
+CHILD_RESULTS_RETURNED_TO_PARENT=YES|NO
+PARENT_SYNTHESIS=VERIFIED|NOT_VERIFIED
+OWNER_MANUAL_RELAY_REQUIRED=YES|NO
+FILES_CHANGED=NO
+GIT_WRITES=NO
+LOCAL_SCHEDULER_CHANGED=NO
+BRIDGE_OR_PUBLIC_TUNNEL_ENABLED=NO
+OUTCOME=PASS|PARTIAL|BLOCKED
+```
+
+A pass requires at least one child to complete and its result to be consumed by the parent without the Owner copying the result between agents. A cross-provider pass additionally requires two distinct provider types to be observed in the parent/child lineage. If only one provider is available, record the single-provider result as a limited orchestration test, not as cross-provider collaboration.
+
+**Transport and authority boundaries:**
+
+- T3 owns the local execution graph and delegated-task lifecycle while its app/server is running. It does not replace `CURRENT-STATE.md`, GitHub's versioned project record, D019/D020/D021, or the owning project's permission gates.
+- Use the T3-injected, app-authenticated MCP endpoint inside T3 provider sessions. Do not expose the local endpoint publicly, create a tunnel, enable the IABV MCP bridge, or export provider-session tokens to create external connectivity.
+- The current ChatGPT cloud session cannot be presumed to call a T3 loopback endpoint on the MSI. ChatGPT continues to retrieve canonical project state through its own authorized Project/GitHub/connector routes; T3's local agents coordinate among themselves and publish only authorized, sanitized project artifacts back to the canonical repository.
+- T3 Connect/remote-device pairing is a separate feature from local Orchestrator V2 delegation. Its disabled state does not by itself prove that local child-agent orchestration is unavailable; do not enable Connect or a tunnel as a prerequisite for a same-host delegation test.
+- T3 scheduled tasks, Windows Task Scheduler and the existing cloud TICD review are distinct schedulers. Do not create another recurrence to test agent delegation.
+
+**Stop and escalation rules:** if `orchestrator_capabilities` is absent, the parent run is not active, no child-capable provider is configured, or a required provider lacks authentication/executable support, stop with the exact observed blocker. Do not switch to a nightly build, install another provider, change credentials, alter runtime permissions or ask the Owner to become the message courier as an automatic fallback. A separately authorized configuration/update step may be proposed after the capability gap is precisely identified.
+
+**Learning status:** this is a source-grounded routing decision and a proposed operating method, not proof that local orchestration is active. Promotion to an operational capability requires the initial acceptance gate above and later causal reuse in a non-identical IABV task.
+
 ## 7. Historical authoring snapshot and per-session falsifiable checks
 
 The values below are the original D021 authoring snapshot, not current route authority. Each material session must refresh live `main` and current PR metadata before reuse. Observed while preparing the initial revision:
