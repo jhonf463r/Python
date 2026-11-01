@@ -1310,7 +1310,7 @@ Item {
             spacing: 10
             width: parent.width
             Label {
-                text: "Se publicará una instantánea con IDs opacos, estados, prioridades, recuentos, procedencia y caducidad de 15 minutos en la rama pública control-master-live."
+                text: "Se publicará una instantánea con referencias posicionales por elemento, estados normalizados, prioridades, recuento del paquete, procedencia y caducidad de 15 minutos en la rama pública control-master-live."
                 color: textPrimary
                 font.family: bodyFontFamily
                 font.pixelSize: 13
