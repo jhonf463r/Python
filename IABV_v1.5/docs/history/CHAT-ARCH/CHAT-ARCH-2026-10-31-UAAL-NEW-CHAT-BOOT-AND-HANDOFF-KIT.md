@@ -346,3 +346,16 @@ The reopen trigger is deliberately dependency-scoped: genuinely new, independent
 - [ ] Kept all project and cloud/local boundaries intact.
 
 **Acceptance boundary:** passing this checklist demonstrates that a session followed the explicit boot procedure for this bounded task. It does not prove that GitHub was automatically injected into the chat, that every future chat will comply, that a runtime enforces the method, that model weights learned, or that IABV has subjective consciousness.
+
+
+## 10. ChatGPT Project shared context (2026-10-31)
+
+Use one owner-controlled ChatGPT Project for IABV coordination. Add the copy-ready instructions from CHAT-ARCH-2026-10-31-CHATGPT-PROJECT-INSTRUCTIONS-R1.md to its Project instructions, and keep IABV ChatGPT chats inside it when the interface permits. The Project makes its own instructions, files and chats available as shared context to its chats. Prefer Project-only memory when available to keep IABV separate from unrelated work.
+
+At startup, inspect the Project sources/relevant chats, then retrieve the current canonical repository sources through the GitHub connector if available. Do not ask the Owner to re-upload a stable file already present in Project Sources or GitHub. Request a file only after checking authorized shared sources and proving that the missing evidence exists solely in a local-only location.
+
+Codex, Claude and other external AI products do not automatically inherit this ChatGPT Project. Use the existing GitHub repository as the common cross-product store and verify each receiving session's authorized access. Project instructions guide behavior; they do not install tools or enforce permissions.
+
+A ChatGPT Project does not expose the Owner's local runtime, local database or current Control Master digest. Keep that signal unavailable/stale unless an authorized live source is actually read. Do not start the runtime, CLI or bridge, and do not bypass Option D or other M1A gates.
+
+See UAAL-D021 §6E and CHAT-ARCH-2026-10-31-CHATGPT-PROJECT-INSTRUCTIONS-R1.md.
