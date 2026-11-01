@@ -90,22 +90,41 @@ Discovery must not fetch or execute candidate payloads automatically. Do not tre
 
 An approval-required provider mode is not itself Owner authorization. A preapproved update allowlist, if ever adopted, must name exact tool IDs, update classes, allowed source/signature, version range, paths, stop conditions, and rollback behavior. Anything outside the allowlist returns for approval.
 
-## 6. Local maintenance through T3
+## 6. Local maintenance scheduling and execution path
 
-T3 Code v0.1.6 documents recurring Scheduled Tasks under **Settings → Scheduled tasks**. Each task runs on the selected environment with that environment's project, model and workspace settings; it can be edited, paused, resumed, run immediately or deleted. Use this existing local facility rather than building another scheduler. The MSI maintenance task must first prove that the local environment is reachable at its scheduled time. The local bootstrap record says the current Windows install has no separate T3 background service and the local server must remain available through T3 Desktop; therefore do not promise execution while the PC is powered off or the T3 host is stopped. Record a heartbeat/runner-availability result and test one immediate scheduled-task run before treating recurrence as operational. Computer Use remains a foreground UI channel; scheduled CLI/API inventory work is not proof of unattended GUI control.
+T3 Scheduled Tasks is one possible local execution surface, not an assumption or universal scheduler. Select the mechanism from the required trigger semantics, host lifecycle and actual environment. A T3 task is appropriate only when its observed UI/API supports the required cadence and its local server/environment availability has been demonstrated. A T3 provider permission belongs only to that T3 thread.
 
-Recommended local task:
+**Episode update (2026-11-01):** the Owner-supplied transcript records that the T3 v0.1.6 UI inspected by the local operator exposed weekday scheduling and minute intervals, but no monthly day-of-month selector. It also records uncertainty about execution after the last T3 window closes on Windows. This is scoped to that observed UI/install and is not proof that every T3 release or backend lacks a monthly scheduler. The R2 handoff then incorrectly required T3 `Supervised` while the recipient was external Codex Desktop; that cross-surface mismatch caused a premature block. See the [execution-surface handoff learning receipt](./CHAT-ARCH-2026-11-01-UAAL-TICD-EXECUTION-SURFACE-HANDOFF-LEARNING-RECEIPT.md).
 
-- **Name:** `TICD — MSI support-tool inventory and maintenance`
-- **Environment/project:** MSI local environment / `C:\IABV-TICD-LAB`
-- **Provider:** Codex as currently configured; use `Supervised`.
-- **Cadence:** monthly, after the cloud TICD research review.
-- **Job:** refresh the local inventory, compare installed versions with official stable releases/advisories, identify incompatibility/security issues, assess disk budget, and prepare a bounded update plan. Execute only updates already covered by an explicit allowlist; otherwise request approval for the exact change.
-- **Receipt:** inventory timestamp, environment identity, commands and exit codes, before/after versions, official source URLs, signatures/hashes, audit findings, disk change, artifacts changed, verification result and rollback status.
+**Capability-matched Windows alternative:** when exact monthly calendar triggers are needed and T3's selected surface cannot provide them, a native Windows Task Scheduler job may be used if its trigger, account mode and lifecycle fit the Owner's requirements. This does not create a new scheduler service; it uses the OS scheduler already present. The task must run under the intended local user with least privilege, and its behavior when the machine is off or the user is logged out must be stated and verified rather than assumed.
 
-Do not use webhook scheduling for this local maintenance task: T3's webhook route requires T3 Connect/tunnel. Keep T3 Connect, public ports, tunnels and Android disabled unless separately authorized. T3's child agents receive their supplied task prompt and role, not the parent conversation history; include the matching D021 profile/manifest in every delegated task. A child cannot receive a broader runtime mode than its parent. Do not delegate when source/path restrictions cannot be enforced and verified.
+**Two-process design for the authorized MSI inventory candidate:**
 
-The existing ChatGPT monthly TICD automation is the cloud research companion, not the local updater. It must not claim that local programs were inspected or updated. The local T3 receipt can be retrieved by the coordinator through an authorized shared artifact route; if local-only, its producer must package the exact evidence once.
+```text
+WINDOWS_TASK_SCHEDULER
+  -> bounded PowerShell runner
+      -> CODEX_CLI_CHILD: codex exec --sandbox read-only
+          -> local read-only inventory; returns text
+      -> runner writes the authorized report/manifest and hashes
+```
+
+The external Codex Desktop operator that installs the runner/registers the task is a separate actor from the `codex exec` child. The Owner's authorization must name the exact runner path, one task name, monthly trigger, run identity and immediate test. The child CLI sandbox constrains only the child process; it does not constrain the outer operator's creation of files or registration of the Windows task. Those outer side effects remain separately authorized and bounded. Conversely, external Codex Desktop `Full Access` does not prove the child CLI is read-only; validate the CLI arguments/effective execution separately.
+
+At the evidence cut of 2026-11-01, the supplied transcript contains R2=`BLOCKED` and an R3 prompt prepared after the Owner explicitly authorized the Windows-native route. It contains no R3 execution result. Therefore `WINDOWS_TASK=NOT_CREATED_AS_OF_TRANSCRIPT_CUTOFF`, `RUNNER=NOT_CREATED_AS_OF_TRANSCRIPT_CUTOFF`, and local recurrence remains unproven until a later correlated receipt is fetched and verified.
+
+**Mandatory local-runner receipt:** include task name and scheduler ID, exact XML/trigger or equivalent query output, Windows principal and logon policy, timezone, first/next run, runner hash/version, Codex CLI version and exact sandbox arguments, auth outcome (without secrets), process exit code, task run/result code, start/end times, report/manifest SHA-256 and independent read-back. Record `IMMEDIATE_RUN_VERIFIED` separately from `MONTHLY_RECURRENCE_REPEATED`; one immediate test does not prove a later monthly occurrence.
+
+**Preflight and route rules:**
+
+- Resolve `DESTINATION_ACTOR_TYPE`, `DESTINATION_APP_AND_VERSION`, `EXECUTION_SURFACE`, `CONTROL_PLANE`, `HOST_AND_OS`, `PROCESS_ACTOR`, `SCHEDULER_OR_TRIGGER_OWNER` and `T3_INVOLVEMENT` before issuing a prompt.
+- Query only the permission source for the selected application/process. Never require T3 `Supervised` when T3 is not involved; never infer Windows rights from a Codex UI permission indicator.
+- Keep the exact read-only CLI sandbox even when the outer operator is permitted to write the one runner and create the one scheduled task. `--ask-for-approval never` suppresses approval prompts; it is not the sandbox. Keep `--sandbox read-only` explicit.
+- If CLI authentication needs a human login, the scheduled run cannot complete unattended under this design; stop and report the condition rather than changing credentials or weakening controls.
+- Use the current user's interactive logon only if that matches the Owner's preference. If the user is not logged in or the device is powered off at trigger time, describe the actual missed-run behavior and test `StartWhenAvailable`; do not promise execution while offline.
+- Do not use T3 Connect, webhooks, tunnels, Android, SYSTEM, elevation or a service unless separately authorized.
+- Do not publish local MSI reports or manifests into the public `jhonf463r/Python` repository. Use the D021 artifact retrieval ladder and an access-controlled private transport; if no authorized route exists, prepare one bounded producer package and identify the exact manual handoff.
+
+**Acceptance:** verify the registered task from Windows after creation; start that exact registered task for an immediate test; inspect task result and logs; read back report and manifest; recompute hashes; inspect scope of all changes. A created task is not a successful run, an immediate run is not proof of future recurrence, and a local receipt is not yet evidence that the cloud coordinator retrieved or consumed it.
 
 ## 7. Current MSI support-stack disposition (2026-11-01 evidence cut)
 
