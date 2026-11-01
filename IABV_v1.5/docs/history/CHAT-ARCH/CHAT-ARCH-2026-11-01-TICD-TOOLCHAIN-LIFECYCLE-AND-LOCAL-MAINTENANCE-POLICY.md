@@ -30,7 +30,19 @@ The current-main source shows the following distinct responsibilities:
 
 The external discovery gap is the intake and reconciliation of trustworthy external catalog/release/advisory evidence into these existing owners. Keep external candidates quarantined until provenance, license, permissions, compatibility and security are established. Do not add a second ToolDiscoveryService or a parallel technology database.
 
-A prior static report at baseline `07ebffc8f866fc99a3f78091dcd1edd456a0da00` identified a required-capability-to-realization selection gap. That report is historical. The current-main inspection in this task confirmed the relevant components but did not trace every normal request path end-to-end; therefore the present status is `NEEDS_REVALIDATION`, not a verified current defect. Re-run bounded source archaeology at the active main before proposing a repair; do not implement or add a new selector based only on the older report.
+**Current-main bounded source trace (source-level observation, not runtime proof):**
+
+- `CapabilityReadinessService.evaluate(intent, context)` is called by `AdaptiveTaskOrchestrator`; its result is retained in `AdaptiveSession.capability_readiness` and the context capability snapshot.
+- The normal `ToolOperationalExecutor.execute(session)` path calls `ToolTeachService.build_task_for_session(session)`.
+- In the inspected current-main implementation, that method reconstructs an `InferenceRequest` from the session goal, detected role, `metadata.goal_parameters`, site and session ID; it does not explicitly carry `session.capability_readiness` into the request or resulting task.
+- The current `ToolTask` model has no typed `required_capability_ids` field. `ToolTeachService.execute_task()` resolves the card again through `ToolRegistry.pick_card_for_task()`, whose selection order is concrete task tool ID, preferred assistant family, lexical overlap and finally the first registered card. That picker has no required-capability argument or hard eligibility check against the readiness snapshot.
+- Relevant current-main source blobs: `adaptive_task_orchestrator.py` `41f6f7b6157226a1c6004591ddff4e36ff6f6da5`; `tool_operational_executor.py` `840addd3dd8a017e83788950ad5ed0205e7b0037`; `tool_teach_service.py` `7f0412627c98074b1e3df0d0f6e76ab5998e3505`; `domain/models.py` `a9033d21052c519e09f482097599c704a62ea916`; `tool_registry.py` `17a0f7cc82dfb6722d4f2d7b231ac61551eb7ac2`; `capability_readiness_service.py` `b4f60d1fb58183765ff232cc58f0c2ef3f1c9704`.
+
+The bounded first-open design seam for this caller is therefore:
+
+`AdaptiveSession.capability_readiness → typed per-ToolTask capability demand → candidate eligibility gate → selected ToolCard/adapter`.
+
+Status: `SOURCE_GAP_OBSERVED_FOR_TOOL_OPERATIONAL_EXECUTOR_PATH; OTHER_CALLERS_NOT_EXHAUSTIVELY_TRACED; RUNTIME_NOT_TESTED`. This is a source-contract finding, not proof of a live runtime failure or a universal absence across all callers. A separate narrow caller census and semantic design review should precede any proposal. Do not implement, add a parallel selector, invent task-to-capability partition semantics or run tests/build/runtime under this documentation-only task.
 
 ## 3. Tool classes and inventory model
 
