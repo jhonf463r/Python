@@ -1,7 +1,7 @@
 <!-- CHATGPT_PROJECT_NATIVE_CONTEXT_R1: project transport pointer. -->
-## ChatGPT native shared context (2026-10-31)
+## ChatGPT native shared context and memory scope (2026-10-31)
 
-The single-project configuration, artifact retrieval ladder, project-only memory guidance, connector limits and copy-ready project instructions are defined in [CHATGPT Project Instructions R1](./CHAT-ARCH-2026-10-31-CHATGPT-PROJECT-INSTRUCTIONS-R1.md) and UAAL-D021 §6E. Do not ask the Owner to re-upload canonical GitHub/project files already available through an authorized source. Project context is not local-runtime access or automatic cross-vendor dispatch.
+The ChatGPT Project mechanism and its memory-mode tradeoffs, the retrieval ladder, the distinction between selective personal Memory and canonical project state, and copy-ready instructions are defined in [UAAL-D021 §6E](./CHAT-ARCH-2026-10-29-UAAL-D021-CROSS-SESSION-BOOT-AND-STATE-RECONCILIATION.md) and [CHATGPT Project Instructions R1](./CHAT-ARCH-2026-10-31-CHATGPT-PROJECT-INSTRUCTIONS-R1.md). Do not assume every prior detail is automatically recalled or ask the Owner to re-upload canonical files already retrievable from an authorized source. Project context is not local-runtime access or automatic cross-vendor dispatch.
 
 <!-- UAAL-D021 activation pointer; CURRENT-STATE.md owns live routing and volatile status. -->
 ## Índice operativo de contexto Espacio-Tiempo — fresh route, no copied state (2026-10-29)
