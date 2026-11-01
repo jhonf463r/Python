@@ -1,7 +1,7 @@
 # Canonical continuity, Space-Time cognition, and adaptive neuroplasticity protocol
 
 - Protocol ID: `CONTINUITY_SPACE_TIME_ANTI_LOOP` (stable identity; operating method evolves in place)
-- Living operating revision: `2.7 — ADAPTIVE_SPACE_TIME_NEUROPLASTICITY + OWNER_CONTEXT_AWARE_TURN_ROUTING + VERIFIED_CONTEXT_HANDOFF + OWNER_FACING_DELIVERY_PREFLIGHT + DUAL_TRACK_PROGRESS_ROUTING + UAAL_D020_PROGRESS_UTILITY + CROSS_AI_MEMORY_ACTIVATION + OBJECTIVE_CONDITIONED_WORLD_MODEL + INCOMING_RESULT_ADJUDICATION + PROJECT_SCOPED_NEW_CHAT_BOOT_AND_ROLE_BOUND_HANDOFF`
+- Living operating revision: `2.7 — ADAPTIVE_SPACE_TIME_NEUROPLASTICITY + OWNER_CONTEXT_AWARE_TURN_ROUTING + VERIFIED_CONTEXT_HANDOFF + OWNER_FACING_DELIVERY_PREFLIGHT + DUAL_TRACK_PROGRESS_ROUTING + UAAL_D020_PROGRESS_UTILITY + CROSS_AI_MEMORY_ACTIVATION + OBJECTIVE_CONDITIONED_WORLD_MODEL + INCOMING_RESULT_ADJUDICATION + PROJECT_SCOPED_NEW_CHAT_BOOT_AND_ROLE_BOUND_HANDOFF + CONTROL_MASTER_SIGNAL_INTAKE_AND_DECISION_BINDING + CHATGPT_PROJECT_CONTEXT_AND_MEMORY_SCOPE`
 - Evolution rule: integrate new lessons into their owning core rule; preserve dated incidents/history; do not accumulate competing append-only protocols
 - Owner instruction date: 2026-10-23 (America/Bogota)
 - Scope: objective-bound reasoning, temporal evidence graph, adaptive role activation, gated action chains, memory consolidation, delivery receipts and outcome-based protocol evolution
@@ -88,6 +88,15 @@ Before a material action, build the minimum objective-conditioned world model: s
 Before any new AI/reviewer handoff, adjudicate the incoming result against the original task and acceptance oracle. Rebind it to the exact live target HEAD and affected paths, separate evidence stages, close only the edge that the evidence demonstrates, record what remains unknown, and choose the next authorized action from the earliest remaining open edge. Do not silently retarget a verdict from one revision to another.
 
 This documents a method and its evidence discipline; it does not prove automatic delivery to future chats, runtime enforcement or model-weight learning. Each participating session must produce its own retrieval/application evidence. The latest canonical D021 receipt records one verified non-identical-task reuse only; generalization remains NOT_TESTED.
+
+
+### Control Master signal intake and decision binding (revision 2.7 refinement; active method)
+
+For material IABV work, the objective-conditioned Space-Time model must include the existing Control Master signal when that signal is relevant and can be retrieved through an already-available, authorized read surface. Do not invent a parallel control plane: `CURRENT-STATE.md` remains the sole route authority; `ControlMasterService` / `ControlMasterDigest` contributes governance priorities, objectives, dependencies, evidence and next-action candidates.
+
+Bind the digest to exact source, workspace/project, state ID, generation time, observation time and queue-item evidence. Classify it `FRESH`, `STALE`, `UNAVAILABLE`, `UNVERIFIED`, `CONFLICTED` or `NOT_APPLICABLE`. A committed export is only as current as its recorded generation time. A blank read or caught exception is not an empty queue. Do not substitute an old snapshot for a live runtime signal or allow a panel score to override Owner scope, D019/D020, authorization, dependency or safety gates.
+
+At each material decision, state whether the Control Master signal changed the chosen action, confirmed it, or was unavailable. If the digest is not accessible without starting a runtime, invoking a CLI, opening protected data or changing the environment, mark it unavailable and keep the task within existing authority. Static wiring, a visible property or a successful prompt build does not prove current runtime retrieval, consumption or causal influence. D021 §6D owns the detailed intake/receipt contract.
 
 ## 4. Adaptive reasoning cycle — from intent to verified state transition
 
@@ -717,3 +726,10 @@ LATER_CAUSAL_REUSE_REQUIRED_FOR_LEARNING_CLAIM=TRUE
 ```
 
 A repeat/reopen is allowed only with its own new bounded authorization and a stated new evidential premise or correction. A new chat, a new task number, or pressure to progress does not count as new evidence. The protocol is coordination guidance, not automatic model-weight training or proof that a runtime learning loop has changed.
+
+
+## ChatGPT Project as the session-context substrate (2026-10-31)
+
+For ChatGPT-to-ChatGPT continuity, one owner-controlled ChatGPT Project can make Project instructions, files and chats available to conversations inside that Project. It is a context substrate, not a second memory/router and not a broadcast bus. Choose memory mode by intended scope: Project-only supports strict IABV isolation but excludes account-level saved memories and outside chats; Default memory may offer broader account-level context where plan/settings permit, with cross-project mixing risk. Under the existing separate-project-memory policy, Project-only is preferred for the dedicated IABV Project unless the Owner chooses wider account recall. ChatGPT Memory remains selective, not exhaustive. For Codex, Claude or other AI products, use the existing GitHub repository as the shared versioned substrate. Keep the active project state in its owning CURRENT-STATE.md; the Project and GitHub transport/retrieve that state rather than replacing it.
+
+The coordinator must prefer already-available Project sources and repository retrieval over asking the Owner to re-upload stable files. A Project does not expose local C:/Python, a live local database, protected data or runtime state. No runtime synchronization is implied. Source availability, retrieval, receiver acknowledgement, decision influence and verified outcome remain separate temporal events under UAAL-D021 §6E. Project instructions guide assistant behavior but do not enforce tool availability, permissions or technical gates.

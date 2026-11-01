@@ -1,3 +1,8 @@
+<!-- CHATGPT_PROJECT_NATIVE_CONTEXT_R1: shared ChatGPT transport; guidance only, not enforcement. -->
+## ChatGPT native continuity and file sharing
+
+For IABV work inside ChatGPT, use the same owner-controlled Project for every participating IABV chat, with the Project instructions in [CHATGPT Project Instructions R1](./CHAT-ARCH-2026-10-31-CHATGPT-PROJECT-INSTRUCTIONS-R1.md). Select Project-only memory when the goal is strict IABV isolation; it deliberately excludes account-level memories and chats outside that Project. Select Default memory when broader account-level recall is desired and the Owner accepts relevant cross-project context where available. Neither setting guarantees recall of every message. Use personal Memory for stable global preferences, the Project for IABV chat/files/instructions, and GitHub for exact canonical facts and state. Before requesting an upload or pasted handoff, first search the Project sources and retrieve the canonical repository file through the currently available authorized connector. Request only a concrete artifact proven to exist solely in an inaccessible local/runtime source. Full semantics and limits are in UAAL-D021 §6E and the New-Chat Boot Kit.
+
 <!-- UAAL-D021 activation pointer; CURRENT-STATE.md owns live routing and volatile status. -->
 ## Continuidad Espacio-Tiempo — fresh route, no copied state (2026-10-29)
 
@@ -10,6 +15,8 @@ Activate the existing operating lineage as relevant to the objective:
 - Before any Owner-dependent question, apply UAAL-D021 §6B.1: recover the Owner-known-input ledger from canonical history first; ask only for genuinely missing, decision-changing evidence. Do not repeat settled setup or approvals.
 
 For each material handoff, rebind evidence to exact source/ref/blob and time; distinguish verified observations, actor reports, inference, hypotheses, unknowns and not-run actions; define an observable and stop condition; then verify the outcome and fetch back authorized writeback. A link or saved file does not prove another chat received or used the memory.
+
+For material IABV development/coordination tasks, also apply **UAAL-D021 §6D — Control Master signal intake**. Retrieve the current ControlMasterDigest only through an already-available, authorized read surface; record source, workspace/scope, state ID and generation/observation times. Reconcile its queue with `CURRENT-STATE.md`, D019/D020 and the Owner's current objective. If the runtime signal is unavailable or stale, label it accordingly; do not substitute an old committed snapshot or silently interpret an error/blank payload as an empty queue. The Control Master informs priority but never replaces the canonical route or grants action authority. See the [signal-intake reconciliation receipt](./CHAT-ARCH-2026-10-31-UAAL-CONTROL-MASTER-SIGNAL-INTAKE-RECONCILIATION-R1.md).
 
 Canonical method: [UAAL-D021](./CHAT-ARCH-2026-10-29-UAAL-D021-CROSS-SESSION-BOOT-AND-STATE-RECONCILIATION.md). First bounded reuse receipt: [first receipt](./CHAT-ARCH-2026-10-29-UAAL-D021-FIRST-LATER-TASK-REUSE-RECEIPT.md). Second bounded reuse receipt: [second receipt](./CHAT-ARCH-2026-10-29-UAAL-D021-SECOND-LATER-TASK-REUSE-RECEIPT.md). Fresh-chat boot test: [independent-session handoff](./CHAT-ARCH-2026-10-29-UAAL-D021-INDEPENDENT-FRESH-CHAT-BOOT-TEST.md).
 

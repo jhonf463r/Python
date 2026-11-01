@@ -1,3 +1,16 @@
+<!-- CHATGPT_PROJECT_NATIVE_CONTEXT_R1: shared ChatGPT transport; guidance only, not enforcement. -->
+## Native ChatGPT cross-chat context — one project, one source chain
+
+For ChatGPT participants, use one owner-controlled ChatGPT Project for IABV coordination (recommended name: **IABV — Coordinación compartida**). Keep material IABV chats inside that Project when possible, and install the copy-ready instructions in [CHATGPT Project Instructions R1](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-31-CHATGPT-PROJECT-INSTRUCTIONS-R1.md). Choose its memory mode deliberately: Project-only for IABV isolation (it excludes account-level memories and chats outside the Project); Default memory when the Owner wants broader account-level chat context and accepts possible cross-project references. For this portfolio's separate-project-memory policy, prefer Project-only in the IABV Project unless the Owner explicitly chooses broader account-wide context. Do not claim either mode remembers every message.
+
+Before asking the Owner to upload, paste, export or repeat an artifact, first inspect the current Project sources/chats and use the available authorized GitHub/repository connector to retrieve the canonical artifact. Ask for a file only when the required evidence is genuinely local-only or absent from every authorized shared source; identify that exact missing artifact and why no connector can retrieve it. Never ask for an already-present canonical file to be re-uploaded.
+
+ChatGPT Memory is selective and does not retain every conversation detail or search history for every response. Use it for stable, general preferences; use Project sources/chats for project context; use the owning GitHub state for exact facts, decisions, configs, permissions and provenance. Check Settings > Personalization > Memory for the available controls, especially Reference saved memories and Reference chat history; feature availability varies by plan, region and workspace.
+
+A connected GitHub app retrieves permitted repository content on demand; it is not a continuously synchronized local runtime feed. Each receiving account/session must have its own available, authorized repository route. External AIs outside the ChatGPT Project use the shared repository as the common store. Project instructions are behavioral guidance, not hard tool/permission enforcement; inspect actual capabilities and gates in every session.
+
+This transport layer does not alter CURRENT-STATE.md ownership, D019/D020/D021, M1A gates, Option D, or the ban on unauthorized local/runtime/protected operations. See D021 §6E and the [ChatGPT Project setup artifact](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-31-CHATGPT-PROJECT-INSTRUCTIONS-R1.md).
+
 <!-- UAAL-D021 activation pointer; CURRENT-STATE.md owns live routing and volatile status. -->
 ## Repository continuity contract — fresh route, no copied state (2026-10-29)
 
@@ -10,6 +23,8 @@ Activate the existing operating lineage as relevant to the objective:
 - Before any Owner-dependent question, apply UAAL-D021 §6B.1: recover the Owner-known-input ledger from canonical history first; ask only for genuinely missing, decision-changing evidence. Do not repeat settled setup or approvals.
 
 For each material handoff, rebind evidence to exact source/ref/blob and time; distinguish verified observations, actor reports, inference, hypotheses, unknowns and not-run actions; define an observable and stop condition; then verify the outcome and fetch back authorized writeback. A link or saved file does not prove another chat received or used the memory.
+
+For material IABV development/coordination tasks, also apply **UAAL-D021 §6D — Control Master signal intake**. Explicitly retrieve the current ControlMasterDigest from an already-available, authorized read surface when one exists; record its source, workspace/scope, state ID and generation/observation times. Reconcile its queue with `CURRENT-STATE.md`, D019/D020 and the Owner's current objective. If the runtime signal cannot be read, mark it `UNAVAILABLE` or `STALE`; never substitute an old GitHub snapshot or silently treat an empty/error payload as an empty queue. The Control Master informs priority but does not replace the canonical router or authorize an action. The [signal-intake reconciliation receipt](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-31-UAAL-CONTROL-MASTER-SIGNAL-INTAKE-RECONCILIATION-R1.md) records the observed gaps and limits.
 
 Canonical method: [UAAL-D021](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-UAAL-D021-CROSS-SESSION-BOOT-AND-STATE-RECONCILIATION.md). First bounded reuse receipt: [first receipt](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-UAAL-D021-FIRST-LATER-TASK-REUSE-RECEIPT.md). Second bounded reuse receipt: [second receipt](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-UAAL-D021-SECOND-LATER-TASK-REUSE-RECEIPT.md). Fresh-chat boot test: [independent-session handoff](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-UAAL-D021-INDEPENDENT-FRESH-CHAT-BOOT-TEST.md).
 

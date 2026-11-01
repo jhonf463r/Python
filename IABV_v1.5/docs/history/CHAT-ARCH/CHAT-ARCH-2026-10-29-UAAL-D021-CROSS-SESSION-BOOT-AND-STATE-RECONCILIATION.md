@@ -363,6 +363,177 @@ The sender provides the minimum context needed; the receiver acknowledges the pr
 
 The repository `jhonf463r/Python` was checked on 2026-10-31 and its visibility was `public`. Therefore, this public repository is suitable for public-safe method contracts and sanitized/generalizable lessons only. Do not write private project archives, personal data, private designs/source files, customer information, credentials, keys, tokens, account identifiers or other restricted material here. Keep such project material in an appropriately private, access-controlled project store and place only a sanitized pointer or transferable method in the public core. Never weaken a project's privacy boundary for convenience of cross-chat retrieval.
 
+
+## 6D. Control Master signal intake and decision binding (2026-10-31)
+
+The existing IABV Control Master is a governance/priority signal that must be consulted when it is relevant and available. This section closes a cross-session method gap: new chats were following the canonical route while failing to explicitly retrieve and adjudicate the Control Master signal that should inform the next useful action. It does **not** create another coordinator, router, memory, service or authority source.
+
+### 6D.1 Keep the two sources distinct and ordered
+
+- `CURRENT-STATE.md` remains the sole canonical authority for IABV `ACTIVE_TASK`, `NEXT_ACTION`, technical gates and permissions.
+- The live `ControlMasterService.current_state()` / `current_work_queue()` and their `ControlMasterDigest` projection provide a second, objective-relevant governance/priority signal: active objectives, backlog, priority, dependencies, next action, evidence refs, risks, decisions and unresolved items.
+- A committed `data/evolution/control_master/latest.json` or `latest.md` is a snapshot with its own generation time. It is not automatically a live view of the local runtime. Use it as historical evidence when stale; do not silently promote it to current state.
+- The Evolution Center's Control Master view and `ProactiveDashboardService` are not interchangeable. The former exposes the Control Master digest; the latter summarizes pending human approvals and learned approval policies. Neither replaces `CURRENT-STATE.md`.
+- A digest, queue item or UI card is not an authorization, mandate, permission grant or proof that an operation may execute.
+
+### 6D.2 Mandatory source-bound intake
+
+For every material IABV development/coordination session, attempt the narrowest already-available, authorized read of the Control Master signal when it is relevant to the objective. Do not start IABV, launch the runtime, run a CLI, access protected data or inspect credentials merely to manufacture a signal.
+
+Record at least:
+
+```text
+CONTROL_MASTER_SIGNAL_STATUS=FRESH|STALE|UNAVAILABLE|UNVERIFIED|CONFLICTED|NOT_APPLICABLE
+CONTROL_MASTER_SOURCE=
+CONTROL_MASTER_WORKSPACE_OR_PROJECT_SCOPE=
+CONTROL_MASTER_STATE_ID=
+CONTROL_MASTER_DIGEST_ID_OR_SHA=
+CONTROL_MASTER_GENERATED_AT=
+CONTROL_MASTER_OBSERVED_AT=
+CONTROL_MASTER_TOP_QUEUE_ITEM_IDS=
+CONTROL_MASTER_TOP_QUEUE_PRIORITIES=
+CONTROL_MASTER_NEXT_ACTIONS_AND_DEPENDENCIES=
+CONTROL_MASTER_EVIDENCE_REFS=
+CONTROL_MASTER_DECISION_INFLUENCE=
+```
+
+`FRESH` means the digest was obtained from the current, source-identified runtime/read surface for this task episode and its generation/observation times are available. `STALE` means the source is known to predate relevant state changes or falls outside an established freshness bound. `UNAVAILABLE` means no supported read route or payload was available. `UNVERIFIED` means content was supplied without enough source identity/time to establish currentness. `CONFLICTED` means material fields disagree with a source of higher authority or newer evidence. `NOT_APPLICABLE` is reserved for tasks unrelated to IABV Control Master.
+
+Do not invent a freshness interval. Use an existing documented producer TTL if one governs the source; otherwise report exact timestamps and whether the read came from the current runtime or a committed snapshot.
+
+### 6D.3 Empty is not unavailable
+
+A valid, successfully retrieved digest with a verified source identity and timestamps may legitimately contain an empty queue. That is `EMPTY_CONFIRMED`.
+
+A blank normal-read response, exception, missing service, missing property, stale cache or failed export is `RETRIEVAL_FAILED` / `UNAVAILABLE`, not `EMPTY_CONFIRMED`. Never catch an error and silently replace it with `[]`, `{}` or `None` in the session's reasoning record. Preserve the failure status and continue only on evidence sufficient for the chosen action.
+
+### 6D.4 Reconcile signal with the canonical route before selecting work
+
+Construct the objective-conditioned model using both sources but preserve their authority order:
+
+1. Read the active `CURRENT-STATE.md` header at the pinned `main` SHA. It controls the active route, gates and permissions.
+2. Read the Control Master signal and bind its scope, timestamps, state ID and queue item evidence.
+3. Match queue entries to the Owner's current objective, acceptance condition, project, exact target and current dependencies.
+4. Exclude completed, superseded, unrelated, stale, blocked-by-unmet-dependency and unauthorized items. A high priority score is a ranking input, not permission.
+5. Apply D019 to identify the first open causal/evidential edge and anti-loop fingerprint; apply D020 to compare the available authorized actions and select the smallest useful action.
+6. Select one action and explain whether the Control Master signal changed the choice, confirmed it, or was unavailable and therefore did not influence it.
+
+If the panel conflicts with `CURRENT-STATE.md`, do not merge the instructions. Preserve the canonical route and record the panel conflict for reconciliation. If D019 permits an independent lane, continue only when the Owner's current objective and its own authorization support a concrete task.
+
+### 6D.5 Consumer coverage and failure visibility
+
+Source code that defines or wires a digest is not proof that every consumer receives it. For any future code-level work, verify separately:
+
+- the full prompt path receives the digest;
+- compact/small-model paths receive an equivalent bounded projection or explicitly declare why not;
+- dashboard/view-model rendering preserves signal identity and freshness;
+- unavailable/error paths remain visibly unavailable instead of appearing empty;
+- task outcomes link to their owning objective where intended;
+- a later decision actually changes or is confirmed because of the signal.
+
+The 2026-10-31 static reconciliation observed a full-prompt digest path, a compact-prompt omission, and silent empty/null fallbacks in some consumers. This is a source-level gap record, not proof of runtime failure or a mandate to implement now. Do not modify product code under a documentation-only authorization.
+
+### 6D.6 Cross-chat handoff and causal reuse
+
+A handoff that materially depends on the Control Master must carry the fields in §6D.2 and the exact source refs. The receiving chat must independently acknowledge whether it retrieved the digest, reconcile it with its own live `CURRENT-STATE.md`, and state how it affected the selected action. A pasted digest or a link proves availability of content, not that it was consumed or causally influential.
+
+Use separate states:
+
+```text
+CONTROL_MASTER_SIGNAL_RETRIEVED=VERIFIED|REPORTED|NOT_AVAILABLE
+ROUTE_RECONCILED=VERIFIED|PARTIAL|NOT_RUN
+SIGNAL_CONSIDERED=YES|NO
+SIGNAL_INFLUENCE=CHANGED_ACTION|CONFIRMED_ACTION|NO_EFFECT|UNAVAILABLE
+ACTION_OUTCOME=VERIFIED|PARTIAL|FAILED|NOT_RUN
+LATER_CAUSAL_REUSE=NOT_TESTED|VERIFIED
+```
+
+Claim causal influence only when the receipt identifies the signal and demonstrates the decision it changed or confirmed. Do not claim automatic delivery to future chats, runtime enforcement or generalization from a single session.
+
+### 6D.7 Safety and scope
+
+The Control Master is subordinate to the Owner's current objective and all existing hard gates. It cannot authorize protected reads, credential access, root provisioning, code changes, tests, build, runtime, tunnel, deployment, permission changes or PR merges. Do not put secrets or protected payloads into public GitHub receipts. Keep local runtime evidence and cloud coordination evidence explicitly separate.
+
+## 6E. ChatGPT native project context and cross-agent artifact transport (2026-10-31)
+
+### 6E.1 Purpose and boundary
+
+Use ChatGPT's native Project as the shared context surface for participating ChatGPT conversations, not as another IABV memory or router. A Project can provide its chats with the same Project instructions, files and conversations. A Project can use Default memory or Project-only memory. The selected mode changes which other chats and saved memories can contribute; there is no universal best setting. Project-only confines references to chats inside the Project and excludes saved memories and conversations outside it. Shared Projects automatically use project-only memory. Default memory can use saved memories and, depending on plan/settings, relevant conversations beyond the Project. A chat outside the Project cannot use its private chat context. The Project does not automatically share its contents with Codex, Claude, another provider, an unrelated ChatGPT Project or the Owner's local filesystem.
+
+For cross-product collaboration, continue using the owning project repository as the common versioned store, provided the receiving AI has an authorized connector or exact repository access. Do not create another coordinator, message bus, knowledge base or competing state file.
+
+### 6E.2 One-time ChatGPT configuration
+
+For IABV ChatGPT work, the recommended owner-side setup is:
+
+1. Create or designate one Project named IABV — Coordinación compartida.
+2. Add the copy-ready text from CHAT-ARCH-2026-10-31-CHATGPT-PROJECT-INSTRUCTIONS-R1.md to that Project's instructions.
+3. Choose the Project memory mode deliberately:
+   - `PROJECT_ONLY` is appropriate when the IABV Project must remain isolated from other projects. It lets chats refer to other IABV Project conversations, but excludes account-level saved memories and conversations outside this Project. Move eligible IABV chats into it and place required operating rules in its Project instructions.
+   - `DEFAULT` is appropriate when the Owner wants the Project to draw on account-level memories and relevant chats outside the Project, where the plan and settings permit it. This improves broad continuity but can introduce unrelated cross-project context; apply the project-boundary rules before using it.
+   - For this portfolio's existing `one shared method / separate project memories` policy, use `PROJECT_ONLY` for the dedicated IABV Project unless the Owner explicitly chooses account-wide context instead. Do not claim that either mode remembers every message.
+   - When available, enable `Reference saved memories` and `Reference chat history` under Settings > Personalization > Memory; Project-only mode requires the applicable personal memory/reference controls. Availability varies by plan, region and workspace.
+4. Move existing IABV chats into this Project when the UI permits; create all new IABV ChatGPT chats from inside it. A chat created with a custom GPT may not be movable; start a replacement chat inside the Project and use the canonical GitHub boot instead of copying an entire transcript.
+5. Connect/authorize the GitHub app for jhonf463r/Python in every account/session that needs repository access. Do not assume one collaborator's app authorization or credentials transfer to another collaborator.
+
+Do not put this IABV policy in global Custom Instructions when that would contaminate unrelated project work. Project instructions take precedence within their Project, but they remain guidance and do not override platform/system policy, app availability, tool permissions, Owner gates or fail-closed rules.
+
+### 6E.3 ChatGPT memory limits and the two-level memory model
+
+ChatGPT Memory is selective personalization, not a transcript database or deterministic retrieval of every past message. OpenAI documents that Memory does not retain every conversation detail, that the memory summary can omit details/sources, and that ChatGPT searches for relevant history only when likely to improve the response. Plan, region, platform and settings affect available features. Therefore:
+
+- Use account-level Memory for stable, cross-project preferences and reusable coordination principles when the Owner wants those preferences across ordinary chats.
+- Use one Project per substantive project to hold its exact instructions, chats and reference files. Project-only memory gives strong project isolation; Default memory provides broader account context where supported.
+- Use the owning GitHub state and artifact records for exact technical settings, decisions, hashes, task status, permissions and provenance. Do not rely on the personal Memory summary as the canonical project record.
+- When an exact prior fact or instruction matters, retrieve the canonical source. Do not assume ChatGPT has searched every chat or that a detail omitted from the visible Memory summary is absent from all underlying sources.
+
+### 6E.4 Artifact retrieval ladder — eliminate avoidable manual transfer
+
+Before asking the Owner for an upload, pasted text, local export or repeated explanation, check in this order:
+
+1. The current ChatGPT Project's shared Sources/files and relevant chats, when this chat is actually inside the IABV Project.
+2. The connected, authorized GitHub repository; retrieve the exact canonical file/ref/commit and verify its revision, rather than relying on a remembered link or copied excerpt.
+3. Another already-connected, authorized project source/connector that can retrieve the exact artifact and preserve its provenance.
+4. Only then, request one precisely identified artifact from the Owner, and only when evidence establishes that it exists solely in a local/runtime location not exposed through an authorized connector or controlled bridge. Explain the missing route; never ask for a whole project export when one file/field is sufficient.
+
+If GitHub/project retrieval is available, do not make the Owner act as a manual courier between ChatGPT chats. Use the common source directly and report what was actually retrieved. If a tool is not present in the receiving session, classify the capability as unavailable; do not pretend a prompt or Project instruction can install the tool.
+
+### 6E.5 Distinguish file sharing from live runtime synchronization
+
+Use these separate channels:
+
+- CHATGPT_PROJECT_SHARED_CONTEXT: Project instructions, files and chats accessible to participating ChatGPT chats in that Project.
+- GITHUB_CANONICAL_STORE: versioned, source-bound records available to any AI that has an authorized repository route.
+- CONNECTED_APP_SOURCE: content returned on demand by a connected app; availability and scope depend on that session's app access and permissions.
+- LOCAL_RUNTIME_SOURCE: local application/database/files/processes; not visible to a cloud chat unless an explicitly supported, authorized connector or bridge exposes them.
+- CROSS_PRODUCT_HANDOFF: a correlated, published artifact in the shared repository or another agreed authorized store; a prompt, link or PR alone does not prove receipt or application.
+
+ChatGPT's GitHub app is documented as on-demand retrieval, not a continuously synchronized GitHub index or local-runtime feed; its availability varies by plan, workspace and product surface. The standard GitHub app may be read-only. Use only the write-capable tool actually exposed and authorized in the current session; do not infer write capability from read access.
+
+A Project therefore removes repeated uploading of shared project material, but does not make a live local Control Master digest appear automatically. If the live digest exists only inside the Owner's local runtime and no authorized reader/bridge publishes it, mark it UNAVAILABLE/UNVERIFIED; do not substitute the stale latest.json/md, start the runtime, access protected data or bypass M1A gates. An authorized future bridge/export would require its own security and scope approval.
+
+### 6E.6 Receipt and no-claim rules
+
+Record the transport state separately:
+
+SOURCE_IDENTIFIED -> ARTIFACT_RETRIEVED -> REVISION_VERIFIED -> CONTEXT_AVAILABLE -> RECEIVER_ACKNOWLEDGED -> DECISION_BOUND -> OUTCOME_VERIFIED -> CANONICAL_FETCHBACK.
+
+- A shared Project/file/link means AVAILABLE, not necessarily RETRIEVED or CONSUMED.
+- A connector read proves retrieval only for the current session and exact returned source/ref.
+- A receiving chat's correlated receipt is evidence of acknowledgement; its explanation of decision influence is needed to claim application.
+- A verified outcome and canonical fetch-back are separate from receipt/application.
+- Never claim automatic delivery, automatic boot, model-weight learning, or cross-vendor synchronization from Project membership, a commit or a link.
+
+### 6E.7 Owner friction rule
+
+The coordinator performs retrieval, reconciliation, source navigation, file comparison, and handoff assembly whenever the current tools and permissions permit. The Owner should perform only the one-time ChatGPT Project configuration that cannot be changed by an assistant tool, or provide an exact local-only artifact when no authorized connector exists. Do not repeatedly request manual export/upload for the same stable artifact once it is stored in the Project or repository.
+
+**Official product behavior references checked 2026-10-31:**
+- Projects in ChatGPT: https://help.openai.com/en/articles/10169521-projects-in-chatgpt
+- Connecting GitHub to ChatGPT: https://help.openai.com/en/articles/11145903-connecting-github-to-chatgpt
+- Connected apps in ChatGPT: https://help.openai.com/en/articles/11487775-connected-apps-in-chatgpt
+- Memory in ChatGPT: https://help.openai.com/en/articles/8590148-memory-in-chatgpt
+
 ## 7. Historical authoring snapshot and per-session falsifiable checks
 
 The values below are the original D021 authoring snapshot, not current route authority. Each material session must refresh live `main` and current PR metadata before reuse. Observed while preparing the initial revision:

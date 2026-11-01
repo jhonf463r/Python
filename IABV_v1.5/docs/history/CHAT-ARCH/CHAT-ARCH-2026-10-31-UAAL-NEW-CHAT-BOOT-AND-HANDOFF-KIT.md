@@ -78,6 +78,7 @@ For an IABV task, or when using the IABV shared method:
 4. Retrieve the current D019/D020/D021 revisions and only the objective-relevant sections/receipts of the Space-Time protocol, SYMBIOSIS-MAP and other records. Do not dump or treat the full archive as active state.
 5. Treat only the top active header of `CURRENT-STATE.md` as the live IABV route. Text below its historical separator is provenance unless explicitly reactivated by the active header.
 6. Reconcile incoming reports against current `main`, PR state, exact file/blob and task fingerprints before acting.
+7. For material IABV development/coordination work, apply D021 §6D and read the Control Master digest from an already-available, authorized read surface where possible. Capture source, workspace/scope, state ID, generation/observation times, top queue item IDs, priorities, next actions, dependencies and evidence refs. Do not start the app/runtime, run a CLI or open protected data to obtain it unless a separate authorization and supported route already exist. A stale GitHub `latest.json/md` snapshot is historical only; if no current signal is readable, report `UNAVAILABLE`/ `STALE`, never an empty queue.
 
 For a non-IABV project, this GitHub method remains reusable, but `CURRENT-STATE.md` is not that project's router. Locate and read the project's own canonical state. If unavailable, use the smallest supplied project handoff and mark missing evidence; do not substitute M1A's state.
 
@@ -108,7 +109,8 @@ At minimum, distinguish:
 - constraints, permissions and no-go conditions;
 - prior attempts and terminal fingerprints;
 - first open causal/evidential dependency;
-- capabilities and tools actually available in this session.
+- capabilities and tools actually available in this session;
+- Control Master signal status, exact source/workspace, state ID, generated/observed times, queue item IDs, priorities, dependencies and evidence refs; distinguish live, stale, unavailable and unverified signals.
 
 ### B4 — Select one next action
 
@@ -116,6 +118,7 @@ Apply:
 - **D019:** identify the first open causal/evidential edge; fingerprint the task; stop unchanged loops.
 - **D020:** compare actually available and authorized actions; prioritize verified progress, decision-changing information and minimum useful intervention; switch strategy after preparation-only repetition.
 - **D021:** reconcile source and time, build the objective-conditioned world model, adjudicate prior results and select one next action with observable outcome and stop condition.
+- **D021 §6D:** intake the Control Master signal, distinguish its freshness/availability, reconcile it with the canonical route and explain whether it changed or confirmed the selected action.
 
 Do not select an action merely because it is easy to describe. Do not bypass a missing prerequisite, access denial, technical gate or owner authorization.
 
@@ -125,7 +128,7 @@ State what will be read, changed, created or run. Respect project boundaries and
 
 ### B6 — Verify and return a receipt
 
-Compare the observed result with the expected observable. Record exact artifact paths, revisions, hashes, tool outputs or limitations. Fetch back authorized writes. Do not claim that work was dispatched, received, executed, tested or merged without the matching evidence.
+Compare the observed result with the expected observable. Record exact artifact paths, revisions, hashes, tool outputs or limitations. Fetch back authorized writes. Do not claim that work was dispatched, received, executed, tested or merged without the matching evidence. For IABV tasks, include `CONTROL_MASTER_SIGNAL_RETRIEVED`, signal status/source/state ID/timestamps, top queue evidence refs, `SIGNAL_INFLUENCE` and whether the action outcome was verified, following D021 §6D.
 
 ## 5. Roles and non-overlapping responsibilities
 
@@ -163,6 +166,10 @@ DO_NOT_REPEAT=
 LAST_TERMINAL_FINGERPRINT=
 FIRST_OPEN_CAUSAL_EDGE=
 AUTHORIZATION_AND_EXCLUSIONS=
+CONTROL_MASTER_SIGNAL_STATUS=
+CONTROL_MASTER_SOURCE_STATE_ID_AND_TIMES=
+CONTROL_MASTER_QUEUE_ITEM_IDS_AND_EVIDENCE=
+SIGNAL_INFLUENCE_ON_NEXT_ACTION=
 AVAILABLE_INPUT_ARTIFACTS=
 NEXT_SINGLE_ACTION=
 EXPECTED_RETURN_ARTIFACT_OR_RECEIPT=
@@ -339,3 +346,16 @@ The reopen trigger is deliberately dependency-scoped: genuinely new, independent
 - [ ] Kept all project and cloud/local boundaries intact.
 
 **Acceptance boundary:** passing this checklist demonstrates that a session followed the explicit boot procedure for this bounded task. It does not prove that GitHub was automatically injected into the chat, that every future chat will comply, that a runtime enforces the method, that model weights learned, or that IABV has subjective consciousness.
+
+
+## 10. ChatGPT Project shared context (2026-10-31)
+
+Use one owner-controlled ChatGPT Project for IABV coordination. Add the copy-ready instructions from CHAT-ARCH-2026-10-31-CHATGPT-PROJECT-INSTRUCTIONS-R1.md to its Project instructions, and keep IABV ChatGPT chats inside it when the interface permits. The Project makes its own instructions, files and chats available as shared context to its chats. Choose memory mode by intended scope: Project-only confines IABV recall to chats inside this Project and excludes account-level saved memories and chats outside it; Default memory may offer broader account-level context where plan/settings permit, with cross-project mixing risk. Under the existing separate-project-memory policy, Project-only is preferred for the dedicated IABV Project unless the Owner explicitly chooses wider account recall. Neither mode guarantees recall of every message.
+
+At startup, inspect the Project sources/relevant chats, then retrieve the current canonical repository sources through the GitHub connector if available. Do not ask the Owner to re-upload a stable file already present in Project Sources or GitHub. Request a file only after checking authorized shared sources and proving that the missing evidence exists solely in a local-only location.
+
+Codex, Claude and other external AI products do not automatically inherit this ChatGPT Project. Use the existing GitHub repository as the common cross-product store and verify each receiving session's authorized access. Project instructions guide behavior; they do not install tools or enforce permissions.
+
+A ChatGPT Project does not expose the Owner's local runtime, local database or current Control Master digest. Keep that signal unavailable/stale unless an authorized live source is actually read. Do not start the runtime, CLI or bridge, and do not bypass Option D or other M1A gates.
+
+See UAAL-D021 §6E and CHAT-ARCH-2026-10-31-CHATGPT-PROJECT-INSTRUCTIONS-R1.md.

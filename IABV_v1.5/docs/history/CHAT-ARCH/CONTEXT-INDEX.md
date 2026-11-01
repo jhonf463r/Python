@@ -1,3 +1,8 @@
+<!-- CHATGPT_PROJECT_NATIVE_CONTEXT_R1: project transport pointer. -->
+## ChatGPT native shared context and memory scope (2026-10-31)
+
+The ChatGPT Project mechanism and its memory-mode tradeoffs, the retrieval ladder, the distinction between selective personal Memory and canonical project state, and copy-ready instructions are defined in [UAAL-D021 §6E](./CHAT-ARCH-2026-10-29-UAAL-D021-CROSS-SESSION-BOOT-AND-STATE-RECONCILIATION.md) and [CHATGPT Project Instructions R1](./CHAT-ARCH-2026-10-31-CHATGPT-PROJECT-INSTRUCTIONS-R1.md). Do not assume every prior detail is automatically recalled or ask the Owner to re-upload canonical files already retrievable from an authorized source. Project context is not local-runtime access or automatic cross-vendor dispatch.
+
 <!-- UAAL-D021 activation pointer; CURRENT-STATE.md owns live routing and volatile status. -->
 ## Índice operativo de contexto Espacio-Tiempo — fresh route, no copied state (2026-10-29)
 
@@ -15,6 +20,8 @@ Canonical method: [UAAL-D021](./CHAT-ARCH-2026-10-29-UAAL-D021-CROSS-SESSION-BOO
 
 Post-adoption D021 §6B.1 evidence: [Owner-input reuse validation receipt (partial application; causal attribution not isolated)](./CHAT-ARCH-2026-10-31-UAAL-D021-OWNER-INPUT-REUSE-VALIDATION-RECEIPT.md).
 M1A gate/scope clarification: [M1A authority-gate acceptance and dual-track continuation receipt](./CHAT-ARCH-2026-10-31-M1A-GATE-ACCEPTANCE-AND-DUAL-TRACK-RECONCILIATION-RECEIPT.md).
+
+Control Master signal-intake refinement: [D021 §6D](CHAT-ARCH-2026-10-29-UAAL-D021-CROSS-SESSION-BOOT-AND-STATE-RECONCILIATION.md#6d-control-master-signal-intake-and-decision-binding) and [reconciliation receipt](CHAT-ARCH-2026-10-31-UAAL-CONTROL-MASTER-SIGNAL-INTAKE-RECONCILIATION-R1.md). The Control Master is a priority/governance signal, not a second route authority. Its committed snapshot was dated 2026-04-19 at this audit cut; live runtime state was not observed. Signal intake, stale/unavailable handling and causal decision influence must be reported explicitly.
 
 Current method status, reuse evidence, next action, technical gates and permissions are owned only by CURRENT-STATE.md; this entry is a pointer, not a second state store.
 
