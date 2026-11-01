@@ -2,6 +2,28 @@
 
 **Routing authority:** this header is the active task route. The historical suffix beginning at the first standalone --- remains byte-for-byte history and is not active unless this header reactivates it.
 
+### Latest coordinator reconciliation — PR #581 (2026-10-31, America/Bogota)
+
+The Owner-known-input correction was merged and fetched back before this checkpoint. This records documentary provenance; it does not change the M1A technical gate.
+
+```text
+PR_581=MERGED
+PR_581_MERGE_COMMIT=b4b8df4f7de8af964113c866b0e1d6df3cab91fd
+MAIN_AT_PR581_FETCHBACK=b4b8df4f7de8af964113c866b0e1d6df3cab91fd
+PR_581_CHANGED_FILES=3_DOCUMENTATION_FILES_ONLY
+D021_BLOB_AFTER_PR581=f16039bc9adab9a81dbd9a0455ad59a1d6d77745
+OWNER_APPROVAL_PROTOCOL_BLOB_AFTER_PR581=7cb11a227c286d470ae44ccab4a0cace2bef29cb
+CURRENT_STATE_BLOB_AFTER_PR581=ab8c4ddb67e9b2723f4efa7b4aca39bd2307b37f
+POST_MERGE_FETCHBACK=VERIFIED
+OWNER_INPUT_RECONCILED=NO_ADDITIONAL_MECHANISM_IDENTIFIED
+G1/G2/G3=NOT_ESTABLISHED
+PROTECTED_READS=FAIL_CLOSED
+OPTION_D=RATIFIED_NO_BOOTSTRAP
+PRODUCT_IMPLEMENTATION=NOT_AUTHORIZED
+```
+
+The front-door synchronization now points to D021 §6B.1 as a mandatory pre-question check. Independent application of that newly added no-repeat rule in a later, non-identical session remains pending. Do not claim that its adoption alone proves automatic retrieval or runtime enforcement.
+
 ### Post-merge documentary state
 
 - BASE_MAIN=274deccd4f1d70c932c0a067e45b1bd41e5b4da7
