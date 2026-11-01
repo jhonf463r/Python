@@ -237,6 +237,15 @@ class SystemPromptBuilder:
             parts.append(f'Señal: {digest.signal_status}; cola: {digest.work_queue_status}.')
             if digest.work_queue_status == 'EMPTY_QUEUE':
                 parts.append('Cola verificada sin elementos pendientes en las fuentes consultadas.')
+            elif digest.work_queue_brief:
+                parts.append('Cola priorizada (primeros elementos):')
+                for item in digest.work_queue_brief[:5]:
+                    parts.append(f'- {item}')
+            if digest.work_queue_counts:
+                counts = ', '.join(
+                    f'{key}={value}' for key, value in sorted(digest.work_queue_counts.items())
+                )
+                parts.append(f'Recuentos de cola: {counts}')
         if digest.current_vision:
             parts.append(f'Vision: {digest.current_vision}')
         if digest.rules_brief:
