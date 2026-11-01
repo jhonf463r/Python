@@ -64,6 +64,16 @@ class ControlMasterService:
         self.platform_pending_queue = platform_pending_queue
         self.workspace_root = workspace_root
         self.recent_decisions_limit = recent_decisions_limit
+        self._last_work_queue_errors: list[str] = []
+
+    @property
+    def last_work_queue_errors(self) -> tuple[str, ...]:
+        """Stable error codes from the most recent queue projection."""
+        return tuple(self._last_work_queue_errors)
+
+    def _record_work_queue_error(self, code: str) -> None:
+        if code not in self._last_work_queue_errors:
+            self._last_work_queue_errors.append(code)
 
     # ------------------------------------------------------------------
     # Read API
@@ -295,6 +305,7 @@ class ControlMasterService:
 
         COMPLETED items are excluded.  Projection is idempotent.
         """
+        self._last_work_queue_errors = []
         items: list[dict[str, Any]] = []
         seen_ids: set[str] = set()
 
@@ -381,6 +392,7 @@ class ControlMasterService:
             try:
                 nodes = self.objective_repository.list_recent(status=status_val, limit=20)
             except Exception:
+                self._record_work_queue_error(f"OBJECTIVES_READ_FAILED:{status_val.value}")
                 continue
             for node in nodes:
                 oid = f'objective:{node.objective_id}'
@@ -420,6 +432,7 @@ class ControlMasterService:
             from iabv_v15.domain.models import PendingTaskStatus as _PTS
             all_tasks = queue.list_all() if hasattr(queue, 'list_all') else []
         except Exception:
+            self._record_work_queue_error("PLATFORM_PENDING_QUEUE_READ_FAILED")
             return []
         for task in all_tasks:
             if task.status == _PTS.COMPLETED:
@@ -455,15 +468,21 @@ class ControlMasterService:
             return []
         items: list[dict[str, Any]] = []
         candidates: list[Any] = []
+        method_errors: list[str] = []
+        method_succeeded = False
         for method_name in ('list_recent', 'list_open', 'list_pending', 'list_all'):
             method = getattr(self.pending_issue_repository, method_name, None)
             if method is None:
                 continue
             try:
                 candidates = list(method())
+                method_succeeded = True
                 break
             except Exception:
+                method_errors.append(method_name)
                 continue
+        if not method_succeeded and method_errors:
+            self._record_work_queue_error("PENDING_ISSUES_READ_FAILED")
         for issue in candidates[:15]:
             iid = f'issue:{getattr(issue, "issue_id", "") or id(issue)}'
             if iid in seen_ids:
@@ -497,6 +516,7 @@ class ControlMasterService:
         if self.self_examination_service is None:
             return []
         snapshot = None
+        method_errors: list[str] = []
         for method_name in ('current_review', 'current_snapshot', 'latest_snapshot', 'current', 'latest'):
             method = getattr(self.self_examination_service, method_name, None)
             if method is None:
@@ -505,8 +525,11 @@ class ControlMasterService:
                 snapshot = method()
                 break
             except Exception:
+                method_errors.append(method_name)
                 continue
         if snapshot is None:
+            if method_errors:
+                self._record_work_queue_error("OSES_FINDINGS_READ_FAILED")
             return []
         findings = getattr(snapshot, 'findings', None) or []
         items: list[dict[str, Any]] = []
@@ -568,6 +591,7 @@ class ControlMasterService:
                 try:
                     event = _json.loads(line)
                 except Exception:
+                    self._record_work_queue_error("RUNTIME_AUDIT_INVALID_JSON_LINE")
                     continue
                 if event.get('kind') != 'interaction_resolved':
                     continue
@@ -607,7 +631,7 @@ class ControlMasterService:
                     ),
                 ))
         except Exception:
-            pass
+            self._record_work_queue_error("RUNTIME_AUDIT_READ_FAILED")
         return items
 
     # ------------------------------------------------------------------
