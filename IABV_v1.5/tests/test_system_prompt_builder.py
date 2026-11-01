@@ -149,6 +149,9 @@ def test_prompt_includes_control_master_section_when_digest_present() -> None:
     assert 'obj-1: Cerrar capa world model' in prompt
     assert 'validar Codex vivo en Windows' in prompt
     assert 'UNRESOLVED' in prompt
+    assert 'state_id=state-prompt-contract-01' in prompt
+    assert 'digest_id=digest-prompt-contract-01' in prompt
+    assert 'generated_at_utc=2026-10-31T20:00:00+00:00' in prompt
 
 
 def test_prompt_falls_back_when_no_digest() -> None:
