@@ -226,7 +226,7 @@ class SystemPromptBuilder:
     @staticmethod
     def _section_control_master(digest: ControlMasterDigest | None) -> str:
         if digest is None:
-            return '## Control Maestro\nSeñal UNAVAILABLE: no se recibió un digest en esta sesión.'
+            return '## Control Maestro\nNo disponible en esta sesion; señal UNAVAILABLE: no se recibió un digest en esta sesión.'
         if digest.signal_status == 'UNAVAILABLE':
             reason = digest.signal_reason or 'SOURCE_UNAVAILABLE'
             return f'## Control Maestro\nSeñal UNAVAILABLE: {reason}. No interpretes esto como una cola vacía.'
