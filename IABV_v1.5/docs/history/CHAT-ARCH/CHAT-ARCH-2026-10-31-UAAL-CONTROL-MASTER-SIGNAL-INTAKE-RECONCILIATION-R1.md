@@ -115,11 +115,40 @@ Sources:
 - https://help.openai.com/en/articles/11145903-connecting-github-to-chatgpt
 - https://help.openai.com/en/articles/11487775-connected-apps-in-chatgpt
 
-**Failure found:** the coordinator asked the Owner to upload a current digest before fully checking the native ChatGPT Project route and did not consistently prioritize already-available canonical GitHub retrieval. This introduced avoidable manual relay. The correction is the retrieval ladder: Project Sources/relevant chats → authorized GitHub → another already-connected authorized source → one narrowly identified Owner-local artifact only when the evidence is proven to exist solely in an inaccessible local/runtime source.
+**Failure found — three distinct causes:** (1) the ChatGPT product's Memory is selective, not a complete transcript archive; it may use relevant past chats but does not retain every detail or search history for every response; (2) the IABV operating front doors did not wire the native ChatGPT Project context path and explicit memory-mode tradeoffs into the new-chat sequence; (3) the coordinator did not consistently apply the already-adopted no-repeat/known-input rule and the available GitHub connector before asking for manual transfer. A current local Control Master digest is a separate case: requesting it may still be necessary if it exists only in the local runtime and no authorized reader can retrieve it, but the coordinator must prove that boundary before asking for manual export. The corrected retrieval ladder is Project Sources/relevant chats → authorized GitHub → another already-connected authorized source → one narrowly identified Owner-local artifact only when it is proven to exist solely in an inaccessible local/runtime source.
 
 **Boundary:** a ChatGPT Project shares context only among chats inside that Project. It does not automatically deliver files to Codex/Claude or expose the Owner's local filesystem/runtime. The committed Control Master snapshot remains stale (2026-04-19); no live local Control Master digest was retrieved. Therefore LIVE_RUNTIME_SIGNAL=NOT_OBSERVED. No runtime, CLI, protected read, bridge, implementation, test, build, credential, permission or tunnel operation was performed. M1A/Option D gates remain unchanged.
 
 The copy-ready one-time Project configuration is in CHAT-ARCH-2026-10-31-CHATGPT-PROJECT-INSTRUCTIONS-R1.md. This GitHub change does not configure native ChatGPT Project settings.
+
+
+## 8A. Root-cause adjudication: "supermente" continuity vs actual product behavior
+
+This Owner concern is not accurately reduced to "the chats need a Project." The supported explanation is a layered gap:
+
+1. **Platform memory semantics (verified official behavior):** Memory can retain useful preferences/context but is selective; it does not retain every detail from every conversation. The Memory summary is not exhaustive, and the system looks up relevant history when it is likely to help rather than searching all chat history for every answer. Available controls vary by plan, region, platform and workspace. Project-only memory intentionally excludes saved memories and chats outside its Project; Default memory may offer wider continuity subject to the account's settings and plan.
+2. **Existing IABV design gap (verified in main at base):** D021/New-Chat Kit already acknowledged that automatic cross-session boot and runtime enforcement were not proven, yet the front-door rules did not specify ChatGPT Project context, the two memory modes, their tradeoffs, or the requirement to inspect Project sources before asking the Owner to repeat or upload stable material.
+3. **Coordinator execution defect (observed in this task):** this session had an authorized GitHub connector and available project continuity context, but its prior response prematurely made a user upload the next step and overstated Project-only memory as a universal recommendation. The coordinator must retrieve first, distinguish project-only from default memory, and never claim full recall.
+4. **Not established:** there is no evidence of a single persistent ChatGPT identity that shares every hidden token/state across every chat; no evidence that model weights learn from each IABV conversation; no proof that another session automatically consumed the repository; and no live local Control Master digest was observed.
+
+The user's intended "Supermente Espacio-Tiempo" is therefore operationally implementable as a governed shared-context/evidence system across Projects, GitHub and participating agents, but it must not be represented as literal consciousness, an omniscient memory or automatic delivery. The correct target is reliable recovery of relevant decisions/configurations with provenance, plus a later independent-session test.
+
+### Root-cause and acceptance states
+
+```text
+CHATGPT_MEMORY=SELECTIVE; NOT_EXHAUSTIVE
+CHAT_HISTORY_LOOKUP=RELEVANCE_BASED; NOT_EVERY_RESPONSE
+PROJECT_CONTEXT=AVAILABLE_WITHIN_PROJECT; RETRIEVAL_MUST_BE_CONFIRMED
+MEMORY_MODE=DEFAULT_OR_PROJECT_ONLY; CHOOSE_BY_SCOPE
+IABV_FRONT_DOOR_PROJECT_AWARENESS=ADDED_TO_PR590_CANDIDATE
+COORDINATOR_NO_REPEAT_AND_RETRIEVAL_COMPLIANCE=REQUIRES_LATER_CAUSAL_TEST
+AUTOMATIC_SUPERSESSION_ACROSS_ALL_CHATS=NOT_PROVEN
+MODEL_WEIGHT_LEARNING_FROM_CHAT=NOT_CLAIMED
+CROSS_SESSION_CAUSAL_REUSE=NOT_YET_VERIFIED_FOR_THIS_CORRECTION
+LIVE_LOCAL_CONTROL_MASTER_DIGEST=NOT_OBSERVED
+```
+
+The later test must begin in a fresh chat in the configured Project and verify route recovery, known-input reuse, exact decision/configuration retrieval, one action selected from that context, and no unnecessary Owner relay. Test a separate non-IABV chat independently if making a claim about account-wide Memory. Do not claim the full "supermind" objective completed after documentary changes or one successful chat.
 
 ## 9. Acceptance evidence and limits
 
