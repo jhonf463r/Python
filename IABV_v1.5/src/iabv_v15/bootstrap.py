@@ -4160,12 +4160,12 @@ class AppBootstrap:
             work_queue = service.current_work_queue(limit=10)
             source_errors = tuple(getattr(service, 'last_work_queue_errors', ()) or ())
             if source_errors:
-                return ControlMasterDigest(
-                    source_state_id=state.state_id,
-                    signal_status='UNAVAILABLE',
-                    signal_reason='QUEUE_SOURCE_ERRORS:' + ','.join(source_errors),
-                    work_queue_status='UNAVAILABLE',
-                ).model_dump(mode='json')
+                digest = builder.build(state, work_queue=None)
+                return digest.model_copy(update={
+                    'signal_status': 'UNAVAILABLE',
+                    'signal_reason': 'QUEUE_SOURCE_ERRORS:' + ','.join(source_errors),
+                    'work_queue_status': 'UNAVAILABLE',
+                }).model_dump(mode='json')
             return builder.build(state, work_queue=work_queue).model_dump(mode='json')
         except Exception as exc:
             return ControlMasterDigest(
