@@ -103,3 +103,35 @@ PROTECTED_READS=FAIL_CLOSED
 PRODUCT_IMPLEMENTATION=NOT_AUTHORIZED
 TESTS_BUILD_RUNTIME=NOT_RUN
 ```
+
+
+## 8. ChatGPT-native transport review and failure correction
+
+OpenAI's official product documentation was checked for Projects, memory, connected apps and GitHub. A ChatGPT Project can share its files, instructions and chats among chats inside that Project. Project-only memory scopes cross-chat references to that Project. ChatGPT's GitHub connection retrieves permitted repository content on demand and does not create a continuously synchronized GitHub index; availability varies by plan/workspace/product surface, and the standard GitHub app is read-only.
+
+Sources:
+- https://help.openai.com/en/articles/10169521-projects-in-chatgpt
+- https://help.openai.com/en/articles/8590148-memory-in-chatgpt
+- https://help.openai.com/en/articles/11145903-connecting-github-to-chatgpt
+- https://help.openai.com/en/articles/11487775-connected-apps-in-chatgpt
+
+**Failure found:** the coordinator asked the Owner to upload a current digest before fully checking the native ChatGPT Project route and did not consistently prioritize already-available canonical GitHub retrieval. This introduced avoidable manual relay. The correction is the retrieval ladder: Project Sources/relevant chats → authorized GitHub → another already-connected authorized source → one narrowly identified Owner-local artifact only when the evidence is proven to exist solely in an inaccessible local/runtime source.
+
+**Boundary:** a ChatGPT Project shares context only among chats inside that Project. It does not automatically deliver files to Codex/Claude or expose the Owner's local filesystem/runtime. The committed Control Master snapshot remains stale (2026-04-19); no live local Control Master digest was retrieved. Therefore LIVE_RUNTIME_SIGNAL=NOT_OBSERVED. No runtime, CLI, protected read, bridge, implementation, test, build, credential, permission or tunnel operation was performed. M1A/Option D gates remain unchanged.
+
+The copy-ready one-time Project configuration is in CHAT-ARCH-2026-10-31-CHATGPT-PROJECT-INSTRUCTIONS-R1.md. This GitHub change does not configure native ChatGPT Project settings.
+
+## 9. Acceptance evidence and limits
+
+CHATGPT_PROJECT_NATIVE_CONTEXT=DOCUMENTED_FROM_OFFICIAL_OPENAI_HELP
+PROJECT_SETUP_IN_OWNER_UI=NOT_CONFIGURED_BY_THIS_SESSION
+PROJECT_SHARED_CONTEXT_CONSUMPTION=NOT_OBSERVED
+GITHUB_CONNECTOR_IN_CURRENT_SESSION=AVAILABLE_AND_USED_FOR_REPOSITORY_ACCESS
+CROSS_PRODUCT_GITHUB_ACCESS=SESSION_SPECIFIC; NOT_ASSUMED
+LIVE_LOCAL_CONTROL_MASTER_DIGEST=NOT_OBSERVED
+OWNER_MANUAL_RELAY_REDUCTION=PROTOCOL_DESIGNED; CAUSAL_REUSE_NOT_YET_VERIFIED
+MAIN_ADOPTION=NOT_MERGED
+M1A_G1=BLOCKED; UNCHANGED
+OPTION_D=RATIFIED_NO_BOOTSTRAP
+PROTECTED_READS=FAIL_CLOSED
+LOCAL_RUNTIME/CLI/BRIDGE=NOT_RUN
