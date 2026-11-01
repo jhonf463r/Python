@@ -1318,7 +1318,7 @@ Item {
                 width: parent.width
             }
             Label {
-                text: "No incluye títulos, resúmenes, evidencias, rutas locales ni contenido de usuario. La publicación no es automática y requiere tu confirmación."
+                text: "No incluye títulos, resúmenes, evidencias, rutas locales ni contenido de usuario. SHA-256 comprueba integridad, pero no firma ni autentica una raíz de confianza. La publicación no es automática y requiere tu confirmación."
                 color: textSecondary
                 font.family: bodyFontFamily
                 font.pixelSize: 12
