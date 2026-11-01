@@ -173,3 +173,18 @@ def test_publisher_blocks_unhashable_malformed_status_without_transport() -> Non
 
     assert result["status"] == "BLOCKED"
     assert result["reason"] == "SIGNAL_VALIDATION_FAILED"
+
+
+def test_projection_rejects_unhashable_source_value_without_raising() -> None:
+    signal = ControlMasterSignalProjector.project(
+        state=_state(),
+        work_queue=[{
+            "id": "objective:obj-control-master-super-sync",
+            "status": "active",
+            "source": ["objective_repository"],
+            "priority_score": 80,
+            "priority_label": "high",
+        }],
+    )
+    assert signal["signal_status"] == "UNAVAILABLE"
+    assert signal["reason_codes"] == ["QUEUE_ITEM_NOT_PORTABLE"]
