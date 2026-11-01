@@ -34,9 +34,9 @@ _ALLOWED_ITEM_STATUSES = {
 }
 
 
-def _opaque_item_id(item_id: str) -> str:
-    """Stable cross-session reference that does not publish the descriptive source ID."""
-    return "item-" + hashlib.sha256(item_id.encode("utf-8")).hexdigest()[:24]
+def _queue_slot_id(position: int) -> str:
+    """Per-snapshot reference; deliberately has no mapping to the source item ID."""
+    return f"queue-item-{position + 1:02d}"
 
 
 class ControlMasterSignalProjector:
@@ -106,7 +106,7 @@ class ControlMasterSignalProjector:
             return cls.unavailable("SOURCE_TIMESTAMP_IN_FUTURE", source_state_id=state.state_id)
 
         safe_items: list[dict[str, Any]] = []
-        for item in work_queue[:_MAX_ITEMS]:
+        for position, item in enumerate(work_queue[:_MAX_ITEMS]):
             if not isinstance(item, dict):
                 return cls.unavailable("QUEUE_ITEM_INVALID", source_state_id=state.state_id)
             item_id = item.get("id")
@@ -129,7 +129,7 @@ class ControlMasterSignalProjector:
             ):
                 return cls.unavailable("QUEUE_ITEM_NOT_PORTABLE", source_state_id=state.state_id)
             safe_items.append({
-                "item_id": _opaque_item_id(item_id),
+                "item_id": _queue_slot_id(position),
                 "status": status,
                 "source": source,
                 "priority_label": label,
