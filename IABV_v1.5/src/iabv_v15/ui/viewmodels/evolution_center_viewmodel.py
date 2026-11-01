@@ -303,17 +303,34 @@ class EvolutionCenterViewModel(QObject):
         except Exception as exc:
             logger.warning('evolution_center: self_examination failed: %s', exc)
             self_examination = {}
-        control_master_digest: dict[str, Any] = {}
+        control_master_digest: dict[str, Any] = {
+            'signal_status': 'UNAVAILABLE',
+            'signal_reason': 'CONTROL_MASTER_SERVICE_NOT_CONFIGURED',
+            'work_queue_status': 'UNAVAILABLE',
+        }
         if self.control_master_service is not None and self.control_master_digest_builder is not None:
             try:
                 state = self.control_master_service.current_state(refresh=False)
-                try:
-                    work_queue = self.control_master_service.current_work_queue(limit=10)
-                except Exception:
-                    work_queue = []
-                control_master_digest = self.control_master_digest_builder.build(state, work_queue=work_queue).model_dump(mode='json')
-            except Exception:
-                control_master_digest = {}
+                work_queue = self.control_master_service.current_work_queue(limit=10)
+                source_errors = tuple(getattr(self.control_master_service, 'last_work_queue_errors', ()) or ())
+                if source_errors:
+                    control_master_digest = {
+                        'signal_status': 'UNAVAILABLE',
+                        'signal_reason': 'QUEUE_SOURCE_ERRORS:' + ','.join(source_errors),
+                        'work_queue_status': 'UNAVAILABLE',
+                        'source_state_id': state.state_id,
+                    }
+                else:
+                    control_master_digest = self.control_master_digest_builder.build(
+                        state, work_queue=work_queue
+                    ).model_dump(mode='json')
+            except Exception as exc:
+                logger.warning('evolution_center: Control Master signal unavailable (%s)', type(exc).__name__)
+                control_master_digest = {
+                    'signal_status': 'UNAVAILABLE',
+                    'signal_reason': 'CONTROL_MASTER_READ_FAILED:' + type(exc).__name__,
+                    'work_queue_status': 'UNAVAILABLE',
+                }
         self._health_snapshot = snapshot.model_dump(mode='json') if snapshot is not None else self._health_snapshot
         self._recent_dossiers = dossiers
         self._recent_incidents = filtered_incidents

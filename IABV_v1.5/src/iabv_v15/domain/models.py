@@ -2667,6 +2667,9 @@ class ControlMasterDigest(BaseModel):
     work_queue_counts: dict[str, int] = Field(default_factory=dict)
     generated_at_utc: datetime = Field(default_factory=utc_now)
     source_state_id: str = ""
+    signal_status: str = "UNVERIFIED"
+    signal_reason: str = ""
+    work_queue_status: str = "UNVERIFIED"
 
 
 

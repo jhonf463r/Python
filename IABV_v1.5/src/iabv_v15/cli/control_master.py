@@ -96,6 +96,22 @@ def cmd_export_digest(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_export_signal(args: argparse.Namespace) -> int:
+    boot = _bootstrap(args.workspace)
+    signal = boot.export_control_master_signal(refresh=args.refresh)
+    json.dump(signal, sys.stdout, indent=2, ensure_ascii=False)
+    sys.stdout.write("\n")
+    return 0 if signal.get('signal_status') in {'AVAILABLE', 'EMPTY_QUEUE'} else 2
+
+
+def cmd_publish_signal(args: argparse.Namespace) -> int:
+    boot = _bootstrap(args.workspace)
+    result = boot.publish_control_master_signal(refresh=args.refresh)
+    json.dump(result, sys.stdout, indent=2, ensure_ascii=False, default=str)
+    sys.stdout.write("\n")
+    return 0 if result.get('status') in {'PUBLISHED', 'UNCHANGED'} else 2
+
+
 def cmd_set_vision(args: argparse.Namespace) -> int:
     boot = _bootstrap(args.workspace)
     state = boot.control_master_service.set_vision(
@@ -241,6 +257,20 @@ def build_parser(parser: argparse.ArgumentParser | None = None) -> argparse.Argu
         help="Skip the saved base state (use only when you want a live projection, may drop persisted current_vision/tests/metadata).",
     )
     p_export.set_defaults(func=cmd_export_digest)
+
+    p_signal = sub.add_parser(
+        "export-signal",
+        help="Print a sanitised, read-only cross-session Control Master signal.",
+    )
+    p_signal.add_argument("--refresh", action="store_true", help="Rebuild source state before projecting.")
+    p_signal.set_defaults(func=cmd_export_signal)
+
+    p_publish = sub.add_parser(
+        "publish-signal",
+        help="Publish only the sanitised signal to the dedicated control-master-live branch.",
+    )
+    p_publish.add_argument("--refresh", action="store_true", help="Rebuild source state before projecting.")
+    p_publish.set_defaults(func=cmd_publish_signal)
 
     p_vision = sub.add_parser("set-vision", help="Update the active vision.")
     p_vision.add_argument("vision")
