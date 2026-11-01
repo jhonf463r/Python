@@ -517,6 +517,12 @@ class EvolutionCenterViewModel(QObject):
         if not digest:
             return ''
         parts: list[str] = []
+        signal_status = str(digest.get('signal_status') or 'UNVERIFIED').strip()
+        queue_status = str(digest.get('work_queue_status') or 'UNVERIFIED').strip()
+        parts.append(f'Control Master: señal {signal_status}; cola {queue_status}')
+        signal_reason = str(digest.get('signal_reason') or '').strip()
+        if signal_reason:
+            parts.append(f'Incidencia de señal: {signal_reason}')
         vision = str(digest.get('current_vision') or '').strip()
         if vision:
             parts.append(f'Vision: {vision}')
