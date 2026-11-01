@@ -84,6 +84,26 @@ class ControlMasterSignalPublisher:
                         "reason": "REMOTE_IDENTITY_REJECTED",
                         "branch": _SIGNAL_BRANCH,
                     }
+
+                # A pre-existing public signal branch must not carry unrelated
+                # content. Compare complete commit trees against live main.
+                self._run_git(
+                    ["fetch", "--no-tags", "--depth=1", "origin", "refs/heads/main"],
+                    cwd=checkout,
+                )
+                main_commit = self._run_git(
+                    ["rev-parse", "FETCH_HEAD"], cwd=checkout
+                ).stdout.strip()
+                public_branch_changes = self._run_git(
+                    ["diff", "--name-only", main_commit, "HEAD"], cwd=checkout
+                ).stdout.splitlines()
+                if not self._public_branch_delta_is_allowlisted(public_branch_changes):
+                    return {
+                        "status": "BLOCKED",
+                        "reason": "PUBLIC_BRANCH_CONTAINS_NON_SIGNAL_CHANGES",
+                        "branch": _SIGNAL_BRANCH,
+                    }
+
                 target = self._safe_signal_target(checkout)
                 descriptor, temporary_name = tempfile.mkstemp(
                     prefix=".control-master-signal-",
@@ -92,10 +112,11 @@ class ControlMasterSignalPublisher:
                 )
                 temporary_target = Path(temporary_name)
                 try:
+                    expected_content = (
+                        json.dumps(signal, ensure_ascii=False, sort_keys=True, indent=2) + "\n"
+                    )
                     with os.fdopen(descriptor, "w", encoding="utf-8", newline="\n") as stream:
-                        stream.write(
-                            json.dumps(signal, ensure_ascii=False, sort_keys=True, indent=2) + "\n"
-                        )
+                        stream.write(expected_content)
                     temporary_target.replace(target)
                 except Exception:
                     temporary_target.unlink(missing_ok=True)
@@ -125,6 +146,26 @@ class ControlMasterSignalPublisher:
                     "push", "--no-follow-tags", "--no-verify",
                     "origin", f"HEAD:refs/heads/{_SIGNAL_BRANCH}",
                 ], cwd=checkout)
+                try:
+                    verification_error = self._verify_remote_publication(
+                        checkout=checkout,
+                        expected_commit=commit_sha,
+                        expected_content=expected_content,
+                    )
+                except (OSError, RuntimeError, subprocess.TimeoutExpired):
+                    # The push may already have succeeded. Never report BLOCKED
+                    # or PUBLISHED when the remote postcondition was not observed.
+                    verification_error = "REMOTE_READBACK_FAILED"
+                if verification_error:
+                    return {
+                        "status": "PUBLISHED_UNVERIFIED",
+                        "reason": verification_error,
+                        "branch": _SIGNAL_BRANCH,
+                        "path": _SIGNAL_PATH.as_posix(),
+                        "commit_sha": commit_sha,
+                        "main_modified": False,
+                        "force_push": False,
+                    }
                 return {
                     "status": "PUBLISHED",
                     "branch": _SIGNAL_BRANCH,
@@ -133,6 +174,7 @@ class ControlMasterSignalPublisher:
                     "content_sha256": signal["content_sha256"],
                     "main_modified": False,
                     "force_push": False,
+                    "remote_readback_verified": True,
                 }
         except (OSError, RuntimeError, subprocess.TimeoutExpired):
             # Do not expose command output that might contain environment details.
@@ -277,6 +319,53 @@ class ControlMasterSignalPublisher:
                 or item["priority_score"] > 1000
             ):
                 return "QUEUE_ITEM_VALUE_REJECTED"
+        return None
+
+    @staticmethod
+    def _public_branch_delta_is_allowlisted(changed_paths: list[str]) -> bool:
+        """Reject public signal branches containing any non-signal tree delta."""
+        return (
+            len(changed_paths) <= 1
+            and all(path == _SIGNAL_PATH.as_posix() for path in changed_paths)
+        )
+
+    def _verify_remote_publication(
+        self,
+        *,
+        checkout: Path,
+        expected_commit: str,
+        expected_content: str,
+    ) -> str | None:
+        """Verify exact remote ref and exact bytes after the push completes."""
+        ref = f"refs/heads/{_SIGNAL_BRANCH}"
+        remote_lines = self._run_git(
+            ["ls-remote", "--heads", _REPOSITORY_URL, ref]
+        ).stdout.splitlines()
+        remote_rows = [line.split() for line in remote_lines if line.strip()]
+        if (
+            len(remote_rows) != 1
+            or len(remote_rows[0]) != 2
+            or remote_rows[0][0] != expected_commit
+            or remote_rows[0][1] != ref
+        ):
+            return "REMOTE_HEAD_MISMATCH"
+
+        self._run_git(
+            ["fetch", "--no-tags", "origin", ref],
+            cwd=checkout,
+        )
+        fetched_commit = self._run_git(
+            ["rev-parse", "FETCH_HEAD"], cwd=checkout
+        ).stdout.strip()
+        if fetched_commit != expected_commit:
+            return "REMOTE_FETCHED_COMMIT_MISMATCH"
+
+        fetched_content = self._run_git(
+            ["show", f"FETCH_HEAD:{_SIGNAL_PATH.as_posix()}"],
+            cwd=checkout,
+        ).stdout
+        if fetched_content != expected_content:
+            return "REMOTE_CONTENT_MISMATCH"
         return None
 
     @staticmethod
