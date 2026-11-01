@@ -16,6 +16,8 @@ Canonical method: [UAAL-D021](./CHAT-ARCH-2026-10-29-UAAL-D021-CROSS-SESSION-BOO
 Post-adoption D021 §6B.1 evidence: [Owner-input reuse validation receipt (partial application; causal attribution not isolated)](./CHAT-ARCH-2026-10-31-UAAL-D021-OWNER-INPUT-REUSE-VALIDATION-RECEIPT.md).
 M1A gate/scope clarification: [M1A authority-gate acceptance and dual-track continuation receipt](./CHAT-ARCH-2026-10-31-M1A-GATE-ACCEPTANCE-AND-DUAL-TRACK-RECONCILIATION-RECEIPT.md).
 
+Control Master signal-intake refinement: [D021 §6D](CHAT-ARCH-2026-10-29-UAAL-D021-CROSS-SESSION-BOOT-AND-STATE-RECONCILIATION.md#6d-control-master-signal-intake-and-decision-binding) and [reconciliation receipt](CHAT-ARCH-2026-10-31-UAAL-CONTROL-MASTER-SIGNAL-INTAKE-RECONCILIATION-R1.md). The Control Master is a priority/governance signal, not a second route authority. Its committed snapshot was dated 2026-04-19 at this audit cut; live runtime state was not observed. Signal intake, stale/unavailable handling and causal decision influence must be reported explicitly.
+
 Current method status, reuse evidence, next action, technical gates and permissions are owned only by CURRENT-STATE.md; this entry is a pointer, not a second state store.
 
 **New-chat activation:** follow the [UAAL New-Chat Boot and Handoff Kit](./CHAT-ARCH-2026-10-31-UAAL-NEW-CHAT-BOOT-AND-HANDOFF-KIT.md) after refreshing the live route. This is an operational aid, not a second router.

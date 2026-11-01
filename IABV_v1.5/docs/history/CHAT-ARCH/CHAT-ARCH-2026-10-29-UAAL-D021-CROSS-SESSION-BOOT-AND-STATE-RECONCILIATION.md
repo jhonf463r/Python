@@ -363,6 +363,97 @@ The sender provides the minimum context needed; the receiver acknowledges the pr
 
 The repository `jhonf463r/Python` was checked on 2026-10-31 and its visibility was `public`. Therefore, this public repository is suitable for public-safe method contracts and sanitized/generalizable lessons only. Do not write private project archives, personal data, private designs/source files, customer information, credentials, keys, tokens, account identifiers or other restricted material here. Keep such project material in an appropriately private, access-controlled project store and place only a sanitized pointer or transferable method in the public core. Never weaken a project's privacy boundary for convenience of cross-chat retrieval.
 
+
+## 6D. Control Master signal intake and decision binding (2026-10-31)
+
+The existing IABV Control Master is a governance/priority signal that must be consulted when it is relevant and available. This section closes a cross-session method gap: new chats were following the canonical route while failing to explicitly retrieve and adjudicate the Control Master signal that should inform the next useful action. It does **not** create another coordinator, router, memory, service or authority source.
+
+### 6D.1 Keep the two sources distinct and ordered
+
+- `CURRENT-STATE.md` remains the sole canonical authority for IABV `ACTIVE_TASK`, `NEXT_ACTION`, technical gates and permissions.
+- The live `ControlMasterService.current_state()` / `current_work_queue()` and their `ControlMasterDigest` projection provide a second, objective-relevant governance/priority signal: active objectives, backlog, priority, dependencies, next action, evidence refs, risks, decisions and unresolved items.
+- A committed `data/evolution/control_master/latest.json` or `latest.md` is a snapshot with its own generation time. It is not automatically a live view of the local runtime. Use it as historical evidence when stale; do not silently promote it to current state.
+- The Evolution Center's Control Master view and `ProactiveDashboardService` are not interchangeable. The former exposes the Control Master digest; the latter summarizes pending human approvals and learned approval policies. Neither replaces `CURRENT-STATE.md`.
+- A digest, queue item or UI card is not an authorization, mandate, permission grant or proof that an operation may execute.
+
+### 6D.2 Mandatory source-bound intake
+
+For every material IABV development/coordination session, attempt the narrowest already-available, authorized read of the Control Master signal when it is relevant to the objective. Do not start IABV, launch the runtime, run a CLI, access protected data or inspect credentials merely to manufacture a signal.
+
+Record at least:
+
+```text
+CONTROL_MASTER_SIGNAL_STATUS=FRESH|STALE|UNAVAILABLE|UNVERIFIED|CONFLICTED|NOT_APPLICABLE
+CONTROL_MASTER_SOURCE=
+CONTROL_MASTER_WORKSPACE_OR_PROJECT_SCOPE=
+CONTROL_MASTER_STATE_ID=
+CONTROL_MASTER_DIGEST_ID_OR_SHA=
+CONTROL_MASTER_GENERATED_AT=
+CONTROL_MASTER_OBSERVED_AT=
+CONTROL_MASTER_TOP_QUEUE_ITEM_IDS=
+CONTROL_MASTER_TOP_QUEUE_PRIORITIES=
+CONTROL_MASTER_NEXT_ACTIONS_AND_DEPENDENCIES=
+CONTROL_MASTER_EVIDENCE_REFS=
+CONTROL_MASTER_DECISION_INFLUENCE=
+```
+
+`FRESH` means the digest was obtained from the current, source-identified runtime/read surface for this task episode and its generation/observation times are available. `STALE` means the source is known to predate relevant state changes or falls outside an established freshness bound. `UNAVAILABLE` means no supported read route or payload was available. `UNVERIFIED` means content was supplied without enough source identity/time to establish currentness. `CONFLICTED` means material fields disagree with a source of higher authority or newer evidence. `NOT_APPLICABLE` is reserved for tasks unrelated to IABV Control Master.
+
+Do not invent a freshness interval. Use an existing documented producer TTL if one governs the source; otherwise report exact timestamps and whether the read came from the current runtime or a committed snapshot.
+
+### 6D.3 Empty is not unavailable
+
+A valid, successfully retrieved digest with a verified source identity and timestamps may legitimately contain an empty queue. That is `EMPTY_CONFIRMED`.
+
+A blank normal-read response, exception, missing service, missing property, stale cache or failed export is `RETRIEVAL_FAILED` / `UNAVAILABLE`, not `EMPTY_CONFIRMED`. Never catch an error and silently replace it with `[]`, `{}` or `None` in the session's reasoning record. Preserve the failure status and continue only on evidence sufficient for the chosen action.
+
+### 6D.4 Reconcile signal with the canonical route before selecting work
+
+Construct the objective-conditioned model using both sources but preserve their authority order:
+
+1. Read the active `CURRENT-STATE.md` header at the pinned `main` SHA. It controls the active route, gates and permissions.
+2. Read the Control Master signal and bind its scope, timestamps, state ID and queue item evidence.
+3. Match queue entries to the Owner's current objective, acceptance condition, project, exact target and current dependencies.
+4. Exclude completed, superseded, unrelated, stale, blocked-by-unmet-dependency and unauthorized items. A high priority score is a ranking input, not permission.
+5. Apply D019 to identify the first open causal/evidential edge and anti-loop fingerprint; apply D020 to compare the available authorized actions and select the smallest useful action.
+6. Select one action and explain whether the Control Master signal changed the choice, confirmed it, or was unavailable and therefore did not influence it.
+
+If the panel conflicts with `CURRENT-STATE.md`, do not merge the instructions. Preserve the canonical route and record the panel conflict for reconciliation. If D019 permits an independent lane, continue only when the Owner's current objective and its own authorization support a concrete task.
+
+### 6D.5 Consumer coverage and failure visibility
+
+Source code that defines or wires a digest is not proof that every consumer receives it. For any future code-level work, verify separately:
+
+- the full prompt path receives the digest;
+- compact/small-model paths receive an equivalent bounded projection or explicitly declare why not;
+- dashboard/view-model rendering preserves signal identity and freshness;
+- unavailable/error paths remain visibly unavailable instead of appearing empty;
+- task outcomes link to their owning objective where intended;
+- a later decision actually changes or is confirmed because of the signal.
+
+The 2026-10-31 static reconciliation observed a full-prompt digest path, a compact-prompt omission, and silent empty/null fallbacks in some consumers. This is a source-level gap record, not proof of runtime failure or a mandate to implement now. Do not modify product code under a documentation-only authorization.
+
+### 6D.6 Cross-chat handoff and causal reuse
+
+A handoff that materially depends on the Control Master must carry the fields in §6D.2 and the exact source refs. The receiving chat must independently acknowledge whether it retrieved the digest, reconcile it with its own live `CURRENT-STATE.md`, and state how it affected the selected action. A pasted digest or a link proves availability of content, not that it was consumed or causally influential.
+
+Use separate states:
+
+```text
+CONTROL_MASTER_SIGNAL_RETRIEVED=VERIFIED|REPORTED|NOT_AVAILABLE
+ROUTE_RECONCILED=VERIFIED|PARTIAL|NOT_RUN
+SIGNAL_CONSIDERED=YES|NO
+SIGNAL_INFLUENCE=CHANGED_ACTION|CONFIRMED_ACTION|NO_EFFECT|UNAVAILABLE
+ACTION_OUTCOME=VERIFIED|PARTIAL|FAILED|NOT_RUN
+LATER_CAUSAL_REUSE=NOT_TESTED|VERIFIED
+```
+
+Claim causal influence only when the receipt identifies the signal and demonstrates the decision it changed or confirmed. Do not claim automatic delivery to future chats, runtime enforcement or generalization from a single session.
+
+### 6D.7 Safety and scope
+
+The Control Master is subordinate to the Owner's current objective and all existing hard gates. It cannot authorize protected reads, credential access, root provisioning, code changes, tests, build, runtime, tunnel, deployment, permission changes or PR merges. Do not put secrets or protected payloads into public GitHub receipts. Keep local runtime evidence and cloud coordination evidence explicitly separate.
+
 ## 7. Historical authoring snapshot and per-session falsifiable checks
 
 The values below are the original D021 authoring snapshot, not current route authority. Each material session must refresh live `main` and current PR metadata before reuse. Observed while preparing the initial revision:
