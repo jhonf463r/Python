@@ -544,6 +544,15 @@ class EvolutionCenterViewModel(QObject):
         active = digest.get('active_objectives_brief') or []
         if active:
             parts.append(f'Objetivos activos: {", ".join(active[:3])}')
+        queue_items = digest.get('work_queue_brief') or []
+        if queue_items:
+            parts.append(f'Prioridad inmediata: {queue_items[0]}')
+        queue_counts = digest.get('work_queue_counts') or {}
+        if queue_counts:
+            counts_text = ', '.join(
+                f'{key}={value}' for key, value in sorted(queue_counts.items())
+            )
+            parts.append(f'Recuentos de cola: {counts_text}')
         unresolved = digest.get('unresolved') or []
         if unresolved:
             parts.append(f'UNRESOLVED: {unresolved[0]}')
