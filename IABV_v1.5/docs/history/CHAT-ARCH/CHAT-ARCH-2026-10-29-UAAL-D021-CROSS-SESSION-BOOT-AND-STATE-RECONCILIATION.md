@@ -436,6 +436,59 @@ Required state progression:
 
 A missing stage remains explicit; do not skip from a send attempt to "received" or from a report to "verified".
 
+### 6C.5.2 Execution-surface routing and permission provenance (2026-11-01)
+
+**Triggering episode:** [TICD execution-surface handoff learning receipt](./CHAT-ARCH-2026-11-01-UAAL-TICD-EXECUTION-SURFACE-HANDOFF-LEARNING-RECEIPT.md). The supplied transcript shows a prompt intended for the external Codex Desktop operator that incorrectly required proof of a T3 thread's `Supervised` permission. The recipient was the external Codex surface; T3 was not the executor. The external operator reported `Full Access`, but that did not establish T3 permission or Windows Task Scheduler capability. The R2 attempt stopped without changes. Treat this as a handoff-contract defect and a scoped actor report, not as a Codex runtime failure or proof that every T3 build lacks monthly scheduling.
+
+**Mandatory routing fields:** every handoff that can cause an operation, create a file, change a scheduler, invoke a CLI or reach a local environment must bind all of the following before its prompt is composed:
+
+```text
+DESTINATION_ACTOR_TYPE=
+DESTINATION_APP_AND_VERSION=
+EXECUTION_SURFACE=
+CONTROL_PLANE=
+HOST_AND_OS=
+OPERATING_CONTEXT=
+PROJECT_OR_WORKSPACE=
+PROCESS_ACTOR=
+SCHEDULER_OR_TRIGGER_OWNER=
+T3_INVOLVEMENT=NONE|HOST|PROVIDER|DELEGATOR|TARGET
+PERMISSION_DOMAIN=
+PERMISSION_SOURCE_AND_SCOPE=
+PERMISSION_OBSERVED_AT=
+OWNER_AUTHORIZATION_SCOPE=
+AUTHORIZED_SIDE_EFFECTS=
+PROHIBITED_SIDE_EFFECTS=
+TARGET_SURFACE_MATCH=VERIFIED|MISMATCH|UNKNOWN
+```
+
+**Do not collapse these distinct actors/surfaces:**
+
+- `CHATGPT_CLOUD_COORDINATOR`: retrieves shared memory, researches, adjudicates evidence and composes a bounded handoff; it does not thereby gain local MSI access.
+- `CODEX_EXTERNAL_DESKTOP`: the external Codex desktop operator receiving a user-pasted or otherwise explicitly dispatched task. Its UI permission is scoped to that Codex session.
+- `CODEX_CLI_CHILD`: a separate non-interactive process such as `codex exec`, with its own explicit CLI sandbox and authentication context.
+- `T3_DESKTOP_PROVIDER`: Codex or another provider operating inside a T3 thread/environment; its thread permission belongs to that T3 execution surface.
+- `T3_DELEGATED_CHILD`: a child execution created by T3; it receives the supplied prompt/role and does not inherit the parent history or broader authority.
+- `WINDOWS_TASK_SCHEDULER`: the native Windows trigger/host that launches an action under a Windows principal; it is not a T3 Scheduled Task.
+- `IABV_LOCAL_RUNTIME`: the actual IABV runtime, which is not equivalent to a development shell, a Codex workspace or a cloud review.
+
+**Permission provenance rule:** permissions are surface- and operation-scoped. A Codex Desktop `Full Access` indicator does not prove T3 `Supervised`, Task Scheduler registration rights, Windows administrator status, Codex CLI sandbox mode, or authority to modify IABV. T3 `Supervised` does not prove permissions on external Codex or Windows. Never require or infer a permission from an application that is explicitly `T3_INVOLVEMENT=NONE`. Never infer Owner authorization from a permissive UI mode. Apply the narrowest Owner-granted operation list independently of the provider's technical permission mode.
+
+**Routing gate before execution:**
+
+1. Resolve the exact destination actor, application, version, execution surface, host and control plane from the Owner request and actual session.
+2. Compare them with the prompt's target. If a mismatch exists, do not execute the mismatched prompt. Re-route to the already available, authorized actor when possible; do not turn a route mismatch into a project-wide blocker.
+3. Query only the permission source belonging to the selected execution surface. Record the scope and observation time. Do not query T3 when T3 is not involved.
+4. Separate the outer operator from child processes. State which actor is allowed to create a runner/scheduled task and which child is constrained to read-only work.
+5. Put a plain-language `PASTE / EXECUTION TARGET` instruction at the very top of any user-mediated handoff. Do not use ambiguous labels such as `T3/Codex`.
+6. If the recipient is not connected to the coordinator and the Owner must paste a prompt, mark `MANUAL_HANDOFF_REQUIRED` and provide one exact, self-contained package. Do not claim automatic dispatch.
+
+**Failure classification:** use `HANDOFF_TARGET_MISMATCH`, `PERMISSION_SOURCE_MISMATCH`, `RECIPIENT_UNAVAILABLE`, `PRECONDITION_NOT_VERIFIED`, or the actual tool/platform limitation. A negative result from T3's scheduler applies to the observed T3 version/UI and the tested form; it does not prove that Windows Task Scheduler or Codex CLI cannot perform the required operation.
+
+**Return receipt additions:** record the actual operator actor, child process actor, scheduler/control plane, target-surface match, permission source/scope, operation IDs, task/run IDs, process exit codes, exact artifact paths/digests, and which process performed each write. A child `read-only` sandbox does not constrain the outer PowerShell runner or scheduler registrar; those outer writes must be separately bounded by Owner authorization.
+
+**Learning status:** the rule is a documented, case-derived correction. It is not evidence of automatic protocol enforcement, universal routing success, or later causal reuse. Apply it on a later non-identical handoff and record whether it prevents a surface/permission mismatch before promoting generalization.
+
 ### 6C.6 Privacy and storage boundary
 
 The repository `jhonf463r/Python` was checked on 2026-10-31 and its visibility was `public`. Therefore, this public repository is suitable for public-safe method contracts and sanitized/generalizable lessons only. Do not write private project archives, personal data, private designs/source files, customer information, credentials, keys, tokens, account identifiers or other restricted material here. Keep such project material in an appropriately private, access-controlled project store and place only a sanitized pointer or transferable method in the public core. Never weaken a project's privacy boundary for convenience of cross-chat retrieval.
