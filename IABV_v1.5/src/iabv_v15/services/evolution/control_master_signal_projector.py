@@ -81,7 +81,11 @@ class ControlMasterSignalProjector:
             )
         if not isinstance(state.state_id, str) or not _TOKEN.fullmatch(state.state_id):
             return cls.unavailable("SOURCE_STATE_ID_INVALID")
-        if not isinstance(state.last_updated, datetime) or state.last_updated.tzinfo is None:
+        if (
+            not isinstance(state.last_updated, datetime)
+            or state.last_updated.tzinfo is None
+            or state.last_updated.utcoffset() is None
+        ):
             return cls.unavailable("SOURCE_TIMESTAMP_UNKNOWN", source_state_id=state.state_id)
 
         observed = observed_at_utc or utc_now()
@@ -143,7 +147,7 @@ class ControlMasterSignalProjector:
             "freshness_window_seconds": FRESHNESS_WINDOW_SECONDS,
             "queue": {
                 "status": queue_status,
-                "item_count": len(work_queue),
+                "item_count": len(safe_items),
                 "items": safe_items,
             },
             "counts": {
