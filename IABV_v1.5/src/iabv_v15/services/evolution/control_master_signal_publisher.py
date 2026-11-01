@@ -121,7 +121,17 @@ class ControlMasterSignalPublisher:
             return "SOURCE_SCHEMA_REJECTED"
         if source.get("component") != "ControlMasterService" or not isinstance(source.get("state_id"), str):
             return "SOURCE_IDENTITY_REJECTED"
-        if not isinstance(signal.get("counts"), dict) or not isinstance(signal.get("reason_codes"), list):
+        expected_counts = {
+            "active_objectives", "completed_objectives", "unresolved_items",
+            "current_risks", "recent_decisions",
+        }
+        counts = signal.get("counts")
+        if (
+            not isinstance(counts, dict)
+            or set(counts) != expected_counts
+            or any(isinstance(value, bool) or not isinstance(value, int) or value < 0 for value in counts.values())
+            or signal.get("reason_codes") != []
+        ):
             return "SIGNAL_COUNTS_OR_REASONS_INVALID"
         queue = signal.get("queue")
         if not isinstance(queue, dict) or set(queue) != _ALLOWED_QUEUE_KEYS:
@@ -139,12 +149,29 @@ class ControlMasterSignalPublisher:
             for item in items
         ):
             return "QUEUE_ITEM_SCHEMA_REJECTED"
-        if queue.get("item_count") != len(items):
+        item_count = queue.get("item_count")
+        if isinstance(item_count, bool) or not isinstance(item_count, int) or item_count != len(items):
             return "QUEUE_COUNT_MISMATCH"
+        if len(items) > 10:
+            return "QUEUE_LIMIT_EXCEEDED"
         if signal.get("signal_status") == "EMPTY_QUEUE" and (items or queue.get("status") != "EMPTY_QUEUE"):
             return "EMPTY_QUEUE_CONTRADICTION"
-        if signal.get("signal_status") == "AVAILABLE" and not items:
+        if signal.get("signal_status") == "AVAILABLE" and (not items or queue.get("status") != "NON_EMPTY_QUEUE"):
             return "NON_EMPTY_QUEUE_CONTRADICTION"
+        allowed_sources = {
+            "objective_repository", "platform_pending_queue", "pending_issue_repository",
+            "oses_finding", "runtime_audit", "tests_state",
+        }
+        allowed_labels = {"critical", "high", "medium", "low", "info", "unknown"}
+        for item in items:
+            if (
+                item["source"] not in allowed_sources
+                or item["priority_label"] not in allowed_labels
+                or isinstance(item["priority_score"], bool)
+                or item["priority_score"] < 0
+                or item["priority_score"] > 1000
+            ):
+                return "QUEUE_ITEM_VALUE_REJECTED"
         return None
 
     @staticmethod
