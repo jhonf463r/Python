@@ -161,3 +161,16 @@ def test_projection_counts_only_items_present_in_verified_payload() -> None:
         }],
     )
     assert signal["counts"] == {"queue_items_published": 1}
+
+
+def test_publisher_blocks_unhashable_malformed_status_without_transport() -> None:
+    from iabv_v15.services.evolution.control_master_signal_publisher import (
+        ControlMasterSignalPublisher,
+    )
+
+    signal = ControlMasterSignalProjector.project(state=_state(), work_queue=[])
+    signal["signal_status"] = []
+    result = ControlMasterSignalPublisher().publish(signal)
+
+    assert result["status"] == "BLOCKED"
+    assert result["reason"] == "SIGNAL_VALIDATION_FAILED"
