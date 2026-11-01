@@ -235,6 +235,9 @@ def test_compact_prompt_includes_control_master_signal() -> None:
     digest = ControlMasterDigest(
         signal_status='AVAILABLE',
         work_queue_status='NON_EMPTY_QUEUE',
+        digest_id='digest-compact-contract-01',
+        source_state_id='state-compact-contract-01',
+        generated_at_utc='2026-10-31T20:01:00+00:00',
         current_vision='Continuidad gobernada',
         active_objectives_brief=['active:obj-super-sync'],
         work_queue_brief=['[high] objective:obj-super-sync Continuar reconciliación'],
