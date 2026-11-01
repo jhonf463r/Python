@@ -489,6 +489,35 @@ TARGET_SURFACE_MATCH=VERIFIED|MISMATCH|UNKNOWN
 
 **Learning status:** the rule is a documented, case-derived correction. It is not evidence of automatic protocol enforcement, universal routing success, or later causal reuse. Apply it on a later non-identical handoff and record whether it prevents a surface/permission mismatch before promoting generalization.
 
+### 6C.5.3 Version-pinned CLI contracts and approval/sandbox separation (2026-11-01)
+
+**Triggering episode:** the R3 Windows preflight reported `codex-cli 0.166.0`, `--sandbox read-only` available, and `--ask-for-approval never` absent from `codex exec --help`. It stopped because the handoff had incorrectly made that exact flag a mandatory `codex exec` argument. The [execution-surface learning receipt](./CHAT-ARCH-2026-11-01-UAAL-TICD-EXECUTION-SURFACE-HANDOFF-LEARNING-RECEIPT.md) records the result and the release-pinned source adjudication.
+
+**Release-pinned source finding for Codex CLI 0.166.0:**
+
+- Release tag: `rust-v0.166.0`, commit `6ff1e1c` (2026-10-29).
+- `codex-rs/exec/src/cli.rs`, blob `6a268da298380344c22ea12620606c3e6713f5fa`, defines `codex exec` arguments. The exec command's propagated shared flags include model, the dangerous bypass flag, hook-trust bypass and worktree; it does not expose the interactive `--ask-for-approval` option as an exec flag.
+- `codex-rs/exec/src/lib.rs`, blob `43cf70b21da037bc654a79a1e325ef3bbd1156c6`, sets `approval_policy: Some(AskForApproval::Never)` by default in headless mode, with a code comment explicitly describing that behavior.
+- `codex-rs/utils/cli/src/shared_options.rs`, blob `5e525662d49ce0697ff6965473be178378443776`, defines the read-only sandbox option independently. Its `--approve-for-me` behavior injects `approval_policy="on-request"` and `sandbox_mode="workspace-write"`; it is not an acceptable substitute for a read-only headless run.
+
+**Operational rule:** CLI contracts must be checked against the exact installed release, exact subcommand and the parser/source for that subcommand. Do not infer that a TUI/global flag applies to `codex exec` merely because it appears in `codex --help` or in a general permissions page. The `codex exec --help` surface is authoritative for its subcommand flags, and version-pinned source resolves a remaining documentation ambiguity. For 0.166.0, use the explicit `--sandbox read-only` option and the headless default approval policy; do not require `--ask-for-approval never` on `exec` and do not replace it with `--approve-for-me`, `workspace-write` or `--yolo`.
+
+**Per-version preflight procedure:**
+
+1. Record exact `codex --version` and resolve the matching official release tag/commit.
+2. Inspect `codex exec --help` for the sandbox, cwd, ephemeral and stdin options actually exposed by the subcommand.
+3. Inspect the matching release source or authoritative version-specific docs for the headless approval default and config-precedence exceptions. Distinguish TUI arguments, `exec` arguments and config keys.
+4. Construct the command only from options accepted by that exact subcommand. Never make a generic flag's presence in the TUI help a hard acceptance condition for `exec`.
+5. Keep approval policy and sandbox policy separate in the receipt. `approval_policy=never` means no approval prompts; it does not grant writes. `sandbox_mode=read-only` constrains agent-generated command access; it does not authorize the outer runner.
+6. Do not use `--approve-for-me` or `--dangerously-bypass-approvals-and-sandbox` to overcome a parser mismatch. If the exact release cannot establish the required read-only sandbox, stop without side effects.
+7. Run a bounded, no-write CLI smoke test using the exact final invocation before creating the recurring runner/task. Capture exit code and relevant startup/result evidence; do not claim effective OS sandbox verification merely because help lists an option.
+
+**R3 adjudication:** the operator's stop was correct relative to the supplied prompt, but the prompt's required flag was wrong for the selected subcommand. Classify this as `PREFLIGHT_CONTRACT_MISMATCH` / `SUBCOMMAND_FLAG_SCOPE_MISMATCH`, not as a missing Codex capability, authentication failure or Windows scheduler failure. No runner, task, report or manifest was created; `codex exec` was not run. The next action is a corrected, version-pinned preflight, not a CLI upgrade.
+
+**Additional Windows runner rule:** when `Get-Command codex` resolves to an npm-generated `codex.ps1`, a .NET `Process.Start()` call must not assume that `.ps1` is a native executable. Resolve and test a supported invocation route (for example, an existing native shim or PowerShell host with the script and redirected stdin) without changing execution policy or using `ExecutionPolicy Bypass`. Record the exact host/shim and argument forwarding used.
+
+**Learning status:** this is a second case-derived correction within the same local-maintenance episode. It documents a version-pinned source method; later causal reuse on a different CLI/subcommand/version remains `NOT_TESTED`.
+
 ### 6C.6 Privacy and storage boundary
 
 The repository `jhonf463r/Python` was checked on 2026-10-31 and its visibility was `public`. Therefore, this public repository is suitable for public-safe method contracts and sanitized/generalizable lessons only. Do not write private project archives, personal data, private designs/source files, customer information, credentials, keys, tokens, account identifiers or other restricted material here. Keep such project material in an appropriately private, access-controlled project store and place only a sanitized pointer or transferable method in the public core. Never weaken a project's privacy boundary for convenience of cross-chat retrieval.
