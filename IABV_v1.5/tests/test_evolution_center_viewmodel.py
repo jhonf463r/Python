@@ -993,3 +993,19 @@ def test_evolution_center_manual_control_master_signal_publish_uses_wired_action
         assert vm.get_working() is False
     finally:
         shutil.rmtree(workspace, ignore_errors=True)
+
+def test_evolution_center_control_master_brief_preserves_source_and_freshness() -> None:
+    digest = {
+        'digest_id': 'digest-viewmodel-contract-01',
+        'source_state_id': 'state-viewmodel-contract-01',
+        'generated_at_utc': '2026-10-31T20:02:00+00:00',
+        'signal_status': 'AVAILABLE',
+        'work_queue_status': 'EMPTY_QUEUE',
+    }
+
+    brief = evolution_center_vm.EvolutionCenterViewModel._format_control_master_brief(digest)
+
+    assert 'state_id=state-viewmodel-contract-01' in brief
+    assert 'digest_id=digest-viewmodel-contract-01' in brief
+    assert 'generated_at_utc=2026-10-31T20:02:00+00:00' in brief
+    assert 'señal AVAILABLE; cola EMPTY_QUEUE' in brief
