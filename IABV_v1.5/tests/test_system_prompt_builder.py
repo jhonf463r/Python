@@ -249,6 +249,8 @@ def test_compact_prompt_does_not_treat_unavailable_signal_as_empty_queue() -> No
         signal_status='UNAVAILABLE',
         signal_reason='QUEUE_SOURCE_ERRORS:OBJECTIVES_READ_FAILED',
         work_queue_status='UNAVAILABLE',
+        current_vision='Vision preservada pese al error de cola',
+        rules_brief=['[irrevocable] Mantener el fail-closed'],
     )
     prompt = builder.build_compact(
         world_model=None,
@@ -258,6 +260,8 @@ def test_compact_prompt_does_not_treat_unavailable_signal_as_empty_queue() -> No
     assert 'UNAVAILABLE' in prompt
     assert 'No interpretes esto como una cola vacía' in prompt
     assert 'Cola verificada sin elementos pendientes' not in prompt
+    assert 'Vision preservada pese al error de cola' in prompt
+    assert 'Mantener el fail-closed' in prompt
 
 
 def test_prompt_includes_self_examination_findings() -> None:
