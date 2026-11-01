@@ -38,7 +38,9 @@ def test_projection_excludes_free_text_and_local_evidence() -> None:
     assert signal["signal_status"] == "AVAILABLE"
     assert signal["queue"]["status"] == "NON_EMPTY_QUEUE"
     assert signal["queue"]["items"] == [{
-        "item_id": "objective:obj-control-master-super-sync",
+        "item_id": "item-" + __import__("hashlib").sha256(
+            b"objective:obj-control-master-super-sync"
+        ).hexdigest()[:24],
         "status": "active",
         "source": "objective_repository",
         "priority_label": "high",
@@ -48,6 +50,7 @@ def test_projection_excludes_free_text_and_local_evidence() -> None:
     assert "PRIVATE" not in serialized
     assert "C:/Python" not in serialized
     assert "evidence_refs" not in serialized
+    assert "obj-control-master-super-sync" not in serialized
 
 
 def test_empty_queue_is_distinct_from_unavailable() -> None:
