@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import json
 from datetime import datetime, timezone
 
 from iabv_v15.domain.models import ControlMasterState
@@ -126,3 +128,22 @@ def test_publisher_rejects_signal_after_content_tampering() -> None:
     signal = ControlMasterSignalProjector.project(state=_state(), work_queue=[])
     signal["counts"]["active_objectives"] = 999
     assert ControlMasterSignalPublisher._validate_signal(signal) == "SIGNAL_HASH_MISMATCH"
+
+
+def test_publisher_rejects_signal_id_mismatch_even_with_recomputed_content_hash() -> None:
+    from iabv_v15.services.evolution.control_master_signal_publisher import (
+        ControlMasterSignalPublisher,
+    )
+
+    signal = ControlMasterSignalProjector.project(state=_state(), work_queue=[])
+    signal["signal_id"] = "cms-" + ("0" * 24)
+    unhashed = {key: value for key, value in signal.items() if key != "content_sha256"}
+    canonical = json.dumps(
+        unhashed,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=True,
+    )
+    signal["content_sha256"] = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+    assert ControlMasterSignalPublisher._validate_signal(signal) == "SIGNAL_ID_HASH_MISMATCH"
