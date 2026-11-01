@@ -2536,3 +2536,12 @@ La selección sigue siendo dinámica y nunca una secuencia fija, pero el resulta
 `objective → current truth → first open edge → required capability → capability-fit → IA DESTINO CONCRETA → prompt/action`.
 
 Si la IA concreta no puede determinarse con evidencia suficiente, debe declararse explícitamente `DESTINO NO DETERMINABLE` y explicar qué dato falta; no dejar un actor genérico como si fuera un handoff ejecutable.
+
+
+## 2026-11-01 MULTI-AGENT COORDINATION — PREFER T3 ORCHESTRATOR V2
+
+When the active execution surface is T3 Code, first inspect its live `orchestrator_capabilities` before any multi-agent handoff. Prefer T3's existing `delegate_task` path for cross-provider child work instead of switching providers mid-thread or asking the Owner to relay outputs. Select only configured, authenticated child-capable provider instances and respect each provider's advertised runtime modes.
+
+T3 delegated children receive the supplied task prompt/role, not the parent's full conversation history. Build each child brief as a self-contained D021 §6C.5.1 context/manifest package with exact repository, revision, source files, acceptance criteria, permission boundary and stop condition. Parallelize read-only research/review first; allow only one writer per workspace/branch unless distinct worktree isolation is verified. Require the parent to retrieve and reconcile child results and return a correlated receipt.
+
+T3 is an execution coordination plane, not canonical IABV memory or permission authority. `CURRENT-STATE.md`, D019/D020/D021 and the authorized GitHub project records remain authoritative. Do not enable T3 Connect, public tunnels, the IABV MCP bridge, new schedulers or provider installs merely to test local delegation. If the required MCP tool/provider is unavailable, report the exact capability gap and stop rather than simulating collaboration.
