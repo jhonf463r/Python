@@ -154,15 +154,13 @@ class ControlMasterSignalPublisher:
                 return "SOURCE_TIMESTAMP_INVALID"
         except (TypeError, ValueError):
             return "SOURCE_TIMESTAMP_INVALID"
-        expected_counts = {
-            "active_objectives", "completed_objectives", "unresolved_items",
-            "current_risks", "recent_decisions",
-        }
+        expected_counts = {"queue_items_published"}
         counts = signal.get("counts")
         if (
             not isinstance(counts, dict)
             or set(counts) != expected_counts
             or any(isinstance(value, bool) or not isinstance(value, int) or value < 0 for value in counts.values())
+            or counts.get("queue_items_published") != len(signal.get("queue", {}).get("items", []))
             or signal.get("reason_codes") != []
         ):
             return "SIGNAL_COUNTS_OR_REASONS_INVALID"
