@@ -314,12 +314,14 @@ class EvolutionCenterViewModel(QObject):
                 work_queue = self.control_master_service.current_work_queue(limit=10)
                 source_errors = tuple(getattr(self.control_master_service, 'last_work_queue_errors', ()) or ())
                 if source_errors:
-                    control_master_digest = {
+                    control_master_digest = self.control_master_digest_builder.build(
+                        state, work_queue=None
+                    ).model_dump(mode='json')
+                    control_master_digest.update({
                         'signal_status': 'UNAVAILABLE',
                         'signal_reason': 'QUEUE_SOURCE_ERRORS:' + ','.join(source_errors),
                         'work_queue_status': 'UNAVAILABLE',
-                        'source_state_id': state.state_id,
-                    }
+                    })
                 else:
                     control_master_digest = self.control_master_digest_builder.build(
                         state, work_queue=work_queue
