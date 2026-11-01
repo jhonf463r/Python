@@ -7,10 +7,10 @@ is used by Git itself; this module does not read or store credentials.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import subprocess
 import tempfile
-import hashlib
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -187,6 +187,7 @@ class ControlMasterSignalPublisher:
             capture_output=True,
             text=True,
             check=False,
+            stdin=subprocess.DEVNULL,
             timeout=90,
         )
         if result.returncode not in allow_returncodes:
