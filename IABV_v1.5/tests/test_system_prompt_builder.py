@@ -224,6 +224,42 @@ def test_compact_prompt_keeps_identity_and_live_contract_under_budget() -> None:
     assert 'Herramientas disponibles' not in prompt
 
 
+def test_compact_prompt_includes_control_master_signal() -> None:
+    builder = SystemPromptBuilder()
+    digest = ControlMasterDigest(
+        signal_status='AVAILABLE',
+        work_queue_status='NON_EMPTY_QUEUE',
+        current_vision='Continuidad gobernada',
+        active_objectives_brief=['active:obj-super-sync'],
+        work_queue_brief=['[high] objective:obj-super-sync'],
+    )
+    prompt = builder.build_compact(
+        world_model=None,
+        env_self_model=None,
+        control_master_digest=digest,
+    )
+    assert 'Control Maestro (digest)' in prompt
+    assert 'Señal: AVAILABLE' in prompt
+    assert 'obj-super-sync' in prompt
+
+
+def test_compact_prompt_does_not_treat_unavailable_signal_as_empty_queue() -> None:
+    builder = SystemPromptBuilder()
+    digest = ControlMasterDigest(
+        signal_status='UNAVAILABLE',
+        signal_reason='QUEUE_SOURCE_ERRORS:OBJECTIVES_READ_FAILED',
+        work_queue_status='UNAVAILABLE',
+    )
+    prompt = builder.build_compact(
+        world_model=None,
+        env_self_model=None,
+        control_master_digest=digest,
+    )
+    assert 'UNAVAILABLE' in prompt
+    assert 'no interpretes esto como una cola vacía' in prompt
+    assert 'Cola verificada sin elementos pendientes' not in prompt
+
+
 def test_prompt_includes_self_examination_findings() -> None:
     """Self-examination snapshot with findings renders in the prompt."""
     builder = SystemPromptBuilder()
