@@ -256,7 +256,7 @@ def test_compact_prompt_does_not_treat_unavailable_signal_as_empty_queue() -> No
         control_master_digest=digest,
     )
     assert 'UNAVAILABLE' in prompt
-    assert 'no interpretes esto como una cola vacía' in prompt
+    assert 'No interpretes esto como una cola vacía' in prompt
     assert 'Cola verificada sin elementos pendientes' not in prompt
 
 
