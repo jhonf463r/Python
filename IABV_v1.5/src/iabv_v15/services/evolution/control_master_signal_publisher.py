@@ -27,6 +27,10 @@ _ALLOWED_TOP_LEVEL = {
 _ALLOWED_QUEUE_KEYS = {"status", "item_count", "items"}
 _ALLOWED_ITEM_KEYS = {"item_id", "status", "source", "priority_label", "priority_score"}
 _TOKEN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
+_ALLOWED_ITEM_STATUSES = {
+    "active", "pending", "blocked", "unresolved", "needs_fix",
+    "observed", "open", "resolved", "failed", "abandoned", "unknown",
+}
 
 
 class ControlMasterSignalPublisher:
@@ -129,7 +133,7 @@ class ControlMasterSignalPublisher:
         except (TypeError, ValueError):
             return "SIGNAL_TIME_INVALID"
         source = signal.get("source")
-        if not isinstance(source, dict) or set(source) != {"component", "state_id", "state_updated_at_utc"}:
+        if not isinstance(source, dict) or set(source) != {"component", "state_id", "state_observed_at_utc"}:
             return "SOURCE_SCHEMA_REJECTED"
         if (
             source.get("component") != "ControlMasterService"
@@ -137,7 +141,7 @@ class ControlMasterSignalPublisher:
             or not _TOKEN.fullmatch(source.get("state_id") or "")
         ):
             return "SOURCE_IDENTITY_REJECTED"
-        source_timestamp = source.get("state_updated_at_utc")
+        source_timestamp = source.get("state_observed_at_utc")
         try:
             parsed_source_time = datetime.fromisoformat(str(source_timestamp).replace("Z", "+00:00"))
             if parsed_source_time.tzinfo is None or parsed_source_time.utcoffset() is None or parsed_source_time > generated:
@@ -191,6 +195,7 @@ class ControlMasterSignalPublisher:
         for item in items:
             if (
                 item["source"] not in allowed_sources
+                or item["status"] not in _ALLOWED_ITEM_STATUSES
                 or item["priority_label"] not in allowed_labels
                 or isinstance(item["priority_score"], bool)
                 or item["priority_score"] < 0
