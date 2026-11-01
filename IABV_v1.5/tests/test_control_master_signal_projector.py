@@ -94,3 +94,32 @@ def test_publisher_will_not_publish_unavailable_signal() -> None:
     result = ControlMasterSignalPublisher().publish(signal)
     assert result["status"] == "BLOCKED"
     assert result["reason"] == "SIGNAL_NOT_AVAILABLE"
+
+
+def test_publisher_accepts_current_integral_signal_shape_without_writing() -> None:
+    from iabv_v15.services.evolution.control_master_signal_publisher import (
+        ControlMasterSignalPublisher,
+    )
+
+    signal = ControlMasterSignalProjector.project(
+        state=_state(),
+        work_queue=[{
+            "id": "objective:obj-control-master-super-sync",
+            "title": "not included in the payload",
+            "status": "active",
+            "source": "objective_repository",
+            "priority_score": 80,
+            "priority_label": "critical",
+        }],
+    )
+    assert ControlMasterSignalPublisher._validate_signal(signal) is None
+
+
+def test_publisher_rejects_signal_after_content_tampering() -> None:
+    from iabv_v15.services.evolution.control_master_signal_publisher import (
+        ControlMasterSignalPublisher,
+    )
+
+    signal = ControlMasterSignalProjector.project(state=_state(), work_queue=[])
+    signal["counts"]["active_objectives"] = 999
+    assert ControlMasterSignalPublisher._validate_signal(signal) == "SIGNAL_HASH_MISMATCH"
