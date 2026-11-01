@@ -53,7 +53,7 @@ class ControlMasterSignalProjector:
             "queue": {"status": "UNAVAILABLE", "item_count": None, "items": []},
             "counts": {},
             "reason_codes": [safe_reason],
-            "transport": "READY_FOR_DEDICATED_BRANCH_PUBLICATION",
+            "transport": "SIGNAL_UNAVAILABLE_NOT_PUBLISHABLE",
         }
         payload["signal_id"] = "cms-" + _content_hash(payload)[:24]
         payload["content_sha256"] = _content_hash(payload)
