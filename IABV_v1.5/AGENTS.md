@@ -15,6 +15,8 @@ Canonical method: [UAAL-D021](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-UAAL-D
 
 Current method status, reuse evidence, next action, technical gates and permissions are owned only by CURRENT-STATE.md; this entry is a pointer, not a second state store.
 
+**Operational new-chat entry:** use the [UAAL New-Chat Boot and Handoff Kit](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-31-UAAL-NEW-CHAT-BOOT-AND-HANDOFF-KIT.md) for the exact startup sequence, role boundaries and correlated return receipt. It operationalizes D021 and does not replace the owning project's state source.
+
 ---
 
 <!-- UAAL-D020 — shared cross-AI method; CURRENT-STATE.md remains the sole route authority. -->
