@@ -1042,7 +1042,12 @@ class EvolutionCenterViewModel(QObject):
             branch = str(data.get('branch') or 'control-master-live')
             if status == 'PUBLISHED':
                 self._control_master_signal_publish_status = (
-                    f'Señal publicada en {branch}; commit {data.get("commit_sha", "n/d")}.'
+                    f'Señal publicada y verificada en {branch}; commit {data.get("commit_sha", "n/d")}.'
+                )
+            elif status == 'PUBLISHED_UNVERIFIED':
+                self._control_master_signal_publish_status = (
+                    f'La publicación en {branch} pudo completarse, pero no se verificó la lectura de retorno '
+                    f'({data.get("reason", "REMOTE_READBACK_FAILED")}); no la trates como confirmada.'
                 )
             elif status == 'UNCHANGED':
                 self._control_master_signal_publish_status = f'La señal vigente de {branch} no ha cambiado.'
