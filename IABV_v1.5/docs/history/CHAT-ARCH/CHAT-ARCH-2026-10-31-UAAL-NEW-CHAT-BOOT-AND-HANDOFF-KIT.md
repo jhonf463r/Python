@@ -294,17 +294,26 @@ STOP_CONDITION=
 Own only this project and task. Use UAAL's shared methods, but keep this project's facts, files, decisions and permissions in this project's memory. Maintain one foreground task and one next action for this project. Capture new ideas without silently displacing the active task. Return a correlated receipt to the coordinator. Do not update IABV's CURRENT-STATE unless the task is explicitly about IABV development and the write is authorized.
 ```
 
-## 11. Special continuity for the current IABV M1A route
+## 11. Historical continuity snapshot for the IABV M1A route — superseded by CURRENT-STATE
 
-At this revision, the live IABV route remains:
+This section is a continuity aid, **not an independent router**. Its values are a dated snapshot and must never override the live [CURRENT-STATE.md](./CURRENT-STATE.md), which remains the sole authority for ACTIVE_TASK, NEXT_ACTION, gate status and permissions. Each new IABV session must refresh the exact live `main` revision first. If the normal file read returns an empty body, fetch the exact CURRENT-STATE blob by its SHA from that same revision; do not fall back to this snapshot.
+
+The route shape to preserve is:
 
 ```text
+ROUTING_AUTHORITY=IABV_v1.5/docs/history/CHAT-ARCH/CURRENT-STATE.md; SOLE_LIVE_ROUTER
 ACTIVE_TASK=IABV_M1A_OWNER_ISSUER_MECHANISM_INPUT_GATE_R1_20261030
 ACTIVE_TASK_STATUS=BLOCKED_NO_ADDITIONAL_MECHANISM_IDENTIFIED; OWNER_INPUT_RECONCILED
 OPEN_EDGE=OWNER_ROOT_DECISION_AUTHENTICATION_AND_ROOT_HANDLE_PROVENANCE_NOT_ESTABLISHED
-NEXT_ACTION=WAIT_FOR_GENUINELY_NEW_INDEPENDENT_ROOT_ISSUER_BINDING_EVIDENCE
-OPTION_D=RATIFIED_NO_BOOTSTRAP
+NEXT_ACTION=WAIT_FOR_NEW_INDEPENDENT_ROOT_ISSUER_BINDING_EVIDENCE_FOR_M1A_G1_ONLY; APPLY_D019_DUAL_TRACK_SELECTOR_TO_ANY_SEPARATE_OWNER_OBJECTIVE; DO_NOT_REPEAT_OWNER_INPUT_OR_ENTRA_AUTHENTICATOR_SETUP
+LANE_A=M1A_G1_ROOT_AUTHORITY_AND_PROVENANCE; BLOCKED; TASK_LOCAL
+LANE_A_WAIT_SCOPE=TASK_LOCAL_M1A_AUTHORITY_DEPENDENCY_ONLY; NOT_PROJECT_WIDE_STOP
+LANE_A_REOPEN_TRIGGER=NEW_INDEPENDENT_SOURCE_BOUND_EVIDENCE_AFFECTING_ANY_OPEN_M1A_DEPENDENCY; REASSESS_ONLY_AFFECTED_GATE_AND_CAUSAL_DEPENDENCIES; NO_FULL_CENSUS_RESTART
+LANE_B=INDEPENDENT_PROGRESS; SELECT_ONLY_WHEN_CURRENT_OWNER_OBJECTIVE_AND_OWN_AUTHORIZATION_SUPPORT_A_CONCRETE_TASK
+LANE_B_AUTOMATIC_FOLLOW_ON=FALSE
 G1/G2/G3=NOT_ESTABLISHED
+G4/G5/G6/G7/G8=OPEN; NONE_CLOSED
+OPTION_D=RATIFIED_NO_BOOTSTRAP
 PROTECTED_READS=FAIL_CLOSED
 BRIDGE=BRIDGE_NOT_READY
 PRODUCT_IMPLEMENTATION=NOT_AUTHORIZED
@@ -312,9 +321,9 @@ TESTS/BUILD/RUNTIME=NOT_RUN
 AUTOMATIC_FOLLOW_ON=FALSE
 ```
 
-Do not repeat Entra/Authenticator setup, ask whether the Owner has another mechanism, repeat the R1 source census or reconstruct another R5 root provider unchanged. The Owner-input question is closed. Do not touch `C:/Python`, enter protected stores, create credentials or trust roots, change permissions, enable protected reads, activate a tunnel, implement, test, build or run the product under this handoff kit.
+The Owner-input question is closed. Do not repeat Entra/Authenticator setup, ask whether the Owner has another mechanism, repeat the R1 source census or reconstruct another R5 root provider unchanged. Do not touch `C:/Python`, enter protected stores, create credentials or trust roots, change permissions, enable protected reads, activate a tunnel, implement, test, build or run the product under this handoff kit.
 
-This is a continuity snapshot, not an independent router. Every new IABV session must refresh live `main` and `CURRENT-STATE.md` before acting. If genuinely new qualifying evidence appears, reconcile it against the current task and reopen only the affected dependency.
+The reopen trigger is deliberately dependency-scoped: genuinely new, independently verifiable, source-bound evidence affecting **any** open M1A dependency permits reassessment of only the affected gate and its causal dependencies. It does not require a complete evidence bundle before a partial dependency can be assessed, and it does not authorize implementation. The normative eight-gate contract remains in the [M1A v1.0.1 prerequisite matrix](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-implementation-prerequisite-evidence-gate-matrix.md), blob `1322fdfb26770bcf5bdfab9fd85a7ffcee5d9f37`.
 
 ## 12. Acceptance checklist for each new material chat
 
