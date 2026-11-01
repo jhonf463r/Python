@@ -117,6 +117,12 @@ class ControlMasterSignalPublisher:
         canonical = json.dumps(unhashed, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
         if not isinstance(supplied_hash, str) or hashlib.sha256(canonical.encode("utf-8")).hexdigest() != supplied_hash:
             return "SIGNAL_HASH_MISMATCH"
+        signal_seed = dict(unhashed)
+        signal_seed["signal_id"] = ""
+        seed_canonical = json.dumps(signal_seed, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
+        expected_signal_id = "cms-" + hashlib.sha256(seed_canonical.encode("utf-8")).hexdigest()[:24]
+        if signal_id != expected_signal_id:
+            return "SIGNAL_ID_HASH_MISMATCH"
         try:
             generated = datetime.fromisoformat(str(signal.get("generated_at_utc")).replace("Z", "+00:00"))
             expires = datetime.fromisoformat(str(signal.get("expires_at_utc")).replace("Z", "+00:00"))
