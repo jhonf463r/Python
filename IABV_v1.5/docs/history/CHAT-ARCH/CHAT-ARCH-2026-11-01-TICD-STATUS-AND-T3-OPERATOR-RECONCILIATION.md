@@ -91,9 +91,12 @@ No usar como primera opción el instalador remoto irm https://t3.codes/install.p
 
 ### Configuración oficial de Codex
 
-El README de T3 indica que para usar Codex se debe tener **Codex CLI instalado y autenticado** (codex login). En esta reconciliación no se verificó si Codex CLI está disponible ni su sesión local; CODEX_PROVIDER=NOT_CONFIGURED solo indica que T3 todavía no tiene configurado ese proveedor.
+La documentación oficial de T3 Code **v0.1.6** ofrece dos rutas para Codex desde **Settings → Providers**:
 
-No asumir que “Connect with ChatGPT” sustituye el flujo documentado de Codex CLI. No copiar ni leer tokens, cookies, claves API o archivos de autenticación. El Owner realiza el inicio de sesión interactivo cuando sea necesario.
+1. **Connect with ChatGPT (preferida para reducir instalación manual):** T3 gestiona la instalación de Codex; el Owner inicia sesión en OpenAI y autoriza compartir el uso del plan ChatGPT. En una máquina remota se debe seleccionar primero ese entorno. El uso compartido puede tener límites o funciones no soportadas; no se debe inferir que todas las funciones o cuotas del plan estén disponibles.
+2. **Usar una sesión Codex CLI existente:** instalar Codex CLI en el entorno del MSI y ejecutar codex login de forma interactiva.
+
+En esta reconciliación no se verificó ninguna de las dos rutas; por eso CODEX_PROVIDER=NOT_CONFIGURED sigue siendo el estado correcto. La primera opción debe intentarse antes de añadir otra instalación CLI, siempre con el Owner presente para la autenticación y el consentimiento. No copiar ni leer tokens, cookies, claves API o archivos de autenticación.
 
 ### Seguridad de T3
 
@@ -242,10 +245,11 @@ La descripción más exacta es **arquitectura y base interna documentadas; herra
 ## 9. Fuentes técnicas y documentación oficial
 
 - T3 Code — proyecto: https://github.com/pingdotgg/t3code
-- Instalación Desktop/CLI incluido: https://github.com/pingdotgg/t3code/blob/main/docs/user/install.md
-- T3 Connect / remote access: https://github.com/pingdotgg/t3code/blob/main/docs/user/remote-access.md
-- Modos de permisos: https://github.com/pingdotgg/t3code/blob/main/docs/user/permission-modes.md
-- Codex CLI y proveedor Codex: https://github.com/pingdotgg/t3code/blob/main/README.md
+- Instalación Desktop/CLI incluido (v0.1.6): https://github.com/pingdotgg/t3code/blob/v0.1.6/docs/user/install.md
+- T3 Connect / remote access (v0.1.6): https://github.com/pingdotgg/t3code/blob/v0.1.6/docs/user/remote-access.md
+- Modos de permisos (v0.1.6): https://github.com/pingdotgg/t3code/blob/v0.1.6/docs/user/permission-modes.md
+- Proveedor Codex y Connect with ChatGPT (v0.1.6): https://github.com/pingdotgg/t3code/blob/v0.1.6/docs/user/providers-codex.md
+- README T3 Code (v0.1.6): https://github.com/pingdotgg/t3code/blob/v0.1.6/README.md
 - Hugging Face Discover: https://github.com/huggingface/hf-discover
 - ARD spec: https://github.com/huggingface/hf-discover/blob/main/spec/ard.md
 - MCP Registry: https://registry.modelcontextprotocol.io/
