@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from iabv_v15.domain.models import ControlMasterState
 from iabv_v15.services.evolution.control_master_signal_projector import (
@@ -14,7 +14,7 @@ def _state() -> ControlMasterState:
     return ControlMasterState(
         state_id="state-2026-10-31-a",
         active_objective_ids=["obj-control-master-super-sync"],
-        last_updated=datetime(2026, 10, 31, 20, 0, tzinfo=timezone.utc),
+        last_updated=datetime.now(timezone.utc) - timedelta(minutes=1),
     )
 
 
@@ -34,7 +34,7 @@ def test_projection_excludes_free_text_and_local_evidence() -> None:
     signal = ControlMasterSignalProjector.project(
         state=_state(),
         work_queue=queue,
-        observed_at_utc=datetime(2026, 10, 31, 20, 1, tzinfo=timezone.utc),
+        observed_at_utc=datetime.now(timezone.utc),
     )
 
     assert signal["signal_status"] == "AVAILABLE"
@@ -58,13 +58,13 @@ def test_empty_queue_is_distinct_from_unavailable() -> None:
     empty = ControlMasterSignalProjector.project(
         state=_state(),
         work_queue=[],
-        observed_at_utc=datetime(2026, 10, 31, 20, 1, tzinfo=timezone.utc),
+        observed_at_utc=datetime.now(timezone.utc),
     )
     unavailable = ControlMasterSignalProjector.project(
         state=_state(),
         work_queue=[],
         source_errors=("OBJECTIVES_READ_FAILED:active",),
-        observed_at_utc=datetime(2026, 10, 31, 20, 1, tzinfo=timezone.utc),
+        observed_at_utc=datetime.now(timezone.utc),
     )
 
     assert empty["signal_status"] == "EMPTY_QUEUE"
@@ -83,7 +83,7 @@ def test_unportable_queue_item_fails_closed() -> None:
             "priority_score": 50,
             "priority_label": "medium",
         }],
-        observed_at_utc=datetime(2026, 10, 31, 20, 1, tzinfo=timezone.utc),
+        observed_at_utc=datetime.now(timezone.utc),
     )
     assert signal["signal_status"] == "UNAVAILABLE"
     assert signal["reason_codes"] == ["QUEUE_ITEM_NOT_PORTABLE"]
@@ -125,7 +125,7 @@ def test_publisher_rejects_signal_after_content_tampering() -> None:
     )
 
     signal = ControlMasterSignalProjector.project(state=_state(), work_queue=[])
-    signal["counts"]["active_objectives"] = 999
+    signal["counts"]["queue_items_published"] = 999
     assert ControlMasterSignalPublisher._validate_signal(signal) == "SIGNAL_HASH_MISMATCH"
 
 
