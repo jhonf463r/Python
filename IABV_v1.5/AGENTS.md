@@ -2545,3 +2545,12 @@ When the active execution surface is T3 Code, first inspect its live `orchestrat
 T3 delegated children receive the supplied task prompt/role, not the parent's full conversation history. Build each child brief as a self-contained D021 §6C.5.1 context/manifest package with exact repository, revision, source files, acceptance criteria, permission boundary and stop condition. Parallelize read-only research/review first; allow only one writer per workspace/branch unless distinct worktree isolation is verified. Require the parent to retrieve and reconcile child results and return a correlated receipt.
 
 T3 is an execution coordination plane, not canonical IABV memory or permission authority. `CURRENT-STATE.md`, D019/D020/D021 and the authorized GitHub project records remain authoritative. Do not enable T3 Connect, public tunnels, the IABV MCP bridge, new schedulers or provider installs merely to test local delegation. If the required MCP tool/provider is unavailable, report the exact capability gap and stop rather than simulating collaboration.
+
+
+## 2026-11-01 FREE PROVIDER AND ACCOUNT INTEGRITY ROUTING
+
+For T3 provider selection, do not assume local model files are automatically available to T3. T3 v0.1.6 uses agent harness/provider integrations and explicitly does not advertise first-class local-model inference. Prefer the Owner's own limited Codex/ChatGPT Free route plus the official Google Antigravity individual free-tier provider, after checking its actual T3 status, model and child/thread capability. OpenRouter `:free` is a limited optional auxiliary only; verify tool calling and daily request limits. OpenCode+Ollama is experimental and hardware-gated, not a proven T3-supported local model route.
+
+Never share, borrow or pool another person's ChatGPT/Anthropic credentials to extend free quotas. Use separate provider instances only for legitimate, separately controlled work/personal accounts consistent with provider terms. A collaborator may work from their own account/device and contribute through authorized GitHub branches/PRs, without disclosing credentials.
+
+Before any child agent runs, verify the specific project and thread permission. A reported `FULL_ACCESS` draft must be corrected to the intended `AUTO` mode and re-verified. Require actual task completion and parent result retrieval; a visible provider card is not evidence of working coordination.
