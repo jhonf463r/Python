@@ -392,7 +392,7 @@ A receiving session should fetch the file from the exact `control-master-live` b
 
 1. `schema_version=iabv.control_master_signal.v1`, `project_id=IABV`, and `transport=READY_FOR_DEDICATED_BRANCH_PUBLICATION`.
 2. `signal_status` is `AVAILABLE` or `EMPTY_QUEUE`; an `UNAVAILABLE` payload is deliberately marked non-publishable and must not be promoted to a valid snapshot.
-3. `content_sha256` equals SHA-256 of canonical UTF-8 JSON containing every top-level field except `content_sha256`, serialized with sorted keys, separators `,` and `:`, and `ensure_ascii=true`.
+3. `content_sha256` equals SHA-256 of canonical UTF-8 JSON containing every top-level field except `content_sha256`, serialized with sorted keys, separators `,` and `:`, and `ensure_ascii=true`. This is an integrity checksum only: it is not a digital signature, issuer authentication or proof of an IABV trust root. Repository/ref access and commit provenance remain separate trust assumptions; never use this hash to satisfy M1A/G1 or another root-authentication gate.
 4. `signal_id` equals `cms-` plus the first 24 hex characters of SHA-256 over the same canonical JSON after removing `content_sha256` and setting `signal_id` to the empty string.
 5. `generated_at_utc` and `expires_at_utc` are timezone-aware, generation is not in the future, expiry is still in the future, and the interval is at most the declared 900-second freshness window. An expired snapshot is `STALE`, even if its hash is valid.
 6. The source component is `ControlMasterService`; capture `source.state_id` and `source.state_observed_at_utc`. This timestamp denotes the producer's state projection observation, not a claim that a persisted object was modified at that time.
