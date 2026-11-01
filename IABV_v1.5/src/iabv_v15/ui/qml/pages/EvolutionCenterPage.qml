@@ -87,6 +87,11 @@ Item {
                         text: "Publicar cambio como PR"
                         onClicked: publishPrDialog.open()
                     }
+                    AppButton {
+                        text: "Publicar señal Control Master"
+                        enabled: evolutionCenterViewModel && !evolutionCenterViewModel.working
+                        onClicked: publishControlMasterSignalDialog.open()
+                    }
                 }
 
                 // F2.2: panel de estado de publicacion de PR. Muestra la ultima
@@ -144,6 +149,40 @@ Item {
                             color: textSecondary
                             font.family: bodyFontFamily
                             font.pixelSize: 11
+                            wrapMode: Label.WordWrap
+                            width: parent.width
+                        }
+                    }
+                }
+
+
+                Rectangle {
+                    width: parent.width
+                    radius: 14
+                    color: "#1c2a33"
+                    border.width: 1
+                    border.color: borderSoft
+                    implicitHeight: controlMasterSignalColumn.implicitHeight + 24
+                    visible: evolutionCenterViewModel !== null
+
+                    Column {
+                        id: controlMasterSignalColumn
+                        anchors.fill: parent
+                        anchors.margins: 14
+                        spacing: 6
+
+                        Label {
+                            text: "Señal compartida del Control Master"
+                            color: textPrimary
+                            font.family: titleFontFamily
+                            font.pixelSize: 16
+                            font.bold: true
+                        }
+                        Label {
+                            text: evolutionCenterViewModel ? evolutionCenterViewModel.controlMasterSignalPublishStatus : ""
+                            color: textSecondary
+                            font.family: bodyFontFamily
+                            font.pixelSize: 12
                             wrapMode: Label.WordWrap
                             width: parent.width
                         }
@@ -1247,6 +1286,44 @@ Item {
     }
 
     // Dialogos evolutivos (Task B) — ahora hosteados globalmente en Main.qml
+
+
+    // Publicación manual; el diálogo explicita que el destino GitHub es público.
+    Dialog {
+        id: publishControlMasterSignalDialog
+        title: "Publicar señal compartida del Control Master"
+        modal: true
+        focus: true
+        standardButtons: Dialog.Cancel | Dialog.Ok
+        anchors.centerIn: parent
+        width: Math.min(520, parent.width - 40)
+
+        contentItem: Column {
+            spacing: 10
+            width: parent.width
+            Label {
+                text: "Se publicará una instantánea con IDs opacos, estados, prioridades, recuentos, procedencia y caducidad de 15 minutos en la rama pública control-master-live."
+                color: textPrimary
+                font.family: bodyFontFamily
+                font.pixelSize: 13
+                wrapMode: Label.WordWrap
+                width: parent.width
+            }
+            Label {
+                text: "No incluye títulos, resúmenes, evidencias, rutas locales ni contenido de usuario. La publicación no es automática y requiere tu confirmación."
+                color: textSecondary
+                font.family: bodyFontFamily
+                font.pixelSize: 12
+                wrapMode: Label.WordWrap
+                width: parent.width
+            }
+        }
+
+        onAccepted: {
+            if (evolutionCenterViewModel)
+                evolutionCenterViewModel.publishControlMasterSignal()
+        }
+    }
 
     // F2.2: dialogo modal para publicar una rama como PR via GitHubRemoteService.
     // No hace validacion de policy ni decide rutas: solo recoge los campos y
