@@ -1,7 +1,7 @@
 # Canonical continuity, Space-Time cognition, and adaptive neuroplasticity protocol
 
 - Protocol ID: `CONTINUITY_SPACE_TIME_ANTI_LOOP` (stable identity; operating method evolves in place)
-- Living operating revision: `2.7 — ADAPTIVE_SPACE_TIME_NEUROPLASTICITY + OWNER_CONTEXT_AWARE_TURN_ROUTING + VERIFIED_CONTEXT_HANDOFF + OWNER_FACING_DELIVERY_PREFLIGHT + DUAL_TRACK_PROGRESS_ROUTING + UAAL_D020_PROGRESS_UTILITY + CROSS_AI_MEMORY_ACTIVATION + OBJECTIVE_CONDITIONED_WORLD_MODEL + INCOMING_RESULT_ADJUDICATION + PROJECT_SCOPED_NEW_CHAT_BOOT_AND_ROLE_BOUND_HANDOFF + CONTROL_MASTER_SIGNAL_INTAKE_AND_DECISION_BINDING`
+- Living operating revision: `2.7 — ADAPTIVE_SPACE_TIME_NEUROPLASTICITY + OWNER_CONTEXT_AWARE_TURN_ROUTING + VERIFIED_CONTEXT_HANDOFF + OWNER_FACING_DELIVERY_PREFLIGHT + DUAL_TRACK_PROGRESS_ROUTING + UAAL_D020_PROGRESS_UTILITY + CROSS_AI_MEMORY_ACTIVATION + OBJECTIVE_CONDITIONED_WORLD_MODEL + INCOMING_RESULT_ADJUDICATION + PROJECT_SCOPED_NEW_CHAT_BOOT_AND_ROLE_BOUND_HANDOFF + CONTROL_MASTER_SIGNAL_INTAKE_AND_DECISION_BINDING + CHATGPT_PROJECT_CONTEXT_AND_MEMORY_SCOPE`
 - Evolution rule: integrate new lessons into their owning core rule; preserve dated incidents/history; do not accumulate competing append-only protocols
 - Owner instruction date: 2026-10-23 (America/Bogota)
 - Scope: objective-bound reasoning, temporal evidence graph, adaptive role activation, gated action chains, memory consolidation, delivery receipts and outcome-based protocol evolution
