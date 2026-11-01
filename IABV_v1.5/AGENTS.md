@@ -51,7 +51,9 @@ AUTOMATIC_FOLLOW_ON=FALSE
 ```
 <!-- END OWNER-DIRECTED CONTINUITY METHOD CORRECTION -->
 
-## Hand-off vigente para iniciar un nuevo chat (2026-10-27)
+## Hand-off histórico — superseded; no usar como ruta vigente (2026-10-27)
+
+Este bloque se conserva solo como procedencia histórica. **No es el handoff activo**: sus datos MCP 1.30.0/Entra, estado de checkout y propuesta de «siguiente paso» pertenecen al 2026-10-27 y quedaron supersedidos por el router vivo. Para cualquier sesión nueva, consulta primero [CURRENT-STATE.md](./docs/history/CHAT-ARCH/CURRENT-STATE.md) desde el `main` actual y sigue el [UAAL New-Chat Boot and Handoff Kit](./docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-31-UAAL-NEW-CHAT-BOOT-AND-HANDOFF-KIT.md). No reactivar este snapshot ni sus autorizaciones históricas.
 
 Leer siempre primero [CURRENT-STATE.md](./docs/history/CHAT-ARCH/CURRENT-STATE.md) desde main. El handoff detallado está en [CHAT-ARCH-2026-10-27-M1A-CROSS-CHAT-HANDOFF-MCP130-20261027.md](https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-27-M1A-CROSS-CHAT-HANDOFF-MCP130-20261027.md); el plan ratificado sin código en [MCP 1.30 implementation plan]( https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-27-M1A-G1-MCP130-IMPLEMENTATION-PLAN-NO-CODE.md ); el diseño Entra corregido en [Entra G1 design]( https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-27-M1A-G1-ENTRA-BOOTSTRAP-DESIGN-ONLY.md ).
 

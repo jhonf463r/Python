@@ -33,17 +33,17 @@ This is not zero application and not a causal pass. The separately opened sessio
 
 ## 3. M1A gate acceptance contract
 
-These definitions preserve the adopted M1A v1.0.1 gate boundaries; they do not change them or close any gate.
+These definitions preserve the adopted M1A v1.0.1 gate boundaries; they do not change them or close any gate. The complete normative acceptance contract for all eight gates is the [M1A v1.0.1 implementation-prerequisite evidence gate matrix](./CHAT-ARCH-2026-10-22-M1A-v1_0_1-implementation-prerequisite-evidence-gate-matrix.md), blob `1322fdfb26770bcf5bdfab9fd85a7ffcee5d9f37`. That matrix remains normative if this concise route summary is read in isolation.
 
 | Gate | Evidence required for adjudication |
 |---|---|
-| G1 — authenticated governance principal / trust anchor | Authenticated Owner/governance principal and mandate; independent trust anchor and custodian/verification path; issuer-to-reader/exact-server trust chain; Owner-to-Windows-principal binding. |
+| G1 — authenticated Owner/governance principal and trust anchor | Correlated evidence identifying the live Owner/governance principal and mandate plus the live server, issuer and reader principals; verifiable trust-root material and chain; authority binding to the relevant governance role; independent custodian/verification path; provenance, custody, rotation and revocation lifecycle; exact instance/revision scope; and Owner-to-Windows-principal binding where host identity is part of the protected boundary. An adoption token, MFA event or accountability statement is not a runtime credential or trust anchor. |
 | G2 — catalogue publisher / producer policy | Authorized catalogue publisher; producer-class policy; integrity and version lifecycle; authoritative freshness, expiry and revocation. |
 | G3 — operation-to-target resolver | Versioned server-side resolver bound to real registered operation IDs and implementation/call sites; caller-supplied scope, descriptive tool metadata or path strings are not authoritative resolution. |
 
 **Cross-cutting same-object invariant:** the authorization decision must be evaluated against the identity-bearing target capability/open object that the reader actually consumes. A path-string decision followed by a separate open is not sufficient. A valid handle proves neither the legitimacy of the selected root nor an authorized operation.
 
-G4–G8 remain separate prerequisites. G1–G3 evidence does not close them. No gate closes from MFA, a Git commit signature, a hash, a design, synthetic tests, a source-level handle candidate or a reported test count alone.
+Each of G4, G5, G6, G7 and G8 remains individually OPEN; none is closed. They are separate prerequisites, and G1–G3 evidence does not close any of them. No gate closes from MFA, a Git commit signature, a hash, a design, synthetic tests, a source-level handle candidate or a reported test count alone.
 
 ## 4. Reopening and stop conditions
 
@@ -92,3 +92,23 @@ No product source, authorization implementation, credentials, permissions, branc
 The `CURRENT-STATE.md` historical suffix after the first standalone `---` was compared against the PR base and was byte-for-byte equal. The active header contains the D021 status correction, task-local Lane A, conditional Lane B, G1/G2/G3 criteria and unchanged fail-closed controls.
 
 A successful documentation merge is not technical M1A authorization or evidence of runtime enforcement.
+
+
+## 7. Follow-on route-consistency correction — documentation only (2026-10-31)
+
+```text
+TASK_ID=IABV_DOC_ROUTE_REOPEN_TRIGGER_CONSISTENCY_R1_20261031
+AUTHORIZATION=OWNER_EXPLICIT_DOCUMENTATION_ONLY
+BASE_MAIN=0037ff4f8a92d779c3b9b015ca94b6a642ecc76e
+SCOPE=FOUR_DOCUMENTATION_FILES_ONLY
+PRODUCT_SOURCE=UNCHANGED
+PERMISSIONS_AND_REPOSITORY_SETTINGS=UNCHANGED
+TESTS/BUILD/RUNTIME=NOT_RUN
+M1A_GATES=UNCHANGED; G1/G2/G3_NOT_ESTABLISHED; G4/G5/G6/G7/G8_OPEN
+```
+
+This follow-on correction aligns the active route with section 4 above: new independent, verifiable and source-bound evidence affecting **at least one open M1A dependency** permits reassessment of only that affected gate and its causal dependencies. A complete bundle of Owner mandate, issuer/root and exact-target evidence is not required before a partial dependency can be evaluated. The full v1.0.1 matrix remains normative and all eight implementation-acceptance gates remain open.
+
+The 2026-10-27 handoff in `IABV_v1.5/AGENTS.md` is explicitly marked historical/superseded without deleting its provenance. Section 11 of the new-chat kit is likewise marked as a non-authoritative snapshot and points back to CURRENT-STATE. The CURRENT-STATE historical suffix after its first standalone `---` is preserved byte-for-byte.
+
+This is documentation routing precision only. It does not provision or establish an authority, close a gate, authorize implementation or tests, enable protected reads, alter Option D, or change repository governance.
