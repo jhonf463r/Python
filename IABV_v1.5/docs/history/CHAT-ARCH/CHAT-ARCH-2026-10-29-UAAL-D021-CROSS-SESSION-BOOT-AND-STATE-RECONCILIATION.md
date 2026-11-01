@@ -535,6 +535,112 @@ M1A_GATES_CHANGED=FALSE
 
 ---
 
+
+### 6D.5C PR #591 next-session coordination receipt (2026-11-01; branch-only)
+
+This receipt records the latest coordinator reconciliation for continuation in a separately opened chat. It is attached to PR #591's isolated candidate branch and is **not adopted by main**. Read the live CURRENT-STATE.md from main first; this receipt supplements that canonical router and does not replace it.
+
+**Exact source and route observations**
+
+```text
+OBSERVED_AT=2026-11-01 (America/Bogota; GitHub metadata fetched in this session)
+MAIN_SHA=a64f9e331ccbf13225ed5a3d945e16586e8756db
+CURRENT_STATE_PATH=IABV_v1.5/docs/history/CHAT-ARCH/CURRENT-STATE.md
+CURRENT_STATE_BLOB=63e1b459a13e23e1012da81826dc50727b688d8c
+CURRENT_STATE_NORMAL_READ=EMPTY_BODY; EXACT_BLOB_FETCHED
+D021_MAIN_BLOB=b0c262730794a8f27b2f9815bfeda3e119cbb327
+M1A_ACTIVE_TASK=IABV_M1A_OWNER_ISSUER_MECHANISM_INPUT_GATE_R1_20261030
+M1A_OPEN_EDGE=OWNER_ROOT_DECISION_AUTHENTICATION_AND_ROOT_HANDLE_PROVENANCE_NOT_ESTABLISHED
+OWNER_INPUT_RECONCILED=NO_ADDITIONAL_MECHANISM_IDENTIFIED
+G1/G2/G3=NOT_ESTABLISHED
+G4/G5/G6/G7/G8=OPEN; NONE_CLOSED
+OPTION_D=RATIFIED_NO_BOOTSTRAP
+PRODUCT_IMPLEMENTATION=NOT_AUTHORIZED
+C:/Python=DO_NOT_TOUCH
+MCP_TOOL_ALLOWLIST=EMPTY
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+TESTS/BUILD/RUNTIME=NOT_RUN
+AUTOMATIC_FOLLOW_ON=FALSE
+```
+
+The canonical route is task-local: M1A/G1 remains blocked, but this is not a project-wide stop. Do not ask the Owner to repeat the Entra/Authenticator setup or identify another mechanism. No new independent root/issuer evidence was received in this continuation.
+
+**PR #591 live state and source identity**
+
+```text
+PR=591
+URL=https://github.com/jhonf463r/Python/pull/591
+STATE=OPEN; DRAFT=TRUE; MERGED=FALSE
+BASE=main@a64f9e331ccbf13225ed5a3d945e16586e8756db
+SOURCE_HEAD_AT_START_OF_THIS_RECEIPT=3cf320140733e3fc99171fd4ba25951dfbd88324
+COMPARE_AT_START=ahead_72; behind_0; 15_changed_files
+PR_REVIEWS=0
+INLINE_REVIEW_THREADS=0
+COMBINED_STATUS_CHECKS=0
+CHECK_RUNS=0
+PR_TRIGGERED_WORKFLOW_RUNS=0
+CONTROL_MASTER_LIVE_BRANCH=NOT_FOUND
+PUBLIC_SIGNAL_PUBLISHED=FALSE
+```
+
+GitHub reports 72 sequential connector-generated commits on the candidate branch; this is not 72 independent deliverables. Review the final file diff and exact final source, not commit count. The prior 11-passed claim in the PR description is bound to earlier projector/publisher/test blobs (bd2c8627e6407e154a86c22ee4621d6d77ed2009, 27801109246ee4295b62ba99267df9e4c6573b78, 789362a24688f98b8cb3a44c3226cac557164cf1) and **does not validate the final HEAD**.
+
+**Final source blobs statically fetched in this continuation**
+
+| Path | Blob |
+|---|---|
+| src/iabv_v15/services/evolution/control_master_signal_projector.py | 7888a07d90e864058fc738bc0c653039c7f63237 |
+| src/iabv_v15/services/evolution/control_master_signal_publisher.py | 70a9005c4a69100c32187ccfe40c0c01578c817b |
+| src/iabv_v15/services/evolution/control_master_service.py | 3b2605d0e0a12c5e3f0601a01c9b944c907692d1 |
+| src/iabv_v15/bootstrap.py | a1bbc4ecf73448b82ea9aae99e8fdeade3592868 |
+| src/iabv_v15/services/llm/system_prompt_builder.py | e76ea07d8afb6490846479ae2585459eaba3b42d |
+| src/iabv_v15/ui/viewmodels/evolution_center_viewmodel.py | 9f4f24a6ca075cfe8684dac3be03db32d482c927 |
+| src/iabv_v15/ui/qml/pages/EvolutionCenterPage.qml | c4568020e4d051e810f75f459f9d159873cc5e22 |
+| tests/test_control_master_signal_projector.py | 19b78b47201bb902918e8c571d3b069f7c4cb472 |
+| tests/test_canonical_work_queue.py | dcf8dd70bac73b7d7d70c0e5f31904bb5188d5ef |
+| tests/test_evolution_center_viewmodel.py | f1f52506041f723178813834041fec67706094b1 |
+| tests/test_system_prompt_builder.py | 4c0529988ac6b3a1782497284e5d8ffbce1f63a7 |
+
+**Adjudicated static findings**
+
+- The observation timestamp, existing-public-branch tree allowlist, exact post-push ref/commit/byte read-back and distinct PUBLISHED_UNVERIFIED ViewModel result are present in the exact fetched source blobs.
+- AppBootstrap statically constructs and wires the objective repository, pending-issue repository, operational self-examination service, platform pending queue and workspace root into ControlMasterService. This is source wiring only; it does not prove runtime reads succeed.
+- Some ControlMasterService readers accept optional dependencies and return no items when a dependency is absent; configured-but-failing/unsupported readers in several paths do record diagnostics. The main AppBootstrap path inspected wires those main dependencies. A missing runtime_audit.jsonl is treated as no audit items. This review did not establish a false-empty queue in the main composition: record it as REVIEW_NOTE; NO_CONFIRMED_DEFECT, not as a reason to patch speculatively.
+- The manual QML confirmation dialog discloses the public destination and payload limits. Static source presence does not prove QML loads or the action works in the native UI.
+
+**Validation boundary and next discriminating action**
+
+```text
+STATIC_SOURCE_FETCHBACK=VERIFIED_FOR_LISTED_BLOBS
+NEW_TESTS_AUTHORED=VERIFIED
+FINAL_HEAD_TESTS_EXECUTED=NOT_RUN
+FULL_SUITE=NOT_RUN
+BUILD=NOT_RUN
+APPBOOTSTRAP_RUNTIME=NOT_RUN
+QML_LOAD_AND_INTERACTION=NOT_RUN
+LIVE_CONTROL_MASTER_READ=UNAVAILABLE
+PUBLIC_SIGNAL_PUBLICATION=NOT_RUN
+MAIN_MODIFIED=FALSE
+PR_591_MERGE=NOT_AUTHORIZED
+```
+
+No authorized project test runner was available through this coordination session. The next action is **not another source rewrite**: obtain/use an already-authorized isolated project runner and execute, against the exact final PR HEAD, the four focused suites:
+
+1. tests/test_control_master_signal_projector.py
+2. tests/test_canonical_work_queue.py
+3. tests/test_system_prompt_builder.py
+4. tests/test_evolution_center_viewmodel.py
+
+Record interpreter/version, exact commands, test counts, exit codes, logs and tested HEAD. Then adjudicate each result separately. Only after these pass should an authorized native QML/AppBootstrap integration check be considered. Do not invoke the publisher, create control-master-live, access local/protected stores, start runtime, touch C:/Python, change permissions/tunnels, merge any PR, or infer M1A/G1 closure.
+
+**Other open PRs were inspected but not modified:** #592 is open Draft at 73300951298fd9e03f20aa3b2a94aa965ed3c33e; its two-test/smoke pass is recorded in its PR body as actor-reported, not re-executed here. #589 is open, targets an older base f39daa5231c5c85c83a7545879aa522286525fef, and GitHub reports mergeable=false; mergeable_state=dirty. It must be reconciled with current main before any review/merge decision. Neither PR is authorized to merge by this receipt.
+
+**Cross-session instruction:** the next chat must fetch live main and its exact CURRENT-STATE.md blob first, then fetch PR #591 and this D021 branch receipt at the PR's live HEAD. Record that the receipt is branch-persistent only until adopted. Do not ask the Owner to repeat settled inputs. The receiver must independently acknowledge retrieval and state whether this receipt changed or confirmed the chosen action; do not claim automatic boot or causal reuse.
+
+---
+
 ### 6D.6 Cross-chat handoff and causal reuse
 
 A handoff that materially depends on the Control Master must carry the fields in §6D.2 and the exact source refs. The receiving chat must independently acknowledge whether it retrieved the digest, reconcile it with its own live `CURRENT-STATE.md`, and state how it affected the selected action. A pasted digest or a link proves availability of content, not that it was consumed or causally influential.
