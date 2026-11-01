@@ -153,6 +153,17 @@ PARENT_OBJECTIVE=
 PROJECT_ID=
 TASK_ID=
 ROLE=
+DESTINATION_ACTOR_TYPE=
+DESTINATION_APP_AND_VERSION=
+EXECUTION_SURFACE=
+CONTROL_PLANE=
+HOST_AND_OS=
+PROCESS_ACTOR=
+SCHEDULER_OR_TRIGGER_OWNER=
+T3_INVOLVEMENT=NONE|HOST|PROVIDER|DELEGATOR|TARGET
+PERMISSION_DOMAIN=
+PERMISSION_SOURCE_AND_SCOPE=
+PERMISSION_OBSERVED_AT=
 OPERATING_CONTEXT=
 MEMORY_SCOPE=
 MEMORY_PROFILE_ID_AND_REVISION=
@@ -207,12 +218,54 @@ The coordinator, not the Owner, resolves shared inputs. Use the D021 §6E.4 retr
 
 If an artifact exists only in a local producer session, ask that producer to generate one bounded archive with a manifest. Request one exact package from the Owner only after Project, GitHub and connected authorized sources have been checked and no transport route exists. Never send private material through the public repository. The role profile is context, not permission; all task authority and no-go rules remain explicit in the handoff envelope.
 
+### 6.4 Execution-surface binding and permission provenance
+
+Before sending an actionable prompt, populate the following target block. These fields are mandatory whenever the task can invoke a local process, create files, modify a scheduler, use a provider UI, or cross from cloud to local:
+
+```text
+DESTINATION_ACTOR_TYPE=
+DESTINATION_APP_AND_VERSION=
+EXECUTION_SURFACE=
+CONTROL_PLANE=
+HOST_AND_OS=
+OPERATING_CONTEXT=
+PROJECT_OR_WORKSPACE=
+PROCESS_ACTOR=
+SCHEDULER_OR_TRIGGER_OWNER=
+T3_INVOLVEMENT=NONE|HOST|PROVIDER|DELEGATOR|TARGET
+PERMISSION_DOMAIN=
+PERMISSION_SOURCE_AND_SCOPE=
+PERMISSION_OBSERVED_AT=
+OWNER_AUTHORIZATION_SCOPE=
+AUTHORIZED_SIDE_EFFECTS=
+PROHIBITED_SIDE_EFFECTS=
+TARGET_SURFACE_MATCH=VERIFIED|MISMATCH|UNKNOWN
+```
+
+Use the concrete actor/surface, not a product-family shorthand. For example, `CODEX_EXTERNAL_DESKTOP` is not `T3_DESKTOP_PROVIDER`; `CODEX_CLI_CHILD` is a separate process; and `WINDOWS_TASK_SCHEDULER` is not T3 Scheduled Tasks. The prompt's first lines must state where it is to be pasted/run, which application is involved, which host executes it, and which actors are explicitly out of scope.
+
+Permission indicators are not portable across surfaces. A `Full Access` indicator in external Codex does not prove a T3 thread is `Supervised`, and T3 `Supervised` does not prove external Codex or Windows permissions. A permission on one surface must never become a precondition on another surface. A permissive technical mode is not broader Owner authorization.
+
+Before execution, the receiver returns `TARGET_SURFACE_MATCH`, identifies the permission source for the selected surface and confirms the exact authorized side effects. If the target is mismatched, stop before side effects and classify `HANDOFF_TARGET_MISMATCH`; if the task can be routed to another already available and authorized actor, propose or perform that bounded re-route instead of declaring the entire project blocked. Query T3 controls only when `T3_INVOLVEMENT` is not `NONE`.
+
+When a workflow has an outer operator and a child process, state both explicitly. Example: an external Codex Desktop operator may create one approved PowerShell runner and register one Windows Task Scheduler job; that runner launches a separate `codex exec` child with `--sandbox read-only`. The child's sandbox does not constrain the outer operator's file/scheduler writes, and the outer operator's UI mode does not change the child's sandbox. Validate each boundary separately.
+
+Do not claim a handoff is automatic when the Owner must paste it. Mark `MANUAL_HANDOFF_REQUIRED`, give one exact copy-ready block, and continue to prefer shared Project/GitHub/authorized connected-source retrieval for artifacts so the Owner is not asked to relay files already available elsewhere.
+
 ## 7. Standard return receipt
 
 ```text
 HANDOFF_ID=
 TASK_ID=
 ACTOR_SESSION_ID=
+ACTOR_TYPE=
+EXECUTION_SURFACE=
+CONTROL_PLANE=
+PROCESS_ACTOR=
+SCHEDULER_OR_TRIGGER_OWNER=
+T3_INVOLVEMENT=
+PERMISSION_DOMAIN_AND_SOURCE=
+TARGET_SURFACE_MATCH=VERIFIED|MISMATCH|UNKNOWN
 OPERATING_CONTEXT=
 PROJECT_ID=
 ROLE=
