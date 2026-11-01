@@ -453,7 +453,7 @@ Source code that defines or wires a digest is not proof that every consumer rece
 - task outcomes link to their owning objective where intended;
 - a later decision actually changes or is confirmed because of the signal.
 
-The 2026-10-31 static reconciliation observed a full-prompt digest path, a compact-prompt omission, and silent empty/null fallbacks in some consumers. This is a source-level gap record, not proof of runtime failure or a mandate to implement now. Do not modify product code under a documentation-only authorization.
+The 2026-10-31 main-branch reconciliation observed a full-prompt digest path, a compact-prompt omission, and silent empty/null fallbacks in some consumers. This remains the historical baseline for that main revision; it is not a claim about the later PR #591 branch. The branch-only source review and bounded corrections are recorded in §6D.5A. No product code is adopted by this receipt, and the branch remains unmerged.
 
 ### 6D.6 Cross-chat handoff and causal reuse
 
@@ -590,3 +590,44 @@ Do not repeat text-only baseline tests as if they solve source attribution. Reop
 ## 8. Scope and non-goals
 
 This is a documentation/control-plane repair only. It does not create trust roots, keys, credentials, Entra registrations, authority assets, production providers, an MCP allowlist, protected reads, local runtime or tunnel. It does not change IABV technical acceptance criteria. G1/G2/G3 remain `NOT_ESTABLISHED` until their independent product evidence is supplied. No test suite or runtime was executed as part of this method authoring.
+
+
+### 6D.5A PR #591 consumer-path reconciliation (branch-only; 2026-10-31)
+
+This subsection records source review of the separately Owner-authorized PR #591 implementation. It does not change the canonical route on `main`, authorize any runtime operation, or claim that the code has been adopted.
+
+**Source-level coverage observed on the PR branch:**
+
+- **Full prompt:** `AdaptiveTaskOrchestrator._control_master_digest()` obtains the state and queue, collects the same-thread queue diagnostics, and returns `UNAVAILABLE` on source/read errors. The full `SystemPromptBuilder.build()` receives that digest.
+- **Compact prompt:** the small-model path calls `build_compact()` with the same digest. The shared Control Master section explicitly says `UNAVAILABLE` is not an empty queue and preserves the other valid digest fields.
+- **Identity and freshness visibility:** `ControlMasterDigest` already carries `digest_id`, `source_state_id`, and `generated_at_utc`. This revision adds those fields to the shared prompt section and to the Evolution Center's Control Master brief, and adds contract assertions for both consumers. The QML view displays that brief.
+- **Error visibility:** the Evolution Center refresh path collects `last_work_queue_errors`; when a configured source read fails, it sets `signal_status=UNAVAILABLE` and `work_queue_status=UNAVAILABLE` rather than presenting that result as an empty queue.
+- **Manual publisher wiring:** the existing `AppBootstrap` instance wires its publisher action into `EvolutionCenterViewModel`. The QML button opens a public-disclosure dialog; only accepting that dialog invokes the slot. Normal refresh is not a publication trigger.
+- **Public projection:** the projector is an allowlist, omits free text and original queue IDs, uses per-snapshot positional references, includes source/timing/expiry metadata and an integrity checksum. The publisher independently validates the payload and targets only the dedicated non-default branch.
+
+**Test evidence and boundary:**
+
+```text
+PROJECTOR_AND_PUBLISHER_FOCUSED_TESTS=11_PASSED
+TEST_FILE_BLOB=789362a24688f98b8cb3a44c3226cac557164cf1
+PROJECTOR_BLOB=bd2c8627e6407e154a86c22ee4621d6d77ed2009
+PUBLISHER_BLOB=27801109246ee4295b62ba99267df9e4c6573b78
+EXECUTION=TEMPORARY_PYTHON_HARNESS; MINIMAL_ControlMasterState_STUB
+NETWORK=NOT_USED
+SECRETS=NOT_LOADED
+PUBLISHER_TRANSPORT=NOT_INVOKED
+```
+
+Those 11 tests exercise the projector/publisher contracts only. The prompt-builder, work-queue integration and ViewModel tests added or updated on this branch have **not** been executed. The complete repository test suite, native PySide/QML load, build, application runtime and real local Control Master read remain unverified. GitHub reported no workflow runs or commit status checks for the reviewed head. Do not promote this result to full integration acceptance.
+
+**Control Master intake in this coordinator session:**
+
+- Canonical route was read from `main@a64f9e331ccbf13225ed5a3d945e16586e8756db`. The normal content read of `IABV_v1.5/docs/history/CHAT-ARCH/CURRENT-STATE.md` returned an empty body; the exact blob `63e1b459a13e23e1012da81826dc50727b688d8c` was then fetched successfully (1,074,956 characters).
+- The active route remains `IABV_M1A_OWNER_ISSUER_MECHANISM_INPUT_GATE_R1_20261030`, with the root/issuer provenance edge blocked, `G1/G2/G3=NOT_ESTABLISHED`, `OPTION_D=RATIFIED_NO_BOOTSTRAP`, protected reads fail-closed, and no product-runtime authority. Its wait is task-local; the independent PR #591 work remains bounded by its own Owner authorization.
+- The newest Control Master state snapshot found on `main`, `IABV_v1.5/data/evolution/control_master/latest.json`, has blob `d76d521e6f8d73e874a21ffe1b720dcdbcd48293`, state ID `dc840807-ef2a-4e7a-8f11-4c6362ccbcb7`, and `last_updated=2026-04-19T19:23:46.389095Z`. It predates the current task and later repository state, and contains no current prioritized queue. Classify it as `STALE`, not as the live signal.
+- The dedicated `control-master-live` branch and `shared_signal.json` were not present at this observation. No authorized live local-runtime read surface was available in this session. Therefore `LIVE_RUNTIME_SIGNAL=UNAVAILABLE`; do not infer an empty queue or publish a synthetic snapshot.
+
+**Current PR state at this receipt:** base `main@a64f9e331ccbf13225ed5a3d945e16586e8756db`; PR #591 remains open and Draft, not merged. Its source-level corrections are branch-persistent only. The PR's UI publisher is not invoked; no public signal was published. Main, Option D, M1A and the G1/G2/G3 gates are unchanged.
+
+**Remaining §6D.5 acceptance edges:** exact-HEAD execution of the updated prompt-builder/work-queue/ViewModel tests in a full isolated project environment; native QML load/interaction verification; source/runtime timestamp and queue provenance confirmation from the real local Control Master; outcome-to-owning-objective linkage; and a later decision receipt showing whether the signal changed or confirmed action selection. The public signal branch remains uncreated until a separate deliberate UI confirmation in an authorized runtime.
+
