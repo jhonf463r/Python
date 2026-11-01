@@ -299,3 +299,82 @@ AUTOMATIC_FOLLOW_ON=FALSE
 NEXT_SINGLE_ACTION=CONFIGURE_CODEX_PROVIDER_IN_EXISTING_T3_DESKTOP; VERIFY_SUPERVISED_LAB_THREAD
 OUTCOME=DOCUMENTARY_RECONCILIATION; PENDING_PR_REVIEW_AND_MERGE
 ~~~
+
+---
+
+## 12. Addendum de continuidad — resultado Codex 11:06 (America/Bogota)
+
+Este addendum supersede únicamente los campos que actualiza; conserva el estado histórico y las restricciones de las secciones anteriores. La fuente del estado local sigue siendo el informe entregado por el Owner, no una inspección directa de este MSI por el conector GitHub.
+
+### Entrada al marco IABV
+
+Codex reporta como recuperados y verificados:
+- main = a64f9e331ccbf13225ed5a3d945e16586e8756db.
+- CURRENT-STATE.md mediante el blob exacto 63e1b459a13e23e1012da81826dc50727b688d8c, después de que la lectura ordinaria devolviera vacío.
+- AGENTS.md, el README de CHAT-ARCH, CONTEXT-INDEX.md, MEMORY-OPERATING-PROTOCOL.md, el protocolo AI Frame, SYMBIOSIS-MAP.md, D019/D020/D021 y el kit de handoff.
+- El recibo TICD de esta rama: blob ced5061951ec026c9d50d26419f00d3465768705.
+
+CONTROL_MASTER_DIGEST=UNAVAILABLE: no se obtuvo un digest vivo mediante una superficie autorizada. El recibo de la rama y la documentación histórica no se elevan a autoridad runtime.
+
+### Estado T3/Codex actualizado
+
+Resultado del Owner desde Codex, Task ID TICD_T3_CONFIG_IABV_FRAME_2026_11_01:
+
+~~~text
+T3_DESKTOP=INSTALLED_VERIFIED; VERSION=0.1.6
+T3_CLI=NOT_ON_PATH; no standalone t3 command found in install-folder scan
+CODEX_CLI=AVAILABLE; VERSION=0.120.0
+CODEX_AUTHENTICATION=AUTHENTICATED; codex login status exit 0; output sanitized
+CODEX_PROVIDER=NOT_VERIFIED
+NEW_THREAD_PERMISSION=NOT_VERIFIED
+LAB_THREAD=NOT_CREATED
+LAB_WRITE_TEST=NOT_RUN
+T3_CONNECT=DISABLED
+ANDROID_PAIRING=NOT_DONE
+COMPUTER_USE=NOT_RETRIED; no changed precondition
+ERROR_OS_3=PREVIOUSLY_OBSERVED; unchanged
+NEW_CAUSAL_PRECONDITION=NONE
+FILES_MODIFIED=NONE
+C:/Python_TOUCHED=NO
+IABV_PRODUCT_CODE_MODIFIED=NO
+MCP_BRIDGE_ACTIVATED=NO
+PUBLIC_TUNNEL_ENABLED=NO
+PRODUCT_RUNTIME=NOT_RUN
+OUTCOME=PARTIAL
+~~~
+
+**Adjudicación:** la instalación y autenticación del Codex CLI quedan verificadas según el reporte local (codex-cli 0.120.0; codex login status terminó con código 0). No reinstalar Codex ni repetir codex login. Esto no demuestra que T3 haya configurado o reconocido el proveedor: CODEX_PROVIDER=NOT_VERIFIED sigue siendo el estado correcto. El comando t3 no está en PATH y el escaneo reportado no encontró un ejecutable independiente; no descargar otro CLI ni modificar configuraciones internas. La activación de “t3 command” debe comprobarse en la UI documentada de T3 Desktop (Settings → About → Install).
+
+La única dependencia operativa pendiente del flujo local es acceso a la UI de T3 para comprobar el proveedor, fijar explícitamente Supervised para hilos nuevos y crear una sola prueba inocua en C:\IABV-TICD-LAB. La prueba debe dejar evidencia de que el hilo realmente se ejecutó bajo ese permiso y creó T3_CONNECTION_TEST.md dentro del laboratorio. Hasta entonces no declarar T3 listo.
+
+El helper Computer Use no se reintentó: el mismo error de kernel-assets / os error 3 permanece sin cambio causal conocido. D019 selecciona no repetir el intento idéntico; D020 selecciona reutilizar el CLI ya instalado/autenticado en vez de reinstalarlo; D021 exige mantener separados los estados verificados, no verificados y no ejecutados. Este caso demuestra aplicación reportada de esas reglas en esta tarea, no aprendizaje autónomo persistente.
+
+### Observación adicional de arquitectura (solo estática)
+
+Codex reporta lectura estática de bootstrap.py (blob e4befa6b683fc87aed7481f377f1332f5753e2c3) y referencias de wiring a ToolRegistry, WorldModelService, ToolDiscoveryService, CapabilityAuditHarness, PortableContextService, TaskOutcomeRecorder, UnifiedMemoryLayer, AdaptiveTaskOrchestrator y DecisionAuditTrail. También reporta:
+- AssistantCapabilityRegistry: perfiles sembrados en fuente y operaciones de registro/consulta; actualización dinámica por experiencia no verificada.
+- SynapticRouter: flag y punto de decisión presentes en la ruta fuente; valor efectivo e invocación no observados.
+- CognitiveFrameTranslator: transformación de contexto presente en código; invocación automática antes de una entrega no demostrada.
+- UnifiedMemoryLayer, PortableContextService, DecisionAuditTrail y RuntimeAuditTracer: presencia de código, sin consultar estados protegidos ni ejecutar los servicios.
+- MCPBridgeService: presencia de runners en fuente; no se activó y sigue sujeto al estado canónico de bridge no listo.
+
+Estas observaciones son evidencia de fuente reportada por Codex, no prueba de ejecución, activación, salud, autonomía ni aprendizaje causal. La simbiosis documental sirve como marco de continuidad; no activa runtime ni otorga acceso a herramientas locales.
+
+### Próximo paso único y límites
+
+~~~text
+NEXT_SINGLE_ACTION=OWNER_OPENS_EXISTING_T3_UI_AND_CONFIGURES_LOCAL_CODEX_PROVIDER
+REQUIRED_UI_CHECKS=PROVIDER_RECOGNIZED; NEW_THREADS_SUPERVISED; ENABLE_T3_COMMAND_IF_AVAILABLE
+REQUIRED_LAB_PROOF=ONE_SUPERVISED_THREAD_READS_LAB_AND_CREATES_T3_CONNECTION_TEST.md
+DO_NOT_REPEAT=CODEX_INSTALL; CODEX_LOGIN; COMPUTER_USE_WITH_UNCHANGED_OS_ERROR_3
+T3_CONNECT=DISABLED_UNTIL_LOCAL_TEST_AND_SEPARATE_OWNER_APPROVAL
+ANDROID_PAIRING=NOT_DONE
+PRODUCT_CODE_MODIFIED=NO
+C:/Python_TOUCHED=NO
+MCP_BRIDGE_ACTIVATED=NO
+PUBLIC_TUNNEL_ENABLED=NO
+PRODUCT_RUNTIME=NOT_RUN
+~~~
+
+El Owner no debe copiar credenciales, tokens ni archivos de autenticación. No abrir C:\Python, no tocar el producto, no cambiar CURRENT-STATE.md, M1A/G1, Option D, gates, allowlist ni túneles.
+
