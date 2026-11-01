@@ -700,3 +700,33 @@ class TestQueueSourceFailureVisibility:
         assert empty.work_queue_status == "EMPTY_QUEUE"
         assert unavailable.signal_status == "UNAVAILABLE"
         assert unavailable.work_queue_status == "UNAVAILABLE"
+
+
+class TestQueueOptionalReaderUnavailable:
+    """Configured sources without supported reader methods are not empty."""
+
+    def test_pending_issue_reader_unavailable_is_reported(self) -> None:
+        ws = _workspace()
+        try:
+            svc = ControlMasterService(
+                repository=_fake_repo(),
+                pending_issue_repository=object(),
+                workspace_root=str(ws),
+            )
+            svc.current_work_queue()
+            assert "PENDING_ISSUES_READER_UNAVAILABLE" in svc.last_work_queue_errors
+        finally:
+            shutil.rmtree(ws, ignore_errors=True)
+
+    def test_oses_reader_unavailable_is_reported(self) -> None:
+        ws = _workspace()
+        try:
+            svc = ControlMasterService(
+                repository=_fake_repo(),
+                self_examination_service=object(),
+                workspace_root=str(ws),
+            )
+            svc.current_work_queue()
+            assert "OSES_FINDINGS_READER_UNAVAILABLE" in svc.last_work_queue_errors
+        finally:
+            shutil.rmtree(ws, ignore_errors=True)
