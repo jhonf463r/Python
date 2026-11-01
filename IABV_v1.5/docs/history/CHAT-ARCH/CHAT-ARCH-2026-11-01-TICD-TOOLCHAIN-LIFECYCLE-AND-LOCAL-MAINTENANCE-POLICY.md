@@ -92,7 +92,7 @@ An approval-required provider mode is not itself Owner authorization. A preappro
 
 ## 6. Local maintenance through T3
 
-T3 Code v0.1.6 documents recurring Scheduled Tasks under **Settings → Scheduled tasks**. Each task runs on the selected environment with that environment's project, model and workspace settings; it can be edited, paused, resumed, run immediately or deleted. Use this existing local facility rather than building another scheduler.
+T3 Code v0.1.6 documents recurring Scheduled Tasks under **Settings → Scheduled tasks**. Each task runs on the selected environment with that environment's project, model and workspace settings; it can be edited, paused, resumed, run immediately or deleted. Use this existing local facility rather than building another scheduler. The MSI maintenance task must first prove that the local environment is reachable at its scheduled time. The local bootstrap record says the current Windows install has no separate T3 background service and the local server must remain available through T3 Desktop; therefore do not promise execution while the PC is powered off or the T3 host is stopped. Record a heartbeat/runner-availability result and test one immediate scheduled-task run before treating recurrence as operational. Computer Use remains a foreground UI channel; scheduled CLI/API inventory work is not proof of unattended GUI control.
 
 Recommended local task:
 
