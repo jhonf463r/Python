@@ -118,6 +118,7 @@ class ControlMasterSignalProjector:
             if (
                 not isinstance(item_id, str)
                 or not _TOKEN.fullmatch(item_id)
+                or not isinstance(source, str)
                 or source not in _ALLOWED_SOURCES
                 or not isinstance(status, str)
                 or not _TOKEN.fullmatch(status)
