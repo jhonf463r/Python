@@ -247,18 +247,18 @@ def test_publisher_verifies_exact_remote_ref_commit_and_content(
 
     publisher = ControlMasterSignalPublisher()
     expected_commit = "a" * 40
-    expected_content = '{"signal_status":"AVAILABLE"}\\n'
+    expected_content = '{"signal_status":"AVAILABLE"}\n'
     remote_ref = "refs/heads/control-master-live"
     commands: list[list[str]] = []
 
     def fake_run(args, *, cwd=None, allow_returncodes=(0,)):
         commands.append(list(args))
         if args[0] == "ls-remote":
-            return SimpleNamespace(stdout=f"{expected_commit}\\t{remote_ref}\\n")
+            return SimpleNamespace(stdout=f"{expected_commit}\\t{remote_ref}\n")
         if args[0] == "fetch":
             return SimpleNamespace(stdout="")
         if args[0] == "rev-parse":
-            return SimpleNamespace(stdout=f"{expected_commit}\\n")
+            return SimpleNamespace(stdout=f"{expected_commit}\n")
         if args[0] == "show":
             return SimpleNamespace(stdout=expected_content)
         raise AssertionError(f"Unexpected git command: {args}")
@@ -291,13 +291,13 @@ def test_publisher_reports_remote_content_mismatch_after_push(
 
     def fake_run(args, *, cwd=None, allow_returncodes=(0,)):
         if args[0] == "ls-remote":
-            return SimpleNamespace(stdout=f"{expected_commit}\\t{remote_ref}\\n")
+            return SimpleNamespace(stdout=f"{expected_commit}\\t{remote_ref}\n")
         if args[0] == "fetch":
             return SimpleNamespace(stdout="")
         if args[0] == "rev-parse":
-            return SimpleNamespace(stdout=f"{expected_commit}\\n")
+            return SimpleNamespace(stdout=f"{expected_commit}\n")
         if args[0] == "show":
-            return SimpleNamespace(stdout='{"signal_status":"DIFFERENT"}\\n')
+            return SimpleNamespace(stdout='{"signal_status":"DIFFERENT"}\n')
         raise AssertionError(f"Unexpected git command: {args}")
 
     monkeypatch.setattr(publisher, "_run_git", fake_run)
@@ -305,7 +305,7 @@ def test_publisher_reports_remote_content_mismatch_after_push(
     result = publisher._verify_remote_publication(
         checkout=tmp_path,
         expected_commit=expected_commit,
-        expected_content='{"signal_status":"AVAILABLE"}\\n',
+        expected_content='{"signal_status":"AVAILABLE"}\n',
     )
 
     assert result == "REMOTE_CONTENT_MISMATCH"
@@ -327,7 +327,7 @@ def test_publisher_reports_remote_head_mismatch_after_push(
     def fake_run(args, *, cwd=None, allow_returncodes=(0,)):
         commands.append(list(args))
         if args[0] == "ls-remote":
-            return SimpleNamespace(stdout=f"{'c' * 40}\\t{remote_ref}\\n")
+            return SimpleNamespace(stdout=f"{'c' * 40}\\t{remote_ref}\n")
         raise AssertionError(f"Unexpected git command after mismatched head: {args}")
 
     monkeypatch.setattr(publisher, "_run_git", fake_run)
@@ -335,7 +335,7 @@ def test_publisher_reports_remote_head_mismatch_after_push(
     result = publisher._verify_remote_publication(
         checkout=tmp_path,
         expected_commit="d" * 40,
-        expected_content="{}\\n",
+        expected_content="{}\n",
     )
 
     assert result == "REMOTE_HEAD_MISMATCH"
