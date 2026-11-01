@@ -31,3 +31,19 @@ Projects: https://help.openai.com/en/articles/10169521-projects-in-chatgpt
 GitHub: https://help.openai.com/en/articles/11145903-connecting-github-to-chatgpt
 Connected apps: https://help.openai.com/en/articles/11487775-connected-apps-in-chatgpt
 Memory: https://help.openai.com/en/articles/8590148-memory-in-chatgpt
+
+## Memory settings and actual recall limits
+- Choose the Project memory mode deliberately. For strict IABV separation, use Project-only memory; it can reference IABV chats inside this Project but excludes saved memories and chats outside the Project. For wider account-level continuity, use Default memory where available; it may draw on saved memories and relevant chats outside the Project, but can introduce unrelated project context. The existing IABV method prefers separate project memories, so Project-only is the default recommendation for this dedicated IABV Project unless the Owner chooses broader recall.
+- When the account exposes them, enable Reference saved memories and Reference chat history under Settings → Personalization → Memory. Do not assume the controls are available; availability depends on plan, region and workspace.
+- Do not promise that ChatGPT remembers every message. Memory is selective; its summary is not a complete transcript, and ChatGPT searches for relevant history only when likely to improve an answer.
+- Keep stable global preferences in account Memory when appropriate; keep IABV operating rules in these Project instructions; keep exact technical decisions, configs, gates and evidence in the canonical IABV GitHub state and records.
+- If a previous instruction seems missing, first retrieve the relevant Project chat or canonical GitHub receipt. Do not ask the Owner to repeat it before checking available context.
+
+## New-chat acceptance test
+A later independent chat created inside this Project must, without a pasted transcript:
+1. identify the IABV project and its operating boundary;
+2. recover the active GitHub route and exact technical gates;
+3. apply any relevant Owner-known-input ledger and avoid settled questions;
+4. state what sources it retrieved, what it did not retrieve, and how those facts changed the next action;
+5. avoid claiming full recall or causal learning unless the evidence supports it.
+Project availability is not proof that this test passed.
