@@ -100,7 +100,7 @@ def cmd_export_signal(args: argparse.Namespace) -> int:
     boot = _bootstrap(args.workspace)
     signal = boot.export_control_master_signal(refresh=args.refresh)
     json.dump(signal, sys.stdout, indent=2, ensure_ascii=False)
-    sys.stdout.write("\\n")
+    sys.stdout.write("\n")
     return 0 if signal.get('signal_status') in {'AVAILABLE', 'EMPTY_QUEUE'} else 2
 
 
@@ -108,7 +108,7 @@ def cmd_publish_signal(args: argparse.Namespace) -> int:
     boot = _bootstrap(args.workspace)
     result = boot.publish_control_master_signal(refresh=args.refresh)
     json.dump(result, sys.stdout, indent=2, ensure_ascii=False, default=str)
-    sys.stdout.write("\\n")
+    sys.stdout.write("\n")
     return 0 if result.get('status') in {'PUBLISHED', 'UNCHANGED'} else 2
 
 
