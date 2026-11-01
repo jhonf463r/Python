@@ -454,6 +454,86 @@ Claim causal influence only when the receipt identifies the signal and demonstra
 
 The Control Master is subordinate to the Owner's current objective and all existing hard gates. It cannot authorize protected reads, credential access, root provisioning, code changes, tests, build, runtime, tunnel, deployment, permission changes or PR merges. Do not put secrets or protected payloads into public GitHub receipts. Keep local runtime evidence and cloud coordination evidence explicitly separate.
 
+## 6E. ChatGPT native project context and cross-agent artifact transport (2026-10-31)
+
+### 6E.1 Purpose and boundary
+
+Use ChatGPT's native Project as the shared context surface for participating ChatGPT conversations, not as another IABV memory or router. A Project can provide its chats with the same Project instructions, files and conversations. A Project can use Default memory or Project-only memory. The selected mode changes which other chats and saved memories can contribute; there is no universal best setting. Project-only confines references to chats inside the Project and excludes saved memories and conversations outside it. Shared Projects automatically use project-only memory. Default memory can use saved memories and, depending on plan/settings, relevant conversations beyond the Project. A chat outside the Project cannot use its private chat context. The Project does not automatically share its contents with Codex, Claude, another provider, an unrelated ChatGPT Project or the Owner's local filesystem.
+
+For cross-product collaboration, continue using the owning project repository as the common versioned store, provided the receiving AI has an authorized connector or exact repository access. Do not create another coordinator, message bus, knowledge base or competing state file.
+
+### 6E.2 One-time ChatGPT configuration
+
+For IABV ChatGPT work, the recommended owner-side setup is:
+
+1. Create or designate one Project named IABV — Coordinación compartida.
+2. Add the copy-ready text from CHAT-ARCH-2026-10-31-CHATGPT-PROJECT-INSTRUCTIONS-R1.md to that Project's instructions.
+3. Choose the Project memory mode deliberately:
+   - `PROJECT_ONLY` is appropriate when the IABV Project must remain isolated from other projects. It lets chats refer to other IABV Project conversations, but excludes account-level saved memories and conversations outside this Project. Move eligible IABV chats into it and place required operating rules in its Project instructions.
+   - `DEFAULT` is appropriate when the Owner wants the Project to draw on account-level memories and relevant chats outside the Project, where the plan and settings permit it. This improves broad continuity but can introduce unrelated cross-project context; apply the project-boundary rules before using it.
+   - For this portfolio's existing `one shared method / separate project memories` policy, use `PROJECT_ONLY` for the dedicated IABV Project unless the Owner explicitly chooses account-wide context instead. Do not claim that either mode remembers every message.
+   - When available, enable `Reference saved memories` and `Reference chat history` under Settings > Personalization > Memory; Project-only mode requires the applicable personal memory/reference controls. Availability varies by plan, region and workspace.
+4. Move existing IABV chats into this Project when the UI permits; create all new IABV ChatGPT chats from inside it. A chat created with a custom GPT may not be movable; start a replacement chat inside the Project and use the canonical GitHub boot instead of copying an entire transcript.
+5. Connect/authorize the GitHub app for jhonf463r/Python in every account/session that needs repository access. Do not assume one collaborator's app authorization or credentials transfer to another collaborator.
+
+Do not put this IABV policy in global Custom Instructions when that would contaminate unrelated project work. Project instructions take precedence within their Project, but they remain guidance and do not override platform/system policy, app availability, tool permissions, Owner gates or fail-closed rules.
+
+### 6E.3 ChatGPT memory limits and the two-level memory model
+
+ChatGPT Memory is selective personalization, not a transcript database or deterministic retrieval of every past message. OpenAI documents that Memory does not retain every conversation detail, that the memory summary can omit details/sources, and that ChatGPT searches for relevant history only when likely to improve the response. Plan, region, platform and settings affect available features. Therefore:
+
+- Use account-level Memory for stable, cross-project preferences and reusable coordination principles when the Owner wants those preferences across ordinary chats.
+- Use one Project per substantive project to hold its exact instructions, chats and reference files. Project-only memory gives strong project isolation; Default memory provides broader account context where supported.
+- Use the owning GitHub state and artifact records for exact technical settings, decisions, hashes, task status, permissions and provenance. Do not rely on the personal Memory summary as the canonical project record.
+- When an exact prior fact or instruction matters, retrieve the canonical source. Do not assume ChatGPT has searched every chat or that a detail omitted from the visible Memory summary is absent from all underlying sources.
+
+### 6E.4 Artifact retrieval ladder — eliminate avoidable manual transfer
+
+Before asking the Owner for an upload, pasted text, local export or repeated explanation, check in this order:
+
+1. The current ChatGPT Project's shared Sources/files and relevant chats, when this chat is actually inside the IABV Project.
+2. The connected, authorized GitHub repository; retrieve the exact canonical file/ref/commit and verify its revision, rather than relying on a remembered link or copied excerpt.
+3. Another already-connected, authorized project source/connector that can retrieve the exact artifact and preserve its provenance.
+4. Only then, request one precisely identified artifact from the Owner, and only when evidence establishes that it exists solely in a local/runtime location not exposed through an authorized connector or controlled bridge. Explain the missing route; never ask for a whole project export when one file/field is sufficient.
+
+If GitHub/project retrieval is available, do not make the Owner act as a manual courier between ChatGPT chats. Use the common source directly and report what was actually retrieved. If a tool is not present in the receiving session, classify the capability as unavailable; do not pretend a prompt or Project instruction can install the tool.
+
+### 6E.5 Distinguish file sharing from live runtime synchronization
+
+Use these separate channels:
+
+- CHATGPT_PROJECT_SHARED_CONTEXT: Project instructions, files and chats accessible to participating ChatGPT chats in that Project.
+- GITHUB_CANONICAL_STORE: versioned, source-bound records available to any AI that has an authorized repository route.
+- CONNECTED_APP_SOURCE: content returned on demand by a connected app; availability and scope depend on that session's app access and permissions.
+- LOCAL_RUNTIME_SOURCE: local application/database/files/processes; not visible to a cloud chat unless an explicitly supported, authorized connector or bridge exposes them.
+- CROSS_PRODUCT_HANDOFF: a correlated, published artifact in the shared repository or another agreed authorized store; a prompt, link or PR alone does not prove receipt or application.
+
+ChatGPT's GitHub app is documented as on-demand retrieval, not a continuously synchronized GitHub index or local-runtime feed; its availability varies by plan, workspace and product surface. The standard GitHub app may be read-only. Use only the write-capable tool actually exposed and authorized in the current session; do not infer write capability from read access.
+
+A Project therefore removes repeated uploading of shared project material, but does not make a live local Control Master digest appear automatically. If the live digest exists only inside the Owner's local runtime and no authorized reader/bridge publishes it, mark it UNAVAILABLE/UNVERIFIED; do not substitute the stale latest.json/md, start the runtime, access protected data or bypass M1A gates. An authorized future bridge/export would require its own security and scope approval.
+
+### 6E.6 Receipt and no-claim rules
+
+Record the transport state separately:
+
+SOURCE_IDENTIFIED -> ARTIFACT_RETRIEVED -> REVISION_VERIFIED -> CONTEXT_AVAILABLE -> RECEIVER_ACKNOWLEDGED -> DECISION_BOUND -> OUTCOME_VERIFIED -> CANONICAL_FETCHBACK.
+
+- A shared Project/file/link means AVAILABLE, not necessarily RETRIEVED or CONSUMED.
+- A connector read proves retrieval only for the current session and exact returned source/ref.
+- A receiving chat's correlated receipt is evidence of acknowledgement; its explanation of decision influence is needed to claim application.
+- A verified outcome and canonical fetch-back are separate from receipt/application.
+- Never claim automatic delivery, automatic boot, model-weight learning, or cross-vendor synchronization from Project membership, a commit or a link.
+
+### 6E.7 Owner friction rule
+
+The coordinator performs retrieval, reconciliation, source navigation, file comparison, and handoff assembly whenever the current tools and permissions permit. The Owner should perform only the one-time ChatGPT Project configuration that cannot be changed by an assistant tool, or provide an exact local-only artifact when no authorized connector exists. Do not repeatedly request manual export/upload for the same stable artifact once it is stored in the Project or repository.
+
+**Official product behavior references checked 2026-10-31:**
+- Projects in ChatGPT: https://help.openai.com/en/articles/10169521-projects-in-chatgpt
+- Connecting GitHub to ChatGPT: https://help.openai.com/en/articles/11145903-connecting-github-to-chatgpt
+- Connected apps in ChatGPT: https://help.openai.com/en/articles/11487775-connected-apps-in-chatgpt
+- Memory in ChatGPT: https://help.openai.com/en/articles/8590148-memory-in-chatgpt
+
 ## 7. Historical authoring snapshot and per-session falsifiable checks
 
 The values below are the original D021 authoring snapshot, not current route authority. Each material session must refresh live `main` and current PR metadata before reuse. Observed while preparing the initial revision:
@@ -488,70 +568,3 @@ Do not repeat text-only baseline tests as if they solve source attribution. Reop
 ## 8. Scope and non-goals
 
 This is a documentation/control-plane repair only. It does not create trust roots, keys, credentials, Entra registrations, authority assets, production providers, an MCP allowlist, protected reads, local runtime or tunnel. It does not change IABV technical acceptance criteria. G1/G2/G3 remain `NOT_ESTABLISHED` until their independent product evidence is supplied. No test suite or runtime was executed as part of this method authoring.
-
-## 6E. ChatGPT native project context and cross-agent artifact transport (2026-10-31)
-
-### 6E.1 Purpose and boundary
-
-Use ChatGPT's native Project as the shared context surface for participating ChatGPT conversations, not as another IABV memory or router. A Project can provide its chats with the same Project instructions, files and conversations. Project-only memory keeps IABV chat context scoped to that Project; in shared Projects, project-only memory is applied automatically. A chat outside the Project does not gain access to its private chat context. The Project does not automatically share its contents with Codex, Claude, another provider, an unrelated ChatGPT Project or the Owner's local filesystem.
-
-For cross-product collaboration, continue using the owning project repository as the common versioned store, provided the receiving AI has an authorized connector or exact repository access. Do not create another coordinator, message bus, knowledge base or competing state file.
-
-### 6E.2 One-time ChatGPT configuration
-
-For IABV ChatGPT work, the recommended owner-side setup is:
-
-1. Create or designate one Project named IABV — Coordinación compartida.
-2. Add the copy-ready text from CHAT-ARCH-2026-10-31-CHATGPT-PROJECT-INSTRUCTIONS-R1.md to that Project's instructions.
-3. Prefer Project-only memory for separation from unrelated projects, if the setting is available. The account's required memory/reference settings must be enabled for the selected memory mode to work.
-4. Move existing IABV chats into this Project when the UI permits; create all new IABV ChatGPT chats from inside it. A chat created with a custom GPT may not be movable; start a replacement chat inside the Project and use the canonical GitHub boot instead of copying an entire transcript.
-5. Connect/authorize the GitHub app for jhonf463r/Python in every account/session that needs repository access. Do not assume one collaborator's app authorization or credentials transfer to another collaborator.
-
-Do not put this IABV policy in global Custom Instructions when that would contaminate unrelated project work. Project instructions take precedence within their Project, but they remain guidance and do not override platform/system policy, app availability, tool permissions, Owner gates or fail-closed rules.
-
-### 6E.3 Artifact retrieval ladder — eliminate avoidable manual transfer
-
-Before asking the Owner for an upload, pasted text, local export or repeated explanation, check in this order:
-
-1. The current ChatGPT Project's shared Sources/files and relevant chats, when this chat is actually inside the IABV Project.
-2. The connected, authorized GitHub repository; retrieve the exact canonical file/ref/commit and verify its revision, rather than relying on a remembered link or copied excerpt.
-3. Another already-connected, authorized project source/connector that can retrieve the exact artifact and preserve its provenance.
-4. Only then, request one precisely identified artifact from the Owner, and only when evidence establishes that it exists solely in a local/runtime location not exposed through an authorized connector or controlled bridge. Explain the missing route; never ask for a whole project export when one file/field is sufficient.
-
-If GitHub/project retrieval is available, do not make the Owner act as a manual courier between ChatGPT chats. Use the common source directly and report what was actually retrieved. If a tool is not present in the receiving session, classify the capability as unavailable; do not pretend a prompt or Project instruction can install the tool.
-
-### 6E.4 Distinguish file sharing from live runtime synchronization
-
-Use these separate channels:
-
-- CHATGPT_PROJECT_SHARED_CONTEXT: Project instructions, files and chats accessible to participating ChatGPT chats in that Project.
-- GITHUB_CANONICAL_STORE: versioned, source-bound records available to any AI that has an authorized repository route.
-- CONNECTED_APP_SOURCE: content returned on demand by a connected app; availability and scope depend on that session's app access and permissions.
-- LOCAL_RUNTIME_SOURCE: local application/database/files/processes; not visible to a cloud chat unless an explicitly supported, authorized connector or bridge exposes them.
-- CROSS_PRODUCT_HANDOFF: a correlated, published artifact in the shared repository or another agreed authorized store; a prompt, link or PR alone does not prove receipt or application.
-
-ChatGPT's GitHub app is documented as on-demand retrieval, not a continuously synchronized GitHub index or local-runtime feed; its availability varies by plan, workspace and product surface. The standard GitHub app may be read-only. Use only the write-capable tool actually exposed and authorized in the current session; do not infer write capability from read access.
-
-A Project therefore removes repeated uploading of shared project material, but does not make a live local Control Master digest appear automatically. If the live digest exists only inside the Owner's local runtime and no authorized reader/bridge publishes it, mark it UNAVAILABLE/UNVERIFIED; do not substitute the stale latest.json/md, start the runtime, access protected data or bypass M1A gates. An authorized future bridge/export would require its own security and scope approval.
-
-### 6E.5 Receipt and no-claim rules
-
-Record the transport state separately:
-
-SOURCE_IDENTIFIED -> ARTIFACT_RETRIEVED -> REVISION_VERIFIED -> CONTEXT_AVAILABLE -> RECEIVER_ACKNOWLEDGED -> DECISION_BOUND -> OUTCOME_VERIFIED -> CANONICAL_FETCHBACK.
-
-- A shared Project/file/link means AVAILABLE, not necessarily RETRIEVED or CONSUMED.
-- A connector read proves retrieval only for the current session and exact returned source/ref.
-- A receiving chat's correlated receipt is evidence of acknowledgement; its explanation of decision influence is needed to claim application.
-- A verified outcome and canonical fetch-back are separate from receipt/application.
-- Never claim automatic delivery, automatic boot, model-weight learning, or cross-vendor synchronization from Project membership, a commit or a link.
-
-### 6E.6 Owner friction rule
-
-The coordinator performs retrieval, reconciliation, source navigation, file comparison, and handoff assembly whenever the current tools and permissions permit. The Owner should perform only the one-time ChatGPT Project configuration that cannot be changed by an assistant tool, or provide an exact local-only artifact when no authorized connector exists. Do not repeatedly request manual export/upload for the same stable artifact once it is stored in the Project or repository.
-
-**Official product behavior references checked 2026-10-31:**
-- Projects in ChatGPT: https://help.openai.com/en/articles/10169521-projects-in-chatgpt
-- Connecting GitHub to ChatGPT: https://help.openai.com/en/articles/11145903-connecting-github-to-chatgpt
-- Connected apps in ChatGPT: https://help.openai.com/en/articles/11487775-connected-apps-in-chatgpt
-- Memory in ChatGPT: https://help.openai.com/en/articles/8590148-memory-in-chatgpt
