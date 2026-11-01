@@ -397,3 +397,50 @@ Do not repeat text-only baseline tests as if they solve source attribution. Reop
 ## 8. Scope and non-goals
 
 This is a documentation/control-plane repair only. It does not create trust roots, keys, credentials, Entra registrations, authority assets, production providers, an MCP allowlist, protected reads, local runtime or tunnel. It does not change IABV technical acceptance criteria. G1/G2/G3 remain `NOT_ESTABLISHED` until their independent product evidence is supplied. No test suite or runtime was executed as part of this method authoring.
+## 9. Owner authorization event ledger and cross-session replay guard (2026-10-31)
+
+The Owner-known-input ledger in §6B.1 must also preserve explicit authorization decisions. This is a continuity record, not a new authority source or a new memory/router.
+
+For each material mutation, persist an OWNER_AUTHORIZATION_EVENT with:
+
+~~~text
+AUTHORIZATION_ID=
+TASK_ID=
+OWNER_DECISION_SOURCE_AND_TURN=
+PROPOSAL_ANTECEDENT=
+OWNER_REPLY_OR_DECISION=
+TARGET_OBJECT_AND_REPOSITORY=
+TARGET_REF_OR_REVISION=
+EXPECTED_BASE_SHA=
+EXPECTED_HEAD_SHA=
+ACTION_AND_METHOD=
+AUTHORIZED_INCLUSIONS=
+EXPLICIT_EXCLUSIONS=
+EXPECTED_POSTCONDITION=
+INVALIDATORS_OR_EXPIRY=
+STATUS=PROPOSED | OWNER_AUTHORIZED | PREFLIGHT_PASSED | EXECUTED | POSTCONDITION_VERIFIED | CONSUMED | AMBIGUOUS | STALE | BLOCKED | FAILED | NOT_EXECUTED
+AUTHORIZATION_CONSUMED=FALSE | TRUE
+EVIDENCE_AND_FETCH_BACK=
+~~~
+
+### 9.1 Antecedent resolution
+
+A short confirmation such as “yes”, “approved”, “proceed” or “sí autorizo” can be resolved without a repeated question only when all are true:
+- it directly follows one complete proposal in the active exchange;
+- the proposal identifies one target object and one bounded mutation;
+- the method, expected target/revision, included verification and exclusions are explicit;
+- no other pending proposal or question can reasonably be its referent.
+
+The reply binds to that exact proposal and nothing more. If any condition is absent, ambiguous or superseded, ask one targeted question. Do not infer permission from silence, reaction, a general desire to progress, a prior authorization for another task, or another session's report.
+
+### 9.2 Preflight, invalidation and consumption
+
+Before mutation, fetch the current target and compare it with the event's revision pins and path/effect scope. If the PR head, base, branch, target object, diff or relevant precondition has materially changed, mark the event STALE and do not mutate under the old decision. For APIs that support optimistic concurrency, pass the expected SHA/ETag/lease so a concurrent change is rejected rather than overwritten.
+
+After the action, verify the actual postcondition from the authoritative target. Record API/action response separately from fetch-back evidence. Set AUTHORIZATION_CONSUMED=TRUE after the single approved mutation; read-only checks expressly included in the proposal are part of its verification envelope. Do not use the consumed event for a second side effect.
+
+### 9.3 Session handoff and no-repeat
+
+Add the authorization event ID, state and exact scope to the handoff envelope and session receipt. The receiving session must retrieve the underlying event and confirm that it is still current before execution. A saved summary, PR comment or branch name alone does not establish a live grant. Do not ask the Owner to repeat a settled answer when the complete event and its unexpired scope are already available; do not revive it after invalidation.
+
+This method is process documentation only. It does not create product authority, change IABV gate status, enable protected reads, or establish automatic cross-session delivery or enforcement. See the [incident receipt and acceptance cases](./CHAT-ARCH-2026-10-31-UAAL-OWNER-AUTHORIZATION-CAPTURE-AND-MUTATION-RECEIPT.md).

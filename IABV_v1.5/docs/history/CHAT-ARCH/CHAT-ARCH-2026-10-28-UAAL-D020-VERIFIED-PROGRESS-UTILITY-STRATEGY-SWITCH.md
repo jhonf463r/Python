@@ -220,3 +220,39 @@ BRIDGE=BRIDGE_NOT_READY
 AUTOMATIC_FOLLOW_ON=FALSE
 CAUSAL_REUSE=NOT_TESTED
 ```
+
+## 11. Authorization fidelity — scoped confirmation and mutation transaction (2026-10-31)
+
+Authorization remains the first lexicographic filter in §3. This refinement makes that filter operational across short Owner replies and cross-session handoffs; it does not soften it or turn consent into technical evidence.
+
+For any consequential mutation, distinguish the following states:
+
+~~~text
+PROPOSED
+  -> OWNER_AUTHORIZED
+  -> PREFLIGHT_PASSED
+  -> EXECUTED
+  -> POSTCONDITION_VERIFIED
+  -> AUTHORIZATION_CONSUMED
+~~~
+
+Alternative terminal states are AMBIGUOUS, STALE_OR_SUPERSEDED, BLOCKED_PRECONDITION, FAILED and NOT_EXECUTED. Never collapse these into APPROVED or SUCCESS. An Owner's approval does not make preflight pass; a passing preflight does not mean the action executed; an API success response does not by itself prove the intended postcondition.
+
+Before scoring the usefulness of an action, resolve its authorization event: the exact antecedent, object, action, method, expected revision, inclusions, exclusions and invalidators. A terse affirmative reply inherits scope only from one immediately preceding complete proposal. A general “continue/evolve” request authorizes only the named bounded objective; it is not blanket consent for merges, configuration, publication or runtime operations. If the antecedent is not unique, ask once rather than guessing.
+
+At preflight, verify the live object and expected revision. For Git operations, verify the PR/branch target, base and head, expected SHA, mergeability and exact path scope; use the connector's expected-head guard when available. If any material identifier or diff changes, treat the earlier authorization as stale for that mutation. After execution, fetch back the target ref/PR/artifact and compare the resulting state to the declared postcondition. The authorization is consumed by one mutation and cannot silently authorize the next domino.
+
+Do not create a false productivity penalty for the Owner's decision point: asking for genuinely missing authorization is required, but asking again after a uniquely resolvable affirmative answer is avoidable friction and a continuity defect. Store the answer in the Owner-input/authorization ledger and reuse it within the same exact scope; do not re-ask or expand it.
+
+Detailed schema, invalidation rules and the PR #588 calibration are in the [Owner authorization capture receipt](./CHAT-ARCH-2026-10-31-UAAL-OWNER-AUTHORIZATION-CAPTURE-AND-MUTATION-RECEIPT.md).
+
+~~~text
+UAAL_D020_AUTHORIZATION_GATE=LEXICOGRAPHIC_HARD_FILTER
+AUTHORIZATION_EVENT=ANTECEDENT_BOUND; OBJECT_AND_REVISION_SCOPED
+AFFIRMATIVE_REPLY_REUSE=ONE_IMMEDIATE_UNAMBIGUOUS_PROPOSAL_ONLY
+MUTATION_CARDINALITY=ONE
+EXPECTED_REVISION_GUARD=REQUIRED_WHERE_SUPPORTED
+POSTCONDITION_FETCH_BACK=REQUIRED
+AUTOMATIC_FOLLOW_ON=FALSE
+RUNTIME_ENFORCEMENT=NOT_PROVEN
+~~~

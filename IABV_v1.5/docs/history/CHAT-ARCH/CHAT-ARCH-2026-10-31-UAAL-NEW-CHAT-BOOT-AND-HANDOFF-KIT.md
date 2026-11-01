@@ -94,6 +94,13 @@ Before any Owner-dependent question, record:
 
 Known IABV continuity facts at this revision: the Owner reported organizational Microsoft Entra, a dedicated IABV Owner account and Microsoft Authenticator enrollment/successful sign-in; the Owner also identified phone-based ChatGPT interaction and possible Codex Remote/mobile approval as interaction channels; the Owner stated no additional independent mechanism is identified. These are not proof of IABV runtime issuer authority, a mandate, a trusted root, Windows principal binding or authorization of a protected operation. Do not ask the Owner to repeat or configure these facts. The current IABV technical edge remains governed by live `CURRENT-STATE.md`.
 
+
+### B2.1 — Resolve an affirmative answer to a bounded proposal
+
+Before repeating an authorization question, inspect the immediately preceding exchange and the Owner-authorization ledger. A short affirmative reply may be bound to one proposal only when that proposal names one target, one mutation, its method, revision pins, verification envelope and exclusions, and no competing pending proposal exists. Record the exact antecedent and reply; inherit only that scope. If ambiguous, ask one targeted question. Do not infer a mutation grant from “continue/evolve” or reuse a consumed/stale event.
+
+Use the transaction states PROPOSED -> OWNER_AUTHORIZED -> PREFLIGHT_PASSED -> EXECUTED -> POSTCONDITION_VERIFIED -> AUTHORIZATION_CONSUMED. Preflight checks the live object and expected revision; use an expected-SHA/ETag guard where available. A moved target or changed scope invalidates the event. Verify by fetch-back and consume the authorization after one mutation only. Full schema and incident calibration: [Owner authorization capture receipt](./CHAT-ARCH-2026-10-31-UAAL-OWNER-AUTHORIZATION-CAPTURE-AND-MUTATION-RECEIPT.md).
+
 ### B3 — Reconstruct the objective-conditioned world model
 
 At minimum, distinguish:
@@ -163,6 +170,7 @@ DO_NOT_REPEAT=
 LAST_TERMINAL_FINGERPRINT=
 FIRST_OPEN_CAUSAL_EDGE=
 AUTHORIZATION_AND_EXCLUSIONS=
+AUTHORIZATION_EVENT_ID_AND_STATUS=
 AVAILABLE_INPUT_ARTIFACTS=
 NEXT_SINGLE_ACTION=
 EXPECTED_RETURN_ARTIFACT_OR_RECEIPT=
@@ -206,6 +214,9 @@ ACTION=EXECUTED | BLOCKED | NOT_EXECUTED
 OUTCOME=VERIFIED | PARTIAL | UNKNOWN
 FILES_OR_SOURCES_MODIFIED=
 TESTS_BUILD_RUNTIME=PASS | FAIL | NOT_RUN | NOT_AUTHORIZED
+AUTHORIZATION_EVENT_ID_AND_STATUS=
+AUTHORIZATION_ANTECEDENT_UNAMBIGUOUS=YES | NO | NOT_REQUIRED
+AUTHORIZATION_CONSUMED=YES | NO | NOT_APPLICABLE
 AUTHORIZATION_BOUNDARY_RESPECTED=YES | NO | UNKNOWN
 FIRST_REMAINING_DEPENDENCY=
 NEXT_SINGLE_ACTION=
@@ -288,6 +299,7 @@ ACCEPTANCE_CRITERIA=
 KNOWN_DECISIONS_AND_DO_NOT_REPEAT=
 CURRENT_ARTIFACTS_AND_REVISIONS=
 AUTHORIZATION_AND_EXCLUSIONS=
+AUTHORIZATION_EVENT_ID_AND_STATUS=
 EXPECTED_RETURN_TO_COORDINATOR=
 STOP_CONDITION=
 
@@ -334,6 +346,7 @@ The reopen trigger is deliberately dependency-scoped: genuinely new, independent
 - [ ] Distinguished verified, reported, inferred, unknown and not-run facts.
 - [ ] Recovered closed decisions and previous terminal fingerprints.
 - [ ] Applied D019/D020/D021 to select one authorized next action.
+- [ ] Bound any short Owner confirmation to one exact proposal, or marked it ambiguous; verified and consumed mutation authorization correctly.
 - [ ] Named expected observable, acceptance and stop condition.
 - [ ] Returned a correlated receipt and recorded any retrieval limitation.
 - [ ] Kept all project and cloud/local boundaries intact.

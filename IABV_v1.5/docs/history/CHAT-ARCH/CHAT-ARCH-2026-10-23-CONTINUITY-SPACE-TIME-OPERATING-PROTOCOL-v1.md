@@ -717,3 +717,51 @@ LATER_CAUSAL_REUSE_REQUIRED_FOR_LEARNING_CLAIM=TRUE
 ```
 
 A repeat/reopen is allowed only with its own new bounded authorization and a stated new evidential premise or correction. A new chat, a new task number, or pressure to progress does not count as new evidence. The protocol is coordination guidance, not automatic model-weight training or proof that a runtime learning loop has changed.
+
+## 27. Owner authorization capture and one-shot mutation transaction (2026-10-31)
+
+This section makes the existing hard authorization boundary operational across turns and participating chats. It adds no second authority source: the Owner remains the source of human authorization, and the owning project's canonical state remains the source for the project's current permitted scope.
+
+### 27.1 Resolve a short confirmation without either guessing or re-asking
+
+Bind an affirmative reply to the immediately preceding proposal only if it contains one target object, one bounded action, the method, expected target/revision, verification envelope, explicit exclusions and stop condition, and no competing live proposal exists. Preserve the reply and its antecedent in the authorization ledger. The receiving coordinator should reuse that exact decision and must not ask the Owner to repeat it while the event remains current and fully scoped.
+
+If the proposal is incomplete, multiple actions are bundled, the reply's referent is unclear, or the message is a general continuation request rather than consent to a specific side effect, do not infer a grant. Ask one targeted question or reduce the proposed action to a single bounded decision.
+
+### 27.2 Authorization is not execution
+
+Use this transaction state machine:
+
+~~~text
+PROPOSED
+ -> OWNER_AUTHORIZED
+ -> PREFLIGHT_PASSED
+ -> EXECUTED
+ -> POSTCONDITION_VERIFIED
+ -> AUTHORIZATION_CONSUMED
+~~~
+
+Stop branches: AMBIGUOUS, STALE_OR_SUPERSEDED, BLOCKED_PRECONDITION, FAILED, NOT_EXECUTED.
+
+Every transition needs its own evidence. An Owner reply proves the authorization event only; it does not prove the target is still current, a permission/mergeability gate passed, an API action succeeded, or a resulting state was persisted. Record the furthest supported stage, not a generic success.
+
+### 27.3 Preflight and optimistic concurrency
+
+Immediately before mutation, refresh the authoritative target. Bind the event to exact repository/object/ref, base and head revision, action, method, changed paths/effects and stop conditions. Where supported, send the expected SHA/ETag/lease to the mutation endpoint. A moved head, changed base, changed diff, closed target or altered effect scope makes the authorization stale for that mutation; stop instead of silently rebinding it.
+
+### 27.4 Execute, verify, consume, hand off
+
+Perform exactly one authorized mutation. Then fetch back the authoritative result: exact ref/PR state, resulting commit/blob, changed paths and declared postcondition. Compare the observed result against the proposal; record API response and independent fetch-back separately. Mark the authorization consumed only after the one mutation. Do not treat the next domino as authorized by the preceding one: later work must have its own existing scope or explicit Owner decision.
+
+The PR #588 calibration and reusable event schema are in the [Owner authorization capture receipt](./CHAT-ARCH-2026-10-31-UAAL-OWNER-AUTHORIZATION-CAPTURE-AND-MUTATION-RECEIPT.md).
+
+### 27.5 Acceptance and falsification
+
+A later non-identical task should test at least these cases:
+- one immediate, complete proposal plus a short affirmative reply is bound once without repeating the same question;
+- multiple possible antecedents are recognized as ambiguous and receive one targeted clarification;
+- a changed target revision invalidates the old authorization before mutation;
+- a successful API response without fetch-back is not classified as postcondition-verified;
+- a consumed mutation authorization does not carry to another PR, configuration change or runtime action.
+
+If this adds friction without reducing scope mistakes, repeated questions or unverified mutations, revise the rule. This documented method is not proof of automatic enforcement, causal learning, model-weight change or runtime behavior.
