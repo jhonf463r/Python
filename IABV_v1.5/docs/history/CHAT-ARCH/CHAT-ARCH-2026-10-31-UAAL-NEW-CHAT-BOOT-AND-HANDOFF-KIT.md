@@ -155,6 +155,13 @@ TASK_ID=
 ROLE=
 OPERATING_CONTEXT=
 MEMORY_SCOPE=
+MEMORY_PROFILE_ID_AND_REVISION=
+CONTEXT_PACKAGE_ID_AND_DIGEST=
+ARTIFACT_MANIFEST_ID_AND_DIGEST=
+ARTIFACT_RETRIEVAL_ROUTE=
+REQUIRED_ARTIFACT_IDS=
+OPTIONAL_ARTIFACT_IDS=
+RECEIVER_ACK_STATE=
 LIVE_MAIN_SHA_AND_OBSERVED_AT=
 PROJECT_STATE_SOURCE_AND_REVISION=
 OBJECTIVE_AND_ACCEPTANCE=
@@ -192,6 +199,14 @@ STOP_CONDITION=
 - Do not repeat already-settled Owner questions.
 - Return a correlated receipt; if blocked, identify the exact missing evidence and stop condition instead of inventing work.
 
+### 6.3 Task-conditioned memory and artifact package
+
+Before a handoff, apply D021 §6C.5.1 and choose the profile that matches the recipient's role: coordinator, specialist/researcher, executor, independent reviewer, local runtime or global method. Include only the task-relevant memory slices; do not forward a full transcript by default and do not assume a child thread inherits the parent's history.
+
+The coordinator, not the Owner, resolves shared inputs. Use the D021 §6E.4 retrieval ladder and create the package manifest from exact paths, source refs, revisions, hashes and required/optional status. The receiver must acknowledge the package ID, exact artifacts retrieved, digest checks and missing items before acting. Keep `AVAILABLE`, `RETRIEVED`, `ACKNOWLEDGED`, `DECISION_BOUND` and `OUTCOME_VERIFIED` distinct.
+
+If an artifact exists only in a local producer session, ask that producer to generate one bounded archive with a manifest. Request one exact package from the Owner only after Project, GitHub and connected authorized sources have been checked and no transport route exists. Never send private material through the public repository. The role profile is context, not permission; all task authority and no-go rules remain explicit in the handoff envelope.
+
 ## 7. Standard return receipt
 
 ```text
@@ -202,6 +217,12 @@ OPERATING_CONTEXT=
 PROJECT_ID=
 ROLE=
 OBSERVED_AT=
+CONTEXT_PACKAGE_ID_AND_DIGEST=
+ARTIFACT_MANIFEST_ID_AND_DIGEST=
+ARTIFACTS_RETRIEVED_AND_HASH_VERIFIED=
+ARTIFACTS_MISSING_OR_MISMATCHED=
+RECEIVER_ACKNOWLEDGED_AT=
+CONTEXT_CONSUMPTION_STATE=AVAILABLE|RETRIEVED|ACKNOWLEDGED|DECISION_BOUND|NOT_RETRIEVED
 SOURCE_REVISION_OR_ARTIFACTS=
 MEMORY_RETRIEVED=VERIFIED | PARTIAL | NOT_RETRIEVED
 METHOD_ACTIVATED=VERIFIED | PARTIAL | NOT_VERIFIED
@@ -260,6 +281,16 @@ TASK_ID=GENERATE_FROM_ASSIGNED_TASK
 ROLE=USE_ASSIGNED_ROLE_OR_PROJECT_COORDINATOR
 OPERATING_CONTEXT=DECLARE_ACTUAL_CONTEXT
 MEMORY_SCOPE=RESOLVE_FROM_PROJECT_AND_TASK
+
+MANDATORY_CONTEXT_AND_ARTIFACT_RULE:
+Before asking the Owner to upload, paste, export or repeat anything,
+check this session's available Project sources/files/chats, then the
+authorized GitHub connector and other connected sources. Apply the
+recipient role profile and D021 artifact manifest. A link or project
+membership is not proof of retrieval. Acknowledge exact files and
+source revisions actually consumed. Ask the Owner only for one exact
+local-only artifact/package after all authorized routes fail.
+Do not assume Project context crosses into Codex/T3/other products.
 
 You are a temporary participant in the IABV/UAAL coordination method, not a second permanent memory or competing coordinator.
 
