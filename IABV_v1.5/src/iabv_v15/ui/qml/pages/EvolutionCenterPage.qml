@@ -179,6 +179,14 @@ Item {
                             font.bold: true
                         }
                         Label {
+                            text: evolutionCenterViewModel ? evolutionCenterViewModel.controlMasterBrief : ""
+                            color: textSecondary
+                            font.family: bodyFontFamily
+                            font.pixelSize: 12
+                            wrapMode: Label.WordWrap
+                            width: parent.width
+                        }
+                        Label {
                             text: evolutionCenterViewModel ? evolutionCenterViewModel.controlMasterSignalPublishStatus : ""
                             color: textSecondary
                             font.family: bodyFontFamily
