@@ -87,3 +87,50 @@ After a later non-identical handoff, test whether the surface-binding fields pre
 - [Codex agent approvals and security](https://learn.chatgpt.com/docs/agent-approvals-security)
 
 The CLI reference documents `codex exec`, `--sandbox read-only`, `--ask-for-approval never`, `--ephemeral`, `--cd` and `-` for stdin prompt input. These flags constrain the child CLI invocation; they do not sandbox the external operator or the Windows task-registration process.
+## 8. R3 Windows preflight and Codex 0.166.0 subcommand-contract correction
+
+**Actor report received after the original transcript cutoff:**
+
+```text
+R3_OUTCOME=BLOCKED
+R3_TASK_STATUS=NOT_CREATED
+R3_WINDOWS_TIMEZONE=SA_PACIFIC_STANDARD_TIME_UTC_MINUS_05
+R3_PROJECT_PATH=C:\\IABV-TICD-LAB_EXISTS
+R3_EXISTING_TASK=NOT_FOUND
+R3_CODEX_VERSION=0.166.0
+R3_CODEX_PATH=LOCAL_NPM_SHIM_CODEX_PS1
+R3_POWERSHELL_POLICY=REMOTESIGNED
+R3_AUTH=CODEX_LOGIN_STATUS_REPORTED_AUTHENTICATED
+R3_EXEC_SANDBOX_OPTION=READ_ONLY_AVAILABLE
+R3_EXEC_APPROVAL_FLAG=ASK_FOR_APPROVAL_NEVER_NOT_LISTED_BY_EXEC_HELP
+R3_EXECUTION=NOT_RUN
+R3_RUNNER=NOT_CREATED
+R3_WINDOWS_TASK=NOT_CREATED
+R3_REPORT_AND_MANIFEST=NOT_CREATED
+R3_SIDE_EFFECTS=NONE_REPORTED
+```
+
+The preflight stopped before any side effect because R3 inherited an invalid acceptance requirement from the prompt. The user/operator report is not independently reproduced from the MSI in this cloud session.
+
+**Independent, release-pinned source reconciliation performed by the coordinator:**
+
+- Official Codex release `0.166.0`, tag `rust-v0.166.0`, commit `6ff1e1c` (released 2026-10-29): https://github.com/openai/codex/releases/tag/rust-v0.166.0
+- Exact exec argument parser: `codex-rs/exec/src/cli.rs`, blob `6a268da298380344c22ea12620606c3e6713f5fa`: https://github.com/openai/codex/blob/6ff1e1c/codex-rs/exec/src/cli.rs
+- Exact headless exec implementation: `codex-rs/exec/src/lib.rs`, blob `43cf70b21da037bc654a79a1e325ef3bbd1156c6`, with `approval_policy: Some(AskForApproval::Never)` and the code comment `Default to never ask for approvals in headless mode`: https://github.com/openai/codex/blob/6ff1e1c/codex-rs/exec/src/lib.rs
+- Shared exec/TUI option definitions: `codex-rs/utils/cli/src/shared_options.rs`, blob `5e525662d49ce0697ff6965473be178378443776`. `--approve-for-me` maps to `on-request` plus `workspace-write`; it must not be used for the read-only child.
+
+**Root cause:** `PREFLIGHT_CONTRACT_MISMATCH; SUBCOMMAND_FLAG_SCOPE_MISMATCH`. The prompt incorrectly required an interactive approval flag as a mandatory `codex exec` option. The stop itself was safe and correct under that prompt. This was not evidence of a failed Codex CLI install, failed authentication, unavailable Windows scheduler or read-only sandbox limitation.
+
+**Corrected 0.166.0 child invocation candidate:**
+
+```powershell
+codex exec --sandbox read-only --ephemeral --color never --cd "C:\\IABV-TICD-LAB" -
+```
+
+The headless approval default is supplied by this exact release's code; the sandbox must still be explicitly selected. Run a bounded no-write smoke test with the exact invocation before runner/task creation. If the path is not a Git repository, evaluate the documented `--skip-git-repo-check` option rather than changing sandbox settings. Verify PowerShell/npm shim invocation and stdin forwarding before using the same command in a scheduled runner.
+
+**Do not use:** `--approve-for-me`, `--yolo`, `danger-full-access`, `workspace-write`, approval weakening, config-wide mutations or CLI upgrade solely to resolve this mismatch.
+
+R3 did not create the task, runner, report or manifest, and did not run `codex exec`. The prior Owner authorization for one bounded runner, one monthly Windows task and one immediate test remains the task's authorization scope; this source-level correction does not expand it.
+
+**Learning delta:** preflight requirements must be derived from the exact release AND exact subcommand parser/implementation, not from a generic CLI help surface or documentation page. `APPROVAL_POLICY` and `SANDBOX_MODE` must be recorded independently. This lesson is documented in the draft proposal; a later non-identical causal reuse is still untested.
