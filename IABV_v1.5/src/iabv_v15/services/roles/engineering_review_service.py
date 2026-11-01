@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from iabv_v15.services.evolution.evolution_review_service import EvolutionReviewService
-    
+
 from iabv_v15.domain.models import IncidentQuery
 from iabv_v15.infra.persistence.episode_repository import EpisodeRepository
 from iabv_v15.infra.persistence.execution_dossier_repository import ExecutionDossierRepository
