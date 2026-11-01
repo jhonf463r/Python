@@ -428,9 +428,12 @@ class ControlMasterService:
         if queue is None:
             return []
         items: list[dict[str, Any]] = []
+        if not hasattr(queue, 'list_all'):
+            self._record_work_queue_error("PLATFORM_PENDING_QUEUE_READER_UNAVAILABLE")
+            return []
         try:
             from iabv_v15.domain.models import PendingTaskStatus as _PTS
-            all_tasks = queue.list_all() if hasattr(queue, 'list_all') else []
+            all_tasks = queue.list_all()
         except Exception:
             self._record_work_queue_error("PLATFORM_PENDING_QUEUE_READ_FAILED")
             return []
@@ -481,8 +484,10 @@ class ControlMasterService:
             except Exception:
                 method_errors.append(method_name)
                 continue
-        if not method_succeeded and method_errors:
-            self._record_work_queue_error("PENDING_ISSUES_READ_FAILED")
+        if not method_succeeded:
+            self._record_work_queue_error(
+                "PENDING_ISSUES_READ_FAILED" if method_errors else "PENDING_ISSUES_READER_UNAVAILABLE"
+            )
         for issue in candidates[:15]:
             iid = f'issue:{getattr(issue, "issue_id", "") or id(issue)}'
             if iid in seen_ids:
@@ -528,8 +533,9 @@ class ControlMasterService:
                 method_errors.append(method_name)
                 continue
         if snapshot is None:
-            if method_errors:
-                self._record_work_queue_error("OSES_FINDINGS_READ_FAILED")
+            self._record_work_queue_error(
+                "OSES_FINDINGS_READ_FAILED" if method_errors else "OSES_FINDINGS_READER_UNAVAILABLE"
+            )
             return []
         findings = getattr(snapshot, 'findings', None) or []
         items: list[dict[str, Any]] = []
