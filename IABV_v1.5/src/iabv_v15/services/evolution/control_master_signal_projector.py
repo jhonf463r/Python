@@ -105,10 +105,6 @@ class ControlMasterSignalProjector:
         if source_updated > observed:
             return cls.unavailable("SOURCE_TIMESTAMP_IN_FUTURE", source_state_id=state.state_id)
 
-        active_ids = list(state.active_objective_ids or [])
-        if len(active_ids) > 100 or any(not isinstance(item, str) or not _TOKEN.fullmatch(item) for item in active_ids):
-            return cls.unavailable("OBJECTIVE_IDS_NOT_PORTABLE", source_state_id=state.state_id)
-
         safe_items: list[dict[str, Any]] = []
         for item in work_queue[:_MAX_ITEMS]:
             if not isinstance(item, dict):
@@ -161,11 +157,7 @@ class ControlMasterSignalProjector:
                 "items": safe_items,
             },
             "counts": {
-                "active_objectives": len(active_ids),
-                "completed_objectives": len(state.completed_objective_ids or []),
-                "unresolved_items": len(state.unresolved_items or []),
-                "current_risks": len(state.current_risks or []),
-                "recent_decisions": len(state.recent_decisions or []),
+                "queue_items_published": len(safe_items),
             },
             "reason_codes": [],
             "transport": "READY_FOR_DEDICATED_BRANCH_PUBLICATION",
