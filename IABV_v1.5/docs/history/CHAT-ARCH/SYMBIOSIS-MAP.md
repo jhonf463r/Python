@@ -12,6 +12,8 @@ Select actors dynamically from the current frontier, required capability, demons
 
 UAAL-D020 is the owning progress-utility method: [UAAL-D020](./CHAT-ARCH-2026-10-28-UAAL-D020-VERIFIED-PROGRESS-UTILITY-STRATEGY-SWITCH.md). The live operating details are in the [Space-Time continuity protocol](./CHAT-ARCH-2026-10-23-CONTINUITY-SPACE-TIME-OPERATING-PROTOCOL-v1.md). This overlay does not claim runtime enforcement, universal context delivery, model-weight changes or causal reuse already proven.
 
+For a new participating chat or bounded specialist/executor/reviewer handoff, use the [UAAL New-Chat Boot and Handoff Kit](./CHAT-ARCH-2026-10-31-UAAL-NEW-CHAT-BOOT-AND-HANDOFF-KIT.md). The receiving actor must report the sources actually retrieved and return a correlated receipt; a link or dispatch instruction alone is not proof of receipt or use.
+
 ### M1B code-candidate evidence gate — applied lesson (2026-10-28)
 
 The R1→R3 reader episode adds a specific correction to cross-agent code handoffs:
