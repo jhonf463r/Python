@@ -254,7 +254,7 @@ def test_publisher_verifies_exact_remote_ref_commit_and_content(
     def fake_run(args, *, cwd=None, allow_returncodes=(0,)):
         commands.append(list(args))
         if args[0] == "ls-remote":
-            return SimpleNamespace(stdout=f"{expected_commit}\\t{remote_ref}\n")
+            return SimpleNamespace(stdout=f"{expected_commit}\t{remote_ref}\n")
         if args[0] == "fetch":
             return SimpleNamespace(stdout="")
         if args[0] == "rev-parse":
@@ -291,7 +291,7 @@ def test_publisher_reports_remote_content_mismatch_after_push(
 
     def fake_run(args, *, cwd=None, allow_returncodes=(0,)):
         if args[0] == "ls-remote":
-            return SimpleNamespace(stdout=f"{expected_commit}\\t{remote_ref}\n")
+            return SimpleNamespace(stdout=f"{expected_commit}\t{remote_ref}\n")
         if args[0] == "fetch":
             return SimpleNamespace(stdout="")
         if args[0] == "rev-parse":
@@ -327,7 +327,7 @@ def test_publisher_reports_remote_head_mismatch_after_push(
     def fake_run(args, *, cwd=None, allow_returncodes=(0,)):
         commands.append(list(args))
         if args[0] == "ls-remote":
-            return SimpleNamespace(stdout=f"{'c' * 40}\\t{remote_ref}\n")
+            return SimpleNamespace(stdout=f"{'c' * 40}\t{remote_ref}\n")
         raise AssertionError(f"Unexpected git command after mismatched head: {args}")
 
     monkeypatch.setattr(publisher, "_run_git", fake_run)
