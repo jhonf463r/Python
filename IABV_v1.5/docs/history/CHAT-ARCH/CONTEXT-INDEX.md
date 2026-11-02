@@ -12,6 +12,7 @@ Activate the existing operating lineage as relevant to the objective:
 - UAAL-D019: first open causal/evidential edge and anti-loop fingerprint.
 - UAAL-D020: verified-progress utility, minimum useful action and strategy switch.
 - UAAL-D021: live-state reconciliation, objective-conditioned world model and adjudication of incoming AI/reviewer/tool results before another handoff.
+- Before every material external-agent handoff, PR/branch operation, source edit or test request, apply D021 §6F: exact target/branch/HEAD identity, actual executor/runner preflight, action-specific authority, volatile precondition recheck, exact-HEAD test evidence and anti-loop fingerprint. See also the operational [New-Chat Boot and Handoff Kit](./CHAT-ARCH-2026-10-31-UAAL-NEW-CHAT-BOOT-AND-HANDOFF-KIT.md).
 - Before an Owner-dependent question, apply D021 §6B.1: recover the Owner-known-input ledger from canonical history; ask only for genuinely missing, decision-changing evidence.
 
 For each material handoff, rebind evidence to exact source/ref/blob and time; distinguish verified observations, actor reports, inference, hypotheses, unknowns and not-run actions; define an observable and stop condition; then verify the outcome and fetch back authorized writeback. A link or saved file does not prove another chat received or used the memory.
