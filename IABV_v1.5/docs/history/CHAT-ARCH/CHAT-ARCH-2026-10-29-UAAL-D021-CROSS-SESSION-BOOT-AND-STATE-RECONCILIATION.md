@@ -487,10 +487,43 @@ A candidate lesson must state its evidence/provenance, original scope, proposed 
 
 **Operational copy-ready entry:** use the [UAAL New-Chat Boot and Handoff Kit](./CHAT-ARCH-2026-10-31-UAAL-NEW-CHAT-BOOT-AND-HANDOFF-KIT.md) for the universal startup prompt, project-chat assignment, role boundaries, receiver/sender obligations, return receipt and new-chat acceptance checklist. This kit operationalizes §6C.1–§6C.4; it does not create another router or memory, and it remains subordinate to the live `CURRENT-STATE.md` for IABV routing and to each other project's own canonical state source.
 
+Every external-agent prompt or handoff must identify one **explicit recipient** before its task body. Do not use ambiguous dispatch language such as "send to Claude or another AI", "use the same reviewer", or "ask an agent". The sender must select the recipient from the task's required capability and the capabilities actually available, then state the provider, named agent/model or channel, role, session requirement, permitted input/source route, authorized operation scope, exclusions, expected return and stop condition.
+
+Use this dispatch header at the top of every copy-ready external prompt:
+
+```text
+DISPATCH_HEADER = {
+  TARGET_AI_PROVIDER_AND_AGENT,
+  TARGET_MODEL_OR_CHANNEL,
+  TARGET_PROJECT_AND_TASK_ID,
+  TARGET_ROLE,
+  TARGET_SESSION_MODE: NEW_SEPARATE | CONTINUED | EXISTING_EXECUTOR,
+  CONTEXT_SEPARATION_REQUIREMENT,
+  REQUIRED_SOURCE_ACCESS_AND_EXACT_REFS,
+  AUTHORIZED_OPERATION_SCOPE,
+  EXPLICIT_EXCLUSIONS,
+  EXPECTED_RETURN_ARTIFACT_AND_RECEIPT,
+  STOP_CONDITION
+}
+```
+
+Recipient selection rules:
+1. Select by the operation and capability required, not by habit or brand. An independent adversarial review needs a reviewer distinct from the author/editor and an admissible context under §6B.2. Source access and runner capability must be checked separately.
+2. Name exactly one intended destination in the prompt header. If the preferred provider/account/channel has not been confirmed available, label it `PREFERRED_RECIPIENT; AVAILABILITY_UNCONFIRMED`; do not imply the handoff was sent or silently substitute another AI. Ask the Owner only for an irreducible routing decision when no supported choice can be established from the task context.
+3. For a blinded independent review, require a new separate reviewer conversation and state what candidate-specific materials must not be exposed. If the selected destination has already seen the candidate's author rationale or findings, apply §6B.2 rather than calling it independent.
+4. For code execution or local tests, Codex is only a candidate executor when its exact checkout, tools, runner and permissions are actually available. For independent static review, a different model/provider such as Claude (Anthropic) may be selected when the Owner has that destination available and its source access is sufficient. Neither is assumed to possess access or capabilities merely from its product name.
+5. Distinguish `PROMPT_PREPARED`, `PROMPT_SENT`, `RECIPIENT_ACKNOWLEDGED`, `SOURCE_RETRIEVED`, `ACTION_EXECUTED` and `RESULT_ADJUDICATED`. Preparing a copy-ready prompt does not prove that it was delivered, read or executed.
 A new chat is a new session, not a continuation by assumption. Start with a small, project-scoped envelope and retrieve only the relevant shared methods:
 
 ```text
 HANDOFF_ID=
+TARGET_AI_PROVIDER_AND_AGENT=
+TARGET_MODEL_OR_CHANNEL=
+TARGET_PROJECT_AND_TASK_ID=
+TARGET_ROLE=
+TARGET_SESSION_MODE=NEW_SEPARATE | CONTINUED | EXISTING_EXECUTOR
+CONTEXT_SEPARATION_REQUIREMENT=
+REQUIRED_SOURCE_ACCESS_AND_EXACT_REFS=
 PARENT_OBJECTIVE=
 PROJECT_ID=
 TASK_ID=
@@ -507,6 +540,7 @@ DECISIONS_ALREADY_CLOSED=
 LAST_TERMINAL_FINGERPRINT=
 FIRST_OPEN_CAUSAL_EDGE=
 AUTHORIZATION_AND_EXCLUSIONS=
+EXPECTED_RETURN_ARTIFACT_AND_RECEIPT=
 NEXT_SINGLE_ACTION=
 EXPECTED_RETURN_ARTIFACT_OR_RECEIPT=
 STOP_CONDITION=
