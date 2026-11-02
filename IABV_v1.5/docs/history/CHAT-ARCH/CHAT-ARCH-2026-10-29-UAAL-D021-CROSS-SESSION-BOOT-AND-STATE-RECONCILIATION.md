@@ -1114,7 +1114,7 @@ Do not rerun the workflow, create another workflow, switch runner classes, add d
 
 **Scope and state preservation**
 
-- The workflow path filter does not include this D021 documentation path. This receipt-only update does not schedule another test run.
+- Although the workflow's `paths` list does not name this D021 file, the `pull_request` path filter evaluates the three-dot aggregate PR diff. Because this PR still contains matching source/test/workflow paths, a D021-only synchronize commit can trigger the workflow again; run #8 demonstrated this. The earlier claim that the receipt-only update would not schedule another run is retracted.
 - `main` remains `a64f9e331ccbf13225ed5a3d945e16586e8756db`; no main write or merge occurred.
 - PR #591 remains open Draft and unmerged; recorded reviews remain `COMMENTED`, not approval.
 - No signal was published; no local runtime, protected store, credential, tunnel or M1A gate was accessed or changed.
@@ -1122,3 +1122,41 @@ Do not rerun the workflow, create another workflow, switch runner classes, add d
 - Positional queue slots still do not provide objective identity mapping. This bridge is not proven end-to-end shared memory or autonomous causal effect-dominó.
 
 The account administrator's remediation is outside this repository. GitHub's official locked-account guidance is documented at https://docs.github.com/en/billing/how-tos/troubleshooting/locked-account. If the account's Billing & Licensing page shows no actionable payment, subscription or authorization issue, GitHub directs the account owner to request a review through the Support portal. Do not infer an account-specific payment cause beyond the exact Actions annotation.
+
+
+### 6D.5I Correction — `pull_request.paths` uses the aggregate PR diff (2026-11-02; branch-only)
+
+This subsection corrects the path-filter assumption introduced in §6D.5H. It is a method correction based on the actual run #8 and GitHub's documented diff semantics.
+
+**Observed event**
+
+- The D021-only receipt commit `b4be39e0abaf6e7cf6bbcec8f7e462e251cd01b7` triggered run #8: https://github.com/jhonf463r/Python/actions/runs/41521712376.
+- The run was associated with PR #591's `synchronize` event and the actual branch `iabv/control-master-signal-bridge-r1-20261031-review`.
+- GitHub again refused to start the job under the same account-level billing/platform restriction. The job step list is empty and the run has no artifacts. No Python setup, dependency installation or pytest command executed.
+- Correct result: `CI_ROUTE=MATCHED`; `RUNNER_JOB_START=BLOCKED_BY_ACCOUNT_RESTRICTION`; `TESTS=NOT_RUN`. GitHub's run conclusion `failure` is not a test assertion failure or product-source failure.
+
+**Why the previous assumption was wrong**
+
+The workflow's path list does not contain this D021 Markdown path. However, the event is `pull_request`, and GitHub evaluates `paths` using a three-dot diff between the current topic branch and the commit where that topic branch was last synced with the base branch. It does not restrict the test to the file list from the latest single commit. The PR's aggregate changed-file set still contains the matching source/test/workflow paths; therefore a documentation-only commit on this same PR can retrigger the workflow.
+
+Official semantics: https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow (section "Git diff comparisons"). GitHub documents two-dot comparisons for pushes and three-dot comparisons for pull requests.
+
+**Corrective rule for all future CI preflights**
+
+1. Bind the filter to the event type before evaluating paths.
+2. For `pull_request`, evaluate the aggregate three-dot PR diff from the current head to the merge-base/last synchronized base, not merely the paths in the newest commit.
+3. For `push`, use the push event's two-dot comparison and inspect the files changed by that push.
+4. A path omitted from the positive `paths` patterns does not prevent a PR workflow from matching when another file in the aggregate PR diff matches.
+5. If a matching PR workflow is already blocked before runner startup by an unchanged account/platform restriction, freeze further commits to that PR branch unless a source change is necessary to address a new material finding. Do not make receipt-only branch commits, edit the workflow or rerun while the blocking premise is unchanged.
+6. Do not create another workflow/branch/PR, add dummy changes, change runner classes or bypass the account restriction as a workaround. Resolve the account condition through GitHub's normal account process; then allow one matching workflow run to validate the exact current HEAD.
+
+```text
+PR591_PATH_FILTER_SEMANTICS=THREE_DOT_AGGREGATE_DIFF
+LATEST_OBSERVED_RUN=41521712376
+RUNNER_JOB_STARTED=FALSE
+FOUR_FOCUSED_SUITES=NOT_RUN
+NO_MORE_PR591_COMMITS_WHILE_ACCOUNT_RESTRICTION_UNCHANGED=TRUE
+MAIN=UNCHANGED
+```
+
+This receipt supersedes the incorrect no-retrigger statement in §6D.5H. It does not modify the workflow, implementation, tests, `main`, M1A gates or permissions. PR #591 remains open Draft and unmerged.
