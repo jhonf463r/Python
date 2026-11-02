@@ -353,7 +353,6 @@ REVIEW_CONTEXT_SEPARATION_RECEIPT = {
 ```
 
 Use the same SOURCE_COVERAGE enum throughout D021 and the Boot Kit: COMPLETE means all source material required for the declared review scope was retrieved and inspected; PARTIAL means some, but not all, of that scope was available or inspected; NOT_ASSESSED means the source/review was unavailable or not substantively assessed. This field describes coverage, while SOURCE_RETRIEVAL_STATUS independently describes the acquisition route. A blocked review remains NOT_ASSESSED, not PARTIAL.
-```
 
 Classify carefully:
 
