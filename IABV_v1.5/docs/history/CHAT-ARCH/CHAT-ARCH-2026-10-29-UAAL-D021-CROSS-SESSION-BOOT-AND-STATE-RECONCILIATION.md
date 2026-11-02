@@ -1063,3 +1063,62 @@ MERGE=NOT_AUTHORIZED
 ```
 
 The actual source publisher and four regression tests remain at their previously recorded blobs; the later commits in this receipt are workflow and documentation changes only. PR #591 remains Draft and unmerged. This branch-only receipt changes no M1A gates, Option D, protected-read, credentials or local-runtime boundaries.
+
+
+### 6D.5H Post-run reconciliation, CI job-start restriction and exact continuation (2026-11-02; branch-only)
+
+This receipt supersedes the earlier branch-head and Actions-run observations in §6D.5G. It is a continuity record on the isolated PR branch, not canonical state on `main`.
+
+**Exact identity at reconciliation**
+
+```text
+REPOSITORY=jhonf463r/Python
+PR=591
+ACTUAL_SOURCE_BRANCH=iabv/control-master-signal-bridge-r1-20261031-review
+SOURCE_HEAD_BEFORE_THIS_RECEIPT=f9d0c17b881575b3a012c7f931293497c2d968bc
+PREVIOUS_REVIEWED_HEAD=f15e825e28760a578e72d9adfa78792eedcb5913
+BASE=main@a64f9e331ccbf13225ed5a3d945e16586e8756db
+COMPARE_BEFORE_THIS_RECEIPT=91_AHEAD;0_BEHIND;16_FILES
+PUBLISHER_BLOB=54247f1581cf89f02c2f2a145a048015d3d467c4
+FOCUSED_TEST_BLOB=b98f76221cf712e8bec84129ce9e160cef2ab567
+WORKFLOW_BLOB=baadd228fe983dae73be88780775517e1ce9691e
+```
+
+The source branch at `f9d0c17...` was one commit after `f15e825...`; the intervening commit changed only this D021 receipt's account-restriction wording. The publisher, focused test module and workflow were fetched again from the exact branch and their blobs were unchanged.
+
+**Matched CI executions and actual result**
+
+- Run #6, for the preceding reviewed head `f15e825...`: https://github.com/jhonf463r/Python/actions/runs/41519399125
+- Run #7, for the observed source head `f9d0c17...`: https://github.com/jhonf463r/Python/actions/runs/41519968279
+- Both matched the dedicated `pull_request/synchronize` workflow and were accepted as workflow runs. GitHub's public annotation identifies an account-level platform restriction and says the job was not started.
+- Each workflow run concluded `failure`, but the job-step endpoint returned an empty step list. No Python setup, dependency installation or pytest command ran. No artifact was produced; the job log download was unavailable.
+- Therefore the GitHub run conclusion is an infrastructure/account-level startup failure, **not** a failed test assertion and **not** evidence of a source-code defect.
+
+```text
+CI_ROUTE=MATCHED
+WORKFLOW_CONFIGURATION=ACCEPTED
+ACTIONS_ACCOUNT_RESTRICTION=BLOCKED
+RUNNER_JOB_NOT_STARTED=TRUE
+FOUR_FOCUSED_SUITES=NOT_RUN
+SOURCE_TEST_RESULT=NO_RESULT
+RERUN=PROHIBITED_UNTIL_ACCOUNT_RESTRICTION_CHANGES
+```
+
+The four required suites remain:
+- `tests/test_canonical_work_queue.py`
+- `tests/test_control_master_signal_projector.py`
+- `tests/test_system_prompt_builder.py`
+- `tests/test_evolution_center_viewmodel.py`
+
+Do not rerun the workflow, create another workflow, switch runner classes, add dummy path changes or pursue a billing/restriction bypass while the account-level condition is unchanged. The next valid attempt is the existing PR workflow after the Owner/account administrator resolves the restriction through GitHub's normal account process and a new PR synchronize event reaches the current branch. Do not request or persist credentials, payment details or billing secrets in this repository.
+
+**Scope and state preservation**
+
+- The workflow path filter does not include this D021 documentation path. This receipt-only update does not schedule another test run.
+- `main` remains `a64f9e331ccbf13225ed5a3d945e16586e8756db`; no main write or merge occurred.
+- PR #591 remains open Draft and unmerged; recorded reviews remain `COMMENTED`, not approval.
+- No signal was published; no local runtime, protected store, credential, tunnel or M1A gate was accessed or changed.
+- `OPTION_D=RATIFIED_NO_BOOTSTRAP`; `G1/G2/G3=NOT_ESTABLISHED`; protected reads remain fail-closed.
+- Positional queue slots still do not provide objective identity mapping. This bridge is not proven end-to-end shared memory or autonomous causal effect-dominó.
+
+The account administrator's remediation is outside this repository. GitHub's official locked-account guidance is documented at https://docs.github.com/en/billing/how-tos/troubleshooting/locked-account. If the account's Billing & Licensing page shows no actionable payment, subscription or authorization issue, GitHub directs the account owner to request a review through the Support portal. Do not infer an account-specific payment cause beyond the exact Actions annotation.
