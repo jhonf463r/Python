@@ -662,6 +662,87 @@ Claim causal influence only when the receipt identifies the signal and demonstra
 
 The Control Master is subordinate to the Owner's current objective and all existing hard gates. It cannot authorize protected reads, credential access, root provisioning, code changes, tests, build, runtime, tunnel, deployment, permission changes or PR merges. Do not put secrets or protected payloads into public GitHub receipts. Keep local runtime evidence and cloud coordination evidence explicitly separate.
 
+
+### 6D.5D M1A G1–G3 live-main source reconciliation (2026-11-01; branch-only)
+
+This receipt records the Owner's request for a deep reconciliation of the path toward the governed IABV bridge. It supplements the canonical router; it does not replace or amend `CURRENT-STATE.md` on `main`. The new evidence is a bounded static comparison of the exact live-main source against the existing PR #531 authorization-organ candidate.
+
+#### Exact inputs fetched
+
+- Canonical `main`: `a64f9e331ccbf13225ed5a3d945e16586e8756db`.
+- Canonical `CURRENT-STATE.md` blob: `63e1b459a13e23e1012da81826dc50727b688d8c`; recovered by exact blob after the ordinary content fetch returned an empty body.
+- Main `bootstrap.py`: blob `e4befa6b683fc87aed7481f377f1332f5753e2c3`.
+- Main MCP `server.py`: blob `17b87a1555a63a6350b7f2f02e8f8ec61ad24f7c`.
+- Main `mcp_bridge_service.py`: blob `340c8f88e198655be86b874fd14c102d486bf8fd`.
+- Main evidence matrix: `CHAT-ARCH-2026-10-22-M1A-v1_0_1-implementation-prerequisite-evidence-gate-matrix.md`, blob `1322fdfb26770bcf5bdfab9fd85a7ffcee5d9f37`.
+- M1A acceptance/dual-track receipt: blob `239efe95c0451e61147eeed72b6b66858b83531d`.
+
+#### Finding A — canonical main does not demonstrate M1A authorization in the current MCP read/list handlers
+
+Static source observations at the exact main SHA:
+
+1. `AppBootstrap` constructs the MCP bridge through `build_mcp_bridge_service(self, workspace_root=self.config.workspace_root)`.
+2. The builder accepts the container and workspace root plus transport/bind settings; the reviewed composition does not inject a `ReadAuthorizationCoordinator`, G1 trust/mandate producer, G2 policy producer or G3 target resolver.
+3. Main's `read_repo_file` and `list_repo_directory` handlers call `_governance_block_for_route(assistant_kind="audit", requires_network=False)`. If it returns no block, the handlers call the path-based `audit_tools` readers.
+4. That route gate evaluates a World Model snapshot, network state, active block records and permission gates filtered by `assistant_kind`. The inspected handler/gate path does not derive a versioned G3 operation-to-target binding, does not ask an M1A issuer for a typed decision, and does not bind that decision to the same opened native object consumed by the reader.
+
+Adjudication: `MAIN_SOURCE_M1A_READ_LIST_INTEGRATION=NOT_DEMONSTRATED`. This is a source-to-route discrepancy against the normative `PROTECTED_READS=FAIL_CLOSED` posture. The required policy remains deny; however, this static review cannot claim that main's current read/list handlers enforce the M1A organ. Actual runtime activation/behavior was not inspected or invoked and remains `NOT_VERIFIED`.
+
+#### Finding B — PR #531 contains a partial fail-closed organ candidate, not production authority
+
+Live PR #531 was re-fetched and compared against main:
+
+- State: `OPEN`, `DRAFT=TRUE`, `MERGED=FALSE`.
+- Base SHA: `7ddfe285b1a3267f9ef6f57f862cca78bc8438c2`.
+- Candidate HEAD: `bc2baf525a70d66628809360a197f25a069aa328`.
+- Compare to current main: `ahead_by=17`, `behind_by=179`; 13 changed paths. No review submissions or inline threads were present in the queried review collections.
+- Candidate `bootstrap.py` blob: `802f1b42881f383d9ac33fea8ee6c2c913a4da32`.
+- Candidate `read_authorization.py` blob: `3a57d1148c175040b7b747a6e04411c542c51dd3`.
+- Candidate MCP `server.py` blob: `af0d95dd27172685a04e28f51d8bdc97c4f00b32`.
+- Candidate `windows_handle_reader.py` blob: `cf3045be70e6824bdcc627ccefa14ea33faf6342`.
+
+The candidate declares typed G1/G2/G3/issuer/replay interfaces. Its `ReadAuthorizationCoordinator.unconfigured()` sets all eight required production dependencies to `None`; `missing_requirements()` enumerates the missing independent trust root, Owner mandate, merge evidence, G2 policy provider, G3 resolver, authenticated issuer IPC, replay consumer and host-owned process identity. This is explicit deny-only composition, not an operational authority chain.
+
+The candidate read/list handlers do have a useful same-object source path: they obtain an `OpenedTargetCapability`, pass that same capability to the authorization decision and then pass it to the handle reader. This advances the G3 enforcement contract at source level. It does not supply the production approved-workspace-root provider, a concrete authoritative versioned target resolver or any of the independent authority producers. Synthetic/source-level structure does not prove native Windows behavior.
+
+A corresponding detailed static reconciliation was also recorded in [PR #531's conversation](https://github.com/jhonf463r/Python/pull/531#issuecomment-6568862657). It is not a formal review approval and it does not change the branch or its merge status.
+
+#### Gate disposition and dependency order
+
+```text
+MAIN=a64f9e331ccbf13225ed5a3d945e16586e8756db
+MAIN_M1A_READ_LIST_INTEGRATION=NOT_DEMONSTRATED
+PR531=OPEN_DRAFT_UNMERGED; BASE_STALE; 17_AHEAD_179_BEHIND
+PR531_SOURCE=PARTIAL_FAIL_CLOSED_CONTRACT; NOT_CANONICAL
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3=PARTIAL_SOURCE_CONTRACT; PRODUCTION_ROOT_AND_RESOLVER_NOT_ESTABLISHED
+G4_G8=OPEN; NONE_CLOSED
+OWNER_INPUT_RECONCILED=NO_ADDITIONAL_INDEPENDENT_MECHANISM
+OPTION_D=RATIFIED_NO_BOOTSTRAP
+TESTS=NOT_RUN_IN_THIS_RECONCILIATION
+BUILD=NOT_RUN
+RUNTIME=NOT_RUN
+PROTECTED_READS_POLICY=FAIL_CLOSED_REQUIRED
+MAIN_HANDLER_ENFORCEMENT=NOT_DEMONSTRATED
+TUNNEL=NOT_ACTIVATED_BY_THIS_TASK
+MERGE_REBASE=NOT_AUTHORIZED
+```
+
+Causal order remains:
+
+1. **G1 first:** independently verifiable root provenance/custody, legitimate Owner/governance mandate and authenticated identity binding to the issuer, host principal and exact server instance. The already-reconciled Entra/Authenticator setup is not to be repeated and does not by itself prove this chain.
+2. **G2 second:** an authorized publisher and versioned catalogue/active set bound to G1; producer-class policy; integrity; freshness/expiry; authoritative revocation; and rollback-resistant lifecycle.
+3. **G3 third:** a server-side versioned registry mapping actual registered operation IDs and implementation/call sites to approved canonical targets; a production approved-root provider; and evidence that authorization and the reader consume the same identity-bearing open object.
+
+Do not create more interfaces or repeat the old broad R1/R5 inventories. Do not rebase or merge PR #531 merely because its source contract is useful: first reconcile its 179-commit divergence against the current main under a separately scoped authorization. Do not interpret PR #576's unmerged enrollment proposal as permission to create a key, manifest or enrollment effect. The Control Master signal work in PR #591 is a separate coordination surface and is not the M1A protected-read authority bridge.
+
+#### Method, authorization and limitations
+
+This task used read-only GitHub fetches for exact public source revisions and one traceability comment on PR #531. It did not access `C:/Python`, local or protected stores, secrets, credentials, the live runtime or issuer; it did not invoke MCP, publish a signal, activate a tunnel, execute tests/builds, edit product source, rebase or merge a PR. No new independent G1 authority evidence was received.
+
+The canonical main route remains the sole router. This section is persisted on the PR #591 branch only, for cross-session retrieval; it is not adopted in main. The independent M1A/G1 wait is task-local and does not imply a project-wide stop, but no separate authorized action was invented by this receipt.
+
 ## 6E. ChatGPT native project context and cross-agent artifact transport (2026-10-31)
 
 ### 6E.1 Purpose and boundary
