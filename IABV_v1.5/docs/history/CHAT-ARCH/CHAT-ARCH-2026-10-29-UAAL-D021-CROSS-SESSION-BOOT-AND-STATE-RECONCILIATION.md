@@ -229,6 +229,14 @@ Apply these rules:
 4. **Close the input question when answered.** When the Owner says no additional mechanism is identified, record `OWNER_INPUT_RECONCILED=NO_ADDITIONAL_MECHANISM_IDENTIFIED`. Do not rephrase the same question. Keep technical gates blocked where evidence is insufficient; do not infer that uninspected assets do not exist.
 5. **Use a material-delta rule.** Reopen the same question or review only after new independent evidence, a changed precondition, or an explicitly authorized new scope. Do not repeat an unchanged census, Entra setup, mobile-authenticator enrollment, or broad feasibility review.
 
+#### Owner-facing action planning gate — D019 §9E / D020 §9 (2026-11-02 proposal)
+
+The `OWNER_INPUT_REUSE_LEDGER` above is a mandatory input to, not a substitute for, the decision-complete `OWNER_ACTION_PACKET` defined by UAAL-D019 §9E and selected under UAAL-D020 §9. Before any material instruction that asks the Owner to use a device, application, account or private UI, the coordinator must first retrieve and reconcile the canonical route, reuse this ledger, inspect assistant-accessible sources/tools, classify the action and its actor, and apply the exact authorization/no-bootstrap boundary. For material IABV work, D021 §6D supplies the Control Master signal status only when an already-authorized read surface exists; a stale snapshot or unavailable runtime signal must be labelled and must not be fabricated into a live queue.
+
+The packet is an internal planning/verification artifact, not an extra Owner form or a new authority source. Its useful result is presented as one consolidated safe sequence plus predictable outcome branches and stop conditions. Do not ask the Owner to transcribe visible screenshots, perform coordinator-side research, or report each predictable screen as a separate round-trip. Retain a pause when a genuinely unpredictable observation, separate high-impact confirmation or missing authorization controls the next action. If the canonical route does not authorize the exact mutation, stop before recommending it. If no Owner intervention is needed, proceed with authorized assistant-side work instead of manufacturing one.
+
+This D021 cross-reference is a candidate amendment on the PR branch. Until adoption, the existing live-main D021 §6B.1 and D019/D020 remain authoritative; this proposal does not alter any technical gate, Option D or product permission.
+
 #### Case-specific continuity facts already recorded
 
 - The Owner reported an organizational Microsoft Entra directory, a dedicated `IABV Owner` account, Microsoft Authenticator enrollment and a successful sign-in verification. Classify this as `ENTRA_DIRECTORY_AND_AUTHENTICATOR=OWNER_REPORTED_READY`; `IDENTITY_PROVIDER_CANDIDATE=MICROSOFT_ENTRA_ID`; `PLAUSIBLE_FOR_HUMAN_OWNER_AUTHENTICATION`; `NOT_YET_TRUSTED_BY_IABV`. **Do not repeat setup or ask whether this identity provider exists.**
