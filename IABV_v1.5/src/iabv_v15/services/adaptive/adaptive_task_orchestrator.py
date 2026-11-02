@@ -2753,6 +2753,7 @@ class AdaptiveTaskOrchestrator:
                 world_model=world_model,
                 env_self_model=env_self_model,
                 governance_rules=governance_snapshot,
+                control_master_digest=control_master_digest,
             )
             system_prompt_mode = 'compact'
         else:
@@ -2897,19 +2898,35 @@ class AdaptiveTaskOrchestrator:
         return {}
 
     def _control_master_digest(self) -> Any:
+        from iabv_v15.domain.models import ControlMasterDigest
+
         service = self.control_master_service
         builder = self.control_master_digest_builder
         if service is None or builder is None:
-            return None
+            return ControlMasterDigest(
+                signal_status="UNAVAILABLE",
+                signal_reason="CONTROL_MASTER_SERVICE_NOT_CONFIGURED",
+                work_queue_status="UNAVAILABLE",
+            )
         try:
             state = service.current_state(refresh=False)
-            try:
-                work_queue = service.current_work_queue(limit=10)
-            except Exception:
-                work_queue = []
+            work_queue = service.current_work_queue(limit=10)
+            source_errors = tuple(getattr(service, "last_work_queue_errors", ()) or ())
+            if source_errors:
+                digest = builder.build(state, work_queue=None)
+                return digest.model_copy(update={
+                    "signal_status": "UNAVAILABLE",
+                    "signal_reason": "QUEUE_SOURCE_ERRORS:" + ",".join(source_errors),
+                    "work_queue_status": "UNAVAILABLE",
+                })
             return builder.build(state, work_queue=work_queue)
-        except Exception:
-            return None
+        except Exception as exc:
+            # A failed read is not an empty queue; retain an explicit fail-closed signal.
+            return ControlMasterDigest(
+                signal_status="UNAVAILABLE",
+                signal_reason="CONTROL_MASTER_READ_FAILED:" + type(exc).__name__,
+                work_queue_status="UNAVAILABLE",
+            )
 
     def _self_examination_snapshot(self) -> Any:
         service = self.self_examination_service

@@ -124,6 +124,9 @@ def test_prompt_includes_control_master_section_when_digest_present() -> None:
     builder = SystemPromptBuilder()
     digest = ControlMasterDigest(
         current_vision='IABV v1.5 local-first',
+        digest_id='digest-prompt-contract-01',
+        source_state_id='state-prompt-contract-01',
+        generated_at_utc='2026-10-31T20:00:00+00:00',
         rules_brief=['[IRREVOCABLE] No crear otro cerebro'],
         active_objectives_brief=['obj-1: Cerrar capa world model'],
         top_backlog=['Integrar digest en prompt'],
@@ -146,6 +149,9 @@ def test_prompt_includes_control_master_section_when_digest_present() -> None:
     assert 'obj-1: Cerrar capa world model' in prompt
     assert 'validar Codex vivo en Windows' in prompt
     assert 'UNRESOLVED' in prompt
+    assert 'state_id=state-prompt-contract-01' in prompt
+    assert 'digest_id=digest-prompt-contract-01' in prompt
+    assert 'generated_at_utc=2026-10-31T20:00:00+00:00' in prompt
 
 
 def test_prompt_falls_back_when_no_digest() -> None:
@@ -222,6 +228,55 @@ def test_compact_prompt_keeps_identity_and_live_contract_under_budget() -> None:
     assert 'Contrato de razonamiento compacto' in prompt
     assert 'ChatGPT - Chrome' in prompt
     assert 'Herramientas disponibles' not in prompt
+
+
+def test_compact_prompt_includes_control_master_signal() -> None:
+    builder = SystemPromptBuilder()
+    digest = ControlMasterDigest(
+        signal_status='AVAILABLE',
+        work_queue_status='NON_EMPTY_QUEUE',
+        digest_id='digest-compact-contract-01',
+        source_state_id='state-compact-contract-01',
+        generated_at_utc='2026-10-31T20:01:00+00:00',
+        current_vision='Continuidad gobernada',
+        active_objectives_brief=['active:obj-super-sync'],
+        work_queue_brief=['[high] objective:obj-super-sync Continuar reconciliación'],
+        work_queue_counts={'active': 2, 'blocked': 1},
+    )
+    prompt = builder.build_compact(
+        world_model=None,
+        env_self_model=None,
+        control_master_digest=digest,
+    )
+    assert 'Control Maestro (digest)' in prompt
+    assert 'Señal: AVAILABLE' in prompt
+    assert 'obj-super-sync' in prompt
+    assert 'Cola priorizada' in prompt
+    assert 'Recuentos de cola: active=2, blocked=1' in prompt
+    assert 'state_id=state-compact-contract-01' in prompt
+    assert 'digest_id=digest-compact-contract-01' in prompt
+    assert 'generated_at_utc=2026-10-31T20:01:00+00:00' in prompt
+
+
+def test_compact_prompt_does_not_treat_unavailable_signal_as_empty_queue() -> None:
+    builder = SystemPromptBuilder()
+    digest = ControlMasterDigest(
+        signal_status='UNAVAILABLE',
+        signal_reason='QUEUE_SOURCE_ERRORS:OBJECTIVES_READ_FAILED',
+        work_queue_status='UNAVAILABLE',
+        current_vision='Vision preservada pese al error de cola',
+        rules_brief=['[irrevocable] Mantener el fail-closed'],
+    )
+    prompt = builder.build_compact(
+        world_model=None,
+        env_self_model=None,
+        control_master_digest=digest,
+    )
+    assert 'UNAVAILABLE' in prompt
+    assert 'No interpretes esto como una cola vacía' in prompt
+    assert 'Cola verificada sin elementos pendientes' not in prompt
+    assert 'Vision preservada pese al error de cola' in prompt
+    assert 'Mantener el fail-closed' in prompt
 
 
 def test_prompt_includes_self_examination_findings() -> None:

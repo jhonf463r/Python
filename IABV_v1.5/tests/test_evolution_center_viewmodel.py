@@ -940,3 +940,82 @@ def test_evolution_center_publish_pr_status_formatter() -> None:
         assert 'push failed' in err
     finally:
         shutil.rmtree(workspace, ignore_errors=True)
+
+
+def test_evolution_center_manual_control_master_signal_publish_uses_wired_action(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Only the explicit slot publishes; a normal refresh is not a publisher trigger."""
+    import threading as _threading
+
+    os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
+    monkeypatch.setattr('iabv_v15.bootstrap._auto_load_secrets', lambda: 0)
+    workspace = _workspace('test_evolution_center_control_master_signal_publish')
+    shutil.rmtree(workspace, ignore_errors=True)
+    workspace.mkdir(parents=True, exist_ok=True)
+    try:
+        bootstrap = AppBootstrap(str(workspace))
+        bootstrap._build_ui_objects()
+        vm = bootstrap.evolution_center_viewmodel
+        assert vm is not None
+
+        completed = _threading.Event()
+        calls: list[dict[str, object]] = []
+
+        def publish_action(*, refresh: bool = False) -> dict[str, object]:
+            calls.append({'refresh': refresh})
+            completed.set()
+            return {
+                'status': 'PUBLISHED',
+                'branch': 'control-master-live',
+                'commit_sha': 'a' * 40,
+                'main_modified': False,
+                'force_push': False,
+            }
+
+        vm.control_master_signal_publish_action = publish_action
+        vm.refresh()
+        assert calls == [], 'refresh normal no debe publicar automáticamente'
+
+        vm.publishControlMasterSignal()
+        assert completed.wait(timeout=5.0), 'la acción de publicación no fue invocada'
+        assert calls == [{'refresh': False}]
+
+        vm._apply_result('publish_control_master_signal', {
+            'status': 'PUBLISHED',
+            'branch': 'control-master-live',
+            'commit_sha': 'a' * 40,
+            'main_modified': False,
+            'force_push': False,
+        })
+        assert 'Señal publicada y verificada' in vm.get_control_master_signal_publish_status()
+        assert 'control-master-live' in vm.get_control_master_signal_publish_status()
+        assert vm.get_working() is False
+
+        vm._apply_result('publish_control_master_signal', {
+            'status': 'PUBLISHED_UNVERIFIED',
+            'branch': 'control-master-live',
+            'reason': 'REMOTE_CONTENT_MISMATCH',
+            'commit_sha': 'b' * 40,
+        })
+        assert 'no se verificó la lectura de retorno' in vm.get_control_master_signal_publish_status()
+        assert 'REMOTE_CONTENT_MISMATCH' in vm.get_control_master_signal_publish_status()
+        assert vm.get_working() is False
+    finally:
+        shutil.rmtree(workspace, ignore_errors=True)
+
+def test_evolution_center_control_master_brief_preserves_source_and_freshness() -> None:
+    digest = {
+        'digest_id': 'digest-viewmodel-contract-01',
+        'source_state_id': 'state-viewmodel-contract-01',
+        'generated_at_utc': '2026-10-31T20:02:00+00:00',
+        'signal_status': 'AVAILABLE',
+        'work_queue_status': 'EMPTY_QUEUE',
+    }
+
+    brief = evolution_center_vm.EvolutionCenterViewModel._format_control_master_brief(digest)
+
+    assert 'state_id=state-viewmodel-contract-01' in brief
+    assert 'digest_id=digest-viewmodel-contract-01' in brief
+    assert 'generated_at_utc=2026-10-31T20:02:00+00:00' in brief
+    assert 'señal AVAILABLE; cola EMPTY_QUEUE' in brief

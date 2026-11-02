@@ -117,6 +117,10 @@ class ControlMasterDigestBuilder:
             work_queue_brief=wq_brief,
             work_queue_counts=wq_counts,
             source_state_id=state.state_id,
+            signal_status="AVAILABLE" if work_queue is not None else "UNAVAILABLE",
+            signal_reason="" if work_queue is not None else "WORK_QUEUE_NOT_PROVIDED",
+            work_queue_status=("EMPTY_QUEUE" if work_queue == [] else "NON_EMPTY_QUEUE")
+            if work_queue is not None else "UNAVAILABLE",
         )
         return _truncate(digest, self.max_chars)
 

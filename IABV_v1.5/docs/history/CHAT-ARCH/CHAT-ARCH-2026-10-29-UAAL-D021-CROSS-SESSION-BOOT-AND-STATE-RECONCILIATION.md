@@ -380,6 +380,28 @@ The existing IABV Control Master is a governance/priority signal that must be co
 
 For every material IABV development/coordination session, attempt the narrowest already-available, authorized read of the Control Master signal when it is relevant to the objective. Do not start IABV, launch the runtime, run a CLI, access protected data or inspect credentials merely to manufacture a signal.
 
+#### 6D.2.1 Dedicated GitHub signal snapshot (when published)
+
+The implementation candidate publishes an explicitly requested, privacy-minimised snapshot to the dedicated non-default branch `control-master-live`, at:
+
+`IABV_v1.5/data/evolution/control_master/shared_signal.json`
+
+This is an optional, source-bound retrieval path for participating sessions; it is not an automatic feed or proof that the local runtime is currently connected. The publisher is invoked only from an already-running, authorized `AppBootstrap` instance. The Evolution Center exposes a manual action that opens a disclosure/confirmation dialog before invoking that existing instance; ordinary panel refresh never publishes. No second bootstrap, CLI launch, protected read or credential inspection is needed or permitted merely to fetch the snapshot. A missing branch/file, inaccessible ref, malformed payload or failed verification is `UNAVAILABLE` / `UNVERIFIED`, never an empty queue.
+
+A receiving session should fetch the file from the exact `control-master-live` branch commit using its already-available authorized GitHub connector/API, then record the branch commit SHA, file blob SHA, retrieval time and source URL. Validate all of the following before treating the signal as usable:
+
+1. `schema_version=iabv.control_master_signal.v1`, `project_id=IABV`, and `transport=READY_FOR_DEDICATED_BRANCH_PUBLICATION`.
+2. `signal_status` is `AVAILABLE` or `EMPTY_QUEUE`; an `UNAVAILABLE` payload is deliberately marked non-publishable and must not be promoted to a valid snapshot.
+3. `content_sha256` equals SHA-256 of canonical UTF-8 JSON containing every top-level field except `content_sha256`, serialized with sorted keys, separators `,` and `:`, and `ensure_ascii=true`. This is an integrity checksum only: it is not a digital signature, issuer authentication or proof of an IABV trust root. Repository/ref access and commit provenance remain separate trust assumptions; never use this hash to satisfy M1A/G1 or another root-authentication gate.
+4. `signal_id` equals `cms-` plus the first 24 hex characters of SHA-256 over the same canonical JSON after removing `content_sha256` and setting `signal_id` to the empty string.
+5. `generated_at_utc` and `expires_at_utc` are timezone-aware, generation is not in the future, expiry is still in the future, and the interval is at most the declared 900-second freshness window. An expired snapshot is `STALE`, even if its hash is valid.
+6. The source component is `ControlMasterService`; capture `source.state_id` and `source.state_observed_at_utc`. This timestamp denotes the producer's state projection observation, not a claim that a persisted object was modified at that time.
+7. Queue status, signal status, item count and actual item list agree. `EMPTY_QUEUE` is valid only when the verified item list is empty; an `AVAILABLE` queue must contain at least one item.
+
+Queue item IDs are per-snapshot positional references such as `queue-item-01` and `queue-item-02`, assigned in priority order and scoped only to the exact `signal_id`. They have no stable mapping to source item IDs across snapshots and do not reveal, identify, authorize or resolve an objective/task. A recipient must use a separate already-authorized local read to correlate a slot with a real source object; never guess the mapping. The snapshot deliberately omits titles, free-form summaries, next actions, reason text, evidence paths, logs and user content. It carries only allowlisted status/source/priority metadata and a `queue_items_published` count derived from the exact item list in the snapshot. The repository is public: do not expand this payload with private or protected fields. A receipt based only on this public snapshot must record `CONTROL_MASTER_NEXT_ACTIONS_AND_DEPENDENCIES=OMITTED_BY_PUBLIC_SIGNAL_PRIVACY_ALLOWLIST` and `CONTROL_MASTER_EVIDENCE_REFS=OMITTED_BY_PUBLIC_SIGNAL_PRIVACY_ALLOWLIST`; do not infer them from opaque IDs or priorities. If a separate authorized local read supplies those fields, record that distinct source and its provenance.
+
+The snapshot is subordinate to the route and must be reconciled with the pinned `main` `CURRENT-STATE.md`; it cannot establish task authority, permissions, Option D changes, M1A/G1/G2/G3 acceptance, or approval for implementation/tests/runtime/merge. Do not call the branch a live runtime view beyond its recorded generation and expiry. Do not claim automatic cross-chat delivery: each recipient must retrieve, verify and acknowledge the exact published commit independently.
+
 Record at least:
 
 ```text
@@ -431,7 +453,193 @@ Source code that defines or wires a digest is not proof that every consumer rece
 - task outcomes link to their owning objective where intended;
 - a later decision actually changes or is confirmed because of the signal.
 
-The 2026-10-31 static reconciliation observed a full-prompt digest path, a compact-prompt omission, and silent empty/null fallbacks in some consumers. This is a source-level gap record, not proof of runtime failure or a mandate to implement now. Do not modify product code under a documentation-only authorization.
+The 2026-10-31 main-branch reconciliation observed a full-prompt digest path, a compact-prompt omission, and silent empty/null fallbacks in some consumers. This remains the historical baseline for that main revision; it is not a claim about the later PR #591 branch. The branch-only source review and bounded corrections are recorded in §6D.5A. No product code is adopted by this receipt, and the branch remains unmerged.
+### 6D.5A PR #591 consumer-path reconciliation (branch-only; 2026-10-31)
+
+This subsection records source review of the separately Owner-authorized PR #591 implementation. It does not change the canonical route on `main`, authorize any runtime operation, or claim that the code has been adopted.
+
+**Source-level coverage observed on the PR branch:**
+
+- **Full prompt:** `AdaptiveTaskOrchestrator._control_master_digest()` obtains the state and queue, collects the same-thread queue diagnostics, and returns `UNAVAILABLE` on source/read errors. The full `SystemPromptBuilder.build()` receives that digest.
+- **Compact prompt:** the small-model path calls `build_compact()` with the same digest. The shared Control Master section explicitly says `UNAVAILABLE` is not an empty queue and preserves the other valid digest fields.
+- **Identity and freshness visibility:** `ControlMasterDigest` already carries `digest_id`, `source_state_id`, and `generated_at_utc`. This revision adds those fields to the shared prompt section and to the Evolution Center's Control Master brief, and adds contract assertions for both consumers. The QML view displays that brief.
+- **Error visibility:** the Evolution Center refresh path collects `last_work_queue_errors`; when a configured source read fails, it sets `signal_status=UNAVAILABLE` and `work_queue_status=UNAVAILABLE` rather than presenting that result as an empty queue.
+- **Manual publisher wiring:** the existing `AppBootstrap` instance wires its publisher action into `EvolutionCenterViewModel`. The QML button opens a public-disclosure dialog; only accepting that dialog invokes the slot. Normal refresh is not a publication trigger.
+- **Public projection:** the projector is an allowlist, omits free text and original queue IDs, uses per-snapshot positional references, includes source/timing/expiry metadata and an integrity checksum. The publisher independently validates the payload and targets only the dedicated non-default branch.
+
+**Test evidence and boundary:**
+
+```text
+PROJECTOR_AND_PUBLISHER_FOCUSED_TESTS=11_PASSED
+TEST_FILE_BLOB=789362a24688f98b8cb3a44c3226cac557164cf1
+PROJECTOR_BLOB=bd2c8627e6407e154a86c22ee4621d6d77ed2009
+PUBLISHER_BLOB=27801109246ee4295b62ba99267df9e4c6573b78
+EXECUTION=TEMPORARY_PYTHON_HARNESS; MINIMAL_ControlMasterState_STUB
+NETWORK=NOT_USED
+SECRETS=NOT_LOADED
+PUBLISHER_TRANSPORT=NOT_INVOKED
+```
+
+Those 11 tests exercise the projector/publisher contracts only. The prompt-builder, work-queue integration and ViewModel tests added or updated on this branch have **not** been executed. The complete repository test suite, native PySide/QML load, build, application runtime and real local Control Master read remain unverified. GitHub reported no workflow runs or commit status checks for the reviewed head. Do not promote this result to full integration acceptance.
+
+**Control Master intake in this coordinator session:**
+
+- Canonical route was read from `main@a64f9e331ccbf13225ed5a3d945e16586e8756db`. The normal content read of `IABV_v1.5/docs/history/CHAT-ARCH/CURRENT-STATE.md` returned an empty body; the exact blob `63e1b459a13e23e1012da81826dc50727b688d8c` was then fetched successfully (1,074,956 characters).
+- The active route remains `IABV_M1A_OWNER_ISSUER_MECHANISM_INPUT_GATE_R1_20261030`, with the root/issuer provenance edge blocked, `G1/G2/G3=NOT_ESTABLISHED`, `OPTION_D=RATIFIED_NO_BOOTSTRAP`, protected reads fail-closed, and no product-runtime authority. Its wait is task-local; the independent PR #591 work remains bounded by its own Owner authorization.
+- The newest Control Master state snapshot found on `main`, `IABV_v1.5/data/evolution/control_master/latest.json`, has blob `d76d521e6f8d73e874a21ffe1b720dcdbcd48293`, state ID `dc840807-ef2a-4e7a-8f11-4c6362ccbcb7`, and `last_updated=2026-04-19T19:23:46.389095Z`. It predates the current task and later repository state, and contains no current prioritized queue. Classify it as `STALE`, not as the live signal.
+- The dedicated `control-master-live` branch and `shared_signal.json` were not present at this observation. No authorized live local-runtime read surface was available in this session. Therefore `LIVE_RUNTIME_SIGNAL=UNAVAILABLE`; do not infer an empty queue or publish a synthetic snapshot.
+
+**Current PR state at this receipt:** base `main@a64f9e331ccbf13225ed5a3d945e16586e8756db`; PR #591 remains open and Draft, not merged. Its source-level corrections are branch-persistent only. The PR's UI publisher is not invoked; no public signal was published. Main, Option D, M1A and the G1/G2/G3 gates are unchanged.
+
+**Remaining §6D.5 acceptance edges:** exact-HEAD execution of the updated prompt-builder/work-queue/ViewModel tests in a full isolated project environment; native QML load/interaction verification; source/runtime timestamp and queue provenance confirmation from the real local Control Master; outcome-to-owning-objective linkage; and a later decision receipt showing whether the signal changed or confirmed action selection. The public signal branch remains uncreated until a separate deliberate UI confirmation in an authorized runtime.
+
+
+
+### 6D.5B PR #591 publication-integrity follow-up (2026-11-01; branch-only)
+
+This follow-up applies to the exact PR #591 candidate branch, not to `main`. The source HEAD immediately before this receipt was `1766861e7a279ee04305b22e51913e6fcb611997`; the branch remains an isolated, unmerged Draft. This is a source-level correction and test-authoring receipt, not runtime acceptance.
+
+**Corrections made in the candidate:**
+
+- `ControlMasterSignalProjector` now sets `source.state_observed_at_utc` from the timestamp captured when the producer projects the state/queue. It no longer substitutes `ControlMasterState.last_updated`, which describes the persisted object's modification time. The field therefore means projection observation time only; it does not independently prove that every underlying repository/cache was fresh.
+- Before writing to an existing public `control-master-live` branch, the publisher fetches the current `main` tree and compares complete commit trees. The branch is rejected unless its delta from current `main` is empty or exactly `IABV_v1.5/data/evolution/control_master/shared_signal.json`. This prevents carrying unrelated pre-existing public branch changes into the publication.
+- After push, the publisher checks the exact remote branch head, fetches that ref, checks the fetched commit SHA and compares the returned file bytes with the exact serialized payload. If push may have succeeded but read-back is not verified, the result is `PUBLISHED_UNVERIFIED`, not `PUBLISHED` or `BLOCKED`.
+- The Evolution Center ViewModel now renders `PUBLISHED` as published-and-verified and reports `PUBLISHED_UNVERIFIED` distinctly, preserving the fact that a push may have happened without a verified remote postcondition.
+
+**Changed source/test blob identities at this review point:**
+
+| Path | Blob |
+|---|---|
+| `src/iabv_v15/services/evolution/control_master_signal_projector.py` | `7888a07d90e864058fc738bc0c653039c7f63237` |
+| `src/iabv_v15/services/evolution/control_master_signal_publisher.py` | `70a9005c4a69100c32187ccfe40c0c01578c817b` |
+| `tests/test_control_master_signal_projector.py` | `19b78b47201bb902918e8c571d3b069f7c4cb472` |
+| `src/iabv_v15/ui/viewmodels/evolution_center_viewmodel.py` | `9f4f24a6ca075cfe8684dac3be03db32d482c927` |
+| `tests/test_evolution_center_viewmodel.py` | `f1f52506041f723178813834041fec67706094b1` |
+
+Five focused tests were added for observation-time semantics, the public-branch delta allowlist, exact remote ref/commit/content read-back, and the mismatch stop states; the ViewModel test also asserts the distinct `PUBLISHED_UNVERIFIED` presentation.
+
+```text
+SOURCE_REVIEW=STATIC_BRANCH_FETCH_BACK
+TESTS_AUTHORED=5_FOCUSED_PLUS_VIEWMODEL_ASSERTION
+TESTS_EXECUTED=NOT_RUN
+BUILD=NOT_RUN
+QML_LOAD=NOT_RUN
+APPBOOTSTRAP=NOT_RUN
+LOCAL_RUNTIME=NOT_OBSERVED
+PUBLIC_SIGNAL_PUBLISHED=FALSE
+MAIN_MODIFIED=FALSE
+M1A_GATES_CHANGED=FALSE
+```
+
+**Limitations retained:** this code does not create a signature, authenticated issuer, independent trust root or M1A/G1 evidence. Observation time is not a guarantee that underlying persisted inputs were freshly regenerated. No public signal was generated or published in this review, and the real local Control Master remains unavailable. The pre-existing checksum remains an integrity checksum only. Branch-level source correction, static review and authored tests do not establish integrated runtime acceptance.
+
+---
+
+
+### 6D.5C PR #591 next-session coordination receipt (2026-11-01; branch-only)
+
+This receipt records the latest coordinator reconciliation for continuation in a separately opened chat. It is attached to PR #591's isolated candidate branch and is **not adopted by main**. Read the live CURRENT-STATE.md from main first; this receipt supplements that canonical router and does not replace it.
+
+**Exact source and route observations**
+
+```text
+OBSERVED_AT=2026-11-01 (America/Bogota; GitHub metadata fetched in this session)
+MAIN_SHA=a64f9e331ccbf13225ed5a3d945e16586e8756db
+CURRENT_STATE_PATH=IABV_v1.5/docs/history/CHAT-ARCH/CURRENT-STATE.md
+CURRENT_STATE_BLOB=63e1b459a13e23e1012da81826dc50727b688d8c
+CURRENT_STATE_NORMAL_READ=EMPTY_BODY; EXACT_BLOB_FETCHED
+D021_MAIN_BLOB=b0c262730794a8f27b2f9815bfeda3e119cbb327
+M1A_ACTIVE_TASK=IABV_M1A_OWNER_ISSUER_MECHANISM_INPUT_GATE_R1_20261030
+M1A_OPEN_EDGE=OWNER_ROOT_DECISION_AUTHENTICATION_AND_ROOT_HANDLE_PROVENANCE_NOT_ESTABLISHED
+OWNER_INPUT_RECONCILED=NO_ADDITIONAL_MECHANISM_IDENTIFIED
+G1/G2/G3=NOT_ESTABLISHED
+G4/G5/G6/G7/G8=OPEN; NONE_CLOSED
+OPTION_D=RATIFIED_NO_BOOTSTRAP
+PRODUCT_IMPLEMENTATION=NOT_AUTHORIZED
+C:/Python=DO_NOT_TOUCH
+MCP_TOOL_ALLOWLIST=EMPTY
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+TESTS/BUILD/RUNTIME=NOT_RUN
+AUTOMATIC_FOLLOW_ON=FALSE
+```
+
+The canonical route is task-local: M1A/G1 remains blocked, but this is not a project-wide stop. Do not ask the Owner to repeat the Entra/Authenticator setup or identify another mechanism. No new independent root/issuer evidence was received in this continuation.
+
+**PR #591 live state and source identity**
+
+```text
+PR=591
+URL=https://github.com/jhonf463r/Python/pull/591
+STATE=OPEN; DRAFT=TRUE; MERGED=FALSE
+BASE=main@a64f9e331ccbf13225ed5a3d945e16586e8756db
+SOURCE_HEAD_AT_START_OF_THIS_RECEIPT=3cf320140733e3fc99171fd4ba25951dfbd88324
+COMPARE_AT_START=ahead_72; behind_0; 15_changed_files
+PR_REVIEWS=0
+INLINE_REVIEW_THREADS=0
+COMBINED_STATUS_CHECKS=0
+CHECK_RUNS=0
+PR_TRIGGERED_WORKFLOW_RUNS=0
+CONTROL_MASTER_LIVE_BRANCH=NOT_FOUND
+PUBLIC_SIGNAL_PUBLISHED=FALSE
+```
+
+GitHub reports 72 sequential connector-generated commits on the candidate branch; this is not 72 independent deliverables. Review the final file diff and exact final source, not commit count. The prior 11-passed claim in the PR description is bound to earlier projector/publisher/test blobs (bd2c8627e6407e154a86c22ee4621d6d77ed2009, 27801109246ee4295b62ba99267df9e4c6573b78, 789362a24688f98b8cb3a44c3226cac557164cf1) and **does not validate the final HEAD**.
+
+**Final source blobs statically fetched in this continuation**
+
+| Path | Blob |
+|---|---|
+| src/iabv_v15/services/evolution/control_master_signal_projector.py | 7888a07d90e864058fc738bc0c653039c7f63237 |
+| src/iabv_v15/services/evolution/control_master_signal_publisher.py | 70a9005c4a69100c32187ccfe40c0c01578c817b |
+| src/iabv_v15/services/evolution/control_master_service.py | 3b2605d0e0a12c5e3f0601a01c9b944c907692d1 |
+| src/iabv_v15/bootstrap.py | a1bbc4ecf73448b82ea9aae99e8fdeade3592868 |
+| src/iabv_v15/services/llm/system_prompt_builder.py | e76ea07d8afb6490846479ae2585459eaba3b42d |
+| src/iabv_v15/ui/viewmodels/evolution_center_viewmodel.py | 9f4f24a6ca075cfe8684dac3be03db32d482c927 |
+| src/iabv_v15/ui/qml/pages/EvolutionCenterPage.qml | c4568020e4d051e810f75f459f9d159873cc5e22 |
+| tests/test_control_master_signal_projector.py | 19b78b47201bb902918e8c571d3b069f7c4cb472 |
+| tests/test_canonical_work_queue.py | dcf8dd70bac73b7d7d70c0e5f31904bb5188d5ef |
+| tests/test_evolution_center_viewmodel.py | f1f52506041f723178813834041fec67706094b1 |
+| tests/test_system_prompt_builder.py | 4c0529988ac6b3a1782497284e5d8ffbce1f63a7 |
+
+**Adjudicated static findings**
+
+- The observation timestamp, existing-public-branch tree allowlist, exact post-push ref/commit/byte read-back and distinct PUBLISHED_UNVERIFIED ViewModel result are present in the exact fetched source blobs.
+- AppBootstrap statically constructs and wires the objective repository, pending-issue repository, operational self-examination service, platform pending queue and workspace root into ControlMasterService. This is source wiring only; it does not prove runtime reads succeed.
+- Some ControlMasterService readers accept optional dependencies and return no items when a dependency is absent; configured-but-failing/unsupported readers in several paths do record diagnostics. The main AppBootstrap path inspected wires those main dependencies. A missing runtime_audit.jsonl is treated as no audit items. This review did not establish a false-empty queue in the main composition: record it as REVIEW_NOTE; NO_CONFIRMED_DEFECT, not as a reason to patch speculatively.
+- The manual QML confirmation dialog discloses the public destination and payload limits. Static source presence does not prove QML loads or the action works in the native UI.
+
+**Validation boundary and next discriminating action**
+
+```text
+STATIC_SOURCE_FETCHBACK=VERIFIED_FOR_LISTED_BLOBS
+NEW_TESTS_AUTHORED=VERIFIED
+FINAL_HEAD_TESTS_EXECUTED=NOT_RUN
+FULL_SUITE=NOT_RUN
+BUILD=NOT_RUN
+APPBOOTSTRAP_RUNTIME=NOT_RUN
+QML_LOAD_AND_INTERACTION=NOT_RUN
+LIVE_CONTROL_MASTER_READ=UNAVAILABLE
+PUBLIC_SIGNAL_PUBLICATION=NOT_RUN
+MAIN_MODIFIED=FALSE
+PR_591_MERGE=NOT_AUTHORIZED
+```
+
+No authorized project test runner was available through this coordination session. The next action is **not another source rewrite**: obtain/use an already-authorized isolated project runner and execute, against the exact final PR HEAD, the four focused suites:
+
+1. tests/test_control_master_signal_projector.py
+2. tests/test_canonical_work_queue.py
+3. tests/test_system_prompt_builder.py
+4. tests/test_evolution_center_viewmodel.py
+
+Record interpreter/version, exact commands, test counts, exit codes, logs and tested HEAD. Then adjudicate each result separately. Only after these pass should an authorized native QML/AppBootstrap integration check be considered. Do not invoke the publisher, create control-master-live, access local/protected stores, start runtime, touch C:/Python, change permissions/tunnels, merge any PR, or infer M1A/G1 closure.
+
+**Other open PRs were inspected but not modified:** #592 is open Draft at 73300951298fd9e03f20aa3b2a94aa965ed3c33e; its two-test/smoke pass is recorded in its PR body as actor-reported, not re-executed here. #589 is open, targets an older base f39daa5231c5c85c83a7545879aa522286525fef, and GitHub reports mergeable=false; mergeable_state=dirty. It must be reconciled with current main before any review/merge decision. Neither PR is authorized to merge by this receipt.
+
+**Cross-session instruction:** the next chat must fetch live main and its exact CURRENT-STATE.md blob first, then fetch PR #591 and this D021 branch receipt at the PR's live HEAD. Record that the receipt is branch-persistent only until adopted. Do not ask the Owner to repeat settled inputs. The receiver must independently acknowledge retrieval and state whether this receipt changed or confirmed the chosen action; do not claim automatic boot or causal reuse.
+
+---
 
 ### 6D.6 Cross-chat handoff and causal reuse
 
@@ -453,6 +661,87 @@ Claim causal influence only when the receipt identifies the signal and demonstra
 ### 6D.7 Safety and scope
 
 The Control Master is subordinate to the Owner's current objective and all existing hard gates. It cannot authorize protected reads, credential access, root provisioning, code changes, tests, build, runtime, tunnel, deployment, permission changes or PR merges. Do not put secrets or protected payloads into public GitHub receipts. Keep local runtime evidence and cloud coordination evidence explicitly separate.
+
+
+### 6D.5D M1A G1–G3 live-main source reconciliation (2026-11-01; branch-only)
+
+This receipt records the Owner's request for a deep reconciliation of the path toward the governed IABV bridge. It supplements the canonical router; it does not replace or amend `CURRENT-STATE.md` on `main`. The new evidence is a bounded static comparison of the exact live-main source against the existing PR #531 authorization-organ candidate.
+
+#### Exact inputs fetched
+
+- Canonical `main`: `a64f9e331ccbf13225ed5a3d945e16586e8756db`.
+- Canonical `CURRENT-STATE.md` blob: `63e1b459a13e23e1012da81826dc50727b688d8c`; recovered by exact blob after the ordinary content fetch returned an empty body.
+- Main `bootstrap.py`: blob `e4befa6b683fc87aed7481f377f1332f5753e2c3`.
+- Main MCP `server.py`: blob `17b87a1555a63a6350b7f2f02e8f8ec61ad24f7c`.
+- Main `mcp_bridge_service.py`: blob `340c8f88e198655be86b874fd14c102d486bf8fd`.
+- Main evidence matrix: `CHAT-ARCH-2026-10-22-M1A-v1_0_1-implementation-prerequisite-evidence-gate-matrix.md`, blob `1322fdfb26770bcf5bdfab9fd85a7ffcee5d9f37`.
+- M1A acceptance/dual-track receipt: blob `239efe95c0451e61147eeed72b6b66858b83531d`.
+
+#### Finding A — canonical main does not demonstrate M1A authorization in the current MCP read/list handlers
+
+Static source observations at the exact main SHA:
+
+1. `AppBootstrap` constructs the MCP bridge through `build_mcp_bridge_service(self, workspace_root=self.config.workspace_root)`.
+2. The builder accepts the container and workspace root plus transport/bind settings; the reviewed composition does not inject a `ReadAuthorizationCoordinator`, G1 trust/mandate producer, G2 policy producer or G3 target resolver.
+3. Main's `read_repo_file` and `list_repo_directory` handlers call `_governance_block_for_route(assistant_kind="audit", requires_network=False)`. If it returns no block, the handlers call the path-based `audit_tools` readers.
+4. That route gate evaluates a World Model snapshot, network state, active block records and permission gates filtered by `assistant_kind`. The inspected handler/gate path does not derive a versioned G3 operation-to-target binding, does not ask an M1A issuer for a typed decision, and does not bind that decision to the same opened native object consumed by the reader.
+
+Adjudication: `MAIN_SOURCE_M1A_READ_LIST_INTEGRATION=NOT_DEMONSTRATED`. This is a source-to-route discrepancy against the normative `PROTECTED_READS=FAIL_CLOSED` posture. The required policy remains deny; however, this static review cannot claim that main's current read/list handlers enforce the M1A organ. Actual runtime activation/behavior was not inspected or invoked and remains `NOT_VERIFIED`.
+
+#### Finding B — PR #531 contains a partial fail-closed organ candidate, not production authority
+
+Live PR #531 was re-fetched and compared against main:
+
+- State: `OPEN`, `DRAFT=TRUE`, `MERGED=FALSE`.
+- Base SHA: `7ddfe285b1a3267f9ef6f57f862cca78bc8438c2`.
+- Candidate HEAD: `bc2baf525a70d66628809360a197f25a069aa328`.
+- Compare to current main: `ahead_by=17`, `behind_by=179`; 13 changed paths. No review submissions or inline threads were present in the queried review collections.
+- Candidate `bootstrap.py` blob: `802f1b42881f383d9ac33fea8ee6c2c913a4da32`.
+- Candidate `read_authorization.py` blob: `3a57d1148c175040b7b747a6e04411c542c51dd3`.
+- Candidate MCP `server.py` blob: `af0d95dd27172685a04e28f51d8bdc97c4f00b32`.
+- Candidate `windows_handle_reader.py` blob: `cf3045be70e6824bdcc627ccefa14ea33faf6342`.
+
+The candidate declares typed G1/G2/G3/issuer/replay interfaces. Its `ReadAuthorizationCoordinator.unconfigured()` sets all eight required production dependencies to `None`; `missing_requirements()` enumerates the missing independent trust root, Owner mandate, merge evidence, G2 policy provider, G3 resolver, authenticated issuer IPC, replay consumer and host-owned process identity. This is explicit deny-only composition, not an operational authority chain.
+
+The candidate read/list handlers do have a useful same-object source path: they obtain an `OpenedTargetCapability`, pass that same capability to the authorization decision and then pass it to the handle reader. This advances the G3 enforcement contract at source level. It does not supply the production approved-workspace-root provider, a concrete authoritative versioned target resolver or any of the independent authority producers. Synthetic/source-level structure does not prove native Windows behavior.
+
+A corresponding detailed static reconciliation was also recorded in [PR #531's conversation](https://github.com/jhonf463r/Python/pull/531#issuecomment-6568862657). It is not a formal review approval and it does not change the branch or its merge status.
+
+#### Gate disposition and dependency order
+
+```text
+MAIN=a64f9e331ccbf13225ed5a3d945e16586e8756db
+MAIN_M1A_READ_LIST_INTEGRATION=NOT_DEMONSTRATED
+PR531=OPEN_DRAFT_UNMERGED; BASE_STALE; 17_AHEAD_179_BEHIND
+PR531_SOURCE=PARTIAL_FAIL_CLOSED_CONTRACT; NOT_CANONICAL
+G1=NOT_ESTABLISHED
+G2=NOT_ESTABLISHED
+G3=PARTIAL_SOURCE_CONTRACT; PRODUCTION_ROOT_AND_RESOLVER_NOT_ESTABLISHED
+G4_G8=OPEN; NONE_CLOSED
+OWNER_INPUT_RECONCILED=NO_ADDITIONAL_INDEPENDENT_MECHANISM
+OPTION_D=RATIFIED_NO_BOOTSTRAP
+TESTS=NOT_RUN_IN_THIS_RECONCILIATION
+BUILD=NOT_RUN
+RUNTIME=NOT_RUN
+PROTECTED_READS_POLICY=FAIL_CLOSED_REQUIRED
+MAIN_HANDLER_ENFORCEMENT=NOT_DEMONSTRATED
+TUNNEL=NOT_ACTIVATED_BY_THIS_TASK
+MERGE_REBASE=NOT_AUTHORIZED
+```
+
+Causal order remains:
+
+1. **G1 first:** independently verifiable root provenance/custody, legitimate Owner/governance mandate and authenticated identity binding to the issuer, host principal and exact server instance. The already-reconciled Entra/Authenticator setup is not to be repeated and does not by itself prove this chain.
+2. **G2 second:** an authorized publisher and versioned catalogue/active set bound to G1; producer-class policy; integrity; freshness/expiry; authoritative revocation; and rollback-resistant lifecycle.
+3. **G3 third:** a server-side versioned registry mapping actual registered operation IDs and implementation/call sites to approved canonical targets; a production approved-root provider; and evidence that authorization and the reader consume the same identity-bearing open object.
+
+Do not create more interfaces or repeat the old broad R1/R5 inventories. Do not rebase or merge PR #531 merely because its source contract is useful: first reconcile its 179-commit divergence against the current main under a separately scoped authorization. Do not interpret PR #576's unmerged enrollment proposal as permission to create a key, manifest or enrollment effect. The Control Master signal work in PR #591 is a separate coordination surface and is not the M1A protected-read authority bridge.
+
+#### Method, authorization and limitations
+
+This task used read-only GitHub fetches for exact public source revisions and one traceability comment on PR #531. It did not access `C:/Python`, local or protected stores, secrets, credentials, the live runtime or issuer; it did not invoke MCP, publish a signal, activate a tunnel, execute tests/builds, edit product source, rebase or merge a PR. No new independent G1 authority evidence was received.
+
+The canonical main route remains the sole router. This section is persisted on the PR #591 branch only, for cross-session retrieval; it is not adopted in main. The independent M1A/G1 wait is task-local and does not imply a project-wide stop, but no separate authorized action was invented by this receipt.
 
 ## 6E. ChatGPT native project context and cross-agent artifact transport (2026-10-31)
 
@@ -568,3 +857,306 @@ Do not repeat text-only baseline tests as if they solve source attribution. Reop
 ## 8. Scope and non-goals
 
 This is a documentation/control-plane repair only. It does not create trust roots, keys, credentials, Entra registrations, authority assets, production providers, an MCP allowlist, protected reads, local runtime or tunnel. It does not change IABV technical acceptance criteria. G1/G2/G3 remain `NOT_ESTABLISHED` until their independent product evidence is supplied. No test suite or runtime was executed as part of this method authoring.
+
+### 6D.5E Authenticator app observation and no-repeat correction (2026-11-02; branch-only)
+
+**Triggering Owner observation:** the Owner reports that the already-installed Microsoft Authenticator app currently shows only the email address for the previously created `IABV Owner` account. The Owner is not reporting a visible Passkey/FIDO2 entry inside the app. This is a fresh UI observation, not evidence that the Entra account has no registered passkey, nor evidence that a passkey exists.
+
+**Correct evidence classification:**
+- `ENTRA_DIRECTORY_AND_AUTHENTICATOR=OWNER_REPORTED_READY` remains the previously reconciled setup fact; do not ask the Owner to reinstall Authenticator, recreate the account, repeat enrollment, or reconfirm the already reported successful sign-in.
+- `AUTHENTICATOR_APP_ACCOUNT_TILE=OWNER_REPORTED_VISIBLE`.
+- `AUTHENTICATOR_APP_VISIBLE_METHOD_DETAILS=NOT_OBSERVED`.
+- `ENTRA_REGISTERED_AUTHENTICATION_METHODS=NOT_INDEPENDENTLY_VERIFIED`.
+- `PASSKEY_FIDO2_REGISTRATION=UNKNOWN`; an email/account tile alone neither confirms nor rules out FIDO2.
+- `OWNER_AUTHORITY_MANDATE=NOT_ESTABLISHED`; `ISSUER_HOST_BINDING=NOT_ESTABLISHED`; M1A/G1 remains blocked.
+
+**Correct next-step selection (read-only, no setup loop):**
+1. Do not ask the Owner to find a Passkey inside the Authenticator account tile. The app's visible account/email entry is not the authoritative inventory of Entra-registered methods.
+2. Use the Owner-facing Microsoft Security Info portal `https://mysignins.microsoft.com/security-info` with the already known `IABV Owner` account. Inspect the registered methods list only; do not add, delete, reset or re-register any method during this observation step.
+3. Classify the exact entries separately: `Microsoft Authenticator` indicates the registered Authenticator method; `Passkey (FIDO2)` indicates a registered FIDO2 credential; `Microsoft Passwordless phone sign-in` is a distinct passwordless method and must not be relabeled as FIDO2. If the portal lists only Authenticator, record FIDO2 as `NOT_OBSERVED_IN_OWNER_PORTAL`, not as globally absent.
+4. If stronger tenant-side confirmation is needed and the Owner already has an authorized administrative role, inspect the Entra user Authentication methods page or the Authentication Methods Activity registration report. Do not assume the Owner has the required role or license, request role elevation, or change tenant policy. The report can lag; record its observation time and limitations.
+5. Only after the read-only inventory establishes that FIDO2 is absent and a concrete need is justified may the coordinator assess the tenant's existing Passkey (FIDO2) policy and supported authenticator profile. Do not opt in to passkey profiles, enable policies, create a credential, or alter Conditional Access without a separate exact scope/authorization; profile opt-in can be non-reversible.
+6. A Passkey/FIDO2, if present, is a phishing-resistant authentication credential, not by itself a free-form digital signature or an IABV authority mandate. Any future Owner decision flow must bind a fresh challenge to the exact decision digest, relying-party/server identity and intended scope, and independently verify the credential assertion. Entra token validation, Owner mandate, issuer identity, host identity and server-instance binding remain separate checks.
+
+**Protocol correction:** the coordinator must recover the Owner-input ledger and prior setup facts before asking anything; interpret app UI observations narrowly; select the authoritative read-only evidence surface; and ask for only the single unresolved observation that changes the next action. Never transfer a known investigation step back to the Owner as an open-ended request to diagnose or design the security mechanism.
+
+**Source basis:** current Microsoft documentation for [Security Info](https://mysignins.microsoft.com/security-info), [Authentication Methods Activity](https://learn.microsoft.com/entra/identity/authentication/howto-authentication-methods-activity), and [Passkeys (FIDO2)](https://learn.microsoft.com/entra/identity/authentication/how-to-authentication-passkeys-fido2), checked 2026-11-02. This subsection is a branch-only coordination correction; it does not alter canonical `main`, provision credentials, authorize tenant-policy changes, establish G1, or enable protected reads.
+
+#### 6D.5E.1 Exact Security Info inventory (2026-11-02; Owner-reported)
+
+The Owner inspected the existing Security info page for the already-created `IABV Owner` account and reported the visible methods:
+- `Password`.
+- `Microsoft Authenticator — MFA` (the page's registration label identifies the notification/code MFA registration).
+
+No `Passkey (FIDO2)` entry was visible in the reported inventory. Classify:
+- `SECURITY_INFO_PASSWORD=OWNER_REPORTED_VISIBLE`.
+- `SECURITY_INFO_AUTHENTICATOR_MFA=OWNER_REPORTED_VISIBLE`.
+- `SECURITY_INFO_PASSKEY_FIDO2=NOT_OBSERVED_IN_REPORTED_INVENTORY`.
+- `ENTRA_REGISTERED_FIDO2=UNKNOWN` pending authoritative tenant-side verification; do not overstate the portal observation as proof that no credential exists anywhere.
+- `OWNER_IDENTITY_MFA=OWNER_REPORTED_READY`; `OWNER_DECISION_SIGNATURE=NOT_ESTABLISHED`; `G1=NOT_ESTABLISHED`.
+
+**Next single bounded observation:** the Owner may open `Add sign-in method` only to view the offered method names, then cancel/close without selecting, registering, deleting or changing anything. Record whether `Passkey` / `Passkey (FIDO2)` is offered. If it is offered, stop before registration; assess the exact method type and allowed passkey provider first. If it is not offered, do not assume the user can enable it from Security info: tenant-side Passkey (FIDO2) policy and targeting may need an appropriately authorized Authentication Policy Administrator. Do not instruct the Owner to enable policy, opt into passkey profiles, modify Conditional Access, or register a credential under the current no-bootstrap boundary.
+
+**Important interpretation:** Microsoft documents that the Security info registration label `Microsoft Authenticator: (Notification/Code)` represents an MFA registration, distinct from `Microsoft Authenticator: Passwordless phone sign-in`. Neither label is equivalent to an Entra `Passkey (FIDO2)` credential. The current Owner-reported screen therefore confirms Authenticator MFA, not FIDO2 or a digital signature.
+
+**Microsoft source basis checked 2026-11-02:** [Authenticator registration types](https://learn.microsoft.com/en-us/entra/identity/authentication/concept-authentication-authenticator-app); [register a FIDO2 passkey with a security key](https://learn.microsoft.com/en-us/entra/identity/authentication/how-to-register-passkey-with-security-key); [enable Passkey (FIDO2) policy](https://learn.microsoft.com/en-us/entra/identity/authentication/how-to-authentication-passkeys-fido2). This is a branch-only continuity update. It does not change canonical `main`, configure Entra policy, create credentials, satisfy G1, or authorize protected reads.
+
+#### 6D.5E.2 Owner-provided Entra passkey option screen (2026-11-02; pre-registration)
+
+The Owner supplied a screenshot of the Security info "Add a sign-in method" chooser. The visible options are:
+1. `Passkey in Microsoft Authenticator` (Spanish UI: `Clave de paso en Microsoft Authenticator`; label says sign in with face, fingerprint or PIN).
+2. `Passkey` (generic passkey provider/security key flow).
+3. `Microsoft Authenticator` (MFA approval or one-time codes).
+
+**Evidence:** `OWNER_REPORTED_SCREENSHOT_VISIBLE` for all three offered options. This confirms the user-facing registration flow currently offers the Authenticator-specific passkey route. It does not yet prove that a credential has been created, accepted by Entra, registered on the authentication server, or usable for sign-in.
+
+**Chosen route for guided Owner enrollment:** option 1, `Passkey in Microsoft Authenticator`, because the Owner already reported that the dedicated `IABV Owner` account is present in the existing Authenticator app. Do not select the generic Passkey option or the old MFA option for this specific enrollment. Microsoft documentation says Authenticator passkeys are device-bound and hardware-backed (iOS Secure Enclave; Android Keystore with supported secure hardware); they do not sync to another phone. Keep the current password and MFA method as fallback and do not delete them.
+
+**Registration procedure:** the Owner starts the Authenticator-specific option from Security info; completes any fresh MFA challenge; follows the browser/app handoff to the existing Authenticator account; creates the passkey in Authenticator using the device screen lock/biometric/PIN; returns to the browser and completes server-side verification. The procedure may require Android 14+ or iOS 17+. A method is counted as registered only after Security info displays the resulting passkey entry and the registration flow confirms completion. A locally created but server-unregistered credential is not accepted as proof.
+
+**Security and evidence boundary:**
+- `PASSKEY_AUTHENTICATOR_OPTION=OWNER_REPORTED_VISIBLE`.
+- `PASSKEY_AUTHENTICATOR_REGISTRATION=NOT_YET_PERFORMED`.
+- `PASSKEY_AUTHENTICATOR_SERVER_ACCEPTANCE=NOT_ESTABLISHED`.
+- `OWNER_AUTHENTICATION_MFA=OWNER_REPORTED_READY`.
+- `OWNER_DECISION_SIGNATURE=NOT_ESTABLISHED`.
+- `ISSUER_HOST_BINDING=NOT_ESTABLISHED`.
+- `M1A_G1=NOT_ESTABLISHED`.
+
+The passkey authenticates the Owner to Microsoft Entra; it is not itself a digital signature of an arbitrary IABV authority decision, does not create the IABV root of trust, and does not bind an issuer, Windows principal or exact server instance. Those validations remain separate. This is a branch-only continuity receipt and does not modify canonical `main` or authorize product runtime/protected reads.
+
+**Microsoft source basis checked 2026-11-02:** [Register passkeys in Authenticator](https://learn.microsoft.com/en-us/entra/identity/authentication/how-to-register-passkey-authenticator); [Authenticator passkey requirements and policy](https://learn.microsoft.com/en-us/entra/identity/authentication/how-to-enable-authenticator-passkey); [Passkey FAQ and device-bound storage](https://learn.microsoft.com/en-us/entra/identity/authentication/passkey-faq).
+
+#### 6D.5E.3 Safety correction — visible option is not enrollment authorization (2026-11-02)
+
+The Owner's screenshot establishes that the Security info UI offers `Passkey in Microsoft Authenticator`. The prior coordinator instruction to select it and proceed with registration was premature because it did not first reconcile the active canonical no-bootstrap boundary.
+
+**Controlling rule:** `OPTION_D=RATIFIED_NO_BOOTSTRAP` and D021 §8 excludes creation of Entra registrations/authority assets unless the canonical route is explicitly changed by an authorized, sufficiently scoped decision. A visible menu option proves availability in the UI, not permission to register. Therefore:
+- `PASSKEY_AUTHENTICATOR_OPTION=OWNER_REPORTED_VISIBLE`.
+- `PASSKEY_AUTHENTICATOR_REGISTRATION=NOT_AUTHORIZED_UNDER_CURRENT_ROUTE`.
+- `PASSKEY_AUTHENTICATOR_SERVER_ACCEPTANCE=NOT_ESTABLISHED`.
+- `OWNER_MFA=OWNER_REPORTED_READY`.
+- `OWNER_DECISION_SIGNATURE=NOT_ESTABLISHED`.
+- `G1=NOT_ESTABLISHED`; `PROTECTED_READS=FAIL_CLOSED`.
+
+**Immediate operator correction:** do not select the option, create/register a passkey, alter Entra authentication policy, change Conditional Access, request admin-role elevation, remove existing MFA/password methods, or change any host/runtime setting under the current route. Leave the chooser and existing account methods unchanged. The first option remains a technically plausible future phishing-resistant Owner-authentication method, but it is neither an IABV root nor an arbitrary decision-signing credential.
+
+**What must change before enrollment can be proposed:** the canonical active route must identify an exact Owner-authorized, bounded Entra registration action; its target tenant/account, specific credential type, platform prerequisites, permitted side effects, rollback/recovery, expected server-side registration evidence and post-enrollment test must be defined. The route owner must explicitly authorize that exact mutation. A generic request to "help establish trust", a visible option or a successful MFA event cannot silently override the ratified no-bootstrap decision.
+
+**Why this correction matters:** Authenticator MFA/Passkey can authenticate a human to Microsoft Entra; it does not by itself issue a signed IABV authority mandate, prove custody/provenance of an IABV trust root, authenticate the IABV issuer, or bind the issuer to the exact Windows principal and server instance. Do not claim G1 closure from passkey enrollment alone.
+
+**Incident classification:** `COORDINATOR_ERROR=ADVANCED_OWNER_MUTATION_BEFORE_ACTIVE_ROUTE_AND_AUTHORIZATION_PREFLIGHT`; `CORRECTION=PAUSE_REGISTRATION_AND_ADD_PRE_ACTION_DECISION_BUNDLE_TO_D019_D020`; `PRODUCT_IMPLEMENTATION=NOT_AUTHORIZED`; `AUTOMATIC_FOLLOW_ON=FALSE`. This subsection supersedes any earlier procedural wording in §6D.5E.2 that appears to direct immediate registration. It is branch-only and does not modify canonical `main`.
+
+
+### 6D.5F PR #591 — F1/F2/F3 publisher correction and CI-route reconciliation (2026-11-02; branch-only)
+
+This receipt records the follow-up source review of the actual PR #591 candidate. It supplements the PR description and the static review comments; it does not change canonical `main`, create a live signal, or authorize merge/publication/runtime.
+
+**Exact target identity**
+
+```text
+REPOSITORY=jhonf463r/Python
+PR=591
+BASE=main@a64f9e331ccbf13225ed5a3d945e16586e8756db
+ACTUAL_PR_BRANCH=iabv/control-master-signal-bridge-r1-20261031-review
+REQUESTED_PARALLEL_BRANCH=iabv/control-master-signal-bridge-r1-20261031
+REQUESTED_BRANCH_IS_PR_HEAD=FALSE
+REQUESTED_BRANCH_AND_PR_BRANCH=SEPARATE_DIVERGENT_REFS; COMMON_BASE=main
+FUNCTIONAL_SOURCE_HEAD_AT_THIS_REVIEW=20cf92aee59c96fb9a4357a7448dcfacaa5b2142
+PUBLISHER_BLOB=54247f1581cf89f02c2f2a145a048015d3d467c4
+FOCUSED_TEST_BLOB=b98f76221cf712e8bec84129ce9e160cef2ab567
+PR_CHANGED_FILES=15
+COMPARE_AT_RECEIPT=ahead_84; behind_0
+PR_STATE=OPEN; DRAFT=TRUE; MERGED=FALSE
+```
+
+The requested branch without the `-review` suffix was not modified. Its earlier observed SHA was `513e86b2b946859700d5c0747c333f0d7c9b3c13`; the PR branch at the reviewed source commit was `520d3aa0623928002c4fb97b68e21a9c1bc96158`. Their common base did not make them aliases. The four new test cases and publisher changes were committed only to the actual PR branch.
+
+**Corrections**
+
+1. **F1 — default-branch TOCTOU:** the publisher checks the remote symbolic default branch at initial preflight and again at the push boundary. A changed/unknown default branch blocks publication. The second client-side check narrows the race but is not atomic; the residual race remains explicit and requires server-side protection for a strict guarantee.
+2. **F2 — ordinary `main` advancement:** the publisher now retains merge ancestry, fetches and merges current `main` into `control-master-live` without force-push, verifies the entire resulting tree delta is limited to `IABV_v1.5/data/evolution/control_master/shared_signal.json`, then fetches/reconciles `main` again immediately before push. Conflicts and unrelated deltas fail closed.
+3. **F3 — ambiguous push result:** if `git push` exits non-zero or times out, the publisher still reads back the exact remote ref, fetched commit and bytes. An exact match verifies the postcondition; otherwise it reports `PUBLISHED_UNVERIFIED` with `PUSH_RESULT_UNVERIFIED` rather than asserting definite non-publication.
+
+**Regression tests authored and fetched back**
+
+- `test_publisher_default_branch_guard_observes_change_between_checks`
+- `test_publisher_reconciles_signal_branch_when_main_advances`
+- `test_publisher_reads_back_after_ambiguous_push_failure`
+- `test_publisher_marks_ambiguous_push_unverified_when_remote_readback_differs`
+
+All four are `AUTHORED_NOT_RUN`. They are bound to the final test blob above. The historical 11-pass reduced harness belongs to earlier code/test blobs and does not validate this source revision.
+
+**CI-route reconciliation**
+
+Main contains `.github/workflows/iabv-authorization-focused-tests.yml` (blob `fc3ff9c6d04a16a391a19b7e0792d6f3c482995c`). It uses `windows-latest` and Python 3.11, but pushes are restricted to `codex/iabv-m1f-authz-candidate-review-20261025`; pull requests to `main` run only when a fixed set of M1A authorization source/test paths changes. PR #591's 15 changed paths do not intersect those filters, and the workflow has no `workflow_dispatch` trigger. Correct classification is `NO_MATCHING_CI_ROUTE`, not `ACTIONS_DISABLED` and not proof that the repository lacks a Windows runner. Do not edit unrelated authorization files or add dummy path changes to trigger it.
+
+At the reviewed functional source HEAD, GitHub reported zero combined status checks and zero PR-triggered workflow runs. The previous Codex result `BLOCKED_NO_AUTHORIZED_RUNNER` remains an actor-reported capability result; it is not a code failure or a passing test.
+
+**Remaining acceptance limits and safety**
+
+- Objective mapping from public positional queue slots to concrete task/objective/dependency identity remains intentionally unestablished.
+- `control-master-live` and `shared_signal.json` were not published in this coordination; live Control Master runtime state remains `UNAVAILABLE`.
+- Native QML/AppBootstrap integration, complete repository suites, build, runtime and publication remain `NOT_RUN`.
+- `OPTION_D=RATIFIED_NO_BOOTSTRAP`; `G1/G2/G3=NOT_ESTABLISHED`; protected reads remain `FAIL_CLOSED`. No M1A gate, credential, permission, tunnel or local-runtime state changed.
+- Follow-up reviews are `COMMENTED`, not approvals. PR #591 remains Draft and unmerged.
+
+
+### 6D.5G Dedicated CI route, workflow correction and account platform restriction (2026-11-02; branch-only)
+
+This receipt supersedes the earlier `NO_MATCHING_CI_ROUTE` observation only for PR #591. The existing main-branch M1A workflow still does not match this PR; a dedicated, narrowly scoped workflow was added to the actual PR branch.
+
+**Exact workflow target**
+
+```text
+REPOSITORY=jhonf463r/Python
+PR=591
+BASE=main@a64f9e331ccbf13225ed5a3d945e16586e8756db
+BRANCH=iabv/control-master-signal-bridge-r1-20261031-review
+WORKFLOW=.github/workflows/iabv-control-master-focused-tests.yml
+LATEST_WORKFLOW_BLOB=baadd228fe983dae73be88780775517e1ce9691e
+LATEST_BRANCH_HEAD=efd2e04e65acefbc221a78e364a6ba7f89cd1a90
+TRIGGER=pull_request; base=main; relevant source/test/workflow paths only
+RUNNER=windows-latest
+PYTHON=3.11
+PERMISSIONS=contents:read
+SECRETS=NONE
+DEPLOYMENT_OR_PUBLICATION=NONE
+TESTS=four focused suites
+```
+
+The workflow runs:
+- `tests/test_canonical_work_queue.py`
+- `tests/test_control_master_signal_projector.py`
+- `tests/test_system_prompt_builder.py`
+- `tests/test_evolution_center_viewmodel.py`
+
+It checks out the PR revision without persisted credentials, installs the existing `IABV_v1.5[dev]` extra and places `IABV_DATA_DIR` in the test step environment, where the GitHub Actions `runner` context is valid. The workflow uses only the PR event to avoid duplicate push+pull-request runs. It does not use `pull_request_target`, write permissions, tokens, secrets or deployment actions.
+
+**Observed first-run workflow-definition defects and correction**
+
+- Run `41518778170` rejected the initial workflow because `runner.temp` was referenced in job-level `env`.
+- Run `41518883184` rejected the subsequent branch-trigger revision for the same invalid context scope.
+- The path was moved to the test step's `env`. GitHub then accepted the workflow and created a pull-request synchronize run. This is configuration correction, not product-code failure.
+
+**Current external blocker**
+
+- Run `41519008799` (push event) and run `41519019291` (PR #591 synchronize) were both accepted by Actions but the job was **not started**.
+- GitHub's explicit annotation: `GitHub reported an account-level platform restriction; the exact account annotation is intentionally not copied into this public receipt.`
+- The job contains no executed steps; tests did not begin. The workflow/job API returned no steps/jobs for these no-start runs.
+- Correct classification: `ACTIONS_ACCOUNT_RESTRICTION=BLOCKED`; `RUNNER_JOB_NOT_STARTED=TRUE`; `TESTS=NOT_RUN`. This is not a test failure, code failure, missing workflow route or proof that Windows runners are unavailable.
+- The repository is public and this workflow uses a standard GitHub-hosted Windows runner. The published GitHub billing guidance says standard hosted runners in public repositories are free; nevertheless, the account-level platform restriction prevented the job from starting. Do not create additional workflows, switch to self-hosted/larger runners, add dummy mutations or seek another billing bypass to evade the lock.
+- Only an authorized Owner/account administrator can resolve the account-level platform restriction through GitHub's normal account process. Do not ask for credentials, payment details or billing secrets in chat.
+
+**Acceptance state**
+
+```text
+WORKFLOW_YAML=ACCEPTED_BY_GITHUB
+WORKFLOW_EVENT=MATCHED
+RUNNER_JOB_START=BLOCKED_BY_PLATFORM_ACCOUNT_RESTRICTION
+TESTS=NOT_RUN
+BUILD=NOT_RUN
+NATIVE_QML_APPBOOTSTRAP=NOT_RUN
+LIVE_CONTROL_MASTER=UNAVAILABLE
+PUBLIC_SIGNAL_PUBLISHED=FALSE
+MERGE=NOT_AUTHORIZED
+```
+
+The actual source publisher and four regression tests remain at their previously recorded blobs; the later commits in this receipt are workflow and documentation changes only. PR #591 remains Draft and unmerged. This branch-only receipt changes no M1A gates, Option D, protected-read, credentials or local-runtime boundaries.
+
+
+### 6D.5H Post-run reconciliation, CI job-start restriction and exact continuation (2026-11-02; branch-only)
+
+This receipt supersedes the earlier branch-head and Actions-run observations in §6D.5G. It is a continuity record on the isolated PR branch, not canonical state on `main`.
+
+**Exact identity at reconciliation**
+
+```text
+REPOSITORY=jhonf463r/Python
+PR=591
+ACTUAL_SOURCE_BRANCH=iabv/control-master-signal-bridge-r1-20261031-review
+SOURCE_HEAD_BEFORE_THIS_RECEIPT=f9d0c17b881575b3a012c7f931293497c2d968bc
+PREVIOUS_REVIEWED_HEAD=f15e825e28760a578e72d9adfa78792eedcb5913
+BASE=main@a64f9e331ccbf13225ed5a3d945e16586e8756db
+COMPARE_BEFORE_THIS_RECEIPT=91_AHEAD;0_BEHIND;16_FILES
+PUBLISHER_BLOB=54247f1581cf89f02c2f2a145a048015d3d467c4
+FOCUSED_TEST_BLOB=b98f76221cf712e8bec84129ce9e160cef2ab567
+WORKFLOW_BLOB=baadd228fe983dae73be88780775517e1ce9691e
+```
+
+The source branch at `f9d0c17...` was one commit after `f15e825...`; the intervening commit changed only this D021 receipt's account-restriction wording. The publisher, focused test module and workflow were fetched again from the exact branch and their blobs were unchanged.
+
+**Matched CI executions and actual result**
+
+- Run #6, for the preceding reviewed head `f15e825...`: https://github.com/jhonf463r/Python/actions/runs/41519399125
+- Run #7, for the observed source head `f9d0c17...`: https://github.com/jhonf463r/Python/actions/runs/41519968279
+- Both matched the dedicated `pull_request/synchronize` workflow and were accepted as workflow runs. GitHub's public annotation identifies an account-level platform restriction and says the job was not started.
+- Each workflow run concluded `failure`, but the job-step endpoint returned an empty step list. No Python setup, dependency installation or pytest command ran. No artifact was produced; the job log download was unavailable.
+- Therefore the GitHub run conclusion is an infrastructure/account-level startup failure, **not** a failed test assertion and **not** evidence of a source-code defect.
+
+```text
+CI_ROUTE=MATCHED
+WORKFLOW_CONFIGURATION=ACCEPTED
+ACTIONS_ACCOUNT_RESTRICTION=BLOCKED
+RUNNER_JOB_NOT_STARTED=TRUE
+FOUR_FOCUSED_SUITES=NOT_RUN
+SOURCE_TEST_RESULT=NO_RESULT
+RERUN=PROHIBITED_UNTIL_ACCOUNT_RESTRICTION_CHANGES
+```
+
+The four required suites remain:
+- `tests/test_canonical_work_queue.py`
+- `tests/test_control_master_signal_projector.py`
+- `tests/test_system_prompt_builder.py`
+- `tests/test_evolution_center_viewmodel.py`
+
+Do not rerun the workflow, create another workflow, switch runner classes, add dummy path changes or pursue a billing/restriction bypass while the account-level condition is unchanged. The next valid attempt is the existing PR workflow after the Owner/account administrator resolves the restriction through GitHub's normal account process and a new PR synchronize event reaches the current branch. Do not request or persist credentials, payment details or billing secrets in this repository.
+
+**Scope and state preservation**
+
+- Although the workflow's `paths` list does not name this D021 file, the `pull_request` path filter evaluates the three-dot aggregate PR diff. Because this PR still contains matching source/test/workflow paths, a D021-only synchronize commit can trigger the workflow again; run #8 demonstrated this. The earlier claim that the receipt-only update would not schedule another run is retracted.
+- `main` remains `a64f9e331ccbf13225ed5a3d945e16586e8756db`; no main write or merge occurred.
+- PR #591 remains open Draft and unmerged; recorded reviews remain `COMMENTED`, not approval.
+- No signal was published; no local runtime, protected store, credential, tunnel or M1A gate was accessed or changed.
+- `OPTION_D=RATIFIED_NO_BOOTSTRAP`; `G1/G2/G3=NOT_ESTABLISHED`; protected reads remain fail-closed.
+- Positional queue slots still do not provide objective identity mapping. This bridge is not proven end-to-end shared memory or autonomous causal effect-dominó.
+
+The account administrator's remediation is outside this repository. GitHub's official locked-account guidance is documented at https://docs.github.com/en/billing/how-tos/troubleshooting/locked-account. If the account's Billing & Licensing page shows no actionable payment, subscription or authorization issue, GitHub directs the account owner to request a review through the Support portal. Do not infer an account-specific payment cause beyond the exact Actions annotation.
+
+
+### 6D.5I Correction — `pull_request.paths` uses the aggregate PR diff (2026-11-02; branch-only)
+
+This subsection corrects the path-filter assumption introduced in §6D.5H. It is a method correction based on the actual run #8 and GitHub's documented diff semantics.
+
+**Observed event**
+
+- The D021-only receipt commit `b4be39e0abaf6e7cf6bbcec8f7e462e251cd01b7` triggered run #8: https://github.com/jhonf463r/Python/actions/runs/41521712376.
+- The run was associated with PR #591's `synchronize` event and the actual branch `iabv/control-master-signal-bridge-r1-20261031-review`.
+- GitHub again refused to start the job under the same account-level billing/platform restriction. The job step list is empty and the run has no artifacts. No Python setup, dependency installation or pytest command executed.
+- Correct result: `CI_ROUTE=MATCHED`; `RUNNER_JOB_START=BLOCKED_BY_ACCOUNT_RESTRICTION`; `TESTS=NOT_RUN`. GitHub's run conclusion `failure` is not a test assertion failure or product-source failure.
+
+**Why the previous assumption was wrong**
+
+The workflow's path list does not contain this D021 Markdown path. However, the event is `pull_request`, and GitHub evaluates `paths` using a three-dot diff between the current topic branch and the commit where that topic branch was last synced with the base branch. It does not restrict the test to the file list from the latest single commit. The PR's aggregate changed-file set still contains the matching source/test/workflow paths; therefore a documentation-only commit on this same PR can retrigger the workflow.
+
+Official semantics: https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow (section "Git diff comparisons"). GitHub documents two-dot comparisons for pushes and three-dot comparisons for pull requests.
+
+**Corrective rule for all future CI preflights**
+
+1. Bind the filter to the event type before evaluating paths.
+2. For `pull_request`, evaluate the aggregate three-dot PR diff from the current head to the merge-base/last synchronized base, not merely the paths in the newest commit.
+3. For `push`, use the push event's two-dot comparison and inspect the files changed by that push.
+4. A path omitted from the positive `paths` patterns does not prevent a PR workflow from matching when another file in the aggregate PR diff matches.
+5. If a matching PR workflow is already blocked before runner startup by an unchanged account/platform restriction, freeze further commits to that PR branch unless a source change is necessary to address a new material finding. Do not make receipt-only branch commits, edit the workflow or rerun while the blocking premise is unchanged.
+6. Do not create another workflow/branch/PR, add dummy changes, change runner classes or bypass the account restriction as a workaround. Resolve the account condition through GitHub's normal account process; then allow one matching workflow run to validate the exact current HEAD.
+
+```text
+PR591_PATH_FILTER_SEMANTICS=THREE_DOT_AGGREGATE_DIFF
+LATEST_OBSERVED_RUN=41521712376
+RUNNER_JOB_STARTED=FALSE
+FOUR_FOCUSED_SUITES=NOT_RUN
+NO_MORE_PR591_COMMITS_WHILE_ACCOUNT_RESTRICTION_UNCHANGED=TRUE
+MAIN=UNCHANGED
+```
+
+This receipt supersedes the incorrect no-retrigger statement in §6D.5H. It does not modify the workflow, implementation, tests, `main`, M1A gates or permissions. PR #591 remains open Draft and unmerged.

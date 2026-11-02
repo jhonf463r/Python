@@ -50,6 +50,7 @@ class EvolutionCenterViewModel(QObject):
         self_examination_service: Any | None = None,
         control_master_service: Any | None = None,
         control_master_digest_builder: Any | None = None,
+        control_master_signal_publish_action: Any | None = None,
         github_remote_service: Any | None = None,
         defer_initial_refresh: bool = False,
     ) -> None:
@@ -71,6 +72,9 @@ class EvolutionCenterViewModel(QObject):
         self.self_examination_service = self_examination_service
         self.control_master_service = control_master_service
         self.control_master_digest_builder = control_master_digest_builder
+        self.control_master_signal_publish_action = control_master_signal_publish_action
+        self._control_master_signal_publish_status = 'No se ha publicado una señal compartida en esta sesión.'
+        self._control_master_signal_publish_result: dict[str, Any] = {}
         # F2.2: el VM no decide rutas ni abre PRs por su cuenta; solo dispara
         # el servicio ya existente (``GitHubRemoteService``) y expone el
         # resultado como Property para que la UI lo muestre. Queda ``None``
@@ -206,6 +210,12 @@ class EvolutionCenterViewModel(QObject):
     def get_publish_pr_result(self) -> dict[str, Any]:
         return self._publish_pr_result
 
+    def get_control_master_signal_publish_status(self) -> str:
+        return self._control_master_signal_publish_status
+
+    def get_control_master_signal_publish_result(self) -> dict[str, Any]:
+        return self._control_master_signal_publish_result
+
     def get_selected_dossier(self) -> dict[str, Any]:
         return self._selected_dossier
 
@@ -303,17 +313,36 @@ class EvolutionCenterViewModel(QObject):
         except Exception as exc:
             logger.warning('evolution_center: self_examination failed: %s', exc)
             self_examination = {}
-        control_master_digest: dict[str, Any] = {}
+        control_master_digest: dict[str, Any] = {
+            'signal_status': 'UNAVAILABLE',
+            'signal_reason': 'CONTROL_MASTER_SERVICE_NOT_CONFIGURED',
+            'work_queue_status': 'UNAVAILABLE',
+        }
         if self.control_master_service is not None and self.control_master_digest_builder is not None:
             try:
                 state = self.control_master_service.current_state(refresh=False)
-                try:
-                    work_queue = self.control_master_service.current_work_queue(limit=10)
-                except Exception:
-                    work_queue = []
-                control_master_digest = self.control_master_digest_builder.build(state, work_queue=work_queue).model_dump(mode='json')
-            except Exception:
-                control_master_digest = {}
+                work_queue = self.control_master_service.current_work_queue(limit=10)
+                source_errors = tuple(getattr(self.control_master_service, 'last_work_queue_errors', ()) or ())
+                if source_errors:
+                    control_master_digest = self.control_master_digest_builder.build(
+                        state, work_queue=None
+                    ).model_dump(mode='json')
+                    control_master_digest.update({
+                        'signal_status': 'UNAVAILABLE',
+                        'signal_reason': 'QUEUE_SOURCE_ERRORS:' + ','.join(source_errors),
+                        'work_queue_status': 'UNAVAILABLE',
+                    })
+                else:
+                    control_master_digest = self.control_master_digest_builder.build(
+                        state, work_queue=work_queue
+                    ).model_dump(mode='json')
+            except Exception as exc:
+                logger.warning('evolution_center: Control Master signal unavailable (%s)', type(exc).__name__)
+                control_master_digest = {
+                    'signal_status': 'UNAVAILABLE',
+                    'signal_reason': 'CONTROL_MASTER_READ_FAILED:' + type(exc).__name__,
+                    'work_queue_status': 'UNAVAILABLE',
+                }
         self._health_snapshot = snapshot.model_dump(mode='json') if snapshot is not None else self._health_snapshot
         self._recent_dossiers = dossiers
         self._recent_incidents = filtered_incidents
@@ -500,6 +529,24 @@ class EvolutionCenterViewModel(QObject):
         if not digest:
             return ''
         parts: list[str] = []
+        source_state_id = str(digest.get('source_state_id') or '').strip()
+        digest_id = str(digest.get('digest_id') or '').strip()
+        generated_at = str(digest.get('generated_at_utc') or '').strip()
+        provenance: list[str] = []
+        if source_state_id:
+            provenance.append(f'state_id={source_state_id}')
+        if digest_id:
+            provenance.append(f'digest_id={digest_id}')
+        if generated_at:
+            provenance.append(f'generated_at_utc={generated_at}')
+        if provenance:
+            parts.append('Procedencia Control Master: ' + '; '.join(provenance))
+        signal_status = str(digest.get('signal_status') or 'UNVERIFIED').strip()
+        queue_status = str(digest.get('work_queue_status') or 'UNVERIFIED').strip()
+        parts.append(f'Control Master: señal {signal_status}; cola {queue_status}')
+        signal_reason = str(digest.get('signal_reason') or '').strip()
+        if signal_reason:
+            parts.append(f'Incidencia de señal: {signal_reason}')
         vision = str(digest.get('current_vision') or '').strip()
         if vision:
             parts.append(f'Vision: {vision}')
@@ -509,6 +556,15 @@ class EvolutionCenterViewModel(QObject):
         active = digest.get('active_objectives_brief') or []
         if active:
             parts.append(f'Objetivos activos: {", ".join(active[:3])}')
+        queue_items = digest.get('work_queue_brief') or []
+        if queue_items:
+            parts.append(f'Prioridad inmediata: {queue_items[0]}')
+        queue_counts = digest.get('work_queue_counts') or {}
+        if queue_counts:
+            counts_text = ', '.join(
+                f'{key}={value}' for key, value in sorted(queue_counts.items())
+            )
+            parts.append(f'Recuentos de cola: {counts_text}')
         unresolved = digest.get('unresolved') or []
         if unresolved:
             parts.append(f'UNRESOLVED: {unresolved[0]}')
@@ -678,6 +734,39 @@ class EvolutionCenterViewModel(QObject):
                 self.taskFailed.emit('audit_base_tools', str(exc))
 
         threading.Thread(target=worker, daemon=True).start()
+
+
+    @Slot()
+    def publishControlMasterSignal(self) -> None:
+        """Publish only after the user confirms the public-branch disclosure."""
+        if self._working:
+            return
+        action = self.control_master_signal_publish_action
+        if not callable(action):
+            self._control_master_signal_publish_status = (
+                'La acción de publicación del Control Master no está conectada en esta sesión.'
+            )
+            self.dataChanged.emit()
+            return
+
+        self._working = True
+        self._control_master_signal_publish_status = 'Preparando y validando la señal del Control Master...'
+        self._control_master_signal_publish_result = {}
+        self._status_text = self._control_master_signal_publish_status
+        self.dataChanged.emit()
+
+        def worker() -> None:
+            try:
+                result = action(refresh=False)
+                payload = dict(result) if isinstance(result, Mapping) else {
+                    'status': 'BLOCKED',
+                    'reason': 'PUBLISH_ACTION_RETURNED_INVALID_RESULT',
+                }
+                self.taskResolved.emit('publish_control_master_signal', payload)
+            except Exception as exc:  # pragma: no cover - defensive transport boundary
+                self.taskFailed.emit('publish_control_master_signal', type(exc).__name__)
+
+        threading.Thread(target=worker, daemon=True, name='control-master-signal-publish').start()
 
     @Slot(str, str, str, str, int, bool)
     def publishBranchAsPR(
@@ -946,6 +1035,30 @@ class EvolutionCenterViewModel(QObject):
             self._working = False
             self.dataChanged.emit()
             return
+        if task_name == 'publish_control_master_signal':
+            data = dict(payload) if isinstance(payload, Mapping) else {}
+            self._control_master_signal_publish_result = data
+            status = str(data.get('status') or 'UNKNOWN')
+            branch = str(data.get('branch') or 'control-master-live')
+            if status == 'PUBLISHED':
+                self._control_master_signal_publish_status = (
+                    f'Señal publicada y verificada en {branch}; commit {data.get("commit_sha", "n/d")}.'
+                )
+            elif status == 'PUBLISHED_UNVERIFIED':
+                self._control_master_signal_publish_status = (
+                    f'La publicación en {branch} pudo completarse, pero no se verificó la lectura de retorno '
+                    f'({data.get("reason", "REMOTE_READBACK_FAILED")}); no la trates como confirmada.'
+                )
+            elif status == 'UNCHANGED':
+                self._control_master_signal_publish_status = f'La señal vigente de {branch} no ha cambiado.'
+            else:
+                self._control_master_signal_publish_status = (
+                    f'Publicación bloqueada ({data.get("reason", "UNKNOWN")}).'
+                )
+            self._working = False
+            self._status_text = self._control_master_signal_publish_status
+            self.dataChanged.emit()
+            return
         if task_name == 'audit_base_tools':
             data = dict(payload) if isinstance(payload, Mapping) else {}
             sections = list(data.get('sections') or [])
@@ -965,6 +1078,9 @@ class EvolutionCenterViewModel(QObject):
         if task_name == 'publish_pr':
             self._publish_pr_status = f'No pude publicar el PR: {message}'
             self._publish_pr_result = {'success': False, 'error': message}
+        elif task_name == 'publish_control_master_signal':
+            self._control_master_signal_publish_status = f'No pude publicar la señal: {message}'
+            self._control_master_signal_publish_result = {'status': 'BLOCKED', 'reason': message}
         elif task_name == 'audit_base_tools':
             self._latest_tool_status = f'Error en auditoria base de herramientas: {message}'
         self.dataChanged.emit()
@@ -1013,6 +1129,8 @@ class EvolutionCenterViewModel(QObject):
     latestToolStatus = Property(str, get_latest_tool_status, notify=dataChanged)
     publishPrStatus = Property(str, get_publish_pr_status, notify=dataChanged)
     publishPrResult = Property('QVariant', get_publish_pr_result, notify=dataChanged)
+    controlMasterSignalPublishStatus = Property(str, get_control_master_signal_publish_status, notify=dataChanged)
+    controlMasterSignalPublishResult = Property('QVariant', get_control_master_signal_publish_result, notify=dataChanged)
     selectedDossier = Property(dict, get_selected_dossier, notify=dataChanged)
     selectedIncident = Property(dict, get_selected_incident, notify=dataChanged)
     evidencePreview = Property(str, get_evidence_preview, notify=dataChanged)
