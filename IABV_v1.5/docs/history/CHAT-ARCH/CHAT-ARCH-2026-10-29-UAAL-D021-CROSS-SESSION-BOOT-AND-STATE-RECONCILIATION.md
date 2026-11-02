@@ -185,6 +185,44 @@ WORLD_MODEL_SNAPSHOT = {
 ```
 
 This snapshot does not become another router: `CURRENT-STATE.md` remains the sole owner of `ACTIVE_TASK` and `NEXT_ACTION`. Do not duplicate those fields as competing instructions. Update the model only when a source-bound observation or explicitly classified report changes it; retain unresolved contradictions rather than blending them into a confident narrative.
+### 6A.1 Bounded impact projection across affected tasks and artifacts
+
+The task-local world model must account for material effects beyond the immediate file or action when the proposed change touches a shared method, entrypoint, contract, branch, PR, route, permission or published state. Use a bounded impact projection rather than assuming the immediate task is isolated, but do not turn every action into a full-repository or all-project inventory.
+
+Before a consequential shared-surface change, construct:
+
+```text
+IMPACT_PROJECTION = {
+  owning_project_and_current_objective,
+  parent_objective_and_acceptance,
+  target_task_and_exact_artifact_refs,
+  proposed_action_and_expected_delta,
+  direct_dependents_and_evidence_edges,
+  downstream_consumers_whose_acceptance_may_change,
+  shared_paths_contracts_and_entrypoints,
+  affected_open_candidates_with_exact_refs_and_heads,
+  project_specific_authority_and_memory_boundaries,
+  predicted_effects_of_apply_defer_reject_or_failure,
+  invariants_to_preserve,
+  overlap_and_merge_simulation_status,
+  post_action_revalidation_and_stop_condition
+}
+```
+
+Apply this bounded traversal:
+
+1. **R0 — target:** identify the current Owner objective, the owning project's canonical state, the active task, its acceptance oracle and the exact object/branch/file/contract being changed. `CURRENT-STATE.md` is not a router for other projects.
+2. **R1 — direct impact:** identify only consumers or candidates connected by verifiable evidence: a shared changed path, imported/referenced contract, entrypoint, schema, route/gate, or explicit dependency. For PR/branch operations, inspect open candidates that share changed paths or interfaces; bind their actual refs and HEADs rather than trusting branch names or summaries.
+3. **R2 — consequential downstream impact:** follow an R1 edge only when the proposed state change can alter another task's acceptance, prerequisite, authorization, compatibility or next action. Stop when further traversal cannot materially change the current decision. Record unsupported or inaccessible edges as `UNKNOWN`; do not invent dependencies.
+4. **Project isolation:** a shared method may transfer across projects, but project facts, artifacts, permissions, private state and canonical routers do not. A cross-project impact edge must identify the shared method/contract and the consuming project without importing its private state into the source project.
+5. **Candidate integration:** where branches overlap, compare exact base/head refs and changed-path intersections. Use a merge simulation when available, but distinguish textual conflict/mergeability from semantic preservation. A clean merge simulation is not proof that required invariants survived. For conflicts, name the resolution order, exact invariant, resolved paths and post-resolution diff; if these cannot be verified, keep integration `UNKNOWN` and do not merge.
+6. **Outcome projection:** consider the material success, failure, rejection and blocked branches of the proposed action. State which downstream edges would change, remain blocked or need revalidation. Do not project only the happy path.
+7. **Post-action update:** compare the observed result with the projection, update only affected task/objective nodes and their owning records, and preserve links to the evidence. Do not rewrite unrelated project state or trigger automatic follow-on work.
+
+Use evidence classes on each material edge: `VERIFIED_SOURCE_LINK`, `ACTOR_REPORTED`, `INFERENCE` or `UNKNOWN`. Shared filenames alone can establish a review/integration candidate, not semantic dependency or correctness. A stale Control Master snapshot is not a live objective/priority edge; record its freshness and use only a source-bound live signal when an authorized read surface exists.
+
+**Acceptance criterion:** before a shared-surface action, the coordinator can name the target, evidence-backed direct dependents, any consequential downstream consumers, project-specific boundaries, integration risks, and the exact post-action checks—or explicitly record the missing edge as `UNKNOWN` with a stop condition. This is a complete decision-relevant impact envelope, not a claim of omniscience or a requirement to scan the entire repository. It does not create a second portfolio/router, override `CURRENT-STATE.md`, promote a Control Master signal to authority, or authorize any blocked action.
+
 
 ## 6B. Adjudicate incoming results before preparing another handoff
 
