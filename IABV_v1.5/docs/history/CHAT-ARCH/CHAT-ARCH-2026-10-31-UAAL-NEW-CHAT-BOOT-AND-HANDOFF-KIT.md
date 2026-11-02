@@ -141,7 +141,7 @@ For an external review or execution task, apply D021 §6E.6A whenever the recipi
 
 - `RECIPIENT_LIVE_FETCH` is verified only when the receiver independently fetches the exact live base/head/source and reports the observed revisions and source coverage.
 - `ATTACHED_PACKAGE` requires the actual package bytes to be present in the outgoing message, not merely a URL, PR link, filename or instruction to download/attach it.
-- Before marking an attachment verified, check that it is visibly attached in the sending surface and record its filename, format, source identity and digest when available.
+- Before marking an attachment verified, check that it is visibly attached in the sending surface and record its filename, format, source identity and digest when available. If the sender cannot expose the sending surface and only reports the attachment, record `ATTACHED_REPORTED` with `OWNER_REPORTED` / `ACTOR_REPORTED` provenance; do not promote it to direct verification.
 - Require a receiver acknowledgement that confirms it can open/read the package and echoes enough identity data to correlate it. A generic acknowledgement is not enough.
 - A coordinator-exported or Owner-supplied patch supports a bounded static review only. Do not call it independent live retrieval; preserve `SOURCE_IDENTITY_VERIFICATION=COORDINATOR_ATTESTED` or `OWNER_ATTESTED` and `REVIEW_CLASS=BOUNDED_STATIC_PACKAGE`.
 - If source bytes, identity, attachment or receiver acknowledgement are missing, keep `PROMPT_PREPARED` / `HANDOFF_BLOCKED`, set substantive review/execution to `NOT_RUN`, and stop. Do not repeat a prompt that cannot change the missing precondition.
@@ -182,14 +182,15 @@ TARGET_SESSION_MODE=NEW_SEPARATE | CONTINUED | EXISTING_EXECUTOR
 CONTEXT_SEPARATION_REQUIREMENT=
 REQUIRED_SOURCE_ACCESS_AND_EXACT_REFS=
 SOURCE_PACKAGE_REQUIRED=YES|NO
+SOURCE_PACKAGE_STATUS=NOT_REQUIRED|IDENTIFIED|BYTES_PRESENT|IDENTITY_VERIFIED|BLOCKED
 SOURCE_ACQUISITION_METHOD=RECIPIENT_LIVE_FETCH|ATTACHED_PACKAGE|OWNER_SUPPLIED_PACKAGE|LINK_ONLY|UNKNOWN
 SOURCE_PACKAGE_FILENAME_FORMAT_AND_IDENTITY=
 SOURCE_PACKAGE_DIGEST=SHA256_OR_GIT_BLOB_SHA_OR_NOT_AVAILABLE
-OUTBOUND_ATTACHMENT_STATUS=NOT_REQUIRED|NOT_ATTACHED|ATTACHED_VERIFIED|UNKNOWN
+OUTBOUND_ATTACHMENT_STATUS=NOT_REQUIRED|NOT_ATTACHED|ATTACHED_VERIFIED|ATTACHED_REPORTED|UNKNOWN
 RECEIVER_ATTACHMENT_ACK=NOT_REQUIRED|PENDING|VERIFIED|FAILED
 SOURCE_IDENTITY_VERIFICATION=RECIPIENT_LIVE_VERIFIED|COORDINATOR_ATTESTED|OWNER_ATTESTED|UNVERIFIED
 SOURCE_COVERAGE=COMPLETE|PARTIAL|NOT_ASSESSED
-REVIEW_CLASS=INDEPENDENT_LIVE|BOUNDED_STATIC_PACKAGE|NOT_RUN
+REVIEW_CLASS=INDEPENDENT_LIVE|BOUNDED_STATIC_PACKAGE|NOT_RUN|NOT_APPLICABLE
 PARENT_OBJECTIVE=
 PROJECT_ID=
 TASK_ID=
@@ -252,7 +253,7 @@ SOURCE_PACKAGE_DIGEST_AND_COVERAGE=
 OUTBOUND_ATTACHMENT_STATUS=
 RECEIVER_ATTACHMENT_ACK=
 SOURCE_IDENTITY_VERIFICATION=
-REVIEW_CLASS=INDEPENDENT_LIVE|BOUNDED_STATIC_PACKAGE|NOT_RUN
+REVIEW_CLASS=INDEPENDENT_LIVE|BOUNDED_STATIC_PACKAGE|NOT_RUN|NOT_APPLICABLE
 MEMORY_RETRIEVED=VERIFIED | PARTIAL | NOT_RETRIEVED
 METHOD_ACTIVATED=VERIFIED | PARTIAL | NOT_VERIFIED
 METHOD_APPLIED=VERIFIED | PARTIAL | NOT_VERIFIED
