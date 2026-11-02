@@ -217,11 +217,39 @@ Apply this bounded traversal:
 4. **Project isolation:** a shared method may transfer across projects, but project facts, artifacts, permissions, private state and canonical routers do not. A cross-project impact edge must identify the shared method/contract and the consuming project without importing its private state into the source project.
 5. **Candidate integration:** where branches overlap, compare exact base/head refs and changed-path intersections. Use a merge simulation when available, but distinguish textual conflict/mergeability from semantic preservation. A clean merge simulation is not proof that required invariants survived. For conflicts, name the resolution order, exact invariant, resolved paths and post-resolution diff; if these cannot be verified, keep integration `UNKNOWN` and do not merge.
 6. **Outcome projection:** consider the material success, failure, rejection and blocked branches of the proposed action. State which downstream edges would change, remain blocked or need revalidation. Do not project only the happy path.
-7. **Post-action update:** compare the observed result with the projection, update only affected task/objective nodes and their owning records, and preserve links to the evidence. Do not rewrite unrelated project state or trigger automatic follow-on work.
+7. **Post-action update and artifact integrity:** compare the observed result with the projection, update only affected task/objective nodes and their owning records, and preserve links to the evidence. For every modified structured document or contract, re-fetch the exact final blob and verify both byte identity and semantic structure: balanced Markdown fences, intact headings/paragraph boundaries, all declared receipt/schema fields still present, every field referenced by later prose defined, and no accidental deletion or concatenation at edit boundaries. For source/schema changes, use the applicable parser/schema checks when authorized; do not claim tests when only static checks ran. Do not rewrite unrelated project state or trigger automatic follow-on work.
 
 Use evidence classes on each material edge: `VERIFIED_SOURCE_LINK`, `ACTOR_REPORTED`, `INFERENCE` or `UNKNOWN`. Shared filenames alone can establish a review/integration candidate, not semantic dependency or correctness. A stale Control Master snapshot is not a live objective/priority edge; record its freshness and use only a source-bound live signal when an authorized read surface exists.
 
-**Acceptance criterion:** before a shared-surface action, the coordinator can name the target, evidence-backed direct dependents, any consequential downstream consumers, project-specific boundaries, integration risks, and the exact post-action checks—or explicitly record the missing edge as `UNKNOWN` with a stop condition. This is a complete decision-relevant impact envelope, not a claim of omniscience or a requirement to scan the entire repository. It does not create a second portfolio/router, override `CURRENT-STATE.md`, promote a Control Master signal to authority, or authorize any blocked action.
+### Minimum evidence for a non-vacuous impact projection
+
+`UNKNOWN` is an evidence classification, not a substitute for performing the bounded discovery required by the task. Before treating the impact gate as complete for a consequential shared-surface action, record an `IMPACT_DISCOVERY_RECEIPT`:
+
+```text
+IMPACT_DISCOVERY_RECEIPT = {
+  target_base_head_and_changed_paths,
+  direct_source_or_contract_refs_inspected,
+  bounded_reference_searches_and_scope,
+  open_related_candidates_checked_when_PR_OR_BRANCH_IS_TOUCHED,
+  results_and_observation_time_for_each_attempt,
+  identified_dependents_and_evidence_links,
+  unavailable_or_denied_sources_and_exact_reason,
+  unresolved_edges_and_why_they_remain_unknown,
+  R2_FOLLOWED_OR_STOPPED_WITH_CAUSAL_REASON
+}
+```
+
+Minimum bounded attempt:
+- Inspect the exact target diff and relevant owning contract/entrypoint.
+- For each shared path or contract, make one bounded check for direct consumers using the available authorized repository search/reference mechanism, or record that this mechanism is unavailable/denied with evidence.
+- When a PR/branch is touched, inspect open PRs sharing changed paths or an explicit interface using available PR metadata/search; if no such query is available, record the exact limitation.
+- Follow R2 only where an R1 dependency can materially affect another task's acceptance, prerequisite, authority, compatibility or next action.
+
+A generic statement such as "not inspected", "insufficient context" or "unknown; stop" without the bounded attempts and source/capability reason is `IMPACT_GATE=INCOMPLETE`, not acceptance. If an essential direct-dependency source is unavailable or denied, record `CAPABILITY_UNAVAILABLE` or `ACCESS_DENIED` and stop the consequential shared-surface mutation until that dependency is bounded. Do not convert missing evidence into `EMPTY` or `NO_DEPENDENTS`.
+
+For IABV, re-read the live canonical `CURRENT-STATE.md` and carry forward its currently applicable Option D, M1A/G1-G3 and other authorization/fail-closed constraints when relevant to the target. This section does not hard-code old gate values, change those gates, or authorize an action; only the live canonical route does. For other projects, use their own canonical state and permissions.
+
+**Acceptance criterion:** before a shared-surface action, the coordinator must complete and record the minimum bounded attempts above, name evidence-backed direct dependents and consequential downstream consumers, preserve project-specific boundaries and applicable gates, identify integration risks, and define exact post-action checks. Any remaining `UNKNOWN` must name the exact attempted sources, missing discriminator and stop consequence. This is a complete decision-relevant impact envelope, not a claim of omniscience or a requirement to scan the entire repository. It does not create a second portfolio/router, override `CURRENT-STATE.md`, promote a Control Master signal to authority, or authorize any blocked action.
 
 
 ## 6B. Adjudicate incoming results before preparing another handoff
@@ -306,6 +334,8 @@ REVIEW_CONTEXT_SEPARATION_RECEIPT = {
   REVIEWER_SESSION_IS_NEW_FOR_THIS_REVIEW,
   REVIEW_CONTEXT_CONTINUITY: NEW_SEPARATE_SESSION | CONTINUED_SAME_CONVERSATION,
   CANDIDATE_SPECIFIC_PRIOR_CONTEXT_EXPOSED: YES | NO | UNKNOWN,
+  SAME_CANDIDATE_METADATA_EXPOSED: NONE | PR_TITLE_BRANCH_SHA_CHANGED_PATHS_ONLY | NON_EVALUATIVE_COMMIT_SUBJECTS | AUTHOR_DESCRIPTION_OR_COMMIT_RATIONALE | MIXED | UNKNOWN,
+  AUTHOR_EVALUATIVE_CLAIMS_EXPOSED: YES | NO | UNKNOWN,
   RELATED_CANDIDATE_CONTEXT_EXPOSED: NONE | METADATA_ONLY | FINDINGS_OR_RATIONALE | UNKNOWN,
   REVIEWER_AUTHORED_OR_EDITED_CANDIDATE,
   PRIOR_AUTHORING_TRANSCRIPT_EXPOSED,
@@ -316,7 +346,13 @@ REVIEW_CONTEXT_SEPARATION_RECEIPT = {
   BASE_SHA_AND_CANDIDATE_HEAD,
   CONTEXT_SEPARATION: PASS | LIMITED | BLOCKED,
   SOURCE_ACQUISITION_METHOD: INDEPENDENT_LIVE_RETRIEVAL | COORDINATOR_EXPORTED_PINNED_DIFF | USER_SUPPLIED_SOURCE | OTHER,
-  SOURCE_IDENTITClassify carefully:
+  SOURCE_IDENTITY_VERIFICATION: REVIEWER_VERIFIED | COORDINATOR_ATTESTED | USER_ATTESTED | UNVERIFIED,
+  SOURCE_COVERAGE: FULL_BASE_HEAD_DIFF | PINNED_DIFF_WITH_HUNKS | PARTIAL_SOURCE | UNKNOWN,
+  SOURCE_RETRIEVAL_STATUS: PASS | LIMITED | BLOCKED
+}
+```
+
+Classify carefully:
 
 1. `PASS`: the reviewer is not the author/editor; the review runs in a new, separate task context; and no prior candidate-specific analysis or verdict was exposed. Generic method/policy knowledge and the candidate's canonical source files remain permissible. Source acquisition is assessed separately below.
 
@@ -335,7 +371,12 @@ REVIEW_CONTEXT_SEPARATION_RECEIPT = {
    
    Record the acquisition method, identity-verification actor/status and source coverage in the receipt fields above. A clean reviewer context can therefore be `CONTEXT_SEPARATION=PASS` while `SOURCE_RETRIEVAL_STATUS=LIMITED`; these are not contradictory.
 
-5. When reviewing multiple related PRs or candidates that share files/contracts, separate two phases:
+5. Same-candidate metadata exposure must be classified by content, not merely by whether it came from GitHub:
+   - `PR_TITLE_BRANCH_SHA_CHANGED_PATHS_ONLY` and `NON_EVALUATIVE_COMMIT_SUBJECTS` are `METADATA_ONLY`. If these are the only prior exposure and no candidate-specific findings/rationale were seen, classify context as `LIMITED`, not `BLOCKED`; record the exposure and do not call the review fully blinded.
+   - A PR description, commit body, review comment or author note that contains design rationale, favorable/unfavorable evaluation, asserted findings, proposed fixes, risk interpretation or acceptance claims is `AUTHOR_DESCRIPTION_OR_COMMIT_RATIONALE` and `AUTHOR_EVALUATIVE_CLAIMS_EXPOSED=YES`. For a review advertised as blinded/adversarial, classify `BLOCKED` and use a reviewer context that has not received those claims. Do not re-label author-authored rationale as harmless metadata.
+   - If only part of a description/message was seen, classify the actual exposed content. If the content cannot be reconstructed, use `UNKNOWN`; do not assume it was metadata-only. A transparently non-blinded supplemental review may still be useful, but it must not satisfy the blinded independent-review gate.
+
+6. When reviewing multiple related PRs or candidates that share files/contracts, separate two phases:
    - `CANDIDATE_INTERNAL_REVIEW`: inspect this candidate's own exact base-to-HEAD diff and acceptance criteria before relying on another PR's conclusions.
    - `CROSS_CANDIDATE_INTEGRATION_REVIEW`: inspect live related PR refs, changed-path intersections, shared invariants and merge simulation after the standalone review, or label the phase as limited if related findings were already exposed.
    
