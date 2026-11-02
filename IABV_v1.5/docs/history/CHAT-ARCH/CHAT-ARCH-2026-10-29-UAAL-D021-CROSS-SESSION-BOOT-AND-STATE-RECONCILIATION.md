@@ -881,3 +881,22 @@ This is a documentation/control-plane repair only. It does not create trust root
 **Protocol correction:** the coordinator must recover the Owner-input ledger and prior setup facts before asking anything; interpret app UI observations narrowly; select the authoritative read-only evidence surface; and ask for only the single unresolved observation that changes the next action. Never transfer a known investigation step back to the Owner as an open-ended request to diagnose or design the security mechanism.
 
 **Source basis:** current Microsoft documentation for [Security Info](https://mysignins.microsoft.com/security-info), [Authentication Methods Activity](https://learn.microsoft.com/entra/identity/authentication/howto-authentication-methods-activity), and [Passkeys (FIDO2)](https://learn.microsoft.com/entra/identity/authentication/how-to-authentication-passkeys-fido2), checked 2026-11-02. This subsection is a branch-only coordination correction; it does not alter canonical `main`, provision credentials, authorize tenant-policy changes, establish G1, or enable protected reads.
+
+#### 6D.5E.1 Exact Security Info inventory (2026-11-02; Owner-reported)
+
+The Owner inspected the existing Security info page for the already-created `IABV Owner` account and reported the visible methods:
+- `Password`.
+- `Microsoft Authenticator — MFA` (the page's registration label identifies the notification/code MFA registration).
+
+No `Passkey (FIDO2)` entry was visible in the reported inventory. Classify:
+- `SECURITY_INFO_PASSWORD=OWNER_REPORTED_VISIBLE`.
+- `SECURITY_INFO_AUTHENTICATOR_MFA=OWNER_REPORTED_VISIBLE`.
+- `SECURITY_INFO_PASSKEY_FIDO2=NOT_OBSERVED_IN_REPORTED_INVENTORY`.
+- `ENTRA_REGISTERED_FIDO2=UNKNOWN` pending authoritative tenant-side verification; do not overstate the portal observation as proof that no credential exists anywhere.
+- `OWNER_IDENTITY_MFA=OWNER_REPORTED_READY`; `OWNER_DECISION_SIGNATURE=NOT_ESTABLISHED`; `G1=NOT_ESTABLISHED`.
+
+**Next single bounded observation:** the Owner may open `Add sign-in method` only to view the offered method names, then cancel/close without selecting, registering, deleting or changing anything. Record whether `Passkey` / `Passkey (FIDO2)` is offered. If it is offered, stop before registration; assess the exact method type and allowed passkey provider first. If it is not offered, do not assume the user can enable it from Security info: tenant-side Passkey (FIDO2) policy and targeting may need an appropriately authorized Authentication Policy Administrator. Do not instruct the Owner to enable policy, opt into passkey profiles, modify Conditional Access, or register a credential under the current no-bootstrap boundary.
+
+**Important interpretation:** Microsoft documents that the Security info registration label `Microsoft Authenticator: (Notification/Code)` represents an MFA registration, distinct from `Microsoft Authenticator: Passwordless phone sign-in`. Neither label is equivalent to an Entra `Passkey (FIDO2)` credential. The current Owner-reported screen therefore confirms Authenticator MFA, not FIDO2 or a digital signature.
+
+**Microsoft source basis checked 2026-11-02:** [Authenticator registration types](https://learn.microsoft.com/en-us/entra/identity/authentication/concept-authentication-authenticator-app); [register a FIDO2 passkey with a security key](https://learn.microsoft.com/en-us/entra/identity/authentication/how-to-register-passkey-with-security-key); [enable Passkey (FIDO2) policy](https://learn.microsoft.com/en-us/entra/identity/authentication/how-to-authentication-passkeys-fido2). This is a branch-only continuity update. It does not change canonical `main`, configure Entra policy, create credentials, satisfy G1, or authorize protected reads.
