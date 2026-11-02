@@ -345,8 +345,8 @@ REVIEW_CONTEXT_SEPARATION_RECEIPT = {
   PROHIBITED_INPUTS_CHECKED,
   BASE_SHA_AND_CANDIDATE_HEAD,
   CONTEXT_SEPARATION: PASS | LIMITED | BLOCKED,
-  SOURCE_ACQUISITION_METHOD: INDEPENDENT_LIVE_RETRIEVAL | COORDINATOR_EXPORTED_PINNED_DIFF | USER_SUPPLIED_SOURCE | OTHER,
-  SOURCE_IDENTITY_VERIFICATION: REVIEWER_VERIFIED | COORDINATOR_ATTESTED | USER_ATTESTED | UNVERIFIED,
+  SOURCE_ACQUISITION_METHOD: RECIPIENT_LIVE_FETCH | ATTACHED_PACKAGE | OWNER_SUPPLIED_PACKAGE | COORDINATOR_EXPORTED_PACKAGE | OTHER | UNKNOWN,
+  SOURCE_IDENTITY_VERIFICATION: RECIPIENT_LIVE_VERIFIED | COORDINATOR_ATTESTED | OWNER_ATTESTED | ACTOR_ATTESTED | UNVERIFIED,
   SOURCE_COVERAGE: FULL_BASE_HEAD_DIFF | PINNED_DIFF_WITH_HUNKS | PARTIAL_SOURCE | UNKNOWN,
   SOURCE_RETRIEVAL_STATUS: PASS | LIMITED | BLOCKED
 }
@@ -525,15 +525,21 @@ TARGET_SESSION_MODE=NEW_SEPARATE | CONTINUED | EXISTING_EXECUTOR
 CONTEXT_SEPARATION_REQUIREMENT=
 REQUIRED_SOURCE_ACCESS_AND_EXACT_REFS=
 SOURCE_PACKAGE_REQUIRED=YES|NO
-SOURCE_PACKAGE_STATUS=NOT_REQUIRED|IDENTIFIED|BYTES_PRESENT|IDENTITY_VERIFIED|BLOCKED
-SOURCE_ACQUISITION_METHOD=RECIPIENT_LIVE_FETCH|ATTACHED_PACKAGE|OWNER_SUPPLIED_PACKAGE|LINK_ONLY|UNKNOWN
+SOURCE_PACKAGE_STATUS=NOT_REQUIRED|IDENTIFIED|BYTES_PRESENT|IDENTITY_VERIFIED|PARTIAL|LINK_ONLY|UNAVAILABLE|MISMATCH|BLOCKED|UNKNOWN
+SOURCE_ACQUISITION_METHOD=RECIPIENT_LIVE_FETCH|ATTACHED_PACKAGE|OWNER_SUPPLIED_PACKAGE|COORDINATOR_EXPORTED_PACKAGE|UNKNOWN
+SOURCE_PACKAGE_PRODUCER=ACTOR_OR_ROLE
 SOURCE_PACKAGE_FILENAME_AND_FORMAT=
 SOURCE_PACKAGE_IDENTITY=REPOSITORY|BASE_SHA|HEAD_SHA|PATHS|REVISION
-SOURCE_PACKAGE_DIGEST=SHA256_OR_GIT_BLOB_SHA_OR_NOT_AVAILABLE
+SOURCE_PACKAGE_DIGEST=SHA256:<64_HEX>|GIT_BLOB_SHA:<40_HEX>|NOT_AVAILABLE
+SOURCE_PACKAGE_DIGEST_BASIS=EXACT_PACKAGE_BYTES|RAW_LIVE_RESPONSE_BYTES|RECOMPUTED_GIT_BLOB|NOT_AVAILABLE
+RECEIVER_FILE_DERIVED_EVIDENCE=
+RECEIVER_EVIDENCE_PROVENANCE=FILE_DERIVED|API_METADATA_DERIVED|PROMPT_COPIED|ACTOR_ATTESTED|COORDINATOR_ATTESTED|OWNER_ATTESTED
 OUTBOUND_ATTACHMENT_STATUS=NOT_REQUIRED|NOT_ATTACHED|ATTACHED_VERIFIED|ATTACHED_REPORTED|UNKNOWN
-RECEIVER_ATTACHMENT_ACK=NOT_REQUIRED|PENDING|VERIFIED|FAILED
-SOURCE_IDENTITY_VERIFICATION=RECIPIENT_LIVE_VERIFIED|COORDINATOR_ATTESTED|OWNER_ATTESTED|UNVERIFIED
+RECEIVER_ATTACHMENT_ACK=NOT_REQUIRED|PENDING|VERIFIED|FAILED|MISMATCH
+RECEIVER_SOURCE_ACK=NOT_REQUIRED|PENDING|VERIFIED|FAILED|MISMATCH
+SOURCE_IDENTITY_VERIFICATION=RECIPIENT_LIVE_VERIFIED|COORDINATOR_ATTESTED|OWNER_ATTESTED|ACTOR_ATTESTED|UNVERIFIED
 SOURCE_COVERAGE=COMPLETE|PARTIAL|NOT_ASSESSED
+CONTEXT_SEPARATION=PASS|LIMITED|BLOCKED|NOT_ASSESSED
 REVIEW_CLASS=INDEPENDENT_LIVE|BOUNDED_STATIC_PACKAGE|NOT_RUN|NOT_APPLICABLE
 PARENT_OBJECTIVE=
 PROJECT_ID=
@@ -725,58 +731,68 @@ SOURCE_IDENTIFIED -> ARTIFACT_RETRIEVED -> REVISION_VERIFIED -> CONTEXT_AVAILABL
 - A verified outcome and canonical fetch-back are separate from receipt/application.
 - Never claim automatic delivery, automatic boot, model-weight learning, or cross-vendor synchronization from Project membership, a commit or a link.
 
-### 6E.6A Source-package integrity and recipient attachment acknowledgement
+### 6E.6A Source-package integrity and recipient acknowledgement
 
-The sender/receiver chain in §6E.6 is not complete merely because a prompt contains a URL or says “attach the patch.” When a task depends on a package, patch, diff, archive or document that the recipient cannot independently retrieve through an available authorized source, use this explicit sub-gate before substantive review or execution.
+A prompt, URL or PR link is not a source package. Apply this gate whenever substantive review/execution depends on source bytes. Keep acquisition methods separate from failure states.
 
-**Source-acquisition routes are distinct:**
+**Methods:** RECIPIENT_LIVE_FETCH, ATTACHED_PACKAGE, OWNER_SUPPLIED_PACKAGE, COORDINATOR_EXPORTED_PACKAGE or UNKNOWN. A URL without successful retrieval or actual bytes is SOURCE_PACKAGE_STATUS=LINK_ONLY, not an acquisition method.
 
-- `RECIPIENT_LIVE_FETCH`: the receiving actor independently retrieves the exact repository/ref/commit and verifies the relevant bytes in its own authorized session.
-- `ATTACHED_PACKAGE`: the recipient receives the actual bytes as an attachment, not merely a URL or instruction to download them. Record who produced the package and the provenance available to the receiver.
-- `OWNER_SUPPLIED_PACKAGE`: the Owner supplies the actual file; treat its source identity as unverified until the recipient compares its manifest/content with the stated canonical revision.
-- `LINK_ONLY`: a URL is present but no successful recipient retrieval or actual attachment has been observed. This is availability, not retrieval.
-- `UNKNOWN`: the acquisition route cannot be established.
+**Route A — recipient live-fetch:**
 
-When a package is required, track this ordered state:
+SOURCE_PACKAGE_IDENTIFIED -> RECIPIENT_LIVE_FETCHED -> PACKAGE_BYTES_PRESENT -> PACKAGE_IDENTITY_AND_SCOPE_VERIFIED -> RECEIVER_SOURCE_ACK=VERIFIED -> SUBSTANTIVE_ACTION_ALLOWED
 
-```text
-SOURCE_PACKAGE_IDENTIFIED
-  -> PACKAGE_BYTES_PRESENT
-  -> PACKAGE_IDENTITY_AND_SCOPE_VERIFIED
-  -> OUTBOUND_ATTACHMENT_VERIFIED
-  -> RECEIVER_ATTACHMENT_ACKNOWLEDGED
-  -> SUBSTANTIVE_ACTION_ALLOWED
-```
+For this route set OUTBOUND_ATTACHMENT_STATUS=NOT_REQUIRED and RECEIVER_ATTACHMENT_ACK=NOT_REQUIRED. Attachment verification is skipped; independent live retrieval and source acknowledgement are required.
 
-The handoff must record at least:
+**Route B — actual package transfer:**
 
-```text
+SOURCE_PACKAGE_IDENTIFIED -> PACKAGE_BYTES_PRESENT -> PACKAGE_IDENTITY_AND_SCOPE_VERIFIED -> OUTBOUND_ATTACHMENT_STATUS=ATTACHED_VERIFIED or ATTACHED_REPORTED -> RECEIVER_ATTACHMENT_ACK=VERIFIED -> RECEIVER_SOURCE_ACK=VERIFIED -> SUBSTANTIVE_ACTION_ALLOWED
+
+ATTACHED_VERIFIED requires direct sender observation of the actual attachment in the outbound surface. If the sender cannot observe that surface, preserve ATTACHED_REPORTED with OWNER_REPORTED or ACTOR_REPORTED provenance. A receiver acknowledgement can verify receipt/readability but never retroactively upgrades sender-side ATTACHED_REPORTED.
+
+**Minimum correlated receipt:**
+
+~~~text
 SOURCE_PACKAGE_REQUIRED=YES|NO
-SOURCE_ACQUISITION_METHOD=RECIPIENT_LIVE_FETCH|ATTACHED_PACKAGE|OWNER_SUPPLIED_PACKAGE|LINK_ONLY|UNKNOWN
+SOURCE_PACKAGE_STATUS=NOT_REQUIRED|IDENTIFIED|BYTES_PRESENT|IDENTITY_VERIFIED|PARTIAL|LINK_ONLY|UNAVAILABLE|MISMATCH|BLOCKED|UNKNOWN
+SOURCE_ACQUISITION_METHOD=RECIPIENT_LIVE_FETCH|ATTACHED_PACKAGE|OWNER_SUPPLIED_PACKAGE|COORDINATOR_EXPORTED_PACKAGE|UNKNOWN
+SOURCE_PACKAGE_PRODUCER=ACTOR_OR_ROLE
 SOURCE_PACKAGE_FILENAME_AND_FORMAT=
 SOURCE_PACKAGE_IDENTITY=REPOSITORY|BASE_SHA|HEAD_SHA|PATHS|REVISION
-SOURCE_PACKAGE_DIGEST=SHA256_OR_GIT_BLOB_SHA_OR_NOT_AVAILABLE
-SOURCE_PACKAGE_STATUS=NOT_REQUIRED|IDENTIFIED|BYTES_PRESENT|IDENTITY_VERIFIED|BLOCKED
+SOURCE_PACKAGE_DIGEST=SHA256:<64_HEX>|GIT_BLOB_SHA:<40_HEX>|NOT_AVAILABLE
+SOURCE_PACKAGE_DIGEST_BASIS=EXACT_PACKAGE_BYTES|RAW_LIVE_RESPONSE_BYTES|RECOMPUTED_GIT_BLOB|NOT_AVAILABLE
+RECEIVER_FILE_DERIVED_EVIDENCE=
+RECEIVER_EVIDENCE_PROVENANCE=FILE_DERIVED|API_METADATA_DERIVED|PROMPT_COPIED|ACTOR_ATTESTED|COORDINATOR_ATTESTED|OWNER_ATTESTED
 OUTBOUND_ATTACHMENT_STATUS=NOT_REQUIRED|NOT_ATTACHED|ATTACHED_VERIFIED|ATTACHED_REPORTED|UNKNOWN
-RECEIVER_ATTACHMENT_ACK=NOT_REQUIRED|PENDING|VERIFIED|FAILED
-SOURCE_IDENTITY_VERIFICATION=RECIPIENT_LIVE_VERIFIED|COORDINATOR_ATTESTED|OWNER_ATTESTED|UNVERIFIED
+RECEIVER_ATTACHMENT_ACK=NOT_REQUIRED|PENDING|VERIFIED|FAILED|MISMATCH
+RECEIVER_SOURCE_ACK=NOT_REQUIRED|PENDING|VERIFIED|FAILED|MISMATCH
+SOURCE_IDENTITY_VERIFICATION=RECIPIENT_LIVE_VERIFIED|COORDINATOR_ATTESTED|OWNER_ATTESTED|ACTOR_ATTESTED|UNVERIFIED
 SOURCE_COVERAGE=COMPLETE|PARTIAL|NOT_ASSESSED
+CONTEXT_SEPARATION=PASS|LIMITED|BLOCKED|NOT_ASSESSED
 REVIEW_CLASS=INDEPENDENT_LIVE|BOUNDED_STATIC_PACKAGE|NOT_RUN|NOT_APPLICABLE
-```
+~~~
 
-**Hard stop rules:**
+**Byte-derived receiver evidence is mandatory:**
 
-1. A prompt, URL, browser link, PR number, filename or request to attach a file does not prove that package bytes exist in the sending surface or are attached to the outbound message.
-2. `OUTBOUND_ATTACHMENT_STATUS=ATTACHED_VERIFIED` requires the actual attachment to be visible/confirmed in the sending surface. Do not infer it from instructions or a download URL.
-   If the sender can only report that it attached the file and the coordinator cannot observe the sending surface, use `ATTACHED_REPORTED` and preserve `OWNER_REPORTED` / `ACTOR_REPORTED` provenance until the receiver's correlated acknowledgement arrives.
-3. `RECEIVER_ATTACHMENT_ACK=VERIFIED` requires the receiver to confirm that it can open/read the actual package and to echo enough identity data to correlate it (for example filename, base SHA, head SHA and changed-path count). A generic “got it” is insufficient.
-4. If a package is required and absent, unreadable, unverified or unacknowledged, keep `PROMPT_PREPARED` or `HANDOFF_BLOCKED`; substantive review/execution is `NOT_RUN`. Do not fill a review receipt, infer PASS/FAIL, or tell the Owner the handoff is ready.
-5. A coordinator-exported or Owner-supplied diff/patch can support a bounded static assessment after its bytes and scope are verified. It does **not** become independent live source retrieval merely because a second model reads it. Use `REVIEW_CLASS=BOUNDED_STATIC_PACKAGE` and `SOURCE_IDENTITY_VERIFICATION=COORDINATOR_ATTESTED` or `OWNER_ATTESTED` unless the receiver independently fetches and verifies the live source.
-6. Claim `REVIEW_CLASS=INDEPENDENT_LIVE` only when reviewer-context separation is satisfied under §6B.2 **and** the recipient independently verifies the exact live base, head, diff/source coverage. Context independence and source independence are separate dimensions.
-7. If no direct cross-product send/attach action exists, say so and keep the state at the last evidenced stage. The Owner may perform one exact attachment step only after the coordinator has made the exact package available and identified it; do not make the Owner reconstruct, generate or diagnose the package.
-8. Do not retry the same failed source route without a material capability/evidence change. A repeated prompt without the missing bytes or retrieval capability is `SAME_EXPERIMENT` under D019/D020.
+- For IDENTITY_VERIFIED or RECEIVER_SOURCE_ACK=VERIFIED, report at least one value derived from exact bytes actually retrieved/opened. Prefer SHA-256 of the exact package bytes; for live API retrieval, hash the raw response body containing the patch/file bytes, not the separate PR metadata response. A Git blob SHA counts only if recomputed from received file bytes.
+- If a digest cannot be computed, identify a named hunk header and path-level additions/deletions recalculated from the received diff text; state the exact path and label the result FILE_DERIVED.
+- Label evidence FILE_DERIVED, API_METADATA_DERIVED or PROMPT_COPIED. Base/head SHAs, filenames or changed-path counts copied from the prompt are PROMPT_COPIED and do not prove file reading. API metadata alone does not substitute for FILE_DERIVED evidence.
+- SOURCE_IDENTITY_VERIFICATION=RECIPIENT_LIVE_VERIFIED requires matching live base/head/revision and claimed path scope, plus correlated FILE_DERIVED evidence. Without it, use ACTOR_ATTESTED, COORDINATOR_ATTESTED or OWNER_ATTESTED as applicable.
+- RECEIVER_ATTACHMENT_ACK=VERIFIED requires confirmation that the actual received bytes open/read and a correlated byte-derived value; a generic acknowledgement or copied SHA is insufficient.
 
-A recipient that reports “no file attached” has supplied a valid transport-failure observation, not a source review. Record `RECEIVER_ATTACHMENT_ACK=FAILED`, `SUBSTANTIVE_REVIEW=NOT_RUN`, and the exact missing package. Resume only after a material source-acquisition change.
+**Stop and scope rules:**
+
+1. A URL, PR number, filename or instruction to attach a file does not prove package bytes were retrieved/received.
+2. A sender report alone is ATTACHED_REPORTED; it is never ATTACHED_VERIFIED.
+3. Use RECEIVER_SOURCE_ACK=MISMATCH or RECEIVER_ATTACHMENT_ACK=MISMATCH when bytes, revision, manifest or claimed scope disagree; use FAILED when required bytes are absent/unreadable.
+4. If bytes are absent, unreadable, unverified, unacknowledged, mismatched or incomplete for the claimed scope, substantive review/execution of that scope is NOT_RUN. Set the matching SOURCE_PACKAGE_STATUS and preserve unexamined dimensions as NOT_ASSESSED. A narrower review is permitted only when its scope is stated in advance and coverage is COMPLETE for that narrower scope; it cannot support a verdict on omitted material or the whole PR.
+5. SOURCE_COVERAGE=PARTIAL or NOT_ASSESSED for a claimed full-PR review prohibits a PR-wide PASS/FAIL or merge-readiness claim.
+6. Coordinator-exported or Owner-supplied packages support BOUNDED_STATIC_PACKAGE only after bytes, identity and scope are verified. Preserve COORDINATOR_ATTESTED/OWNER_ATTESTED unless the receiver independently verifies live canonical source.
+7. INDEPENDENT_LIVE requires both §6B.2 context separation and independently verified exact live base, head, bytes and coverage. CONTEXT_SEPARATION=LIMITED must remain visible and is not fully blinded. CONTEXT_SEPARATION=BLOCKED requires SUBSTANTIVE_REVIEW=NOT_RUN.
+8. For RECIPIENT_LIVE_FETCH, both attachment fields are NOT_REQUIRED. For transfer routes, a byte-derived receiver acknowledgement may establish receipt/readability while sender-side ATTACHED_REPORTED remains unchanged.
+9. If no cross-product send/attach action exists, report the last evidenced stage. Do not ask the Owner to reconstruct or generate an artifact that authorized repository tools can retrieve.
+10. Do not repeat a failed route without a material capability/evidence change; the repeated attempt is SAME_EXPERIMENT under D019/D020.
+
+A recipient reporting “no file attached” supplies a transport-failure observation, not a source review: RECEIVER_ATTACHMENT_ACK=FAILED, RECEIVER_SOURCE_ACK=FAILED, SUBSTANTIVE_REVIEW=NOT_RUN. Resume only after a material acquisition change.
 
 ### 6E.7 Owner friction rule
 
@@ -824,20 +840,17 @@ The actual PR head branch and SHA must be read from the live PR/ref. The branch 
 Before delegating, verify separately that the receiving actor actually has:
 - the correct repository and exact ref/HEAD;
 - the intended checkout/worktree, when local inspection or edits are required;
-- an available executor and the required interpreter/toolchain, when tests/build are requested;
-- the explicit permission needed for each read, write, test, build or runtime operation;
-- the exact files and source revision needed to complete the bounded task.
+- an available executor and required interpreter/toolchain, when tests/build are requested;
+- explicit permission for each read, write, test, build or runtime operation;
+- the exact files and source revision required for the bounded task.
 
-A GitHub connector's ability to read or write remote repository objects does not prove that Codex has a local checkout, that a Windows workspace is attached, or that a test runner exists. An existing GitHub Actions workflow also does not establish that it can validate this task: inspect its event type, branch filters, path filters, runner OS, Python/toolchain and exact test command. Classify an inapplicable workflow as `NO_MATCHING_CI_ROUTE`, separately from `RUNNER_UNAVAILABLE`. If a matching workflow is accepted but the platform refuses to start its job because the repository/account is account-restricted, classify `ACTIONS_ACCOUNT_RESTRICTION` and `RUNNER_JOB_NOT_STARTED`; this is neither a source/test failure nor proof that the runner configuration is absent. If GitHub rejects the workflow definition before creating a job, classify `WORKFLOW_CONFIGURATION_ERROR` and correct the YAML before interpreting CI results. Do not add dummy file changes or unrelated source edits merely to trigger a workflow; do not create or dispatch a new runner/workflow unless that mechanism is explicitly authorized and its cost/permissions are known. A reported `BLOCKED_NO_AUTHORIZED_RUNNER`, missing checkout or unavailable capability is not a code defect and is not permission to bypass the boundary. Do not issue a test command to an actor that has already reported no authorized runner. Choose a useful, authorized static/documentation action if one exists; otherwise record the dependency and stop.
+A GitHub connector's ability to read/write repository objects does not prove that Codex has a local checkout, Windows workspace or test runner. An existing Actions workflow does not prove applicability: inspect its exact revision, event, branch/path filters, runner OS, toolchain and command. Classify inapplicable workflows as NO_MATCHING_CI_ROUTE, separately from RUNNER_UNAVAILABLE. If a matching event is accepted but the platform refuses to start the job because the repository/account is restricted, classify ACTIONS_ACCOUNT_RESTRICTION and RUNNER_JOB_NOT_STARTED; this is neither a test failure nor proof the runner is absent. If GitHub rejects the workflow definition before job creation, classify WORKFLOW_CONFIGURATION_ERROR. Do not add dummy source changes, alter runner classes, create an unapproved workflow or bypass a platform restriction merely to obtain a green check. A missing checkout/runner is not a code defect or permission to bypass the boundary. Do not issue test requests to an actor already reporting no authorized runner. Choose an authorized static/documentary step or stop.
 
+A route decision is candidate-specific and time-sensitive. Re-read the exact workflow revision, event, base/source branch, current merge-base and aggregate changed-file set immediately before relying on it. For pull_request path filters, evaluate the aggregate three-dot PR diff, not merely the latest commit; for push path filters, use the applicable push comparison. A run/job conclusion without correlated step/log evidence does not prove a test command ran or failed. Missing job-step/log payload is NOT_ASSESSED, not an inferred test result.
 
-**Observed CI-route classification (2026-11-02):** the repository's main branch contains `.github/workflows/iabv-authorization-focused-tests.yml` (blob `fc3ff9c6d04a16a391a19b7e0792d6f3c482995c`). It uses `windows-latest` and Python 3.11, but its push trigger is restricted to `codex/iabv-m1f-authz-candidate-review-20261025`; its pull-request trigger requires changes in a fixed list of M1A authorization source/test paths. It has no `workflow_dispatch` trigger. The changed paths in PR #591 and PR #598 do not match those conditions. Therefore the result for these tasks is `NO_MATCHING_CI_ROUTE`, not proof that GitHub Actions is disabled or that the repository has no Windows runner. Do not alter unrelated authorization files or add dummy source changes merely to trigger this workflow. The exact PR #591 candidate has zero reported status checks and zero PR-triggered runs; the four new focused publisher tests remain `AUTHORED_NOT_RUN`.
+Keep mutable workflow SHAs, PR states, run/job IDs, platform annotations and branch observations in a dated, source-bound receipt, not this normative method. See [the dated PR #591 CI observation receipt](CHAT-ARCH-2026-11-02-UAAL-PR591-CI-OBSERVATION-RECEIPT.md). It is historical evidence, not current route authority.
 
-
-**Subsequent CI execution evidence — PR #591 (2026-11-02):** the initial `NO_MATCHING_CI_ROUTE` finding referred to the repository's pre-existing M1A-only workflow. A dedicated workflow was then added to the actual PR #591 branch at `.github/workflows/iabv-control-master-focused-tests.yml`; its current branch-only blob at this observation was `baadd228fe983dae73be88780775517e1ce9691e`. GitHub accepted the matching `pull_request/synchronize` event and created run `41519019291`, but explicitly annotated that the job was not started because the GitHub reported an account-level platform restriction; the exact account annotation is intentionally not copied into this public record. Run `41519008799` reached the same account-level stop via the branch-push event. Earlier runs `41518778170` and `41518883184` exposed the `runner.temp` job-env scope error; this was corrected by moving `IABV_DATA_DIR` into the pytest step environment. The current definition is accepted by GitHub; no test step ran. Classify `ACTIONS_ACCOUNT_RESTRICTION=BLOCKED`, `RUNNER_JOB_NOT_STARTED=TRUE`, `TESTS=NOT_RUN` — not a test failure or missing route. Standard GitHub-hosted runners for public repositories are ordinarily free under GitHub's billing guidance (<https://docs.github.com/en/billing/concepts/product-billing/github-actions>), but this account-level lock still prevents job startup. Do not switch runner classes or attempt a restriction bypass. The Owner/account administrator must resolve the restriction through GitHub's normal account process before test execution can proceed.
-
-
-For every external-agent handoff, apply §6E.6A before substantive review or execution. Verify the actual source package bytes, outbound attachment and recipient acknowledgement when that route is required. A link or a prompt that says “attach the patch” is `LINK_ONLY`, not `ATTACHED_PACKAGE`. If direct recipient live-fetch is unavailable and the actual attachment/acknowledgement chain is incomplete, stop at `PROMPT_PREPARED` / `REVIEW=NOT_RUN`; do not issue another copy of the prompt or claim dispatch. A coordinator-exported attachment permits only a bounded static package review unless the receiver independently verifies the live repository state.
+Apply §6E.6A only when present in the pinned canonical main. If it exists only on a candidate branch, it is candidate-only. When reviewing a candidate that proposes §6E.6A itself, evaluate it as proposed text, not as an already-adopted gate.
 
 ### 6F.2A Pull-request path-filter comparison semantics — aggregate diff, not latest commit
 
@@ -850,7 +863,7 @@ A workflow path filter must be evaluated using the event's comparison semantics,
 - After a matching workflow is blocked before runner startup by an unchanged account/platform restriction, do not add receipt-only commits, tweak workflow files or retry on that same PR merely to refresh its record. Each new PR synchronize event may reproduce the same blocked job because the aggregate PR diff remains matched. Freeze that PR branch until the external restriction changes or a genuinely necessary source correction changes the task's acceptance evidence.
 - Do not create a second PR/branch, use dummy source changes, alter runner classes or bypass the platform restriction to avoid this result. Persist the blocker in the PR description or a non-triggering coordination record when possible; resume the existing workflow once the account administrator has resolved the restriction through the normal GitHub process.
 
-**Observed falsifier and correction (2026-11-02):** PR #591's dedicated workflow excludes the D021 Markdown path from its explicit `paths` list, but a D021-only commit still triggered run #8 because the PR's aggregate three-dot diff continued to contain matching source/test/workflow files. The job was not started under the account-level restriction; no test step ran. The earlier coordinator assumption that a documentation-only commit would not retrigger a PR-filtered workflow was therefore false and is superseded by this rule.
+The PR #591 falsifier that motivated this correction is preserved in the dated [PR #591 CI observation receipt](CHAT-ARCH-2026-11-02-UAAL-PR591-CI-OBSERVATION-RECEIPT.md). The general comparison rule above is linked to official GitHub documentation.
 
 Official reference: https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow (section "Git diff comparisons").
 
@@ -921,17 +934,24 @@ REQUESTED_BRANCH_AND_MATCH_STATUS=
 CHANGED_PATHS_AND_BLOB_SHAS=
 CONTROL_MASTER_SIGNAL_STATUS_AND_DECISION_INFLUENCE=
 CAPABILITY_PREFLIGHT=
+CONTEXT_SEPARATION=PASS|LIMITED|BLOCKED|NOT_ASSESSED
 SOURCE_PACKAGE_REQUIRED_AND_STATUS=
-SOURCE_ACQUISITION_METHOD_AND_IDENTITY=
-SOURCE_PACKAGE_DIGEST_AND_COVERAGE=
+SOURCE_ACQUISITION_METHOD=
+SOURCE_PACKAGE_PRODUCER=
+SOURCE_PACKAGE_FILENAME_AND_FORMAT=
+SOURCE_PACKAGE_IDENTITY=
+SOURCE_PACKAGE_DIGEST_AND_BASIS=
+RECEIVER_FILE_DERIVED_EVIDENCE_AND_PROVENANCE=
 OUTBOUND_ATTACHMENT_STATUS=
 RECEIVER_ATTACHMENT_ACK=
+RECEIVER_SOURCE_ACK=
 SOURCE_IDENTITY_VERIFICATION=
+SOURCE_COVERAGE=COMPLETE|PARTIAL|NOT_ASSESSED
 REVIEW_CLASS=INDEPENDENT_LIVE|BOUNDED_STATIC_PACKAGE|NOT_RUN|NOT_APPLICABLE
 AUTHORIZATION_SCOPE_AND_EXCLUSIONS=
 ACTION_ATTEMPTED=
 TEST_COMMAND_AND_EXACT_HEAD=
-TEST_STATUS=VERIFIED|ACTOR_REPORTED|AUTHORED_NOT_RUN|NOT_RUN
+TEST_STATUS=VERIFIED|ACTOR_REPORTED|AUTHORED_NOT_RUN|CI_REPORTED|NOT_RUN
 EXPECTED_VS_ACTUAL=
 ROOT_CAUSE_CLASS=
 STOP_CONDITION_OR_NEXT_DEPENDENCY=
