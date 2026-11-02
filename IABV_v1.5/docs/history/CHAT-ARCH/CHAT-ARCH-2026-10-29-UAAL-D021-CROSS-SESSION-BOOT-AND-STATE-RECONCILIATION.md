@@ -251,10 +251,11 @@ This D021 cross-reference is a candidate amendment on the PR branch. Until adopt
 
 Apply this gate before dispatching or claiming an **independent**, **adversarial**, or **second-opinion** review of a material candidate, protocol, PR or technical decision. It prevents a reviewer from being asked to validate work using the same task-specific conclusions that shaped the work.
 
-Context separation and source identity are separate requirements:
+Context separation, source acquisition and source identity are separate requirements. Do not collapse them into one pass/fail label:
 
 - The reviewer must be a distinct actor/session from the candidate author/editor. A fresh conversation in a separate provider/model context is preferred when the prior session has already discussed or shaped the candidate.
-- The reviewer must independently retrieve the exact pinned repository base, candidate HEAD, diff and relevant acceptance criteria. Sharing the same canonical source revision is required and does not itself contaminate the review.
+- Preferred source acquisition is reviewer-side retrieval of the exact pinned repository base, candidate HEAD, diff and acceptance criteria from the canonical source. Sharing the same canonical source revision is required and does not itself contaminate the review.
+- When direct retrieval is unavailable, a coordinator-exported pinned diff or user-supplied source may support a bounded static assessment only when the supplied material's revision, paths and scope have adequate provenance. Record the indirect acquisition explicitly; never describe it as independent live retrieval.
 - Generic safety policy, repository method definitions and the review rubric are allowed inputs. The candidate author's narrative, prior review verdicts, task-specific findings, implementation rationale, previous conversation transcript and review discussion must not be supplied before the reviewer completes its own source inspection.
 - A PR description or handoff summary authored by the candidate author is not a substitute for the diff. For a blinded review, ignore its evaluative claims and derive the scope from the pinned source and changed-file list.
 
@@ -272,15 +273,24 @@ REVIEW_CONTEXT_SEPARATION_RECEIPT = {
   ALLOWED_INPUTS_AND_SOURCE_REFS,
   PROHIBITED_INPUTS_CHECKED,
   BASE_SHA_AND_CANDIDATE_HEAD,
-  CONTEXT_SEPARATION: PASS | LIMITED | BLOCKED
+  CONTEXT_SEPARATION: PASS | LIMITED | BLOCKED,
+  SOURCE_ACQUISITION_METHOD: INDEPENDENT_LIVE_RETRIEVAL | COORDINATOR_EXPORTED_PINNED_DIFF | USER_SUPPLIED_SOURCE | OTHER,
+  SOURCE_IDENTITY_VERIFICATION: REVIEWER_VERIFIED | COORDINATOR_ATTESTED | USER_ATTESTED | UNVERIFIED,
+  SOURCE_COVERAGE: FULL_BASE_HEAD_DIFF | PINNED_DIFF_WITH_HUNKS | PARTIAL_SOURCE | UNKNOWN,
+  SOURCE_RETRIEVAL_STATUS: PASS | LIMITED | BLOCKED
 }
 ```
 
 Classify carefully:
 
-1. `PASS`: the reviewer is not the author/editor; the review runs in a new, separate task context; no prior candidate-specific analysis or verdict was exposed; the exact source revision and review scope are pinned. Generic method/policy knowledge and the candidate's canonical source files remain permissible.
-2. `LIMITED`: the session is new and no prior findings were supplied, but some persistent memory/context provenance cannot be inspected. The reviewer may perform a clearly labelled bounded static review only if no known candidate-specific conclusion is present; it must not claim fully independent context separation.
-3. `BLOCKED`: the same task conversation is reused after substantive prior discussion, the reviewer authored/edited the candidate, prior findings or author analysis were exposed, task-specific memory contamination is known, or the reviewer cannot establish the required source/context boundary.
+1. `PASS`: the reviewer is not the author/editor; the review runs in a new, separate task context; and no prior candidate-specific analysis or verdict was exposed. Generic method/policy knowledge and the candidate's canonical source files remain permissible. Source acquisition is assessed separately below.
+2. `LIMITED`: the session is new and no known prior findings were supplied, but some persistent memory/context provenance cannot be inspected. This status concerns reviewer-context provenance only; do not use it to encode an indirect source-acquisition method.
+3. `BLOCKED`: the same task conversation is reused after substantive prior discussion, the reviewer authored/edited the candidate, prior findings or author analysis were exposed, or task-specific memory contamination is known.
+4. Source acquisition is classified independently:
+   - `PASS`: the reviewer directly retrieves the exact pinned base, candidate HEAD and diff from the canonical repository and verifies their identities and scope.
+   - `LIMITED`: the reviewer receives a coordinator-exported pinned diff, user-supplied source or other indirect copy with enough provenance to identify its claimed revision and scope, but cannot independently retrieve the live source or inspect all required base context. A bounded static assessment may proceed on the supplied material; mark every conclusion requiring omitted content `NOT_ASSESSED` and do not claim independent live retrieval.
+   - `BLOCKED`: the candidate revision/source identity cannot be established, the supplied material is insufficient to identify the candidate under review, or no usable source is available. Stop before substantive review and report `SUBSTANTIVE_REVIEW=NOT_RUN`.
+   Record the acquisition method, identity-verification actor/status and source coverage in the receipt fields above. A clean reviewer context can therefore be `CONTEXT_SEPARATION=PASS` while `SOURCE_RETRIEVAL_STATUS=LIMITED`; these are not contradictory.
 
 When blocked, stop before substantive evaluation and return exactly:
 
@@ -291,7 +301,7 @@ REVIEW_DIMENSIONS=NOT_ASSESSED
 MISSING_EVIDENCE=REVIEW_CONTEXT_SEPARATION
 ```
 
-Do not label unexamined rubric dimensions `PARTIAL`, `PASS` or `FAIL`. Those statuses are valid only after the reviewer inspected the corresponding content. Do not ask the Owner to repeat the same review in the same contaminated context. Select a genuinely separate reviewer or report that no admissible independent-review route is presently available.
+Do not label unexamined rubric dimensions `PARTIAL`, `PASS` or `FAIL`. Those statuses are valid only after the reviewer inspected the corresponding content. Apply the same rule to source-limited reviews: omitted base context is `NOT_ASSESSED`, not an inferred pass or failure. Do not ask the Owner to repeat the same review in the same contaminated context. Select a genuinely separate reviewer or report that no admissible independent-review route is presently available.
 
 Finally, distinguish `INDEPENDENT_STATIC_REVIEW` from a formal GitHub approval by an authorized human/code owner. A separate AI context may provide an independent technical assessment; it does not become a formal approval or merge authorization.
 
