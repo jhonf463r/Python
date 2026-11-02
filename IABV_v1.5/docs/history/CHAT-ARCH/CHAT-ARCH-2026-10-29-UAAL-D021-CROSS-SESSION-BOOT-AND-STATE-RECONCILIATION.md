@@ -946,3 +946,57 @@ The Owner's screenshot establishes that the Security info UI offers `Passkey in 
 **Why this correction matters:** Authenticator MFA/Passkey can authenticate a human to Microsoft Entra; it does not by itself issue a signed IABV authority mandate, prove custody/provenance of an IABV trust root, authenticate the IABV issuer, or bind the issuer to the exact Windows principal and server instance. Do not claim G1 closure from passkey enrollment alone.
 
 **Incident classification:** `COORDINATOR_ERROR=ADVANCED_OWNER_MUTATION_BEFORE_ACTIVE_ROUTE_AND_AUTHORIZATION_PREFLIGHT`; `CORRECTION=PAUSE_REGISTRATION_AND_ADD_PRE_ACTION_DECISION_BUNDLE_TO_D019_D020`; `PRODUCT_IMPLEMENTATION=NOT_AUTHORIZED`; `AUTOMATIC_FOLLOW_ON=FALSE`. This subsection supersedes any earlier procedural wording in §6D.5E.2 that appears to direct immediate registration. It is branch-only and does not modify canonical `main`.
+
+
+### 6D.5F PR #591 — F1/F2/F3 publisher correction and CI-route reconciliation (2026-11-02; branch-only)
+
+This receipt records the follow-up source review of the actual PR #591 candidate. It supplements the PR description and the static review comments; it does not change canonical `main`, create a live signal, or authorize merge/publication/runtime.
+
+**Exact target identity**
+
+```text
+REPOSITORY=jhonf463r/Python
+PR=591
+BASE=main@a64f9e331ccbf13225ed5a3d945e16586e8756db
+ACTUAL_PR_BRANCH=iabv/control-master-signal-bridge-r1-20261031-review
+REQUESTED_PARALLEL_BRANCH=iabv/control-master-signal-bridge-r1-20261031
+REQUESTED_BRANCH_IS_PR_HEAD=FALSE
+REQUESTED_BRANCH_AND_PR_BRANCH=SEPARATE_DIVERGENT_REFS; COMMON_BASE=main
+FUNCTIONAL_SOURCE_HEAD_AT_THIS_REVIEW=20cf92aee59c96fb9a4357a7448dcfacaa5b2142
+PUBLISHER_BLOB=54247f1581cf89f02c2f2a145a048015d3d467c4
+FOCUSED_TEST_BLOB=b98f76221cf712e8bec84129ce9e160cef2ab567
+PR_CHANGED_FILES=15
+COMPARE_AT_RECEIPT=ahead_84; behind_0
+PR_STATE=OPEN; DRAFT=TRUE; MERGED=FALSE
+```
+
+The requested branch without the `-review` suffix was not modified. Its earlier observed SHA was `513e86b2b946859700d5c0747c333f0d7c9b3c13`; the PR branch at the reviewed source commit was `520d3aa0623928002c4fb97b68e21a9c1bc96158`. Their common base did not make them aliases. The four new test cases and publisher changes were committed only to the actual PR branch.
+
+**Corrections**
+
+1. **F1 — default-branch TOCTOU:** the publisher checks the remote symbolic default branch at initial preflight and again at the push boundary. A changed/unknown default branch blocks publication. The second client-side check narrows the race but is not atomic; the residual race remains explicit and requires server-side protection for a strict guarantee.
+2. **F2 — ordinary `main` advancement:** the publisher now retains merge ancestry, fetches and merges current `main` into `control-master-live` without force-push, verifies the entire resulting tree delta is limited to `IABV_v1.5/data/evolution/control_master/shared_signal.json`, then fetches/reconciles `main` again immediately before push. Conflicts and unrelated deltas fail closed.
+3. **F3 — ambiguous push result:** if `git push` exits non-zero or times out, the publisher still reads back the exact remote ref, fetched commit and bytes. An exact match verifies the postcondition; otherwise it reports `PUBLISHED_UNVERIFIED` with `PUSH_RESULT_UNVERIFIED` rather than asserting definite non-publication.
+
+**Regression tests authored and fetched back**
+
+- `test_publisher_default_branch_guard_observes_change_between_checks`
+- `test_publisher_reconciles_signal_branch_when_main_advances`
+- `test_publisher_reads_back_after_ambiguous_push_failure`
+- `test_publisher_marks_ambiguous_push_unverified_when_remote_readback_differs`
+
+All four are `AUTHORED_NOT_RUN`. They are bound to the final test blob above. The historical 11-pass reduced harness belongs to earlier code/test blobs and does not validate this source revision.
+
+**CI-route reconciliation**
+
+Main contains `.github/workflows/iabv-authorization-focused-tests.yml` (blob `fc3ff9c6d04a16a391a19b7e0792d6f3c482995c`). It uses `windows-latest` and Python 3.11, but pushes are restricted to `codex/iabv-m1f-authz-candidate-review-20261025`; pull requests to `main` run only when a fixed set of M1A authorization source/test paths changes. PR #591's 15 changed paths do not intersect those filters, and the workflow has no `workflow_dispatch` trigger. Correct classification is `NO_MATCHING_CI_ROUTE`, not `ACTIONS_DISABLED` and not proof that the repository lacks a Windows runner. Do not edit unrelated authorization files or add dummy path changes to trigger it.
+
+At the reviewed functional source HEAD, GitHub reported zero combined status checks and zero PR-triggered workflow runs. The previous Codex result `BLOCKED_NO_AUTHORIZED_RUNNER` remains an actor-reported capability result; it is not a code failure or a passing test.
+
+**Remaining acceptance limits and safety**
+
+- Objective mapping from public positional queue slots to concrete task/objective/dependency identity remains intentionally unestablished.
+- `control-master-live` and `shared_signal.json` were not published in this coordination; live Control Master runtime state remains `UNAVAILABLE`.
+- Native QML/AppBootstrap integration, complete repository suites, build, runtime and publication remain `NOT_RUN`.
+- `OPTION_D=RATIFIED_NO_BOOTSTRAP`; `G1/G2/G3=NOT_ESTABLISHED`; protected reads remain `FAIL_CLOSED`. No M1A gate, credential, permission, tunnel or local-runtime state changed.
+- Follow-up reviews are `COMMENTED`, not approvals. PR #591 remains Draft and unmerged.
