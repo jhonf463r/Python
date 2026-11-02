@@ -119,8 +119,18 @@ Apply:
 - **D020:** compare actually available and authorized actions; prioritize verified progress, decision-changing information and minimum useful intervention; switch strategy after preparation-only repetition.
 - **D021:** reconcile source and time, build the objective-conditioned world model, adjudicate prior results and select one next action with observable outcome and stop condition.
 - **D021 §6D:** intake the Control Master signal, distinguish its freshness/availability, reconcile it with the canonical route and explain whether it changed or confirmed the selected action.
+- **D021 §6F:** verify exact repository/PR/branch/HEAD identity, actual executor and runner availability, authorization scope, volatile preconditions, current source/test blob identities, expected observable and stop condition before drafting an external-agent prompt or writing.
 
 Do not select an action merely because it is easy to describe. Do not bypass a missing prerequisite, access denial, technical gate or owner authorization.
+
+
+### B4.1 — Pin the target and verify the executor before handoff
+
+For a PR, record the repository, PR number, actual PR source branch, exact source HEAD SHA, base SHA and requested branch separately. Confirm the requested branch is the actual PR branch; a similar name is not enough. If the refs differ or diverged, stop before switching, renaming, rebasing, cherry-picking or writing.
+
+Verify that the intended recipient has the exact checkout/worktree and authorized runner needed for the requested action. A GitHub connector does not imply Codex has a local checkout or Windows runner. If the recipient reports no authorized runner or no checkout, classify the capability as unavailable and do not request tests/build/runtime from that actor. Choose an authorized static/documentary step or stop on the dependency.
+
+Before a consequential write, refresh the target ref and re-check volatile preconditions. Use expected-SHA ref updates where supported. Batch related repository edits into one coherent commit where possible; do not treat connector-generated commit count as progress. Apply UAAL-D021 §6F for the full guard and receipt.
 
 ### B5 — Execute only within declared authority
 
@@ -128,7 +138,7 @@ State what will be read, changed, created or run. Respect project boundaries and
 
 ### B6 — Verify and return a receipt
 
-Compare the observed result with the expected observable. Record exact artifact paths, revisions, hashes, tool outputs or limitations. Fetch back authorized writes. Do not claim that work was dispatched, received, executed, tested or merged without the matching evidence. For IABV tasks, include `CONTROL_MASTER_SIGNAL_RETRIEVED`, signal status/source/state ID/timestamps, top queue evidence refs, `SIGNAL_INFLUENCE` and whether the action outcome was verified, following D021 §6D.
+Compare the observed result with the expected observable. Record exact artifact paths, revisions, hashes, tool outputs or limitations. Fetch back authorized writes. Do not claim that work was dispatched, received, executed, tested or merged without the matching evidence. For IABV tasks, include `CONTROL_MASTER_SIGNAL_RETRIEVED`, signal status/source/state ID/timestamps, top queue evidence refs, `SIGNAL_INFLUENCE` and whether the action outcome was verified, following D021 §6D. For repository/test tasks, also bind the result to exact base/head SHAs, actual PR source branch, changed-path/blob SHAs, executor/runner, command and test-file blobs; distinguish `VERIFIED`, `ACTOR_REPORTED`, `AUTHORED_NOT_RUN` and `NOT_RUN` under D021 §6F.
 
 ## 5. Roles and non-overlapping responsibilities
 
