@@ -857,3 +857,27 @@ Do not repeat text-only baseline tests as if they solve source attribution. Reop
 ## 8. Scope and non-goals
 
 This is a documentation/control-plane repair only. It does not create trust roots, keys, credentials, Entra registrations, authority assets, production providers, an MCP allowlist, protected reads, local runtime or tunnel. It does not change IABV technical acceptance criteria. G1/G2/G3 remain `NOT_ESTABLISHED` until their independent product evidence is supplied. No test suite or runtime was executed as part of this method authoring.
+
+### 6D.5E Authenticator app observation and no-repeat correction (2026-11-02; branch-only)
+
+**Triggering Owner observation:** the Owner reports that the already-installed Microsoft Authenticator app currently shows only the email address for the previously created `IABV Owner` account. The Owner is not reporting a visible Passkey/FIDO2 entry inside the app. This is a fresh UI observation, not evidence that the Entra account has no registered passkey, nor evidence that a passkey exists.
+
+**Correct evidence classification:**
+- `ENTRA_DIRECTORY_AND_AUTHENTICATOR=OWNER_REPORTED_READY` remains the previously reconciled setup fact; do not ask the Owner to reinstall Authenticator, recreate the account, repeat enrollment, or reconfirm the already reported successful sign-in.
+- `AUTHENTICATOR_APP_ACCOUNT_TILE=OWNER_REPORTED_VISIBLE`.
+- `AUTHENTICATOR_APP_VISIBLE_METHOD_DETAILS=NOT_OBSERVED`.
+- `ENTRA_REGISTERED_AUTHENTICATION_METHODS=NOT_INDEPENDENTLY_VERIFIED`.
+- `PASSKEY_FIDO2_REGISTRATION=UNKNOWN`; an email/account tile alone neither confirms nor rules out FIDO2.
+- `OWNER_AUTHORITY_MANDATE=NOT_ESTABLISHED`; `ISSUER_HOST_BINDING=NOT_ESTABLISHED`; M1A/G1 remains blocked.
+
+**Correct next-step selection (read-only, no setup loop):**
+1. Do not ask the Owner to find a Passkey inside the Authenticator account tile. The app's visible account/email entry is not the authoritative inventory of Entra-registered methods.
+2. Use the Owner-facing Microsoft Security Info portal `https://mysignins.microsoft.com/security-info` with the already known `IABV Owner` account. Inspect the registered methods list only; do not add, delete, reset or re-register any method during this observation step.
+3. Classify the exact entries separately: `Microsoft Authenticator` indicates the registered Authenticator method; `Passkey (FIDO2)` indicates a registered FIDO2 credential; `Microsoft Passwordless phone sign-in` is a distinct passwordless method and must not be relabeled as FIDO2. If the portal lists only Authenticator, record FIDO2 as `NOT_OBSERVED_IN_OWNER_PORTAL`, not as globally absent.
+4. If stronger tenant-side confirmation is needed and the Owner already has an authorized administrative role, inspect the Entra user Authentication methods page or the Authentication Methods Activity registration report. Do not assume the Owner has the required role or license, request role elevation, or change tenant policy. The report can lag; record its observation time and limitations.
+5. Only after the read-only inventory establishes that FIDO2 is absent and a concrete need is justified may the coordinator assess the tenant's existing Passkey (FIDO2) policy and supported authenticator profile. Do not opt in to passkey profiles, enable policies, create a credential, or alter Conditional Access without a separate exact scope/authorization; profile opt-in can be non-reversible.
+6. A Passkey/FIDO2, if present, is a phishing-resistant authentication credential, not by itself a free-form digital signature or an IABV authority mandate. Any future Owner decision flow must bind a fresh challenge to the exact decision digest, relying-party/server identity and intended scope, and independently verify the credential assertion. Entra token validation, Owner mandate, issuer identity, host identity and server-instance binding remain separate checks.
+
+**Protocol correction:** the coordinator must recover the Owner-input ledger and prior setup facts before asking anything; interpret app UI observations narrowly; select the authoritative read-only evidence surface; and ask for only the single unresolved observation that changes the next action. Never transfer a known investigation step back to the Owner as an open-ended request to diagnose or design the security mechanism.
+
+**Source basis:** current Microsoft documentation for [Security Info](https://mysignins.microsoft.com/security-info), [Authentication Methods Activity](https://learn.microsoft.com/entra/identity/authentication/howto-authentication-methods-activity), and [Passkeys (FIDO2)](https://learn.microsoft.com/entra/identity/authentication/how-to-authentication-passkeys-fido2), checked 2026-11-02. This subsection is a branch-only coordination correction; it does not alter canonical `main`, provision credentials, authorize tenant-policy changes, establish G1, or enable protected reads.
