@@ -114,31 +114,33 @@ At minimum, distinguish:
 
 ### B4 — Select one next action
 
+Before any external-agent prompt or handoff, apply D021 §6C.5's explicit dispatch rule. Name one intended AI provider/agent and model or channel, the project/task, role, session mode (new separate, continued or existing executor), required source-access route, exact authorized operations, exclusions and expected return. Do not write ambiguous instructions such as "send to Claude or another AI" or "use the same reviewer". If the preferred destination's availability/capability is unconfirmed, label it unconfirmed and do not claim dispatch or silently substitute another agent. The exact recipient must be selected using the task's required capability and context-separation requirements.
+
 Apply:
 - **D019:** identify the first open causal/evidential edge; fingerprint the task; stop unchanged loops.
 - **D020:** compare actually available and authorized actions; prioritize verified progress, decision-changing information and minimum useful intervention; switch strategy after preparation-only repetition.
 - **D021:** reconcile source and time, build the objective-conditioned world model, adjudicate prior results and select one next action with observable outcome and stop condition.
+- **D021 §6B.2:** before dispatching or claiming an independent/adversarial review, record reviewer-context separation separately from source-acquisition method, source identity and source coverage; pin base/HEAD/diff; and exclude prior candidate-specific findings and author analysis. A coordinator-exported or user-supplied diff is a `LIMITED` source route and supports only a bounded static assessment, not independent live retrieval. If context separation or source retrieval is `BLOCKED`, stop before substantive review; mark all unexamined dimensions `NOT_ASSESSED`, never `PARTIAL`, `PASS` or `FAIL`.
 - **D021 §6D:** intake the Control Master signal, distinguish its freshness/availability, reconcile it with the canonical route and explain whether it changed or confirmed the selected action.
 - **D021 §6F:** verify exact repository/PR/branch/HEAD identity, actual executor and runner availability, authorization scope, volatile preconditions, current source/test blob identities, expected observable and stop condition before drafting an external-agent prompt or writing.
+- **D019 §9E + D020 §9 (adopted pre-action gate):** before any material Owner-facing device/app/account/private-UI instruction, build one internal `OWNER_ACTION_PACKET` from the D021 §6B.1 known-input ledger, the current route/permissions and the D021 §6D signal status when relevant. Finish assistant-side retrieval/research first; define the actor split, action class, exact mutation permission, predictable branch matrix, acceptance evidence and stop/recovery conditions. Give one consolidated safe sequence; interpret screenshots directly; ask only for an irreducible local observation/action. Never treat a visible UI option as authorization. This adopted method does not grant authority to bypass `CURRENT-STATE.md` or action-specific approval.
 
 Do not select an action merely because it is easy to describe. Do not bypass a missing prerequisite, access denial, technical gate or owner authorization.
 
-
 ### B4.1 — Pin the target and verify the executor before handoff
 
-For a PR, record the repository, PR number, actual PR source branch, exact source HEAD SHA, base SHA and requested branch separately. Confirm the requested branch is the actual PR branch; a similar name is not enough. If the refs differ or diverged, stop before switching, renaming, rebasing, cherry-picking or writing.
+For a PR, record the repository, PR number, actual PR source branch, exact source HEAD SHA, base SHA and requested branch separately. Confirm the requested branch is the actual PR source branch; a similar name is not enough. If the refs differ or diverged, stop before switching, renaming, rebasing, cherry-picking or writing.
 
-Verify that the intended recipient has the exact checkout/worktree and authorized runner needed for the requested action. For GitHub Actions, inspect the live workflow's event, branch/path filters, runner OS and exact command; an unrelated Windows workflow is not a valid runner for this task. Record `NO_MATCHING_CI_ROUTE` separately from `RUNNER_UNAVAILABLE`, and distinguish `ACTIONS_ACCOUNT_RESTRICTION` / `RUNNER_JOB_NOT_STARTED` when a matched workflow is accepted but GitHub refuses to start the job. If Actions accepts the event but does not start a job because of a account-level platform restriction, record `ACTIONS_ACCOUNT_RESTRICTION` and `RUNNER_JOB_NOT_STARTED`; if the workflow definition is rejected before job creation, record `WORKFLOW_CONFIGURATION_ERROR`. Do not manufacture a matching path change or add an unapproved workflow just to obtain a green check. A GitHub connector does not imply Codex has a local checkout or Windows runner. If the recipient reports no authorized runner or no checkout, classify the capability as unavailable and do not request tests/build/runtime from that actor. Choose an authorized static/documentary step or stop on the dependency.
+Verify that the intended recipient has the exact checkout/worktree and authorized runner needed for the requested action. For GitHub Actions, inspect the live workflow's event, branch/path filters, runner OS and exact command; an unrelated Windows workflow is not a valid runner for this task. Record `NO_MATCHING_CI_ROUTE` separately from `RUNNER_UNAVAILABLE`, and distinguish `ACTIONS_ACCOUNT_RESTRICTION` / `RUNNER_JOB_NOT_STARTED` when a matched workflow is accepted but GitHub refuses to start the job. If Actions accepts the event but does not start a job because of an account-level platform restriction, record `ACTIONS_ACCOUNT_RESTRICTION` and `RUNNER_JOB_NOT_STARTED`; if the workflow definition is rejected before job creation, record `WORKFLOW_CONFIGURATION_ERROR`. Do not manufacture a matching path change or add an unapproved workflow just to obtain a green check. A GitHub connector does not imply Codex has a local checkout or Windows runner. If the recipient reports no authorized runner or no checkout, classify the capability as unavailable and do not request tests/build/runtime from that actor. Choose an authorized static/documentary step or stop on the dependency.
 
-Before a consequential write, refresh the target ref and re-check volatile preconditions. Use expected-SHA ref updates where supported. Batch related repository edits into one coherent commit where possible; do not treat connector-generated commit count as progress. Apply UAAL-D021 §6F for the full guard and receipt.
-
+Before a consequential write, refresh the target ref and re-check volatile preconditions. Use expected-SHA ref updates where supported. Batch related writes into one coherent commit where possible; do not treat connector-generated commit count as progress. Apply UAAL-D021 §6F for the full guard and receipt.
 ### B5 — Execute only within declared authority
 
 State what will be read, changed, created or run. Respect project boundaries and exact permissions. A documentation-only authorization does not permit source implementation, credentials, portals, protected reads, tests, build, runtime, tunnel, deployment or changes to another project.
 
 ### B6 — Verify and return a receipt
 
-Compare the observed result with the expected observable. Record exact artifact paths, revisions, hashes, tool outputs or limitations. Fetch back authorized writes. Do not claim that work was dispatched, received, executed, tested or merged without the matching evidence. For IABV tasks, include `CONTROL_MASTER_SIGNAL_RETRIEVED`, signal status/source/state ID/timestamps, top queue evidence refs, `SIGNAL_INFLUENCE` and whether the action outcome was verified, following D021 §6D. For repository/test tasks, also bind the result to exact base/head SHAs, actual PR source branch, changed-path/blob SHAs, executor/runner, command and test-file blobs; distinguish `VERIFIED`, `ACTOR_REPORTED`, `AUTHORED_NOT_RUN` and `NOT_RUN` under D021 §6F.
+Compare the observed result with the expected observable. Record exact artifact paths, revisions, hashes, tool outputs or limitations. For external handoffs, record the named recipient and session, then distinguish `PROMPT_PREPARED`, `PROMPT_SENT`, `RECIPIENT_ACKNOWLEDGED`, `SOURCE_RETRIEVED`, `ACTION_EXECUTED` and `RESULT_ADJUDICATED`; do not infer later stages from earlier ones. Fetch back authorized writes. Do not claim that work was dispatched, received, executed, tested or merged without the matching evidence. For IABV tasks, include `CONTROL_MASTER_SIGNAL_RETRIEVED`, signal status/source/state ID/timestamps, top queue evidence refs, `SIGNAL_INFLUENCE` and whether the action outcome was verified, following D021 §6D. For repository/test tasks, also bind the result to exact base/head SHAs, actual PR source branch, changed-path/blob SHAs, executor/runner, command and test-file blobs; distinguish `VERIFIED`, `ACTOR_REPORTED`, `AUTHORED_NOT_RUN` and `NOT_RUN` under D021 §6F.
 
 ## 5. Roles and non-overlapping responsibilities
 
@@ -159,6 +161,13 @@ The sender should populate this envelope from already available evidence. The Ow
 
 ```text
 HANDOFF_ID=
+TARGET_AI_PROVIDER_AND_AGENT=
+TARGET_MODEL_OR_CHANNEL=
+TARGET_PROJECT_AND_TASK_ID=
+TARGET_ROLE=
+TARGET_SESSION_MODE=NEW_SEPARATE | CONTINUED | EXISTING_EXECUTOR
+CONTEXT_SEPARATION_REQUIREMENT=
+REQUIRED_SOURCE_ACCESS_AND_EXACT_REFS=
 PARENT_OBJECTIVE=
 PROJECT_ID=
 TASK_ID=
@@ -262,7 +271,7 @@ Because `jhonf463r/Python` is public, write only public-safe methods and sanitiz
 
 ## 9. Copy-ready universal bootstrap prompt
 
-Paste this prompt into a new chat when starting or resuming a material task. Add the project-specific handoff envelope immediately below it when available. This prompt is intentionally explicit about Control Master intake: a generic instruction to "use D021" is not enough to prove the panel was consulted.
+Paste this prompt into a new chat when starting or resuming a material task. Add the project-specific handoff envelope immediately below it when available. This prompt explicitly requires Control Master intake for IABV; a generic instruction to "use D021" is not evidence that the panel was consulted.
 
 ```text
 UAAL — UNIVERSAL NEW-CHAT BOOT
@@ -281,6 +290,8 @@ Your first job is to reconstruct the correct present state before recommending o
 
 3. Retrieve only the relevant, live-main versions/sections of UAAL-D019, D020, D021, the Space-Time protocol, SYMBIOSIS-MAP and the New-Chat Boot Kit. Separate adopted main content from branch-only candidates and historical snapshots. Do not claim a proposed PR or a remembered SHA is canonical.
 
+3a. For every non-IABV project, retrieve that project's own canonical state and relevant artifacts. IABV `CURRENT-STATE.md` is not that project's router. If its state source is unavailable, use the smallest supplied project handoff and mark missing evidence; do not substitute M1A/IABV state or permissions.
+
 4. For every material IABV development/coordination task, explicitly perform UAAL-D021 §6D Control Master signal intake before selecting the next action:
    - Attempt the narrowest already-available, authorized read of the current ControlMasterDigest/runtime signal. Do not start the IABV app/runtime, run a local CLI, inspect protected data or access credentials merely to obtain it.
    - Record CONTROL_MASTER_SIGNAL_STATUS as FRESH, STALE, UNAVAILABLE, UNVERIFIED, CONFLICTED or NOT_APPLICABLE, plus the exact source, workspace/project scope, state_id, digest ID/SHA, generated time and observed time.
@@ -296,15 +307,20 @@ Your first job is to reconstruct the correct present state before recommending o
 
 7. Apply D019 to identify the first open causal/evidential edge and prevent unchanged loops. Apply D020 to compare genuinely available, authorized actions and maximize useful verified progress while minimizing Owner effort. Apply D021 to reconcile evidence and adjudicate prior results. Select one next action only, and state why it is better than repeating a prior attempt.
 
+7a. Before any material Owner-facing device/app/account/private-UI instruction, apply D019 §9E and D020 §9. Reuse the D021 §6B.1 ledger and, for IABV, record D021 §6D Control Master availability/freshness when an authorized read surface exists. Build one internal OWNER_ACTION_PACKET with the exact route permission, actor split, action class, minimum Owner steps, predictable branch matrix, acceptance evidence and stop/recovery conditions. Complete assistant-side discovery first, then present one consolidated safe sequence and ask only for the irreducible local action. Do not ask the Owner to transcribe screenshots or use an unauthorized option.
+
 8. Before drafting an external-agent prompt, repository write, PR operation or test request, bind the exact task, repository, base SHA, actual PR source branch/head SHA, target paths/blob SHAs, Owner authorization, recipient checkout/runner capability, expected observable and stop condition. Apply D021 §6F only when it is present in the pinned canonical main; if it exists only on a candidate branch, label it candidate-only and do not claim it is adopted. A similarly named branch is not the PR source branch.
+   - For every external-agent handoff, apply D021 §6C.5 and name one exact provider/agent, model or channel, role, session mode, source-access route, permitted scope, exclusions and expected return. Do not use "Claude or another AI", "same reviewer" or another ambiguous substitute. Verify the recipient's actual capability; otherwise mark it unconfirmed and do not claim dispatch.
+   - For independent/adversarial review, apply D021 §6B.2: record reviewer-context separation separately from source-acquisition method, identity and coverage; pin the exact base/HEAD/diff; exclude candidate-specific prior findings and author rationale; and classify unexamined dimensions as NOT_ASSESSED.
 
 9. Execute only within the exact declared authority. Do not expand scope, bypass a failed prerequisite, access protected data, use credentials, alter permissions, start local runtime/bridge/tunnel, or claim tests/build/runtime were run without correlated evidence. Do not merge a PR without separate explicit Owner approval.
 
 10. Return a correlated receipt. Include exact refs/SHAs/timestamps, sources actually retrieved, Control Master intake fields and signal influence, Owner-input reuse ledger, selected action, authority/exclusions, expected observable, stop condition, result provenance and fetch-back evidence. Distinguish VERIFIED, OWNER/ACTOR_REPORTED, INFERENCE, HYPOTHESIS, UNKNOWN, AUTHORED_NOT_RUN and NOT_RUN. A receipt is a report until independently reconciled.
 
+Do not change another project's state, IABV CURRENT-STATE, permissions, source code or canonical methods unless the handoff explicitly authorizes that exact change. Keep private project information out of the public repository. Do not ask for information already available. If a source or tool is unavailable, say exactly what failed and continue only within the evidence and authority you do have.
+
 Never claim automatic memory delivery, continuous cross-chat synchronization, runtime enforcement, consciousness, physical observation, test execution, causal learning or autonomy without evidence. If a source or tool is unavailable, name the exact missing capability/source and continue only within the evidence and authority that remain.
 ```
-
 ## 10. Copy-ready project-chat assignment
 
 Use this short addition when a chat is dedicated to one of the Owner's projects:

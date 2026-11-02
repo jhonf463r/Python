@@ -96,7 +96,45 @@ For material IABV work, the objective-conditioned Space-Time model must include 
 
 Bind the digest to exact source, workspace/project, state ID, generation time, observation time and queue-item evidence. Classify it `FRESH`, `STALE`, `UNAVAILABLE`, `UNVERIFIED`, `CONFLICTED` or `NOT_APPLICABLE`. A committed export is only as current as its recorded generation time. A blank read or caught exception is not an empty queue. Do not substitute an old snapshot for a live runtime signal or allow a panel score to override Owner scope, D019/D020, authorization, dependency or safety gates.
 
-At each material decision, state whether the Control Master signal changed the chosen action, confirmed it, or was unavailable. If the digest is not accessible without starting a runtime, invoking a CLI, opening protected data or changing the environment, mark it unavailable and keep the task within existing authority. Static wiring, a visible property or a successful prompt build does not prove current runtime retrieval, consumption or causal influence. D021 §6D owns the detailed intake/receipt contract.
+### Decision-complete Owner-action preflight (D019 §9E / D020 §9; 2026-11-02 proposal)
+
+This is the execution bridge between the existing Space-Time world model, D021's Owner-input and Control Master intake, and D019/D020's causal selector. It refines the same operating lineage; it does not create a second router, memory, coordinator, approval channel or permission system.
+
+For every material action that would ask the Owner to use a device, application, account, security surface or private UI, complete this order **before the first Owner-facing instruction**:
+
+1. Refresh the exact canonical route, task scope, permission state and relevant revision. `CURRENT-STATE.md` remains the route authority.
+2. Reuse D021 §6B.1's Owner-input ledger, current conversation evidence, completed steps, screenshots and terminal outcomes. Mark facts by provenance; do not repeat settled setup.
+3. For material IABV work, intake D021 §6D's Control Master signal only through an already-available authorized surface. Bind source/scope/state ID/timestamps and classify `FRESH`, `STALE`, `UNAVAILABLE`, `UNVERIFIED`, `CONFLICTED` or `NOT_APPLICABLE`. It informs priority; it never grants permission or replaces the route.
+   At each material decision, state whether the signal changed the chosen action, confirmed it, had no effect, or was unavailable. Static wiring or a committed snapshot does not prove live retrieval, consumption or causal influence.
+4. Complete assistant-side retrieval, comparison and public-product/UI research before assigning local work. Identify the first causal edge and compare only actually available, authorized actors/routes.
+5. Apply the hard authorization/no-bootstrap filter and classify the proposed action (`READ_ONLY`, `REVERSIBLE`, `MUTATING` or `IRREVERSIBLE`). A visible option is not permission.
+6. Build D019 §9E's single `OWNER_ACTION_PACKET`, bind it to D020 §9's advance contract and precompute foreseeable branches, evidence, next actor/action, recovery and stop conditions.
+7. Present one consolidated, actionable instruction containing only the irreducible Owner steps and the branch guidance that can safely be stated in advance. Interpret screenshots/artifacts directly; do not outsource analysis or transcription.
+8. After the real outcome arrives, select its prepared branch, perform newly enabled assistant-side work, verify the target-edge delta and fetch back any authorized write. Record the outcome honestly.
+
+Do not collapse genuinely separate approvals or high-impact confirmations to reduce turn count. If an unpredictable state or missing authorization determines the next action, pause only at that boundary and ask one decision-changing question. If the exact action is not authorized, do not ask the Owner to execute it. If no Owner action is needed, do not invent one.
+
+The minimal decision receipt should expose the result without disclosing private chain-of-thought:
+
+```text
+PRE_ACTION_DECISION_RECEIPT
+OBJECTIVE_AND_ACCEPTANCE=
+CANONICAL_MAIN_SHA_AND_ROUTE=
+CONTROL_MASTER_STATUS_SOURCE_SCOPE_STATE_TIME=
+CONTROL_MASTER_SIGNAL_INFLUENCE=CHANGED_ACTION|CONFIRMED_ACTION|NO_EFFECT|UNAVAILABLE
+KNOWN_INPUTS_REUSED_AND_DO_NOT_REPEAT=
+FIRST_OPEN_CAUSAL_EDGE=
+AUTHORIZATION_PREFLIGHT=
+ACTION_CLASS_AND_ACTOR_SPLIT=
+ASSISTANT_SIDE_WORK_COMPLETED_FIRST=
+OWNER_ACTIONS_AND_EXPECTED_ROUND_TRIPS=
+PREDICTABLE_BRANCHES_AND_ACCEPTANCE_EVIDENCE=
+STOP_AND_RECOVERY_CONDITIONS=
+TARGET_EDGE_DELTA=
+RESULT=TARGET_EDGE_CLOSED|DECISION_UNCERTAINTY_REDUCED|NECESSARY_PREREQUISITE_VERIFIED|PREPARATION_ONLY|NO_PROGRESS|BLOCKED_NO_ADMISSIBLE_ROUTE
+```
+
+Operational success is not a shorter conversation by itself. A later non-identical application must show that precomputation removed at least one avoidable round-trip or prevented a premature action while preserving safety and independently verifying the outcome. Until then `CAUSAL_REUSE=NOT_TESTED`, `RUNTIME_ENFORCEMENT=NOT_PROVEN`, and the method remains a documented candidate. This amendment becomes active only if adopted into live `main`.
 
 ## 4. Adaptive reasoning cycle — from intent to verified state transition
 
