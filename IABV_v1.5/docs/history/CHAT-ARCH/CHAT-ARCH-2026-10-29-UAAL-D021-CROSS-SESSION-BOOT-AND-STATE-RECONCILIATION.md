@@ -381,6 +381,7 @@ Classify carefully:
    - `CROSS_CANDIDATE_INTEGRATION_REVIEW`: inspect live related PR refs, changed-path intersections, shared invariants and merge simulation after the standalone review, or label the phase as limited if related findings were already exposed.
    
    Record related-candidate exposure as `NONE`, `METADATA_ONLY`, `FINDINGS_OR_RATIONALE` or `UNKNOWN`. Do not use another PR's review verdict as proof that this candidate is correct or defective. A merge simulation is evidence of textual mergeability/conflict only; it does not prove semantic preservation. For every conflicted or overlapping path, record the chosen integration order, the invariant that must survive, the resolved result and the exact post-integration diff. If the same session performs both phases, preserve separate receipts and do not relabel the standalone review as fully blinded after integration findings have been disclosed.
+
 When blocked, stop before substantive evaluation and return exactly:
 
 ```text
