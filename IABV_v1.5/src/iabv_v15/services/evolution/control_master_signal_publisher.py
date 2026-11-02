@@ -204,20 +204,11 @@ class ControlMasterSignalPublisher:
                         "reason": "REMOTE_DEFAULT_BRANCH_CHANGED_BEFORE_PUSH",
                         "branch": _SIGNAL_BRANCH,
                     }
-                self._run_git([
-                    "push", "--no-follow-tags", "--no-verify",
-                    "origin", f"HEAD:refs/heads/{_SIGNAL_BRANCH}",
-                ], cwd=checkout)
-                try:
-                    verification_error = self._verify_remote_publication(
-                        checkout=checkout,
-                        expected_commit=commit_sha,
-                        expected_content=expected_content,
-                    )
-                except (OSError, RuntimeError, subprocess.TimeoutExpired):
-                    # The push may already have succeeded. Never report BLOCKED
-                    # or PUBLISHED when the remote postcondition was not observed.
-                    verification_error = "REMOTE_READBACK_FAILED"
+                verification_error = self._push_and_verify(
+                    checkout=checkout,
+                    expected_commit=commit_sha,
+                    expected_content=expected_content,
+                )
                 if verification_error:
                     return {
                         "status": "PUBLISHED_UNVERIFIED",
@@ -416,6 +407,38 @@ class ControlMasterSignalPublisher:
             return False, "PUBLIC_BRANCH_RECONCILIATION_CONFLICT"
         after = self._run_git(["rev-parse", "HEAD"], cwd=checkout).stdout.strip()
         return after != before, None
+
+    def _push_and_verify(
+        self,
+        *,
+        checkout: Path,
+        expected_commit: str,
+        expected_content: str,
+    ) -> str | None:
+        """Read back the remote even when the push command has an ambiguous failure."""
+        push_error: str | None = None
+        try:
+            self._run_git([
+                "push", "--no-follow-tags", "--no-verify",
+                "origin", f"HEAD:refs/heads/{_SIGNAL_BRANCH}",
+            ], cwd=checkout)
+        except (OSError, RuntimeError, subprocess.TimeoutExpired):
+            # A non-zero exit/timeout can occur after the remote accepted the ref.
+            # Read back before classifying the result as failed or uncertain.
+            push_error = "PUSH_COMMAND_RESULT_UNCERTAIN"
+
+        try:
+            verification_error = self._verify_remote_publication(
+                checkout=checkout,
+                expected_commit=expected_commit,
+                expected_content=expected_content,
+            )
+        except (OSError, RuntimeError, subprocess.TimeoutExpired):
+            verification_error = "REMOTE_READBACK_FAILED"
+
+        if push_error and verification_error:
+            return f"PUSH_RESULT_UNVERIFIED:{verification_error}"
+        return verification_error
 
     def _verify_remote_publication(
         self,
