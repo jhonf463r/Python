@@ -1,0 +1,67 @@
+name: IABV Control Master focused tests
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+    paths:
+      - ".github/workflows/iabv-control-master-focused-tests.yml"
+      - "IABV_v1.5/src/iabv_v15/bootstrap.py"
+      - "IABV_v1.5/src/iabv_v15/domain/models.py"
+      - "IABV_v1.5/src/iabv_v15/services/adaptive/adaptive_task_orchestrator.py"
+      - "IABV_v1.5/src/iabv_v15/services/evolution/control_master_digest_builder.py"
+      - "IABV_v1.5/src/iabv_v15/services/evolution/control_master_service.py"
+      - "IABV_v1.5/src/iabv_v15/services/evolution/control_master_signal_projector.py"
+      - "IABV_v1.5/src/iabv_v15/services/evolution/control_master_signal_publisher.py"
+      - "IABV_v1.5/src/iabv_v15/services/llm/system_prompt_builder.py"
+      - "IABV_v1.5/src/iabv_v15/ui/qml/pages/EvolutionCenterPage.qml"
+      - "IABV_v1.5/src/iabv_v15/ui/viewmodels/evolution_center_viewmodel.py"
+      - "IABV_v1.5/tests/test_canonical_work_queue.py"
+      - "IABV_v1.5/tests/test_control_master_signal_projector.py"
+      - "IABV_v1.5/tests/test_evolution_center_viewmodel.py"
+      - "IABV_v1.5/tests/test_system_prompt_builder.py"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: iabv-control-master-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  focused-control-master-tests:
+    name: Control Master / prompt / Evolution Center tests
+    runs-on: windows-latest
+    timeout-minutes: 25
+    env:
+      PYTHONPATH: IABV_v1.5/src
+      IABV_DATA_DIR: ${{ runner.temp }}/iabv-control-master-test-data
+    steps:
+      - name: Check out the reviewed pull-request revision
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v7.1.0
+        with:
+          python-version: "3.11"
+
+      - name: Install project test dependencies
+        run: >-
+          python -m pip install --disable-pip-version-check
+          -e "IABV_v1.5[dev]"
+
+      - name: Run the four focused suites
+        run: >-
+          python -m pytest
+          IABV_v1.5/tests/test_canonical_work_queue.py
+          IABV_v1.5/tests/test_control_master_signal_projector.py
+          IABV_v1.5/tests/test_system_prompt_builder.py
+          IABV_v1.5/tests/test_evolution_center_viewmodel.py
+          -q
