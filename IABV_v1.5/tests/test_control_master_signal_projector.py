@@ -340,3 +340,85 @@ def test_publisher_reports_remote_head_mismatch_after_push(
 
     assert result == "REMOTE_HEAD_MISMATCH"
     assert len(commands) == 1
+
+
+def test_publisher_default_branch_guard_observes_change_between_checks(monkeypatch) -> None:
+    from types import SimpleNamespace
+
+    from iabv_v15.services.evolution.control_master_signal_publisher import (
+        ControlMasterSignalPublisher,
+    )
+
+    publisher = ControlMasterSignalPublisher()
+    responses = [
+        "ref: refs/heads/main\tHEAD\n" + "a" * 40 + "\tHEAD\n",
+        "ref: refs/heads/release\tHEAD\n" + "b" * 40 + "\tHEAD\n",
+    ]
+    commands: list[list[str]] = []
+
+    def fake_run(args, *, cwd=None, allow_returncodes=(0,)):
+        commands.append(list(args))
+        return SimpleNamespace(stdout=responses.pop(0))
+
+    monkeypatch.setattr(publisher, "_run_git", fake_run)
+
+    assert publisher._remote_default_branch_is_main() is True
+    assert publisher._remote_default_branch_is_main() is False
+    assert commands == [
+        ["ls-remote", "--symref", "https://github.com/jhonf463r/Python.git", "HEAD"],
+        ["ls-remote", "--symref", "https://github.com/jhonf463r/Python.git", "HEAD"],
+    ]
+
+
+def test_publisher_reconciles_signal_branch_when_main_advances(tmp_path) -> None:
+    import subprocess
+
+    from iabv_v15.services.evolution.control_master_signal_publisher import (
+        ControlMasterSignalPublisher,
+    )
+
+    def git(*args: str) -> str:
+        completed = subprocess.run(
+            ["git", *args],
+            cwd=tmp_path,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        return completed.stdout.strip()
+
+    git("init", "--initial-branch=main")
+    git("config", "user.name", "IABV Test")
+    git("config", "user.email", "iabv-test@example.invalid")
+    (tmp_path / "README.md").write_text("base\n", encoding="utf-8")
+    git("add", "README.md")
+    git("commit", "-m", "base")
+    git("switch", "-c", "control-master-live")
+
+    signal_path = "IABV_v1.5/data/evolution/control_master/shared_signal.json"
+    signal_file = tmp_path / signal_path
+    signal_file.parent.mkdir(parents=True)
+    signal_file.write_text('{"signal_status":"AVAILABLE"}\n', encoding="utf-8")
+    git("add", signal_path)
+    git("commit", "-m", "publish signal")
+    signal_commit = git("rev-parse", "HEAD")
+
+    git("switch", "main")
+    (tmp_path / "main-only.txt").write_text("ordinary main progress\n", encoding="utf-8")
+    git("add", "main-only.txt")
+    git("commit", "-m", "advance main")
+    main_commit = git("rev-parse", "HEAD")
+    git("switch", "control-master-live")
+
+    reconciled, error = ControlMasterSignalPublisher()._reconcile_public_branch(
+        checkout=tmp_path,
+        main_commit=main_commit,
+    )
+
+    assert error is None
+    assert reconciled is True
+    assert git("merge-base", main_commit, "HEAD") == main_commit
+    assert git("merge-base", signal_commit, "HEAD") == signal_commit
+    changed_paths = git("diff", "--name-only", main_commit, "HEAD").splitlines()
+    assert changed_paths == [signal_path]
+    assert ControlMasterSignalPublisher._public_branch_delta_is_allowlisted(changed_paths)
