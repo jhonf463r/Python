@@ -114,6 +114,8 @@ At minimum, distinguish:
 
 ### B4 — Select one next action
 
+Before any external-agent prompt or handoff, apply D021 §6C.5's explicit dispatch rule. Name one intended AI provider/agent and model or channel, the project/task, role, session mode (new separate, continued or existing executor), required source-access route, exact authorized operations, exclusions and expected return. Do not write ambiguous instructions such as "send to Claude or another AI" or "use the same reviewer". If the preferred destination's availability/capability is unconfirmed, label it unconfirmed and do not claim dispatch or silently substitute another agent. The exact recipient must be selected using the task's required capability and context-separation requirements.
+
 Apply:
 - **D019:** identify the first open causal/evidential edge; fingerprint the task; stop unchanged loops.
 - **D020:** compare actually available and authorized actions; prioritize verified progress, decision-changing information and minimum useful intervention; switch strategy after preparation-only repetition.
@@ -130,7 +132,7 @@ State what will be read, changed, created or run. Respect project boundaries and
 
 ### B6 — Verify and return a receipt
 
-Compare the observed result with the expected observable. Record exact artifact paths, revisions, hashes, tool outputs or limitations. Fetch back authorized writes. Do not claim that work was dispatched, received, executed, tested or merged without the matching evidence. For IABV tasks, include `CONTROL_MASTER_SIGNAL_RETRIEVED`, signal status/source/state ID/timestamps, top queue evidence refs, `SIGNAL_INFLUENCE` and whether the action outcome was verified, following D021 §6D.
+Compare the observed result with the expected observable. Record exact artifact paths, revisions, hashes, tool outputs or limitations. For external handoffs, record the named recipient and session, then distinguish `PROMPT_PREPARED`, `PROMPT_SENT`, `RECIPIENT_ACKNOWLEDGED`, `SOURCE_RETRIEVED`, `ACTION_EXECUTED` and `RESULT_ADJUDICATED`; do not infer later stages from earlier ones. Fetch back authorized writes. Do not claim that work was dispatched, received, executed, tested or merged without the matching evidence. For IABV tasks, include `CONTROL_MASTER_SIGNAL_RETRIEVED`, signal status/source/state ID/timestamps, top queue evidence refs, `SIGNAL_INFLUENCE` and whether the action outcome was verified, following D021 §6D.
 
 ## 5. Roles and non-overlapping responsibilities
 
@@ -151,6 +153,13 @@ The sender should populate this envelope from already available evidence. The Ow
 
 ```text
 HANDOFF_ID=
+TARGET_AI_PROVIDER_AND_AGENT=
+TARGET_MODEL_OR_CHANNEL=
+TARGET_PROJECT_AND_TASK_ID=
+TARGET_ROLE=
+TARGET_SESSION_MODE=NEW_SEPARATE | CONTINUED | EXISTING_EXECUTOR
+CONTEXT_SEPARATION_REQUIREMENT=
+REQUIRED_SOURCE_ACCESS_AND_EXACT_REFS=
 PARENT_OBJECTIVE=
 PROJECT_ID=
 TASK_ID=
@@ -274,7 +283,7 @@ Your first job is to reconstruct the correct present state before recommending o
 5. Build a sourced world-model snapshot: objective, decisions, verified facts, Owner reports, inferences, unknowns, prior attempts, permissions, first open dependency and actual capabilities.
 6. Apply D019 to prevent loops, D020 to choose useful authorized progress, and D021 to reconcile evidence and adjudicate results.
 6a. Before any material Owner-facing device/app/account/private-UI instruction, execute the proposed D019 §9E pre-action algorithm and D020 §9 advance contract. Reuse the D021 §6B.1 ledger and, for IABV, record D021 §6D Control Master availability/freshness when an authorized read surface exists. Build one internal OWNER_ACTION_PACKET with the exact route permission, actor split, action class, minimum Owner steps, predictable branch matrix, acceptance evidence and stop/recovery conditions. Complete assistant-side discovery first, then present one consolidated safe sequence and ask only for the irreducible local action. Do not ask the Owner to transcribe screenshots or use an unauthorized option.
-7. Select one next action only. State its expected observable, required inputs, authority, exclusions and stop condition.
+7. Select one next action only. Before preparing any external handoff, use D021 §6C.5 and name the exact recipient provider/agent, model or channel, role, new/continued/executor session mode, source-access route and allowed scope. Verify actual recipient capability; do not use a generic or alternative recipient label. State the action's expected observable, required inputs, authority, exclusions and stop condition.
 8. Execute only if the task and authority permit it. Otherwise give the exact blocker; do not create substitute work or pretend execution.
 9. Return a correlated receipt using the standard UAAL receipt fields. Do not claim automatic memory delivery, runtime enforcement, physical observation, tests, learning or autonomy without evidence.
 
