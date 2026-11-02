@@ -900,3 +900,29 @@ No `Passkey (FIDO2)` entry was visible in the reported inventory. Classify:
 **Important interpretation:** Microsoft documents that the Security info registration label `Microsoft Authenticator: (Notification/Code)` represents an MFA registration, distinct from `Microsoft Authenticator: Passwordless phone sign-in`. Neither label is equivalent to an Entra `Passkey (FIDO2)` credential. The current Owner-reported screen therefore confirms Authenticator MFA, not FIDO2 or a digital signature.
 
 **Microsoft source basis checked 2026-11-02:** [Authenticator registration types](https://learn.microsoft.com/en-us/entra/identity/authentication/concept-authentication-authenticator-app); [register a FIDO2 passkey with a security key](https://learn.microsoft.com/en-us/entra/identity/authentication/how-to-register-passkey-with-security-key); [enable Passkey (FIDO2) policy](https://learn.microsoft.com/en-us/entra/identity/authentication/how-to-authentication-passkeys-fido2). This is a branch-only continuity update. It does not change canonical `main`, configure Entra policy, create credentials, satisfy G1, or authorize protected reads.
+
+#### 6D.5E.2 Owner-provided Entra passkey option screen (2026-11-02; pre-registration)
+
+The Owner supplied a screenshot of the Security info "Add a sign-in method" chooser. The visible options are:
+1. `Passkey in Microsoft Authenticator` (Spanish UI: `Clave de paso en Microsoft Authenticator`; label says sign in with face, fingerprint or PIN).
+2. `Passkey` (generic passkey provider/security key flow).
+3. `Microsoft Authenticator` (MFA approval or one-time codes).
+
+**Evidence:** `OWNER_REPORTED_SCREENSHOT_VISIBLE` for all three offered options. This confirms the user-facing registration flow currently offers the Authenticator-specific passkey route. It does not yet prove that a credential has been created, accepted by Entra, registered on the authentication server, or usable for sign-in.
+
+**Chosen route for guided Owner enrollment:** option 1, `Passkey in Microsoft Authenticator`, because the Owner already reported that the dedicated `IABV Owner` account is present in the existing Authenticator app. Do not select the generic Passkey option or the old MFA option for this specific enrollment. Microsoft documentation says Authenticator passkeys are device-bound and hardware-backed (iOS Secure Enclave; Android Keystore with supported secure hardware); they do not sync to another phone. Keep the current password and MFA method as fallback and do not delete them.
+
+**Registration procedure:** the Owner starts the Authenticator-specific option from Security info; completes any fresh MFA challenge; follows the browser/app handoff to the existing Authenticator account; creates the passkey in Authenticator using the device screen lock/biometric/PIN; returns to the browser and completes server-side verification. The procedure may require Android 14+ or iOS 17+. A method is counted as registered only after Security info displays the resulting passkey entry and the registration flow confirms completion. A locally created but server-unregistered credential is not accepted as proof.
+
+**Security and evidence boundary:**
+- `PASSKEY_AUTHENTICATOR_OPTION=OWNER_REPORTED_VISIBLE`.
+- `PASSKEY_AUTHENTICATOR_REGISTRATION=NOT_YET_PERFORMED`.
+- `PASSKEY_AUTHENTICATOR_SERVER_ACCEPTANCE=NOT_ESTABLISHED`.
+- `OWNER_AUTHENTICATION_MFA=OWNER_REPORTED_READY`.
+- `OWNER_DECISION_SIGNATURE=NOT_ESTABLISHED`.
+- `ISSUER_HOST_BINDING=NOT_ESTABLISHED`.
+- `M1A_G1=NOT_ESTABLISHED`.
+
+The passkey authenticates the Owner to Microsoft Entra; it is not itself a digital signature of an arbitrary IABV authority decision, does not create the IABV root of trust, and does not bind an issuer, Windows principal or exact server instance. Those validations remain separate. This is a branch-only continuity receipt and does not modify canonical `main` or authorize product runtime/protected reads.
+
+**Microsoft source basis checked 2026-11-02:** [Register passkeys in Authenticator](https://learn.microsoft.com/en-us/entra/identity/authentication/how-to-register-passkey-authenticator); [Authenticator passkey requirements and policy](https://learn.microsoft.com/en-us/entra/identity/authentication/how-to-enable-authenticator-passkey); [Passkey FAQ and device-bound storage](https://learn.microsoft.com/en-us/entra/identity/authentication/passkey-faq).
