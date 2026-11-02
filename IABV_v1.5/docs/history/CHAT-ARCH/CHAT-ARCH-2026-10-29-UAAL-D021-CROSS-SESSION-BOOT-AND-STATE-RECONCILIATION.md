@@ -926,3 +926,23 @@ The Owner supplied a screenshot of the Security info "Add a sign-in method" choo
 The passkey authenticates the Owner to Microsoft Entra; it is not itself a digital signature of an arbitrary IABV authority decision, does not create the IABV root of trust, and does not bind an issuer, Windows principal or exact server instance. Those validations remain separate. This is a branch-only continuity receipt and does not modify canonical `main` or authorize product runtime/protected reads.
 
 **Microsoft source basis checked 2026-11-02:** [Register passkeys in Authenticator](https://learn.microsoft.com/en-us/entra/identity/authentication/how-to-register-passkey-authenticator); [Authenticator passkey requirements and policy](https://learn.microsoft.com/en-us/entra/identity/authentication/how-to-enable-authenticator-passkey); [Passkey FAQ and device-bound storage](https://learn.microsoft.com/en-us/entra/identity/authentication/passkey-faq).
+
+#### 6D.5E.3 Safety correction — visible option is not enrollment authorization (2026-11-02)
+
+The Owner's screenshot establishes that the Security info UI offers `Passkey in Microsoft Authenticator`. The prior coordinator instruction to select it and proceed with registration was premature because it did not first reconcile the active canonical no-bootstrap boundary.
+
+**Controlling rule:** `OPTION_D=RATIFIED_NO_BOOTSTRAP` and D021 §8 excludes creation of Entra registrations/authority assets unless the canonical route is explicitly changed by an authorized, sufficiently scoped decision. A visible menu option proves availability in the UI, not permission to register. Therefore:
+- `PASSKEY_AUTHENTICATOR_OPTION=OWNER_REPORTED_VISIBLE`.
+- `PASSKEY_AUTHENTICATOR_REGISTRATION=NOT_AUTHORIZED_UNDER_CURRENT_ROUTE`.
+- `PASSKEY_AUTHENTICATOR_SERVER_ACCEPTANCE=NOT_ESTABLISHED`.
+- `OWNER_MFA=OWNER_REPORTED_READY`.
+- `OWNER_DECISION_SIGNATURE=NOT_ESTABLISHED`.
+- `G1=NOT_ESTABLISHED`; `PROTECTED_READS=FAIL_CLOSED`.
+
+**Immediate operator correction:** do not select the option, create/register a passkey, alter Entra authentication policy, change Conditional Access, request admin-role elevation, remove existing MFA/password methods, or change any host/runtime setting under the current route. Leave the chooser and existing account methods unchanged. The first option remains a technically plausible future phishing-resistant Owner-authentication method, but it is neither an IABV root nor an arbitrary decision-signing credential.
+
+**What must change before enrollment can be proposed:** the canonical active route must identify an exact Owner-authorized, bounded Entra registration action; its target tenant/account, specific credential type, platform prerequisites, permitted side effects, rollback/recovery, expected server-side registration evidence and post-enrollment test must be defined. The route owner must explicitly authorize that exact mutation. A generic request to "help establish trust", a visible option or a successful MFA event cannot silently override the ratified no-bootstrap decision.
+
+**Why this correction matters:** Authenticator MFA/Passkey can authenticate a human to Microsoft Entra; it does not by itself issue a signed IABV authority mandate, prove custody/provenance of an IABV trust root, authenticate the IABV issuer, or bind the issuer to the exact Windows principal and server instance. Do not claim G1 closure from passkey enrollment alone.
+
+**Incident classification:** `COORDINATOR_ERROR=ADVANCED_OWNER_MUTATION_BEFORE_ACTIVE_ROUTE_AND_AUTHORIZATION_PREFLIGHT`; `CORRECTION=PAUSE_REGISTRATION_AND_ADD_PRE_ACTION_DECISION_BUNDLE_TO_D019_D020`; `PRODUCT_IMPLEMENTATION=NOT_AUTHORIZED`; `AUTOMATIC_FOLLOW_ON=FALSE`. This subsection supersedes any earlier procedural wording in §6D.5E.2 that appears to direct immediate registration. It is branch-only and does not modify canonical `main`.
