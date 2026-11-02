@@ -542,7 +542,7 @@ This section integrates the corrections from the 2026-11-02 Control Master bridg
 
 Before drafting a Codex/Claude prompt or making a consequential repository action, bind the task to the following tuple:
 
-`BT`text
+```text
 TASK_ID=
 PROJECT_ID=
 OPERATING_CONTEXT=
@@ -559,7 +559,7 @@ OWNER_AUTHORIZATION_SCOPE=
 EXPLICIT_EXCLUSIONS=
 EXPECTED_OBSERVABLE=
 STOP_CONDITION=
-`BT§BT
+```
 
 For a task without a PR, mark the PR fields `NOT_APPLICABLE`; do not omit the distinction. Record source and observation time. A remembered SHA, an earlier assistant message, a task number or a branch-like name is not a live reference.
 
@@ -632,7 +632,7 @@ For Control Master, record whether the signal was fresh/stale/unavailable/unveri
 
 Every material handoff or repository action returns one compact receipt:
 
-`BT`text
+```text
 TASK_ID=
 OBSERVED_AT=
 REPOSITORY=
@@ -653,7 +653,7 @@ STOP_CONDITION_OR_NEXT_DEPENDENCY=
 FETCH_BACK=VERIFIED|PARTIAL|NOT_RUN
 MAIN_CHANGED=TRUE|FALSE
 MERGE_OR_PUBLICATION=NOT_ATTEMPTED|VERIFIED|UNVERIFIED
-`BT§BT
+```
 
 Do not claim that another chat received or applied the method from a link, commit or handoff attempt. Do not claim tests, build, runtime, publication, merge or learning without the matching evidence.
 
