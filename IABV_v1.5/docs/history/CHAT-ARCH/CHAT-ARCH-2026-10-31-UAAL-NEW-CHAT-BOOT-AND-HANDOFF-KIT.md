@@ -134,13 +134,26 @@ For a PR, record the repository, PR number, actual PR source branch, exact sourc
 Verify that the intended recipient has the exact checkout/worktree and authorized runner needed for the requested action. For GitHub Actions, inspect the live workflow's event, branch/path filters, runner OS and exact command; an unrelated Windows workflow is not a valid runner for this task. Record `NO_MATCHING_CI_ROUTE` separately from `RUNNER_UNAVAILABLE`, and distinguish `ACTIONS_ACCOUNT_RESTRICTION` / `RUNNER_JOB_NOT_STARTED` when a matched workflow is accepted but GitHub refuses to start the job. If Actions accepts the event but does not start a job because of an account-level platform restriction, record `ACTIONS_ACCOUNT_RESTRICTION` and `RUNNER_JOB_NOT_STARTED`; if the workflow definition is rejected before job creation, record `WORKFLOW_CONFIGURATION_ERROR`. Do not manufacture a matching path change or add an unapproved workflow just to obtain a green check. A GitHub connector does not imply Codex has a local checkout or Windows runner. If the recipient reports no authorized runner or no checkout, classify the capability as unavailable and do not request tests/build/runtime from that actor. Choose an authorized static/documentary step or stop on the dependency.
 
 Before a consequential write, refresh the target ref and re-check volatile preconditions. Use expected-SHA ref updates where supported. Batch related writes into one coherent commit where possible; do not treat connector-generated commit count as progress. Apply UAAL-D021 §6F for the full guard and receipt.
+
+### B4.2 — Verify source-package transport before substantive handoff
+
+For an external review or execution task, apply D021 §6E.6A whenever the recipient cannot independently retrieve the exact source through an available authorized route.
+
+- `RECIPIENT_LIVE_FETCH` is verified only when the receiver independently fetches the exact live base/head/source and reports the observed revisions and source coverage.
+- `ATTACHED_PACKAGE` requires the actual package bytes to be present in the outgoing message, not merely a URL, PR link, filename or instruction to download/attach it.
+- Before marking an attachment verified, check that it is visibly attached in the sending surface and record its filename, format, source identity and digest when available.
+- Require a receiver acknowledgement that confirms it can open/read the package and echoes enough identity data to correlate it. A generic acknowledgement is not enough.
+- A coordinator-exported or Owner-supplied patch supports a bounded static review only. Do not call it independent live retrieval; preserve `SOURCE_IDENTITY_VERIFICATION=COORDINATOR_ATTESTED` or `OWNER_ATTESTED` and `REVIEW_CLASS=BOUNDED_STATIC_PACKAGE`.
+- If source bytes, identity, attachment or receiver acknowledgement are missing, keep `PROMPT_PREPARED` / `HANDOFF_BLOCKED`, set substantive review/execution to `NOT_RUN`, and stop. Do not repeat a prompt that cannot change the missing precondition.
+- Never tell the Owner to generate or diagnose an artifact that the coordinator can retrieve or assemble through currently available authorized tools. If an exact manual attachment is irreducible, identify the already-prepared artifact and the single required action; do not imply it has been attached or sent.
+
 ### B5 — Execute only within declared authority
 
 State what will be read, changed, created or run. Respect project boundaries and exact permissions. A documentation-only authorization does not permit source implementation, credentials, portals, protected reads, tests, build, runtime, tunnel, deployment or changes to another project.
 
 ### B6 — Verify and return a receipt
 
-Compare the observed result with the expected observable. Record exact artifact paths, revisions, hashes, tool outputs or limitations. For external handoffs, record the named recipient and session, then distinguish `PROMPT_PREPARED`, `PROMPT_SENT`, `RECIPIENT_ACKNOWLEDGED`, `SOURCE_RETRIEVED`, `ACTION_EXECUTED` and `RESULT_ADJUDICATED`; do not infer later stages from earlier ones. Fetch back authorized writes. Do not claim that work was dispatched, received, executed, tested or merged without the matching evidence. For IABV tasks, include `CONTROL_MASTER_SIGNAL_RETRIEVED`, signal status/source/state ID/timestamps, top queue evidence refs, `SIGNAL_INFLUENCE` and whether the action outcome was verified, following D021 §6D. For repository/test tasks, also bind the result to exact base/head SHAs, actual PR source branch, changed-path/blob SHAs, executor/runner, command and test-file blobs; distinguish `VERIFIED`, `ACTOR_REPORTED`, `AUTHORED_NOT_RUN` and `NOT_RUN` under D021 §6F.
+Compare the observed result with the expected observable. Record exact artifact paths, revisions, hashes, tool outputs or limitations. For external handoffs, record the named recipient and session, then distinguish `PROMPT_PREPARED`, `PROMPT_SENT`, `RECIPIENT_ACKNOWLEDGED`, `SOURCE_RETRIEVED`, `ACTION_EXECUTED` and `RESULT_ADJUDICATED`; do not infer later stages from earlier ones. When a package is required, additionally verify `SOURCE_PACKAGE_STATUS`, `OUTBOUND_ATTACHMENT_STATUS` and `RECEIVER_ATTACHMENT_ACK`; require the receiver to echo source identity and coverage. A coordinator-exported attachment remains a bounded static review unless the receiver independently live-fetches the exact source. Fetch back authorized writes. Do not claim that work was dispatched, received, executed, tested or merged without the matching evidence. For IABV tasks, include `CONTROL_MASTER_SIGNAL_RETRIEVED`, signal status/source/state ID/timestamps, top queue evidence refs, `SIGNAL_INFLUENCE` and whether the action outcome was verified, following D021 §6D. For repository/test tasks, also bind the result to exact base/head SHAs, actual PR source branch, changed-path/blob SHAs, executor/runner, command and test-file blobs; distinguish `VERIFIED`, `ACTOR_REPORTED`, `AUTHORED_NOT_RUN` and `NOT_RUN` under D021 §6F.
 
 ## 5. Roles and non-overlapping responsibilities
 
@@ -168,6 +181,15 @@ TARGET_ROLE=
 TARGET_SESSION_MODE=NEW_SEPARATE | CONTINUED | EXISTING_EXECUTOR
 CONTEXT_SEPARATION_REQUIREMENT=
 REQUIRED_SOURCE_ACCESS_AND_EXACT_REFS=
+SOURCE_PACKAGE_REQUIRED=YES|NO
+SOURCE_ACQUISITION_METHOD=RECIPIENT_LIVE_FETCH|ATTACHED_PACKAGE|OWNER_SUPPLIED_PACKAGE|LINK_ONLY|UNKNOWN
+SOURCE_PACKAGE_FILENAME_FORMAT_AND_IDENTITY=
+SOURCE_PACKAGE_DIGEST=SHA256_OR_GIT_BLOB_SHA_OR_NOT_AVAILABLE
+OUTBOUND_ATTACHMENT_STATUS=NOT_REQUIRED|NOT_ATTACHED|ATTACHED_VERIFIED|UNKNOWN
+RECEIVER_ATTACHMENT_ACK=NOT_REQUIRED|PENDING|VERIFIED|FAILED
+SOURCE_IDENTITY_VERIFICATION=RECIPIENT_LIVE_VERIFIED|COORDINATOR_ATTESTED|OWNER_ATTESTED|UNVERIFIED
+SOURCE_COVERAGE=COMPLETE|PARTIAL|NOT_ASSESSED
+REVIEW_CLASS=INDEPENDENT_LIVE|BOUNDED_STATIC_PACKAGE|NOT_RUN
 PARENT_OBJECTIVE=
 PROJECT_ID=
 TASK_ID=
@@ -202,6 +224,7 @@ STOP_CONDITION=
 - Pin project sources and artifact revisions; never expose secrets or unnecessary private data.
 - State the exact task, acceptance criteria, authorized actions and exclusions.
 - Preserve the owning project's task route; a specialist handoff does not create a competing active task.
+- Before sending, verify that every required source package's actual bytes are present and correctly identified. If an attachment is required, confirm the file is actually attached in the outbound surface; a URL or instruction to attach it is not an attachment.
 
 ### 6.2 Receiver obligations
 
@@ -210,6 +233,7 @@ STOP_CONDITION=
 - Reconcile with the live owning state before action.
 - Do not repeat already-settled Owner questions.
 - Return a correlated receipt; if blocked, identify the exact missing evidence and stop condition instead of inventing work.
+- Confirm whether the actual package is attached/readable or independently live-fetched. Echo its filename and correlating revision fields (for example base SHA, head SHA and changed-path count); do not acknowledge a prompt or link as receipt of package bytes.
 
 ## 7. Standard return receipt
 
@@ -222,6 +246,13 @@ PROJECT_ID=
 ROLE=
 OBSERVED_AT=
 SOURCE_REVISION_OR_ARTIFACTS=
+SOURCE_PACKAGE_REQUIRED_AND_STATUS=
+SOURCE_ACQUISITION_METHOD_AND_IDENTITY=
+SOURCE_PACKAGE_DIGEST_AND_COVERAGE=
+OUTBOUND_ATTACHMENT_STATUS=
+RECEIVER_ATTACHMENT_ACK=
+SOURCE_IDENTITY_VERIFICATION=
+REVIEW_CLASS=INDEPENDENT_LIVE|BOUNDED_STATIC_PACKAGE|NOT_RUN
 MEMORY_RETRIEVED=VERIFIED | PARTIAL | NOT_RETRIEVED
 METHOD_ACTIVATED=VERIFIED | PARTIAL | NOT_VERIFIED
 METHOD_APPLIED=VERIFIED | PARTIAL | NOT_VERIFIED
@@ -312,6 +343,7 @@ Your first job is to reconstruct the correct present state before recommending o
 8. Before drafting an external-agent prompt, repository write, PR operation or test request, bind the exact task, repository, base SHA, actual PR source branch/head SHA, target paths/blob SHAs, Owner authorization, recipient checkout/runner capability, expected observable and stop condition. Apply D021 §6F only when it is present in the pinned canonical main; if it exists only on a candidate branch, label it candidate-only and do not claim it is adopted. A similarly named branch is not the PR source branch.
    - For every external-agent handoff, apply D021 §6C.5 and name one exact provider/agent, model or channel, role, session mode, source-access route, permitted scope, exclusions and expected return. Do not use "Claude or another AI", "same reviewer" or another ambiguous substitute. Verify the recipient's actual capability; otherwise mark it unconfirmed and do not claim dispatch.
    - For independent/adversarial review, apply D021 §6B.2: record reviewer-context separation separately from source-acquisition method, identity and coverage; pin the exact base/HEAD/diff; exclude candidate-specific prior findings and author rationale; and classify unexamined dimensions as NOT_ASSESSED.
+   - Apply D021 §6E.6A to the source package. If the receiver cannot live-fetch the exact source, attach the actual package bytes and verify the attachment in the outgoing surface; do not substitute a link or an instruction to download. Obtain the receiver's explicit file-read acknowledgement with matching identity fields before substantive review. If either side cannot verify the package, stop with `REVIEW=NOT_RUN`. A coordinator-exported package supports only `BOUNDED_STATIC_PACKAGE` unless the reviewer independently fetches and verifies the live source.
 
 9. Execute only within the exact declared authority. Do not expand scope, bypass a failed prerequisite, access protected data, use credentials, alter permissions, start local runtime/bridge/tunnel, or claim tests/build/runtime were run without correlated evidence. Do not merge a PR without separate explicit Owner approval.
 
