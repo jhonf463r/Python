@@ -2,22 +2,47 @@
   "objective_id": "obj-super-sync-outcome-loop",
   "kind": "task",
   "title": "Cierre de loop: TaskOutcomeRecorder -> ControlMasterService",
-  "summary": "Hoy cuando una sesion completa un objetivo o marca UNRESOLVED nada lo registra automaticamente en el control maestro. Conectar TaskOutcomeRecorder con mark_objective(completed) / mark_unresolved para cerrar el loop de aprendizaje sin intervencion humana.",
+  "summary": "Existe un hook opt-in en TaskOutcomeRecorder: propaga estados terminales cuando la sesión incluye `control_master_objective_id` y procesa `control_master_unresolved` cuando se suministra. El bootstrap conecta el servicio y existe test source. No equivale a propagación universal/automática: depende de metadatos explícitos, el hook es best-effort y sus excepciones se absorben. Tests, runtime, postcondition fetch-back y generalización siguen sin verificarse.",
   "parent_id": "obj-control-master-super-sync",
   "root_id": "obj-control-master-super-sync",
   "site_id": null,
   "priority": 30,
   "status": "active",
-  "progress": 0.0,
+  "progress": 0,
   "blocker": "",
-  "confidence": 0.0,
-  "evidence_refs": [],
+  "confidence": 0,
+  "evidence_refs": [
+    "IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-11-02-UAAL-CONTROL-MASTER-SOURCE-OBJECTIVE-RECONCILIATION-R1.md"
+  ],
   "tags": [
     "control-master",
     "learning",
     "super-sync"
   ],
-  "metadata": {},
+  "metadata": {
+    "source_reconciliation_r1": {
+      "audit_id": "IABV_UAAL_CONTROL_MASTER_SOURCE_OBJECTIVE_RECONCILIATION_R1_20261102",
+      "observed_at": "2026-11-02T19:16:00Z",
+      "source_main_sha": "a64f9e331ccbf13225ed5a3d945e16586e8756db",
+      "classification": "OPT_IN_OUTCOME_PROPAGATION_PRESENT_IN_SOURCE; TEST_SOURCE_PRESENT_BUT_NOT_RUN; UNIVERSAL_PROPAGATION_NOT_ESTABLISHED",
+      "runtime_verification": "NOT_RUN",
+      "live_control_master_signal": "UNAVAILABLE",
+      "acceptance_evidence_still_required": [
+        "verify objective-id metadata correlation for a real task",
+        "verify terminal status mapping and outcome persistence",
+        "make propagation failure observable without breaking session recording",
+        "fetch back the owning objective and test a later non-identical reuse"
+      ],
+      "evidence_paths": [
+        "IABV_v1.5/src/iabv_v15/services/adaptive/task_outcome_recorder.py",
+        "IABV_v1.5/src/iabv_v15/services/adaptive/adaptive_task_orchestrator.py",
+        "IABV_v1.5/src/iabv_v15/bootstrap.py",
+        "IABV_v1.5/tests/test_control_master_outcome_loop.py"
+      ],
+      "receipt_path": "IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-11-02-UAAL-CONTROL-MASTER-SOURCE-OBJECTIVE-RECONCILIATION-R1.md",
+      "objective_state_preserved": true
+    }
+  },
   "created_at_utc": "2026-04-19T19:22:00.747349Z",
-  "updated_at_utc": "2026-04-19T19:22:00.747351Z"
+  "updated_at_utc": "2026-11-02T19:16:00Z"
 }
