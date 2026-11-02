@@ -1000,3 +1000,66 @@ At the reviewed functional source HEAD, GitHub reported zero combined status che
 - Native QML/AppBootstrap integration, complete repository suites, build, runtime and publication remain `NOT_RUN`.
 - `OPTION_D=RATIFIED_NO_BOOTSTRAP`; `G1/G2/G3=NOT_ESTABLISHED`; protected reads remain `FAIL_CLOSED`. No M1A gate, credential, permission, tunnel or local-runtime state changed.
 - Follow-up reviews are `COMMENTED`, not approvals. PR #591 remains Draft and unmerged.
+
+
+### 6D.5G Dedicated CI route, workflow correction and account billing lock (2026-11-02; branch-only)
+
+This receipt supersedes the earlier `NO_MATCHING_CI_ROUTE` observation only for PR #591. The existing main-branch M1A workflow still does not match this PR; a dedicated, narrowly scoped workflow was added to the actual PR branch.
+
+**Exact workflow target**
+
+```text
+REPOSITORY=jhonf463r/Python
+PR=591
+BASE=main@a64f9e331ccbf13225ed5a3d945e16586e8756db
+BRANCH=iabv/control-master-signal-bridge-r1-20261031-review
+WORKFLOW=.github/workflows/iabv-control-master-focused-tests.yml
+LATEST_WORKFLOW_BLOB=baadd228fe983dae73be88780775517e1ce9691e
+LATEST_BRANCH_HEAD=efd2e04e65acefbc221a78e364a6ba7f89cd1a90
+TRIGGER=pull_request; base=main; relevant source/test/workflow paths only
+RUNNER=windows-latest
+PYTHON=3.11
+PERMISSIONS=contents:read
+SECRETS=NONE
+DEPLOYMENT_OR_PUBLICATION=NONE
+TESTS=four focused suites
+```
+
+The workflow runs:
+- `tests/test_canonical_work_queue.py`
+- `tests/test_control_master_signal_projector.py`
+- `tests/test_system_prompt_builder.py`
+- `tests/test_evolution_center_viewmodel.py`
+
+It checks out the PR revision without persisted credentials, installs the existing `IABV_v1.5[dev]` extra and places `IABV_DATA_DIR` in the test step environment, where the GitHub Actions `runner` context is valid. The workflow uses only the PR event to avoid duplicate push+pull-request runs. It does not use `pull_request_target`, write permissions, tokens, secrets or deployment actions.
+
+**Observed first-run workflow-definition defects and correction**
+
+- Run `41518778170` rejected the initial workflow because `runner.temp` was referenced in job-level `env`.
+- Run `41518883184` rejected the subsequent branch-trigger revision for the same invalid context scope.
+- The path was moved to the test step's `env`. GitHub then accepted the workflow and created a pull-request synchronize run. This is configuration correction, not product-code failure.
+
+**Current external blocker**
+
+- Run `41519008799` (push event) and run `41519019291` (PR #591 synchronize) were both accepted by Actions but the job was **not started**.
+- GitHub's explicit annotation: `The job was not started because your account is locked due to a billing issue.`
+- The job contains no executed steps; tests did not begin. The workflow/job API returned no steps/jobs for these no-start runs.
+- Correct classification: `ACTIONS_ACCOUNT_BILLING_LOCK=BLOCKED`; `RUNNER_JOB_NOT_STARTED=TRUE`; `TESTS=NOT_RUN`. This is not a test failure, code failure, missing workflow route or proof that Windows runners are unavailable.
+- The repository is public and this workflow uses a standard GitHub-hosted Windows runner. The published GitHub billing guidance says standard hosted runners in public repositories are free; nevertheless, the account-level billing lock prevented the job from starting. Do not create additional workflows, switch to self-hosted/larger runners, add dummy mutations or seek another billing bypass to evade the lock.
+- Only an authorized Owner/account administrator can resolve the account billing restriction through GitHub's normal account process. Do not ask for credentials, payment details or billing secrets in chat.
+
+**Acceptance state**
+
+```text
+WORKFLOW_YAML=ACCEPTED_BY_GITHUB
+WORKFLOW_EVENT=MATCHED
+RUNNER_JOB_START=BLOCKED_BY_ACCOUNT_BILLING_LOCK
+TESTS=NOT_RUN
+BUILD=NOT_RUN
+NATIVE_QML_APPBOOTSTRAP=NOT_RUN
+LIVE_CONTROL_MASTER=UNAVAILABLE
+PUBLIC_SIGNAL_PUBLISHED=FALSE
+MERGE=NOT_AUTHORIZED
+```
+
+The actual source publisher and four regression tests remain at their previously recorded blobs; the later commits in this receipt are workflow and documentation changes only. PR #591 remains Draft and unmerged. This branch-only receipt changes no M1A gates, Option D, protected-read, credentials or local-runtime boundaries.
