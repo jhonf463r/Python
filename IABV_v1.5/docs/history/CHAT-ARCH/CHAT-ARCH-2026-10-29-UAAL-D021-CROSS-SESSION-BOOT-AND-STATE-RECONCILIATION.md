@@ -1002,7 +1002,7 @@ At the reviewed functional source HEAD, GitHub reported zero combined status che
 - Follow-up reviews are `COMMENTED`, not approvals. PR #591 remains Draft and unmerged.
 
 
-### 6D.5G Dedicated CI route, workflow correction and account billing lock (2026-11-02; branch-only)
+### 6D.5G Dedicated CI route, workflow correction and account platform restriction (2026-11-02; branch-only)
 
 This receipt supersedes the earlier `NO_MATCHING_CI_ROUTE` observation only for PR #591. The existing main-branch M1A workflow still does not match this PR; a dedicated, narrowly scoped workflow was added to the actual PR branch.
 
@@ -1042,18 +1042,18 @@ It checks out the PR revision without persisted credentials, installs the existi
 **Current external blocker**
 
 - Run `41519008799` (push event) and run `41519019291` (PR #591 synchronize) were both accepted by Actions but the job was **not started**.
-- GitHub's explicit annotation: `The job was not started because your account is locked due to a billing issue.`
+- GitHub's explicit annotation: `GitHub reported an account-level platform restriction; the exact account annotation is intentionally not copied into this public receipt.`
 - The job contains no executed steps; tests did not begin. The workflow/job API returned no steps/jobs for these no-start runs.
-- Correct classification: `ACTIONS_ACCOUNT_BILLING_LOCK=BLOCKED`; `RUNNER_JOB_NOT_STARTED=TRUE`; `TESTS=NOT_RUN`. This is not a test failure, code failure, missing workflow route or proof that Windows runners are unavailable.
-- The repository is public and this workflow uses a standard GitHub-hosted Windows runner. The published GitHub billing guidance says standard hosted runners in public repositories are free; nevertheless, the account-level billing lock prevented the job from starting. Do not create additional workflows, switch to self-hosted/larger runners, add dummy mutations or seek another billing bypass to evade the lock.
-- Only an authorized Owner/account administrator can resolve the account billing restriction through GitHub's normal account process. Do not ask for credentials, payment details or billing secrets in chat.
+- Correct classification: `ACTIONS_ACCOUNT_RESTRICTION=BLOCKED`; `RUNNER_JOB_NOT_STARTED=TRUE`; `TESTS=NOT_RUN`. This is not a test failure, code failure, missing workflow route or proof that Windows runners are unavailable.
+- The repository is public and this workflow uses a standard GitHub-hosted Windows runner. The published GitHub billing guidance says standard hosted runners in public repositories are free; nevertheless, the account-level platform restriction prevented the job from starting. Do not create additional workflows, switch to self-hosted/larger runners, add dummy mutations or seek another billing bypass to evade the lock.
+- Only an authorized Owner/account administrator can resolve the account-level platform restriction through GitHub's normal account process. Do not ask for credentials, payment details or billing secrets in chat.
 
 **Acceptance state**
 
 ```text
 WORKFLOW_YAML=ACCEPTED_BY_GITHUB
 WORKFLOW_EVENT=MATCHED
-RUNNER_JOB_START=BLOCKED_BY_ACCOUNT_BILLING_LOCK
+RUNNER_JOB_START=BLOCKED_BY_PLATFORM_ACCOUNT_RESTRICTION
 TESTS=NOT_RUN
 BUILD=NOT_RUN
 NATIVE_QML_APPBOOTSTRAP=NOT_RUN
