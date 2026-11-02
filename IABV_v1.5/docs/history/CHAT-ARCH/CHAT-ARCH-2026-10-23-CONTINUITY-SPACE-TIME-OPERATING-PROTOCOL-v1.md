@@ -105,6 +105,7 @@ For every material action that would ask the Owner to use a device, application,
 1. Refresh the exact canonical route, task scope, permission state and relevant revision. `CURRENT-STATE.md` remains the route authority.
 2. Reuse D021 §6B.1's Owner-input ledger, current conversation evidence, completed steps, screenshots and terminal outcomes. Mark facts by provenance; do not repeat settled setup.
 3. For material IABV work, intake D021 §6D's Control Master signal only through an already-available authorized surface. Bind source/scope/state ID/timestamps and classify `FRESH`, `STALE`, `UNAVAILABLE`, `UNVERIFIED`, `CONFLICTED` or `NOT_APPLICABLE`. It informs priority; it never grants permission or replaces the route.
+   At each material decision, state whether the signal changed the chosen action, confirmed it, had no effect, or was unavailable. Static wiring or a committed snapshot does not prove live retrieval, consumption or causal influence.
 4. Complete assistant-side retrieval, comparison and public-product/UI research before assigning local work. Identify the first causal edge and compare only actually available, authorized actors/routes.
 5. Apply the hard authorization/no-bootstrap filter and classify the proposed action (`READ_ONLY`, `REVERSIBLE`, `MUTATING` or `IRREVERSIBLE`). A visible option is not permission.
 6. Build D019 §9E's single `OWNER_ACTION_PACKET`, bind it to D020 §9's advance contract and precompute foreseeable branches, evidence, next actor/action, recovery and stop conditions.
@@ -120,6 +121,7 @@ PRE_ACTION_DECISION_RECEIPT
 OBJECTIVE_AND_ACCEPTANCE=
 CANONICAL_MAIN_SHA_AND_ROUTE=
 CONTROL_MASTER_STATUS_SOURCE_SCOPE_STATE_TIME=
+CONTROL_MASTER_SIGNAL_INFLUENCE=CHANGED_ACTION|CONFIRMED_ACTION|NO_EFFECT|UNAVAILABLE
 KNOWN_INPUTS_REUSED_AND_DO_NOT_REPEAT=
 FIRST_OPEN_CAUSAL_EDGE=
 AUTHORIZATION_PREFLIGHT=
