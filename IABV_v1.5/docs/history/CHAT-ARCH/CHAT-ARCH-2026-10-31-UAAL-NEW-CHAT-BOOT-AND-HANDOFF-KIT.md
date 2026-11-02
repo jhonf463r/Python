@@ -118,7 +118,7 @@ Apply:
 - **D019:** identify the first open causal/evidential edge; fingerprint the task; stop unchanged loops.
 - **D020:** compare actually available and authorized actions; prioritize verified progress, decision-changing information and minimum useful intervention; switch strategy after preparation-only repetition.
 - **D021:** reconcile source and time, build the objective-conditioned world model, adjudicate prior results and select one next action with observable outcome and stop condition.
-- **D021 §6D:** intake the Control Master signal, distinguish its freshness/availability, reconcile it with the canonical route and explain whether it changed or confirmed the selected action.
+- **D019 §9E + D020 §9 (proposed activation gate):** before any material Owner-facing device/app/account/private-UI instruction, build one internal `OWNER_ACTION_PACKET` from the D021 §6B.1 known-input ledger, the current route/permissions and the D021 §6D signal status when relevant. Finish assistant-side retrieval/research first; define the actor split, action class, exact mutation permission, predictable branch matrix, acceptance evidence and stop/recovery conditions. Give one consolidated safe sequence; interpret screenshots directly; ask only for an irreducible local observation/action. Never treat a visible UI option as authorization. This proposal becomes canonical only after adoption.
 
 Do not select an action merely because it is easy to describe. Do not bypass a missing prerequisite, access denial, technical gate or owner authorization.
 
@@ -271,6 +271,7 @@ Your first job is to reconstruct the correct present state before recommending o
 4. Before asking the Owner anything, recover the known-input ledger from available conversation context and project records. Never repeat a settled fact or ask the Owner to design the technical solution.
 5. Build a sourced world-model snapshot: objective, decisions, verified facts, Owner reports, inferences, unknowns, prior attempts, permissions, first open dependency and actual capabilities.
 6. Apply D019 to prevent loops, D020 to choose useful authorized progress, and D021 to reconcile evidence and adjudicate results.
+6a. Before any material Owner-facing device/app/account/private-UI instruction, execute the proposed D019 §9E pre-action algorithm and D020 §9 advance contract. Reuse the D021 §6B.1 ledger and, for IABV, record D021 §6D Control Master availability/freshness when an authorized read surface exists. Build one internal OWNER_ACTION_PACKET with the exact route permission, actor split, action class, minimum Owner steps, predictable branch matrix, acceptance evidence and stop/recovery conditions. Complete assistant-side discovery first, then present one consolidated safe sequence and ask only for the irreducible local action. Do not ask the Owner to transcribe screenshots or use an unauthorized option.
 7. Select one next action only. State its expected observable, required inputs, authority, exclusions and stop condition.
 8. Execute only if the task and authority permit it. Otherwise give the exact blocker; do not create substitute work or pretend execution.
 9. Return a correlated receipt using the standard UAAL receipt fields. Do not claim automatic memory delivery, runtime enforcement, physical observation, tests, learning or autonomy without evidence.
