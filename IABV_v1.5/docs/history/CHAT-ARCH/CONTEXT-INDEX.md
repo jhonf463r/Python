@@ -13,6 +13,7 @@ Activate the existing operating lineage as relevant to the objective:
 - UAAL-D020: verified-progress utility, minimum useful action and strategy switch.
 - UAAL-D021: live-state reconciliation, objective-conditioned world model and adjudication of incoming AI/reviewer/tool results before another handoff.
 - Before an Owner-dependent question, apply D021 §6B.1: recover the Owner-known-input ledger from canonical history; ask only for genuinely missing, decision-changing evidence.
+- Before a material Owner-facing device/app/account/private-UI instruction, apply proposed D019 §9E and D020 §9: reuse the D021 §6B.1 ledger, reconcile D021 §6D when relevant, complete assistant-side discovery first, and prepare one internal `OWNER_ACTION_PACKET` with permission, actor split, action class, branch matrix, acceptance evidence and stop rule. Give one consolidated safe sequence; interpret screenshots directly; ask only for the irreducible local action. This proposal does not grant mutation authority and is not canonical until adopted.
 
 For each material handoff, rebind evidence to exact source/ref/blob and time; distinguish verified observations, actor reports, inference, hypotheses, unknowns and not-run actions; define an observable and stop condition; then verify the outcome and fetch back authorized writeback. A link or saved file does not prove another chat received or used the memory.
 
