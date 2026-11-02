@@ -347,9 +347,12 @@ REVIEW_CONTEXT_SEPARATION_RECEIPT = {
   CONTEXT_SEPARATION: PASS | LIMITED | BLOCKED,
   SOURCE_ACQUISITION_METHOD: RECIPIENT_LIVE_FETCH | ATTACHED_PACKAGE | OWNER_SUPPLIED_PACKAGE | COORDINATOR_EXPORTED_PACKAGE | OTHER | UNKNOWN,
   SOURCE_IDENTITY_VERIFICATION: RECIPIENT_LIVE_VERIFIED | COORDINATOR_ATTESTED | OWNER_ATTESTED | ACTOR_ATTESTED | UNVERIFIED,
-  SOURCE_COVERAGE: FULL_BASE_HEAD_DIFF | PINNED_DIFF_WITH_HUNKS | PARTIAL_SOURCE | UNKNOWN,
+  SOURCE_COVERAGE: COMPLETE | PARTIAL | NOT_ASSESSED,
   SOURCE_RETRIEVAL_STATUS: PASS | LIMITED | BLOCKED
 }
+```
+
+Use the same SOURCE_COVERAGE enum throughout D021 and the Boot Kit: COMPLETE means all source material required for the declared review scope was retrieved and inspected; PARTIAL means some, but not all, of that scope was available or inspected; NOT_ASSESSED means the source/review was unavailable or not substantively assessed. This field describes coverage, while SOURCE_RETRIEVAL_STATUS independently describes the acquisition route. A blocked review remains NOT_ASSESSED, not PARTIAL.
 ```
 
 Classify carefully:
@@ -807,6 +810,14 @@ The coordinator performs retrieval, reconciliation, source navigation, file comp
 ## 6F. Pre-action precision gate, branch identity and anti-waste execution loop (2026-11-02)
 
 This section integrates the corrections from the 2026-11-02 Control Master bridge review into the existing UAAL loop. It is a mandatory decision gate for material work, external-agent handoffs, repository edits, PR reviews and test requests. It does not create a new coordinator, router, memory store, service or technical authority. `CURRENT-STATE.md` remains the sole active route authority; Owner authorization remains action-specific.
+
+### 6F.0 Canonical trigger set and project boundary
+
+Apply D021 §6F before any material work item, external-agent handoff, PR/branch operation, repository/source edit, PR review or test request. Apply §6F only when it is present in the pinned canonical main; if it exists only on a candidate branch, label it candidate-only and do not claim it is adopted.
+
+This is the one canonical trigger set for this gate; AGENTS, Space-Time, CONTEXT-INDEX and the New-Chat Boot Kit must point to this sentence rather than redefine the trigger list.
+
+Project boundary: §6F is a method/evidence gate, not a project router, state source, permission grant or new technical authority. For IABV tasks, CURRENT-STATE.md remains the sole route/gate authority and Owner authorization remains operation-specific; all M1A, protected-read, runtime and bridge exclusions remain unchanged. For non-IABV tasks, reuse §6F as method-only guidance and retrieve that project's own canonical state; do not import IABV project state, Control Master objectives, Owner identity inputs, M1A gates, root/handle evidence or permissions.
 
 ### 6F.1 Build one exact target-and-authority bundle before proposing work
 

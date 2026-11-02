@@ -122,7 +122,7 @@ Apply:
 - **D021:** reconcile source and time, build the objective-conditioned world model, adjudicate prior results and select one next action with observable outcome and stop condition.
 - **D021 §6B.2:** before dispatching or claiming an independent/adversarial review, record reviewer-context separation separately from source-acquisition method, source identity and source coverage; pin base/HEAD/diff; and exclude prior candidate-specific findings and author analysis. A coordinator-exported or user-supplied diff is a `LIMITED` source route and supports only a bounded static assessment, not independent live retrieval. If context separation or source retrieval is `BLOCKED`, stop before substantive review; mark all unexamined dimensions `NOT_ASSESSED`, never `PARTIAL`, `PASS` or `FAIL`.
 - **D021 §6D:** intake the Control Master signal, distinguish its freshness/availability, reconcile it with the canonical route and explain whether it changed or confirmed the selected action.
-- **D021 §6F (candidate-aware):** for material work, external-agent handoffs, PR/branch operations, repository/source edits, PR reviews and test requests, apply §6F only when it is present in the pinned canonical main. If it exists only on a candidate branch, treat it as candidate-only and do not claim it is adopted. Verify exact repository/PR/branch/HEAD identity, actual executor/runner, authorization, volatile preconditions, source/test blobs, expected observable and stop condition before drafting or writing.
+- **D021 §6F:** Apply D021 §6F before any material work item, external-agent handoff, PR/branch operation, repository/source edit, PR review or test request. Apply §6F only when it is present in the pinned canonical main; if it exists only on a candidate branch, label it candidate-only and do not claim it is adopted. Verify exact repository/PR/branch/HEAD identity, actual executor/runner, authorization, volatile preconditions, source/test blobs, expected observable and stop condition before drafting or writing.
 - **D019 §9E + D020 §9 (adopted pre-action gate):** before any material Owner-facing device/app/account/private-UI instruction, build one internal `OWNER_ACTION_PACKET` from the D021 §6B.1 known-input ledger, the current route/permissions and the D021 §6D signal status when relevant. Finish assistant-side retrieval/research first; define the actor split, action class, exact mutation permission, predictable branch matrix, acceptance evidence and stop/recovery conditions. Give one consolidated safe sequence; interpret screenshots directly; ask only for an irreducible local observation/action. Never treat a visible UI option as authorization. This adopted method does not grant authority to bypass `CURRENT-STATE.md` or action-specific approval.
 
 Do not select an action merely because it is easy to describe. Do not bypass a missing prerequisite, access denial, technical gate or owner authorization.
@@ -133,7 +133,7 @@ For a PR, record the repository, PR number, actual PR source branch, exact sourc
 
 Verify that the intended recipient has the exact checkout/worktree and authorized runner needed for the requested action. For GitHub Actions, inspect the live workflow revision, event, branch/path filters, runner OS and exact command; an unrelated Windows workflow is not a valid runner for this task. Record `NO_MATCHING_CI_ROUTE` separately from `RUNNER_UNAVAILABLE`. If a matching event is accepted but no job starts because of an account/platform restriction, record `ACTIONS_ACCOUNT_RESTRICTION` and `RUNNER_JOB_NOT_STARTED`. If GitHub rejects the workflow definition before job creation, record `WORKFLOW_CONFIGURATION_ERROR`. Do not manufacture a matching path change or add an unapproved workflow merely to obtain a green check. A GitHub connector does not imply Codex has a local checkout or Windows runner. If the recipient reports no authorized runner or no checkout, do not request tests/build/runtime from that actor; choose an authorized static/documentary step or stop on the dependency.
 
-Before a consequential write, refresh the target ref and re-check volatile preconditions. Use expected-SHA ref updates where supported. Batch related writes into one coherent commit where possible; do not treat connector-generated commit count as progress. Apply UAAL-D021 §6F for the full guard and receipt.
+Before a consequential write, refresh the target ref and re-check volatile preconditions. Use expected-SHA ref updates where supported. Batch related writes into one coherent commit where possible; do not treat connector-generated commit count as progress. Apply D021 §6F only when present in the pinned canonical main; if it exists only on a candidate branch, keep it candidate-only and do not claim adoption. When adopted, apply its full guard and correlated receipt.
 
 ### B4.2 — Verify source-package transport before substantive handoff
 
@@ -257,11 +257,20 @@ OBSERVED_AT=
 SOURCE_REVISION_OR_ARTIFACTS=
 SOURCE_PACKAGE_REQUIRED=YES|NO
 SOURCE_PACKAGE_STATUS=NOT_REQUIRED|IDENTIFIED|BYTES_PRESENT|IDENTITY_VERIFIED|PARTIAL|LINK_ONLY|UNAVAILABLE|MISMATCH|BLOCKED|UNKNOWN
-SOURCE_ACQUISITION_METHOD_AND_IDENTITY=
-SOURCE_PACKAGE_DIGEST_AND_COVERAGE=
+SOURCE_ACQUISITION_METHOD=
+SOURCE_PACKAGE_PRODUCER=
+SOURCE_PACKAGE_FILENAME_AND_FORMAT=
+SOURCE_PACKAGE_IDENTITY=
+SOURCE_PACKAGE_DIGEST=
+SOURCE_PACKAGE_DIGEST_BASIS=
+RECEIVER_FILE_DERIVED_EVIDENCE=
+RECEIVER_EVIDENCE_PROVENANCE=
 OUTBOUND_ATTACHMENT_STATUS=
 RECEIVER_ATTACHMENT_ACK=
+RECEIVER_SOURCE_ACK=
 SOURCE_IDENTITY_VERIFICATION=
+SOURCE_COVERAGE=COMPLETE|PARTIAL|NOT_ASSESSED
+CONTEXT_SEPARATION=PASS|LIMITED|BLOCKED|NOT_ASSESSED
 REVIEW_CLASS=INDEPENDENT_LIVE|BOUNDED_STATIC_PACKAGE|NOT_RUN|NOT_APPLICABLE
 MEMORY_RETRIEVED=VERIFIED | PARTIAL | NOT_RETRIEVED
 METHOD_ACTIVATED=VERIFIED | PARTIAL | NOT_VERIFIED
@@ -350,7 +359,7 @@ Your first job is to reconstruct the correct present state before recommending o
 
 7a. Before any material Owner-facing device/app/account/private-UI instruction, apply D019 §9E and D020 §9. Reuse the D021 §6B.1 ledger and, for IABV, record D021 §6D Control Master availability/freshness when an authorized read surface exists. Build one internal OWNER_ACTION_PACKET with the exact route permission, actor split, action class, minimum Owner steps, predictable branch matrix, acceptance evidence and stop/recovery conditions. Complete assistant-side discovery first, then present one consolidated safe sequence and ask only for the irreducible local action. Do not ask the Owner to transcribe screenshots or use an unauthorized option.
 
-8. Before any material work, external-agent handoff, PR/branch operation, repository/source edit, PR review or test request, bind the exact task, repository, base SHA, actual PR source branch/head SHA, target paths/blob SHAs, Owner authorization, recipient checkout/runner capability, expected observable and stop condition. Apply D021 §6F only when it is present in the pinned canonical main; if it exists only on a candidate branch, label it candidate-only and do not claim it is adopted. Apply D021 §6E.6A only when it is present in that same pinned canonical main; if it exists only in the candidate under review, evaluate it as proposed text and do not claim it is already adopted. A similarly named branch is not the PR source branch.
+8. Apply D021 §6F before any material work item, external-agent handoff, PR/branch operation, repository/source edit, PR review or test request. Apply §6F only when it is present in the pinned canonical main; if it exists only on a candidate branch, label it candidate-only and do not claim it is adopted. Bind the exact task, repository, base SHA, actual PR source branch/head SHA, target paths/blob SHAs, Owner authorization, recipient checkout/runner capability, expected observable and stop condition. Apply D021 §6E.6A only when it is present in that same pinned canonical main; if it exists only in the candidate under review, evaluate it as proposed text and do not claim it is already adopted. A similarly named branch is not the PR source branch.
    - For every external-agent handoff, apply D021 §6C.5 and name one exact provider/agent, model or channel, role, session mode, source-access route, permitted scope, exclusions and expected return. Do not use "Claude or another AI", "same reviewer" or another ambiguous substitute. Verify the recipient's actual capability; otherwise mark it unconfirmed and do not claim dispatch.
    - For independent/adversarial review, apply adopted D021 §6B.2: record `CONTEXT_SEPARATION` separately from source acquisition, identity and coverage; pin the exact base/HEAD/diff; exclude candidate-specific prior findings and author rationale before source inspection; and classify unexamined dimensions as `NOT_ASSESSED`. A same-conversation review that has already seen evaluative PR-body content about the same candidate is `BLOCKED` for a blinded review; do not label it `INDEPENDENT_LIVE`.
    - Apply D021 §6E.6A only under the canonical-main/candidate-only rule in step 8. For `RECIPIENT_LIVE_FETCH`, verify the receiver's live source identity and byte-derived acknowledgement; set attachment fields to `NOT_REQUIRED`. For a transfer route, verify actual bytes, sender-side status and the receiver's correlated byte-derived acknowledgement. If bytes, identity, coverage or acknowledgement are missing, incomplete or mismatched, stop with `REVIEW=NOT_RUN` for the claimed scope. A coordinator-exported package supports only `BOUNDED_STATIC_PACKAGE` unless the reviewer independently fetches and verifies the live source.
@@ -361,8 +370,9 @@ Your first job is to reconstruct the correct present state before recommending o
 
 Do not change another project's state, IABV CURRENT-STATE, permissions, source code or canonical methods unless the handoff explicitly authorizes that exact change. Keep private project information out of the public repository. Do not ask for information already available. If a source or tool is unavailable, say exactly what failed and continue only within the evidence and authority you do have.
 
-Never claim automatic memory delivery, continuous cross-chat synchronization, runtime enforcement, consciousness, physical observation, test execution, causal learning or autonomy without evidence. If a source or tool is unavailable, name the exact missing capability/source and continue only within the evidence and authority that remain.
+Never claim automatic memory delivery, continuous cross-chat synchronization, runtime enforcement, consciousness, physical observation, test execution, causal learning or autonomy without evidence.
 ```
+
 ## 10. Copy-ready project-chat assignment
 
 Use this short addition when a chat is dedicated to one of the Owner's projects:
