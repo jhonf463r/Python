@@ -2,18 +2,43 @@
   "objective_id": "obj-control-master-super-sync",
   "kind": "objective",
   "title": "Capa Control Maestro: super sincronia entre sesiones",
-  "summary": "Garantizar que cualquier IA (Codex, ChatGPT, Devin, Claude) que tome el proyecto pueda leer y escribir el estado real sin pegar historial de chat. Usa ControlMasterDigest como unica fuente compacta de verdad.",
+  "summary": "Objetivo paraguas: lograr continuidad verificable entre sesiones mediante el ControlMasterDigest y el ciclo de resultados existente. La auditoría estática de main@a64f9e3 encontró componentes y rutas parciales, pero no demuestra lectura/escritura viva de extremo a extremo, recepción automática por todas las sesiones ni influencia causal generalizada. Mantener activo hasta verificar las aceptaciones de la reconciliación R1.",
   "parent_id": null,
   "root_id": "obj-control-master-super-sync",
   "site_id": null,
   "priority": 10,
   "status": "active",
-  "progress": 0.0,
+  "progress": 0,
   "blocker": "",
-  "confidence": 0.0,
-  "evidence_refs": [],
+  "confidence": 0,
+  "evidence_refs": [
+    "IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-11-02-UAAL-CONTROL-MASTER-SOURCE-OBJECTIVE-RECONCILIATION-R1.md"
+  ],
   "tags": [],
-  "metadata": {},
+  "metadata": {
+    "source_reconciliation_r1": {
+      "audit_id": "IABV_UAAL_CONTROL_MASTER_SOURCE_OBJECTIVE_RECONCILIATION_R1_20261102",
+      "observed_at": "2026-11-02T19:16:00Z",
+      "source_main_sha": "a64f9e331ccbf13225ed5a3d945e16586e8756db",
+      "classification": "SOURCE_COMPONENTS_PRESENT; END_TO_END_CROSS_SESSION_SYNC_NOT_ESTABLISHED",
+      "runtime_verification": "NOT_RUN",
+      "live_control_master_signal": "UNAVAILABLE",
+      "acceptance_evidence_still_required": [
+        "source-identified current digest from an already-authorized read surface",
+        "full/compact consumer parity and visible failure semantics",
+        "correlated receiving-session retrieval and decision receipt",
+        "later non-identical causal reuse and outcome fetch-back"
+      ],
+      "evidence_paths": [
+        "IABV_v1.5/src/iabv_v15/services/evolution/control_master_service.py",
+        "IABV_v1.5/src/iabv_v15/services/evolution/control_master_digest_builder.py",
+        "IABV_v1.5/src/iabv_v15/services/adaptive/adaptive_task_orchestrator.py",
+        "IABV_v1.5/src/iabv_v15/services/llm/system_prompt_builder.py"
+      ],
+      "receipt_path": "IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-11-02-UAAL-CONTROL-MASTER-SOURCE-OBJECTIVE-RECONCILIATION-R1.md",
+      "objective_state_preserved": true
+    }
+  },
   "created_at_utc": "2026-04-19T19:22:00.737214Z",
-  "updated_at_utc": "2026-04-19T19:22:00.737216Z"
+  "updated_at_utc": "2026-11-02T19:16:00Z"
 }
