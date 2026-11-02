@@ -387,21 +387,6 @@ class ControlMasterSignalPublisher:
         after = self._run_git(["rev-parse", "HEAD"], cwd=checkout).stdout.strip()
         return after != before, None
 
-    @staticmethod
-    def _default_branch_is_main(remote_head: str) -> bool:
-        default_refs = [
-            parts[1]
-            for line in remote_head.splitlines()
-            if len(parts := line.split()) == 3 and parts[0] == "ref:" and parts[2] == "HEAD"
-        ]
-        return default_refs == ["refs/heads/main"] and _SIGNAL_BRANCH != "main"
-
-    def _remote_default_branch_is_main(self) -> bool:
-        remote_head = self._run_git(
-            ["ls-remote", "--symref", _REPOSITORY_URL, "HEAD"]
-        ).stdout
-        return self._default_branch_is_main(remote_head)
-
     def _verify_remote_publication(
         self,
         *,
