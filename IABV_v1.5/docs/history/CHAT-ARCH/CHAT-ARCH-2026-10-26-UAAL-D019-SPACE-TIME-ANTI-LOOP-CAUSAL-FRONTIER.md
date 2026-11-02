@@ -307,7 +307,7 @@ OWNER_ACTION_PACKET = {
 
 ### Selection rule and stopping criterion
 
-A candidate Owner action is admissible only if it passes the D019 authorization filter and demonstrates one of `CLOSE`, `DISCRIMINATE`, `ENABLE` or `PRESERVE_SAFETY` under D020. Among admissible actions, prefer the option that minimizes Owner round-trips, repeated facts, manual transcription, irreversible effects and verification burden while maximizing decision-changing evidence. Owner-effort optimization never overrides a permission gate.
+A candidate Owner action is admissible only if it passes the D019 authorization filter and demonstrates one of `CLOSE`, `DISCRIMINATE`, `ENABLE` or `PRESERVE_SAFETY` under D020. Among admissible actions, prefer the option that minimizes Owner round-trips, repeated facts, manual transcription, irreversible effects and verification burden while maximizing decision-changing evidence. Owner-effort optimization never overrides a permission gate or the requirement for separate explicit confirmation of irreversible or high-impact actions.
 
 If the assistant cannot construct the branch matrix because a material precondition is unknown, it must first try to resolve that precondition through authorized sources. If no source can resolve it, ask only for that single necessary observation and explain why the branch depends on it. If the action itself is not authorized, stop before asking the Owner to execute it.
 
