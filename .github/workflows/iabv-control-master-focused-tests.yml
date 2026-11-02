@@ -59,7 +59,6 @@ jobs:
     timeout-minutes: 25
     env:
       PYTHONPATH: IABV_v1.5/src
-      IABV_DATA_DIR: ${{ runner.temp }}/iabv-control-master-test-data
     steps:
       - name: Check out the reviewed pull-request revision
         uses: actions/checkout@v7.0.1
@@ -77,6 +76,8 @@ jobs:
           -e "IABV_v1.5[dev]"
 
       - name: Run the four focused suites
+        env:
+          IABV_DATA_DIR: ${{ runner.temp }}/iabv-control-master-test-data
         run: >-
           python -m pytest
           IABV_v1.5/tests/test_canonical_work_queue.py
