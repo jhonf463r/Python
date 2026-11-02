@@ -534,6 +534,132 @@ The coordinator performs retrieval, reconciliation, source navigation, file comp
 - Connected apps in ChatGPT: https://help.openai.com/en/articles/11487775-connected-apps-in-chatgpt
 - Memory in ChatGPT: https://help.openai.com/en/articles/8590148-memory-in-chatgpt
 
+## 6F. Pre-action precision gate, branch identity and anti-waste execution loop (2026-11-02)
+
+This section integrates the corrections from the 2026-11-02 Control Master bridge review into the existing UAAL loop. It is a mandatory decision gate for material work, external-agent handoffs, repository edits, PR reviews and test requests. It does not create a new coordinator, router, memory store, service or technical authority. `CURRENT-STATE.md` remains the sole active route authority; Owner authorization remains action-specific.
+
+### 6F.1 Build one exact target-and-authority bundle before proposing work
+
+Before drafting a Codex/Claude prompt or making a consequential repository action, bind the task to the following tuple:
+
+`BT`text
+TASK_ID=
+PROJECT_ID=
+OPERATING_CONTEXT=
+TASK_SCOPE=DOCS|SOURCE|TESTS|BUILD|RUNTIME|REVIEW|OTHER
+REPOSITORY=
+BASE_REF=
+BASE_SHA=
+TARGET_PR=
+PR_HEAD_BRANCH=
+PR_HEAD_SHA=
+REQUESTED_BRANCH=
+TARGET_PATHS_AND_CURRENT_BLOB_SHAS=
+OWNER_AUTHORIZATION_SCOPE=
+EXPLICIT_EXCLUSIONS=
+EXPECTED_OBSERVABLE=
+STOP_CONDITION=
+`BT§BT
+
+For a task without a PR, mark the PR fields `NOT_APPLICABLE`; do not omit the distinction. Record source and observation time. A remembered SHA, an earlier assistant message, a task number or a branch-like name is not a live reference.
+
+The actual PR head branch and SHA must be read from the live PR/ref. The branch requested in an earlier prompt is only a requested target until it is proven identical. If names or commit ancestry differ, classify `BRANCH_IDENTITY_MISMATCH` or `BRANCHES_DIVERGED`; do not silently switch, rename, rebase, cherry-pick, recreate or open a second candidate. Compare both exact refs and stop before writes until the intended owner target is clear. A branch with a similar prefix is not an alias.
+
+### 6F.2 Capability and permission preflight — do not send impossible work
+
+Before delegating, verify separately that the receiving actor actually has:
+- the correct repository and exact ref/HEAD;
+- the intended checkout/worktree, when local inspection or edits are required;
+- an available executor and the required interpreter/toolchain, when tests/build are requested;
+- the explicit permission needed for each read, write, test, build or runtime operation;
+- the exact files and source revision needed to complete the bounded task.
+
+A GitHub connector's ability to read or write remote repository objects does not prove that Codex has a local checkout, that a Windows workspace is attached, or that a test runner exists. A reported `BLOCKED_NO_AUTHORIZED_RUNNER`, missing checkout or unavailable capability is not a code defect and is not permission to bypass the boundary. Do not issue a test command to an actor that has already reported no authorized runner. Choose a useful, authorized static/documentation action if one exists; otherwise record the dependency and stop.
+
+Owner inputs already reconciled in canonical history must be reused. Ask one question only when a genuinely missing answer would change the authorized choice. Never ask the Owner to repeat settled identity, setup, branch or approval facts.
+
+### 6F.3 Repository and branch identity guard
+
+For every PR operation, record and verify all four identities: repository, PR number, actual source branch, and actual source HEAD SHA. Also record the base branch and base SHA. Do not derive the actual PR branch from a previously prepared task prompt.
+
+Before writing:
+1. Refresh live `main` and the target PR/ref.
+2. Confirm the exact source branch and HEAD SHA still match the bundle.
+3. Inspect the relevant final diff and exact source/test blobs, not merely commit count or PR title.
+4. If the PR head moved, the branch disappeared, the branch name differs, or the compare status is unexpected, stop and reconcile. Do not apply a write against a stale assumption.
+5. For ref updates, use an expected-SHA/lease check where the interface supports it; never force-update to “make it fit”.
+
+The two Control Master bridge branches observed on 2026-11-02 are separate refs: `iabv/control-master-signal-bridge-r1-20261031` and the actual PR #591 source `iabv/control-master-signal-bridge-r1-20261031-review`. Their common base at the observed revision did not make them aliases. Only the actual PR source may be modified for PR #591 unless the Owner separately changes the target.
+
+### 6F.4 Temporal preconditions, TOCTOU and safe branch reconciliation
+
+A precondition that may change between inspection and action must be checked again at the narrowest practical point immediately before the write/side effect. Record both observations and the interval. For a public-branch publisher, checking the remote default branch only at startup is insufficient: re-check it immediately before pushing. If the value changed, fail closed and do not push.
+
+A last-moment client-side re-check narrows but does not eliminate a race: the remote default branch can still change after the check and before the server accepts the push. Do not describe this as atomic protection. Absolute prevention requires a server-side invariant or an atomic server operation that binds the target ref to the non-default condition. Preserve this residual risk in review and acceptance language.
+
+When a dedicated signal branch is behind current `main`, do not treat ordinary new `main` commits as contamination and do not force-push or overwrite the signal branch. Use a normal, non-force fast-forward/merge reconciliation of current `main` into the signal branch, then compare the resulting complete tree against the exact current `main` tree. Continue only when the sole remaining delta is the allowlisted signal file. If merge conflicts occur or any non-allowlisted delta remains, stop fail-closed. Verify the subsequent normal push by remote ref, fetched commit and exact file bytes. A successful merge/read-back proves branch consistency, not signal authenticity or M1A authority.
+
+### 6F.5 Batch writes and verify the final artifact, not activity volume
+
+Group related edits into one coherent tree/commit when the Git interface permits it. Prefer create-blob/create-tree/create-commit and one guarded ref update over a sequence of one-file commits. If the available interface only supports sequential file updates, keep the sequence minimal, verify each resulting blob and inspect the final aggregate diff. Connector-generated commits are transport artifacts; `ahead_by`, commit count, file count, tool-call count and text volume are not independent deliverables or progress metrics.
+
+After writing, fetch every changed path back from the exact candidate ref. Verify the final base/head, changed-path set, blob identities, scope and exclusions. A successful API write is not enough; it must be reconciled against the intended branch and final diff.
+
+### 6F.6 Evidence-bound testing and result classification
+
+A test result is valid only for the exact source revision it exercised. Bind every execution result to:
+- exact commit/HEAD SHA;
+- exact source and test file blob SHAs;
+- exact command and selected test set;
+- executor/runner, OS, interpreter and relevant environment;
+- exit code and raw result summary;
+- whether the run was independent, reported by an actor, or observed directly.
+
+A prior `11 passed` result on earlier publisher/projector/test blobs does not validate changed blobs or the current PR HEAD. Label results `VERIFIED`, `ACTOR_REPORTED`, `AUTHORED_NOT_RUN`, `CI_REPORTED`, or `NOT_RUN` as applicable. No runner, no checkout, an unavailable workflow, or a permission block is not a passing test and must not be hidden by a synthetic harness. A bounded harness result must state what it stubbed and what integration paths it did not exercise.
+
+Use a specific stop classification rather than a generic `BLOCKED`:
+`BRANCH_IDENTITY_MISMATCH`, `AUTHORITY_NOT_GRANTED`, `CAPABILITY_UNAVAILABLE`, `WORKSPACE_NOT_ATTACHED`, `SOURCE_UNAVAILABLE`, `PRECONDITION_CHANGED`, `MERGE_CONFLICT`, `TESTS_NOT_RUN`, `TEST_FAILURE`, `INTEGRATION_UNVERIFIED`, or `TOOL_TRANSPORT_FAILURE`. Preserve confirmed defects separately from hypotheses and missing evidence.
+
+### 6F.7 Anti-waste selector and causal learning
+
+Before repeating any attempt, compute a task fingerprint from the objective, first open causal/evidential edge, exact target/ref, preconditions, attempted operation and expected observable. Compare it with the terminal fingerprints already recorded under D019. A new chat, changed wording, new task ID, new branch suffix or repeated prompt is not a material delta. Retry only when new source evidence, a changed precondition, a corrected operation or an explicitly authorized scope changes the expected result.
+
+Select the smallest action that creates verified progress or decision-changing evidence. Exhaust already-authorized repository/source tools before asking the Owner to copy information manually. If the same blocker remains and no authorized discriminating action exists, stop that lane; continue a genuinely independent lane only when the Owner's current objective and that lane's authorization support it. Do not invent a new runner, memory store, router or live signal.
+
+For Control Master, record whether the signal was fresh/stale/unavailable/unverified, what exact queue evidence was considered, and whether it changed the selected action, confirmed it, had no effect, or was unavailable. A signal is not consumed merely because it was fetched or included in a prompt. A causal-learning claim requires a later, non-identical task/session to retrieve the rule, apply it, and demonstrate an attributable improvement. Until then, report only that the rule was stored or explicitly applied in the current bounded episode.
+
+### 6F.8 Minimum correlated receipt
+
+Every material handoff or repository action returns one compact receipt:
+
+`BT`text
+TASK_ID=
+OBSERVED_AT=
+REPOSITORY=
+BASE_REF_AND_SHA=
+TARGET_PR=
+ACTUAL_HEAD_BRANCH_AND_SHA=
+REQUESTED_BRANCH_AND_MATCH_STATUS=
+CHANGED_PATHS_AND_BLOB_SHAS=
+CONTROL_MASTER_SIGNAL_STATUS_AND_DECISION_INFLUENCE=
+CAPABILITY_PREFLIGHT=
+AUTHORIZATION_SCOPE_AND_EXCLUSIONS=
+ACTION_ATTEMPTED=
+TEST_COMMAND_AND_EXACT_HEAD=
+TEST_STATUS=VERIFIED|ACTOR_REPORTED|AUTHORED_NOT_RUN|NOT_RUN
+EXPECTED_VS_ACTUAL=
+ROOT_CAUSE_CLASS=
+STOP_CONDITION_OR_NEXT_DEPENDENCY=
+FETCH_BACK=VERIFIED|PARTIAL|NOT_RUN
+MAIN_CHANGED=TRUE|FALSE
+MERGE_OR_PUBLICATION=NOT_ATTEMPTED|VERIFIED|UNVERIFIED
+`BT§BT
+
+Do not claim that another chat received or applied the method from a link, commit or handoff attempt. Do not claim tests, build, runtime, publication, merge or learning without the matching evidence.
+
+**Observed triggers for this revision (2026-11-02):** PR #591's actual source branch had a `-review` suffix while a separately existing requested branch lacked it; Codex reported no authorized runner/checkout and did not run tests; the public signal publisher checked the remote default branch before cloning but not immediately before push; the publisher rejected every non-signal tree delta against live `main` without first reconciling ordinary `main` advancement; historical test success was attached to earlier blobs; and the connector-generated PR history had many sequential commits that did not represent separate deliveries. These observations require the guards above. They do not authorize a merge, public signal publication, local/protected read, runtime operation, or any M1A gate transition.
+
+
 ## 7. Historical authoring snapshot and per-session falsifiable checks
 
 The values below are the original D021 authoring snapshot, not current route authority. Each material session must refresh live `main` and current PR metadata before reuse. Observed while preparing the initial revision:
