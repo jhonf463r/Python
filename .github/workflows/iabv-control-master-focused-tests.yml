@@ -1,25 +1,6 @@
 name: IABV Control Master focused tests
 
 on:
-  push:
-    branches:
-      - iabv/control-master-signal-bridge-r1-20261031-review
-    paths:
-      - ".github/workflows/iabv-control-master-focused-tests.yml"
-      - "IABV_v1.5/src/iabv_v15/bootstrap.py"
-      - "IABV_v1.5/src/iabv_v15/domain/models.py"
-      - "IABV_v1.5/src/iabv_v15/services/adaptive/adaptive_task_orchestrator.py"
-      - "IABV_v1.5/src/iabv_v15/services/evolution/control_master_digest_builder.py"
-      - "IABV_v1.5/src/iabv_v15/services/evolution/control_master_service.py"
-      - "IABV_v1.5/src/iabv_v15/services/evolution/control_master_signal_projector.py"
-      - "IABV_v1.5/src/iabv_v15/services/evolution/control_master_signal_publisher.py"
-      - "IABV_v1.5/src/iabv_v15/services/llm/system_prompt_builder.py"
-      - "IABV_v1.5/src/iabv_v15/ui/qml/pages/EvolutionCenterPage.qml"
-      - "IABV_v1.5/src/iabv_v15/ui/viewmodels/evolution_center_viewmodel.py"
-      - "IABV_v1.5/tests/test_canonical_work_queue.py"
-      - "IABV_v1.5/tests/test_control_master_signal_projector.py"
-      - "IABV_v1.5/tests/test_evolution_center_viewmodel.py"
-      - "IABV_v1.5/tests/test_system_prompt_builder.py"
   pull_request:
     branches:
       - main
