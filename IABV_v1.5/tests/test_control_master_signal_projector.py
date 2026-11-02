@@ -422,3 +422,71 @@ def test_publisher_reconciles_signal_branch_when_main_advances(tmp_path) -> None
     changed_paths = git("diff", "--name-only", main_commit, "HEAD").splitlines()
     assert changed_paths == [signal_path]
     assert ControlMasterSignalPublisher._public_branch_delta_is_allowlisted(changed_paths)
+
+
+def test_publisher_reads_back_after_ambiguous_push_failure(tmp_path, monkeypatch) -> None:
+    from iabv_v15.services.evolution.control_master_signal_publisher import (
+        ControlMasterSignalPublisher,
+    )
+
+    publisher = ControlMasterSignalPublisher()
+    commands: list[list[str]] = []
+    readbacks: list[dict[str, object]] = []
+
+    def fake_run(args, *, cwd=None, allow_returncodes=(0,)):
+        commands.append(list(args))
+        if args[0] == "push":
+            raise RuntimeError("GIT_COMMAND_FAILED")
+        raise AssertionError(f"Unexpected git command: {args}")
+
+    def fake_verify(**kwargs):
+        readbacks.append(kwargs)
+        return None
+
+    monkeypatch.setattr(publisher, "_run_git", fake_run)
+    monkeypatch.setattr(publisher, "_verify_remote_publication", fake_verify)
+
+    result = publisher._push_and_verify(
+        checkout=tmp_path,
+        expected_commit="e" * 40,
+        expected_content='{"signal_status":"AVAILABLE"}\n',
+    )
+
+    assert result is None
+    assert len(commands) == 1
+    assert commands[0][0] == "push"
+    assert readbacks == [{
+        "checkout": tmp_path,
+        "expected_commit": "e" * 40,
+        "expected_content": '{"signal_status":"AVAILABLE"}\n',
+    }]
+
+
+def test_publisher_marks_ambiguous_push_unverified_when_remote_readback_differs(
+    tmp_path, monkeypatch
+) -> None:
+    from iabv_v15.services.evolution.control_master_signal_publisher import (
+        ControlMasterSignalPublisher,
+    )
+
+    publisher = ControlMasterSignalPublisher()
+
+    def fake_run(args, *, cwd=None, allow_returncodes=(0,)):
+        if args[0] == "push":
+            raise RuntimeError("GIT_COMMAND_FAILED")
+        raise AssertionError(f"Unexpected git command: {args}")
+
+    monkeypatch.setattr(publisher, "_run_git", fake_run)
+    monkeypatch.setattr(
+        publisher,
+        "_verify_remote_publication",
+        lambda **kwargs: "REMOTE_HEAD_MISMATCH",
+    )
+
+    result = publisher._push_and_verify(
+        checkout=tmp_path,
+        expected_commit="f" * 40,
+        expected_content='{"signal_status":"AVAILABLE"}\n',
+    )
+
+    assert result == "PUSH_RESULT_UNVERIFIED:REMOTE_HEAD_MISMATCH"
