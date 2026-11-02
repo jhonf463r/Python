@@ -199,6 +199,44 @@ Before directing an actor to implement a native security boundary, verify the pr
 
 The episode is bounded evidence of this method correction, not proof that the protocol is automatically enforced or that the model has changed weights. Receipt for the original reader-specific gate: [M1B implementation and test receipt](https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-28-M1B-CONTEXT-READER-IMPLEMENTATION-AND-TEST-RECEIPT.md).
 
+## 9. Decision-complete advance packets and Owner-turn minimization (2026-11-02)
+
+UAAL-D019 §9E is the owning pre-action decision-completeness algorithm. This section binds it to D020's advance contract and lexicographic progress selector; it does not create a second selector or override authorization.
+
+Before any Owner-facing step on a material UI/device/account task, enrich `ADVANCE_CONTRACT` with:
+- actor split: what the coordinator can retrieve/verify directly, what the Owner alone must do, and what requires an external authority;
+- exact target UI/account/device and current route permission;
+- read-only versus mutating action classification;
+- one ordered Owner sequence;
+- a branch matrix for foreseeable success, unavailable option, policy denial, unsupported platform, handoff failure and unexpected result;
+- exact evidence that accepts each branch and the next actor/action;
+- stop/recovery behavior and the minimum number of Owner round-trips.
+
+**Selection and interaction constraints**
+
+1. Do not ask for information already in the Owner ledger, current conversation, a supplied screenshot, the connected repository or another available authorized source.
+2. Finish coordinator-side research, state retrieval and route comparison before requesting local interaction.
+3. Do not drip-feed instructions across predictable screens. Provide the entire safe action sequence and the outcome-specific next steps together. Pause only where the next action depends on an unpredictable state, a high-impact decision or a required authorization.
+4. Do not interpret an available UI option as permission to use it. A mutation must pass the canonical authorization/no-bootstrap filter before it can appear as an Owner instruction.
+5. Interpret screenshots directly and ask only for an omitted or unreadable fact whose value changes the route.
+6. After the Owner reports or supplies the outcome, select the precomputed branch, do all newly enabled coordinator-side work and verify the resulting target-edge delta. Do not ask the Owner to perform analysis the coordinator can do.
+7. A lower interaction count is not a goal at the expense of security. Retain explicit confirmation for sensitive, irreversible or separately scoped actions.
+
+**Operational metrics**
+
+```text
+OWNER_ROUND_TRIPS=
+REPEATED_FACTS_REQUESTED=
+PREDICTABLE_BRANCHES_PRECOMPUTED=
+UNPLANNED_MICRO_PROMPTS=
+ASSISTANT_SIDE_WORK_COMPLETED_FIRST=
+MUTATION_PERMISSION_PREFLIGHT=PASS|FAIL|NOT_APPLICABLE
+TARGET_EDGE_DELTA=
+RESULT=TARGET_EDGE_CLOSED|DECISION_UNCERTAINTY_REDUCED|NECESSARY_PREREQUISITE_VERIFIED|PREPARATION_ONLY|NO_PROGRESS|BLOCKED_NO_ADMISSIBLE_ROUTE
+```
+
+The method passes only when the decision trace demonstrates that precomputation prevented at least one avoidable Owner round-trip or premature action, while preserving all permission boundaries and independently verifying the outcome. Until such a later non-identical task is observed, mark `CAUSAL_REUSE=NOT_TESTED`; the documentation update itself is not proof that the coordinator has learned or that every future chat will enforce the rule.
+
 ## 10. Acceptance and falsification
 
 On a later, non-identical task, evaluate this method with a decision trace. Success requires evidence that the selector (a) names the target edge, (b) compares the proposed route with actually available authorized realizations, (c) rejects unsupported preparation loops, (d) chooses a route with a predicted observable, and (e) verifies the outcome before claiming progress. The trace must show that applying the rule changed the chosen action or outcome relative to the prior default.

@@ -185,6 +185,72 @@ WORLD_MODEL_SNAPSHOT = {
 ```
 
 This snapshot does not become another router: `CURRENT-STATE.md` remains the sole owner of `ACTIVE_TASK` and `NEXT_ACTION`. Do not duplicate those fields as competing instructions. Update the model only when a source-bound observation or explicitly classified report changes it; retain unresolved contradictions rather than blending them into a confident narrative.
+### 6A.1 Bounded impact projection across affected tasks and artifacts
+
+The task-local world model must account for material effects beyond the immediate file or action when the proposed change touches a shared method, entrypoint, contract, branch, PR, route, permission or published state. Use a bounded impact projection rather than assuming the immediate task is isolated, but do not turn every action into a full-repository or all-project inventory.
+
+Before a consequential shared-surface change, construct:
+
+```text
+IMPACT_PROJECTION = {
+  owning_project_and_current_objective,
+  parent_objective_and_acceptance,
+  target_task_and_exact_artifact_refs,
+  proposed_action_and_expected_delta,
+  direct_dependents_and_evidence_edges,
+  downstream_consumers_whose_acceptance_may_change,
+  shared_paths_contracts_and_entrypoints,
+  affected_open_candidates_with_exact_refs_and_heads,
+  project_specific_authority_and_memory_boundaries,
+  predicted_effects_of_apply_defer_reject_or_failure,
+  invariants_to_preserve,
+  overlap_and_merge_simulation_status,
+  post_action_revalidation_and_stop_condition
+}
+```
+
+Apply this bounded traversal:
+
+1. **R0 — target:** identify the current Owner objective, the owning project's canonical state, the active task, its acceptance oracle and the exact object/branch/file/contract being changed. `CURRENT-STATE.md` is not a router for other projects.
+2. **R1 — direct impact:** identify only consumers or candidates connected by verifiable evidence: a shared changed path, imported/referenced contract, entrypoint, schema, route/gate, or explicit dependency. For PR/branch operations, inspect open candidates that share changed paths or interfaces; bind their actual refs and HEADs rather than trusting branch names or summaries.
+3. **R2 — consequential downstream impact:** follow an R1 edge only when the proposed state change can alter another task's acceptance, prerequisite, authorization, compatibility or next action. Stop when further traversal cannot materially change the current decision. Record unsupported or inaccessible edges as `UNKNOWN`; do not invent dependencies.
+4. **Project isolation:** a shared method may transfer across projects, but project facts, artifacts, permissions, private state and canonical routers do not. A cross-project impact edge must identify the shared method/contract and the consuming project without importing its private state into the source project.
+5. **Candidate integration:** where branches overlap, compare exact base/head refs and changed-path intersections. Use a merge simulation when available, but distinguish textual conflict/mergeability from semantic preservation. A clean merge simulation is not proof that required invariants survived. For conflicts, name the resolution order, exact invariant, resolved paths and post-resolution diff; if these cannot be verified, keep integration `UNKNOWN` and do not merge.
+6. **Outcome projection:** consider the material success, failure, rejection and blocked branches of the proposed action. State which downstream edges would change, remain blocked or need revalidation. Do not project only the happy path.
+7. **Post-action update and artifact integrity:** compare the observed result with the projection, update only affected task/objective nodes and their owning records, and preserve links to the evidence. For every modified structured document or contract, re-fetch the exact final blob and verify both byte identity and semantic structure: balanced Markdown fences, intact headings/paragraph boundaries, all declared receipt/schema fields still present, every field referenced by later prose defined, and no accidental deletion or concatenation at edit boundaries. For source/schema changes, use the applicable parser/schema checks when authorized; do not claim tests when only static checks ran. Do not rewrite unrelated project state or trigger automatic follow-on work.
+
+Use evidence classes on each material edge: `VERIFIED_SOURCE_LINK`, `ACTOR_REPORTED`, `INFERENCE` or `UNKNOWN`. Shared filenames alone can establish a review/integration candidate, not semantic dependency or correctness. A stale Control Master snapshot is not a live objective/priority edge; record its freshness and use only a source-bound live signal when an authorized read surface exists.
+
+### Minimum evidence for a non-vacuous impact projection
+
+`UNKNOWN` is an evidence classification, not a substitute for performing the bounded discovery required by the task. Before treating the impact gate as complete for a consequential shared-surface action, record an `IMPACT_DISCOVERY_RECEIPT`:
+
+```text
+IMPACT_DISCOVERY_RECEIPT = {
+  target_base_head_and_changed_paths,
+  direct_source_or_contract_refs_inspected,
+  bounded_reference_searches_and_scope,
+  open_related_candidates_checked_when_PR_OR_BRANCH_IS_TOUCHED,
+  results_and_observation_time_for_each_attempt,
+  identified_dependents_and_evidence_links,
+  unavailable_or_denied_sources_and_exact_reason,
+  unresolved_edges_and_why_they_remain_unknown,
+  R2_FOLLOWED_OR_STOPPED_WITH_CAUSAL_REASON
+}
+```
+
+Minimum bounded attempt:
+- Inspect the exact target diff and relevant owning contract/entrypoint.
+- For each shared path or contract, make one bounded check for direct consumers using the available authorized repository search/reference mechanism, or record that this mechanism is unavailable/denied with evidence.
+- When a PR/branch is touched, inspect open PRs sharing changed paths or an explicit interface using available PR metadata/search; if no such query is available, record the exact limitation.
+- Follow R2 only where an R1 dependency can materially affect another task's acceptance, prerequisite, authority, compatibility or next action.
+
+A generic statement such as "not inspected", "insufficient context" or "unknown; stop" without the bounded attempts and source/capability reason is `IMPACT_GATE=INCOMPLETE`, not acceptance. If an essential direct-dependency source is unavailable or denied, record `CAPABILITY_UNAVAILABLE` or `ACCESS_DENIED` and stop the consequential shared-surface mutation until that dependency is bounded. Do not convert missing evidence into `EMPTY` or `NO_DEPENDENTS`.
+
+For IABV, re-read the live canonical `CURRENT-STATE.md` and carry forward its currently applicable Option D, M1A/G1-G3 and other authorization/fail-closed constraints when relevant to the target. This section does not hard-code old gate values, change those gates, or authorize an action; only the live canonical route does. For other projects, use their own canonical state and permissions.
+
+**Acceptance criterion:** before a shared-surface action, the coordinator must complete and record the minimum bounded attempts above, name evidence-backed direct dependents and consequential downstream consumers, preserve project-specific boundaries and applicable gates, identify integration risks, and define exact post-action checks. Any remaining `UNKNOWN` must name the exact attempted sources, missing discriminator and stop consequence. This is a complete decision-relevant impact envelope, not a claim of omniscience or a requirement to scan the entire repository. It does not create a second portfolio/router, override `CURRENT-STATE.md`, promote a Control Master signal to authority, or authorize any blocked action.
+
 
 ## 6B. Adjudicate incoming results before preparing another handoff
 
@@ -229,6 +295,14 @@ Apply these rules:
 4. **Close the input question when answered.** When the Owner says no additional mechanism is identified, record `OWNER_INPUT_RECONCILED=NO_ADDITIONAL_MECHANISM_IDENTIFIED`. Do not rephrase the same question. Keep technical gates blocked where evidence is insufficient; do not infer that uninspected assets do not exist.
 5. **Use a material-delta rule.** Reopen the same question or review only after new independent evidence, a changed precondition, or an explicitly authorized new scope. Do not repeat an unchanged census, Entra setup, mobile-authenticator enrollment, or broad feasibility review.
 
+#### Owner-facing action planning gate — D019 §9E / D020 §9 (2026-11-02 proposal)
+
+The `OWNER_INPUT_REUSE_LEDGER` above is a mandatory input to, not a substitute for, the decision-complete `OWNER_ACTION_PACKET` defined by UAAL-D019 §9E and selected under UAAL-D020 §9. Before any material instruction that asks the Owner to use a device, application, account or private UI, the coordinator must first retrieve and reconcile the canonical route, reuse this ledger, inspect assistant-accessible sources/tools, classify the action and its actor, and apply the exact authorization/no-bootstrap boundary. For material IABV work, D021 §6D supplies the Control Master signal status only when an already-authorized read surface exists; a stale snapshot or unavailable runtime signal must be labelled and must not be fabricated into a live queue.
+
+The packet is an internal planning/verification artifact, not an extra Owner form or a new authority source. Its useful result is presented as one consolidated safe sequence plus predictable outcome branches and stop conditions. Do not ask the Owner to transcribe visible screenshots, perform coordinator-side research, or report each predictable screen as a separate round-trip. Retain a pause when a genuinely unpredictable observation, separate high-impact confirmation or missing authorization controls the next action. If the canonical route does not authorize the exact mutation, stop before recommending it. If no Owner intervention is needed, proceed with authorized assistant-side work instead of manufacturing one.
+
+This D021 cross-reference is a candidate amendment on the PR branch. Until adoption, the existing live-main D021 §6B.1 and D019/D020 remain authoritative; this proposal does not alter any technical gate, Option D or product permission.
+
 #### Case-specific continuity facts already recorded
 
 - The Owner reported an organizational Microsoft Entra directory, a dedicated `IABV Owner` account, Microsoft Authenticator enrollment and a successful sign-in verification. Classify this as `ENTRA_DIRECTORY_AND_AUTHENTICATOR=OWNER_REPORTED_READY`; `IDENTITY_PROVIDER_CANDIDATE=MICROSOFT_ENTRA_ID`; `PLAUSIBLE_FOR_HUMAN_OWNER_AUTHENTICATION`; `NOT_YET_TRUSTED_BY_IABV`. **Do not repeat setup or ask whether this identity provider exists.**
@@ -238,6 +312,88 @@ Apply these rules:
 - For the 2026-10-31 reconciliation, the Owner stated that no additional mechanism is identified beyond the phone authentication/approval app. The correct result is that the known Entra/Authenticator and mobile approval channels are already in memory, no additional independent root/issuer mechanism is identified, and the technical root-provenance gate remains open. This resolves the Owner-input question; it does not close G1 or prove that other uninspected authority assets are absent.
 
 **Acceptance rule:** no further Owner question is permitted until the ledger shows that the proposed question is not answered by an existing source and identifies the precise new decision/evidence it would change.
+
+### 6B.2. Independent-review context separation preflight
+
+Apply this gate before dispatching or claiming an **independent**, **adversarial**, or **second-opinion** review of a material candidate, protocol, PR or technical decision. It prevents a reviewer from being asked to validate work using the same task-specific conclusions that shaped the work.
+
+Context separation, source acquisition and source identity are separate requirements. Do not collapse them into one pass/fail label:
+
+- The reviewer must be a distinct actor/session from the candidate author/editor. A fresh conversation in a separate provider/model context is preferred when the prior session has already discussed or shaped the candidate.
+- Preferred source acquisition is reviewer-side retrieval of the exact pinned repository base, candidate HEAD, diff and acceptance criteria from the canonical source. Sharing the same canonical source revision is required and does not itself contaminate the review.
+- When direct retrieval is unavailable, a coordinator-exported pinned diff or user-supplied source may support a bounded static assessment only when the supplied material's revision, paths and scope have adequate provenance. Record the indirect acquisition explicitly; never describe it as independent live retrieval.
+- Generic safety policy, repository method definitions and the review rubric are allowed inputs. The candidate author's narrative, prior review verdicts, task-specific findings, implementation rationale, previous conversation transcript and review discussion must not be supplied before the reviewer completes its own source inspection.
+- A PR description or handoff summary authored by the candidate author is not a substitute for the diff. For a blinded review, ignore its evaluative claims and derive the scope from the pinned source and changed-file list.
+
+Before dispatch, build:
+
+```text
+REVIEW_CONTEXT_SEPARATION_RECEIPT = {
+  REVIEW_TASK_ID,
+  REVIEWER_ROLE_AND_PROVIDER,
+  REVIEWER_SESSION_IS_NEW_FOR_THIS_REVIEW,
+  REVIEW_CONTEXT_CONTINUITY: NEW_SEPARATE_SESSION | CONTINUED_SAME_CONVERSATION,
+  CANDIDATE_SPECIFIC_PRIOR_CONTEXT_EXPOSED: YES | NO | UNKNOWN,
+  SAME_CANDIDATE_METADATA_EXPOSED: NONE | PR_TITLE_BRANCH_SHA_CHANGED_PATHS_ONLY | NON_EVALUATIVE_COMMIT_SUBJECTS | AUTHOR_DESCRIPTION_OR_COMMIT_RATIONALE | MIXED | UNKNOWN,
+  AUTHOR_EVALUATIVE_CLAIMS_EXPOSED: YES | NO | UNKNOWN,
+  RELATED_CANDIDATE_CONTEXT_EXPOSED: NONE | METADATA_ONLY | FINDINGS_OR_RATIONALE | UNKNOWN,
+  REVIEWER_AUTHORED_OR_EDITED_CANDIDATE,
+  PRIOR_AUTHORING_TRANSCRIPT_EXPOSED,
+  PRIOR_REVIEW_FINDINGS_EXPOSED,
+  TASK_SPECIFIC_MEMORY_OR_PROJECT_CONTEXT_IMPORTED,
+  ALLOWED_INPUTS_AND_SOURCE_REFS,
+  PROHIBITED_INPUTS_CHECKED,
+  BASE_SHA_AND_CANDIDATE_HEAD,
+  CONTEXT_SEPARATION: PASS | LIMITED | BLOCKED,
+  SOURCE_ACQUISITION_METHOD: INDEPENDENT_LIVE_RETRIEVAL | COORDINATOR_EXPORTED_PINNED_DIFF | USER_SUPPLIED_SOURCE | OTHER,
+  SOURCE_IDENTITY_VERIFICATION: REVIEWER_VERIFIED | COORDINATOR_ATTESTED | USER_ATTESTED | UNVERIFIED,
+  SOURCE_COVERAGE: FULL_BASE_HEAD_DIFF | PINNED_DIFF_WITH_HUNKS | PARTIAL_SOURCE | UNKNOWN,
+  SOURCE_RETRIEVAL_STATUS: PASS | LIMITED | BLOCKED
+}
+```
+
+Classify carefully:
+
+1. `PASS`: the reviewer is not the author/editor; the review runs in a new, separate task context; and no prior candidate-specific analysis or verdict was exposed. Generic method/policy knowledge and the candidate's canonical source files remain permissible. Source acquisition is assessed separately below.
+
+2. `LIMITED`: use this status for either of these non-blocking context limitations:
+   - The session is new and no known prior findings were supplied, but some persistent memory/context provenance cannot be inspected.
+   - The reviewer continues the same conversation/session for a **different, non-identical candidate/task**, did not author/edit the candidate under review, and no prior analysis, verdict, author rationale or candidate-specific finding about that exact candidate was exposed before source inspection. General project memory, canonical method knowledge, and discussion of another candidate do not by themselves establish contamination of this candidate.
+   
+   For the continued-conversation case, record `REVIEW_CONTEXT_CONTINUITY=CONTINUED_SAME_CONVERSATION` and `CANDIDATE_SPECIFIC_PRIOR_CONTEXT_EXPOSED=NO`. The review may proceed as a bounded independent assessment, but must not be described as a fresh, fully blinded session. If exposure cannot be established either way, use `CANDIDATE_SPECIFIC_PRIOR_CONTEXT_EXPOSED=UNKNOWN`, retain `LIMITED`, and explicitly limit any claim of blindness.
+
+3. `BLOCKED`: the reviewer authored/edited the candidate; prior findings, author analysis or implementation rationale about the **same candidate** were exposed before its own source inspection; the same candidate was substantively discussed in the review conversation before the reviewer independently inspected its pinned source; or candidate-specific memory contamination is known. A continued conversation alone is not sufficient for `BLOCKED`; the decisive factor is exposure to material that can pre-judge the candidate being reviewed.
+
+4. Source acquisition is classified independently:
+   - `PASS`: the reviewer directly retrieves the exact pinned base, candidate HEAD and diff from the canonical repository and verifies their identities and scope.
+   - `LIMITED`: the reviewer receives a coordinator-exported pinned diff, user-supplied source or other indirect copy with enough provenance to identify its claimed revision and scope, but cannot independently retrieve the live source or inspect all required base context. A bounded static assessment may proceed on the supplied material; mark every conclusion requiring omitted content `NOT_ASSESSED` and do not claim independent live retrieval.
+   - `BLOCKED`: the candidate revision/source identity cannot be established, the supplied material is insufficient to identify the candidate under review, or no usable source is available. Stop before substantive review and report `SUBSTANTIVE_REVIEW=NOT_RUN`.
+   
+   Record the acquisition method, identity-verification actor/status and source coverage in the receipt fields above. A clean reviewer context can therefore be `CONTEXT_SEPARATION=PASS` while `SOURCE_RETRIEVAL_STATUS=LIMITED`; these are not contradictory.
+
+5. Same-candidate metadata exposure must be classified by content, not merely by whether it came from GitHub:
+   - `PR_TITLE_BRANCH_SHA_CHANGED_PATHS_ONLY` and `NON_EVALUATIVE_COMMIT_SUBJECTS` are `METADATA_ONLY`. If these are the only prior exposure and no candidate-specific findings/rationale were seen, classify context as `LIMITED`, not `BLOCKED`; record the exposure and do not call the review fully blinded.
+   - A PR description, commit body, review comment or author note that contains design rationale, favorable/unfavorable evaluation, asserted findings, proposed fixes, risk interpretation or acceptance claims is `AUTHOR_DESCRIPTION_OR_COMMIT_RATIONALE` and `AUTHOR_EVALUATIVE_CLAIMS_EXPOSED=YES`. For a review advertised as blinded/adversarial, classify `BLOCKED` and use a reviewer context that has not received those claims. Do not re-label author-authored rationale as harmless metadata.
+   - If only part of a description/message was seen, classify the actual exposed content. If the content cannot be reconstructed, use `UNKNOWN`; do not assume it was metadata-only. A transparently non-blinded supplemental review may still be useful, but it must not satisfy the blinded independent-review gate.
+
+6. When reviewing multiple related PRs or candidates that share files/contracts, separate two phases:
+   - `CANDIDATE_INTERNAL_REVIEW`: inspect this candidate's own exact base-to-HEAD diff and acceptance criteria before relying on another PR's conclusions.
+   - `CROSS_CANDIDATE_INTEGRATION_REVIEW`: inspect live related PR refs, changed-path intersections, shared invariants and merge simulation after the standalone review, or label the phase as limited if related findings were already exposed.
+   
+   Record related-candidate exposure as `NONE`, `METADATA_ONLY`, `FINDINGS_OR_RATIONALE` or `UNKNOWN`. Do not use another PR's review verdict as proof that this candidate is correct or defective. A merge simulation is evidence of textual mergeability/conflict only; it does not prove semantic preservation. For every conflicted or overlapping path, record the chosen integration order, the invariant that must survive, the resolved result and the exact post-integration diff. If the same session performs both phases, preserve separate receipts and do not relabel the standalone review as fully blinded after integration findings have been disclosed.
+
+When blocked, stop before substantive evaluation and return exactly:
+
+```text
+INDEPENDENT_REVIEW=BLOCKED_PRECONDITION
+SUBSTANTIVE_REVIEW=NOT_RUN
+REVIEW_DIMENSIONS=NOT_ASSESSED
+MISSING_EVIDENCE=REVIEW_CONTEXT_SEPARATION
+```
+
+Do not label unexamined rubric dimensions `PARTIAL`, `PASS` or `FAIL`. Those statuses are valid only after the reviewer inspected the corresponding content. Apply the same rule to source-limited reviews: omitted base context is `NOT_ASSESSED`, not an inferred pass or failure. Do not ask the Owner to repeat the same review in the same contaminated context. Select a genuinely separate reviewer or report that no admissible independent-review route is presently available.
+
+Finally, distinguish `INDEPENDENT_STATIC_REVIEW` from a formal GitHub approval by an authorized human/code owner. A separate AI context may provide an independent technical assessment; it does not become a formal approval or merge authorization.
 
 ## 6C. Distinct operating contexts and memory-scope isolation (Owner clarification; 2026-10-31)
 
@@ -331,10 +487,43 @@ A candidate lesson must state its evidence/provenance, original scope, proposed 
 
 **Operational copy-ready entry:** use the [UAAL New-Chat Boot and Handoff Kit](./CHAT-ARCH-2026-10-31-UAAL-NEW-CHAT-BOOT-AND-HANDOFF-KIT.md) for the universal startup prompt, project-chat assignment, role boundaries, receiver/sender obligations, return receipt and new-chat acceptance checklist. This kit operationalizes §6C.1–§6C.4; it does not create another router or memory, and it remains subordinate to the live `CURRENT-STATE.md` for IABV routing and to each other project's own canonical state source.
 
+Every external-agent prompt or handoff must identify one **explicit recipient** before its task body. Do not use ambiguous dispatch language such as "send to Claude or another AI", "use the same reviewer", or "ask an agent". The sender must select the recipient from the task's required capability and the capabilities actually available, then state the provider, named agent/model or channel, role, session requirement, permitted input/source route, authorized operation scope, exclusions, expected return and stop condition.
+
+Use this dispatch header at the top of every copy-ready external prompt:
+
+```text
+DISPATCH_HEADER = {
+  TARGET_AI_PROVIDER_AND_AGENT,
+  TARGET_MODEL_OR_CHANNEL,
+  TARGET_PROJECT_AND_TASK_ID,
+  TARGET_ROLE,
+  TARGET_SESSION_MODE: NEW_SEPARATE | CONTINUED | EXISTING_EXECUTOR,
+  CONTEXT_SEPARATION_REQUIREMENT,
+  REQUIRED_SOURCE_ACCESS_AND_EXACT_REFS,
+  AUTHORIZED_OPERATION_SCOPE,
+  EXPLICIT_EXCLUSIONS,
+  EXPECTED_RETURN_ARTIFACT_AND_RECEIPT,
+  STOP_CONDITION
+}
+```
+
+Recipient selection rules:
+1. Select by the operation and capability required, not by habit or brand. An independent adversarial review needs a reviewer distinct from the author/editor and an admissible context under §6B.2. Source access and runner capability must be checked separately.
+2. Name exactly one intended destination in the prompt header. If the preferred provider/account/channel has not been confirmed available, label it `PREFERRED_RECIPIENT; AVAILABILITY_UNCONFIRMED`; do not imply the handoff was sent or silently substitute another AI. Ask the Owner only for an irreducible routing decision when no supported choice can be established from the task context.
+3. For a blinded independent review, require a new separate reviewer conversation and state what candidate-specific materials must not be exposed. If the selected destination has already seen the candidate's author rationale or findings, apply §6B.2 rather than calling it independent.
+4. For code execution or local tests, Codex is only a candidate executor when its exact checkout, tools, runner and permissions are actually available. For independent static review, a different model/provider such as Claude (Anthropic) may be selected when the Owner has that destination available and its source access is sufficient. Neither is assumed to possess access or capabilities merely from its product name.
+5. Distinguish `PROMPT_PREPARED`, `PROMPT_SENT`, `RECIPIENT_ACKNOWLEDGED`, `SOURCE_RETRIEVED`, `ACTION_EXECUTED` and `RESULT_ADJUDICATED`. Preparing a copy-ready prompt does not prove that it was delivered, read or executed.
 A new chat is a new session, not a continuation by assumption. Start with a small, project-scoped envelope and retrieve only the relevant shared methods:
 
 ```text
 HANDOFF_ID=
+TARGET_AI_PROVIDER_AND_AGENT=
+TARGET_MODEL_OR_CHANNEL=
+TARGET_PROJECT_AND_TASK_ID=
+TARGET_ROLE=
+TARGET_SESSION_MODE=NEW_SEPARATE | CONTINUED | EXISTING_EXECUTOR
+CONTEXT_SEPARATION_REQUIREMENT=
+REQUIRED_SOURCE_ACCESS_AND_EXACT_REFS=
 PARENT_OBJECTIVE=
 PROJECT_ID=
 TASK_ID=
@@ -351,6 +540,7 @@ DECISIONS_ALREADY_CLOSED=
 LAST_TERMINAL_FINGERPRINT=
 FIRST_OPEN_CAUSAL_EDGE=
 AUTHORIZATION_AND_EXCLUSIONS=
+EXPECTED_RETURN_ARTIFACT_AND_RECEIPT=
 NEXT_SINGLE_ACTION=
 EXPECTED_RETURN_ARTIFACT_OR_RECEIPT=
 STOP_CONDITION=

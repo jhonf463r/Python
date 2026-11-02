@@ -241,6 +241,106 @@ Full refinement and acceptance method: [UAAL-D020 — Verified Progress Utility,
 This is a documented rule candidate. It does not prove runtime enforcement, causal reuse, automated learning or model-weight change.
 
 
+## 9E. Decision-complete action planning and Owner-friction control (2026-11-02)
+
+### Observed defect this refinement addresses
+
+The 2026-11-02 Owner-authentication guidance was issued as a sequence of narrow prompts (inspect one screen, report it, inspect another screen, report it) instead of a precomputed, authorization-filtered action plan. The coordinator had enough context to anticipate the known branches but transferred the branch analysis and predictable UI interpretation to the Owner. It also advanced from a visible Entra passkey option to a registration instruction before rechecking the canonical `OPTION_D=RATIFIED_NO_BOOTSTRAP` boundary. This is a coordination/decision-selection failure, not an Owner information deficit.
+
+Preserve the earlier D019 rules. This refinement makes the existing objective, evidence, capability, authorization and progress logic mandatory **before any Owner-facing instruction**. It does not create another memory store, router, agent or permission authority.
+
+### Required algorithm — run before every material Owner-facing action
+
+```text
+PRE_ACTION_DECISION_COMPLETENESS
+  1. REFRESH the exact live route, task scope, permission state and relevant source revisions.
+  2. REUSE the Owner-input ledger, previous screenshots/reports, completed steps and terminal outcomes.
+  3. NAME the target causal edge and exact claim the next action can close or discriminate.
+  4. INSPECT available tools/sources; perform assistant-side research and read-only retrieval directly when authorized.
+  5. BUILD viable realizations and compare actual actor capability, target surface, authority, risk and Owner effort.
+  6. APPLY the hard authorization/no-bootstrap/safety filter before recommending any click, enrollment, setting or mutation.
+  7. PROJECT every reasonably foreseeable outcome of the selected action.
+  8. BUILD one decision-complete OWNER_ACTION_PACKET with all predictable branches and acceptance evidence.
+  9. ASK the Owner only for the irreducible local/private observation or action that the assistant cannot perform.
+ 10. INTERPRET supplied screenshots/artifacts directly; do not ask the Owner to transcribe information that is visible to the coordinator.
+ 11. SELECT the branch from the actual observation, perform all newly enabled assistant-side work, and verify the outcome.
+ 12. UPDATE the owning method and current route only when evidence supports a real delta; fetch back the exact write.
+```
+
+### OWNER_ACTION_PACKET — mandatory fields
+
+Every material instruction that requires the Owner to use a device, application, account, physical key or private UI must be preceded internally by this packet. Present its useful contents to the Owner in one consolidated instruction rather than exposing a chain of avoidable micro-questions.
+
+```text
+OWNER_ACTION_PACKET = {
+  OBJECTIVE_AND_ACCEPTANCE,
+  EXACT_TARGET_CAUSAL_EDGE,
+  KNOWN_OWNER_INPUTS_AND_SOURCE_CLASSES,
+  COMPLETED_STEPS_AND_DO_NOT_REPEAT_ITEMS,
+  ACTIVE_ROUTE_AND_EXPLICIT_PERMISSION,
+  ACTION_CLASS: READ_ONLY | REVERSIBLE | MUTATING | IRREVERSIBLE,
+  EXACT_DEVICE_APP_ACCOUNT_AND_UI_SURFACE,
+  RESPONSIBLE_ACTOR: ASSISTANT | OWNER | EXTERNAL_AUTHORITY,
+  MINIMUM_OWNER_ACTION_SEQUENCE,
+  EXPECTED_SCREEN_OR_RESULT,
+  BRANCH_MATRIX: [
+    { outcome, evidence_to_recognize, interpretation,
+      next_actor, next_action, acceptance_or_stop_condition }
+  ],
+  SECURITY_AND_RECOVERY_CONSEQUENCES,
+  SUCCESS_EVIDENCE_AND_FETCHBACK,
+  UNEXPECTED_OUTCOME_STOP_RULE,
+  OWNER_ROUND_TRIPS_EXPECTED
+}
+```
+
+### Branch projection and interaction rules
+
+1. **Precompute predictable branches.** Before asking the Owner to click or report anything, identify the expected success, unavailable/disabled option, policy/permission denial, unsupported device/platform, app handoff/timeout and unexpected-result branches that are material to the decision. For each, state what evidence distinguishes it and the exact next action or stop condition. Do not make the Owner return after every predictable screen merely to receive the next instruction.
+2. **Do assistant work first.** Retrieve repository state, compare prior records, inspect official documentation, resolve public product/UI facts and use available authorized connectors before assigning manual work. The Owner is not the research agent, transcription service, memory courier or branch selector.
+3. **Use screenshots as evidence.** When the Owner supplies a screenshot, inspect its visible labels and states directly. Ask for transcription only when the relevant content is genuinely unreadable or omitted; never request secrets, QR enrollment payloads, OTPs or private keys.
+4. **One consolidated local intervention where safe.** Bundle read-only observations and deterministic steps for one target dependency. Do not bundle unrelated sensitive mutations or remove separate confirmation points for irreversible/high-impact actions.
+5. **Ask only decision-changing questions.** A question is justified only when the answer cannot be recovered from current tools/history and changes the selected next action, permission, risk or acceptance. Use one narrow question for the single unresolved branch; never ask an open-ended "what do you want to do?" when the supported path is already determined.
+6. **No premature mutation.** The existence of a UI button, supported API, available credential type or successful prior login is not authorization. Re-read the active canonical route immediately before Owner-facing instructions for enrollment, key creation, tenant-policy change, account/security modification, root selection, privileged action, protected-data access or runtime activation. If the route does not authorize the exact side effect, do not instruct the Owner to perform it.
+7. **Do not overclaim from a partial result.** Distinguish option visible, registration initiated, credential created locally, server registration accepted, authentication tested, decision signed, issuer authorized and host/server bound. Each is a different evidence stage.
+8. **Unexpected branch:** stop the precomputed path, inspect the supplied observation, refresh only the affected dependency and construct the smallest revised packet. Do not restart the whole setup or ask for facts already supplied.
+
+### Selection rule and stopping criterion
+
+A candidate Owner action is admissible only if it passes the D019 authorization filter and demonstrates one of `CLOSE`, `DISCRIMINATE`, `ENABLE` or `PRESERVE_SAFETY` under D020. Among admissible actions, prefer the option that minimizes Owner round-trips, repeated facts, manual transcription, irreversible effects and verification burden while maximizing decision-changing evidence. Owner-effort optimization never overrides a permission gate or the requirement for separate explicit confirmation of irreversible or high-impact actions.
+
+If the assistant cannot construct the branch matrix because a material precondition is unknown, it must first try to resolve that precondition through authorized sources. If no source can resolve it, ask only for that single necessary observation and explain why the branch depends on it. If the action itself is not authorized, stop before asking the Owner to execute it.
+
+### Falsifiable acceptance test
+
+On the next non-identical multi-step Owner/device/UI task, the coordinator must produce an internal decision trace showing:
+- prior Owner inputs and completed steps were reused without repetition;
+- assistant-accessible discovery/research was completed before an Owner request;
+- the active permission boundary was checked before any mutation instruction;
+- all predictable branches and their next actions were prepared before the first Owner turn;
+- screenshots were interpreted directly;
+- the Owner completed only the irreducible local action(s);
+- the selected branch changed the target-edge evidence and was independently checked.
+
+Record `OWNER_ROUND_TRIPS`, `REPEATED_FACTS_REQUESTED`, `PREDICTABLE_BRANCHES_PRECOMPUTED`, `UNPLANNED_MICRO_PROMPTS`, `MUTATION_PERMISSION_PREFLIGHT` and `TARGET_EDGE_DELTA`. A lower turn count alone is not success if safety or evidence quality declines. The rule remains `DOCUMENTED_METHOD` until a later non-identical application demonstrates causal reuse.
+
+**Incident-specific correction:** for the 2026-11-02 Entra screen, "Passkey in Microsoft Authenticator" being visible was a verified UI observation only. D021's ratified no-bootstrap boundary controlled; immediate enrollment instructions were premature. The safe next action is to leave the account methods unchanged until a separately authorized route explicitly permits that exact Entra registration. A Passkey, even if later registered and tested, authenticates the Owner to Entra; it does not alone create an IABV trust root, sign an arbitrary IABV mandate, authorize an issuer or bind the Windows/server instance.
+
+```text
+CONCEPT_ID=UAAL-D019
+METHOD_REFINEMENT=PRE_ACTION_DECISION_COMPLETENESS
+DATE=2026-11-02
+EVIDENCE=OWNER_OBSERVED_COORDINATION_FAILURE
+STATUS=DOCUMENTED_METHOD_CANDIDATE
+RUNTIME_ENFORCEMENT=NOT_PROVEN
+CAUSAL_REUSE=NOT_TESTED
+CANONICAL_MAIN_ADOPTION=NOT_YET
+PRODUCT_IMPLEMENTATION_AUTHORIZED=FALSE
+OPTION_D=RATIFIED_NO_BOOTSTRAP
+G1/G2/G3=NOT_ESTABLISHED
+PROTECTED_READS=FAIL_CLOSED
+```
+
 ## 10. Required new-chat handoff — route from current state, not stale incident snapshots
 
 A new chat must:
