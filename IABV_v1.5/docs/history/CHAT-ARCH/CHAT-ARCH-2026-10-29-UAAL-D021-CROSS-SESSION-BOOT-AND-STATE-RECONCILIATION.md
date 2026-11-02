@@ -247,6 +247,54 @@ This D021 cross-reference is a candidate amendment on the PR branch. Until adopt
 
 **Acceptance rule:** no further Owner question is permitted until the ledger shows that the proposed question is not answered by an existing source and identifies the precise new decision/evidence it would change.
 
+### 6B.2. Independent-review context separation preflight
+
+Apply this gate before dispatching or claiming an **independent**, **adversarial**, or **second-opinion** review of a material candidate, protocol, PR or technical decision. It prevents a reviewer from being asked to validate work using the same task-specific conclusions that shaped the work.
+
+Context separation and source identity are separate requirements:
+
+- The reviewer must be a distinct actor/session from the candidate author/editor. A fresh conversation in a separate provider/model context is preferred when the prior session has already discussed or shaped the candidate.
+- The reviewer must independently retrieve the exact pinned repository base, candidate HEAD, diff and relevant acceptance criteria. Sharing the same canonical source revision is required and does not itself contaminate the review.
+- Generic safety policy, repository method definitions and the review rubric are allowed inputs. The candidate author's narrative, prior review verdicts, task-specific findings, implementation rationale, previous conversation transcript and review discussion must not be supplied before the reviewer completes its own source inspection.
+- A PR description or handoff summary authored by the candidate author is not a substitute for the diff. For a blinded review, ignore its evaluative claims and derive the scope from the pinned source and changed-file list.
+
+Before dispatch, build:
+
+```text
+REVIEW_CONTEXT_SEPARATION_RECEIPT = {
+  REVIEW_TASK_ID,
+  REVIEWER_ROLE_AND_PROVIDER,
+  REVIEWER_SESSION_IS_NEW_FOR_THIS_REVIEW,
+  REVIEWER_AUTHORED_OR_EDITED_CANDIDATE,
+  PRIOR_AUTHORING_TRANSCRIPT_EXPOSED,
+  PRIOR_REVIEW_FINDINGS_EXPOSED,
+  TASK_SPECIFIC_MEMORY_OR_PROJECT_CONTEXT_IMPORTED,
+  ALLOWED_INPUTS_AND_SOURCE_REFS,
+  PROHIBITED_INPUTS_CHECKED,
+  BASE_SHA_AND_CANDIDATE_HEAD,
+  CONTEXT_SEPARATION: PASS | LIMITED | BLOCKED
+}
+```
+
+Classify carefully:
+
+1. `PASS`: the reviewer is not the author/editor; the review runs in a new, separate task context; no prior candidate-specific analysis or verdict was exposed; the exact source revision and review scope are pinned. Generic method/policy knowledge and the candidate's canonical source files remain permissible.
+2. `LIMITED`: the session is new and no prior findings were supplied, but some persistent memory/context provenance cannot be inspected. The reviewer may perform a clearly labelled bounded static review only if no known candidate-specific conclusion is present; it must not claim fully independent context separation.
+3. `BLOCKED`: the same task conversation is reused after substantive prior discussion, the reviewer authored/edited the candidate, prior findings or author analysis were exposed, task-specific memory contamination is known, or the reviewer cannot establish the required source/context boundary.
+
+When blocked, stop before substantive evaluation and return exactly:
+
+```text
+INDEPENDENT_REVIEW=BLOCKED_PRECONDITION
+SUBSTANTIVE_REVIEW=NOT_RUN
+REVIEW_DIMENSIONS=NOT_ASSESSED
+MISSING_EVIDENCE=REVIEW_CONTEXT_SEPARATION
+```
+
+Do not label unexamined rubric dimensions `PARTIAL`, `PASS` or `FAIL`. Those statuses are valid only after the reviewer inspected the corresponding content. Do not ask the Owner to repeat the same review in the same contaminated context. Select a genuinely separate reviewer or report that no admissible independent-review route is presently available.
+
+Finally, distinguish `INDEPENDENT_STATIC_REVIEW` from a formal GitHub approval by an authorized human/code owner. A separate AI context may provide an independent technical assessment; it does not become a formal approval or merge authorization.
+
 ## 6C. Distinct operating contexts and memory-scope isolation (Owner clarification; 2026-10-31)
 
 The shared UAAL method is intended to help the Owner across different subjects and projects while preserving continuity between chats and participating AIs. This does not mean every project fact belongs in one undifferentiated memory, or that every deployment of IABV has the same capabilities.
