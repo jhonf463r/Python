@@ -164,6 +164,36 @@ class ControlMasterSignalPublisher:
                         "commit", "--quiet", "-m",
                         "chore(control-master): publish sanitised live signal",
                     ], cwd=checkout)
+                # Refresh main again at the push boundary. If main advanced while
+                # the snapshot was prepared, merge it normally before publishing.
+                self._run_git(
+                    ["fetch", "--no-tags", "origin", "refs/heads/main"],
+                    cwd=checkout,
+                )
+                latest_main_commit = self._run_git(
+                    ["rev-parse", "FETCH_HEAD"], cwd=checkout
+                ).stdout.strip()
+                late_reconcile, late_reconcile_error = self._reconcile_public_branch(
+                    checkout=checkout,
+                    main_commit=latest_main_commit,
+                )
+                if late_reconcile_error:
+                    return {
+                        "status": "BLOCKED",
+                        "reason": late_reconcile_error,
+                        "branch": _SIGNAL_BRANCH,
+                    }
+                latest_delta = self._run_git(
+                    ["diff", "--name-only", latest_main_commit, "HEAD"],
+                    cwd=checkout,
+                ).stdout.splitlines()
+                if not self._public_branch_delta_is_allowlisted(latest_delta):
+                    return {
+                        "status": "BLOCKED",
+                        "reason": "PUBLIC_BRANCH_CONTAINS_NON_SIGNAL_CHANGES",
+                        "branch": _SIGNAL_BRANCH,
+                    }
+                branch_reconciled = branch_reconciled or late_reconcile
                 commit_sha = self._run_git(["rev-parse", "HEAD"], cwd=checkout).stdout.strip()
 
                 # Re-check the remote symbolic default branch at the push boundary.
