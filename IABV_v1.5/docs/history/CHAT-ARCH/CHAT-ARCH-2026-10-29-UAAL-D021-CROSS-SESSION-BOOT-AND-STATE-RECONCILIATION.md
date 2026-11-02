@@ -266,6 +266,9 @@ REVIEW_CONTEXT_SEPARATION_RECEIPT = {
   REVIEW_TASK_ID,
   REVIEWER_ROLE_AND_PROVIDER,
   REVIEWER_SESSION_IS_NEW_FOR_THIS_REVIEW,
+  REVIEW_CONTEXT_CONTINUITY: NEW_SEPARATE_SESSION | CONTINUED_SAME_CONVERSATION,
+  CANDIDATE_SPECIFIC_PRIOR_CONTEXT_EXPOSED: YES | NO | UNKNOWN,
+  RELATED_CANDIDATE_CONTEXT_EXPOSED: NONE | METADATA_ONLY | FINDINGS_OR_RATIONALE | UNKNOWN,
   REVIEWER_AUTHORED_OR_EDITED_CANDIDATE,
   PRIOR_AUTHORING_TRANSCRIPT_EXPOSED,
   PRIOR_REVIEW_FINDINGS_EXPOSED,
@@ -275,23 +278,30 @@ REVIEW_CONTEXT_SEPARATION_RECEIPT = {
   BASE_SHA_AND_CANDIDATE_HEAD,
   CONTEXT_SEPARATION: PASS | LIMITED | BLOCKED,
   SOURCE_ACQUISITION_METHOD: INDEPENDENT_LIVE_RETRIEVAL | COORDINATOR_EXPORTED_PINNED_DIFF | USER_SUPPLIED_SOURCE | OTHER,
-  SOURCE_IDENTITY_VERIFICATION: REVIEWER_VERIFIED | COORDINATOR_ATTESTED | USER_ATTESTED | UNVERIFIED,
-  SOURCE_COVERAGE: FULL_BASE_HEAD_DIFF | PINNED_DIFF_WITH_HUNKS | PARTIAL_SOURCE | UNKNOWN,
-  SOURCE_RETRIEVAL_STATUS: PASS | LIMITED | BLOCKED
-}
-```
-
-Classify carefully:
+  SOURCE_IDENTITClassify carefully:
 
 1. `PASS`: the reviewer is not the author/editor; the review runs in a new, separate task context; and no prior candidate-specific analysis or verdict was exposed. Generic method/policy knowledge and the candidate's canonical source files remain permissible. Source acquisition is assessed separately below.
-2. `LIMITED`: the session is new and no known prior findings were supplied, but some persistent memory/context provenance cannot be inspected. This status concerns reviewer-context provenance only; do not use it to encode an indirect source-acquisition method.
-3. `BLOCKED`: the same task conversation is reused after substantive prior discussion, the reviewer authored/edited the candidate, prior findings or author analysis were exposed, or task-specific memory contamination is known.
+
+2. `LIMITED`: use this status for either of these non-blocking context limitations:
+   - The session is new and no known prior findings were supplied, but some persistent memory/context provenance cannot be inspected.
+   - The reviewer continues the same conversation/session for a **different, non-identical candidate/task**, did not author/edit the candidate under review, and no prior analysis, verdict, author rationale or candidate-specific finding about that exact candidate was exposed before source inspection. General project memory, canonical method knowledge, and discussion of another candidate do not by themselves establish contamination of this candidate.
+   
+   For the continued-conversation case, record `REVIEW_CONTEXT_CONTINUITY=CONTINUED_SAME_CONVERSATION` and `CANDIDATE_SPECIFIC_PRIOR_CONTEXT_EXPOSED=NO`. The review may proceed as a bounded independent assessment, but must not be described as a fresh, fully blinded session. If exposure cannot be established either way, use `CANDIDATE_SPECIFIC_PRIOR_CONTEXT_EXPOSED=UNKNOWN`, retain `LIMITED`, and explicitly limit any claim of blindness.
+
+3. `BLOCKED`: the reviewer authored/edited the candidate; prior findings, author analysis or implementation rationale about the **same candidate** were exposed before its own source inspection; the same candidate was substantively discussed in the review conversation before the reviewer independently inspected its pinned source; or candidate-specific memory contamination is known. A continued conversation alone is not sufficient for `BLOCKED`; the decisive factor is exposure to material that can pre-judge the candidate being reviewed.
+
 4. Source acquisition is classified independently:
    - `PASS`: the reviewer directly retrieves the exact pinned base, candidate HEAD and diff from the canonical repository and verifies their identities and scope.
    - `LIMITED`: the reviewer receives a coordinator-exported pinned diff, user-supplied source or other indirect copy with enough provenance to identify its claimed revision and scope, but cannot independently retrieve the live source or inspect all required base context. A bounded static assessment may proceed on the supplied material; mark every conclusion requiring omitted content `NOT_ASSESSED` and do not claim independent live retrieval.
    - `BLOCKED`: the candidate revision/source identity cannot be established, the supplied material is insufficient to identify the candidate under review, or no usable source is available. Stop before substantive review and report `SUBSTANTIVE_REVIEW=NOT_RUN`.
+   
    Record the acquisition method, identity-verification actor/status and source coverage in the receipt fields above. A clean reviewer context can therefore be `CONTEXT_SEPARATION=PASS` while `SOURCE_RETRIEVAL_STATUS=LIMITED`; these are not contradictory.
 
+5. When reviewing multiple related PRs or candidates that share files/contracts, separate two phases:
+   - `CANDIDATE_INTERNAL_REVIEW`: inspect this candidate's own exact base-to-HEAD diff and acceptance criteria before relying on another PR's conclusions.
+   - `CROSS_CANDIDATE_INTEGRATION_REVIEW`: inspect live related PR refs, changed-path intersections, shared invariants and merge simulation after the standalone review, or label the phase as limited if related findings were already exposed.
+   
+   Record related-candidate exposure as `NONE`, `METADATA_ONLY`, `FINDINGS_OR_RATIONALE` or `UNKNOWN`. Do not use another PR's review verdict as proof that this candidate is correct or defective. A merge simulation is evidence of textual mergeability/conflict only; it does not prove semantic preservation. For every conflicted or overlapping path, record the chosen integration order, the invariant that must survive, the resolved result and the exact post-integration diff. If the same session performs both phases, preserve separate receipts and do not relabel the standalone review as fully blinded after integration findings have been disclosed.
 When blocked, stop before substantive evaluation and return exactly:
 
 ```text
