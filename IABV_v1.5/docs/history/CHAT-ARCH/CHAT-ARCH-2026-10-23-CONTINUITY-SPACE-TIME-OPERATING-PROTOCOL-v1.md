@@ -1,7 +1,7 @@
 # Canonical continuity, Space-Time cognition, and adaptive neuroplasticity protocol
 
 - Protocol ID: `CONTINUITY_SPACE_TIME_ANTI_LOOP` (stable identity; operating method evolves in place)
-- Living operating revision: `2.7 — ADAPTIVE_SPACE_TIME_NEUROPLASTICITY + OWNER_CONTEXT_AWARE_TURN_ROUTING + VERIFIED_CONTEXT_HANDOFF + OWNER_FACING_DELIVERY_PREFLIGHT + DUAL_TRACK_PROGRESS_ROUTING + UAAL_D020_PROGRESS_UTILITY + CROSS_AI_MEMORY_ACTIVATION + OBJECTIVE_CONDITIONED_WORLD_MODEL + INCOMING_RESULT_ADJUDICATION + PROJECT_SCOPED_NEW_CHAT_BOOT_AND_ROLE_BOUND_HANDOFF + CONTROL_MASTER_SIGNAL_INTAKE_AND_DECISION_BINDING + CHATGPT_PROJECT_CONTEXT_AND_MEMORY_SCOPE`
+- Living operating revision: `2.8 — ADAPTIVE_SPACE_TIME_NEUROPLASTICITY + OWNER_CONTEXT_AWARE_TURN_ROUTING + VERIFIED_CONTEXT_HANDOFF + OWNER_FACING_DELIVERY_PREFLIGHT + DUAL_TRACK_PROGRESS_ROUTING + UAAL_D020_PROGRESS_UTILITY + CROSS_AI_MEMORY_ACTIVATION + OBJECTIVE_CONDITIONED_WORLD_MODEL + INCOMING_RESULT_ADJUDICATION + PROJECT_SCOPED_NEW_CHAT_BOOT_AND_ROLE_BOUND_HANDOFF + CONTROL_MASTER_SIGNAL_INTAKE_AND_DECISION_BINDING + CHATGPT_PROJECT_CONTEXT_AND_MEMORY_SCOPE + PRE_ACTION_PRECISION_GATE_AND_BRANCH_PROVENANCE_GUARD`
 - Evolution rule: integrate new lessons into their owning core rule; preserve dated incidents/history; do not accumulate competing append-only protocols
 - Owner instruction date: 2026-10-23 (America/Bogota)
 - Scope: objective-bound reasoning, temporal evidence graph, adaptive role activation, gated action chains, memory consolidation, delivery receipts and outcome-based protocol evolution
@@ -125,6 +125,11 @@ When the Owner says to continue, advance, organize, analyze, or evolve the metho
 **H. Transition and learn.** Record the terminal result, update the canonical route and the owning operating rule when justified, preserve prior history, and identify whether the lesson is a hypothesis, candidate rule or demonstrated reuse. Revalidate live `main` and fetch back any authorized writeback.
 
 For eligible candidate actions, filter out every action that lacks authorization or an essential prerequisite first. Among remaining actions, prioritize the earliest dependency that blocks the North Star, the action with the clearest discriminating evidence, reversibility and zero/lowest justified cost. This is a **lexicographic operating heuristic**, not a scientific probability model; no score or productivity pressure can override a hard gate.
+
+
+### Pre-action precision gate (living revision 2.8)
+
+The reasoning cycle is incomplete until the intended action is bound to an exact repository/ref/HEAD, its authorization and exclusions, the actual receiving actor's capabilities, the available executor/runner, the expected observable and a stop condition. Before an external-agent prompt or a repository write, apply UAAL-D021 §6F. In particular, never infer that a requested branch is the PR's real source branch, that a connector-visible repository is a Codex checkout, or that an earlier test result validates a new HEAD. Re-check volatile preconditions immediately before consequential writes, use expected-SHA updates where supported, and preserve any residual TOCTOU risk. If prerequisites are absent, select a different authorized useful action or stop; do not repeat the same blocked request under new wording.
 
 ## 5. Dynamic role/facet activation
 
