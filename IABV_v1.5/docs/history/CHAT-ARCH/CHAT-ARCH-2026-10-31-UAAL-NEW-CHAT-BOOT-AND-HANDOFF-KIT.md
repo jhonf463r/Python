@@ -118,6 +118,7 @@ Apply:
 - **D019:** identify the first open causal/evidential edge; fingerprint the task; stop unchanged loops.
 - **D020:** compare actually available and authorized actions; prioritize verified progress, decision-changing information and minimum useful intervention; switch strategy after preparation-only repetition.
 - **D021:** reconcile source and time, build the objective-conditioned world model, adjudicate prior results and select one next action with observable outcome and stop condition.
+- **D021 §6D:** intake the Control Master signal, distinguish its freshness/availability, reconcile it with the canonical route and explain whether it changed or confirmed the selected action.
 - **D019 §9E + D020 §9 (proposed activation gate):** before any material Owner-facing device/app/account/private-UI instruction, build one internal `OWNER_ACTION_PACKET` from the D021 §6B.1 known-input ledger, the current route/permissions and the D021 §6D signal status when relevant. Finish assistant-side retrieval/research first; define the actor split, action class, exact mutation permission, predictable branch matrix, acceptance evidence and stop/recovery conditions. Give one consolidated safe sequence; interpret screenshots directly; ask only for an irreducible local observation/action. Never treat a visible UI option as authorization. This proposal becomes canonical only after adoption.
 
 Do not select an action merely because it is easy to describe. Do not bypass a missing prerequisite, access denial, technical gate or owner authorization.
