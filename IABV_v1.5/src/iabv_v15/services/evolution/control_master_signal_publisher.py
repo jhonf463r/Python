@@ -37,6 +37,21 @@ _ALLOWED_ITEM_STATUSES = {
 class ControlMasterSignalPublisher:
     """Publish only a validated allowlist signal to a dedicated public branch."""
 
+    @staticmethod
+    def _default_branch_is_main(remote_head: str) -> bool:
+        default_refs = [
+            parts[1]
+            for line in remote_head.splitlines()
+            if len(parts := line.split()) == 3 and parts[0] == "ref:" and parts[2] == "HEAD"
+        ]
+        return default_refs == ["refs/heads/main"] and _SIGNAL_BRANCH != "main"
+
+    def _remote_default_branch_is_main(self) -> bool:
+        remote_head = self._run_git(
+            ["ls-remote", "--symref", _REPOSITORY_URL, "HEAD"]
+        ).stdout
+        return self._default_branch_is_main(remote_head)
+
     def publish(self, signal: dict[str, Any]) -> dict[str, Any]:
         try:
             reason = self._validate_signal(signal)
@@ -49,15 +64,7 @@ class ControlMasterSignalPublisher:
                 checkout = Path(tmp) / "repo"
                 empty_hooks = Path(tmp) / "empty-git-hooks"
                 empty_hooks.mkdir()
-                remote_head = self._run_git(
-                    ["ls-remote", "--symref", _REPOSITORY_URL, "HEAD"]
-                ).stdout
-                default_refs = [
-                    parts[1]
-                    for line in remote_head.splitlines()
-                    if len(parts := line.split()) == 3 and parts[0] == "ref:" and parts[2] == "HEAD"
-                ]
-                if default_refs != ["refs/heads/main"] or _SIGNAL_BRANCH == "main":
+                if not self._remote_default_branch_is_main():
                     return {
                         "status": "BLOCKED",
                         "reason": "DEDICATED_BRANCH_IS_NOT_GUARANTEED_NON_DEFAULT",
@@ -69,7 +76,7 @@ class ControlMasterSignalPublisher:
                 source_branch = _SIGNAL_BRANCH if heads.stdout.strip() else "main"
                 self._run_git([
                     "-c", f"core.hooksPath={empty_hooks}",
-                    "clone", "--quiet", "--depth", "1", "--no-tags", "--single-branch",
+                    "clone", "--quiet", "--no-tags", "--single-branch",
                     "--branch", source_branch, _REPOSITORY_URL, str(checkout),
                 ])
                 fetch_url = self._run_git(
@@ -85,15 +92,32 @@ class ControlMasterSignalPublisher:
                         "branch": _SIGNAL_BRANCH,
                     }
 
-                # A pre-existing public signal branch must not carry unrelated
-                # content. Compare complete commit trees against live main.
+                # Reconcile the existing signal branch with the latest main using
+                # a normal merge. A main-only advance is not branch contamination.
+                # The final tree must still differ from main only by the signal file.
+                self._run_git(["config", "core.hooksPath", str(empty_hooks)], cwd=checkout)
+                self._run_git(["config", "user.name", "IABV Control Master Signal"], cwd=checkout)
                 self._run_git(
-                    ["fetch", "--no-tags", "--depth=1", "origin", "refs/heads/main"],
+                    ["config", "user.email", "iabv-signal@users.noreply.github.com"],
+                    cwd=checkout,
+                )
+                self._run_git(
+                    ["fetch", "--no-tags", "origin", "refs/heads/main"],
                     cwd=checkout,
                 )
                 main_commit = self._run_git(
                     ["rev-parse", "FETCH_HEAD"], cwd=checkout
                 ).stdout.strip()
+                branch_reconciled, reconciliation_error = self._reconcile_public_branch(
+                    checkout=checkout,
+                    main_commit=main_commit,
+                )
+                if reconciliation_error:
+                    return {
+                        "status": "BLOCKED",
+                        "reason": reconciliation_error,
+                        "branch": _SIGNAL_BRANCH,
+                    }
                 public_branch_changes = self._run_git(
                     ["diff", "--name-only", main_commit, "HEAD"], cwd=checkout
                 ).stdout.splitlines()
@@ -126,22 +150,30 @@ class ControlMasterSignalPublisher:
                 staged = self._run_git(
                     ["diff", "--cached", "--name-only"], cwd=checkout
                 ).stdout.splitlines()
-                if staged != [_SIGNAL_PATH.as_posix()]:
+                if staged and staged != [_SIGNAL_PATH.as_posix()]:
                     return {"status": "BLOCKED", "reason": "STAGED_PATH_SET_NOT_EXACT", "branch": _SIGNAL_BRANCH}
                 diff = self._run_git(
                     ["diff", "--cached", "--quiet"], cwd=checkout, allow_returncodes=(0, 1)
                 )
-                if diff.returncode == 0:
+                signal_changed = diff.returncode == 1
+                if not signal_changed and not branch_reconciled:
                     return {"status": "UNCHANGED", "branch": _SIGNAL_BRANCH, "path": _SIGNAL_PATH.as_posix()}
 
-                self._run_git(["config", "core.hooksPath", str(empty_hooks)], cwd=checkout)
-                self._run_git(["config", "user.name", "IABV Control Master Signal"], cwd=checkout)
-                self._run_git(["config", "user.email", "iabv-signal@users.noreply.github.com"], cwd=checkout)
-                self._run_git([
-                    "commit", "--quiet", "-m",
-                    "chore(control-master): publish sanitised live signal",
-                ], cwd=checkout)
+                if signal_changed:
+                    self._run_git([
+                        "commit", "--quiet", "-m",
+                        "chore(control-master): publish sanitised live signal",
+                    ], cwd=checkout)
                 commit_sha = self._run_git(["rev-parse", "HEAD"], cwd=checkout).stdout.strip()
+
+                # Re-check the remote symbolic default branch at the push boundary.
+                # This narrows TOCTOU exposure but cannot make the check+push atomic.
+                if not self._remote_default_branch_is_main():
+                    return {
+                        "status": "BLOCKED",
+                        "reason": "REMOTE_DEFAULT_BRANCH_CHANGED_BEFORE_PUSH",
+                        "branch": _SIGNAL_BRANCH,
+                    }
                 self._run_git([
                     "push", "--no-follow-tags", "--no-verify",
                     "origin", f"HEAD:refs/heads/{_SIGNAL_BRANCH}",
@@ -165,6 +197,17 @@ class ControlMasterSignalPublisher:
                         "commit_sha": commit_sha,
                         "main_modified": False,
                         "force_push": False,
+                    }
+                if not signal_changed:
+                    return {
+                        "status": "UNCHANGED",
+                        "branch": _SIGNAL_BRANCH,
+                        "path": _SIGNAL_PATH.as_posix(),
+                        "commit_sha": commit_sha,
+                        "main_modified": False,
+                        "force_push": False,
+                        "branch_reconciled": branch_reconciled,
+                        "remote_readback_verified": True,
                     }
                 return {
                     "status": "PUBLISHED",
@@ -328,6 +371,36 @@ class ControlMasterSignalPublisher:
             len(changed_paths) <= 1
             and all(path == _SIGNAL_PATH.as_posix() for path in changed_paths)
         )
+
+    def _reconcile_public_branch(
+        self,
+        *,
+        checkout: Path,
+        main_commit: str,
+    ) -> tuple[bool, str | None]:
+        """Merge current main into the signal branch without rewriting its history."""
+        before = self._run_git(["rev-parse", "HEAD"], cwd=checkout).stdout.strip()
+        try:
+            self._run_git(["merge", "--no-edit", main_commit], cwd=checkout)
+        except RuntimeError:
+            return False, "PUBLIC_BRANCH_RECONCILIATION_CONFLICT"
+        after = self._run_git(["rev-parse", "HEAD"], cwd=checkout).stdout.strip()
+        return after != before, None
+
+    @staticmethod
+    def _default_branch_is_main(remote_head: str) -> bool:
+        default_refs = [
+            parts[1]
+            for line in remote_head.splitlines()
+            if len(parts := line.split()) == 3 and parts[0] == "ref:" and parts[2] == "HEAD"
+        ]
+        return default_refs == ["refs/heads/main"] and _SIGNAL_BRANCH != "main"
+
+    def _remote_default_branch_is_main(self) -> bool:
+        remote_head = self._run_git(
+            ["ls-remote", "--symref", _REPOSITORY_URL, "HEAD"]
+        ).stdout
+        return self._default_branch_is_main(remote_head)
 
     def _verify_remote_publication(
         self,
