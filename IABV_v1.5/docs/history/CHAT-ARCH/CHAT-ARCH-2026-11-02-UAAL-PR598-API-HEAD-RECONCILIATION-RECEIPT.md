@@ -729,3 +729,14 @@ This section records the three preceding documentation commits. The receipt-only
 The exact HEAD fetch-back returned all three expected new sections and blob identities. These are GitHub connector/tree object identities; this coordinator did not independently recompute Git blob SHA-1 from raw response bytes. GitHub's commit API confirmed the three commits form the linear parent chain above. The PR metadata/body was refreshed after commit `4ab3ef63c12985146f3e2e5c258e920fb3f5a880`; the receipt-only commit that follows changes only this receipt.
 
 **Scope:** documentation/methodology only. `main`/PR base remains `56e4d8b11846a8d8f3cb8cda08efd773ec235651`; no runtime/code/test/permission/bridge/Option D/G1/G2/G3 changes. `TESTS/BUILD/RUNTIME=NOT_RUN`; `MERGE_AUTHORIZATION=NOT_GRANTED`.
+
+
+## 2026-11-03 — Claude transport, active-thread continuity and blind-review scope correction
+
+A subsequent Owner-supplied Claude transcript exposed additional limits in the external handoff path. The actor reported that the preceding long prompt was received twice in identical 20,212-byte copies, each truncated inside section 12. A later response said the active thread contained no Phase A lock/report, despite an earlier pasted response reporting a scope-lock timestamp. The available evidence does not establish whether the messages reached different threads or execution surfaces. The active thread therefore had no valid Phase A freeze; B and C remained blocked.
+
+The recipient also reported that its web reader opens only URLs literally surfaced in the current message/search results. The exact commit URL had been constructed by the recipient rather than supplied literally, and was rejected. This is a URL-discovery limitation for that route, not evidence that the GitHub object was absent. Capability reports about shell/Git egress also differed across the supplied messages; they remain actor-reported and must not be combined into one global Claude capability claim.
+
+The coordinator's GitHub compare for BASE 56e4d8b11846a8d8f3cb8cda08efd773ec235651 and pre-amendment HEAD 19ca803c70330e1d6e999019b9943d6002686a4f independently returned ten changed paths. Eight are operational documents and two are receipts. The corrected blind-review decomposition is Phase A = eight operational documents (16 BASE/HEAD source items); Phase B = two receipts only after Phase A is frozen in the same receiving thread; Phase C = a separate non-blind current-state/technical reconciliation. Phase A must not be represented as a ten-file review.
+
+The detailed evidence and reusable repair rules are recorded in CHAT-ARCH-2026-11-03-UAAL-CLAUDE-SESSION-TRANSPORT-AND-BLIND-REVIEW-REPAIR-RECEIPT.md and integrated into D021 §§6F–6G and Boot Kit §14. These are documentary method changes only; they do not claim automatic cross-chat delivery, model-weight learning or generalization to all Claude sessions.
