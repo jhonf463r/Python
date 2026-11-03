@@ -539,7 +539,7 @@ Before dispatch, the sender must:
 - State capabilities only when observed for the receiving session. Keep browser, GitHub API, Git smart-HTTP, shell, network egress, local checkout, attachments and write rights separate.
 - Use available coordinator connectors to retrieve canonical facts before asking the Owner to repeat them or manually prepare links.
 - Supply exact repository owner/name, pinned base/head, full paths and literal URL(s) for every source the receiver must open. Never require the receiver to invent URLs from abbreviated SHAs or unstated paths.
-- Define the complete phase scope and exclusions with matching counts. If the change list contains ten paths but the blind phase excludes two receipts, state eight operational paths and 16 BASE/HEAD source items for that phase.
+- Define the complete phase scope and exclusions with matching counts. For the current PR #598 candidate, the changed-path list contains eleven paths: eight operational documents and three receipts. The blind Phase A scope is the eight operational paths and 16 BASE/HEAD source items; all three receipts are reserved for Phase B after a valid same-thread Phase A freeze. Recompute counts for every later revision rather than reusing these numbers.
 
 ### 14.2 Packet protocol
 
