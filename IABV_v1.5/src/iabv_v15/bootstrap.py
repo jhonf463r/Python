@@ -499,6 +499,13 @@ class AppBootstrap:
         self._services_wired = False
         self._defer_services = _defer_services
 
+        # The protected-read authority is explicitly registered even before
+        # deferred service wiring. No real G1/G2/G3 or issuer-IPC providers are
+        # provisioned here, so the composed decision remains fail-closed.
+        from iabv_v15.services.security.read_authorization import ReadAuthorizationCoordinator
+
+        self.read_authorization_coordinator = ReadAuthorizationCoordinator.unconfigured()
+
         # VM placeholders needed by create_engine(defer_vm_creation=True)
         # which sets context properties to these (initially None) values.
         self.navigation_controller = None
@@ -3294,6 +3301,15 @@ class AppBootstrap:
         )
         self._yield_to_event_loop()
 
+    def _create_mcp_bridge_service(self) -> MCPBridgeService:
+        """Compose the MCP bridge with this app's fail-closed read authority."""
+
+        return build_mcp_bridge_service(
+            self,
+            workspace_root=self.config.workspace_root,
+            read_authorization_coordinator=self.read_authorization_coordinator,
+        )
+
     def _build_deferred_ui_batch_1(self) -> None:
         """Phase 2: MCP side-effects only (lightweight services).
 
@@ -3309,10 +3325,7 @@ class AppBootstrap:
         # --- MCP bridge ---
         if getattr(self, 'mcp_bridge_service', None) is None:
             try:
-                self.mcp_bridge_service = build_mcp_bridge_service(
-                    self,
-                    workspace_root=self.config.workspace_root,
-                )
+                self.mcp_bridge_service = self._create_mcp_bridge_service()
             except Exception:
                 logger.exception('No se pudo inicializar MCPBridgeService; bridge desactivado')
                 self.mcp_bridge_service = None
