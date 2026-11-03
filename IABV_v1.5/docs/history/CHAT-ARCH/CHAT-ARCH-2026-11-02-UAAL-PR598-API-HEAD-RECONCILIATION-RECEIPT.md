@@ -495,3 +495,53 @@ MERGE_AUTHORIZATION=NOT_GRANTED
 7. A candidate's final receipt must use the D021 enum values exactly. A first unattempted refusal cannot be recorded as `BLOCKED`; an unexecuted review is `SUBSTANTIVE_REVIEW=NOT_RUN`; `REVIEW_CLASS=BLOCKED_PRECONDITION` is distinct from `NOT_APPLICABLE` when independent review was required but could not proceed.
 
 The PR branch amendment that incorporates these lessons is documentation/methodology only. It does not modify CURRENT-STATE, Control Master runtime state, M1A implementation, G1/G2/G3, Option D, protected reads, permissions, runtime, tunnel or bridge authority. It remains candidate-only until an explicitly approved merge and fetch-back from canonical main.
+
+
+## Claude Web delta-review handoff response — HEAD 67f79c7ad4e4a05640bbbb7277bf0f0caad143a4 (received 2026-11-02)
+
+**Actor-supplied response:** the Owner pasted Claude Web's response stating that no source retrieval or content review was performed because the same conversation already contained Claude's earlier review of DELTA_BASE `08b66cbf5829aaeb31e597c0d2e470eeb30da5a7`.
+
+```text
+TASK_ID=IABV_PR598_DELTA_67F79C7_CLAUDE_WEB_INDEPENDENT_REVIEW
+REVIEWER=Claude (Anthropic) — ACTOR_REPORTED
+REVIEWER_CHANNEL=CLAUDE_WEB — ACTOR_REPORTED
+MODEL_LABEL_PROVENANCE=Claude Sonnet 5.5 per session system information; UI label NOT observed — ACTOR_REPORTED
+PR_BASE=56e4d8b11846a8d8f3cb8cda08efd773ec235651
+DELTA_BASE=08b66cbf5829aaeb31e597c0d2e470eeb30da5a7
+HEAD=67f79c7ad4e4a05640bbbb7277bf0f0caad143a4
+DECLARED_REVIEW_SCOPE=NOT_APPLICABLE (not frozen)
+SOURCE_PACKAGE_REQUIRED=YES
+SOURCE_PACKAGE_STATUS=IDENTIFIED
+SOURCE_ACQUISITION_METHOD=UNKNOWN
+SOURCE_RETRIEVAL_STATUS=NOT_ATTEMPTED
+SOURCE_IDENTITY_VERIFICATION=UNVERIFIED
+RECEIVER_SOURCE_ACK=PENDING
+SOURCE_COVERAGE=NOT_ASSESSED
+CONTEXT_SEPARATION=BLOCKED — ACTOR_REPORTED
+REVIEW_CLASS=NOT_APPLICABLE — ACTOR_REPORTED; canonical PR_BASE enum set has no BLOCKED_PRECONDITION member
+SUBSTANTIVE_REVIEW=NOT_RUN
+INDEPENDENT_REVIEW=BLOCKED_PRECONDITION
+REVIEW_DIMENSIONS=NOT_ASSESSED
+MISSING_EVIDENCE=REVIEW_CONTEXT_SEPARATION — ACTOR_REPORTED
+TEST_STATUS=NOT_RUN
+MERGE_AUTHORIZATION=NOT_GRANTED
+```
+
+### Coordinator adjudication of context and stop reason
+
+- The actual review target is the new successor HEAD `67f79c7`; the prior review findings discussed in the conversation were about its distinct parent/delta-base candidate `08b66cbf`. The candidates are closely related and share the same operating documents, but they are not the same immutable candidate.
+- Under D021 §6B.2 rules 2 and 6, this is related-candidate exposure: record `REVIEW_CONTEXT_CONTINUITY=CONTINUED_SAME_CONVERSATION` and `RELATED_CANDIDATE_CONTEXT_EXPOSED=FINDINGS_OR_RATIONALE`; the factual context classification is `CONTEXT_SEPARATION=LIMITED`, not automatically `BLOCKED`. Rule 3's `BLOCKED` classification applies when prior evaluative material was about the exact candidate HEAD under review.
+- The dispatch nevertheless explicitly required `TARGET_SESSION_MODE=NEW_SEPARATE` and a fresh Claude Web conversation. The actual same-conversation context failed that declared handoff precondition. Therefore no source retrieval or substantive review should proceed under this dispatch. This is a session-mode/independence-precondition stop, not a source-access block.
+- The stop is `INDEPENDENT_REVIEW=BLOCKED_PRECONDITION`, `SUBSTANTIVE_REVIEW=NOT_RUN`, `REVIEW_DIMENSIONS=NOT_ASSESSED`, `MISSING_EVIDENCE=REQUIRED_NEW_SEPARATE_SESSION_NOT_ESTABLISHED`, while preserving `CONTEXT_SEPARATION=LIMITED` as the factual classification.
+- Claude's `REVIEW_CLASS=NOT_APPLICABLE` is retained as ACTOR_REPORTED schema compatibility only. Canonical PR_BASE D021 has no value for "required review blocked before inspection"; the candidate HEAD proposes `BLOCKED_PRECONDITION`, but that value is not canonical until adoption. The note must not be read as saying independent review was not required.
+- Claude reported persistent Memory disabled/empty. That fact does not erase the transcript of the active conversation; memory provenance and conversational exposure are distinct.
+
+### Process lessons retained
+
+1. A dispatch field `TARGET_SESSION_MODE=NEW_SEPARATE` is not proof that a new conversation was created. The sender must actually open/select the new target conversation before dispatch; the recipient must report observed continuity. If not verifiable, do not claim a fresh independent review.
+2. Related-candidate findings in the same conversation are not automatically rule-3 same-candidate contamination. Classify under D021 §6B.2 rules 2 and 6; preserve `LIMITED` and `RELATED_CANDIDATE_CONTEXT_EXPOSED=FINDINGS_OR_RATIONALE` when applicable.
+3. When a task explicitly requires a genuinely new session, a continued or unverified session fails that dispatch precondition even when the factual context classification is `LIMITED`. Stop without fetching source; do not silently downgrade the required session mode.
+4. Disabled/empty Memory does not clear same-conversation transcript exposure.
+5. If the canonical BASE enum lacks a required-but-blocked review class, preserve its stop tuple and add a supplemental schema-limitation note. Never use a candidate-only enum before canonical adoption, and never imply that the review was not required merely because the baseline enum is incomplete.
+
+The next valid attempt requires a genuinely new Claude Web conversation selected by the sender before this handoff is pasted. Do not repeat this dispatch in the already-contaminated conversation. A separately scoped, transparent cross-candidate delta assessment is possible only if explicitly accepted as `CONTEXT_SEPARATION=LIMITED`; it does not satisfy this handoff's new-session requirement.

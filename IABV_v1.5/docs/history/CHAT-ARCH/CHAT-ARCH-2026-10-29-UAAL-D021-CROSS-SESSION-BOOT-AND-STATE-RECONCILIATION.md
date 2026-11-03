@@ -396,6 +396,20 @@ Use `CONTEXT_SEPARATION=NOT_ASSESSED` only when the evidence needed to classify 
    
    Record related-candidate exposure as `NONE`, `METADATA_ONLY`, `FINDINGS_OR_RATIONALE` or `UNKNOWN`. Do not use another PR's review verdict as proof that this candidate is correct or defective. A merge simulation is evidence of textual mergeability/conflict only; it does not prove semantic preservation. For every conflicted or overlapping path, record the chosen integration order, the invariant that must survive, the resolved result and the exact post-integration diff. If the same session performs both phases, preserve separate receipts and do not relabel the standalone review as fully blinded after integration findings have been disclosed.
 
+**Observed session continuity is separate from requested session mode**
+
+`TARGET_SESSION_MODE=NEW_SEPARATE` in a dispatch header expresses the required/declared destination; it does not create a new conversation and is not evidence that one exists. The sender must actually open/select a new conversation in the destination product before sending the review prompt, and the receiver must report the observed continuity of the conversation it is answering in. Do not mark `REVIEWER_SESSION_IS_NEW_FOR_THIS_REVIEW=YES` solely because the prompt requested it.
+
+- If the recipient is in a genuinely new conversation, record `REVIEW_CONTEXT_CONTINUITY=NEW_SEPARATE_SESSION` and the evidence supporting that observation. Do not import previous candidate findings, author rationale or review discussion.
+- If the recipient is in the same conversation but the earlier findings concern a different, non-identical candidate, apply rules 2 and 6 above: ordinarily classify `CONTEXT_SEPARATION=LIMITED`, record `RELATED_CANDIDATE_CONTEXT_EXPOSED=FINDINGS_OR_RATIONALE`, and inspect this candidate's own exact diff before relying on the related candidate's result. Do not misclassify related-candidate exposure as rule 3's same-candidate contamination.
+- If prior findings, author rationale or substantive review concerned the exact HEAD candidate being reviewed, apply rule 3 and classify `CONTEXT_SEPARATION=BLOCKED`.
+- If this dispatch explicitly requires `NEW_SEPARATE` or `CONTEXT_SEPARATION=PASS`, a continued or unverified session does not satisfy that task's declared precondition. Stop the requested independent-review scope without source retrieval or substantive inspection. Preserve the factual context classification (`LIMITED` or `NOT_ASSESSED`); return `INDEPENDENT_REVIEW=BLOCKED_PRECONDITION`, `SUBSTANTIVE_REVIEW=NOT_RUN`, `REVIEW_DIMENSIONS=NOT_ASSESSED`, and `MISSING_EVIDENCE=REQUIRED_NEW_SEPARATE_SESSION_NOT_ESTABLISHED`. Do not silently downgrade the dispatch requirement or relabel `LIMITED` as `CONTEXT_SEPARATION=BLOCKED`.
+- Disabled/empty persistent Memory does not erase messages already present in the active conversation. Record memory provenance and conversational exposure as separate facts.
+
+When this session precondition stops the review, `DECLARED_REVIEW_SCOPE` remains `NOT_APPLICABLE`/not frozen, `SOURCE_RETRIEVAL_STATUS=NOT_ATTEMPTED`, `SOURCE_COVERAGE=NOT_ASSESSED` and `SUBSTANTIVE_REVIEW=NOT_RUN`. Do not retrieve source merely to substantiate a known session-continuity failure.
+
+When applying the exact enum set from a pinned canonical base, never use a candidate-only enum value. If the canonical base has no `REVIEW_CLASS` value for a required review that is blocked before review, preserve the exact canonical stop-return fields and add a clearly labelled supplemental `SCHEMA_LIMITATION_NOTE`; do not claim the review was genuinely not required. A candidate may propose a new enum, but it is not operational until adopted in main.
+
 The exact return below applies only when `CONTEXT_SEPARATION=BLOCKED` under this reviewer-context gate. A source retrieval, identity or receiver-acknowledgement failure is not context contamination and must not be recorded as `MISSING_EVIDENCE=REVIEW_CONTEXT_SEPARATION`; handle it under §6E.6A, preserve the independent context value, and identify the specific missing source precondition.
 
 When `CONTEXT_SEPARATION=BLOCKED`, stop before substantive evaluation and return exactly:
@@ -596,7 +610,7 @@ Recipient selection rules:
 
 **Release rule:** if the header is absent, outside the artifact, incomplete, ambiguous, or inconsistent with the task body, set `PROMPT_EMISSION_STATUS=BLOCKED`; do not present the prompt as ready to send. Correct it or resolve the one irreducible missing detail first. After validation, provide the complete prompt as one artifact with its dispatch header included at the top.
 
-A new chat is a new session, not a continuation by assumption. Start with a small, project-scoped envelope and retrieve only the relevant shared methods:
+A new chat is a new session, not a continuation by assumption. A header requesting `NEW_SEPARATE` does not create one: the sender must open/select the actual new destination conversation before dispatch, and the receiver must report the observed continuity and prior exposure under §6B.2. If a new session is mandatory but the actual session is continued or cannot be verified, do not fetch source; stop using the §6B.2 session-precondition return. Start with a small, project-scoped envelope and retrieve only the relevant shared methods:
 
 ```text
 HANDOFF_ID=
