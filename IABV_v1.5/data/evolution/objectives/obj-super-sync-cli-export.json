@@ -2,22 +2,45 @@
   "objective_id": "obj-super-sync-cli-export",
   "kind": "task",
   "title": "Exponer un CLI para exportar el ControlMasterDigest",
-  "summary": "Hoy AppBootstrap.export_control_master_digest() existe pero solo es invocable desde codigo. Falta un entrypoint tipo 'python -m iabv_v15 export-digest' que escupa el digest como JSON/markdown para pegarlo a cualquier IA externa.",
+  "summary": "La ruta local `python -m iabv_v15 cm export-digest` (JSON/Markdown) está presente en el código de main@a64f9e3 y existe test source para el CLI. La descripción anterior que afirmaba que faltaba el entrypoint está desactualizada. Ejecución del CLI, prueba, procedencia/frescura del resultado y recepción por otra sesión siguen sin verificarse; conservar el objetivo activo.",
   "parent_id": "obj-control-master-super-sync",
   "root_id": "obj-control-master-super-sync",
   "site_id": null,
   "priority": 20,
   "status": "active",
-  "progress": 0.0,
+  "progress": 0,
   "blocker": "",
-  "confidence": 0.0,
-  "evidence_refs": [],
+  "confidence": 0,
+  "evidence_refs": [
+    "IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-11-02-UAAL-CONTROL-MASTER-SOURCE-OBJECTIVE-RECONCILIATION-R1.md"
+  ],
   "tags": [
     "control-master",
     "cli",
     "super-sync"
   ],
-  "metadata": {},
+  "metadata": {
+    "source_reconciliation_r1": {
+      "audit_id": "IABV_UAAL_CONTROL_MASTER_SOURCE_OBJECTIVE_RECONCILIATION_R1_20261102",
+      "observed_at": "2026-11-02T19:16:00Z",
+      "source_main_sha": "a64f9e331ccbf13225ed5a3d945e16586e8756db",
+      "classification": "CLI_ENTRYPOINT_PRESENT_IN_SOURCE; CLI_AND_TEST_EXECUTION_NOT_RUN; CROSS_SESSION_RECEIPT_NOT_VERIFIED",
+      "runtime_verification": "NOT_RUN",
+      "live_control_master_signal": "UNAVAILABLE",
+      "acceptance_evidence_still_required": [
+        "run only under a separately authorized supported environment",
+        "capture exit status, digest source identity, scope and generation/observation timestamps",
+        "verify recipient acknowledgement and decision use",
+        "do not assume --refresh is a safe generic workaround; source help warns it may drop persisted base fields"
+      ],
+      "evidence_paths": [
+        "IABV_v1.5/src/iabv_v15/cli/control_master.py",
+        "IABV_v1.5/tests/test_control_master_cli.py"
+      ],
+      "receipt_path": "IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-11-02-UAAL-CONTROL-MASTER-SOURCE-OBJECTIVE-RECONCILIATION-R1.md",
+      "objective_state_preserved": true
+    }
+  },
   "created_at_utc": "2026-04-19T19:22:00.740838Z",
-  "updated_at_utc": "2026-04-19T19:22:00.740840Z"
+  "updated_at_utc": "2026-11-02T19:16:00Z"
 }

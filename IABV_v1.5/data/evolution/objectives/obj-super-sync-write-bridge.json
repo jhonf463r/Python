@@ -2,23 +2,45 @@
   "objective_id": "obj-super-sync-write-bridge",
   "kind": "task",
   "title": "Puente de escritura: UI/CLI sobre ControlMasterService",
-  "summary": "Las IAs solo pueden leer el control maestro. Para 'agregar tareas pendientes' desde cualquier sesion falta affordance en UI y CLI que llame add_objective / record_decision / mark_unresolved. Los metodos del servicio ya existen; falta el camino desde fuera.",
+  "summary": "La CLI local contiene affordances de escritura para add-objective, record-decision, mark-objective y mark-unresolved sobre los servicios/repositorios existentes. Esto corrige la afirmación anterior de que faltaba toda affordance CLI. No demuestra un transporte remoto seguro ni que una IA externa pueda escribir desde otra sesión; el puente de escritura cross-session sigue sin establecerse y la ejecución no fue probada.",
   "parent_id": "obj-control-master-super-sync",
   "root_id": "obj-control-master-super-sync",
   "site_id": null,
   "priority": 25,
   "status": "active",
-  "progress": 0.0,
+  "progress": 0,
   "blocker": "",
-  "confidence": 0.0,
-  "evidence_refs": [],
+  "confidence": 0,
+  "evidence_refs": [
+    "IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-11-02-UAAL-CONTROL-MASTER-SOURCE-OBJECTIVE-RECONCILIATION-R1.md"
+  ],
   "tags": [
     "control-master",
     "ui",
     "cli",
     "super-sync"
   ],
-  "metadata": {},
+  "metadata": {
+    "source_reconciliation_r1": {
+      "audit_id": "IABV_UAAL_CONTROL_MASTER_SOURCE_OBJECTIVE_RECONCILIATION_R1_20261102",
+      "observed_at": "2026-11-02T19:16:00Z",
+      "source_main_sha": "a64f9e331ccbf13225ed5a3d945e16586e8756db",
+      "classification": "LOCAL_CLI_WRITE_AFFORDANCES_PRESENT_IN_SOURCE; REMOTE_CROSS_SESSION_WRITE_BRIDGE_NOT_ESTABLISHED",
+      "runtime_verification": "NOT_RUN",
+      "live_control_master_signal": "UNAVAILABLE",
+      "acceptance_evidence_still_required": [
+        "keep local CLI and remote/cloud write transport as separate capabilities",
+        "any remote write needs its own explicit authority, target binding and supported secure transport",
+        "verify one authorized write and authoritative postcondition/fetch-back before claiming operation"
+      ],
+      "evidence_paths": [
+        "IABV_v1.5/src/iabv_v15/cli/control_master.py",
+        "IABV_v1.5/src/iabv_v15/services/evolution/control_master_service.py"
+      ],
+      "receipt_path": "IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-11-02-UAAL-CONTROL-MASTER-SOURCE-OBJECTIVE-RECONCILIATION-R1.md",
+      "objective_state_preserved": true
+    }
+  },
   "created_at_utc": "2026-04-19T19:22:00.744117Z",
-  "updated_at_utc": "2026-04-19T19:22:00.744119Z"
+  "updated_at_utc": "2026-11-02T19:16:00Z"
 }
