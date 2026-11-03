@@ -350,7 +350,7 @@ REVIEW_CONTEXT_SEPARATION_RECEIPT = {
   SOURCE_ACQUISITION_METHOD: RECIPIENT_LIVE_FETCH | ATTACHED_PACKAGE | OWNER_SUPPLIED_PACKAGE | COORDINATOR_EXPORTED_PACKAGE | OTHER | UNKNOWN,
   SOURCE_IDENTITY_VERIFICATION: RECIPIENT_LIVE_VERIFIED | COORDINATOR_ATTESTED | OWNER_ATTESTED | ACTOR_ATTESTED | UNVERIFIED,
   SOURCE_COVERAGE: COMPLETE | PARTIAL | NOT_ASSESSED,
-  SOURCE_RETRIEVAL_STATUS: PASS | LIMITED | BLOCKED | NOT_APPLICABLE | NOT_APPLICABLE,
+  SOURCE_RETRIEVAL_STATUS: NOT_ATTEMPTED | PASS | LIMITED | BLOCKED | NOT_APPLICABLE,
   SUBSTANTIVE_REVIEW: COMPLETE | PARTIAL | NOT_RUN | NOT_APPLICABLE
 }
 ```
@@ -358,7 +358,7 @@ REVIEW_CONTEXT_SEPARATION_RECEIPT = {
 Use the same orthogonal status fields throughout D021 and the Boot Kit; never infer one field from another:
 
 - `SOURCE_PACKAGE_STATUS` describes only package-byte availability/integrity: `NOT_REQUIRED | IDENTIFIED | BYTES_PRESENT | BYTES_INCOMPLETE | LINK_ONLY | UNAVAILABLE | MISMATCH | UNKNOWN`. `IDENTITY_VERIFIED` is not a package state; record the verification actor/result in `SOURCE_IDENTITY_VERIFICATION`. Do not use `PARTIAL` or `BLOCKED` as package states.
-- `SOURCE_RETRIEVAL_STATUS` describes only the acquisition route: `PASS` means exact pinned source bytes were retrieved directly from the declared canonical source and route/identity checks succeeded; it does not claim complete review coverage. `LIMITED` means usable, identifiable bytes were obtained through an indirect or constrained route; coverage may still be `COMPLETE` for the declared scope. `BLOCKED` means no usable, identity-verifiable route exists for that scope. `NOT_APPLICABLE` is reserved for `SOURCE_PACKAGE_REQUIRED=NO`.
+- `SOURCE_RETRIEVAL_STATUS` describes only the acquisition route: `NOT_ATTEMPTED` means no acquisition attempt has started; it is not evidence that the source is unavailable or that a route failed. Until an attempt occurs, retain `SOURCE_COVERAGE=NOT_ASSESSED`, `SOURCE_IDENTITY_VERIFICATION=UNVERIFIED` and `RECEIVER_SOURCE_ACK=PENDING` when applicable. `PASS` means exact pinned source bytes were retrieved directly from the declared canonical source and route/identity checks succeeded; it does not claim complete review coverage. `LIMITED` means usable, identifiable bytes were obtained through an indirect or constrained route; coverage may still be `COMPLETE` for the declared scope. `BLOCKED` means an attempted route failed to produce usable, identity-verifiable source, or a concrete verified precondition makes every permitted route unavailable. `NOT_APPLICABLE` is reserved for `SOURCE_PACKAGE_REQUIRED=NO`.
 - `SOURCE_COVERAGE` describes only the amount of the declared source scope actually inspected: `COMPLETE` means all required material for that scope was retrieved and inspected; `PARTIAL` means some but not all was inspected; `NOT_ASSESSED` means no substantive inspection was performed or the source was unavailable. It is independent of whether the retrieval route was direct or indirect.
 - `SOURCE_IDENTITY_VERIFICATION` records who independently verified or attested the exact source identity. `CONTEXT_SEPARATION` separately records reviewer-context admissibility; it never proves source identity or coverage.
 
@@ -567,7 +567,7 @@ RECEIVER_ATTACHMENT_ACK=NOT_REQUIRED|PENDING|VERIFIED|FAILED|MISMATCH
 RECEIVER_SOURCE_ACK=NOT_REQUIRED|PENDING|VERIFIED|FAILED|MISMATCH
 SOURCE_IDENTITY_VERIFICATION=RECIPIENT_LIVE_VERIFIED|COORDINATOR_ATTESTED|OWNER_ATTESTED|ACTOR_ATTESTED|UNVERIFIED
 SOURCE_COVERAGE=COMPLETE|PARTIAL|NOT_ASSESSED
-SOURCE_RETRIEVAL_STATUS=PASS|LIMITED|BLOCKED|NOT_APPLICABLE
+SOURCE_RETRIEVAL_STATUS=NOT_ATTEMPTED|PASS|LIMITED|BLOCKED|NOT_APPLICABLE
 CONTEXT_SEPARATION=PASS|LIMITED|BLOCKED|NOT_ASSESSED
 REVIEW_CLASS=INDEPENDENT_LIVE|BOUNDED_STATIC_PACKAGE|NOT_APPLICABLE
 SUBSTANTIVE_REVIEW=COMPLETE|PARTIAL|NOT_RUN|NOT_APPLICABLE
@@ -800,7 +800,7 @@ RECEIVER_ATTACHMENT_ACK=NOT_REQUIRED|PENDING|VERIFIED|FAILED|MISMATCH
 RECEIVER_SOURCE_ACK=NOT_REQUIRED|PENDING|VERIFIED|FAILED|MISMATCH
 SOURCE_IDENTITY_VERIFICATION=RECIPIENT_LIVE_VERIFIED|COORDINATOR_ATTESTED|OWNER_ATTESTED|ACTOR_ATTESTED|UNVERIFIED
 SOURCE_COVERAGE=COMPLETE|PARTIAL|NOT_ASSESSED
-SOURCE_RETRIEVAL_STATUS=PASS|LIMITED|BLOCKED|NOT_APPLICABLE
+SOURCE_RETRIEVAL_STATUS=NOT_ATTEMPTED|PASS|LIMITED|BLOCKED|NOT_APPLICABLE
 CONTEXT_SEPARATION=PASS|LIMITED|BLOCKED|NOT_ASSESSED
 REVIEW_CLASS=INDEPENDENT_LIVE|BOUNDED_STATIC_PACKAGE|NOT_APPLICABLE
 SUBSTANTIVE_REVIEW=COMPLETE|PARTIAL|NOT_RUN|NOT_APPLICABLE
@@ -995,7 +995,7 @@ RECEIVER_ATTACHMENT_ACK=
 RECEIVER_SOURCE_ACK=
 SOURCE_IDENTITY_VERIFICATION=
 SOURCE_COVERAGE=COMPLETE|PARTIAL|NOT_ASSESSED
-SOURCE_RETRIEVAL_STATUS=PASS|LIMITED|BLOCKED|NOT_APPLICABLE
+SOURCE_RETRIEVAL_STATUS=NOT_ATTEMPTED|PASS|LIMITED|BLOCKED|NOT_APPLICABLE
 CONTEXT_SEPARATION=PASS|LIMITED|BLOCKED|NOT_ASSESSED
 REVIEW_CLASS=INDEPENDENT_LIVE|BOUNDED_STATIC_PACKAGE|NOT_APPLICABLE
 SUBSTANTIVE_REVIEW=COMPLETE|PARTIAL|NOT_RUN|NOT_APPLICABLE
