@@ -226,3 +226,59 @@ Claude's original severity count was `P0=0; P1=1; P2=3; P3=7`.
 
 `TEST_EXECUTION_SCOPE=NOT_APPLICABLE`; `TEST_AUTHORIZATION=NOT_AUTHORIZED`; `TEST_STATUS=NOT_RUN`; `MERGE_AUTHORIZATION=NOT_GRANTED`. No tests, build, runtime, protected reads, credentials, local bridge/tunnel, product code, permission changes or CURRENT-STATE changes were performed. G1/G2/G3 remain `NOT_ESTABLISHED`; Option D remains `RATIFIED_NO_BOOTSTRAP`; protected reads remain `FAIL_CLOSED`; bridge remains `BRIDGE_NOT_READY`.
 
+## Coordinator live-source and semantic reconciliation — 2026-11-03 UTC
+
+This section records a coordinator/author reconciliation of the complete PR #598 file set after the recipient-side Claude Web attempt returned `SOURCE_RETRIEVAL_STATUS=BLOCKED`. That report correctly describes its own tool limitation; it is not evidence that the pinned GitHub objects are unavailable through every authorized connector.
+
+### Scope and actor boundary
+
+`RECONCILIATION_ID=IABV_PR598_COORDINATOR_GITHUB_SOURCE_AND_SEMANTIC_AUDIT_20261103`  
+`ACTOR_ROLE=COORDINATOR_AND_CANDIDATE_EDITOR`  
+`REPOSITORY=jhonf463r/Python`  
+`PR=598`  
+`BASE_SHA=56e4d8b11846a8d8f3cb8cda08efd773ec235651`  
+`HEAD_SHA=419960ae57b495570e2b3124472fd08bafccdf40`  
+`HEAD_TREE=4c5432521cc44c1d7c94b6dcca80d841ff3ee072`  
+`BASE_TREE=da5e395d3a2f77c5cfeb595a2a9ea875e756608a`  
+`PR_STATE=OPEN`; `MERGED=FALSE`; `CHANGED_FILES=10`; `ADDITIONS=819`; `DELETIONS=66`; `COMMITS_AHEAD=51`; `COMMITS_BEHIND=0`.
+
+The complete base and HEAD Git trees were retrieved from exact commit objects; neither response was truncated. The eight pre-existing paths were retrieved at both base and HEAD (16 blobs). The two newly added receipts were retrieved at HEAD (two blobs). The coordinator independently recomputed Git blob SHA-1 from the exact UTF-8 bytes returned for all 18 objects; all 18 recomputed values matched the GitHub blob identities. Tree entries report mode `100644`, type `blob` for the ten changed paths. This was a GitHub tree/API plus byte-derived blob verification; no canonicalized aggregate `MANIFEST_SHA256` was claimed and no raw `git ls-tree -rz` stream was received in this coordinator session.
+
+The three follow-on corrections in commit `419960ae57b495570e2b3124472fd08bafccdf40` were separately fetched back and their Git blob identities recomputed; all 3/3 match:
+
+| Path | Fetch-back blob SHA | Byte length |
+|---|---|---:|
+| `IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-UAAL-D021-CROSS-SESSION-BOOT-AND-STATE-RECONCILIATION.md` | `fd1033a55281f2b9490012799300801b3a8160a2` | 125947 |
+| `IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-31-UAAL-NEW-CHAT-BOOT-AND-HANDOFF-KIT.md` | `585a5c96c1466f214b482e08fffefc4382a2e5fa` | 48546 |
+| `IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-23-CONTINUITY-SPACE-TIME-OPERATING-PROTOCOL-v1.md` | `6828b406dbe2d8d417ed9cf4a19150bbd60fce3f` | 101295 |
+
+This is **not an independent reviewer result**: the coordinator authored/edited the candidate and its receipts. `INDEPENDENT_REVIEW_STATUS=NOT_PERFORMED`; the coordinator's own byte and semantic reconciliation cannot satisfy D021's independent-review gate, cannot produce an independent PASS, and cannot authorize merge.
+
+### Canonical dependency checks at the pinned base
+
+- D019 §9E at base blob `2973bda8810bd015a36655ebf81689a9c5130089` identifies itself as `STATUS=DOCUMENTED_METHOD_CANDIDATE` and `CANONICAL_MAIN_ADOPTION=NOT_YET`. Its adoption state is owned by that D019 record; this receipt does not treat D020's general `STATUS=DOCUMENTED_METHOD` as adoption of D019 §9E.
+- D020 §9 already states in prose that D019 §9E is its owner; its base concept metadata did not bind the owner/adoption relationship as explicitly as the candidate now does.
+- Pinned-main D021 at base blob `67acb8a9e1d96a25a9bc890554877ac08c3c9bf1` does not contain the candidate's `§6E.6A` source-acquisition section. New §6E.6A text remains candidate-only until merged and fetched back from main.
+- D021 §6B.2 in pinned main already distinguishes reviewer-context separation from source acquisition, source identity and coverage. Its rule 4 refers to `SOURCE_RETRIEVAL_STATUS=BLOCKED`, a source-acquisition field, not to `CONTEXT_SEPARATION=BLOCKED`; the candidate's wording now names the complete field to remove ambiguity.
+- `CURRENT-STATE.md` was fetched from its exact base blob `63e1b459a13e23e1012da81826dc50727b688d8c` because its normal file read returns an empty body. Its active route remains M1A G1 blocked; `G1/G2/G3=NOT_ESTABLISHED`; `OPTION_D=RATIFIED_NO_BOOTSTRAP`; protected reads `FAIL_CLOSED`; bridge `BRIDGE_NOT_READY`; product implementation not authorized.
+- `control_master/latest.json` at base blob `d76d521e6f8d73e874a21ffe1b720dcdbcd48293` retains state ID `dc840807-ef2a-4e7a-8f11-4c6362ccbcb7`, `last_updated=2026-04-19T19:23:46.389095Z` and the same four historical active objective IDs. This is a stale committed snapshot, not a live Control Master digest and it did not supersede CURRENT-STATE.
+
+### PR #591 receipt cross-check
+
+The new PR591 receipt binds a separate PR snapshot: PR #591 was OPEN/DRAFT with base `a64f9e331ccbf13225ed5a3d945e16586e8756db`, head `01d4e70eac7afd80bde80a6844db784926f57c76`, and source branch `iabv/control-master-signal-bridge-r1-20261031-review`. The GitHub API run `41522096790` identifies that same PR/head and workflow `IABV Control Master focused tests`; the run and its only listed job `125540433553` ended `completed/failure`. The job payload had `steps=null`, and the steps endpoint returned no step records. Therefore the receipt is correct not to claim pytest ran or that a test assertion failed; the cause remains unassessed from available step evidence. This historical receipt does not alter PR #591's route or authorize a retry.
+
+### Additional semantic findings and corrections carried by HEAD 419960ae
+
+- **COORD-PR598-A1 (P2) — CORRECTED:** the Space-Time revision 2.8 section labelled the D019 §9E/D020 §9 bundle a proposal, but then instructed every Owner-facing task to complete the whole sequence without an explicit owner-record adoption boundary. That could be read as adopting the D019 proposal through a second document while D019 itself still said `CANONICAL_MAIN_ADOPTION=NOT_YET`. The section now explicitly makes steps 6–8 and the `OWNER_ACTION_PACKET` expansion candidate-only until the owning D019 record is adopted; existing CURRENT-STATE, adopted D021 and authorization/no-bootstrap controls remain controlling.
+- **COORD-PR598-A2 (P2) — CORRECTED:** the mixed-source rule previously set `SOURCE_COVERAGE=NOT_ASSESSED` whenever any required source was missing, even if a subset of the declared scope had already been inspected. That conflicted with the definition of SOURCE_COVERAGE as the amount actually inspected. It now retains `PARTIAL` when some but not all items were actually inspected, while still setting `SUBSTANTIVE_REVIEW=NOT_RUN` for the unreviewable full scope; `NOT_ASSESSED` is reserved for no substantive inspection of any declared item. Exploratory subset observations remain non-verdict evidence.
+- **COORD-PR598-A3 (P2) — CORRECTED:** Boot Kit step 7a stated the current D019 owner value as fixed prompt text, risking a stale false block after later adoption. It now treats the value observed at PR base as dated and requires each session to recheck the exact current pinned-main owner record before deciding candidate/adopted status.
+- **COORD-PR598-A4 (P3) — CORRECTED:** the prompt emission transition list allowed only the route through `PREPARED_NOT_SENT`, whose definition requires an unconfirmed preflight item. This omitted the case where all recipient/capability/target facts were already verified when the draft was created. D021 now allows direct `NOT_PREPARED -> READY_TO_SEND` when all mandatory checks pass at creation, while retaining `PREPARED_NOT_SENT -> READY_TO_SEND` for later verification and `BLOCKED` for failed/contradictory preconditions.
+
+The first post-write aggregate verification harness applied all three file-specific semantic assertions to each returned file and therefore reported a false negative; it did not indicate a GitHub blob mismatch. A subsequent path-specific fetch-back and independent Git blob SHA recomputation verified all 3/3 correction blobs, as recorded above. The branch update itself was a non-force fast-forward guarded by the expected predecessor SHA `849a0cec2654975057e1f8171eb9ef1e7909c2fd`.
+
+### Current result and remaining boundary
+
+`COORDINATOR_RECONCILIATION=COMPLETE_FOR_LIVE_SOURCE_IDENTITY_AND_THE_LISTED_SEMANTIC_CORRECTIONS`; `INDEPENDENT_REVIEW_STATUS=NOT_PERFORMED`; `TEST_EXECUTION_SCOPE=NOT_APPLICABLE`; `TEST_AUTHORIZATION=NOT_AUTHORIZED`; `TEST_STATUS=NOT_RUN`; `MERGE_AUTHORIZATION=NOT_GRANTED`.
+
+This does not claim that an independent full-scope review has passed. Claude Web's supplied report remains a correct recipient-side `SOURCE_RETRIEVAL_STATUS=BLOCKED` receipt for that session; it does not override the coordinator's separately verified GitHub source retrieval. A fresh independent reviewer with a real Git/GitHub read channel is still required to inspect the final HEAD, with the two reconciliation receipts read only after the normative candidate sources in Phase A to avoid exposing prior evaluative findings before the reviewer's own source inspection. No product code, current-state route, technical gate, protected-read boundary, local runtime, tunnel or bridge was changed.
+
