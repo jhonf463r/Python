@@ -45,7 +45,7 @@ For every new chat and every material hand-off:
 
 GitHub is the durable source for records actually committed there; it is not a magical transcript of all chats or local runtime. A new chat does not automatically inherit an old chat's hidden context. The coordinator must fetch and bind the records it uses, while marking what was unavailable.
 
-**Operational boot and handoff entry (revision 2.7):** use the [UAAL New-Chat Boot and Handoff Kit](./CHAT-ARCH-2026-10-31-UAAL-NEW-CHAT-BOOT-AND-HANDOFF-KIT.md) for the copy-ready startup sequence, role boundaries, project-scoped memory selection, Owner-input reuse ledger and correlated return receipt. The kit operationalizes this protocol; it does not create a second router, grant permissions or imply automatic context injection.
+**Operational boot and handoff entry (revision 2.8):** use the [UAAL New-Chat Boot and Handoff Kit](./CHAT-ARCH-2026-10-31-UAAL-NEW-CHAT-BOOT-AND-HANDOFF-KIT.md) for the copy-ready startup sequence, role boundaries, project-scoped memory selection, Owner-input reuse ledger and correlated return receipt. The kit operationalizes this protocol; it does not create a second router, grant permissions or imply automatic context injection.
 
 ### Turn-boundary refresh and route-drift prevention (revision 2.2)
 
