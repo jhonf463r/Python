@@ -379,7 +379,7 @@ Classify carefully:
 
 Use `CONTEXT_SEPARATION=NOT_ASSESSED` only when the evidence needed to classify reviewer-context separation was not inspected or cannot be reconstructed. It is neither a pass nor a known contamination result. Keep it distinct from `BLOCKED` (a known disqualifying exposure) and from `SOURCE_COVERAGE=NOT_ASSESSED` (the extent of source inspection).
 
-4. Source acquisition is classified independently under §6E.6A. Use the orthogonal `SOURCE_PACKAGE_STATUS`, `SOURCE_ACQUISITION_METHOD`, `SOURCE_RETRIEVAL_STATUS`, `SOURCE_IDENTITY_VERIFICATION`, `SOURCE_COVERAGE` and receiver-ack fields defined there; do not apply a second `PASS`/`LIMITED`/`BLOCKED` taxonomy here or infer one field from another. In particular, `NOT_ATTEMPTED` is not `BLOCKED`, `LIMITED` does not imply partial coverage, and `BLOCKED` requires an attempted route failure to obtain usable, identity-verifiable source bytes or a concrete verified precondition that makes every permitted route unavailable. A source-acquisition result never changes `CONTEXT_SEPARATION`.
+4. Source acquisition is classified independently under §6E.6A. Use the orthogonal `SOURCE_PACKAGE_STATUS`, `SOURCE_ACQUISITION_METHOD`, `SOURCE_RETRIEVAL_STATUS`, `SOURCE_IDENTITY_VERIFICATION`, `SOURCE_COVERAGE` and receiver-ack fields defined there; do not apply a second `PASS`/`LIMITED`/`BLOCKED` taxonomy here or infer one field from another. In particular, `NOT_ATTEMPTED` is not `BLOCKED`, and `LIMITED` does not imply partial coverage. The exact acquisition-failure meaning of `BLOCKED` is owned by §6E.6A; identity and coverage remain separate fields and must not be folded into that definition. A source-acquisition result never changes `CONTEXT_SEPARATION`.
 
 5. Same-candidate metadata exposure must be classified by content, not merely by whether it came from GitHub:
    - `PR_TITLE_BRANCH_SHA_CHANGED_PATHS_ONLY` and `NON_EVALUATIVE_COMMIT_SUBJECTS` are `METADATA_ONLY`. If these are the only prior exposure and no candidate-specific findings/rationale were seen, classify context as `LIMITED`, not `BLOCKED`; record the exposure and do not call the review fully blinded.
@@ -507,7 +507,7 @@ Canonical-method status is established from the owning method's exact pinned-mai
 
 Every external-agent prompt or handoff must identify one **explicit recipient** before its task body. Do not use ambiguous dispatch language such as "send to Claude or another AI", "use the same reviewer", or "ask an agent". The sender must select the recipient from the task's required capability and the capabilities actually available, then state the provider, named agent/model or channel, role, session requirement, permitted input/source route, authorized operation scope, exclusions, expected return and stop condition.
 
-Use this exact dispatch-header schema as the first non-empty content inside every copy-ready external prompt. Populate each field with the specific task value or an explicitly permitted status; do not emit blank values or the schema as an unfilled example:
+Use this exact dispatch-header schema as the first non-empty content inside every copy-ready external prompt. Populate mandatory fields with concrete task values; do not emit blanks, placeholders or unresolved values for recipient, task, role, session mode, authorization scope, exclusions, expected return or stop condition:
 
 ```text
 DISPATCH_HEADER
@@ -525,6 +525,16 @@ EXPECTED_RETURN_ARTIFACT_AND_RECEIPT=
 STOP_CONDITION=
 ```
 
+The `DISPATCH_HEADER` is the sole authority for recipient/model-channel, project/task, role, session mode, context requirement, source refs, authorized scope, exclusions, expected return and stop condition. A project-specific `HANDOFF_ENVELOPE` may follow it and add evidence/context, but any repeated field must match the header exactly; the envelope cannot override it. Any conflict makes the artifact `PROMPT_EMISSION_STATUS=BLOCKED`.
+
+Use this separate emission-state field (it is not a substitute for the delivery-stage receipt):
+`PROMPT_EMISSION_STATUS=NOT_PREPARED|PREPARED_NOT_SENT|READY_TO_SEND|BLOCKED`.
+- `NOT_PREPARED`: no complete prompt artifact exists.
+- `PREPARED_NOT_SENT`: the artifact is drafted but the exact destination/account/channel is not confirmed; it must not be presented as ready or sent.
+- `READY_TO_SEND`: the header and body passed preflight; this does not mean the prompt was sent.
+- `BLOCKED`: the header is absent, incomplete, ambiguous or contradictory, or the task cannot be safely/accurately dispatched. Do not release it.
+Actual `PROMPT_SENT` and `RECIPIENT_ACKNOWLEDGED` remain separate observed delivery stages.
+
 Recipient selection rules:
 1. Select by the operation and capability required, not by habit or brand. An independent adversarial review needs a reviewer distinct from the author/editor and an admissible context under §6B.2. Source access and runner capability must be checked separately.
 2. Name exactly one intended destination in the prompt header. If the preferred provider/account/channel has not been confirmed available, label it `PREFERRED_RECIPIENT; AVAILABILITY_UNCONFIRMED`; do not imply the handoff was sent or silently substitute another AI. Ask the Owner only for an irreducible routing decision when no supported choice can be established from the task context.
@@ -536,11 +546,11 @@ Recipient selection rules:
 - The literal dispatch header is the first non-empty content **inside the prompt artifact itself**, before its title or task body. Putting the recipient only in surrounding chat prose does not satisfy this requirement.
 - Populate every field in the `DISPATCH_HEADER` schema: one exact provider/agent; model or channel; project/task; role; session mode; context-separation requirement; source access and exact refs; authorized scope; exclusions; expected return; and stop condition. Do not leave blank fields, generic placeholders, or alternatives such as "Claude or another AI" in a released prompt.
 - Select the recipient from the task's required capability and the destination established by the current conversation/project context. Do not infer that an account, model, tool, repository checkout or runner is available merely because its product is named.
-- If the provider is known but account/channel availability is not confirmed, preserve that exact destination as `PREFERRED_RECIPIENT; AVAILABILITY_UNCONFIRMED`; state `PROMPT_PREPARED_NOT_SENT` and do not silently substitute another recipient. If the intended recipient itself cannot be resolved from available evidence, ask only the single irreducible routing question before drafting.
-- Use explicit values such as `UNKNOWN` or `NOT_APPLICABLE` where the schema permits them; never invent model labels, capabilities, source access, authority or delivery status to make the header look complete.
+- If the provider is known but account/channel availability is not confirmed, preserve that exact destination as `PREFERRED_RECIPIENT; AVAILABILITY_UNCONFIRMED`; set `PROMPT_EMISSION_STATUS=PREPARED_NOT_SENT` and do not silently substitute another recipient. If the intended recipient itself cannot be resolved from available evidence, ask only the single irreducible routing question before drafting.
+- The only permitted sentinel in a required header field is `NOT_APPLICABLE` for `REQUIRED_SOURCE_ACCESS_AND_EXACT_REFS` when the task genuinely requires no source package. `UNKNOWN` is not a substitute for an unresolved destination, session mode, scope, exclusion, expected return or stop condition; any such unresolved value makes `PROMPT_EMISSION_STATUS=BLOCKED`. `PREFERRED_RECIPIENT; AVAILABILITY_UNCONFIRMED` is permitted only in the recipient field and requires `PROMPT_EMISSION_STATUS=PREPARED_NOT_SENT`.
 - Cross-check the task body against the header. The body must not broaden the authorized scope, contradict the target/session requirement, imply unverified capabilities, omit a required source route, or weaken exclusions/stop conditions.
 
-**Release rule:** if the header is absent, outside the artifact, incomplete, ambiguous, or inconsistent with the task body, the prompt is `BLOCKED` and must not be presented as ready to send. Correct it or resolve the one irreducible missing detail first. After validation, provide the complete prompt as one artifact with its dispatch header included at the top.
+**Release rule:** if the header is absent, outside the artifact, incomplete, ambiguous, or inconsistent with the task body, set `PROMPT_EMISSION_STATUS=BLOCKED`; do not present the prompt as ready to send. Correct it or resolve the one irreducible missing detail first. After validation, provide the complete prompt as one artifact with its dispatch header included at the top.
 
 A new chat is a new session, not a continuation by assumption. Start with a small, project-scoped envelope and retrieve only the relevant shared methods:
 
@@ -559,7 +569,7 @@ SOURCE_ACQUISITION_METHOD=RECIPIENT_LIVE_FETCH|ATTACHED_PACKAGE|OWNER_SUPPLIED_P
 SOURCE_PACKAGE_PRODUCER=PROVIDER_OR_ACCOUNT_OR_AGENT_OR_ORGANIZATION_IDENTIFIER
 SOURCE_PACKAGE_FILENAME_AND_FORMAT=
 SOURCE_PACKAGE_IDENTITY=
-SOURCE_PACKAGE_MANIFEST_ENTRIES=ROLE<TAB>REVISION<TAB>PATH<TAB>GIT_BLOB_SHA<TAB>BYTE_LENGTH (repeat once per file; see §6E.6A)
+SOURCE_PACKAGE_MANIFEST_ENTRIES=ROLE<TAB>REVISION<TAB>PATH_ESCAPED<TAB>GIT_MODE<TAB>OBJECT_TYPE<TAB>OBJECT_ID<TAB>BYTE_LENGTH (repeat once per existing path/revision object; see §6E.6A)
 SOURCE_PACKAGE_DIGEST=SHA256:<64_HEX>|GIT_BLOB_SHA:<40_HEX>|MANIFEST_SHA256:<64_HEX>|NOT_AVAILABLE
 SOURCE_PACKAGE_DIGEST_BASIS=EXACT_PACKAGE_BYTES|RAW_LIVE_RESPONSE_BYTES|RECOMPUTED_GIT_BLOB|CANONICALIZED_FILE_MANIFEST|NOT_AVAILABLE
 RECEIVER_FILE_DERIVED_EVIDENCE=
@@ -572,7 +582,7 @@ SOURCE_IDENTITY_VERIFICATION=RECIPIENT_LIVE_VERIFIED|COORDINATOR_ATTESTED|OWNER_
 SOURCE_COVERAGE=COMPLETE|PARTIAL|NOT_ASSESSED
 SOURCE_RETRIEVAL_STATUS=NOT_ATTEMPTED|PASS|LIMITED|BLOCKED|NOT_APPLICABLE
 CONTEXT_SEPARATION=PASS|LIMITED|BLOCKED|NOT_ASSESSED
-REVIEW_CLASS=INDEPENDENT_LIVE|BOUNDED_STATIC_PACKAGE|NOT_APPLICABLE
+REVIEW_CLASS=INDEPENDENT_LIVE|INDEPENDENT_LIVE_PARTIAL|BOUNDED_STATIC_PACKAGE|NOT_APPLICABLE
 SUBSTANTIVE_REVIEW=COMPLETE|PARTIAL|NOT_RUN|NOT_APPLICABLE
 PARENT_OBJECTIVE=
 PROJECT_ID=
@@ -793,7 +803,7 @@ SOURCE_ACQUISITION_METHOD=RECIPIENT_LIVE_FETCH|ATTACHED_PACKAGE|OWNER_SUPPLIED_P
 SOURCE_PACKAGE_PRODUCER=PROVIDER_OR_ACCOUNT_OR_AGENT_OR_ORGANIZATION_IDENTIFIER
 SOURCE_PACKAGE_FILENAME_AND_FORMAT=
 SOURCE_PACKAGE_IDENTITY=
-SOURCE_PACKAGE_MANIFEST_ENTRIES=ROLE<TAB>REVISION<TAB>PATH<TAB>GIT_BLOB_SHA<TAB>BYTE_LENGTH (repeat once per file; see §6E.6A)
+SOURCE_PACKAGE_MANIFEST_ENTRIES=ROLE<TAB>REVISION<TAB>PATH_ESCAPED<TAB>GIT_MODE<TAB>OBJECT_TYPE<TAB>OBJECT_ID<TAB>BYTE_LENGTH (repeat once per existing path/revision object; see §6E.6A)
 SOURCE_PACKAGE_DIGEST=SHA256:<64_HEX>|GIT_BLOB_SHA:<40_HEX>|MANIFEST_SHA256:<64_HEX>|NOT_AVAILABLE
 SOURCE_PACKAGE_DIGEST_BASIS=EXACT_PACKAGE_BYTES|RAW_LIVE_RESPONSE_BYTES|RECOMPUTED_GIT_BLOB|CANONICALIZED_FILE_MANIFEST|NOT_AVAILABLE
 RECEIVER_FILE_DERIVED_EVIDENCE=
@@ -806,11 +816,19 @@ SOURCE_IDENTITY_VERIFICATION=RECIPIENT_LIVE_VERIFIED|COORDINATOR_ATTESTED|OWNER_
 SOURCE_COVERAGE=COMPLETE|PARTIAL|NOT_ASSESSED
 SOURCE_RETRIEVAL_STATUS=NOT_ATTEMPTED|PASS|LIMITED|BLOCKED|NOT_APPLICABLE
 CONTEXT_SEPARATION=PASS|LIMITED|BLOCKED|NOT_ASSESSED
-REVIEW_CLASS=INDEPENDENT_LIVE|BOUNDED_STATIC_PACKAGE|NOT_APPLICABLE
+REVIEW_CLASS=INDEPENDENT_LIVE|INDEPENDENT_LIVE_PARTIAL|BOUNDED_STATIC_PACKAGE|NOT_APPLICABLE
 SUBSTANTIVE_REVIEW=COMPLETE|PARTIAL|NOT_RUN|NOT_APPLICABLE
 ~~~
 
-**Multi-file manifest rule:** When the declared source scope contains more than one file/revision, populate `SOURCE_PACKAGE_MANIFEST_ENTRIES` with one UTF-8 line per existing source object in this exact form: `ROLE<TAB>REVISION<TAB>PATH<TAB>GIT_BLOB_SHA<TAB>BYTE_LENGTH`. Each `<TAB>` is one literal horizontal tab (U+0009) byte. Use `HEAD`, `BASE` or `OTHER` for ROLE. Sort by unsigned bytewise lexicographic order of the UTF-8 bytes of ROLE, then repository-relative PATH; use REVISION and GIT_BLOB_SHA as tie-breakers. Do not use locale-dependent collation. `REVISION` is the full 40-character lowercase Git commit SHA for Git-backed objects, or the exact immutable version identifier for a non-Git source; never use a moving branch/ref or a timestamp alone. `BYTE_LENGTH` is the exact number of source bytes, rendered as unsigned base-10 ASCII digits without separators or leading zeroes (except `0`). Emit one row only for each object that exists in that role: a new HEAD file has a HEAD row and no empty BASE placeholder; a deleted file has a BASE row and no empty HEAD placeholder. Encode the lines as UTF-8 with LF (U+000A) separators, no header, blank lines, extra spaces or trailing LF. Set `SOURCE_PACKAGE_DIGEST=MANIFEST_SHA256:<64_HEX>` and `SOURCE_PACKAGE_DIGEST_BASIS=CANONICALIZED_FILE_MANIFEST`, using SHA-256 over those exact canonical manifest bytes. Keep each file's blob SHA and byte length in the manifest; never place multiple blob SHAs in the single `GIT_BLOB_SHA` digest field. For a single-file source, use the exact package SHA-256 or recomputed Git blob SHA as defined above.
+**Multi-file manifest rule:** When the declared source scope contains more than one file/revision, populate `SOURCE_PACKAGE_MANIFEST_ENTRIES` with one UTF-8 line per existing source path/object in this exact form: `ROLE<TAB>REVISION<TAB>PATH_ESCAPED<TAB>GIT_MODE<TAB>OBJECT_TYPE<TAB>OBJECT_ID<TAB>BYTE_LENGTH`. Each `<TAB>` is one literal horizontal tab (U+0009) byte. Use `HEAD`, `BASE` or `OTHER` for ROLE. `REVISION` is the full 40-character lowercase Git commit SHA for Git-backed content, or the exact immutable version identifier for a non-Git source; never use a moving branch/ref or timestamp alone.
+
+`PATH_ESCAPED` is the exact repository-relative path encoded as UTF-8 without Unicode normalization. To keep tab-delimited rows unambiguous, encode every literal percent sign as `%25`, TAB as `%09`, LF as `%0A` and CR as `%0D`, using uppercase hexadecimal; preserve all other valid UTF-8 bytes unchanged. Decode these escapes only after splitting the row into fields. If a path is not valid UTF-8 or cannot be represented losslessly, stop canonicalization and set the aggregate digest to `NOT_AVAILABLE`; never normalize or replace path bytes lossily.
+
+`GIT_MODE` is the exact six-digit Git tree mode (`100644`, `100755`, `120000` or `160000`); use `NOT_APPLICABLE` for non-Git byte objects. `OBJECT_TYPE` is `BLOB`, `GITLINK` or `NON_GIT_BYTES`. `OBJECT_ID` is the 40-character lowercase Git blob SHA for `BLOB`, the 40-character lowercase commit SHA for `GITLINK`, or `SHA256:<64_HEX>` over exact bytes for `NON_GIT_BYTES`. `BYTE_LENGTH` is the exact byte length as unsigned base-10 ASCII digits without separators or leading zeroes (except `0`) for byte-backed objects; use `NOT_APPLICABLE` for a gitlink, which identifies a commit rather than package bytes. A symlink is represented as a `BLOB` with mode `120000` and exact link-target bytes.
+
+Sort by unsigned bytewise lexicographic order of the UTF-8 ROLE field, then the UTF-8 bytes of `PATH_ESCAPED`, then REVISION, GIT_MODE, OBJECT_TYPE and OBJECT_ID. Do not use locale-dependent collation. Emit one row for each source path/object that exists in each included role: a new file has a HEAD row and no empty BASE placeholder; a deleted file has a BASE row and no empty HEAD placeholder. A rename is represented by the old path in BASE and the new path in HEAD; do not infer or encode rename detection. A mode change is represented by the BASE and HEAD rows with their respective exact modes. A Git submodule is represented as a `GITLINK` with mode `160000`, its commit SHA and `BYTE_LENGTH=NOT_APPLICABLE`.
+
+Encode rows as UTF-8 with LF (U+000A) separators, no header, blank lines, extra spaces or trailing LF. Set `SOURCE_PACKAGE_DIGEST=MANIFEST_SHA256:<64_HEX>` and `SOURCE_PACKAGE_DIGEST_BASIS=CANONICALIZED_FILE_MANIFEST`, using SHA-256 over those exact canonical manifest bytes. Keep each object's identifier and byte length in the manifest; never place multiple object IDs in the single-file `GIT_BLOB_SHA` digest field. For a single-file source, use the exact package SHA-256 or recomputed Git blob SHA as defined above.
 
 **Byte-derived receiver evidence is mandatory:**
 
@@ -828,8 +846,9 @@ SUBSTANTIVE_REVIEW=COMPLETE|PARTIAL|NOT_RUN|NOT_APPLICABLE
 4. If bytes are absent, unreadable, unverified, unacknowledged, mismatched or incomplete for the claimed scope, substantive review/execution of that scope is NOT_RUN. Set the matching SOURCE_PACKAGE_STATUS and preserve unexamined dimensions as NOT_ASSESSED. A narrower review is permitted only when its scope is stated in advance and coverage is COMPLETE for that narrower scope; it cannot support a verdict on omitted material or the whole PR.
 5. SOURCE_COVERAGE=PARTIAL or NOT_ASSESSED for a claimed full-PR review prohibits a PR-wide PASS/FAIL or merge-readiness claim.
 6. Coordinator-exported or Owner-supplied packages support BOUNDED_STATIC_PACKAGE only after bytes, identity and scope are verified. Preserve COORDINATOR_ATTESTED/OWNER_ATTESTED unless the receiver independently verifies live canonical source.
-7. INDEPENDENT_LIVE requires §6B.2 context admissibility, `SOURCE_RETRIEVAL_STATUS=PASS`, `SOURCE_IDENTITY_VERIFICATION=RECIPIENT_LIVE_VERIFIED`, `RECEIVER_SOURCE_ACK=VERIFIED`, and `SOURCE_COVERAGE=COMPLETE` for the declared full scope. `CONTEXT_SEPARATION` must be `PASS` or `LIMITED`; LIMITED remains visible and is not fully blinded. BLOCKED or NOT_ASSESSED context separation precludes an INDEPENDENT_LIVE claim; BLOCKED requires `SUBSTANTIVE_REVIEW=NOT_RUN`.
-8. For RECIPIENT_LIVE_FETCH, both attachment fields are NOT_REQUIRED. For transfer routes, a byte-derived receiver acknowledgement may establish receipt/readability while sender-side ATTACHED_REPORTED remains unchanged.
+7. `INDEPENDENT_LIVE` requires §6B.2 context admissibility, `SOURCE_RETRIEVAL_STATUS=PASS`, `SOURCE_IDENTITY_VERIFICATION=RECIPIENT_LIVE_VERIFIED`, `RECEIVER_SOURCE_ACK=VERIFIED`, and `SOURCE_COVERAGE=COMPLETE` for the entire review scope declared before source inspection. That declared scope may be narrower than the full PR only under rule 4; record its exact paths/criteria and never imply a PR-wide verdict when the declared scope omits PR material. `CONTEXT_SEPARATION` must be `PASS` or `LIMITED`; `LIMITED` remains visible and is not fully blinded. `BLOCKED` or `NOT_ASSESSED` context separation precludes an `INDEPENDENT_LIVE` claim; `BLOCKED` requires `SUBSTANTIVE_REVIEW=NOT_RUN`.
+7a. `INDEPENDENT_LIVE_PARTIAL` records a reviewer who independently live-fetched and identity-verified the exact declared source, received a verified receiver acknowledgement, and satisfied the §6B.2 context gate, but inspected only part of a broader scope declared before review. Require `SOURCE_RETRIEVAL_STATUS=PASS`, `SOURCE_IDENTITY_VERIFICATION=RECIPIENT_LIVE_VERIFIED`, `RECEIVER_SOURCE_ACK=VERIFIED`, `CONTEXT_SEPARATION=PASS|LIMITED`, `SOURCE_COVERAGE=PARTIAL`, and `SUBSTANTIVE_REVIEW=PARTIAL`; list every omitted path/dimension as `NOT_ASSESSED`. This class preserves the live-source provenance of useful partial findings but cannot satisfy a complete independent-review requirement or support a PR-wide PASS/FAIL, merge-readiness or full-scope acceptance claim. If the review scope was explicitly narrowed before inspection and all of that narrower scope was inspected, use `INDEPENDENT_LIVE` with the narrower scope declared under rule 7. If required source bytes are absent, unreadable, mismatched, unverified or unacknowledged, do not use `INDEPENDENT_LIVE_PARTIAL`; apply rule 4 and set `SUBSTANTIVE_REVIEW=NOT_RUN` for the affected claimed scope.
+8. For RECIPIENT_LIVE_FETCH, both attachment fields are NOT_REQUIRED.
 9. If no cross-product send/attach action exists, report the last evidenced stage. Do not ask the Owner to reconstruct or generate an artifact that authorized repository tools can retrieve.
 10. Do not repeat a failed route without a material capability/evidence change; the repeated attempt is SAME_EXPERIMENT under D019/D020.
 
@@ -939,6 +958,8 @@ A precondition that may change between inspection and action must be checked aga
 
 A last-moment client-side re-check narrows but does not eliminate a race: the remote default branch can still change after the check and before the server accepts the push. Do not describe this as atomic protection. Absolute prevention requires a server-side invariant or an atomic server operation that binds the target ref to the non-default condition. Preserve this residual risk in review and acceptance language.
 
+For this section, a `dedicated signal branch` is a non-default repository branch whose purpose, owner and single allowlisted signal artifact are explicitly recorded in the owning protocol; it is not a general development branch. Verify the actual branch ref and allowlisted path against live repository metadata immediately before publication; branch naming alone proves neither purpose nor write authority.
+
 When a dedicated signal branch is behind current `main`, do not treat ordinary new `main` commits as contamination and do not force-push or overwrite the signal branch. Use a normal, non-force fast-forward/merge reconciliation of current `main` into the signal branch, then compare the resulting complete tree against the exact current `main` tree. Continue only when the sole remaining delta is the allowlisted signal file. If merge conflicts occur or any non-allowlisted delta remains, stop fail-closed. Verify the subsequent normal push by remote ref, fetched commit and exact file bytes. A successful merge/read-back proves branch consistency, not signal authenticity or M1A authority. Also perform this read-back when the push command itself exits non-zero or times out: the remote may have accepted the ref before the transport acknowledgement was lost. Do not classify that case as definitely unpublished; report `PUBLISHED_UNVERIFIED`/`PUSH_RESULT_UNVERIFIED` unless the exact remote ref, commit and bytes prove the postcondition. A verified read-back may confirm publication despite an ambiguous client-side exit. `PUBLISHED_UNVERIFIED` and `PUSH_RESULT_UNVERIFIED` are publication/acknowledgement outcome labels, not members of the §6F.6 stop-classification set; record the applicable §6F.6 stop class separately (for example, `TOOL_TRANSPORT_FAILURE` for a lost transport acknowledgement or `INTEGRATION_UNVERIFIED` when the remote postcondition cannot be established).
 
 ### 6F.5 Batch writes and verify the final artifact, not activity volume
@@ -1004,7 +1025,7 @@ SOURCE_IDENTITY_VERIFICATION=
 SOURCE_COVERAGE=COMPLETE|PARTIAL|NOT_ASSESSED
 SOURCE_RETRIEVAL_STATUS=NOT_ATTEMPTED|PASS|LIMITED|BLOCKED|NOT_APPLICABLE
 CONTEXT_SEPARATION=PASS|LIMITED|BLOCKED|NOT_ASSESSED
-REVIEW_CLASS=INDEPENDENT_LIVE|BOUNDED_STATIC_PACKAGE|NOT_APPLICABLE
+REVIEW_CLASS=INDEPENDENT_LIVE|INDEPENDENT_LIVE_PARTIAL|BOUNDED_STATIC_PACKAGE|NOT_APPLICABLE
 SUBSTANTIVE_REVIEW=COMPLETE|PARTIAL|NOT_RUN|NOT_APPLICABLE
 AUTHORIZATION_SCOPE_AND_EXCLUSIONS=
 ACTION_ATTEMPTED=
