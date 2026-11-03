@@ -73,3 +73,6 @@ At the adjudication observation, committed `control_master/latest.json` / `lates
 The canonical active route continues to keep `G1/G2/G3=NOT_ESTABLISHED`, `OPTION_D=RATIFIED_NO_BOOTSTRAP`, protected reads `FAIL_CLOSED`, and `BRIDGE=BRIDGE_NOT_READY`. This documentation correction changes none of those gates, permissions, runtimes or bridge states.
 
 This section records the review of the prior immutable HEAD and the adjudication applied in a successor candidate. It does not claim that the prior HEAD remains the current PR HEAD after the corrections below, nor does it approve or merge the PR.
+
+
+**Multi-file digest clarification:** Claude's review independently recomputed all 16 per-file Git blob identities. It did not report a canonicalized aggregate manifest SHA-256, so this receipt does not claim one retroactively; the deterministic manifest convention was added prospectively in the corrected D021/Boot Kit.

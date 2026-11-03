@@ -381,7 +381,7 @@ Use `CONTEXT_SEPARATION=NOT_ASSESSED` only when the evidence needed to classify 
 
 4. Source acquisition is classified independently under §6E.6A. Use the orthogonal `SOURCE_PACKAGE_STATUS`, `SOURCE_ACQUISITION_METHOD`, `SOURCE_RETRIEVAL_STATUS`, `SOURCE_IDENTITY_VERIFICATION`, `SOURCE_COVERAGE` and receiver-ack fields defined there; do not apply a second `PASS`/`LIMITED`/`BLOCKED` taxonomy here or infer one field from another. In particular, `NOT_ATTEMPTED` is not `BLOCKED`, `LIMITED` does not imply partial coverage, and `BLOCKED` requires an attempted route failure to obtain usable, identity-verifiable source bytes or a concrete verified precondition that makes every permitted route unavailable. A source-acquisition result never changes `CONTEXT_SEPARATION`.
 
-   5. Same-candidate metadata exposure must be classified by content, not merely by whether it came from GitHub:
+5. Same-candidate metadata exposure must be classified by content, not merely by whether it came from GitHub:
    - `PR_TITLE_BRANCH_SHA_CHANGED_PATHS_ONLY` and `NON_EVALUATIVE_COMMIT_SUBJECTS` are `METADATA_ONLY`. If these are the only prior exposure and no candidate-specific findings/rationale were seen, classify context as `LIMITED`, not `BLOCKED`; record the exposure and do not call the review fully blinded.
    - A PR description, commit body, review comment or author note that contains design rationale, favorable/unfavorable evaluation, asserted findings, proposed fixes, risk interpretation or acceptance claims is `AUTHOR_DESCRIPTION_OR_COMMIT_RATIONALE` and `AUTHOR_EVALUATIVE_CLAIMS_EXPOSED=YES`. For a review advertised as blinded/adversarial, classify `BLOCKED` and use a reviewer context that has not received those claims. Do not re-label author-authored rationale as harmless metadata.
    - If only part of a description/message was seen, classify the actual exposed content. If the content cannot be reconstructed, use `UNKNOWN`; do not assume it was metadata-only. A transparently non-blinded supplemental review may still be useful, but it must not satisfy the blinded independent-review gate.
@@ -555,7 +555,7 @@ SOURCE_ACQUISITION_METHOD=RECIPIENT_LIVE_FETCH|ATTACHED_PACKAGE|OWNER_SUPPLIED_P
 SOURCE_PACKAGE_PRODUCER=PROVIDER_OR_ACCOUNT_OR_AGENT_OR_ORGANIZATION_IDENTIFIER
 SOURCE_PACKAGE_FILENAME_AND_FORMAT=
 SOURCE_PACKAGE_IDENTITY=
-SOURCE_PACKAGE_MANIFEST_ENTRIES=SOURCE:<canonical repository or locator>;REVISION:<exact commit/version or NOT_APPLICABLE>;SCOPE:<explicit paths or artifact extent>
+SOURCE_PACKAGE_MANIFEST_ENTRIES=ROLE<TAB>REVISION<TAB>PATH<TAB>GIT_BLOB_SHA<TAB>BYTE_LENGTH (repeat once per file; see §6E.6A)
 SOURCE_PACKAGE_DIGEST=SHA256:<64_HEX>|GIT_BLOB_SHA:<40_HEX>|MANIFEST_SHA256:<64_HEX>|NOT_AVAILABLE
 SOURCE_PACKAGE_DIGEST_BASIS=EXACT_PACKAGE_BYTES|RAW_LIVE_RESPONSE_BYTES|RECOMPUTED_GIT_BLOB|CANONICALIZED_FILE_MANIFEST|NOT_AVAILABLE
 RECEIVER_FILE_DERIVED_EVIDENCE=
@@ -789,7 +789,7 @@ SOURCE_ACQUISITION_METHOD=RECIPIENT_LIVE_FETCH|ATTACHED_PACKAGE|OWNER_SUPPLIED_P
 SOURCE_PACKAGE_PRODUCER=PROVIDER_OR_ACCOUNT_OR_AGENT_OR_ORGANIZATION_IDENTIFIER
 SOURCE_PACKAGE_FILENAME_AND_FORMAT=
 SOURCE_PACKAGE_IDENTITY=
-SOURCE_PACKAGE_MANIFEST_ENTRIES=SOURCE:<canonical repository or locator>;REVISION:<exact commit/version or NOT_APPLICABLE>;SCOPE:<explicit paths or artifact extent>
+SOURCE_PACKAGE_MANIFEST_ENTRIES=ROLE<TAB>REVISION<TAB>PATH<TAB>GIT_BLOB_SHA<TAB>BYTE_LENGTH (repeat once per file; see §6E.6A)
 SOURCE_PACKAGE_DIGEST=SHA256:<64_HEX>|GIT_BLOB_SHA:<40_HEX>|MANIFEST_SHA256:<64_HEX>|NOT_AVAILABLE
 SOURCE_PACKAGE_DIGEST_BASIS=EXACT_PACKAGE_BYTES|RAW_LIVE_RESPONSE_BYTES|RECOMPUTED_GIT_BLOB|CANONICALIZED_FILE_MANIFEST|NOT_AVAILABLE
 RECEIVER_FILE_DERIVED_EVIDENCE=
@@ -988,8 +988,8 @@ SOURCE_PACKAGE_PRODUCER=
 SOURCE_PACKAGE_FILENAME_AND_FORMAT=
 SOURCE_PACKAGE_IDENTITY=
 SOURCE_PACKAGE_MANIFEST_ENTRIES=
-SOURCE_PACKAGE_DIGEST=
-SOURCE_PACKAGE_DIGEST_BASIS=
+SOURCE_PACKAGE_DIGEST=SHA256:<64_HEX>|GIT_BLOB_SHA:<40_HEX>|MANIFEST_SHA256:<64_HEX>|NOT_AVAILABLE
+SOURCE_PACKAGE_DIGEST_BASIS=EXACT_PACKAGE_BYTES|RAW_LIVE_RESPONSE_BYTES|RECOMPUTED_GIT_BLOB|CANONICALIZED_FILE_MANIFEST|NOT_AVAILABLE
 RECEIVER_FILE_DERIVED_EVIDENCE=
 RECEIVER_EVIDENCE_PROVENANCE=
 OUTBOUND_ATTACHMENT_STATUS=NOT_REQUIRED|NOT_ATTACHED|ATTACHED_VERIFIED|ATTACHED_REPORTED|UNKNOWN
