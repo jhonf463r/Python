@@ -384,3 +384,48 @@ The last receipt-only commit has parent `b6d22477a64fc35ce45abd5ec0612b2d3fc2f04
 `COORDINATOR_RECONCILIATION=COMPLETE_FOR_THE_DECLARED_10_PATH_CHANGESET_AND_NORMATIVE_DEPENDENCIES`; `INDEPENDENT_REVIEW_STATUS=NOT_PERFORMED`; `TEST_EXECUTION_SCOPE=NOT_APPLICABLE`; `TEST_AUTHORIZATION=NOT_AUTHORIZED`; `TEST_STATUS=NOT_RUN`; `MERGE_AUTHORIZATION=NOT_GRANTED`.
 
 No tests, build, runtime, protected reads, credentials, product code, permission changes, CURRENT-STATE route, local bridge or tunnel were changed. G1/G2/G3 remain `NOT_ESTABLISHED`; Option D remains `RATIFIED_NO_BOOTSTRAP`; protected reads remain `FAIL_CLOSED`; bridge remains `BRIDGE_NOT_READY`.
+
+
+## Independent static review and coordinator adjudication — HEAD 796a15d7ebae19d282fcce0b409c9f100609353c (2026-11-03 UTC)
+
+`REVIEW_TASK_ID=IABV_PR598_FINAL_INDEPENDENT_GIT_REVIEW_796A15D7_20261103`  
+`REVIEWER=Claude / Anthropic (ACTOR_REPORTED)`  
+`REVIEWER_CHANNEL=Claude application with cloud shell and Git; requested Claude Code CLI was not the observed channel (ACTOR_REPORTED)`  
+`MODEL_LABEL=claude-sonnet-5-5 / Sonnet 5.5 (ACTOR_REPORTED; UI label not independently observed)`  
+`OBSERVED_AT=2026-11-02T22:55:41-05:00 (ACTOR_REPORTED)`  
+`BASE_SHA=56e4d8b11846a8d8f3cb8cda08efd773ec235651`  
+`HEAD_SHA=796a15d7ebae19d282fcce0b409c9f100609353c`  
+`SOURCE_RETRIEVAL_STATUS=PASS (reviewer-reported)`; `SOURCE_IDENTITY_VERIFICATION=RECIPIENT_LIVE_VERIFIED (reviewer-reported)`; `RECEIVER_SOURCE_ACK=VERIFIED (reviewer-reported)`  
+`SOURCE_COVERAGE=PARTIAL`; `SUBSTANTIVE_REVIEW=PARTIAL`; `REVIEW_CLASS=INDEPENDENT_LIVE_PARTIAL`; `CONTEXT_SEPARATION=LIMITED`  
+`TEST_STATUS=NOT_RUN`; `MERGE_AUTHORIZATION=NOT_GRANTED`
+
+### Declared scope and limitations
+
+The reviewer reports inspecting all changed hunks in the ten-file BASE→HEAD diff and the relevant D021/Boot Kit sections, then opening the reconciliation receipt. The reviewer reports that CURRENT-STATE was read only partially, D019 outside §9E was not read, D021 BASE outside the declared dependency sections was not read, and latest.json global rules were not inspected item by item. Thus the returned result is a useful independent partial review, not a complete full-scope acceptance. The reviewer reports 21 Git object identities checked (8 BASE, 10 HEAD and 3 dependencies); those counts and identities remain ACTOR_REPORTED here, not a coordinator re-execution of all 21 byte hashes.
+
+### Finding adjudication
+
+| Finding | Reviewer priority | Coordinator disposition | Basis |
+|---|---:|---|---|
+| IR598-F01 — Boot Kit §7 manifest schema has five columns while D021 §6E.6A requires seven | P2 | CONFIRMED; corrected in successor | Direct comparison of the exact HEAD Boot Kit and D021 text confirms the mismatch. |
+| IR598-F02 — INDEPENDENT_LIVE did not require SUBSTANTIVE_REVIEW=COMPLETE | P3 | CONFIRMED; corrected in successor | Rule 7 required complete source coverage but omitted complete substantive assessment; rule 7a was limited to partial source coverage. |
+| IR598-F03 — standard correlated receipts omitted DECLARED_REVIEW_SCOPE | P3 | CONFIRMED; corrected in successor | §6B.2 requires scope frozen before inspection; the §6E.6A/§6F.8 and Boot Kit §7 receipt schemas did not carry that field. |
+| IR598-F04 — §6F.0 canonical-trigger wording might overstate adoption | P3 | NOT_CONFIRMED as an adoption defect | Boot Kit §6F pointer and step 8 require checking pinned main and label branch-only text candidate-only. AGENTS and CONTEXT-INDEX likewise require the pinned-main candidate/adoption check. |
+| IR598-F05 — Boot Kit step 10 did not identify the §7 standard receipt | P3 | CONFIRMED; clarified in successor | The step required a correlated receipt but did not expressly bind it to the standard §7 schema. |
+| IR598-F06 — D019 §9E remains a candidate while containing mandatory-sounding prose | P3 | DEFERRED; no D019 edit in this PR | Exact pinned-main D019 status remains DOCUMENTED_METHOD_CANDIDATE / CANONICAL_MAIN_ADOPTION=NOT_YET; the Boot Kit requires a live owning-record check. No adoption is inferred. |
+| IR598-F07 — README/MEMORY lack §6F.0/§6C.5 pointers | P3 | NOT_ACCEPTED as a blocking defect | No canonical rule was identified that requires every front door to duplicate every section pointer. |
+| IR598-R01 — earlier Claude Web blocked event lacks precise HEAD/time correlation | P3 | NOT_ADJUDICATED | A separate historical receipt-event trace was not fully reconstructed in this reconciliation. |
+| IR598-R02 — historical correction labels may read as independently accepted | P3 | NON_BLOCKING CLARITY NOTE | The surrounding paragraph already states INDEPENDENT_VERIFICATION_PENDING; the successor review remains explicitly partial. |
+| IR598-R03 — old receipt header and reused historical finding ID prefixes | P3 | NON_BLOCKING / PARTIALLY EXPLAINED | The header is labelled Pinned identity at this observation and later observations supersede it chronologically. ID prefixing could improve navigation but does not alter the live source or current review result. |
+
+The reviewer reported no P0/P1 and identified the above P2/P3 observations. The coordinator independently confirmed the five correction targets F01/F02/F03/F05 against exact candidate file content. Other dispositions above are limited to the checks stated; unadjudicated receipt details remain open rather than being silently cleared.
+
+### Successor correction scope
+
+The successor applies four coherent corrections only:
+1. Align the Boot Kit §7 manifest row with the seven-field D021 manifest contract.
+2. Require both SOURCE_COVERAGE=COMPLETE and SUBSTANTIVE_REVIEW=COMPLETE for INDEPENDENT_LIVE; define partial live review when either source coverage or substantive assessment is partial, while preserving their orthogonality.
+3. Carry the frozen DECLARED_REVIEW_SCOPE into the source/review and standard return-receipt schemas.
+4. Make Boot Kit step 10 invoke the standard §7 receipt explicitly.
+
+These changes are candidate-only until independently reviewed and, if later approved and merged, fetched back from main. They do not alter CURRENT-STATE, Owner authority, G1/G2/G3, Option D, protected-read, runtime or bridge status. No tests/build/runtime were run.

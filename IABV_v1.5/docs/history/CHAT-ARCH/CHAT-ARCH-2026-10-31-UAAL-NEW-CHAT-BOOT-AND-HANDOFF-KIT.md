@@ -280,7 +280,8 @@ SOURCE_ACQUISITION_METHOD=RECIPIENT_LIVE_FETCH|ATTACHED_PACKAGE|OWNER_SUPPLIED_P
 SOURCE_PACKAGE_PRODUCER=
 SOURCE_PACKAGE_FILENAME_AND_FORMAT=
 SOURCE_PACKAGE_IDENTITY=
-SOURCE_PACKAGE_MANIFEST_ENTRIES=ROLE<TAB>REVISION<TAB>PATH<TAB>GIT_BLOB_SHA<TAB>BYTE_LENGTH (repeat once per file; see D021 §6E.6A)
+DECLARED_REVIEW_SCOPE=NOT_APPLICABLE|<exact scope frozen before source inspection; required for independent/adversarial review>
+SOURCE_PACKAGE_MANIFEST_ENTRIES=ROLE<TAB>REVISION<TAB>PATH_ESCAPED<TAB>GIT_MODE<TAB>OBJECT_TYPE<TAB>OBJECT_ID<TAB>BYTE_LENGTH (repeat once per existing path/revision object; see D021 §6E.6A)
 SOURCE_PACKAGE_DIGEST=SHA256:<64_HEX>|GIT_BLOB_SHA:<40_HEX>|MANIFEST_SHA256:<64_HEX>|NOT_AVAILABLE
 SOURCE_PACKAGE_DIGEST_BASIS=EXACT_PACKAGE_BYTES|RAW_LIVE_RESPONSE_BYTES|RECOMPUTED_GIT_BLOB|CANONICALIZED_FILE_MANIFEST|NOT_AVAILABLE
 RECEIVER_FILE_DERIVED_EVIDENCE=
@@ -390,7 +391,7 @@ Your first job is to reconstruct the correct present state before recommending o
    - Apply D021 §6E.6A only under the canonical-main/candidate-only rule in step 8. For `RECIPIENT_LIVE_FETCH`, verify the receiver's live source identity and byte-derived acknowledgement; set attachment fields to `NOT_REQUIRED`. For a transfer route, verify actual bytes, sender-side status and the receiver's correlated byte-derived acknowledgement. If bytes, identity, coverage or acknowledgement are missing, incomplete or mismatched, stop with `SUBSTANTIVE_REVIEW=NOT_RUN` for the claimed scope. A coordinator-exported package supports only `BOUNDED_STATIC_PACKAGE` unless the reviewer independently fetches and verifies the live source.
 
 9. Execute only within the exact declared authority. Do not expand scope, bypass a failed prerequisite, access protected data, use credentials, alter permissions, start local runtime/bridge/tunnel, or claim tests/build/runtime were run without correlated evidence. Do not merge a PR without separate explicit Owner approval.
-
+10. Return the §7 Standard return receipt, completing every applicable field. For an independent/adversarial review, include `DECLARED_REVIEW_SCOPE` frozen before the first source inspection. Include exact refs/SHAs/timestamps, sources actually retrieved, Control Master intake fields and signal influence, Owner-input reuse ledger, selected action, authority/exclusions, expected observable, stop condition, result provenance and fetch-back evidence. Distinguish VERIFIED, OWNER/ACTOR_REPORTED, INFERENCE, HYPOTHESIS, UNKNOWN and NOT_RUN; record authorship of an unexecuted test artifact only in provenance notes, and keep `TEST_STATUS=NOT_RUN` until a correlated run is actually observed. A receipt is a report until independently reconciled.
 10. Return a correlated receipt. Include exact refs/SHAs/timestamps, sources actually retrieved, Control Master intake fields and signal influence, Owner-input reuse ledger, selected action, authority/exclusions, expected observable, stop condition, result provenance and fetch-back evidence. Distinguish VERIFIED, OWNER/ACTOR_REPORTED, INFERENCE, HYPOTHESIS, UNKNOWN and NOT_RUN; record authorship of an unexecuted test artifact only in provenance notes, and keep `TEST_STATUS=NOT_RUN` until a correlated run is actually observed. A receipt is a report until independently reconciled.
 
 Do not change another project's state, IABV CURRENT-STATE, permissions, source code or canonical methods unless the handoff explicitly authorizes that exact change. Keep private project information out of the public repository. Do not ask for information already available. If a source or tool is unavailable, say exactly what failed and continue only within the evidence and authority you do have.
