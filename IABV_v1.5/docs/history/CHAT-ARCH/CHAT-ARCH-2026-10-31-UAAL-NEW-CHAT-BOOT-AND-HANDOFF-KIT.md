@@ -526,3 +526,45 @@ Codex, Claude and other external AI products do not automatically inherit this C
 A ChatGPT Project does not expose the Owner's local runtime, local database or current Control Master digest. Keep that signal unavailable/stale unless an authorized live source is actually read. Do not start the runtime, CLI or bridge, and do not bypass Option D or other M1A gates.
 
 See UAAL-D021 §6E and CHAT-ARCH-2026-10-31-CHATGPT-PROJECT-INSTRUCTIONS-R1.md.
+
+
+## 14. External-AI destination preflight, prompt packet integrity and phase continuity (2026-11-03)
+
+Use this section whenever a task is sent to Claude, Codex or another external AI. It supplements §§6–7; it does not create a new service or memory store.
+
+### 14.1 Sender preflight
+
+Before dispatch, the sender must:
+- Name the concrete provider/product, model if known, UI/API/code surface, session type and requested role. Do not say only “Claude” or “Codex”.
+- State capabilities only when observed for the receiving session. Keep browser, GitHub API, Git smart-HTTP, shell, network egress, local checkout, attachments and write rights separate.
+- Use available coordinator connectors to retrieve canonical facts before asking the Owner to repeat them or manually prepare links.
+- Supply exact repository owner/name, pinned base/head, full paths and literal URL(s) for every source the receiver must open. Never require the receiver to invent URLs from abbreviated SHAs or unstated paths.
+- Define the complete phase scope and exclusions with matching counts. If the change list contains ten paths but the blind phase excludes two receipts, state eight operational paths and 16 BASE/HEAD source items for that phase.
+
+### 14.2 Packet protocol
+
+Where a receiving route has truncated a long dispatch, do not resend one huge prompt. Use numbered, independently delimited packets:
+- Same DISPATCH_ID and TASK_ID across all parts.
+- PART 1/N, PART 2/N, etc.; each part has BEGIN_PACKET and END_PACKET markers.
+- Keep each message below 12,000 UTF-8 bytes for the receiving route involved in the 2026-11-03 incident, unless a later measured route-specific limit supports another size. This is a conservative operating target, not a universal Claude limit.
+- The receiver must echo the packet IDs received, confirm that all N parts are present, and identify the final section/END marker.
+- No source inspection, phase lock or execution before all required packets are acknowledged as complete.
+- If any part is missing or cut off mid-sentence/section, stop and request only the missing part. Do not reconstruct missing instructions by guessing.
+
+### 14.3 Phase lock and continuity
+
+A new conversation must receive its own complete task packet. Never assume the active thread inherited a lock or phase output from an earlier Claude conversation. A phase lock is valid only when the correlated lock receipt is visible in that exact thread and precedes source inspection. A later same-thread continuation may proceed only when the required earlier phase report is visible in that thread. If Phase A is absent, B/C remain blocked.
+
+### 14.4 Read-only acquisition ladder
+
+Ask the receiver to test each relevant method separately, with exact URLs:
+1. Git smart-HTTP against the immutable repository and commit refs.
+2. GitHub REST API for ref, commit, compare, tree and blob objects.
+3. raw.githubusercontent.com with exact commit SHA and path.
+4. GitHub blob HTML for the exact path and revision.
+
+Record each attempt and error class. A constructed-but-unsurfaced URL rejected by the web reader is not an object-not-found result. A failed route does not prove every alternative route is unavailable. Stop only when all allowed routes have been tested or a verified permission precondition rules them out.
+
+### 14.5 Evidence and learning claim
+
+Preserve the canonical D021 evidence fields. Do not claim reviewer-side hashing when the reviewer only received a SHA field from GitHub. Do not claim a full review from a source list, metadata or a partial file. Keep pasted external responses ACTOR_REPORTED until adjudicated. A documentation amendment records a reusable method; it does not prove automatic cross-chat use, general Claude behaviour, model-weight updates or causal learning. Validate reuse on a later non-identical task.
