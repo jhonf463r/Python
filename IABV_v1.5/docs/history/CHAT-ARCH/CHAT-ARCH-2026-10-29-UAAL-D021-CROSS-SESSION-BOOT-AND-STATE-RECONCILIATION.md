@@ -608,6 +608,32 @@ A failed route is not proof that all other routes failed. Keep `NOT_ATTEMPTED` d
 
 For an independent/adversarial review, do not silently downgrade a required recipient-live acquisition to a coordinator export. A coordinator-exported package can support a bounded static assessment with the correct provenance, but it cannot be called independent live retrieval or a fully blinded live review. If independent recipient retrieval is a hard acceptance condition and no admissible route exists, stop that review scope and state the exact missing precondition.
 
+#### C.2 Conversation-boundary continuity, receiver lock and dependency-aware recovery (2026-11-03)
+
+A new chat is a new receiver session, not a continuation merely because its prompt says “continue”. Only content actually present in that conversation, or an exact transferred artifact that the receiver can open, is available to it. Never inherit another conversation's source bytes, retrieval results, inspection coverage, tool probes, timestamps, receiver acknowledgements or scope lock by assertion.
+
+For each cross-chat handoff, compile and expose:
+
+```text
+CONTINUITY_MODE=SAME_CONVERSATION|NEW_CONVERSATION_HANDOFF
+PRIOR_SESSION_STATE=VISIBLE_IN_THIS_CONVERSATION|EXACT_RECEIPT_ATTACHED|LINK_ONLY|NOT_PRESENT
+PRIOR_SOURCE_ITEMS=EXACT_ARTIFACTS_TRANSFERRED|PROVENANCE_LABELLED_REPORT_ONLY|NOT_TRANSFERRED
+RECEIVER_SCOPE_LOCK=EMITTED_IN_THIS_SESSION|NOT_EMITTED
+OWNER_AUTHORIZATION_PROVENANCE=CURRENT_USER_MESSAGE|EXPLICITLY_ADOPTED_CURRENT_ARTIFACT|NOT_ESTABLISHED
+```
+
+A URL, filename, task ID or statement that another session read a source is not the source itself and does not prove this receiver acquired it. Previous-session evidence may inform planning as actor-reported or coordinator-attested, but it must not be counted as current receiver live retrieval. A source item becomes available to this receiver only after its own admissible retrieval or an actual transfer that the receiver acknowledges.
+
+The receiver must issue its own scope lock before its first substantive inspection in that conversation. Owner authorization and receiver lock are separate facts. Do not copy a previous receiver's lock, invent or backdate its timestamp, or represent an Owner acknowledgement as the receiver's acknowledgement. Use an actually available clock/time source; when no verifiable time is available, record that exact limitation and any applicable schema deviation rather than fabricate a UTC timestamp.
+
+**Do not let one blocked item freeze independent acquisition work.** Maintain item-level and scope-level status separately. If a required source (for example, D021 HEAD) truncates after the applicable BASE schema has already been retrieved, mark that item incomplete and invoke its preplanned fallback, but continue acquiring other independent path@revision pairs. Keep full-scope substantive review NOT_RUN until every required item has admissible identity and coverage. The first blocked dependency is not a reason to stop unrelated acquisition or ask the Owner to choose among routes the coordinator can resolve.
+
+Use one materially distinct fallback per item when it can discriminate a different failure domain (for example, RAW versus REST blob versus coordinator connector). Do not repeat the same route after a reproducible truncation unless a material capability, endpoint, response mode or input condition changed. A capacity limit is not a permission denial or proof that the object is absent.
+
+Before asking the Owner to transfer public material, exhaust the coordinator's authorized GitHub/file route. When a coordinator export is the planned route, prepare one manifest-bound package for all affected items. Include every change hunk in deterministic order, the exact BASE/HEAD commit and blob IDs, path, measured byte lengths, chunk index/count when chunking is necessary, and a package digest when actually computed. A complete set of unified-diff hunks is PINNED_DIFF_WITH_HUNKS; it is not the same as transferring both full file bodies (FULL_BASE_HEAD_DIFF). Never describe exported items as recipient-live.
+
+Artifact fidelity is part of the transport contract. Verify the actual created object type, filename and returned path. A Dropbox Paper document whose path ends in .md.paper is not a raw .md file even if its title ends in .md. Do not silently substitute a Paper document, browser page or link for a requested raw file. Record ARTIFACT_TYPE, REQUESTED_FORMAT, ACTUAL_FORMAT and ARTIFACT_PATH; report a format/path mismatch plainly and use a file-upload route only when its file-parameter requirements are actually satisfied. A saved artifact or link still does not prove a different receiver session opened or acknowledged it.
+
 #### D. Compile the prompt only after the retrieval plan is known
 
 The complete prompt must put the populated dispatch header first and carry only the minimum sufficient context:
