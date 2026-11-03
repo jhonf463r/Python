@@ -262,3 +262,21 @@ BRIDGE=BRIDGE_NOT_READY
 AUTOMATIC_FOLLOW_ON=FALSE
 CAUSAL_REUSE=NOT_TESTED
 ```
+
+
+## 11. Destination-aware tool preflight and preparation-debt control (2026-11-03)
+
+The preparation-debt rule applies to cross-AI handoffs as well as local repository work. A coordinator can avoid repeating the same failed retrieval attempt and still waste Owner effort by asking the Owner to reconstruct URLs, export files or relay content that the coordinator's authorized connectors can already retrieve.
+
+Before requesting user-side transport or another prompt, compare the actual authorized realizations available to the coordinating session and the receiving session separately.
+
+1. Name the concrete target surface and its observed capabilities. Do not infer browser, Git/API, shell, egress, attachment or write access from a model/product name.
+2. Use the coordinator's own connected GitHub or file tools first when authorized. The recipient's lack of egress does not restrict the coordinator's access.
+3. If the recipient has a narrower route, supply exact literal source URLs, owner/repo, immutable revisions and complete paths. Do not make the Owner construct URLs from truncated SHAs or repeat facts already in the task context.
+4. Probe one safe representative endpoint per distinct access plane before building a large transfer package. Record NOT_ATTEMPTED separately from a failed attempt. A permission error caused by a URL not present in the receiving prompt is not evidence that the source or public endpoint is unavailable.
+5. When a handoff exceeds the demonstrated capacity of the receiving surface, split and acknowledge packets rather than repeating the full dispatch. Do not ask the Owner to resend already acknowledged complete parts.
+6. Stop after the available authorized routes have been discriminated. Reopen a route only when a new capability, exact URL, permission, source revision or material hypothesis changes the action choice.
+
+The advance contract must identify which dependency the transport step closes: source availability, source identity, complete package receipt, review-scope lock or substantive inspection. A prompt written, link generated, packet sent or repository listed is preparation until the receiver acknowledges the complete package and produces the expected source/phase evidence.
+
+Acceptance remains falsifiable: on a later non-identical task, show that the destination-specific preflight reduced an avoidable Owner round-trip or prevented a false progress claim without increasing permission risk. Until then, mark causal reuse NOT_TESTED.
