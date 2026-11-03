@@ -2542,3 +2542,14 @@ La selección sigue siendo dinámica y nunca una secuencia fija, pero el resulta
 `objective → current truth → first open edge → required capability → capability-fit → IA DESTINO CONCRETA → prompt/action`.
 
 Si la IA concreta no puede determinarse con evidencia suficiente, debe declararse explícitamente `DESTINO NO DETERMINABLE` y explicar qué dato falta; no dejar un actor genérico como si fuera un handoff ejecutable.
+
+
+## REGLA OPERATIVA — CAPACIDADES POR SESIÓN Y ENTREGA ÍNTEGRA ENTRE IA (2026-11-03)
+
+Antes de despachar una tarea a Claude, Codex u otra IA externa, identifica producto, superficie concreta, sesión y capacidades observadas. No deduzcas acceso a navegador, Git/API, shell, egress, adjuntos o escritura a partir del nombre del modelo. Usa primero los conectores autorizados disponibles en la sesión coordinadora; no traslades al Owner una recuperación que esa sesión puede realizar.
+
+Incluye owner/repo, BASE/HEAD inmutables, rutas completas y URLs literales exactas para el receptor. Si una URL construida no fue incluida en el mensaje y su lector la rechaza, clasifica el problema como URL no suministrada al lector, no como objeto ausente ni como permiso GitHub denegado. Prueba rutas distintas por separado.
+
+Si existe riesgo de truncación, divide el despacho en paquetes numerados con BEGIN/END explícitos. Exige acuse de todos los paquetes y del marcador final antes de inspeccionar fuentes. Una declaración de scope lock o de fase que no esté visible en el hilo receptor actual no se hereda de otra conversación. Si falta el informe congelado de una fase previa, detén las fases dependientes.
+
+Normativa completa: D021 §§6F–6G y New-Chat Boot Kit §14. No implica aprendizaje de pesos, sincronización automática ni enforcement runtime.
