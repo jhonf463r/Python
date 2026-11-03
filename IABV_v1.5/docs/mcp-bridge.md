@@ -1,5 +1,12 @@
 # MCP Bridge — Devin ↔ IABV v1.5
 
+> **Estado operativo actual — DESHABILITADO:** el inicio del servidor MCP y
+> cualquier túnel (`cloudflared`) se rechazan mientras G1/G2/G3 no estén
+> establecidos y no exista una ruta de aceptación autorizada. Los diagramas y
+> descripciones siguientes son inventario histórico/de diseño; sus comandos,
+> toggles y configuraciones no son instrucciones ejecutables en el estado
+> actual. No hay variable de entorno ni modo local que omita esta denegación.
+
 Este documento describe cómo exponer los servicios core de IABV v1.5 como un
 servidor MCP (Model Context Protocol) para que agentes externos (Devin, Claude,
 Codex y cualquier otro cliente MCP-compatible) puedan consumirlos de forma
@@ -12,7 +19,7 @@ todas las capas cerradas P1–P4 (ver `AGENTS.md`).
 
 ---
 
-## Tools expuestas (6 core)
+## Inventario de tools diseñado (6 core; no expuestas actualmente)
 
 | Tool                      | Servicio origen                             | Tipo    |
 |---------------------------|---------------------------------------------|---------|
@@ -72,7 +79,7 @@ abierto.
 
 ---
 
-## Instalación (laptop Windows)
+## Instalación histórica (no requerida ni habilitante mientras el bridge esté bloqueado)
 
 Una sola vez:
 
@@ -90,77 +97,43 @@ winget install --id Cloudflare.cloudflared
 
 ---
 
-## Arranque del bridge
+## Arranque del bridge — deshabilitado
 
-### Capa 1 — Auto-arranque dentro del programa (recomendado)
+`start_iabv.ps1`, `run_mcp_bridge.ps1`, `mcp_hot_reload.py`, el entry point
+directo del módulo y `MCPBridgeService` devuelven o registran una denegación
+antes de lanzar el servidor. `cloudflared` permanece deshabilitado. No uses las
+secciones históricas siguientes para intentar arrancar el bridge.
 
-Con IABV v1.5 abierto, el `MCPBridgeService` ya está instanciado en
-`AppBootstrap`. Activalo desde el Centro de Control:
+### Capa 1 — Auto-arranque dentro del programa (histórico; bloqueado)
 
-1. Abrir el programa normalmente (`main.py`).
-2. En el **Centro de Control**, tarjeta **"Conexion IA externa (MCP)"**:
-   - Toggle **ON** para arrancar server + tunnel.
-   - Cuando el state sea `running`, aparece la URL `https://<sub>.trycloudflare.com`.
-   - Botón **Copiar URL** la manda al portapapeles.
-3. La preferencia se persiste en `data/evolution/config/mcp_bridge.json`; la
-   próxima vez que abras el programa se auto-arranca el bridge sin tocar nada.
-4. Toggle **OFF** para detener todo sin cerrar el programa.
+No está disponible el toggle de arranque ni se publica una URL. La
+preferencia persistida no constituye autorización. Las variables de entorno
+históricas no cambian la denegación.
 
-El service respeta `AutonomyGovernancePolicy`: si hay un
-`OperationalBlockRecord` activo para `mcp_bridge` (o `*` global), el toggle
-queda en `failed` con `governance_blocked=true` y **no** expone nada.
+### Modo script (debug) — bloqueado
 
-Variables de entorno que reconoce (opcionales):
+El wrapper termina con código 78 antes de modificar el entorno, crear procesos
+o invocar `cloudflared`.
 
-| Variable               | Default              | Uso                                      |
-|------------------------|----------------------|------------------------------------------|
-| `IABV_MCP_TRANSPORT`   | `streamable-http`    | `stdio` \| `sse` \| `streamable-http`     |
-| `IABV_MCP_BIND_HOST`   | `127.0.0.1`          | Host donde bindea el server MCP          |
-| `IABV_MCP_BIND_PORT`   | `8765`               | Puerto local del server                  |
-| `IABV_MCP_NAMED_TUNNEL`| *(vacío)*            | Nombre del named tunnel (ver Capa 2)     |
-| `CLOUDFLARED_BIN`      | `$(which cloudflared)`| Path al binario                         |
+El entry point **stdio** directo también está bloqueado:
 
-### Modo script (debug)
-
-Si querés arrancar el bridge sin abrir la UI:
-
-```powershell
-cd C:\Python\IABV_v1.5
-powershell -ExecutionPolicy Bypass -File scripts\run_mcp_bridge.ps1
-```
-
-El script:
-
-1. Configura `PYTHONPATH`, `IABV_WORKSPACE_ROOT`, `FASTMCP_HOST/PORT` y
-   `IABV_MCP_TRANSPORT=streamable-http`.
-2. Arranca `python -m iabv_v15.infra.mcp.server` enlazado a `127.0.0.1:8765`.
-3. Abre `cloudflared tunnel --url http://127.0.0.1:8765` y te imprime en consola
-   una URL pública tipo `https://<sub>.trycloudflare.com`.
-4. Cuando cortas `Ctrl+C`, mata el MCP server y cierra el tunnel.
-
-Para transporte **stdio** (uso local directo con Claude Desktop, etc.):
-
-```powershell
-$env:IABV_MCP_TRANSPORT = 'stdio'
-& 'C:\Users\faber\miniconda3\python.exe' -m iabv_v15.infra.mcp.server
-```
+No ejecutes el comando histórico anterior; `main()` deniega antes de crear
+`AppBootstrap` o iniciar transporte.
 
 ---
 
-## Registrar el server en Devin
+## Registrar el server en Devin — no disponible mientras el bridge esté bloqueado
 
-1. Abrí la URL que imprime `cloudflared` (algo tipo
-   `https://amber-spider-1234.trycloudflare.com`).
-2. En Devin: **Settings → Integrations → MCP Servers → Add Custom MCP**.
-3. Rellená:
-   - Name: `iabv-v15`
-   - URL: la URL del tunnel + `/mcp` (streamable-http expone el path `/mcp/` por defecto).
-   - Transport: `streamable-http`
-4. Save. A partir de ese momento cada sesión Devin tiene las 6 tools disponibles.
+No hay URL que registrar ni tools MCP disponibles mientras la ruta autorizada
+de inicio no exista.
 
 ---
 
-## Capa 2 — URL estable con cuenta Cloudflare gratis (named tunnel)
+## Capa 2 — URL estable con cuenta Cloudflare gratis (named tunnel; bloqueada)
+
+El contenido restante de esta sección es histórico y no autoriza ni habilita
+un túnel. No instales, autentiques ni arranques `cloudflared` para este bridge
+mientras siga vigente el bloqueo operativo.
 
 La URL `*.trycloudflare.com` del quick tunnel cambia en cada arranque. Para
 que Devin / Claude / Codex no tengan que re-registrar la integración cada vez,

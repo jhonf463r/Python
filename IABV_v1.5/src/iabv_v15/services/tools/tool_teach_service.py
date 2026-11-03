@@ -37,7 +37,7 @@ from iabv_v15.services.lab.experiment_lab import ExperimentLab
 from iabv_v15.services.evolution.live_audit_supervisor import LiveAuditSupervisor
 from iabv_v15.services.tools.interaction_learning_service import InteractionLearningService
 from iabv_v15.services.tools.interaction_mode_selector import InteractionModeSelector
-from iabv_v15.services.tools.tool_adapters import ToolAdapter
+from iabv_v15.services.tools.tool_adapters import ToolAdapter, registered_command_block_reason
 from iabv_v15.services.tools.tool_approval_policy import ToolApprovalPolicy
 from iabv_v15.services.tools.tool_memory import ToolMemory
 from iabv_v15.services.tools.tool_registry import ToolRegistry
@@ -747,6 +747,37 @@ class ToolTeachService:
         return stored_task, result, preview
 
     def execute_task(self, task: ToolTask, *, approved: bool = False, launch_dry_run: bool = False) -> ToolResult:
+        # Resolve an explicitly requested card without refreshing availability:
+        # ToolRegistry.pick_card_for_task() may invoke adapter.is_available().
+        # Reject blocked registered command routes before even that adapter call.
+        requested_card = self.registry.get_card(task.tool_id) if task.tool_id else None
+        requested_block = registered_command_block_reason(requested_card, task) if requested_card is not None else None
+        if requested_card is not None and requested_block:
+            blocked_task = task.model_copy(update={'tool_id': requested_card.tool_id})
+            blocked_result = ToolResult(
+                task_id=blocked_task.task_id,
+                tool_id=requested_card.tool_id,
+                tool_type=requested_card.tool_type,
+                success=False,
+                validation_status=ToolValidationStatus.BLOCKED,
+                execution_state=ExecutionState(
+                    state='blocked',
+                    detail=requested_block,
+                    destructive_blocked=True,
+                    metadata={'blocked': True, 'reason': requested_block},
+                ),
+                error_message=requested_block,
+            )
+            self.memory.remember_task(blocked_task)
+            self.memory.audit_event(
+                tool_id=requested_card.tool_id,
+                task_id=blocked_task.task_id,
+                action_type='preflight',
+                state='blocked',
+                payload={'reason': requested_block, 'adapter_key': requested_card.adapter_key},
+            )
+            self.memory.repository.save_result(blocked_result)
+            return blocked_result
         card = self.registry.pick_card_for_task(
             task,
             preferred_assistant_kind=str(task.metadata.get('synaptic_preferred_assistant_kind') or ''),
@@ -770,6 +801,36 @@ class ToolTeachService:
             )
             if self.live_audit_supervisor is not None:
                 result = self.live_audit_supervisor.audit_tool_result(card=None, task=task, result=result)
+            self.memory.repository.save_result(result)
+            return result
+        # This gate precedes adapter availability and ToolSandbox: sandbox is
+        # an application-level preview, not OS process isolation, and generic
+        # `approved=True` is not authority to launch MCP or a public tunnel.
+        block_reason = registered_command_block_reason(card, task)
+        if block_reason:
+            task = task.model_copy(update={'tool_id': card.tool_id})
+            result = ToolResult(
+                task_id=task.task_id,
+                tool_id=card.tool_id,
+                tool_type=card.tool_type,
+                success=False,
+                validation_status=ToolValidationStatus.BLOCKED,
+                execution_state=ExecutionState(
+                    state='blocked',
+                    detail=block_reason,
+                    destructive_blocked=True,
+                    metadata={'blocked': True, 'reason': block_reason},
+                ),
+                error_message=block_reason,
+            )
+            self.memory.remember_task(task)
+            self.memory.audit_event(
+                tool_id=card.tool_id,
+                task_id=task.task_id,
+                action_type='preflight',
+                state='blocked',
+                payload={'reason': block_reason, 'adapter_key': card.adapter_key},
+            )
             self.memory.repository.save_result(result)
             return result
         adapter = self.adapters.get(card.adapter_key)

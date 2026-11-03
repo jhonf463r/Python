@@ -1,4 +1,4 @@
-# run_mcp_bridge.ps1 -- arranca el MCP server de IABV v1.5 + Cloudflare Tunnel.
+# run_mcp_bridge.ps1 — OPERATIONALLY DISABLED: denies before setup or launch.
 #
 # Uso tipico:
 #   powershell -ExecutionPolicy Bypass -File scripts\run_mcp_bridge.ps1
@@ -28,6 +28,9 @@
 #   * FASTMCP_PORT se setea pero FastMCP puede ignorarlo segun version; por
 #     eso el default ahora es 8000 (el mismo que uvicorn usa por default) y
 #     el tunnel siempre apunta a <bindHost>:<bindPort>.
+
+[Console]::Error.WriteLine('MCP bridge startup denied: G1/G2/G3 are not established; tunnel remains disabled.')
+exit 78
 
 $ErrorActionPreference = 'Stop'
 

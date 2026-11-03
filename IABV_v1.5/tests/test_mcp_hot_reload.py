@@ -101,3 +101,27 @@ def test_resolve_interval_clamps_low(hot_reload, monkeypatch):
 def test_resolve_interval_honors_override(hot_reload, monkeypatch):
     monkeypatch.setenv("IABV_MCP_HOT_RELOAD_INTERVAL", "5")
     assert hot_reload._resolve_interval() == pytest.approx(5.0)
+
+
+def test_denied_supervisor_returns_without_spawning_or_watching(hot_reload, monkeypatch):
+    calls: list[object] = []
+    monkeypatch.setattr(hot_reload.subprocess, "Popen", lambda *a, **k: calls.append((a, k)))
+    monkeypatch.setattr(hot_reload, "snapshot_mtimes", lambda *_: pytest.fail("watcher entered"))
+
+    assert hot_reload.run_forever() == hot_reload.START_DENIED_EXIT_CODE
+    assert calls == []
+
+
+def test_denied_spawn_helper_never_calls_popen(hot_reload, monkeypatch):
+    calls: list[object] = []
+    monkeypatch.setattr(hot_reload.subprocess, "Popen", lambda *a, **k: calls.append((a, k)))
+
+    with pytest.raises(RuntimeError, match="MCP_START_AUTHORIZATION_NOT_ESTABLISHED"):
+        hot_reload._spawn_server()
+    assert calls == []
+
+
+def test_direct_entry_uses_denied_supervisor(hot_reload):
+    source = _SCRIPT_PATH.read_text(encoding="utf-8")
+    assert "sys.exit(run_forever())" in source
+    assert hot_reload.run_forever() == hot_reload.START_DENIED_EXIT_CODE

@@ -17,7 +17,7 @@ from iabv_v15.services.lab.algorithm_benchmark_registry import AlgorithmBenchmar
 from iabv_v15.services.lab.decision_scoring_engine import DecisionScoringEngine
 from iabv_v15.services.lab.experiment_lab import ExperimentLab
 from iabv_v15.services.lab.strategy_selector import StrategySelector
-from iabv_v15.services.tools.tool_adapters import ExternalAssistantToolAdapter, ShellToolAdapter
+from iabv_v15.services.tools.tool_adapters import ExternalAssistantToolAdapter, LocalCliToolAdapter, ShellToolAdapter
 from iabv_v15.services.tools.tool_approval_policy import ToolApprovalPolicy
 from iabv_v15.services.tools.tool_memory import ToolMemory
 from iabv_v15.services.tools.tool_registry import ToolRegistry
@@ -111,40 +111,73 @@ def _service(root: Path, *, fail_shell_execute: bool = False, external_adapter: 
     return service, repository
 
 
-def test_tool_teach_service_preserves_tool_sandbox_route_and_executes_read_only() -> None:
+def test_tool_teach_service_blocks_free_form_shell_before_sandbox_even_when_approved(monkeypatch) -> None:
     root = _workspace('tool_teach_service_read_only')
     shutil.rmtree(root, ignore_errors=True)
     root.mkdir(parents=True, exist_ok=True)
     try:
         service, repository = _service(root)
-        request = InferenceRequest(
-            user_goal='Valida esta herramienta shell en sandbox',
-            task_role=TaskRole.TOOL_SANDBOX,
-            goal_parameters={
-                'tool_id': 'shell_command',
-                'command': 'Get-Location',
-                'execution_scope': 'read_only',
-            },
+        real_shell = ShellToolAdapter()
+        service.adapters['shell'] = real_shell
+        service.registry.adapters['shell'] = real_shell
+        task = ToolTask(
+            tool_id='shell_command',
+            title='Free-form shell blocked',
+            objective='Attempt bridge through the shell adapter.',
+            requested_by_role=TaskRole.TOOL_SANDBOX,
+            actions=[ToolAction(action_type=ToolActionType.RUN_COMMAND, label='launch', value='python -m iabv_v15.infra.mcp.server')],
+            execution_scope='read_only',
         )
+        sandbox_calls: list[object] = []
+        process_calls: list[object] = []
+        monkeypatch.setattr(service.sandbox, 'run', lambda **kwargs: sandbox_calls.append(kwargs))
+        monkeypatch.setattr('iabv_v15.services.tools.tool_adapters.subprocess.run', lambda *args, **kwargs: process_calls.append((args, kwargs)))
 
-        route, result = service.handle(request)
-        task = service.build_task_from_request(request)
-        execution = service.execute_task(task, approved=False)
+        result = service.execute_task(task, approved=True, launch_dry_run=True)
         stored_results = repository.list_results(task_id=task.task_id, limit=10)
 
-        assert route.task_role == TaskRole.TOOL_SANDBOX
-        assert result.detected_role == TaskRole.TOOL_SANDBOX
-        assert result.raw_output['tool_preview']['available'] is True
-        assert execution.success is True
-        assert execution.execution_state.state == 'executed'
-        assert execution.validation_status.value == 'approved'
-        assert execution.metadata['interaction_pattern_id']
-        assert execution.metadata['interaction_episode_id']
-        assert execution.metadata['live_audit']['decision']['action'] == 'continue_local'
-        stored_episodes = repository.list_interaction_episodes(limit=10)
-        matching_episode = next(item for item in stored_episodes if item.task_id == task.task_id)
-        assert matching_episode.metadata['live_audit']['decision']['action'] == 'continue_local'
-        assert len(stored_results) == 2
+        assert result.success is False
+        assert result.execution_state.state == 'blocked'
+        assert result.execution_state.destructive_blocked is True
+        assert result.error_message == 'free_form_shell_execution_disabled_until_os_isolation_exists'
+        assert sandbox_calls == []
+        assert process_calls == []
+        assert len(stored_results) == 1
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_tool_teach_service_blocks_cloudflared_before_adapter_or_sandbox(monkeypatch) -> None:
+    root = _workspace('tool_teach_service_cloudflared_block')
+    shutil.rmtree(root, ignore_errors=True)
+    root.mkdir(parents=True, exist_ok=True)
+    try:
+        service, _ = _service(root)
+        adapter = LocalCliToolAdapter()
+        service.adapters['local_cli'] = adapter
+        service.registry.adapters['local_cli'] = adapter
+        adapter_calls: list[object] = []
+        sandbox_calls: list[object] = []
+        process_calls: list[object] = []
+        monkeypatch.setattr(adapter, 'is_available', lambda card: adapter_calls.append(card))
+        monkeypatch.setattr(service.sandbox, 'run', lambda **kwargs: sandbox_calls.append(kwargs))
+        monkeypatch.setattr('iabv_v15.services.tools.tool_adapters.subprocess.run', lambda *args, **kwargs: process_calls.append((args, kwargs)))
+        task = ToolTask(
+            tool_id='cloudflared_cli',
+            title='Tunnel launch attempt',
+            objective='Start a tunnel through the generic tool route.',
+            requested_by_role=TaskRole.TOOL_USE,
+            actions=[ToolAction(action_type=ToolActionType.RUN_COMMAND, label='launch', value='TUNNEL RUN')],
+        )
+
+        result = service.execute_task(task, approved=True, launch_dry_run=True)
+
+        assert result.success is False
+        assert result.execution_state.state == 'blocked'
+        assert result.error_message == 'local_cli_executable_identity_unverified'
+        assert adapter_calls == []
+        assert sandbox_calls == []
+        assert process_calls == []
     finally:
         shutil.rmtree(root, ignore_errors=True)
 
@@ -178,7 +211,7 @@ def test_tool_teach_service_requires_approval_for_code_editing() -> None:
         shutil.rmtree(root, ignore_errors=True)
 
 
-def test_tool_teach_service_attempts_basic_rollback_on_failed_write() -> None:
+def test_tool_teach_service_does_not_attempt_rollback_for_blocked_free_form_shell() -> None:
     root = _workspace('tool_teach_service_rollback')
     shutil.rmtree(root, ignore_errors=True)
     root.mkdir(parents=True, exist_ok=True)
@@ -200,11 +233,10 @@ def test_tool_teach_service_attempts_basic_rollback_on_failed_write() -> None:
         history = repository.list_results(task_id=task.task_id, limit=10)
 
         assert result.success is False
-        assert result.execution_state.state == 'failed'
-        assert result.rollback_state is not None
-        assert result.rollback_state.state == 'rolled_back'
-        assert 'Rollback ejecutado correctamente' in result.rollback_state.detail
-        assert len(history) == 2
+        assert result.execution_state.state == 'blocked'
+        assert result.rollback_state is None
+        assert result.error_message == 'free_form_shell_execution_disabled_until_os_isolation_exists'
+        assert len(history) == 1
     finally:
         shutil.rmtree(root, ignore_errors=True)
 
@@ -304,7 +336,7 @@ def test_tool_teach_service_blocks_destructive_shell_commands_and_keeps_audit_tr
         assert result.execution_state.destructive_blocked is True
         assert result.rollback_state is None
         assert len(history) == 1
-        assert any(item['state'] == 'blocked' and item['action_type'] == 'task_result' for item in log)
+        assert any(item['state'] == 'blocked' and item['action_type'] == 'preflight' for item in log)
     finally:
         shutil.rmtree(root, ignore_errors=True)
 

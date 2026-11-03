@@ -1,4 +1,5 @@
-# start_iabv.ps1
+# start_iabv.ps1 — OPERATIONALLY DISABLED: exits before startup side effects.
+# The historical launch notes below do not override the fail-closed gate.
 #
 # Un solo comando para arrancar IABV v1.5 end-to-end:
 #   1. Carga secretos desde $HOME\.iabv_secrets.ps1 si existe.
@@ -56,6 +57,11 @@ param(
     [switch]$NoAutoPull,
     [switch]$AllowNonMain
 )
+
+# Startup is disabled until an authorized bridge path is established. This
+# denial precedes filesystem, Git, process, UI, and bridge operations.
+[Console]::Error.WriteLine('MCP bridge startup denied: G1/G2/G3 are not established.')
+exit 78
 
 if ($NoAutoPull) {
     $AutoPull = $false

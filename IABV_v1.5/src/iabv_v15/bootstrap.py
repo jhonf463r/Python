@@ -471,6 +471,16 @@ class AppBootstrap:
         _auto_load_secrets()
 
         self.config = load_app_config(workspace_root)
+        # Observe host enrollment context only when explicitly requested by a
+        # host-owned caller. This provider is descriptive and does not feed
+        # the protected-read coordinator or approve a workspace root.
+        from iabv_v15.services.security.host_enrollment_context import (
+            HostEnrollmentContextProvider,
+        )
+
+        self.observed_local_enrollment_context_provider = HostEnrollmentContextProvider(
+            self.config, workspace_root,
+        )
         self.theme = load_theme_config()
         self._ensure_directories()
         configure_logging(self.config.logs_dir)
@@ -498,6 +508,13 @@ class AppBootstrap:
 
         self._services_wired = False
         self._defer_services = _defer_services
+
+        # The protected-read authority is explicitly registered even before
+        # deferred service wiring. No real G1/G2/G3 or issuer-IPC providers are
+        # provisioned here, so the composed decision remains fail-closed.
+        from iabv_v15.services.security.read_authorization import ReadAuthorizationCoordinator
+
+        self.read_authorization_coordinator = ReadAuthorizationCoordinator.unconfigured()
 
         # VM placeholders needed by create_engine(defer_vm_creation=True)
         # which sets context properties to these (initially None) values.
@@ -3294,6 +3311,15 @@ class AppBootstrap:
         )
         self._yield_to_event_loop()
 
+    def _create_mcp_bridge_service(self) -> MCPBridgeService:
+        """Compose the MCP bridge with this app's fail-closed read authority."""
+
+        return build_mcp_bridge_service(
+            self,
+            workspace_root=self.config.workspace_root,
+            read_authorization_coordinator=self.read_authorization_coordinator,
+        )
+
     def _build_deferred_ui_batch_1(self) -> None:
         """Phase 2: MCP side-effects only (lightweight services).
 
@@ -3309,10 +3335,7 @@ class AppBootstrap:
         # --- MCP bridge ---
         if getattr(self, 'mcp_bridge_service', None) is None:
             try:
-                self.mcp_bridge_service = build_mcp_bridge_service(
-                    self,
-                    workspace_root=self.config.workspace_root,
-                )
+                self.mcp_bridge_service = self._create_mcp_bridge_service()
             except Exception:
                 logger.exception('No se pudo inicializar MCPBridgeService; bridge desactivado')
                 self.mcp_bridge_service = None
@@ -4371,167 +4394,22 @@ class AppBootstrap:
         return app, engine
 
     # ------------------------------------------------------------------
-    # Integrated MCP server + Cloudflare tunnel auto-start
+    # Legacy integrated MCP server auto-start and public tunnel are disabled
     # ------------------------------------------------------------------
-    # When the user launches ``python -m iabv_v15``, the full stack must
-    # come alive autonomously: secrets, MCP server, tunnel (if internet
-    # is available), and the PySide6 UI — all from a single invocation.
-    # The MCP server and tunnel run as daemon subprocesses so they die
-    # automatically when the UI (main process) exits.
+    # These compatibility helpers remain fail-closed until G1/G2/G3 and an
+    # authorized bridge start path are established.
     # ------------------------------------------------------------------
 
     def _start_mcp_subprocess(self) -> 'subprocess.Popen[bytes] | None':
-        """Launch the MCP server as a background subprocess."""
-        import shutil
-        import subprocess
+        """Keep the legacy subprocess path disabled until G1/G2/G3 exist."""
 
-        python_exe = sys.executable
-        if os.name == 'nt' and python_exe.lower().endswith('pythonw.exe'):
-            python_candidate = Path(python_exe).with_name('python.exe')
-            if python_candidate.is_file():
-                python_exe = str(python_candidate)
-        workspace = str(self.config.workspace_root)
-        src_dir = str(Path(workspace) / 'src')
-
-        env = {**os.environ}
-        if 'PYTHONPATH' not in env or src_dir not in env.get('PYTHONPATH', ''):
-            env['PYTHONPATH'] = src_dir + os.pathsep + env.get('PYTHONPATH', '')
-        env.setdefault('IABV_MCP_TRANSPORT', 'streamable-http')
-        env.setdefault('IABV_MCP_NAME', 'iabv-v15')
-        env.setdefault('FASTMCP_HOST', '127.0.0.1')
-        env.setdefault('FASTMCP_PORT', '8000')
-        env.setdefault('PYTHONUNBUFFERED', '1')
-        env['IABV_WORKSPACE_ROOT'] = workspace
-        # Signal that this bootstrap runs inside the MCP subprocess so it
-        # can reduce redundant scans and log noise.
-        env['IABV_MCP_SUBPROCESS'] = '1'
-        # The startup timeline audits visible UI boot. If the MCP child writes
-        # into the same JSONL, it contaminates phase ordering and breaks the
-        # metacognitive snapshot for splash -> shell timings.
-        env['IABV_STARTUP_TIMELINE'] = '0'
-
-        # Inject portable CLI tools into PATH (same as run_mcp_bridge.ps1)
-        iabv_tools = Path.home() / '.iabv' / 'tools'
-        if iabv_tools.is_dir():
-            extra_paths = []
-            for candidate in ['gh/bin', 'cloudflared']:
-                p = iabv_tools / candidate
-                if p.is_dir():
-                    extra_paths.append(str(p))
-            if extra_paths:
-                env['PATH'] = os.pathsep.join(extra_paths) + os.pathsep + env.get('PATH', '')
-
-        creationflags = 0
-        startupinfo = None
-        if os.name == 'nt':
-            creationflags = getattr(subprocess, 'CREATE_NO_WINDOW', 0)
-            startupinfo = subprocess.STARTUPINFO()
-            startupinfo.dwFlags |= getattr(subprocess, 'STARTF_USESHOWWINDOW', 0)
-            startupinfo.wShowWindow = 0
-
-        previous_handle = getattr(self, '_mcp_runtime_log_handle', None)
-        if previous_handle is not None:
-            try:
-                previous_handle.close()
-            except Exception:
-                pass
-            self._mcp_runtime_log_handle = None
-        log_handle = None
-        try:
-            log_path = Path(self.config.logs_dir) / 'mcp_server_runtime.log'
-            log_path.parent.mkdir(parents=True, exist_ok=True)
-            log_handle = log_path.open('ab')
-            proc = subprocess.Popen(
-                [python_exe, '-m', 'iabv_v15.infra.mcp.server'],
-                cwd=workspace,
-                env=env,
-                stdin=subprocess.DEVNULL,
-                stdout=log_handle,
-                stderr=subprocess.STDOUT,
-                creationflags=creationflags,
-                startupinfo=startupinfo,
-            )
-            self._mcp_runtime_log_handle = log_handle
-            logger.info('mcp_autostart: MCP server launched (PID %d)', proc.pid)
-            return proc
-        except Exception as exc:
-            if log_handle is not None:
-                try:
-                    log_handle.close()
-                except Exception:
-                    pass
-            logger.warning('mcp_autostart: failed to launch MCP server: %s', exc)
-            return None
+        logger.warning("mcp_autostart: denied; G1/G2/G3 are not established")
+        return None
 
     def _start_tunnel_subprocess(self) -> 'subprocess.Popen[bytes] | None':
-        """Launch Cloudflare tunnel as a background subprocess if available."""
-        import shutil
-        import subprocess
-
-        cloudflared = shutil.which('cloudflared')
-        if not cloudflared:
-            # Check portable install
-            portable = Path.home() / '.iabv' / 'tools' / 'cloudflared'
-            if portable.is_dir():
-                for name in ('cloudflared.exe', 'cloudflared'):
-                    candidate = portable / name
-                    if candidate.is_file():
-                        cloudflared = str(candidate)
-                        break
-        if not cloudflared:
-            logger.info('mcp_autostart: cloudflared not found, skipping tunnel')
-            return None
-
-        bind_host = os.environ.get('FASTMCP_HOST', '127.0.0.1')
-        bind_port = os.environ.get('FASTMCP_PORT', '8000')
-        origin = f'http://{bind_host}:{bind_port}'
-        host_header = f'{bind_host}:{bind_port}'
-
-        creationflags = 0
-        startupinfo = None
-        if os.name == 'nt':
-            creationflags = getattr(subprocess, 'CREATE_NO_WINDOW', 0)
-            startupinfo = subprocess.STARTUPINFO()
-            startupinfo.dwFlags |= getattr(subprocess, 'STARTF_USESHOWWINDOW', 0)
-            startupinfo.wShowWindow = 0
-
-        previous_handle = getattr(self, '_tunnel_runtime_log_handle', None)
-        if previous_handle is not None:
-            try:
-                previous_handle.close()
-            except Exception:
-                pass
-            self._tunnel_runtime_log_handle = None
-        log_handle = None
-        try:
-            log_path = Path(self.config.logs_dir) / 'cloudflared_runtime.log'
-            log_path.parent.mkdir(parents=True, exist_ok=True)
-            log_handle = log_path.open('ab')
-            proc = subprocess.Popen(
-                [
-                    cloudflared, 'tunnel',
-                    '--url', origin,
-                    '--no-autoupdate',
-                    '--loglevel', 'info',
-                    '--http-host-header', host_header,
-                ],
-                stdin=subprocess.DEVNULL,
-                stdout=log_handle,
-                stderr=subprocess.STDOUT,
-                creationflags=creationflags,
-                startupinfo=startupinfo,
-            )
-            self._tunnel_runtime_log_handle = log_handle
-            logger.info('mcp_autostart: Cloudflare tunnel launched (PID %d)', proc.pid)
-            return proc
-        except Exception as exc:
-            if log_handle is not None:
-                try:
-                    log_handle.close()
-                except Exception:
-                    pass
-            logger.warning('mcp_autostart: failed to launch tunnel: %s', exc)
-            return None
+        """Keep the legacy auto-start route from opening a public tunnel."""
+        logger.info('mcp_autostart: public tunnel disabled pending an authenticated remote profile')
+        return None
 
     # ------------------------------------------------------------------
     # Task 8: MCP supervision — heartbeat + auto-restart
@@ -5196,40 +5074,26 @@ class AppBootstrap:
                     except Exception:
                         pass
 
-            # --- MCP autostart ---
+            # --- MCP bridge status ---
             if self._splash:
                 self._splash.set_status('Verificando servicios MCP...')
                 try:
                     QGuiApplication.instance().processEvents()
                 except Exception:
                     pass
-
-            skip_mcp = os.environ.get('IABV_SKIP_MCP_AUTOSTART', '') == '1'
-            mcp_port = int(os.environ.get('FASTMCP_PORT', '8000'))
-            if skip_mcp:
-                logger.info('mcp_autostart: skipped (IABV_SKIP_MCP_AUTOSTART=1)')
-            elif not self._is_mcp_port_in_use(mcp_port):
-                if self._splash:
-                    self._splash.set_status('Iniciando servidor MCP...')
-                    try:
-                        QGuiApplication.instance().processEvents()
-                    except Exception:
-                        pass
-                def _deferred_mcp_start() -> None:
-                    self._mcp_proc = self._start_mcp_subprocess()
-                    if self._mcp_proc:
-                        import time
-                        time.sleep(2)
-                        self._tunnel_proc = self._start_tunnel_subprocess()
-                    # Task 8: start supervision after initial launch
-                    self._start_mcp_supervisor()
-                threading.Thread(
-                    target=_deferred_mcp_start,
-                    name='mcp-deferred-start',
-                    daemon=True,
-                ).start()
+            bridge = getattr(self, 'mcp_bridge_service', None)
+            if bridge is None:
+                logger.warning('MCP startup remains blocked: composed bridge is unavailable')
             else:
-                logger.info('mcp_autostart: port %d already in use, skipping MCP launch', mcp_port)
+                try:
+                    status = bridge.ensure_started()
+                    if getattr(status, 'governance_blocked', False):
+                        logger.info(
+                            'MCP startup remains blocked by bridge composition: %s',
+                            getattr(status, 'governance_reason', None),
+                        )
+                except Exception:
+                    logger.exception('MCPBridgeService rejected or failed startup; no legacy fallback is allowed')
 
             # --- Startup evolution: defer until the main event loop is alive ---
             if self._splash:
