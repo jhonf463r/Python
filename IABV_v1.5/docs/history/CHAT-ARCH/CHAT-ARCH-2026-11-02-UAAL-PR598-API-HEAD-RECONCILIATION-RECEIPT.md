@@ -8,6 +8,7 @@
 
 | Reviewed HEAD | Record | Result and limitation |
 |---|---|---|
+| `adea652e29a65c0c1dd31d11369ad8d8831dd7ca` | Follow-up eight-document review, repair-delta review and receipt reconciliation — 2026-11-03 | Substantive eight-document review reported and source identity rechecked; same-thread/limited context; no lock or blind-review claim; corrected delta has no blocker; no merge authorization |
 | `0c60406ec00bd7daa5f79840a9f0c89d7740ec0a` | Claude Web review received 2026-11-03; latest entry at end of this receipt | Partial bounded static assessment; `CONTEXT_SEPARATION=LIMITED`; no merge-readiness claim |
 | `67f79c7ad4e4a05640bbbb7277bf0f0caad143a4` | Claude Web delta handoff response, 2026-11-02/03 | No source review; session-mode precondition stop |
 | `08b66cbf5829aaeb31e597c0d2e470eeb30da5a7` | Subsequent Claude Web review, 2026-11-02/03 | Partial review; findings and limitations recorded in its own section |
@@ -740,3 +741,52 @@ The recipient also reported that its web reader opens only URLs literally surfac
 The coordinator's GitHub compare for BASE 56e4d8b11846a8d8f3cb8cda08efd773ec235651 and pre-amendment HEAD 19ca803c70330e1d6e999019b9943d6002686a4f independently returned ten changed paths. Eight are operational documents and two are receipts. The corrected blind-review decomposition for the current 11-path candidate is Phase A = eight operational documents (16 BASE/HEAD source items); Phase B = all three receipts (the two pre-existing PR591/PR598 receipts and the new Claude transport incident receipt) only after Phase A is frozen in the same receiving thread; Phase C = a separate non-blind current-state/technical reconciliation. Phase A must not be represented as a full 11-path review.
 
 The detailed evidence and reusable repair rules are recorded in CHAT-ARCH-2026-11-03-UAAL-CLAUDE-SESSION-TRANSPORT-AND-BLIND-REVIEW-REPAIR-RECEIPT.md and integrated into D021 §§6F–6G and Boot Kit §14. These are documentary method changes only; they do not claim automatic cross-chat delivery, model-weight learning or generalization to all Claude sessions.
+
+## Follow-up review and coordinator reconciliation — final candidate HEAD adea652e (2026-11-03)
+
+### Owner correction to the earlier scope-lock narrative
+
+The Owner explicitly clarified that no `REVIEW_SCOPE_LOCK_RECEIPT` and no P3/P5 “pre-lock inspection” existed in the active review conversation. No correlated lock artifact is recognized for that conversation. Any pasted assertion of a prior lock timestamp is retained only as a reported assertion; it is not evidence that a lock occurred, that source inspection preceded it, or that a formal scope freeze was completed. Do not retroactively create or claim such a receipt.
+
+The correction is about the actual review-thread events. It does not invalidate separately evidenced source retrieval, byte identity, or substantive inspection that occurred without the claimed lock. Such work must be described as same-thread and non-blind where prior candidate context was present.
+
+### Eight-document substantive review and repair-delta review
+
+The Owner supplied Claude's full eight-document review report for BASE `56e4d8b11846a8d8f3cb8cda08efd773ec235651` to the pre-repair HEAD `adac537dd1242b83051800174010bb416895387c`. Claude reported direct Git retrieval, independent Git-blob SHA-1 recomputation for all 16 BASE/HEAD objects, matching byte counts, and substantive inspection of all eight operational-file diffs. Those execution details are actor-reported. The coordinating session separately retrieved and recomputed the Git blob identities/byte counts for the 16 pinned source objects and found them matching.
+
+This was a continued conversation with prior exposure to related candidate material. It is a substantive same-thread review, not a blind or context-isolated independent review. The Owner correction above governs: no pre-inspection scope-lock receipt or P3/P5 pre-lock inspection is claimed.
+
+The eight-document findings and coordinator dispositions are:
+
+- **D021 duplicated 6F numbering — P1 confirmed and corrected.** The external-AI handoff block is now `§6F.9`, with `§6F.9.1–§6F.9.6`. The original pre-action gate retains `§6F.0–§6F.8`.
+- **PR-specific phase arithmetic embedded in normative text — confirmed and corrected.** D021 §6G and Boot Kit §14 now require scope/counts to be calculated from each task's exact BASE/HEAD and changed-path set.
+- **Incident-specific byte thresholds embedded in reusable methodology — confirmed and corrected.** The numeric transcript measurement and conservative packet target remain in the dated incident evidence, not as reusable normative values.
+- **D019 §9E adoption dependency — verified at the pinned BASE.** The owner record is `IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-26-UAAL-D019-SPACE-TIME-ANTI-LOOP-CAUSAL-FRONTIER.md`, blob `2973bda8810bd015a36655ebf81689a9c5130089`. It states `STATUS=DOCUMENTED_METHOD_CANDIDATE` and `CANONICAL_MAIN_ADOPTION=NOT_YET`. Space-Time's candidate/adoption boundary is therefore appropriately qualified; no D019 adoption is inferred.
+- **Receipt-enum complexity — residual non-blocking risk.** D021 now expressly says the revised definitions do not retroactively reinterpret historical receipts and that producer/consumer migration needs its own inventory, compatibility mapping, authorization and validation. No migration or automated consumer validation is claimed.
+- **Prompt-injection calibration — strength retained.** Formal task structure is not itself treated as prompt injection; concrete semantic conflicts remain subject to normal instruction, safety, authority and capability boundaries.
+
+Claude's follow-up review of `adac537dd1242b83051800174010bb416895387c → adea652e29a65c0c1dd31d11369ad8d8831dd7ca` reported no blocking findings. GitHub commit metadata and branch fetch-back independently confirm the ancestry `adac537d → 7430ec9b → adea652e`; the exact three-file repair delta is D021, Boot Kit and Space-Time. The final candidate HEAD is `adea652e29a65c0c1dd31d11369ad8d8831dd7ca`.
+
+The other five operational documents contain no active pointer to the old duplicated external-handoff headings. Older §6F.1/§6F.2 references found inside the dated PR591/PR598 receipts describe historical revisions and are retained as history, not treated as current navigation.
+
+### Receipt reconciliation and remaining boundaries
+
+The three receipt paths have been inspected for current scope and provenance:
+
+- PR591's CI receipt records a failed job payload without exposed step-level evidence; it correctly does not infer that tests ran or failed.
+- The PR598 reconciliation receipt remains an append-only historical log. Earlier SHA values, review outcomes, and old section numbers are tied to their recorded HEADs and are not current identity claims. Its historical transcript/lock assertions are qualified by the Owner correction above.
+- The Claude transport receipt preserves route-specific truncation, URL-discovery and capability observations as owner-supplied/actor-reported evidence, not universal Claude product specifications. Its earlier “no Phase A” state is a point-in-time observation and is superseded only by the later substantive eight-document review described here; no earlier lock is retroactively recognized.
+
+The coordinator's receipt inspection is a bounded reconciliation of these records, not a fresh independent audit of every historical assertion in the cumulative PR598 log.
+
+### Current candidate identity and disposition
+
+- PR #598 remains OPEN / UNMERGED.
+- Base and live `main`: `56e4d8b11846a8d8f3cb8cda08efd773ec235651`.
+- Branch: `uaal/precision-gates-and-anti-waste-r1-20261102`.
+- Current reviewed HEAD: `adea652e29a65c0c1dd31d11369ad8d8831dd7ca`; parent `7430ec9b0d553a363356c54f2415d22ea959e541`; tree `eff09ecb0ea10edad32ae2c1e7d082d043a54cb8`.
+- Compare: 84 commits ahead, 0 behind; 11 changed paths; +1,769 / −68.
+- The eight operational documents and correction delta have no remaining blocking finding in the reviewed scope. Historical receipt evidence remains source/actor-qualified as stated above.
+- Pull-request workflow runs and combined commit statuses returned no entries for this HEAD. No tests, build or runtime were executed; this is not a test pass.
+- `MAIN_CHANGED=FALSE`; `TEST_STATUS=NOT_RUN`; `MERGE_AUTHORIZATION=NOT_GRANTED`.
+- No change to CURRENT-STATE, Control Master runtime, product code, M1A, G1/G2/G3, Option D, protected reads, credentials, permissions, local runtime, tunnel or bridge authority was made.

@@ -120,3 +120,15 @@ The amendment is useful only if a later non-identical external-AI task demonstra
 - no unnecessary Owner question, duplicate preparation loop or false progress claim occurred.
 
 Until a later non-identical task meets those criteria, CAUSAL_REUSE=NOT_TESTED and GENERALIZATION=NOT_TESTED.
+
+## Subsequent Owner correction and substantive review record — 2026-11-03
+
+The Owner clarified that no `REVIEW_SCOPE_LOCK_RECEIPT` and no P3/P5 “pre-lock inspection” existed in the active review conversation. No correlated lock artifact is recognized for that thread. Any earlier pasted statement about a lock timestamp is only a reported assertion and must not be represented as an actual lock, frozen scope, or completed pre-lock inspection. This corrects the event framing; it does not erase the independently verifiable source-retrieval work or the substantive review that followed.
+
+After that correction, the Owner supplied Claude's substantive review of the eight operational documents at BASE `56e4d8b11846a8d8f3cb8cda08efd773ec235651` and HEAD `adac537dd1242b83051800174010bb416895387c`. Claude reported retrieval and independent Git-blob SHA-1 recomputation for all 16 BASE/HEAD source objects, matching byte counts, and inspection of all eight diffs. The coordinating session separately fetched and recomputed the exact Git blob identities/byte counts and found all 16 matching. The substantive review is therefore recorded as a completed same-thread review of the declared eight-document scope, with prior related-candidate exposure; it is not a blind or context-isolated independent review. No scope-lock receipt is claimed.
+
+The review identified the duplicated D021 `6F` numbering, PR-specific phase arithmetic in reusable methodology, and incident-specific packet-size figures embedded in normative text. Those defects were corrected in the later candidate delta. The exact `adac537d → adea652e` follow-up review was also supplied by the same Claude conversation; it reported no blocking findings. It did not claim independent/blind status.
+
+The earlier point-in-time status in §7 (Phase A not completed in that earlier state and later phases not then begun) remains a historical observation, not the status of this subsequent review. Do not rewrite that history or use it to deny that the later substantive eight-document review occurred. No formal scope-lock event is retroactively established.
+
+PR #598 remains OPEN / UNMERGED; merge authorization is not granted. No tests, build or runtime were executed. Technical gates and the local/cloud boundaries remain unchanged.
