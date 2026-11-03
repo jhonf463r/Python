@@ -98,9 +98,13 @@ Bind the digest to exact source, workspace/project, state ID, generation time, o
 
 ### Decision-complete Owner-action preflight (D019 §9E / D020 §9; 2026-11-02 proposal)
 
-This is the execution bridge between the existing Space-Time world model, D021's Owner-input and Control Master intake, and D019/D020's causal selector. It refines the same operating lineage; it does not create a second router, memory, coordinator, approval channel or permission system.
+This is a proposal for an execution bridge between the existing Space-Time world model, D021's Owner-input and Control Master intake, and D019/D020's causal selector. It refines the same operating lineage; it does not create a second router, memory, coordinator, approval channel or permission system.
 
-For every material action that would ask the Owner to use a device, application, account, security surface or private UI, complete this order **before the first Owner-facing instruction**:
+**Adoption boundary:** the D019 §9E / D020 §9 `OWNER_ACTION_PACKET` expansion described in this proposal is not a mandatory canonical gate unless the owning D019 record in the exact pinned `main` affirmatively records its adoption. The D019 owner record at PR #598's base `56e4d8b11846a8d8f3cb8cda08efd773ec235651` states `STATUS=DOCUMENTED_METHOD_CANDIDATE` and `CANONICAL_MAIN_ADOPTION=NOT_YET`; that is a dated baseline fact, not a permanent state. Recheck the current owner record in each session. Existing `CURRENT-STATE.md`, adopted D021 controls and action-specific authorization/no-bootstrap rules remain controlling regardless of this proposal.
+
+The following order is proposed guidance. Steps 1–5 restate existing route, Owner-ledger, Control Master and authorization checks to the extent required by their adopted owning sections. Steps 6–8, including the `OWNER_ACTION_PACKET` expansion and branch precomputation, remain candidate-only planning guidance until the owning D019 record is adopted; they must not add permissions or displace existing controls.
+
+For every material action that would ask the Owner to use a device, application, account, security surface or private UI, when the proposed bundle is used as a planning aid, complete this order **before the first Owner-facing instruction**:
 
 1. Refresh the exact canonical route, task scope, permission state and relevant revision. `CURRENT-STATE.md` remains the route authority.
 2. Reuse D021 §6B.1's Owner-input ledger, current conversation evidence, completed steps, screenshots and terminal outcomes. Mark facts by provenance; do not repeat settled setup.
