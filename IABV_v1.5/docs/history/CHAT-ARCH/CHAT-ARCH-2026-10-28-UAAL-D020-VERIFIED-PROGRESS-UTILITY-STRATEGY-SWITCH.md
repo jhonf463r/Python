@@ -201,7 +201,7 @@ The episode is bounded evidence of this method correction, not proof that the pr
 
 ## 9. Decision-complete advance packets and Owner-turn minimization (2026-11-02)
 
-UAAL-D019 §9E is the owning pre-action decision-completeness algorithm. This section binds it to D020's advance contract and lexicographic progress selector; it does not create a second selector or override authorization.
+UAAL-D019 §9E is the sole owning pre-action decision-completeness record. This D020 §9 section is a bounded refinement of D020's advance contract and lexicographic progress selector; it is not a second owner record and does not create an independent adoption state. The canonical/mandatory status of the §9E algorithm is determined only from the exact D019 owner record in pinned `main`. D020's general progress/utility method status must not be used to infer adoption of D019 §9E.
 
 Before any Owner-facing step on a material UI/device/account task, enrich `ADVANCE_CONTRACT` with:
 - actor split: what the coordinator can retrieve/verify directly, what the Owner alone must do, and what requires an external authority;
@@ -249,6 +249,10 @@ PARENT_CONCEPT_ID=UAAL-D019
 REFINES=UAAL-D019; UAAL-D018
 ROOT=UAAL-ROOT-001
 STATUS=DOCUMENTED_METHOD; RUNTIME_ENFORCEMENT=NOT_PROVEN
+PRE_ACTION_DECISION_COMPLETENESS_OWNING_RECORD=UAAL-D019 §9E
+D020_SECTION_9_ROLE=BOUNDING_REFINEMENT; NOT_A_SECOND_OWNER
+D019_ADOPTION_AUTHORITY=EXACT_D019_OWNER_RECORD_IN_PINNED_MAIN_ONLY
+D020_STATUS_DOES_NOT_PROVE_D019_ADOPTION=TRUE
 TASK_ID_POLICY=NEW_TASK_PER_REVISION
 COMMIT_PROFILE=GATE_COMMIT
 OPTION_D=RATIFIED_NO_BOOTSTRAP
