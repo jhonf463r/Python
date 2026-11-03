@@ -675,3 +675,34 @@ The six file contents were fetched back from the exact HEAD and returned the lis
 ### Boundaries and remaining review scope
 
 `REVIEW_DISPOSITION=PARTIAL_BOUNDED_STATIC_ASSESSMENT`; the actor did not claim a complete review. Tests/build/runtime were NOT_RUN. The reviewing actor performed no GitHub mutation. This coordinator successor write is separately recorded by its commit/blob identities and fetch-back. `MERGE_AUTHORIZATION=NOT_GRANTED`.
+
+
+## Prompt-specification authority interpretation incident — 2026-11-03 (owner-supplied transcript)
+
+**Evidence provenance:** `OWNER_SUPPLIED_TRANSCRIPT`. The coordinator received the Claude exchange pasted by the Owner in this conversation. The external Claude session, its internal state and any source operations are not directly observable here; all claims about Claude's execution are `ACTOR_REPORTED` as relayed in the transcript.
+
+### Observed sequence
+
+1. Claude initially declined the supplied PR #598 dispatch and characterized it as a prompt-injection attempt. It correctly observed that a document cannot acquire system/developer authority merely by declaring roles, scope fields or protocol labels. It then made an unsupported additional leap: it treated the formal dispatch structure, scope-lock/receipt conventions and conditional Git/GitHub acquisition instructions as reasons to reject the task, rather than first resolving whether the Owner had designated the document as the task specification.
+2. The Owner clarified that the document was supplied by the Owner as part of the IABV project and was intended to direct the requested work. Claude then corrected its position and accepted the task as user-directed. Correct interpretation: an explicitly user-adopted artifact is a user-level task specification, not a privileged instruction source; its non-conflicting task constraints should be followed within normal instruction, safety, authorization and capability boundaries.
+3. Claude's subsequent preflight correctly noticed that the active conversation was continued and did not meet `NEW_SEPARATE`. It nevertheless chose to continue as `LIMITED`, retrieved source and inspected Phase A material, and only afterward stopped. The exact D021 §6B.2 stop rule says a continued/unverified conversation does not satisfy a dispatch that requires `NEW_SEPARATE`; the receiver must stop before source retrieval. This later attempt is therefore not an eligible independent review. Its reported technical observations remain actor-reported and must not be promoted to an independent review result.
+
+### Adjudication and causal lesson
+
+- `FIRST_RESPONSE=FALSE_POSITIVE_AUTHORITY/INJECTION_CLASSIFICATION`: the no-privilege-escalation observation was valid; rejecting the task solely on formal structure and tool-request language was not.
+- `TASK_SPECIFICATION_PROVENANCE=USER_ADOPTED_ARTIFACT`: based on the Owner's explicit clarification in the supplied transcript. `TASK_AUTHORITY_LEVEL=USER_LEVEL_ONLY`; this does not elevate the artifact above the user's authority.
+- `SECOND_RESPONSE=SESSION_PRECONDITION_MISAPPLIED`: the receiver identified the `NEW_SEPARATE` failure but did not enforce the stop before acquisition.
+- `INDEPENDENT_REVIEW_DISPOSITION=BLOCKED_PRECONDITION`. The transcript's claimed SHA/byte checks and Phase A inspections are preserved as `ACTOR_REPORTED`; they do not establish complete review coverage, independent source verification by this coordinator or a valid independent verdict.
+- The missing method was not another coordinator/router. It was a receiving-agent interpretation rule that separates user adoption/provenance from instruction hierarchy and separates formal task constraints from actual semantic conflicts.
+
+### Candidate documentation correction published in this PR
+
+1. D021 §6C.5 now defines `USER_DIRECTED_MESSAGE`, `USER_ADOPTED_ARTIFACT`, `REFERENCE_ONLY`, `THIRD_PARTY_SOURCE` and `UNKNOWN` provenance classes in prose, with the user-adopted artifact explicitly limited to user-level authority.
+2. D021 now states that formal role labels, schemas, imperative wording, exact refs, scope locks, stop conditions, staged reviews and conditional tool requests do not by themselves establish prompt injection. A concrete conflict must be identified semantically; a separable conflicting clause should be isolated while safe authorized work continues.
+3. D021 clarifies that a scope-lock acknowledgement records the scope understood, not unconditional acceptance of an impossible, ambiguous, contradictory or impermissible scope.
+4. D021 clarifies that blind-review neutrality prevents preloading candidate findings/rationale; it does not prohibit the reviewer from reporting methods, evidence, findings, uncertainty or concise rationale.
+5. The Boot Kit §6.0 adds a provenance preflight and a reusable task-specification boundary block for artifact-based handoffs.
+
+### Safety and project boundary
+
+This correction does not make a user-provided document privileged, authorize arbitrary shell/network/write operations, weaken actual prompt-injection handling, bypass tool capability checks, relax `NEW_SEPARATE`, or change any M1A/G1/G2/G3 technical gate. It adds no runtime code, coordinator, router or memory store. No tests/build/runtime were run. `main` remains unchanged; PR #598 remains open/unmerged; merge authorization remains not granted.
