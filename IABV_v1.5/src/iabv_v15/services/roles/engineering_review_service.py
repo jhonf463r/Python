@@ -2,7 +2,10 @@ from __future__ import annotations
 
 import time
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from iabv_v15.services.evolution.evolution_review_service import EvolutionReviewService
 
 from iabv_v15.domain.models import IncidentQuery
 from iabv_v15.infra.persistence.episode_repository import EpisodeRepository
@@ -11,7 +14,6 @@ from iabv_v15.infra.persistence.knowledge_repository import KnowledgeRepository
 from iabv_v15.infra.persistence.run_repository import RunRepository
 from iabv_v15.infra.persistence.session_artifact_repository import SessionArtifactRepository
 from iabv_v15.services.development.development_assist_service import DevelopmentAssistService
-from iabv_v15.services.evolution.evolution_review_service import EvolutionReviewService
 from iabv_v15.services.evolution.incident_packet_service import IncidentPacketService
 from iabv_v15.services.roles.analytics_strategy_service import AnalyticsStrategyService
 from iabv_v15.services.roles.teaching_gap_analyzer import TeachingGapAnalyzer
