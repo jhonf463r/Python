@@ -149,11 +149,11 @@ INFERENCE_RULES: list[dict[str, Any]] = [
     {
         'id': 'tunnel_installed_not_running',
         'premises': ['cloudflared_installed', 'tunnel_not_running', 'tunnel_expected'],
-        'conclusion': 'tunnel_needs_start',
-        'action': 'start_tunnel',
+        'conclusion': 'tunnel_start_prohibited',
+        'action': 'tunnel_start_prohibited',
         'severity': 'medium',
-        'safe': True,
-        'description': 'Cloudflared instalado pero tunnel no corre — iniciar',
+        'safe': False,
+        'description': 'El túnel público está prohibido y no se inicia desde el razonador',
     },
     # Performance
     {
@@ -768,9 +768,9 @@ def detect_anomalies(
         anomalies.append({
             'type': 'expected_vs_real',
             'severity': 'medium',
-            'description': 'Cloudflared instalado pero tunnel no activo',
-            'action': 'start_tunnel',
-            'safe': True,
+            'description': 'El túnel público está prohibido y no se inicia desde el razonador',
+            'action': 'tunnel_start_prohibited',
+            'safe': False,
             'evidence': {'expected': 'tunnel_running', 'real': 'tunnel_stopped'},
         })
 
@@ -1382,30 +1382,6 @@ def _exec_diagnose_network(rule: dict[str, Any]) -> dict[str, Any]:
     return {'executed': True, 'detail': '; '.join(checks), 'checks': checks}
 
 
-def _exec_start_tunnel(rule: dict[str, Any]) -> dict[str, Any]:
-    """Start cloudflared tunnel."""
-    try:
-        if os.name == 'nt':
-            tunnel_path = os.path.join(
-                os.path.expanduser('~'), '.iabv', 'tools', 'cloudflared.exe',
-            )
-            if os.path.exists(tunnel_path):
-                subprocess.Popen(
-                    [tunnel_path, 'tunnel', 'run'],
-                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                )
-                return {'executed': True, 'detail': 'Tunnel cloudflared iniciado'}
-            return {'executed': False, 'detail': 'cloudflared no encontrado en ~/.iabv/tools/'}
-        else:
-            subprocess.Popen(
-                ['cloudflared', 'tunnel', 'run'],
-                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-            )
-            return {'executed': True, 'detail': 'Tunnel cloudflared iniciado'}
-    except Exception as exc:
-        return {'executed': False, 'error': str(exc)}
-
-
 def _exec_github_rate_check(rule: dict[str, Any]) -> dict[str, Any]:
     """Check GitHub API rate limit status."""
     try:
@@ -1709,7 +1685,6 @@ _ACTION_EXECUTORS: dict[str, Any] = {
     'switch_to_main': _exec_switch_to_main,
     'cleanup_merged_branches': _exec_cleanup_branches,
     'source_secrets_file': _exec_source_secrets,
-    'start_tunnel': _exec_start_tunnel,
     'offload_to_gpu': _exec_preload_model_on_gpu,
     'parallelize_startup_checks': _exec_noop,
     'move_to_primary': _exec_noop,

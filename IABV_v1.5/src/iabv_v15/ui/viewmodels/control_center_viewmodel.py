@@ -296,11 +296,11 @@ class ControlCenterViewModel(QObject):
             'running': False,
             'state': 'stopped',
             'tunnel_url': None,
-            'transport': 'streamable-http',
+            'transport': 'stdio',
             'bind_host': '127.0.0.1',
             'bind_port': 8765,
             'last_error': None,
-            'governance_blocked': False,
+            'governance_blocked': None,
             'governance_reason': None,
         }
         self.taskResolved.connect(self._apply_task_result)
@@ -14891,8 +14891,9 @@ class ControlCenterViewModel(QObject):
         url = self._mcp_bridge_status.get('tunnel_url')
         return str(url) if url else ''
 
-    def get_mcp_bridge_blocked(self) -> bool:
-        return bool(self._mcp_bridge_status.get('governance_blocked', False))
+    def get_mcp_bridge_blocked(self) -> bool | None:
+        value = self._mcp_bridge_status.get('governance_blocked')
+        return value if isinstance(value, bool) else None
 
     def get_mcp_bridge_reason(self) -> str:
         reason = self._mcp_bridge_status.get('governance_reason') or self._mcp_bridge_status.get('last_error')
@@ -14902,12 +14903,9 @@ class ControlCenterViewModel(QObject):
     def toggleMcpBridge(self, enabled: bool) -> None:
         """Dispara el toggle del MCP bridge sin bloquear el hilo UI.
 
-        `service.set_enabled(True)` puede tardar hasta `DEFAULT_TUNNEL_TIMEOUT_S`
-        segundos (espera sincrónica a que cloudflared publique la URL). Corriéndolo
-        en el hilo UI freezea todo el programa hasta que la URL aparece o timeout.
-        Lo mandamos a un thread daemon; el service publica las transiciones
-        (`stopped → starting → running|failed`) vía `attach_listener`, que ya
-        reemitimos por `mcpBridgeChanged` al hilo UI.
+        `service.set_enabled(True)` conserva una respuesta fail-closed para las
+        rutas de transporte no habilitadas. Se ejecuta en un thread daemon para
+        no bloquear el hilo UI; no inicia un servidor MCP ni un túnel.
         """
 
         service = self.mcp_bridge_service
@@ -14945,7 +14943,7 @@ class ControlCenterViewModel(QObject):
     mcpBridgeRunning = Property(bool, get_mcp_bridge_running, notify=mcpBridgeChanged)
     mcpBridgeState = Property(str, get_mcp_bridge_state, notify=mcpBridgeChanged)
     mcpTunnelUrl = Property(str, get_mcp_tunnel_url, notify=mcpBridgeChanged)
-    mcpBridgeBlocked = Property(bool, get_mcp_bridge_blocked, notify=mcpBridgeChanged)
+    mcpBridgeBlocked = Property('QVariant', get_mcp_bridge_blocked, notify=mcpBridgeChanged)
     mcpBridgeReason = Property(str, get_mcp_bridge_reason, notify=mcpBridgeChanged)
 
     # --- Control Master (read-only, cached via refresh()) ---

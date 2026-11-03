@@ -27,7 +27,14 @@ from iabv_v15.domain.models import (  # noqa: E402
     WorldModelSnapshot,
     IATraceEntry,
 )
-from iabv_v15.infra.mcp.server import IABVMCPServer, _to_jsonable  # noqa: E402
+from iabv_v15.infra.mcp.server import (  # noqa: E402
+    IABVMCPServer,
+    PROFILE_FULL,
+    PROFILE_LOCAL_RESTRICTED,
+    _to_jsonable,
+    create_server,
+    main as mcp_main,
+)
 from iabv_v15.services.tools.site_exploration_service import (  # noqa: E402
     SiteExplorationResult,
     SitePageSnapshot,
@@ -232,6 +239,24 @@ def _build_container(**overrides: object) -> _FakeContainer:
     return _FakeContainer(**defaults)
 
 
+def _full_registry_server_for_unit_test(container: object) -> IABVMCPServer:
+    """Build a non-runnable full registry solely to unit-test legacy handlers.
+
+    This deliberately bypasses the public constructor. The product constructor
+    and every MCP execution entrypoint reject PROFILE_FULL; these tests invoke
+    registered handler functions directly with synthetic dependencies only.
+    """
+    from mcp.server.fastmcp import FastMCP
+
+    server = object.__new__(IABVMCPServer)
+    server.container = container
+    server.name = "mcp-unit-test"
+    server.profile = PROFILE_FULL
+    server.mcp = FastMCP("mcp-unit-test", log_level="WARNING")
+    server._register_tools()
+    return server
+
+
 def _get_tool(server: IABVMCPServer, name: str):
     registry = server.mcp._tool_manager._tools  # fastmcp exposed internal
     assert name in registry, f"tool {name} no registrada (existentes: {sorted(registry)})"
@@ -244,7 +269,7 @@ def _call_tool(server: IABVMCPServer, name: str, **kwargs: object) -> object:
 
 
 def test_server_registers_core_tools() -> None:
-    server = IABVMCPServer(_build_container())
+    server = _full_registry_server_for_unit_test(_build_container())
     registered = set(server.mcp._tool_manager._tools.keys())
     expected = {
         "world_model_snapshot",
@@ -267,6 +292,177 @@ def test_server_registers_core_tools() -> None:
     assert expected <= registered, f"faltan tools: {expected - registered}"
 
 
+def test_local_restricted_profile_registers_only_static_health_tool() -> None:
+    server = IABVMCPServer(None, profile=PROFILE_LOCAL_RESTRICTED)
+    registry = server.mcp._tool_manager._tools
+
+    assert set(registry) == {"bridge_health"}
+    assert _call_tool(server, "bridge_health") == {"status": "ok"}
+    for forbidden in ("read_repo_file", "list_repo_directory", "run_pytest", "self_update"):
+        assert forbidden not in registry
+
+
+def test_server_constructor_defaults_to_local_restricted() -> None:
+    server = IABVMCPServer(None)
+
+    assert server.profile == PROFILE_LOCAL_RESTRICTED
+    assert set(server.mcp._tool_manager._tools) == {"bridge_health"}
+
+
+def test_server_constructor_rejects_full_before_tool_registration(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        IABVMCPServer,
+        "_register_tools",
+        lambda _self: pytest.fail("full profile must fail before tool registration"),
+    )
+
+    with pytest.raises(ValueError, match="autorización gobernada verificable"):
+        IABVMCPServer(_build_container(), profile=PROFILE_FULL)
+
+
+def test_create_server_defaults_to_local_restricted_without_bootstrap(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import builtins
+
+    original_import = builtins.__import__
+
+    def reject_bootstrap_import(name: str, *args: object, **kwargs: object) -> object:
+        if name == "iabv_v15.bootstrap":
+            raise AssertionError("create_server default must not import AppBootstrap")
+        return original_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", reject_bootstrap_import)
+    server = create_server()
+
+    assert server.profile == PROFILE_LOCAL_RESTRICTED
+    assert set(server.mcp._tool_manager._tools) == {"bridge_health"}
+
+
+def test_create_server_rejects_full_before_bootstrap_or_constructor(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import builtins
+
+    original_import = builtins.__import__
+
+    def reject_bootstrap_import(name: str, *args: object, **kwargs: object) -> object:
+        if name == "iabv_v15.bootstrap":
+            raise AssertionError("full profile must fail before AppBootstrap")
+        return original_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", reject_bootstrap_import)
+    monkeypatch.setattr(
+        IABVMCPServer,
+        "__init__",
+        lambda *_args, **_kwargs: pytest.fail("full profile must fail before construction"),
+    )
+
+    with pytest.raises(ValueError, match="autorización gobernada verificable"):
+        create_server(profile=PROFILE_FULL)
+
+
+def test_direct_full_profile_instance_cannot_run_mcp(monkeypatch: pytest.MonkeyPatch) -> None:
+    server = _full_registry_server_for_unit_test(_build_container())
+    calls: list[str] = []
+    monkeypatch.setattr(server.mcp, "run", lambda **_: calls.append("run"))
+
+    with pytest.raises(ValueError, match="ejecución MCP bloqueada"):
+        server.run(transport="stdio")
+
+    assert calls == []
+
+
+def test_local_restricted_profile_rejects_injected_mcp_registry() -> None:
+    with pytest.raises(ValueError, match="registro MCP nuevo"):
+        IABVMCPServer(None, profile=PROFILE_LOCAL_RESTRICTED, mcp=object())
+
+
+def test_local_restricted_profile_run_skips_dynamic_write_tools(monkeypatch: pytest.MonkeyPatch) -> None:
+    server = IABVMCPServer(None, profile=PROFILE_LOCAL_RESTRICTED)
+    captured: list[str] = []
+    monkeypatch.setattr(server.mcp, "run", lambda *, transport: captured.append(transport))
+
+    server.run(transport="stdio")
+
+    assert captured == ["stdio"]
+    assert set(server.mcp._tool_manager._tools) == {"bridge_health"}
+
+
+def test_main_defaults_to_local_restricted_without_appbootstrap(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import builtins
+
+    original_import = builtins.__import__
+    bootstrap_imports: list[str] = []
+
+    def reject_bootstrap_import(name: str, *args: object, **kwargs: object) -> object:
+        if name == "iabv_v15.bootstrap":
+            bootstrap_imports.append(name)
+            raise AssertionError("AppBootstrap module must not be imported")
+        return original_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", reject_bootstrap_import)
+    monkeypatch.setenv("IABV_MCP_TRANSPORT", "stdio")
+    monkeypatch.delenv("IABV_MCP_PROFILE", raising=False)
+    captured: list[tuple[str, str, set[str]]] = []
+
+    def capture_run(server: IABVMCPServer, *, transport: str) -> None:
+        captured.append((transport, server.profile, set(server.mcp._tool_manager._tools)))
+
+    monkeypatch.setattr(IABVMCPServer, "run", capture_run)
+    mcp_main()
+
+    assert bootstrap_imports == []
+    assert captured == [("stdio", PROFILE_LOCAL_RESTRICTED, {"bridge_health"})]
+
+
+@pytest.mark.parametrize("transport", ["sse", "streamable-http"])
+def test_main_rejects_network_transport_before_appbootstrap(
+    monkeypatch: pytest.MonkeyPatch, transport: str,
+) -> None:
+    import sys
+
+    from types import ModuleType
+
+    bootstrap = ModuleType("iabv_v15.bootstrap")
+    bootstrap.AppBootstrap = lambda **_: pytest.fail(  # type: ignore[attr-defined]
+        "network transport must be rejected before AppBootstrap"
+    )
+    monkeypatch.setitem(sys.modules, "iabv_v15.bootstrap", bootstrap)
+    monkeypatch.setenv("IABV_MCP_TRANSPORT", transport)
+    monkeypatch.setenv("IABV_MCP_PROFILE", "full")
+
+    with pytest.raises(ValueError, match="solo stdio local"):
+        mcp_main()
+
+
+def test_main_rejects_explicit_full_before_bootstrap_or_server_construction(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import builtins
+
+    original_import = builtins.__import__
+
+    def reject_bootstrap_import(name: str, *args: object, **kwargs: object) -> object:
+        if name == "iabv_v15.bootstrap":
+            raise AssertionError("full profile must fail before AppBootstrap")
+        return original_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", reject_bootstrap_import)
+    monkeypatch.setattr(
+        IABVMCPServer,
+        "__init__",
+        lambda *_args, **_kwargs: pytest.fail("full profile must fail before construction"),
+    )
+    monkeypatch.setenv("IABV_MCP_TRANSPORT", "stdio")
+    monkeypatch.setenv("IABV_MCP_PROFILE", PROFILE_FULL)
+
+    with pytest.raises(ValueError, match="autorización gobernada verificable"):
+        mcp_main()
+
+
 def test_consensus_fuse_loads_candidate_traces_from_experiment_lab_scope() -> None:
     trace = IATraceEntry(
         trace_id="trace-1",
@@ -278,7 +474,7 @@ def test_consensus_fuse_loads_candidate_traces_from_experiment_lab_scope() -> No
     )
     consensus = _FakeConsensusService()
     lab = _FakeExperimentLab([trace])
-    server = IABVMCPServer(
+    server = _full_registry_server_for_unit_test(
         _build_container(consensus_fusion_service=consensus, experiment_lab=lab)
     )
 
@@ -293,7 +489,7 @@ def test_world_model_snapshot_returns_current_without_refresh() -> None:
     wm = _FakeWorldModelService(
         WorldModelSnapshot(external_state_flags=[], environment=EnvironmentSelfModel()),
     )
-    server = IABVMCPServer(_build_container(world_model_service=wm))
+    server = _full_registry_server_for_unit_test(_build_container(world_model_service=wm))
     payload = _call_tool(server, "world_model_snapshot")
     assert isinstance(payload, dict)
     assert wm.calls == [("current", False)]
@@ -303,20 +499,20 @@ def test_world_model_snapshot_refresh_triggers_request_refresh() -> None:
     wm = _FakeWorldModelService(
         WorldModelSnapshot(external_state_flags=[], environment=EnvironmentSelfModel()),
     )
-    server = IABVMCPServer(_build_container(world_model_service=wm))
+    server = _full_registry_server_for_unit_test(_build_container(world_model_service=wm))
     _call_tool(server, "world_model_snapshot", refresh=True, full=True)
     assert wm.calls == [("refresh", True)]
 
 
 def test_portable_context_get_passes_refresh_and_max_age() -> None:
     pc = _FakePortableContextService(PortableContextPackage())
-    server = IABVMCPServer(_build_container(portable_context_service=pc))
+    server = _full_registry_server_for_unit_test(_build_container(portable_context_service=pc))
     _call_tool(server, "portable_context_get", refresh=True, max_age_seconds=42)
     assert pc.calls == [(True, 42)]
 
 
 def test_self_examination_current_returns_review_and_summary() -> None:
-    server = IABVMCPServer(_build_container())
+    server = _full_registry_server_for_unit_test(_build_container())
     payload = _call_tool(server, "self_examination_current")
     assert isinstance(payload, dict)
     assert "review" in payload and "summary" in payload
@@ -331,7 +527,7 @@ def test_site_exploration_explore_persists_manual_when_success() -> None:
         success=True,
     )
     svc = _FakeSiteExplorationService(result)
-    server = IABVMCPServer(_build_container(site_exploration_service=svc, site_manual_repository=repo))
+    server = _full_registry_server_for_unit_test(_build_container(site_exploration_service=svc, site_manual_repository=repo))
     payload = _call_tool(server, "site_exploration_explore", start_url="https://example.com", max_pages=3)
     assert payload["manual_persisted"] is True
     assert len(repo.saved) == 1
@@ -349,7 +545,7 @@ def test_site_exploration_explore_does_not_persist_when_failure() -> None:
         error_message="boom",
     )
     svc = _FakeSiteExplorationService(failing)
-    server = IABVMCPServer(_build_container(site_exploration_service=svc, site_manual_repository=repo))
+    server = _full_registry_server_for_unit_test(_build_container(site_exploration_service=svc, site_manual_repository=repo))
     payload = _call_tool(server, "site_exploration_explore", start_url="https://bad")
     assert repo.saved == []
     assert "manual_persisted" not in payload or payload["manual_persisted"] is False
@@ -357,7 +553,7 @@ def test_site_exploration_explore_does_not_persist_when_failure() -> None:
 
 def test_orchestrator_preview_calls_build_decision_context_preview() -> None:
     orch = _FakeOrchestrator({"route": "external_consultation", "reason": "preview"})
-    server = IABVMCPServer(_build_container(adaptive_task_orchestrator=orch))
+    server = _full_registry_server_for_unit_test(_build_container(adaptive_task_orchestrator=orch))
     payload = _call_tool(
         server,
         "orchestrator_preview",
@@ -370,7 +566,7 @@ def test_orchestrator_preview_calls_build_decision_context_preview() -> None:
 
 def test_chatgpt_web_capture_respects_reingest_only_true() -> None:
     runner = _FakeUIExecutionRunner()
-    server = IABVMCPServer(_build_container(ui_execution_runner=runner))
+    server = _full_registry_server_for_unit_test(_build_container(ui_execution_runner=runner))
     payload = _call_tool(
         server,
         "chatgpt_web_capture",
@@ -384,7 +580,7 @@ def test_chatgpt_web_capture_respects_reingest_only_true() -> None:
 
 def test_chatgpt_web_capture_pastes_prompt_when_not_reingesting() -> None:
     runner = _FakeUIExecutionRunner()
-    server = IABVMCPServer(_build_container(ui_execution_runner=runner))
+    server = _full_registry_server_for_unit_test(_build_container(ui_execution_runner=runner))
     payload = _call_tool(
         server,
         "chatgpt_web_capture",
@@ -398,7 +594,7 @@ def test_chatgpt_web_capture_pastes_prompt_when_not_reingesting() -> None:
 
 def test_chatgpt_web_capture_uses_official_selectors_by_default() -> None:
     runner = _FakeUIExecutionRunner()
-    server = IABVMCPServer(_build_container(ui_execution_runner=runner))
+    server = _full_registry_server_for_unit_test(_build_container(ui_execution_runner=runner))
     _call_tool(server, "chatgpt_web_capture", prompt_text="hola")
     sent = runner.calls[0]
     assert "textarea" in sent["input_selectors"]
@@ -407,7 +603,7 @@ def test_chatgpt_web_capture_uses_official_selectors_by_default() -> None:
 
 
 def test_container_missing_world_model_raises() -> None:
-    server = IABVMCPServer(_build_container(world_model_service=None))
+    server = _full_registry_server_for_unit_test(_build_container(world_model_service=None))
     tool = _get_tool(server, "world_model_snapshot")
     with pytest.raises(RuntimeError, match="world_model_service"):
         tool.fn()
@@ -424,14 +620,21 @@ def test_to_jsonable_handles_dataclass_and_pydantic() -> None:
 
 
 def test_server_rejects_unknown_transport() -> None:
-    server = IABVMCPServer(_build_container())
+    server = IABVMCPServer(None, profile=PROFILE_LOCAL_RESTRICTED)
     with pytest.raises(ValueError, match="transport"):
         server.run(transport="does-not-exist")
 
 
-def test_server_requires_container() -> None:
-    with pytest.raises(ValueError, match="container"):
-        IABVMCPServer(container=None)
+@pytest.mark.parametrize("transport", ["sse", "streamable-http"])
+def test_server_rejects_network_transports_before_run(transport: str) -> None:
+    server = IABVMCPServer(None, profile=PROFILE_LOCAL_RESTRICTED)
+    with pytest.raises(ValueError, match="deshabilitado"):
+        server.run(transport=transport)
+
+
+def test_server_rejects_full_profile() -> None:
+    with pytest.raises(ValueError, match="autorización gobernada verificable"):
+        IABVMCPServer(container=None, profile=PROFILE_FULL)
 
 
 # ----------------------------------------------------------------------
@@ -447,7 +650,7 @@ def test_site_exploration_blocked_when_network_offline() -> None:
     svc = _FakeSiteExplorationService(
         SiteExplorationResult(hostname="x", start_url="https://x", pages=[], success=True),
     )
-    server = IABVMCPServer(_build_container(world_model_service=wm, site_exploration_service=svc))
+    server = _full_registry_server_for_unit_test(_build_container(world_model_service=wm, site_exploration_service=svc))
     payload = _call_tool(server, "site_exploration_explore", start_url="https://x")
     assert payload["governance_blocked"] is True
     assert payload["reason"] == "network_unavailable"
@@ -464,7 +667,7 @@ def test_chatgpt_web_capture_blocked_when_permission_gate_required() -> None:
     )
     wm = _FakeWorldModelService(_default_snapshot(gates=[gate]))
     runner = _FakeUIExecutionRunner()
-    server = IABVMCPServer(_build_container(world_model_service=wm, ui_execution_runner=runner))
+    server = _full_registry_server_for_unit_test(_build_container(world_model_service=wm, ui_execution_runner=runner))
     payload = _call_tool(server, "chatgpt_web_capture", prompt_text="hola")
     assert payload["governance_blocked"] is True
     assert payload["reason"] == "permission_gate_required"
@@ -480,7 +683,7 @@ def test_chatgpt_web_capture_blocked_when_operational_block_active() -> None:
     )
     wm = _FakeWorldModelService(_default_snapshot(blocks=[block]))
     runner = _FakeUIExecutionRunner()
-    server = IABVMCPServer(_build_container(world_model_service=wm, ui_execution_runner=runner))
+    server = _full_registry_server_for_unit_test(_build_container(world_model_service=wm, ui_execution_runner=runner))
     payload = _call_tool(server, "chatgpt_web_capture", prompt_text="hola")
     assert payload["governance_blocked"] is True
     assert payload["reason"] == "operational_block_active"
@@ -491,7 +694,7 @@ def test_governance_allows_route_when_network_ok_and_no_blocks() -> None:
     """Camino feliz: snapshot con red ok y sin bloqueos no debe bloquear."""
 
     runner = _FakeUIExecutionRunner()
-    server = IABVMCPServer(_build_container(ui_execution_runner=runner))
+    server = _full_registry_server_for_unit_test(_build_container(ui_execution_runner=runner))
     payload = _call_tool(server, "chatgpt_web_capture", prompt_text="hola")
     assert "governance_blocked" not in payload
     assert runner.calls and runner.calls[0]["prompt_text"] == "hola"
@@ -507,7 +710,7 @@ def test_governance_ignores_blocks_scoped_to_other_assistant_kinds() -> None:
     )
     wm = _FakeWorldModelService(_default_snapshot(blocks=[unrelated]))
     runner = _FakeUIExecutionRunner()
-    server = IABVMCPServer(_build_container(world_model_service=wm, ui_execution_runner=runner))
+    server = _full_registry_server_for_unit_test(_build_container(world_model_service=wm, ui_execution_runner=runner))
     payload = _call_tool(server, "chatgpt_web_capture", prompt_text="hola")
     assert "governance_blocked" not in payload
     assert runner.calls  # sí se ejecutó porque el bloqueo no aplicaba
@@ -524,7 +727,7 @@ def test_governance_ignores_permission_gates_already_granted() -> None:
     )
     wm = _FakeWorldModelService(_default_snapshot(gates=[gate]))
     runner = _FakeUIExecutionRunner()
-    server = IABVMCPServer(_build_container(world_model_service=wm, ui_execution_runner=runner))
+    server = _full_registry_server_for_unit_test(_build_container(world_model_service=wm, ui_execution_runner=runner))
     payload = _call_tool(server, "chatgpt_web_capture", prompt_text="hola")
     assert "governance_blocked" not in payload
     assert runner.calls
@@ -537,7 +740,7 @@ def test_governance_ignores_permission_gates_already_granted() -> None:
 
 
 def test_server_registers_audit_tools() -> None:
-    server = IABVMCPServer(_build_container())
+    server = _full_registry_server_for_unit_test(_build_container())
     registered = set(server.mcp._tool_manager._tools.keys())
     audit = {
         "run_pytest",
@@ -552,14 +755,14 @@ def test_server_registers_audit_tools() -> None:
 def test_read_repo_file_happy_path_via_server(tmp_path) -> None:  # type: ignore[no-untyped-def]
     (tmp_path / "docs").mkdir()
     (tmp_path / "docs" / "hello.md").write_text("hola", encoding="utf-8")
-    server = IABVMCPServer(_build_container(workspace_root=str(tmp_path)))
+    server = _full_registry_server_for_unit_test(_build_container(workspace_root=str(tmp_path)))
     payload = _call_tool(server, "read_repo_file", relative_path="docs/hello.md")
     assert payload["content"] == "hola"
     assert payload["path"] == "docs/hello.md"
 
 
 def test_read_repo_file_returns_error_payload_on_invalid(tmp_path) -> None:  # type: ignore[no-untyped-def]
-    server = IABVMCPServer(_build_container(workspace_root=str(tmp_path)))
+    server = _full_registry_server_for_unit_test(_build_container(workspace_root=str(tmp_path)))
     payload = _call_tool(server, "read_repo_file", relative_path="/etc/passwd")
     assert payload["error"] == "absolute_path_forbidden"
 
@@ -567,14 +770,14 @@ def test_read_repo_file_returns_error_payload_on_invalid(tmp_path) -> None:  # t
 def test_list_repo_directory_via_server(tmp_path) -> None:  # type: ignore[no-untyped-def]
     (tmp_path / "a.txt").write_text("x")
     (tmp_path / ".env").write_text("S")
-    server = IABVMCPServer(_build_container(workspace_root=str(tmp_path)))
+    server = _full_registry_server_for_unit_test(_build_container(workspace_root=str(tmp_path)))
     payload = _call_tool(server, "list_repo_directory", relative_path="")
     names = {entry["name"]: entry for entry in payload["entries"]}
     assert ".env" in names and names[".env"]["sensitive"] is True
 
 
 def test_capture_ui_screenshot_without_provider_degrades_via_server() -> None:
-    server = IABVMCPServer(_build_container())
+    server = _full_registry_server_for_unit_test(_build_container())
     payload = _call_tool(server, "capture_ui_screenshot")
     assert payload["error"] == "ui_not_running"
 
@@ -590,7 +793,7 @@ def test_audit_tools_blocked_when_audit_block_active(tmp_path) -> None:  # type:
         status="active",
     )
     wm = _FakeWorldModelService(_default_snapshot(blocks=[block]))
-    server = IABVMCPServer(
+    server = _full_registry_server_for_unit_test(
         _build_container(world_model_service=wm, workspace_root=str(tmp_path)),
     )
     for tool_name, kwargs in [
@@ -615,7 +818,7 @@ def test_audit_tools_blocked_when_global_wildcard_block_active(tmp_path) -> None
         status="active",
     )
     wm = _FakeWorldModelService(_default_snapshot(blocks=[block]))
-    server = IABVMCPServer(
+    server = _full_registry_server_for_unit_test(
         _build_container(world_model_service=wm, workspace_root=str(tmp_path)),
     )
     payload = _call_tool(server, "read_repo_file", relative_path="README.md")
@@ -633,7 +836,7 @@ def test_audit_tools_allow_when_only_unrelated_block(tmp_path) -> None:  # type:
         status="active",
     )
     wm = _FakeWorldModelService(_default_snapshot(blocks=[unrelated]))
-    server = IABVMCPServer(
+    server = _full_registry_server_for_unit_test(
         _build_container(world_model_service=wm, workspace_root=str(tmp_path)),
     )
     payload = _call_tool(server, "read_repo_file", relative_path="file.md")
@@ -651,7 +854,7 @@ def test_run_pytest_tool_signature_rejects_python_executable() -> None:
 
     import inspect
 
-    server = IABVMCPServer(_build_container())
+    server = _full_registry_server_for_unit_test(_build_container())
     tool = _get_tool(server, "run_pytest")
     sig = inspect.signature(tool.fn)
     assert "python_executable" not in sig.parameters
@@ -671,7 +874,7 @@ def test_pytest_python_executable_prefers_environment_self_model(tmp_path, monke
         runtime_profile = {"python_executable": str(fake_python)}
 
     monkeypatch.delenv("IABV_PYTEST_PYTHON", raising=False)
-    server = IABVMCPServer(
+    server = _full_registry_server_for_unit_test(
         _build_container(environment_self_model=_ESM()),
     )
     assert server._pytest_python_executable() == str(fake_python.resolve())
@@ -682,13 +885,13 @@ def test_pytest_python_executable_rejects_unsafe_candidates(tmp_path, monkeypatc
     caer al siguiente candidato / None, nunca devolver el valor crudo."""
 
     monkeypatch.setenv("IABV_PYTEST_PYTHON", "/usr/bin/python3; rm -rf /")
-    server = IABVMCPServer(_build_container())
+    server = _full_registry_server_for_unit_test(_build_container())
     assert server._pytest_python_executable() is None
 
 
 def test_pytest_python_executable_returns_none_when_no_candidates(monkeypatch) -> None:  # type: ignore[no-untyped-def]
     monkeypatch.delenv("IABV_PYTEST_PYTHON", raising=False)
-    server = IABVMCPServer(_build_container())
+    server = _full_registry_server_for_unit_test(_build_container())
     assert server._pytest_python_executable() is None
 
 
@@ -741,7 +944,7 @@ def _default_audit_snapshot(*, reason: str | None = None) -> SelfAuditSnapshot:
 
 def test_run_self_audit_registered_and_returns_serialized_snapshot() -> None:
     audit = _FakeSelfAuditService(_default_audit_snapshot(reason="ok"))
-    server = IABVMCPServer(_build_container(self_audit_service=audit))
+    server = _full_registry_server_for_unit_test(_build_container(self_audit_service=audit))
     payload = _call_tool(server, "run_self_audit", reason="ok")
 
     assert isinstance(payload, dict)
@@ -758,14 +961,14 @@ def test_run_self_audit_registered_and_returns_serialized_snapshot() -> None:
 
 def test_run_self_audit_without_reason_passes_none() -> None:
     audit = _FakeSelfAuditService()
-    server = IABVMCPServer(_build_container(self_audit_service=audit))
+    server = _full_registry_server_for_unit_test(_build_container(self_audit_service=audit))
     payload = _call_tool(server, "run_self_audit")
     assert isinstance(payload, dict)
     assert audit.calls == [None]
 
 
 def test_run_self_audit_degrades_when_container_missing_service() -> None:
-    server = IABVMCPServer(_build_container(self_audit_service=None))
+    server = _full_registry_server_for_unit_test(_build_container(self_audit_service=None))
     payload = _call_tool(server, "run_self_audit", reason="probe")
 
     assert payload.get("error") == "self_audit_unavailable"
@@ -774,7 +977,7 @@ def test_run_self_audit_degrades_when_container_missing_service() -> None:
 
 def test_run_self_audit_serializes_datetime_as_isoformat() -> None:
     audit = _FakeSelfAuditService()
-    server = IABVMCPServer(_build_container(self_audit_service=audit))
+    server = _full_registry_server_for_unit_test(_build_container(self_audit_service=audit))
     payload = _call_tool(server, "run_self_audit")
     # _to_jsonable convierte datetime -> ISO 8601 con separador 'T'.
     assert isinstance(payload["generated_at"], str)
@@ -790,7 +993,7 @@ def test_run_self_audit_blocked_by_operational_block_on_audit_kind() -> None:
     )
     wm = _FakeWorldModelService(_default_snapshot(blocks=[block]))
     audit = _FakeSelfAuditService()
-    server = IABVMCPServer(_build_container(world_model_service=wm, self_audit_service=audit))
+    server = _full_registry_server_for_unit_test(_build_container(world_model_service=wm, self_audit_service=audit))
     payload = _call_tool(server, "run_self_audit", reason="should_block")
 
     assert payload["governance_blocked"] is True
@@ -807,7 +1010,7 @@ def test_run_self_audit_blocked_by_global_block_record() -> None:
     )
     wm = _FakeWorldModelService(_default_snapshot(blocks=[block]))
     audit = _FakeSelfAuditService()
-    server = IABVMCPServer(_build_container(world_model_service=wm, self_audit_service=audit))
+    server = _full_registry_server_for_unit_test(_build_container(world_model_service=wm, self_audit_service=audit))
     payload = _call_tool(server, "run_self_audit")
 
     assert payload["governance_blocked"] is True
@@ -824,7 +1027,7 @@ def test_run_self_audit_blocked_by_permission_gate_for_audit() -> None:
     )
     wm = _FakeWorldModelService(_default_snapshot(gates=[gate]))
     audit = _FakeSelfAuditService()
-    server = IABVMCPServer(_build_container(world_model_service=wm, self_audit_service=audit))
+    server = _full_registry_server_for_unit_test(_build_container(world_model_service=wm, self_audit_service=audit))
     payload = _call_tool(server, "run_self_audit")
 
     assert payload["governance_blocked"] is True
@@ -842,7 +1045,7 @@ def test_run_self_audit_ignores_blocks_scoped_to_other_assistant_kinds() -> None
     )
     wm = _FakeWorldModelService(_default_snapshot(blocks=[other]))
     audit = _FakeSelfAuditService()
-    server = IABVMCPServer(_build_container(world_model_service=wm, self_audit_service=audit))
+    server = _full_registry_server_for_unit_test(_build_container(world_model_service=wm, self_audit_service=audit))
     payload = _call_tool(server, "run_self_audit", reason="independent")
 
     assert "governance_blocked" not in payload
@@ -854,7 +1057,7 @@ def test_run_self_audit_does_not_require_network() -> None:
 
     wm = _FakeWorldModelService(_default_snapshot(connected=False))
     audit = _FakeSelfAuditService()
-    server = IABVMCPServer(_build_container(world_model_service=wm, self_audit_service=audit))
+    server = _full_registry_server_for_unit_test(_build_container(world_model_service=wm, self_audit_service=audit))
     payload = _call_tool(server, "run_self_audit")
 
     assert "governance_blocked" not in payload
@@ -879,7 +1082,7 @@ def test_probe_assistant_login_blocked_when_audit_block_active() -> None:
         status="active",
     )
     wm = _FakeWorldModelService(_default_snapshot(blocks=[block]))
-    server = IABVMCPServer(_build_container(world_model_service=wm))
+    server = _full_registry_server_for_unit_test(_build_container(world_model_service=wm))
     payload = _call_tool(server, "probe_assistant_login", assistant_kind="chatgpt")
 
     assert payload["governance_blocked"] is True
@@ -890,7 +1093,7 @@ def test_probe_assistant_login_blocked_when_network_offline() -> None:
     """`requires_network=True`: si la red está caída, bloquear antes de abrir browser."""
 
     wm = _FakeWorldModelService(_default_snapshot(connected=False))
-    server = IABVMCPServer(_build_container(world_model_service=wm))
+    server = _full_registry_server_for_unit_test(_build_container(world_model_service=wm))
     payload = _call_tool(server, "probe_assistant_login", assistant_kind="chatgpt")
 
     assert payload["governance_blocked"] is True
@@ -904,7 +1107,7 @@ def test_probe_assistant_login_blocked_by_global_wildcard_block() -> None:
         status="active",
     )
     wm = _FakeWorldModelService(_default_snapshot(blocks=[block]))
-    server = IABVMCPServer(_build_container(world_model_service=wm))
+    server = _full_registry_server_for_unit_test(_build_container(world_model_service=wm))
     payload = _call_tool(server, "probe_assistant_login", assistant_kind="chatgpt")
 
     assert payload["governance_blocked"] is True
@@ -914,7 +1117,7 @@ def test_probe_assistant_login_passes_gate_and_reports_unknown_kind() -> None:
     """Con red ok y sin bloqueos, el gate deja pasar; el core reporta el error
     tipado ``unknown_assistant_kind`` sin abrir un browser real."""
 
-    server = IABVMCPServer(_build_container())
+    server = _full_registry_server_for_unit_test(_build_container())
     payload = _call_tool(server, "probe_assistant_login", assistant_kind="foobar")
 
     assert "governance_blocked" not in payload
@@ -929,7 +1132,7 @@ def test_probe_assistant_login_ignores_blocks_for_other_assistant_kinds() -> Non
         status="active",
     )
     wm = _FakeWorldModelService(_default_snapshot(blocks=[other]))
-    server = IABVMCPServer(_build_container(world_model_service=wm))
+    server = _full_registry_server_for_unit_test(_build_container(world_model_service=wm))
     payload = _call_tool(server, "probe_assistant_login", assistant_kind="foobar")
 
     assert "governance_blocked" not in payload
@@ -1028,7 +1231,7 @@ def test_audit_capability_blocked_when_audit_block_active() -> None:
         status="active",
     )
     wm = _FakeWorldModelService(_default_snapshot(blocks=[block]))
-    server = IABVMCPServer(_build_container(world_model_service=wm))
+    server = _full_registry_server_for_unit_test(_build_container(world_model_service=wm))
     payload = _call_tool(server, "audit_capability", capability_id="llm_local_ollama")
 
     assert payload["governance_blocked"] is True
@@ -1039,7 +1242,7 @@ def test_audit_capability_blocks_external_caps_when_network_offline() -> None:
     """llm_external_chatgpt tiene `requires_network=True` → red caída bloquea."""
 
     wm = _FakeWorldModelService(_default_snapshot(connected=False))
-    server = IABVMCPServer(_build_container(world_model_service=wm))
+    server = _full_registry_server_for_unit_test(_build_container(world_model_service=wm))
     payload = _call_tool(
         server, "audit_capability", capability_id="llm_external_chatgpt"
     )
@@ -1056,7 +1259,7 @@ def test_audit_capability_local_caps_not_blocked_by_offline_network() -> None:
     """
 
     wm = _FakeWorldModelService(_default_snapshot(connected=False))
-    server = IABVMCPServer(_build_container(world_model_service=wm))
+    server = _full_registry_server_for_unit_test(_build_container(world_model_service=wm))
     payload = _call_tool(server, "audit_capability", capability_id="llm_local_ollama")
 
     assert "governance_blocked" not in payload
@@ -1068,7 +1271,7 @@ def test_audit_capability_dry_run_does_not_trigger_network_gate() -> None:
 
     wm = _FakeWorldModelService(_default_snapshot(connected=False))
     harness = _audit_harness_with_ok_runner("llm_external_chatgpt")
-    server = IABVMCPServer(
+    server = _full_registry_server_for_unit_test(
         _build_container(
             world_model_service=wm,
             capability_audit_harness=harness,
@@ -1087,7 +1290,7 @@ def test_audit_capability_dry_run_does_not_trigger_network_gate() -> None:
 
 def test_audit_capability_delegates_to_wired_harness() -> None:
     harness = _audit_harness_with_ok_runner("llm_local_ollama")
-    server = IABVMCPServer(_build_container(capability_audit_harness=harness))
+    server = _full_registry_server_for_unit_test(_build_container(capability_audit_harness=harness))
     payload = _call_tool(server, "audit_capability", capability_id="llm_local_ollama")
 
     assert "governance_blocked" not in payload
@@ -1099,7 +1302,7 @@ def test_audit_capability_delegates_to_wired_harness() -> None:
 def test_audit_capability_returns_harness_unavailable_without_wiring() -> None:
     """Sin harness en el container, se reporta degradación controlada."""
 
-    server = IABVMCPServer(_build_container())
+    server = _full_registry_server_for_unit_test(_build_container())
     payload = _call_tool(
         server, "audit_capability", capability_id="llm_local_ollama"
     )
@@ -1144,7 +1347,7 @@ def test_audit_capability_runner_runs_off_event_loop() -> None:
 
     harness = CapabilityAuditHarness()
     harness.register("llm_local_ollama", _probe_runner)
-    server = IABVMCPServer(_build_container(capability_audit_harness=harness))
+    server = _full_registry_server_for_unit_test(_build_container(capability_audit_harness=harness))
 
     async def _driver() -> object:
         return _call_tool(
@@ -1192,7 +1395,7 @@ def test_chatgpt_web_capture_runs_off_event_loop() -> None:
                 "capture_source": "browser_dom",
             }
 
-    server = IABVMCPServer(_build_container(ui_execution_runner=_ProbeRunner()))
+    server = _full_registry_server_for_unit_test(_build_container(ui_execution_runner=_ProbeRunner()))
 
     async def _driver() -> object:
         return _call_tool(server, "chatgpt_web_capture", prompt_text="ping")
@@ -1229,7 +1432,7 @@ def test_site_exploration_explore_runs_off_event_loop() -> None:
                 success=True,
             )
 
-    server = IABVMCPServer(_build_container(site_exploration_service=_ProbeService()))
+    server = _full_registry_server_for_unit_test(_build_container(site_exploration_service=_ProbeService()))
 
     async def _driver() -> object:
         return _call_tool(
@@ -1293,7 +1496,7 @@ def test_compare_perception_blocked_when_audit_block_active() -> None:
         status="active",
     )
     wm = _FakeWorldModelService(_default_snapshot(blocks=[block]))
-    server = IABVMCPServer(_build_container(world_model_service=wm))
+    server = _full_registry_server_for_unit_test(_build_container(world_model_service=wm))
     payload = _call_tool(
         server,
         "compare_perception_vs_ground_truth",
@@ -1321,7 +1524,7 @@ def test_compare_perception_does_not_require_network() -> None:
             "duration_ms": 3,
         }
     )
-    server = IABVMCPServer(
+    server = _full_registry_server_for_unit_test(
         _build_container(
             world_model_service=wm,
             perception_ground_truth_comparator=comparator,
@@ -1346,7 +1549,7 @@ def test_compare_perception_blocked_by_global_wildcard_block() -> None:
         status="active",
     )
     wm = _FakeWorldModelService(_default_snapshot(blocks=[block]))
-    server = IABVMCPServer(_build_container(world_model_service=wm))
+    server = _full_registry_server_for_unit_test(_build_container(world_model_service=wm))
     payload = _call_tool(
         server,
         "compare_perception_vs_ground_truth",
@@ -1359,7 +1562,7 @@ def test_compare_perception_blocked_by_global_wildcard_block() -> None:
 def test_compare_perception_returns_comparator_unavailable_without_wiring() -> None:
     """Sin comparator wireado, degradación tipada en vez de crash."""
 
-    server = IABVMCPServer(_build_container())
+    server = _full_registry_server_for_unit_test(_build_container())
     payload = _call_tool(
         server,
         "compare_perception_vs_ground_truth",
@@ -1373,7 +1576,7 @@ def test_compare_perception_returns_comparator_unavailable_without_wiring() -> N
 
 def test_compare_perception_invalid_title_short_circuits_before_comparator() -> None:
     comparator = _FakeComparator(result={"mismatches": []})
-    server = IABVMCPServer(
+    server = _full_registry_server_for_unit_test(
         _build_container(perception_ground_truth_comparator=comparator)
     )
     payload = _call_tool(
@@ -1414,7 +1617,7 @@ def test_compare_perception_happy_path_delegates_and_normalizes() -> None:
         duration_ms=11,
     )
     comparator = _FakeComparator(result=result)
-    server = IABVMCPServer(
+    server = _full_registry_server_for_unit_test(
         _build_container(perception_ground_truth_comparator=comparator)
     )
     payload = _call_tool(
@@ -1477,7 +1680,7 @@ def test_github_remote_publish_branch_as_pr_delegates_and_serializes() -> None:
     container = _build_container()
     container.github_remote_service = svc
 
-    server = IABVMCPServer(container)
+    server = _full_registry_server_for_unit_test(container)
     payload = _call_tool(
         server,
         "github_remote_publish_branch_as_pr",
@@ -1510,7 +1713,7 @@ def test_github_remote_publish_branch_as_pr_delegates_and_serializes() -> None:
 def test_github_remote_publish_branch_as_pr_returns_unavailable_without_service() -> None:
     container = _build_container()
     container.github_remote_service = None
-    server = IABVMCPServer(container)
+    server = _full_registry_server_for_unit_test(container)
     payload = _call_tool(
         server,
         "github_remote_publish_branch_as_pr",
@@ -1552,7 +1755,7 @@ def test_self_auto_merge_delegates_to_module_and_returns_dict(monkeypatch) -> No
     monkeypatch.setattr(_saam, "auto_merge", _fake)
 
     container = _build_container()
-    server = IABVMCPServer(container)
+    server = _full_registry_server_for_unit_test(container)
 
     payload = _call_tool(
         server,
@@ -1595,7 +1798,7 @@ def test_self_auto_merge_defaults_repo_when_none(monkeypatch) -> None:
     monkeypatch.setattr(_saam, "auto_merge", _fake)
 
     container = _build_container()
-    server = IABVMCPServer(container)
+    server = _full_registry_server_for_unit_test(container)
 
     payload = _call_tool(server, "self_auto_merge", pr_number=1)
 
@@ -1612,7 +1815,7 @@ def test_self_auto_merge_returns_governance_block_when_network_down() -> None:
         update={"network_status": NetworkStatusSnapshot(connected=False, status="offline")},
     )
     container = _build_container(_snapshot=snapshot)
-    server = IABVMCPServer(container)
+    server = _full_registry_server_for_unit_test(container)
 
     payload = _call_tool(server, "self_auto_merge", pr_number=5)
     assert payload.get("governance_blocked") is True

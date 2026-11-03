@@ -930,7 +930,13 @@ Item {
                             width: parent.width
                             radius: 8
                             color: "#111827"
-                            border.color: controlCenterViewModel && controlCenterViewModel.mcpBridgeBlocked ? "#dc2626" : (controlCenterViewModel && controlCenterViewModel.mcpBridgeRunning ? "#16a34a" : "#334155")
+                            border.color: {
+                                if (!controlCenterViewModel) return "#334155"
+                                var blocked = controlCenterViewModel.mcpBridgeBlocked
+                                if (blocked === true) return "#dc2626"
+                                if (blocked === null || blocked === undefined) return "#d97706"
+                                return controlCenterViewModel.mcpBridgeRunning ? "#16a34a" : "#334155"
+                            }
                             border.width: 1
                             implicitHeight: mcpBridgeColumn.implicitHeight + 24
 
@@ -970,13 +976,16 @@ Item {
                                     font.family: "Segoe UI"
                                     text: {
                                         if (!controlCenterViewModel) return ""
-                                        if (controlCenterViewModel.mcpBridgeBlocked) return "Bloqueado por governance: " + (controlCenterViewModel.mcpBridgeReason || "revisar autonomia")
+                                        var blocked = controlCenterViewModel.mcpBridgeBlocked
+                                        if (blocked === true) return "Bloqueado por governance: " + (controlCenterViewModel.mcpBridgeReason || "revisar autonomía")
+                                        if (blocked === null || blocked === undefined) return "Gobernanza no inspeccionada; MCP no disponible: " + (controlCenterViewModel.mcpBridgeReason || "el estado de bloqueo no fue consultado")
+                                        var governancePrefix = "Gobernanza comprobada: sin bloqueo. "
                                         var st = controlCenterViewModel.mcpBridgeState || "stopped"
-                                        if (st === "running") return "Activo. Agentes externos pueden consumir las 6 tools core."
-                                        if (st === "starting") return "Iniciando servidor MCP y tunnel..."
-                                        if (st === "failed") return "Fallo: " + (controlCenterViewModel.mcpBridgeReason || "ver logs")
-                                        if (st === "stopping") return "Deteniendo..."
-                                        return "Apagado. Activar para exponer el programa a Devin/Claude/Codex."
+                                        if (st === "running") return governancePrefix + "puente activo."
+                                        if (st === "starting") return governancePrefix + "preparando estado; no se inician servidor ni túnel aquí."
+                                        if (st === "failed") return governancePrefix + "fallo: " + (controlCenterViewModel.mcpBridgeReason || "ver logs")
+                                        if (st === "stopping") return governancePrefix + "deteniendo..."
+                                        return governancePrefix + "puente apagado; el inicio de MCP/túnel está deshabilitado en este flujo."
                                     }
                                 }
 

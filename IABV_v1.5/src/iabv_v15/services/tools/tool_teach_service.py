@@ -772,6 +772,34 @@ class ToolTeachService:
                 result = self.live_audit_supervisor.audit_tool_result(card=None, task=task, result=result)
             self.memory.repository.save_result(result)
             return result
+        if card.tool_id == 'shell_command':
+            # The generic shell adapter cannot provide an actual OS sandbox.
+            # Reject at the service boundary, before availability checks,
+            # ToolSandbox, approval evaluation, or any adapter invocation.
+            result = ToolResult(
+                task_id=task.task_id,
+                tool_id=card.tool_id,
+                tool_type=card.tool_type,
+                success=False,
+                validation_status=ToolValidationStatus.BLOCKED,
+                execution_state=ExecutionState(
+                    state='blocked',
+                    detail='La ejecucion generica de shell esta deshabilitada hasta contar con autorizacion por comando.',
+                    destructive_blocked=True,
+                    approval_decision=task.approval_decision,
+                    metadata={'blocked': True, 'reason': 'generic_shell_execution_disabled'},
+                ),
+                error_message='generic_shell_execution_disabled',
+            )
+            self.memory.audit_event(
+                tool_id=card.tool_id,
+                task_id=task.task_id,
+                action_type='task_result',
+                state='blocked',
+                payload={'reason': 'generic_shell_execution_disabled', 'approval_decision': task.approval_decision.value},
+            )
+            self.memory.repository.save_result(result)
+            return result
         adapter = self.adapters.get(card.adapter_key)
         # Verificar disponibilidad del adapter
         # Nota: Algunos adapters tienen is_available(card, dry_run=False), otros solo is_available(card)

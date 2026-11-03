@@ -1739,43 +1739,20 @@ class ShellToolAdapter:
         return True
 
     def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False) -> dict[str, Any]:
-        start = time.perf_counter()
-        command = next((action.value or action.target for action in task.actions if action.action_type == ToolActionType.RUN_COMMAND), '')
-        if not command:
-            command = str(task.metadata.get('command') or '')
-        lowered = f' {command.lower()} '
-        if any(token in lowered for token in self.BLOCKED_TOKENS):
-            return {
-                'success': False,
-                'output_text': '',
-                'extracted_data': {},
-                'artifacts': [],
-                'error_message': 'Comando bloqueado por politica de seguridad.',
-                'execution_ms': 0,
-                'metadata': {'sandbox': sandbox, 'blocked': True},
-            }
-        try:
-            completed = subprocess.run(command, capture_output=True, text=True, shell=True, check=False)
-            success = completed.returncode == 0
-            return {
-                'success': success,
-                'output_text': (completed.stdout or '').strip(),
-                'extracted_data': {'stderr': (completed.stderr or '').strip(), 'returncode': completed.returncode},
-                'artifacts': [],
-                'error_message': '' if success else (completed.stderr or completed.stdout).strip(),
-                'execution_ms': int((time.perf_counter() - start) * 1000),
-                'metadata': {'sandbox': sandbox, 'command': command},
-            }
-        except Exception as exc:
-            return {
-                'success': False,
-                'output_text': '',
-                'extracted_data': {},
-                'artifacts': [],
-                'error_message': str(exc),
-                'execution_ms': int((time.perf_counter() - start) * 1000),
-                'metadata': {'sandbox': sandbox, 'command': command},
-            }
+        # A text denylist cannot safely authorize arbitrary shell syntax
+        # (interpreter indirection, scripts, quoting, and command chaining).
+        # Keep this adapter fail-closed until a separately governed command
+        # execution contract exists. This applies equally to sandbox and
+        # approved execution paths.
+        return {
+            'success': False,
+            'output_text': '',
+            'extracted_data': {},
+            'artifacts': [],
+            'error_message': 'generic_shell_execution_disabled',
+            'execution_ms': 0,
+            'metadata': {'sandbox': sandbox, 'blocked': True, 'reason': 'generic_shell_execution_disabled'},
+        }
 
 
 class DesktopHumanToolAdapter:
@@ -2599,27 +2576,26 @@ class SiteExplorerToolAdapter:
 
 
 class LocalCliToolAdapter:
-    """Adapter read-only para CLIs locales (gh, cloudflared, git, winget).
+    """Adaptador para CLIs locales concretas (gh, cloudflared, git, winget).
 
-    Complementa a ``ShellToolAdapter`` sin reemplazarlo: ese corre comandos
-    libres con ``shell=True``; este conoce herramientas concretas, busca su
-    ejecutable en PATH o rutas Windows tipicas, restringe los verbos permitidos
-    y ejecuta con ``shell=False`` para no exponer inyeccion. Es la base que
-    consume ``ToolRegistry`` para ``gh_cli``, ``cloudflared_cli``, ``git_cli``
-    y ``winget_cli``.
+    Complementa a ``ShellToolAdapter``, que permanece deshabilitado en esta
+    fase. Resuelve ejecutables concretos y llama con ``shell=False``. Cada
+    ToolCard declara verbos permitidos; para ``cloudflared_cli``, una allowlist
+    adicional fija impide que la metadata habilite comandos de red o acceso.
 
-    Contratos respetados:
-    - No decide rutas: ``AutonomyGovernancePolicy`` sigue siendo el gate.
-      ``requires_human_approval=True`` en la ``ToolCard`` mantiene cualquier
-      operacion fuera del whitelist detras de ``ToolApprovalPolicy``.
-    - No inventa observaciones: si el binario no existe, ``is_available``
-      devuelve ``False`` y ``run`` corta antes del subprocess.
-    - Read-only por diseno: ``card.metadata['allowed_verbs']`` declara los
-      primeros tokens permitidos; ``BLOCKED_TOKENS`` bloquea tokens
-      destructivos aunque aparezcan listados por error en ``allowed_verbs``.
+    Contratos:
+    - ``AutonomyGovernancePolicy`` y ``ToolApprovalPolicy`` siguen siendo gates
+      separados; esta allowlist técnica no sustituye la autorización.
+    - Si el ejecutable no existe, ``is_available`` devuelve ``False``.
+    - La metadata de ``allowed_verbs`` no puede ampliar la allowlist fija
+      específica de ``cloudflared_cli``.
     """
 
     tool_type = ToolType.SHELL
+    # No confiar en ToolCard.allowed_verbs para cloudflared: ese metadata puede
+    # ampliarse. Solo se admite version/help y las dos operaciones de inspeccion.
+    CLOUDFLARED_ALLOWED_VERBS = frozenset({'--version', 'version', 'help', 'tunnel'})
+    CLOUDFLARED_TUNNEL_INSPECTION_SUBCOMMANDS = frozenset({'list', 'info'})
 
     # Failsafe sobre la allowlist declarada por cada tool: aunque un operador
     # agregue un verbo destructivo por error al ``allowed_verbs`` de una
@@ -2712,6 +2688,62 @@ class LocalCliToolAdapter:
                 args=args_text,
                 blocked=True,
             )
+
+        executable_name = os.path.basename(executable.replace('\\', '/')).lower()
+        command_name = str(card.metadata.get('command_name') or '').strip().lower()
+        tool_family = str(card.metadata.get('tool_family') or '').strip().lower()
+        is_cloudflared = (
+            card.tool_id == 'cloudflared_cli'
+            or executable_name in {'cloudflared', 'cloudflared.exe'}
+            or command_name in {'cloudflared', 'cloudflared.exe'}
+            or tool_family == 'cloudflared'
+        )
+        if is_cloudflared:
+            verb = tokens[0].lower() if tokens else ''
+            if verb not in self.CLOUDFLARED_ALLOWED_VERBS:
+                return self._fail(
+                    start,
+                    f"cloudflared verb '{verb or '<missing>'}' is not permitted; "
+                    f'allowed first tokens are {sorted(self.CLOUDFLARED_ALLOWED_VERBS)}',
+                    sandbox=sandbox,
+                    executable=executable,
+                    args=args_text,
+                    blocked=True,
+                )
+            if verb == 'tunnel':
+                subcommand = tokens[1].lower() if len(tokens) > 1 else ''
+                if subcommand not in self.CLOUDFLARED_TUNNEL_INSPECTION_SUBCOMMANDS:
+                    return self._fail(
+                        start,
+                        f"tunnel subcommand '{subcommand or '<missing>'}' is not allowed; "
+                        'allowed inspection subcommands are '
+                        f'{sorted(self.CLOUDFLARED_TUNNEL_INSPECTION_SUBCOMMANDS)}',
+                        sandbox=sandbox,
+                        executable=executable,
+                        args=args_text,
+                        blocked=True,
+                    )
+
+        if is_cloudflared and sandbox:
+            # ToolSandbox runs before the approval gate. Never invoke cloudflared
+            # in this phase, even for inspection commands; approval can only
+            # lead to the later non-sandbox adapter call.
+            return {
+                'success': True,
+                'output_text': '[SANDBOX] cloudflared inspection validated; no process invoked.',
+                'extracted_data': {},
+                'artifacts': [],
+                'error_message': '',
+                'execution_ms': 0,
+                'metadata': {
+                    'sandbox': True,
+                    'blocked': False,
+                    'simulated': True,
+                    'reason': 'cloudflared_process_deferred_until_approval',
+                    'executable': executable,
+                },
+            }
+
         cmd_list = [executable, *tokens]
         try:
             completed = subprocess.run(

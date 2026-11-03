@@ -33,7 +33,6 @@ def test_script_exists(bootstrap_src: str) -> None:
         "Install-CloudflaredPortable",
         "setup_iabv_profile.ps1",
         "rotate_tokens.ps1",
-        "start_iabv.ps1",
         # Version pin para reproducibilidad.
         "$ghVersion = '2.90.0'",
         "cloudflared-windows-amd64.exe",
@@ -48,39 +47,30 @@ def test_script_exists(bootstrap_src: str) -> None:
         "Add-ToProfilePath",
         # No asume admin.
         "$HOME\\.iabv\\tools",
-        # Capa 2.1.1: kill de MCP zombi antes de relanzar. La logica vive
-        # en _mcp_port_utils.ps1 (dot-sourced); aca solo el flag + la llamada.
-        "Stop-McpZombies",
-        "_mcp_port_utils.ps1",
-        "[int]$McpPort",
+        # El bootstrap prepara herramientas; no inicia el puente.
+        "No se iniciaron procesos MCP, Cloudflare",
     ],
 )
 def test_bootstrap_contains_expected_fragment(bootstrap_src: str, fragment: str) -> None:
     assert fragment in bootstrap_src, f"Falta fragmento esperado: {fragment!r}"
 
 
-def test_bootstrap_kills_mcp_zombie_before_start(bootstrap_src: str) -> None:
-    """Capa 2.1.1: el bootstrap debe limpiar procesos que aun esten escuchando
-    el puerto del MCP antes de spawnear uno nuevo. El orden importa: primero
-    matar zombies, despues arrancar start_iabv.ps1."""
-    assert "Stop-McpZombies -Port $McpPort" in bootstrap_src
-    kill_idx = bootstrap_src.index("Stop-McpZombies -Port $McpPort")
-    # rindex: la invocacion real a start_iabv.ps1 es la ultima mencion
-    # (en el header/comentarios aparece antes, como documentacion).
-    start_idx = bootstrap_src.rindex("start_iabv.ps1")
-    assert kill_idx < start_idx, (
-        "Stop-McpZombies debe ejecutarse antes de arrancar start_iabv.ps1"
-    )
-
-
-def test_bootstrap_dot_sources_port_utils(bootstrap_src: str) -> None:
-    """Capa 2.1.1: la logica real vive en _mcp_port_utils.ps1 para no
-    duplicarse con start_iabv.ps1. El bootstrap la importa via dot-source."""
-    assert ". (Join-Path $PSScriptRoot '_mcp_port_utils.ps1')" in bootstrap_src
-    # No duplicamos la implementacion en el bootstrap.
-    assert "function Stop-McpZombies" not in bootstrap_src, (
-        "No redefinir Stop-McpZombies en bootstrap; usar _mcp_port_utils.ps1"
-    )
+def test_bootstrap_never_cleans_ports_or_starts_mcp_or_tunnel(bootstrap_src: str) -> None:
+    """Static guard: the preparation entry point must not kill or launch."""
+    lowered = bootstrap_src.lower()
+    assert "stop-mcpzombies" not in lowered
+    assert "_mcp_port_utils.ps1" not in lowered
+    assert "start_iabv.ps1" not in lowered
+    assert "arrancando mcp" not in lowered
+    assert "arrancando mcp + tunnel" not in lowered
+    assert "trycloudflare.com" not in lowered
+    assert "cloudflared tunnel" not in lowered
+    assert "no se iniciaron procesos mcp, cloudflare" in lowered
+    # Installation is explicitly distinct from launching the executable.
+    assert "Install-CloudflaredPortable" in bootstrap_src
+    assert "cloudflared" in bootstrap_src
+    assert "qued" in bootstrap_src
+    assert "no se ejecut" in bootstrap_src
 
 
 def test_bootstrap_references_only_official_hosts(bootstrap_src: str) -> None:

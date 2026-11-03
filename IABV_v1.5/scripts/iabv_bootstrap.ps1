@@ -19,19 +19,14 @@
 #      "Authorize" en el browser = unico paso manual).
 #   6.5 Crea acceso directo en el escritorio con icono BURVE
 #      (idempotente, sobreescribe si existe).
-#   7. Antes de arrancar, detecta y mata cualquier MCP zombi previo que
-#      siga ocupando el puerto 8000 (capa 2.1.1: relanzado idempotente).
-#   8. Arranca scripts\start_iabv.ps1 (MCP + tunnel cloudflared) salvo
-#      que pases -NoStart.
+#   7. No inicia MCP ni Cloudflare: este bootstrap prepara herramientas y
+#      perfil, pero no crea procesos del puente.
 #
 # Flags:
 #   -Force           Re-instala gh/cloudflared aunque ya existan.
-#   -NoStart         No arranca el MCP al final (solo deja todo listo).
+#   -NoStart         Compatibilidad histórica; el bootstrap nunca inicia MCP.
 #   -SkipInstalls    Omite instalar gh/cloudflared (asume que ya estan).
-#   -PrintTunnelUrl  Al arrancar, intenta capturar la URL trycloudflare
-#                    y la imprime al final para compartir con Devin.
-#   -McpPort         Puerto local que ocupa el MCP (default 8000). Usado
-#                    para limpiar procesos zombi antes de relanzar.
+#   -PrintTunnelUrl  Compatibilidad histórica; no hay túnel ni URL que publicar.
 #
 # Seguridad:
 #   - Todos los binarios bajan de dominios oficiales (github.com/cli,
@@ -45,8 +40,7 @@ param(
     [switch]$Force,
     [switch]$NoStart,
     [switch]$SkipInstalls,
-    [switch]$PrintTunnelUrl,
-    [int]$McpPort = 8000
+    [switch]$PrintTunnelUrl
 )
 
 $ErrorActionPreference = 'Stop'
@@ -164,10 +158,6 @@ function Add-ToSessionPath([string]$Dir) {
     }
 }
 
-# Capa 2.1.1: Stop-McpZombies vive en _mcp_port_utils.ps1 (compartido con
-# start_iabv.ps1). Dot-source lo hace disponible aca.
-. (Join-Path $PSScriptRoot '_mcp_port_utils.ps1')
-
 function Add-ToProfilePath([string]$Dir) {
     $profilePath = $PROFILE
     $profileDir = Split-Path -Parent $profilePath
@@ -252,26 +242,14 @@ try {
     Write-Warn2 "No se pudo crear acceso directo: $_"
 }
 
-# 6. Start (opcional).
-if ($NoStart) {
-    Write-Section 'Bootstrap completo (sin arrancar MCP)'
-    Write-Info "Para arrancar: scripts\start_iabv.ps1"
-    exit 0
-}
-
-Write-Section "Libera puerto :$McpPort (kill MCP zombi)"
-Stop-McpZombies -Port $McpPort
-
-Write-Section 'Arrancando MCP + tunnel'
+# 6. Completar preparación. Instalar cloudflared no inicia el túnel.
+Write-Section 'Bootstrap completo; sin arranque de MCP ni túneles'
+Write-Info 'Cloudflared, si se instaló, quedó disponible como herramienta; no se ejecutó.'
+Write-Info 'No se iniciaron procesos MCP, Cloudflare ni procesos de limpieza por puerto.'
 if ($PrintTunnelUrl) {
-    # start_iabv.ps1 delega a run_mcp_bridge que es interactivo. Para capturar
-    # la URL del tunnel hace falta otro diseno (pipe + regex). Dejamos la
-    # captura como UNRESOLVED en este PR: por ahora imprimimos una nota.
-    Write-Warn2 '-PrintTunnelUrl: captura automatica de URL del tunnel pendiente.'
-    Write-Warn2 'Por ahora: la URL aparece en stdout cuando cloudflared imprime'
-    Write-Warn2 '  INF Connection registered ... https://<xxx>.trycloudflare.com'
-    Write-Warn2 'Copiala y compartila con Devin si queres que audite en vivo.'
+    Write-Warn2 '-PrintTunnelUrl se conserva por compatibilidad; no se inició un túnel y no hay URL disponible.'
 }
-
-& powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $scriptDir 'start_iabv.ps1')
-exit $LASTEXITCODE
+if (-not $NoStart) {
+    Write-Info '-NoStart ya no controla el inicio: este bootstrap solo prepara herramientas y perfil.'
+}
+exit 0
