@@ -1193,11 +1193,17 @@ On 2026-11-03, an Owner-supplied Claude transcript reported two identical receiv
 
 If a part is missing, ends unexpectedly, or lacks its END_PACKET marker, mark DISPATCH_COMPLETENESS=INCOMPLETE, do not inspect candidate sources, and request only the missing part. Do not infer that a section is absent from the task when the dispatch itself was truncated.
 
-#### 6F.5 Same-thread phase continuity
+#### 6F.5 Phase continuity and portable post-freeze continuation
 
-A timestamp, scope-lock statement or phase result mentioned by a sender or remembered from another conversation is not proof that the current receiving conversation contains it. The active thread must contain the correlated acknowledgement and required phase artifact.
+A timestamp, scope-lock statement or phase result mentioned by a sender, copied from another conversation, or remembered without the underlying artifact is not proof that the active receiver possesses it. The receiver must inspect the actual content available in its current session and record whether each required artifact is present, complete and bound to the task/revision.
 
-For a NEW_SEPARATE requirement, the sender must actually open/select the new conversation before dispatch. The receiver reports observable session continuity and prior exposure. A new prompt cannot retroactively create a new session. If the receiver says the active thread lacks an earlier lock or report, treat it as NOT PRESENT in that thread unless the exact correlated artifact is visible there. Do not assume a model memory failure when a different thread or execution surface may have received the earlier message.
+For a phase whose acceptance requires NEW_SEPARATE (for example, blind Phase A), the sender must actually open/select the new reviewer conversation before dispatch. The Phase-A scope lock and the blind review itself belong to that reviewer conversation. A later thread cannot retroactively create the required isolation, inherit an unobserved lock, or claim to have performed Phase A.
+
+After Phase A has been frozen, later non-blind adjudication (for example, Phases B/C) may continue either:
+- in the same conversation, when the complete frozen Phase-A report is still visible there; or
+- in a different continuation conversation, when a complete, immutable and identity-checked portable Phase-A checkpoint is supplied and acknowledged there.
+
+A portable checkpoint transfers the frozen result as evidence; it does not transfer the original session, create a new independent review, or upgrade the Phase-A provenance. The continuation receiver must use a distinct role such as PHASE_B_ADJUDICATOR / PHASE_C_AUDITOR, declare SESSION_CONTINUITY=PORTABLE_CHECKPOINT, and preserve the original reviewer context-separation and source-coverage classifications. If the checkpoint is absent, incomplete, mismatched or unverifiable under the task acceptance criteria, block only the dependent phase and request the exact missing artifact—not repository facts already carried in the handoff. Never infer why a prior message/report is absent; record the observed boundary and leave the cause UNKNOWN unless independently established.
 
 #### 6F.6 No false handoff progress
 
@@ -1205,13 +1211,17 @@ Keep delivery stages separate: PROMPT_PREPARED, PROMPT_SENT, RECIPIENT_ACKNOWLED
 
 ### 6G. Blind-review phase integrity and scope arithmetic (2026-11-03)
 
-1. The scope lock and Phase A freeze must exist in the active reviewer conversation. A Phase A result cannot be imported from another thread by timestamp or assistant statement.
-2. If the receiver states that the active thread contains no Phase A report, do not open Phase B receipts, proceed to Phase C, or synthesize findings. Phase A is absent/incomplete.
+1. The Phase-A scope lock and execution must occur in the active NEW_SEPARATE reviewer conversation. The Phase-A freeze is created there. A later B/C session may consume the frozen report only through the same-thread-visible route or the portable-checkpoint route in §6F.5; a timestamp or assistant statement alone never qualifies.
+2. If the receiver states that its active thread contains no Phase A report, first check whether a complete portable checkpoint was actually supplied. If neither a visible same-thread freeze nor a valid checkpoint exists, do not open Phase B receipts, proceed to Phase C, or synthesize findings; classify the dependent continuation as BLOCKED_PRECONDITION.
 3. Enumerate atomic source items before inspection. A BASE-to-HEAD path normally contributes two items: path@BASE and path@HEAD. Distinguish total changed paths from the declared review scope.
 4. The pre-amendment PR #598 comparison returned ten changed paths: eight operational documents and two receipts. The later incident-receipt addition expanded the current candidate to eleven paths: the same eight operational documents and three receipts. The blind Phase A remains exactly the eight operational documents (16 BASE/HEAD source items); all three receipts are excluded and reserved for Phase B. Label PHASE_A_SCOPE=8_OPERATIONAL_FILES_ONLY and FULL_11_PATH_REVIEW=NOT_COMPLETED. Do not claim Phase A reviewed the entire eleven-path change set.
-5. Phase B may inspect all three receipts only after a complete Phase A report is frozen in the same receiving thread. Phase C is a separate non-blind reconciliation against current main, canonical state and technical gates. B/C must not retroactively alter the frozen Phase A record.
+5. Phase B may inspect all three receipts only after a complete Phase A report is frozen and available through either (a) the same-thread-visible route or (b) a validated portable checkpoint. Phase C is a separate non-blind reconciliation against current main, canonical state and technical gates after the required B disposition. B/C must not retroactively alter the frozen Phase A record.
 6. A changed-path list may be used as metadata for scope lock. For a blind review, do not expose or inspect PR body, comments, prior receipts, author findings or evaluation rationale before Phase A freezes.
 7. If the full declared source package is incomplete, retain factual retrieval/coverage values and set SUBSTANTIVE_REVIEW=NOT_RUN for the unreviewable full scope. A bounded subset is COMPLETE only when it was declared before inspection.
+
+8. A portable Phase-A checkpoint must contain, at minimum: dispatch/task ID; repository owner/name and canonical URL; exact BASE, HEAD, parent/tree identities when required; the pre-inspection scope lock; the exact operational path list and expected atomic source-item count; per-item retrieval/identity/inspection coverage; the canonical receipt-schema revision; context-separation and prior-exposure declaration; all findings with evidence and unique IDs; severity counts; limitations; the frozen disposition and timestamp; and an explicit statement that PR body/comments/receipts were not opened during Phase A. Include the complete frozen report, not merely a summary or link.
+9. Bind the checkpoint to exact bytes where a digest-capable route exists: record byte length, digest algorithm/value and basis, then recompute at receipt. If recomputation is unavailable, declare identity UNVERIFIED and do not describe the artifact as cryptographically verified. A GitHub blob SHA returned by metadata is not a receiver-recomputed digest. A user-pasted transcript remains OWNER_SUPPLIED/ACTOR_REPORTED unless independently corroborated.
+10. The receiving B/C session must ACK the checkpoint ID, revision, digest/identity status, completeness and task/revision match before opening receipts or beginning dependent work. If it rejects the checkpoint or lacks its content, stop; do not ask for repository URLs already included in the checkpoint manifest. Preserve the original Phase-A result verbatim and place later adjudication in a separate record.
 
 These are documentary process rules. They do not establish automatic cross-session bootstrap, model-weight learning, runtime enforcement, source permissions or any IABV technical gate.
 

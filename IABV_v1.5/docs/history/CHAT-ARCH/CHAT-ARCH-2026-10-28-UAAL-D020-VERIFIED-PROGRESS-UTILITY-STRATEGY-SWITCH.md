@@ -280,3 +280,9 @@ Before requesting user-side transport or another prompt, compare the actual auth
 The advance contract must identify which dependency the transport step closes: source availability, source identity, complete package receipt, review-scope lock or substantive inspection. A prompt written, link generated, packet sent or repository listed is preparation until the receiver acknowledges the complete package and produces the expected source/phase evidence.
 
 Acceptance remains falsifiable: on a later non-identical task, show that the destination-specific preflight reduced an avoidable Owner round-trip or prevented a false progress claim without increasing permission risk. Until then, mark causal reuse NOT_TESTED.
+
+
+### 11.1 Phase-boundary checkpoint reuse
+
+1. Treat phase-boundary continuity as an artifact dependency, not as a conversation-name dependency. Before repeating a phase or asking the Owner to relay context, check for the complete frozen checkpoint defined by D021 §6F.5/§6G and Boot Kit §14.6. Reuse it only when task/revision identity, contents, coverage and provenance match. A copied timestamp, summary, prompt or link without the report content is not a checkpoint.
+2. If Phase A is frozen but the continuation thread lacks it, do not restart A automatically and do not open B/C on assertion alone. Retrieve or request only the one missing checkpoint. If complete, continue only the already-authorized dependent phase in the correct role. Record this as ENABLE/transport of an existing result, not new substantive progress; verify whether it actually reduced Owner relay. If no checkpoint exists, stop with the exact missing artifact instead of creating another generic prompt.
