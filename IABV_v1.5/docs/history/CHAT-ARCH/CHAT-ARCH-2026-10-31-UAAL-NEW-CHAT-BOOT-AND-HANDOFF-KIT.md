@@ -228,6 +228,19 @@ EXPECTED_RETURN_ARTIFACT_OR_RECEIPT=
 STOP_CONDITION=
 ```
 
+
+### 6.0 Mandatory prompt-emission preflight
+
+Before presenting any copy-ready external-agent prompt, apply D021 §6C.5's fail-closed emission check to the exact artifact:
+
+1. The dispatch header must be the first non-empty content **inside the prompt artifact**, before its title or task body. A recipient named only in surrounding chat prose is insufficient.
+2. Populate the complete dispatch header: one exact provider/agent, model or channel, project/task, role, session mode, context-separation requirement, source route and exact refs, authorized scope, exclusions, expected return and stop condition. Do not leave blanks, placeholders or alternative recipients.
+3. Resolve the destination from the current conversation and task capability. Do not infer account availability, model identity, source access, checkout, runner or delivery from a product name.
+4. If the provider is identified but account/channel availability is unconfirmed, retain it as `PREFERRED_RECIPIENT; AVAILABILITY_UNCONFIRMED`, label the artifact `PROMPT_PREPARED_NOT_SENT`, and do not substitute another agent. If the intended recipient is genuinely unresolved, ask one irreducible routing question before drafting.
+5. Verify that the task body agrees with the header and does not expand authority, weaken exclusions, omit required source access or imply an action already occurred.
+
+A prompt with an absent, incomplete, ambiguous or contradictory header is `BLOCKED`; do not present it as ready to send. The generic envelope above is a schema, not a completed dispatch. Fill it with the exact task values in each prompt.
+
 ### 6.1 Sender obligations
 
 - Resolve the destination chat/agent and role.
@@ -364,7 +377,7 @@ Your first job is to reconstruct the correct present state before recommending o
 7a. Before any material Owner-facing device/app/account/private-UI instruction, apply D019 §9E and D020 §9. Reuse the D021 §6B.1 ledger and, for IABV, record D021 §6D Control Master availability/freshness when an authorized read surface exists. Build one internal OWNER_ACTION_PACKET with the exact route permission, actor split, action class, minimum Owner steps, predictable branch matrix, acceptance evidence and stop/recovery conditions. Complete assistant-side discovery first, then present one consolidated safe sequence and ask only for the irreducible local action. Do not ask the Owner to transcribe screenshots or use an unauthorized option.
 
 8. Apply D021 §6F before any material work item, external-agent handoff, PR/branch operation, repository/source edit, PR review or test request. Apply §6F only when it is present in the pinned canonical main; if it exists only on a candidate branch, label it candidate-only and do not claim it is adopted. Bind the exact task, repository, base SHA, actual PR source branch/head SHA, target paths/blob SHAs, Owner authorization, recipient checkout/runner capability, expected observable and stop condition. Apply D021 §6E.6A only when it is present in that same pinned canonical main; if it exists only in the candidate under review, evaluate it as proposed text and do not claim it is already adopted. A similarly named branch is not the PR source branch.
-   - For every external-agent handoff, apply D021 §6C.5 and name one exact provider/agent, model or channel, role, session mode, source-access route, permitted scope, exclusions and expected return. Do not use "Claude or another AI", "same reviewer" or another ambiguous substitute. Verify the recipient's actual capability; otherwise mark it unconfirmed and do not claim dispatch.
+   - For every external-agent handoff, apply D021 §6C.5 and complete the §6.0 prompt-emission preflight before presenting the copy-ready artifact. The literal, fully populated dispatch header must be the first content inside that artifact; naming the recipient only in surrounding prose does not comply. Name one exact provider/agent, model or channel, role, session mode, source-access route, permitted scope, exclusions and expected return. Do not use "Claude or another AI", "same reviewer" or another ambiguous substitute. Verify the recipient's actual capability; otherwise mark it unconfirmed and do not claim dispatch.
    - For independent/adversarial review, apply adopted D021 §6B.2: record `CONTEXT_SEPARATION` separately from source acquisition, identity and coverage; pin the exact base/HEAD/diff; exclude candidate-specific prior findings and author rationale before source inspection; and classify unexamined dimensions as `NOT_ASSESSED`. A same-conversation review that has already seen evaluative PR-body content about the same candidate is `BLOCKED` for a blinded review; do not label it `INDEPENDENT_LIVE`.
    - Apply D021 §6E.6A only under the canonical-main/candidate-only rule in step 8. For `RECIPIENT_LIVE_FETCH`, verify the receiver's live source identity and byte-derived acknowledgement; set attachment fields to `NOT_REQUIRED`. For a transfer route, verify actual bytes, sender-side status and the receiver's correlated byte-derived acknowledgement. If bytes, identity, coverage or acknowledgement are missing, incomplete or mismatched, stop with `REVIEW=NOT_RUN` for the claimed scope. A coordinator-exported package supports only `BOUNDED_STATIC_PACKAGE` unless the reviewer independently fetches and verifies the live source.
 
