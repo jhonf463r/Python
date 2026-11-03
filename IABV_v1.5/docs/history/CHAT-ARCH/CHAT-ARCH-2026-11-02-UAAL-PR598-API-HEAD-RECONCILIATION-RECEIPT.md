@@ -4,6 +4,18 @@
 **Repository:** jhonf463r/Python  
 **Purpose:** record a point-in-time, read-only reconciliation of the candidate's Git refs, pull-request metadata, changed-file listing and base-to-HEAD comparison.
 
+## Review-record index — immutable HEAD correlation
+
+| Reviewed HEAD | Record | Result and limitation |
+|---|---|---|
+| `0c60406ec00bd7daa5f79840a9f0c89d7740ec0a` | Claude Web review received 2026-11-03; latest entry at end of this receipt | Partial bounded static assessment; `CONTEXT_SEPARATION=LIMITED`; no merge-readiness claim |
+| `67f79c7ad4e4a05640bbbb7277bf0f0caad143a4` | Claude Web delta handoff response, 2026-11-02/03 | No source review; session-mode precondition stop |
+| `08b66cbf5829aaeb31e597c0d2e470eeb30da5a7` | Subsequent Claude Web review, 2026-11-02/03 | Partial review; findings and limitations recorded in its own section |
+| `796a15d7ebae19d282fcce0b409c9f100609353c` | Independent static review and adjudication, 2026-11-03 | Bounded scope; does not substitute for the later HEAD |
+
+The index is navigational; each record retains its own actor, exact scope, time basis, evidence classes, coverage and adjudication. New observations use UTC timestamps. Historical local-time labels are preserved as originally reported and must not be silently reinterpreted.
+
+
 ## Pinned identity at this observation
 
 - PR: #598 — https://github.com/jhonf463r/Python/pull/598
@@ -545,3 +557,93 @@ MERGE_AUTHORIZATION=NOT_GRANTED
 5. If the canonical BASE enum lacks a required-but-blocked review class, preserve its stop tuple and add a supplemental schema-limitation note. Never use a candidate-only enum before canonical adoption, and never imply that the review was not required merely because the baseline enum is incomplete.
 
 The next valid attempt requires a genuinely new Claude Web conversation selected by the sender before this handoff is pasted. Do not repeat this dispatch in the already-contaminated conversation. A separately scoped, transparent cross-candidate delta assessment is possible only if explicitly accepted as `CONTEXT_SEPARATION=LIMITED`; it does not satisfy this handoff's new-session requirement.
+
+
+## Claude Web scoped review response and coordinator adjudication — HEAD 0c60406ec00bd7daa5f79840a9f0c89d7740ec0a (2026-11-03 UTC)
+
+### Actor-reported review record
+
+The Owner supplied Claude's complete report. Statements about the reviewer environment, shell commands, fetched objects, source reading and findings remain `ACTOR_REPORTED` unless explicitly marked as independently rechecked by the coordinator.
+
+```text
+TASK_ID=IABV_PR598_FINAL_HEAD_0C60406_CLAUDE_WEB_INDEPENDENT_REVIEW
+REPOSITORY=jhonf463r/Python
+PR=598
+BASE_SHA=56e4d8b11846a8d8f3cb8cda08efd773ec235651
+HEAD_SHA=0c60406ec00bd7daa5f79840a9f0c89d7740ec0a
+PARENT_SHA=67f79c7ad4e4a05640bbbb7277bf0f0caad143a4
+REVIEWER=Claude / Anthropic
+REVIEWER_CHANNEL=CLAUDE_WEB
+MODEL_LABEL=NOT_OBSERVED
+REVIEW_CONTEXT_CONTINUITY=NEW_SEPARATE_SESSION (ACTOR_REPORTED)
+CANDIDATE_SPECIFIC_PRIOR_CONTEXT_EXPOSED=NO before Phase B (ACTOR_REPORTED)
+TASK_SPECIFIC_MEMORY_OR_PROJECT_CONTEXT_IMPORTED=UNKNOWN
+CONTEXT_SEPARATION=LIMITED
+SOURCE_ACQUISITION_METHOD=INDEPENDENT_LIVE_RETRIEVAL
+SOURCE_RETRIEVAL_STATUS=PASS
+SOURCE_IDENTITY_VERIFICATION=REVIEWER_VERIFIED
+SOURCE_COVERAGE=PARTIAL_SOURCE
+```
+
+**Schema limitation:** the exact PR_BASE D021 schema does not provide the candidate-added `REVIEW_CLASS`, `SUBSTANTIVE_REVIEW`, `RECEIVER_SOURCE_ACK`, `SOURCE_PACKAGE_STATUS` or `DECLARED_REVIEW_SCOPE` fields/enums. These are therefore not inserted as canonical fields above. In the report's supplemental plain-language return, the reviewer described substantive inspection as partial, identified the scope in the dispatch, and stated that no separate receiver-ack field existed in the BASE schema. Do not infer a candidate-only `INDEPENDENT_LIVE_PARTIAL` classification from that baseline receipt.
+
+**Session/context:** Claude reports that this was the first and only user turn in that conversation, with no exact-HEAD findings or author rationale exposed before Phase A. Persistent-memory provenance could not be inspected, so `CONTEXT_SEPARATION=LIMITED`, not `PASS`. Related-candidate findings became visible only after Phase A when the PR598 receipt was opened in Phase B. The model label was not visible and remains `NOT_OBSERVED`.
+
+**Acquisition and identity (actor-reported):** Git 2.43.0 and Git smart-HTTP succeeded; live refs, BASE/HEAD, parent and tree reportedly matched the dispatch pins. The reviewer reports fetching 25 Git objects and recomputing hashes for the 21 manifest rows and dependencies, all matching. The first verification script failed on shell syntax and was rerun successfully under Bash. REST/API, browser, base64 decoding and checkout were not used. The reviewer reports a 21-row manifest and SHA-256 `0a7936cdc79ee5173c3258525bf899863a7fdc10989595380e4c00e451cce157`. The coordinator did not independently recompute that manifest digest or all blob hashes in this adjudication.
+
+**Coverage (actor-reported):** source retrieval was reported successful, but substantive inspection remained partial. Fully inspected diffs were reported for AGENTS, Space-Time, D020, CONTEXT-INDEX, MEMORY and README; D021 was mostly inspected with long-line truncation; about 14 KB of the Boot Kit diff was inspected; several dependencies were checked only by search; and only selected ranges of the PR598 receipt were read. The reviewer recorded a scope-order deviation: source/diff content appeared before a receiver-side scope-lock acknowledgement. The dispatch itself already contained the scope; the missing event was the receiver acknowledgement before the first content-bearing output.
+
+### Phase A findings as reported and coordinator disposition
+
+| ID | Actor priority | Subject | Coordinator disposition |
+|---|---:|---|---|
+| A1 | P2 | Dispatch demanded BASE enums while also requiring fields/statuses absent from BASE | **CONFIRMED — prompt-generation defect.** Generate receipt fields/enums from exact PR_BASE; candidate-only additions belong in a labelled supplement. |
+| A2 | P2 | New D021 sections allegedly lack separate adoption records | **NOT SUSTAINED.** Candidate §6F.0/§6E.6A self-limit to exact pinned main; §6C.5 makes main content plus any method-specific adoption record controlling. Presence in main after an authorized merge/fetch-back is the adoption boundary; a per-section registry is not justified by this evidence. |
+| A3 | P3 | README/MEMORY front doors omit some expanded D021 pointers | **NOT A NORMATIVE DEFECT.** The front doors already activate D021 and need not duplicate every rule. A concise §6C.5 pointer is added for navigation only. |
+| A4 | P2 | A genuinely new session with uninspectable memory lacks an explicit acceptance mapping when dispatch requires PASS | **CONFIRMED.** Rule 2 classifies that factual state as LIMITED. Dispatch must state PASS_ONLY or PASS_OR_LIMITED; never upgrade LIMITED to PASS. |
+| A5 | P3 | Receiver did not emit the scope lock before content-bearing inspection | **CONFIRMED PROCESS DEVIATION.** The dispatch supplied the scope, but the receiver-side pre-inspection acknowledgement was absent. A single first-turn scope-lock receipt is now defined. |
+| A6 | P3 | Manifest row set/final newline allegedly indeterminate | **NOT SUSTAINED.** The candidate says one row per existing source path/object in each included role and expressly specifies LF with no trailing LF. The five dependencies were BASE-only, so extra HEAD rows were not required by that scope. |
+| A7 | P3 | Receipt schemas across D021 sections and Boot Kit §7 differ | **PARTLY SUSTAINED AS AN OWNERSHIP/COMPOSITION CLARITY ISSUE, NOT AS A REQUIREMENT FOR IDENTICAL SCHEMAS.** Context, source-package, repository-action and universal receipts serve different purposes. The Boot Kit now explains the compact §7 receipt plus D021's repository-action supplement. |
+| A8 | P3 | Space-Time revision label reads as though candidate-only pre-action gate were live | **LOW-RISK LABEL AMBIGUITY.** The revision descriptor is marked `CANDIDATE_PRE_ACTION...`; canonical status remains determined by pinned main. |
+
+### Phase B findings as reported and coordinator disposition
+
+| ID | Actor priority | Subject | Coordinator disposition |
+|---|---:|---|---|
+| B1 | P3 | PR591 receipt lacks per-fact evidence-class labels | **HISTORICAL IMPROVEMENT.** Preserve PR591's source boundary and actor-reported claims; do not upgrade them in this record. |
+| B2 | P3 | PR598 receipt is a cumulative log with several review rounds | **CONFIRMED TRACEABILITY RISK.** A HEAD-keyed record index is added; historical records remain append-only. |
+| B3 | P3 | Historical chronology mixes UTC and America/Bogota dates | **CONFIRMED PRESENTATION RISK.** This record and future observations use UTC; earlier local-time labels remain intact. |
+| B4 | — | Blinding is procedural rather than structurally enforced | **OBSERVATION, NOT A FINDING.** Excluded from priority totals. |
+| B5 | — | Receipt claims reconciled; some values remain UNKNOWN | **ADJUDICATION NOTE, NOT A FINDING.** Excluded from priority totals. |
+
+**Finding-count arithmetic:** Claude reported `P0=0; P1=0; P2=3; P3=9`. Its itemized priority-bearing rows contain three P2 findings (A1, A2, A4) and eight P3 findings (A3, A5, A6, A7, A8, B1, B2, B3). B4 and B5 have no priority. The reported P3 total therefore exceeds the itemized list by one. This discrepancy is retained; no ninth P3 finding is invented.
+
+### Independent coordinator reconciliation against GitHub and canonical state
+
+**API/connector metadata verified in this session:**
+- PR #598 remains OPEN / UNMERGED.
+- PR base and live main both equal `56e4d8b11846a8d8f3cb8cda08efd773ec235651`.
+- PR head and source branch both equal `0c60406ec00bd7daa5f79840a9f0c89d7740ec0a`.
+- Compare: 60 commits ahead, 0 behind; 10 paths; +1,209 / −68.
+- Public GitHub commit API reports parent `67f79c7ad4e4a05640bbbb7277bf0f0caad143a4` and tree `58f7564a0b0bb27e0b024a842af6b5e2175f1756`.
+
+**Coordinator source reads:** D021 BASE blob `67acb8a9e1d96a25a9bc890554877ac08c3c9bf1` and candidate blob `3dc3494b3ba6c3a8fe7d6c6c87c1fbd9f5117172` were retrieved and compared at §6B.2/§6C.5/§6E.6A/§6F.8. Boot Kit BASE blob `d846b6898886cfcf2faa7012ee204a2d560710af` and candidate blob `1b9b7721b5179f3817fb26fa6e385b1988114cf6` were retrieved and compared at §6.0/§7/step 10. Space-Time candidate blob `5d86f3e1b8deea4ed6d82b88314a4e3d293ba159`, README candidate blob `845a097f02cb4af30c3b598bf4b331abea2cb9af` and MEMORY candidate blob `4f193ff6fbf8b47f4ade217207986655f6d3fdf2` were retrieved. These SHA values were returned as GitHub object metadata; the coordinator did not recompute all their SHA-1 identities from bytes in this step.
+
+**CURRENT-STATE:** normal read returned an empty body with blob `63e1b459a13e23e1012da81826dc50727b688d8c`; the exact blob was separately retrieved. Active route remains `IABV_M1A_OWNER_ISSUER_MECHANISM_INPUT_GATE_R1_20261030`; first open edge remains `OWNER_ROOT_DECISION_AUTHENTICATION_AND_ROOT_HANDLE_PROVENANCE_NOT_ESTABLISHED`. Owner inputs remain reconciled; `G1/G2/G3=NOT_ESTABLISHED`, `OPTION_D=RATIFIED_NO_BOOTSTRAP`, `PROTECTED_READS=FAIL_CLOSED`, `BRIDGE=BRIDGE_NOT_READY`, `PRODUCT_IMPLEMENTATION=NOT_AUTHORIZED`. No Owner authentication setup or source census was repeated.
+
+**Control Master:** JSON blob `d76d521e6f8d73e874a21ffe1b720dcdbcd48293`, state ID `dc840807-ef2a-4e7a-8f11-4c6362ccbcb7`, last updated `2026-04-19T19:23:46.389095Z`; latest.md blob `e97700bcafb5b33fcf5b3712b8fe97d18ce5b244` carries the same generation time. This is a STALE committed snapshot, not a live runtime digest. No current runtime signal was obtained; `SIGNAL_INFLUENCE=NO_EFFECT`.
+
+### Corrective documentation scope applied to this candidate
+
+1. D021 §6B.2 defines one receiver-side pre-inspection scope-lock acknowledgement.
+2. D021 §6C.5 distinguishes PASS_ONLY from PASS_OR_LIMITED and makes PR_BASE/pinned-main the receipt-schema source.
+3. D021/Boot Kit clarify that specialized repository-action receipts and the universal receipt are complementary; finding totals must reconcile to unique itemized IDs.
+4. Space-Time marks the pre-action precision expansion as candidate-only.
+5. README/MEMORY point to D021 §6C.5 without duplicating its rules.
+6. This receipt gains a HEAD-keyed index and preserves the review as a separate chronological record.
+
+These are documentation/methodology changes only. They do not authorize merge, modify main or change CURRENT-STATE, Control Master runtime, product code, M1A, G1/G2/G3, Option D, protected reads, credentials, permissions, local runtime, tunnel or bridge.
+
+### Boundaries and remaining review scope
+
+`REVIEW_DISPOSITION=PARTIAL_BOUNDED_STATIC_ASSESSMENT`; the actor did not claim a complete review. Tests/build/runtime were NOT_RUN. The reviewing actor performed no GitHub mutation. This coordinator successor write is separately recorded by its commit/blob identities and fetch-back. `MERGE_AUTHORIZATION=NOT_GRANTED`.

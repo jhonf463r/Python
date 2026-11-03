@@ -321,6 +321,9 @@ Context separation, source acquisition and source identity are separate requirem
 
 **Freeze the declared review scope before substantive content inspection:** `DECLARED_REVIEW_SCOPE` must identify the exact comparison mode and immutable base/HEAD revisions; every in-scope file and relevant section/hunk range; required review dimensions and acceptance criteria; required source items; and explicit exclusions. Record it in the correlated receipt before any diff or candidate source content is displayed, read, searched, semantically parsed or evaluated. Non-semantic preparation may precede the freeze: checking refs/commit/tree metadata, listing changed paths, retrieving object IDs and byte lengths, and computing hashes/manifests without displaying or evaluating source content. Those operations do not authorize source review. Once any source content or diff has been inspected, never retroactively freeze or narrow the scope; record the deviation and either continue with the original scope or restart a genuinely separate review under a new declared scope.
 
+**Pre-inspection scope-lock receipt — one acknowledgement, not repeated work:** If the dispatch already supplies every required scope element, the reviewer must echo that exact scope in the first assistant response, before the first content-bearing source/diff tool call, as a correlated `REVIEW_SCOPE_LOCK_RECEIPT` containing `TASK_ID`, the exact `DECLARED_REVIEW_SCOPE`, `SCOPE_LOCKED_AT` (UTC), and `SOURCE_CONTENT_INSPECTED_BEFORE_LOCK=NO`. The final receipt references that same lock; it does not create a new or narrower scope. If the dispatch scope is incomplete, the reviewer must complete and emit the lock before inspecting source content. A sender-supplied scope without a receiver lock is not evidence that the receiver acknowledged the frozen scope. Do not duplicate the full final receipt or repeat the lock before every command. The metadata-only preparation expressly allowed above may precede the lock; no diff, file content, source excerpt or semantic result may.
+
+
 - The reviewer must be a distinct actor/session from the candidate author/editor. A fresh conversation in a separate provider/model context is preferred when the prior session has already discussed or shaped the candidate.
 - Preferred source acquisition is reviewer-side retrieval of the exact pinned repository base, candidate HEAD, diff and acceptance criteria from the canonical source. Sharing the same canonical source revision is required and does not itself contaminate the review.
 - When direct retrieval is unavailable, a coordinator-exported pinned diff or user-supplied source may support a bounded static assessment only when the supplied material's revision, paths and scope have adequate provenance. Record the indirect acquisition explicitly; never describe it as independent live retrieval.
@@ -542,14 +545,16 @@ TARGET_PROJECT_AND_TASK_ID=
 TARGET_ROLE=
 TARGET_SESSION_MODE=NEW_SEPARATE | CONTINUED | EXISTING_EXECUTOR
 CONTEXT_SEPARATION_REQUIREMENT=
+CONTEXT_SEPARATION_ACCEPTANCE=PASS_ONLY|PASS_OR_LIMITED|NOT_REQUIRED
 REQUIRED_SOURCE_ACCESS_AND_EXACT_REFS=
+RECEIPT_SCHEMA_SOURCE_AND_REVISION=PR_BASE:<40_HEX>|PINNED_MAIN:<40_HEX>
 AUTHORIZED_OPERATION_SCOPE=
 EXPLICIT_EXCLUSIONS=
 EXPECTED_RETURN_ARTIFACT_AND_RECEIPT=
 STOP_CONDITION=
 ```
 
-The `DISPATCH_HEADER` is the sole authority for the exact recipient/provider, product surface/execution channel, model/channel label and provenance, project/task, role, session mode, context requirement, source refs, authorized scope, exclusions, expected return and stop condition. A project-specific `HANDOFF_ENVELOPE` may follow it and add evidence/context, but any repeated field must match the header exactly; the envelope cannot override it. Any conflict makes the artifact `PROMPT_EMISSION_STATUS=BLOCKED`.
+The `DISPATCH_HEADER` is the sole authority for the exact recipient/provider, product surface/execution channel, model/channel label and provenance, project/task, role, session mode, context requirement and acceptance threshold, source refs, receipt-schema baseline, authorized scope, exclusions, expected return and stop condition. A project-specific `HANDOFF_ENVELOPE` may follow it and add evidence/context, but any repeated field must match the header exactly; the envelope cannot override it. Any conflict makes the artifact `PROMPT_EMISSION_STATUS=BLOCKED`.
 
 **Capability and provenance anti-fabrication rule:** never invent or infer a model/version label, agent identity, account/channel availability, product capability, tool or repository access, checkout/runner availability, session mode, send/delivery/receipt/acknowledgement status, or test/build/runtime execution. Report a value only as directly verified or as explicitly actor-reported; otherwise preserve `UNKNOWN`, `UNVERIFIED` or `NOT_RUN`. A product name, prior session, visible UI option or candidate PR does not prove that capability, access or delivery exists.
 
@@ -574,9 +579,15 @@ Use the following conditional route sequence, recording the actual attempt, time
 
 **Review design and context-separation adapter**
 
+**Select the context-acceptance threshold explicitly:** the dispatch must distinguish the required conversation mode from the acceptable factual context class. Use `CONTEXT_SEPARATION_ACCEPTANCE=PASS_OR_LIMITED` for the ordinary independent review where a genuinely new conversation is required but opaque persistent-memory provenance is a tolerable, disclosed limitation. Under §6B.2 rule 2, a new conversation with no known same-candidate findings/rationale but uninspectable persistent-memory provenance is `LIMITED`, not `PASS`; it may proceed only when the dispatch accepts `PASS_OR_LIMITED`. Use `PASS_ONLY` only when the task's risk/acceptance criteria genuinely require fully separated provenance; then `LIMITED` does not satisfy the dispatch, and the reviewer stops before source retrieval with the §6B.2 precondition return. Use `NOT_REQUIRED` only when independent/context-separated review is not required. A mandatory `TARGET_SESSION_MODE=NEW_SEPARATE` remains a separate requirement: accepting `LIMITED` does not permit a continued conversation to masquerade as a new one. Never upgrade `LIMITED` to `PASS`.
+
+**Choose the receipt-schema authority before dispatch:** for a review of a PR/candidate, set `RECEIPT_SCHEMA_SOURCE_AND_REVISION=PR_BASE:<exact PR_BASE SHA>`; for other work, use `PINNED_MAIN:<exact main SHA>`. Generate the required receipt fields and every enum from that exact schema revision, not from the candidate HEAD being reviewed or from a later/current main. Do not ask a reviewer to emit candidate-only fields or enum values as though they were canonical. If the pinned baseline lacks a field needed to explain a required stop or candidate-specific observation, preserve the baseline fields/enums exactly and add a clearly labelled `SCHEMA_LIMITATION_NOTE` or `SUPPLEMENTAL_CANDIDATE_FIELDS` outside the canonical receipt. Do not invent an enum, silently omit the limitation, or call the review `NOT_APPLICABLE` merely because the baseline schema cannot represent a required-but-blocked review. Candidate-only schemas remain review material, not the authority for their own return receipt.
+
 For a blinded independent review, use a new separate reviewer conversation and a neutral scope/acceptance rubric. Do not seed the reviewer with candidate-specific findings, suspected defect lists, author rationale, earlier review verdicts or a topic checklist derived from those findings. Freeze the declared scope before the first substantive content inspection. A phase-gated review may inspect operating/method documents first, record Phase A before opening receipts or outcome evidence in Phase B, and then assess the receipts separately. If the reviewer has already seen candidate-specific findings or evaluative claims, disclose that exposure and classify context separation under §6B.2; do not claim full blindness. Generic method rules and neutral review criteria are allowed, but a prompt that points the reviewer toward particular candidate defects may limit independence and must be disclosed.
 
 For all destination surfaces, the task body must name the primary acquisition path and a capability-compatible fallback, include exact repository/PR/base/HEAD/parent/tree/path/blob identifiers where applicable, and request the D021 receipt with exact enum values. Distinguish preparation, sending, acknowledgement, retrieval, execution and coordinator adjudication; none implies the next.
+
+**Finding-count reconciliation:** when a review reports `P0/P1/P2/P3` totals, derive each total from the final itemized finding registry: count each unique finding ID exactly once at its final adjudicated priority. Do not count observations, rejected/not-sustained claims, non-finding notes or duplicate IDs. Preserve reviewer-reported counts separately when they disagree; show the arithmetic mismatch and provide coordinator-adjudicated counts only after each ID has a recorded disposition. The sum of priority counts must equal the number of itemized findings that actually carry a priority.
 
 Inside the copy-ready artifact, the first non-empty content remains the literal `DISPATCH_HEADER`. Place exactly one `PROMPT_EMISSION_STATUS=<value>` line immediately after the header block's final field and before the task body. This line is outside the header schema: it records emission readiness and cannot override or repair any header field.
 
@@ -621,7 +632,9 @@ TARGET_PROJECT_AND_TASK_ID=
 TARGET_ROLE=
 TARGET_SESSION_MODE=NEW_SEPARATE | CONTINUED | EXISTING_EXECUTOR
 CONTEXT_SEPARATION_REQUIREMENT=
+CONTEXT_SEPARATION_ACCEPTANCE=PASS_ONLY|PASS_OR_LIMITED|NOT_REQUIRED
 REQUIRED_SOURCE_ACCESS_AND_EXACT_REFS=
+RECEIPT_SCHEMA_SOURCE_AND_REVISION=PR_BASE:<40_HEX>|PINNED_MAIN:<40_HEX>
 SOURCE_PACKAGE_REQUIRED=YES|NO
 SOURCE_PACKAGE_STATUS=NOT_REQUIRED|IDENTIFIED|BYTES_PRESENT|BYTES_INCOMPLETE|LINK_ONLY|UNAVAILABLE|MISMATCH|UNKNOWN
 SOURCE_ACQUISITION_METHOD=RECIPIENT_LIVE_FETCH|ATTACHED_PACKAGE|OWNER_SUPPLIED_PACKAGE|COORDINATOR_EXPORTED_PACKAGE|OTHER|UNKNOWN
@@ -1068,7 +1081,9 @@ Every material handoff or repository action returns one compact receipt:
 
 ```text
 TASK_ID=
+RECEIPT_SCHEMA_SOURCE_AND_REVISION=PR_BASE:<40_HEX>|PINNED_MAIN:<40_HEX>
 DECLARED_REVIEW_SCOPE=NOT_APPLICABLE|<exact scope frozen before source inspection; include comparison, paths/ranges, criteria, required source items and exclusions>
+DECLARED_REVIEW_SCOPE_LOCKED_AT=
 OBSERVED_AT=
 REPOSITORY=
 BASE_REF_AND_SHA=
@@ -1117,6 +1132,8 @@ MERGE_OR_PUBLICATION=NOT_ATTEMPTED|VERIFIED|UNVERIFIED
 ```
 
 Do not claim that another chat received or applied the method from a link, commit or handoff attempt. Do not claim tests, build, runtime, publication, merge or learning without the matching evidence.
+
+For independent PR/repository work, this §6F.8 block is the repository-action supplement to the universal Boot Kit §7 receipt; it is not a replacement for the context/source-specific receipts in §§6B.2/6E.6A. The schemas are purpose-specific, not expected to be byte-for-byte identical. The receiver records `RECEIPT_SCHEMA_SOURCE_AND_REVISION` and uses the exact pinned baseline's enums. When this section exists only in the candidate under review, it is proposed text: use the immutable PR_BASE schema for the actual return and place any additional candidate-only observations in a clearly labelled supplement.
 
 Record the concrete observation that triggered each use of this gate in the dated task receipt, with its exact source/ref, timestamp and evidence class. Do not embed mutable PR identities, branch names, run/job IDs, platform restrictions or one-off incident details in this normative method. Keep current operational state in the owning canonical state/receipt and refresh it before consequential action.
 
