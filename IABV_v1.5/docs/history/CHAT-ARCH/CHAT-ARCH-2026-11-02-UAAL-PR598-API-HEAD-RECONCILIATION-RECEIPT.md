@@ -332,3 +332,55 @@ The generic `SOURCE_COVERAGE` definition at D021 §6B.2 was brought into line wi
 
 Coordinator fetch-back of the exact D021 successor blob reports SHA `cb08a483aef5378f973a0b9050a185fbb749153e` and byte length 128628; it matches the exact pinned successor object's identity and size. This is still coordinator verification, not an independent reviewer result.
 
+## Final coordinator Git-object integrity and semantic reconciliation — 2026-11-03 UTC
+
+`RECONCILIATION_ID=IABV_PR598_FINAL_COORDINATOR_OBJECT_AND_SEMANTIC_AUDIT_20261103`  
+`ACTOR_ROLE=COORDINATOR_AND_CANDIDATE_EDITOR`  
+`REPOSITORY=jhonf463r/Python`; `PR=598`  
+`BASE_SHA=56e4d8b11846a8d8f3cb8cda08efd773ec235651`  
+`INPUT_HEAD_SHA=d80d933071b2b9dfe0746bae565962b5662e68e8`  
+`INPUT_HEAD_TREE=4a3f34c9e11851e6e9c122c7c43803fdb9854cec`  
+`BASE_TREE=da5e395d3a2f77c5cfeb595a2a9ea875e756608a`  
+`PR_STATE=OPEN`; `MERGED=FALSE`; `CHANGED_FILES=10`; `ADDITIONS=932`; `DELETIONS=66`; `COMMITS_AHEAD=56`; `COMMITS_BEHIND=0` at this pre-receipt-update observation.
+
+### Exact Git object verification
+
+Both recursive Git tree API responses were complete and reported `truncated=false`. The base tree contains eight of the ten changed paths; the two new receipt files exist only at HEAD. All changed path entries are mode `100644`, type `blob`.
+
+For each of the 18 extant BASE/HEAD file objects, the reviewer-side fetch returned exact base64 content. The coordinator decoded the bytes and independently recomputed the Git blob object identifier using `SHA-1(ASCII("blob " + decimal_byte_length + NUL) + exact_file_bytes)`. A known Git blob test vector (`hello` followed by LF → `ce013625030ba8dba906f756967f9e9ca394464a`) passed. All 18 recomputed blob IDs matched the GitHub file response IDs and the corresponding immutable tree-entry IDs; all 18 decoded byte lengths matched the tree sizes.
+
+| ROLE | PATH | GIT_MODE | OBJECT_TYPE | RECOMPUTED_BLOB_SHA | BYTE_LENGTH |
+|---|---|---|---|---|---:|
+| BASE | `IABV_v1.5/AGENTS.md` | 100644 | BLOB | `f984a00108b309810775f0b11f8b5d333b7869fd` | 232421 |
+| BASE | `IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-23-CONTINUITY-SPACE-TIME-OPERATING-PROTOCOL-v1.md` | 100644 | BLOB | `8f5891e27e2e7cb03289725d162c7ba166fae6c9` | 99227 |
+| BASE | `IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-28-UAAL-D020-VERIFIED-PROGRESS-UTILITY-STRATEGY-SWITCH.md` | 100644 | BLOB | `1f5055e85a4db7482bb0c0d3fffc4073a4f1679d` | 23552 |
+| BASE | `IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-UAAL-D021-CROSS-SESSION-BOOT-AND-STATE-RECONCILIATION.md` | 100644 | BLOB | `67acb8a9e1d96a25a9bc890554877ac08c3c9bf1` | 76413 |
+| BASE | `IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-31-UAAL-NEW-CHAT-BOOT-AND-HANDOFF-KIT.md` | 100644 | BLOB | `d846b6898886cfcf2faa7012ee204a2d560710af` | 29193 |
+| BASE | `IABV_v1.5/docs/history/CHAT-ARCH/CONTEXT-INDEX.md` | 100644 | BLOB | `7f8c985e37f022f5b5ce92c3479fd8a9f6e2255f` | 525897 |
+| BASE | `IABV_v1.5/docs/history/CHAT-ARCH/MEMORY-OPERATING-PROTOCOL.md` | 100644 | BLOB | `4f79ca61ca37c720b39fc29f5fcc601c1ab99dff` | 389226 |
+| BASE | `IABV_v1.5/docs/history/CHAT-ARCH/README.md` | 100644 | BLOB | `335b4eae5f5d1312404b9460b64ea89f87838cdd` | 293721 |
+| HEAD | `IABV_v1.5/AGENTS.md` | 100644 | BLOB | `2bb6fb395965883f14095c00db03723d22d3011b` | 232364 |
+| HEAD | `IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-23-CONTINUITY-SPACE-TIME-OPERATING-PROTOCOL-v1.md` | 100644 | BLOB | `5d86f3e1b8deea4ed6d82b88314a4e3d293ba159` | 101510 |
+| HEAD | `IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-28-UAAL-D020-VERIFIED-PROGRESS-UTILITY-STRATEGY-SWITCH.md` | 100644 | BLOB | `4dba16205395d0d4c03b2e7c3b1edde427db5859` | 24051 |
+| HEAD | `IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-UAAL-D021-CROSS-SESSION-BOOT-AND-STATE-RECONCILIATION.md` | 100644 | BLOB | `cb08a483aef5378f973a0b9050a185fbb749153e` | 128628 |
+| HEAD | `IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-31-UAAL-NEW-CHAT-BOOT-AND-HANDOFF-KIT.md` | 100644 | BLOB | `585a5c96c1466f214b482e08fffefc4382a2e5fa` | 48546 |
+| HEAD | `IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-11-02-UAAL-PR591-CI-OBSERVATION-RECEIPT.md` | 100644 | BLOB | `23dd35500d9ef0f9dfc3f9cd370e00d0c1a3dc4a` | 4758 |
+| HEAD | `IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-11-02-UAAL-PR598-API-HEAD-RECONCILIATION-RECEIPT.md` | 100644 | BLOB | `7e69ad23b6cd2eee4bdb006260ae555da1fff738` | 48369 |
+| HEAD | `IABV_v1.5/docs/history/CHAT-ARCH/CONTEXT-INDEX.md` | 100644 | BLOB | `05cd3cf9b53dcebe00a89423562a115d3450b5bd` | 525882 |
+| HEAD | `IABV_v1.5/docs/history/CHAT-ARCH/MEMORY-OPERATING-PROTOCOL.md` | 100644 | BLOB | `4f193ff6fbf8b47f4ade217207986655f6d3fdf2` | 388894 |
+| HEAD | `IABV_v1.5/docs/history/CHAT-ARCH/README.md` | 100644 | BLOB | `845a097f02cb4af30c3b598bf4b331abea2cb9af` | 293329 |
+
+No raw `git ls-tree -rz` stream was obtained and no aggregate `MANIFEST_SHA256` was generated. The verification above establishes per-file blob identity, mode/type and byte length for the listed ordinary UTF-8 paths; it does not claim raw-path-byte coverage for exotic non-UTF-8 filenames or a canonical aggregate manifest.
+
+### Final semantic adjudication
+
+- `COORD-PR598-A5 (P2)` is complete across two correction commits: `a35d3ce86fe72423fba08c1bdedf1d1a450ba11c` separates byte acquisition, identity verification, receiver acknowledgement and full-scope substantive review; `b6d22477a64fc35ce45abd5ec0612b2d3fc2f041` aligns the general `SOURCE_COVERAGE` definition with the mixed-source rule. `NOT_ASSESSED` now means zero declared items inspected; `PARTIAL` means some but not all items were inspected, even if the remaining source is unavailable; `SUBSTANTIVE_REVIEW=NOT_RUN` remains the full-scope result when a required precondition is unmet.
+- `COORD-PR598-A6 (P3)` is complete in `a35d3ce86fe72423fba08c1bdedf1d1a450ba11c`: Space-Time describes D021 §6F.0 as a candidate-branch proposal until that exact section exists in pinned `main`, not as an already-canonical trigger.
+- Boot Kit step 10 remains the restored correlated receipt instruction and preserves `TEST_STATUS=NOT_RUN` for authored but unexecuted tests. Step 7a rechecks the live D019 owner record each session; it does not freeze the base's `NOT_YET` state as permanent.
+- D019 §9E remains a candidate at the pinned base; D020 §9 identifies D019 as owner but does not confer adoption. Candidate-only D021 §6F/§6E.6A text is not `main` authority until merged and fetched back.
+
+The last receipt-only commit has parent `b6d22477a64fc35ce45abd5ec0612b2d3fc2f041`; its parent comparison changes only this reconciliation receipt. This section describes the immutable input tree at `d80d9330` and is not a self-referential hash claim about the receipt version containing this paragraph.
+
+`COORDINATOR_RECONCILIATION=COMPLETE_FOR_THE_DECLARED_10_PATH_CHANGESET_AND_NORMATIVE_DEPENDENCIES`; `INDEPENDENT_REVIEW_STATUS=NOT_PERFORMED`; `TEST_EXECUTION_SCOPE=NOT_APPLICABLE`; `TEST_AUTHORIZATION=NOT_AUTHORIZED`; `TEST_STATUS=NOT_RUN`; `MERGE_AUTHORIZATION=NOT_GRANTED`.
+
+No tests, build, runtime, protected reads, credentials, product code, permission changes, CURRENT-STATE route, local bridge or tunnel were changed. G1/G2/G3 remain `NOT_ESTABLISHED`; Option D remains `RATIFIED_NO_BOOTSTRAP`; protected reads remain `FAIL_CLOSED`; bridge remains `BRIDGE_NOT_READY`.
