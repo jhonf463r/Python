@@ -112,9 +112,9 @@ Claude inspected the complete 7,232-byte receipt. It reported B-1 and B-2 as P3 
 - **A-6 (P3) — APPLIED_IN_SUCCESSOR; INDEPENDENT_VERIFICATION_PENDING:** the manifest now fixes bytewise collation, revision identifiers, byte-length representation and omission of nonexistent BASE/HEAD rows.
 - **A-7 (P3) — APPLIED_IN_SUCCESSOR; INDEPENDENT_VERIFICATION_PENDING:** AGENTS points to the canonical prompt-emission preflight rather than duplicating it, and its paragraph boundary is repaired.
 - **A-8 (P3) — APPLIED_IN_SUCCESSOR; INDEPENDENT_VERIFICATION_PENDING:** `AUTHORED_NOT_RUN` is removed from `TEST_STATUS`; the remaining statuses, including `VERIFIED`, have explicit meanings in D021 and Boot Kit.
-- **B-1 (P3) — APPLIED_IN_SUCCESSOR; INDEPENDENT_VERIFICATION_PENDING:** the dangling reference is repaired and the historical predecessor order is recorded from exact commit comparisons.
-- **B-2 (P3) — APPLIED_IN_SUCCESSOR; INDEPENDENT_VERIFICATION_PENDING:** historical `SOURCE_RETRIEVAL_STATUS`, `SOURCE_IDENTITY_VERIFICATION` and `RECEIVER_SOURCE_ACK` values are recorded with reviewer-reported provenance.
-- **B-3 (P2, coordinator-detected receipt classification issue) — APPLIED_IN_SUCCESSOR; INDEPENDENT_VERIFICATION_PENDING:** Claude returned `REVIEW_CLASS=INDEPENDENT_LIVE` while also declaring `SOURCE_COVERAGE=PARTIAL` and `SUBSTANTIVE_REVIEW=PARTIAL` for the declared full-document scope. The candidate-only D021 §6E.6A rule 7 on reviewed HEAD `3529a7bb` proposed `SOURCE_COVERAGE=COMPLETE` for `INDEPENDENT_LIVE` over the declared scope. That rule was not part of pinned `main` and was evaluated here only as a candidate-internal classification criterion, not as adopted operational authority. The partial findings remain usable, but this review did not satisfy the full-scope `INDEPENDENT_LIVE` gate and is not counted as a complete independent review. This records the discrepancy without retroactively expanding Phase A coverage.
+- **3529-B-1 (P3) — APPLIED_IN_SUCCESSOR; INDEPENDENT_VERIFICATION_PENDING:** the dangling reference is repaired and the historical predecessor order is recorded from exact commit comparisons.
+- **3529-B-2 (P3) — APPLIED_IN_SUCCESSOR; INDEPENDENT_VERIFICATION_PENDING:** historical `SOURCE_RETRIEVAL_STATUS`, `SOURCE_IDENTITY_VERIFICATION` and `RECEIVER_SOURCE_ACK` values are recorded with reviewer-reported provenance.
+- **3529-B-3 (P2, coordinator-detected receipt classification issue) — APPLIED_IN_SUCCESSOR; INDEPENDENT_VERIFICATION_PENDING:** Claude returned `REVIEW_CLASS=INDEPENDENT_LIVE` while also declaring `SOURCE_COVERAGE=PARTIAL` and `SUBSTANTIVE_REVIEW=PARTIAL` for the declared full-document scope. The candidate-only D021 §6E.6A rule 7 on reviewed HEAD `3529a7bb` proposed `SOURCE_COVERAGE=COMPLETE` for `INDEPENDENT_LIVE` over the declared scope. That rule was not part of pinned `main` and was evaluated here only as a candidate-internal classification criterion, not as adopted operational authority. The partial findings remain usable, but this review did not satisfy the full-scope `INDEPENDENT_LIVE` gate and is not counted as a complete independent review. This records the discrepancy without retroactively expanding Phase A coverage.
 
 ### Boundaries
 
@@ -146,26 +146,83 @@ The reviewer reported a complete read of the reconciliation receipt. The content
 
 ### Findings and coordinator adjudication
 
-Claude reported no P0/P1 in the declared scope, four P2 findings (A-F1 through A-F4) and eleven P3 findings (A-F5 through A-F9; B-1 through B-6). The coordinator reconciled each finding against the pinned source:
+Claude reported no P0/P1 in the declared scope, four P2 findings (A-F1 through A-F4) and eleven P3 findings (A-F5 through A-F9; B-1 through B-6). The coordinator reconciled each finding against the pinned source.
+
+**Successor-correction provenance:** the coordinator's intended edits for this review were carried into successor HEAD `6d3c99220292b568ff036c7f7cb3b9664ef35fe9`. The subsequent live review found that the A-F6 test-provenance correction had regressed there because the Boot Kit's step 10 contained a literal editing expression. The exact correction carrier for this regression and the additional protocol findings is now `36d871cd7a9c2ff4da8c30ea03cb8f394e92df3b`, parent `6d3c99220292b568ff036c7f7cb3b9664ef35fe9`. Coordinator fetch-back confirms the seven intended file contents at that exact HEAD; this is coordinator verification, not independent reviewer acceptance. Keep `INDEPENDENT_VERIFICATION_PENDING` until the successor is reviewed:
 
 - **A-F1 (P2) — CONFIRMED/CORRECTED:** five front doors described D019 §9E / D020 §9 as canonical-main despite the owning D019 record still stating `DOCUMENTED_METHOD_CANDIDATE` and `CANONICAL_MAIN_ADOPTION=NOT_YET`. Front-door wording now requires checking the owning adoption record in exact pinned main.
 - **A-F2 (P2) — CONFIRMED/CORRECTED:** the review-class enum had no distinct value for an independently live-fetched but incomplete broader-scope review. D021 and the Boot Kit now define `INDEPENDENT_LIVE_PARTIAL`, distinct from a complete `INDEPENDENT_LIVE` and from a bounded static package; it cannot satisfy full-scope acceptance.
 - **A-F3 (P2) — CONFIRMED/CORRECTED:** four front doors repeated a source/context rule not owned by D021. They now point to the pinned-main contract and explicitly remain navigational.
 - **A-F4 (P2) — CONFIRMED/CORRECTED:** the AGENTS and Boot Kit pointers did not distinguish adopted D021 §6B.2/§6C.5 content in pinned main from expanded candidate-only text in this PR. The pointers now bind use to exact pinned main.
 - **A-F5 (P3) — CONFIRMED/CORRECTED:** §6B.2 repeated a `BLOCKED` definition that folded source identity into acquisition status. It now delegates the exact meaning and keeps identity/coverage orthogonal.
-- **A-F6 (P3) — CONFIRMED/CORRECTED:** authored-but-unexecuted test artifacts are now explicitly recorded as provenance only, with `TEST_STATUS=NOT_RUN`.
+- **A-F6 (P3) — CONFIRMED/CORRECTED_AT_E4AF; REGRESSED_IN_6D3C:** the test-provenance wording was present in the e4af successor reviewed in this section, but it did not survive the next correction commit: at HEAD `6d3c9922`, Boot Kit step 10 had been replaced by a literal JavaScript editing expression. That regression was corrected in successor `36d871cd7a9c2ff4da8c30ea03cb8f394e92df3b`; the exact Boot Kit bytes were fetched back by the coordinator. Independent verification of that successor remains pending.
 - **A-F7 (P3) — CONFIRMED/CORRECTED:** D021 now defines precedence between the dispatch header and subsequent handoff envelope, field-specific sentinel handling, and `PROMPT_EMISSION_STATUS`; the Boot Kit points to the same gate.
 - **A-F8 (P3) — CONFIRMED/CORRECTED:** the manifest now escapes delimiter characters in paths and records Git mode/object type/object identity, rename/mode-change representation and submodule handling.
 - **A-F9 (P3) — CONFIRMED/CORRECTED:** §6F.4 now defines a dedicated signal branch generically and requires live identity verification; it does not embed incident-specific branch names.
-- **B-1 (P3) — CONFIRMED/CORRECTED:** the invalid 39-character SHA in line 38 has been replaced with the valid 40-character commit SHA.
-- **B-2 (P3) — CONFIRMED/CORRECTED:** the review of 3529 is now explicitly separated from its unreviewed successor e4af; successor edits are no longer presented as independently accepted before the e4af review.
-- **B-3 (P3) — CONFIRMED/CORRECTED:** the historical af3242 review states who reported its statuses and the exact declared nine-path scope to which COMPLETE applies.
-- **B-4 (P3) — CONFIRMED/CORRECTED:** the non-standard `TESTS_BUILD_RUNTIME` shorthand was replaced by D021's canonical `TEST_EXECUTION_SCOPE`, `TEST_AUTHORIZATION` and `TEST_STATUS` fields.
-- **B-5 (P3) — CONFIRMED/CORRECTED:** the historical claim that the four front doors were pure canonical pointers now records the remaining duplicated qualification and its later correction.
-- **B-6 (P3) — CONFIRMED/CORRECTED:** the §6E.6A review-class rule is identified as candidate-only text on the reviewed HEAD, not adopted authority from pinned main.
+- **E4AF-B-1 (P3) — CONFIRMED/CORRECTED:** the invalid 39-character SHA in line 38 has been replaced with the valid 40-character commit SHA.
+- **E4AF-B-2 (P3) — CONFIRMED/CORRECTED:** the review of 3529 is now explicitly separated from its unreviewed successor e4af; successor edits are no longer presented as independently accepted before the e4af review.
+- **E4AF-B-3 (P3) — CONFIRMED/CORRECTED:** the historical af3242 review states who reported its statuses and the exact declared nine-path scope to which COMPLETE applies.
+- **E4AF-B-4 (P3) — CONFIRMED/CORRECTED:** the non-standard `TESTS_BUILD_RUNTIME` shorthand was replaced by D021's canonical `TEST_EXECUTION_SCOPE`, `TEST_AUTHORIZATION` and `TEST_STATUS` fields.
+- **E4AF-B-5 (P3) — CONFIRMED/CORRECTED:** the historical claim that the four front doors were pure canonical pointers now records the remaining duplicated qualification and its later correction.
+- **E4AF-B-6 (P3) — CONFIRMED/CORRECTED:** the §6E.6A review-class rule is identified as candidate-only text on the reviewed HEAD, not adopted authority from pinned main.
 
 ### Boundaries and result
 
 `TEST_EXECUTION_SCOPE=NOT_APPLICABLE`; `TEST_AUTHORIZATION=NOT_AUTHORIZED`; `TEST_STATUS=NOT_RUN`; `MERGE_AUTHORIZATION=NOT_GRANTED`. No product source, credentials, protected reads, local runtime, tunnel, bridge or technical gate was changed. G1/G2/G3 remain `NOT_ESTABLISHED`; Option D remains `RATIFIED_NO_BOOTSTRAP`; protected reads remain `FAIL_CLOSED`; bridge remains `BRIDGE_NOT_READY`.
 
 `PHASE_A_SUBSTANTIVE_REVIEW=COMPLETE` for the declared scope; `PHASE_B_SUBSTANTIVE_REVIEW=COMPLETE` for the reconciliation receipt; `CONTEXT_SEPARATION=LIMITED`; `REVIEW_CLASS_PHASE_A=INDEPENDENT_LIVE` under the candidate's proposed §6E.6A criteria; `P0=0`; `P1=0`; `P2=4`; `P3=11`. This is a scoped documentary review with findings, not a PR-wide PASS/FAIL or merge-readiness claim.
+
+## Independent delta review of successor HEAD 6d3c9922 — 2026-11-03 UTC
+
+**Reviewed candidate:** `6d3c99220292b568ff036c7f7cb3b9664ef35fe9`  
+**Declared comparison:** immediate parent `e4af943f92abc5d86c4619b93be3ff4234ff25c3` → HEAD `6d3c99220292b568ff036c7f7cb3b9664ef35fe9`; PR target/base and pinned `main` `56e4d8b11846a8d8f3cb8cda08efd773ec235651`.  
+**Reviewer:** Claude / Anthropic; the user-supplied report identifies a continued chat with read-only Git tooling, not Claude Web and not a new separate session. Model label `Claude Sonnet 5.5` is actor-reported and was not independently checked in a product UI.  
+**Context:** `CONTEXT_SEPARATION=LIMITED`. The report says same-session project context and ten criteria/metadata from prior work were available, but no exact-6d3 findings or author rationale were exposed before Phase A. This is not a fully blinded review.  
+**Source:** `SOURCE_ACQUISITION_METHOD=RECIPIENT_LIVE_FETCH`; reviewer reports live Git fetch and byte identity recomputation. `SOURCE_RETRIEVAL_STATUS=PASS`, `SOURCE_IDENTITY_VERIFICATION=RECIPIENT_LIVE_VERIFIED`, `RECEIVER_SOURCE_ACK=VERIFIED` are retained as reviewer-reported. The reviewer reports recomputing 14 blob identities (seven parent, seven HEAD); the coordinator did not independently recompute that full 14-object set in this adjudication.  
+**Coverage:** `SOURCE_COVERAGE=PARTIAL`; `SUBSTANTIVE_REVIEW=PARTIAL`; `REVIEW_CLASS=INDEPENDENT_LIVE_PARTIAL` as reported. The report says it inspected all changed hunks in the seven-file parent-to-HEAD delta and the complete PR598 reconciliation receipt, but did not inspect the remaining listed D021 sections, the rest of the Boot Kit, the unchanged bulk of the front doors, the two other PR paths outside this delta, or D019/D020 beyond the specified adoption references. This is not a complete PR review or merge-readiness verdict. The formal `DECLARED_REVIEW_SCOPE` field had not yet been added to the candidate's D021 schema at the time of this review; the scope description is preserved here as reviewer-reported rather than retroactively treated as a frozen field.
+
+### Live identity and coordinator reconciliation
+
+The reviewer reports that `main`/PR base equalled `56e4d8b11846a8d8f3cb8cda08efd773ec235651`, and the branch/`refs/pull/598/head` equalled `6d3c99220292b568ff036c7f7cb3b9664ef35fe9`; tree `8edc0cb709ab528119c9606dfbd640c44615acb3`. The reviewer reports one commit, seven changed paths and +119/−46 for the reviewed parent-to-HEAD delta, with 14/14 blob hashes recomputed.
+
+The coordinator then independently refreshed PR #598 and observed it still OPEN/unmerged, with base `56e4d8b11846a8d8f3cb8cda08efd773ec235651` and corrected branch HEAD `36d871cd7a9c2ff4da8c30ea03cb8f394e92df3b`. The direct parent comparison `6d3c9922 → 36d871cd` is one commit ahead, zero behind and exactly seven changed paths: AGENTS, D020, D021, Boot Kit, CONTEXT-INDEX, MEMORY-OPERATING-PROTOCOL and README. No other path was modified by this correction commit. The coordinator fetched the seven files from exact HEAD `36d871cd`; their returned blob IDs are recorded below. The comparison against main remains zero commits behind; no main ref was changed.
+
+### Phase A — findings and adjudication
+
+Claude's original severity count was `P0=0; P1=1; P2=3; P3=7`.
+
+- **6D3-A1 (P1) — CONFIRMED/CORRECTED_IN_SUCCESSOR:** Boot Kit step 10 contained a literal `x=>x.replace(...)` editing expression, not an instruction to return the correlated receipt. The step's receipt content and explicit `TEST_STATUS=NOT_RUN` provenance rule have been restored in HEAD `36d871cd7a9c2ff4da8c30ea03cb8f394e92df3b`; exact Boot Kit fetch-back is verified by the coordinator.
+- **6D3-A2 (P2) — CONFIRMED/CORRECTED_IN_SUCCESSOR:** Boot Kit step 7a unconditionally directed sessions to apply D019 §9E and D020 §9, while exact pinned-main D019 states `STATUS=DOCUMENTED_METHOD_CANDIDATE` and `CANONICAL_MAIN_ADOPTION=NOT_YET`. Step 7a now keeps those expansions candidate-only and preserves already-adopted authorization/no-bootstrap controls.
+- **6D3-A3 (reported P2; adjudicated as P3 wording clarification) — PARTLY_REJECTED/CORRECTED_IN_SUCCESSOR:** the report's claim that §6B.2 points to a §6E.6A definition that does not exist conflates two separate fields. §6B.2 rule 4 refers to `SOURCE_RETRIEVAL_STATUS=BLOCKED`, whose acquisition-failure meaning is defined in §6E.6A; `CONTEXT_SEPARATION=BLOCKED` is separately defined by §6B.2 rule 3. The underlying text was therefore not semantically circular or missing its acquisition definition. Its unqualified word `BLOCKED` was ambiguous, so D021 now names the full field and distinguishes the two meanings. The source finding is not retained as P2.
+- **6D3-A4 (P3) — CONFIRMED/CORRECTED_IN_SUCCESSOR:** D021 lacked a receipt field freezing the declared review scope before inspection and lacked a deterministic mixed-source rule. D021 now requires `DECLARED_REVIEW_SCOPE`, per-item acquisition/inspection tracking, and `SOURCE_COVERAGE=NOT_ASSESSED` plus `SUBSTANTIVE_REVIEW=NOT_RUN` for a full declared scope whose required source items are unavailable. Accessible-subset observations cannot be relabelled a partial verdict on that unreviewable full scope. `INDEPENDENT_LIVE_PARTIAL` is reserved for cases where all required source bytes are available/verified but inspection itself is incomplete.
+- **6D3-A5 (P3) — CONFIRMED/CORRECTED_IN_SUCCESSOR:** D021 now expressly prohibits fabrication of model labels, capabilities, access, session, delivery or execution status; separates `PROMPT_PREPARED` from the emission-readiness enum; defines the valid readiness progression; and fixes the status line's location immediately after the dispatch header and before task body.
+- **6D3-A6 (P3) — CONFIRMED/CORRECTED_IN_SUCCESSOR:** the manifest now binds Git-backed paths from raw NUL-delimited `git ls-tree -rz --full-tree` records, defines `BASE` as the compared left-hand revision (including the parent in parent-to-successor deltas), and explains that a blob SHA alone does not bind path/mode/type. A one-row descriptor is required where those properties matter, including for a one-file source.
+- **6D3-A7 (P3) — CONFIRMED/CORRECTED_IN_SUCCESSOR:** the four front doors regain the invariant that a visible UI option or permission prompt is not authorization and every mutation needs action-specific authorization for the exact target/action. D021 remains the rule owner; the front doors stay navigational.
+- **6D3-A8 (P3) — PARTLY_CONFIRMED/CORRECTED_IN_SUCCESSOR:** D020 §9 already stated in prose that D019 §9E owns the pre-action decision-completeness algorithm, so the report's claim that D020 did not identify the owner is overstated. The structured D020 concept record lacked an explicit owner/adoption binding; D020 now names D019 §9E as the owning record, classifies its own §9 as a bounded refinement rather than a second owner, and says D020's general method status does not prove D019 adoption.
+
+### Phase B — receipt findings and adjudication
+
+- **6D3-B1 (reported P2) — CONFIRMED/CORRECTED_IN_SUCCESSOR:** the e4af receipt called A-F6 `CONFIRMED/CORRECTED`, but Boot Kit step 10 at reviewed HEAD 6d3 was actually corrupted by the literal editing expression. The historical e4af correction is retained as such but now explicitly marked as regressed in 6d3 and repaired in `36d871cd`; independent acceptance remains pending.
+- **6D3-B2 (P3) — CONFIRMED/CORRECTED_IN_SUCCESSOR:** the e4af section now names exact successor correction carrier `6d3c9922` as the prior attempt and `36d871cd7a9c2ff4da8c30ea03cb8f394e92df3b` as the current repair carrier, and distinguishes coordinator fetch-back from independent verification.
+- **6D3-B3 (P3) — CONFIRMED/CORRECTED_IN_THIS_RECEIPT:** repeated `B-1`–`B-3` identifiers are now namespaced as `3529-B-1`–`3529-B-3` in the 3529 review and `E4AF-B-1`–`E4AF-B-6` in the e4af review. New 6d3 findings use the `6D3-A*`/`6D3-B*` identifiers.
+
+### Correction carrier and exact fetch-back identities
+
+`CORRECTION_CARRIER_HEAD=36d871cd7a9c2ff4da8c30ea03cb8f394e92df3b`; parent `6d3c99220292b568ff036c7f7cb3b9664ef35fe9`. The coordinator fetched back these exact paths/blob IDs:
+
+| Path | Fetched HEAD blob |
+|---|---|
+| `IABV_v1.5/AGENTS.md` | `2bb6fb395965883f14095c00db03723d22d3011b` |
+| `IABV_v1.5/docs/history/CHAT-ARCH/README.md` | `845a097f02cb4af30c3b598bf4b331abea2cb9af` |
+| `IABV_v1.5/docs/history/CHAT-ARCH/CONTEXT-INDEX.md` | `05cd3cf9b53dcebe00a89423562a115d3450b5bd` |
+| `IABV_v1.5/docs/history/CHAT-ARCH/MEMORY-OPERATING-PROTOCOL.md` | `4f193ff6fbf8b47f4ade217207986655f6d3fdf2` |
+| `IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-31-UAAL-NEW-CHAT-BOOT-AND-HANDOFF-KIT.md` | `553f9604d1132cf077939eed5f9a92e06e7dddbf` |
+| `IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-UAAL-D021-CROSS-SESSION-BOOT-AND-STATE-RECONCILIATION.md` | `385e628f205c6ae8bcc338ef49353c56da250711` |
+| `IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-28-UAAL-D020-VERIFIED-PROGRESS-UTILITY-STRATEGY-SWITCH.md` | `4dba16205395d0d4c03b2e7c3b1edde427db5859` |
+
+`P0=0; P1=1; P2=2; P3=8` after adjudicating 6D3-A3 as a P3 wording ambiguity rather than a substantive P2 defect. This is a scoped documentary review with findings; it is not a PR-wide PASS/FAIL or merge-readiness decision.
+
+### Boundaries
+
+`TEST_EXECUTION_SCOPE=NOT_APPLICABLE`; `TEST_AUTHORIZATION=NOT_AUTHORIZED`; `TEST_STATUS=NOT_RUN`; `MERGE_AUTHORIZATION=NOT_GRANTED`. No tests, build, runtime, protected reads, credentials, local bridge/tunnel, product code, permission changes or CURRENT-STATE changes were performed. G1/G2/G3 remain `NOT_ESTABLISHED`; Option D remains `RATIFIED_NO_BOOTSTRAP`; protected reads remain `FAIL_CLOSED`; bridge remains `BRIDGE_NOT_READY`.
+
