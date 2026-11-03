@@ -1,3 +1,11 @@
+<!-- 2026-11-03 external-AI handoff and Claude transport incident pointer -->
+## Latest cross-AI handoff repair — 2026-11-03
+
+- Core method: [D021 §§6F–6G](./CHAT-ARCH-2026-10-29-UAAL-D021-CROSS-SESSION-BOOT-AND-STATE-RECONCILIATION.md) — destination-specific capability discovery, exact literal source URLs, packet-integrity acknowledgement, same-thread phase continuity and blind-review scope arithmetic.
+- New-chat execution template: [Boot Kit §14](./CHAT-ARCH-2026-10-31-UAAL-NEW-CHAT-BOOT-AND-HANDOFF-KIT.md).
+- Incident and evidence ledger: [Claude session transport and blind-review repair receipt](./CHAT-ARCH-2026-11-03-UAAL-CLAUDE-SESSION-TRANSPORT-AND-BLIND-REVIEW-REPAIR-RECEIPT.md).
+- Status: documentary candidate on PR #598; not canonical in main until explicitly reviewed, merged and fetched back. No runtime enforcement or model-weight learning is claimed.
+
 <!-- CHATGPT_PROJECT_NATIVE_CONTEXT_R1: project transport pointer. -->
 ## ChatGPT native shared context and memory scope (2026-10-31)
 
