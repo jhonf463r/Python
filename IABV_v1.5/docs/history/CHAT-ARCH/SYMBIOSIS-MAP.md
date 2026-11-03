@@ -28,6 +28,11 @@ UAAL-D020 is the owning progress-utility method: [UAAL-D020](./CHAT-ARCH-2026-10
 
 For a new participating chat or bounded specialist/executor/reviewer handoff, use the [UAAL New-Chat Boot and Handoff Kit](./CHAT-ARCH-2026-10-31-UAAL-NEW-CHAT-BOOT-AND-HANDOFF-KIT.md). The receiving actor must report the sources actually retrieved and return a correlated receipt; a link or dispatch instruction alone is not proof of receipt or use.
 
+
+### Destination-aware activation for Claude and other external AIs (2026-11-03)
+
+Claude is part of the cross-product symbiosis only when the exact receiving session retrieves the relevant GitHub memory through an authorized route, or receives a bounded source package with its provenance preserved. The coordinator must check its own GitHub connector before asking the Owner to relay public files; the recipient's tools and the coordinator's tools are separate. Use D021 §6C.5.1 to compile the prompt/source route and D020 §§8–8.1 to prove retrieval, method activation, decision application and later causal reuse. Do not assume automatic context injection, shared hidden context, or identical browser/API/shell access across Claude.ai, Claude Code and Claude API.
+
 ### M1B code-candidate evidence gate — applied lesson (2026-10-28)
 
 The R1→R3 reader episode adds a specific correction to cross-agent code handoffs:
