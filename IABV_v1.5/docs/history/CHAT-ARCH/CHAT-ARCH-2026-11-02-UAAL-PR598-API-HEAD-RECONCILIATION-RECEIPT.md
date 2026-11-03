@@ -282,3 +282,47 @@ The first post-write aggregate verification harness applied all three file-speci
 
 This does not claim that an independent full-scope review has passed. Claude Web's supplied report remains a correct recipient-side `SOURCE_RETRIEVAL_STATUS=BLOCKED` receipt for that session; it does not override the coordinator's separately verified GitHub source retrieval. A fresh independent reviewer with a real Git/GitHub read channel is still required to inspect the final HEAD, with the two reconciliation receipts read only after the normative candidate sources in Phase A to avoid exposing prior evaluative findings before the reviewer's own source inspection. No product code, current-state route, technical gate, protected-read boundary, local runtime, tunnel or bridge was changed.
 
+## Follow-on coordinator semantic correction — source/identity/ack orthogonality — 2026-11-03 UTC
+
+**Review input HEAD:** \`7475b29cf4cc9087a581460b239409cbe49ef73d\`  
+**Correction carrier:** \`a35d3ce86fe72423fba08c1bdedf1d1a450ba11c\` (parent \`7475b29cf4cc9087a581460b239409cbe49ef73d\`); tree \`6a5295c7ebaa1175e94bbb2d2c44ab53b502bb3e\`.  
+**Repository / PR:** \`jhonf463r/Python\`, PR #598, branch \`uaal/precision-gates-and-anti-waste-r1-20261102\`; base/main \`56e4d8b11846a8d8f3cb8cda08efd773ec235651\`. At the pre-write observation PR #598 was OPEN/unmerged, with the branch and PR head both at \`7475b29cf4cc9087a581460b239409cbe49ef73d\`.  
+**Actor boundary:** coordinator and candidate editor. This reconciliation is not an independent reviewer result and does not satisfy the independent-review gate.
+
+### Source and identity observations
+
+Both exact recursive Git tree objects were retrieved and were not truncated: base tree \`da5e395d3a2f77c5cfeb595a2a9ea875e756608a\`, candidate tree \`759856ead597866352d75acf6ce4f0a24cc5ef18\`. The base contains eight of the ten changed paths; the two reconciliation receipts are newly added at HEAD. All ten changed HEAD entries and eight existing BASE entries are regular Git blobs with mode \`100644\`. The changed-path set remains the ten paths listed in the PR #598 source reconciliation above.
+
+The four files changed between HEAD \`849a0cec\` and reviewed input HEAD \`7475b29c\` were fetched at their exact refs and their returned blob IDs and decoded byte lengths matched the Git tree entries:
+
+| HEAD 7475 path | Blob SHA | Bytes |
+|---|---|---:|
+| \`IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-23-CONTINUITY-SPACE-TIME-OPERATING-PROTOCOL-v1.md\` | \`6828b406dbe2d8d417ed9cf4a19150bbd60fce3f\` | 101295 |
+| \`IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-UAAL-D021-CROSS-SESSION-BOOT-AND-STATE-RECONCILIATION.md\` | \`fd1033a55281f2b9490012799300801b3a8160a2\` | 125947 |
+| \`IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-31-UAAL-NEW-CHAT-BOOT-AND-HANDOFF-KIT.md\` | \`585a5c96c1466f214b482e08fffefc4382a2e5fa\` | 48546 |
+| \`IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-11-02-UAAL-PR598-API-HEAD-RECONCILIATION-RECEIPT.md\` | \`e3378ea20f4c423fd779b3e9662f5651c965287e\` | 40350 |
+
+The immediately preceding pinned review at HEAD \`849a0cec\` had already verified all 18 extant BASE/HEAD blob identities and decoded byte lengths against their tree entries. The intervening successor commits changed only the four paths listed above. The current correction commit changes only D021 and the Space-Time protocol; its exact fetch-back is recorded after publication. This was GitHub tree/API plus per-file base64 fetch-back; no raw \`git ls-tree -rz\` stream or aggregate \`MANIFEST_SHA256\` was generated in this session.
+
+### Adjudicated findings and corrections
+
+- **COORD-PR598-A5 (P2) — CONFIRMED/CORRECTED_IN_SUCCESSOR:** the mixed-source rule said an item that was unverified could make the full acquisition \`SOURCE_RETRIEVAL_STATUS=BLOCKED\`, while the same D021 section defined retrieval status as the acquisition route only and kept identity verification and receiver acknowledgement orthogonal. D021 §6E.6A rule 4 also directed unverified/unacknowledged conditions to \`SOURCE_PACKAGE_STATUS\`, despite those not being package states. That could misclassify a successful live fetch with identity still unverified, or an otherwise successful fetch whose acknowledgement is pending, as a failed retrieval. The successor now distinguishes: (1) absent/unreadable/incomplete/mismatched bytes and actual route failure; (2) bytes present but identity unverified; (3) receiver acknowledgement pending/failed; and (4) the separate substantive-review precondition. A retrieval route is marked BLOCKED only after an attempted route fails to return the required bytes, or when a concrete verified precondition makes every permitted route unavailable. An unattempted route remains NOT_ATTEMPTED. If bytes exist but identity is unverified, the actual PASS/LIMITED acquisition result is retained and \`SOURCE_IDENTITY_VERIFICATION=UNVERIFIED\` is recorded. An ACK pending/failed is recorded in its own field and does not, by itself, change retrieval status. The full declared scope remains \`SUBSTANTIVE_REVIEW=NOT_RUN\` while any required precondition is unmet; \`SOURCE_COVERAGE\` records actual inspection (NOT_ASSESSED for none, PARTIAL for some, COMPLETE for all). A factual PARTIAL coverage value is not a partial substantive verdict on an unreviewable full scope.
+- **COORD-PR598-A6 (P3) — CONFIRMED/CORRECTED_IN_SUCCESSOR:** the Space-Time §4 pre-action gate called D021 §6F.0 the “sole canonical trigger” even though §6F is absent from the pinned base \`main\` and is introduced by this candidate. The text now says §6F.0 is the proposed trigger-set owner on this candidate branch and becomes canonical only when the exact section is present in pinned \`main\`; until then it is candidate-only and must not be applied as a mandatory gate.
+
+### Exact correction fetch-back
+
+The guarded successor commit \`a35d3ce86fe72423fba08c1bdedf1d1a450ba11c\` has parent \`7475b29cf4cc9087a581460b239409cbe49ef73d\`. The coordinator fetched both files back from that exact successor and confirmed these blob identities and decoded byte lengths:
+
+| Path | Successor blob SHA | Bytes |
+|---|---|---:|
+| \`IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-29-UAAL-D021-CROSS-SESSION-BOOT-AND-STATE-RECONCILIATION.md\` | \`5a7774cad9c7f90779c6e89ea00d6cf99b6413d8\` | 128297 |
+| \`IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-23-CONTINUITY-SPACE-TIME-OPERATING-PROTOCOL-v1.md\` | \`5d86f3e1b8deea4ed6d82b88314a4e3d293ba159\` | 101510 |
+
+The parent comparison \`7475b29c → a35d3ce8\` is exactly one commit ahead, zero behind and exactly two paths changed: D021 (+9/−2) and Space-Time (+1/−1). PR #598 remained OPEN/unmerged at the pre-write observation; \`main\` was not changed. The current receipt is updated in a separate receipt-only successor so that this section records the correction carrier without circularly referring to its own commit.
+
+### Boundaries and independent-review status
+
+\`COORDINATOR_SEMANTIC_RECONCILIATION=COMPLETE_FOR_THE_TWO_LISTED_FINDINGS\`; \`INDEPENDENT_REVIEW_STATUS=NOT_PERFORMED\`; \`TEST_EXECUTION_SCOPE=NOT_APPLICABLE\`; \`TEST_AUTHORIZATION=NOT_AUTHORIZED\`; \`TEST_STATUS=NOT_RUN\`; \`MERGE_AUTHORIZATION=NOT_GRANTED\`.
+
+This correction improves the candidate's documentary state machine but does not turn this coordinator/author audit into independent acceptance. The final candidate still requires a separate reviewer with live Git/GitHub source access, using a predeclared complete scope. No tests, build, runtime, protected reads, credentials, CURRENT-STATE changes, product code, permissions, local bridge or tunnel were changed.
+
