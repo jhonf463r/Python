@@ -1158,6 +1158,63 @@ For independent PR/repository work, this §6F.8 block is the repository-action s
 Record the concrete observation that triggered each use of this gate in the dated task receipt, with its exact source/ref, timestamp and evidence class. Do not embed mutable PR identities, branch names, run/job IDs, platform restrictions or one-off incident details in this normative method. Keep current operational state in the owning canonical state/receipt and refresh it before consequential action.
 
 
+
+### 6F. Destination-scoped external-AI handoff, retrieval preflight and packet integrity (2026-11-03)
+
+This section operationalizes D021 for external AI destinations whose tools and context surfaces differ by product, mode, account, conversation and runtime. It refines existing handoff and source-separation rules; it creates no coordinator, memory store, router or authority layer.
+
+#### 6F.1 Identify the actual receiving surface
+
+Every material external handoff records, where known: target provider/product; model identifier only as reported or visibly displayed; concrete surface (web chat, code agent, API, remote container, desktop app); session continuity (new separate, same-thread continuation, or unverified); and separately observed capabilities for browser, GitHub connector/API, Git smart-HTTP, shell, outbound network, local checkout, attachments and write permissions. Record the target role, immutable task/revision, source scope, authorized actions and stop conditions.
+
+A brand/model name such as Claude, Codex or ChatGPT is not a capability declaration. Capabilities are session- and surface-specific. Shell access does not prove outbound network; a browser does not prove Git/API access; public repository visibility does not prove endpoint reachability. Treat model/runtime/capability statements as ACTOR_REPORTED until observed.
+
+#### 6F.2 Retrieval route preflight and literal URLs
+
+Before asking the Owner to relay repository links/files, the coordinator must use its own authorized connectors where available. Do not transfer work to the Owner merely because a receiving AI lacks a capability that the coordinator already has.
+
+When the receiver must retrieve public repository material, include exact owner/repository, immutable BASE and HEAD, complete paths and literal URLs in the dispatch. Do not rely on the receiver constructing a URL from a SHA or path. Some web readers accept only URLs explicitly present in the user message or search results. A constructed URL rejected because it was not surfaced is an input-discovery limitation, not proof that the GitHub object is absent or permissions deny it.
+
+Probe distinct routes independently: Git smart-HTTP; GitHub REST refs/commits/compare/trees/blobs; raw.githubusercontent.com at the exact SHA/path; and GitHub blob HTML. A failure in one route does not establish failure of the others. Use NOT_ATTEMPTED when a route was not tried. Use BLOCKED only after a permitted route was attempted and failed, or a verified precondition rules out every permitted route. Distinguish URL_NOT_SURFACED, PERMISSION_DENIED, NETWORK_UNAVAILABLE, OBJECT_NOT_FOUND and CONTENT_NOT_RENDERED.
+
+For a public repository, resolve the exact ref, verify the commit object, obtain the recursive tree or path/blob IDs, retrieve exact blob bytes, then inspect content. An empty normal content response is not evidence that a file is empty. If a path has a known blob SHA, fetch that exact blob and record both retrieval events. Do not open unrelated credential-bearing files during repository traversal.
+
+#### 6F.3 Retrieval, identity, inspection and review are orthogonal
+
+Continue using the canonical D021 fields and definitions for SOURCE_RETRIEVAL_STATUS, SOURCE_IDENTITY_VERIFICATION, SOURCE_COVERAGE, SOURCE_PACKAGE_STATUS, RECEIVER_SOURCE_ACK and SUBSTANTIVE_REVIEW. Do not introduce a new value into a canonical enum through a local prompt.
+
+A commit SHA returned by GitHub identifies the commit reference served by GitHub. A blob SHA returned in file metadata does not mean the receiver recomputed the Git object hash from raw bytes. State who retrieved bytes, who verified identity, whether the hash was independently recomputed, and what content was inspected. Metadata/HTML visibility, a URL, a copied SHA, retrieved bytes and substantive review are distinct events.
+
+#### 6F.4 Multi-part prompt delivery
+
+A long prompt is a source package; sending is not proof of complete delivery. For a route with observed truncation, split the dispatch into numbered packets. Each packet carries the same DISPATCH_ID, TASK_ID and immutable revision, plus PACKET_ID, PART i/N, BEGIN_PACKET and END_PACKET markers. The receiver must acknowledge all parts and the final marker before source inspection.
+
+On 2026-11-03, an Owner-supplied Claude transcript reported two identical received copies of a dispatch, each 20,212 bytes and truncated within section 12. This is route-specific ACTOR_REPORTED evidence, not a universal Claude/API limit. For that receiving route use a conservative target of at most 12,000 UTF-8 bytes per message until a different limit is measured. Never present it as a product specification.
+
+If a part is missing, ends unexpectedly, or lacks its END_PACKET marker, mark DISPATCH_COMPLETENESS=INCOMPLETE, do not inspect candidate sources, and request only the missing part. Do not infer that a section is absent from the task when the dispatch itself was truncated.
+
+#### 6F.5 Same-thread phase continuity
+
+A timestamp, scope-lock statement or phase result mentioned by a sender or remembered from another conversation is not proof that the current receiving conversation contains it. The active thread must contain the correlated acknowledgement and required phase artifact.
+
+For a NEW_SEPARATE requirement, the sender must actually open/select the new conversation before dispatch. The receiver reports observable session continuity and prior exposure. A new prompt cannot retroactively create a new session. If the receiver says the active thread lacks an earlier lock or report, treat it as NOT PRESENT in that thread unless the exact correlated artifact is visible there. Do not assume a model memory failure when a different thread or execution surface may have received the earlier message.
+
+#### 6F.6 No false handoff progress
+
+Keep delivery stages separate: PROMPT_PREPARED, PROMPT_SENT, RECIPIENT_ACKNOWLEDGED, ALL_PACKETS_ACKNOWLEDGED, SOURCE_RETRIEVED, SOURCE_IDENTITY_VERIFIED, SOURCE_INSPECTED, ACTION_EXECUTED and RESULT_ADJUDICATED. A prior stage never implies a later one.
+
+### 6G. Blind-review phase integrity and scope arithmetic (2026-11-03)
+
+1. The scope lock and Phase A freeze must exist in the active reviewer conversation. A Phase A result cannot be imported from another thread by timestamp or assistant statement.
+2. If the receiver states that the active thread contains no Phase A report, do not open Phase B receipts, proceed to Phase C, or synthesize findings. Phase A is absent/incomplete.
+3. Enumerate atomic source items before inspection. A BASE-to-HEAD path normally contributes two items: path@BASE and path@HEAD. Distinguish total changed paths from the declared review scope.
+4. In the PR #598 task observed on 2026-11-03, the pinned comparison returned ten changed paths: eight operational documents and two receipts. The blind Phase A covers exactly the eight operational documents (16 BASE/HEAD source items); the two receipts are excluded and reserved for Phase B. Label PHASE_A_SCOPE=8_OPERATIONAL_FILES_ONLY and FULL_10_FILE_REVIEW=NOT_COMPLETED. Do not claim Phase A reviewed ten files.
+5. Phase B may inspect the two receipts only after a complete Phase A report is frozen in the same receiving thread. Phase C is a separate non-blind reconciliation against current main, canonical state and technical gates. B/C must not retroactively alter the frozen Phase A record.
+6. A changed-path list may be used as metadata for scope lock. For a blind review, do not expose or inspect PR body, comments, prior receipts, author findings or evaluation rationale before Phase A freezes.
+7. If the full declared source package is incomplete, retain factual retrieval/coverage values and set SUBSTANTIVE_REVIEW=NOT_RUN for the unreviewable full scope. A bounded subset is COMPLETE only when it was declared before inspection.
+
+These are documentary process rules. They do not establish automatic cross-session bootstrap, model-weight learning, runtime enforcement, source permissions or any IABV technical gate.
+
 ## 7. Historical authoring snapshot and per-session falsifiable checks
 
 The values below are the original D021 authoring snapshot, not current route authority. Each material session must refresh live `main` and current PR metadata before reuse. Observed while preparing the initial revision:
