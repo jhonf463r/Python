@@ -1,24 +1,12 @@
-"""MCPBridgeService: ciclo de vida del puente MCP + cloudflared.
+"""Lifecycle adapter for the IABV MCP bridge.
 
-Capa 1 del plan de autonomía bidireccional Devin ↔ IABV:
+This phase intentionally leaves the application bridge stopped. The default
+production tunnel runner is a deny-only placeholder until a separate exposure
+phase is authorized and verified; the local-only PowerShell launcher is a
+separate path and still requires complete Entra configuration before listening.
 
-- arranca / detiene el MCP server (`iabv_v15.infra.mcp.server`) en un hilo
-  dedicado, sin bloquear el UI principal.
-- arranca / detiene el proceso `cloudflared` (quick tunnel por defecto, o
-  named tunnel si el usuario configuró uno).
-- publica el estado vivo (`MCPBridgeStatus`) para que el `ControlCenterViewModel`
-  muestre un toggle + URL visible + botón copiar.
-- persiste la preferencia del usuario en `data/evolution/config/mcp_bridge.json`
-  así el programa recuerda entre sesiones si el bridge debe auto-arrancar.
-
-Contratos respetados (AGENTS.md):
-  - No decide rutas: sólo opera la infra de transporte.
-  - `AutonomyGovernancePolicy` sigue siendo la fuente de verdad. Antes de
-    arrancar consulta `WorldModelSnapshot` via `_governance_gate_ok()` para
-    no exponer el puente cuando governance lo bloquea.
-  - No crea otro cerebro. Reusa `IABVMCPServer` del PR #26.
-  - Fail-closed: si falta `mcp` SDK o falla el subproceso de cloudflared,
-    publica `status=failed` con razón; no tira excepción al UI.
+Protected repository reads remain denied because a verified scoped-read authority
+is not wired. A token verifier alone does not establish G1/G2/G3.
 """
 
 from __future__ import annotations
@@ -40,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 
 DEFAULT_BIND_HOST = "127.0.0.1"
-DEFAULT_BIND_PORT = 8765
+DEFAULT_BIND_PORT = 8000
 DEFAULT_TRANSPORT = "streamable-http"
 DEFAULT_TUNNEL_TIMEOUT_S = 30.0
 QUICK_TUNNEL_URL_PATTERN = re.compile(r"https://[a-zA-Z0-9\-]+\.trycloudflare\.com")
@@ -123,12 +111,20 @@ class FastMCPServerRunner:
     def run_threaded(self, transport: str, host: str, port: int) -> threading.Thread:
         from iabv_v15.infra.mcp.server import IABVMCPServer  # lazy
 
-        # FastMCP lee host/port de su config / env. Seteamos via env por compatibilidad
-        # con distintos clientes.
-        os.environ["FASTMCP_HOST"] = str(host)
-        os.environ["FASTMCP_PORT"] = str(port)
+        from iabv_v15.infra.mcp.server import preflight_mcp_startup_configuration
 
-        self._server = IABVMCPServer(self._container)
+        # Validate explicit runner arguments before constructing FastMCP or
+        # mutating process state, then pass the same sealed snapshot to server.
+        startup = preflight_mcp_startup_configuration(
+            transport,
+            bind_host=host,
+            bind_port=port,
+        )
+        self._server = IABVMCPServer(
+            self._container,
+            _startup_preflight=startup,
+        )
+        self._server.validate_transport_configuration(transport)
         self._stopped.clear()
 
         def _target() -> None:
@@ -189,56 +185,14 @@ class CloudflaredTunnelRunner:
         return shutil.which(self._bin) is not None
 
     def start(self, bind_host: str, bind_port: int) -> None:
+        """Fail closed: public tunnel creation is not part of this authorized phase."""
         with self._lock:
             if self._proc is not None:
                 return
-            if not self._binary_available():
-                self._last_error = (
-                    f"No se encontró binario '{self._bin}' en PATH. "
-                    "Instalar Cloudflare tunnel (winget install --id Cloudflare.cloudflared)."
-                )
-                return
-
-            if self._named_tunnel:
-                # Named tunnel: el usuario ya corrió `cloudflared tunnel login` y
-                # `cloudflared tunnel create <name>`. Acá sólo lo arrancamos por nombre.
-                argv = [self._bin, "tunnel", "--no-autoupdate", "run", self._named_tunnel]
-            else:
-                # Quick tunnel: URL efímera *.trycloudflare.com; no requiere login.
-                target_url = f"http://{bind_host}:{bind_port}"
-                argv = [
-                    self._bin,
-                    "tunnel",
-                    "--no-autoupdate",
-                    "--loglevel",
-                    "info",
-                    "--url",
-                    target_url,
-                ]
-            argv.extend(self._extra_args)
-
-            try:
-                self._proc = subprocess.Popen(
-                    argv,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT,
-                    text=True,
-                    bufsize=1,
-                )
-            except Exception as exc:
-                self._last_error = f"No se pudo arrancar cloudflared: {exc!r}"
-                self._proc = None
-                return
-
             self._url = None
             self._url_event.clear()
-            self._last_error = None
-            self._reader_thread = threading.Thread(
-                target=self._drain_output,
-                name="iabv-cloudflared-reader",
-                daemon=True,
-            )
-            self._reader_thread.start()
+            self._last_error = "public_tunnel_disabled_by_policy"
+            logger.warning("Cloudflare tunnel startup denied by fail-closed policy.")
 
     def _drain_output(self) -> None:
         proc = self._proc
@@ -292,14 +246,14 @@ class CloudflaredTunnelRunner:
 
 
 class MCPBridgeService:
-    """Orquesta start/stop del MCP server + tunnel y publica el estado.
+    """Orquesta start/stop del puente y publica el estado; producción permanece bloqueada sin autorización de exposición.
 
     Ciclo de vida:
       - __init__: carga preferencia persistida; no arranca nada.
       - attach_listener(callback): suscribe un observador (p.ej. ViewModel) al
         cambio de estado. Recibe un dict via `MCPBridgeStatus.to_dict()`.
       - ensure_started(): idempotente; si el usuario lo habilitó y governance
-        lo permite, arranca server + tunnel.
+        lo permite y la exposición está autorizada, arranca el servicio.
       - set_enabled(enabled: bool): cambia preferencia persistida y refleja
         el estado (arranca o detiene según valor).
       - stop(): detiene en caliente sin tocar preferencia.
@@ -321,8 +275,12 @@ class MCPBridgeService:
     ) -> None:
         self._container = container
         self._workspace_root = Path(workspace_root) if workspace_root else Path.cwd()
+        # Reject tunnel injection before constructing any runner in this profile.
+        # No alternate implementation may bypass the public-tunnel deny gate.
+        if tunnel_runner is not None:
+            raise ValueError("public_tunnel_runner_injection_disabled_by_policy")
         self._server_runner: _ServerRunner = server_runner or FastMCPServerRunner(container)
-        self._tunnel_runner: _TunnelRunner = tunnel_runner or CloudflaredTunnelRunner()
+        self._tunnel_runner: _TunnelRunner = CloudflaredTunnelRunner()
         self._transport = transport if transport in {"stdio", "sse", "streamable-http"} else DEFAULT_TRANSPORT
         self._bind_host = bind_host
         self._bind_port = int(bind_port)
@@ -433,6 +391,15 @@ class MCPBridgeService:
     # Internals
 
     def _start_locked(self) -> MCPBridgeStatus:
+        # Do not start MCP when the production public-tunnel runner is disabled.
+        # This prevents a partially started process surviving a failed tunnel startup.
+        if isinstance(self._tunnel_runner, CloudflaredTunnelRunner):
+            with self._lock:
+                self._status.running = False
+                self._status.tunnel_url = None
+                self._status.last_error = "public_tunnel_disabled_by_policy; bridge remains not ready"
+                self._update_state("failed")
+            return self.status()
         block = self._governance_gate_block()
         with self._lock:
             if block is not None:
@@ -465,6 +432,8 @@ class MCPBridgeService:
         # Arranca tunnel y espera URL.
         try:
             self._tunnel_runner.start(self._bind_host, self._bind_port)
+            if getattr(self._tunnel_runner, "last_error", None) == "public_tunnel_disabled_by_policy":
+                raise RuntimeError("public_tunnel_disabled_by_policy")
         except Exception as exc:
             with self._lock:
                 self._status.last_error = f"No se pudo arrancar cloudflared: {exc!r}"

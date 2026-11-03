@@ -7,7 +7,7 @@ Esta capa concentra la lógica que NO depende de FastMCP:
 - blacklist de archivos sensibles (secrets, credenciales, llaves);
 - whitelist y ejecución segura de la batería `pytest` oficial;
 - inspección read-only de `git` (`status --porcelain` + `log`);
-- listado de directorios con `{name, type, size, mtime}`;
+- denegación fail-closed de lectura/listado hasta que exista autoridad de alcance verificable;
 - captura de screenshot con degradación explícita cuando la UI no está
   mapeada (el caso típico de los tests Linux headless).
 
@@ -209,46 +209,15 @@ def read_repo_file(
     *,
     max_bytes: int = MAX_READ_BYTES,
 ) -> dict[str, Any]:
-    """Lee un archivo dentro del workspace como texto UTF-8.
+    """Deny repository content reads until a verified scoped-read authority exists.
 
-    Devuelve `{path, size, content}` si es seguro; levanta `AuditToolError`
-    en cualquier otra ruta.
+    Path validation and a sensitive-file blacklist are not authorization. This
+    helper intentionally does not resolve or open the requested path.
     """
-
-    resolved = resolve_workspace_path(workspace_root, relative_path)
-    relative_norm = str(relative_path).replace(os.sep, "/")
-    while relative_norm.startswith("./"):
-        relative_norm = relative_norm[2:]
-    if is_sensitive_path(relative_norm) or is_sensitive_path(resolved.name):
-        raise AuditToolError(
-            "sensitive_file_blocked",
-            f"Lectura bloqueada por blacklist de secrets: {relative_path!r}",
-        )
-    if not resolved.exists():
-        raise AuditToolError("not_found", f"Archivo no existe: {relative_path!r}")
-    if resolved.is_dir():
-        raise AuditToolError(
-            "is_directory",
-            f"{relative_path!r} es un directorio; usá list_repo_directory.",
-        )
-    size = resolved.stat().st_size
-    if size > max_bytes:
-        raise AuditToolError(
-            "file_too_large",
-            f"Archivo {relative_path!r} pesa {size} bytes; tope {max_bytes}.",
-        )
-    try:
-        content = resolved.read_text(encoding="utf-8")
-    except UnicodeDecodeError as exc:
-        raise AuditToolError(
-            "binary_not_supported",
-            f"Archivo {relative_path!r} no es UTF-8 decodable ({exc.reason}).",
-        ) from exc
-    return {
-        "path": relative_norm,
-        "size": size,
-        "content": content,
-    }
+    raise AuditToolError(
+        "scoped_read_authority_unavailable",
+        "Repository content reads remain denied: no verified scoped-read authority is wired.",
+    )
 
 
 # ----------------------------------------------------------------------
@@ -275,62 +244,15 @@ def list_repo_directory(
     *,
     max_entries: int = DEFAULT_LIST_MAX,
 ) -> dict[str, Any]:
-    """Lista entradas de un directorio dentro del workspace."""
+    """Deny directory listings until a verified scoped-read authority exists.
 
-    rel = relative_path.strip() if relative_path else ""
-    if rel in ("", "."):
-        resolved = Path(workspace_root).resolve()
-    else:
-        resolved = resolve_workspace_path(workspace_root, rel)
-    if not resolved.exists():
-        raise AuditToolError("not_found", f"Directorio no existe: {rel!r}")
-    if not resolved.is_dir():
-        raise AuditToolError("not_a_directory", f"{rel!r} no es un directorio.")
-
-    cap = max(1, min(int(max_entries or DEFAULT_LIST_MAX), MAX_LIST_ENTRIES))
-    entries: list[dict[str, Any]] = []
-    names = sorted(os.listdir(resolved))
-    truncated = False
-    for name in names:
-        if len(entries) >= cap:
-            truncated = True
-            break
-        child = resolved / name
-        sensitive = is_sensitive_path(name)
-        try:
-            st = child.lstat()
-            size = int(st.st_size) if stat.S_ISREG(st.st_mode) else 0
-            mtime = float(st.st_mtime)
-        except OSError:
-            size = 0
-            mtime = 0.0
-        entries.append(
-            {
-                "name": name,
-                "type": _entry_type(child),
-                "size": size,
-                "mtime": mtime,
-                "sensitive": bool(sensitive),
-            }
-        )
-
-    root = Path(workspace_root).resolve()
-    # Normalizar a forward slash para ser consistentes con read_repo_file
-    # (en Windows `Path.relative_to` devuelve backslashes; el contrato MCP
-    # expone siempre `/` y los clientes que comparan ambos tools no
-    # deberían ver formatos distintos).
-    path_field = (
-        str(resolved.relative_to(root)).replace(os.sep, "/")
-        if resolved != root
-        else ""
+    Directory names, sizes, and timestamps may disclose protected workspace
+    state. This helper intentionally does not resolve or enumerate the path.
+    """
+    raise AuditToolError(
+        "scoped_read_authority_unavailable",
+        "Repository directory listings remain denied: no verified scoped-read authority is wired.",
     )
-    return {
-        "path": path_field,
-        "entries": entries,
-        "truncated": truncated,
-        "total_listed": len(entries),
-        "total_available": len(names),
-    }
 
 
 # ----------------------------------------------------------------------

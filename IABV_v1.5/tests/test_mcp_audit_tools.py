@@ -1,15 +1,8 @@
-"""Tests de los helpers puros en `iabv_v15.infra.mcp.audit_tools`.
+"""Tests for audit helpers, including scoped-read fail-closed contracts.
 
-Cubre:
-- `resolve_workspace_path` rechaza absolutos, `..`, y paths fuera de root.
-- `is_sensitive_path` reconoce `.env*`, `credentials*.json`, `*.key`, `*.pem`.
-- `read_repo_file`: happy path, secrets blocked, binario > tope,
-  directorio vs archivo, no-existe, ruta fuera.
-- `list_repo_directory`: lista cap, marca `sensitive`, truncado.
-- `validate_pytest_suite` / `validate_pytest_keyword`.
-- `run_pytest`: runner fake que valida comando + parseo del resumen.
-- `capture_ui_screenshot`: degrada a `ui_not_running` si no hay provider.
-- `git_status_and_log`: runner fake con salida porcelain + log controlada.
+Covers path utility safety, sensitive-name recognition, pytest argument validation,
+and ensures read/list helpers do not disclose repository content without a verified
+scoped-read authority. Tests are source-only in this phase and have not been run.
 """
 
 from __future__ import annotations
@@ -116,137 +109,35 @@ def test_is_sensitive_path_ignores_regular_files() -> None:
 
 
 # ----------------------------------------------------------------------
-# read_repo_file
+# read_repo_file / list_repo_directory — fail-closed until authority is wired
 
-
-def test_read_repo_file_happy_path(tmp_path: Path) -> None:
-    (tmp_path / "docs").mkdir()
-    target = tmp_path / "docs" / "note.md"
-    target.write_text("hola mundo", encoding="utf-8")
-    payload = read_repo_file(tmp_path, "docs/note.md")
-    assert payload["path"] == "docs/note.md"
-    assert payload["size"] == len("hola mundo".encode("utf-8"))
-    assert payload["content"] == "hola mundo"
-
-
-def test_read_repo_file_blocks_secrets(tmp_path: Path) -> None:
-    (tmp_path / ".env").write_text("SECRET=abc")
+def test_read_repo_file_denied_even_for_existing_file_without_scoped_authority(tmp_path: Path) -> None:
+    target = tmp_path / "note.md"
+    target.write_text("must-not-be-disclosed", encoding="utf-8")
     with pytest.raises(AuditToolError) as exc:
-        read_repo_file(tmp_path, ".env")
-    assert exc.value.code == "sensitive_file_blocked"
+        read_repo_file(tmp_path, "note.md")
+    assert exc.value.code == "scoped_read_authority_unavailable"
+    assert "must-not-be-disclosed" not in exc.value.detail
 
 
-def test_read_repo_file_blocks_credentials_in_subdir(tmp_path: Path) -> None:
-    (tmp_path / "data").mkdir()
-    (tmp_path / "data" / "credentials.json").write_text("{}")
+def test_read_repo_file_denied_before_path_resolution(tmp_path: Path) -> None:
     with pytest.raises(AuditToolError) as exc:
-        read_repo_file(tmp_path, "data/credentials.json")
-    assert exc.value.code == "sensitive_file_blocked"
+        read_repo_file(tmp_path, "../outside.txt")
+    assert exc.value.code == "scoped_read_authority_unavailable"
 
 
-def test_read_repo_file_rejects_directory(tmp_path: Path) -> None:
-    (tmp_path / "docs").mkdir()
+def test_list_repo_directory_denied_even_for_existing_directory(tmp_path: Path) -> None:
+    (tmp_path / "secret-name").write_text("x", encoding="utf-8")
     with pytest.raises(AuditToolError) as exc:
-        read_repo_file(tmp_path, "docs")
-    assert exc.value.code == "is_directory"
+        list_repo_directory(tmp_path, "")
+    assert exc.value.code == "scoped_read_authority_unavailable"
+    assert "secret-name" not in exc.value.detail
 
 
-def test_read_repo_file_not_found(tmp_path: Path) -> None:
+def test_list_repo_directory_denied_before_path_resolution(tmp_path: Path) -> None:
     with pytest.raises(AuditToolError) as exc:
-        read_repo_file(tmp_path, "does/not/exist.txt")
-    assert exc.value.code == "not_found"
-
-
-def test_read_repo_file_rejects_too_large(tmp_path: Path) -> None:
-    target = tmp_path / "big.bin"
-    target.write_bytes(b"A" * 32)
-    with pytest.raises(AuditToolError) as exc:
-        read_repo_file(tmp_path, "big.bin", max_bytes=8)
-    assert exc.value.code == "file_too_large"
-
-
-def test_read_repo_file_rejects_non_utf8(tmp_path: Path) -> None:
-    target = tmp_path / "bin.dat"
-    target.write_bytes(b"\x80\x81\x82")
-    with pytest.raises(AuditToolError) as exc:
-        read_repo_file(tmp_path, "bin.dat")
-    assert exc.value.code == "binary_not_supported"
-
-
-def test_read_repo_file_rejects_absolute(tmp_path: Path) -> None:
-    with pytest.raises(AuditToolError) as exc:
-        read_repo_file(tmp_path, "/etc/passwd")
-    assert exc.value.code == "absolute_path_forbidden"
-
-
-def test_read_repo_file_preserves_dotfile_names(tmp_path: Path) -> None:
-    (tmp_path / ".gitignore").write_text("*.pyc", encoding="utf-8")
-    (tmp_path / ".config").mkdir()
-    (tmp_path / ".config" / "settings.yml").write_text("key: 1", encoding="utf-8")
-
-    payload = read_repo_file(tmp_path, ".gitignore")
-    assert payload["path"] == ".gitignore"
-    assert payload["content"] == "*.pyc"
-
-    payload = read_repo_file(tmp_path, ".config/settings.yml")
-    assert payload["path"] == ".config/settings.yml"
-    assert payload["content"] == "key: 1"
-
-
-def test_read_repo_file_strips_only_leading_dot_slash(tmp_path: Path) -> None:
-    (tmp_path / "docs").mkdir()
-    (tmp_path / "docs" / "note.md").write_text("hola", encoding="utf-8")
-
-    payload = read_repo_file(tmp_path, "./docs/note.md")
-    assert payload["path"] == "docs/note.md"
-
-    payload = read_repo_file(tmp_path, "././docs/note.md")
-    assert payload["path"] == "docs/note.md"
-
-
-# ----------------------------------------------------------------------
-# list_repo_directory
-
-
-def test_list_repo_directory_enumerates_entries(tmp_path: Path) -> None:
-    (tmp_path / "a.txt").write_text("1")
-    (tmp_path / "b.txt").write_text("22")
-    (tmp_path / ".env").write_text("S")
-    (tmp_path / "docs").mkdir()
-    payload = list_repo_directory(tmp_path, "")
-    names = {e["name"]: e for e in payload["entries"]}
-    assert set(names) == {"a.txt", "b.txt", ".env", "docs"}
-    assert names["docs"]["type"] == "dir"
-    assert names["a.txt"]["type"] == "file"
-    assert names["a.txt"]["size"] == 1
-    assert names[".env"]["sensitive"] is True
-    assert names["a.txt"]["sensitive"] is False
-    assert payload["truncated"] is False
-    assert payload["total_listed"] == 4
-    assert payload["total_available"] == 4
-
-
-def test_list_repo_directory_truncates_at_max_entries(tmp_path: Path) -> None:
-    for i in range(5):
-        (tmp_path / f"f{i}.txt").write_text("x")
-    payload = list_repo_directory(tmp_path, "", max_entries=2)
-    assert len(payload["entries"]) == 2
-    assert payload["truncated"] is True
-    assert payload["total_listed"] == 2
-    assert payload["total_available"] == 5
-
-
-def test_list_repo_directory_not_a_directory(tmp_path: Path) -> None:
-    (tmp_path / "a.txt").write_text("1")
-    with pytest.raises(AuditToolError) as exc:
-        list_repo_directory(tmp_path, "a.txt")
-    assert exc.value.code == "not_a_directory"
-
-
-def test_list_repo_directory_not_found(tmp_path: Path) -> None:
-    with pytest.raises(AuditToolError) as exc:
-        list_repo_directory(tmp_path, "does/not/exist")
-    assert exc.value.code == "not_found"
+        list_repo_directory(tmp_path, "../outside")
+    assert exc.value.code == "scoped_read_authority_unavailable"
 
 
 # ----------------------------------------------------------------------
