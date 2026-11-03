@@ -5233,3 +5233,16 @@ The repair stage must preserve reuse-first and anti-scope-creep:
 - distinguish a semantic necessity from a useful future extension.
 
 This protects the developmental method from ontology inflation while retaining adversarial learning.
+
+
+## 2026-11-03 METHOD AMENDMENT — EXTERNAL-AI SESSION AND TRANSCRIPT INTEGRITY
+
+A pasted response from an external AI is an Owner-supplied transcript unless independently retrieved from the provider's own session record. Preserve its source, exact extent, timestamp basis and missing context. Attribute tool/model/session/capability claims to the actor; do not promote them to VERIFIED merely because they are stated confidently.
+
+When two pasted reports appear to conflict about whether a scope lock, review phase or source retrieval occurred, first test conversation continuity and transcript presence. A prior lock is valid for a later phase only if its correlated record and frozen report are visible in the actual receiving conversation. Do not infer that a model forgot or that the earlier event never happened globally; record only that it is not present in the active thread.
+
+An external prompt is a payload with delivery integrity. Preparation, send, receiver acknowledgement, complete packet receipt, source retrieval, inspection, execution and adjudication are distinct events. For a route with an observed truncation, send numbered packets and require the receiver to confirm the packet sequence and final marker. If the final marker is absent or the content ends mid-section, classify delivery as incomplete and stop before substantive work.
+
+Do not treat model-brand labels as stable capability identities. Record the actual product surface, session continuity, model identifier when visible, and separately observed Git, REST/API, raw-file, browser, shell and network-egress capabilities. One failed retrieval path does not prove all others unavailable.
+
+For the 2026-11-03 Claude exchange, use the dedicated receipt CHAT-ARCH-2026-11-03-UAAL-CLAUDE-SESSION-TRANSPORT-AND-BLIND-REVIEW-REPAIR-RECEIPT.md. Its transcript-derived observations remain ACTOR_REPORTED or OWNER_SUPPLIED_TRANSCRIPT where appropriate. This amendment documents a reusable method; it does not prove automatic cross-chat activation, generalization to all Claude sessions or model-weight learning.
