@@ -215,6 +215,19 @@ For every material Claude or other external-AI handoff, the coordinator and reci
 
 **Observed mixed-capability route refinement (2026-11-03):** source availability is per object and per receiving tool, not one global property of the model. A recipient may retrieve one document whole, another through a different rendered route, and a third only partially. Record `GITHUB_MEMORY_RETRIEVED=PARTIAL` when any required source item remains truncated or uninspected, even if the relevant section appears in the partial response. For source-heavy tasks, plan a per-`path@revision` matrix before inspection: recipient live-fetch for complete admissible objects, plus one coordinator-exported pinned manifest/diff package for oversized objects only when the task allows mixed provenance. Freeze that route in the review scope. A mixed route cannot be represented as an all-recipient-live review; use the applicable receipt's `OTHER`/mixed designation with an explicit per-item breakdown or stop if strict independent live acquisition is required. Do not ask the Owner to relay public files the coordinator's authorized connector can fetch. This is a method refinement, not evidence of universal Claude tool limits; re-probe only when destination, tool, URL, response size or capability materially changes.
 
+### Observed conversation-boundary and dependency-aware continuation correction (2026-11-03)
+
+The PR #598 Phase A handoff exposed two avoidable stops: a new Claude conversation was told to continue source work whose prior-session lock and retrieved objects were not actually present there; and a truncated D021 HEAD response stopped acquisition of unrelated file pairs. Apply D021 §6C.5.1.C.2.
+
+- **Continuity is session-local.** The prompt compiler must explicitly set CONTINUITY_MODE. In a new conversation, do not carry forward prior receiver acknowledgements, source retrieval, inspection coverage, tool observations or lock receipts unless the exact receipt/source artifact is transferred and acknowledged. Reconcile the Owner's current authorization separately.
+- **Lock once per receiver session, not once per task label.** Require a new receiver lock before that session's first substantive inspection. Never backdate or infer a timestamp. Record NO_VERIFIABLE_TIME_AVAILABLE as a limitation where appropriate.
+- **Continue independent acquisition.** Track ITEM_STATUS independently from SCOPE_STATUS. A blocked pair triggers its planned fallback, while unaffected pairs continue acquisition. Full-scope review remains NOT_RUN until every required object meets the declared identity and coverage conditions.
+- **Coordinator-first, not Owner-choice-first.** If public source is available to the coordinator's authorized connector, the coordinator selects the best pre-authorized route and prepares one consolidated transfer. Ask the Owner only for a genuine Owner-only input, an authorization, or one unavoidable transfer—not to choose between technical routes the coordinator can test.
+- **Preserve provenance and format.** Distinguish recipient RAW/REST retrieval from coordinator-exported pinned hunks and Owner-supplied source. Verify the artifact's actual type/path; do not call a Paper document a Markdown file merely because its title has a .md suffix.
+- **No premature causal-reuse claim.** A method application to the task that produced the learning is not LATER_CAUSAL_REUSE. Require a later non-identical task and a verified beneficial outcome before claiming that stage.
+
+This refinement changes dispatch and acquisition behavior; it does not establish automatic memory injection, shared hidden context or model-weight learning.
+
 Use the following as a compact prompt-compiler contract for external-AI tasks:
 
 ```text
