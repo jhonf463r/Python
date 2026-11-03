@@ -493,22 +493,22 @@ A candidate lesson must state its evidence/provenance, original scope, proposed 
 
 Every external-agent prompt or handoff must identify one **explicit recipient** before its task body. Do not use ambiguous dispatch language such as "send to Claude or another AI", "use the same reviewer", or "ask an agent". The sender must select the recipient from the task's required capability and the capabilities actually available, then state the provider, named agent/model or channel, role, session requirement, permitted input/source route, authorized operation scope, exclusions, expected return and stop condition.
 
-Use this dispatch header at the top of every copy-ready external prompt:
+Use this exact dispatch-header schema as the first non-empty content inside every copy-ready external prompt. Populate each field with the specific task value or an explicitly permitted status; do not emit blank values or the schema as an unfilled example:
 
 ```text
-DISPATCH_HEADER = {
-  TARGET_AI_PROVIDER_AND_AGENT,
-  TARGET_MODEL_OR_CHANNEL,
-  TARGET_PROJECT_AND_TASK_ID,
-  TARGET_ROLE,
-  TARGET_SESSION_MODE: NEW_SEPARATE | CONTINUED | EXISTING_EXECUTOR,
-  CONTEXT_SEPARATION_REQUIREMENT,
-  REQUIRED_SOURCE_ACCESS_AND_EXACT_REFS,
-  AUTHORIZED_OPERATION_SCOPE,
-  EXPLICIT_EXCLUSIONS,
-  EXPECTED_RETURN_ARTIFACT_AND_RECEIPT,
-  STOP_CONDITION
-}
+DISPATCH_HEADER
+HANDOFF_ID=
+TARGET_AI_PROVIDER_AND_AGENT=
+TARGET_MODEL_OR_CHANNEL=
+TARGET_PROJECT_AND_TASK_ID=
+TARGET_ROLE=
+TARGET_SESSION_MODE=NEW_SEPARATE | CONTINUED | EXISTING_EXECUTOR
+CONTEXT_SEPARATION_REQUIREMENT=
+REQUIRED_SOURCE_ACCESS_AND_EXACT_REFS=
+AUTHORIZED_OPERATION_SCOPE=
+EXPLICIT_EXCLUSIONS=
+EXPECTED_RETURN_ARTIFACT_AND_RECEIPT=
+STOP_CONDITION=
 ```
 
 Recipient selection rules:
