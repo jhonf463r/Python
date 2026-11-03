@@ -164,8 +164,26 @@ PARENT_OBJECTIVE=
 PROJECT_ID=
 TASK_ID=
 ROLE=
+DESTINATION_ACTOR_TYPE=
+DESTINATION_APP_AND_VERSION=
+EXECUTION_SURFACE=
+CONTROL_PLANE=
+HOST_AND_OS=
+PROCESS_ACTOR=
+SCHEDULER_OR_TRIGGER_OWNER=
+T3_INVOLVEMENT=NONE|HOST|PROVIDER|DELEGATOR|TARGET
+PERMISSION_DOMAIN=
+PERMISSION_SOURCE_AND_SCOPE=
+PERMISSION_OBSERVED_AT=
 OPERATING_CONTEXT=
 MEMORY_SCOPE=
+MEMORY_PROFILE_ID_AND_REVISION=
+CONTEXT_PACKAGE_ID_AND_DIGEST=
+ARTIFACT_MANIFEST_ID_AND_DIGEST=
+ARTIFACT_RETRIEVAL_ROUTE=
+REQUIRED_ARTIFACT_IDS=
+OPTIONAL_ARTIFACT_IDS=
+RECEIVER_ACK_STATE=
 LIVE_MAIN_SHA_AND_OBSERVED_AT=
 PROJECT_STATE_SOURCE_AND_REVISION=
 OBJECTIVE_AND_ACCEPTANCE=
@@ -203,16 +221,88 @@ STOP_CONDITION=
 - Do not repeat already-settled Owner questions.
 - Return a correlated receipt; if blocked, identify the exact missing evidence and stop condition instead of inventing work.
 
+### 6.3 Task-conditioned memory and artifact package
+
+Before a handoff, apply D021 §6C.5.1 and choose the profile that matches the recipient's role: coordinator, specialist/researcher, executor, independent reviewer, local runtime or global method. Include only the task-relevant memory slices; do not forward a full transcript by default and do not assume a child thread inherits the parent's history.
+
+The coordinator, not the Owner, resolves shared inputs. Use the D021 §6E.4 retrieval ladder and create the package manifest from exact paths, source refs, revisions, hashes and required/optional status. The receiver must acknowledge the package ID, exact artifacts retrieved, digest checks and missing items before acting. Keep `AVAILABLE`, `RETRIEVED`, `ACKNOWLEDGED`, `DECISION_BOUND` and `OUTCOME_VERIFIED` distinct.
+
+If an artifact exists only in a local producer session, ask that producer to generate one bounded archive with a manifest. Request one exact package from the Owner only after Project, GitHub and connected authorized sources have been checked and no transport route exists. Never send private material through the public repository. The role profile is context, not permission; all task authority and no-go rules remain explicit in the handoff envelope.
+
+### 6.4 Execution-surface binding and permission provenance
+
+Before sending an actionable prompt, populate the following target block. These fields are mandatory whenever the task can invoke a local process, create files, modify a scheduler, use a provider UI, or cross from cloud to local:
+
+```text
+DESTINATION_ACTOR_TYPE=
+DESTINATION_APP_AND_VERSION=
+EXECUTION_SURFACE=
+CONTROL_PLANE=
+HOST_AND_OS=
+OPERATING_CONTEXT=
+PROJECT_OR_WORKSPACE=
+PROCESS_ACTOR=
+SCHEDULER_OR_TRIGGER_OWNER=
+T3_INVOLVEMENT=NONE|HOST|PROVIDER|DELEGATOR|TARGET
+PERMISSION_DOMAIN=
+PERMISSION_SOURCE_AND_SCOPE=
+PERMISSION_OBSERVED_AT=
+OWNER_AUTHORIZATION_SCOPE=
+AUTHORIZED_SIDE_EFFECTS=
+PROHIBITED_SIDE_EFFECTS=
+TARGET_SURFACE_MATCH=VERIFIED|MISMATCH|UNKNOWN
+```
+
+Use the concrete actor/surface, not a product-family shorthand. For example, `CODEX_EXTERNAL_DESKTOP` is not `T3_DESKTOP_PROVIDER`; `CODEX_CLI_CHILD` is a separate process; and `WINDOWS_TASK_SCHEDULER` is not T3 Scheduled Tasks. The prompt's first lines must state where it is to be pasted/run, which application is involved, which host executes it, and which actors are explicitly out of scope.
+
+Permission indicators are not portable across surfaces. A `Full Access` indicator in external Codex does not prove a T3 thread is `Supervised`, and T3 `Supervised` does not prove external Codex or Windows permissions. A permission on one surface must never become a precondition on another surface. A permissive technical mode is not broader Owner authorization.
+
+Before execution, the receiver returns `TARGET_SURFACE_MATCH`, identifies the permission source for the selected surface and confirms the exact authorized side effects. If the target is mismatched, stop before side effects and classify `HANDOFF_TARGET_MISMATCH`; if the task can be routed to another already available and authorized actor, propose or perform that bounded re-route instead of declaring the entire project blocked. Query T3 controls only when `T3_INVOLVEMENT` is not `NONE`.
+
+When a workflow has an outer operator and a child process, state both explicitly. Example: an external Codex Desktop operator may create one approved PowerShell runner and register one Windows Task Scheduler job; that runner launches a separate `codex exec` child with `--sandbox read-only`. The child's sandbox does not constrain the outer operator's file/scheduler writes, and the outer operator's UI mode does not change the child's sandbox. Validate each boundary separately.
+
+Do not claim a handoff is automatic when the Owner must paste it. Mark `MANUAL_HANDOFF_REQUIRED`, give one exact copy-ready block, and continue to prefer shared Project/GitHub/authorized connected-source retrieval for artifacts so the Owner is not asked to relay files already available elsewhere.
+
+### 6.5 Version-pinned CLI capability and approval/sandbox contract
+
+For any delegated CLI runner, identify the exact installed version and subcommand. Separate interactive/TUI global flags from the flags actually accepted by a non-interactive command. A flag shown by `codex --help` is not automatically an argument of `codex exec`; inspect `codex exec --help` and, where necessary, the exact release tag's parser/source. Do not make a flag mandatory merely because a generic permissions document mentions it.
+
+Keep the controls separate:
+
+- `approval_policy=never`: the agent does not pause for an approval prompt. This is not a grant of file/network permissions.
+- `sandbox_mode=read-only`: the agent's generated commands are confined to the read-only sandbox. This does not constrain the outer PowerShell runner or the Windows task registrar.
+- The outer runner's file and scheduler writes require their own exact Owner authorization.
+
+**Codex CLI 0.166.0 case rule:** the release-pinned `codex exec` source sets `approval_policy=Never` by default for headless execution, while its `exec` argument parser exposes `--sandbox` but not the interactive `--ask-for-approval` flag. `--approve-for-me` configures `on-request` plus `workspace-write` and is not a read-only alternative. Use `--sandbox read-only`; do not add a non-existent `--ask-for-approval never` requirement to this release's `exec` command. Re-check exact source when the installed version changes.
+
+Before creating a scheduled runner, use a bounded no-write smoke test with the exact final invocation. Capture the CLI version, exact command (without secrets), exit code, approval-policy source/default and sandbox selection. Help availability alone does not prove that an execution occurred or that the OS sandbox was effectively enforced.
+
+On Windows, if `Get-Command codex` resolves to a `.ps1` npm shim, verify how the runner will invoke it. Use a tested PowerShell host or a verified native shim and confirm stdin forwarding. Do not call a `.ps1` path as though it were a native executable, and do not bypass the execution policy.
+
 ## 7. Standard return receipt
 
 ```text
 HANDOFF_ID=
 TASK_ID=
 ACTOR_SESSION_ID=
+ACTOR_TYPE=
+EXECUTION_SURFACE=
+CONTROL_PLANE=
+PROCESS_ACTOR=
+SCHEDULER_OR_TRIGGER_OWNER=
+T3_INVOLVEMENT=
+PERMISSION_DOMAIN_AND_SOURCE=
+TARGET_SURFACE_MATCH=VERIFIED|MISMATCH|UNKNOWN
 OPERATING_CONTEXT=
 PROJECT_ID=
 ROLE=
 OBSERVED_AT=
+CONTEXT_PACKAGE_ID_AND_DIGEST=
+ARTIFACT_MANIFEST_ID_AND_DIGEST=
+ARTIFACTS_RETRIEVED_AND_HASH_VERIFIED=
+ARTIFACTS_MISSING_OR_MISMATCHED=
+RECEIVER_ACKNOWLEDGED_AT=
+CONTEXT_CONSUMPTION_STATE=AVAILABLE|RETRIEVED|ACKNOWLEDGED|DECISION_BOUND|NOT_RETRIEVED
 SOURCE_REVISION_OR_ARTIFACTS=
 MEMORY_RETRIEVED=VERIFIED | PARTIAL | NOT_RETRIEVED
 METHOD_ACTIVATED=VERIFIED | PARTIAL | NOT_VERIFIED
@@ -271,6 +361,16 @@ TASK_ID=GENERATE_FROM_ASSIGNED_TASK
 ROLE=USE_ASSIGNED_ROLE_OR_PROJECT_COORDINATOR
 OPERATING_CONTEXT=DECLARE_ACTUAL_CONTEXT
 MEMORY_SCOPE=RESOLVE_FROM_PROJECT_AND_TASK
+
+MANDATORY_CONTEXT_AND_ARTIFACT_RULE:
+Before asking the Owner to upload, paste, export or repeat anything,
+check this session's available Project sources/files/chats, then the
+authorized GitHub connector and other connected sources. Apply the
+recipient role profile and D021 artifact manifest. A link or project
+membership is not proof of retrieval. Acknowledge exact files and
+source revisions actually consumed. Ask the Owner only for one exact
+local-only artifact/package after all authorized routes fail.
+Do not assume Project context crosses into Codex/T3/other products.
 
 You are a temporary participant in the IABV/UAAL coordination method, not a second permanent memory or competing coordinator.
 

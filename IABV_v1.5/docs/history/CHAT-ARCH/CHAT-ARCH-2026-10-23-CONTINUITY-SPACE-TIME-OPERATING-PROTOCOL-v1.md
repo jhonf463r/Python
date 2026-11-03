@@ -771,3 +771,16 @@ A repeat/reopen is allowed only with its own new bounded authorization and a sta
 For ChatGPT-to-ChatGPT continuity, one owner-controlled ChatGPT Project can make Project instructions, files and chats available to conversations inside that Project. It is a context substrate, not a second memory/router and not a broadcast bus. Choose memory mode by intended scope: Project-only supports strict IABV isolation but excludes account-level saved memories and outside chats; Default memory may offer broader account-level context where plan/settings permit, with cross-project mixing risk. Under the existing separate-project-memory policy, Project-only is preferred for the dedicated IABV Project unless the Owner chooses wider account recall. ChatGPT Memory remains selective, not exhaustive. For Codex, Claude or other AI products, use the existing GitHub repository as the shared versioned substrate. Keep the active project state in its owning CURRENT-STATE.md; the Project and GitHub transport/retrieve that state rather than replacing it.
 
 The coordinator must prefer already-available Project sources and repository retrieval over asking the Owner to re-upload stable files. A Project does not expose local C:/Python, a live local database, protected data or runtime state. No runtime synchronization is implied. Source availability, retrieval, receiver acknowledgement, decision influence and verified outcome remain separate temporal events under UAAL-D021 §6E. Project instructions guide assistant behavior but do not enforce tool availability, permissions or technical gates.
+
+## 27. Task-conditioned memory delivery and local tool-maintenance lane (2026-11-01)
+
+The Space-Time protocol already requires the coordinator to retrieve shared sources, assemble producer evidence and minimize Owner relay. Make that obligation operational through the D021 §6C.5.1 task-conditioned memory profile and artifact manifest, and the updated UAAL New-Chat Boot and Handoff Kit. Do not create a second memory store, router or bus.
+
+For every cross-chat or cross-provider handoff:
+- choose the recipient profile from the actual role and operating context;
+- retrieve exact artifacts from the existing Project/GitHub/connected-source ladder before involving the Owner;
+- when an artifact is genuinely local-only, have its producer create one bounded package with a manifest and hashes;
+- require receiver acknowledgement of exact retrieval and consumption;
+- preserve the distinction between cloud shared coordination, local runtime observations and controlled cloud/local handoff.
+
+This same method applies to TICD's toolchain lane. The monthly cloud research context and the MSI's local installed-tool state are different Space-Time objects. The cloud coordinator researches official releases/advisories and prepares a bounded local task; a local T3 scheduled task or Codex operator inspects the MSI, checks compatibility, executes only pre-authorized updates and returns a correlated local receipt. Never infer that a cloud report updated a local application. See the TICD Toolchain Lifecycle and Local Maintenance Policy.

@@ -530,6 +530,13 @@ TASK_ID=
 ROLE=COORDINATOR | SPECIALIST | EXECUTOR | INDEPENDENT_REVIEWER
 OPERATING_CONTEXT=
 MEMORY_SCOPE=
+MEMORY_PROFILE_ID_AND_REVISION=
+CONTEXT_PACKAGE_ID_AND_DIGEST=
+ARTIFACT_MANIFEST_ID_AND_DIGEST=
+ARTIFACT_RETRIEVAL_ROUTE=
+REQUIRED_ARTIFACT_IDS=
+OPTIONAL_ARTIFACT_IDS=
+RECEIVER_ACK_STATE=
 LIVE_MAIN_SHA_AND_OBSERVED_AT=
 PROJECT_STATE_SOURCE_AND_REVISION=
 OBJECTIVE_AND_ACCEPTANCE=
@@ -548,6 +555,158 @@ WRITEBACK_TARGET_AND_PRIVACY_CLASS=
 ```
 
 The sender provides the minimum context needed; the receiver acknowledges the project/task identity, sources actually retrieved, context actually available and any missing artifacts before acting. The receiver returns a correlated result to the owning project space. The coordinator adjudicates it under §6B before any next handoff. Do not make the Owner relay entire histories when one producer-generated, provenance-bound package can carry the necessary evidence; do not claim delivery until receipt is observed.
+
+### 6C.5.1 Task-conditioned memory profiles and artifact manifest (2026-11-01)
+
+This subsection makes the existing handoff contract operational. It does not introduce a memory store, router, bus, scheduler or permission authority. The coordinator composes a small context package from the owning project sources and the recipient's assigned role; it does not forward a full transcript or every project file.
+
+**Select one profile from the task, then include only the necessary source slices:**
+
+| Profile | Minimum context to provide | Explicit exclusions |
+|---|---|---|
+| `PROJECT_COORDINATOR` / `GLOBAL_COORDINATOR` | Owning current-state route, current objective, first open causal edge, relevant D019/D020/D021 methods, closed decisions, dependencies, all actor/task statuses and expected receipts. | Do not replace a project's route with a portfolio pointer or a different project's state. |
+| `SPECIALIST` / `RESEARCHER` | Exact research question, acceptance criteria, relevant prior findings including rejected candidates, source/version requirements, comparison method, uncertainty and output schema. | No unrelated project archives, credentials, private source files or authority to change priorities. |
+| `EXECUTOR` | Exact task envelope, source revision, required input artifacts and digests, target workspace/branch, allowed paths and operations, acceptance checks, permission mode, rollback and stop condition. | No inherited authority from the parent chat; no inferred permission from a file, link, tool catalog or prior task. |
+| `INDEPENDENT_REVIEWER` | Exact final artifact/patch and digest, base revision, requirements, acceptance criteria, relevant evidence and unresolved objections. Retrieve the target source independently where possible. | Do not rely only on the executor's summary, review a stale draft as final, or silently become the executor. |
+| `LOCAL_RUNTIME` | Fresh machine/runtime identity, OS and tool versions, workspace, observation time, actual session capabilities, visible permission mode, authorized path scope and local artifact manifest. | Cloud memory or an old environment snapshot cannot establish current local state. |
+| `GLOBAL_METHOD` | Only stable, transferable methods, safety invariants and evidence rules applicable to the task. | Do not promote project-specific facts, assumptions, permissions or private artifacts into global memory. |
+
+Recompute the profile whenever the destination actor, role, operating context or task boundary changes. A role profile is a context filter, not a permission grant. If a reviewer becomes an executor, create a new bounded envelope and re-evaluate its authority; do not silently reuse the review package as an execution mandate.
+
+**Required package manifest (metadata only; never put secrets in it):**
+
+```text
+CONTEXT_PACKAGE_ID=
+HANDOFF_ID=
+PROJECT_ID=
+TASK_ID=
+PARENT_OBJECTIVE=
+DESTINATION_ACTOR_TYPE_AND_SESSION=
+ROLE=
+OPERATING_CONTEXT=
+MEMORY_SCOPE=
+MEMORY_PROFILE_ID_AND_REVISION=
+CANONICAL_STATE_SOURCE_AND_REVISION=
+SOURCE_MAIN_SHA_AND_OBSERVED_AT=
+PRIVACY_CLASS=
+TRANSPORT_ROUTE=CHATGPT_PROJECT_SHARED_CONTEXT|GITHUB_CANONICAL_STORE|CONNECTED_APP_SOURCE|PRIVATE_SHARED_STORE|LOCAL_PRODUCER_PACKAGE
+CREATED_AT_UTC=
+EXPIRES_AT_UTC_OR_REVIEW_TRIGGER=
+ARTIFACTS:
+  - ARTIFACT_ID=
+    LOGICAL_NAME=
+    SOURCE_SCOPE=
+    SOURCE_LOCATOR=
+    SOURCE_REF_COMMIT_OR_BLOB=
+    SHA256=
+    SIZE_BYTES=
+    REQUIRED=YES|NO
+    REDACTED=YES|NO
+    OBSERVED_AT=
+    VERIFIED_AT=
+SENDER_ACK=
+RECEIVER_ACK=
+CONSUMPTION_STATE=AVAILABLE|RETRIEVED|ACKNOWLEDGED|DECISION_BOUND|NOT_RETRIEVED
+WRITEBACK_TARGET_AND_PRIVACY_CLASS=
+```
+
+An artifact can be a Project source, exact GitHub path/blob, connected-source result, or a producer-created local package. A link alone is not an artifact receipt. The receiver reports the exact IDs and digests actually retrieved, any hash mismatch, and the items not available. The coordinator records separately whether the package was merely available, actually retrieved, acknowledged, consumed in a decision, and followed by a verified outcome.
+
+**Transfer policy:**
+
+1. Use the existing D021 §6E.4 retrieval ladder: current shared ChatGPT Project; exact authorized GitHub source; another authorized connected source; only then a producer-generated local package.
+2. If the source is local-only, ask the producer/local operator to create one bounded archive with this manifest and exact artifact hashes. Prefer one package over multiple manual uploads. Do not ask the Owner to export or courier stable files that an authorized source can retrieve.
+3. Use GitHub only for public-safe artifacts and sanitized methods. Private files, local designs, customer data and restricted project material must remain in an access-controlled private route.
+4. If no authorized route exists, report the exact missing artifact IDs and blocked transport edge. Ask the Owner once for that specific item/package; never ask for an entire repository or repeat the same request.
+5. On receipt, verify size/digest where bytes are available, then acknowledge retrieval and identify which artifacts were consumed. A context link, successful send, Project membership or commit does not prove consumption.
+
+Required state progression:
+
+`SOURCE_IDENTIFIED → ARTIFACT_RETRIEVED → REVISION_VERIFIED → CONTEXT_PACKAGE_BUILT → CONTEXT_AVAILABLE → RECEIVER_ACKNOWLEDGED → DECISION_BOUND → RESULT_RETURNED → OUTCOME_VERIFIED → CANONICAL_FETCHBACK`.
+
+A missing stage remains explicit; do not skip from a send attempt to "received" or from a report to "verified".
+
+### 6C.5.2 Execution-surface routing and permission provenance (2026-11-01)
+
+**Triggering episode:** [TICD execution-surface handoff learning receipt](./CHAT-ARCH-2026-11-01-UAAL-TICD-EXECUTION-SURFACE-HANDOFF-LEARNING-RECEIPT.md). The supplied transcript shows a prompt intended for the external Codex Desktop operator that incorrectly required proof of a T3 thread's `Supervised` permission. The recipient was the external Codex surface; T3 was not the executor. The external operator reported `Full Access`, but that did not establish T3 permission or Windows Task Scheduler capability. The R2 attempt stopped without changes. Treat this as a handoff-contract defect and a scoped actor report, not as a Codex runtime failure or proof that every T3 build lacks monthly scheduling.
+
+**Mandatory routing fields:** every handoff that can cause an operation, create a file, change a scheduler, invoke a CLI or reach a local environment must bind all of the following before its prompt is composed:
+
+```text
+DESTINATION_ACTOR_TYPE=
+DESTINATION_APP_AND_VERSION=
+EXECUTION_SURFACE=
+CONTROL_PLANE=
+HOST_AND_OS=
+OPERATING_CONTEXT=
+PROJECT_OR_WORKSPACE=
+PROCESS_ACTOR=
+SCHEDULER_OR_TRIGGER_OWNER=
+T3_INVOLVEMENT=NONE|HOST|PROVIDER|DELEGATOR|TARGET
+PERMISSION_DOMAIN=
+PERMISSION_SOURCE_AND_SCOPE=
+PERMISSION_OBSERVED_AT=
+OWNER_AUTHORIZATION_SCOPE=
+AUTHORIZED_SIDE_EFFECTS=
+PROHIBITED_SIDE_EFFECTS=
+TARGET_SURFACE_MATCH=VERIFIED|MISMATCH|UNKNOWN
+```
+
+**Do not collapse these distinct actors/surfaces:**
+
+- `CHATGPT_CLOUD_COORDINATOR`: retrieves shared memory, researches, adjudicates evidence and composes a bounded handoff; it does not thereby gain local MSI access.
+- `CODEX_EXTERNAL_DESKTOP`: the external Codex desktop operator receiving a user-pasted or otherwise explicitly dispatched task. Its UI permission is scoped to that Codex session.
+- `CODEX_CLI_CHILD`: a separate non-interactive process such as `codex exec`, with its own explicit CLI sandbox and authentication context.
+- `T3_DESKTOP_PROVIDER`: Codex or another provider operating inside a T3 thread/environment; its thread permission belongs to that T3 execution surface.
+- `T3_DELEGATED_CHILD`: a child execution created by T3; it receives the supplied prompt/role and does not inherit the parent history or broader authority.
+- `WINDOWS_TASK_SCHEDULER`: the native Windows trigger/host that launches an action under a Windows principal; it is not a T3 Scheduled Task.
+- `IABV_LOCAL_RUNTIME`: the actual IABV runtime, which is not equivalent to a development shell, a Codex workspace or a cloud review.
+
+**Permission provenance rule:** permissions are surface- and operation-scoped. A Codex Desktop `Full Access` indicator does not prove T3 `Supervised`, Task Scheduler registration rights, Windows administrator status, Codex CLI sandbox mode, or authority to modify IABV. T3 `Supervised` does not prove permissions on external Codex or Windows. Never require or infer a permission from an application that is explicitly `T3_INVOLVEMENT=NONE`. Never infer Owner authorization from a permissive UI mode. Apply the narrowest Owner-granted operation list independently of the provider's technical permission mode.
+
+**Routing gate before execution:**
+
+1. Resolve the exact destination actor, application, version, execution surface, host and control plane from the Owner request and actual session.
+2. Compare them with the prompt's target. If a mismatch exists, do not execute the mismatched prompt. Re-route to the already available, authorized actor when possible; do not turn a route mismatch into a project-wide blocker.
+3. Query only the permission source belonging to the selected execution surface. Record the scope and observation time. Do not query T3 when T3 is not involved.
+4. Separate the outer operator from child processes. State which actor is allowed to create a runner/scheduled task and which child is constrained to read-only work.
+5. Put a plain-language `PASTE / EXECUTION TARGET` instruction at the very top of any user-mediated handoff. Do not use ambiguous labels such as `T3/Codex`.
+6. If the recipient is not connected to the coordinator and the Owner must paste a prompt, mark `MANUAL_HANDOFF_REQUIRED` and provide one exact, self-contained package. Do not claim automatic dispatch.
+
+**Failure classification:** use `HANDOFF_TARGET_MISMATCH`, `PERMISSION_SOURCE_MISMATCH`, `RECIPIENT_UNAVAILABLE`, `PRECONDITION_NOT_VERIFIED`, or the actual tool/platform limitation. A negative result from T3's scheduler applies to the observed T3 version/UI and the tested form; it does not prove that Windows Task Scheduler or Codex CLI cannot perform the required operation.
+
+**Return receipt additions:** record the actual operator actor, child process actor, scheduler/control plane, target-surface match, permission source/scope, operation IDs, task/run IDs, process exit codes, exact artifact paths/digests, and which process performed each write. A child `read-only` sandbox does not constrain the outer PowerShell runner or scheduler registrar; those outer writes must be separately bounded by Owner authorization.
+
+**Learning status:** the rule is a documented, case-derived correction. It is not evidence of automatic protocol enforcement, universal routing success, or later causal reuse. Apply it on a later non-identical handoff and record whether it prevents a surface/permission mismatch before promoting generalization.
+
+### 6C.5.3 Version-pinned CLI contracts and approval/sandbox separation (2026-11-01)
+
+**Triggering episode:** the R3 Windows preflight reported `codex-cli 0.166.0`, `--sandbox read-only` available, and `--ask-for-approval never` absent from `codex exec --help`. It stopped because the handoff had incorrectly made that exact flag a mandatory `codex exec` argument. The [execution-surface learning receipt](./CHAT-ARCH-2026-11-01-UAAL-TICD-EXECUTION-SURFACE-HANDOFF-LEARNING-RECEIPT.md) records the result and the release-pinned source adjudication.
+
+**Release-pinned source finding for Codex CLI 0.166.0:**
+
+- Release tag: `rust-v0.166.0`, commit `6ff1e1c` (2026-10-29).
+- `codex-rs/exec/src/cli.rs`, blob `6a268da298380344c22ea12620606c3e6713f5fa`, defines `codex exec` arguments. The exec command's propagated shared flags include model, the dangerous bypass flag, hook-trust bypass and worktree; it does not expose the interactive `--ask-for-approval` option as an exec flag.
+- `codex-rs/exec/src/lib.rs`, blob `43cf70b21da037bc654a79a1e325ef3bbd1156c6`, sets `approval_policy: Some(AskForApproval::Never)` by default in headless mode, with a code comment explicitly describing that behavior.
+- `codex-rs/utils/cli/src/shared_options.rs`, blob `5e525662d49ce0697ff6965473be178378443776`, defines the read-only sandbox option independently. Its `--approve-for-me` behavior injects `approval_policy="on-request"` and `sandbox_mode="workspace-write"`; it is not an acceptable substitute for a read-only headless run.
+
+**Operational rule:** CLI contracts must be checked against the exact installed release, exact subcommand and the parser/source for that subcommand. Do not infer that a TUI/global flag applies to `codex exec` merely because it appears in `codex --help` or in a general permissions page. The `codex exec --help` surface is authoritative for its subcommand flags, and version-pinned source resolves a remaining documentation ambiguity. For 0.166.0, use the explicit `--sandbox read-only` option and the headless default approval policy; do not require `--ask-for-approval never` on `exec` and do not replace it with `--approve-for-me`, `workspace-write` or `--yolo`.
+
+**Per-version preflight procedure:**
+
+1. Record exact `codex --version` and resolve the matching official release tag/commit.
+2. Inspect `codex exec --help` for the sandbox, cwd, ephemeral and stdin options actually exposed by the subcommand.
+3. Inspect the matching release source or authoritative version-specific docs for the headless approval default and config-precedence exceptions. Distinguish TUI arguments, `exec` arguments and config keys.
+4. Construct the command only from options accepted by that exact subcommand. Never make a generic flag's presence in the TUI help a hard acceptance condition for `exec`.
+5. Keep approval policy and sandbox policy separate in the receipt. `approval_policy=never` means no approval prompts; it does not grant writes. `sandbox_mode=read-only` constrains agent-generated command access; it does not authorize the outer runner.
+6. Do not use `--approve-for-me` or `--dangerously-bypass-approvals-and-sandbox` to overcome a parser mismatch. If the exact release cannot establish the required read-only sandbox, stop without side effects.
+7. Run a bounded, no-write CLI smoke test using the exact final invocation before creating the recurring runner/task. Capture exit code and relevant startup/result evidence; do not claim effective OS sandbox verification merely because help lists an option.
+
+**R3 adjudication:** the operator's stop was correct relative to the supplied prompt, but the prompt's required flag was wrong for the selected subcommand. Classify this as `PREFLIGHT_CONTRACT_MISMATCH` / `SUBCOMMAND_FLAG_SCOPE_MISMATCH`, not as a missing Codex capability, authentication failure or Windows scheduler failure. No runner, task, report or manifest was created; `codex exec` was not run. The next action is a corrected, version-pinned preflight, not a CLI upgrade.
+
+**Additional Windows runner rule:** when `Get-Command codex` resolves to an npm-generated `codex.ps1`, a .NET `Process.Start()` call must not assume that `.ps1` is a native executable. Resolve and test a supported invocation route (for example, an existing native shim or PowerShell host with the script and redirected stdin) without changing execution policy or using `ExecutionPolicy Bypass`. Record the exact host/shim and argument forwarding used.
+
+**Learning status:** this is a second case-derived correction within the same local-maintenance episode. It documents a version-pinned source method; later causal reuse on a different CLI/subcommand/version remains `NOT_TESTED`.
 
 ### 6C.6 Privacy and storage boundary
 
@@ -688,6 +847,8 @@ Before asking the Owner for an upload, pasted text, local export or repeated exp
 
 If GitHub/project retrieval is available, do not make the Owner act as a manual courier between ChatGPT chats. Use the common source directly and report what was actually retrieved. If a tool is not present in the receiving session, classify the capability as unavailable; do not pretend a prompt or Project instruction can install the tool.
 
+The retrieval ladder must also build the role-conditioned package and manifest in §6C.5.1. The recipient's profile determines which context slices and exact artifacts are needed; it never changes the canonical source hierarchy or grants access. When one source already contains the exact artifact, retrieve it directly instead of asking the Owner to relay it.
+
 ### 6E.5 Distinguish file sharing from live runtime synchronization
 
 Use these separate channels:
@@ -723,6 +884,146 @@ The coordinator performs retrieval, reconciliation, source navigation, file comp
 - Connecting GitHub to ChatGPT: https://help.openai.com/en/articles/11145903-connecting-github-to-chatgpt
 - Connected apps in ChatGPT: https://help.openai.com/en/articles/11487775-connected-apps-in-chatgpt
 - Memory in ChatGPT: https://help.openai.com/en/articles/8590148-memory-in-chatgpt
+
+
+### 6C.5.4 T3 Code as the multi-provider execution coordination plane (2026-11-01)
+
+**Decision:** prefer the existing T3 Code Orchestrator V2 for operational collaboration among configured coding-agent providers before designing or implementing another IABV-specific agent router, scheduler, message bus or MCP bridge. T3 is an execution/control plane, not IABV's canonical memory, project router or permission authority.
+
+**Release/source basis and evidence ceiling:**
+
+- The official T3 Code v0.1.0 release on 2026-10-15 explicitly declares Orchestrator V2 stable and documents `delegate_task` as the way for one agent to start child agents on another provider/model, await or receive their results, and coordinate multiple harnesses. It also documents the T3 Code MCP for creating, launching, messaging, waiting on, reading, searching and interrupting threads.
+- The official T3 Code v0.1.6 stable release was published 2026-10-31, after the V2 stable release. The release lineage therefore provides a stable implementation path; this does not prove the Owner's local provider instances, authentication, or child-task capabilities are configured or healthy.
+- The Owner's earlier context reports T3 Code 0.1.6 on the MSI. Treat that as `OWNER_REPORTED` until the actual local T3 instance and its connected providers are inspected.
+- Current T3 Orchestrator MCP documentation describes the `orchestrator_capabilities` tool, provider-instance availability, per-provider child-task capability, runtime-mode constraints, `delegate_task`, task status, thread operations and authenticated app-owned MCP endpoint. Recheck the local installed version's behavior before relying on any current-main detail.
+- T3's own v0.1.0 release warns that switching providers mid-thread is a lossy context handoff; use `delegate_task` for multi-harness collaboration instead.
+
+**Required activation sequence (capability-driven; no provider assumptions):**
+
+1. Start one T3 parent/coordinator thread bound to the correct IABV workspace.
+2. During an active parent run, call `orchestrator_capabilities` before delegation. Record provider instance IDs, driver kinds, models, whether each provider can run child tasks, availability constraints, authentication/executable gaps, and supported runtime modes. Do not guess provider IDs or assume Claude/Codex is configured because its CLI exists elsewhere on the machine.
+3. Select recipients only from currently available instances with child-task capability. Preserve the narrowest supported runtime/interaction mode. T3 providers and external Codex Desktop/CLI are distinct execution surfaces; verify which actual provider instance T3 launches.
+4. Use `delegate_task` to hand off bounded research, source audit, design challenge, implementation or review to a child on the selected provider. Do not use provider switching as a substitute for delegation.
+5. Build every child prompt as a self-contained task-conditioned package under §6C.5.1. T3's Orchestrator MCP contract states that a delegated child receives the supplied task prompt plus optional role instruction; parent conversation history is not copied. Include exact project/repository, source revision, required files, acceptance criteria, allowed operations, permission mode, evidence format and stop condition.
+6. Use asynchronous delegation for work that should not block the coordinator; retain the task ID and child-thread ID, then consume the durable result through the parent wake/status/lineage path. Do not claim success from task creation alone.
+7. For initial activation, delegate read-only, independent tasks in parallel (for example: Codex source/state audit and Claude adversarial architecture review). The parent reconciles disagreements against exact source evidence and returns one synthesis. This proves agent-to-agent result delivery without introducing write conflicts.
+8. Permit only one writer per workspace/branch at a time unless separate worktree isolation is positively verified. A review/research child must not edit. For parallel implementation, require independently bound worktrees/branches and explicit merge-back review; never assume child sessions have isolated filesystems merely because their provider histories are separate.
+9. Have the parent return one correlated orchestration receipt containing parent thread/run, child task/thread IDs, provider instance/model/version, exact artifact refs/digests, terminal statuses, retrieved result evidence, conflicts, synthesis, and confirmation that the Owner did not relay child outputs.
+
+**Initial acceptance gate:**
+
+```text
+T3_VERSION_AND_PROJECT_BINDING=VERIFIED
+ORCHESTRATOR_CAPABILITIES=RETRIEVED
+CODEX_CHILD_CAPABILITY=AVAILABLE|UNAVAILABLE|UNKNOWN
+CLAUDE_CHILD_CAPABILITY=AVAILABLE|UNAVAILABLE|UNKNOWN
+OTHER_PROVIDER_CHILD_CAPABILITIES=
+PARENT_THREAD_AND_RUN_ID=
+CHILD_TASK_IDS=
+CHILD_PROVIDER_INSTANCES=
+CHILD_RESULTS_RETURNED_TO_PARENT=YES|NO
+PARENT_SYNTHESIS=VERIFIED|NOT_VERIFIED
+OWNER_MANUAL_RELAY_REQUIRED=YES|NO
+FILES_CHANGED=NO
+GIT_WRITES=NO
+LOCAL_SCHEDULER_CHANGED=NO
+BRIDGE_OR_PUBLIC_TUNNEL_ENABLED=NO
+OUTCOME=PASS|PARTIAL|BLOCKED
+```
+
+A pass requires at least one child to complete and its result to be consumed by the parent without the Owner copying the result between agents. A cross-provider pass additionally requires two distinct provider types to be observed in the parent/child lineage. If only one provider is available, record the single-provider result as a limited orchestration test, not as cross-provider collaboration.
+
+**Transport and authority boundaries:**
+
+- T3 owns the local execution graph and delegated-task lifecycle while its app/server is running. It does not replace `CURRENT-STATE.md`, GitHub's versioned project record, D019/D020/D021, or the owning project's permission gates.
+- Use the T3-injected, app-authenticated MCP endpoint inside T3 provider sessions. Do not expose the local endpoint publicly, create a tunnel, enable the IABV MCP bridge, or export provider-session tokens to create external connectivity.
+- The current ChatGPT cloud session cannot be presumed to call a T3 loopback endpoint on the MSI. ChatGPT continues to retrieve canonical project state through its own authorized Project/GitHub/connector routes; T3's local agents coordinate among themselves and publish only authorized, sanitized project artifacts back to the canonical repository.
+- T3 Connect/remote-device pairing is a separate feature from local Orchestrator V2 delegation. Its disabled state does not by itself prove that local child-agent orchestration is unavailable; do not enable Connect or a tunnel as a prerequisite for a same-host delegation test.
+- T3 scheduled tasks, Windows Task Scheduler and the existing cloud TICD review are distinct schedulers. Do not create another recurrence to test agent delegation.
+
+**Stop and escalation rules:** if `orchestrator_capabilities` is absent, the parent run is not active, no child-capable provider is configured, or a required provider lacks authentication/executable support, stop with the exact observed blocker. Do not switch to a nightly build, install another provider, change credentials, alter runtime permissions or ask the Owner to become the message courier as an automatic fallback. A separately authorized configuration/update step may be proposed after the capability gap is precisely identified.
+
+**Learning status:** this is a source-grounded routing decision and a proposed operating method, not proof that local orchestration is active. Promotion to an operational capability requires the initial acceptance gate above and later causal reuse in a non-identical IABV task.
+
+
+### 6C.5.5 R1 coordination pilot adjudication: inheritance, Claude auth and code workspace (2026-11-01)
+
+**Observed pilot receipt:** `IABV_T3_COMPLETE_MULTI_AGENT_CONFIGURATION_R1` reported project and coordinator permissions `AUTO`; T3 Connect remained disabled; no files or Git refs changed. The Codex-parent → Claude-child test did not call `delegate_task` because the preflight treated the absence of an explicit `runtimeMode=inherit` capability announcement as a blocker. The Claude-parent → Codex-child test failed before delegation with `Credit balance is too low`. The local project bound to `C:\\IABV-TICD-LAB` was reported not to be a Git checkout and to contain lab documentation rather than product code. These are actor-reported local observations; no local artifact was independently retrieved in this documentation episode.
+
+**Correct interpretation of T3 Code v0.1.6 Orchestrator V2 contract (release-tagged source):**
+
+- `delegate_task.runtimeMode` is optional and accepts `inherit`, `approval-required`, `auto-accept-edits` or `full-access`.
+- Provider, model, runtime mode and interaction mode inherit from the parent when omitted. Therefore, for normal inheritance, omit `runtimeMode` and `interactionMode`; do not require a child provider to announce the literal word `inherit`.
+- `orchestrator_capabilities` exposes `runtimeModes` only when a provider supports a subset of modes. If that list is omitted, the provider supports all modes. If a list is present, an explicit unsupported request is refused and an inherited mode steps down to the broadest mode the target supports.
+- An unsupported runtime mode resolves to `approval-required`, which can cause one approval prompt per command. The parent must inspect the child's effective runtime mode/result rather than infer it from a missing string in the capability response.
+- Delegation requires an active parent run owned by the provider session. A test must call the native tool during that active run and record `taskId`, `childThreadId`, terminal state and consumed result.
+
+**Claude authentication path:** T3's v0.1.6 Claude provider guide says the native provider uses Claude Code's login and configuration. Diagnose `claude auth status`, the exact `CLAUDE_CONFIG_DIR` selected by the provider and only the *presence/names* of provider environment overrides. Never print key/token values. Anthropic documents that `ANTHROPIC_API_KEY` can override a Claude subscription login; a depleted API balance is therefore not proof that the subscription itself is unavailable. If an existing Claude subscription OAuth login is confirmed and an unintended per-instance API-key override is the cause, remove only that T3 provider-instance override and restart/recheck the instance; do not alter the global Windows environment or delete the underlying secret. If the provider is intentionally API-key authenticated and lacks funds, stop without purchasing credits or enabling auto-reload; billing requires a separate Owner decision. If OAuth is missing or expired, use the official Claude Code login flow in the same config directory and request only that one-time account sign-in.
+
+**Workspace boundary:** the existing `C:\\IABV-TICD-LAB` is a documentation/lab workspace, not the product Git checkout. Keep it intact. `C:\\Python` remains `DO_NOT_TOUCH`. For source-level coordination, create a separate dedicated local clone/project (for example `C:\\IABV-TICD-CODE`) of the authorized `jhonf463r/Python` repository after checking free disk space and the exact remote branch SHA. Do not bind code agents to the documentation-only folder or clone into the protected path. Use the existing PR branch for read-only source archaeology until a later task has its own implementation authorization.
+
+**Corrected next pilot:**
+
+1. Use Codex as parent in an active T3 run with project/thread mode `Auto`.
+2. Call `orchestrator_capabilities` and record Claude's exact provider instance, `canRunChildTask`, availability and any `runtimeModes` list. A missing `runtimeModes` list is not a blocker.
+3. Call `delegate_task` with exact `providerInstanceId`, `mode: "async"`, and omit `runtimeMode` and `interactionMode` so they inherit from the active parent.
+4. Verify the child's effective mode and terminal state. If it still falls to `approval-required`, record the provider's advertised subset and stop to diagnose; do not use `full-access`.
+5. Run only after Claude's authentication path is corrected. Use read-only research/review tasks and consume the result in the Codex parent without Owner relay.
+6. Enable T3 Connect only after local delegated result delivery passes; phone sign-in/pairing remains a separate Owner-operated device step.
+
+**Learning status:** source-grounded correction plus one reported failure episode. The inheritance interpretation is verified against the v0.1.6 release-tagged T3 documentation; local Claude authentication, a successful delegated child and real code-workspace binding remain `NOT_VERIFIED`. Do not mark multi-provider coordination as operational until a child task completes and the parent consumes its result.
+
+
+### 6C.5.6 Provider economics, local-model boundary and account integrity (2026-11-01)
+
+**R2 episode:** the owner expected T3 Code to orchestrate models installed on the MSI and/or freely available agents, and asked whether another borrowed email could supply an additional free quota. The R2 receipt reports Codex authenticated in T3, Claude enabled but not authenticated in the exact `C:\\Users\\faber\\.claude` config directory, the code workspace added as `C:\\IABV-TICD-CODE`, current draft permission `FULL_ACCESS` (not revalidated), no delegated child or terminal result, no billing changes, and T3 Connect still disabled. These are actor-reported facts; preserve the failed state and do not claim a functioning team.
+
+**T3 is a harness orchestrator, not a free model host:**
+
+- T3 Code v0.1.6 FAQ describes T3 as using provider harnesses (Codex, Claude Code, OpenCode, Antigravity, etc.), not as hosting its own inference quota. It explicitly says T3 does not support local models as a first-class capability. T3 itself is free/open source; the selected model provider's plan or API billing still applies. This resolves the Owner's misconception: installing a model on Windows does not automatically make it a T3 provider.
+- T3 v0.1.6 nevertheless provides a native Google Antigravity provider using Google's official ACP agent and a Google sign-in. Google's individual Antigravity tier advertises a $0 plan with a meaningful weekly baseline quota for Gemini models, and rate/model availability can change with Google's capacity and policy. This is the preferred second free cloud-agent candidate to verify before paying for Claude or adding more providers.
+- The Antigravity provider's actual `canRunChildTask` must be checked using the local T3 `orchestrator_capabilities` result. If it is not child-capable, use T3's documented independent-thread operations only if the parent can actually start, wait for, read and reconcile those threads; otherwise classify it as a useful separately usable provider, not as a delegated child.
+- OpenRouter currently lists free model variants (`:free`) with a plan-level limit of 20 requests/minute and 50 requests/day for accounts below the credit-purchase threshold; failed attempts count toward the daily cap. T3 v0.1.6 has a documented OpenRouter recipe for a separate Claude-compatible provider instance. Treat this as a bounded, optional fallback/reviewer: verify that the chosen free model supports the required tool calling and context, and never assume a free chat endpoint is a working coding-agent harness.
+- Indirect local-model candidate: OpenCode supports Ollama through an OpenAI-compatible local endpoint, while T3 can run the OpenCode harness locally. However, this is not T3's advertised first-class local-model support; T3's v0.1.6 FAQ explicitly says local models are not supported. Keep this as an experimental, hardware-gated route only. Before download, inventory RAM, GPU/VRAM, CPU, architecture and fresh free disk. Do not install Ollama or download weights until capacity is verified. The earlier owner-reported C: free-space figure is stale and cannot authorize a download. Also note T3 v0.1.6 OpenCode documentation says its `Auto` behavior is equivalent to `Supervised` because OpenCode lacks an AI approval reviewer; do not promise approval-light operation on that harness.
+
+**Free/low-cost provider priority:**
+
+1. Keep the existing Codex provider authenticated with the Owner's own ChatGPT account. OpenAI currently includes limited Codex access on Free; usage caps apply, and Codex Cloud is not included on Free/Go. Treat the free allowance as limited and variable, not as infinite capacity.
+2. Add/verify Google's native Antigravity provider using the Owner's own Google account and individual free tier. Start with its free Gemini models and inspect quota/availability in T3. Use it as the primary second-provider candidate for independent review or research, subject to actual child/thread capability.
+3. Consider OpenRouter `:free` as a third, optional auxiliary route with a separately owned key, subject to daily request limits and tool compatibility.
+4. Retest Claude only if the exact T3 provider configuration completes its own authentication and status check. T3 v0.1.6 Claude uses Claude Code's login/configuration; an unrelated or default CLI config status is not sufficient unless it is the exact `CLAUDE_CONFIG_DIR` used by that provider. Do not buy Anthropic API credits to make an OAuth/subscription path work. Check for API-key environment overrides by variable name/presence only; never expose values.
+
+**Account integrity and multi-account policy:**
+
+- T3 v0.1.6 supports a separate provider instance/account for legitimate work/personal separation; Codex documents a separate account instance and (for CLI sessions) a shadow-home arrangement, while Claude uses separate config directories. These are separate identities and their own usage limits, not a license to share logins or evade quota enforcement.
+- Never use, store or automate a friend's/borrowed person's OpenAI or Anthropic credentials in the Owner's T3 environment. OpenAI and Anthropic consumer account rules make accounts individual and prohibit sharing credentials or making the account available to someone else. Do not set up a proxy/auto-switcher to rotate borrowed/free accounts or circumvent provider rate/usage limits. T3's own FAQ warns that a pile-of-accounts auto-switcher risks provider ToS enforcement.
+- A collaborator may contribute using their own account on their own device and authorized repository access, returning work through a branch/PR or a sanitized artifact; they must not hand over their personal login/token. A separate work account may be configured only when it is genuinely provisioned for and controlled by the same authorized user or organization under the provider's terms; it must not be used as a quota-evasion mechanism.
+
+**R2 corrective actions and safety gates:**
+
+- Preserve `IABV-TICD-LAB`; preserve the separate `IABV-TICD-CODE` workspace. Do not rename/move paths or alter the repo until local T3 project binding is verified.
+- Correct the new code project's draft permission from the reported `FULL_ACCESS` to `AUTO` before any agent is allowed to operate; verify both project defaults and the target thread. `FULL_ACCESS` was observed in a draft and no prompt was sent from it, so do not treat it as a tested active permission.
+- Do not launch Claude or any child while its exact provider config reports `loggedIn=false`.
+- First execute a free-capability pilot: Codex parent → Antigravity child if `canRunChildTask=true`; otherwise use independent T3 threads only if read/wait/reconciliation works. Require actual terminal result and parent retrieval. Keep all tasks read-only.
+- Do not enable T3 Connect until a free provider path completes a real result-return test and the project Auto boundary is verified. T3 Connect is a separate remote-control feature, not a model provider or orchestration prerequisite.
+- Keep `C:\\Python=DO_NOT_TOUCH`, no billing changes, no borrowed credentials, no account pooling, no public tunnel, no MCP bridge, and no product-code writes during provider setup.
+
+**Acceptance states:** `FREE_SECOND_PROVIDER=VERIFIED` requires successful provider status plus a usable model. `CROSS_PROVIDER_COORDINATION=VERIFIED` additionally requires a child/independent thread to complete and its exact result to be retrieved and reconciled by the parent without Owner relay. `LOCAL_MODEL=EXPERIMENTAL` until the indirect OpenCode+Ollama route passes a hardware and tool-use test. Never infer success from a provider appearing enabled in the UI.
+
+
+### 6C.5.7 R3 free-provider activation and workspace identity gate (2026-11-01)
+
+**R3 actor-reported outcome:** `IABV_T3_FREE_PROVIDER_ORCHESTRATION_R3_2026_11_01` stopped `BLOCKED`. T3 displayed the new project as `IABV-TICD-CODE`, while the requested target/approval name was `IABV-CODE`; the permission screen showed `Full access`. The Owner explicitly approved changing only `IABV-CODE` to `Auto`, but the receiving session reported it could not alter application security settings. No setting changed. No agents were launched. Antigravity authentication/runtime/plan/quota remained unverified/not installed. Local disk free space was reported as approximately 4.48 GiB; Ollama was installed but no model weights were downloaded. No product code, Git, C:\\Python, billing, public tunnel or MCP bridge changes occurred.
+
+**Identity and authorization gate:** do not apply the Owner's project-scoped Auto approval to `IABV-TICD-CODE` solely because its path appears to be `C:\\IABV-TICD-CODE`. First verify the immutable T3 project identity and root path. If T3 confirms that the displayed `IABV-TICD-CODE` is exactly the intended project/root `C:\\IABV-TICD-CODE`, obtain the Owner's explicit confirmation that the existing named project is the project they intended to call `IABV-CODE`, or rename only its display label if the Owner has authorized that separate operation. Until identity matches, leave `Full access` unchanged and launch no agents. Never change the global permission default or other projects.
+
+**Resource gate:** 4.48 GiB free is an actor-reported observation and leaves inadequate margin for a managed Antigravity runtime documented to require several GB. Do not install it or download model weights until fresh free space, required install size and a safe post-install margin are verified. Preserve existing Ollama installation without weights; do not start another install. Recheck current free space immediately before any provider runtime installation.
+
+**Free-path fallback:** keep existing Codex/ChatGPT Free as the available provider. T3 0.1.6's native Antigravity provider is a valid second-provider candidate, but it is not yet available until the runtime is installed and the Owner's Google sign-in is confirmed by T3. If disk capacity remains inadequate, use only currently installed providers and their already-included free allowances; do not buy API credits, borrow credentials, rotate accounts or mistake a provider card for a usable agent. Claude's earlier `loggedIn=false` at `C:\\Users\\faber\\.claude` remains unresolved; no Anthropic billing action is authorized.
+
+**Execution gate:** after the exact project identity is reconciled and its own permission is verified as `Auto`, inspect the active parent provider and call `orchestrator_capabilities` from an active parent run. Start with one Codex-parent read-only task delegated to the cheapest actually available child-capable free provider; omit `runtimeMode` and `interactionMode` so T3 inherits them. Verify task ID, child-thread ID, effective runtime mode, terminal state and parent result retrieval. Do not run reverse delegation or enable T3 Connect until the first result is consumed successfully. `T3 Connect` is a remote-access feature, not an agent/provider or a prerequisite for local orchestration.
+
+**Learning status:** source-grounded T3 capability interpretation plus actor-reported R3 stop. Neither Antigravity readiness nor any multi-provider coordination is established. R3 must remain `BLOCKED` until project identity, scoped Auto permission and a usable second provider are independently verified.
 
 ## 7. Historical authoring snapshot and per-session falsifiable checks
 

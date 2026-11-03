@@ -24,7 +24,7 @@ Activate the existing operating lineage as relevant to the objective:
 - Before any material Owner-facing instruction involving a device, application, account or private UI, apply the proposed D019 §9E / D020 §9 pre-action gate: first reuse the D021 §6B.1 Owner-input ledger, reconcile D021 §6D when the Control Master is relevant, and build one internal `OWNER_ACTION_PACKET` with actor split, exact permission, action class, predictable branches, acceptance evidence and stop conditions. Perform assistant-side retrieval/research first; give the Owner one consolidated safe sequence and interpret supplied screenshots directly. Ask only for an irreducible local observation/action. If no Owner action is needed, do not manufacture one. This process guidance does not grant mutation authority or override `CURRENT-STATE.md`; activation becomes canonical only when the proposal is adopted.
 - Before dispatching or claiming an independent/adversarial review, apply proposed D021 §6B.2: verify and record `CONTEXT_SEPARATION` separately from `SOURCE_RETRIEVAL_STATUS`; pin the exact base/HEAD/diff; exclude prior candidate-specific findings and author reasoning; and record source-acquisition method, identity and coverage. If context separation is `BLOCKED`, stop before substantive review. If source retrieval is `LIMITED`, label the result a bounded static assessment and do not claim independent live retrieval. If either required precondition is `BLOCKED`, substantive review is `NOT_RUN`; mark unexamined dimensions `NOT_ASSESSED`, never `PARTIAL`, `PASS` or `FAIL`.
 
-For each material handoff, rebind evidence to exact source/ref/blob and time; distinguish verified observations, actor reports, inference, hypotheses, unknowns and not-run actions; define an observable and stop condition; then verify the outcome and fetch back authorized writeback. A link or saved file does not prove another chat received or used the memory.
+For each material handoff, rebind evidence to exact source/ref/blob and time; distinguish verified observations, actor reports, inference, hypotheses, unknowns and not-run actions; define an observable and stop condition; then verify the outcome and fetch back authorized writeback. A link or saved file does not prove another chat received or used the memory. Apply UAAL-D021 §6C.5.1 to select the recipient's task-conditioned memory profile and build/resolve the artifact manifest before any Owner upload request; use the updated New-Chat Boot and Handoff Kit for the receiver acknowledgement.
 
 For material IABV development/coordination tasks, also apply **UAAL-D021 §6D — Control Master signal intake**. Explicitly retrieve the current ControlMasterDigest from an already-available, authorized read surface when one exists; record its source, workspace/scope, state ID and generation/observation times. Reconcile its queue with `CURRENT-STATE.md`, D019/D020 and the Owner's current objective. If the runtime signal cannot be read, mark it `UNAVAILABLE` or `STALE`; never substitute an old GitHub snapshot or silently treat an empty/error payload as an empty queue. The Control Master informs priority but does not replace the canonical router or authorize an action. The [signal-intake reconciliation receipt](docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-31-UAAL-CONTROL-MASTER-SIGNAL-INTAKE-RECONCILIATION-R1.md) records the observed gaps and limits.
 
@@ -2538,3 +2538,28 @@ La selección sigue siendo dinámica y nunca una secuencia fija, pero el resulta
 `objective → current truth → first open edge → required capability → capability-fit → IA DESTINO CONCRETA → prompt/action`.
 
 Si la IA concreta no puede determinarse con evidencia suficiente, debe declararse explícitamente `DESTINO NO DETERMINABLE` y explicar qué dato falta; no dejar un actor genérico como si fuera un handoff ejecutable.
+
+
+## 2026-11-01 MULTI-AGENT COORDINATION — PREFER T3 ORCHESTRATOR V2
+
+When the active execution surface is T3 Code, first inspect its live `orchestrator_capabilities` before any multi-agent handoff. Prefer T3's existing `delegate_task` path for cross-provider child work instead of switching providers mid-thread or asking the Owner to relay outputs. Select only configured, authenticated child-capable provider instances and respect each provider's advertised runtime modes.
+
+T3 delegated children receive the supplied task prompt/role, not the parent's full conversation history. Build each child brief as a self-contained D021 §6C.5.1 context/manifest package with exact repository, revision, source files, acceptance criteria, permission boundary and stop condition. Parallelize read-only research/review first; allow only one writer per workspace/branch unless distinct worktree isolation is verified. Require the parent to retrieve and reconcile child results and return a correlated receipt.
+
+T3 is an execution coordination plane, not canonical IABV memory or permission authority. `CURRENT-STATE.md`, D019/D020/D021 and the authorized GitHub project records remain authoritative. Do not enable T3 Connect, public tunnels, the IABV MCP bridge, new schedulers or provider installs merely to test local delegation. If the required MCP tool/provider is unavailable, report the exact capability gap and stop rather than simulating collaboration.
+
+
+## 2026-11-01 FREE PROVIDER AND ACCOUNT INTEGRITY ROUTING
+
+For T3 provider selection, do not assume local model files are automatically available to T3. T3 v0.1.6 uses agent harness/provider integrations and explicitly does not advertise first-class local-model inference. Prefer the Owner's own limited Codex/ChatGPT Free route plus the official Google Antigravity individual free-tier provider, after checking its actual T3 status, model and child/thread capability. OpenRouter `:free` is a limited optional auxiliary only; verify tool calling and daily request limits. OpenCode+Ollama is experimental and hardware-gated, not a proven T3-supported local model route.
+
+Never share, borrow or pool another person's ChatGPT/Anthropic credentials to extend free quotas. Use separate provider instances only for legitimate, separately controlled work/personal accounts consistent with provider terms. A collaborator may work from their own account/device and contribute through authorized GitHub branches/PRs, without disclosing credentials.
+
+Before any child agent runs, verify the specific project and thread permission. A reported `FULL_ACCESS` draft must be corrected to the intended `AUTO` mode and re-verified. Require actual task completion and parent result retrieval; a visible provider card is not evidence of working coordination.
+
+
+## 2026-11-01 R3 PROJECT IDENTITY AND FREE-PROVIDER GATES
+
+Before changing a project-scoped permission, verify the exact T3 project identity and root. A prior approval naming `IABV-CODE` must not be applied to a different displayed project `IABV-TICD-CODE` until the Owner confirms it is the intended same project. Do not alter global settings or launch agents while the identity is unresolved.
+
+A T3 provider being visible/enabled does not prove authentication, child-task capability, quota or runtime readiness. Antigravity requires its managed provider runtime and verified Google sign-in; do not install with insufficient disk margin. Codex Free remains the current known route; do not borrow another person's credentials, pool accounts or purchase API credits without a separate decision. T3 Connect is separate remote access and follows a successful local provider/delegation proof.
