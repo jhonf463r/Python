@@ -361,6 +361,7 @@ Use the same orthogonal status fields throughout D021 and the Boot Kit; never in
 - `SOURCE_RETRIEVAL_STATUS` describes only the acquisition route: `NOT_ATTEMPTED` means no acquisition attempt has started; it is not evidence that the source is unavailable or that a route failed. Until an attempt occurs, retain `SOURCE_COVERAGE=NOT_ASSESSED`, `SOURCE_IDENTITY_VERIFICATION=UNVERIFIED` and `RECEIVER_SOURCE_ACK=PENDING` when applicable. `PASS` means exact pinned source bytes were retrieved directly from the declared canonical source and route/identity checks succeeded; it does not claim complete review coverage. `LIMITED` means usable, identifiable bytes were obtained through an indirect or constrained route; coverage may still be `COMPLETE` for the declared scope. `BLOCKED` means an attempted route failed to produce usable, identity-verifiable source, or a concrete verified precondition makes every permitted route unavailable. `NOT_APPLICABLE` is reserved for `SOURCE_PACKAGE_REQUIRED=NO`.
 - `SOURCE_COVERAGE` describes only the amount of the declared source scope actually inspected: `COMPLETE` means all required material for that scope was retrieved and inspected; `PARTIAL` means some but not all was inspected; `NOT_ASSESSED` means no substantive inspection was performed or the source was unavailable. It is independent of whether the retrieval route was direct or indirect.
 - `SOURCE_IDENTITY_VERIFICATION` records who independently verified or attested the exact source identity. `CONTEXT_SEPARATION` separately records reviewer-context admissibility; it never proves source identity or coverage.
+- `SUBSTANTIVE_REVIEW` describes the extent of analysis completed for the declared review scope: `COMPLETE` means all required review dimensions/items were assessed; `PARTIAL` means substantive analysis was completed for at least one but not all required dimensions/items, with every unexamined dimension explicitly `NOT_ASSESSED`; `NOT_RUN` means no substantive assessment was performed for that scope. This is an analysis-completion field, not a source or context status. `PARTIAL` cannot support a full-scope PASS/FAIL or merge-readiness claim. Do not use `PARTIAL` when a source/context precondition left the claimed scope unreviewable; use `NOT_RUN` for that scope. A scope narrowed and declared before review may be `COMPLETE` only for that narrower scope and must be labelled as such.
 
 Valid combinations include: direct retrieval with `SOURCE_RETRIEVAL_STATUS=PASS` and `SOURCE_COVERAGE=PARTIAL` when the reviewer inspected only part of the scope; an indirect but complete package with `SOURCE_RETRIEVAL_STATUS=LIMITED` and `SOURCE_COVERAGE=COMPLETE`; and URL-only/failed acquisition with `SOURCE_RETRIEVAL_STATUS=BLOCKED`, `SOURCE_COVERAGE=NOT_ASSESSED` and `SUBSTANTIVE_REVIEW=NOT_RUN`. When no package is required, use `SOURCE_PACKAGE_STATUS=NOT_REQUIRED` and `SOURCE_RETRIEVAL_STATUS=NOT_APPLICABLE`. A blocked route must not be described as partial review coverage.
 
@@ -378,14 +379,9 @@ Classify carefully:
 
 Use `CONTEXT_SEPARATION=NOT_ASSESSED` only when the evidence needed to classify reviewer-context separation was not inspected or cannot be reconstructed. It is neither a pass nor a known contamination result. Keep it distinct from `BLOCKED` (a known disqualifying exposure) and from `SOURCE_COVERAGE=NOT_ASSESSED` (the extent of source inspection).
 
-4. Source acquisition is classified independently:
-   - `PASS`: the reviewer directly retrieves the exact pinned base, candidate HEAD and diff from the canonical repository and verifies their identities and scope.
-   - `LIMITED`: the reviewer receives a coordinator-exported pinned diff, user-supplied source or other indirect copy with enough provenance to identify its claimed revision and scope, but cannot independently retrieve the live source or inspect all required base context. A bounded static assessment may proceed on the supplied material; mark every conclusion requiring omitted content `NOT_ASSESSED` and do not claim independent live retrieval.
-   - `BLOCKED`: the candidate revision/source identity cannot be established, the supplied material is insufficient to identify the candidate under review, or no usable source is available. Stop before substantive review and report `SUBSTANTIVE_REVIEW=NOT_RUN`.
-   
-   Record the acquisition method, identity-verification actor/status and source coverage in the receipt fields above. A clean reviewer context can therefore be `CONTEXT_SEPARATION=PASS` while `SOURCE_RETRIEVAL_STATUS=LIMITED`; these are not contradictory.
+4. Source acquisition is classified independently under §6E.6A. Use the orthogonal `SOURCE_PACKAGE_STATUS`, `SOURCE_ACQUISITION_METHOD`, `SOURCE_RETRIEVAL_STATUS`, `SOURCE_IDENTITY_VERIFICATION`, `SOURCE_COVERAGE` and receiver-ack fields defined there; do not apply a second `PASS`/`LIMITED`/`BLOCKED` taxonomy here or infer one field from another. In particular, `NOT_ATTEMPTED` is not `BLOCKED`, `LIMITED` does not imply partial coverage, and `BLOCKED` requires an attempted route failure to obtain usable, identity-verifiable source bytes or a concrete verified precondition that makes every permitted route unavailable. A source-acquisition result never changes `CONTEXT_SEPARATION`.
 
-5. Same-candidate metadata exposure must be classified by content, not merely by whether it came from GitHub:
+   5. Same-candidate metadata exposure must be classified by content, not merely by whether it came from GitHub:
    - `PR_TITLE_BRANCH_SHA_CHANGED_PATHS_ONLY` and `NON_EVALUATIVE_COMMIT_SUBJECTS` are `METADATA_ONLY`. If these are the only prior exposure and no candidate-specific findings/rationale were seen, classify context as `LIMITED`, not `BLOCKED`; record the exposure and do not call the review fully blinded.
    - A PR description, commit body, review comment or author note that contains design rationale, favorable/unfavorable evaluation, asserted findings, proposed fixes, risk interpretation or acceptance claims is `AUTHOR_DESCRIPTION_OR_COMMIT_RATIONALE` and `AUTHOR_EVALUATIVE_CLAIMS_EXPOSED=YES`. For a review advertised as blinded/adversarial, classify `BLOCKED` and use a reviewer context that has not received those claims. Do not re-label author-authored rationale as harmless metadata.
    - If only part of a description/message was seen, classify the actual exposed content. If the content cannot be reconstructed, use `UNKNOWN`; do not assume it was metadata-only. A transparently non-blinded supplemental review may still be useful, but it must not satisfy the blinded independent-review gate.
@@ -396,7 +392,9 @@ Use `CONTEXT_SEPARATION=NOT_ASSESSED` only when the evidence needed to classify 
    
    Record related-candidate exposure as `NONE`, `METADATA_ONLY`, `FINDINGS_OR_RATIONALE` or `UNKNOWN`. Do not use another PR's review verdict as proof that this candidate is correct or defective. A merge simulation is evidence of textual mergeability/conflict only; it does not prove semantic preservation. For every conflicted or overlapping path, record the chosen integration order, the invariant that must survive, the resolved result and the exact post-integration diff. If the same session performs both phases, preserve separate receipts and do not relabel the standalone review as fully blinded after integration findings have been disclosed.
 
-When blocked, stop before substantive evaluation and return exactly:
+The exact return below applies only when `CONTEXT_SEPARATION=BLOCKED` under this reviewer-context gate. A source retrieval, identity or receiver-acknowledgement failure is not context contamination and must not be recorded as `MISSING_EVIDENCE=REVIEW_CONTEXT_SEPARATION`; handle it under §6E.6A, preserve the independent context value, and identify the specific missing source precondition.
+
+When `CONTEXT_SEPARATION=BLOCKED`, stop before substantive evaluation and return exactly:
 
 ```text
 INDEPENDENT_REVIEW=BLOCKED_PRECONDITION
@@ -556,9 +554,10 @@ SOURCE_PACKAGE_STATUS=NOT_REQUIRED|IDENTIFIED|BYTES_PRESENT|BYTES_INCOMPLETE|LIN
 SOURCE_ACQUISITION_METHOD=RECIPIENT_LIVE_FETCH|ATTACHED_PACKAGE|OWNER_SUPPLIED_PACKAGE|COORDINATOR_EXPORTED_PACKAGE|OTHER|UNKNOWN
 SOURCE_PACKAGE_PRODUCER=PROVIDER_OR_ACCOUNT_OR_AGENT_OR_ORGANIZATION_IDENTIFIER
 SOURCE_PACKAGE_FILENAME_AND_FORMAT=
-SOURCE_PACKAGE_IDENTITY=SOURCE:<canonical repository or locator>;REVISION:<exact commit/version or NOT_APPLICABLE>;SCOPE:<explicit paths or artifact extent>
-SOURCE_PACKAGE_DIGEST=SHA256:<64_HEX>|GIT_BLOB_SHA:<40_HEX>|NOT_AVAILABLE
-SOURCE_PACKAGE_DIGEST_BASIS=EXACT_PACKAGE_BYTES|RAW_LIVE_RESPONSE_BYTES|RECOMPUTED_GIT_BLOB|NOT_AVAILABLE
+SOURCE_PACKAGE_IDENTITY=
+SOURCE_PACKAGE_MANIFEST_ENTRIES=SOURCE:<canonical repository or locator>;REVISION:<exact commit/version or NOT_APPLICABLE>;SCOPE:<explicit paths or artifact extent>
+SOURCE_PACKAGE_DIGEST=SHA256:<64_HEX>|GIT_BLOB_SHA:<40_HEX>|MANIFEST_SHA256:<64_HEX>|NOT_AVAILABLE
+SOURCE_PACKAGE_DIGEST_BASIS=EXACT_PACKAGE_BYTES|RAW_LIVE_RESPONSE_BYTES|RECOMPUTED_GIT_BLOB|CANONICALIZED_FILE_MANIFEST|NOT_AVAILABLE
 RECEIVER_FILE_DERIVED_EVIDENCE=
 RECEIVER_EVIDENCE_PROVENANCE=FILE_DERIVED|API_METADATA_DERIVED|PROMPT_COPIED|ACTOR_ATTESTED|COORDINATOR_ATTESTED|OWNER_ATTESTED
 OUTBOUND_ATTACHMENT_STATUS=NOT_REQUIRED|NOT_ATTACHED|ATTACHED_VERIFIED|ATTACHED_REPORTED|UNKNOWN
@@ -789,9 +788,10 @@ SOURCE_PACKAGE_STATUS=NOT_REQUIRED|IDENTIFIED|BYTES_PRESENT|BYTES_INCOMPLETE|LIN
 SOURCE_ACQUISITION_METHOD=RECIPIENT_LIVE_FETCH|ATTACHED_PACKAGE|OWNER_SUPPLIED_PACKAGE|COORDINATOR_EXPORTED_PACKAGE|OTHER|UNKNOWN
 SOURCE_PACKAGE_PRODUCER=PROVIDER_OR_ACCOUNT_OR_AGENT_OR_ORGANIZATION_IDENTIFIER
 SOURCE_PACKAGE_FILENAME_AND_FORMAT=
-SOURCE_PACKAGE_IDENTITY=SOURCE:<canonical repository or locator>;REVISION:<exact commit/version or NOT_APPLICABLE>;SCOPE:<explicit paths or artifact extent>
-SOURCE_PACKAGE_DIGEST=SHA256:<64_HEX>|GIT_BLOB_SHA:<40_HEX>|NOT_AVAILABLE
-SOURCE_PACKAGE_DIGEST_BASIS=EXACT_PACKAGE_BYTES|RAW_LIVE_RESPONSE_BYTES|RECOMPUTED_GIT_BLOB|NOT_AVAILABLE
+SOURCE_PACKAGE_IDENTITY=
+SOURCE_PACKAGE_MANIFEST_ENTRIES=SOURCE:<canonical repository or locator>;REVISION:<exact commit/version or NOT_APPLICABLE>;SCOPE:<explicit paths or artifact extent>
+SOURCE_PACKAGE_DIGEST=SHA256:<64_HEX>|GIT_BLOB_SHA:<40_HEX>|MANIFEST_SHA256:<64_HEX>|NOT_AVAILABLE
+SOURCE_PACKAGE_DIGEST_BASIS=EXACT_PACKAGE_BYTES|RAW_LIVE_RESPONSE_BYTES|RECOMPUTED_GIT_BLOB|CANONICALIZED_FILE_MANIFEST|NOT_AVAILABLE
 RECEIVER_FILE_DERIVED_EVIDENCE=
 RECEIVER_EVIDENCE_PROVENANCE=FILE_DERIVED|API_METADATA_DERIVED|PROMPT_COPIED|ACTOR_ATTESTED|COORDINATOR_ATTESTED|OWNER_ATTESTED
 OUTBOUND_ATTACHMENT_STATUS=NOT_REQUIRED|NOT_ATTACHED|ATTACHED_VERIFIED|ATTACHED_REPORTED|UNKNOWN
@@ -806,9 +806,11 @@ REVIEW_CLASS=INDEPENDENT_LIVE|BOUNDED_STATIC_PACKAGE|NOT_APPLICABLE
 SUBSTANTIVE_REVIEW=COMPLETE|PARTIAL|NOT_RUN|NOT_APPLICABLE
 ~~~
 
+**Multi-file manifest rule:** When the declared source scope contains more than one file/revision, populate `SOURCE_PACKAGE_MANIFEST_ENTRIES` with one UTF-8 line per file in this exact form: `ROLE<TAB>REVISION<TAB>PATH<TAB>GIT_BLOB_SHA<TAB>BYTE_LENGTH`. Use `HEAD`, `BASE` or `OTHER` for ROLE; sort entries lexicographically by ROLE and then repository-relative PATH; encode as UTF-8 with LF line endings, no header, blank lines or extra spaces. Set `SOURCE_PACKAGE_DIGEST=MANIFEST_SHA256:<64_HEX>` and `SOURCE_PACKAGE_DIGEST_BASIS=CANONICALIZED_FILE_MANIFEST`, using SHA-256 over those exact canonical manifest bytes. Keep each file's blob SHA and byte length in the manifest. Never place multiple blob SHAs in the single `GIT_BLOB_SHA` digest field. For a single-file source, use the exact package SHA-256 or recomputed Git blob SHA as defined above.
+
 **Byte-derived receiver evidence is mandatory:**
 
-- For IDENTITY_VERIFIED or RECEIVER_SOURCE_ACK=VERIFIED, report at least one value derived from exact bytes actually retrieved/opened. Prefer SHA-256 of the exact package bytes; for live API retrieval, hash the raw response body containing the patch/file bytes, not the separate PR metadata response. A Git blob SHA counts only if recomputed from received file bytes.
+- For SOURCE_IDENTITY_VERIFICATION=RECIPIENT_LIVE_VERIFIED or RECEIVER_SOURCE_ACK=VERIFIED, report at least one value derived from exact bytes actually retrieved/opened. Prefer SHA-256 of the exact package bytes; for live API retrieval, hash the raw response body containing the patch/file bytes, not the separate PR metadata response. A Git blob SHA counts only if recomputed from received file bytes.
 - If a digest cannot be computed, identify a named hunk header and path-level additions/deletions recalculated from the received diff text; state the exact path and label the result FILE_DERIVED.
 - Label evidence FILE_DERIVED, API_METADATA_DERIVED or PROMPT_COPIED. Base/head SHAs, filenames or changed-path counts copied from the prompt are PROMPT_COPIED and do not prove file reading. API metadata alone does not substitute for FILE_DERIVED evidence.
 - SOURCE_IDENTITY_VERIFICATION=RECIPIENT_LIVE_VERIFIED requires matching live base/head/revision and claimed path scope, plus correlated FILE_DERIVED evidence. Without it, use ACTOR_ATTESTED, COORDINATOR_ATTESTED or OWNER_ATTESTED as applicable.
@@ -951,10 +953,10 @@ A test result is valid only for the exact source revision it exercised. Bind eve
 - exit code and raw result summary;
 - whether the run was independent, reported by an actor, or observed directly.
 
-A test result is valid only for the exact source and test blob identities it exercised; any changed source/test blob or later PR HEAD requires its own correlated result. Do not carry forward a pass from earlier blobs. Label results `VERIFIED`, `ACTOR_REPORTED`, `AUTHORED_NOT_RUN`, `CI_REPORTED`, or `NOT_RUN` as applicable. No runner, no checkout, an unavailable workflow, or a permission block is not a passing test and must not be hidden by a synthetic harness. A bounded harness result must state what it stubbed and what integration paths it did not exercise.
+A test result is valid only for the exact source and test blob identities it exercised; any changed source/test blob or later PR HEAD requires its own correlated result. Do not carry forward a pass from earlier blobs. Record the activity as `TEST_EXECUTION_SCOPE=TESTS|BUILD|RUNTIME|COMBINED|NOT_APPLICABLE` and its permission separately as `TEST_AUTHORIZATION=AUTHORIZED|NOT_AUTHORIZED|NOT_APPLICABLE|UNKNOWN`. Label result provenance only as `TEST_STATUS=VERIFIED`, `ACTOR_REPORTED`, `AUTHORED_NOT_RUN`, `CI_REPORTED`, or `NOT_RUN`. A no-run condition remains `NOT_RUN` regardless of whether authorization was withheld; record that reason in `TEST_AUTHORIZATION` and the authorization scope. No runner, no checkout, an unavailable workflow, or a permission block is not a passing test and must not be hidden by a synthetic harness. A bounded harness result must state what it stubbed and what integration paths it did not exercise.
 
 Use a specific stop classification rather than a generic `BLOCKED`:
-`BRANCH_IDENTITY_MISMATCH`, `AUTHORITY_NOT_GRANTED`, `CAPABILITY_UNAVAILABLE`, `WORKSPACE_NOT_ATTACHED`, `SOURCE_UNAVAILABLE`, `PRECONDITION_CHANGED`, `MERGE_CONFLICT`, `TESTS_NOT_RUN`, `TEST_FAILURE`, `INTEGRATION_UNVERIFIED`, or `TOOL_TRANSPORT_FAILURE`. Preserve confirmed defects separately from hypotheses and missing evidence.
+`BRANCH_IDENTITY_MISMATCH`, `BRANCHES_DIVERGED`, `AUTHORITY_NOT_GRANTED`, `CAPABILITY_UNAVAILABLE`, `WORKSPACE_NOT_ATTACHED`, `SOURCE_UNAVAILABLE`, `PRECONDITION_CHANGED`, `MERGE_CONFLICT`, `NO_MATCHING_CI_ROUTE`, `RUNNER_UNAVAILABLE`, `ACTIONS_ACCOUNT_RESTRICTION`, `RUNNER_JOB_NOT_STARTED`, `WORKFLOW_CONFIGURATION_ERROR`, `TESTS_NOT_RUN`, `TEST_FAILURE`, `INTEGRATION_UNVERIFIED`, or `TOOL_TRANSPORT_FAILURE`. Preserve confirmed defects separately from hypotheses and missing evidence.
 
 ### 6F.7 Anti-waste selector and causal learning
 
@@ -985,6 +987,7 @@ SOURCE_ACQUISITION_METHOD=RECIPIENT_LIVE_FETCH|ATTACHED_PACKAGE|OWNER_SUPPLIED_P
 SOURCE_PACKAGE_PRODUCER=
 SOURCE_PACKAGE_FILENAME_AND_FORMAT=
 SOURCE_PACKAGE_IDENTITY=
+SOURCE_PACKAGE_MANIFEST_ENTRIES=
 SOURCE_PACKAGE_DIGEST=
 SOURCE_PACKAGE_DIGEST_BASIS=
 RECEIVER_FILE_DERIVED_EVIDENCE=
@@ -1002,6 +1005,8 @@ SUBSTANTIVE_REVIEW=COMPLETE|PARTIAL|NOT_RUN|NOT_APPLICABLE
 AUTHORIZATION_SCOPE_AND_EXCLUSIONS=
 ACTION_ATTEMPTED=
 TEST_COMMAND_AND_EXACT_HEAD=
+TEST_EXECUTION_SCOPE=TESTS|BUILD|RUNTIME|COMBINED|NOT_APPLICABLE
+TEST_AUTHORIZATION=AUTHORIZED|NOT_AUTHORIZED|NOT_APPLICABLE|UNKNOWN
 TEST_STATUS=VERIFIED|ACTOR_REPORTED|AUTHORED_NOT_RUN|CI_REPORTED|NOT_RUN
 EXPECTED_VS_ACTUAL=
 ROOT_CAUSE_CLASS=

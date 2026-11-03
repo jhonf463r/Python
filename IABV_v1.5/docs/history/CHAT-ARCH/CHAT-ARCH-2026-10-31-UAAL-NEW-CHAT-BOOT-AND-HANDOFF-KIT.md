@@ -188,8 +188,9 @@ SOURCE_ACQUISITION_METHOD=RECIPIENT_LIVE_FETCH|ATTACHED_PACKAGE|OWNER_SUPPLIED_P
 SOURCE_PACKAGE_PRODUCER=PROVIDER_OR_ACCOUNT_OR_AGENT_OR_ORGANIZATION_IDENTIFIER
 SOURCE_PACKAGE_FILENAME_AND_FORMAT=
 SOURCE_PACKAGE_IDENTITY=
-SOURCE_PACKAGE_DIGEST=SHA256:<64_HEX>|GIT_BLOB_SHA:<40_HEX>|NOT_AVAILABLE
-SOURCE_PACKAGE_DIGEST_BASIS=EXACT_PACKAGE_BYTES|RAW_LIVE_RESPONSE_BYTES|RECOMPUTED_GIT_BLOB|NOT_AVAILABLE
+SOURCE_PACKAGE_MANIFEST_ENTRIES=
+SOURCE_PACKAGE_DIGEST=SHA256:<64_HEX>|GIT_BLOB_SHA:<40_HEX>|MANIFEST_SHA256:<64_HEX>|NOT_AVAILABLE
+SOURCE_PACKAGE_DIGEST_BASIS=EXACT_PACKAGE_BYTES|RAW_LIVE_RESPONSE_BYTES|RECOMPUTED_GIT_BLOB|CANONICALIZED_FILE_MANIFEST|NOT_AVAILABLE
 RECEIVER_FILE_DERIVED_EVIDENCE=
 RECEIVER_EVIDENCE_PROVENANCE=FILE_DERIVED|API_METADATA_DERIVED|PROMPT_COPIED|ACTOR_ATTESTED|COORDINATOR_ATTESTED|OWNER_ATTESTED
 OUTBOUND_ATTACHMENT_STATUS=NOT_REQUIRED|NOT_ATTACHED|ATTACHED_VERIFIED|ATTACHED_REPORTED|UNKNOWN
@@ -278,6 +279,7 @@ SOURCE_ACQUISITION_METHOD=RECIPIENT_LIVE_FETCH|ATTACHED_PACKAGE|OWNER_SUPPLIED_P
 SOURCE_PACKAGE_PRODUCER=
 SOURCE_PACKAGE_FILENAME_AND_FORMAT=
 SOURCE_PACKAGE_IDENTITY=
+SOURCE_PACKAGE_MANIFEST_ENTRIES=
 SOURCE_PACKAGE_DIGEST=
 SOURCE_PACKAGE_DIGEST_BASIS=
 RECEIVER_FILE_DERIVED_EVIDENCE=
@@ -301,7 +303,9 @@ DECISION_AND_REASON=
 ACTION=EXECUTED | BLOCKED | NOT_EXECUTED
 OUTCOME=VERIFIED | PARTIAL | UNKNOWN
 FILES_OR_SOURCES_MODIFIED=
-TESTS_BUILD_RUNTIME=PASS | FAIL | NOT_RUN | NOT_AUTHORIZED
+TEST_EXECUTION_SCOPE=TESTS|BUILD|RUNTIME|COMBINED|NOT_APPLICABLE
+TEST_AUTHORIZATION=AUTHORIZED|NOT_AUTHORIZED|NOT_APPLICABLE|UNKNOWN
+TEST_STATUS=VERIFIED|ACTOR_REPORTED|AUTHORED_NOT_RUN|CI_REPORTED|NOT_RUN
 AUTHORIZATION_BOUNDARY_RESPECTED=YES | NO | UNKNOWN
 FIRST_REMAINING_DEPENDENCY=
 NEXT_SINGLE_ACTION=
@@ -339,9 +343,9 @@ A transferable lesson must preserve original scope, provenance, conditions, coun
 
 Because `jhonf463r/Python` is public, write only public-safe methods and sanitized/generalizable lessons here. Private project files, personal information, commercial secrets, source artifacts, account identifiers, credentials, keys and tokens belong in a suitable private project store. This public kit must not become a cross-project private archive.
 
-## 9. Copy-ready universal bootstrap prompt
+## 9. Universal bootstrap prompt body template — dispatch header required
 
-Paste this prompt into a new chat when starting or resuming a material task. Add the project-specific handoff envelope immediately below it when available. This prompt explicitly requires Control Master intake for IABV; a generic instruction to "use D021" is not evidence that the panel was consulted.
+Use this as the task-body template when starting or resuming a material task. It is not a released external-agent prompt by itself. When dispatching it to an external agent, prepend a fully populated D021 §6C.5 `DISPATCH_HEADER` as the first non-empty content of the complete prompt artifact. Place any project-specific handoff envelope after that header and before/within this body; never put the header below the bootstrap prompt. Do not present the body alone as ready to send. This prompt explicitly requires Control Master intake for IABV; a generic instruction to "use D021" is not evidence that the panel was consulted.
 
 ```text
 UAAL — UNIVERSAL NEW-CHAT BOOT
@@ -393,9 +397,9 @@ Do not change another project's state, IABV CURRENT-STATE, permissions, source c
 Never claim automatic memory delivery, continuous cross-chat synchronization, runtime enforcement, consciousness, physical observation, test execution, causal learning or autonomy without evidence.
 ```
 
-## 10. Copy-ready project-chat assignment
+## 10. Project-chat assignment block
 
-Use this short addition when a chat is dedicated to one of the Owner's projects:
+Use this short assignment block inside an existing project chat. If it is sent as an external-agent prompt, put a fully populated D021 §6C.5 `DISPATCH_HEADER` first and place this block below it; do not send this block as a standalone external prompt:
 
 ```text
 PROJECT CHAT ASSIGNMENT
@@ -464,7 +468,7 @@ The reopen trigger is deliberately dependency-scoped: genuinely new, independent
 **Acceptance boundary:** passing this checklist demonstrates that a session followed the explicit boot procedure for this bounded task. It does not prove that GitHub was automatically injected into the chat, that every future chat will comply, that a runtime enforces the method, that model weights learned, or that IABV has subjective consciousness.
 
 
-## 10. ChatGPT Project shared context (2026-10-31)
+## 13. ChatGPT Project shared context (2026-10-31)
 
 Use one owner-controlled ChatGPT Project for IABV coordination. Add the copy-ready instructions from CHAT-ARCH-2026-10-31-CHATGPT-PROJECT-INSTRUCTIONS-R1.md to its Project instructions, and keep IABV ChatGPT chats inside it when the interface permits. The Project makes its own instructions, files and chats available as shared context to its chats. Choose memory mode by intended scope: Project-only confines IABV recall to chats inside this Project and excludes account-level saved memories and chats outside it; Default memory may offer broader account-level context where plan/settings permit, with cross-project mixing risk. Under the existing separate-project-memory policy, Project-only is preferred for the dedicated IABV Project unless the Owner explicitly chooses wider account recall. Neither mode guarantees recall of every message.
 
