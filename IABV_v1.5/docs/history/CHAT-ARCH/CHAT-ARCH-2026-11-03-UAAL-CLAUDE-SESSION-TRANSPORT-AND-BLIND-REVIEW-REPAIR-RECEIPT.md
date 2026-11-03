@@ -59,13 +59,13 @@ Adjudication: do not merge these statements into one capability profile. Preserv
 
 ### 3.5 Correct blind-review scope arithmetic
 
-The coordinating GitHub connector independently queried the exact BASE...HEAD comparison and returned ten changed paths. Eight are operational documents; two are receipts. The corrected decomposition is:
+The coordinating GitHub connector independently queried the exact BASE...HEAD comparison before this new receipt was added and returned ten changed paths: eight operational documents and two receipts. Adding this incident receipt made the current candidate eleven paths: the same eight operational documents and three receipts. The corrected decomposition is:
 
-- Phase A: eight operational files only, each at BASE and HEAD; 16 declared source items. Do not open the two receipts, the PR body, comments or prior findings.
-- Phase B: read the two receipts only after Phase A has been completed and frozen in the same Claude conversation.
+- Phase A: eight operational files only, each at BASE and HEAD; 16 declared source items. Do not open any of the three receipts, the PR body, comments or prior findings.
+- Phase B: read all three receipts only after Phase A has been completed and frozen in the same Claude conversation.
 - Phase C: non-blind current-main, Control Master and M1A/bridge audit after Phase B, under its own bounded scope.
 
-Required labels: PHASE_A_SCOPE=8_OPERATIONAL_FILES_ONLY; RECEIPTS=EXCLUDED_PENDING_PHASE_B; FULL_10_FILE_REVIEW=NOT_COMPLETED until Phase B is adjudicated. Do not claim that Phase A covered all ten changed paths.
+Required labels: PHASE_A_SCOPE=8_OPERATIONAL_FILES_ONLY; RECEIPTS=3_EXCLUDED_PENDING_PHASE_B; FULL_11_PATH_REVIEW=NOT_COMPLETED until Phase B is adjudicated. Do not claim that Phase A covered all eleven changed paths.
 
 ## 4. Exact Phase A paths
 
@@ -80,9 +80,10 @@ The eight operational paths in both BASE and HEAD are:
 7. IABV_v1.5/docs/history/CHAT-ARCH/MEMORY-OPERATING-PROTOCOL.md
 8. IABV_v1.5/docs/history/CHAT-ARCH/README.md
 
-The excluded receipts are:
+The three receipts excluded from Phase A and reserved for Phase B are:
 - IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-11-02-UAAL-PR591-CI-OBSERVATION-RECEIPT.md
 - IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-11-02-UAAL-PR598-API-HEAD-RECONCILIATION-RECEIPT.md
+- IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-11-03-UAAL-CLAUDE-SESSION-TRANSPORT-AND-BLIND-REVIEW-REPAIR-RECEIPT.md
 
 The reviewer must receive complete literal BASE and HEAD URLs for all 16 source items in the new dispatch, pinned to the final immutable HEAD after this documentary amendment. Do not use abbreviated SHAs or ask the reviewer to construct URLs.
 
