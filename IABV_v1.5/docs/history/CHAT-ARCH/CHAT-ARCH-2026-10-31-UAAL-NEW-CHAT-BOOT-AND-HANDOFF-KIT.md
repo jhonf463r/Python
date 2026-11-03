@@ -122,8 +122,8 @@ Apply:
 - **D021:** reconcile source and time, build the objective-conditioned world model, adjudicate prior results and select one next action with observable outcome and stop condition.
 - **D021 §6B.2:** before dispatching or claiming an independent/adversarial review, record reviewer-context separation separately from source-acquisition method, source identity and source coverage; pin base/HEAD/diff; and exclude prior candidate-specific findings and author analysis. A coordinator-exported or user-supplied diff is a `LIMITED` source route and supports only a bounded static assessment, not independent live retrieval. If context separation or source retrieval is `BLOCKED`, stop before substantive review and mark every unexamined rubric dimension `NOT_ASSESSED`. Use `SOURCE_COVERAGE=PARTIAL` only when some, but not all, of the declared source scope was actually inspected; it is not a substitute for a dimension-level assessment. Never assign `PASS` or `FAIL` to an unexamined dimension.
 - **D021 §6D:** intake the Control Master signal, distinguish its freshness/availability, reconcile it with the canonical route and explain whether it changed or confirmed the selected action.
-- **D021 §6F:** Apply D021 §6F before any material work item, external-agent handoff, PR/branch operation, repository/source edit, PR review or test request. Apply §6F only when it is present in the pinned canonical main; if it exists only on a candidate branch, label it candidate-only and do not claim it is adopted. Verify exact repository/PR/branch/HEAD identity, actual executor/runner, authorization, volatile preconditions, source/test blobs, expected observable and stop condition before drafting or writing.
-- **D019 §9E + D020 §9 (adopted pre-action gate):** before any material Owner-facing device/app/account/private-UI instruction, build one internal `OWNER_ACTION_PACKET` from the D021 §6B.1 known-input ledger, the current route/permissions and the D021 §6D signal status when relevant. Finish assistant-side retrieval/research first; define the actor split, action class, exact mutation permission, predictable branch matrix, acceptance evidence and stop/recovery conditions. Give one consolidated safe sequence; interpret screenshots directly; ask only for an irreducible local observation/action. Never treat a visible UI option as authorization. This adopted method does not grant authority to bypass `CURRENT-STATE.md` or action-specific approval.
+- **D021 §6F:** Use [D021 §6F.0](./CHAT-ARCH-2026-10-29-UAAL-D021-CROSS-SESSION-BOOT-AND-STATE-RECONCILIATION.md#6f0-canonical-trigger-set-and-project-boundary) as the sole canonical trigger/status pointer. Do not reproduce or redefine its trigger list in this kit; consult pinned main to determine whether the section is adopted or candidate-only.
+- **D019 §9E + D020 §9 (canonical-main documented method; runtime enforcement not proven):** before any material Owner-facing device/app/account/private-UI instruction, build one internal `OWNER_ACTION_PACKET` from the D021 §6B.1 known-input ledger, the current route/permissions and the D021 §6D signal status when relevant. Finish assistant-side retrieval/research first; define the actor split, action class, exact mutation permission, predictable branch matrix, acceptance evidence and stop/recovery conditions. Give one consolidated safe sequence; interpret screenshots directly; ask only for an irreducible local observation/action. Never treat a visible UI option as authorization. This adopted method does not grant authority to bypass `CURRENT-STATE.md` or action-specific approval.
 
 Do not select an action merely because it is easy to describe. Do not bypass a missing prerequisite, access denial, technical gate or owner authorization.
 
@@ -131,15 +131,15 @@ Do not select an action merely because it is easy to describe. Do not bypass a m
 
 For a PR, record the repository, PR number, actual PR source branch, exact source HEAD SHA, base SHA and requested branch separately. Confirm the requested branch is the actual PR source branch; a similar name is not enough. If the refs differ or diverged, stop before switching, renaming, rebasing, cherry-picking or writing.
 
-Verify that the intended recipient has the exact checkout/worktree and authorized runner needed for the requested action. For GitHub Actions, inspect the live workflow revision, event, branch/path filters, runner OS and exact command; an unrelated Windows workflow is not a valid runner for this task. Record `NO_MATCHING_CI_ROUTE` separately from `RUNNER_UNAVAILABLE`. If a matching event is accepted but no job starts because of an account/platform restriction, record `ACTIONS_ACCOUNT_RESTRICTION` and `RUNNER_JOB_NOT_STARTED`. If GitHub rejects the workflow definition before job creation, record `WORKFLOW_CONFIGURATION_ERROR`. Do not manufacture a matching path change or add an unapproved workflow merely to obtain a green check. A GitHub connector does not imply Codex has a local checkout or Windows runner. If the recipient reports no authorized runner or no checkout, do not request tests/build/runtime from that actor; choose an authorized static/documentary step or stop on the dependency.
+Verify that the intended recipient has the exact checkout/worktree and authorized runner needed for the requested action. For GitHub Actions, verify the workflow revision, triggering event, exact ref/path filters, runner OS and command against this task. A runner label or operating system alone does not establish a matching CI route. Record `NO_MATCHING_CI_ROUTE` separately from `RUNNER_UNAVAILABLE`. If a matching event is accepted but no job starts because of an account/platform restriction, record `ACTIONS_ACCOUNT_RESTRICTION` and `RUNNER_JOB_NOT_STARTED`. If GitHub rejects the workflow definition before job creation, record `WORKFLOW_CONFIGURATION_ERROR`. Do not manufacture a matching path change or add an unapproved workflow merely to obtain a green check. A GitHub connector does not imply Codex has a local checkout or Windows runner. If the recipient reports no authorized runner or no checkout, do not request tests/build/runtime from that actor; choose an authorized static/documentary step or stop on the dependency.
 
-Before a consequential write, refresh the target ref and re-check volatile preconditions. Use expected-SHA ref updates where supported. Batch related writes into one coherent commit where possible; do not treat connector-generated commit count as progress. Apply D021 §6F only when present in the pinned canonical main; if it exists only on a candidate branch, keep it candidate-only and do not claim adoption. When adopted, apply its full guard and correlated receipt.
+Before a consequential write, refresh the target ref and re-check volatile preconditions. Use expected-SHA ref updates where supported. Batch related writes into one coherent commit where possible; do not treat connector-generated commit count as progress. Respect the canonical trigger and candidate-only status rule in D021 §6F.0; detailed controls apply only at the authority level established by the pinned canonical main.
 
 ### B4.2 — Verify source-package transport before substantive handoff
 
 Use D021 §6E.6A only when that section is present in the pinned canonical main. If it exists only on a candidate branch, treat it as candidate-only. When reviewing the candidate that proposes §6E.6A itself, evaluate it as proposed text, not as an already-adopted gate.
 
-- Choose the route from what the receiver actually did: RECIPIENT_LIVE_FETCH, ATTACHED_PACKAGE, OWNER_SUPPLIED_PACKAGE or COORDINATOR_EXPORTED_PACKAGE. A URL without successful retrieval or actual bytes is SOURCE_PACKAGE_STATUS=LINK_ONLY, not a successful acquisition method.
+- Choose the route from what the receiver actually did: RECIPIENT_LIVE_FETCH, ATTACHED_PACKAGE, OWNER_SUPPLIED_PACKAGE, COORDINATOR_EXPORTED_PACKAGE or OTHER (name and justify the exact route). A URL without successful retrieval or actual bytes is SOURCE_PACKAGE_STATUS=LINK_ONLY, not a successful acquisition method.
 - For RECIPIENT_LIVE_FETCH, the receiver must independently retrieve the exact pinned base/head/source and report its observed revisions, coverage and byte-derived evidence. OUTBOUND_ATTACHMENT_STATUS=NOT_REQUIRED and RECEIVER_ATTACHMENT_ACK=NOT_REQUIRED; require RECEIVER_SOURCE_ACK=VERIFIED.
 - For a transfer route, require actual readable bytes. `ATTACHED_VERIFIED` requires direct sender-side observation and `OUTBOUND_ATTACHMENT_STATUS_PROVENANCE=DIRECT_SENDER_OBSERVATION`. If the sender cannot observe the sending surface, preserve `ATTACHED_REPORTED` with `OUTBOUND_ATTACHMENT_STATUS_PROVENANCE=OWNER_REPORTED` or `ACTOR_REPORTED`, according to the reporting source. Use `NOT_APPLICABLE` when no attachment is required and `UNKNOWN` when provenance cannot be established. Receiver acknowledgement does not upgrade sender-side status.
 - Require at least one value derived from actual bytes: preferably SHA-256 of exact package/raw live response bytes, or a named hunk header plus path-level addition/deletion counts recalculated from the diff. Label FILE_DERIVED, API_METADATA_DERIVED or PROMPT_COPIED. A copied base/head SHA is not proof of file reading.
@@ -183,9 +183,9 @@ TARGET_SESSION_MODE=NEW_SEPARATE | CONTINUED | EXISTING_EXECUTOR
 CONTEXT_SEPARATION_REQUIREMENT=
 REQUIRED_SOURCE_ACCESS_AND_EXACT_REFS=
 SOURCE_PACKAGE_REQUIRED=YES|NO
-SOURCE_PACKAGE_STATUS=NOT_REQUIRED|IDENTIFIED|BYTES_PRESENT|IDENTITY_VERIFIED|PARTIAL|LINK_ONLY|UNAVAILABLE|MISMATCH|BLOCKED|UNKNOWN
+SOURCE_PACKAGE_STATUS=NOT_REQUIRED|IDENTIFIED|BYTES_PRESENT|BYTES_INCOMPLETE|LINK_ONLY|UNAVAILABLE|MISMATCH|UNKNOWN
 SOURCE_ACQUISITION_METHOD=RECIPIENT_LIVE_FETCH|ATTACHED_PACKAGE|OWNER_SUPPLIED_PACKAGE|COORDINATOR_EXPORTED_PACKAGE|OTHER|UNKNOWN
-SOURCE_PACKAGE_PRODUCER=ACTOR_OR_ROLE
+SOURCE_PACKAGE_PRODUCER=PROVIDER_OR_ACCOUNT_OR_AGENT_OR_ORGANIZATION_IDENTIFIER
 SOURCE_PACKAGE_FILENAME_AND_FORMAT=
 SOURCE_PACKAGE_IDENTITY=
 SOURCE_PACKAGE_DIGEST=SHA256:<64_HEX>|GIT_BLOB_SHA:<40_HEX>|NOT_AVAILABLE
@@ -198,9 +198,10 @@ RECEIVER_ATTACHMENT_ACK=NOT_REQUIRED|PENDING|VERIFIED|FAILED|MISMATCH
 RECEIVER_SOURCE_ACK=NOT_REQUIRED|PENDING|VERIFIED|FAILED|MISMATCH
 SOURCE_IDENTITY_VERIFICATION=RECIPIENT_LIVE_VERIFIED|COORDINATOR_ATTESTED|OWNER_ATTESTED|ACTOR_ATTESTED|UNVERIFIED
 SOURCE_COVERAGE=COMPLETE|PARTIAL|NOT_ASSESSED
-SOURCE_RETRIEVAL_STATUS=PASS|LIMITED|BLOCKED
+SOURCE_RETRIEVAL_STATUS=PASS|LIMITED|BLOCKED|NOT_APPLICABLE
 CONTEXT_SEPARATION=PASS|LIMITED|BLOCKED|NOT_ASSESSED
-REVIEW_CLASS=INDEPENDENT_LIVE|BOUNDED_STATIC_PACKAGE|NOT_RUN|NOT_APPLICABLE
+REVIEW_CLASS=INDEPENDENT_LIVE|BOUNDED_STATIC_PACKAGE|NOT_APPLICABLE
+SUBSTANTIVE_REVIEW=COMPLETE|PARTIAL|NOT_RUN|NOT_APPLICABLE
 PARENT_OBJECTIVE=
 PROJECT_ID=
 TASK_ID=
@@ -272,7 +273,7 @@ ROLE=
 OBSERVED_AT=
 SOURCE_REVISION_OR_ARTIFACTS=
 SOURCE_PACKAGE_REQUIRED=YES|NO
-SOURCE_PACKAGE_STATUS=NOT_REQUIRED|IDENTIFIED|BYTES_PRESENT|IDENTITY_VERIFIED|PARTIAL|LINK_ONLY|UNAVAILABLE|MISMATCH|BLOCKED|UNKNOWN
+SOURCE_PACKAGE_STATUS=NOT_REQUIRED|IDENTIFIED|BYTES_PRESENT|BYTES_INCOMPLETE|LINK_ONLY|UNAVAILABLE|MISMATCH|UNKNOWN
 SOURCE_ACQUISITION_METHOD=RECIPIENT_LIVE_FETCH|ATTACHED_PACKAGE|OWNER_SUPPLIED_PACKAGE|COORDINATOR_EXPORTED_PACKAGE|OTHER|UNKNOWN
 SOURCE_PACKAGE_PRODUCER=
 SOURCE_PACKAGE_FILENAME_AND_FORMAT=
@@ -287,9 +288,10 @@ RECEIVER_ATTACHMENT_ACK=
 RECEIVER_SOURCE_ACK=
 SOURCE_IDENTITY_VERIFICATION=
 SOURCE_COVERAGE=COMPLETE|PARTIAL|NOT_ASSESSED
-SOURCE_RETRIEVAL_STATUS=PASS|LIMITED|BLOCKED
+SOURCE_RETRIEVAL_STATUS=PASS|LIMITED|BLOCKED|NOT_APPLICABLE
 CONTEXT_SEPARATION=PASS|LIMITED|BLOCKED|NOT_ASSESSED
-REVIEW_CLASS=INDEPENDENT_LIVE|BOUNDED_STATIC_PACKAGE|NOT_RUN|NOT_APPLICABLE
+REVIEW_CLASS=INDEPENDENT_LIVE|BOUNDED_STATIC_PACKAGE|NOT_APPLICABLE
+SUBSTANTIVE_REVIEW=COMPLETE|PARTIAL|NOT_RUN|NOT_APPLICABLE
 MEMORY_RETRIEVED=VERIFIED | PARTIAL | NOT_RETRIEVED
 METHOD_ACTIVATED=VERIFIED | PARTIAL | NOT_VERIFIED
 METHOD_APPLIED=VERIFIED | PARTIAL | NOT_VERIFIED
@@ -373,14 +375,14 @@ Your first job is to reconstruct the correct present state before recommending o
 
 6. Build a source-grounded world-model snapshot: objective and acceptance condition; canonical route; verified facts; Owner/actor reports; inferences and hypotheses; unknowns and not-run operations; decisions already closed; exact authority and exclusions; prior attempts and terminal fingerprints; first open causal/evidential dependency; actual capabilities available in this session; and the Control Master signal status and influence.
 
-7. Apply D019 to identify the first open causal/evidential edge and prevent unchanged loops. Apply D020 to compare genuinely available, authorized actions and maximize useful verified progress while minimizing Owner effort. Apply D021 to reconcile evidence and adjudicate prior results. Select one next action only, and state why it is better than repeating a prior attempt.
+7. Apply D019 to identify the first open causal/evidential edge and prevent unchanged loops. Apply D020 to compare genuinely available, authorized candidate actions and maximize useful verified progress while minimizing Owner effort. Apply D021 to reconcile evidence and adjudicate prior results. Keep candidate actions provisional; do not finalize, dispatch or execute a material action yet.
 
 7a. Before any material Owner-facing device/app/account/private-UI instruction, apply D019 §9E and D020 §9. Reuse the D021 §6B.1 ledger and, for IABV, record D021 §6D Control Master availability/freshness when an authorized read surface exists. Build one internal OWNER_ACTION_PACKET with the exact route permission, actor split, action class, minimum Owner steps, predictable branch matrix, acceptance evidence and stop/recovery conditions. Complete assistant-side discovery first, then present one consolidated safe sequence and ask only for the irreducible local action. Do not ask the Owner to transcribe screenshots or use an unauthorized option.
 
-8. Apply D021 §6F before any material work item, external-agent handoff, PR/branch operation, repository/source edit, PR review or test request. Apply §6F only when it is present in the pinned canonical main; if it exists only on a candidate branch, label it candidate-only and do not claim it is adopted. Bind the exact task, repository, base SHA, actual PR source branch/head SHA, target paths/blob SHAs, Owner authorization, recipient checkout/runner capability, expected observable and stop condition. Apply D021 §6E.6A only when it is present in that same pinned canonical main; if it exists only in the candidate under review, evaluate it as proposed text and do not claim it is already adopted. A similarly named branch is not the PR source branch.
+8. Before finalizing the next action, consult D021 §6F.0 for the canonical trigger and candidate-only status rule. Apply the detailed pre-action bundle only at the authority level present in the pinned canonical main; if §6F exists only on a candidate branch, label it candidate-only and do not claim adoption. Bind the exact task, repository, base SHA, actual PR source branch/head SHA, target paths/blob SHAs, Owner authorization, recipient checkout/runner capability, expected observable and stop condition. Apply D021 §6E.6A only when it is present in pinned canonical main; otherwise treat it as candidate-only. A similarly named branch is not the PR source branch. Exclude any candidate action that fails a required precondition. Then select one next action only from the gate-eligible candidates; if none remains, stop and report the first unmet precondition instead of dispatching.
    - For every external-agent handoff, apply D021 §6C.5 and complete the §6.0 prompt-emission preflight before presenting the copy-ready artifact. The literal, fully populated dispatch header must be the first content inside that artifact; naming the recipient only in surrounding prose does not comply. Name one exact provider/agent, model or channel, role, session mode, source-access route, permitted scope, exclusions and expected return. Do not use "Claude or another AI", "same reviewer" or another ambiguous substitute. Verify the recipient's actual capability; otherwise mark it unconfirmed and do not claim dispatch.
    - For independent/adversarial review, apply adopted D021 §6B.2: record `CONTEXT_SEPARATION` separately from source acquisition, identity and coverage; pin the exact base/HEAD/diff; exclude candidate-specific prior findings and author rationale before source inspection; and classify unexamined dimensions as `NOT_ASSESSED`. A same-conversation review that has already seen evaluative PR-body content about the same candidate is `BLOCKED` for a blinded review; do not label it `INDEPENDENT_LIVE`.
-   - Apply D021 §6E.6A only under the canonical-main/candidate-only rule in step 8. For `RECIPIENT_LIVE_FETCH`, verify the receiver's live source identity and byte-derived acknowledgement; set attachment fields to `NOT_REQUIRED`. For a transfer route, verify actual bytes, sender-side status and the receiver's correlated byte-derived acknowledgement. If bytes, identity, coverage or acknowledgement are missing, incomplete or mismatched, stop with `REVIEW=NOT_RUN` for the claimed scope. A coordinator-exported package supports only `BOUNDED_STATIC_PACKAGE` unless the reviewer independently fetches and verifies the live source.
+   - Apply D021 §6E.6A only under the canonical-main/candidate-only rule in step 8. For `RECIPIENT_LIVE_FETCH`, verify the receiver's live source identity and byte-derived acknowledgement; set attachment fields to `NOT_REQUIRED`. For a transfer route, verify actual bytes, sender-side status and the receiver's correlated byte-derived acknowledgement. If bytes, identity, coverage or acknowledgement are missing, incomplete or mismatched, stop with `SUBSTANTIVE_REVIEW=NOT_RUN` for the claimed scope. A coordinator-exported package supports only `BOUNDED_STATIC_PACKAGE` unless the reviewer independently fetches and verifies the live source.
 
 9. Execute only within the exact declared authority. Do not expand scope, bypass a failed prerequisite, access protected data, use credentials, alter permissions, start local runtime/bridge/tunnel, or claim tests/build/runtime were run without correlated evidence. Do not merge a PR without separate explicit Owner approval.
 
