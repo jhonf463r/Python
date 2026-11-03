@@ -36,6 +36,8 @@ For mixed-capability handoffs, use D021 §6C.5.1.C.1: plan the exact source rout
 
 Claude is part of the cross-product symbiosis only when the exact receiving session retrieves the relevant GitHub memory through an authorized route, or receives a bounded source package with its provenance preserved. The coordinator must check its own GitHub connector before asking the Owner to relay public files; the recipient's tools and the coordinator's tools are separate. Use D021 §6C.5.1 to compile the prompt/source route and D020 §§8–8.1 to prove retrieval, method activation, decision application and later causal reuse. Do not assume automatic context injection, shared hidden context, or identical browser/API/shell access across Claude.ai, Claude Code and Claude API.
 
+**Conversation-boundary and artifact-fidelity correction (2026-11-03):** D021 §6C.5.1.C.2 is now the owning rule for new-chat handoffs, receiver-local scope locks, item-level continuation after an isolated retrieval failure, coordinator-first package preparation, and verification of actual artifact type/path. A new Claude session does not inherit prior-session source bytes or receipts; a link is not retrieval. Continue independent source-pair acquisition while the blocked item uses its planned fallback, but keep the full review unstarted until its entire declared scope is ready. A coordinator-exported complete hunk set remains PINNED_DIFF_WITH_HUNKS, not recipient-live acquisition. Never report a Dropbox Paper .md.paper object as a raw Markdown .md file.
+
 ### M1B code-candidate evidence gate — applied lesson (2026-10-28)
 
 The R1→R3 reader episode adds a specific correction to cross-agent code handoffs:
