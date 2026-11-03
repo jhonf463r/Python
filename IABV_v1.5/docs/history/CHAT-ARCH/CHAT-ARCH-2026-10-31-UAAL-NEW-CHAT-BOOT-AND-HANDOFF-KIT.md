@@ -176,6 +176,7 @@ The sender should populate this envelope from already available evidence. The Ow
 ```text
 HANDOFF_ID=
 TARGET_AI_PROVIDER_AND_AGENT=
+TARGET_EXECUTION_SURFACE=
 TARGET_MODEL_OR_CHANNEL=
 TARGET_PROJECT_AND_TASK_ID=
 TARGET_ROLE=
@@ -202,7 +203,7 @@ DECLARED_REVIEW_SCOPE=
 SOURCE_COVERAGE=COMPLETE|PARTIAL|NOT_ASSESSED
 SOURCE_RETRIEVAL_STATUS=NOT_ATTEMPTED|PASS|LIMITED|BLOCKED|NOT_APPLICABLE
 CONTEXT_SEPARATION=PASS|LIMITED|BLOCKED|NOT_ASSESSED
-REVIEW_CLASS=INDEPENDENT_LIVE|INDEPENDENT_LIVE_PARTIAL|BOUNDED_STATIC_PACKAGE|NOT_APPLICABLE
+REVIEW_CLASS=INDEPENDENT_LIVE|INDEPENDENT_LIVE_PARTIAL|BOUNDED_STATIC_PACKAGE|NOT_APPLICABLE|BLOCKED_PRECONDITION
 SUBSTANTIVE_REVIEW=COMPLETE|PARTIAL|NOT_RUN|NOT_APPLICABLE
 PARENT_OBJECTIVE=
 PROJECT_ID=
@@ -235,13 +236,15 @@ STOP_CONDITION=
 
 ### 6.0 Mandatory prompt-emission preflight
 
-Before presenting any copy-ready external-agent prompt, apply D021 §6C.5's fail-closed emission check to the exact artifact:
+Before presenting any copy-ready external-agent prompt, apply D021 §6C.5 as present in the exact pinned canonical `main`. Expanded candidate-only requirements are not adopted merely because they appear in this Kit or a PR branch; when the current task reviews that candidate, assess them as proposed text and label them candidate-only. Apply the fail-closed emission check to the exact artifact:
 
 1. The dispatch header must be the first non-empty content **inside the prompt artifact**, before its title or task body. A recipient named only in surrounding chat prose is insufficient.
-2. Populate the complete dispatch header: one exact provider/agent, model or channel, project/task, role, session mode, context-separation requirement, source route and exact refs, authorized scope, exclusions, expected return and stop condition. Do not leave blanks, placeholders or alternative recipients.
-3. Resolve the destination from the current conversation and task capability. Do not infer account availability, model identity, source access, checkout, runner or delivery from a product name.
+2. Populate the complete dispatch header: one exact provider/agent, one exact product surface/execution channel, model/channel label with provenance, project/task, role, session mode, context-separation requirement, source route and exact refs, authorized scope, exclusions, expected return and stop condition. Do not leave blanks, placeholders or alternative recipients.
+3. Resolve the destination from the current conversation and task capability. Do not infer account availability, model identity, shell/browser/API access, checkout, runner, write capability or delivery from a product name. Distinguish product surfaces explicitly (for example, Claude Web versus Claude Code, or Codex app versus Codex CLI).
+4. Build a capability matrix for every task-required function (browser, shell, Git transport, GitHub REST/blob bytes, checkout/worktree, tests/build/runtime, branch/PR write). Record REQUIRED/OPTIONAL/NOT_REQUIRED, AVAILABLE/NOT_TESTED/UNAVAILABLE and the exact probe/evidence. Adapt the prompt's commands to the destination actually available. For a public GitHub repository, use the D021 §6C.5 Git/REST/browser fallback sequence; do not ask the Owner to upload public source before attempting a feasible retrieval route. Do not label acquisition BLOCKED without an actual failed permitted attempt or a concrete verified precondition that makes all permitted routes impossible.
+5. Before stating a repository/ref/path was not supplied, inspect the entire prompt artifact and all supplied handoff fields. Do not ask the Owner to repeat values already present.
 4. If the provider is identified but account/channel availability is unconfirmed, retain it as `PREFERRED_RECIPIENT; AVAILABILITY_UNCONFIRMED`, set D021 `PROMPT_EMISSION_STATUS=PREPARED_NOT_SENT`, and do not substitute another agent. If the intended recipient is genuinely unresolved, set `PROMPT_EMISSION_STATUS=BLOCKED` and ask one irreducible routing question before drafting.
-5. Verify that the task body agrees with the header and does not expand authority, weaken exclusions, omit required source access or imply an action already occurred.
+6. Verify that the task body agrees with the header and does not expand authority, weaken exclusions, omit required source access or imply an action already occurred. Do not place candidate-specific prior findings or author rationale in a supposedly blinded independent-review prompt; use a neutral rubric and disclose any topic/finding exposure under D021 §6B.2.
 
 A prompt with an absent, incomplete, ambiguous or contradictory header has `PROMPT_EMISSION_STATUS=BLOCKED`; do not present it as ready to send. The generic envelope above is a schema, not a completed dispatch. Fill it with exact task values. Any repeated field in a project-specific envelope must match the dispatch header exactly; the header is authoritative and the envelope cannot override it.
 
@@ -277,7 +280,7 @@ SOURCE_REVISION_OR_ARTIFACTS=
 SOURCE_PACKAGE_REQUIRED=YES|NO
 SOURCE_PACKAGE_STATUS=NOT_REQUIRED|IDENTIFIED|BYTES_PRESENT|BYTES_INCOMPLETE|LINK_ONLY|UNAVAILABLE|MISMATCH|UNKNOWN
 SOURCE_ACQUISITION_METHOD=RECIPIENT_LIVE_FETCH|ATTACHED_PACKAGE|OWNER_SUPPLIED_PACKAGE|COORDINATOR_EXPORTED_PACKAGE|OTHER|UNKNOWN
-SOURCE_PACKAGE_PRODUCER=
+SOURCE_PACKAGE_PRODUCER=PROVIDER_OR_ACCOUNT_OR_AGENT_OR_ORGANIZATION_IDENTIFIER
 SOURCE_PACKAGE_FILENAME_AND_FORMAT=
 SOURCE_PACKAGE_IDENTITY=
 DECLARED_REVIEW_SCOPE=NOT_APPLICABLE|<exact scope frozen before source inspection; required for independent/adversarial review>
@@ -285,17 +288,20 @@ SOURCE_PACKAGE_MANIFEST_ENTRIES=ROLE<TAB>REVISION<TAB>PATH_ESCAPED<TAB>GIT_MODE<
 SOURCE_PACKAGE_DIGEST=SHA256:<64_HEX>|GIT_BLOB_SHA:<40_HEX>|MANIFEST_SHA256:<64_HEX>|NOT_AVAILABLE
 SOURCE_PACKAGE_DIGEST_BASIS=EXACT_PACKAGE_BYTES|RAW_LIVE_RESPONSE_BYTES|RECOMPUTED_GIT_BLOB|CANONICALIZED_FILE_MANIFEST|NOT_AVAILABLE
 RECEIVER_FILE_DERIVED_EVIDENCE=
-RECEIVER_EVIDENCE_PROVENANCE=
+RECEIVER_EVIDENCE_PROVENANCE=FILE_DERIVED|API_METADATA_DERIVED|PROMPT_COPIED|ACTOR_ATTESTED|COORDINATOR_ATTESTED|OWNER_ATTESTED
 OUTBOUND_ATTACHMENT_STATUS=NOT_REQUIRED|NOT_ATTACHED|ATTACHED_VERIFIED|ATTACHED_REPORTED|UNKNOWN
 OUTBOUND_ATTACHMENT_STATUS_PROVENANCE=DIRECT_SENDER_OBSERVATION|OWNER_REPORTED|ACTOR_REPORTED|NOT_APPLICABLE|UNKNOWN
-RECEIVER_ATTACHMENT_ACK=
-RECEIVER_SOURCE_ACK=
-SOURCE_IDENTITY_VERIFICATION=
+RECEIVER_ATTACHMENT_ACK=NOT_REQUIRED|PENDING|VERIFIED|FAILED|MISMATCH
+RECEIVER_SOURCE_ACK=NOT_REQUIRED|PENDING|VERIFIED|FAILED|MISMATCH
+SOURCE_IDENTITY_VERIFICATION=RECIPIENT_LIVE_VERIFIED|COORDINATOR_ATTESTED|OWNER_ATTESTED|ACTOR_ATTESTED|UNVERIFIED
 SOURCE_COVERAGE=COMPLETE|PARTIAL|NOT_ASSESSED
 SOURCE_RETRIEVAL_STATUS=NOT_ATTEMPTED|PASS|LIMITED|BLOCKED|NOT_APPLICABLE
 CONTEXT_SEPARATION=PASS|LIMITED|BLOCKED|NOT_ASSESSED
-REVIEW_CLASS=INDEPENDENT_LIVE|INDEPENDENT_LIVE_PARTIAL|BOUNDED_STATIC_PACKAGE|NOT_APPLICABLE
+REVIEW_CLASS=INDEPENDENT_LIVE|INDEPENDENT_LIVE_PARTIAL|BOUNDED_STATIC_PACKAGE|NOT_APPLICABLE|BLOCKED_PRECONDITION
 SUBSTANTIVE_REVIEW=COMPLETE|PARTIAL|NOT_RUN|NOT_APPLICABLE
+INDEPENDENT_REVIEW=NOT_REQUIRED|PERFORMED|BLOCKED_PRECONDITION
+REVIEW_DIMENSIONS=NOT_ASSESSED|<comma-separated declared review dimensions actually assessed>
+MISSING_EVIDENCE=NOT_APPLICABLE|<exact failed field>:<observed reason>
 MEMORY_RETRIEVED=VERIFIED | PARTIAL | NOT_RETRIEVED
 METHOD_ACTIVATED=VERIFIED | PARTIAL | NOT_VERIFIED
 METHOD_APPLIED=VERIFIED | PARTIAL | NOT_VERIFIED
@@ -386,13 +392,12 @@ Your first job is to reconstruct the correct present state before recommending o
 7a. Before any material Owner-facing device/app/account/private-UI instruction, enforce the action-specific authorization and no-bootstrap rules in the exact pinned canonical route: a visible UI option, permission prompt or available control is not authorization. Apply only pre-action requirements whose owning method is adopted in pinned `main`. Recheck the owning D019 record in the exact pinned `main` used for this session: unless it affirmatively records canonical adoption, keep D019 §9E and the dependent D020 §9 `OWNER_ACTION_PACKET` expansion candidate-only and non-mandatory. The `NOT_YET` value observed at PR #598's base `56e4d8b11846a8d8f3cb8cda08efd773ec235651` is a dated baseline fact, not a permanent status. Candidate text may be used as a planning aid only when it does not expand authority or override an adopted rule. Do not infer adoption from front-door wording or D020's general `STATUS=DOCUMENTED_METHOD`.
 
 8. Before finalizing the next action, consult D021 §6F.0 for the canonical trigger and candidate-only status rule. Apply the detailed pre-action bundle only at the authority level present in the pinned canonical main; if §6F exists only on a candidate branch, label it candidate-only and do not claim adoption. Bind the exact task, repository, base SHA, actual PR source branch/head SHA, target paths/blob SHAs, Owner authorization, recipient checkout/runner capability, expected observable and stop condition. Apply D021 §6E.6A only when it is present in pinned canonical main; otherwise treat it as candidate-only. A similarly named branch is not the PR source branch. Exclude any candidate action that fails a required precondition. Then select one next action only from the gate-eligible candidates; if none remains, stop and report the first unmet precondition instead of dispatching.
-   - For every external-agent handoff, apply D021 §6C.5 and complete the §6.0 prompt-emission preflight before presenting the copy-ready artifact. The literal, fully populated dispatch header must be the first content inside that artifact; naming the recipient only in surrounding prose does not comply. Name one exact provider/agent, model or channel, role, session mode, source-access route, permitted scope, exclusions and expected return. Do not use "Claude or another AI", "same reviewer" or another ambiguous substitute. Verify the recipient's actual capability; otherwise mark it unconfirmed and do not claim dispatch.
+   - For every external-agent handoff, apply the portions of D021 §6C.5 and §6.0 that are present in the exact pinned canonical `main`; expanded branch-only requirements remain candidate-only until adopted. The literal, fully populated dispatch header must be the first content inside the artifact. Name one exact provider/agent, product surface/execution channel, model/channel label and provenance, role, session mode, source-access route, permitted scope, exclusions and expected return. Do not use "Claude or another AI", "same reviewer" or another ambiguous substitute. Verify the recipient's actual capability; otherwise mark it unconfirmed and do not claim dispatch.
    - For any independent/adversarial review, freeze `DECLARED_REVIEW_SCOPE` before the first source inspection and apply D021 §6B.2 exactly as present in pinned canonical `main`. Record exact included paths/ranges, criteria, required source items and explicit exclusions; do not narrow scope after seeing source availability or findings. If any required source item is unavailable/incomplete, handle the full claimed scope under the mixed-source rule in §6E.6A; available-subset observations may be recorded separately but are not a partial verdict on an unreviewable full scope. Assess branch-only amendments as candidate text, not adopted authority.
    - Apply D021 §6E.6A only under the canonical-main/candidate-only rule in step 8. For `RECIPIENT_LIVE_FETCH`, verify the receiver's live source identity and byte-derived acknowledgement; set attachment fields to `NOT_REQUIRED`. For a transfer route, verify actual bytes, sender-side status and the receiver's correlated byte-derived acknowledgement. If bytes, identity, coverage or acknowledgement are missing, incomplete or mismatched, stop with `SUBSTANTIVE_REVIEW=NOT_RUN` for the claimed scope. A coordinator-exported package supports only `BOUNDED_STATIC_PACKAGE` unless the reviewer independently fetches and verifies the live source.
 
 9. Execute only within the exact declared authority. Do not expand scope, bypass a failed prerequisite, access protected data, use credentials, alter permissions, start local runtime/bridge/tunnel, or claim tests/build/runtime were run without correlated evidence. Do not merge a PR without separate explicit Owner approval.
 10. Return the §7 Standard return receipt, completing every applicable field. For an independent/adversarial review, include `DECLARED_REVIEW_SCOPE` frozen before the first source inspection. Include exact refs/SHAs/timestamps, sources actually retrieved, Control Master intake fields and signal influence, Owner-input reuse ledger, selected action, authority/exclusions, expected observable, stop condition, result provenance and fetch-back evidence. Distinguish VERIFIED, OWNER/ACTOR_REPORTED, INFERENCE, HYPOTHESIS, UNKNOWN and NOT_RUN; record authorship of an unexecuted test artifact only in provenance notes, and keep `TEST_STATUS=NOT_RUN` until a correlated run is actually observed. A receipt is a report until independently reconciled.
-10. Return a correlated receipt. Include exact refs/SHAs/timestamps, sources actually retrieved, Control Master intake fields and signal influence, Owner-input reuse ledger, selected action, authority/exclusions, expected observable, stop condition, result provenance and fetch-back evidence. Distinguish VERIFIED, OWNER/ACTOR_REPORTED, INFERENCE, HYPOTHESIS, UNKNOWN and NOT_RUN; record authorship of an unexecuted test artifact only in provenance notes, and keep `TEST_STATUS=NOT_RUN` until a correlated run is actually observed. A receipt is a report until independently reconciled.
 
 Do not change another project's state, IABV CURRENT-STATE, permissions, source code or canonical methods unless the handoff explicitly authorizes that exact change. Keep private project information out of the public repository. Do not ask for information already available. If a source or tool is unavailable, say exactly what failed and continue only within the evidence and authority you do have.
 

@@ -319,7 +319,7 @@ Apply this gate before dispatching or claiming an **independent**, **adversarial
 
 Context separation, source acquisition and source identity are separate requirements. Do not collapse them into one pass/fail label.
 
-**Freeze the declared review scope before inspection:** `DECLARED_REVIEW_SCOPE` must identify the exact comparison mode and immutable base/HEAD revisions; every in-scope file and relevant section/hunk range; required review dimensions and acceptance criteria; required source items; and explicit exclusions. Record it in the correlated receipt before the reviewer opens or inspects candidate source. A changed scope is a new review scope and must be recorded before its inspection starts; never narrow scope retrospectively to turn an incomplete review into a complete one.
+**Freeze the declared review scope before substantive content inspection:** `DECLARED_REVIEW_SCOPE` must identify the exact comparison mode and immutable base/HEAD revisions; every in-scope file and relevant section/hunk range; required review dimensions and acceptance criteria; required source items; and explicit exclusions. Record it in the correlated receipt before any diff or candidate source content is displayed, read, searched, semantically parsed or evaluated. Non-semantic preparation may precede the freeze: checking refs/commit/tree metadata, listing changed paths, retrieving object IDs and byte lengths, and computing hashes/manifests without displaying or evaluating source content. Those operations do not authorize source review. Once any source content or diff has been inspected, never retroactively freeze or narrow the scope; record the deviation and either continue with the original scope or restart a genuinely separate review under a new declared scope.
 
 - The reviewer must be a distinct actor/session from the candidate author/editor. A fresh conversation in a separate provider/model context is preferred when the prior session has already discussed or shaped the candidate.
 - Preferred source acquisition is reviewer-side retrieval of the exact pinned repository base, candidate HEAD, diff and acceptance criteria from the canonical source. Sharing the same canonical source revision is required and does not itself contaminate the review.
@@ -363,6 +363,7 @@ Use the same orthogonal status fields throughout D021 and the Boot Kit; never in
 - `SOURCE_PACKAGE_STATUS` describes only package-byte availability/integrity: `NOT_REQUIRED | IDENTIFIED | BYTES_PRESENT | BYTES_INCOMPLETE | LINK_ONLY | UNAVAILABLE | MISMATCH | UNKNOWN`. `IDENTITY_VERIFIED` is not a package state; record the verification actor/result in `SOURCE_IDENTITY_VERIFICATION`. Do not use `PARTIAL` or `BLOCKED` as package states.
 - `SOURCE_RETRIEVAL_STATUS` describes only the acquisition route: `NOT_ATTEMPTED` means no acquisition attempt has started; it is not evidence that the source is unavailable or that a route failed. Until an attempt occurs, retain `SOURCE_COVERAGE=NOT_ASSESSED`, `SOURCE_IDENTITY_VERIFICATION=UNVERIFIED` and `RECEIVER_SOURCE_ACK=PENDING` when applicable. `PASS` means the declared direct acquisition route returned the requested source bytes from the pinned canonical source. It does not assert independent identity verification or complete inspection; those dimensions are recorded separately in `SOURCE_IDENTITY_VERIFICATION` and `SOURCE_COVERAGE`. `LIMITED` means source bytes were obtained through an indirect or constrained acquisition route; it does not by itself assert identity verification or incomplete coverage. Those dimensions are recorded separately in `SOURCE_IDENTITY_VERIFICATION` and `SOURCE_COVERAGE`. `BLOCKED` means an attempted route failed to produce usable source bytes, or a concrete verified precondition makes every permitted acquisition route unavailable. Do not use `BLOCKED` merely because identity or review coverage has not yet been assessed; report those dimensions independently. `NOT_APPLICABLE` is reserved for `SOURCE_PACKAGE_REQUIRED=NO`.
 - `SOURCE_COVERAGE` describes only the amount of the declared source scope actually inspected: `COMPLETE` means all required material for that scope was retrieved and inspected; `PARTIAL` means some but not all declared source items were inspected; `NOT_ASSESSED` means no declared source item was substantively inspected. If required source items are unavailable but an accessible subset was inspected, retain `PARTIAL` as the factual coverage measurement; the separate `SUBSTANTIVE_REVIEW` field records `NOT_RUN` when an unsatisfied byte, identity or acknowledgement precondition prevents a valid substantive verdict for the full declared scope. It is independent of whether the retrieval route was direct or indirect.
+  A `declared source item` is an atomic scope unit enumerated before inspection. Default unit: one immutable `path@revision` object (a BASE version and a HEAD version are separate items). When the scope intentionally covers only part of a file, define the item as `path@revision#exact-section-or-hunk-range` with unambiguous boundaries. A dependency named as an entire file is one file-level item; a dependency limited to a section is one section-level item. Do not mix file-level and hunk-level units for the same comparison without explicitly enumerating them, and do not count a retrieved file as fully inspected when only a declared subset was read. `COMPLETE` requires inspection of every enumerated item at its declared granularity.
 - `SOURCE_IDENTITY_VERIFICATION` records who independently verified or attested the exact source identity. `CONTEXT_SEPARATION` separately records reviewer-context admissibility; it never proves source identity or coverage.
 - `SUBSTANTIVE_REVIEW` describes the extent of analysis completed for the declared review scope: `COMPLETE` means all required review dimensions/items were assessed; `PARTIAL` means substantive analysis was completed for at least one but not all required dimensions/items, with every unexamined dimension explicitly `NOT_ASSESSED`; `NOT_RUN` means no substantive assessment was performed for that scope; `NOT_APPLICABLE` means substantive content review is not part of the declared task. If review was required but did not occur, use `NOT_RUN`, not `NOT_APPLICABLE`. This is an analysis-completion field, not a source or context status. `PARTIAL` cannot support a full-scope PASS/FAIL or merge-readiness claim. Do not use `PARTIAL` when a source/context precondition left the claimed scope unreviewable; use `NOT_RUN` for that scope. A scope narrowed and declared before review may be `COMPLETE` only for that narrower scope and must be labelled as such.
 
@@ -400,15 +401,20 @@ The exact return below applies only when `CONTEXT_SEPARATION=BLOCKED` under this
 When `CONTEXT_SEPARATION=BLOCKED`, stop before substantive evaluation and return exactly:
 
 ```text
+REVIEW_CLASS=BLOCKED_PRECONDITION
 INDEPENDENT_REVIEW=BLOCKED_PRECONDITION
 SUBSTANTIVE_REVIEW=NOT_RUN
 REVIEW_DIMENSIONS=NOT_ASSESSED
 MISSING_EVIDENCE=REVIEW_CONTEXT_SEPARATION
 ```
 
-When `CONTEXT_SEPARATION=NOT_ASSESSED` and independent review is a required precondition, do not claim or perform the independent-review scope. Return `INDEPENDENT_REVIEW=BLOCKED_PRECONDITION`, `SUBSTANTIVE_REVIEW=NOT_RUN`, `REVIEW_DIMENSIONS=NOT_ASSESSED` and `MISSING_EVIDENCE=CONTEXT_SEPARATION_EVIDENCE`. `NOT_ASSESSED` is not a finding of contamination, but it cannot satisfy the independent-review gate. A separately scoped non-independent assessment does not satisfy that gate.
+When `CONTEXT_SEPARATION=NOT_ASSESSED` and independent review is a required precondition, do not claim or perform the independent-review scope. Return `REVIEW_CLASS=BLOCKED_PRECONDITION`, `INDEPENDENT_REVIEW=BLOCKED_PRECONDITION`, `SUBSTANTIVE_REVIEW=NOT_RUN`, `REVIEW_DIMENSIONS=NOT_ASSESSED` and `MISSING_EVIDENCE=CONTEXT_SEPARATION_EVIDENCE`. `NOT_ASSESSED` is not a finding of contamination, but it cannot satisfy the independent-review gate. A separately scoped non-independent assessment does not satisfy that gate.
 
-When a required source, identity or receiver-acknowledgement precondition prevents the declared review class, stop the affected scope and use the same first three return fields, with `MISSING_EVIDENCE` naming the exact failed field and its observed reason (for example, `SOURCE_PACKAGE_STATUS`, `SOURCE_RETRIEVAL_STATUS`, `SOURCE_IDENTITY_VERIFICATION`, `SOURCE_COVERAGE` or `RECEIVER_SOURCE_ACK`). Preserve `CONTEXT_SEPARATION` as independently assessed; never report a source/identity/ACK failure as `MISSING_EVIDENCE=REVIEW_CONTEXT_SEPARATION`.
+When a required source, identity or receiver-acknowledgement precondition prevents the declared review class, stop the affected scope and return `REVIEW_CLASS=BLOCKED_PRECONDITION`, `INDEPENDENT_REVIEW=BLOCKED_PRECONDITION`, `SUBSTANTIVE_REVIEW=NOT_RUN`, `REVIEW_DIMENSIONS=NOT_ASSESSED` and `MISSING_EVIDENCE=<exact failed field>:<observed reason>` (for example, `SOURCE_PACKAGE_STATUS:BYTES_INCOMPLETE`, `SOURCE_RETRIEVAL_STATUS:BLOCKED`, `SOURCE_IDENTITY_VERIFICATION:UNVERIFIED`, `SOURCE_COVERAGE:PARTIAL` or `RECEIVER_SOURCE_ACK:FAILED`). Preserve `CONTEXT_SEPARATION` as independently assessed; never report a source/identity/ACK failure as `MISSING_EVIDENCE=REVIEW_CONTEXT_SEPARATION`.
+
+
+
+`REVIEW_CLASS=NOT_APPLICABLE` is valid only when independent review is not a requirement of the declared task. If independent review is required but cannot begin or cannot satisfy a mandatory precondition, use `REVIEW_CLASS=BLOCKED_PRECONDITION` with `INDEPENDENT_REVIEW=BLOCKED_PRECONDITION`, `SUBSTANTIVE_REVIEW=NOT_RUN`, `REVIEW_DIMENSIONS=NOT_ASSESSED` and a specific `MISSING_EVIDENCE` value. Never use `NOT_APPLICABLE` to conceal an unachieved required review. `INDEPENDENT_REVIEW=NOT_REQUIRED|PERFORMED|BLOCKED_PRECONDITION`; `REVIEW_DIMENSIONS` identifies dimensions actually assessed or `NOT_ASSESSED`; `MISSING_EVIDENCE=NOT_APPLICABLE` only when no blocking evidence is missing.
 
 Do not label unexamined rubric dimensions `PARTIAL`, `PASS` or `FAIL`. Those statuses are valid only after the reviewer inspected the corresponding content. Apply the same rule to source-limited reviews: omitted base context is `NOT_ASSESSED`, not an inferred pass or failure. Do not ask the Owner to repeat the same review in the same contaminated context. Select a genuinely separate reviewer or report that no admissible independent-review route is presently available.
 
@@ -516,6 +522,7 @@ Use this exact dispatch-header schema as the first non-empty content inside ever
 DISPATCH_HEADER
 HANDOFF_ID=
 TARGET_AI_PROVIDER_AND_AGENT=
+TARGET_EXECUTION_SURFACE=
 TARGET_MODEL_OR_CHANNEL=
 TARGET_PROJECT_AND_TASK_ID=
 TARGET_ROLE=
@@ -528,9 +535,34 @@ EXPECTED_RETURN_ARTIFACT_AND_RECEIPT=
 STOP_CONDITION=
 ```
 
-The `DISPATCH_HEADER` is the sole authority for recipient/model-channel, project/task, role, session mode, context requirement, source refs, authorized scope, exclusions, expected return and stop condition. A project-specific `HANDOFF_ENVELOPE` may follow it and add evidence/context, but any repeated field must match the header exactly; the envelope cannot override it. Any conflict makes the artifact `PROMPT_EMISSION_STATUS=BLOCKED`.
+The `DISPATCH_HEADER` is the sole authority for the exact recipient/provider, product surface/execution channel, model/channel label and provenance, project/task, role, session mode, context requirement, source refs, authorized scope, exclusions, expected return and stop condition. A project-specific `HANDOFF_ENVELOPE` may follow it and add evidence/context, but any repeated field must match the header exactly; the envelope cannot override it. Any conflict makes the artifact `PROMPT_EMISSION_STATUS=BLOCKED`.
 
 **Capability and provenance anti-fabrication rule:** never invent or infer a model/version label, agent identity, account/channel availability, product capability, tool or repository access, checkout/runner availability, session mode, send/delivery/receipt/acknowledgement status, or test/build/runtime execution. Report a value only as directly verified or as explicitly actor-reported; otherwise preserve `UNKNOWN`, `UNVERIFIED` or `NOT_RUN`. A product name, prior session, visible UI option or candidate PR does not prove that capability, access or delivery exists.
+
+**Destination/surface-specific prompt adapter — mandatory before prompt release**
+
+Bind each handoff to the exact product surface, not merely the vendor or model family. Populate `TARGET_EXECUTION_SURFACE` with a concrete destination such as `CLAUDE_WEB`, `CLAUDE_CODE`, `CODEX_APP_EXISTING_SESSION`, `CODEX_CLI`, `CHATGPT_WEB_WITH_GITHUB_CONNECTOR` or `API_TOOL_CALL`. These are routing labels, not claims that a capability is present. Record the actual session/account/workspace and the evidence for model-label provenance; when the UI label was not observed, say so rather than guessing.
+
+Before writing task instructions, build a compact capability matrix for the selected destination. For each capability the task needs, record `REQUIRED|OPTIONAL|NOT_REQUIRED`, observed state `AVAILABLE|NOT_TESTED|UNAVAILABLE`, and the exact probe/evidence: public web/browser retrieval; shell/terminal; Git smart-HTTP; GitHub REST/API; exact raw/blob byte retrieval and base64 decoding; local repository checkout/worktree and exact branch identity; test/build/runtime runner; and authorized ability to create blobs/commits/branches/PRs or publish results.
+
+A product name is not a capability probe. Do not send shell commands to a browser-only surface, do not assume Claude Web is Claude Code, do not assume Codex app is Codex CLI, and do not assume ChatGPT's GitHub connector is a local checkout or a write-capable Git client. Use only the actions actually exposed in the target session. The prompt must adapt its steps and stop conditions to the observed capability matrix; if a required capability is `NOT_TESTED` or `UNAVAILABLE`, do not imply that the action can proceed.
+
+**Public GitHub retrieval adapter for Claude Web and other browser/sandbox reviewers**
+
+When the exact public repository, immutable refs and source paths are already in the handoff, inspect the complete prompt artifact before claiming that the repository or refs were not supplied. Do not ask the Owner to repeat an identifier already present in the header/body. Public visibility means private credentials are not required for public reads; it does not guarantee that a particular browser/sandbox network route works.
+
+Use the following conditional route sequence, recording the actual attempt, timestamp, command/URL, exit/result and exact error:
+1. If a shell is actually available, probe `git --version`; then test Git transport with `git ls-remote https://github.com/<owner>/<repo>.git <exact-refspecs>`. If it succeeds, fetch the exact pinned BASE/HEAD commit SHAs (not a moving branch), verify parent/tree identity, enumerate changed paths, and retrieve the required blobs. Recompute Git blob identity from bytes using the Git object header `blob <byte-length>\\0<bytes>`; a copied SHA or command output alone is not byte verification.
+2. If shell/Git transport is absent or fails, attempt the public GitHub REST route when available: exact `GET /repos/{owner}/{repo}/git/ref/heads/{branch}` for moving-ref reconciliation; `GET /repos/{owner}/{repo}/git/commits/{sha}` for commit/parent/tree; `GET /repos/{owner}/{repo}/git/trees/{sha}?recursive=1` for tree entries; and `GET /repos/{owner}/{repo}/git/blobs/{sha}` for blob bytes. Decode the returned base64 bytes and recompute the Git blob SHA-1 from the byte length and bytes. Verify exact object IDs and lengths against the pinned tree. A recursive tree with `truncated=true` is incomplete; retrieve required subtrees or exact paths before claiming complete source coverage.
+3. A browser-only route may read exact GitHub commit/tree/file pages or API resources without shell, but record what bytes were actually obtained. API metadata, HTML snippets or path listings alone do not establish source-byte identity. Use `SOURCE_RETRIEVAL_STATUS=PASS` only for a successful declared direct byte-retrieval route; use `LIMITED` for an indirect/constrained route; use `NOT_ATTEMPTED` if no permitted retrieval attempt was made. Use `BLOCKED` only after an attempted permitted route failed to produce the required bytes, or a concrete verified precondition makes every permitted route unavailable.
+4. A failed `git ls-remote` does not prove the REST/API or browser route is unavailable. Attempt the next permitted route rather than stopping early. Conversely, do not loop identical failed commands/URLs; switch strategy only when the new route has a materially different capability or failure domain.
+5. Do not ask for a manual upload or paste of public source files before trying a feasible exact public retrieval route. If all permitted byte routes fail, report the actual failures and the remaining missing evidence; do not call the source `BLOCKED` if no route was actually attempted.
+
+**Review design and context-separation adapter**
+
+For a blinded independent review, use a new separate reviewer conversation and a neutral scope/acceptance rubric. Do not seed the reviewer with candidate-specific findings, suspected defect lists, author rationale, earlier review verdicts or a topic checklist derived from those findings. Freeze the declared scope before the first substantive content inspection. A phase-gated review may inspect operating/method documents first, record Phase A before opening receipts or outcome evidence in Phase B, and then assess the receipts separately. If the reviewer has already seen candidate-specific findings or evaluative claims, disclose that exposure and classify context separation under §6B.2; do not claim full blindness. Generic method rules and neutral review criteria are allowed, but a prompt that points the reviewer toward particular candidate defects may limit independence and must be disclosed.
+
+For all destination surfaces, the task body must name the primary acquisition path and a capability-compatible fallback, include exact repository/PR/base/HEAD/parent/tree/path/blob identifiers where applicable, and request the D021 receipt with exact enum values. Distinguish preparation, sending, acknowledgement, retrieval, execution and coordinator adjudication; none implies the next.
 
 Inside the copy-ready artifact, the first non-empty content remains the literal `DISPATCH_HEADER`. Place exactly one `PROMPT_EMISSION_STATUS=<value>` line immediately after the header block's final field and before the task body. This line is outside the header schema: it records emission readiness and cannot override or repair any header field.
 
@@ -556,7 +588,7 @@ Recipient selection rules:
 
 **Mandatory prompt-emission preflight — fail closed:** before returning, copying or presenting any external-agent prompt (including a review request, executor task or project handoff), validate the exact copy-ready artifact:
 - The literal dispatch header is the first non-empty content **inside the prompt artifact itself**, before its title or task body. Putting the recipient only in surrounding chat prose does not satisfy this requirement.
-- Populate every field in the `DISPATCH_HEADER` schema: one exact provider/agent; model or channel; project/task; role; session mode; context-separation requirement; source access and exact refs; authorized scope; exclusions; expected return; and stop condition. Do not leave blank fields, generic placeholders, or alternatives such as "Claude or another AI" in a released prompt.
+- Populate every field in the `DISPATCH_HEADER` schema: one exact provider/agent; one exact product surface/execution channel; model/channel label with provenance; project/task; role; session mode; context-separation requirement; source access and exact refs; authorized scope; exclusions; expected return; and stop condition. Do not leave blank fields, generic placeholders, or alternatives such as "Claude or another AI" in a released prompt.
 - Select the recipient from the task's required capability and the destination established by the current conversation/project context. Do not infer that an account, model, tool, repository checkout or runner is available merely because its product is named.
 - If the provider is known but account/channel availability is not confirmed, preserve that exact destination as `PREFERRED_RECIPIENT; AVAILABILITY_UNCONFIRMED`; set `PROMPT_EMISSION_STATUS=PREPARED_NOT_SENT` and do not silently substitute another recipient. If the intended recipient itself cannot be resolved from available evidence, ask only the single irreducible routing question before drafting.
 - The only permitted sentinel in a required header field is `NOT_APPLICABLE` for `REQUIRED_SOURCE_ACCESS_AND_EXACT_REFS` when the task genuinely requires no source package. `UNKNOWN` is not a substitute for an unresolved destination, session mode, scope, exclusion, expected return or stop condition; any such unresolved value makes `PROMPT_EMISSION_STATUS=BLOCKED`. `PREFERRED_RECIPIENT; AVAILABILITY_UNCONFIRMED` is permitted only in the recipient field and requires `PROMPT_EMISSION_STATUS=PREPARED_NOT_SENT`.
@@ -569,6 +601,7 @@ A new chat is a new session, not a continuation by assumption. Start with a smal
 ```text
 HANDOFF_ID=
 TARGET_AI_PROVIDER_AND_AGENT=
+TARGET_EXECUTION_SURFACE=
 TARGET_MODEL_OR_CHANNEL=
 TARGET_PROJECT_AND_TASK_ID=
 TARGET_ROLE=
@@ -594,7 +627,7 @@ SOURCE_IDENTITY_VERIFICATION=RECIPIENT_LIVE_VERIFIED|COORDINATOR_ATTESTED|OWNER_
 SOURCE_COVERAGE=COMPLETE|PARTIAL|NOT_ASSESSED
 SOURCE_RETRIEVAL_STATUS=NOT_ATTEMPTED|PASS|LIMITED|BLOCKED|NOT_APPLICABLE
 CONTEXT_SEPARATION=PASS|LIMITED|BLOCKED|NOT_ASSESSED
-REVIEW_CLASS=INDEPENDENT_LIVE|INDEPENDENT_LIVE_PARTIAL|BOUNDED_STATIC_PACKAGE|NOT_APPLICABLE
+REVIEW_CLASS=INDEPENDENT_LIVE|INDEPENDENT_LIVE_PARTIAL|BOUNDED_STATIC_PACKAGE|NOT_APPLICABLE|BLOCKED_PRECONDITION
 SUBSTANTIVE_REVIEW=COMPLETE|PARTIAL|NOT_RUN|NOT_APPLICABLE
 PARENT_OBJECTIVE=
 PROJECT_ID=
@@ -838,11 +871,11 @@ SOURCE_IDENTITY_VERIFICATION=RECIPIENT_LIVE_VERIFIED|COORDINATOR_ATTESTED|OWNER_
 SOURCE_COVERAGE=COMPLETE|PARTIAL|NOT_ASSESSED
 SOURCE_RETRIEVAL_STATUS=NOT_ATTEMPTED|PASS|LIMITED|BLOCKED|NOT_APPLICABLE
 CONTEXT_SEPARATION=PASS|LIMITED|BLOCKED|NOT_ASSESSED
-REVIEW_CLASS=INDEPENDENT_LIVE|INDEPENDENT_LIVE_PARTIAL|BOUNDED_STATIC_PACKAGE|NOT_APPLICABLE
+REVIEW_CLASS=INDEPENDENT_LIVE|INDEPENDENT_LIVE_PARTIAL|BOUNDED_STATIC_PACKAGE|NOT_APPLICABLE|BLOCKED_PRECONDITION
 SUBSTANTIVE_REVIEW=COMPLETE|PARTIAL|NOT_RUN|NOT_APPLICABLE
 ~~~
 
-**Manifest rule:** Populate `SOURCE_PACKAGE_MANIFEST_ENTRIES` for every Git-backed source set, including a one-file source whenever path/mode/type binding matters, with one UTF-8 line per existing source path/object in this exact form: `ROLE<TAB>REVISION<TAB>PATH_ESCAPED<TAB>GIT_MODE<TAB>OBJECT_TYPE<TAB>OBJECT_ID<TAB>BYTE_LENGTH`. Each `<TAB>` is one literal horizontal tab (U+0009) byte. `BASE` is the exact left-hand commit/tree in the comparison and `HEAD` is the exact right-hand candidate; in a parent-to-successor delta, the immediate parent is `BASE` for that delta. If the PR target `PR_BASE_SHA` differs from the delta's left-hand revision, record both separately; do not relabel the parent `OTHER`. Reserve `OTHER` for auxiliary source objects outside the compared pair. `REVISION` is the full 40-character lowercase Git commit SHA for Git-backed content, or the exact immutable version identifier for a non-Git source; never use a moving branch/ref or timestamp alone.
+**Manifest rule:** Populate `SOURCE_PACKAGE_MANIFEST_ENTRIES` for every Git-backed source set, including a one-file source whenever path/mode/type binding matters, with one UTF-8 line per existing source path/object in this exact form: `ROLE<TAB>REVISION<TAB>PATH_ESCAPED<TAB>GIT_MODE<TAB>OBJECT_TYPE<TAB>OBJECT_ID<TAB>BYTE_LENGTH`. Each `<TAB>` is one literal horizontal tab (U+0009) byte. `ROLE` is a closed enum: `BASE|HEAD|PR_BASE|OTHER`. `BASE` is the exact left-hand commit/tree in the declared comparison and `HEAD` is the exact right-hand candidate; in a parent-to-successor delta, the immediate parent is `BASE` for that delta. If the PR target `PR_BASE_SHA` differs from the delta's left-hand revision, emit a separate `PR_BASE` row for each required source path/object present at that PR base; if the PR target base equals `BASE`, do not duplicate those rows. Never relabel the delta parent as `OTHER` or use `OTHER` for the PR target base. Reserve `OTHER` exclusively for auxiliary source objects outside BASE, HEAD and PR_BASE. `REVISION` is the full 40-character lowercase Git commit SHA for Git-backed content, or the exact immutable version identifier for a non-Git source; never use a moving branch/ref or timestamp alone.
 
 For Git-backed paths, derive the manifest from `git ls-tree -rz --full-tree <REVISION>` (or an equivalent raw NUL-delimited tree-object response) and parse the NUL-delimited records as bytes. Do not use human-readable `git ls-tree` output that quotes/escapes unusual paths. Preserve the exact raw path bytes through parsing and apply `PATH_ESCAPED` only after the path field has been isolated. Obtain blob byte length from the exact blob object (for example, `git cat-file -s <OBJECT_ID>`); bind mode, object type and object ID from the same tree entry.
 
@@ -929,6 +962,8 @@ For a task without a PR, mark the PR fields `NOT_APPLICABLE`; do not omit the di
 
 The actual PR head branch and SHA must be read from the live PR/ref. The branch requested in an earlier prompt is only a requested target until it is proven identical. If names or commit ancestry differ, classify `BRANCH_IDENTITY_MISMATCH` or `BRANCHES_DIVERGED`; do not silently switch, rename, rebase, cherry-pick, recreate or open a second candidate. Compare both exact refs and stop before writes until the intended owner target is clear. A branch with a similar prefix is not an alias.
 
+Owner inputs already reconciled in canonical history must be reused. Ask one question only when a genuinely missing answer would change the authorized choice. Never ask the Owner to repeat settled identity, setup, branch or approval facts.
+
 ### 6F.2 Capability and permission preflight — do not send impossible work
 
 Before delegating, verify separately that the receiving actor actually has:
@@ -960,8 +995,6 @@ A workflow path filter must be evaluated using the event's comparison semantics,
 The PR #591 falsifier that motivated this correction is preserved in the dated [PR #591 CI observation receipt](CHAT-ARCH-2026-11-02-UAAL-PR591-CI-OBSERVATION-RECEIPT.md). The general comparison rule above is linked to official GitHub documentation.
 
 Official reference: https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow (section "Git diff comparisons").
-
-Owner inputs already reconciled in canonical history must be reused. Ask one question only when a genuinely missing answer would change the authorized choice. Never ask the Owner to repeat settled identity, setup, branch or approval facts.
 
 ### 6F.3 Repository and branch identity guard
 
@@ -1050,7 +1083,10 @@ SOURCE_IDENTITY_VERIFICATION=
 SOURCE_COVERAGE=COMPLETE|PARTIAL|NOT_ASSESSED
 SOURCE_RETRIEVAL_STATUS=NOT_ATTEMPTED|PASS|LIMITED|BLOCKED|NOT_APPLICABLE
 CONTEXT_SEPARATION=PASS|LIMITED|BLOCKED|NOT_ASSESSED
-REVIEW_CLASS=INDEPENDENT_LIVE|INDEPENDENT_LIVE_PARTIAL|BOUNDED_STATIC_PACKAGE|NOT_APPLICABLE
+REVIEW_CLASS=INDEPENDENT_LIVE|INDEPENDENT_LIVE_PARTIAL|BOUNDED_STATIC_PACKAGE|NOT_APPLICABLE|BLOCKED_PRECONDITION
+INDEPENDENT_REVIEW=NOT_REQUIRED|PERFORMED|BLOCKED_PRECONDITION
+REVIEW_DIMENSIONS=NOT_ASSESSED|<comma-separated declared review dimensions actually assessed>
+MISSING_EVIDENCE=NOT_APPLICABLE|<exact failed field>:<observed reason>
 SUBSTANTIVE_REVIEW=COMPLETE|PARTIAL|NOT_RUN|NOT_APPLICABLE
 AUTHORIZATION_SCOPE_AND_EXCLUSIONS=
 ACTION_ATTEMPTED=

@@ -411,14 +411,14 @@ The reviewer reports inspecting all changed hunks in the ten-file BASE→HEAD di
 | IR598-F02 — INDEPENDENT_LIVE did not require SUBSTANTIVE_REVIEW=COMPLETE | P3 | CONFIRMED; corrected in successor | Rule 7 required complete source coverage but omitted complete substantive assessment; rule 7a was limited to partial source coverage. |
 | IR598-F03 — standard correlated receipts omitted DECLARED_REVIEW_SCOPE | P3 | CONFIRMED; corrected in successor | §6B.2 requires scope frozen before inspection; the §6E.6A/§6F.8 and Boot Kit §7 receipt schemas did not carry that field. |
 | IR598-F04 — §6F.0 canonical-trigger wording might overstate adoption | P3 | NOT_CONFIRMED as an adoption defect | Boot Kit §6F pointer and step 8 require checking pinned main and label branch-only text candidate-only. AGENTS and CONTEXT-INDEX likewise require the pinned-main candidate/adoption check. |
-| IR598-F05 — Boot Kit step 10 did not identify the §7 standard receipt | P3 | CONFIRMED; clarified in successor | The step required a correlated receipt but did not expressly bind it to the standard §7 schema. |
+| IR598-F05 — Boot Kit step 10 did not identify the §7 standard receipt | P3 | APPLIED_WITH_RESIDUAL_DUPLICATE | The new step names §7, but a second legacy item also numbered 10 remains at HEAD 08b66cbf; see the subsequent Claude Web review and A01. |
 | IR598-F06 — D019 §9E remains a candidate while containing mandatory-sounding prose | P3 | DEFERRED; no D019 edit in this PR | Exact pinned-main D019 status remains DOCUMENTED_METHOD_CANDIDATE / CANONICAL_MAIN_ADOPTION=NOT_YET; the Boot Kit requires a live owning-record check. No adoption is inferred. |
 | IR598-F07 — README/MEMORY lack §6F.0/§6C.5 pointers | P3 | NOT_ACCEPTED as a blocking defect | No canonical rule was identified that requires every front door to duplicate every section pointer. |
 | IR598-R01 — earlier Claude Web blocked event lacks precise HEAD/time correlation | P3 | NOT_ADJUDICATED | A separate historical receipt-event trace was not fully reconstructed in this reconciliation. |
 | IR598-R02 — historical correction labels may read as independently accepted | P3 | NON_BLOCKING CLARITY NOTE | The surrounding paragraph already states INDEPENDENT_VERIFICATION_PENDING; the successor review remains explicitly partial. |
 | IR598-R03 — old receipt header and reused historical finding ID prefixes | P3 | NON_BLOCKING / PARTIALLY EXPLAINED | The header is labelled Pinned identity at this observation and later observations supersede it chronologically. ID prefixing could improve navigation but does not alter the live source or current review result. |
 
-The reviewer reported no P0/P1 and identified the above P2/P3 observations. The coordinator independently confirmed the five correction targets F01/F02/F03/F05 against exact candidate file content. Other dispositions above are limited to the checks stated; unadjudicated receipt details remain open rather than being silently cleared.
+The reviewer reported no P0/P1 and identified the above P2/P3 observations. The coordinator independently confirmed four correction targets (F01/F02/F03/F05) against exact candidate file content. Other dispositions above are limited to the checks stated; unadjudicated receipt details remain open rather than being silently cleared.
 
 ### Successor correction scope
 
@@ -429,3 +429,69 @@ The successor applies four coherent corrections only:
 4. Make Boot Kit step 10 invoke the standard §7 receipt explicitly.
 
 These changes are candidate-only until independently reviewed and, if later approved and merged, fetched back from main. They do not alter CURRENT-STATE, Owner authority, G1/G2/G3, Option D, protected-read, runtime or bridge status. No tests/build/runtime were run.
+
+## Subsequent Claude Web review — HEAD 08b66cbf5829aaeb31e597c0d2e470eeb30da5a7 (2026-11-02/03)
+
+**Provenance:** the review below was pasted by the Owner from an Anthropic Claude Web session. Its session actions, byte-hash recomputations, source-coverage statements and findings are `ACTOR_REPORTED` unless separately identified as coordinator-verified. The coordinator independently refreshed the public GitHub refs and PR metadata during this reconciliation.
+
+```text
+TASK_ID=IABV_PR598_CLAUDE_WEB_FULL_SCOPE_REVIEW_08B66CBF_20261103
+REVIEWER=Claude (Anthropic) — ACTOR_REPORTED
+REVIEWER_CHANNEL=CLAUDE_WEB — ACTOR_REPORTED
+MODEL_LABEL_PROVENANCE=Claude Sonnet 5.5 from session system information; UI label NOT observed — ACTOR_REPORTED
+OBSERVED_AT=2026-11-03T04:15:20Z (sandbox clock; 2026-11-02 23:15 America/Bogota) — ACTOR_REPORTED
+BASE_SHA=56e4d8b11846a8d8f3cb8cda08efd773ec235651
+HEAD_SHA=08b66cbf5829aaeb31e597c0d2e470eeb30da5a7
+PARENT_SHA=796a15d7ebae19d282fcce0b409c9f100609353c
+BASE_TREE=da5e395d3a2f77c5cfeb595a2a9ea875e756608a
+HEAD_TREE=9e2420f1e29b1667389ddaa6e2982cee66eaf227
+SOURCE_PACKAGE_STATUS=BYTES_PRESENT — ACTOR_REPORTED
+SOURCE_ACQUISITION_METHOD=RECIPIENT_LIVE_FETCH — ACTOR_REPORTED
+SOURCE_RETRIEVAL_STATUS=PASS — ACTOR_REPORTED
+SOURCE_IDENTITY_VERIFICATION=RECIPIENT_LIVE_VERIFIED — ACTOR_REPORTED
+RECEIVER_SOURCE_ACK=VERIFIED — ACTOR_REPORTED
+SOURCE_COVERAGE=PARTIAL — ACTOR_REPORTED
+CONTEXT_SEPARATION=LIMITED — ACTOR_REPORTED
+REVIEW_CLASS=INDEPENDENT_LIVE_PARTIAL — ACTOR_REPORTED
+SUBSTANTIVE_REVIEW=PARTIAL — ACTOR_REPORTED
+P0=0; P1=0; P2=2; P3=10 — ACTOR_REPORTED
+TEST_STATUS=NOT_RUN
+MERGE_AUTHORIZATION=NOT_GRANTED
+```
+
+### Coordinator-verified repository identity at reconciliation
+
+- PR #598 is OPEN and UNMERGED; base branch `main` is `56e4d8b11846a8d8f3cb8cda08efd773ec235651`; source branch `uaal/precision-gates-and-anti-waste-r1-20261102` points to `08b66cbf5829aaeb31e597c0d2e470eeb30da5a7`.
+- The HEAD commit's immediate parent is `796a15d7ebae19d282fcce0b409c9f100609353c`; HEAD tree is `9e2420f1e29b1667389ddaa6e2982cee66eaf227`; BASE tree is `da5e395d3a2f77c5cfeb595a2a9ea875e756608a`.
+- The live PR reports 10 changed files, +1,032/−66 and 58 commits ahead. The PR description body still contained an older scope/base/head summary at the time of this receipt update and must be reconciled separately.
+- The coordinator has not independently recomputed Claude's 18 BASE/HEAD blob hashes or 3 dependency hashes. Those remain actor-reported. The refs/commit/tree/PR metadata above were read directly from GitHub.
+- The Control Master snapshot `IABV_v1.5/data/evolution/control_master/latest.json` is still blob `d76d521e6f8d73e874a21ffe1b720dcdbcd48293`, dated `2026-04-19T19:23:46.389095Z`; classify it STALE, not a live queue.
+
+### New review findings and coordinator adjudication
+
+| ID | Priority | Area | Coordinator disposition |
+|---|---:|---|---|
+| A-01 | P2 | Boot Kit §9 contains two items numbered 10; the legacy item does not require §7 schema | CONFIRMED by direct HEAD read; delete the duplicate and retain any needed clauses in the single §7 receipt step |
+| A-02 | P2 | D021 stop-return fields are absent from Boot Kit §7; blocked-required-review semantics for REVIEW_CLASS are ambiguous | CONFIRMED by direct schema comparison; synchronize the stop fields and define BLOCKED_PRECONDITION versus NOT_APPLICABLE |
+| A-03 | P3 | D021 manifest ROLE was not explicitly a closed enum and did not assign a token to a distinct PR_BASE row | CONFIRMED by direct §6E.6A read; define BASE/HEAD/PR_BASE/OTHER and deterministic row handling |
+| A-04 | P3 | Owner-input reuse/no-repeat rule was placed at the end of §6F.2A path-filter semantics | CONFIRMED by direct D021 read; move it to the owner-input/pre-action section |
+| A-05 | P3 | Scope-freeze wording did not distinguish metadata/hash preparation from substantive content inspection | CONFIRMED by direct D021 read; define the boundary and forbid retroactive freeze |
+| A-06 | P3 | Boot Kit §7 left source producer/provenance/ack/identity fields blank or under-specified | CONFIRMED by direct schema read; mirror the D021 formats and enum values |
+| A-07 | P3 | Boot Kit preflight applied expanded candidate-only requirements without the same pinned-main adoption qualification used by AGENTS | CONFIRMED by direct cross-file read; keep branch-only requirements candidate-only |
+| A-08 | P3 | D021 did not define the atomic unit counted by SOURCE_COVERAGE | CONFIRMED by direct D021 read; enumerate source items at file-level or exact section/hunk-level granularity |
+| B-01 | P3 | Receipt F05 was marked confirmed although the duplicate step 10 remained | CONFIRMED; F05 disposition above is corrected to APPLIED_WITH_RESIDUAL_DUPLICATE |
+| B-02 | P3 | Receipt status vocabulary drifted between correction/confirmation terms and unnamespaced IDs | ACTOR-REPORTED as a count; coordinator accepts the need for one explicit status vocabulary and task-namespaced IDs in new receipt entries |
+| B-03 | P3 | Receipt said five correction targets but listed four | CONFIRMED by direct receipt read; the count now says four |
+| B-04 | P3 | Historical R01 event was not correlated to exact HEAD/time | ACTOR-REPORTED; remains UNKNOWN until source event evidence is recovered |
+
+### Reusable Claude Web and cross-provider lessons
+
+1. The initial Claude reply said repository/refs had not been supplied and classified access as blocked without attempting a route. That was not a valid retrieval failure: the dispatch contained `jhonf463r/Python`, PR #598 and immutable refs. A later Claude Web attempt used Git smart-HTTP and reported success. Future recipients must inspect the entire handoff before asking for already-supplied values, test an available route, and use the capability-compatible REST/browser fallback rather than infer a block.
+2. `CLAUDE_WEB` is not `CLAUDE_CODE`. A web chat may expose a sandbox shell, browser access, REST access or some subset; probe the exact session. Do not issue CLI-only directions as though a terminal is guaranteed, and do not assume that browser/API metadata provides byte identity.
+3. GitHub public visibility removes the need for private credentials for public reads; it does not guarantee the recipient sandbox's network path. Record actual route attempts, commands/URLs, times and errors. `SOURCE_RETRIEVAL_STATUS=NOT_ATTEMPTED` when no route was tried; `BLOCKED` only after an allowed attempt fails or a verified condition eliminates every allowed route.
+4. When Git smart-HTTP works, fetch immutable BASE/HEAD and verify commit parent/tree, changed paths and blob bytes. If it does not, use exact GitHub REST refs/commit/tree/blob endpoints or browser-accessible source. Check recursive tree truncation; decode base64 blob bytes and recompute Git blob identity. Do not equate metadata with bytes.
+5. Keep source retrieval, byte identity, receiver acknowledgement, source coverage, context separation and substantive review orthogonal. An exact commit/PR ref does not prove every dependency was read. Declare each dependency as a file-level or exact section/hunk-level source item before inspection.
+6. A two-phase review is useful: freeze scope, inspect method/operating docs and record Phase A before opening receipts/outcome evidence in Phase B. Do not seed a blinded reviewer with candidate-specific suspected findings or an author-generated checklist; disclose any topic/finding exposure and classify context separation under D021 §6B.2.
+7. A candidate's final receipt must use the D021 enum values exactly. A first unattempted refusal cannot be recorded as `BLOCKED`; an unexecuted review is `SUBSTANTIVE_REVIEW=NOT_RUN`; `REVIEW_CLASS=BLOCKED_PRECONDITION` is distinct from `NOT_APPLICABLE` when independent review was required but could not proceed.
+
+The PR branch amendment that incorporates these lessons is documentation/methodology only. It does not modify CURRENT-STATE, Control Master runtime state, M1A implementation, G1/G2/G3, Option D, protected reads, permissions, runtime, tunnel or bridge authority. It remains candidate-only until an explicitly approved merge and fetch-back from canonical main.
