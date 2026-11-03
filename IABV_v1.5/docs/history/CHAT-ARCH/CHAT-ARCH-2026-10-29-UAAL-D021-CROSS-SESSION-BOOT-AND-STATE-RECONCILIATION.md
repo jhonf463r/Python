@@ -344,7 +344,7 @@ REVIEW_CONTEXT_SEPARATION_RECEIPT = {
   ALLOWED_INPUTS_AND_SOURCE_REFS,
   PROHIBITED_INPUTS_CHECKED,
   BASE_SHA_AND_CANDIDATE_HEAD,
-  CONTEXT_SEPARATION: PASS | LIMITED | BLOCKED,
+  CONTEXT_SEPARATION: PASS | LIMITED | BLOCKED | NOT_ASSESSED,
   SOURCE_ACQUISITION_METHOD: RECIPIENT_LIVE_FETCH | ATTACHED_PACKAGE | OWNER_SUPPLIED_PACKAGE | COORDINATOR_EXPORTED_PACKAGE | OTHER | UNKNOWN,
   SOURCE_IDENTITY_VERIFICATION: RECIPIENT_LIVE_VERIFIED | COORDINATOR_ATTESTED | OWNER_ATTESTED | ACTOR_ATTESTED | UNVERIFIED,
   SOURCE_COVERAGE: COMPLETE | PARTIAL | NOT_ASSESSED,
@@ -352,7 +352,7 @@ REVIEW_CONTEXT_SEPARATION_RECEIPT = {
 }
 ```
 
-Use the same SOURCE_COVERAGE enum throughout D021 and the Boot Kit: COMPLETE means all source material required for the declared review scope was retrieved and inspected; PARTIAL means some, but not all, of that scope was available or inspected; NOT_ASSESSED means the source/review was unavailable or not substantively assessed. This field describes coverage, while SOURCE_RETRIEVAL_STATUS independently describes the acquisition route. A blocked review remains NOT_ASSESSED, not PARTIAL.
+Use the same SOURCE_COVERAGE enum throughout D021 and the Boot Kit: COMPLETE means all source material required for the declared review scope was retrieved and inspected; PARTIAL means some, but not all, of that scope was available or inspected; NOT_ASSESSED means the source/review was unavailable or not substantively assessed. SOURCE_COVERAGE describes how much of the declared source scope was actually inspected. SOURCE_RETRIEVAL_STATUS independently classifies the acquisition route and its reliability: PASS means the pinned source was retrieved directly and completely; LIMITED means identifiable source material was obtained through an indirect, constrained or incomplete route; BLOCKED means no usable/identifiable route was available and substantive review must not proceed. Do not infer one field from another. A blocked review remains NOT_ASSESSED for coverage, not PARTIAL.
 
 Classify carefully:
 
@@ -365,6 +365,8 @@ Classify carefully:
    For the continued-conversation case, record `REVIEW_CONTEXT_CONTINUITY=CONTINUED_SAME_CONVERSATION` and `CANDIDATE_SPECIFIC_PRIOR_CONTEXT_EXPOSED=NO`. The review may proceed as a bounded independent assessment, but must not be described as a fresh, fully blinded session. If exposure cannot be established either way, use `CANDIDATE_SPECIFIC_PRIOR_CONTEXT_EXPOSED=UNKNOWN`, retain `LIMITED`, and explicitly limit any claim of blindness.
 
 3. `BLOCKED`: the reviewer authored/edited the candidate; prior findings, author analysis or implementation rationale about the **same candidate** were exposed before its own source inspection; the same candidate was substantively discussed in the review conversation before the reviewer independently inspected its pinned source; or candidate-specific memory contamination is known. A continued conversation alone is not sufficient for `BLOCKED`; the decisive factor is exposure to material that can pre-judge the candidate being reviewed.
+
+Use `CONTEXT_SEPARATION=NOT_ASSESSED` only when the evidence needed to classify reviewer-context separation was not inspected or cannot be reconstructed. It is neither a pass nor a known contamination result. Keep it distinct from `BLOCKED` (a known disqualifying exposure) and from `SOURCE_COVERAGE=NOT_ASSESSED` (the extent of source inspection).
 
 4. Source acquisition is classified independently:
    - `PASS`: the reviewer directly retrieves the exact pinned base, candidate HEAD and diff from the canonical repository and verifies their identities and scope.
@@ -528,7 +530,7 @@ CONTEXT_SEPARATION_REQUIREMENT=
 REQUIRED_SOURCE_ACCESS_AND_EXACT_REFS=
 SOURCE_PACKAGE_REQUIRED=YES|NO
 SOURCE_PACKAGE_STATUS=NOT_REQUIRED|IDENTIFIED|BYTES_PRESENT|IDENTITY_VERIFIED|PARTIAL|LINK_ONLY|UNAVAILABLE|MISMATCH|BLOCKED|UNKNOWN
-SOURCE_ACQUISITION_METHOD=RECIPIENT_LIVE_FETCH|ATTACHED_PACKAGE|OWNER_SUPPLIED_PACKAGE|COORDINATOR_EXPORTED_PACKAGE|UNKNOWN
+SOURCE_ACQUISITION_METHOD=RECIPIENT_LIVE_FETCH|ATTACHED_PACKAGE|OWNER_SUPPLIED_PACKAGE|COORDINATOR_EXPORTED_PACKAGE|OTHER|UNKNOWN
 SOURCE_PACKAGE_PRODUCER=ACTOR_OR_ROLE
 SOURCE_PACKAGE_FILENAME_AND_FORMAT=
 SOURCE_PACKAGE_IDENTITY=REPOSITORY|BASE_SHA|HEAD_SHA|PATHS|REVISION
@@ -537,10 +539,12 @@ SOURCE_PACKAGE_DIGEST_BASIS=EXACT_PACKAGE_BYTES|RAW_LIVE_RESPONSE_BYTES|RECOMPUT
 RECEIVER_FILE_DERIVED_EVIDENCE=
 RECEIVER_EVIDENCE_PROVENANCE=FILE_DERIVED|API_METADATA_DERIVED|PROMPT_COPIED|ACTOR_ATTESTED|COORDINATOR_ATTESTED|OWNER_ATTESTED
 OUTBOUND_ATTACHMENT_STATUS=NOT_REQUIRED|NOT_ATTACHED|ATTACHED_VERIFIED|ATTACHED_REPORTED|UNKNOWN
+OUTBOUND_ATTACHMENT_STATUS_PROVENANCE=DIRECT_SENDER_OBSERVATION|OWNER_REPORTED|ACTOR_REPORTED|NOT_APPLICABLE|UNKNOWN
 RECEIVER_ATTACHMENT_ACK=NOT_REQUIRED|PENDING|VERIFIED|FAILED|MISMATCH
 RECEIVER_SOURCE_ACK=NOT_REQUIRED|PENDING|VERIFIED|FAILED|MISMATCH
 SOURCE_IDENTITY_VERIFICATION=RECIPIENT_LIVE_VERIFIED|COORDINATOR_ATTESTED|OWNER_ATTESTED|ACTOR_ATTESTED|UNVERIFIED
 SOURCE_COVERAGE=COMPLETE|PARTIAL|NOT_ASSESSED
+SOURCE_RETRIEVAL_STATUS=PASS|LIMITED|BLOCKED
 CONTEXT_SEPARATION=PASS|LIMITED|BLOCKED|NOT_ASSESSED
 REVIEW_CLASS=INDEPENDENT_LIVE|BOUNDED_STATIC_PACKAGE|NOT_RUN|NOT_APPLICABLE
 PARENT_OBJECTIVE=
@@ -735,7 +739,7 @@ SOURCE_IDENTIFIED -> ARTIFACT_RETRIEVED -> REVISION_VERIFIED -> CONTEXT_AVAILABL
 
 ### 6E.6A Source-package integrity and recipient acknowledgement
 
-A prompt, URL or PR link is not a source package. Apply this gate whenever substantive review/execution depends on source bytes. Keep acquisition methods separate from failure states.
+A prompt, URL or PR link is not a source package. Apply this gate whenever substantive review/execution depends on source bytes. Keep acquisition methods separate from failure states. `SOURCE_PACKAGE_STATUS` describes package availability/integrity; `SOURCE_RETRIEVAL_STATUS` describes the retrieval route and its reliability; `SOURCE_COVERAGE` describes how much of the declared scope was inspected. These are independent fields.
 
 **Methods:** RECIPIENT_LIVE_FETCH, ATTACHED_PACKAGE, OWNER_SUPPLIED_PACKAGE, COORDINATOR_EXPORTED_PACKAGE or UNKNOWN. A URL without successful retrieval or actual bytes is SOURCE_PACKAGE_STATUS=LINK_ONLY, not an acquisition method.
 
@@ -749,14 +753,14 @@ For this route set OUTBOUND_ATTACHMENT_STATUS=NOT_REQUIRED and RECEIVER_ATTACHME
 
 SOURCE_PACKAGE_IDENTIFIED -> PACKAGE_BYTES_PRESENT -> PACKAGE_IDENTITY_AND_SCOPE_VERIFIED -> OUTBOUND_ATTACHMENT_STATUS=ATTACHED_VERIFIED or ATTACHED_REPORTED -> RECEIVER_ATTACHMENT_ACK=VERIFIED -> RECEIVER_SOURCE_ACK=VERIFIED -> SUBSTANTIVE_ACTION_ALLOWED
 
-ATTACHED_VERIFIED requires direct sender observation of the actual attachment in the outbound surface. If the sender cannot observe that surface, preserve ATTACHED_REPORTED with OWNER_REPORTED or ACTOR_REPORTED provenance. A receiver acknowledgement can verify receipt/readability but never retroactively upgrades sender-side ATTACHED_REPORTED.
+ATTACHED_VERIFIED requires direct sender observation of the actual attachment in the outbound surface and `OUTBOUND_ATTACHMENT_STATUS_PROVENANCE=DIRECT_SENDER_OBSERVATION`. If the sender cannot observe that surface, preserve ATTACHED_REPORTED with `OUTBOUND_ATTACHMENT_STATUS_PROVENANCE=OWNER_REPORTED` or `ACTOR_REPORTED`, according to who supplied the report. Use `NOT_APPLICABLE` when attachment is not required and `UNKNOWN` when provenance cannot be established. A receiver acknowledgement can verify receipt/readability but never retroactively upgrades sender-side ATTACHED_REPORTED.
 
 **Minimum correlated receipt:**
 
 ~~~text
 SOURCE_PACKAGE_REQUIRED=YES|NO
 SOURCE_PACKAGE_STATUS=NOT_REQUIRED|IDENTIFIED|BYTES_PRESENT|IDENTITY_VERIFIED|PARTIAL|LINK_ONLY|UNAVAILABLE|MISMATCH|BLOCKED|UNKNOWN
-SOURCE_ACQUISITION_METHOD=RECIPIENT_LIVE_FETCH|ATTACHED_PACKAGE|OWNER_SUPPLIED_PACKAGE|COORDINATOR_EXPORTED_PACKAGE|UNKNOWN
+SOURCE_ACQUISITION_METHOD=RECIPIENT_LIVE_FETCH|ATTACHED_PACKAGE|OWNER_SUPPLIED_PACKAGE|COORDINATOR_EXPORTED_PACKAGE|OTHER|UNKNOWN
 SOURCE_PACKAGE_PRODUCER=ACTOR_OR_ROLE
 SOURCE_PACKAGE_FILENAME_AND_FORMAT=
 SOURCE_PACKAGE_IDENTITY=REPOSITORY|BASE_SHA|HEAD_SHA|PATHS|REVISION
@@ -765,10 +769,12 @@ SOURCE_PACKAGE_DIGEST_BASIS=EXACT_PACKAGE_BYTES|RAW_LIVE_RESPONSE_BYTES|RECOMPUT
 RECEIVER_FILE_DERIVED_EVIDENCE=
 RECEIVER_EVIDENCE_PROVENANCE=FILE_DERIVED|API_METADATA_DERIVED|PROMPT_COPIED|ACTOR_ATTESTED|COORDINATOR_ATTESTED|OWNER_ATTESTED
 OUTBOUND_ATTACHMENT_STATUS=NOT_REQUIRED|NOT_ATTACHED|ATTACHED_VERIFIED|ATTACHED_REPORTED|UNKNOWN
+OUTBOUND_ATTACHMENT_STATUS_PROVENANCE=DIRECT_SENDER_OBSERVATION|OWNER_REPORTED|ACTOR_REPORTED|NOT_APPLICABLE|UNKNOWN
 RECEIVER_ATTACHMENT_ACK=NOT_REQUIRED|PENDING|VERIFIED|FAILED|MISMATCH
 RECEIVER_SOURCE_ACK=NOT_REQUIRED|PENDING|VERIFIED|FAILED|MISMATCH
 SOURCE_IDENTITY_VERIFICATION=RECIPIENT_LIVE_VERIFIED|COORDINATOR_ATTESTED|OWNER_ATTESTED|ACTOR_ATTESTED|UNVERIFIED
 SOURCE_COVERAGE=COMPLETE|PARTIAL|NOT_ASSESSED
+SOURCE_RETRIEVAL_STATUS=PASS|LIMITED|BLOCKED
 CONTEXT_SEPARATION=PASS|LIMITED|BLOCKED|NOT_ASSESSED
 REVIEW_CLASS=INDEPENDENT_LIVE|BOUNDED_STATIC_PACKAGE|NOT_RUN|NOT_APPLICABLE
 ~~~
@@ -890,7 +896,7 @@ Before writing:
 4. If the PR head moved, the branch disappeared, the branch name differs, or the compare status is unexpected, stop and reconcile. Do not apply a write against a stale assumption.
 5. For ref updates, use an expected-SHA/lease check where the interface supports it; never force-update to “make it fit”.
 
-The two Control Master bridge branches observed on 2026-11-02 are separate refs: `iabv/control-master-signal-bridge-r1-20261031` and the actual PR #591 source `iabv/control-master-signal-bridge-r1-20261031-review`. Their common base at the observed revision did not make them aliases. Only the actual PR source may be modified for PR #591 unless the Owner separately changes the target.
+If multiple similarly named branches or refs exist, resolve the actual target from the live PR/ref metadata and compare exact SHAs. A shared base or similar name does not make two refs aliases; modify only the verified target unless the Owner separately changes it.
 
 ### 6F.4 Temporal preconditions, TOCTOU and safe branch reconciliation
 
@@ -944,10 +950,9 @@ REQUESTED_BRANCH_AND_MATCH_STATUS=
 CHANGED_PATHS_AND_BLOB_SHAS=
 CONTROL_MASTER_SIGNAL_STATUS_AND_DECISION_INFLUENCE=
 CAPABILITY_PREFLIGHT=
-CONTEXT_SEPARATION=PASS|LIMITED|BLOCKED|NOT_ASSESSED
 SOURCE_PACKAGE_REQUIRED=YES|NO
 SOURCE_PACKAGE_STATUS=NOT_REQUIRED|IDENTIFIED|BYTES_PRESENT|IDENTITY_VERIFIED|PARTIAL|LINK_ONLY|UNAVAILABLE|MISMATCH|BLOCKED|UNKNOWN
-SOURCE_ACQUISITION_METHOD=
+SOURCE_ACQUISITION_METHOD=RECIPIENT_LIVE_FETCH|ATTACHED_PACKAGE|OWNER_SUPPLIED_PACKAGE|COORDINATOR_EXPORTED_PACKAGE|OTHER|UNKNOWN
 SOURCE_PACKAGE_PRODUCER=
 SOURCE_PACKAGE_FILENAME_AND_FORMAT=
 SOURCE_PACKAGE_IDENTITY=
@@ -955,11 +960,14 @@ SOURCE_PACKAGE_DIGEST=
 SOURCE_PACKAGE_DIGEST_BASIS=
 RECEIVER_FILE_DERIVED_EVIDENCE=
 RECEIVER_EVIDENCE_PROVENANCE=
-OUTBOUND_ATTACHMENT_STATUS=
+OUTBOUND_ATTACHMENT_STATUS=NOT_REQUIRED|NOT_ATTACHED|ATTACHED_VERIFIED|ATTACHED_REPORTED|UNKNOWN
+OUTBOUND_ATTACHMENT_STATUS_PROVENANCE=DIRECT_SENDER_OBSERVATION|OWNER_REPORTED|ACTOR_REPORTED|NOT_APPLICABLE|UNKNOWN
 RECEIVER_ATTACHMENT_ACK=
 RECEIVER_SOURCE_ACK=
 SOURCE_IDENTITY_VERIFICATION=
 SOURCE_COVERAGE=COMPLETE|PARTIAL|NOT_ASSESSED
+SOURCE_RETRIEVAL_STATUS=PASS|LIMITED|BLOCKED
+CONTEXT_SEPARATION=PASS|LIMITED|BLOCKED|NOT_ASSESSED
 REVIEW_CLASS=INDEPENDENT_LIVE|BOUNDED_STATIC_PACKAGE|NOT_RUN|NOT_APPLICABLE
 AUTHORIZATION_SCOPE_AND_EXCLUSIONS=
 ACTION_ATTEMPTED=
@@ -975,7 +983,7 @@ MERGE_OR_PUBLICATION=NOT_ATTEMPTED|VERIFIED|UNVERIFIED
 
 Do not claim that another chat received or applied the method from a link, commit or handoff attempt. Do not claim tests, build, runtime, publication, merge or learning without the matching evidence.
 
-**Observed triggers for this revision (2026-11-02):** PR #591's actual source branch had a `-review` suffix while a separately existing requested branch lacked it; Codex reported no authorized runner/checkout and did not run tests; the public signal publisher checked the remote default branch before cloning but not immediately before push; the publisher rejected every non-signal tree delta against live `main` without first reconciling ordinary `main` advancement; historical test success was attached to earlier blobs; and the connector-generated PR history had many sequential commits that did not represent separate deliveries. These observations require the guards above. They do not authorize a merge, public signal publication, local/protected read, runtime operation, or any M1A gate transition.
+Record the concrete observation that triggered each use of this gate in the dated task receipt, with its exact source/ref, timestamp and evidence class. Do not embed mutable PR identities, branch names, run/job IDs, platform restrictions or one-off incident details in this normative method. Keep current operational state in the owning canonical state/receipt and refresh it before consequential action.
 
 
 ## 7. Historical authoring snapshot and per-session falsifiable checks
