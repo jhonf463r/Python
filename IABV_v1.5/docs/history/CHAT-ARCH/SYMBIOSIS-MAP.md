@@ -31,6 +31,9 @@ For a new participating chat or bounded specialist/executor/reviewer handoff, us
 
 ### Destination-aware activation for Claude and other external AIs (2026-11-03)
 
+For mixed-capability handoffs, use D021 §6C.5.1.C.1: plan the exact source route per immutable path/revision before inspection, prefer recipient live fetch when complete, and use one manifest-bound coordinator package for oversized items only when the task permits mixed provenance. A hybrid may reduce Owner transfer effort but cannot be called independent live retrieval for coordinator-exported items. Record actual retrieval and application per item; do not infer them from the model name or link delivery.
+
+
 Claude is part of the cross-product symbiosis only when the exact receiving session retrieves the relevant GitHub memory through an authorized route, or receives a bounded source package with its provenance preserved. The coordinator must check its own GitHub connector before asking the Owner to relay public files; the recipient's tools and the coordinator's tools are separate. Use D021 §6C.5.1 to compile the prompt/source route and D020 §§8–8.1 to prove retrieval, method activation, decision application and later causal reuse. Do not assume automatic context injection, shared hidden context, or identical browser/API/shell access across Claude.ai, Claude Code and Claude API.
 
 ### M1B code-candidate evidence gate — applied lesson (2026-10-28)
