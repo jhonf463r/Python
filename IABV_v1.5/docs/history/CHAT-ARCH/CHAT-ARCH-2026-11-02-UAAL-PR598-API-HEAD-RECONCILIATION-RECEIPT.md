@@ -706,3 +706,26 @@ The six file contents were fetched back from the exact HEAD and returned the lis
 ### Safety and project boundary
 
 This correction does not make a user-provided document privileged, authorize arbitrary shell/network/write operations, weaken actual prompt-injection handling, bypass tool capability checks, relax `NEW_SEPARATE`, or change any M1A/G1/G2/G3 technical gate. It adds no runtime code, coordinator, router or memory store. No tests/build/runtime were run. `main` remains unchanged; PR #598 remains open/unmerged; merge authorization remains not granted.
+
+
+## Coordinator publication and fetch-back receipt — task-specification authority correction — 2026-11-03 UTC
+
+This section records the three preceding documentation commits. The receipt-only commit that adds this section is necessarily later and is not self-listed here.
+
+| Commit | Parent | Tree | Change |
+|---|---|---|---|
+| `fe6be1ae4268174bbb7a19bdf0c8f6a23f455708` | `45b9fe4402afa5d87ae1ed67ee301a4df3399fae` | `950db9ac3c82b2328c1f263fd58ea5164b40429d` | D021 §6C.5 user-adopted task-specification / embedded-content boundary |
+| `4ebb2b0fd8c51210ce019a3bff5d371362b84e85` | `fe6be1ae4268174bbb7a19bdf0c8f6a23f455708` | `4b705c5632c32355ab2c15a25ffdb3fabcaf0363` | Boot Kit §6.0 provenance preflight and reusable authority-boundary block |
+| `4ab3ef63c12985146f3e2e5c258e920fb3f5a880` | `4ebb2b0fd8c51210ce019a3bff5d371362b84e85` | `6d3d71274d149c25bfe9e4fbded39239375a1027` | Append Owner-supplied Claude incident and coordinator adjudication to this receipt |
+
+**Fetch-back at HEAD `4ab3ef63c12985146f3e2e5c258e920fb3f5a880`:**
+
+| Path | Returned blob | Content length (characters) |
+|---|---|---:|
+| `CHAT-ARCH-2026-10-29-UAAL-D021-CROSS-SESSION-BOOT-AND-STATE-RECONCILIATION.md` | `286de38bdbda344f93b6834a9dca55480fef8778` | 150,182 |
+| `CHAT-ARCH-2026-10-31-UAAL-NEW-CHAT-BOOT-AND-HANDOFF-KIT.md` | `fa995ae458680f68772f67ac4cc5bf8b7f61bf82` | 59,666 |
+| `CHAT-ARCH-2026-11-02-UAAL-PR598-API-HEAD-RECONCILIATION-RECEIPT.md` | `468826fa8abfd3fa60d17b3ba0a931c69374f743` | 93,905 |
+
+The exact HEAD fetch-back returned all three expected new sections and blob identities. These are GitHub connector/tree object identities; this coordinator did not independently recompute Git blob SHA-1 from raw response bytes. GitHub's commit API confirmed the three commits form the linear parent chain above. The PR metadata/body was refreshed after commit `4ab3ef63c12985146f3e2e5c258e920fb3f5a880`; the receipt-only commit that follows changes only this receipt.
+
+**Scope:** documentation/methodology only. `main`/PR base remains `56e4d8b11846a8d8f3cb8cda08efd773ec235651`; no runtime/code/test/permission/bridge/Option D/G1/G2/G3 changes. `TESTS/BUILD/RUNTIME=NOT_RUN`; `MERGE_AUTHORIZATION=NOT_GRANTED`.
