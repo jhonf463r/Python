@@ -357,6 +357,10 @@ For each meaningful bounded task, persist a concise receipt when authorized and 
 
 Before delivering a new-chat brief, bind it to the verified current route and identify its destination. For another AI/session, include the exact prompt, source baseline, prior-art links, role contract, action contract, acceptance criteria and prohibited side effects. Distinguish `PREPARED`, `SENT`, `ACKNOWLEDGED`, `CONSUMED`, `REUSED` and `OUTCOME_VERIFIED`; claim only the state supported by a receipt. GitHub records do not prove that a newly opened ChatGPT or Codex session has read them. No automatic-delivery claim without a supported destination and correlated evidence.
 
+### Phase-boundary continuity and frozen-result transport
+
+The active conversation is not a durable cross-session storage guarantee. A phase boundary must be represented by an observable artifact. Keep the blind phase isolation and scope lock in its own reviewer conversation; after its freeze, pass the complete report through the same visible thread or the portable checkpoint contract in D021 §6F.5/§6G and Boot Kit §14.6. A continuation session must acknowledge task/revision identity, complete contents, coverage, provenance and integrity status before dependent work. Do not rerun a completed phase merely because a new thread lacks its transcript, and do not proceed from a timestamp or summary alone.
+
 ### Minimum current-context envelope (existing organs only)
 
 For every new chat or material AI handoff, assemble one concise, self-contained envelope from canonical records: (1) `PRIMARY_OUTCOME` and the Owner's immediate objective; (2) explicit constraints such as budget and effort limits; (3) live-main SHA and observation time; (4) current `ACTIVE_TASK/NEXT_ACTION` and permissions; (5) latest terminal result and evidence class; (6) relevant closed paths and a few exact prior-art links; (7) blocker, unknowns and unrun checks; (8) destination-specific delivery state; (9) acceptance criteria and expected output; and (10) one next action or truthful wait state. Prefer selective decision-relevant context over archive dumping or a parallel memory.

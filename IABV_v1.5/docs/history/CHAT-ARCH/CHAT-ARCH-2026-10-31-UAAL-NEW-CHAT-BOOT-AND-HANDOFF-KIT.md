@@ -539,7 +539,7 @@ Before dispatch, the sender must:
 - State capabilities only when observed for the receiving session. Keep browser, GitHub API, Git smart-HTTP, shell, network egress, local checkout, attachments and write rights separate.
 - Use available coordinator connectors to retrieve canonical facts before asking the Owner to repeat them or manually prepare links.
 - Supply exact repository owner/name, pinned base/head, full paths and literal URL(s) for every source the receiver must open. Never require the receiver to invent URLs from abbreviated SHAs or unstated paths.
-- Define the complete phase scope and exclusions with matching counts. For the current PR #598 candidate, the changed-path list contains eleven paths: eight operational documents and three receipts. The blind Phase A scope is the eight operational paths and 16 BASE/HEAD source items; all three receipts are reserved for Phase B after a valid same-thread Phase A freeze. Recompute counts for every later revision rather than reusing these numbers.
+- Define the complete phase scope and exclusions with matching counts. For the current PR #598 candidate, the changed-path list contains eleven paths: eight operational documents and three receipts. The blind Phase A scope is the eight operational paths and 16 BASE/HEAD source items; all three receipts are reserved for Phase B after a valid same-thread-visible freeze or validated portable Phase-A checkpoint. These counts describe the observed candidate only; recompute paths and source items for every later revision.
 
 ### 14.2 Packet protocol
 
@@ -553,7 +553,9 @@ Where a receiving route has truncated a long dispatch, do not resend one huge pr
 
 ### 14.3 Phase lock and continuity
 
-A new conversation must receive its own complete task packet. Never assume the active thread inherited a lock or phase output from an earlier Claude conversation. A phase lock is valid only when the correlated lock receipt is visible in that exact thread and precedes source inspection. A later same-thread continuation may proceed only when the required earlier phase report is visible in that thread. If Phase A is absent, B/C remain blocked.
+A task that requires NEW_SEPARATE must be dispatched into a genuinely new/selectable reviewer conversation. The Phase-A scope lock must be acknowledged there before source inspection, and the Phase-A report must be frozen there. A timestamp, copied claim or remembered summary from another conversation does not create either artifact.
+
+Do not require every later phase to remain in the same conversation. Once Phase A is frozen, B/C may continue in the same thread if the complete report remains visible, or in a new continuation thread with the verified checkpoint defined in §14.6. The continuation receiver is an adjudicator/auditor, not the Phase-A reviewer; it must state SESSION_CONTINUITY=PORTABLE_CHECKPOINT and preserve the original A classifications. If neither the visible report nor a valid checkpoint is present, B/C remain blocked and the receiver requests only the missing checkpoint/report.
 
 ### 14.4 Read-only acquisition ladder
 
@@ -568,3 +570,26 @@ Record each attempt and error class. A constructed-but-unsurfaced URL rejected b
 ### 14.5 Evidence and learning claim
 
 Preserve the canonical D021 evidence fields. Do not claim reviewer-side hashing when the reviewer only received a SHA field from GitHub. Do not claim a full review from a source list, metadata or a partial file. Keep pasted external responses ACTOR_REPORTED until adjudicated. A documentation amendment records a reusable method; it does not prove automatic cross-chat use, general Claude behaviour, model-weight updates or causal learning. Validate reuse on a later non-identical task.
+
+
+### 14.6 Portable frozen-phase checkpoint
+
+Use this contract only after the preceding phase has actually reached a frozen disposition. It is a transportable evidence artifact, not a second memory store or a way to bypass phase acceptance.
+
+The sender must produce one self-contained checkpoint with:
+- CHECKPOINT_ID, parent DISPATCH_ID/TASK_ID, phase, frozen disposition and freeze timestamp;
+- repository owner/name and URL; exact BASE/HEAD and relevant tree/parent IDs; complete changed-path and in-scope source-item manifests;
+- the complete pre-inspection scope lock and the complete frozen Phase-A report, preserved verbatim;
+- source acquisition method, identity-verification method, per-item inspection/coverage matrix and reviewer-context classification;
+- findings with unique IDs and evidence, severity counts, explicit limitations, and the declaration that PR body/comments/receipts were not opened before freeze;
+- exact byte length and digest metadata when a digest can be computed. Do not claim cryptographic integrity when the receiver cannot recompute it.
+
+The continuation receiver must:
+1. Identify itself as the B/C adjudicator/auditor, not as the Phase-A reviewer.
+2. Confirm that the complete checkpoint content is actually present, not merely referenced by a timestamp or link.
+3. Match the task, repository and immutable BASE/HEAD; reject a mismatch rather than silently substituting a newer revision.
+4. Recompute the supplied digest when the tool permits; otherwise report identity UNVERIFIED and retain the source provenance as supplied.
+5. ACK CHECKPOINT_ID, phase, disposition, byte count, digest/identity result, task/revision match and missing fields.
+6. Preserve the Phase-A report verbatim. Put receipt adjudication and current-main/M1A/bridge conclusions in later sections/receipts; never rewrite Phase-A findings retrospectively.
+
+A checkpoint that is missing, truncated, mismatched or lacks the actual frozen report is INCOMPLETE; B/C stay blocked where they depend on it. Do not ask the Owner to repeat repository URLs, SHAs, paths or facts already present in the checkpoint manifest. Ask only for the single missing artifact when no authorized source can retrieve it.
