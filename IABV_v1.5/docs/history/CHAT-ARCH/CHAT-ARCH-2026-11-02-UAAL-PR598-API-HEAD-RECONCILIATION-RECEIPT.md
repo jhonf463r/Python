@@ -1,47 +1,45 @@
-# UAAL — PR #598 API/HEAD reconciliation receipt
+# UAAL — PR #598 GitHub identity reconciliation receipt
 
 **Observation date:** 2026-11-02  
 **Repository:** jhonf463r/Python  
-**Purpose:** reconcile the independent review's report that the PR files endpoint returned seven files whose blob URLs referenced the earlier candidate HEAD.
+**Purpose:** record a point-in-time, read-only reconciliation of the candidate's Git refs, pull-request metadata, changed-file listing and base-to-HEAD comparison.
 
-## Pinned identity re-read
+## Pinned identity at this observation
 
 - PR: #598 — https://github.com/jhonf463r/Python/pull/598
-- Base branch: main
-- Base SHA: 56e4d8b11846a8d8f3cb8cda08efd773ec235651
-- Actual source branch: uaal/precision-gates-and-anti-waste-r1-20261102
-- Branch ref SHA: a6e5c25bbdc380b95bc1f408f3ba02c08a628735
-- PR metadata head SHA: a6e5c25bbdc380b95bc1f408f3ba02c08a628735
-- PR metadata updated_at: 2026-11-02T23:41:34Z
-- PR state: OPEN, not merged
+- Base branch: `main`
+- Base SHA: `56e4d8b11846a8d8f3cb8cda08efd773ec235651`
+- Actual source branch: `uaal/precision-gates-and-anti-waste-r1-20261102`
+- Branch ref SHA: `a6e5c25bbdc380b95bc1f408f3ba02c08a628735`
+- PR metadata head SHA: `a6e5c25bbdc380b95bc1f408f3ba02c08a628735`
+- PR metadata `updated_at`: `2026-11-02T23:41:34Z`
+- PR state: `OPEN`, not merged
 - Changed files: 8
 - Additions/deletions: 412 / 27
 
-## Independent endpoint comparison performed by the coordinator
+## Read-only routes checked
 
-The following routes were read in the same reconciliation pass:
-
-1. Git reference for main.
+1. Git reference for `main`.
 2. Git reference for the candidate branch.
-3. PR metadata via the authorized GitHub PR operation.
-4. Public GitHub API fetch for the PR metadata.
-5. GET /repos/jhonf463r/Python/pulls/598/files?per_page=100.
+3. PR metadata through the authorized GitHub PR operation.
+4. Public GitHub API PR metadata.
+5. `GET /repos/jhonf463r/Python/pulls/598/files?per_page=100`.
 6. Base-to-HEAD compare for the exact SHAs above.
 7. Connector PR patch retrieval and changed-filename listing.
 
-All returned the same base/head identity. The files endpoint returned eight paths, eight blob URLs anchored to a6e5c25bbdc380b95bc1f408f3ba02c08a628735, and aggregate counts 412 additions / 27 deletions. The compare endpoint returned 26 commits ahead, 0 behind, and the same eight changed paths. The connector patch operation returned eight readable patches.
+## Results
 
-## Disposition of the earlier review finding
+At this observation, the read routes agreed on the base/head identity. The files endpoint returned eight paths, with eight blob URLs anchored to `a6e5c25bbdc380b95bc1f408f3ba02c08a628735`, and aggregate counts of 412 additions / 27 deletions. The compare endpoint returned 26 commits ahead, 0 behind, and the same eight changed paths. The connector patch operation returned eight readable patches.
 
-The earlier reviewer reported a files-endpoint response with seven paths, blob URLs at 9002db4af595a28b2c9cda5ba0060522d334b5fc, and per-file counts that did not match the current candidate.
+No cause is assigned to any response obtained outside this reconciliation. The observations in this receipt establish only the identities, paths and counts listed above at the recorded time.
 
-That result is preserved as an observation from the reviewer session. It is not reproduced by the coordinator's current direct reads. The evidence now available establishes that, at the observation timestamp above, the live PR metadata, branch reference, PR files endpoint, patch operation and base-to-HEAD comparison all agree on a6e5c25... and eight changed files.
+## Later candidate observation
 
-The exact cause of the reviewer's discrepant response is UNKNOWN. Do not assert cache behavior or a GitHub defect without additional evidence. For the current decision, the P1-1 assertion that the PR head remains 9002db4... is superseded by this reconciled source evidence.
+On a later read-only check on 2026-11-02, before the next documentation correction, the branch ref and PR metadata agreed on HEAD `01acf607c0986950db8b0e110f6800f2df1e3424`; the compare against base `56e4d8b11846a8d8f3cb8cda08efd773ec235651` reported 28 commits ahead, 0 behind and nine changed paths. This later observation supersedes the counts and candidate identity in the earlier observation above. It is point-in-time metadata, not a substitute for refreshing refs before a consequential action.
 
 ## Limits
 
 - This receipt does not authorize a merge, PR retargeting, branch rewrite, rebase, CI dispatch, source/runtime changes or M1A gate changes.
-- It does not convert the earlier review into a PASS; its textual findings P2/P3 remain to be adjudicated against the exact candidate.
-- The PR description and conversation contents are not evidence for this reconciliation.
-- This is a point-in-time receipt. Refresh all refs before any later consequential action.
+- It does not establish test/build/runtime execution, independent review acceptance or authorization.
+- It records source identity and comparison metadata only; it is not a current-state router.
+- Later branch updates supersede these observations. Refresh the live refs and compare before any later consequential action.
