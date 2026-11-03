@@ -539,14 +539,14 @@ Before dispatch, the sender must:
 - State capabilities only when observed for the receiving session. Keep browser, GitHub API, Git smart-HTTP, shell, network egress, local checkout, attachments and write rights separate.
 - Use available coordinator connectors to retrieve canonical facts before asking the Owner to repeat them or manually prepare links.
 - Supply exact repository owner/name, pinned base/head, full paths and literal URL(s) for every source the receiver must open. Never require the receiver to invent URLs from abbreviated SHAs or unstated paths.
-- Define the complete phase scope and exclusions with matching counts. For the current PR #598 candidate, the changed-path list contains eleven paths: eight operational documents and three receipts. The blind Phase A scope is the eight operational paths and 16 BASE/HEAD source items; all three receipts are reserved for Phase B after a valid same-thread Phase A freeze. Recompute counts for every later revision rather than reusing these numbers.
+- Define the complete phase scope and exclusions against the exact BASE/HEAD. Enumerate in-scope paths, atomic source items, excluded artifacts and any later-phase materials; include the corresponding counts in the task dispatch and receipt. Recompute them for every changed BASE/HEAD or path set. Do not bake one PR's path counts or receipt inventory into this reusable kit.
 
 ### 14.2 Packet protocol
 
 Where a receiving route has truncated a long dispatch, do not resend one huge prompt. Use numbered, independently delimited packets:
 - Same DISPATCH_ID and TASK_ID across all parts.
 - PART 1/N, PART 2/N, etc.; each part has BEGIN_PACKET and END_PACKET markers.
-- Keep each message below 12,000 UTF-8 bytes for the receiving route involved in the 2026-11-03 incident, unless a later measured route-specific limit supports another size. This is a conservative operating target, not a universal Claude limit.
+- For a route with documented truncation, choose a conservative per-packet size from the dated observation for that exact product surface/session, with a safety margin. Store the measured threshold and its provenance in the task/incident receipt, not as a fixed limit in this reusable kit. A route-specific measurement is not a provider-wide product specification.
 - The receiver must echo the packet IDs received, confirm that all N parts are present, and identify the final section/END marker.
 - No source inspection, phase lock or execution before all required packets are acknowledged as complete.
 - If any part is missing or cut off mid-sentence/section, stop and request only the missing part. Do not reconstruct missing instructions by guessing.
