@@ -517,6 +517,17 @@ Recipient selection rules:
 3. For a blinded independent review, require a new separate reviewer conversation and state what candidate-specific materials must not be exposed. If the selected destination has already seen the candidate's author rationale or findings, apply §6B.2 rather than calling it independent.
 4. For code execution or local tests, Codex is only a candidate executor when its exact checkout, tools, runner and permissions are actually available. For independent static review, a different model/provider such as Claude (Anthropic) may be selected when the Owner has that destination available and its source access is sufficient. Neither is assumed to possess access or capabilities merely from its product name.
 5. Distinguish `PROMPT_PREPARED`, `PROMPT_SENT`, `RECIPIENT_ACKNOWLEDGED`, `SOURCE_RETRIEVED`, `ACTION_EXECUTED` and `RESULT_ADJUDICATED`. Preparing a copy-ready prompt does not prove that it was delivered, read or executed.
+
+**Mandatory prompt-emission preflight — fail closed:** before returning, copying or presenting any external-agent prompt (including a review request, executor task or project handoff), validate the exact copy-ready artifact:
+- The literal dispatch header is the first non-empty content **inside the prompt artifact itself**, before its title or task body. Putting the recipient only in surrounding chat prose does not satisfy this requirement.
+- Populate every field in the `DISPATCH_HEADER` schema: one exact provider/agent; model or channel; project/task; role; session mode; context-separation requirement; source access and exact refs; authorized scope; exclusions; expected return; and stop condition. Do not leave blank fields, generic placeholders, or alternatives such as "Claude or another AI" in a released prompt.
+- Select the recipient from the task's required capability and the destination established by the current conversation/project context. Do not infer that an account, model, tool, repository checkout or runner is available merely because its product is named.
+- If the provider is known but account/channel availability is not confirmed, preserve that exact destination as `PREFERRED_RECIPIENT; AVAILABILITY_UNCONFIRMED`; state `PROMPT_PREPARED_NOT_SENT` and do not silently substitute another recipient. If the intended recipient itself cannot be resolved from available evidence, ask only the single irreducible routing question before drafting.
+- Use explicit values such as `UNKNOWN` or `NOT_APPLICABLE` where the schema permits them; never invent model labels, capabilities, source access, authority or delivery status to make the header look complete.
+- Cross-check the task body against the header. The body must not broaden the authorized scope, contradict the target/session requirement, imply unverified capabilities, omit a required source route, or weaken exclusions/stop conditions.
+
+**Release rule:** if the header is absent, outside the artifact, incomplete, ambiguous, or inconsistent with the task body, the prompt is `BLOCKED` and must not be presented as ready to send. Correct it or resolve the one irreducible missing detail first. After validation, provide the complete prompt as one artifact with its dispatch header included at the top.
+
 A new chat is a new session, not a continuation by assumption. Start with a small, project-scoped envelope and retrieve only the relevant shared methods:
 
 ```text
