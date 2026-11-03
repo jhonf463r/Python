@@ -199,6 +199,66 @@ Before directing an actor to implement a native security boundary, verify the pr
 
 The episode is bounded evidence of this method correction, not proof that the protocol is automatically enforced or that the model has changed weights. Receipt for the original reader-specific gate: [M1B implementation and test receipt](https://github.com/jhonf463r/Python/blob/main/IABV_v1.5/docs/history/CHAT-ARCH/CHAT-ARCH-2026-10-28-M1B-CONTEXT-READER-IMPLEMENTATION-AND-TEST-RECEIPT.md).
 
+
+## 8.1 Claude and cross-product GitHub-memory symbiosis (2026-11-03)
+
+The intended symbiosis is a **shared external context substrate plus explicit retrieval and decision application**, not a hidden shared model, automatic memory injection or model-weight update. Claude can participate in the same GitHub-backed memory method as ChatGPT and Codex only when the actual Claude session has an authorized route to the repository, or when a bounded, provenance-labelled source package is transferred to it. The coordinator's GitHub access does not imply that Claude has the same access; Claude's inability to retrieve a source does not prevent the coordinator from retrieving it through its own connected tools.
+
+For every material Claude or other external-AI handoff, the coordinator and recipient each perform their own side of the activation:
+
+1. **Coordinator side — compile from live memory.** Refresh the owning project's canonical route and exact `main` revision. Retrieve the relevant D019/D020/D021, Space-Time and SYMBIOSIS method slices plus the objective-relevant project state. Check the coordinator's actual connected GitHub/file capabilities and retrieve public repository material directly when authorized. Do not ask the Owner to paste or upload public content that the coordinator can fetch.
+2. **Destination side — identify actual access.** Record the exact provider, product surface, session continuity and model-label provenance. Probe only the source-access capabilities required by the task. Claude.ai web/app, Claude Code and Claude API are distinct destinations; neither GitHub, shell nor outbound network is implied by “Claude Sonnet 5.5”.
+3. **Select the transfer route.** Prefer recipient live retrieval when it is actually available and required for independence. Otherwise transfer the smallest pinned package/diff the coordinator can verify, label it as coordinator-exported/attested, and restrict the conclusion to the evidence that route supports. Never claim independent live retrieval from a copied prompt, URL or package.
+4. **Bind and activate the method.** Give the recipient the exact source revisions and only the relevant memory slice. Ask it to identify the method that applies, the candidate action it rules out or confirms, the decision delta, and the first remaining edge. The receiver must use the live source it actually retrieved, not the coordinator's assertion that a link was sent.
+5. **Reconcile the returned result.** Treat the pasted response as actor-reported until its source evidence is adjudicated. Verify its claims against the exact task/ref and acceptance condition. Write back only the reusable, evidence-supported knowledge/method delta to the existing owning records.
+
+
+**Observed mixed-capability route refinement (2026-11-03):** source availability is per object and per receiving tool, not one global property of the model. A recipient may retrieve one document whole, another through a different rendered route, and a third only partially. Record `GITHUB_MEMORY_RETRIEVED=PARTIAL` when any required source item remains truncated or uninspected, even if the relevant section appears in the partial response. For source-heavy tasks, plan a per-`path@revision` matrix before inspection: recipient live-fetch for complete admissible objects, plus one coordinator-exported pinned manifest/diff package for oversized objects only when the task allows mixed provenance. Freeze that route in the review scope. A mixed route cannot be represented as an all-recipient-live review; use the applicable receipt's `OTHER`/mixed designation with an explicit per-item breakdown or stop if strict independent live acquisition is required. Do not ask the Owner to relay public files the coordinator's authorized connector can fetch. This is a method refinement, not evidence of universal Claude tool limits; re-probe only when destination, tool, URL, response size or capability materially changes.
+
+### Observed conversation-boundary and dependency-aware continuation correction (2026-11-03)
+
+The PR #598 Phase A handoff exposed two avoidable stops: a new Claude conversation was told to continue source work whose prior-session lock and retrieved objects were not actually present there; and a truncated D021 HEAD response stopped acquisition of unrelated file pairs. Apply D021 §6C.5.1.C.2.
+
+- **Continuity is session-local.** The prompt compiler must explicitly set CONTINUITY_MODE. In a new conversation, do not carry forward prior receiver acknowledgements, source retrieval, inspection coverage, tool observations or lock receipts unless the exact receipt/source artifact is transferred and acknowledged. Reconcile the Owner's current authorization separately.
+- **Lock once per receiver session, not once per task label.** Require a new receiver lock before that session's first substantive inspection. Never backdate or infer a timestamp. Record NO_VERIFIABLE_TIME_AVAILABLE as a limitation where appropriate.
+- **Continue independent acquisition.** Track ITEM_STATUS independently from SCOPE_STATUS. A blocked pair triggers its planned fallback, while unaffected pairs continue acquisition. Full-scope review remains NOT_RUN until every required object meets the declared identity and coverage conditions.
+- **Coordinator-first, not Owner-choice-first.** If public source is available to the coordinator's authorized connector, the coordinator selects the best pre-authorized route and prepares one consolidated transfer. Ask the Owner only for a genuine Owner-only input, an authorization, or one unavoidable transfer—not to choose between technical routes the coordinator can test.
+- **Preserve provenance and format.** Distinguish recipient RAW/REST retrieval from coordinator-exported pinned hunks and Owner-supplied source. Verify the artifact's actual type/path; do not call a Paper document a Markdown file merely because its title has a .md suffix.
+- **No premature causal-reuse claim.** A method application to the task that produced the learning is not LATER_CAUSAL_REUSE. Require a later non-identical task and a verified beneficial outcome before claiming that stage.
+
+This refinement changes dispatch and acquisition behavior; it does not establish automatic memory injection, shared hidden context or model-weight learning.
+
+Use the following as a compact prompt-compiler contract for external-AI tasks:
+
+```text
+CROSS_AI_PROMPT_COMPILER
+TASK_AND_ACCEPTANCE=
+CANONICAL_PROJECT_ROUTE_AND_REVISION=
+RELEVANT_GITHUB_MEMORY_SLICES=
+COORDINATOR_CAPABILITY_EVIDENCE=
+RECIPIENT_PROVIDER_SURFACE_SESSION_MODEL=
+RECIPIENT_CAPABILITY_EVIDENCE=
+TASK_SPECIFICATION_PROVENANCE=
+SOURCE_TRANSPORT_ROUTE=
+SOURCE_MANIFEST_AND_COVERAGE=
+CONTEXT_SEPARATION_IF_REVIEW=
+AUTHORIZED_SCOPE_AND_EXCLUSIONS=
+FIRST_OPEN_CAUSAL_EDGE=
+EXPECTED_RETURN_AND_RECEIPT=
+STOP_CONDITION=
+PROMPT_STATUS=PREPARED_NOT_SENT|SENT_UNVERIFIED|RECIPIENT_ACKNOWLEDGED
+```
+
+The receiver's method-activation receipt must distinguish `MEMORY_RETRIEVED`, `METHOD_ACTIVATED`, `METHOD_APPLIED`, `OUTCOME_VERIFIED` and `LATER_CAUSAL_REUSE`. A concise rationale is sufficient: name the applicable rule, the decision it changed/confirmed and its evidence. Do not request or publish private chain-of-thought. Retrieval alone is not application, and one successful handoff is not proof of generalization.
+
+### Optional Claude Sonnet 5.5 prompt profile
+
+Use this profile only when the model is actually identified as Claude Sonnet 5.5, and re-check the official guide before relying on version-specific settings. Anthropic's guide (checked 2026-11-03) describes Sonnet 5.5 as adaptive-thinking, and recommends calibrating effort to workload: for well-specified multi-step agentic work, start at medium; for harder or longer work, use high; for latency-sensitive chat, medium or low may be suitable. Higher effort may take longer and can be more expansive, so pair it with exact scope, exclusions and stop conditions. At low/medium effort, a long agentic task may check in before completion; a clear instruction to finish the authorized deliverable unless a real dependency or risky step requires user input can reduce avoidable pauses. Use explicit tool instructions for current facts rather than relying on training knowledge.
+
+These are model/API guidance, not guaranteed controls in every Claude interface. Do not prescribe API-only parameters to claude.ai or a mobile/desktop chat. Do not equate Sonnet's advertised context window with the capacity of a single web-fetch, REST response, attachment, or tool-result. For coding tasks, require a real authorized check before reporting completion; when tests are explicitly excluded or unauthorized, preserve `NOT_RUN` and state the reason.
+
+Official version-specific reference: https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-sonnet-5-5
+
 ## 9. Decision-complete advance packets and Owner-turn minimization (2026-11-02)
 
 UAAL-D019 §9E is the owning pre-action decision-completeness algorithm. This section binds it to D020's advance contract and lexicographic progress selector; it does not create a second selector or override authorization.
