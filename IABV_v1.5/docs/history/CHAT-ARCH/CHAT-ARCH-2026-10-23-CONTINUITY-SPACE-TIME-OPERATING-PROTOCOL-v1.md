@@ -345,6 +345,9 @@ Track coordination outcomes separately across later tasks: stale-route reuse, re
 
 ## 9. Durable handoff, context delivery and answer contract
 
+For cross-session continuation after a blind phase has been frozen, use the owning portable-checkpoint contract in D021 section 6F.9.7 and New-Chat Boot Kit section 14.6. The receiving B/C session must possess and acknowledge the complete identity-bound report; a link or timestamp is insufficient. This transports the frozen evidence, not the original reviewer session, independent-review status or new authority.
+
+
 For each meaningful bounded task, persist a concise receipt when authorized and useful. Include:
 - task/event ID, date/time zone, canonical `main` SHA, and candidate branch/HEAD if any;
 - objective, success condition, selected role(s) and why;
