@@ -133,6 +133,7 @@ foreach ($repositoryPath in $repositories) {
         Refs = Invoke-GitCapture $repositoryPath @(
             "for-each-ref", "--format=%(refname) %(objectname) %(objecttype)"
         )
+        Reflogs = Invoke-GitCapture $repositoryPath @("reflog", "--all", "--date=iso")
         Remotes = Get-SafeRemoteInventory $repositoryPath
         Worktrees = Invoke-GitCapture $repositoryPath @("worktree", "list", "--porcelain")
         Stashes = Invoke-GitCapture $repositoryPath @("stash", "list")
@@ -158,7 +159,6 @@ $report = [PSCustomObject]@{
     GeneratedAtLocal = (Get-Date).ToString("o")
     GeneratedAtUtc = (Get-Date).ToUniversalTime().ToString("o")
     ComputerName = $env:COMPUTERNAME
-    UserProfilePath = $env:USERPROFILE
     ScanRoots = $ScanRoots
     ExistingScanRoots = @($ScanRoots | Where-Object { Test-Path -LiteralPath $_ })
     RepositoryCount = $repositories.Count
