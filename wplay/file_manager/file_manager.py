@@ -42,16 +42,35 @@ class FileManager:
     @staticmethod
     def load_credentials(creds_file: str = None) -> tuple:
         """
-        Carga credenciales desde JSON con campos 'username' y 'password'.
+        Carga credenciales Wplay sin incorporarlas al código fuente.
+
+        Prioridad:
+        1. Variables de entorno WPLAY_USERNAME y WPLAY_PASSWORD.
+        2. Archivo credentials.json local, ignorado por Git.
+
+        Si se define una sola variable de entorno, falla de forma cerrada
+        y no recurre al archivo local.
         Retorna (username, password) o (None, None).
         """
+        env_username = os.environ.get("WPLAY_USERNAME")
+        env_password = os.environ.get("WPLAY_PASSWORD")
+
+        if env_username is not None or env_password is not None:
+            if env_username and env_password:
+                return env_username, env_password
+            return None, None
+
         path = creds_file or os.path.join(os.getcwd(), "credentials.json")
         if not os.path.isfile(path):
             return None, None
         try:
             with open(path, "r", encoding="utf-8") as f:
                 data = json.load(f)
-            return data.get("username"), data.get("password")
+            username = data.get("username")
+            password = data.get("password")
+            if username and password:
+                return username, password
+            return None, None
         except Exception:
             return None, None
 
