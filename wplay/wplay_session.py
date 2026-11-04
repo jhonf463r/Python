@@ -10,7 +10,10 @@ import pygetwindow as gw
 import mss
 import mss.tools
 from difflib import SequenceMatcher
-from wplay.file_manager.file_manager import FileManager
+if __package__:
+    from .file_manager.file_manager import FileManager
+else:
+    from file_manager.file_manager import FileManager
 
 # Configurar la variable de entorno para Tesseract (asegúrate de que la carpeta tessdata esté en esta ruta)
 os.environ['TESSDATA_PREFIX'] = r'C:\Program Files\Tesseract-OCR\tessdata'
