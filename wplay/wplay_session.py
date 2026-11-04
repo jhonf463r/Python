@@ -10,6 +10,10 @@ import pygetwindow as gw
 import mss
 import mss.tools
 from difflib import SequenceMatcher
+if __package__:
+    from .file_manager.file_manager import FileManager
+else:
+    from file_manager.file_manager import FileManager
 
 # Configurar la variable de entorno para Tesseract (asegúrate de que la carpeta tessdata esté en esta ruta)
 os.environ['TESSDATA_PREFIX'] = r'C:\Program Files\Tesseract-OCR\tessdata'
@@ -217,10 +221,13 @@ def attempt_login(fields, win_offset, username, password):
     return True
 
 def main():
-    with open("credentials.json", "r") as f:
-        creds = json.load(f)
-    username = creds.get("username")
-    password = creds.get("password")
+    username, password = FileManager.load_credentials()
+    if not username or not password:
+        print(
+            "Credenciales Wplay no configuradas. Define WPLAY_USERNAME y "
+            "WPLAY_PASSWORD, o crea un credentials.json local (ignorado por Git)."
+        )
+        return
     
     open_chrome()
     time.sleep(5)  # Esperar a que la ventana se abra y la página cargue

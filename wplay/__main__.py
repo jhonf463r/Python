@@ -125,12 +125,14 @@ def main():
     time.sleep(10)
 
     creds_path = os.path.join(os.getcwd(), "credentials.json")
-    try:
-        with open(creds_path, "r") as f:
-            creds = json.load(f)
-    except Exception as e:
-        print(f"Error al cargar credenciales: {e}")
+    username, password = FileManager.load_credentials(creds_path)
+    if not username or not password:
+        print(
+            "Credenciales Wplay no configuradas. Define WPLAY_USERNAME y "
+            "WPLAY_PASSWORD, o crea un credentials.json local (ignorado por Git)."
+        )
         return
+    creds = {"username": username, "password": password}
 
     regions = FileManager.load_regions("regions.json")
     if not all(k in regions for k in ("correo","contraseña","boton entrar")):
