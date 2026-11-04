@@ -4,6 +4,7 @@
 - Core method: [D021 §§6F–6G](./CHAT-ARCH-2026-10-29-UAAL-D021-CROSS-SESSION-BOOT-AND-STATE-RECONCILIATION.md) — destination-specific capability discovery, exact literal source URLs, packet-integrity acknowledgement, same-thread phase continuity and blind-review scope arithmetic.
 - New-chat execution template: [Boot Kit §14](./CHAT-ARCH-2026-10-31-UAAL-NEW-CHAT-BOOT-AND-HANDOFF-KIT.md).
 - Incident and evidence ledger: [Claude session transport and blind-review repair receipt](./CHAT-ARCH-2026-11-03-UAAL-CLAUDE-SESSION-TRANSPORT-AND-BLIND-REVIEW-REPAIR-RECEIPT.md).
+- Portable post-freeze phase continuation: D021 section 6F.9.7 and Boot Kit section 14.6 define the identity-bound checkpoint and receiver ACK; [checkpoint incident/repair receipt](./CHAT-ARCH-2026-11-03-UAAL-PORTABLE-PHASE-CHECKPOINT-AND-CLAUDE-CONTINUITY-REPAIR-RECEIPT.md) records the original event. This transports evidence, not reviewer independence or session state.
 - Status: documentary candidate on PR #598; not canonical in main until explicitly reviewed, merged and fetched back. No runtime enforcement or model-weight learning is claimed.
 
 <!-- CHATGPT_PROJECT_NATIVE_CONTEXT_R1: project transport pointer. -->
