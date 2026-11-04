@@ -112,6 +112,56 @@ At minimum, distinguish:
 - capabilities and tools actually available in this session;
 - Control Master signal status, exact source/workspace, state ID, generated/observed times, queue item IDs, priorities, dependencies and evidence refs; distinguish live, stale, unavailable and unverified signals.
 
+### B3.1 — Bind the task to the strategic organism objective
+
+For every material IABV task, perform this alignment before selecting the next action. The source of the developmental vision is the current master objective in [Issue #454](https://github.com/jhonf463r/Python/issues/454), not this Kit, a branch name, or a remembered chat summary. Read its live objective/layer definitions and the relevant owning issue receipts; do not duplicate their backlogs here.
+
+1. Identify the Owner's immediate objective and its observable acceptance condition. Identify the strategic layer that this task can actually advance. Use one primary layer and list secondary dependencies only where source evidence supports them:
+   - `G0 — TRUSTWORTHY FOUNDATION`: truthful authority, evidence, lifecycle, objective semantics and safe resource boundaries.
+   - `G1 — REAL COGNITIVE CONTINUITY`: persistent cognitive-process identity, truthful checkpoint/resume and governed multi-chunk continuation.
+   - `G2 — NEXT-BEST-WORK / COGNITIVE ARBITRATION`: select one explainable next item from the existing work inventory, goals, evidence, dependencies, capabilities, risks and resources.
+   - `G3 — MEASURED CAPABILITY / HYPOTHESIS LOOP`: baseline, hypothesis, prediction, bounded experiment, observed outcome, belief/strategy update and measured change.
+   - `G4 — FIRST TRUE COGNITIVE EXPERIMENT`: IABV inspects its real state/capabilities and independently recommends a bounded decision-only experiment.
+   - `G5 — CONTROLLED EXECUTION + LEARNING`: governed execution, objective validation, experience and measured reuse.
+   - `G6 — ASSISTED DEVELOPMENT`: bounded proposal → isolated change → validation → promotion/rejection → experience.
+   - `G7 — EMERGING SELF-DEVELOPMENT`: only after G6 is independently verified, controlled self-development with external agents.
+2. Bind the task to the universal reasoning loop and name the phase(s) it is advancing: `OBJECTIVE → PERCEIVE → REPRESENT/MODEL → INTERPRET/UNCERTAINTY → INFER CAPABILITY → DISCOVER REALIZATIONS → CHECK CONSTRAINTS/RESOURCES → SELECT → GOVERN → ACT → OBSERVE → VERIFY → UPDATE MODEL/EXPERIENCE → REUSE → NEXT DECISION`. Do not claim later phases merely because an earlier phase has source code or documentation.
+3. Keep the strategic layers G0–G7 strictly separate from the technical M1A authorization gates `G1/G2/G3`. M1A gate state and permissions come only from the active `CURRENT-STATE.md` header. A strategic-layer classification cannot satisfy, release or weaken a technical gate.
+4. Resolve ownership through the existing records: #450 owns cognitive continuity/learning integrity/organism integrity; #451 owns arbitration/capability fit; #459 owns external-result eligibility and causal consumption; #463 owns knowledge retrieval/lineage; #605 owns repository artifact lifecycle. #454 remains the strategic synthesis point. Use other owners only when the current source links establish the dependency. Do not create a new queue, graph database, router, scheduler, memory store or competing roadmap.
+5. Activate only the smallest objective-relevant dependency neighborhood. A branch, PR, issue, file or agent is not an active “neuron” merely because it exists, has a similar name, is recent or is nearby in the repository. Require a source-backed producer → consumer, objective → dependency or evidence → decision relation. If no relation is established, record `NO_PROPAGATION` or `UNKNOWN`; do not invent an edge.
+6. Select the earliest unmet strategic prerequisite that materially blocks the immediate objective. If the mapping is uncertain, use `STRATEGIC_LAYER=NOT_ASSESSED` and continue only with an independently justified action; do not manufacture an optimum or promote a later layer.
+
+For each material IABV session, produce a concise entry receipt in the first substantive response (or the owning task receipt when a chat response is not the right durable location). This is a compact projection of existing records, not another state store:
+
+```text
+IABV_METACOGNITIVE_ENTRY_RECEIPT
+OPERATING_CONTEXT=CLOUD_SHARED_COORDINATION|LOCAL_IABV_RUNTIME|CONTROLLED_CLOUD_LOCAL_HANDOFF
+PROJECT_SCOPE=IABV_v1.5
+LIVE_MAIN_SHA_AND_OBSERVED_AT=
+CURRENT_STATE_SOURCE_BLOB_AND_ACTIVE_ROUTE=
+OWNER_OBJECTIVE_AND_ACCEPTANCE=
+STRATEGIC_LAYER=G0|G1|G2|G3|G4|G5|G6|G7|NOT_ASSESSED
+UNIVERSAL_LOOP_PHASES=
+FIRST_OPEN_CAUSAL_EDGE=
+OWNING_ISSUE_AND_SOURCE_REFS=
+EVIDENCE_CLASS_AND_COVERAGE=
+CONTROL_MASTER_SIGNAL_STATUS=FRESH|STALE|UNAVAILABLE|UNVERIFIED|CONFLICTED|NOT_APPLICABLE
+REQUIRED_CAPABILITY_AND_AVAILABLE_REALIZATION=
+AUTHORITY_AND_EXCLUSIONS=
+ONE_NEXT_ACTION=
+EXPECTED_OBSERVABLE_AND_STOP_CONDITION=
+MEMORY_RETRIEVED=VERIFIED|REPORTED|NOT_AVAILABLE
+METHOD_ACTIVATED=VERIFIED|NOT_ESTABLISHED
+METHOD_APPLIED=VERIFIED|NOT_ESTABLISHED
+METHOD_INFLUENCE=CHANGED_ACTION|CONFIRMED_ACTION|NO_EFFECT|UNAVAILABLE
+OUTCOME_VERIFIED=VERIFIED|PARTIAL|FAILED|NOT_RUN
+LATER_CAUSAL_REUSE=NOT_TESTED|VERIFIED
+```
+
+Use the actual evidence status; do not fill fields with inferred positives. `METHOD_APPLIED` requires a concrete, attributable decision/action showing how the retrieved method affected or confirmed the selection. `OUTCOME_VERIFIED` requires the expected postcondition. `LATER_CAUSAL_REUSE` requires a subsequent non-identical task. A retrieved file, a generated receipt, a link or a handoff does not prove those later stages. The first response should expose the strategic layer, first open edge, evidence limits and one next action in readable prose; it need not dump the full archive or print every field when not useful.
+
+For another project, reuse the general UAAL method but use that project's own objective, strategic layers and canonical state. Never import IABV facts, M1A permissions or G0–G7 labels as if they belonged to another project.
+
 ### B4 — Select one next action
 
 Before any external-agent prompt or handoff, apply D021 §6C.5's explicit dispatch rule. Name one intended AI provider/agent and model or channel, the project/task, role, session mode (new separate, continued or existing executor), required source-access route, exact authorized operations, exclusions and expected return. Do not write ambiguous instructions such as "send to Claude or another AI" or "use the same reviewer". If the preferred destination's availability/capability is unconfirmed, label it unconfirmed and do not claim dispatch or silently substitute another agent. The exact recipient must be selected using the task's required capability and context-separation requirements.
