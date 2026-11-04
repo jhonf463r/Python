@@ -2939,9 +2939,29 @@ class AdaptiveTaskOrchestrator:
                 work_queue_status = "UNAVAILABLE"
                 signal_reason = "QUEUE_SOURCE_ERRORS:" + ",".join(source_errors)
             else:
-                work_queue = observed_queue
-                work_queue_status = "EMPTY_QUEUE" if not observed_queue else "AVAILABLE"
-                signal_reason = ""
+                read_failures = {
+                    key: value for key, value in source_coverage.items()
+                    if value in {"READ_PARTIAL", "READ_FAILED", "READER_UNAVAILABLE"}
+                }
+                unresolved_sources = {
+                    key: value for key, value in source_coverage.items()
+                    if value in {"NOT_CONFIGURED", "NO_FILE"}
+                }
+                unknown_sources = {
+                    key: value for key, value in source_coverage.items()
+                    if value != "READ_OK"
+                    and value not in {"READ_PARTIAL", "READ_FAILED", "READER_UNAVAILABLE", "NOT_CONFIGURED", "NO_FILE"}
+                }
+                if read_failures:
+                    work_queue_status = "UNAVAILABLE"
+                    signal_reason = "SOURCE_COVERAGE_READ_INCOMPLETE"
+                elif unresolved_sources or unknown_sources or not source_coverage:
+                    work_queue_status = "UNVERIFIED"
+                    signal_reason = "SOURCE_APPLICABILITY_OR_COVERAGE_UNRESOLVED"
+                else:
+                    work_queue = observed_queue
+                    work_queue_status = "EMPTY_QUEUE" if not observed_queue else "AVAILABLE"
+                    signal_reason = ""
 
         if not source_coverage:
             source_coverage = dict(

@@ -820,3 +820,70 @@ class TestQueueSourceFailureVisibilityR2:
         assert digest.work_queue_status == "UNAVAILABLE"
         assert digest.work_queue_brief == []
         assert "OBJECTIVES_READ_FAILED:active" in digest.signal_reason
+
+    def test_unconfigured_or_missing_sources_prevent_confirmed_empty_queue(self) -> None:
+        from iabv_v15.services.adaptive.adaptive_task_orchestrator import AdaptiveTaskOrchestrator
+
+        class _IncompleteCoverageQueue:
+            def current_state(self, *, refresh: bool = False) -> ControlMasterState:
+                return ControlMasterState()
+
+            def current_work_queue(self, *, limit: int = 10) -> list[dict[str, Any]]:
+                return []
+
+            @property
+            def last_work_queue_errors(self) -> tuple[str, ...]:
+                return ()
+
+            @property
+            def last_work_queue_source_coverage(self) -> dict[str, str]:
+                return {
+                    "objective_repository": "READ_OK",
+                    "runtime_audit": "NO_FILE",
+                    "pending_issue_repository": "NOT_CONFIGURED",
+                }
+
+        orchestrator = object.__new__(AdaptiveTaskOrchestrator)
+        orchestrator.control_master_service = _IncompleteCoverageQueue()
+        orchestrator.control_master_digest_builder = ControlMasterDigestBuilder()
+        digest = orchestrator._control_master_digest()
+
+        assert digest.signal_status == "UNVERIFIED"
+        assert digest.work_queue_status == "UNVERIFIED"
+        assert digest.signal_reason == "SOURCE_APPLICABILITY_OR_COVERAGE_UNRESOLVED"
+        assert digest.work_queue_brief == []
+
+    def test_complete_source_coverage_can_confirm_empty_queue(self) -> None:
+        from iabv_v15.services.adaptive.adaptive_task_orchestrator import AdaptiveTaskOrchestrator
+
+        class _CompleteEmptyQueue:
+            def current_state(self, *, refresh: bool = False) -> ControlMasterState:
+                return ControlMasterState()
+
+            def current_work_queue(self, *, limit: int = 10) -> list[dict[str, Any]]:
+                return []
+
+            @property
+            def last_work_queue_errors(self) -> tuple[str, ...]:
+                return ()
+
+            @property
+            def last_work_queue_source_coverage(self) -> dict[str, str]:
+                return {
+                    "objective_repository": "READ_OK",
+                    "platform_pending_queue": "READ_OK",
+                    "pending_issue_repository": "READ_OK",
+                    "self_examination_service": "READ_OK",
+                    "runtime_audit": "READ_OK",
+                    "tests_state": "READ_OK",
+                }
+
+        orchestrator = object.__new__(AdaptiveTaskOrchestrator)
+        orchestrator.control_master_service = _CompleteEmptyQueue()
+        orchestrator.control_master_digest_builder = ControlMasterDigestBuilder()
+        digest = orchestrator._control_master_digest()
+
+        assert digest.signal_status == "AVAILABLE"
+        assert digest.work_queue_status == "EMPTY_QUEUE"
+        assert digest.signal_reason == ""
+

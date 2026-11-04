@@ -31,7 +31,9 @@ Source coverage semantics:
 - NO_FILE means the optional runtime_audit file did not exist at the inspected workspace path; it is not a read failure.
 - READ_OK means a configured reader returned successfully.
 - READ_PARTIAL, READ_FAILED or READER_UNAVAILABLE are diagnostics; any recorded source error makes the unified signal and queue UNAVAILABLE, never EMPTY_QUEUE.
-- signal_status describes availability of the successfully obtained configured-source projection. source_coverage exposes optional omissions; the signal is not a claim that every possible source exists.
+- NOT_CONFIGURED, NO_FILE or unknown coverage states do not establish that the source is optional/not-applicable. Until an explicit source-applicability policy exists, the unified signal and queue remain UNVERIFIED and do not expose partial items as actionable context.
+- EMPTY_QUEUE / AVAILABLE are emitted only when the queue is a list and every source in the observed coverage map is READ_OK. A real source read failure is UNAVAILABLE; unresolved applicability/coverage is UNVERIFIED.
+- signal_status describes availability of the successfully obtained and sufficiently covered configured-source projection; it is not an Owner authority or permission signal.
 
 Excluded:
 - The public projector and publisher from #591.
