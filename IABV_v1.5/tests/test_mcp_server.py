@@ -1663,3 +1663,20 @@ def test_self_auto_merge_returns_governance_block_when_network_down() -> None:
     payload = _call_tool(server, "self_auto_merge", pr_number=5)
     assert payload.get("governance_blocked") is True
     assert payload.get("reason") == "network_unavailable"
+
+def test_portable_context_get_marks_future_full_context_timestamp_unverified() -> None:
+    from datetime import datetime, timedelta, timezone
+
+    now = datetime.now(timezone.utc)
+    package = PortableContextPackage(
+        created_at_utc=now,
+        full_context_generated_at_utc=now + timedelta(hours=1),
+        sections=[],
+    )
+    pc = _FakePortableContextService(package)
+    server = IABVMCPServer(_build_container(portable_context_service=pc))
+    payload = _call_tool(server, "portable_context_get", refresh=True, max_age_seconds=300)
+
+    assert payload["freshness"]["status"] == "UNVERIFIED"
+    assert payload["freshness"]["basis"] == "future_timestamp"
+    assert payload["freshness"]["age_seconds"] is None

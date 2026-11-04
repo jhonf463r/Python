@@ -786,11 +786,19 @@ class IABVMCPServer:
                     )
                     if generated_at.tzinfo is None:
                         generated_at = generated_at.replace(tzinfo=timezone.utc)
-                    age_seconds = max(
-                        0,
-                        int((datetime.now(timezone.utc) - generated_at).total_seconds()),
-                    )
-                    freshness_status = "FRESH" if age_seconds <= requested_max_age else "STALE"
+                    raw_age_seconds = (
+                        datetime.now(timezone.utc) - generated_at
+                    ).total_seconds()
+                    if raw_age_seconds < 0:
+                        # A future timestamp is provenance uncertainty, not zero-age freshness.
+                        age_seconds = None
+                        freshness_status = "UNVERIFIED"
+                        freshness_basis = "future_timestamp"
+                    else:
+                        age_seconds = int(raw_age_seconds)
+                        freshness_status = (
+                            "FRESH" if age_seconds <= requested_max_age else "STALE"
+                        )
                 except (TypeError, ValueError):
                     age_seconds = None
                     freshness_status = "UNVERIFIED"

@@ -37,13 +37,13 @@ Follow-on hardening commit: 2f7f48437f7a9d9251ee798bd15ff576b786805a. It ensures
 | IABV_v1.5/src/iabv_v15/services/evolution/control_master_digest_builder.py | a7bd6d8390095e5dff22dcaa6fcb79d22378df15 | 36e5cb09d6ae257031f049d9e5c9f564a53eae4b |
 | IABV_v1.5/src/iabv_v15/services/llm/system_prompt_builder.py | 8dfded0bfb1e08fbb691e293f566a1551bf71ed3 | 8b1073c2ac9b64b6f248172ee5c730085952416b |
 | IABV_v1.5/src/iabv_v15/services/adaptive/adaptive_task_orchestrator.py | 41f6f7b6157226a1c6004591ddff4e36ff6f6da5 | 1bfbd36c30598ffd1015f6749852603f3fa6f159 |
-| IABV_v1.5/src/iabv_v15/services/evolution/portable_context_service.py | 021cbe829e96099494444b33275423f8d6319dc6 | 4957f22364ff8d9b46cce399dd287a201afa8b59 |
-| IABV_v1.5/src/iabv_v15/infra/mcp/server.py | 17b87a1555a63a6350b7f2f02e8f8ec61ad24f7c | 22a26601fa44bb554f7bc25b3b9f0c9e0b4dc052 |
+| IABV_v1.5/src/iabv_v15/services/evolution/portable_context_service.py | 021cbe829e96099494444b33275423f8d6319dc6 | 8f05b4c7ef28d161ef3c95d0bb64b19ceebf1918 |
+| IABV_v1.5/src/iabv_v15/infra/mcp/server.py | 17b87a1555a63a6350b7f2f02e8f8ec61ad24f7c | c16712b14968258011b2a481059d57d7204f34d7 |
 | IABV_v1.5/src/iabv_v15/services/adaptive/task_context_assembler.py | c5a6852a6a82a0c60886ea4bb6c236f50fe4a57c | 39e601ededea5adcd1d01a65964988825b21be30 |
 | IABV_v1.5/tests/test_canonical_work_queue.py | acc8f162b44234ad55893c4cbcf7b8f62db59560 | 654954d7dba713822d4c35237d1081d7bdcd7bbe |
 | IABV_v1.5/tests/test_system_prompt_builder.py | 98557d8cbdac45e47529fb1133c8d9276e0e2408 | 7f7bbec0a37144a82aac3cd77fdf6057af4d1d23 |
-| IABV_v1.5/tests/test_portable_context_service.py | e03732d5d447218bb50988ed42a1e5ab9e0ecdf5 | 0f713383e2241464a66b9d910195bddf565a1b68 |
-| IABV_v1.5/tests/test_mcp_server.py | 93c11837d39eaee60d2c818e522284f0f9c261d6 | 6770c9920f8e1ddb1141fa2cb033bd2ed442739b |
+| IABV_v1.5/tests/test_portable_context_service.py | e03732d5d447218bb50988ed42a1e5ab9e0ecdf5 | b912bafd36b65a74dad56d935d9ebd3877340624 |
+| IABV_v1.5/tests/test_mcp_server.py | 93c11837d39eaee60d2c818e522284f0f9c261d6 | ca15464e4511ab7c7e1f6e443064003d11c43879 |
 | IABV_v1.5/tests/test_space_time_context_contracts.py | new | 2cdd4ff5773109d8ca21b65682396787ac170933 |
 
 ## Control Master and support signal intake
@@ -55,3 +55,29 @@ GitHub Support ticket #4910849: acknowledgement received; resolution pending. No
 ## No-merge / no-activation receipt
 
 main remains at 56e4d8b11846a8d8f3cb8cda08efd773ec235651. G1/G2/G3 remain NOT_ESTABLISHED. OPTION_D=RATIFIED_NO_BOOTSTRAP. PROTECTED_READS=FAIL_CLOSED. BRIDGE=NOT_READY. M1A permissions unchanged. Tests/build/runtime NOT_RUN. No credentials or payment data included. Merge is not authorized by this receipt.
+
+## Follow-on temporal clock-skew hardening — 2026-11-04
+
+Static review of the exact candidate source found that a future `full_context_generated_at_utc` could pass the service freshness check because a negative age satisfied the maximum-age comparison. The MCP adapter also clamped negative age to zero and could report `FRESH`.
+
+Correction:
+- `PortableContextService._is_fresh()` now returns false when the computed age is negative.
+- `portable_context_get` reports `UNVERIFIED`, basis `future_timestamp`, and `age_seconds=null` for a future timestamp.
+- Regression tests added:
+  - `test_portable_context_service_rejects_future_full_context_timestamp`
+  - `test_portable_context_get_marks_future_full_context_timestamp_unverified`
+
+The two tests are authored and fetch-back verification remains pending. Tests/build/runtime/CI are NOT_RUN due the outstanding GitHub Actions account restriction and support case #4910849. No workflow was rerun.
+
+## Cross-PR semantic reconciliation required before adoption
+
+PR #591 and PR #602 overlap in the Control Master model, digest builder, adaptive orchestrator, system-prompt builder, and queue/prompt tests. The candidates need one explicit semantic reconciliation before either can be considered canonical:
+- #591 carries `signal_status` and `signal_reason`, and its non-empty queue label is `NON_EMPTY_QUEUE`.
+- #602 standardizes queue states as `AVAILABLE`, `EMPTY_QUEUE`, `UNAVAILABLE`, and `UNVERIFIED`, but does not carry #591's detailed signal reason fields.
+- A combined acceptance must preserve both distinctions without converting a failed/unknown source to an empty queue or dropping diagnostic provenance.
+
+This is a static compatibility finding, not merge approval. Keep both PRs Draft/open/unmerged pending a single reconciled candidate and tests against its exact HEAD. Their branch bases differ (#591: main at a64f9e3; #602: main at 56e4d8b); do not merge either blindly.
+
+## Follow-on boundaries
+
+This follow-on changes only this Lane B PR branch. main and CURRENT-STATE remain unchanged. M1A gates, protected reads, bridge/runtime/tunnel and production activation remain untouched. AUTOMATIC_FOLLOW_ON=FALSE. Tests are authored, not passed. Merge remains unauthorized.

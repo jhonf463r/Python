@@ -477,3 +477,21 @@ def test_portable_context_service_keeps_unresolved_when_adaptive_session_is_stal
         assert 'UNRESOLVED:active_goal_context' in package.unresolved_fields
     finally:
         shutil.rmtree(root, ignore_errors=True)
+
+def test_portable_context_service_rejects_future_full_context_timestamp() -> None:
+    from datetime import datetime, timedelta, timezone
+
+    from iabv_v15.domain.models import PortableContextPackage
+
+    root = _workspace('portable_context_future_generated_at')
+    try:
+        bootstrap = AppBootstrap(str(root))
+        package = PortableContextPackage(
+            full_context_generated_at_utc=datetime.now(timezone.utc) + timedelta(hours=1),
+        )
+        assert not bootstrap.portable_context_service._is_fresh(
+            package,
+            max_age_seconds=300,
+        )
+    finally:
+        shutil.rmtree(root, ignore_errors=True)

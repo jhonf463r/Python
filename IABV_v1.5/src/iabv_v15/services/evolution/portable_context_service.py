@@ -503,6 +503,9 @@ class PortableContextService:
             # cannot renew the freshness window for every section.
             generated_at = package.full_context_generated_at_utc or package.created_at_utc
             age_seconds = (utc_now() - generated_at).total_seconds()
+            # Clock skew or a future-dated persisted value cannot establish freshness.
+            if age_seconds < 0:
+                return False
         except Exception:
             return False
         return age_seconds <= max_age_seconds
