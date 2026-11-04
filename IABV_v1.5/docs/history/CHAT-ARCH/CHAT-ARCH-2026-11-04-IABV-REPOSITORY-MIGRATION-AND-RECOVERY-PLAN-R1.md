@@ -246,6 +246,23 @@ At minimum, inspect the known historical locations if they still exist, then sea
 - C:\Temp\IABV_TASKSCOPED_APPROVAL\IABV_v1.5 (historical candidate workspace; existence/currentness unknown)
 - Other clones/worktrees under the Owner's source/repository folders, Desktop/Documents and any secondary drive.
 
+A read-only helper is included at:
+
+**IABV_v1.5/tools/migration/Invoke-IabvLocalInventory.ps1**
+
+Review its source before running. It inventories repository paths, HEAD, branches, refs, reflogs, worktrees, stashes, dirty status, untracked/ignored paths, object-store size, LFS pointers, submodules and sanitized remotes. It writes a JSON metadata report only; it does not read source-file contents, copy or archive repositories, fetch/push, download LFS objects, upload data or clean working trees. The optional **-RunFsck** switch performs a read-only unreachable-object check and may take longer.
+
+Example (run from PowerShell after reviewing the helper source):
+
+~~~powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\IABV_v1.5\tools\migration\Invoke-IabvLocalInventory.ps1
+# After inspecting the first report, optionally repeat with:
+.\IABV_v1.5\tools\migration\Invoke-IabvLocalInventory.ps1 -RunFsck
+~~~
+
+The helper is source-reviewed/fetched back but has **not** been executed on the Owner's laptop or validated in Windows PowerShell. Keep its output local and private; untracked/ignored filenames and ref names can disclose sensitive project context. Sanitize before sharing. This helper is an inventory, not a backup.
+
 Do not assume these paths are current. Inventory all discovered .git directories **and** .git worktree pointer files. In every common Git directory, record:
 
 ~~~powershell
