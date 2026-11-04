@@ -201,7 +201,7 @@ The episode is bounded evidence of this method correction, not proof that the pr
 
 ## 9. Decision-complete advance packets and Owner-turn minimization (2026-11-02)
 
-UAAL-D019 §9E is the owning pre-action decision-completeness algorithm. This section binds it to D020's advance contract and lexicographic progress selector; it does not create a second selector or override authorization.
+UAAL-D019 §9E is the sole owning pre-action decision-completeness record. This D020 §9 section is a bounded refinement of D020's advance contract and lexicographic progress selector; it is not a second owner record and does not create an independent adoption state. The canonical/mandatory status of the §9E algorithm is determined only from the exact D019 owner record in pinned `main`. D020's general progress/utility method status must not be used to infer adoption of D019 §9E.
 
 Before any Owner-facing step on a material UI/device/account task, enrich `ADVANCE_CONTRACT` with:
 - actor split: what the coordinator can retrieve/verify directly, what the Owner alone must do, and what requires an external authority;
@@ -249,6 +249,10 @@ PARENT_CONCEPT_ID=UAAL-D019
 REFINES=UAAL-D019; UAAL-D018
 ROOT=UAAL-ROOT-001
 STATUS=DOCUMENTED_METHOD; RUNTIME_ENFORCEMENT=NOT_PROVEN
+PRE_ACTION_DECISION_COMPLETENESS_OWNING_RECORD=UAAL-D019 §9E
+D020_SECTION_9_ROLE=BOUNDING_REFINEMENT; NOT_A_SECOND_OWNER
+D019_ADOPTION_AUTHORITY=EXACT_D019_OWNER_RECORD_IN_PINNED_MAIN_ONLY
+D020_STATUS_DOES_NOT_PROVE_D019_ADOPTION=TRUE
 TASK_ID_POLICY=NEW_TASK_PER_REVISION
 COMMIT_PROFILE=GATE_COMMIT
 OPTION_D=RATIFIED_NO_BOOTSTRAP
@@ -258,3 +262,30 @@ BRIDGE=BRIDGE_NOT_READY
 AUTOMATIC_FOLLOW_ON=FALSE
 CAUSAL_REUSE=NOT_TESTED
 ```
+
+
+## 11. Destination-aware tool preflight and preparation-debt control (2026-11-03)
+
+The preparation-debt rule applies to cross-AI handoffs as well as local repository work. A coordinator can avoid repeating the same failed retrieval attempt and still waste Owner effort by asking the Owner to reconstruct URLs, export files or relay content that the coordinator's authorized connectors can already retrieve.
+
+Before requesting user-side transport or another prompt, compare the actual authorized realizations available to the coordinating session and the receiving session separately.
+
+1. Name the concrete target surface and its observed capabilities. Do not infer browser, Git/API, shell, egress, attachment or write access from a model/product name.
+2. Use the coordinator's own connected GitHub or file tools first when authorized. The recipient's lack of egress does not restrict the coordinator's access.
+3. If the recipient has a narrower route, supply exact literal source URLs, owner/repo, immutable revisions and complete paths. Do not make the Owner construct URLs from truncated SHAs or repeat facts already in the task context.
+4. Probe one safe representative endpoint per distinct access plane before building a large transfer package. Record NOT_ATTEMPTED separately from a failed attempt. A permission error caused by a URL not present in the receiving prompt is not evidence that the source or public endpoint is unavailable.
+5. When a handoff exceeds the demonstrated capacity of the receiving surface, split and acknowledge packets rather than repeating the full dispatch. Do not ask the Owner to resend already acknowledged complete parts.
+6. Stop after the available authorized routes have been discriminated. Reopen a route only when a new capability, exact URL, permission, source revision or material hypothesis changes the action choice.
+
+The advance contract must identify which dependency the transport step closes: source availability, source identity, complete package receipt, review-scope lock or substantive inspection. A prompt written, link generated, packet sent or repository listed is preparation until the receiver acknowledges the complete package and produces the expected source/phase evidence.
+
+Acceptance remains falsifiable: on a later non-identical task, show that the destination-specific preflight reduced an avoidable Owner round-trip or prevented a false progress claim without increasing permission risk. Until then, mark causal reuse NOT_TESTED.
+
+
+### 11.1 Phase-boundary checkpoint reuse
+
+1. Treat phase-boundary continuity as an artifact dependency, not a conversation-name dependency. Before repeating a completed phase or asking the Owner to relay context, check whether the complete frozen checkpoint defined by D021 section 6F.9.7 and Boot Kit section 14.6 is available. Reuse it only when task/revision identity, complete contents, coverage, provenance and identity status match. A copied timestamp, summary, prompt or link without the report content is not a checkpoint.
+2. If Phase A was frozen but a continuation session lacks its report, do not restart Phase A automatically and do not open B/C on assertion alone. First retrieve or request only the missing complete checkpoint through an already-authorized source. If complete, continue only the already-authorized dependent phase in the correct role and require its ACK. Record this as transport/reuse of an existing result, not new substantive progress.
+3. If no valid checkpoint exists, stop only the dependent phase with the exact missing artifact and preserve the original Phase-A status. Do not manufacture another generic prompt, ask the Owner to repeat canonical repository facts, or infer why the report is missing.
+
+Acceptance remains falsifiable: on a later non-identical task, show that checkpoint reuse prevented a needless restart or Owner relay while preserving task/revision identity, review independence, provenance and all phase acceptance boundaries. Until observed, CAUSAL_REUSE=NOT_TESTED; the documentation change itself is not proof of behavioral reuse or automatic cross-session delivery.

@@ -1,7 +1,7 @@
 # Canonical continuity, Space-Time cognition, and adaptive neuroplasticity protocol
 
 - Protocol ID: `CONTINUITY_SPACE_TIME_ANTI_LOOP` (stable identity; operating method evolves in place)
-- Living operating revision: `2.7 — ADAPTIVE_SPACE_TIME_NEUROPLASTICITY + OWNER_CONTEXT_AWARE_TURN_ROUTING + VERIFIED_CONTEXT_HANDOFF + OWNER_FACING_DELIVERY_PREFLIGHT + DUAL_TRACK_PROGRESS_ROUTING + UAAL_D020_PROGRESS_UTILITY + CROSS_AI_MEMORY_ACTIVATION + OBJECTIVE_CONDITIONED_WORLD_MODEL + INCOMING_RESULT_ADJUDICATION + PROJECT_SCOPED_NEW_CHAT_BOOT_AND_ROLE_BOUND_HANDOFF + CONTROL_MASTER_SIGNAL_INTAKE_AND_DECISION_BINDING + CHATGPT_PROJECT_CONTEXT_AND_MEMORY_SCOPE`
+- Living operating revision: `2.8 — ADAPTIVE_SPACE_TIME_NEUROPLASTICITY + OWNER_CONTEXT_AWARE_TURN_ROUTING + VERIFIED_CONTEXT_HANDOFF + OWNER_FACING_DELIVERY_PREFLIGHT + DUAL_TRACK_PROGRESS_ROUTING + UAAL_D020_PROGRESS_UTILITY + CROSS_AI_MEMORY_ACTIVATION + OBJECTIVE_CONDITIONED_WORLD_MODEL + INCOMING_RESULT_ADJUDICATION + PROJECT_SCOPED_NEW_CHAT_BOOT_AND_ROLE_BOUND_HANDOFF + CONTROL_MASTER_SIGNAL_INTAKE_AND_DECISION_BINDING + CHATGPT_PROJECT_CONTEXT_AND_MEMORY_SCOPE + CANDIDATE_PRE_ACTION_PRECISION_GATE_AND_BRANCH_PROVENANCE_GUARD`
 - Evolution rule: integrate new lessons into their owning core rule; preserve dated incidents/history; do not accumulate competing append-only protocols
 - Owner instruction date: 2026-10-23 (America/Bogota)
 - Scope: objective-bound reasoning, temporal evidence graph, adaptive role activation, gated action chains, memory consolidation, delivery receipts and outcome-based protocol evolution
@@ -45,7 +45,7 @@ For every new chat and every material hand-off:
 
 GitHub is the durable source for records actually committed there; it is not a magical transcript of all chats or local runtime. A new chat does not automatically inherit an old chat's hidden context. The coordinator must fetch and bind the records it uses, while marking what was unavailable.
 
-**Operational boot and handoff entry (revision 2.7):** use the [UAAL New-Chat Boot and Handoff Kit](./CHAT-ARCH-2026-10-31-UAAL-NEW-CHAT-BOOT-AND-HANDOFF-KIT.md) for the copy-ready startup sequence, role boundaries, project-scoped memory selection, Owner-input reuse ledger and correlated return receipt. The kit operationalizes this protocol; it does not create a second router, grant permissions or imply automatic context injection.
+**Operational boot and handoff entry (revision 2.8):** use the [UAAL New-Chat Boot and Handoff Kit](./CHAT-ARCH-2026-10-31-UAAL-NEW-CHAT-BOOT-AND-HANDOFF-KIT.md) for the copy-ready startup sequence, role boundaries, project-scoped memory selection, Owner-input reuse ledger and correlated return receipt. The kit operationalizes this protocol; it does not create a second router, grant permissions or imply automatic context injection.
 
 ### Turn-boundary refresh and route-drift prevention (revision 2.2)
 
@@ -98,9 +98,13 @@ Bind the digest to exact source, workspace/project, state ID, generation time, o
 
 ### Decision-complete Owner-action preflight (D019 §9E / D020 §9; 2026-11-02 proposal)
 
-This is the execution bridge between the existing Space-Time world model, D021's Owner-input and Control Master intake, and D019/D020's causal selector. It refines the same operating lineage; it does not create a second router, memory, coordinator, approval channel or permission system.
+This is a proposal for an execution bridge between the existing Space-Time world model, D021's Owner-input and Control Master intake, and D019/D020's causal selector. It refines the same operating lineage; it does not create a second router, memory, coordinator, approval channel or permission system.
 
-For every material action that would ask the Owner to use a device, application, account, security surface or private UI, complete this order **before the first Owner-facing instruction**:
+**Adoption boundary:** the D019 §9E / D020 §9 `OWNER_ACTION_PACKET` expansion described in this proposal is not a mandatory canonical gate unless the owning D019 record in the exact pinned `main` affirmatively records its adoption. The D019 owner record at PR #598's base `56e4d8b11846a8d8f3cb8cda08efd773ec235651` states `STATUS=DOCUMENTED_METHOD_CANDIDATE` and `CANONICAL_MAIN_ADOPTION=NOT_YET`; that is a dated baseline fact, not a permanent state. Recheck the current owner record in each session. Existing `CURRENT-STATE.md`, adopted D021 controls and action-specific authorization/no-bootstrap rules remain controlling regardless of this proposal.
+
+The following order is proposed guidance. Steps 1–5 restate existing route, Owner-ledger, Control Master and authorization checks to the extent required by their adopted owning sections. Steps 6–8, including the `OWNER_ACTION_PACKET` expansion and branch precomputation, remain candidate-only planning guidance until the owning D019 record is adopted; they must not add permissions or displace existing controls.
+
+For every material action that would ask the Owner to use a device, application, account, security surface or private UI, when the proposed bundle is used as a planning aid, complete this order **before the first Owner-facing instruction**:
 
 1. Refresh the exact canonical route, task scope, permission state and relevant revision. `CURRENT-STATE.md` remains the route authority.
 2. Reuse D021 §6B.1's Owner-input ledger, current conversation evidence, completed steps, screenshots and terminal outcomes. Mark facts by provenance; do not repeat settled setup.
@@ -163,6 +167,11 @@ When the Owner says to continue, advance, organize, analyze, or evolve the metho
 **H. Transition and learn.** Record the terminal result, update the canonical route and the owning operating rule when justified, preserve prior history, and identify whether the lesson is a hypothesis, candidate rule or demonstrated reuse. Revalidate live `main` and fetch back any authorized writeback.
 
 For eligible candidate actions, filter out every action that lacks authorization or an essential prerequisite first. Among remaining actions, prioritize the earliest dependency that blocks the North Star, the action with the clearest discriminating evidence, reversibility and zero/lowest justified cost. This is a **lexicographic operating heuristic**, not a scientific probability model; no score or productivity pressure can override a hard gate.
+
+
+### Pre-action precision gate (living revision 2.8)
+
+The reasoning cycle is incomplete until the intended action is bound to an exact repository/ref/HEAD, its authorization and exclusions, the actual receiving actor's capabilities, the available executor/runner, the expected observable and a stop condition. D021 §6F.0 is the proposed single owner for the trigger set on this candidate branch; it becomes a canonical trigger only when the exact section is present in the pinned `main`. Until then, treat §6F.0 as candidate-only and do not apply it as a mandatory gate. Point to that proposed section rather than reproducing its trigger list. Keep this entry focused on the Space-Time invariant: verify the exact target and actor/executor capabilities, re-check volatile preconditions immediately before consequential writes, use expected-SHA updates where supported, and preserve residual TOCTOU risk. If a prerequisite fails, discard that candidate action or select another independently authorized and preflighted route; do not repeat the same blocked request under new wording.
 
 ## 5. Dynamic role/facet activation
 
@@ -335,6 +344,9 @@ Measure operational outcomes, not the volume of documentation: did a later chat 
 Track coordination outcomes separately across later tasks: stale-route reuse, repeated Owner questions, avoidable manual transfers per handoff, briefs with verified goal/freshness provenance, destination-bound delivery receipt coverage, later causal reuse, and attributable rework reduction. Establish a baseline before claiming improvement. Do not compress these into one intelligence/consciousness score. A metric without observations is `UNKNOWN`, not zero.
 
 ## 9. Durable handoff, context delivery and answer contract
+
+For cross-session continuation after a blind phase has been frozen, use the owning portable-checkpoint contract in D021 section 6F.9.7 and New-Chat Boot Kit section 14.6. The receiving B/C session must possess and acknowledge the complete identity-bound report; a link or timestamp is insufficient. This transports the frozen evidence, not the original reviewer session, independent-review status or new authority.
+
 
 For each meaningful bounded task, persist a concise receipt when authorized and useful. Include:
 - task/event ID, date/time zone, canonical `main` SHA, and candidate branch/HEAD if any;
@@ -771,3 +783,14 @@ A repeat/reopen is allowed only with its own new bounded authorization and a sta
 For ChatGPT-to-ChatGPT continuity, one owner-controlled ChatGPT Project can make Project instructions, files and chats available to conversations inside that Project. It is a context substrate, not a second memory/router and not a broadcast bus. Choose memory mode by intended scope: Project-only supports strict IABV isolation but excludes account-level saved memories and outside chats; Default memory may offer broader account-level context where plan/settings permit, with cross-project mixing risk. Under the existing separate-project-memory policy, Project-only is preferred for the dedicated IABV Project unless the Owner chooses wider account recall. ChatGPT Memory remains selective, not exhaustive. For Codex, Claude or other AI products, use the existing GitHub repository as the shared versioned substrate. Keep the active project state in its owning CURRENT-STATE.md; the Project and GitHub transport/retrieve that state rather than replacing it.
 
 The coordinator must prefer already-available Project sources and repository retrieval over asking the Owner to re-upload stable files. A Project does not expose local C:/Python, a live local database, protected data or runtime state. No runtime synchronization is implied. Source availability, retrieval, receiver acknowledgement, decision influence and verified outcome remain separate temporal events under UAAL-D021 §6E. Project instructions guide assistant behavior but do not enforce tool availability, permissions or technical gates.
+
+
+## Operational amendment — destination-scoped AI capabilities and complete handoff delivery (2026-11-03)
+
+The capability-fit step must resolve a concrete receiving product AND session surface, not just a model family. “Claude” may refer to a browser chat, code agent, API call or remote container; each can have different retrieval, shell, egress, attachment and permission boundaries. Record model/runtime declarations as actor-reported unless observed. Probe and classify each route independently; do not infer global unavailability from one failed URL or transport.
+
+A material cross-AI handoff is not complete at prompt preparation or send time. It requires an actual receiving-session acknowledgement of the complete packet, the expected end marker, the exact task/revision and the receiver's source/phase preconditions. Where a receiving route has demonstrated truncation, use numbered packets sized conservatively from evidence for that exact product surface/session, with a safety margin, and require confirmation of every part before inspection. Keep measured thresholds and transcript evidence in the dated task/incident receipt rather than in this reusable method; a route-specific threshold is not a universal product specification.
+
+A new-chat lock, a scope timestamp or a frozen review from another thread cannot be imported into the active receiver conversation unless the exact correlated artifact is present there. If a later phase requires an earlier frozen report and that report is absent from the current thread, stop rather than synthesize continuity.
+
+Apply D021 §§6F–6G and the New-Chat Boot Kit §14. Keep retrieval, identity, coverage, context separation, delivery acknowledgement and substantive review orthogonal. Documentary persistence does not prove automatic session boot, causal reuse, model-weight learning or runtime enforcement.
