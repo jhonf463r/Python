@@ -250,6 +250,7 @@ def test_compact_prompt_includes_control_master_queue_signal() -> None:
     assert "objective_repository=READ_OK" in prompt
     assert "state-compact-1" in prompt
     assert "Close G1 evidence gap" in prompt
+    assert prompt.index("Siguientes acciones:") < prompt.index("Cobertura:")
     assert "blocked=1" in prompt
 
 

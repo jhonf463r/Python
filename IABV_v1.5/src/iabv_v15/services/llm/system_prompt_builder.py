@@ -295,16 +295,9 @@ class SystemPromptBuilder:
             f'Estado de señal: {digest.signal_status}',
             f'Estado de cola: {digest.work_queue_status}',
         ]
-        if digest.signal_reason:
-            parts.append(f'Diagnóstico: {digest.signal_reason[:160]}')
-        if digest.source_coverage:
-            coverage = ', '.join(
-                f'{key}={value}' for key, value in sorted(digest.source_coverage.items())
-            )
-            parts.append(f'Cobertura: {coverage[:180]}')
         if digest.source_state_id:
             parts.append(f'State ID: {digest.source_state_id}')
-        # Keep next actions immediately after status so they survive prompt truncation.
+        # Decision-bearing next actions precede lower-priority diagnostic detail.
         if digest.work_queue_brief:
             parts.append('Siguientes acciones:')
             parts.extend(f'- {item[:180]}' for item in digest.work_queue_brief[:3])
@@ -316,6 +309,13 @@ class SystemPromptBuilder:
             parts.append('Cola consultada; no hay elementos textuales en la proyección.')
         else:
             parts.append('Cola no verificada; no inferir que está vacía.')
+        if digest.signal_reason:
+            parts.append(f'Diagnóstico: {digest.signal_reason[:160]}')
+        if digest.source_coverage:
+            coverage = ', '.join(
+                f'{key}={value}' for key, value in sorted(digest.source_coverage.items())
+            )
+            parts.append(f'Cobertura: {coverage[:180]}')
         if digest.active_objectives_brief:
             parts.append('Objetivos: ' + ', '.join(digest.active_objectives_brief[:3]))
         if digest.rules_brief:
