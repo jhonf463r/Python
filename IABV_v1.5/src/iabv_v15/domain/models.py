@@ -1927,6 +1927,8 @@ class PortableContextPackage(BaseModel):
     package_id: str = Field(default_factory=lambda: str(uuid4()))
     created_at_utc: datetime = Field(default_factory=utc_now)
     updated_at_utc: datetime = Field(default_factory=utc_now)
+    # Only a full build renews whole-context freshness; section flushes do not.
+    full_context_generated_at_utc: datetime | None = None
     package_version: str = "portable_context.v1"
     project_id: str = "IABV_v1.5"
     summary: str = ""
@@ -2665,6 +2667,8 @@ class ControlMasterDigest(BaseModel):
     coordination_patterns_brief: str = ""
     work_queue_brief: list[str] = Field(default_factory=list)
     work_queue_counts: dict[str, int] = Field(default_factory=dict)
+    # Empty, failed and unattempted reads are different epistemic states.
+    work_queue_status: str = "UNVERIFIED"
     generated_at_utc: datetime = Field(default_factory=utc_now)
     source_state_id: str = ""
 

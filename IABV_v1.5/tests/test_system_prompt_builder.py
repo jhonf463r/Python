@@ -224,6 +224,29 @@ def test_compact_prompt_keeps_identity_and_live_contract_under_budget() -> None:
     assert 'Herramientas disponibles' not in prompt
 
 
+def test_compact_prompt_includes_control_master_queue_signal() -> None:
+    builder = SystemPromptBuilder()
+    digest = ControlMasterDigest(
+        source_state_id="state-compact-1",
+        work_queue_status="AVAILABLE",
+        work_queue_counts={"active": 1, "blocked": 1},
+        work_queue_brief=["[critical] Close G1 evidence gap (objective) inspect issuer provenance"],
+        active_objectives_brief=["active:obj-g1"],
+    )
+    prompt = builder.build_compact(
+        world_model=None,
+        env_self_model=None,
+        governance_rules={"recommended_action": "continue_authorized_review"},
+        control_master_digest=digest,
+    )
+    assert len(prompt) <= 3500
+    assert "Control Maestro" in prompt
+    assert "AVAILABLE" in prompt
+    assert "state-compact-1" in prompt
+    assert "Close G1 evidence gap" in prompt
+    assert "blocked=1" in prompt
+
+
 def test_prompt_includes_self_examination_findings() -> None:
     """Self-examination snapshot with findings renders in the prompt."""
     builder = SystemPromptBuilder()

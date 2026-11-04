@@ -39,6 +39,7 @@ import asyncio
 import concurrent.futures
 import logging
 import os
+from datetime import datetime, timezone
 from dataclasses import asdict, is_dataclass
 from typing import Any, Callable, TypeVar
 
@@ -735,7 +736,8 @@ class IABVMCPServer:
             # authoritative rich snapshot; rebuilding without an active
             # task_context produces empty sections because there is no
             # live orchestration cycle feeding the builder.
-            effective_max_age = int(max_age_seconds)
+            requested_max_age = max(0, int(max_age_seconds))
+            effective_max_age = requested_max_age
             if not refresh:
                 effective_max_age = max(effective_max_age, 86400)
             package = svc.current_package(
@@ -761,6 +763,54 @@ class IABVMCPServer:
                     )
                     if loaded_chars > total_chars:
                         result = loaded_dump
+
+            # Rich persisted context may be served beyond the caller's requested
+            # window; expose its true age rather than silently calling it fresh.
+            generated_value = result.get("full_context_generated_at_utc")
+            freshness_basis = "full_context_generated_at_utc"
+            metadata = result.get("metadata") or {}
+            if (
+                not generated_value
+                and metadata.get("source") == "lightweight_unresolved_package"
+            ):
+                age_seconds = None
+                freshness_status = "UNVERIFIED"
+                freshness_basis = "full_context_generation_unavailable"
+            else:
+                if not generated_value:
+                    generated_value = result.get("created_at_utc")
+                    freshness_basis = "created_at_utc_legacy_fallback"
+                try:
+                    generated_at = datetime.fromisoformat(
+                        str(generated_value).replace("Z", "+00:00")
+                    )
+                    if generated_at.tzinfo is None:
+                        generated_at = generated_at.replace(tzinfo=timezone.utc)
+                    raw_age_seconds = (
+                        datetime.now(timezone.utc) - generated_at
+                    ).total_seconds()
+                    if raw_age_seconds < 0:
+                        # A future timestamp is provenance uncertainty, not zero-age freshness.
+                        age_seconds = None
+                        freshness_status = "UNVERIFIED"
+                        freshness_basis = "future_timestamp"
+                    else:
+                        age_seconds = int(raw_age_seconds)
+                        freshness_status = (
+                            "FRESH" if age_seconds <= requested_max_age else "STALE"
+                        )
+                except (TypeError, ValueError):
+                    age_seconds = None
+                    freshness_status = "UNVERIFIED"
+                    freshness_basis = "timestamp_unavailable"
+            result["freshness"] = {
+                "status": freshness_status,
+                "basis": freshness_basis,
+                "age_seconds": age_seconds,
+                "requested_max_age_seconds": requested_max_age,
+                "effective_max_age_seconds": effective_max_age,
+                "rich_snapshot_extension_applied": effective_max_age > requested_max_age,
+            }
             return result
 
         @mcp.tool()

@@ -315,6 +315,52 @@ def test_portable_context_get_passes_refresh_and_max_age() -> None:
     assert pc.calls == [(True, 42)]
 
 
+def test_portable_context_get_reports_stale_rich_snapshot_without_discarding_it() -> None:
+    from datetime import datetime, timedelta, timezone
+    from iabv_v15.domain.models import PortableContextSection
+
+    now = datetime.now(timezone.utc)
+    generated = now - timedelta(hours=2)
+    package = PortableContextPackage(
+        created_at_utc=generated,
+        updated_at_utc=now,
+        full_context_generated_at_utc=generated,
+        sections=[PortableContextSection(
+            section_id="historical-rich-section",
+            title="Preserved section",
+            items=[{"evidence_ref": "source:1"}],
+        )],
+    )
+    pc = _FakePortableContextService(package)
+    server = IABVMCPServer(_build_container(portable_context_service=pc))
+    payload = _call_tool(server, "portable_context_get", refresh=False, max_age_seconds=300)
+    assert pc.calls == [(False, 86400)]
+    assert payload["freshness"]["status"] == "STALE"
+    assert payload["freshness"]["basis"] == "full_context_generated_at_utc"
+    assert payload["freshness"]["requested_max_age_seconds"] == 300
+    assert payload["freshness"]["effective_max_age_seconds"] == 86400
+    assert payload["freshness"]["rich_snapshot_extension_applied"] is True
+    assert payload["sections"][0]["section_id"] == "historical-rich-section"
+
+
+def test_portable_context_get_marks_lightweight_package_unverified() -> None:
+    from datetime import datetime, timezone
+
+    now = datetime.now(timezone.utc)
+    package = PortableContextPackage(
+        created_at_utc=now,
+        metadata={"source": "lightweight_unresolved_package"},
+        sections=[],
+    )
+    pc = _FakePortableContextService(package)
+    server = IABVMCPServer(_build_container(portable_context_service=pc))
+    payload = _call_tool(server, "portable_context_get", refresh=True, max_age_seconds=300)
+
+    assert payload["freshness"]["status"] == "UNVERIFIED"
+    assert payload["freshness"]["basis"] == "full_context_generation_unavailable"
+    assert payload["freshness"]["age_seconds"] is None
+
+
 def test_self_examination_current_returns_review_and_summary() -> None:
     server = IABVMCPServer(_build_container())
     payload = _call_tool(server, "self_examination_current")
@@ -1617,3 +1663,20 @@ def test_self_auto_merge_returns_governance_block_when_network_down() -> None:
     payload = _call_tool(server, "self_auto_merge", pr_number=5)
     assert payload.get("governance_blocked") is True
     assert payload.get("reason") == "network_unavailable"
+
+def test_portable_context_get_marks_future_full_context_timestamp_unverified() -> None:
+    from datetime import datetime, timedelta, timezone
+
+    now = datetime.now(timezone.utc)
+    package = PortableContextPackage(
+        created_at_utc=now,
+        full_context_generated_at_utc=now + timedelta(hours=1),
+        sections=[],
+    )
+    pc = _FakePortableContextService(package)
+    server = IABVMCPServer(_build_container(portable_context_service=pc))
+    payload = _call_tool(server, "portable_context_get", refresh=True, max_age_seconds=300)
+
+    assert payload["freshness"]["status"] == "UNVERIFIED"
+    assert payload["freshness"]["basis"] == "future_timestamp"
+    assert payload["freshness"]["age_seconds"] is None
