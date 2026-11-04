@@ -149,8 +149,10 @@ class ControlCenterViewModel(QObject):
         chat_message_repository: Any | None = None,
         system_identity_registry: SystemIdentityRegistry | None = None,
         defer_initial_refresh: bool = False,
+        iabv_i1_isolated_mode: bool = False,
     ) -> None:
         super().__init__()
+        self._iabv_i1_isolated_mode = bool(iabv_i1_isolated_mode)
         self.config = config
         self.episode_repository = episode_repository
         self.knowledge_repository = knowledge_repository
@@ -312,14 +314,21 @@ class ControlCenterViewModel(QObject):
         # runs on _bg_pool via _deferred_initial_refresh.  Only
         # lightweight signal connections happen on main thread via
         # _deferred_heavy_init.
-        if not self._working and not self._adaptive_session_id:
+        if self._iabv_i1_isolated_mode:
+            # The isolated I1 startup exposes the real public UI without
+            # background repository refreshes, provider probes or app discovery.
+            self._busy_label = (
+                'Arranque aislado: carga inicial y comprobaciones automáticas aplazadas.'
+            )
+        elif not self._working and not self._adaptive_session_id:
             self._busy_label = self._startup_readiness_text(
                 validating_local_stack=True,
                 nonblocking=True,
             )
         QTimer.singleShot(0, self._deferred_heavy_init)
-        QTimer.singleShot(250, self._deferred_initial_refresh)
-        QTimer.singleShot(900, lambda: self._refresh_provider_health(announce=False))
+        if not self._iabv_i1_isolated_mode:
+            QTimer.singleShot(250, self._deferred_initial_refresh)
+            QTimer.singleShot(900, lambda: self._refresh_provider_health(announce=False))
 
     def _deferred_heavy_init(self) -> None:
         """Attach lightweight listeners that need main-thread affinity.
@@ -9011,12 +9020,12 @@ class ControlCenterViewModel(QObject):
             'assistant_kind': assistant_kind,
             'assistant_title': title,
             'session_modes': list(self._WEB_SKILL_SESSION_MODES),
-            'active_session_mode': 'unknown',
+            'active_session_mode': 'isolated_profile' if self._iabv_i1_isolated_mode else 'unknown',
             'browser_profile_path': '',
-            'cdp_status': 'unknown',
+            'cdp_status': 'disabled_in_i1_isolated_mode' if self._iabv_i1_isolated_mode else 'unknown',
             'window_status': 'unknown',
             'auth_status': 'unknown',
-            'capture_modes': ['manual_pasteback'],
+            'capture_modes': ['dom_capture', 'browser_dom'] if self._iabv_i1_isolated_mode else ['manual_pasteback'],
             'last_scan_ts': 0.0,
             'last_block_reason': '',
             'action_grammar': [
@@ -9042,7 +9051,9 @@ class ControlCenterViewModel(QObject):
             pass
         # Enrich from CDP probe
         try:
-            if hasattr(self, '_detect_cdp_available'):
+            # Isolated I1 must not probe or select the shared/user Chrome CDP
+            # endpoint. The actual consultation uses its data-root-owned profile.
+            if not self._iabv_i1_isolated_mode and hasattr(self, '_detect_cdp_available'):
                 cdp_result = self._detect_cdp_available()
                 if isinstance(cdp_result, dict):
                     profile['cdp_status'] = 'available' if cdp_result.get('available') else 'unavailable'
@@ -9072,8 +9083,8 @@ class ControlCenterViewModel(QObject):
         # Browser profile path
         try:
             profile['browser_profile_path'] = str(
-                Path(self.config.workspace_root)
-                / 'data' / 'tool_teaching' / 'external_assistants'
+                Path(self.config.data_dir)
+                / 'tool_teaching' / 'external_assistants'
                 / f'{assistant_kind}_program_session' / 'browser_profile'
             )
         except Exception:
@@ -9135,7 +9146,7 @@ class ControlCenterViewModel(QObject):
                 if pkg is None and hasattr(pcs, 'latest_cache'):
                     pkg = pcs.latest_cache
                 if pkg is None:
-                    latest_path = Path(self.config.workspace_root) / 'data' / 'evolution' / 'portable_context' / 'latest.json'
+                    latest_path = Path(self.config.data_dir) / 'evolution' / 'portable_context' / 'latest.json'
                     if latest_path.exists():
                         import json as _json
                         try:

@@ -100,9 +100,13 @@ class TokenRotationLedger:
         self,
         workspace_root: str | Path,
         *,
+        data_root: str | Path | None = None,
         clock: Any | None = None,
     ) -> None:
-        self._root = Path(workspace_root) / 'data' / self.SUBDIR
+        # Use the configured data root when supplied. In normal mode this is
+        # workspace_root/data; isolated I1 mode can point elsewhere.
+        base = Path(data_root) if data_root is not None else Path(workspace_root) / 'data'
+        self._root = base / self.SUBDIR
         self._ledger_path = self._root / self.FILENAME
         self._lock = threading.Lock()
         self._clock = clock or _utc_now

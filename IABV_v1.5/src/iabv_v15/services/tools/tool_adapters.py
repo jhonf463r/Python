@@ -1323,8 +1323,20 @@ class ToolAdapter:
 
     def _browser_profile_dir(self, *, card: ToolCard, task: ToolTask, workspace_root: str) -> str:
         background_capture_mode = str(task.metadata.get('background_capture_mode') or card.metadata.get('background_capture_mode') or '').strip().lower()
+        # ToolTeachService owns the profile path and derives it from AppConfig.data_dir.
+        # Prefer that exact path instead of reconstructing it from workspace_root.
+        supplied_profile = str(
+            task.metadata.get('session_profile_dir')
+            or task.metadata.get('browser_profile_dir')
+            or card.metadata.get('browser_profile_dir')
+            or ''
+        ).strip()
+        if supplied_profile:
+            return supplied_profile
+        if os.environ.get('IABV_I1_ISOLATED_MODE', '').strip() == '1' and background_capture_mode == 'browser_dom':
+            raise RuntimeError('isolated_browser_profile_missing')
         if background_capture_mode != 'browser_dom':
-            return str(task.metadata.get('browser_profile_dir') or card.metadata.get('browser_profile_dir') or '')
+            return ''
         assistant_kind = str(task.metadata.get('assistant_kind') or card.metadata.get('assistant_kind') or card.tool_id).strip().lower() or card.tool_id
         profile_root = Path(workspace_root) / 'data' / 'tool_teaching' / 'external_assistants' / f'{assistant_kind}_program_session' / 'browser_profile'
         profile_root.mkdir(parents=True, exist_ok=True)
