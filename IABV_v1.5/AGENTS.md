@@ -36,6 +36,22 @@ Current method status, reuse evidence, next action, technical gates and permissi
 
 ---
 
+## Muda de Piel — non-destructive repository and organism evolution (2026-11-04)
+
+The Owner's “mudar de piel” principle means **reorganize the existing organism as evidence, objectives and circumstances change while preserving the lineage of what it learned**. It is not a cleanup purge, branch reset, memory rewrite, or permission to delete old artifacts.
+
+Use the detailed, evidence-bound protocol in [the master objective's Muda de Piel section](https://github.com/jhonf463r/Python/issues/454#issuecomment-6636492217) and the exact whole-tree inventory in [the repository hygiene/evidence register](https://github.com/jhonf463r/Python/issues/605#issuecomment-6636469506). Those records are method/inventory references, **not a second live task router**. CURRENT-STATE.md continues to own ACTIVE_TASK, NEXT_ACTION, technical gates and permissions.
+
+Before moving or retiring any repository object, classify it as one of:
+`CANONICAL_ACTIVE`, `ACTIVE_CANDIDATE`, `HISTORICAL_EVIDENCE`, `REPRODUCIBLE_GENERATED`, `VENDOR_COMPATIBILITY`, `SENSITIVE_QUARANTINE`, or `UNKNOWN`. `UNKNOWN` is retained, not discarded. Age, size, duplicate blob, ignored status or absence of an open PR is never sufficient deletion evidence.
+
+The bounded evolution cycle is:
+`OBSERVE → RECONCILE → REUSE/COMPOSE → WIRE/REPAIR → PRESERVE OLD LINEAGE → STAGE ISOLATED CANDIDATE → VALIDATE EXACT REVISION → ADOPT WITH AUTHORITY → RECORD KNOWLEDGE DELTA → RE-OBSERVE`.
+
+For every candidate transition, pin the exact main/base/HEAD/tree/blob refs, producer and consumers, ownership, evidence class, risk, rollback path and validation level. Keep structural existence, source verification, dependency wiring, invocation, observed behavior, tests, build and runtime as separate stages. A test file is not a test result; a mergeable flag is not validation; a persisted artifact is not causal learning.
+
+Do not create a second queue, scheduler, router, graph or memory store to repair an integration gap. Do not delete generated data, vendor bundles, historical records, credentials/session artifacts, or branches without provenance/consumer/retention review and the required separate authority. Keep AUTOMATIC_FOLLOW_ON=FALSE and stop after one bounded transition to observe its result.
+
 <!-- UAAL-D020 — shared cross-AI method; CURRENT-STATE.md remains the sole route authority. -->
 ## UAAL-D020 — verified progress and cross-AI memory activation (2026-10-28)
 
