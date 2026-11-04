@@ -280,3 +280,12 @@ Before requesting user-side transport or another prompt, compare the actual auth
 The advance contract must identify which dependency the transport step closes: source availability, source identity, complete package receipt, review-scope lock or substantive inspection. A prompt written, link generated, packet sent or repository listed is preparation until the receiver acknowledges the complete package and produces the expected source/phase evidence.
 
 Acceptance remains falsifiable: on a later non-identical task, show that the destination-specific preflight reduced an avoidable Owner round-trip or prevented a false progress claim without increasing permission risk. Until then, mark causal reuse NOT_TESTED.
+
+
+### 11.1 Phase-boundary checkpoint reuse
+
+1. Treat phase-boundary continuity as an artifact dependency, not a conversation-name dependency. Before repeating a completed phase or asking the Owner to relay context, check whether the complete frozen checkpoint defined by D021 section 6F.9.7 and Boot Kit section 14.6 is available. Reuse it only when task/revision identity, complete contents, coverage, provenance and identity status match. A copied timestamp, summary, prompt or link without the report content is not a checkpoint.
+2. If Phase A was frozen but a continuation session lacks its report, do not restart Phase A automatically and do not open B/C on assertion alone. First retrieve or request only the missing complete checkpoint through an already-authorized source. If complete, continue only the already-authorized dependent phase in the correct role and require its ACK. Record this as transport/reuse of an existing result, not new substantive progress.
+3. If no valid checkpoint exists, stop only the dependent phase with the exact missing artifact and preserve the original Phase-A status. Do not manufacture another generic prompt, ask the Owner to repeat canonical repository facts, or infer why the report is missing.
+
+Acceptance remains falsifiable: on a later non-identical task, show that checkpoint reuse prevented a needless restart or Owner relay while preserving task/revision identity, review independence, provenance and all phase acceptance boundaries. Until observed, CAUSAL_REUSE=NOT_TESTED; the documentation change itself is not proof of behavioral reuse or automatic cross-session delivery.
