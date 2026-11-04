@@ -603,7 +603,11 @@ Where a receiving route has truncated a long dispatch, do not resend one huge pr
 
 ### 14.3 Phase lock and continuity
 
-A new conversation must receive its own complete task packet. Never assume the active thread inherited a lock or phase output from an earlier Claude conversation. A phase lock is valid only when the correlated lock receipt is visible in that exact thread and precedes source inspection. A later same-thread continuation may proceed only when the required earlier phase report is visible in that thread. If Phase A is absent, B/C remain blocked.
+A task that requires NEW_SEPARATE must be dispatched into a genuinely new/selectable reviewer conversation. The Phase-A scope lock must be acknowledged there before source inspection, and the complete Phase-A report must be frozen there. A timestamp, copied claim, prompt label or remembered summary from another conversation does not create either artifact.
+
+Do not require every later phase to remain in the same conversation. Once Phase A is frozen, B/C may continue in the same thread only when the complete frozen report remains visible there, or in a new continuation thread only when the complete portable checkpoint in section 14.6 is supplied, validated and acknowledged. The continuation receiver is a B/C adjudicator/auditor, not the Phase-A reviewer; it must state SESSION_CONTINUITY=PORTABLE_CHECKPOINT and preserve the original context-separation, prior-exposure and source-coverage classifications.
+
+If neither the complete same-thread report nor a valid checkpoint is present, B/C remain blocked as dependent phases. Request only the exact missing checkpoint/report; do not restart Phase A automatically, ask for repository URLs/SHAs already available or infer why the artifact is absent.
 
 ### 14.4 Read-only acquisition ladder
 
@@ -618,3 +622,27 @@ Record each attempt and error class. A constructed-but-unsurfaced URL rejected b
 ### 14.5 Evidence and learning claim
 
 Preserve the canonical D021 evidence fields. Do not claim reviewer-side hashing when the reviewer only received a SHA field from GitHub. Do not claim a full review from a source list, metadata or a partial file. Keep pasted external responses ACTOR_REPORTED until adjudicated. A documentation amendment records a reusable method; it does not prove automatic cross-chat use, general Claude behaviour, model-weight updates or causal learning. Validate reuse on a later non-identical task.
+
+
+### 14.6 Portable frozen-phase checkpoint
+
+Use this contract only after the preceding phase has actually reached a frozen disposition. It is a transportable evidence artifact, not a second memory store or a way to bypass phase acceptance.
+
+The sender must produce one self-contained checkpoint with:
+- CHECKPOINT_ID, parent DISPATCH_ID/TASK_ID, phase, frozen disposition and freeze timestamp;
+- repository owner/name and canonical URL; exact BASE/HEAD and relevant tree/parent identities;
+- complete changed-path and in-scope source-item manifests, expected counts and exclusions;
+- the complete pre-inspection scope lock and complete frozen Phase-A report, preserved verbatim;
+- source acquisition and identity-verification methods; per-item retrieval/identity/inspection coverage; reviewer-context separation and prior-exposure classification;
+- findings with unique IDs/evidence, severity counts, explicit limitations and a declaration of what was not opened during Phase A;
+- exact byte length and digest algorithm/value/basis when computable. Do not claim cryptographic integrity unless the receiver can recompute from the actual bytes.
+
+The continuation receiver must:
+1. Identify itself as the B/C adjudicator/auditor, not the Phase-A reviewer.
+2. Confirm the complete checkpoint content is actually present, not merely referenced by a timestamp or link.
+3. Match task, repository, immutable BASE/HEAD, scope and source-item manifest; reject a mismatch rather than substituting a newer revision.
+4. Recompute the digest when permitted; otherwise set identity UNVERIFIED and retain the supplied provenance without claiming byte integrity.
+5. ACK CHECKPOINT_ID, phase, frozen disposition, byte count, digest/identity result, completeness, task/revision match and missing fields before opening receipts or beginning dependent work.
+6. Preserve Phase A verbatim. Place B/C findings and live-main/canonical-state reconciliation in separate later records; never rewrite Phase-A findings retrospectively.
+
+If the checkpoint is missing, truncated, mismatched, incomplete or unverifiable under the task's acceptance criteria, the dependent phase remains blocked. Do not restart a completed Phase A automatically and do not ask the Owner to repeat repository facts already carried in the manifest.
