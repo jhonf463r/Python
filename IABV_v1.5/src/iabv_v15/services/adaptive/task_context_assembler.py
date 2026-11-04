@@ -1365,6 +1365,7 @@ class TaskContextAssembler:
                             'recommended_config_signature': recommendation.recommended_config_signature,
                             'score': recommendation.score,
                             'confidence': recommendation.confidence,
+                            'created_at_utc': recommendation.created_at_utc.isoformat(),
                             'rationale': recommendation.rationale,
                             'supporting_run_ids': list(recommendation.supporting_run_ids),
                             'winning_trace_ids': list((recommendation.metadata or {}).get('winning_trace_ids') or []),

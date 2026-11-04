@@ -2753,6 +2753,7 @@ class AdaptiveTaskOrchestrator:
                 world_model=world_model,
                 env_self_model=env_self_model,
                 governance_rules=governance_snapshot,
+                control_master_digest=control_master_digest,
             )
             system_prompt_mode = 'compact'
         else:
@@ -2903,11 +2904,21 @@ class AdaptiveTaskOrchestrator:
             return None
         try:
             state = service.current_state(refresh=False)
+            work_queue: list[dict[str, Any]] | None = None
+            work_queue_status = "UNVERIFIED"
             try:
-                work_queue = service.current_work_queue(limit=10)
+                observed_queue = service.current_work_queue(limit=10)
+                if isinstance(observed_queue, list):
+                    work_queue = observed_queue
+                    work_queue_status = "EMPTY_QUEUE" if not observed_queue else "AVAILABLE"
             except Exception:
-                work_queue = []
-            return builder.build(state, work_queue=work_queue)
+                # A failed read is not an empty queue.
+                work_queue_status = "UNAVAILABLE"
+            return builder.build(
+                state,
+                work_queue=work_queue,
+                work_queue_status=work_queue_status,
+            )
         except Exception:
             return None
 

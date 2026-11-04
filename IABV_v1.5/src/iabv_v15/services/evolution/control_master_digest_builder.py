@@ -57,6 +57,7 @@ class ControlMasterDigestBuilder:
         autonomy_metrics: dict[str, Any] | None = None,
         coordination_patterns: list[dict[str, Any]] | None = None,
         work_queue: list[dict[str, Any]] | None = None,
+        work_queue_status: str | None = None,
     ) -> ControlMasterDigest:
         rules = [
             rule
@@ -102,6 +103,17 @@ class ControlMasterDigestBuilder:
         autonomy_brief = _render_autonomy_metrics(autonomy_metrics)
         coordination_brief = _render_coordination_patterns(coordination_patterns)
         wq_brief, wq_counts = _render_work_queue(work_queue, limit=5)
+        if work_queue_status is None:
+            resolved_queue_status = (
+                "UNVERIFIED" if work_queue is None
+                else ("EMPTY_QUEUE" if not work_queue else "AVAILABLE")
+            )
+        else:
+            resolved_queue_status = str(work_queue_status).strip().upper()
+            if resolved_queue_status not in {
+                "AVAILABLE", "EMPTY_QUEUE", "UNAVAILABLE", "UNVERIFIED",
+            }:
+                resolved_queue_status = "UNVERIFIED"
 
         digest = ControlMasterDigest(
             current_vision=(state.current_vision or "").strip(),
@@ -116,6 +128,7 @@ class ControlMasterDigestBuilder:
             coordination_patterns_brief=coordination_brief,
             work_queue_brief=wq_brief,
             work_queue_counts=wq_counts,
+            work_queue_status=resolved_queue_status,
             source_state_id=state.state_id,
         )
         return _truncate(digest, self.max_chars)
@@ -206,6 +219,15 @@ def _render_tests_brief(tests_state: dict) -> str:
 
 def render_digest_markdown(digest: ControlMasterDigest) -> str:
     lines: list[str] = ["## Control Maestro (digest)"]
+    lines.append(f"Estado de cola: {digest.work_queue_status}")
+    if digest.work_queue_status == "EMPTY_QUEUE":
+        lines.append("Cola consultada correctamente: vacía.")
+    elif digest.work_queue_status == "UNAVAILABLE":
+        lines.append("Cola no disponible: la consulta falló; no inferir que está vacía.")
+    elif digest.work_queue_status == "UNVERIFIED":
+        lines.append("Cola no verificada; no inferir que está vacía.")
+    if digest.source_state_id:
+        lines.append(f"Control Master state: {digest.source_state_id}")
     if digest.current_vision:
         lines.append(f"Vision: {digest.current_vision}")
     if digest.rules_brief:

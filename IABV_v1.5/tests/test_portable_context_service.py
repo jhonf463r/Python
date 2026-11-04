@@ -327,6 +327,11 @@ def test_flush_startup_health_patches_latest_json_in_place() -> None:
         latest_path = Path(pcs.storage.resolve('portable_context/latest.json'))
         assert latest_path.exists()
 
+        # Record whole-context timestamps before a section-only update.
+        before = json.loads(latest_path.read_text(encoding='utf-8'))
+        original_created_at = before['created_at_utc']
+        original_full_generation = before['full_context_generated_at_utc']
+        original_updated_at = before['updated_at_utc']
         # Tamper the startup_health section to simulate stale data.
         payload = json.loads(latest_path.read_text(encoding='utf-8'))
         for section in payload.get('sections', []):
@@ -361,6 +366,32 @@ def test_flush_startup_health_patches_latest_json_in_place() -> None:
             raise AssertionError('startup_health section not found in patched latest.json')
 
         assert patched['metadata']['startup_health']['status'] == 'analyzed'
+        assert patched['created_at_utc'] == original_created_at
+        assert patched['full_context_generated_at_utc'] == original_full_generation
+        assert patched['updated_at_utc'] >= original_updated_at
+        assert patched['metadata']['startup_health_updated_at_utc']
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_partial_section_update_does_not_extend_whole_package_freshness() -> None:
+    from datetime import datetime, timedelta, timezone
+    from iabv_v15.domain.models import PortableContextPackage
+
+    root = _workspace('partial_update_freshness')
+    try:
+        bootstrap = AppBootstrap(str(root))
+        now = datetime.now(timezone.utc)
+        generated = now - timedelta(hours=2)
+        package = PortableContextPackage(
+            created_at_utc=generated,
+            updated_at_utc=now,
+            full_context_generated_at_utc=generated,
+        )
+        assert not bootstrap.portable_context_service._is_fresh(package, max_age_seconds=300)
+        assert bootstrap.portable_context_service._is_fresh(
+            package, max_age_seconds=3 * 60 * 60
+        )
     finally:
         shutil.rmtree(root, ignore_errors=True)
 

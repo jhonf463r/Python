@@ -317,6 +317,43 @@ class TestDigestRendersWorkQueue:
         assert 'Work queue counts' in md
 
 
+    def test_queue_status_keeps_empty_unavailable_and_unverified_distinct(self) -> None:
+        state = ControlMasterState()
+        builder = ControlMasterDigestBuilder(max_chars=4000)
+        unverified = builder.build(state)
+        empty = builder.build(state, work_queue=[], work_queue_status="EMPTY_QUEUE")
+        unavailable = builder.build(state, work_queue=None, work_queue_status="UNAVAILABLE")
+        available = builder.build(state, work_queue=[{
+            "title": "Close highest-priority objective",
+            "status": "active",
+            "priority_label": "critical",
+            "source": "objective_repository",
+            "next_action": "Inspect evidence refs",
+        }])
+        assert unverified.work_queue_status == "UNVERIFIED"
+        assert empty.work_queue_status == "EMPTY_QUEUE"
+        assert unavailable.work_queue_status == "UNAVAILABLE"
+        assert available.work_queue_status == "AVAILABLE"
+        assert "UNAVAILABLE" in render_digest_markdown(unavailable)
+
+    def test_orchestrator_preserves_work_queue_read_failure(self) -> None:
+        from iabv_v15.services.adaptive.adaptive_task_orchestrator import AdaptiveTaskOrchestrator
+
+        class _QueueReadFailure:
+            def current_state(self, *, refresh: bool = False) -> ControlMasterState:
+                return ControlMasterState()
+
+            def current_work_queue(self, *, limit: int = 10) -> list[dict[str, Any]]:
+                raise RuntimeError("queue storage unavailable")
+
+        orchestrator = object.__new__(AdaptiveTaskOrchestrator)
+        orchestrator.control_master_service = _QueueReadFailure()
+        orchestrator.control_master_digest_builder = ControlMasterDigestBuilder()
+        digest = orchestrator._control_master_digest()
+        assert digest is not None
+        assert digest.work_queue_status == "UNAVAILABLE"
+        assert digest.work_queue_brief == []
+
 class TestPortableContextCanonicalQueue:
     """portable context muestra la cola canónica."""
 
