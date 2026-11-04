@@ -731,6 +731,22 @@ class TestQueueSourceFailureVisibilityR2:
         assert unavailable.signal_reason == "OBJECTIVES_READ_FAILED:active"
         assert unavailable.source_coverage["objective_repository"] == "READ_PARTIAL"
 
+        # Contradictory status/content pairs must not become available.
+        mismatched_empty = builder.build(
+            state, work_queue=[], work_queue_status="AVAILABLE"
+        )
+        assert mismatched_empty.signal_status == "UNVERIFIED"
+        assert mismatched_empty.work_queue_status == "UNVERIFIED"
+        assert mismatched_empty.work_queue_brief == []
+
+        untrusted_partial = builder.build(
+            state,
+            work_queue=[{"title": "partial item", "status": "active"}],
+            work_queue_status="UNAVAILABLE",
+        )
+        assert untrusted_partial.signal_status == "UNAVAILABLE"
+        assert untrusted_partial.work_queue_brief == []
+
     def test_objective_source_failures_are_recorded(self) -> None:
         ws = _workspace()
         try:

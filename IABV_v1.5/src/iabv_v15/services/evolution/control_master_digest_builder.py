@@ -117,6 +117,21 @@ class ControlMasterDigestBuilder:
             }:
                 resolved_queue_status = "UNVERIFIED"
 
+        # Enforce agreement between the declared queue state and the actual read value.
+        # Contradictory caller input is epistemically UNVERIFIED, never silently repaired.
+        if resolved_queue_status == "AVAILABLE" and (
+            not isinstance(work_queue, list) or not work_queue
+        ):
+            resolved_queue_status = "UNVERIFIED"
+        elif resolved_queue_status == "EMPTY_QUEUE" and (
+            not isinstance(work_queue, list) or bool(work_queue)
+        ):
+            resolved_queue_status = "UNVERIFIED"
+
+        if resolved_queue_status in {"UNAVAILABLE", "UNVERIFIED"}:
+            # Do not expose partial/unverified queue items as actionable prompt content.
+            wq_brief, wq_counts = [], {}
+
         resolved_signal_status = (
             "AVAILABLE" if resolved_queue_status in {"AVAILABLE", "EMPTY_QUEUE"}
             else ("UNAVAILABLE" if resolved_queue_status == "UNAVAILABLE" else "UNVERIFIED")
