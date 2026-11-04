@@ -40,7 +40,7 @@ Current method status, reuse evidence, next action, technical gates and permissi
 
 The Owner's “mudar de piel” principle means **reorganize the existing organism as evidence, objectives and circumstances change while preserving the lineage of what it learned**. It is not a cleanup purge, branch reset, memory rewrite, or permission to delete old artifacts.
 
-Use the detailed, evidence-bound protocol in [the master objective's Muda de Piel section](https://github.com/jhonf463r/Python/issues/454#issuecomment-6634279694) and the exact whole-tree inventory in [the repository hygiene/evidence register](https://github.com/jhonf463r/Python/issues/605#issuecomment-6636469506). Those records are method/inventory references, **not a second live task router**. CURRENT-STATE.md continues to own ACTIVE_TASK, NEXT_ACTION, technical gates and permissions.
+Use the detailed, evidence-bound protocol in [the master objective's Muda de Piel section](https://github.com/jhonf463r/Python/issues/454#issuecomment-6636492217) and the exact whole-tree inventory in [the repository hygiene/evidence register](https://github.com/jhonf463r/Python/issues/605#issuecomment-6636469506). Those records are method/inventory references, **not a second live task router**. CURRENT-STATE.md continues to own ACTIVE_TASK, NEXT_ACTION, technical gates and permissions.
 
 Before moving or retiring any repository object, classify it as one of:
 `CANONICAL_ACTIVE`, `ACTIVE_CANDIDATE`, `HISTORICAL_EVIDENCE`, `REPRODUCIBLE_GENERATED`, `VENDOR_COMPATIBILITY`, `SENSITIVE_QUARANTINE`, or `UNKNOWN`. `UNKNOWN` is retained, not discarded. Age, size, duplicate blob, ignored status or absence of an open PR is never sufficient deletion evidence.
