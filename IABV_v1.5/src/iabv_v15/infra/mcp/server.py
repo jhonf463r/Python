@@ -768,24 +768,33 @@ class IABVMCPServer:
             # window; expose its true age rather than silently calling it fresh.
             generated_value = result.get("full_context_generated_at_utc")
             freshness_basis = "full_context_generated_at_utc"
-            if not generated_value:
-                generated_value = result.get("created_at_utc")
-                freshness_basis = "created_at_utc_legacy_fallback"
-            try:
-                generated_at = datetime.fromisoformat(
-                    str(generated_value).replace("Z", "+00:00")
-                )
-                if generated_at.tzinfo is None:
-                    generated_at = generated_at.replace(tzinfo=timezone.utc)
-                age_seconds = max(
-                    0,
-                    int((datetime.now(timezone.utc) - generated_at).total_seconds()),
-                )
-                freshness_status = "FRESH" if age_seconds <= requested_max_age else "STALE"
-            except (TypeError, ValueError):
+            metadata = result.get("metadata") or {}
+            if (
+                not generated_value
+                and metadata.get("source") == "lightweight_unresolved_package"
+            ):
                 age_seconds = None
                 freshness_status = "UNVERIFIED"
-                freshness_basis = "timestamp_unavailable"
+                freshness_basis = "full_context_generation_unavailable"
+            else:
+                if not generated_value:
+                    generated_value = result.get("created_at_utc")
+                    freshness_basis = "created_at_utc_legacy_fallback"
+                try:
+                    generated_at = datetime.fromisoformat(
+                        str(generated_value).replace("Z", "+00:00")
+                    )
+                    if generated_at.tzinfo is None:
+                        generated_at = generated_at.replace(tzinfo=timezone.utc)
+                    age_seconds = max(
+                        0,
+                        int((datetime.now(timezone.utc) - generated_at).total_seconds()),
+                    )
+                    freshness_status = "FRESH" if age_seconds <= requested_max_age else "STALE"
+                except (TypeError, ValueError):
+                    age_seconds = None
+                    freshness_status = "UNVERIFIED"
+                    freshness_basis = "timestamp_unavailable"
             result["freshness"] = {
                 "status": freshness_status,
                 "basis": freshness_basis,

@@ -19,7 +19,7 @@ Stop: do not merge, activate runtime, or run CI while GitHub Support billing rev
 
 ## Changes
 
-ST-M01 — PortableContextPackage now distinguishes last full generation from last partial mutation. The MCP response includes FRESH, STALE or UNVERIFIED, the age, the requested/effective age windows and whether the rich-snapshot extension was used. Legacy packages fall back to created_at_utc.
+ST-M01 — PortableContextPackage now distinguishes last full generation from last partial mutation. The MCP response includes FRESH, STALE or UNVERIFIED, the age, the requested/effective age windows and whether the rich-snapshot extension was used. Legacy full snapshots fall back to created_at_utc; lightweight unresolved packages remain UNVERIFIED and cannot renew full-context freshness.
 
 ST-M02 — the compact prompt now accepts the existing ControlMasterDigest and includes its queue, objective and risk signals. The full prompt renders the queue status and work items.
 

@@ -396,6 +396,25 @@ def test_partial_section_update_does_not_extend_whole_package_freshness() -> Non
         shutil.rmtree(root, ignore_errors=True)
 
 
+def test_lightweight_unresolved_package_is_not_fresh_as_full_context() -> None:
+    from datetime import datetime, timezone
+    from iabv_v15.domain.models import PortableContextPackage
+
+    root = _workspace('lightweight_context_unverified')
+    try:
+        bootstrap = AppBootstrap(str(root))
+        package = PortableContextPackage(
+            created_at_utc=datetime.now(timezone.utc),
+            metadata={'source': 'lightweight_unresolved_package'},
+        )
+        assert not bootstrap.portable_context_service._is_fresh(
+            package,
+            max_age_seconds=300,
+        )
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
 def test_flush_startup_health_returns_false_when_no_latest_json() -> None:
     """flush_startup_health returns False when latest.json doesn't exist."""
     root = _workspace('flush_no_latest')

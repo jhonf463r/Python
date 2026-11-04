@@ -492,7 +492,14 @@ class PortableContextService:
 
     def _is_fresh(self, package: PortableContextPackage, *, max_age_seconds: int) -> bool:
         try:
-            # Legacy snapshots fall back to creation time. A partial flush
+            # A lightweight unresolved package is not a complete context
+            # snapshot, even when its own created_at timestamp is recent.
+            if (
+                package.full_context_generated_at_utc is None
+                and (package.metadata or {}).get('source') == 'lightweight_unresolved_package'
+            ):
+                return False
+            # Legacy full snapshots fall back to creation time. A partial flush
             # cannot renew the freshness window for every section.
             generated_at = package.full_context_generated_at_utc or package.created_at_utc
             age_seconds = (utc_now() - generated_at).total_seconds()

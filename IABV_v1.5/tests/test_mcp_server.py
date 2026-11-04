@@ -343,6 +343,24 @@ def test_portable_context_get_reports_stale_rich_snapshot_without_discarding_it(
     assert payload["sections"][0]["section_id"] == "historical-rich-section"
 
 
+def test_portable_context_get_marks_lightweight_package_unverified() -> None:
+    from datetime import datetime, timezone
+
+    now = datetime.now(timezone.utc)
+    package = PortableContextPackage(
+        created_at_utc=now,
+        metadata={"source": "lightweight_unresolved_package"},
+        sections=[],
+    )
+    pc = _FakePortableContextService(package)
+    server = IABVMCPServer(_build_container(portable_context_service=pc))
+    payload = _call_tool(server, "portable_context_get", refresh=True, max_age_seconds=300)
+
+    assert payload["freshness"]["status"] == "UNVERIFIED"
+    assert payload["freshness"]["basis"] == "full_context_generation_unavailable"
+    assert payload["freshness"]["age_seconds"] is None
+
+
 def test_self_examination_current_returns_review_and_summary() -> None:
     server = IABVMCPServer(_build_container())
     payload = _call_tool(server, "self_examination_current")

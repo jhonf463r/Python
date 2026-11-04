@@ -285,13 +285,7 @@ class SystemPromptBuilder:
         parts = ['## Control Maestro (compacto)', f'Estado de cola: {digest.work_queue_status}']
         if digest.source_state_id:
             parts.append(f'State ID: {digest.source_state_id}')
-        if digest.active_objectives_brief:
-            parts.append('Objetivos: ' + ', '.join(digest.active_objectives_brief[:3]))
-        if digest.rules_brief:
-            parts.append('Reglas: ' + '; '.join(digest.rules_brief[:2]))
-        if digest.work_queue_counts:
-            counts = ', '.join(f'{key}={value}' for key, value in sorted(digest.work_queue_counts.items()))
-            parts.append(f'Conteos: {counts}')
+        # Keep next actions immediately after status so they survive prompt truncation.
         if digest.work_queue_brief:
             parts.append('Siguientes acciones:')
             parts.extend(f'- {item[:180]}' for item in digest.work_queue_brief[:3])
@@ -299,8 +293,17 @@ class SystemPromptBuilder:
             parts.append('Cola consultada correctamente: vacía.')
         elif digest.work_queue_status == 'UNAVAILABLE':
             parts.append('Cola no disponible; no inferir que está vacía.')
+        elif digest.work_queue_status == 'AVAILABLE':
+            parts.append('Cola consultada; no hay elementos textuales en la proyección.')
         else:
             parts.append('Cola no verificada; no inferir que está vacía.')
+        if digest.active_objectives_brief:
+            parts.append('Objetivos: ' + ', '.join(digest.active_objectives_brief[:3]))
+        if digest.rules_brief:
+            parts.append('Reglas: ' + '; '.join(digest.rules_brief[:2]))
+        if digest.work_queue_counts:
+            counts = ', '.join(f'{key}={value}' for key, value in sorted(digest.work_queue_counts.items()))
+            parts.append(f'Conteos: {counts}')
         if digest.current_risks:
             parts.append('Riesgos: ' + '; '.join(digest.current_risks[:2]))
         if digest.unresolved:
