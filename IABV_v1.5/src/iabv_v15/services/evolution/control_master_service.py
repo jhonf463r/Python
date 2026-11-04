@@ -19,6 +19,7 @@ from __future__ import annotations
 import hashlib
 import re
 from pathlib import Path
+from threading import local
 from typing import Any
 
 from iabv_v15.domain.models import (
@@ -64,6 +65,33 @@ class ControlMasterService:
         self.platform_pending_queue = platform_pending_queue
         self.workspace_root = workspace_root
         self.recent_decisions_limit = recent_decisions_limit
+        self._work_queue_diagnostics = local()
+
+    @property
+    def last_work_queue_errors(self) -> tuple[str, ...]:
+        """Stable error codes for this thread's most recent queue projection."""
+        return tuple(getattr(self._work_queue_diagnostics, "errors", ()))
+
+    @property
+    def last_work_queue_source_coverage(self) -> dict[str, str]:
+        """Per-source read coverage for this thread's most recent queue projection."""
+        return dict(getattr(self._work_queue_diagnostics, "coverage", {}))
+
+    def _record_work_queue_error(self, code: str) -> None:
+        errors = getattr(self._work_queue_diagnostics, "errors", None)
+        if errors is None:
+            errors = []
+            self._work_queue_diagnostics.errors = errors
+        if code not in errors:
+            errors.append(code)
+
+    def _record_work_queue_source(self, source: str, status: str) -> None:
+        coverage = getattr(self._work_queue_diagnostics, "coverage", None)
+        if coverage is None:
+            coverage = {}
+            self._work_queue_diagnostics.coverage = coverage
+        coverage[source] = status
+
 
     # ------------------------------------------------------------------
     # Read API
@@ -295,6 +323,8 @@ class ControlMasterService:
 
         COMPLETED items are excluded.  Projection is idempotent.
         """
+        self._work_queue_diagnostics.errors = []
+        self._work_queue_diagnostics.coverage = {}
         items: list[dict[str, Any]] = []
         seen_ids: set[str] = set()
 
@@ -316,6 +346,7 @@ class ControlMasterService:
         # 6. Tests state
         state = self.current_state()
         ts = state.current_tests_state
+        self._record_work_queue_source("tests_state", "READ_OK")
         if ts and ts.get('failed', 0) > 0:
             tid = 'tests:failing'
             if tid not in seen_ids:
@@ -375,12 +406,16 @@ class ControlMasterService:
         self, seen_ids: set[str],
     ) -> list[dict[str, Any]]:
         if self.objective_repository is None:
+            self._record_work_queue_source("objective_repository", "NOT_CONFIGURED")
             return []
         items: list[dict[str, Any]] = []
+        read_failed = False
         for status_val in (ObjectiveStatus.ACTIVE, ObjectiveStatus.PENDING, ObjectiveStatus.BLOCKED):
             try:
                 nodes = self.objective_repository.list_recent(status=status_val, limit=20)
             except Exception:
+                read_failed = True
+                self._record_work_queue_error(f"OBJECTIVES_READ_FAILED:{status_val.value}")
                 continue
             for node in nodes:
                 oid = f'objective:{node.objective_id}'
@@ -407,6 +442,9 @@ class ControlMasterService:
                     updated_at=node.updated_at_utc.isoformat(),
                     reason=node.summary,
                 ))
+        self._record_work_queue_source(
+            "objective_repository", "READ_PARTIAL" if read_failed else "READ_OK"
+        )
         return items
 
     def _project_platform_pending_items(
@@ -414,12 +452,19 @@ class ControlMasterService:
     ) -> list[dict[str, Any]]:
         queue = self.platform_pending_queue
         if queue is None:
+            self._record_work_queue_source("platform_pending_queue", "NOT_CONFIGURED")
             return []
         items: list[dict[str, Any]] = []
+        if not hasattr(queue, "list_all"):
+            self._record_work_queue_error("PLATFORM_PENDING_QUEUE_READER_UNAVAILABLE")
+            self._record_work_queue_source("platform_pending_queue", "READER_UNAVAILABLE")
+            return items
         try:
             from iabv_v15.domain.models import PendingTaskStatus as _PTS
-            all_tasks = queue.list_all() if hasattr(queue, 'list_all') else []
+            all_tasks = queue.list_all()
         except Exception:
+            self._record_work_queue_error("PLATFORM_PENDING_QUEUE_READ_FAILED")
+            self._record_work_queue_source("platform_pending_queue", "READ_FAILED")
             return []
         for task in all_tasks:
             if task.status == _PTS.COMPLETED:
@@ -446,24 +491,39 @@ class ControlMasterService:
                 updated_at=task.updated_at.isoformat(),
                 reason=task.reason or task.description,
             ))
+        self._record_work_queue_source("platform_pending_queue", "READ_OK")
         return items
 
     def _project_pending_issue_items(
         self, seen_ids: set[str],
     ) -> list[dict[str, Any]]:
         if self.pending_issue_repository is None:
+            self._record_work_queue_source("pending_issue_repository", "NOT_CONFIGURED")
             return []
         items: list[dict[str, Any]] = []
         candidates: list[Any] = []
+        method_errors: list[str] = []
+        method_succeeded = False
         for method_name in ('list_recent', 'list_open', 'list_pending', 'list_all'):
             method = getattr(self.pending_issue_repository, method_name, None)
             if method is None:
                 continue
             try:
                 candidates = list(method())
+                method_succeeded = True
                 break
             except Exception:
+                method_errors.append(method_name)
                 continue
+        if not method_succeeded:
+            self._record_work_queue_error(
+                "PENDING_ISSUES_READ_FAILED" if method_errors else "PENDING_ISSUES_READER_UNAVAILABLE"
+            )
+            self._record_work_queue_source(
+                "pending_issue_repository", "READ_FAILED" if method_errors else "READER_UNAVAILABLE"
+            )
+        else:
+            self._record_work_queue_source("pending_issue_repository", "READ_OK")
         for issue in candidates[:15]:
             iid = f'issue:{getattr(issue, "issue_id", "") or id(issue)}'
             if iid in seen_ids:
@@ -495,8 +555,10 @@ class ControlMasterService:
         self, seen_ids: set[str],
     ) -> list[dict[str, Any]]:
         if self.self_examination_service is None:
+            self._record_work_queue_source("self_examination_service", "NOT_CONFIGURED")
             return []
         snapshot = None
+        method_errors: list[str] = []
         for method_name in ('current_review', 'current_snapshot', 'latest_snapshot', 'current', 'latest'):
             method = getattr(self.self_examination_service, method_name, None)
             if method is None:
@@ -505,9 +567,17 @@ class ControlMasterService:
                 snapshot = method()
                 break
             except Exception:
+                method_errors.append(method_name)
                 continue
         if snapshot is None:
+            self._record_work_queue_error(
+                "OSES_FINDINGS_READ_FAILED" if method_errors else "OSES_FINDINGS_READER_UNAVAILABLE"
+            )
+            self._record_work_queue_source(
+                "self_examination_service", "READ_FAILED" if method_errors else "READER_UNAVAILABLE"
+            )
             return []
+        self._record_work_queue_source("self_examination_service", "READ_OK")
         findings = getattr(snapshot, 'findings', None) or []
         items: list[dict[str, Any]] = []
         for finding in findings:
@@ -551,10 +621,12 @@ class ControlMasterService:
         Resolved-sane episodes are NOT projected (no false positives).
         """
         if not self.workspace_root:
+            self._record_work_queue_source("runtime_audit", "NOT_CONFIGURED")
             return []
         import json as _json
         audit_path = Path(str(self.workspace_root)) / 'data' / 'logs' / 'runtime_audit.jsonl'
         if not audit_path.exists():
+            self._record_work_queue_source("runtime_audit", "NO_FILE")
             return []
         items: list[dict[str, Any]] = []
         try:
@@ -568,6 +640,7 @@ class ControlMasterService:
                 try:
                     event = _json.loads(line)
                 except Exception:
+                    self._record_work_queue_error("RUNTIME_AUDIT_INVALID_JSON_LINE")
                     continue
                 if event.get('kind') != 'interaction_resolved':
                     continue
@@ -607,7 +680,13 @@ class ControlMasterService:
                     ),
                 ))
         except Exception:
-            pass
+            self._record_work_queue_error("RUNTIME_AUDIT_READ_FAILED")
+            self._record_work_queue_source("runtime_audit", "READ_FAILED")
+            return items
+        self._record_work_queue_source(
+            "runtime_audit",
+            "READ_PARTIAL" if "RUNTIME_AUDIT_INVALID_JSON_LINE" in self.last_work_queue_errors else "READ_OK",
+        )
         return items
 
     # ------------------------------------------------------------------

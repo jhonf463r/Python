@@ -61,6 +61,7 @@ class SystemPromptBuilder:
         env_self_model: EnvironmentSelfModel | None,
         *,
         governance_rules: dict[str, Any] | None = None,
+        control_master_digest: ControlMasterDigest | None = None,
         max_chars: int = 3500,
     ) -> str:
         """Build a compact prompt for small local models."""
@@ -70,7 +71,8 @@ class SystemPromptBuilder:
         sections.append((1, self._section_compact_reasoning_contract()))
         sections.append((2, self._section_live_state(world_model)))
         sections.append((3, self._section_hardware(env_self_model)))
-        sections.append((4, self._section_governance(governance_rules)))
+        sections.append((4, self._section_compact_control_master(control_master_digest)))
+        sections.append((5, self._section_governance(governance_rules)))
         return self._truncate(sections, max_chars=max_chars)
 
     @staticmethod
@@ -226,6 +228,29 @@ class SystemPromptBuilder:
         if digest is None:
             return '## Control Maestro\nNo disponible en esta sesion.'
         parts: list[str] = ['## Control Maestro (digest)']
+        parts.append(f'Estado de señal: {digest.signal_status}')
+        if digest.signal_reason:
+            parts.append(f'Diagnóstico: {digest.signal_reason}')
+        if digest.source_coverage:
+            coverage = ', '.join(
+                f'{key}={value}' for key, value in sorted(digest.source_coverage.items())
+            )
+            parts.append(f'Cobertura de fuentes: {coverage}')
+        parts.append(f'Estado de cola: {digest.work_queue_status}')
+        if digest.work_queue_status == 'EMPTY_QUEUE':
+            parts.append('Cola consultada correctamente: vacía.')
+        elif digest.work_queue_status == 'UNAVAILABLE':
+            parts.append('Cola no disponible: la consulta falló; no inferir que está vacía.')
+        elif digest.work_queue_status == 'UNVERIFIED':
+            parts.append('Cola no verificada; no inferir que está vacía.')
+        if digest.source_state_id:
+            parts.append(f'Control Master state: {digest.source_state_id}')
+        if digest.work_queue_counts:
+            counts = ', '.join(f'{key}={value}' for key, value in sorted(digest.work_queue_counts.items()))
+            parts.append(f'Conteos de cola: {counts}')
+        if digest.work_queue_brief:
+            parts.append('Siguientes acciones del panel:')
+            parts.extend(f'- {item}' for item in digest.work_queue_brief)
         if digest.current_vision:
             parts.append(f'Vision: {digest.current_vision}')
         if digest.rules_brief:
@@ -254,6 +279,54 @@ class SystemPromptBuilder:
                 parts.append(f'- {item}')
         if digest.tests_state_brief:
             parts.append(f'Tests: {digest.tests_state_brief}')
+        return '\n'.join(parts)
+
+    @staticmethod
+    def _section_compact_control_master(digest: ControlMasterDigest | None) -> str:
+        """Keep decision-bearing Control Master signals in small-model prompts."""
+        if digest is None:
+            return (
+                '## Control Maestro\n'
+                'UNAVAILABLE: no se obtuvo un digest en esta sesión; '
+                'no asumir que la cola está vacía.'
+            )
+        parts = [
+            '## Control Maestro (compacto)',
+            f'Estado de señal: {digest.signal_status}',
+            f'Estado de cola: {digest.work_queue_status}',
+        ]
+        if digest.signal_reason:
+            parts.append(f'Diagnóstico: {digest.signal_reason[:160]}')
+        if digest.source_coverage:
+            coverage = ', '.join(
+                f'{key}={value}' for key, value in sorted(digest.source_coverage.items())
+            )
+            parts.append(f'Cobertura: {coverage[:180]}')
+        if digest.source_state_id:
+            parts.append(f'State ID: {digest.source_state_id}')
+        # Keep next actions immediately after status so they survive prompt truncation.
+        if digest.work_queue_brief:
+            parts.append('Siguientes acciones:')
+            parts.extend(f'- {item[:180]}' for item in digest.work_queue_brief[:3])
+        elif digest.work_queue_status == 'EMPTY_QUEUE':
+            parts.append('Cola consultada correctamente: vacía.')
+        elif digest.work_queue_status == 'UNAVAILABLE':
+            parts.append('Cola no disponible; no inferir que está vacía.')
+        elif digest.work_queue_status == 'AVAILABLE':
+            parts.append('Cola consultada; no hay elementos textuales en la proyección.')
+        else:
+            parts.append('Cola no verificada; no inferir que está vacía.')
+        if digest.active_objectives_brief:
+            parts.append('Objetivos: ' + ', '.join(digest.active_objectives_brief[:3]))
+        if digest.rules_brief:
+            parts.append('Reglas: ' + '; '.join(digest.rules_brief[:2]))
+        if digest.work_queue_counts:
+            counts = ', '.join(f'{key}={value}' for key, value in sorted(digest.work_queue_counts.items()))
+            parts.append(f'Conteos: {counts}')
+        if digest.current_risks:
+            parts.append('Riesgos: ' + '; '.join(digest.current_risks[:2]))
+        if digest.unresolved:
+            parts.append('UNRESOLVED: ' + '; '.join(digest.unresolved[:2]))
         return '\n'.join(parts)
 
     @staticmethod

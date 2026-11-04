@@ -317,6 +317,43 @@ class TestDigestRendersWorkQueue:
         assert 'Work queue counts' in md
 
 
+    def test_queue_status_keeps_empty_unavailable_and_unverified_distinct(self) -> None:
+        state = ControlMasterState()
+        builder = ControlMasterDigestBuilder(max_chars=4000)
+        unverified = builder.build(state)
+        empty = builder.build(state, work_queue=[], work_queue_status="EMPTY_QUEUE")
+        unavailable = builder.build(state, work_queue=None, work_queue_status="UNAVAILABLE")
+        available = builder.build(state, work_queue=[{
+            "title": "Close highest-priority objective",
+            "status": "active",
+            "priority_label": "critical",
+            "source": "objective_repository",
+            "next_action": "Inspect evidence refs",
+        }])
+        assert unverified.work_queue_status == "UNVERIFIED"
+        assert empty.work_queue_status == "EMPTY_QUEUE"
+        assert unavailable.work_queue_status == "UNAVAILABLE"
+        assert available.work_queue_status == "AVAILABLE"
+        assert "UNAVAILABLE" in render_digest_markdown(unavailable)
+
+    def test_orchestrator_preserves_work_queue_read_failure(self) -> None:
+        from iabv_v15.services.adaptive.adaptive_task_orchestrator import AdaptiveTaskOrchestrator
+
+        class _QueueReadFailure:
+            def current_state(self, *, refresh: bool = False) -> ControlMasterState:
+                return ControlMasterState()
+
+            def current_work_queue(self, *, limit: int = 10) -> list[dict[str, Any]]:
+                raise RuntimeError("queue storage unavailable")
+
+        orchestrator = object.__new__(AdaptiveTaskOrchestrator)
+        orchestrator.control_master_service = _QueueReadFailure()
+        orchestrator.control_master_digest_builder = ControlMasterDigestBuilder()
+        digest = orchestrator._control_master_digest()
+        assert digest is not None
+        assert digest.work_queue_status == "UNAVAILABLE"
+        assert digest.work_queue_brief == []
+
 class TestPortableContextCanonicalQueue:
     """portable context muestra la cola canónica."""
 
@@ -668,3 +705,102 @@ class TestDigestWorkQueueInOrchestrator:
         assert 'Orchestrator sees this' in digest.work_queue_brief[0]
         md = render_digest_markdown(digest)
         assert 'Orchestrator sees this' in md
+
+class TestQueueSourceFailureVisibilityR2:
+    """Source failures and omitted source coverage remain explicit."""
+
+    def test_queue_and_signal_statuses_are_orthogonal(self) -> None:
+        state = ControlMasterState()
+        builder = ControlMasterDigestBuilder(max_chars=4000)
+        unverified = builder.build(state)
+        empty = builder.build(state, work_queue=[], work_queue_status="EMPTY_QUEUE")
+        unavailable = builder.build(
+            state,
+            work_queue=None,
+            work_queue_status="UNAVAILABLE",
+            signal_reason="OBJECTIVES_READ_FAILED:active",
+            source_coverage={"objective_repository": "READ_PARTIAL"},
+        )
+
+        assert unverified.signal_status == "UNVERIFIED"
+        assert unverified.work_queue_status == "UNVERIFIED"
+        assert empty.signal_status == "AVAILABLE"
+        assert empty.work_queue_status == "EMPTY_QUEUE"
+        assert unavailable.signal_status == "UNAVAILABLE"
+        assert unavailable.work_queue_status == "UNAVAILABLE"
+        assert unavailable.signal_reason == "OBJECTIVES_READ_FAILED:active"
+        assert unavailable.source_coverage["objective_repository"] == "READ_PARTIAL"
+
+    def test_objective_source_failures_are_recorded(self) -> None:
+        ws = _workspace()
+        try:
+            repo = MagicMock()
+            repo.list_recent.side_effect = RuntimeError("source unavailable")
+            svc = ControlMasterService(
+                repository=_fake_repo(),
+                objective_repository=repo,
+                workspace_root=str(ws),
+            )
+            assert svc.current_work_queue() == []
+            assert "OBJECTIVES_READ_FAILED:active" in svc.last_work_queue_errors
+            assert "OBJECTIVES_READ_FAILED:pending" in svc.last_work_queue_errors
+            assert "OBJECTIVES_READ_FAILED:blocked" in svc.last_work_queue_errors
+            assert svc.last_work_queue_source_coverage["objective_repository"] == "READ_PARTIAL"
+        finally:
+            shutil.rmtree(ws, ignore_errors=True)
+
+    def test_configured_pending_issue_reader_without_method_is_not_empty(self) -> None:
+        ws = _workspace()
+        try:
+            svc = ControlMasterService(
+                repository=_fake_repo(),
+                pending_issue_repository=object(),
+                workspace_root=str(ws),
+            )
+            svc.current_work_queue()
+            assert "PENDING_ISSUES_READER_UNAVAILABLE" in svc.last_work_queue_errors
+            assert svc.last_work_queue_source_coverage["pending_issue_repository"] == "READER_UNAVAILABLE"
+        finally:
+            shutil.rmtree(ws, ignore_errors=True)
+
+    def test_configured_oses_reader_without_method_is_not_empty(self) -> None:
+        ws = _workspace()
+        try:
+            svc = ControlMasterService(
+                repository=_fake_repo(),
+                self_examination_service=object(),
+                workspace_root=str(ws),
+            )
+            svc.current_work_queue()
+            assert "OSES_FINDINGS_READER_UNAVAILABLE" in svc.last_work_queue_errors
+            assert svc.last_work_queue_source_coverage["self_examination_service"] == "READER_UNAVAILABLE"
+        finally:
+            shutil.rmtree(ws, ignore_errors=True)
+
+    def test_orchestrator_surfaces_partial_source_failure(self) -> None:
+        from iabv_v15.services.adaptive.adaptive_task_orchestrator import AdaptiveTaskOrchestrator
+
+        class _PartialQueue:
+            def current_state(self, *, refresh: bool = False) -> ControlMasterState:
+                return ControlMasterState()
+
+            def current_work_queue(self, *, limit: int = 10) -> list[dict[str, Any]]:
+                return []
+
+            @property
+            def last_work_queue_errors(self) -> tuple[str, ...]:
+                return ("OBJECTIVES_READ_FAILED:active",)
+
+            @property
+            def last_work_queue_source_coverage(self) -> dict[str, str]:
+                return {"objective_repository": "READ_PARTIAL"}
+
+        orchestrator = object.__new__(AdaptiveTaskOrchestrator)
+        orchestrator.control_master_service = _PartialQueue()
+        orchestrator.control_master_digest_builder = ControlMasterDigestBuilder()
+        digest = orchestrator._control_master_digest()
+
+        assert digest.signal_status == "UNAVAILABLE"
+        assert digest.work_queue_status == "UNAVAILABLE"
+        assert digest.work_queue_brief == []
+        assert "OBJECTIVES_READ_FAILED:active" in digest.signal_reason

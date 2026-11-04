@@ -1,0 +1,77 @@
+# Space-Time / Control Master reconciled implementation R2
+
+Date: 2026-11-04 (America/Bogota)
+Task: `IABV_SPACE_TIME_CONTROL_MASTER_RECONCILED_R2_20261104`
+Base: `main@56e4d8b11846a8d8f3cb8cda08efd773ec235651`
+Related candidates: PR #591 (source diagnostics) and PR #602 (temporal provenance / prompt parity)
+Status: isolated combined candidate; tests/build/runtime NOT RUN.
+
+## Advance contract
+
+Objective: complete the independent Lane B implementation of Space-Time 2.7 by preserving whole-context freshness, timestamp provenance, queue semantics, source diagnostics and prompt delivery without creating another coordinator, router, memory store or authority source.
+
+Target edge: the Control Master digest and Portable Context must expose the strongest supported source/time state to full and compact prompt consumers without converting partial/failed reads or ambiguous timestamps into fresh, empty or available states.
+
+## Integration decision
+
+One candidate is based directly on the exact current main SHA. PR #591 and PR #602 were not merged sequentially because their bases differ and six code/test paths overlap.
+
+Included:
+- Whole-context generation time is distinct from partial section update time.
+- Portable-context freshness reports FRESH, STALE or UNVERIFIED; future and timezone-naive timestamps are UNVERIFIED.
+- Queue states remain AVAILABLE, EMPTY_QUEUE, UNAVAILABLE and UNVERIFIED.
+- Configured Control Master source-reader failures are recorded with stable diagnostic codes.
+- Per-source coverage distinguishes READ_OK, READ_PARTIAL, READ_FAILED, READER_UNAVAILABLE, NOT_CONFIGURED and NO_FILE.
+- signal_status, signal_reason and work_queue_status remain orthogonal. A successfully read empty queue is signal AVAILABLE + queue EMPTY_QUEUE.
+- Full and compact prompts both receive the digest; next actions remain prioritized in compact prompts.
+- ExperimentRecommendation.created_at_utc is preserved in task insight projection.
+
+Source coverage semantics:
+- NOT_CONFIGURED means an optional source dependency was not wired in this service instance; it is not evidence that the source was empty.
+- NO_FILE means the optional runtime_audit file did not exist at the inspected workspace path; it is not a read failure.
+- READ_OK means a configured reader returned successfully.
+- READ_PARTIAL, READ_FAILED or READER_UNAVAILABLE are diagnostics; any recorded source error makes the unified signal and queue UNAVAILABLE, never EMPTY_QUEUE.
+- signal_status describes availability of the successfully obtained configured-source projection. source_coverage exposes optional omissions; the signal is not a claim that every possible source exists.
+
+Excluded:
+- The public projector and publisher from #591.
+- The control-master-live branch, remote receiver, public disclosure dialog and Evolution Center UI.
+- Any change to CURRENT-STATE routing, M1A G1–G8, Option D, protected reads, MCP allowlist, bridge, tunnel or production activation.
+- Any claim of a live local Control Master read where no authorized runtime read surface was used.
+
+## Acceptance matrix
+
+| Contract | Required evidence |
+|---|---|
+| Full-context freshness | Full generation time is distinct from updated_at; section-only writes preserve it. |
+| Timestamp provenance | Explicit offset/Z required; naive, invalid and future timestamps are UNVERIFIED. |
+| Queue semantics | All four queue states remain distinct. |
+| Source diagnostics | Configured read failures and missing reader methods are recorded with stable codes. |
+| Source coverage | Optional/unconfigured/no-file states are explicit, not silently represented as empty reads. |
+| Signal semantics | signal_status and signal_reason are independent from queue content/state. |
+| Prompt parity | Full and compact prompts receive signal and queue status; compact prompt prioritizes next actions. |
+| Recommendation provenance | Original ExperimentRecommendation.created_at_utc reaches TaskContext. |
+
+## Verification boundary
+
+- Candidate source and regression tests are on this isolated branch only.
+- Tests/build/runtime are NOT RUN. GitHub Actions billing restriction and Support ticket #4910849 remain an external execution blocker.
+- Static inspection and GitHub fetch-back do not substitute for execution.
+- The committed Control Master snapshot remains historical/STALE; no live digest was retrieved in this task.
+- No publication, remote receive/ACK or cross-session causal-consumption proof is included.
+
+## M1A boundary
+
+```text
+M1A_G1=BLOCKED_NO_NEW_INDEPENDENT_ROOT_EVIDENCE
+G1/G2/G3=NOT_ESTABLISHED
+G4/G5/G6/G7/G8=OPEN
+OPTION_D=RATIFIED_NO_BOOTSTRAP
+PROTECTED_READS=FAIL_CLOSED
+MCP_TOOL_ALLOWLIST=EMPTY
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+PRODUCTION_ACTIVATION=NOT_AUTHORIZED
+```
+
+No credentials, authority assets, protected data, local checkout, secrets, branch-protection settings or production state were accessed or changed.

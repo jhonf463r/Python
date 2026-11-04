@@ -319,6 +319,7 @@ class PortableContextService:
         package = PortableContextPackage(
             created_at_utc=now,
             updated_at_utc=now,
+            full_context_generated_at_utc=now,
             summary=self._package_summary(
                 goal_context=goal_context,
                 recommendations=recommendations,
@@ -463,7 +464,9 @@ class PortableContextService:
 
             metadata = payload.get('metadata') or {}
             metadata['startup_health'] = dict(startup_health)
+            metadata['startup_health_updated_at_utc'] = utc_now().isoformat()
             payload['metadata'] = metadata
+            # This is a section-only mutation, not a new whole-context build.
             payload['updated_at_utc'] = utc_now().isoformat()
 
             self.storage.save_json_atomic('portable_context/latest.json', payload)
@@ -489,7 +492,20 @@ class PortableContextService:
 
     def _is_fresh(self, package: PortableContextPackage, *, max_age_seconds: int) -> bool:
         try:
-            age_seconds = (utc_now() - package.updated_at_utc).total_seconds()
+            # A lightweight unresolved package is not a complete context
+            # snapshot, even when its own created_at timestamp is recent.
+            if (
+                package.full_context_generated_at_utc is None
+                and (package.metadata or {}).get('source') == 'lightweight_unresolved_package'
+            ):
+                return False
+            # Legacy full snapshots fall back to creation time. A partial flush
+            # cannot renew the freshness window for every section.
+            generated_at = package.full_context_generated_at_utc or package.created_at_utc
+            age_seconds = (utc_now() - generated_at).total_seconds()
+            # Clock skew or a future-dated persisted value cannot establish freshness.
+            if age_seconds < 0:
+                return False
         except Exception:
             return False
         return age_seconds <= max_age_seconds
