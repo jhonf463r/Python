@@ -259,3 +259,58 @@ MERGE=NOT_AUTHORIZED
 ```
 
 The D021 consumer surface is statically integrated across the orchestrator, dashboard/view-model and CLI export. This does not prove a live runtime read, model consideration, causal influence, cross-session reuse or completion of the Space-Time organ. No merge or production activation is authorized.
+
+## R18.9 — Closed-source-set completeness before EMPTY_QUEUE — 2026-11-04
+
+Code HEAD before this receipt update: `02947d3b0e0b6963df35ef9ad3ceb2a8ca129f36`.
+Base: `main@56e4d8b11846a8d8f3cb8cda08efd773ec235651`.
+Compare: `20_AHEAD_0_BEHIND`; 24 changed paths.
+PR #610 remains OPEN / DRAFT / UNMERGED; no merge, dispatch or production activation.
+
+### New gap and correction
+
+Static review found that `ControlMasterDigestBuilder.build_from_service()` validated the statuses of keys present in `last_work_queue_source_coverage`, but did not prove that all six source projectors invoked by `ControlMasterService.current_work_queue()` had each recorded a status. The earlier positive EMPTY_QUEUE unit fixture also used abstract/mismatched source keys rather than the service's actual source names.
+
+The existing service invokes exactly these six projectors:
+- `objective_repository`
+- `platform_pending_queue`
+- `pending_issue_repository`
+- `self_examination_service`
+- `runtime_audit`
+- `tests_state`
+
+The builder now holds this expected key set explicitly. A missing key or an unexpected/unregistered key forces `work_queue_status=UNVERIFIED`; an observed read failure still forces `UNAVAILABLE`; `NOT_CONFIGURED` and `NO_FILE` remain unresolved/UNVERIFIED. Only the exact expected set, with every entry `READ_OK`, can progress to `EMPTY_QUEUE` or `AVAILABLE`.
+
+This is a completeness check over the six readers already called by the service. It does **not** decide which sources are optional or not applicable; that policy remains NOT_ESTABLISHED. No source was removed or treated as optional.
+
+### Regression coverage authored
+
+- Corrected the positive EMPTY_QUEUE fixture to use the six actual service source keys.
+- Added a builder regression where five sources report READ_OK but `tests_state` is missing; it must stay UNVERIFIED.
+- Added a regression where an unregistered source is added to an otherwise complete READ_OK map; it must stay UNVERIFIED.
+- Added a service regression asserting `current_work_queue()` emits a coverage entry for each of the six invoked projectors, even when some are not configured or have no file.
+
+These tests are authored and fetched back from the exact HEAD; **they have not been executed**.
+
+### CI and acceptance boundary
+
+The newest Actions run for code/test HEAD `02947d3…` is #564 (`41947273240`): `startup_failure`, jobs endpoint returned zero jobs. No runner, pytest, build or runtime step ran. Combined status checks are empty. Earlier current-candidate runs #560 (`41945907927`) and #562 (`41947165220`) also ended startup_failure with zero jobs. No manual dispatch/retry was performed.
+
+```text
+PR610=OPEN_DRAFT_UNMERGED
+CODE_HEAD=02947d3b0e0b6963df35ef9ad3ceb2a8ca129f36
+MAIN=56e4d8b11846a8d8f3cb8cda08efd773ec235651
+COMPARE=20_AHEAD_0_BEHIND; CHANGED_PATHS=24
+EXPECTED_QUEUE_SOURCE_SET=6_REGISTERED_KEYS
+EMPTY_QUEUE_REQUIRES=EXACT_KEY_SET + ALL_READ_OK + NO_SOURCE_ERRORS
+MISSING_OR_UNEXPECTED_SOURCE=UNVERIFIED
+READ_FAILURE=UNAVAILABLE
+SOURCE_APPLICABILITY_POLICY=NOT_ESTABLISHED
+RUN_564=startup_failure; JOBS=0
+TESTS/BUILD/RUNTIME=NOT_RUN
+INDEPENDENT_ACCEPTANCE=NOT_ESTABLISHED
+SPACE_TIME_ORGAN=PARTIAL
+BRIDGE=BRIDGE_NOT_READY
+M1A=UNCHANGED
+MERGE=NOT_AUTHORIZED
+```
