@@ -708,3 +708,72 @@ def test_current_work_queue_retains_partial_pending_issue_report_without_actiona
         assert not any(item.get('source') == 'pending_issue_repository' for item in queue)
     finally:
         shutil.rmtree(root, ignore_errors=True)
+
+
+def test_control_master_reads_only_fresh_cached_oses_review():
+    root = _workspace()
+    try:
+        service, _ = _build_service(root)
+        snapshot = SimpleNamespace(
+            findings=[],
+            unresolved_risks=[],
+            source_coverage={'recent_runs': 'READ_OK'},
+        )
+
+        class CachedOnlyOSES:
+            _current_review = None
+
+            def _load_latest_review(self):
+                return snapshot
+
+            def _is_fresh(self, review, *, max_age_seconds):
+                assert review is snapshot
+                assert max_age_seconds == 300
+                return True
+
+            def current_review(self):
+                raise AssertionError('projection must not trigger OSES rebuild')
+
+        service.self_examination_service = CachedOnlyOSES()
+
+        state = service.current_state()
+        queue = service.current_work_queue(limit=20)
+
+        assert state.current_risks == []
+        assert state.unresolved_items == []
+        assert service.last_work_queue_source_coverage['self_examination_service'] == 'READ_OK'
+        assert not any(item.get('source') == 'oses_finding' for item in queue)
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_control_master_does_not_project_oses_findings_without_complete_source_coverage():
+    root = _workspace()
+    try:
+        service, _ = _build_service(root)
+        snapshot = SimpleNamespace(
+            findings=[],
+            unresolved_risks=[],
+            source_coverage={'recent_runs': 'READ_FAILED'},
+        )
+
+        class IncompleteCachedOSES:
+            _current_review = None
+
+            def _load_latest_review(self):
+                return snapshot
+
+            def _is_fresh(self, review, *, max_age_seconds):
+                return True
+
+            def current_review(self):
+                raise AssertionError('projection must not trigger OSES rebuild')
+
+        service.self_examination_service = IncompleteCachedOSES()
+        queue = service.current_work_queue(limit=20)
+
+        assert service.last_work_queue_source_coverage['self_examination_service'] == 'READ_UNVERIFIED'
+        assert any(error.startswith('OSES_FINDINGS_NOT_VERIFIED:') for error in service.last_work_queue_errors)
+        assert not any(item.get('source') == 'oses_finding' for item in queue)
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
