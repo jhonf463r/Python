@@ -463,13 +463,131 @@ TESTS/BUILD/RUNTIME=NOT_RUN
 AUTOMATIC_FOLLOW_ON=FALSE
 ```
 
-## 12. Siguiente acción
+## 12. Reconciliación obligatoria con la ruta canónica viva (2026-11-05)
 
-`NEXT_ACTION=PREPARE_A_SEPARATE_OWNER_AUTHORIZED_G1_REAL_SERVICE_CANDIDATE_BINDING_INTEGRATION_TEST_DESIGN`
+La lectura independiente de `main/CURRENT-STATE.md` desde el blob exacto `63e1b459a13e23e1012da81826dc50727b688d8c` confirma que el siguiente paso anterior de esta auditoría (`PREPARE_A_SEPARATE_OWNER_AUTHORIZED_G1_REAL_SERVICE_CANDIDATE_BINDING_INTEGRATION_TEST_DESIGN`) **no es la ruta activa** y queda subordinado al router canónico. No debe ejecutarse ni presentarse como NEXT_ACTION vigente.
 
-La siguiente tarea útil no es instalar otro producto. Es fijar el test de integración que pueda demostrar o falsificar la primera arista abierta: que dos candidatos elegidos por Synaptic se conviertan en dos tareas reales para dos recursos diferentes, manteniendo gobernanza, límites gratuitos y recibos independientes.
+Ruta canónica observada:
 
-No iniciar implementación, runtime ni pruebas hasta una autorización separada y la reconciliación de `CURRENT-STATE.md`.
+```text
+ACTIVE_TASK=IABV_M1A_OWNER_ISSUER_MECHANISM_INPUT_GATE_R1_20261030
+ACTIVE_TASK_STATUS=BLOCKED_NO_ADDITIONAL_INDEPENDENT_MECHANISM_IDENTIFIED; OWNER_INPUT_RECONCILED
+OPEN_EDGE=OWNER_ROOT_DECISION_AUTHENTICATION_AND_ROOT_HANDLE_PROVENANCE_NOT_ESTABLISHED
+NEXT_ACTION=WAIT_FOR_NEW_INDEPENDENT_ROOT_ISSUER_BINDING_EVIDENCE_FOR_M1A_G1_ONLY; APPLY_D019_DUAL_TRACK_SELECTOR_TO_ANY_SEPARATE_OWNER_OBJECTIVE; DO_NOT_REPEAT_OWNER_INPUT_OR_ENTRA_AUTHENTICATOR_SETUP
+LANE_A=M1A_G1_ROOT_AUTHORITY_AND_PROVENANCE; BLOCKED
+LANE_A_WAIT_SCOPE=TASK_LOCAL_M1A_AUTHORITY_DEPENDENCY_ONLY; NOT_PROJECT_WIDE_STOP
+LANE_B=INDEPENDENT_PROGRESS; SELECT_ONLY_WHEN_CURRENT_OWNER_OBJECTIVE_AND_OWN_AUTHORIZATION_SUPPORT_A_CONCRETE_TASK
+OPTION_D=RATIFIED_NO_BOOTSTRAP
+G1/G2/G3=NOT_ESTABLISHED
+MCP_TOOL_ALLOWLIST=EMPTY
+PROTECTED_READS=FAIL_CLOSED
+TUNNEL=DISABLED
+BRIDGE=BRIDGE_NOT_READY
+PRODUCT_IMPLEMENTATION=NOT_AUTHORIZED
+PARALLEL_DISPATCH=NOT_AUTHORIZED
+TESTS/BUILD/RUNTIME=NOT_RUN
+AUTOMATIC_FOLLOW_ON=FALSE
+```
+
+El Owner-input ya está reconciliado: se informó que no existe otro mecanismo identificado y que Entra/Authenticator está preparado como canal humano, pero no constituye por sí solo una raíz/issuer independiente ni una cadena autenticada hacia el handle raíz. No volver a pedir al Owner que invente otro mecanismo, repetir el censo de activos o rehacer la configuración Entra/Authenticator. Reabrir G1 solamente ante evidencia nueva, independiente, ligada a fuente y capaz de cerrar la arista causal.
+
+La matriz de aceptación sigue siendo: G1 = principal/mandato autenticado + raíz de confianza independiente + cadena issuer/reader/server + vínculo Owner→principal Windows; G2 = publicador de catálogo autorizado + política de clase productora + ciclo de integridad/versión + revocación autoritativa; G3 = resolver versionado server-side ligado a los call sites reales y al mismo objeto protegido consumido. G4–G8 siguen separados, abiertos y ninguno se cierra por inferencia desde G1–G3.
+
+### Estado de candidatos del órgano, reconciliado con main
+
+La consulta de PR devolvió estos estados vivos:
+
+| PR | Candidato | Estado observado | Base SHA observada | HEAD SHA observado |
+|---|---|---|---|---|
+| #531 | Composición fail-closed M1F | OPEN / DRAFT / UNMERGED | `7ddfe285b1a3267f9ef6f57f862cca78bc8438c2` | `bc2baf525a70d66628809360a197f25a069aa328` |
+| #549 | Auth Entra/MCP G1 | OPEN / DRAFT / UNMERGED | `a8624c30744da7f593d6a1c829e48aa229c8efca` | `519c55a5b96a5e0b3826b54bf92726ef7f1b9c28` |
+| #556 | Composición M1A/M1F | OPEN / DRAFT / UNMERGED | `79ab8c50eaa7518120d5ebed9db4747d395a21cb` | `fb635aab18d9c2ef19b20d48e3625d52383fe6af` |
+| #576 | Excepción de inscripción inicial | OPEN / DRAFT / UNMERGED; mergeable=false | `20755570e078f132e44de3af7d235b48b63a98ae` | `2d2a8fc0965a0ffc02d580c6f98985ef02549ea2` |
+| #546 | Diseño de autoridad gobernada | OPEN / DRAFT en el último resultado de búsqueda; refrescar antes de cualquier decisión | No fijada aquí | No fijada aquí |
+
+Esas bases no coinciden con el `main` vivo `56e4d8b11846a8d8f3cb8cda08efd773ec235651`; por tanto, son candidatos sobre bases históricas y no deben considerarse reconciliados con el HEAD actual. No rebasear, retargetear, fusionar ni cambiar estos PR automáticamente. PR #614, en cambio, parte del main vivo y conserva únicamente la auditoría documental free-first; no establece autoridad.
+
+## 13. Ciclo de autonomía deseado — sin segundo coordinador
+
+La arquitectura objetivo debe ser un ciclo de cinco capas que reutiliza los órganos existentes:
+
+1. **Observar:** leer eventos y estado del repositorio, PR, comentarios, revisiones, checks y releases. Mantener cursores/identidades exactas (`repository`, `PR`, `base_sha`, `head_sha`, `delivery_id`, `task_id`, `result_id`). No interpretar silencio como ausencia de cambios si la fuente no pudo leerse.
+2. **Triage y revisión:** al cambiar un HEAD, recuperar el diff exacto y el contexto mínimo, clasificar el cambio (documental, código, pruebas, seguridad, permisos, infraestructura), revisar estáticamente los nuevos tramos y mapear su efecto sobre los gates. Marcar explícitamente lo no probado.
+3. **Preparar delegación:** empaquetar el contexto canónico, rol, objetivo, archivos/diff, límites y criterios de aceptación para el ejecutor realmente disponible (por ejemplo, Codex cuando la cuenta/sesión y sus límites lo permitan). La preparación de un handoff no implica que otro agente lo recibió ni lo ejecutó.
+4. **Ejecutar bajo mandato:** solamente cuando la autorización exacta exista. Las operaciones de escritura, instalación, ejecución, pruebas, credenciales, permisos, lectores protegidos, red/túnel y runtime conservan sus gates independientes. Rechazar o escalar cualquier acción que exceda el mandato.
+5. **Adjudicar y aprender:** correlacionar el resultado observado con la tarea solicitada; aplicar validación independiente cuando corresponda; alimentar ExperimentLab y los servicios existentes de descubrimiento/evolución como propuesta, sin promoción automática ni cambio de CURRENT-STATE por el monitor.
+
+No crear otro coordinador, router, memoria o registro de herramientas. El router sigue siendo `CURRENT-STATE.md`; `AdaptiveTaskOrchestrator`, `SynapticRouter`, `ToolRegistry`, `ToolTeachService`, `ToolOperationalExecutor`, `ExperimentLab`, `ToolDiscoveryService`, `ToolEvolutionMonitor` y `PlatformLearningOrchestrator` son los órganos a reutilizar, en el alcance real que su integración demuestre.
+
+## 14. Supervisión de PR: evento ideal, observador temporal y límites actuales
+
+### Camino ideal cuando la infraestructura esté autorizada
+
+GitHub documenta el evento `pull_request` con actividades como `opened`, `synchronize` y `reopened`, y permite declarar explícitamente tipos como `ready_for_review` o `review_requested`. Por tanto, un workflow de revisión de solo lectura puede reaccionar a nuevos HEADs sin que el Owner tenga que pedir una nueva revisión manual en cada actualización. Fuente: [GitHub Actions — events that trigger workflows](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows).
+
+Como alternativa de receptor propio, un webhook podría entregar el evento al puente local, pero exige un endpoint autorizado y validación de firma `X-Hub-Signature-256` mediante HMAC-SHA256 antes de procesar el payload. Fuente: [GitHub — validating webhook deliveries](https://docs.github.com/en/webhooks/using-webhooks/validating-webhook-deliveries). El transporte, deduplicación de entregas, secreto y destino necesitan una frontera segura.
+
+**No es activable hoy:** el estado canónico conserva `TUNNEL=DISABLED`, `BRIDGE=BRIDGE_NOT_READY`, `MCP_TOOL_ALLOWLIST=EMPTY` y `PARALLEL_DISPATCH=NOT_AUTHORIZED`. Tampoco se ha verificado en esta sesión que GitHub Actions pueda ejecutar workflows para esta cuenta/repositorio; el historial contiene un bloqueo de infraestructura reportado. No asumir disponibilidad ni crear un receptor/túnel como atajo.
+
+### Observador temporal ya creado fuera del runtime IABV
+
+Se crearon con éxito dos tareas del programador de ChatGPT, habilitadas y con instrucciones de solo lectura. No son servicios del producto IABV ni reciben eventos instantáneos de GitHub:
+
+| Tarea | Cadencia configurada | ID externo | Alcance |
+|---|---|---|---|
+| Vigilar el órgano de autorización M1A en GitHub | Diaria; objetivo 09:00 America/Bogota, desde 2026-11-06 | `6aecbe5c7474819186fcb66762c1a7e2` | Refrescar main/CURRENT-STATE, inspeccionar cambios en #531/#549/#556/#576/#546 y nuevos cambios relacionados. |
+| Vigilar tecnologías gratuitas útiles para IABV | Semanal, lunes; objetivo 09:30 America/Bogota, desde 2026-11-09 | `6aecbe67ea5081918ee89ce4c49d9aae` | Radar de tecnología OSS/free-first, sin instalaciones ni cambios. |
+
+Las tareas comparan ejecuciones y notifican únicamente cambios materiales. Si el conector GitHub no está disponible, no pueden declarar «sin cambios»: deben dejar la comprobación como no verificada. La cadencia diaria reduce el trabajo manual, pero no es monitorización en tiempo real. La primera ejecución y la entrega de resultados siguen **NOT_OBSERVED** al cerrar esta actualización.
+
+## 15. Contrato de revisión automática y escalado humano
+
+Ante un cambio relevante de PR, el flujo esperado es:
+
+- Refrescar `main` y `CURRENT-STATE.md`; recuperar el blob exacto si la lectura ordinaria devuelve cuerpo vacío.
+- Obtener el nuevo base/HEAD, diff y lista de paths; no revisar una URL o resumen sin fijar SHA.
+- Revisar solo el delta nuevo y sus dependencias causales; no repetir auditorías cerradas.
+- Separar evidencia observada, reporte de agente, inferencia, desconocido y no ejecutado.
+- Entregar un recibo corto: qué cambió, qué evidencia nueva existe, qué gate afecta, qué falta, qué está bloqueado y si la ruta canónica cambia o no.
+- Si no hay cambio material confirmado, permanecer en silencio; si el acceso falla, no afirmar que no hubo cambios.
+- Para code review, no ejecutar código arbitrario de un PR. El primer nivel es triage estático de solo lectura. Un juicio independiente/adversarial requiere otro contexto y recuperación de fuentes verificada; una segunda pasada del mismo coordinador no cuenta como independencia.
+
+El Owner solo debe intervenir para decisiones irreducibles: seleccionar/confirmar una autoridad o un mandato, aprobar un efecto sensible, resolver una ambigüedad de negocio, autorizar una fase nueva o actuar en una UI local que el asistente no puede operar. No pedirle que copie actualizaciones públicas del PR, repita el estado del repo o transporte a mano el contexto que el conector autorizado puede recuperar.
+
+**Nunca automatizar:** aprobar, solicitar cambios, comentar, fusionar, rebasear, retargetear, modificar `main/CURRENT-STATE.md`, instalar, ejecutar pruebas/build/runtime, crear credenciales/raíces/issuers, activar lectores protegidos, abrir túneles, modificar permisos o despachar otro agente sin autorización específica.
+
+## 16. Consideraciones de planes gratuitos y límites entre canales
+
+- Codex figura incluido en ChatGPT Free con acceso limitado; no presupuestarlo como trabajador ilimitado, servicio permanente ni capacidad de Codex Cloud en Free. Consultar las restricciones efectivas del plan antes de depender de una capacidad. Fuentes oficiales: [Codex pricing](https://chatgpt.com/codex/pricing/) y [Using Codex with your ChatGPT plan](https://help.openai.com/en/articles/11369540-using-codex-with-your-chatgpt-plan).
+- ChatGPT Free puede usarse como canal manual: IABV prepara el paquete, el usuario lo presenta y devuelve el resultado mediante un mecanismo permitido. No automatizar extracción de respuestas de ChatGPT mediante DOM, clipboard o técnicas equivalentes: los Términos de OpenAI prohíben extraer automáticamente o programáticamente datos u Output. Fuente: [OpenAI Terms of Use, effective 2026-01-01](https://openai.com/policies/terms-of-use/).
+- No confundir la automatización externa de ChatGPT con una activación de IABV. Las tareas programadas son observadores auxiliares; no alteran el mandato, no conceden autoridad y no prueban que Codex/otro chat recibió o ejecutó un handoff.
+- Mantener FREE-FIRST: capacidades ya disponibles primero; no introducir cuota, API paga, suscripción nueva, servicio duplicado o instalación solo por curiosidad.
+
+## 17. Estado de esta actualización
+
+```text
+MAIN=56e4d8b11846a8d8f3cb8cda08efd773ec235651
+CURRENT_STATE_BLOB=63e1b459a13e23e1012da81826dc50727b688d8c
+ACTIVE_TASK=IABV_M1A_OWNER_ISSUER_MECHANISM_INPUT_GATE_R1_20261030
+M1A_G1=BLOCKED; WAIT_FOR_NEW_INDEPENDENT_ROOT_ISSUER_BINDING_EVIDENCE
+G1/G2/G3=NOT_ESTABLISHED
+G4_G8=OPEN; NONE_CLOSED
+PROTECTED_READS=FAIL_CLOSED
+MCP_TOOL_ALLOWLIST=EMPTY
+BRIDGE=BRIDGE_NOT_READY
+TUNNEL=DISABLED
+PARALLEL_DISPATCH=NOT_AUTHORIZED
+PRODUCT_IMPLEMENTATION=NOT_AUTHORIZED
+TESTS/BUILD/RUNTIME=NOT_RUN
+AUTOMATIC_FOLLOW_ON=FALSE
+CHATGPT_DAILY_M1A_MONITOR=CREATED_ENABLED; FIRST_RUN_NOT_OBSERVED
+CHATGPT_WEEKLY_FREE_FIRST_RADAR=CREATED_ENABLED; FIRST_RUN_NOT_OBSERVED
+IABV_EVENT_DRIVEN_PR_REVIEW=NOT_IMPLEMENTED
+IABV_WEBHOOK_RECEIVER=NOT_READY; NOT_AUTHORIZED
+MERGE=NOT_AUTHORIZED
+```
+
+La próxima acción de este expediente es conservar el monitor y esperar únicamente evidencia nueva e independiente para G1. En paralelo, un objetivo distinto solo puede avanzar con su propia autorización y bajo el selector D019/D020/D021. Las tareas programadas pueden observar y reducir la carga de seguimiento, pero no cambian esa decisión.
 
 ---
 
@@ -483,3 +601,12 @@ No iniciar implementación, runtime ni pruebas hasta una autorización separada 
 - [UAAL-D020 — progress utility and strategy switching](./CHAT-ARCH-2026-10-28-UAAL-D020-VERIFIED-PROGRESS-UTILITY-STRATEGY-SWITCH.md)
 - [OpenAI Terms of Use — effective 2026-01-01](https://openai.com/policies/terms-of-use/)
 - [Codex pricing — Free has limited trial access](https://chatgpt.com/codex/pricing/)
+
+
+## Addendum — referencias para el flujo de eventos
+
+- [GitHub Actions events](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows)
+- [GitHub webhook signature validation](https://docs.github.com/en/webhooks/using-webhooks/validating-webhook-deliveries)
+- [OpenAI Terms of Use (2026-01-01)](https://openai.com/policies/terms-of-use/)
+- [Codex pricing](https://chatgpt.com/codex/pricing/)
+- [Codex plan access and limitations](https://help.openai.com/en/articles/11369540-using-codex-with-your-chatgpt-plan)
