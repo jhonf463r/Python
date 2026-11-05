@@ -411,12 +411,15 @@ class OperationalSelfExaminationService:
         findings: list[SelfExaminationFinding] = []
         trail = self.decision_audit_trail
         if trail is None:
+            self._record_source_status('decision_audit_trail', 'NOT_CONFIGURED')
             return findings
 
         try:
             recent = trail.load_recent(limit=50)
-        except Exception:
+        except Exception as exc:
+            self._record_source_status('decision_audit_trail', 'READ_FAILED', type(exc).__name__)
             return findings
+        self._record_source_status('decision_audit_trail', 'READ_OK')
 
         if len(recent) < 5:
             return findings
@@ -674,9 +677,12 @@ class OperationalSelfExaminationService:
         # 2. Provider success correlation: if two providers fail in the
         # same time window, they may share an infrastructure issue.
         trail = self.decision_audit_trail
-        if trail is not None:
+        if trail is None:
+            self._record_source_status('decision_audit_trail', 'NOT_CONFIGURED')
+        else:
             try:
                 entries = trail.load_recent(limit=40)
+                self._record_source_status('decision_audit_trail', 'READ_OK')
                 if len(entries) >= 10:
                     window_failures: dict[str, list[str]] = {}
                     for entry in entries:
@@ -704,8 +710,8 @@ class OperationalSelfExaminationService:
                             ),
                             source_refs=['deep_analysis_queue', 'DecisionAuditTrail'],
                         ))
-            except Exception:
-                pass
+            except Exception as exc:
+                self._record_source_status('decision_audit_trail', 'READ_FAILED', type(exc).__name__)
 
         # 3. IQR outlier detection on latencies.
         all_latencies = sorted(
@@ -1132,7 +1138,6 @@ _REQUIRED_SOURCE_IDS = (
     'improvement_backlog',
     'world_model_service',
     'autonomous_validation_cycle',
-    'previous_review_snapshot',
     'token_rotation_ledger',
     'decision_audit_trail',
     'runtime_audit_tracer',
@@ -1146,7 +1151,6 @@ _REQUIRED_SOURCE_IDS = (
     'code_audit_trail',
     'sqlite_incident_file',
     'environment_self_awareness_service',
-    'pending_queue',
     'test_evidence_file',
     'experiment_lab_threshold',
     'metacognition_evolution',
@@ -1942,11 +1946,14 @@ _REQUIRED_SOURCE_IDS = (
         """
         ledger = getattr(self, 'token_rotation_ledger', None)
         if ledger is None or not hasattr(ledger, 'predictions'):
+            self._record_source_status('token_rotation_ledger', 'NOT_CONFIGURED')
             return []
         try:
             predictions = list(ledger.predictions() or [])
-        except Exception:
+        except Exception as exc:
+            self._record_source_status('token_rotation_ledger', 'READ_FAILED', type(exc).__name__)
             return []
+        self._record_source_status('token_rotation_ledger', 'READ_OK')
         findings: list[SelfExaminationFinding] = []
         for pred in predictions:
             if not isinstance(pred, dict):
@@ -3584,16 +3591,20 @@ _REQUIRED_SOURCE_IDS = (
         """
         store = self.boot_profile_store
         if store is None:
+            self._record_source_status('boot_profile_store', 'NOT_CONFIGURED')
             return []
 
         environment_id = self._boot_profile_environment_id()
         if not environment_id:
+            self._record_source_status('boot_profile_store', 'NOT_CONFIGURED', 'environment_id_unavailable')
             return []
 
         try:
             summary = store.boot_profile_summary(environment_id)
-        except Exception:
+        except Exception as exc:
+            self._record_source_status('boot_profile_store', 'READ_FAILED', type(exc).__name__)
             return []
+        self._record_source_status('boot_profile_store', 'READ_OK')
 
         if summary.get('boot_count', 0) < 2:
             return []
@@ -3732,11 +3743,14 @@ _REQUIRED_SOURCE_IDS = (
         """
         audit = getattr(self, 'decision_audit_trail', None)
         if audit is None:
+            self._record_source_status('decision_audit_trail', 'NOT_CONFIGURED')
             return []
         try:
             summary = audit.self_examination_summary()
-        except Exception:
+        except Exception as exc:
+            self._record_source_status('decision_audit_trail', 'READ_FAILED', type(exc).__name__)
             return []
+        self._record_source_status('decision_audit_trail', 'READ_OK')
         if summary.get('status') == 'no_data':
             return []
 
@@ -6216,17 +6230,21 @@ _REQUIRED_SOURCE_IDS = (
         from iabv_v15.domain.models import SelfExaminationFinding, IssueSeverity
         repo = self.chat_message_repository
         if repo is None:
+            self._record_source_status('chat_message_repository', 'NOT_CONFIGURED')
             return []
         try:
             total = repo.count()
-        except Exception:
+        except Exception as exc:
+            self._record_source_status('chat_message_repository', 'READ_FAILED', type(exc).__name__)
             return []
+        self._record_source_status('chat_message_repository', 'READ_OK')
         if total == 0:
             return []
         findings: list[SelfExaminationFinding] = []
         try:
             recent = repo.list_recent(limit=200)
-        except Exception:
+        except Exception as exc:
+            self._record_source_status('chat_message_repository', 'READ_FAILED', type(exc).__name__)
             return []
         if not recent:
             return findings
@@ -6273,7 +6291,11 @@ _REQUIRED_SOURCE_IDS = (
                 metadata={'no_evidence': no_evidence, 'ratio': evidence_gap_ratio},
             ))
         if total > 1200:
-            sessions = repo.list_sessions()
+            try:
+                sessions = repo.list_sessions()
+            except Exception as exc:
+                self._record_source_status('chat_message_repository', 'READ_FAILED', type(exc).__name__)
+                return findings
             old_sessions = [s for s in sessions if s.get('count', 0) > 0]
             if len(old_sessions) > 20:
                 findings.append(SelfExaminationFinding(
@@ -6420,6 +6442,7 @@ _REQUIRED_SOURCE_IDS = (
         """
         trail = getattr(self, 'code_audit_trail', None)
         if trail is None:
+            self._record_source_status('code_audit_trail', 'NOT_CONFIGURED')
             return []
         findings: list[SelfExaminationFinding] = []
         try:
@@ -6444,6 +6467,7 @@ _REQUIRED_SOURCE_IDS = (
                     ))
 
             cross_verifications = trail.pending_cross_verifications()
+            self._record_source_status('code_audit_trail', 'READ_OK')
             windows_pending = [
                 f for f in cross_verifications
                 if f.get('needs_windows_verification')
@@ -6467,6 +6491,7 @@ _REQUIRED_SOURCE_IDS = (
                     source_refs=['CodeAuditTrail', 'pending_cross_verifications'],
                 ))
         except Exception as exc:
+            self._record_source_status('code_audit_trail', 'READ_FAILED', type(exc).__name__)
             import logging as _logging
             _logging.getLogger(__name__).warning('oses: code_audit_cross_reference error: %s', exc)
         return findings
@@ -8101,6 +8126,7 @@ _REQUIRED_SOURCE_IDS = (
     def _compute_current_adaptive_nc(self) -> int | None:
         repo = self.experiment_lab_repository
         if repo is None:
+            self._record_source_status('experiment_lab_threshold', 'NOT_CONFIGURED')
             return None
         try:
             from iabv_v15.services.lab.experiment_lab import ExperimentLab
@@ -8113,8 +8139,11 @@ _REQUIRED_SOURCE_IDS = (
                 scoring_engine=DecisionScoringEngine(),
                 strategy_selector=StrategySelector(),
             )
-            return lab.calculate_adaptive_threshold()
-        except Exception:
+            threshold = lab.calculate_adaptive_threshold()
+            self._record_source_status('experiment_lab_threshold', 'READ_OK')
+            return threshold
+        except Exception as exc:
+            self._record_source_status('experiment_lab_threshold', 'READ_FAILED', type(exc).__name__)
             return None
 
     # ------------------------------------------------------------------
