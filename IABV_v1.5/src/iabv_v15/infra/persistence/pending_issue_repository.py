@@ -34,6 +34,21 @@ class PendingIssueRepository:
         self._read_state.report = report
         return report
 
+    def _remember_collection_error(
+        self,
+        scope: str,
+        error: Exception,
+        *,
+        requested_artifact_id: str = "",
+    ) -> RepositoryReadReport[CodexPendingIssue]:
+        return self._remember_report(
+            RepositoryReadReport.from_collection_error(
+                scope,
+                error,
+                requested_artifact_id=requested_artifact_id,
+            )
+        )
+
     def save(self, issue: CodexPendingIssue) -> CodexPendingIssue:
         relative_path = f"pending_issues/{issue.issue_id}.json"
         saved_path = self.storage.save_json_atomic(relative_path, issue.model_dump(mode='json'))
@@ -59,7 +74,7 @@ class PendingIssueRepository:
         return issue
 
     def list_recent_with_diagnostics(self, limit: int = 20) -> RepositoryReadReport[CodexPendingIssue]:
-        rows = self.db.fetchall(
+        return self._fetchall_with_diagnostics(
             """
             SELECT issue_id, path
             FROM codex_pending_issues
@@ -68,20 +83,33 @@ class PendingIssueRepository:
             """,
             (limit,),
         )
-        return self._read_rows(rows)
 
     def list_recent(self, limit: int = 20) -> list[CodexPendingIssue]:
         return self.list_recent_with_diagnostics(limit).require_complete()
 
     def get_with_diagnostics(self, issue_id: str) -> ArtifactReadResult[CodexPendingIssue]:
-        row = self.db.fetchone(
-            """
-            SELECT issue_id, path
-            FROM codex_pending_issues
-            WHERE issue_id = ?
-            """,
-            (issue_id,),
-        )
+        try:
+            row = self.db.fetchone(
+                """
+                SELECT issue_id, path
+                FROM codex_pending_issues
+                WHERE issue_id = ?
+                """,
+                (issue_id,),
+            )
+        except Exception as exc:
+            self._remember_collection_error(
+                "SQLITE_INDEX_LOOKUP",
+                exc,
+                requested_artifact_id=issue_id,
+            )
+            return ArtifactReadResult(
+                artifact_id=issue_id,
+                path="",
+                status=ArtifactReadStatus.READ_FAILED,
+                error_type=type(exc).__name__,
+                error_message=str(exc)[:300],
+            )
         if row is None:
             result = ArtifactReadResult(
                 artifact_id=issue_id,
@@ -108,7 +136,7 @@ class PendingIssueRepository:
         raise RepositoryReadError(report)
 
     def find_by_run_with_diagnostics(self, run_id: str) -> RepositoryReadReport[CodexPendingIssue]:
-        rows = self.db.fetchall(
+        return self._fetchall_with_diagnostics(
             """
             SELECT issue_id, path
             FROM codex_pending_issues
@@ -117,7 +145,6 @@ class PendingIssueRepository:
             """,
             (run_id,),
         )
-        return self._read_rows(rows)
 
     def find_by_run(self, run_id: str) -> list[CodexPendingIssue]:
         return self.find_by_run_with_diagnostics(run_id).require_complete()
@@ -125,7 +152,7 @@ class PendingIssueRepository:
     def find_by_scenario_id_with_diagnostics(
         self, scenario_id: str
     ) -> RepositoryReadReport[CodexPendingIssue]:
-        rows = self.db.fetchall(
+        return self._fetchall_with_diagnostics(
             """
             SELECT issue_id, path
             FROM codex_pending_issues
@@ -134,7 +161,6 @@ class PendingIssueRepository:
             """,
             (scenario_id,),
         )
-        return self._read_rows(rows)
 
     def find_by_scenario_id(self, scenario_id: str) -> list[CodexPendingIssue]:
         return self.find_by_scenario_id_with_diagnostics(scenario_id).require_complete()
@@ -142,7 +168,7 @@ class PendingIssueRepository:
     def find_by_session_with_diagnostics(
         self, session_id: str
     ) -> RepositoryReadReport[CodexPendingIssue]:
-        rows = self.db.fetchall(
+        return self._fetchall_with_diagnostics(
             """
             SELECT issue_id, path
             FROM codex_pending_issues
@@ -151,10 +177,20 @@ class PendingIssueRepository:
             """,
             (session_id,),
         )
-        return self._read_rows(rows)
 
     def find_by_session(self, session_id: str) -> list[CodexPendingIssue]:
         return self.find_by_session_with_diagnostics(session_id).require_complete()
+
+    def _fetchall_with_diagnostics(
+        self,
+        sql: str,
+        parameters: tuple[object, ...],
+    ) -> RepositoryReadReport[CodexPendingIssue]:
+        try:
+            rows = self.db.fetchall(sql, parameters)
+        except Exception as exc:
+            return self._remember_collection_error("SQLITE_INDEX_ROWS", exc)
+        return self._read_rows(rows)
 
     def _read_rows(
         self, rows: list[dict[str, str]]

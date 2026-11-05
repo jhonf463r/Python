@@ -25,6 +25,7 @@ class RepositoryReadStatus(str, Enum):
     READ_PARTIAL = "READ_PARTIAL"
     READ_FAILED = "READ_FAILED"
     NO_RECORDS_OBSERVED = "NO_RECORDS_OBSERVED"
+    QUERY_NOT_EXECUTED = "QUERY_NOT_EXECUTED"
 
 
 @dataclass(frozen=True)
@@ -53,6 +54,8 @@ class RepositoryReadReport(Generic[T]):
     observed_at_utc: str
     collection_error_type: str = ""
     collection_error_message: str = ""
+    query_not_executed: bool = False
+    requested_artifact_id: str = ""
 
     @classmethod
     def from_results(
@@ -71,6 +74,8 @@ class RepositoryReadReport(Generic[T]):
         cls,
         scope: str,
         error: Exception,
+        *,
+        requested_artifact_id: str = "",
     ) -> "RepositoryReadReport[T]":
         return cls(
             scope=scope,
@@ -78,10 +83,25 @@ class RepositoryReadReport(Generic[T]):
             observed_at_utc=datetime.now(timezone.utc).isoformat(),
             collection_error_type=type(error).__name__,
             collection_error_message=str(error)[:300],
+            requested_artifact_id=requested_artifact_id,
+        )
+
+    @classmethod
+    def from_not_executed(
+        cls,
+        scope: str,
+    ) -> "RepositoryReadReport[T]":
+        return cls(
+            scope=scope,
+            results=(),
+            observed_at_utc=datetime.now(timezone.utc).isoformat(),
+            query_not_executed=True,
         )
 
     @property
     def status(self) -> RepositoryReadStatus:
+        if self.query_not_executed:
+            return RepositoryReadStatus.QUERY_NOT_EXECUTED
         if self.collection_error_type:
             return RepositoryReadStatus.READ_FAILED
         if not self.results:
@@ -121,6 +141,8 @@ class RepositoryReadReport(Generic[T]):
         return {
             "scope": self.scope,
             "status": self.status.value,
+            "query_not_executed": self.query_not_executed,
+            "requested_artifact_id": self.requested_artifact_id,
             "observed_at_utc": self.observed_at_utc,
             "records_seen": self.records_seen,
             "records_loaded": self.records_loaded,
@@ -143,13 +165,17 @@ class RepositoryReadReport(Generic[T]):
         }
 
     def require_complete(self) -> list[T]:
-        """Return loaded values only when every observed index row was read.
+        """Return loaded values only when the read contract is complete.
 
-        A query with no indexed rows returns an empty list, but its separate
-        NO_RECORDS_OBSERVED status must not be interpreted as a filesystem-wide
-        empty inventory.
+        NO_RECORDS_OBSERVED is a completed query with zero indexed rows.
+        QUERY_NOT_EXECUTED is not a completed read and is fail-closed for
+        generic consumers; a legacy caller may handle its known no-op explicitly.
         """
-        if self.status in (RepositoryReadStatus.READ_PARTIAL, RepositoryReadStatus.READ_FAILED):
+        if self.status in (
+            RepositoryReadStatus.READ_PARTIAL,
+            RepositoryReadStatus.READ_FAILED,
+            RepositoryReadStatus.QUERY_NOT_EXECUTED,
+        ):
             raise RepositoryReadError(self)
         return self.items
 

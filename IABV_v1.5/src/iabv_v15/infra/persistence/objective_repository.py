@@ -44,6 +44,21 @@ class ObjectiveRepository:
         self._read_state.report = report
         return report
 
+    def _remember_collection_error(
+        self,
+        scope: str,
+        error: Exception,
+        *,
+        requested_artifact_id: str = "",
+    ) -> RepositoryReadReport[ObjectiveNode]:
+        return self._remember_report(
+            RepositoryReadReport.from_collection_error(
+                scope,
+                error,
+                requested_artifact_id=requested_artifact_id,
+            )
+        )
+
     def save(self, node: ObjectiveNode) -> ObjectiveNode:
         if not node.root_id:
             node = node.model_copy(update={'root_id': node.objective_id if node.parent_id is None else node.root_id})
@@ -72,14 +87,28 @@ class ObjectiveRepository:
         return node
 
     def get_with_diagnostics(self, objective_id: str) -> ArtifactReadResult[ObjectiveNode]:
-        row = self.db.fetchone(
-            """
-            SELECT objective_id, path
-            FROM objective_nodes
-            WHERE objective_id = ?
-            """,
-            (objective_id,),
-        )
+        try:
+            row = self.db.fetchone(
+                """
+                SELECT objective_id, path
+                FROM objective_nodes
+                WHERE objective_id = ?
+                """,
+                (objective_id,),
+            )
+        except Exception as exc:
+            self._remember_collection_error(
+                "SQLITE_INDEX_LOOKUP",
+                exc,
+                requested_artifact_id=objective_id,
+            )
+            return ArtifactReadResult(
+                artifact_id=objective_id,
+                path="",
+                status=ArtifactReadStatus.READ_FAILED,
+                error_type=type(exc).__name__,
+                error_message=str(exc)[:300],
+            )
         if row is None:
             result = ArtifactReadResult(
                 artifact_id=objective_id,
@@ -136,8 +165,7 @@ class ObjectiveRepository:
             sql += ' WHERE ' + ' AND '.join(clauses)
         sql += ' ORDER BY updated_at_utc DESC LIMIT ?'
         parameters.append(limit)
-        rows = self.db.fetchall(sql, tuple(parameters))
-        return self._collect_with_diagnostics(rows, scope="SQLITE_INDEX_ROWS")
+        return self._fetchall_with_diagnostics(sql, tuple(parameters))
 
     def list_recent(
         self,
@@ -170,8 +198,7 @@ class ObjectiveRepository:
             parameters.append(status.value)
         sql += ' ORDER BY priority ASC, updated_at_utc DESC LIMIT ?'
         parameters.append(limit)
-        rows = self.db.fetchall(sql, tuple(parameters))
-        return self._collect_with_diagnostics(rows, scope="SQLITE_INDEX_ROWS")
+        return self._fetchall_with_diagnostics(sql, tuple(parameters))
 
     def list_children(
         self,
@@ -207,7 +234,7 @@ class ObjectiveRepository:
         probe = self._normalize_title(title)
         if not probe:
             report = self._remember_report(
-                RepositoryReadReport.from_results("SQLITE_INDEX_ROWS", [])
+                RepositoryReadReport.from_not_executed("SQLITE_INDEX_ROWS")
             )
             return [], report
 
@@ -224,8 +251,7 @@ class ObjectiveRepository:
             parameters.extend([site_id or '', site_id or ''])
         sql += ' ORDER BY updated_at_utc DESC LIMIT ?'
         parameters.append(limit)
-        rows = self.db.fetchall(sql, tuple(parameters))
-        report = self._collect_with_diagnostics(rows, scope="SQLITE_INDEX_ROWS")
+        report = self._fetchall_with_diagnostics(sql, tuple(parameters))
         matches = [
             node for node in report.items
             if self._normalize_title(node.title) == probe
@@ -250,6 +276,8 @@ class ObjectiveRepository:
             site_id=site_id,
             limit=limit,
         )
+        if report.status == RepositoryReadStatus.QUERY_NOT_EXECUTED:
+            return matches
         report.require_complete()
         return matches
 
@@ -270,6 +298,17 @@ class ObjectiveRepository:
             for row in rows
         ]
         return self._remember_report(RepositoryReadReport.from_results(scope, results))
+
+    def _fetchall_with_diagnostics(
+        self,
+        sql: str,
+        parameters: tuple[object, ...],
+    ) -> RepositoryReadReport[ObjectiveNode]:
+        try:
+            rows = self.db.fetchall(sql, parameters)
+        except Exception as exc:
+            return self._remember_collection_error("SQLITE_INDEX_ROWS", exc)
+        return self._collect_with_diagnostics(rows, scope="SQLITE_INDEX_ROWS")
 
     def _load_result(self, objective_id: str, path: str) -> ArtifactReadResult[ObjectiveNode]:
         candidate = Path(path)

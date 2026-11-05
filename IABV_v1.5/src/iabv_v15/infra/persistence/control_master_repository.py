@@ -19,7 +19,7 @@ from __future__ import annotations
 from datetime import datetime
 from pathlib import Path
 from threading import local
-from typing import TypeVar
+from typing import Any, TypeVar
 
 from iabv_v15.domain.models import (
     ControlDecision,
