@@ -958,3 +958,35 @@ def test_oses_test_evidence_file_missing_is_confirmed_not_found(tmp_path) -> Non
     service._metacognitive_starvation_findings()
 
     assert service._source_coverage['test_evidence_file'] == 'CONFIRMED_NOT_FOUND'
+
+def test_oses_adaptive_threshold_failure_survives_later_success(tmp_path, monkeypatch) -> None:
+    service = _service(tmp_path, experiment_lab_repository=object())
+    attempts = 0
+
+    def fail_once_then_succeed():
+        nonlocal attempts
+        attempts += 1
+        if attempts == 1:
+            service._record_source_status(
+                "experiment_lab_threshold", "READ_FAILED", "OperationalError",
+            )
+            return None
+        service._record_source_status("experiment_lab_threshold", "READ_OK")
+        return 4
+
+    monkeypatch.setattr(service, "_compute_current_adaptive_nc", fail_once_then_succeed)
+
+    # The threshold-shift reader must use the same diagnostic path.
+    assert service._adaptive_threshold_shift_findings() == []
+    assert attempts == 1
+    assert service._source_coverage["experiment_lab_threshold"] == "READ_FAILED"
+
+    # A later successful read cannot erase the failure from this review cycle.
+    assert service._compute_current_adaptive_nc() == 4
+    assert service._source_coverage["experiment_lab_threshold"] == "READ_FAILED"
+    assert service._source_errors["experiment_lab_threshold"] == "OperationalError"
+
+    report = service._source_coverage_report()
+    assert report["complete"] is False
+    assert "experiment_lab_threshold" in report["incomplete_source_ids"]
+    assert report["source_errors"]["experiment_lab_threshold"] == "OperationalError"

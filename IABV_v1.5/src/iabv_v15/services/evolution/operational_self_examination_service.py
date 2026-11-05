@@ -8369,24 +8369,12 @@ _REQUIRED_SOURCE_IDS = (
         previous_review: Any | None = None,
     ) -> list[SelfExaminationFinding]:
         """Detect significant shifts in the adaptive N_c threshold."""
-        repo = self.experiment_lab_repository
-        if repo is None:
+        # Route every threshold read through the shared diagnostic reader.
+        # A transient failure must remain in this review's coverage even if
+        # the later metadata refresh succeeds.
+        current_nc = self._compute_current_adaptive_nc()
+        if current_nc is None:
             return []
-        try:
-            from iabv_v15.services.lab.experiment_lab import ExperimentLab
-            from iabv_v15.services.lab.algorithm_benchmark_registry import AlgorithmBenchmarkRegistry
-            from iabv_v15.services.lab.decision_scoring_engine import DecisionScoringEngine
-            from iabv_v15.services.lab.strategy_selector import StrategySelector
-            lab = ExperimentLab(
-                repository=repo,
-                registry=AlgorithmBenchmarkRegistry(),
-                scoring_engine=DecisionScoringEngine(),
-                strategy_selector=StrategySelector(),
-            )
-            current_nc = lab.calculate_adaptive_threshold()
-        except Exception:
-            return []
-
         previous_nc = 3
         if previous_review is not None:
             meta = getattr(previous_review, 'metadata', None) or {}
