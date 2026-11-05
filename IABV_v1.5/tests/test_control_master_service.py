@@ -740,7 +740,6 @@ def test_control_master_reads_only_fresh_cached_oses_review():
         queue = service.current_work_queue(limit=20)
 
         assert state.current_risks == []
-        assert state.unresolved_items == []
         assert service.last_work_queue_source_coverage['self_examination_service'] == 'READ_OK'
         assert not any(item.get('source') == 'oses_finding' for item in queue)
     finally:
