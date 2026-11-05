@@ -163,6 +163,7 @@ def test_tool_record_repository_round_trip() -> None:
 
         stored_card = repository.get_card('shell_command')
         stored_task = repository.get_task(task.task_id)
+        stored_tasks = repository.list_tasks(limit=20)
         stored_results = repository.list_results(task_id=task.task_id)
         stored_patterns = repository.list_interaction_patterns(tool_id='shell_command')
         stored_episodes = repository.list_interaction_episodes(tool_id='shell_command')
@@ -173,6 +174,7 @@ def test_tool_record_repository_round_trip() -> None:
         assert stored_card.tool_type == ToolType.SHELL
         assert stored_card.validation_status == ToolValidationStatus.SANDBOX_PASS
         assert stored_task is not None
+        assert any(item.task_id == task.task_id for item in stored_tasks)
         assert stored_task.requested_by_role == TaskRole.TOOL_USE
         assert stored_task.execution_scope == 'read_only'
         assert len(stored_results) == 1
