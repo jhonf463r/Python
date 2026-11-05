@@ -1,8 +1,11 @@
 ﻿from __future__ import annotations
 
 import shutil
+import sqlite3
 from pathlib import Path
 from uuid import uuid4
+
+import pytest
 
 from iabv_v15.domain.models import (
     ApprovalDecision,
@@ -25,6 +28,11 @@ from iabv_v15.domain.models import (
     ToolValidationStatus,
 )
 from iabv_v15.infra.persistence.database import AppDatabase
+from iabv_v15.infra.persistence.read_results import (
+    ArtifactReadStatus,
+    RepositoryReadError,
+    RepositoryReadStatus,
+)
 from iabv_v15.infra.persistence.storage import ArtifactStorage
 from iabv_v15.infra.persistence.tool_record_repository import ToolRecordRepository
 
@@ -185,5 +193,109 @@ def test_tool_record_repository_round_trip() -> None:
         assert len(stored_log) == 1
         assert stored_log[0]['log_id'] == log_id
         assert stored_log[0]['payload']['ok'] is True
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def _read_integrity_repository(name: str) -> tuple[Path, AppDatabase, ToolRecordRepository]:
+    root = _workspace(name)
+    db = AppDatabase(str(root / 'app.sqlite'))
+    storage = ArtifactStorage(str(root / 'tool_teaching'))
+    return root, db, ToolRecordRepository(db, storage)
+
+
+def _read_integrity_card(tool_id: str) -> ToolCard:
+    return ToolCard(
+        tool_id=tool_id,
+        title=f'Tool {tool_id}',
+        tool_type=ToolType.SHELL,
+        description='Synthetic card for read-integrity tests.',
+        adapter_key='shell',
+        validation_status=ToolValidationStatus.SANDBOX_PASS,
+        available=True,
+    )
+
+
+def test_tool_record_missing_card_payload_is_reported_without_pruning_index() -> None:
+    root, db, repository = _read_integrity_repository('tool_record_missing_card')
+    try:
+        card = repository.save_card(_read_integrity_card('missing-card'))
+        row = db.fetchone(
+            'SELECT tool_id, path FROM tool_cards WHERE tool_id = ?',
+            (card.tool_id,),
+        )
+        assert row is not None
+        Path(row['path']).unlink()
+
+        report = repository.list_cards_with_diagnostics()
+
+        assert report.status == RepositoryReadStatus.READ_FAILED
+        assert report.records_seen == 1
+        assert report.records_loaded == 0
+        assert report.missing_ids == [card.tool_id]
+        assert report.results[0].status == ArtifactReadStatus.CONFIRMED_NOT_FOUND
+        assert repository.last_read_report is report
+        assert db.fetchone(
+            'SELECT tool_id FROM tool_cards WHERE tool_id = ?',
+            (card.tool_id,),
+        ) is not None
+        with pytest.raises(RepositoryReadError) as exc_info:
+            repository.list_cards()
+        assert exc_info.value.report.status == RepositoryReadStatus.READ_FAILED
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_tool_record_partial_card_report_preserves_valid_items_and_index_rows() -> None:
+    root, db, repository = _read_integrity_repository('tool_record_partial_cards')
+    try:
+        valid = repository.save_card(_read_integrity_card('valid-card'))
+        corrupt = repository.save_card(_read_integrity_card('corrupt-card'))
+        row = db.fetchone(
+            'SELECT path FROM tool_cards WHERE tool_id = ?',
+            (corrupt.tool_id,),
+        )
+        assert row is not None
+        Path(row['path']).write_text('{', encoding='utf-8')
+
+        report = repository.list_cards_with_diagnostics()
+
+        assert report.status == RepositoryReadStatus.READ_PARTIAL
+        assert report.records_seen == 2
+        assert report.records_loaded == 1
+        assert [item.tool_id for item in report.items] == [valid.tool_id]
+        assert report.results[1].status == ArtifactReadStatus.CORRUPT
+        assert db.fetchone(
+            'SELECT tool_id FROM tool_cards WHERE tool_id = ?',
+            (corrupt.tool_id,),
+        ) is not None
+        with pytest.raises(RepositoryReadError) as exc_info:
+            repository.list_cards()
+        assert exc_info.value.report.status == RepositoryReadStatus.READ_PARTIAL
+        assert len(exc_info.value.report.items) == 1
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_tool_record_sqlite_fetchall_failure_replaces_stale_report(monkeypatch) -> None:
+    root, db, repository = _read_integrity_repository('tool_record_fetchall_failure')
+    try:
+        previous = repository.list_cards_with_diagnostics()
+        assert previous.status == RepositoryReadStatus.NO_RECORDS_OBSERVED
+
+        def fail_fetchall(*args, **kwargs):
+            raise sqlite3.OperationalError('database is locked')
+
+        monkeypatch.setattr(db, 'fetchall', fail_fetchall)
+        report = repository.list_cards_with_diagnostics()
+
+        assert report.status == RepositoryReadStatus.READ_FAILED
+        assert report.collection_error_type == 'OperationalError'
+        assert 'database is locked' in report.collection_error_message
+        assert repository.last_read_report is report
+        assert report is not previous
+        with pytest.raises(RepositoryReadError) as exc_info:
+            repository.list_cards()
+        assert exc_info.value.report is repository.last_read_report
     finally:
         shutil.rmtree(root, ignore_errors=True)
