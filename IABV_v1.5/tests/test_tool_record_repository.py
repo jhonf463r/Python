@@ -289,14 +289,15 @@ def test_tool_record_sqlite_fetchall_failure_replaces_stale_report(monkeypatch) 
         assert previous.status == RepositoryReadStatus.NO_RECORDS_OBSERVED
 
         def fail_fetchall(*args, **kwargs):
-            raise sqlite3.OperationalError('database is locked')
+            raise sqlite3.OperationalError('PRIVATE_DB_ERROR_CANARY')
 
         monkeypatch.setattr(db, 'fetchall', fail_fetchall)
         report = repository.list_cards_with_diagnostics()
 
         assert report.status == RepositoryReadStatus.READ_FAILED
         assert report.collection_error_type == 'OperationalError'
-        assert 'database is locked' in report.collection_error_message
+        assert report.collection_error_message == 'Repository collection read failed.'
+        assert 'PRIVATE_DB_ERROR_CANARY' not in str(report.to_dict())
         assert repository.last_read_report is report
         assert report is not previous
         with pytest.raises(RepositoryReadError) as exc_info:
@@ -383,7 +384,7 @@ def test_tool_record_collection_readers_report_sqlite_errors_without_stale_repor
         assert previous.status == RepositoryReadStatus.NO_RECORDS_OBSERVED
 
         def fail_fetchall(*args, **kwargs):
-            raise sqlite3.OperationalError('database is locked')
+            raise sqlite3.OperationalError('PRIVATE_DB_ERROR_CANARY')
 
         monkeypatch.setattr(db, 'fetchall', fail_fetchall)
         readers = (
@@ -398,7 +399,8 @@ def test_tool_record_collection_readers_report_sqlite_errors_without_stale_repor
             report = read_collection()
             assert report.status == RepositoryReadStatus.READ_FAILED
             assert report.collection_error_type == 'OperationalError'
-            assert 'database is locked' in report.collection_error_message
+            assert report.collection_error_message == 'Repository collection read failed.'
+            assert 'PRIVATE_DB_ERROR_CANARY' not in str(report.to_dict())
             assert report.scope.startswith('SQLITE_INDEX_ROWS:')
             assert repository.last_read_report is report
             assert report is not previous
@@ -439,7 +441,7 @@ def test_tool_record_point_lookup_sqlite_failures_replace_stale_report(monkeypat
         assert previous.status == RepositoryReadStatus.NO_RECORDS_OBSERVED
 
         def fail_fetchone(*args, **kwargs):
-            raise sqlite3.OperationalError("database is locked")
+            raise sqlite3.OperationalError("PRIVATE_DB_ERROR_CANARY")
 
         monkeypatch.setattr(db, "fetchone", fail_fetchone)
         lookups = (
@@ -470,6 +472,9 @@ def test_tool_record_point_lookup_sqlite_failures_replace_stale_report(monkeypat
             assert report.status == RepositoryReadStatus.READ_FAILED
             assert report.requested_artifact_id == requested_id
             assert report.collection_error_type == "OperationalError"
+            assert result.error_message == "Repository point lookup failed."
+            assert report.collection_error_message == "Repository collection read failed."
+            assert "PRIVATE_DB_ERROR_CANARY" not in str(report.to_dict())
             assert report is not previous
             with pytest.raises(RepositoryReadError) as exc_info:
                 legacy_reader()
@@ -488,7 +493,7 @@ def test_tool_record_corrupt_point_lookup_preserves_index_and_fails_closed() -> 
             (card.tool_id,),
         )
         assert row is not None
-        Path(row["path"]).write_text("{", encoding="utf-8")
+        Path(row["path"]).write_text('{"secret": "PRIVATE_PAYLOAD_CANARY",}', encoding="utf-8")
 
         result = repository.get_card_with_diagnostics(card.tool_id)
 
@@ -496,6 +501,7 @@ def test_tool_record_corrupt_point_lookup_preserves_index_and_fails_closed() -> 
         assert repository.last_read_report is not None
         assert repository.last_read_report.status == RepositoryReadStatus.READ_FAILED
         assert repository.last_read_report.results == (result,)
+        assert "PRIVATE_PAYLOAD_CANARY" not in str(repository.last_read_report.to_dict())
         assert db.fetchone(
             "SELECT tool_id FROM tool_cards WHERE tool_id = ?",
             (card.tool_id,),
@@ -503,5 +509,51 @@ def test_tool_record_corrupt_point_lookup_preserves_index_and_fails_closed() -> 
         with pytest.raises(RepositoryReadError) as exc_info:
             repository.get_card(card.tool_id)
         assert exc_info.value.report.results[0].status == ArtifactReadStatus.CORRUPT
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+def test_tool_record_file_read_errors_redact_exception_details(monkeypatch) -> None:
+    root, db, repository = _read_integrity_repository("tool_record_file_error_redaction")
+    try:
+        card = repository.save_card(_read_integrity_card("file-error-card"))
+        card_row = db.fetchone(
+            "SELECT path FROM tool_cards WHERE tool_id = ?",
+            (card.tool_id,),
+        )
+        assert card_row is not None
+
+        log_id = repository.log_execution(
+            tool_id="shell_command",
+            task_id=None,
+            action_type="read_only_check",
+            state="executed",
+            payload={"ok": True},
+            created_at_utc="2026-11-05T00:00:00+00:00",
+        )
+        log_row = db.fetchone(
+            "SELECT path FROM tool_execution_log WHERE log_id = ?",
+            (log_id,),
+        )
+        assert log_row is not None
+        denied_paths = {Path(card_row["path"]), Path(log_row["path"])}
+        original_read_text = Path.read_text
+
+        def fail_private_reads(self, *args, **kwargs):
+            if self in denied_paths:
+                raise PermissionError("PRIVATE_FILE_ERROR_CANARY")
+            return original_read_text(self, *args, **kwargs)
+
+        monkeypatch.setattr(Path, "read_text", fail_private_reads)
+
+        card_result = repository.get_card_with_diagnostics(card.tool_id)
+        log_report = repository.list_log_with_diagnostics()
+
+        assert card_result.status == ArtifactReadStatus.READ_FAILED
+        assert card_result.error_type == "PermissionError"
+        assert card_result.error_message == "Artifact read or validation failed."
+        assert log_report.status == RepositoryReadStatus.READ_FAILED
+        assert log_report.results[0].error_type == "PermissionError"
+        assert log_report.results[0].error_message == "Artifact read or validation failed."
+        assert "PRIVATE_FILE_ERROR_CANARY" not in str(log_report.to_dict())
     finally:
         shutil.rmtree(root, ignore_errors=True)
