@@ -1665,15 +1665,32 @@ def test_portable_context_consumes_and_projects_file_fsync_ack() -> None:
 
     ws = _workspace()
     try:
+        import hashlib
+        import json
         storage = ArtifactStorage(root=str(ws))
         pcs = PortableContextService(workspace_root=str(ws), storage=storage)
+        event = {
+            "seq": 19,
+            "kind": "interaction_resolved",
+            "data": {
+                "interaction_id": "chat-portable-ack",
+                "outcome": "resolved",
+                "provider": "test",
+                "message_preview": "ack",
+                "stalls_during": [],
+            },
+        }
+        line_bytes = (json.dumps(event, ensure_ascii=False, default=str) + "\n").encode("utf-8")
+        audit = ws / "data" / "logs" / "runtime_audit.jsonl"
+        audit.parent.mkdir(parents=True, exist_ok=True)
+        audit.write_bytes(line_bytes)
         ack = {
             "status": "FILE_FSYNCED",
             "path": "runtime_audit.jsonl",
             "seq": 19,
-            "byte_start": 10,
-            "byte_end": 140,
-            "line_sha256": "b" * 64,
+            "byte_start": 0,
+            "byte_end": len(line_bytes),
+            "line_sha256": hashlib.sha256(line_bytes).hexdigest(),
         }
         episode = {
             "interaction_id": "chat-portable-ack",

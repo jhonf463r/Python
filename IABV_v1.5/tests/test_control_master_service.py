@@ -798,14 +798,16 @@ def test_runtime_audit_work_item_carries_matching_fsync_ack() -> None:
         }
         audit = root / "data" / "logs" / "runtime_audit.jsonl"
         audit.parent.mkdir(parents=True, exist_ok=True)
-        audit.write_text(json.dumps(event) + "\n", encoding="utf-8")
+        line_bytes = (json.dumps(event, ensure_ascii=False, default=str) + "\n").encode("utf-8")
+        audit.write_bytes(line_bytes)
+        import hashlib
         ack = {
             "status": "FILE_FSYNCED",
             "path": "runtime_audit.jsonl",
             "seq": 7,
             "byte_start": 0,
-            "byte_end": len(json.dumps(event).encode("utf-8")) + 1,
-            "line_sha256": "a" * 64,
+            "byte_end": len(line_bytes),
+            "line_sha256": hashlib.sha256(line_bytes).hexdigest(),
         }
 
         class Lifecycle:

@@ -235,6 +235,18 @@ def test_trace_ack_validator_rejects_malformed_receipts() -> None:
         "line_sha256": "a" * 64,
     }
     assert validate_durability_ack(valid, expected_seq=4)["accepted"] is True
+    assert validate_durability_ack(
+        valid, expected_seq=4, expected_line_sha256="a" * 64,
+        expected_byte_start=10, expected_byte_end=100,
+    )["verification"] == "TRACER_RECEIPT_MATCHED_TO_READ_ROW"
+    assert validate_durability_ack(
+        valid, expected_seq=4, expected_line_sha256="b" * 64,
+        expected_byte_start=10, expected_byte_end=100,
+    )["status"] == "ACK_INVALID"
+    assert validate_durability_ack(
+        valid, expected_seq=4, expected_line_sha256="a" * 64,
+        expected_byte_start=9, expected_byte_end=100,
+    )["status"] == "ACK_INVALID"
     assert validate_durability_ack(valid, expected_seq=5)["status"] == "ACK_INVALID"
     assert validate_durability_ack(valid, expected_seq=True)["status"] == "ACK_INVALID"
     assert validate_durability_ack(valid, expected_seq="4")["status"] == "ACK_INVALID"
