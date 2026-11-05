@@ -256,3 +256,72 @@ def test_existing_test_evidence_without_r24_commit_provenance_stays_unverified(t
     assert service._source_errors["test_evidence_file"] == (
         "R24_commit_bound_provenance_and_freshness_not_integrated"
     )
+
+
+def test_cached_oses_review_rejects_typed_metadata_coverage_disagreement(tmp_path) -> None:
+    service = _service(tmp_path)
+    snapshot = _complete_snapshot()
+    metadata_coverage = dict(snapshot.metadata["source_coverage"])
+    metadata_coverage["run_repository"] = "READ_FAILED"
+    snapshot.metadata = {**snapshot.metadata, "source_coverage": metadata_coverage}
+    service._current_review = snapshot
+
+    with pytest.raises(RuntimeError, match="oses_source_coverage_representation_mismatch"):
+        service.current_review_cached()
+
+
+def test_cached_oses_review_rejects_metadata_completion_claim_that_disagrees(tmp_path) -> None:
+    service = _service(tmp_path)
+    snapshot = _complete_snapshot()
+    snapshot.metadata = {**snapshot.metadata, "source_coverage_complete": False}
+    service._current_review = snapshot
+
+    with pytest.raises(RuntimeError, match="oses_source_coverage_completion_unverified"):
+        service.current_review_cached()
+
+
+def test_cached_oses_review_rejects_future_dated_snapshot(tmp_path) -> None:
+    service = _service(tmp_path)
+    snapshot = _complete_snapshot().model_copy(
+        update={"updated_at_utc": datetime.now(timezone.utc) + timedelta(seconds=60)}
+    )
+    service._current_review = snapshot
+
+    with pytest.raises(RuntimeError, match="oses_cached_review_stale"):
+        service.current_review_cached()
+
+
+def test_cached_oses_miss_does_not_create_self_examination_directory(tmp_path) -> None:
+    service = _service(tmp_path)
+    cache_dir = Path(service.storage.root) / "self_examination"
+    assert not cache_dir.exists()
+
+    with pytest.raises(RuntimeError, match="oses_cached_review_unavailable"):
+        service.current_review_cached()
+
+    assert not cache_dir.exists()
+
+
+def test_oses_persistence_materializes_all_required_source_ids_even_if_some_were_not_instrumented(tmp_path) -> None:
+    service = _service(tmp_path)
+    snapshot = _complete_snapshot()
+    service._source_coverage = {"run_repository": "READ_OK"}
+    service._source_errors = {}
+
+    persisted = service._persist_review(snapshot)
+    latest = service.storage.load_json("self_examination/latest.json")
+    assert set(latest["source_coverage"]) == set(_REQUIRED_SOURCE_IDS)
+    assert latest["source_coverage"]["adaptive_session_repository"] == "NOT_INSTRUMENTED"
+    assert latest["metadata"]["source_coverage_complete"] is False
+    assert "adaptive_session_repository" in latest["metadata"]["source_coverage_incomplete_ids"]
+    assert persisted.source_coverage == latest["source_coverage"]
+
+
+def test_oses_coverage_report_marks_unexpected_reader_ids_incomplete(tmp_path) -> None:
+    service = _service(tmp_path)
+    service._source_coverage["unregistered_reader"] = "READ_OK"
+
+    report = service._source_coverage_report()
+
+    assert report["complete"] is False
+    assert report["unexpected_source_ids"] == ["unregistered_reader"]

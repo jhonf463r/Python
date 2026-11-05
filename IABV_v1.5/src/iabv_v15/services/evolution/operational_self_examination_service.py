@@ -148,9 +148,13 @@ class OperationalSelfExaminationService:
         ):
             raise RuntimeError("oses_source_coverage_contract_mismatch")
 
-        coverage = dict(getattr(cached, "source_coverage", None) or {})
-        if not coverage:
-            coverage = dict(metadata.get("source_coverage") or {})
+        typed_coverage = dict(cached.source_coverage or {})
+        metadata_coverage = metadata.get("source_coverage")
+        if not isinstance(metadata_coverage, dict) or not metadata_coverage:
+            raise RuntimeError("oses_source_coverage_metadata_unverified")
+        if typed_coverage != metadata_coverage:
+            raise RuntimeError("oses_source_coverage_representation_mismatch")
+        coverage = typed_coverage
         missing = sorted(set(_REQUIRED_SOURCE_IDS) - set(coverage))
         unexpected = sorted(set(coverage) - set(_REQUIRED_SOURCE_IDS))
         if missing or unexpected:
@@ -163,7 +167,23 @@ class OperationalSelfExaminationService:
             for source in _REQUIRED_SOURCE_IDS
             if coverage[source] != "READ_OK"
         }
-        errors = dict(getattr(cached, "source_errors", None) or metadata.get("source_errors") or {})
+
+        typed_errors = dict(cached.source_errors or {})
+        metadata_errors = metadata.get("source_errors")
+        if not isinstance(metadata_errors, dict):
+            raise RuntimeError("oses_source_errors_metadata_unverified")
+        if typed_errors != metadata_errors:
+            raise RuntimeError("oses_source_errors_representation_mismatch")
+        errors = typed_errors
+
+        if metadata.get("source_coverage_complete") is not True:
+            raise RuntimeError("oses_source_coverage_completion_unverified")
+        incomplete_ids = metadata.get("source_coverage_incomplete_ids")
+        unexpected_ids = metadata.get("source_coverage_unexpected_ids")
+        if not isinstance(incomplete_ids, list) or incomplete_ids:
+            raise RuntimeError("oses_source_coverage_completion_mismatch")
+        if not isinstance(unexpected_ids, list) or unexpected_ids:
+            raise RuntimeError("oses_source_coverage_unexpected_sources")
         if incomplete or errors:
             raise RuntimeError(
                 "oses_source_coverage_incomplete:"
@@ -186,14 +206,16 @@ class OperationalSelfExaminationService:
             source for source, status in coverage.items()
             if status != "READ_OK"
         ]
+        unexpected = sorted(set(self._source_coverage) - set(_REQUIRED_SOURCE_IDS))
         incomplete = sorted(set(missing) | set(errors))
         return {
             "contract": _SOURCE_COVERAGE_CONTRACT,
             "required_source_ids": list(_REQUIRED_SOURCE_IDS),
             "source_coverage": coverage,
             "source_errors": errors,
-            "complete": not incomplete,
+            "complete": not incomplete and not unexpected,
             "incomplete_source_ids": incomplete,
+            "unexpected_source_ids": unexpected,
         }
 
     def _record_source_status(
@@ -1415,18 +1437,17 @@ _REQUIRED_SOURCE_IDS = (
 
     def _persist_review(self, review: SelfExaminationSnapshot) -> SelfExaminationSnapshot:
         embodiment_violations = self._collect_embodiment_violations()
+        coverage_report = self._source_coverage_report()
         metadata_update: dict[str, Any] = {
             **dict(review.metadata or {}),
             'workspace_root': self.workspace_root,
-            'source_coverage_contract': _SOURCE_COVERAGE_CONTRACT,
-            'required_source_ids': list(_REQUIRED_SOURCE_IDS),
-            'source_coverage': dict(review.source_coverage or {}),
-            'source_errors': dict(review.source_errors or {}),
-            'source_coverage_complete': (
-                set(self._source_coverage) == set(_REQUIRED_SOURCE_IDS)
-                and all(status == 'READ_OK' for status in self._source_coverage.values())
-                and not self._source_errors
-            ),
+            'source_coverage_contract': coverage_report['contract'],
+            'required_source_ids': list(coverage_report['required_source_ids']),
+            'source_coverage': dict(coverage_report['source_coverage']),
+            'source_errors': dict(coverage_report['source_errors']),
+            'source_coverage_complete': bool(coverage_report['complete']),
+            'source_coverage_incomplete_ids': list(coverage_report['incomplete_source_ids']),
+            'source_coverage_unexpected_ids': list(coverage_report['unexpected_source_ids']),
             'source_refs': [
                 'RunRepository',
                 'AdaptiveSessionRepository',
@@ -1457,12 +1478,12 @@ _REQUIRED_SOURCE_IDS = (
                 'assistant_brief': self._render_assistant_brief(review),
                 'package_path': str(self.storage.resolve('self_examination/latest.json')),
                 'markdown_path': str(self.storage.resolve('self_examination/latest.md')),
-                'source_coverage': dict(self._source_coverage),
-                'source_errors': dict(self._source_errors),
+                'source_coverage': dict(coverage_report['source_coverage']),
+                'source_errors': dict(coverage_report['source_errors']),
                 'metadata': {
                     **metadata_update,
-                    'source_coverage': dict(self._source_coverage),
-                    'source_errors': dict(self._source_errors),
+                    'source_coverage': dict(coverage_report['source_coverage']),
+                    'source_errors': dict(coverage_report['source_errors']),
                 },
             }
         )
@@ -1515,10 +1536,13 @@ _REQUIRED_SOURCE_IDS = (
 
     def _load_latest_review(self) -> SelfExaminationSnapshot | None:
         try:
-            if not self.storage.exists('self_examination/latest.json'):
+            # Use a non-creating path resolver: a cache miss must not create
+            # self_examination/ merely because a consumer asked for a cache read.
+            latest_path = self.storage.resolve_managed_path('self_examination/latest.json')
+            if not latest_path.is_file():
                 self._record_source_status('previous_review_snapshot', 'CONFIRMED_NOT_FOUND')
                 return None
-            payload = self.storage.load_json('self_examination/latest.json')
+            payload = json.loads(latest_path.read_text(encoding='utf-8'))
             review = SelfExaminationSnapshot.model_validate(payload)
             self._record_source_status('previous_review_snapshot', 'READ_OK')
             return review
@@ -1531,7 +1555,7 @@ _REQUIRED_SOURCE_IDS = (
             age_seconds = (utc_now() - review.updated_at_utc).total_seconds()
         except Exception:
             return False
-        return age_seconds <= max_age_seconds
+        return 0 <= age_seconds <= max_age_seconds
 
     def _recent_runs(self) -> list[RunRecord]:
         repository = self.run_repository
