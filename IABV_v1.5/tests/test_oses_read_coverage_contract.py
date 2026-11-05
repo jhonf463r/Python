@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from importlib import import_module
+from pathlib import Path
 from types import SimpleNamespace
 import pytest
 
@@ -255,3 +256,65 @@ def test_oses_account_scanner_failure_is_not_erased_by_later_success(tmp_path, m
     assert service._account_resource_health_findings() == []
     assert service._source_coverage['account_resource_scanner'] == 'READ_FAILED'
     assert service._source_errors['account_resource_scanner'] == 'PermissionError'
+
+
+
+def test_oses_runtime_audit_log_integrity_is_verified(tmp_path) -> None:
+    audit_path = tmp_path / 'data' / 'logs' / 'runtime_audit.jsonl'
+    audit_path.parent.mkdir(parents=True)
+    audit_path.write_text(
+        '{"kind":"dispatch_started","data":{"task_name":"chat"}}\n'
+        '{"kind":"dispatch_terminal","data":{"terminal_state":"completed"}}\n',
+        encoding='utf-8',
+    )
+    service = _service(tmp_path)
+
+    service._inspect_runtime_audit_log()
+
+    assert service._source_coverage['runtime_audit_log'] == 'READ_OK'
+    assert 'runtime_audit_log' not in service._source_errors
+
+
+def test_oses_runtime_audit_log_malformed_rows_are_partial_not_clean(tmp_path) -> None:
+    audit_path = tmp_path / 'data' / 'logs' / 'runtime_audit.jsonl'
+    audit_path.parent.mkdir(parents=True)
+    audit_path.write_text(
+        '{"kind":"valid_event"}\n'
+        '[]\n'
+        '{malformed}\n',
+        encoding='utf-8',
+    )
+    service = _service(tmp_path)
+
+    service._inspect_runtime_audit_log()
+
+    assert service._source_coverage['runtime_audit_log'] == 'READ_PARTIAL'
+    assert service._source_errors['runtime_audit_log'] == 'malformed_jsonl_rows:2'
+
+
+def test_oses_runtime_audit_log_missing_file_is_not_verified_empty(tmp_path) -> None:
+    service = _service(tmp_path)
+
+    service._inspect_runtime_audit_log()
+
+    assert service._source_coverage['runtime_audit_log'] == 'CONFIRMED_NOT_FOUND'
+
+
+def test_oses_runtime_audit_log_permission_failure_is_reported(monkeypatch, tmp_path) -> None:
+    audit_path = tmp_path / 'data' / 'logs' / 'runtime_audit.jsonl'
+    audit_path.parent.mkdir(parents=True)
+    audit_path.write_text('{"kind":"event"}\n', encoding='utf-8')
+    original_open = Path.open
+
+    def fail_target_open(self, *args, **kwargs):
+        if self == audit_path:
+            raise PermissionError('synthetic audit log access denied')
+        return original_open(self, *args, **kwargs)
+
+    monkeypatch.setattr(Path, 'open', fail_target_open)
+    service = _service(tmp_path)
+
+    service._inspect_runtime_audit_log()
+
+    assert service._source_coverage['runtime_audit_log'] == 'READ_FAILED'
+    assert service._source_errors['runtime_audit_log'] == 'PermissionError'
