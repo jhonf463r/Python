@@ -850,7 +850,18 @@ def _sync_control_master_tests_state(
         failed = int(evidence.get("failed") or 0)
         errors = int(evidence.get("errors") or 0)
         total = passed + failed + errors
-        health = "green" if failed == 0 and errors == 0 else "red"
+        provenance_clean = (
+            evidence.get("provenance_status") == "COMMIT_BOUND_CLEAN"
+            and evidence.get("worktree_clean") is True
+            and bool(evidence.get("commit_sha"))
+        )
+        run_failed = (
+            failed > 0
+            or errors > 0
+            or int(evidence.get("returncode") or 0) != 0
+            or bool(evidence.get("timed_out"))
+        )
+        health = "red" if run_failed else ("green" if provenance_clean else "unknown")
         tests_state = {
             "health": health,
             "passed": passed,
