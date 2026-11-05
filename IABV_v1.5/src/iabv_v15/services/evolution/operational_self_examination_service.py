@@ -1204,6 +1204,9 @@ _REQUIRED_SOURCE_IDS = (
     'improvement_backlog',
     'world_model_service',
     'autonomous_validation_cycle',
+    'previous_review_snapshot',
+    'metacognitive_error_ledger',
+    'validation_feedback_history',
     'token_rotation_ledger',
     'decision_audit_trail',
     'runtime_audit_tracer',
@@ -1504,10 +1507,14 @@ _REQUIRED_SOURCE_IDS = (
     def _load_latest_review(self) -> SelfExaminationSnapshot | None:
         try:
             if not self.storage.exists('self_examination/latest.json'):
+                self._record_source_status('previous_review_snapshot', 'CONFIRMED_NOT_FOUND')
                 return None
             payload = self.storage.load_json('self_examination/latest.json')
-            return SelfExaminationSnapshot.model_validate(payload)
-        except Exception:
+            review = SelfExaminationSnapshot.model_validate(payload)
+            self._record_source_status('previous_review_snapshot', 'READ_OK')
+            return review
+        except Exception as exc:
+            self._record_source_status('previous_review_snapshot', 'READ_FAILED', type(exc).__name__)
             return None
 
     def _is_fresh(self, review: SelfExaminationSnapshot, *, max_age_seconds: int) -> bool:
@@ -5148,8 +5155,11 @@ _REQUIRED_SOURCE_IDS = (
         if g2_file_exists:
             try:
                 g2_entry_count = sum(1 for line in feedback_path.read_text(encoding='utf-8').splitlines() if line.strip())
-            except Exception:
-                pass
+                self._record_source_status('validation_feedback_history', 'READ_OK')
+            except Exception as exc:
+                self._record_source_status('validation_feedback_history', 'READ_FAILED', type(exc).__name__)
+        else:
+            self._record_source_status('validation_feedback_history', 'CONFIRMED_NOT_FOUND')
         checks.append({
             'mechanism': 'G2_feedback_persistence',
             'wired': True,
@@ -5775,8 +5785,10 @@ _REQUIRED_SOURCE_IDS = (
         """Load the metacognitive error ledger for persistent bias detection."""
         ledger_rel = 'self_examination/metacognitive_ledger.jsonl'
         entries: list[dict[str, Any]] = []
+        malformed_rows = 0
         try:
             if not self.storage.exists(ledger_rel):
+                self._record_source_status('metacognitive_error_ledger', 'CONFIRMED_NOT_FOUND')
                 return entries
             raw = self.storage.load_bytes(ledger_rel).decode('utf-8')
             for line in raw.splitlines():
@@ -5784,11 +5796,25 @@ _REQUIRED_SOURCE_IDS = (
                 if not line:
                     continue
                 try:
-                    entries.append(json.loads(line))
+                    item = json.loads(line)
                 except (json.JSONDecodeError, ValueError):
+                    malformed_rows += 1
                     continue
-        except Exception:
-            pass
+                if not isinstance(item, dict):
+                    malformed_rows += 1
+                    continue
+                entries.append(item)
+        except Exception as exc:
+            self._record_source_status('metacognitive_error_ledger', 'READ_FAILED', type(exc).__name__)
+            return entries
+
+        if malformed_rows:
+            self._record_source_status(
+                'metacognitive_error_ledger', 'READ_PARTIAL',
+                f'malformed_jsonl_rows:{malformed_rows}',
+            )
+        else:
+            self._record_source_status('metacognitive_error_ledger', 'READ_OK')
         return entries
 
     # ------------------------------------------------------------------
@@ -5796,19 +5822,13 @@ _REQUIRED_SOURCE_IDS = (
     # ------------------------------------------------------------------
 
     def _load_tried_proposal_keys(self) -> set[str]:
-        """G2: Load proposal keys that have already been validated.
-
-        Reads the JSONL file written by ``AutonomousValidationCycleService._persist_validation_feedback``
-        and returns a set of synthetic keys for proposals that were
-        ``discarded`` or ``unresolved`` — so ``_solution_proposals`` avoids
-        re-proposing the same strategy.  Proposals that were ``promoted``
-        are NOT filtered (they succeeded and may be proposed again for
-        different contexts).
-        """
+        """G2: Load proposal keys that have already been validated."""
         tried: set[str] = set()
+        malformed_rows = 0
+        feedback_path = Path(self.workspace_root) / 'data' / 'evolution' / 'validation_feedback' / 'history.jsonl'
         try:
-            feedback_path = Path(self.workspace_root) / 'data' / 'evolution' / 'validation_feedback' / 'history.jsonl'
             if not feedback_path.is_file():
+                self._record_source_status('validation_feedback_history', 'CONFIRMED_NOT_FOUND')
                 return tried
             for line in feedback_path.read_text(encoding='utf-8').splitlines():
                 line = line.strip()
@@ -5817,6 +5837,10 @@ _REQUIRED_SOURCE_IDS = (
                 try:
                     entry = json.loads(line)
                 except (json.JSONDecodeError, ValueError):
+                    malformed_rows += 1
+                    continue
+                if not isinstance(entry, dict):
+                    malformed_rows += 1
                     continue
                 decision = str(entry.get('decision') or '')
                 if decision not in {'discarded', 'unresolved'}:
@@ -5831,8 +5855,17 @@ _REQUIRED_SOURCE_IDS = (
                     tried.add(f'collaborative_execution:{current}:{candidate}')
                     tried.add(f'validated_collaboration:{candidate}:{current}')
                     tried.add(f'validated_collaboration:{current}:{candidate}')
-        except Exception:
-            pass
+        except Exception as exc:
+            self._record_source_status('validation_feedback_history', 'READ_FAILED', type(exc).__name__)
+            return tried
+
+        if malformed_rows:
+            self._record_source_status(
+                'validation_feedback_history', 'READ_PARTIAL',
+                f'malformed_jsonl_rows:{malformed_rows}',
+            )
+        else:
+            self._record_source_status('validation_feedback_history', 'READ_OK')
         return tried
 
     # ------------------------------------------------------------------
