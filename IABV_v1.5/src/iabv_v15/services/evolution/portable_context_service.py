@@ -3377,11 +3377,26 @@ class PortableContextService:
             digest = None
 
         queue_status = str(getattr(digest, "work_queue_status", "UNAVAILABLE") or "UNAVAILABLE").upper()
-        items = (
+        raw_items = (
             list(getattr(digest, "top_work_queue_items", []) or [])
             if queue_status == "AVAILABLE"
             else []
         )
+        # Preserve the existing PortableContext item contract (id), while
+        # adapting the digest's compact provenance contract (item_id).
+        items = [
+            {
+                "id": item.get("item_id") or item.get("id") or "",
+                "title": item.get("title") or "",
+                "status": item.get("status") or "",
+                "priority_score": item.get("priority_score", 0),
+                "priority_label": item.get("priority_label") or "",
+                "source": item.get("source") or "",
+                "next_action": item.get("next_action") or "",
+                "evidence_refs": list(item.get("evidence_refs") or []),
+            }
+            for item in raw_items
+        ]
         if queue_status == "AVAILABLE":
             summary = f'{len(items)} items prioritarios en cola canónica con cobertura completa.'
             unresolved_fields: list[str] = []

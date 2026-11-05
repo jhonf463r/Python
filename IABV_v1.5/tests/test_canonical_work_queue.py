@@ -417,6 +417,7 @@ class TestPortableContextCanonicalQueue:
             )
             assert wq_section is not None
             assert len(wq_section.items) == 1
+            assert wq_section.items[0]['id'] == 'objective:obj-vis'
             assert wq_section.items[0]['title'] == 'Visible in latest.md'
             # Verify it renders in the assistant_brief / markdown
             assert 'Cola canónica de trabajo' in package.assistant_brief
