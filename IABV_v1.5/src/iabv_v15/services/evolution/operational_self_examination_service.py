@@ -159,8 +159,8 @@ class OperationalSelfExaminationService:
             for source in _REQUIRED_SOURCE_IDS
             if coverage[source] != "READ_OK"
         }
-        if incomplete:
-            errors = dict(getattr(cached, "source_errors", None) or metadata.get("source_errors") or {})
+        errors = dict(getattr(cached, "source_errors", None) or metadata.get("source_errors") or {})
+        if incomplete or errors:
             raise RuntimeError(
                 "oses_source_coverage_incomplete:"
                 + str({"statuses": incomplete, "errors": errors})
@@ -182,13 +182,14 @@ class OperationalSelfExaminationService:
             source for source, status in coverage.items()
             if status != "READ_OK"
         ]
+        incomplete = sorted(set(missing) | set(errors))
         return {
             "contract": _SOURCE_COVERAGE_CONTRACT,
             "required_source_ids": list(_REQUIRED_SOURCE_IDS),
             "source_coverage": coverage,
             "source_errors": errors,
-            "complete": not missing,
-            "incomplete_source_ids": missing,
+            "complete": not incomplete,
+            "incomplete_source_ids": incomplete,
         }
 
     def _record_source_status(
@@ -1418,8 +1419,9 @@ _REQUIRED_SOURCE_IDS = (
             'source_coverage': dict(review.source_coverage or {}),
             'source_errors': dict(review.source_errors or {}),
             'source_coverage_complete': (
-                set(review.source_coverage or {}) == set(_REQUIRED_SOURCE_IDS)
-                and all(status == 'READ_OK' for status in (review.source_coverage or {}).values())
+                set(self._source_coverage) == set(_REQUIRED_SOURCE_IDS)
+                and all(status == 'READ_OK' for status in self._source_coverage.values())
+                and not self._source_errors
             ),
             'source_refs': [
                 'RunRepository',
