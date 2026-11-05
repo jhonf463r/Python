@@ -518,7 +518,7 @@ def _quota_file() -> Path:
     for p in candidates:
         if p.parent.exists():
             return p
-    candidates[0].parent.mkdir(parents=True, exist_ok=True)
+    # Path resolution is read-only; _save_quota_state creates parents on writes.
     return candidates[0]
 
 
