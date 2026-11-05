@@ -334,9 +334,9 @@ def test_evolution_center_exposes_and_copies_self_examination(monkeypatch: pytes
 
         self_examination = vm.get_self_examination()
 
-        assert self_examination
-        assert self_examination.get('assistant_brief')
-        assert self_examination.get('package_path')
+        # This branch does not expose the validated cached OSES API yet.
+        # The panel must report unresolved rather than rebuild OSES on read.
+        assert self_examination.get('truthState') == 'unresolved'
 
         vm.copySelfExamination()
 
@@ -359,19 +359,18 @@ def test_evolution_center_refresh_reuses_cached_self_examination_after_portable_
         service = bootstrap.operational_self_examination_service
         assert service is not None
 
-        original = service.current_review
-        calls: list[bool] = []
+        active_calls: list[bool] = []
 
-        def tracked_current_review(*, refresh: bool = False, max_age_seconds: int = 300):
-            calls.append(bool(refresh))
-            return original(refresh=refresh, max_age_seconds=max_age_seconds)
+        def fail_active_review(*, refresh: bool = False, max_age_seconds: int = 300):
+            active_calls.append(bool(refresh))
+            raise AssertionError('Evolution Center must not rebuild OSES')
 
-        service.current_review = tracked_current_review  # type: ignore[assignment]
+        service.current_review = fail_active_review  # type: ignore[assignment]
 
         vm.refresh()
 
-        assert calls
-        assert all(c is False for c in calls)
+        assert not active_calls
+        assert vm.get_self_examination().get('truthState') == 'unresolved'
     finally:
         shutil.rmtree(workspace, ignore_errors=True)
 
