@@ -7,7 +7,6 @@ that ``SystemPromptBuilder`` injects tool card data into the LLM context.
 from __future__ import annotations
 
 from pathlib import Path
-from uuid import uuid4
 
 from iabv_v15.domain.models import (
     InferenceRequest,
@@ -104,14 +103,6 @@ class _RecordingProvider(LLMProvider):
             confidence=0.9,
             executor_model='recording-model',
         )
-
-
-def _workspace(name: str) -> Path:
-    base = Path(__file__).resolve().parents[1] / 'data' / 'test_runs'
-    base.mkdir(parents=True, exist_ok=True)
-    root = base / f'{name}_{uuid4().hex}'
-    root.mkdir(parents=True, exist_ok=True)
-    return root
 
 
 def _build_orchestrator(
@@ -214,7 +205,7 @@ def _build_orchestrator(
     )
 
 
-def test_chat_sees_tools() -> None:
+def test_chat_sees_tools(tmp_path: Path) -> None:
     """The system prompt sent to the LLM must contain 'Herramientas disponibles'
     and at least one real ToolCard name from the registry."""
     provider = _RecordingProvider(
@@ -223,7 +214,7 @@ def test_chat_sees_tools() -> None:
         available=True,
     )
     orchestrator = _build_orchestrator(
-        _workspace('chat_sees_tools'),
+        tmp_path,
         general_provider=provider,
     )
     request = InferenceRequest(
