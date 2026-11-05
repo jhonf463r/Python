@@ -365,3 +365,76 @@ BRIDGE=BRIDGE_NOT_READY
 M1A=UNCHANGED
 MERGE=NOT_AUTHORIZED
 ```
+
+
+## R18.11 — Segunda pasada de integridad de los seis projectors — 2026-11-04
+
+HEAD de código examinado: `02947d3b0e0b6963df35ef9ad3ceb2a8ca129f36`.
+Recepción documental previa: `5c68dbf4341ee75db5edc3b8d0a1c8a564d309b8`.
+Método: fetch-back del código de servicio, cada projector y los consumidores inmediatos. Solo revisión estática; no tests ni fault injection.
+
+### Dos fuentes adicionales con errores internos ocultos
+
+**1. platform_pending_queue**
+
+`PlatformPendingQueue.list_all()` enumera `task_*.json`, valida y agrega cada archivo; cualquier excepción de lectura/JSON/schema se captura con `except Exception: continue`. El archivo omitido no genera diagnóstico ni contador de incompletitud. `ControlMasterService._project_platform_pending_items()` solo puede observar la lista devuelta; al no propagarse excepción, registra `platform_pending_queue=READ_OK`. Un task persistido ilegible puede desaparecer del resumen sin volver la fuente UNVERIFIED.
+
+Blobs:
+- `platform_pending_queue.py`: `48a262d677f4bd8a01dfe2d74afac8e1e306fe59`.
+- `control_master_service.py`: `7170eff8f875f0d2e6402f57348eec768949afa2`.
+
+**2. self_examination_service / OSES**
+
+`OperationalSelfExaminationService.current_review()` devuelve el review cacheado cuando es fresco o llama `build_review()`. Este último reúne runs, adaptive sessions, experiment runs, recommendations, scenario runs, project health, backlog, WorldModel y validation snapshot. Los helpers `_recent_runs()`, `_recent_adaptive_sessions()`, `_recent_experiment_runs()`, `_recent_recommendations()`, `_recent_scenario_runs()`, `_project_health_snapshot()` y `_improvement_backlog()` convierten excepciones en `[]`/`{}` sin una cobertura de origen que llegue al snapshot. El adaptador de Control Master registra `self_examination_service=READ_OK` tan pronto como obtiene un snapshot, por lo que el estado significa que el servicio devolvió un objeto, no que todas sus fuentes internas se leyeron completas.
+
+El loader del último review también convierte cualquier excepción a `None` y fuerza una reconstrucción sin propagar el motivo. WorldModel y validation snapshot sí conservan algunos marcadores `unresolved_fields`, pero eso no subsana los helpers que suprimen errores devolviendo colecciones vacías.
+
+Blob OSES:
+- `operational_self_examination_service.py`: `054b1e4560b3990b691e39d2471db77f341b38bc`.
+
+### Dos lectores con clasificación explícita en el adaptador
+
+**3. tests_state / TestEvidence**
+
+El projector directo distingue FileNotFoundError=`NO_FILE`, OSError=`READ_FAILED`, JSON inválido=`READ_FAILED`, estructura/campos/fecha no verificables=`UNVERIFIED`; solo registra `READ_OK` tras validar evidence_id, timestamp timezone-aware, frescura de 24 h, contadores, returncode y timed_out. La función auxiliar best-effort de otro módulo no sustituye este consumidor directo.
+
+**4. runtime_audit**
+
+El projector distingue archivo ausente, error de lectura e invalid JSON line; este último genera diagnóstico y `READ_PARTIAL`. No lo clasifico con los mismos defectos probados en los otros cuatro lectores.
+
+### Adjudicación integrada
+
+La evidencia está acotada: cuatro de las seis claves esperadas pueden subrepresentar lecturas internas fallidas:
+- `objective_repository`: error normalizado a None + poda SQLite, R18.10 / owner #605 R20.3–R20.5.
+- `pending_issue_repository`: artefacto ausente omitido sin diagnóstico, R18.10.
+- `platform_pending_queue`: task JSON ilegible/corrupto omitido sin diagnóstico, R18.11.
+- `self_examination_service`: errores de sus fuentes internas normalizados a colecciones vacías y snapshot no marcado parcial, R18.11.
+
+`tests_state` y `runtime_audit` tienen clasificación explícita de error en el adaptador; no declaro que eso pruebe su runtime ni todas sus capas externas.
+
+La compuerta R18.9 es una condición de completitud del conjunto de projectors, no de completitud del contenido que cada projector puede leer. Por ello `EMPTY_QUEUE_END_TO_END=NOT_ESTABLISHED` hasta que los cuatro contratos anteriores expongan resultados de lectura tipados/coverage y existan pruebas negativas. No se debe añadir un segundo lector o coordinador en #610 para evitar los fallos internos: las correcciones deben hacerse en sus owners y contratos existentes.
+
+### Límites y ownership
+
+- Solo revisión estática + fetch-back. No se abrió workspace, SQLite ni artefactos locales; no hubo fault injection ni ejecución.
+- No se cambió código fuente ni tests.
+- ObjectiveRepository sigue enlazado a #605. La asignación de owner para PlatformPendingQueue y la agregación OSES no se da por adjudicada por este recibo; requieren seguir la ruta de persistencia/servicio existente, sin crear otro coordinador.
+- M1A, G1/G2/G3, Option D, protected reads, MCP allowlist, túnel y puente sin cambios.
+
+```text
+EXPECTED_PROJECTORS=6
+SOURCE_LEVEL_READ_INTEGRITY=4_INSUFFICIENT / 2_EXPLICIT_ADAPTER_CLASSIFICATION
+OBJECTIVE_REPOSITORY=HIDDEN_READ_FAILURE + INDEX_PRUNE
+PENDING_ISSUE_REPOSITORY=MISSING_ARTIFACT_OMITTED
+PLATFORM_PENDING_QUEUE=PER_FILE_EXCEPTION_SWALLOWED
+SELF_EXAMINATION_SERVICE=INTERNAL_SOURCE_ERRORS_COLLAPSED_TO_EMPTY
+TESTS_STATE=EXPLICIT_READ/JSON/TIME/SCHEMA_SHAPE_CLASSIFICATION
+RUNTIME_AUDIT=READ_FAILED_OR_READ_PARTIAL
+EMPTY_QUEUE_END_TO_END=NOT_ESTABLISHED
+TESTS/BUILD/RUNTIME=NOT_RUN
+CODE_CHANGES=NONE
+SPACE_TIME_ORGAN=PARTIAL
+BRIDGE=BRIDGE_NOT_READY
+M1A=UNCHANGED
+MERGE=NOT_AUTHORIZED
+```
