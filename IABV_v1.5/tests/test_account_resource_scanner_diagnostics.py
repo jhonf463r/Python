@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from iabv_v15.services.evolution import account_resource_scanner
+from iabv_v15.services import account_resource_scanner
 
 
 def test_browser_account_scan_reports_directory_enumeration_failure(monkeypatch) -> None:
