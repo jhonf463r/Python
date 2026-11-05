@@ -384,8 +384,8 @@ def test_oses_ui_bridge_startup_presence_malformed_rows_are_partial(tmp_path, mo
     trace_path = tmp_path / 'data' / 'logs' / 'startup_ui_presence.jsonl'
     trace_path.parent.mkdir(parents=True)
     trace_path.write_text(
-        '{"kind":"ui_bridge_port_conflict"}\\n'
-        '{malformed}\\n',
+        '{"kind":"ui_bridge_port_conflict"}\n'
+        '{malformed}\n',
         encoding='utf-8',
     )
     monkeypatch.setattr(tracer_module, 'get_runtime_tracer', lambda: EmptyTracer())
