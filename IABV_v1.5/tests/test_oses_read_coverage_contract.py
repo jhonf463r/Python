@@ -858,3 +858,103 @@ def test_validation_feedback_history_permission_failure_is_not_not_found(tmp_pat
     service._load_tried_proposal_keys()
     assert service._source_coverage['validation_feedback_history'] == 'READ_FAILED'
     assert service._source_errors['validation_feedback_history'] == 'PermissionError'
+
+
+
+def _write_commit_bound_test_evidence(workspace: Path) -> Path:
+    import json
+    from iabv_v15.infra.mcp.audit_tools import _test_evidence_payload_sha256
+
+    evidence_path = workspace / 'data' / 'evolution' / 'test_evidence' / 'latest.json'
+    evidence_path.parent.mkdir(parents=True, exist_ok=True)
+    evidence = {
+        'evidence_id': 'evidence-r24-test',
+        'command': 'python -m pytest tests/ -q',
+        'suite': 'tests/',
+        'keyword': '',
+        'passed': 10,
+        'failed': 0,
+        'errors': 0,
+        'duration_s': 2.5,
+        'returncode': 0,
+        'timed_out': False,
+        'timestamp': datetime.now(timezone.utc).isoformat(),
+        'linked_pending_task': 'R24',
+        'changed_files': ['src/module.py'],
+        'commit_sha': 'a' * 40,
+        'branch': 'test-branch',
+        'worktree_clean': True,
+        'provenance_status': 'COMMIT_BOUND_CLEAN',
+        'worktree_status_sha256': 'b' * 64,
+        'metadata': {},
+    }
+    evidence['payload_sha256'] = _test_evidence_payload_sha256(evidence)
+    evidence_path.write_text(json.dumps(evidence), encoding='utf-8')
+    return evidence_path
+
+
+def test_oses_test_evidence_file_requires_commit_bound_clean_provenance(tmp_path, monkeypatch) -> None:
+    audit_tools = import_module('iabv_v15.infra.mcp.audit_tools')
+    _write_commit_bound_test_evidence(tmp_path)
+    monkeypatch.setattr(
+        audit_tools,
+        '_collect_test_git_provenance',
+        lambda _root: {
+            'commit_sha': 'a' * 40,
+            'branch': 'test-branch',
+            'worktree_clean': True,
+            'provenance_status': 'COMMIT_BOUND_CLEAN',
+            'worktree_status_sha256': 'b' * 64,
+        },
+    )
+    service = _service(tmp_path)
+
+    service._metacognitive_starvation_findings()
+
+    assert service._source_coverage['test_evidence_file'] == 'READ_OK'
+    assert 'test_evidence_file' not in service._source_errors
+
+
+def test_oses_test_evidence_file_without_provenance_is_partial(tmp_path) -> None:
+    import json
+
+    path = tmp_path / 'data' / 'evolution' / 'test_evidence' / 'latest.json'
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps({'timestamp': datetime.now(timezone.utc).isoformat(), 'passed': 10}),
+        encoding='utf-8',
+    )
+    service = _service(tmp_path)
+
+    service._metacognitive_starvation_findings()
+
+    assert service._source_coverage['test_evidence_file'] == 'READ_PARTIAL'
+    assert service._source_errors['test_evidence_file'] == 'fresh_commit_bound_evidence_not_verified'
+
+
+def test_oses_test_evidence_file_permission_failure_is_not_absence(tmp_path, monkeypatch) -> None:
+    path = tmp_path / 'data' / 'evolution' / 'test_evidence' / 'latest.json'
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text('{}', encoding='utf-8')
+    original_read_bytes = Path.read_bytes
+
+    def deny_evidence_read(target, *args, **kwargs):
+        if target == path:
+            raise PermissionError('synthetic TestEvidence read denial')
+        return original_read_bytes(target, *args, **kwargs)
+
+    monkeypatch.setattr(Path, 'read_bytes', deny_evidence_read)
+    service = _service(tmp_path)
+
+    service._metacognitive_starvation_findings()
+
+    assert service._source_coverage['test_evidence_file'] == 'READ_FAILED'
+    assert service._source_errors['test_evidence_file'] == 'PermissionError'
+
+
+def test_oses_test_evidence_file_missing_is_confirmed_not_found(tmp_path) -> None:
+    service = _service(tmp_path)
+
+    service._metacognitive_starvation_findings()
+
+    assert service._source_coverage['test_evidence_file'] == 'CONFIRMED_NOT_FOUND'
