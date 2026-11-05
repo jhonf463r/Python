@@ -34,25 +34,18 @@ def _replace_with_retry(src: str | Path, dst: str | Path) -> None:
                 src, dst, attempt + 1, _REPLACE_MAX_ATTEMPTS, exc,
             )
             time.sleep(_REPLACE_RETRY_DELAY * (attempt + 1))
-    # All retries exhausted on Windows — fall back to non-atomic overwrite
-    # so the process doesn't crash.
-    if _IS_WINDOWS and last_err is not None:
-        try:
-            import shutil
-            shutil.copy2(str(src), str(dst))
-            try:
-                os.unlink(str(src))
-            except OSError:
-                pass
-            logger.warning(
-                'os.replace(%s -> %s) failed after %d attempts; '
-                'used shutil.copy2 fallback: %s',
-                src, dst, _REPLACE_MAX_ATTEMPTS, last_err,
-            )
-            return
-        except Exception:
-            pass
-    raise last_err  # type: ignore[misc]
+    # A direct copy over the destination is not an atomic replacement. If
+    # Windows keeps the destination locked, fail closed and retain the source
+    # temporary file for recovery; never overwrite the previous destination
+    # with a copy that can be interrupted halfway through.
+    if last_err is not None:
+        logger.error(
+            'os.replace(%s -> %s) failed after %d attempts; '
+            'destination left untouched and source retained: %s',
+            src, dst, max(1, _REPLACE_MAX_ATTEMPTS), last_err,
+        )
+        raise last_err
+    raise OSError("os.replace did not execute because the retry count was zero.")
 
 
 class ArtifactStorage:
