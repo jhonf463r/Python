@@ -480,3 +480,37 @@ def test_oses_ui_bridge_startup_presence_permission_failure(tmp_path, monkeypatc
 
     assert service._source_coverage['startup_ui_presence_log'] == 'READ_FAILED'
     assert service._source_errors['startup_ui_presence_log'] == 'PermissionError'
+
+
+
+def test_oses_cached_review_rejects_residual_errors_even_when_statuses_are_read_ok(tmp_path) -> None:
+    service = _service(tmp_path)
+    coverage = _complete_coverage()
+    errors = {'runtime_audit_tracer': 'PermissionError'}
+    snapshot = SelfExaminationSnapshot(
+        source_coverage=coverage,
+        source_errors=errors,
+        metadata={
+            'source_coverage_contract': _SOURCE_COVERAGE_CONTRACT,
+            'required_source_ids': list(_REQUIRED_SOURCE_IDS),
+            'source_coverage': dict(coverage),
+            'source_errors': dict(errors),
+        },
+    )
+    service._current_review = snapshot
+    service._is_fresh = lambda review, *, max_age_seconds: True
+
+    with pytest.raises(RuntimeError, match='oses_source_coverage_incomplete'):
+        service.current_review_cached()
+
+
+def test_oses_coverage_report_is_incomplete_when_error_map_is_nonempty(tmp_path) -> None:
+    service = _service(tmp_path)
+    service._source_coverage = _complete_coverage()
+    service._source_errors = {'runtime_audit_tracer': 'PermissionError'}
+
+    report = service._source_coverage_report()
+
+    assert report['complete'] is False
+    assert 'runtime_audit_tracer' in report['incomplete_source_ids']
+    assert report['source_errors']['runtime_audit_tracer'] == 'PermissionError'
