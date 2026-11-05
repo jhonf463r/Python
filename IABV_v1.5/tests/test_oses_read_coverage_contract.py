@@ -444,3 +444,39 @@ def test_oses_ui_bridge_freeze_report_parse_error_is_partial(tmp_path, monkeypat
 
     assert service._source_coverage['freeze_incident_reporter'] == 'READ_PARTIAL'
     assert service._source_errors['freeze_incident_reporter'] == 'incident_report_parse_or_shape_error'
+
+
+
+def test_oses_ui_bridge_startup_presence_permission_failure(tmp_path, monkeypatch) -> None:
+    tracer_module = import_module('iabv_v15.services.evolution.runtime_audit_tracer')
+
+    class EmptyTracer:
+        def events(self, *, limit: int):
+            return []
+
+    class EmptyReporter:
+        def list_reports(self, *, limit: int):
+            return []
+
+        def get_report(self, filename: str):
+            raise AssertionError('no report should be requested for an empty listing')
+
+    trace_path = tmp_path / 'data' / 'logs' / 'startup_ui_presence.jsonl'
+    trace_path.parent.mkdir(parents=True)
+    trace_path.write_text('{"kind":"event"}\\n', encoding='utf-8')
+    original_open = Path.open
+
+    def fail_target_open(self, *args, **kwargs):
+        if self == trace_path:
+            raise PermissionError('synthetic startup UI log access denied')
+        return original_open(self, *args, **kwargs)
+
+    monkeypatch.setattr(Path, 'open', fail_target_open)
+    monkeypatch.setattr(tracer_module, 'get_runtime_tracer', lambda: EmptyTracer())
+    service = _service(tmp_path)
+    service._freeze_incident_reporter = EmptyReporter()
+
+    service._ui_bridge_truth_findings()
+
+    assert service._source_coverage['startup_ui_presence_log'] == 'READ_FAILED'
+    assert service._source_errors['startup_ui_presence_log'] == 'PermissionError'
