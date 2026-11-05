@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import sqlite3
 from pathlib import Path
 
@@ -548,3 +549,33 @@ def test_read_only_reindex_plan_distinguishes_noncanonical_safe_index_paths(
     )
     assert issue.status.value == "SAFE_NONCANONICAL_PATH"
     assert alternate_path.exists()
+
+
+
+def test_reindex_report_does_not_expose_payload_values_from_schema_errors(
+    tmp_path: Path,
+) -> None:
+    db, repository = _dossier_repository(tmp_path)
+    dossier = repository.save(_dossier("schema-error-canary"))
+    row = db.fetchone(
+        "SELECT path FROM execution_dossiers WHERE dossier_id = ?",
+        (dossier.dossier_id,),
+    )
+    assert row is not None
+    canary = "PRIVATE_PAYLOAD_CANARY"
+    Path(row["path"]).write_text(
+        json.dumps({"dossier_id": dossier.dossier_id, "private_value": canary}),
+        encoding="utf-8",
+    )
+
+    report = repository.plan_reindex_with_diagnostics()
+
+    assert report.status.value == "REVIEW_REQUIRED"
+    serialized = repr(report.to_dict())
+    assert canary not in serialized
+    issue = next(
+        item for item in report.index_path_results
+        if item.artifact_id == dossier.dossier_id
+    )
+    assert issue.status.value == "SCHEMA_UNSUPPORTED"
+    assert issue.error_message == "Artifact JSON does not match the supported schema."

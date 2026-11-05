@@ -55,7 +55,7 @@ class ExecutionDossierRepository:
             indexed_ids = tuple(sorted({str(row["dossier_id"]) for row in rows}))
         except sqlite3.Error as exc:
             collection_error_type = type(exc).__name__
-            collection_error_message = str(exc)[:300]
+            collection_error_message = "SQLite index enumeration failed."
 
         index_path_results: list[IndexReconciliationIndexPathResult] = []
         for row in (rows if not collection_error_type else ()):
@@ -71,7 +71,7 @@ class ExecutionDossierRepository:
                         artifact_id=artifact_id,
                         status=IndexReconciliationPathStatus.INVALID_PATH,
                         error_type=type(exc).__name__,
-                        error_message=str(exc)[:300],
+                        error_message="Indexed artifact path is not a valid managed path.",
                     )
                 )
                 continue
@@ -134,7 +134,7 @@ class ExecutionDossierRepository:
                                 path=candidate.name,
                                 status=ArtifactReadStatus.READ_FAILED,
                                 error_type=type(exc).__name__,
-                                error_message=str(exc)[:300],
+                                error_message="Indexed artifact path is not a valid managed path.",
                             )
                         )
                         continue
@@ -165,7 +165,7 @@ class ExecutionDossierRepository:
                 filesystem_error_message = "The managed dossiers path is not a directory."
         except (OSError, TypeError, ValueError) as exc:
             filesystem_error_type = type(exc).__name__
-            filesystem_error_message = str(exc)[:300]
+            filesystem_error_message = "Managed artifact directory could not be enumerated."
 
         return RepositoryIndexReconciliationReport(
             scope=scope,
@@ -225,7 +225,7 @@ class ExecutionDossierRepository:
                         path="",
                         status=ArtifactReadStatus.READ_FAILED,
                         error_type=type(exc).__name__,
-                        error_message=str(exc)[:300],
+                        error_message="Indexed artifact path is not a valid managed path.",
                     )
                 )
                 continue
@@ -351,7 +351,7 @@ class ExecutionDossierRepository:
                 path="",
                 status=ArtifactReadStatus.READ_FAILED,
                 error_type=type(exc).__name__,
-                error_message=str(exc)[:300],
+                error_message="Indexed artifact path is not a valid managed path.",
             )
 
         if row is None:
@@ -372,7 +372,7 @@ class ExecutionDossierRepository:
                     path="",
                     status=ArtifactReadStatus.READ_FAILED,
                     error_type=type(exc).__name__,
-                    error_message=str(exc)[:300],
+                    error_message="Indexed artifact path is not a valid managed path.",
                 )
             else:
                 paths: list[Path] = []
