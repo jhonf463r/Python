@@ -1525,18 +1525,11 @@ def top_worker_for_target(
 # ──────────────────────────────────────────────────────────────
 
 def scan_configured_secrets() -> dict[str, Any]:
-    """Detect which secret/env vars are configured (names only, never values).
-
-    Secrets that are aliases of each other (e.g. GITHUB_TOKEN_IABV and
-    GITHUB_TOKEN) are grouped: if ANY alias in the group is configured, the
-    whole group is satisfied and none of its members appear as missing.
-    """
-    # Groups of aliases — if any name in a group is set, the group is OK.
+    """Detect configured secret names; never read or expose secret values."""
     _alias_groups: list[tuple[str, ...]] = [
         ('GITHUB_TOKEN_IABV', 'IABV_GITHUB_TOKEN', 'GITHUB_TOKEN', 'GH_TOKEN'),
         ('DEVIN_API_KEY_IABV', 'IABV_DEVIN_API_KEY', 'DEVIN_API_KEY'),
     ]
-    # Standalone secrets (not aliased).
     _standalone = [
         'OPENAI_API_KEY', 'ANTHROPIC_API_KEY',
         'CLOUDFLARE_TUNNEL_TOKEN', 'CLOUDFLARED_TOKEN',
@@ -1544,6 +1537,7 @@ def scan_configured_secrets() -> dict[str, Any]:
     ]
     configured: list[str] = []
     missing: list[str] = []
+    unverified: list[str] = []
 
     for group in _alias_groups:
         found = [name for name in group if os.environ.get(name)]
@@ -1558,47 +1552,65 @@ def scan_configured_secrets() -> dict[str, Any]:
         else:
             missing.append(name)
 
-    # Check secrets file — secrets configured here with ANY alias name
-    # should satisfy the whole alias group, just like env vars do.
     secrets_file = Path.home() / '.iabv_secrets.ps1'
     secrets_from_file: list[str] = []
-    if secrets_file.exists():
+    secrets_file_exists: bool | None = False
+    file_status = 'CONFIRMED_NOT_FOUND'
+    file_error = ''
+    try:
+        secrets_file.stat()
+        secrets_file_exists = True
+    except FileNotFoundError:
+        secrets_file_exists = False
+    except OSError as exc:
+        secrets_file_exists = None
+        file_status = 'READ_FAILED'
+        file_error = type(exc).__name__
+    else:
         try:
             content = secrets_file.read_text(encoding='utf-8', errors='replace')
+        except OSError as exc:
+            file_status = 'READ_FAILED'
+            file_error = type(exc).__name__
+        else:
+            file_status = 'READ_OK'
             for line in content.splitlines():
-                m = re.match(r'\$env:(\w+)\s*=', line)
-                if m:
-                    secrets_from_file.append(m.group(1))
-        except Exception:
-            pass
+                match = re.match(r'\$env:(\w+)\s*=', line)
+                if match:
+                    secrets_from_file.append(match.group(1))
 
-    # Cross-reference file-based secrets against alias groups to resolve
-    # names that are configured in the file but not yet loaded into env.
-    if secrets_from_file:
+    if file_status == 'READ_FAILED':
+        # An unreadable file may satisfy any environment-missing alias.
+        # Do not misreport those names as definitely absent.
+        unverified = list(missing)
+        missing.clear()
+    elif secrets_from_file:
         file_set = set(secrets_from_file)
-        resolved_from_file: list[str] = []
         for primary in list(missing):
             group = next((g for g in _alias_groups if g[0] == primary), None)
             if group:
-                found_in_file = [n for n in group if n in file_set]
+                found_in_file = [name for name in group if name in file_set]
                 if found_in_file:
                     missing.remove(primary)
                     configured.extend(found_in_file)
-                    resolved_from_file.extend(found_in_file)
             elif primary in file_set:
                 missing.remove(primary)
                 configured.append(primary)
-                resolved_from_file.append(primary)
 
     return {
         'configured': configured,
         'missing': missing,
+        'unverified': unverified,
         'configured_count': len(configured),
         'missing_count': len(missing),
-        'secrets_file_exists': secrets_file.exists(),
+        'secrets_file_exists': secrets_file_exists,
         'secrets_in_file': secrets_from_file,
+        'source_coverage': {
+            'environment': 'READ_OK',
+            'secrets_file': file_status,
+        },
+        'source_errors': {'secrets_file': file_error} if file_error else {},
     }
-
 
 # ──────────────────────────────────────────────────────────────
 # Cloudflare Tunnel Status
@@ -1653,10 +1665,8 @@ def account_resource_scan() -> dict[str, Any]:
     secrets = scan_configured_secrets()
     tunnel = scan_cloudflare_tunnel()
 
-    # Calculate overall resource health
     total_resources = 6
-    available_count = sum(1 for r in [github, devin, ollama, tunnel]
-                         if r.get('available'))
+    available_count = sum(1 for r in [github, devin, ollama, tunnel] if r.get('available'))
     available_count += 1 if secrets['configured_count'] > 0 else 0
     available_count += 1 if browser['count'] > 0 else 0
 
@@ -1671,7 +1681,18 @@ def account_resource_scan() -> dict[str, Any]:
         alerts.append(f'Ollama: {ollama.get("detail", "no disponible")}')
     if secrets['missing_count'] > 2:
         alerts.append(f'Secretos faltantes: {", ".join(secrets["missing"][:3])}...')
+    if secrets.get('unverified'):
+        alerts.append('Configuración de secretos parcialmente no verificable: archivo inaccesible')
 
+    source_coverage = {
+        **dict(browser.get('source_coverage') or {}),
+        'secrets_environment': secrets['source_coverage']['environment'],
+        'secrets_file': secrets['source_coverage']['secrets_file'],
+    }
+    source_errors = {
+        **dict(browser.get('source_errors') or {}),
+        **dict(secrets.get('source_errors') or {}),
+    }
     return {
         'github_api': github,
         'devin_api': devin,
@@ -1679,6 +1700,8 @@ def account_resource_scan() -> dict[str, Any]:
         'browser_accounts': browser,
         'secrets': secrets,
         'cloudflare_tunnel': tunnel,
+        'source_coverage': source_coverage,
+        'source_errors': source_errors,
         'summary': {
             'total_resources': total_resources,
             'available': available_count,
@@ -1687,7 +1710,6 @@ def account_resource_scan() -> dict[str, Any]:
             'alert_count': len(alerts),
         },
     }
-
 
 def format_account_resource_report(scan: dict[str, Any]) -> str:
     """Format account/resource scan for the auto-analysis report."""

@@ -188,3 +188,61 @@ def test_inventory_keeps_untracked_quota_account_unresolved(monkeypatch) -> None
     assert snapshot.active_count == 0
     assert snapshot.unresolved_count == 1
     assert any("quota_never_tracked" in item for item in snapshot.unresolved_items)
+
+
+def test_secret_file_read_failure_is_not_reported_as_missing(monkeypatch, tmp_path) -> None:
+    secret_path = tmp_path / '.iabv_secrets.ps1'
+    secret_path.write_text('$env:OPENAI_API_KEY=synthetic\n', encoding='utf-8')
+    monkeypatch.setattr(Path, 'home', classmethod(lambda cls: tmp_path))
+    for name in (
+        'GITHUB_TOKEN_IABV', 'IABV_GITHUB_TOKEN', 'GITHUB_TOKEN', 'GH_TOKEN',
+        'DEVIN_API_KEY_IABV', 'IABV_DEVIN_API_KEY', 'DEVIN_API_KEY',
+        'OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'CLOUDFLARE_TUNNEL_TOKEN',
+        'CLOUDFLARED_TOKEN', 'IABV_MCP_API_KEY',
+    ):
+        monkeypatch.delenv(name, raising=False)
+    original_read_text = Path.read_text
+
+    def fail_secret_read(self, *args, **kwargs):
+        if self == secret_path:
+            raise PermissionError('synthetic secret file denial')
+        return original_read_text(self, *args, **kwargs)
+
+    monkeypatch.setattr(Path, 'read_text', fail_secret_read)
+
+    result = account_resource_scanner.scan_configured_secrets()
+
+    assert result['source_coverage']['environment'] == 'READ_OK'
+    assert result['source_coverage']['secrets_file'] == 'READ_FAILED'
+    assert result['source_errors']['secrets_file'] == 'PermissionError'
+    assert result['secrets_file_exists'] is True
+    assert result['missing'] == []
+    assert result['missing_count'] == 0
+    assert 'OPENAI_API_KEY' in result['unverified']
+    assert result['configured'] == []
+
+
+def test_account_resource_scan_exposes_secret_file_coverage(monkeypatch) -> None:
+    monkeypatch.setattr(account_resource_scanner, 'scan_github_api', lambda: {'available': False, 'reason': 'no_token'})
+    monkeypatch.setattr(account_resource_scanner, 'scan_devin_api', lambda: {'available': False, 'reason': 'no_token'})
+    monkeypatch.setattr(account_resource_scanner, 'scan_ollama_api', lambda: {'available': False, 'reason': 'not_running'})
+    monkeypatch.setattr(account_resource_scanner, 'scan_browser_accounts', lambda: {
+        'accounts': [], 'count': 0, 'source_coverage': {'browser_accounts': 'READ_PARTIAL'},
+        'source_errors': {'browser_accounts': 'PermissionError'},
+    })
+    monkeypatch.setattr(account_resource_scanner, 'scan_configured_secrets', lambda: {
+        'configured_count': 0, 'missing_count': 0, 'unverified': ['OPENAI_API_KEY'],
+        'source_coverage': {'environment': 'READ_OK', 'secrets_file': 'READ_FAILED'},
+        'source_errors': {'secrets_file': 'PermissionError'},
+    })
+    monkeypatch.setattr(account_resource_scanner, 'scan_cloudflare_tunnel', lambda: {'available': False})
+
+    result = account_resource_scanner.account_resource_scan()
+
+    assert result['source_coverage']['browser_accounts'] == 'READ_PARTIAL'
+    assert result['source_coverage']['secrets_file'] == 'READ_FAILED'
+    assert result['source_errors'] == {
+        'browser_accounts': 'PermissionError',
+        'secrets_file': 'PermissionError',
+    }
+    assert any('parcialmente no verificable' in alert for alert in result['summary']['alerts'])
