@@ -240,7 +240,7 @@ Los Términos de Uso de OpenAI, efectivos desde el 1 de enero de 2026, prohíben
 CHATGPT_FREE_MANUAL_INTERACTION=AVAILABLE_AS_HUMAN_MEDIATED_CHANNEL
 CHATGPT_DOM_OUTPUT_CAPTURE=DO_NOT_ENABLE
 CHATGPT_CLIPBOARD_OUTPUT_CAPTURE=DO_NOT_ENABLE
-CHATGPT_AUTOMATED_SESSION_DISPATCH=NOT_AN_ADMISSIBLE_ROUTE_FOR_THIS_DESIGN
+CHATGPT_AUTOMATED_ROUND_TRIP_WITH_OUTPUT_CAPTURE=NOT_AN_ADMISSIBLE_ROUTE_FOR_THIS_DESIGN
 ```
 
 Esta restricción no impide que el Owner utilice ChatGPT Free normalmente ni que IABV prepare un paquete de consulta para que el Owner lo entregue y devuelva manualmente. Esa modalidad corresponde a la colaboración asistida, no a autonomía completa.
