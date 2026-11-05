@@ -1364,7 +1364,7 @@ class IABVMCPServer:
                         None,
                     )
                     if oses is not None:
-                        review = oses.current_review(refresh=False)
+                        review = oses.current_review_cached()
                         if review is not None:
                             session_health = SessionHealthSnapshot(
                                 health_label=review.status or "unknown",
@@ -2149,7 +2149,7 @@ class IABVMCPServer:
             try:
                 oses = getattr(self.container, 'operational_self_examination_service', None)
                 if oses:
-                    review = oses.current_review(refresh=False, max_age_seconds=600)
+                    review = oses.current_review_cached(max_age_seconds=600)
                     report['subsystems']['oses'] = {
                         'status': 'ok',
                         'review_status': review.status,
@@ -2313,7 +2313,7 @@ class IABVMCPServer:
                     elif sub == 'oses':
                         oses = getattr(self.container, 'operational_self_examination_service', None)
                         if oses:
-                            review = oses.current_review(refresh=False, max_age_seconds=600)
+                            review = oses.current_review_cached(max_age_seconds=600)
                             report['subsystems']['oses'] = {
                                 'status': 'ok',
                                 'findings_count': len(review.findings),
