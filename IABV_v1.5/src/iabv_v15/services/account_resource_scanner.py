@@ -186,22 +186,27 @@ def _chromium_browser_dirs() -> list[tuple[str, Path]]:
     return dirs
 
 
-def _firefox_accounts() -> list[dict[str, str]]:
-    """Detect Firefox accounts from profile signedInUser.json files."""
+def _firefox_accounts_with_diagnostics() -> tuple[list[dict[str, str]], list[str]]:
+    """Read Firefox account metadata and retain per-profile read failures."""
     accounts: list[dict[str, str]] = []
+    errors: list[str] = []
     if os.name == 'nt':
         ff_root = Path(os.environ.get('APPDATA', '')) / 'Mozilla' / 'Firefox' / 'Profiles'
     else:
         ff_root = Path.home() / '.mozilla' / 'firefox'
-    if not ff_root.exists():
-        return accounts
-    for profile_dir in ff_root.iterdir():
-        if not profile_dir.is_dir():
-            continue
-        signed_in = profile_dir / 'signedInUser.json'
-        if not signed_in.exists():
-            continue
+    try:
+        if not ff_root.exists():
+            return accounts, errors
+        profile_dirs = list(ff_root.iterdir())
+    except Exception as exc:
+        return accounts, [f'firefox_directory:{type(exc).__name__}']
+    for profile_dir in profile_dirs:
         try:
+            if not profile_dir.is_dir():
+                continue
+            signed_in = profile_dir / 'signedInUser.json'
+            if not signed_in.exists():
+                continue
             data = json.loads(signed_in.read_text(encoding='utf-8', errors='replace'))
             acct = data.get('accountData', {})
             email = acct.get('email', '')
@@ -212,29 +217,43 @@ def _firefox_accounts() -> list[dict[str, str]]:
                     'email': email,
                     'full_name': acct.get('displayName', ''),
                 })
-        except Exception:
-            continue
+        except Exception as exc:
+            errors.append(f'firefox_profile:{profile_dir.name}:{type(exc).__name__}')
+    return accounts, errors
+
+
+def _firefox_accounts() -> list[dict[str, str]]:
+    """Compatibility wrapper; callers needing completeness use diagnostics."""
+    accounts, _errors = _firefox_accounts_with_diagnostics()
     return accounts
 
 
 def scan_browser_accounts() -> dict[str, Any]:
-    """Detect active browser sessions/accounts from all supported browsers.
-
-    Scans: Chrome, Edge, Brave, Opera, Opera GX, Vivaldi (Chromium-based)
-    and Firefox (signedInUser.json).
-    """
+    """Detect browser account metadata and expose skipped-profile coverage."""
     accounts: list[dict[str, str]] = []
     browsers_scanned: list[str] = []
+    errors: list[str] = []
 
-    for browser_name, chrome_dir in _chromium_browser_dirs():
+    try:
+        browser_dirs = _chromium_browser_dirs()
+    except Exception as exc:
+        browser_dirs = []
+        errors.append(f'chromium_browser_roots:{type(exc).__name__}')
+
+    for browser_name, chrome_dir in browser_dirs:
         browsers_scanned.append(str(chrome_dir))
-        for profile_dir in chrome_dir.iterdir():
-            if not profile_dir.is_dir():
-                continue
-            prefs_file = profile_dir / 'Preferences'
-            if not prefs_file.exists():
-                continue
+        try:
+            profile_dirs = list(chrome_dir.iterdir())
+        except Exception as exc:
+            errors.append(f'chromium_directory:{browser_name}:{type(exc).__name__}')
+            continue
+        for profile_dir in profile_dirs:
             try:
+                if not profile_dir.is_dir():
+                    continue
+                prefs_file = profile_dir / 'Preferences'
+                if not prefs_file.exists():
+                    continue
                 prefs = json.loads(prefs_file.read_text(encoding='utf-8', errors='replace'))
                 account_info = prefs.get('account_info', [])
                 for acc in account_info:
@@ -253,13 +272,13 @@ def scan_browser_accounts() -> dict[str, Any]:
                         'profile': profile_dir.name,
                         'email': 'signed_in (details unavailable)',
                     })
-            except Exception:
-                continue
+            except Exception as exc:
+                errors.append(f'chromium_profile:{browser_name}:{profile_dir.name}:{type(exc).__name__}')
 
-    # Firefox accounts
-    ff_accounts = _firefox_accounts()
-    if ff_accounts:
-        accounts.extend(ff_accounts)
+    ff_accounts, ff_errors = _firefox_accounts_with_diagnostics()
+    accounts.extend(ff_accounts)
+    errors.extend(ff_errors)
+    if ff_accounts or ff_errors:
         if os.name == 'nt':
             browsers_scanned.append(str(Path(os.environ.get('APPDATA', '')) / 'Mozilla' / 'Firefox'))
         else:
@@ -269,6 +288,10 @@ def scan_browser_accounts() -> dict[str, Any]:
         'accounts': accounts,
         'count': len(accounts),
         'browsers_scanned': browsers_scanned,
+        'source_coverage': {
+            'browser_accounts': 'READ_PARTIAL' if errors else 'READ_OK',
+        },
+        'source_errors': {'browser_accounts': ';'.join(errors[:20])} if errors else {},
     }
 
 
@@ -283,43 +306,45 @@ _TOOL_SESSION_DOMAINS: dict[str, list[str]] = {
 
 
 def scan_browser_sessions() -> dict[str, Any]:
-    """Detect which tool services have active cookies in the user's browsers.
-
-    Reads the Chrome/Edge Cookies SQLite database (copy to temp to avoid
-    locking) and checks for session cookies from known tool domains.
-    This tells the program: "the user has an active ChatGPT session in
-    Chrome Profile 2" — which means CDP mode can reuse that session.
-
-    NOTE: Chrome encrypts cookie values on Windows (DPAPI). We do NOT
-    read cookie values — we only check if rows EXIST for the domain,
-    which is enough to confirm an active session.
-    """
+    """Detect session-domain rows without exposing cookie values; retain coverage."""
     import shutil as _shutil
     import tempfile as _tempfile
 
     sessions: list[dict[str, Any]] = []
+    errors: list[str] = []
+    try:
+        browser_dirs = _chromium_browser_dirs()
+    except Exception as exc:
+        browser_dirs = []
+        errors.append(f'chromium_browser_roots:{type(exc).__name__}')
 
-    for browser_name, chrome_dir in _chromium_browser_dirs():
-        for profile_dir in chrome_dir.iterdir():
-            if not profile_dir.is_dir():
-                continue
-            cookies_db = profile_dir / 'Cookies'
-            # Newer Chrome versions use Network/Cookies
-            if not cookies_db.exists():
-                cookies_db = profile_dir / 'Network' / 'Cookies'
-            if not cookies_db.exists():
+    for browser_name, chrome_dir in browser_dirs:
+        try:
+            profile_dirs = list(chrome_dir.iterdir())
+        except Exception as exc:
+            errors.append(f'chromium_directory:{browser_name}:{type(exc).__name__}')
+            continue
+        for profile_dir in profile_dirs:
+            try:
+                if not profile_dir.is_dir():
+                    continue
+                cookies_db = profile_dir / 'Cookies'
+                if not cookies_db.exists():
+                    cookies_db = profile_dir / 'Network' / 'Cookies'
+                if not cookies_db.exists():
+                    continue
+            except Exception as exc:
+                errors.append(f'profile_metadata:{browser_name}:{profile_dir.name}:{type(exc).__name__}')
                 continue
 
-            # Copy database to temp to avoid locking issues
+            tmp_path: str | None = None
+            conn: sqlite3.Connection | None = None
             try:
                 with _tempfile.NamedTemporaryFile(suffix='.db', delete=False) as tmp:
                     tmp_path = tmp.name
                 _shutil.copy2(str(cookies_db), tmp_path)
-
                 conn = sqlite3.connect(tmp_path)
-                conn.execute('PRAGMA journal_mode=WAL')
                 cursor = conn.cursor()
-
                 for tool_name, domains in _TOOL_SESSION_DOMAINS.items():
                     for domain in domains:
                         try:
@@ -337,31 +362,37 @@ def scan_browser_sessions() -> dict[str, Any]:
                                     'cookie_count': count,
                                     'has_session': True,
                                 })
-                        except Exception:
-                            continue
-
-                conn.close()
-            except Exception:
-                continue
+                        except Exception as exc:
+                            errors.append(
+                                f'cookie_index:{browser_name}:{profile_dir.name}:{domain}:{type(exc).__name__}'
+                            )
+            except Exception as exc:
+                errors.append(f'cookie_database:{browser_name}:{profile_dir.name}:{type(exc).__name__}')
             finally:
-                try:
-                    os.unlink(tmp_path)
-                except Exception:
-                    pass
+                if conn is not None:
+                    try:
+                        conn.close()
+                    except Exception as exc:
+                        errors.append(f'cookie_close:{browser_name}:{profile_dir.name}:{type(exc).__name__}')
+                if tmp_path is not None:
+                    try:
+                        os.unlink(tmp_path)
+                    except Exception as exc:
+                        errors.append(f'temp_cleanup:{browser_name}:{profile_dir.name}:{type(exc).__name__}')
 
-    # Aggregate by tool
     tool_sessions: dict[str, list[dict[str, Any]]] = {}
-    for s in sessions:
-        tool = s['tool']
-        if tool not in tool_sessions:
-            tool_sessions[tool] = []
-        tool_sessions[tool].append(s)
+    for item in sessions:
+        tool_sessions.setdefault(item['tool'], []).append(item)
 
     return {
         'sessions': sessions,
         'session_count': len(sessions),
         'tools_with_sessions': list(tool_sessions.keys()),
         'by_tool': tool_sessions,
+        'source_coverage': {
+            'browser_sessions': 'READ_PARTIAL' if errors else 'READ_OK',
+        },
+        'source_errors': {'browser_sessions': ';'.join(errors[:20])} if errors else {},
     }
 
 
@@ -491,14 +522,26 @@ def _quota_file() -> Path:
     return candidates[0]
 
 
-def _load_quota_state() -> dict[str, Any]:
+def _load_quota_state_with_diagnostics() -> tuple[dict[str, Any], str, str]:
     qf = _quota_file()
-    if qf.exists():
-        try:
-            return json.loads(qf.read_text(encoding='utf-8'))
-        except Exception:
-            pass
-    return {'accounts': {}}
+    try:
+        raw = qf.read_text(encoding='utf-8')
+    except FileNotFoundError:
+        return {'accounts': {}}, 'CONFIRMED_NOT_FOUND', 'quota_tracker_not_found'
+    except Exception as exc:
+        return {'accounts': {}}, 'READ_FAILED', type(exc).__name__
+    try:
+        state = json.loads(raw)
+    except Exception as exc:
+        return {'accounts': {}}, 'READ_FAILED', type(exc).__name__
+    if not isinstance(state, dict) or not isinstance(state.get('accounts', {}), dict):
+        return {'accounts': {}}, 'SCHEMA_UNSUPPORTED', 'quota_tracker_schema_unsupported'
+    return state, 'READ_OK', ''
+
+
+def _load_quota_state() -> dict[str, Any]:
+    """Compatibility wrapper; diagnostics are exposed by get_all_quota_status."""
+    return _load_quota_state_with_diagnostics()[0]
 
 
 def _save_quota_state(state: dict[str, Any]) -> None:
@@ -578,8 +621,8 @@ def _quota_status_for_entry(entry: dict[str, Any], tool: str) -> dict[str, Any]:
 
 
 def get_all_quota_status() -> dict[str, Any]:
-    """Return quota status for every tracked account+tool pair."""
-    state = _load_quota_state()
+    """Return quota status plus the integrity outcome of its backing file."""
+    state, source_status, source_error = _load_quota_state_with_diagnostics()
     statuses: list[dict[str, Any]] = []
     exhausted_keys: list[str] = []
     available_keys: list[str] = []
@@ -600,6 +643,8 @@ def get_all_quota_status() -> dict[str, Any]:
         'available_count': len(available_keys),
         'exhausted_keys': exhausted_keys,
         'available_keys': available_keys,
+        'source_coverage': {'quota_tracker': source_status},
+        'source_errors': {'quota_tracker': source_error} if source_error else {},
     }
 
 
