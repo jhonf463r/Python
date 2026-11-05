@@ -173,7 +173,7 @@ def test_approval_and_replay_sqlite_collection_failures_replace_stale_reports(
     assert previous_replay.status == RepositoryReadStatus.NO_RECORDS_OBSERVED
 
     def fail_fetchall(*args, **kwargs):
-        raise __import__("sqlite3").OperationalError("database is locked")
+        raise __import__("sqlite3").OperationalError("PRIVATE_DB_ERROR_CANARY")
 
     monkeypatch.setattr(approval_db, "fetchall", fail_fetchall)
     monkeypatch.setattr(replay_db, "fetchall", fail_fetchall)
@@ -182,6 +182,10 @@ def test_approval_and_replay_sqlite_collection_failures_replace_stale_reports(
 
     assert approval_report.status == RepositoryReadStatus.READ_FAILED
     assert replay_report.status == RepositoryReadStatus.READ_FAILED
+    assert approval_report.collection_error_message == "Repository read failed."
+    assert replay_report.collection_error_message == "Repository read failed."
+    assert "PRIVATE_DB_ERROR_CANARY" not in str(approval_report.to_dict())
+    assert "PRIVATE_DB_ERROR_CANARY" not in str(replay_report.to_dict())
     assert approval_repo.last_read_report is approval_report
     assert replay_repo.last_read_report is replay_report
     assert approval_report is not previous_approval

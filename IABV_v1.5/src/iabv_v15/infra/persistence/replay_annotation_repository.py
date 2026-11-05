@@ -75,7 +75,7 @@ class ReplayAnnotationRepository:
                         path="",
                         status=ArtifactReadStatus.READ_FAILED,
                         error_type=type(exc).__name__,
-                        error_message=str(exc)[:300],
+                        error_message="Repository read failed.",
                     )
                 )
                 continue
@@ -90,7 +90,7 @@ class ReplayAnnotationRepository:
                         path="",
                         status=ArtifactReadStatus.READ_FAILED,
                         error_type=type(exc).__name__,
-                        error_message=str(exc)[:300],
+                        error_message="Repository read failed.",
                     )
                 )
                 continue
@@ -175,7 +175,7 @@ class ReplayAnnotationRepository:
                 path="",
                 status=ArtifactReadStatus.READ_FAILED,
                 error_type=type(exc).__name__,
-                error_message=str(exc)[:300],
+                error_message="Repository read failed.",
             )
 
         if row is None:
@@ -196,7 +196,7 @@ class ReplayAnnotationRepository:
                     path="",
                     status=ArtifactReadStatus.READ_FAILED,
                     error_type=type(exc).__name__,
-                    error_message=str(exc)[:300],
+                    error_message="Repository read failed.",
                 )
             else:
                 try:
@@ -209,7 +209,7 @@ class ReplayAnnotationRepository:
                         path="",
                         status=ArtifactReadStatus.READ_FAILED,
                         error_type=type(exc).__name__,
-                        error_message=str(exc)[:300],
+                        error_message="Repository read failed.",
                     )
                 else:
                     result = read_model_from_paths(
