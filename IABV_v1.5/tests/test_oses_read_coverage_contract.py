@@ -712,3 +712,32 @@ def test_portable_context_unresolved_links_do_not_claim_all_clear_without_shared
     )
 
     assert 'discernment_frame_service_not_configured' in section.unresolved_fields
+
+
+
+def test_oses_metacognitive_error_ledger_is_read_without_calibration_sample(tmp_path) -> None:
+    service = _service(tmp_path)
+
+    findings = service._metacognitive_calibration_findings(
+        previous_review=None,
+        experiment_runs=[],
+    )
+
+    assert findings == []
+    assert service._source_coverage['metacognitive_error_ledger'] == 'CONFIRMED_NOT_FOUND'
+
+
+def test_oses_metacognitive_error_ledger_valid_empty_file_is_read_ok(tmp_path) -> None:
+    service = _service(tmp_path)
+    service.storage.save_bytes(
+        'self_examination/metacognitive_ledger.jsonl',
+        b'',
+    )
+
+    findings = service._metacognitive_calibration_findings(
+        previous_review=None,
+        experiment_runs=[],
+    )
+
+    assert findings == []
+    assert service._source_coverage['metacognitive_error_ledger'] == 'READ_OK'
