@@ -269,3 +269,51 @@ def test_disabled_trace_returns_disabled_ack(tmp_path: Path, monkeypatch) -> Non
     assert event['durability_ack']['status'] == 'DISABLED'
     assert len(tracer.events()) == 1
     assert not (tmp_path / 'runtime_audit.jsonl').exists()
+
+
+def test_interaction_resolution_exposes_file_fsync_durability_ack(tmp_path, monkeypatch) -> None:
+    from iabv_v15.services.evolution import runtime_audit_tracer
+    from iabv_v15.services.evolution.freeze_incident_reporter import ChatInteractionLifecycle
+
+    tracer = RuntimeAuditTracer(log_dir=str(tmp_path))
+    tracer.configure(tmp_path)
+    monkeypatch.setattr(runtime_audit_tracer, 'get_runtime_tracer', lambda: tracer)
+    lifecycle = ChatInteractionLifecycle()
+    interaction_id = lifecycle.open_interaction('durability ack test')
+
+    record = lifecycle.resolve_interaction(interaction_id, outcome='resolved', provider='test')
+
+    assert record is not None
+    acknowledgement = record['runtime_audit_durability']
+    assert acknowledgement['status'] == 'FILE_FSYNCED'
+    assert acknowledgement['seq'] == 2
+    assert len(acknowledgement['line_sha256']) == 64
+    retained = lifecycle.interaction_info(interaction_id)
+    assert retained is not None
+    assert retained['runtime_audit_durability'] == acknowledgement
+
+
+def test_interaction_resolution_exposes_fsync_failure_ack(tmp_path, monkeypatch) -> None:
+    from iabv_v15.services.evolution import runtime_audit_tracer
+    from iabv_v15.services.evolution.freeze_incident_reporter import ChatInteractionLifecycle
+
+    def fail_fsync(_fd: int) -> None:
+        raise OSError('synthetic fsync failure')
+
+    monkeypatch.setattr(runtime_audit_tracer.os, 'fsync', fail_fsync)
+    tracer = RuntimeAuditTracer(log_dir=str(tmp_path))
+    tracer.configure(tmp_path)
+    monkeypatch.setattr(runtime_audit_tracer, 'get_runtime_tracer', lambda: tracer)
+    lifecycle = ChatInteractionLifecycle()
+    interaction_id = lifecycle.open_interaction('durability failure test')
+
+    record = lifecycle.resolve_interaction(interaction_id, outcome='failed', provider='test')
+
+    assert record is not None
+    assert record['runtime_audit_durability'] == {
+        'status': 'WRITE_FAILED',
+        'error_type': 'OSError',
+    }
+    retained = lifecycle.interaction_info(interaction_id)
+    assert retained is not None
+    assert retained['runtime_audit_durability']['status'] == 'WRITE_FAILED'
