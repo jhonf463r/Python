@@ -1787,6 +1787,7 @@ def test_control_master_signal_is_bound_before_strategy_and_into_decision_contex
         assert intake["CONTROL_MASTER_SIGNAL_RETRIEVED"] == "REPORTED"
         assert intake["ROUTE_RECONCILED"] == "NOT_RUN"
         assert intake["SIGNAL_CONSIDERED"] == "NO"
+        assert intake["SIGNAL_CONSIDERATION_EVIDENCE"] == "NOT_AVAILABLE"
         assert intake["SIGNAL_INFLUENCE"] == "UNAVAILABLE"
         assert intake["CONTROL_MASTER_DECISION_INFLUENCE"] == "UNAVAILABLE"
         assert intake["ACTION_OUTCOME"] == "NOT_RUN"
@@ -1797,3 +1798,28 @@ def test_control_master_signal_is_bound_before_strategy_and_into_decision_contex
     finally:
         import shutil
         shutil.rmtree(root, ignore_errors=True)
+
+
+def test_control_master_unavailable_intake_uses_d021_not_available_states() -> None:
+    from iabv_v15.domain.models import ControlMasterDigest, InferenceRequest
+    from iabv_v15.services.adaptive.adaptive_task_orchestrator import AdaptiveTaskOrchestrator
+
+    orchestrator = object.__new__(AdaptiveTaskOrchestrator)
+    request = InferenceRequest(user_goal="Tarea fuera de una fuente disponible")
+    digest = ControlMasterDigest(
+        signal_status="UNAVAILABLE",
+        signal_reason="CONTROL_MASTER_SERVICE_NOT_CONFIGURED",
+        work_queue_status="UNAVAILABLE",
+        control_master_signal_status="UNAVAILABLE",
+    )
+    intake = orchestrator._build_control_master_signal_intake(
+        request=request,
+        digest=digest,
+    )
+    assert intake["CONTROL_MASTER_SIGNAL_RETRIEVED"] == "NOT_AVAILABLE"
+    assert intake["ROUTE_RECONCILED"] == "NOT_RUN"
+    assert intake["SIGNAL_CONSIDERED"] == "NO"
+    assert intake["SIGNAL_CONSIDERATION_EVIDENCE"] == "NOT_AVAILABLE"
+    assert intake["SIGNAL_INFLUENCE"] == "UNAVAILABLE"
+    assert intake["ACTION_OUTCOME"] == "NOT_RUN"
+    assert intake["LATER_CAUSAL_REUSE"] == "NOT_TESTED"

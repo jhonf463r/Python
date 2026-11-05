@@ -2687,6 +2687,7 @@ class AdaptiveTaskOrchestrator:
             # The model response does not expose a verified "considered" event
             # or a causal decision comparison.
             intake["SIGNAL_CONSIDERED"] = "NO"
+            intake["SIGNAL_CONSIDERATION_EVIDENCE"] = "NOT_AVAILABLE"
             intake["SIGNAL_INFLUENCE"] = "UNAVAILABLE"
             intake["CONTROL_MASTER_DECISION_INFLUENCE"] = "UNAVAILABLE"
             session.metadata["control_master_signal_intake"] = intake
@@ -3115,6 +3116,7 @@ class AdaptiveTaskOrchestrator:
             # Delivery is recorded separately; without consumer-side evidence,
             # do not claim the model considered or applied the signal.
             "SIGNAL_CONSIDERED": "NO",
+            "SIGNAL_CONSIDERATION_EVIDENCE": "NOT_AVAILABLE",
             "PROMPT_DELIVERY": {"status": "NOT_DELIVERED"},
             "SIGNAL_INFLUENCE": "UNAVAILABLE",
             "CONTROL_MASTER_DECISION_INFLUENCE": "UNAVAILABLE",
