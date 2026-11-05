@@ -597,14 +597,57 @@ class ControlMasterService:
             return []
         items: list[dict[str, Any]] = []
         successful_reads = 0
+        partial_reads = 0
         failed_reads = 0
+        diagnostic_reader = getattr(
+            self.objective_repository, "list_recent_with_diagnostics", None
+        )
         for status_val in (ObjectiveStatus.ACTIVE, ObjectiveStatus.PENDING, ObjectiveStatus.BLOCKED):
             try:
-                nodes = self.objective_repository.list_recent(status=status_val, limit=20)
-                successful_reads += 1
-            except Exception:
-                failed_reads += 1
-                self._record_work_queue_error(f"OBJECTIVES_READ_FAILED:{status_val.value}")
+                if callable(diagnostic_reader):
+                    report = diagnostic_reader(status=status_val, limit=20)
+                    self._record_work_queue_read_report(
+                        f"objective_repository:{status_val.value}", report
+                    )
+                    report_status = getattr(
+                        getattr(report, "status", None), "value", ""
+                    )
+                    if report_status in ("READ_OK", "NO_RECORDS_OBSERVED"):
+                        nodes = report.items
+                        successful_reads += 1
+                    elif report_status == "READ_PARTIAL":
+                        partial_reads += 1
+                        self._record_work_queue_error(
+                            f"OBJECTIVES_READ_PARTIAL:{status_val.value}"
+                        )
+                        continue
+                    else:
+                        failed_reads += 1
+                        self._record_work_queue_error(
+                            f"OBJECTIVES_READ_FAILED:{status_val.value}"
+                        )
+                        continue
+                else:
+                    nodes = self.objective_repository.list_recent(
+                        status=status_val, limit=20
+                    )
+                    successful_reads += 1
+            except Exception as exc:
+                report = getattr(exc, "report", None)
+                if report is not None:
+                    self._record_work_queue_read_report(
+                        f"objective_repository:{status_val.value}", report
+                    )
+                report_status = getattr(
+                    getattr(report, "status", None), "value", ""
+                ) if report is not None else ""
+                if report_status == "READ_PARTIAL":
+                    partial_reads += 1
+                    code = "OBJECTIVES_READ_PARTIAL"
+                else:
+                    failed_reads += 1
+                    code = "OBJECTIVES_READ_FAILED"
+                self._record_work_queue_error(f"{code}:{status_val.value}")
                 continue
             for node in nodes:
                 oid = f'objective:{node.objective_id}'
@@ -632,8 +675,8 @@ class ControlMasterService:
                     reason=node.summary,
                 ))
         objective_status = (
-            "READ_FAILED" if failed_reads and successful_reads == 0
-            else "READ_PARTIAL" if failed_reads
+            "READ_PARTIAL" if partial_reads or (failed_reads and successful_reads)
+            else "READ_FAILED" if failed_reads
             else "READ_OK"
         )
         self._record_work_queue_source("objective_repository", objective_status)
