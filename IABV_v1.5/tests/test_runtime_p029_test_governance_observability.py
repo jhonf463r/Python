@@ -557,3 +557,23 @@ def test_atomic_evidence_writer_surfaces_replace_failure(tmp_path, monkeypatch) 
     assert receipt["error_type"] == "PermissionError"
     assert not evidence_path.exists()
     assert not list(evidence_path.parent.glob(".latest.*.tmp"))
+
+
+
+def test_evidence_worktree_status_digest_must_match_current_tree(tmp_path, monkeypatch) -> None:
+    from iabv_v15.infra.mcp import audit_tools
+
+    _write_fresh_evidence(str(tmp_path))
+    monkeypatch.setattr(
+        audit_tools,
+        "_collect_test_git_provenance",
+        lambda _root: {
+            "commit_sha": _TEST_EVIDENCE_COMMIT,
+            "branch": _TEST_EVIDENCE_BRANCH,
+            "worktree_clean": True,
+            "provenance_status": "COMMIT_BOUND_CLEAN",
+            "worktree_status_sha256": "c" * 64,
+        },
+    )
+
+    assert load_latest_test_evidence(tmp_path) is None
