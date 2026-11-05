@@ -1784,7 +1784,13 @@ def test_control_master_signal_is_bound_before_strategy_and_into_decision_contex
         assert intake["CONTROL_MASTER_EVIDENCE_REFS"] == ["evidence://OBJ-42/review"]
         assert intake["VERIFICATION_STATUS"] == "NOT_VERIFIED"
         assert intake["SUPERSESSION_CONFLICT_CHECK"] == "NOT_EVALUATED"
-        assert intake["CONTROL_MASTER_DECISION_INFLUENCE"] == "NOT_EVALUATED"
+        assert intake["CONTROL_MASTER_SIGNAL_RETRIEVED"] == "REPORTED"
+        assert intake["ROUTE_RECONCILED"] == "NOT_RUN"
+        assert intake["SIGNAL_CONSIDERED"] == "NO"
+        assert intake["SIGNAL_INFLUENCE"] == "UNAVAILABLE"
+        assert intake["CONTROL_MASTER_DECISION_INFLUENCE"] == "UNAVAILABLE"
+        assert intake["ACTION_OUTCOME"] == "NOT_RUN"
+        assert intake["LATER_CAUSAL_REUSE"] == "NOT_TESTED"
         assert decision_intake == intake
         assert result.raw_output["control_master_signal_intake"] == intake
         assert result.raw_output["control_master_digest"]["digest_id"] == session.metadata["control_master_digest"]["digest_id"]

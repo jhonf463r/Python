@@ -2684,8 +2684,11 @@ class AdaptiveTaskOrchestrator:
         if control_master_prompt_delivery:
             intake = dict(session.metadata.get("control_master_signal_intake") or {})
             intake["PROMPT_DELIVERY"] = control_master_prompt_delivery
-            intake["SIGNAL_CONSIDERED"] = "NOT_EVALUATED"
-            intake["CONTROL_MASTER_DECISION_INFLUENCE"] = "NOT_EVALUATED"
+            # The model response does not expose a verified "considered" event
+            # or a causal decision comparison.
+            intake["SIGNAL_CONSIDERED"] = "NO"
+            intake["SIGNAL_INFLUENCE"] = "UNAVAILABLE"
+            intake["CONTROL_MASTER_DECISION_INFLUENCE"] = "UNAVAILABLE"
             session.metadata["control_master_signal_intake"] = intake
             session.context.metadata["control_master_signal_intake"] = intake
             dc_metadata = dict(decision_context_payload.get("metadata") or {})
@@ -3062,6 +3065,12 @@ class AdaptiveTaskOrchestrator:
             "VERIFICATION_STATUS": "NOT_VERIFIED",
             "SUPERSEDES_OR_CONFLICTS_WITH": [],
             "SUPERSESSION_CONFLICT_CHECK": "NOT_EVALUATED",
+            "CONTROL_MASTER_SIGNAL_RETRIEVED": (
+                "NOT_AVAILABLE"
+                if str(getattr(digest, "signal_status", "UNAVAILABLE")).upper() == "UNAVAILABLE"
+                else "REPORTED"
+            ),
+            "ROUTE_RECONCILED": "NOT_RUN",
             "FRESHNESS_OR_VALIDITY": freshness,
             "CONTROL_MASTER_SIGNAL_STATUS": freshness,
             "CONTROL_MASTER_TRANSPORT_STATUS": str(getattr(digest, "signal_status", "UNVERIFIED")),
@@ -3103,9 +3112,14 @@ class AdaptiveTaskOrchestrator:
             "CONTROL_MASTER_SOURCE_EVIDENCE_REFS": list(
                 getattr(digest, "source_evidence_refs", []) or []
             ),
-            "SIGNAL_CONSIDERED": "NOT_EVALUATED",
+            # Delivery is recorded separately; without consumer-side evidence,
+            # do not claim the model considered or applied the signal.
+            "SIGNAL_CONSIDERED": "NO",
             "PROMPT_DELIVERY": {"status": "NOT_DELIVERED"},
-            "CONTROL_MASTER_DECISION_INFLUENCE": "NOT_EVALUATED",
+            "SIGNAL_INFLUENCE": "UNAVAILABLE",
+            "CONTROL_MASTER_DECISION_INFLUENCE": "UNAVAILABLE",
+            "ACTION_OUTCOME": "NOT_RUN",
+            "LATER_CAUSAL_REUSE": "NOT_TESTED",
         }
 
     def _control_master_digest(self) -> Any:
