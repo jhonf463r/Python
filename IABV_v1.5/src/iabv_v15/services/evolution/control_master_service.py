@@ -57,6 +57,7 @@ class ControlMasterService:
         platform_pending_queue: Any | None = None,
         workspace_root: str | None = None,
         recent_decisions_limit: int = 10,
+        chat_interaction_lifecycle: Any | None = None,
     ) -> None:
         self.repository = repository
         self.objective_repository = objective_repository
@@ -67,6 +68,7 @@ class ControlMasterService:
         self.platform_pending_queue = platform_pending_queue
         self.workspace_root = workspace_root
         self.recent_decisions_limit = recent_decisions_limit
+        self.chat_interaction_lifecycle = chat_interaction_lifecycle
         self._work_queue_diagnostics = local()
 
     @property
@@ -920,19 +922,32 @@ class ControlMasterService:
     def _project_runtime_audit_items(
         self, seen_ids: set[str],
     ) -> list[dict[str, Any]]:
-        """Project failed/stalled interaction episodes from runtime_audit.jsonl.
+        """Project failed/stalled interactions with a matching fsync receipt."""
+        from iabv_v15.services.evolution.runtime_audit_tracer import validate_durability_ack
 
-        Resolved-sane episodes are NOT projected (no false positives).
-        """
+        lifecycle = self.chat_interaction_lifecycle
         if not self.workspace_root:
             self._record_work_queue_source("runtime_audit", "NOT_CONFIGURED")
+            self._record_work_queue_source(
+                "runtime_audit_durability",
+                "NOT_CONFIGURED" if lifecycle is None else "READ_UNVERIFIED",
+            )
             return []
+
         import json as _json
         audit_path = Path(str(self.workspace_root)) / 'data' / 'logs' / 'runtime_audit.jsonl'
         if not audit_path.exists():
             self._record_work_queue_source("runtime_audit", "NO_FILE")
+            self._record_work_queue_source(
+                "runtime_audit_durability",
+                "NOT_CONFIGURED" if lifecycle is None else "NO_FILE",
+            )
             return []
+
         items: list[dict[str, Any]] = []
+        interaction_events = 0
+        durability_unverified = False
+        invalid_lines = False
         try:
             lines = audit_path.read_text(encoding='utf-8', errors='replace').splitlines()
             count = 0
@@ -944,19 +959,45 @@ class ControlMasterService:
                 try:
                     event = _json.loads(line)
                 except Exception:
+                    invalid_lines = True
                     self._record_work_queue_error("RUNTIME_AUDIT_INVALID_JSON_LINE")
                     continue
                 if event.get('kind') != 'interaction_resolved':
                     continue
                 count += 1
+                interaction_events += 1
                 data = dict(event.get('data') or {})
+                iid = str(data.get('interaction_id') or '')
+                event_seq = event.get('seq')
+                expected_seq = (
+                    event_seq
+                    if isinstance(event_seq, int) and not isinstance(event_seq, bool)
+                    else -1
+                )
+
+                lifecycle_record = None
+                if lifecycle is not None and iid:
+                    try:
+                        reader = getattr(lifecycle, "interaction_info", None)
+                        if callable(reader):
+                            lifecycle_record = reader(iid)
+                    except Exception:
+                        lifecycle_record = None
+                raw_ack = (
+                    lifecycle_record.get("runtime_audit_durability")
+                    if isinstance(lifecycle_record, dict)
+                    else None
+                )
+                ack_check = validate_durability_ack(raw_ack, expected_seq=expected_seq)
+                if not ack_check.get("accepted"):
+                    durability_unverified = True
+
                 outcome = data.get('outcome', '')
                 stalls = list(data.get('stalls_during') or [])
-                # Only project failed or stalled episodes
                 if outcome == 'resolved' and not stalls:
                     continue
-                iid_raw = data.get('interaction_id', '')
-                aid = f'audit:{iid_raw}'
+
+                aid = f'audit:{iid}'
                 if aid in seen_ids:
                     continue
                 seen_ids.add(aid)
@@ -965,7 +1006,7 @@ class ControlMasterService:
                     score['failed_interaction'] = 35
                 if stalls:
                     score['ui_stalls'] = min(len(stalls) * 15, 45)
-                items.append(self._make_item(
+                item = self._make_item(
                     item_id=aid,
                     title=(
                         f'Interaction {outcome}: '
@@ -974,7 +1015,7 @@ class ControlMasterService:
                     ),
                     status=outcome,
                     source='runtime_audit',
-                    evidence_refs=[f'data/logs/runtime_audit.jsonl#{iid_raw}'],
+                    evidence_refs=[f'data/logs/runtime_audit.jsonl#{iid}'],
                     next_action='Investigate interaction failure/stall pattern',
                     score_components=score,
                     reason=(
@@ -982,15 +1023,29 @@ class ControlMasterService:
                         f'stalls={len(stalls)} '
                         f'window_inactive={data.get("window_went_inactive", False)}'
                     ),
-                ))
+                )
+                item["runtime_audit_event_seq"] = event_seq
+                item["runtime_audit_durability"] = ack_check
+                items.append(item)
         except Exception:
             self._record_work_queue_error("RUNTIME_AUDIT_READ_FAILED")
             self._record_work_queue_source("runtime_audit", "READ_FAILED")
+            self._record_work_queue_source("runtime_audit_durability", "READ_FAILED")
             return items
+
         self._record_work_queue_source(
             "runtime_audit",
-            "READ_PARTIAL" if "RUNTIME_AUDIT_INVALID_JSON_LINE" in self.last_work_queue_errors else "READ_OK",
+            "READ_PARTIAL" if invalid_lines else "READ_OK",
         )
+        if lifecycle is None:
+            durability_status = "NOT_CONFIGURED"
+        elif invalid_lines:
+            durability_status = "READ_PARTIAL"
+        elif interaction_events and durability_unverified:
+            durability_status = "READ_UNVERIFIED"
+        else:
+            durability_status = "READ_OK"
+        self._record_work_queue_source("runtime_audit_durability", durability_status)
         return items
 
     # ------------------------------------------------------------------

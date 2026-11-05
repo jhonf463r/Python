@@ -42,6 +42,7 @@ _EXPECTED_WORK_QUEUE_SOURCE_KEYS = frozenset({
     "pending_issue_repository",
     "self_examination_service",
     "runtime_audit",
+    "runtime_audit_durability",
     "tests_state",
 })
 

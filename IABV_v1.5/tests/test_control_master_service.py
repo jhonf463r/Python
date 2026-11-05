@@ -119,6 +119,7 @@ def test_current_work_queue_reports_every_registered_source_even_when_unconfigur
             "pending_issue_repository",
             "self_examination_service",
             "runtime_audit",
+            "runtime_audit_durability",
             "tests_state",
         }
     finally:
@@ -771,5 +772,89 @@ def test_control_master_does_not_project_oses_findings_without_complete_source_c
         assert service.last_work_queue_source_coverage['self_examination_service'] == 'READ_UNVERIFIED'
         assert any(error.startswith('OSES_FINDINGS_NOT_VERIFIED:') for error in service.last_work_queue_errors)
         assert not any(item.get('source') == 'oses_finding' for item in queue)
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_runtime_audit_work_item_carries_matching_fsync_ack() -> None:
+    import json
+
+    root = _workspace()
+    try:
+        service, _ = _build_service(root)
+        service.workspace_root = str(root)
+        event = {
+            "seq": 7,
+            "kind": "interaction_resolved",
+            "data": {
+                "interaction_id": "chat-durable-7",
+                "outcome": "failed",
+                "message_preview": "durable failure",
+                "provider": "test",
+                "total_duration_ms": 100,
+                "stalls_during": [],
+                "window_went_inactive": False,
+            },
+        }
+        audit = root / "data" / "logs" / "runtime_audit.jsonl"
+        audit.parent.mkdir(parents=True, exist_ok=True)
+        audit.write_text(json.dumps(event) + "\\n", encoding="utf-8")
+        ack = {
+            "status": "FILE_FSYNCED",
+            "path": "runtime_audit.jsonl",
+            "seq": 7,
+            "byte_start": 0,
+            "byte_end": len(json.dumps(event).encode("utf-8")) + 1,
+            "line_sha256": "a" * 64,
+        }
+
+        class Lifecycle:
+            def interaction_info(self, interaction_id):
+                assert interaction_id == "chat-durable-7"
+                return {"runtime_audit_durability": ack}
+
+        service.chat_interaction_lifecycle = Lifecycle()
+        items = service._project_runtime_audit_items(set())
+        assert len(items) == 1
+        assert items[0]["runtime_audit_durability"]["accepted"] is True
+        assert service.last_work_queue_source_coverage["runtime_audit_durability"] == "READ_OK"
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_runtime_audit_work_item_does_not_promote_missing_ack() -> None:
+    import json
+
+    root = _workspace()
+    try:
+        service, _ = _build_service(root)
+        service.workspace_root = str(root)
+        event = {
+            "seq": 8,
+            "kind": "interaction_resolved",
+            "data": {
+                "interaction_id": "chat-no-ack",
+                "outcome": "failed",
+                "message_preview": "missing acknowledgement",
+                "provider": "test",
+                "total_duration_ms": 100,
+                "stalls_during": [],
+                "window_went_inactive": False,
+            },
+        }
+        audit = root / "data" / "logs" / "runtime_audit.jsonl"
+        audit.parent.mkdir(parents=True, exist_ok=True)
+        audit.write_text(json.dumps(event) + "\\n", encoding="utf-8")
+
+        class Lifecycle:
+            def interaction_info(self, interaction_id):
+                return {}
+
+        service.chat_interaction_lifecycle = Lifecycle()
+        items = service._project_runtime_audit_items(set())
+        assert len(items) == 1
+        assert items[0]["runtime_audit_durability"]["accepted"] is False
+        assert items[0]["runtime_audit_durability"]["status"] == "ACK_UNAVAILABLE"
+        assert service.last_work_queue_source_coverage["runtime_audit_durability"] == "READ_UNVERIFIED"
     finally:
         shutil.rmtree(root, ignore_errors=True)

@@ -398,6 +398,7 @@ def test_build_from_service_reports_empty_only_after_complete_successful_reads()
             "pending_issue_repository": "READ_OK",
             "self_examination_service": "READ_OK",
             "runtime_audit": "READ_OK",
+            "runtime_audit_durability": "READ_OK",
             "tests_state": "READ_OK",
         }
 
@@ -440,6 +441,7 @@ def test_build_from_service_missing_expected_source_cannot_confirm_empty_queue()
             "pending_issue_repository": "READ_OK",
             "self_examination_service": "READ_OK",
             "runtime_audit": "READ_OK",
+            "runtime_audit_durability": "READ_OK",
         }
 
         def current_state(self, *, refresh: bool = False):
@@ -481,6 +483,7 @@ def test_build_from_service_unexpected_source_cannot_confirm_empty_queue() -> No
             "pending_issue_repository": "READ_OK",
             "self_examination_service": "READ_OK",
             "runtime_audit": "READ_OK",
+            "runtime_audit_durability": "READ_OK",
             "tests_state": "READ_OK",
             "unregistered_source": "READ_OK",
         }
