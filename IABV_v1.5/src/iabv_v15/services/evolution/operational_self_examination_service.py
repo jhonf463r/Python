@@ -255,7 +255,7 @@ class OperationalSelfExaminationService:
         try:
             wm_service = self.world_model_service
             if wm_service is not None:
-                env_service = getattr(wm_service, 'environment_self_awareness_service', None)
+                env_service = getattr(wm_service, 'environment_model', None)
                 if env_service is not None and hasattr(env_service, 'current_model'):
                     env_model = env_service.current_model()
                     if env_model is not None:
@@ -892,10 +892,16 @@ class OperationalSelfExaminationService:
         # MetacognitionEvolution: aggregate findings from DecisionSimplifier,
         # PlatformLearning, and provider health monitoring.
         metacog = getattr(self, 'metacognition_evolution', None)
-        if metacog is not None:
+        if metacog is None:
+            self._record_source_status('metacognition_evolution', 'NOT_CONFIGURED')
+        else:
             try:
                 from iabv_v15.domain.models import SelfExaminationFinding, IssueSeverity
+                malformed_findings = False
                 for raw in metacog.all_findings():
+                    if not isinstance(raw, dict):
+                        malformed_findings = True
+                        continue
                     sev_str = str(raw.get('severity', 'MEDIUM')).upper()
                     try:
                         sev = IssueSeverity(sev_str)
@@ -910,7 +916,13 @@ class OperationalSelfExaminationService:
                         recommendation=raw.get('recommendation', ''),
                         metadata=raw.get('metadata', {}),
                     ))
+                self._record_source_status(
+                    'metacognition_evolution',
+                    'READ_PARTIAL' if malformed_findings else 'READ_OK',
+                    'non_object_findings_observed' if malformed_findings else '',
+                )
             except Exception as exc:
+                self._record_source_status('metacognition_evolution', 'READ_FAILED', type(exc).__name__)
                 logger.warning('oses: metacognition_evolution findings error: %s', exc)
 
         # CodeAuditTrail cross-referencing: detect recurring bug patterns
@@ -8768,23 +8780,44 @@ _REQUIRED_SOURCE_IDS = (
             return None
 
     def _environment_model(self) -> Any | None:
-        """Read EnvironmentSelfModel from world_model_service or direct."""
+        """Read EnvironmentSelfModel through WorldModel or its configured source."""
         wms = self.world_model_service
-        if wms is not None:
-            try:
-                snap = wms.current_model()
-                env = getattr(snap, 'environment', None)
-                if env is not None:
-                    return env
-            except Exception:
-                pass
-            try:
-                esas = getattr(wms, 'environment_self_awareness_service', None)
-                if esas is not None:
-                    return esas.current_model()
-            except Exception:
-                pass
-        return None
+        if wms is None:
+            self._record_source_status('environment_model', 'NOT_CONFIGURED')
+            return None
+
+        snapshot_error = ''
+        try:
+            snapshot = wms.current_model()
+            if snapshot is None:
+                raise RuntimeError('world_model_snapshot_unavailable')
+            environment = getattr(snapshot, 'environment', None)
+            if environment is not None:
+                self._record_source_status('environment_model', 'READ_OK')
+                return environment
+        except Exception as exc:
+            snapshot_error = type(exc).__name__
+
+        esas = getattr(wms, 'environment_self_awareness_service', None)
+        if esas is None or not callable(getattr(esas, 'current_model', None)):
+            self._record_source_status(
+                'environment_model',
+                'READ_FAILED' if snapshot_error else 'NOT_CONFIGURED',
+                snapshot_error or 'environment_model_not_exposed',
+            )
+            return None
+        try:
+            environment = esas.current_model()
+            if environment is None:
+                self._record_source_status(
+                    'environment_model', 'READ_PARTIAL', 'environment_model_returned_none'
+                )
+                return None
+            self._record_source_status('environment_model', 'READ_OK')
+            return environment
+        except Exception as exc:
+            self._record_source_status('environment_model', 'READ_FAILED', type(exc).__name__)
+            return None
 
     # ------------------------------------------------------------------
     # Task-packet → pending issues (materialization)
@@ -9333,10 +9366,15 @@ _REQUIRED_SOURCE_IDS = (
         # Check test evidence freshness
         te_path = root / 'data' / 'evolution' / 'test_evidence' / 'latest.json'
         test_evidence_fresh = False
-        if te_path.exists():
+        if not te_path.exists():
+            self._record_source_status('test_evidence_file', 'CONFIRMED_NOT_FOUND')
+        else:
             try:
                 import json as _json
                 te = _json.loads(te_path.read_text(encoding='utf-8'))
+                if not isinstance(te, dict):
+                    raise TypeError('test_evidence_payload_not_object')
+                self._record_source_status('test_evidence_file', 'READ_OK')
                 from datetime import datetime as _dt, timezone as _tz
                 ts_str = te.get('timestamp', '')
                 if ts_str:
@@ -9345,8 +9383,8 @@ _REQUIRED_SOURCE_IDS = (
                         ts = ts.replace(tzinfo=_tz.utc)
                     age_h = (_dt.now(_tz.utc) - ts).total_seconds() / 3600
                     test_evidence_fresh = age_h < 24
-            except Exception:
-                pass
+            except Exception as exc:
+                self._record_source_status('test_evidence_file', 'READ_FAILED', type(exc).__name__)
 
         starved = skip_count >= 5 or (not test_evidence_fresh and skip_count >= 2)
         if starved:
