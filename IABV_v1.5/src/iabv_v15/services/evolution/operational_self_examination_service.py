@@ -5164,16 +5164,38 @@ _REQUIRED_SOURCE_IDS = (
 
         # --- G2: validation feedback persistence ---
         feedback_path = Path(self.workspace_root) / 'data' / 'evolution' / 'validation_feedback' / 'history.jsonl'
-        g2_file_exists = feedback_path.is_file()
+        g2_file_exists = False
         g2_entry_count = 0
-        if g2_file_exists:
-            try:
-                g2_entry_count = sum(1 for line in feedback_path.read_text(encoding='utf-8').splitlines() if line.strip())
-                self._record_source_status('validation_feedback_history', 'READ_OK')
-            except Exception as exc:
-                self._record_source_status('validation_feedback_history', 'READ_FAILED', type(exc).__name__)
-        else:
+        malformed_feedback_rows = 0
+        try:
+            feedback_text = feedback_path.read_text(encoding='utf-8')
+        except FileNotFoundError:
             self._record_source_status('validation_feedback_history', 'CONFIRMED_NOT_FOUND')
+        except (OSError, UnicodeError) as exc:
+            self._record_source_status('validation_feedback_history', 'READ_FAILED', type(exc).__name__)
+        else:
+            g2_file_exists = True
+            for line in feedback_text.splitlines():
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    feedback_item = json.loads(line)
+                except (json.JSONDecodeError, ValueError):
+                    malformed_feedback_rows += 1
+                    continue
+                if not isinstance(feedback_item, dict):
+                    malformed_feedback_rows += 1
+                    continue
+                g2_entry_count += 1
+            if malformed_feedback_rows:
+                self._record_source_status(
+                    'validation_feedback_history',
+                    'READ_PARTIAL',
+                    f'malformed_jsonl_rows:{malformed_feedback_rows}',
+                )
+            else:
+                self._record_source_status('validation_feedback_history', 'READ_OK')
         checks.append({
             'mechanism': 'G2_feedback_persistence',
             'wired': True,
@@ -5843,22 +5865,27 @@ _REQUIRED_SOURCE_IDS = (
         malformed_rows = 0
         feedback_path = Path(self.workspace_root) / 'data' / 'evolution' / 'validation_feedback' / 'history.jsonl'
         try:
-            if not feedback_path.is_file():
-                self._record_source_status('validation_feedback_history', 'CONFIRMED_NOT_FOUND')
-                return tried
-            for line in feedback_path.read_text(encoding='utf-8').splitlines():
-                line = line.strip()
-                if not line:
-                    continue
-                try:
-                    entry = json.loads(line)
-                except (json.JSONDecodeError, ValueError):
-                    malformed_rows += 1
-                    continue
-                if not isinstance(entry, dict):
-                    malformed_rows += 1
-                    continue
-                decision = str(entry.get('decision') or '')
+            feedback_text = feedback_path.read_text(encoding='utf-8')
+        except FileNotFoundError:
+            self._record_source_status('validation_feedback_history', 'CONFIRMED_NOT_FOUND')
+            return tried
+        except (OSError, UnicodeError) as exc:
+            self._record_source_status('validation_feedback_history', 'READ_FAILED', type(exc).__name__)
+            return tried
+
+        for line in feedback_text.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                entry = json.loads(line)
+            except (json.JSONDecodeError, ValueError):
+                malformed_rows += 1
+                continue
+            if not isinstance(entry, dict):
+                malformed_rows += 1
+                continue
+            decision = str(entry.get('decision') or '')
                 if decision not in {'discarded', 'unresolved'}:
                     continue
                 kind = str(entry.get('proposal_kind') or entry.get('proposal_key') or '').strip()
