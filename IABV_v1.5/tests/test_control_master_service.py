@@ -538,5 +538,9 @@ def test_current_state_preserves_source_generation_before_projection_refresh() -
         assert provenance["workspace_scope_id"]
         assert provenance["freshness_status"] == "FRESH"
         assert projected.last_updated >= source_generated
+        service.save_state(projected)
+        persisted = service.repository.load_latest_state()
+        assert persisted is not None
+        assert "_space_time_control_master_source_provenance" not in persisted.metadata
     finally:
         shutil.rmtree(root, ignore_errors=True)

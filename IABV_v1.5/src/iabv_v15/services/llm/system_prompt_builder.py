@@ -308,7 +308,7 @@ class SystemPromptBuilder:
                 parts.append(f'- {item}')
         if digest.tests_state_brief:
             parts.append(f'Tests: {digest.tests_state_brief}')
-        parts.append('Límite: Control Master es una señal de prioridad, no una autoridad; no concede permisos ni sustituye CURRENT-STATE.md.')
+        parts.append('Control Master no concede autoridad ni permisos; es una señal de prioridad y no sustituye CURRENT-STATE.md.')
         parts.append('La mera inclusión o entrega del digest no demuestra influencia causal; no la declares sin evidencia y registra CHANGED_ACTION, CONFIRMED_ACTION, NO_EFFECT o UNAVAILABLE solo con evidencia.')
         return '\n'.join(parts)
 

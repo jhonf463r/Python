@@ -1752,11 +1752,28 @@ def test_control_master_signal_is_bound_before_strategy_and_into_decision_contex
             metadata={"task_id": "task-d021-42"},
             auto_route=True,
         )
+        classifier_observation = {}
+        original_classify = orchestrator.intent_service.classify_with_schema
+
+        def _classify_with_bound_signal(*args, **kwargs):
+            active_request = kwargs.get("request")
+            classifier_observation["task_id"] = (
+                active_request.metadata.get("control_master_signal_intake", {}).get("TASK_ID")
+            )
+            classifier_observation["digest_id"] = (
+                active_request.metadata.get("control_master_digest", {}).get("digest_id")
+            )
+            return original_classify(*args, **kwargs)
+
+        orchestrator.intent_service.classify_with_schema = _classify_with_bound_signal
         _, result, session = orchestrator.handle_request(request)
         intake = session.metadata["control_master_signal_intake"]
         decision_intake = session.metadata["decision_context"]["metadata"]["control_master_signal_intake"]
         assert probe.state_reads == 1
         assert probe.queue_reads == 1
+        assert classifier_observation["task_id"] == "task-d021-42"
+        assert classifier_observation["digest_id"] == session.metadata["control_master_digest"]["digest_id"]
+        assert request.metadata["control_master_signal_intake"]["TASK_ID"] == "task-d021-42"
         assert intake["TASK_ID"] == "task-d021-42"
         assert intake["ACTOR_SESSION_ID"] == session.session_id
         assert intake["SESSION_BINDING_STATUS"] == "BOUND"

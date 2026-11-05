@@ -1477,6 +1477,11 @@ class AdaptiveTaskOrchestrator:
             request=request,
             digest=control_master_digest,
         )
+        # Expose the same pinned signal to the classifier/router request before
+        # either can make a routing decision; downstream consumers reuse this ID.
+        request.metadata = dict(request.metadata or {})
+        request.metadata["control_master_digest"] = control_master_digest.model_dump(mode="json")
+        request.metadata["control_master_signal_intake"] = control_master_intake
 
         # ETAPA 2: Clasificación semántica mejorada con IntentSchema
         intent, intent_schema = self.intent_service.classify_with_schema(

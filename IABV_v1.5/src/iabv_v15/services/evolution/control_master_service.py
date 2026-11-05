@@ -191,7 +191,12 @@ class ControlMasterService:
         return state
 
     def save_state(self, state: ControlMasterState) -> ControlMasterState:
-        return self.repository.save_state(state)
+        # D021 read provenance is ephemeral to the observation/task episode.
+        # Do not turn it into durable governance state through a later write.
+        metadata = dict(state.metadata or {})
+        metadata.pop("_space_time_control_master_source_provenance", None)
+        persistable = state.model_copy(update={"metadata": metadata})
+        return self.repository.save_state(persistable)
 
     def get_rule(self, rule_id: str) -> ControlRule | None:
         return self.repository.get_rule(rule_id)
