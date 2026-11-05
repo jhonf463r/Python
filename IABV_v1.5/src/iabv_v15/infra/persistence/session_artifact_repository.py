@@ -16,6 +16,8 @@ class SessionArtifactRepository:
 
     def save(self, artifact: SessionArtifact, payload: Any | None = None) -> SessionArtifact:
         final_artifact = artifact
+        if payload is None:
+            self.storage.resolve_managed_path(artifact.path)
         if payload is not None:
             artifact_path = Path(artifact.path)
             if artifact_path.is_absolute():
@@ -82,4 +84,6 @@ class SessionArtifactRepository:
             "metadata": json.loads(row["metadata_json"]),
             "created_at_utc": row["created_at_utc"],
         }
-        return SessionArtifact.model_validate(payload)
+        artifact = SessionArtifact.model_validate(payload)
+        self.storage.resolve_managed_path(artifact.path)
+        return artifact
