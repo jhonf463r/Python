@@ -152,3 +152,37 @@ BRIDGE=BRIDGE_NOT_READY
 M1A=UNCHANGED
 MERGE=NOT_AUTHORIZED
 ```
+
+## D021 lifecycle-state alignment and current route reconciliation — 2026-11-04
+
+Implementation commit: `1b092edf6d81ebd09a7bc5ebe32f805b510ea417`.
+Follow-up semantic-precision commit: `f2ada0ea105a10a38082742d6244806a19434d5b`.
+These are direct descendants on the same PR branch; no new branch or coordinator was introduced.
+
+### D021 §6D.6 intake states
+
+The existing `AdaptiveTaskOrchestrator` intake now emits the exact lifecycle fields required by D021:
+
+- `CONTROL_MASTER_SIGNAL_RETRIEVED=REPORTED` when the Control Master service reports a payload; `NOT_AVAILABLE` when its signal status is UNAVAILABLE. It is not promoted to VERIFIED without independent verification.
+- `ROUTE_RECONCILED=NOT_RUN` in the product intake because the runtime consumer has not performed the authoritative `CURRENT-STATE.md` comparison.
+- `SIGNAL_CONSIDERED=NO` with `SIGNAL_CONSIDERATION_EVIDENCE=NOT_AVAILABLE` until consumer-side evidence exists. Prompt delivery alone does not satisfy consideration.
+- `SIGNAL_INFLUENCE=UNAVAILABLE`; the legacy `CONTROL_MASTER_DECISION_INFLUENCE` mirrors this conservative state. No changed/confirmed/no-effect causal result is inferred.
+- `ACTION_OUTCOME=NOT_RUN` and `LATER_CAUSAL_REUSE=NOT_TESTED`.
+
+The local-chat completion path preserves these states; a returned provider response updates prompt-delivery evidence but does not upgrade consideration or causal influence. Regression tests assert the available-source and unavailable-source cases.
+
+### Current coordination episode — route reconciliation
+
+The exact `main` ref used for the candidate remains `56e4d8b11846a8d8f3cb8cda08efd773ec235651`.
+
+- `CURRENT-STATE.md` exact Git blob `63e1b459a13e23e1012da81826dc50727b688d8c` was fetched through the Git Blob API (tree metadata reports 1,081,478 bytes). The ordinary file-content route returned an empty body, so only the exact blob fetch is treated as content evidence.
+- Its active header remains `IABV_M1A_OWNER_ISSUER_MECHANISM_INPUT_GATE_R1_20261030`, with the root issuer/provenance edge blocked, M1A G1–G3 not established, protected reads fail-closed, and the separate Lane B route permitted only when supported by the Owner's current objective and its own authorization.
+- The committed Control Master snapshot is blob `d76d521e6f8d73e874a21ffe1b720dcdbcd48293`, state ID `dc840807-ef2a-4e7a-8f11-4c6362ccbcb7`, `last_updated=2026-04-19T19:23:46.389095Z`. It lists historical Super Sync objectives and is not a live November 2026 runtime read.
+- For this coordination task the snapshot is `STALE`; its usefulness as a current priority signal is `UNAVAILABLE`. The task is allowed to continue as a separately authorized Lane B Space-Time development because the Owner explicitly requested continuation. The M1A blocked route is not bypassed or changed.
+- Episode-level reconciliation: `CONTROL_MASTER_SIGNAL_RETRIEVED=REPORTED` (committed snapshot only), `ROUTE_RECONCILED=PARTIAL`, `SIGNAL_CONSIDERED=YES` (considered and excluded as stale), `SIGNAL_INFLUENCE=UNAVAILABLE`, `ACTION_OUTCOME=PARTIAL` (isolated candidate commits; no tests), `LATER_CAUSAL_REUSE=NOT_TESTED`.
+
+### Execution boundary for the preceding code HEAD
+
+At code HEAD `f2ada0ea105a10a38082742d6244806a19434d5b`, GitHub Actions run #549 (`41944077000`) ended `startup_failure`; the jobs endpoint returned zero jobs. No runner, test or build step ran; combined statuses were empty. Tests/build/runtime remain `NOT_RUN`. This run belongs to the code HEAD above; the receipt-only commit that follows has its own run state.
+
+The Space-Time organ remains `PARTIAL`. The D021 lifecycle fields now distinguish retrieval, route reconciliation, consideration, influence, action outcome and later reuse; they do not make those stages automatically occur. M1A, `main`, protected reads, Option D, MCP allowlist, tunnel, bridge and production authorization remain unchanged.
