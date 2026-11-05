@@ -314,3 +314,54 @@ BRIDGE=BRIDGE_NOT_READY
 M1A=UNCHANGED
 MERGE=NOT_AUTHORIZED
 ```
+
+
+## R18.10 — Integridad de lectura de los repositorios que alimentan la cola — 2026-11-04
+
+PR: #610. Code/test HEAD examined: `02947d3b0e0b6963df35ef9ad3ceb2a8ca129f36`.
+Base: `main@56e4d8b11846a8d8f3cb8cda08efd773ec235651`.
+Related owner: #605, R20.3–R20.5:
+- https://github.com/jhonf463r/Python/issues/605#issuecomment-6646604135
+- https://github.com/jhonf463r/Python/issues/605#issuecomment-6646877238
+- https://github.com/jhonf463r/Python/issues/605#issuecomment-6646977758
+
+### Hallazgo
+
+La corrección R18.9 cierra la completitud del conjunto de seis projectors llamados por `ControlMasterService.current_work_queue()`; no cierra todavía la integridad de lectura debajo de esos projectors.
+
+1. `ObjectiveRepository.list_recent()` delega en `_collect()`. `_load()` normaliza FileNotFoundError, JSONDecodeError, OSError, errores de validación y excepciones generales a `None`. `_collect()` convierte todo `None` en orphan y ejecuta `_prune_orphans()`, que borra la fila SQLite. El projector de Control Master puede recibir entonces una lista vacía y registrar `objective_repository=READ_OK`, aunque se haya ocultado un error de artefacto y alterado el índice.
+2. `PendingIssueRepository.list_recent()` usa `_load_optional()`; FileNotFoundError se convierte en `None` y la fila se omite sin diagnóstico. El projector de Control Master registra `pending_issue_repository=READ_OK` para esa devolución normal, aunque el índice señalaba un artefacto que no pudo leerse.
+3. Los blobs de ambos repositorios son idénticos en `main` y en el code HEAD de #610:
+   - `objective_repository.py`: `40e70a551df50e8f3c8277e4f82450c26e2b599f`.
+   - `pending_issue_repository.py`: `4c7efa43995f1eae729ecf43a40cd38dd0377552`.
+   Por tanto, no son cambios introducidos por PR #610.
+
+### Adjudicación
+
+R18.9 prueba el conjunto de seis projectors y sus estados declarados; no prueba la lectura íntegra de las filas/artefactos que esos repositorios indexan. En consecuencia, `EMPTY_QUEUE` end-to-end todavía no puede darse por demostrado mientras un loader pueda ocultar un error o una ausencia de artefacto sin exponerlo a la cobertura de fuente.
+
+Este hallazgo enlaza con el owner técnico ya existente #605; no se crea un coordinador ni se duplica allí una reparación. La remediación debe seguir ese carril: resultados tipados FOUND / CONFIRMED_NOT_FOUND / READ_FAILED / CORRUPT / SCHEMA_UNSUPPORTED; ninguna poda de índice por un fallo distinto a ausencia confirmada; y tests negativos que comprueben la conservación de filas ante I/O/JSON/schema failures. Para PendingIssueRepository también debe distinguirse una ausencia confirmada de un registro indexado cuyo payload falta, y esa condición debe llegar al consumidor como cobertura no verificada.
+
+### Límites de evidencia
+
+- Es revisión estática de fuentes y fetch-back; no se abrió la SQLite de Owner ni se inspeccionaron artefactos locales.
+- No se ejecutó fault injection, tests, build ni runtime; no se observó borrado real durante esta revisión.
+- No se cambió código de los repositorios ni de #610.
+- No se hizo comentario ni cambio de código en #605; se conserva como dependencia de propietario técnico.
+- M1A, G1/G2/G3, Option D, protected reads, MCP allowlist, túnel y puente permanecen intactos.
+
+```text
+R18.9_PROJECTOR_SET_COMPLETENESS=IMPLEMENTED_SOURCE_LEVEL
+OBJECTIVE_READER_ERROR_NORMALIZATION=SOURCE_VERIFIED
+OBJECTIVE_READ_SIDE_INDEX_PRUNE=SOURCE_VERIFIED
+PENDING_ISSUE_MISSING_ARTIFACT_SUPPRESSION=SOURCE_VERIFIED
+D021_QUEUE_STORAGE_READ_INTEGRITY=BLOCKED_BY_605
+EMPTY_QUEUE_END_TO_END=NOT_ESTABLISHED
+TESTS/BUILD/RUNTIME=NOT_RUN
+OWNER_DB/ARTIFACTS=NOT_OPENED
+CODE_CHANGES=NONE
+SPACE_TIME_ORGAN=PARTIAL
+BRIDGE=BRIDGE_NOT_READY
+M1A=UNCHANGED
+MERGE=NOT_AUTHORIZED
+```
