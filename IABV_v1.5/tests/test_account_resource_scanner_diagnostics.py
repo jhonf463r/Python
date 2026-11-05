@@ -246,3 +246,139 @@ def test_account_resource_scan_exposes_secret_file_coverage(monkeypatch) -> None
         'secrets_file': 'PermissionError',
     }
     assert any('parcialmente no verificable' in alert for alert in result['summary']['alerts'])
+
+
+def test_github_api_without_token_is_not_configured(monkeypatch) -> None:
+    monkeypatch.delenv('GITHUB_TOKEN_IABV', raising=False)
+    monkeypatch.delenv('GITHUB_TOKEN', raising=False)
+
+    result = account_resource_scanner.scan_github_api()
+
+    assert result['available'] is False
+    assert result['source_coverage']['github_api'] == 'NOT_CONFIGURED'
+    assert result['source_errors'] == {}
+
+
+def test_github_api_http_failure_is_preserved(monkeypatch) -> None:
+    monkeypatch.setenv('GITHUB_TOKEN_IABV', 'synthetic-test-token')
+    monkeypatch.setattr(account_resource_scanner, '_safe_request', lambda *args, **kwargs: {
+        'ok': False, 'status': 403, 'error': 'synthetic forbidden',
+    })
+
+    result = account_resource_scanner.scan_github_api()
+
+    assert result['available'] is False
+    assert result['source_coverage']['github_api'] == 'READ_FAILED'
+    assert result['source_errors']['github_api'] == 'synthetic forbidden'
+
+
+def test_ollama_invalid_json_is_not_reported_as_available(monkeypatch) -> None:
+    monkeypatch.setattr(account_resource_scanner, '_safe_request', lambda *args, **kwargs: {
+        'ok': True, 'body': '{invalid-json',
+    })
+
+    result = account_resource_scanner.scan_ollama_api()
+
+    assert result['available'] is False
+    assert result['source_coverage']['ollama_api'] == 'READ_FAILED'
+    assert result['models'] == []
+
+
+def test_ollama_malformed_model_entry_is_read_partial(monkeypatch) -> None:
+    monkeypatch.setattr(account_resource_scanner, '_safe_request', lambda *args, **kwargs: {
+        'ok': True, 'body': '{"models": [{"name": "valid-model", "size": 1024}, null]}',
+    })
+
+    result = account_resource_scanner.scan_ollama_api()
+
+    assert result['available'] is True
+    assert result['models_count'] == 2
+    assert result['models_valid_count'] == 1
+    assert result['models'][0]['name'] == 'valid-model'
+    assert result['source_coverage']['ollama_api'] == 'READ_PARTIAL'
+    assert result['source_errors']['ollama_api'] == 'invalid_model_entries:1'
+
+
+def test_cloudflared_process_enumeration_failure_is_not_not_running(monkeypatch) -> None:
+    import subprocess
+
+    monkeypatch.setattr(account_resource_scanner.os, 'name', 'nt')
+    def run(command, **kwargs):
+        if command == ['cloudflared', 'version']:
+            return subprocess.CompletedProcess(command, 0, stdout='cloudflared version synthetic', stderr='')
+        raise PermissionError('synthetic tasklist denial')
+    monkeypatch.setattr(account_resource_scanner.subprocess, 'run', run)
+
+    result = account_resource_scanner.scan_cloudflare_tunnel()
+
+    assert result['available'] is True
+    assert result['tunnel_running'] is None
+    assert result['source_coverage']['cloudflared_binary'] == 'READ_OK'
+    assert result['source_coverage']['cloudflared_processes'] == 'READ_FAILED'
+    assert result['source_errors']['cloudflared_processes'] == 'PermissionError'
+
+
+def test_account_resource_scan_merges_api_and_tunnel_coverage(monkeypatch) -> None:
+    monkeypatch.setattr(account_resource_scanner, 'scan_github_api', lambda: {
+        'available': False, 'source_coverage': {'github_api': 'NOT_CONFIGURED'}, 'source_errors': {},
+    })
+    monkeypatch.setattr(account_resource_scanner, 'scan_devin_api', lambda: {
+        'available': False, 'source_coverage': {'devin_api': 'READ_FAILED'}, 'source_errors': {'devin_api': 'TimeoutError'},
+    })
+    monkeypatch.setattr(account_resource_scanner, 'scan_ollama_api', lambda: {
+        'available': False, 'source_coverage': {'ollama_api': 'READ_FAILED'}, 'source_errors': {'ollama_api': 'ConnectionError'},
+    })
+    monkeypatch.setattr(account_resource_scanner, 'scan_browser_accounts', lambda: {
+        'accounts': [], 'count': 0, 'source_coverage': {'browser_accounts': 'READ_PARTIAL'},
+        'source_errors': {'browser_accounts': 'PermissionError'},
+    })
+    monkeypatch.setattr(account_resource_scanner, 'scan_configured_secrets', lambda: {
+        'configured_count': 0, 'missing_count': 0, 'unverified': [],
+        'source_coverage': {'environment': 'READ_OK', 'secrets_file': 'CONFIRMED_NOT_FOUND'},
+        'source_errors': {},
+    })
+    monkeypatch.setattr(account_resource_scanner, 'scan_cloudflare_tunnel', lambda: {
+        'available': True, 'source_coverage': {'cloudflared_binary': 'READ_OK', 'cloudflared_processes': 'READ_FAILED'},
+        'source_errors': {'cloudflared_processes': 'PermissionError'},
+    })
+
+    result = account_resource_scanner.account_resource_scan()
+
+    assert result['source_coverage'] == {
+        'github_api': 'NOT_CONFIGURED',
+        'devin_api': 'READ_FAILED',
+        'ollama_api': 'READ_FAILED',
+        'cloudflared_binary': 'READ_OK',
+        'cloudflared_processes': 'READ_FAILED',
+        'browser_accounts': 'READ_PARTIAL',
+        'secrets_environment': 'READ_OK',
+        'secrets_file': 'CONFIRMED_NOT_FOUND',
+    }
+    assert result['source_errors']['devin_api'] == 'TimeoutError'
+    assert result['source_errors']['ollama_api'] == 'ConnectionError'
+    assert result['source_errors']['cloudflared_processes'] == 'PermissionError'
+
+
+def test_cloudflared_missing_binary_is_confirmed_not_found(monkeypatch) -> None:
+    def missing_binary(*args, **kwargs):
+        raise FileNotFoundError('synthetic cloudflared absence')
+    monkeypatch.setattr(account_resource_scanner.subprocess, 'run', missing_binary)
+
+    result = account_resource_scanner.scan_cloudflare_tunnel()
+
+    assert result['available'] is False
+    assert result['tunnel_running'] is None
+    assert result['source_coverage']['cloudflared_binary'] == 'CONFIRMED_NOT_FOUND'
+    assert result['source_coverage']['cloudflared_processes'] == 'NOT_EXECUTED'
+
+
+def test_ollama_missing_models_field_is_not_verified_empty(monkeypatch) -> None:
+    monkeypatch.setattr(account_resource_scanner, '_safe_request', lambda *args, **kwargs: {
+        'ok': True, 'body': '{"unexpected": []}',
+    })
+
+    result = account_resource_scanner.scan_ollama_api()
+
+    assert result['available'] is False
+    assert result['source_coverage']['ollama_api'] == 'READ_FAILED'
+    assert result['source_errors']['ollama_api'] == 'TypeError'

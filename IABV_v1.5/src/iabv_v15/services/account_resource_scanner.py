@@ -60,13 +60,15 @@ def _safe_request(url: str, headers: dict[str, str] | None = None,
 # ──────────────────────────────────────────────────────────────
 
 def scan_github_api() -> dict[str, Any]:
-    """Check GitHub API access and rate limits."""
+    """Check GitHub API access and expose the read outcome."""
     token = os.environ.get('GITHUB_TOKEN_IABV') or os.environ.get('GITHUB_TOKEN') or ''
     if not token:
         return {
             'available': False,
             'reason': 'no_token',
             'detail': 'GITHUB_TOKEN_IABV ni GITHUB_TOKEN están configurados',
+            'source_coverage': {'github_api': 'NOT_CONFIGURED'},
+            'source_errors': {},
         }
 
     resp = _safe_request(
@@ -74,78 +76,144 @@ def scan_github_api() -> dict[str, Any]:
         headers={'Authorization': f'token {token}', 'Accept': 'application/vnd.github.v3+json'},
     )
     if not resp.get('ok'):
+        error = str(resp.get('error') or f'HTTP {resp.get("status")}')
         return {
             'available': False,
             'reason': 'api_error',
-            'detail': resp.get('error', f'HTTP {resp.get("status")}'),
+            'detail': error,
+            'source_coverage': {'github_api': 'READ_FAILED'},
+            'source_errors': {'github_api': error},
         }
 
     try:
         data = json.loads(resp['body'])
-        core = data.get('resources', {}).get('core', {})
+        if not isinstance(data, dict):
+            raise TypeError('github_rate_limit_response_not_object')
+        resources = data.get('resources')
+        if not isinstance(resources, dict):
+            raise TypeError('github_rate_limit_resources_not_object')
+        core = resources.get('core')
+        if not isinstance(core, dict):
+            raise TypeError('github_rate_limit_core_not_object')
+        limit = core.get('limit')
+        remaining = core.get('remaining')
+        if type(limit) is not int or type(remaining) is not int or limit < 0 or remaining < 0 or remaining > limit:
+            raise ValueError('github_rate_limit_counters_invalid')
+        reset = core.get('reset')
+        reset_at = datetime.fromtimestamp(reset, tz=timezone.utc).isoformat() if isinstance(reset, (int, float)) and not isinstance(reset, bool) and reset > 0 else None
         return {
             'available': True,
-            'rate_limit': core.get('limit', 0),
-            'remaining': core.get('remaining', 0),
-            'reset_at': datetime.fromtimestamp(
-                core.get('reset', 0), tz=timezone.utc
-            ).isoformat() if core.get('reset') else None,
-            'usage_pct': round(
-                (1 - core.get('remaining', 0) / max(core.get('limit', 1), 1)) * 100, 1
-            ),
+            'rate_limit': limit,
+            'remaining': remaining,
+            'reset_at': reset_at,
+            'usage_pct': round((1 - remaining / max(limit, 1)) * 100, 1),
+            'source_coverage': {'github_api': 'READ_OK'},
+            'source_errors': {},
         }
     except Exception as exc:
-        return {'available': False, 'reason': 'parse_error', 'detail': str(exc)}
-
+        error = type(exc).__name__
+        return {
+            'available': False,
+            'reason': 'parse_error',
+            'detail': error,
+            'source_coverage': {'github_api': 'READ_FAILED'},
+            'source_errors': {'github_api': error},
+        }
 
 def scan_devin_api() -> dict[str, Any]:
-    """Check Devin API access."""
+    """Check Devin API access and expose whether the probe was performed."""
     token = os.environ.get('DEVIN_API_KEY_IABV') or os.environ.get('DEVIN_API_KEY') or ''
     if not token:
         return {
             'available': False,
             'reason': 'no_token',
             'detail': 'DEVIN_API_KEY_IABV ni DEVIN_API_KEY están configurados',
+            'source_coverage': {'devin_api': 'NOT_CONFIGURED'},
+            'source_errors': {},
         }
 
     resp = _safe_request(
         'https://api.devin.ai/v1/sessions',
         headers={'Authorization': f'Bearer {token}', 'Accept': 'application/json'},
     )
+    if resp.get('ok'):
+        return {
+            'available': True,
+            'status_code': resp.get('status', 0),
+            'detail': 'ok',
+            'source_coverage': {'devin_api': 'READ_OK'},
+            'source_errors': {},
+        }
+    error = str(resp.get('error') or f'HTTP {resp.get("status")}')
     return {
-        'available': resp.get('ok', False),
+        'available': False,
+        'reason': 'api_error',
         'status_code': resp.get('status', 0),
-        'detail': 'ok' if resp.get('ok') else resp.get('error', f'HTTP {resp.get("status")}'),
+        'detail': error,
+        'source_coverage': {'devin_api': 'READ_FAILED'},
+        'source_errors': {'devin_api': error},
     }
 
-
 def scan_ollama_api() -> dict[str, Any]:
-    """Check Ollama local API and loaded models."""
+    """Check Ollama and validate its model-list response before reporting it."""
     resp = _safe_request('http://localhost:11434/api/tags', timeout=5)
     if not resp.get('ok'):
+        error = str(resp.get('error') or 'ollama_http_error')
         return {
             'available': False,
             'reason': 'not_running',
-            'detail': resp.get('error', 'Ollama no responde en localhost:11434'),
+            'detail': error,
+            'source_coverage': {'ollama_api': 'READ_FAILED'},
+            'source_errors': {'ollama_api': error},
         }
 
     try:
         data = json.loads(resp['body'])
-        models = data.get('models', [])
+        if not isinstance(data, dict) or 'models' not in data or not isinstance(data['models'], list):
+            raise TypeError('ollama_models_response_invalid_shape')
+        raw_models = data['models']
+        valid_models: list[dict[str, Any]] = []
+        invalid_count = 0
+        for model in raw_models:
+            if not isinstance(model, dict):
+                invalid_count += 1
+                continue
+            name = model.get('name')
+            size = model.get('size', 0)
+            if not isinstance(name, str) or not name.strip() or not isinstance(size, (int, float)) or isinstance(size, bool):
+                invalid_count += 1
+                continue
+            import math
+            try:
+                normalized_size = float(size)
+            except (OverflowError, TypeError, ValueError):
+                invalid_count += 1
+                continue
+            if not math.isfinite(normalized_size) or normalized_size < 0:
+                invalid_count += 1
+                continue
+            valid_models.append({'name': name, 'size_gb': round(normalized_size / (1024**3), 1)})
+        coverage = 'READ_PARTIAL' if invalid_count else 'READ_OK'
+        errors = {'ollama_api': f'invalid_model_entries:{invalid_count}'} if invalid_count else {}
         return {
             'available': True,
-            'models_count': len(models),
-            'models': [
-                {
-                    'name': m.get('name', ''),
-                    'size_gb': round(m.get('size', 0) / (1024**3), 1),
-                }
-                for m in models[:10]
-            ],
+            'models_count': len(raw_models),
+            'models_valid_count': len(valid_models),
+            'models': valid_models[:10],
+            'source_coverage': {'ollama_api': coverage},
+            'source_errors': errors,
         }
     except Exception as exc:
-        return {'available': True, 'models_count': 0, 'parse_error': str(exc)}
-
+        error = type(exc).__name__
+        return {
+            'available': False,
+            'reason': 'parse_error',
+            'detail': error,
+            'models_count': 0,
+            'models': [],
+            'source_coverage': {'ollama_api': 'READ_FAILED'},
+            'source_errors': {'ollama_api': error},
+        }
 
 # ──────────────────────────────────────────────────────────────
 # Browser Account Detection
@@ -1617,40 +1685,102 @@ def scan_configured_secrets() -> dict[str, Any]:
 # ──────────────────────────────────────────────────────────────
 
 def scan_cloudflare_tunnel() -> dict[str, Any]:
-    """Check if cloudflared tunnel is running."""
+    """Check cloudflared installation and process state without false negatives."""
     try:
-        r = subprocess.run(
+        result = subprocess.run(
             ['cloudflared', 'version'],
             capture_output=True, text=True, timeout=5,
         )
-        version = r.stdout.strip() if r.returncode == 0 else 'unknown'
-    except (FileNotFoundError, subprocess.TimeoutExpired):
-        return {'available': False, 'reason': 'cloudflared not installed'}
+    except FileNotFoundError:
+        return {
+            'available': False,
+            'reason': 'cloudflared_not_installed',
+            'version': None,
+            'tunnel_running': None,
+            'source_coverage': {
+                'cloudflared_binary': 'CONFIRMED_NOT_FOUND',
+                'cloudflared_processes': 'NOT_EXECUTED',
+            },
+            'source_errors': {},
+        }
+    except subprocess.TimeoutExpired:
+        return {
+            'available': False,
+            'reason': 'cloudflared_version_timeout',
+            'version': None,
+            'tunnel_running': None,
+            'source_coverage': {
+                'cloudflared_binary': 'READ_FAILED',
+                'cloudflared_processes': 'NOT_EXECUTED',
+            },
+            'source_errors': {'cloudflared_binary': 'TimeoutExpired'},
+        }
+    except OSError as exc:
+        error = type(exc).__name__
+        return {
+            'available': False,
+            'reason': 'cloudflared_version_error',
+            'version': None,
+            'tunnel_running': None,
+            'source_coverage': {
+                'cloudflared_binary': 'READ_FAILED',
+                'cloudflared_processes': 'NOT_EXECUTED',
+            },
+            'source_errors': {'cloudflared_binary': error},
+        }
 
-    # Check if tunnel process is running
-    running = False
-    if os.name == 'nt':
-        try:
-            r = subprocess.run(
+    if result.returncode != 0:
+        error = f'cloudflared_version_exit:{result.returncode}'
+        return {
+            'available': False,
+            'reason': 'cloudflared_version_failed',
+            'version': None,
+            'tunnel_running': None,
+            'source_coverage': {
+                'cloudflared_binary': 'READ_FAILED',
+                'cloudflared_processes': 'NOT_EXECUTED',
+            },
+            'source_errors': {'cloudflared_binary': error},
+        }
+
+    version = result.stdout.strip() or 'unknown'
+    process_status = 'READ_OK'
+    process_error = ''
+    running: bool | None = None
+    try:
+        if os.name == 'nt':
+            process_result = subprocess.run(
                 ['tasklist', '/FI', 'IMAGENAME eq cloudflared.exe', '/FO', 'CSV', '/NH'],
                 capture_output=True, text=True, timeout=5,
             )
-            running = 'cloudflared' in r.stdout.lower()
-        except Exception:
-            pass
-    else:
-        try:
-            r = subprocess.run(['pgrep', '-f', 'cloudflared'], capture_output=True, timeout=5)
-            running = r.returncode == 0
-        except Exception:
-            pass
+            if process_result.returncode != 0:
+                raise OSError(f'tasklist_exit:{process_result.returncode}')
+            running = 'cloudflared' in process_result.stdout.lower()
+        else:
+            process_result = subprocess.run(
+                ['pgrep', '-f', 'cloudflared'], capture_output=True, text=True, timeout=5,
+            )
+            if process_result.returncode == 0:
+                running = True
+            elif process_result.returncode == 1:
+                running = False
+            else:
+                raise OSError(f'pgrep_exit:{process_result.returncode}')
+    except Exception as exc:
+        process_status = 'READ_FAILED'
+        process_error = type(exc).__name__
+        running = None
 
     return {
         'available': True,
         'version': version,
         'tunnel_running': running,
+        'source_coverage': {
+            'cloudflared_binary': 'READ_OK',
+            'cloudflared_processes': process_status,
+        },
+        'source_errors': {'cloudflared_processes': process_error} if process_error else {},
     }
-
 
 # ──────────────────────────────────────────────────────────────
 # Full Account & Resource Report
@@ -1684,15 +1814,16 @@ def account_resource_scan() -> dict[str, Any]:
     if secrets.get('unverified'):
         alerts.append('Configuración de secretos parcialmente no verificable: archivo inaccesible')
 
-    source_coverage = {
-        **dict(browser.get('source_coverage') or {}),
+    source_coverage: dict[str, str] = {}
+    source_errors: dict[str, str] = {}
+    for scanner_result in (github, devin, ollama, tunnel, browser):
+        source_coverage.update(dict(scanner_result.get('source_coverage') or {}))
+        source_errors.update(dict(scanner_result.get('source_errors') or {}))
+    source_coverage.update({
         'secrets_environment': secrets['source_coverage']['environment'],
         'secrets_file': secrets['source_coverage']['secrets_file'],
-    }
-    source_errors = {
-        **dict(browser.get('source_errors') or {}),
-        **dict(secrets.get('source_errors') or {}),
-    }
+    })
+    source_errors.update(dict(secrets.get('source_errors') or {}))
     return {
         'github_api': github,
         'devin_api': devin,
