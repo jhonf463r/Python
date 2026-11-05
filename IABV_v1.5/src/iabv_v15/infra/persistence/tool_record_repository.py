@@ -68,7 +68,7 @@ class ToolRecordRepository:
                         path="",
                         status=ArtifactReadStatus.READ_FAILED,
                         error_type=type(exc).__name__,
-                        error_message=str(exc)[:300],
+                        error_message="Indexed artifact path is invalid.",
                     )
                 )
                 continue
@@ -112,7 +112,7 @@ class ToolRecordRepository:
                 path="",
                 status=ArtifactReadStatus.READ_FAILED,
                 error_type=type(exc).__name__,
-                error_message=str(exc)[:300],
+                error_message="Repository point lookup failed.",
             )
 
         if row is None:
@@ -133,7 +133,7 @@ class ToolRecordRepository:
                     path="",
                     status=ArtifactReadStatus.READ_FAILED,
                     error_type=type(exc).__name__,
-                    error_message=str(exc)[:300],
+                    error_message="Indexed artifact path is invalid.",
                 )
             else:
                 paths: list[Path] = []
@@ -210,7 +210,19 @@ class ToolRecordRepository:
         results: list[ArtifactReadResult[ToolCard]] = []
         for row in rows:
             tool_id = str(row["tool_id"])
-            candidate = Path(row["path"])
+            try:
+                candidate = Path(row["path"])
+            except (TypeError, ValueError, OSError) as exc:
+                results.append(
+                    ArtifactReadResult(
+                        artifact_id=tool_id,
+                        path="",
+                        status=ArtifactReadStatus.READ_FAILED,
+                        error_type=type(exc).__name__,
+                        error_message="Indexed artifact path is invalid.",
+                    )
+                )
+                continue
             paths: list[Path] = []
             if candidate.is_absolute():
                 paths.append(candidate)

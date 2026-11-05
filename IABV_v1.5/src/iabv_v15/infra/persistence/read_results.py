@@ -83,7 +83,7 @@ class RepositoryReadReport(Generic[T]):
             results=(),
             observed_at_utc=datetime.now(timezone.utc).isoformat(),
             collection_error_type=type(error).__name__,
-            collection_error_message=str(error)[:300],
+            collection_error_message="Repository collection read failed.",
             requested_artifact_id=requested_artifact_id,
         )
 
@@ -467,7 +467,7 @@ def read_model_file(
             path=str(path),
             status=ArtifactReadStatus.CORRUPT,
             error_type=type(exc).__name__,
-            error_message=str(exc)[:300],
+            error_message="Artifact read or validation failed.",
         )
     except OSError as exc:
         return ArtifactReadResult(
@@ -475,7 +475,7 @@ def read_model_file(
             path=str(path),
             status=ArtifactReadStatus.READ_FAILED,
             error_type=type(exc).__name__,
-            error_message=str(exc)[:300],
+            error_message="Artifact read or validation failed.",
         )
 
     try:
@@ -486,7 +486,7 @@ def read_model_file(
             path=str(path),
             status=ArtifactReadStatus.CORRUPT,
             error_type=type(exc).__name__,
-            error_message=str(exc)[:300],
+            error_message="Artifact read or validation failed.",
         )
 
     try:
@@ -497,7 +497,7 @@ def read_model_file(
             path=str(path),
             status=ArtifactReadStatus.SCHEMA_UNSUPPORTED,
             error_type=type(exc).__name__,
-            error_message=str(exc)[:300],
+            error_message="Artifact read or validation failed.",
         )
     except Exception as exc:
         return ArtifactReadResult(
@@ -505,7 +505,7 @@ def read_model_file(
             path=str(path),
             status=ArtifactReadStatus.READ_FAILED,
             error_type=type(exc).__name__,
-            error_message=str(exc)[:300],
+            error_message="Artifact read or validation failed.",
         )
 
     return ArtifactReadResult(
@@ -562,7 +562,7 @@ def read_json_mapping_from_paths(
                 path=str(path),
                 status=ArtifactReadStatus.CORRUPT,
                 error_type=type(exc).__name__,
-                error_message=str(exc)[:300],
+                error_message="Artifact read or validation failed.",
             )
         except OSError as exc:
             return ArtifactReadResult(
@@ -570,7 +570,7 @@ def read_json_mapping_from_paths(
                 path=str(path),
                 status=ArtifactReadStatus.READ_FAILED,
                 error_type=type(exc).__name__,
-                error_message=str(exc)[:300],
+                error_message="Artifact read or validation failed.",
             )
 
         try:
@@ -581,7 +581,7 @@ def read_json_mapping_from_paths(
                 path=str(path),
                 status=ArtifactReadStatus.CORRUPT,
                 error_type=type(exc).__name__,
-                error_message=str(exc)[:300],
+                error_message="Artifact read or validation failed.",
             )
 
         if not isinstance(payload, dict):
