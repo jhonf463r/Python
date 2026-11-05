@@ -921,7 +921,7 @@ class RuntimeAuditTracer:
         try:
             self._log_dir.mkdir(parents=True, exist_ok=True)
             target = self._log_dir / 'runtime_audit.jsonl'
-            line = (json.dumps(event, ensure_ascii=False, default=str) + '\\n').encode('utf-8')
+            line = (json.dumps(event, ensure_ascii=False, default=str) + '\n').encode('utf-8')
             with target.open('ab') as handle:
                 byte_start = handle.tell()
                 written = handle.write(line)
