@@ -481,4 +481,5 @@ No iniciar implementación, runtime ni pruebas hasta una autorización separada 
 - [IABV as laptop mind / agent intermediary](./CHAT-ARCH-2026-10-05-059-product-vision-iabv-as-laptop-mind-and-agent-intermediary.md)
 - [Symbiosis cumulative developmental control loop](./CHAT-ARCH-2026-10-08-148-symbiosis-cumulative-developmental-control-loop.md)
 - [UAAL-D020 — progress utility and strategy switching](./CHAT-ARCH-2026-10-28-UAAL-D020-VERIFIED-PROGRESS-UTILITY-STRATEGY-SWITCH.md)
-- [OpenAI Terms of Use — effective 2026-01-01](https://openai.com/policies/terms-of-use/)\n- [Codex pricing — Free has limited trial access](https://chatgpt.com/codex/pricing/)
+- [OpenAI Terms of Use — effective 2026-01-01](https://openai.com/policies/terms-of-use/)
+- [Codex pricing — Free has limited trial access](https://chatgpt.com/codex/pricing/)
