@@ -3322,14 +3322,34 @@ class PortableContextService:
         )
 
     def _pending_section(self, *, pending_items: list[dict[str, Any]], backlog_items: list[dict[str, Any]], now) -> PortableContextSection:
-        platform_items = self._platform_pending_items()
+        platform_items, platform_status, platform_error = self._platform_pending_items()
         items = pending_items[:4] + backlog_items[:4] + platform_items[:4]
         platform_summary = ''
+        unresolved_fields: list[str] = []
+        if platform_status == 'READ_FAILED':
+            platform_summary = f' La cola de plataforma no se pudo leer ({platform_error}); no inferir que está vacía.'
+            unresolved_fields.append('UNRESOLVED:platform_pending_queue_read_failed')
+        elif platform_status == 'READ_PARTIAL':
+            platform_summary = f' La cola de plataforma tuvo lectura parcial ({platform_error}); sus elementos no se ofrecen como accionables.'
+            unresolved_fields.append('UNRESOLVED:platform_pending_queue_read_partial')
+        elif platform_status == 'READER_UNAVAILABLE':
+            platform_summary = ' El lector de la cola de plataforma no está disponible.'
+            unresolved_fields.append('UNRESOLVED:platform_pending_queue_reader_unavailable')
+        elif platform_status == 'NOT_CONFIGURED':
+            platform_summary = ' La cola de plataforma no está conectada.'
+            unresolved_fields.append('UNRESOLVED:platform_pending_queue_not_connected')
         if platform_items:
             platform_summary = f' {len(platform_items)} tareas de plataforma pendientes.'
         summary = f'{len(pending_items)} pending issues y {len(backlog_items)} mejoras priorizadas.{platform_summary}'
-        if not items:
+        if not items and not unresolved_fields:
             summary = 'No tengo pendientes priorizados confirmados por evidencia persistida.'
+        if not items and unresolved_fields:
+            summary = f'No se puede confirmar el inventario completo de pendientes.{platform_summary}'
+        unresolved_fields = list(dict.fromkeys([
+            *unresolved_fields,
+            *([] if items else ['UNRESOLVED:pending_backlog']),
+        ]))
+        confidence = 0.8 if items and not unresolved_fields else 0.45 if items else 0.0
         return self._section(
             section_id='pending',
             title='Pendientes priorizados',
@@ -3337,20 +3357,56 @@ class PortableContextService:
             items=items,
             source_kind='persistent_backlog',
             source_refs=['pending_issue_repository', 'evolution_review_service', 'platform_pending_queue'],
-            confidence=0.8 if items else 0.0,
+            confidence=confidence,
             last_updated=now,
-            unresolved_fields=[] if items else ['UNRESOLVED:pending_backlog'],
+            unresolved_fields=unresolved_fields,
         )
 
-    def _platform_pending_items(self) -> list[dict[str, Any]]:
-        """Read structured pending items from PlatformPendingQueue."""
+    def _platform_pending_items(self) -> tuple[list[dict[str, Any]], str, str]:
+        """Read platform tasks without collapsing failed/partial reads to empty."""
         queue = self.platform_pending_queue
-        if queue is None or not hasattr(queue, 'to_portable_items'):
-            return []
+        if queue is None:
+            return [], 'NOT_CONFIGURED', ''
+        if not hasattr(queue, 'to_portable_items'):
+            return [], 'READER_UNAVAILABLE', ''
+        diagnostic_reader = getattr(type(queue), 'list_all_with_diagnostics', None)
+        if callable(diagnostic_reader):
+            try:
+                report = queue.list_all_with_diagnostics()
+                status = str(report.status).upper()
+                if status != 'READ_OK':
+                    return [], status, ';'.join(list(report.failed_paths)[:3])
+                tasks = list(report.require_complete())
+                actionable_statuses = {'PENDING', 'READY_FOR_NEXT_SLICE', 'BLOCKED'}
+                items: list[dict[str, Any]] = []
+                for task in tasks:
+                    status_value = (
+                        task.status.value if hasattr(task.status, 'value')
+                        else str(task.status)
+                    )
+                    if status_value not in actionable_statuses:
+                        continue
+                    if len(items) >= 6:
+                        break
+                    items.append({
+                        'id': task.id,
+                        'title': task.title,
+                        'description': task.description,
+                        'reason': task.reason,
+                        'dependency_missing': task.dependency_missing,
+                        'priority': task.priority,
+                        'next_action': task.next_action,
+                        'status': status_value,
+                        'category': task.category,
+                        'resume_hint': task.resume_hint,
+                    })
+                return items, 'READ_OK', ''
+            except Exception as exc:
+                return [], 'READ_FAILED', type(exc).__name__
         try:
-            return queue.to_portable_items(limit=6)
-        except Exception:
-            return []
+            return queue.to_portable_items(limit=6), 'READ_OK', ''
+        except Exception as exc:
+            return [], 'READ_FAILED', type(exc).__name__
 
     def _canonical_work_queue_section(self, *, now) -> PortableContextSection:
         """Project top-5 canonical work queue items from ControlMasterService."""
