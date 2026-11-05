@@ -393,10 +393,10 @@ def test_build_from_service_reports_empty_only_after_complete_successful_reads()
     class _Service:
         last_work_queue_errors = ()
         last_work_queue_source_coverage = {
-            "objectives": "READ_OK",
+            "objective_repository": "READ_OK",
             "platform_pending_queue": "READ_OK",
-            "pending_issues": "READ_OK",
-            "oses_findings": "READ_OK",
+            "pending_issue_repository": "READ_OK",
+            "self_examination_service": "READ_OK",
             "runtime_audit": "READ_OK",
             "tests_state": "READ_OK",
         }
@@ -426,6 +426,91 @@ def test_build_from_service_reports_empty_only_after_complete_successful_reads()
     assert digest.signal_status == "AVAILABLE"
     assert digest.work_queue_status == "EMPTY_QUEUE"
     assert digest.control_master_signal_status == "FRESH"
+
+
+def test_build_from_service_missing_expected_source_cannot_confirm_empty_queue() -> None:
+    from datetime import datetime, timezone
+
+    class _Service:
+        last_work_queue_errors = ()
+        # Five sources report READ_OK, but tests_state was never reported.
+        last_work_queue_source_coverage = {
+            "objective_repository": "READ_OK",
+            "platform_pending_queue": "READ_OK",
+            "pending_issue_repository": "READ_OK",
+            "self_examination_service": "READ_OK",
+            "runtime_audit": "READ_OK",
+        }
+
+        def current_state(self, *, refresh: bool = False):
+            return ControlMasterState(
+                state_id="state-reader-missing-source",
+                current_vision="source snapshot",
+                metadata={
+                    "_space_time_control_master_source_provenance": {
+                        "project_id": "IABV_v1.5",
+                        "source_object": "control_master/latest.json",
+                        "source_state_id": "state-reader-missing-source",
+                        "source_revision_or_digest": "sha256:missing-source",
+                        "source_generated_at_utc": datetime.now(timezone.utc).isoformat(),
+                        "workspace_scope_id": "scope-reader",
+                        "freshness_status": "FRESH",
+                        "read_status": "READ_OK",
+                    }
+                },
+            )
+
+        def current_work_queue(self, *, limit: int = 10):
+            return []
+
+    digest = ControlMasterDigestBuilder().build_from_service(_Service())
+    assert digest.signal_status == "AVAILABLE"
+    assert digest.work_queue_status == "UNVERIFIED"
+    assert digest.work_queue_brief == []
+    assert "MISSING:tests_state" in digest.signal_reason
+
+
+def test_build_from_service_unexpected_source_cannot_confirm_empty_queue() -> None:
+    from datetime import datetime, timezone
+
+    class _Service:
+        last_work_queue_errors = ()
+        last_work_queue_source_coverage = {
+            "objective_repository": "READ_OK",
+            "platform_pending_queue": "READ_OK",
+            "pending_issue_repository": "READ_OK",
+            "self_examination_service": "READ_OK",
+            "runtime_audit": "READ_OK",
+            "tests_state": "READ_OK",
+            "unregistered_source": "READ_OK",
+        }
+
+        def current_state(self, *, refresh: bool = False):
+            return ControlMasterState(
+                state_id="state-reader-unexpected-source",
+                current_vision="source snapshot",
+                metadata={
+                    "_space_time_control_master_source_provenance": {
+                        "project_id": "IABV_v1.5",
+                        "source_object": "control_master/latest.json",
+                        "source_state_id": "state-reader-unexpected-source",
+                        "source_revision_or_digest": "sha256:unexpected-source",
+                        "source_generated_at_utc": datetime.now(timezone.utc).isoformat(),
+                        "workspace_scope_id": "scope-reader",
+                        "freshness_status": "FRESH",
+                        "read_status": "READ_OK",
+                    }
+                },
+            )
+
+        def current_work_queue(self, *, limit: int = 10):
+            return []
+
+    digest = ControlMasterDigestBuilder().build_from_service(_Service())
+    assert digest.signal_status == "AVAILABLE"
+    assert digest.work_queue_status == "UNVERIFIED"
+    assert digest.work_queue_brief == []
+    assert "UNEXPECTED:unregistered_source" in digest.signal_reason
 
 
 def test_build_from_service_queue_exception_is_unavailable_not_empty() -> None:

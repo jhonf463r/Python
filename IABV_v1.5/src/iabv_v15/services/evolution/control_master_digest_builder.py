@@ -33,6 +33,18 @@ _SEVERITY_WEIGHT = {
     ControlRuleSeverity.INFO: 3,
 }
 
+# Every current_work_queue() projection must report one outcome for each
+# source it invokes. This is a completeness contract, not an applicability
+# policy: NOT_CONFIGURED / NO_FILE still remain UNVERIFIED until adjudicated.
+_EXPECTED_WORK_QUEUE_SOURCE_KEYS = frozenset({
+    "objective_repository",
+    "platform_pending_queue",
+    "pending_issue_repository",
+    "self_examination_service",
+    "runtime_audit",
+    "tests_state",
+})
+
 
 class ControlMasterDigestBuilder:
     def __init__(
@@ -105,6 +117,10 @@ class ControlMasterDigestBuilder:
                 work_queue_status = "UNAVAILABLE"
                 signal_reason = "QUEUE_SOURCE_ERRORS:" + ",".join(source_errors)
             else:
+                missing_sources = _EXPECTED_WORK_QUEUE_SOURCE_KEYS.difference(source_coverage)
+                unexpected_sources = set(source_coverage).difference(
+                    _EXPECTED_WORK_QUEUE_SOURCE_KEYS
+                )
                 read_failures = {
                     key: value for key, value in source_coverage.items()
                     if value in {"READ_PARTIAL", "READ_FAILED", "READER_UNAVAILABLE"}
@@ -124,9 +140,23 @@ class ControlMasterDigestBuilder:
                 if read_failures:
                     work_queue_status = "UNAVAILABLE"
                     signal_reason = "SOURCE_COVERAGE_READ_INCOMPLETE"
-                elif unresolved_sources or unknown_sources or not source_coverage:
+                elif (
+                    missing_sources
+                    or unexpected_sources
+                    or unresolved_sources
+                    or unknown_sources
+                ):
                     work_queue_status = "UNVERIFIED"
-                    signal_reason = "SOURCE_APPLICABILITY_OR_COVERAGE_UNRESOLVED"
+                    reasons = []
+                    if missing_sources:
+                        reasons.append("MISSING:" + ",".join(sorted(missing_sources)))
+                    if unexpected_sources:
+                        reasons.append("UNEXPECTED:" + ",".join(sorted(unexpected_sources)))
+                    if unresolved_sources:
+                        reasons.append("UNRESOLVED:" + ",".join(sorted(unresolved_sources)))
+                    if unknown_sources:
+                        reasons.append("UNKNOWN_STATUS:" + ",".join(sorted(unknown_sources)))
+                    signal_reason = "SOURCE_APPLICABILITY_OR_COVERAGE_UNRESOLVED:" + ";".join(reasons)
                 else:
                     work_queue = observed_queue
                     work_queue_status = "EMPTY_QUEUE" if not observed_queue else "AVAILABLE"
