@@ -776,3 +776,85 @@ def test_oses_runtime_log_surfaces_account_scanner_failure(tmp_path, monkeypatch
     assert service._source_coverage['runtime_log'] == 'READ_OK'
     assert service._source_coverage['account_resource_scanner'] == 'READ_FAILED'
     assert service._source_errors['account_resource_scanner'] == 'PermissionError'
+
+
+
+def test_validation_feedback_history_valid_jsonl_is_read_ok(tmp_path) -> None:
+    import json
+
+    service = _service(tmp_path)
+    history = tmp_path / 'data' / 'evolution' / 'validation_feedback' / 'history.jsonl'
+    history.parent.mkdir(parents=True, exist_ok=True)
+    entry = {
+        'decision': 'discarded',
+        'proposal_kind': 'route_substitution',
+        'candidate_assistant_kind': 'claude',
+        'current_assistant_kind': 'chatgpt',
+    }
+    history.write_text(json.dumps(entry) + '\\n', encoding='utf-8')
+
+    service._loop_closure_findings(findings_so_far=[], experiment_runs=[])
+    tried = service._load_tried_proposal_keys()
+
+    assert 'route_substitution:chatgpt:claude' in tried
+    assert service._source_coverage['validation_feedback_history'] == 'READ_OK'
+    assert 'validation_feedback_history' not in service._source_errors
+
+
+def test_validation_feedback_history_malformed_jsonl_is_partial(tmp_path) -> None:
+    import json
+
+    service = _service(tmp_path)
+    history = tmp_path / 'data' / 'evolution' / 'validation_feedback' / 'history.jsonl'
+    history.parent.mkdir(parents=True, exist_ok=True)
+    valid = {
+        'decision': 'discarded',
+        'proposal_kind': 'route_substitution',
+        'candidate_assistant_kind': 'claude',
+        'current_assistant_kind': 'chatgpt',
+    }
+    history.write_text(
+        json.dumps(valid) + '\\n[]\\n{malformed\\n',
+        encoding='utf-8',
+    )
+
+    service._loop_closure_findings(findings_so_far=[], experiment_runs=[])
+    service._load_tried_proposal_keys()
+
+    assert service._source_coverage['validation_feedback_history'] == 'READ_PARTIAL'
+    assert service._source_errors['validation_feedback_history'] == 'malformed_jsonl_rows:2'
+
+
+def test_validation_feedback_history_missing_file_is_confirmed_not_found(tmp_path) -> None:
+    service = _service(tmp_path)
+
+    service._loop_closure_findings(findings_so_far=[], experiment_runs=[])
+    assert service._source_coverage['validation_feedback_history'] == 'CONFIRMED_NOT_FOUND'
+
+    assert service._load_tried_proposal_keys() == set()
+    assert service._source_coverage['validation_feedback_history'] == 'CONFIRMED_NOT_FOUND'
+
+
+def test_validation_feedback_history_permission_failure_is_not_not_found(tmp_path, monkeypatch) -> None:
+    from pathlib import Path
+
+    service = _service(tmp_path)
+    history = tmp_path / 'data' / 'evolution' / 'validation_feedback' / 'history.jsonl'
+    history.parent.mkdir(parents=True, exist_ok=True)
+    history.write_text('{}\\n', encoding='utf-8')
+    original_read_text = Path.read_text
+
+    def deny_history_read(path, *args, **kwargs):
+        if path == history:
+            raise PermissionError('synthetic feedback history permission failure')
+        return original_read_text(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, 'read_text', deny_history_read)
+
+    service._loop_closure_findings(findings_so_far=[], experiment_runs=[])
+    assert service._source_coverage['validation_feedback_history'] == 'READ_FAILED'
+    assert service._source_errors['validation_feedback_history'] == 'PermissionError'
+
+    service._load_tried_proposal_keys()
+    assert service._source_coverage['validation_feedback_history'] == 'READ_FAILED'
+    assert service._source_errors['validation_feedback_history'] == 'PermissionError'
