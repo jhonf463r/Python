@@ -352,13 +352,9 @@ class CentroVivoViewModel(QObject):
             return []
         try:
             cached_reader = getattr(service, 'current_review_cached', None)
-            if callable(cached_reader):
-                review = cached_reader()
-            else:
-                legacy_reader = getattr(service, 'current_review', None)
-                if not callable(legacy_reader):
-                    raise RuntimeError('oses_cached_review_reader_unavailable')
-                review = legacy_reader(refresh=False)
+            if not callable(cached_reader):
+                raise RuntimeError('oses_cached_review_reader_unavailable')
+            review = cached_reader()
         except Exception as exc:
             status = (
                 'READ_UNVERIFIED'
@@ -389,7 +385,7 @@ class CentroVivoViewModel(QObject):
             for key, value in coverage.items()
             if value != 'READ_OK'
         }
-        if bad_coverage:
+        if errors or bad_coverage:
             status = 'READ_FAILED' if 'READ_FAILED' in bad_coverage.values() else 'READ_PARTIAL'
             self._record_source_status(
                 'self_examination_service', status, str(bad_coverage)
