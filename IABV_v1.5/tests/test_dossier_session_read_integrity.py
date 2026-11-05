@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import sqlite3
 from pathlib import Path
 
@@ -381,3 +382,169 @@ def test_execution_dossier_query_filters_preserve_expected_scope(
     issue_report = repository.find_by_issue_with_diagnostics("navigation_stall")
     assert issue_report.status == RepositoryReadStatus.READ_OK
     assert [item.dossier_id for item in issue_report.items] == [target.dossier_id]
+
+
+
+def test_execution_dossier_reindex_plan_is_read_only_and_finds_index_and_file_differences(
+    tmp_path: Path,
+) -> None:
+    db, repository = _dossier_repository(tmp_path)
+    indexed = repository.save(_dossier("indexed-dossier"))
+    orphaned = _dossier("filesystem-only-dossier")
+    unindexed_path = repository.storage.save_json_atomic(
+        f"dossiers/{orphaned.dossier_id}.json",
+        orphaned.model_dump(mode="json"),
+    )
+    missing = repository.save(_dossier("index-only-dossier"))
+    missing_row = db.fetchone(
+        "SELECT path FROM execution_dossiers WHERE dossier_id = ?",
+        (missing.dossier_id,),
+    )
+    assert missing_row is not None
+    Path(missing_row["path"]).unlink()
+    corrupt_path = Path(repository.storage.save_json_atomic(
+        "dossiers/corrupt-dossier.json", {"not": "a dossier"}
+    ))
+    corrupt_path.write_text("{", encoding="utf-8")
+    before_rows = [
+        (row["dossier_id"], row["path"])
+        for row in db.fetchall(
+            "SELECT dossier_id, path FROM execution_dossiers ORDER BY dossier_id"
+        )
+    ]
+
+    report = repository.plan_reindex_with_diagnostics()
+
+    after_rows = [
+        (row["dossier_id"], row["path"])
+        for row in db.fetchall(
+            "SELECT dossier_id, path FROM execution_dossiers ORDER BY dossier_id"
+        )
+    ]
+    assert report.status.value == "REVIEW_REQUIRED"
+    assert indexed.dossier_id in report.indexed_ids
+    assert orphaned.dossier_id in report.unindexed_valid_ids
+    orphaned_file = next(item for item in report.files if item.artifact_id == orphaned.dossier_id)
+    assert orphaned_file.sha256 == hashlib.sha256(Path(unindexed_path).read_bytes()).hexdigest()
+    assert orphaned_file.size_bytes == Path(unindexed_path).stat().st_size
+    assert missing.dossier_id in report.indexed_without_file_ids
+    assert missing.dossier_id in report.index_path_issues
+    missing_path_issue = next(
+        item for item in report.index_path_results
+        if item.artifact_id == missing.dossier_id
+    )
+    assert missing_path_issue.status.value == "MISSING_PATH"
+    assert "corrupt-dossier" in report.invalid_file_ids
+    assert before_rows == after_rows
+    assert Path(unindexed_path).exists()
+    assert report.to_dict()["scope"] == "READ_ONLY_INDEX_RECONCILIATION:execution_dossiers"
+
+
+def test_adaptive_session_reindex_plan_is_read_only_and_never_returns_payloads(
+    tmp_path: Path,
+) -> None:
+    db, repository = _session_repository(tmp_path)
+    indexed = repository.save(_session("indexed-session"))
+    orphaned = _session("filesystem-only-session")
+    path = repository.storage.save_json_atomic(
+        f"adaptive_sessions/{orphaned.session_id}.json",
+        orphaned.model_dump(mode="json"),
+    )
+    before_count = db.fetchone("SELECT COUNT(*) AS total FROM adaptive_sessions")["total"]
+
+    report = repository.plan_reindex_with_diagnostics()
+
+    after_count = db.fetchone("SELECT COUNT(*) AS total FROM adaptive_sessions")["total"]
+    assert report.status.value == "REVIEW_REQUIRED"
+    assert indexed.session_id in report.indexed_ids
+    assert orphaned.session_id in report.unindexed_valid_ids
+    assert before_count == after_count == 1
+    assert Path(path).exists()
+    assert all(not hasattr(item, "value") for item in report.files)
+
+
+def test_read_only_reindex_plan_reports_database_enumeration_failure(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    db, repository = _dossier_repository(tmp_path)
+    repository.storage.save_json_atomic(
+        "dossiers/filesystem-only.json",
+        _dossier("filesystem-only").model_dump(mode="json"),
+    )
+
+    def fail_fetchall(*args, **kwargs):
+        raise sqlite3.OperationalError("database is locked")
+
+    monkeypatch.setattr(db, "fetchall", fail_fetchall)
+    report = repository.plan_reindex_with_diagnostics()
+
+    assert report.status.value == "READ_FAILED"
+    assert report.collection_error_type == "OperationalError"
+    assert report.unindexed_valid_ids == []
+
+
+def test_read_only_reindex_plan_reports_missing_managed_directory(
+    tmp_path: Path,
+) -> None:
+    db = AppDatabase(str(tmp_path / "adaptive.sqlite"))
+    repository = AdaptiveSessionRepository(
+        db, ArtifactStorage(str(tmp_path / "evolution"))
+    )
+
+    report = repository.plan_reindex_with_diagnostics()
+
+    assert report.status.value == "DIRECTORY_ABSENT"
+    assert report.directory_exists is False
+    assert report.files == ()
+
+
+
+def test_read_only_reindex_plan_flags_external_sqlite_index_path_without_opening_it(
+    tmp_path: Path,
+) -> None:
+    db, repository = _dossier_repository(tmp_path)
+    dossier = repository.save(_dossier("external-index-path"))
+    outside = tmp_path.parent / f"{tmp_path.name}_outside.json"
+    outside.write_text(dossier.model_dump_json(), encoding="utf-8")
+    db.execute(
+        "UPDATE execution_dossiers SET path = ? WHERE dossier_id = ?",
+        (str(outside), dossier.dossier_id),
+    )
+
+    report = repository.plan_reindex_with_diagnostics()
+
+    assert report.status.value == "REVIEW_REQUIRED"
+    assert dossier.dossier_id in report.index_path_issues
+    issue = next(
+        item for item in report.index_path_results
+        if item.artifact_id == dossier.dossier_id
+    )
+    assert issue.status.value == "INVALID_PATH"
+    assert outside.read_text(encoding="utf-8") == dossier.model_dump_json()
+
+
+def test_read_only_reindex_plan_distinguishes_noncanonical_safe_index_paths(
+    tmp_path: Path,
+) -> None:
+    db, repository = _dossier_repository(tmp_path)
+    dossier = repository.save(_dossier("noncanonical-index-path"))
+    alternate_relative = "legacy/dossiers/noncanonical-index-path.json"
+    alternate_path = Path(
+        repository.storage.save_json_atomic(
+            alternate_relative, dossier.model_dump(mode="json")
+        )
+    )
+    db.execute(
+        "UPDATE execution_dossiers SET path = ? WHERE dossier_id = ?",
+        (str(alternate_path), dossier.dossier_id),
+    )
+
+    report = repository.plan_reindex_with_diagnostics()
+
+    assert dossier.dossier_id in report.index_path_issues
+    issue = next(
+        item for item in report.index_path_results
+        if item.artifact_id == dossier.dossier_id
+    )
+    assert issue.status.value == "SAFE_NONCANONICAL_PATH"
+    assert alternate_path.exists()
