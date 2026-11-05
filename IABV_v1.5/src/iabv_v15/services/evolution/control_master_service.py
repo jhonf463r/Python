@@ -79,6 +79,18 @@ class ControlMasterService:
         """Per-source read coverage for this thread's most recent queue projection."""
         return dict(getattr(self._work_queue_diagnostics, "coverage", {}))
 
+    @property
+    def last_work_queue_read_reports(self) -> dict[str, Any]:
+        """Structured reports retained from the most recent queue projection."""
+        return dict(getattr(self._work_queue_diagnostics, "reports", {}))
+
+    def _record_work_queue_read_report(self, source: str, report: Any) -> None:
+        reports = getattr(self._work_queue_diagnostics, "reports", None)
+        if reports is None:
+            reports = {}
+            self._work_queue_diagnostics.reports = reports
+        reports[source] = report
+
     def _record_work_queue_error(self, code: str) -> None:
         errors = getattr(self._work_queue_diagnostics, "errors", None)
         if errors is None:
@@ -393,6 +405,7 @@ class ControlMasterService:
         """
         self._work_queue_diagnostics.errors = []
         self._work_queue_diagnostics.coverage = {}
+        self._work_queue_diagnostics.reports = {}
         items: list[dict[str, Any]] = []
         seen_ids: set[str] = set()
 
