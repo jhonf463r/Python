@@ -820,6 +820,11 @@ class TestDigestWorkQueueInOrchestrator:
             assert any(item["id"] == "platform:visible-task" for item in queue)
             assert svc.last_work_queue_source_coverage["platform_pending_queue"] == "READ_PARTIAL"
             assert "PLATFORM_PENDING_QUEUE_READ_PARTIAL" in svc.last_work_queue_errors
+
+            digest = ControlMasterDigestBuilder().build_from_service(svc)
+            assert digest.work_queue_status == "UNAVAILABLE"
+            assert digest.top_work_queue_items == []
+            assert digest.work_queue_brief == []
         finally:
             shutil.rmtree(ws, ignore_errors=True)
 
