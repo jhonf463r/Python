@@ -608,11 +608,14 @@ def test_current_state_uses_oses_current_review_and_does_not_hide_review_failure
         repo = ControlMasterRepository(storage)
 
         class _FailingOSES:
-            def current_review(self):
+            def current_review_cached(self):
                 raise RuntimeError("OSES review unavailable")
 
+            def current_review(self):
+                raise AssertionError("projection must not use the active OSES reader")
+
             def current_snapshot(self):
-                return type("Snapshot", (), {"findings": [], "unresolved_risks": []})()
+                raise AssertionError("projection must not use generic snapshots")
 
         service = ControlMasterService(
             repository=repo,
@@ -721,18 +724,14 @@ def test_control_master_reads_only_fresh_cached_oses_review():
         )
 
         class CachedOnlyOSES:
-            _current_review = None
-
-            def _load_latest_review(self):
+            def current_review_cached(self):
                 return snapshot
-
-            def _is_fresh(self, review, *, max_age_seconds):
-                assert review is snapshot
-                assert max_age_seconds == 300
-                return True
 
             def current_review(self):
                 raise AssertionError('projection must not trigger OSES rebuild')
+
+            def current_snapshot(self):
+                raise AssertionError('projection must not use generic snapshots')
 
         service.self_examination_service = CachedOnlyOSES()
 
@@ -757,16 +756,14 @@ def test_control_master_does_not_project_oses_findings_without_complete_source_c
         )
 
         class IncompleteCachedOSES:
-            _current_review = None
-
-            def _load_latest_review(self):
-                return snapshot
-
-            def _is_fresh(self, review, *, max_age_seconds):
-                return True
+            def current_review_cached(self):
+                raise RuntimeError('oses_source_coverage_incomplete')
 
             def current_review(self):
                 raise AssertionError('projection must not trigger OSES rebuild')
+
+            def current_snapshot(self):
+                raise AssertionError('projection must not use generic snapshots')
 
         service.self_examination_service = IncompleteCachedOSES()
         queue = service.current_work_queue(limit=20)

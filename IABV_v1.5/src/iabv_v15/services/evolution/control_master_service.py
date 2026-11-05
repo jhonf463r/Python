@@ -832,54 +832,39 @@ class ControlMasterService:
         return items
 
     def _read_cached_oses_review(self) -> Any:
-        """Read only a fresh, already persisted OSES review; never rebuild it."""
+        """Read only the public fresh/complete cache contract; never rebuild."""
         service = self.self_examination_service
         if service is None:
             raise RuntimeError("oses_service_not_configured")
 
         cached_reader = getattr(service, "current_review_cached", None)
-        if callable(cached_reader):
-            snapshot = cached_reader()
-        else:
-            snapshot = getattr(service, "_current_review", None)
-            loader = getattr(service, "_load_latest_review", None)
-            if snapshot is None and callable(loader):
-                snapshot = loader()
-            if snapshot is None:
-                # Test doubles and legacy read-only providers may expose only
-                # current_review(); real OSES exposes _load_latest_review and
-                # therefore never falls through to its active rebuild method.
-                if callable(loader) or hasattr(service, "_current_review"):
-                    raise RuntimeError("oses_cached_review_unavailable")
-                legacy_reader = None
-                for method_name in ("current_review", "current_snapshot", "latest_snapshot", "current", "latest"):
-                    candidate = getattr(service, method_name, None)
-                    if callable(candidate):
-                        legacy_reader = candidate
-                        break
-                if not callable(legacy_reader):
-                    raise RuntimeError("oses_cached_review_reader_unavailable")
-                snapshot = legacy_reader()
-            freshness_check = getattr(service, "_is_fresh", None)
-            if snapshot is not None and callable(freshness_check):
-                if not freshness_check(snapshot, max_age_seconds=300):
-                    raise RuntimeError("oses_cached_review_stale")
+        if not callable(cached_reader):
+            raise RuntimeError("oses_cached_review_reader_unavailable")
 
+        snapshot = cached_reader()
         if snapshot is None:
             raise RuntimeError("oses_cached_review_unavailable")
+
+        metadata = getattr(snapshot, "metadata", {}) or {}
         coverage = getattr(snapshot, "source_coverage", None)
         if not isinstance(coverage, dict) or not coverage:
-            metadata = getattr(snapshot, "metadata", {}) or {}
             coverage = metadata.get("source_coverage") if isinstance(metadata, dict) else None
         if not isinstance(coverage, dict) or not coverage:
             raise RuntimeError("oses_source_coverage_unverified")
+
+        errors = getattr(snapshot, "source_errors", None)
+        if not isinstance(errors, dict):
+            errors = metadata.get("source_errors", {}) if isinstance(metadata, dict) else {}
         incomplete = {
             str(source): str(status)
             for source, status in coverage.items()
             if status != "READ_OK"
         }
-        if incomplete:
-            raise RuntimeError("oses_source_coverage_incomplete:" + str(incomplete))
+        if incomplete or errors:
+            raise RuntimeError(
+                "oses_source_coverage_incomplete:"
+                + str({"statuses": incomplete, "errors": errors})
+            )
         return snapshot
 
     def _project_oses_finding_items(
