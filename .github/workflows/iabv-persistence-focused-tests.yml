@@ -1,0 +1,55 @@
+name: IABV persistence read-contract candidate tests
+
+"on":
+  push:
+    branches:
+      - "codex/605-artifact-read-integrity-r1-20261105"
+  pull_request:
+    branches:
+      - "main"
+    paths:
+      - "IABV_v1.5/src/iabv_v15/infra/persistence/**"
+      - "IABV_v1.5/tests/test_control_master_repository.py"
+      - "IABV_v1.5/tests/test_objective_repository.py"
+      - "IABV_v1.5/tests/test_pending_issue_repository.py"
+      - "IABV_v1.5/pyproject.toml"
+      - ".github/workflows/iabv-persistence-focused-tests.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  persistence-read-contract:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    env:
+      PYTHONPATH: IABV_v1.5/src
+      QT_QPA_PLATFORM: offscreen
+    steps:
+      - name: Check out the reviewed revision
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v7.1.0
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: IABV_v1.5/pyproject.toml
+
+      - name: Install the declared project test environment
+        run: >-
+          python -m pip install --disable-pip-version-check
+          -e "IABV_v1.5[dev]"
+
+      - name: Check dependency consistency
+        run: python -m pip check
+
+      - name: Run persistence read-contract suites
+        run: >-
+          python -m pytest
+          IABV_v1.5/tests/test_control_master_repository.py
+          IABV_v1.5/tests/test_objective_repository.py
+          IABV_v1.5/tests/test_pending_issue_repository.py
+          -q
