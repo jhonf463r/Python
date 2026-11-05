@@ -80,16 +80,13 @@ class ArtifactStorage:
         return resolved
 
     def resolve(self, relative_path: str) -> Path:
-        """Resolve a relative path, rejecting traversal and symlink escapes."""
-        raw = str(relative_path)
-        candidate = Path(raw)
-        windows_candidate = PureWindowsPath(raw)
-        if candidate.is_absolute() or windows_candidate.is_absolute() or windows_candidate.drive:
-            raise ValueError("ArtifactStorage.resolve() accepts relative paths only.")
-        self.resolve_managed_path(raw).parent.mkdir(parents=True, exist_ok=True)
+        """Resolve a path within this storage root, rejecting traversal and escapes."""
+        resolved = self.resolve_managed_path(relative_path)
+        resolved.parent.mkdir(parents=True, exist_ok=True)
         # Re-check after parent creation so a pre-existing symlink cannot redirect
-        # the path outside the storage root.
-        return self.resolve_managed_path(raw)
+        # the path outside the storage root. Absolute legacy paths remain supported
+        # only when they resolve beneath the configured root.
+        return self.resolve_managed_path(relative_path)
 
     def exists(self, relative_path: str) -> bool:
         return self.resolve(relative_path).exists()
