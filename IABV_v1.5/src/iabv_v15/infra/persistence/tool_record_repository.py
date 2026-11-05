@@ -2,11 +2,19 @@
 
 import json
 from pathlib import Path
+from threading import local
 from typing import Any
 from uuid import uuid4
 
 from iabv_v15.domain.models import InteractionEpisode, InteractionObservation, InteractionPattern, ToolCard, ToolResult, ToolTask
 from iabv_v15.infra.persistence.database import AppDatabase
+from iabv_v15.infra.persistence.read_results import (
+    ArtifactReadResult,
+    ArtifactReadStatus,
+    RepositoryReadError,
+    RepositoryReadReport,
+    read_model_from_paths,
+)
 from iabv_v15.infra.persistence.storage import ArtifactStorage
 
 
@@ -14,6 +22,16 @@ class ToolRecordRepository:
     def __init__(self, db: AppDatabase, storage: ArtifactStorage):
         self.db = db
         self.storage = storage
+        self._read_state = local()
+
+    @property
+    def last_read_report(self) -> RepositoryReadReport[Any] | None:
+        """Per-thread diagnostics for the most recent collection read."""
+        return getattr(self._read_state, "report", None)
+
+    def _remember_report(self, report: RepositoryReadReport[Any]) -> RepositoryReadReport[Any]:
+        self._read_state.report = report
+        return report
 
     def save_card(self, card: ToolCard) -> ToolCard:
         relative_path = f"cards/{card.tool_id}.json"
@@ -43,20 +61,37 @@ class ToolRecordRepository:
         )
         return card
 
-    def list_cards(self) -> list[ToolCard]:
-        rows = self.db.fetchall(
-            """
-            SELECT tool_id, path
-            FROM tool_cards
-            ORDER BY updated_at_utc DESC, title ASC
-            """
-        )
-        cards: list[ToolCard] = []
+    def list_cards_with_diagnostics(self) -> RepositoryReadReport[ToolCard]:
+        """Read the SQLite-indexed cards without pruning unreadable index rows."""
+        try:
+            rows = self.db.fetchall(
+                """
+                SELECT tool_id, path
+                FROM tool_cards
+                ORDER BY updated_at_utc DESC, title ASC
+                """
+            )
+        except Exception as exc:
+            return self._remember_report(
+                RepositoryReadReport.from_collection_error("SQLITE_INDEX_ROWS", exc)
+            )
+
+        results: list[ArtifactReadResult[ToolCard]] = []
         for row in rows:
-            card = self._load_card_safe(row['tool_id'], row['path'])
-            if card is not None:
-                cards.append(card)
-        return cards
+            tool_id = str(row["tool_id"])
+            candidate = Path(row["path"])
+            paths: list[Path] = []
+            if candidate.is_absolute():
+                paths.append(candidate)
+            paths.append(self.storage.root / f"cards/{tool_id}.json")
+            results.append(read_model_from_paths(paths, tool_id, ToolCard))
+        return self._remember_report(
+            RepositoryReadReport.from_results("SQLITE_INDEX_ROWS", results)
+        )
+
+    def list_cards(self) -> list[ToolCard]:
+        """Legacy list API; fail closed and retain the diagnostic report."""
+        return self.list_cards_with_diagnostics().require_complete()
 
     def get_card(self, tool_id: str) -> ToolCard | None:
         row = self.db.fetchone(
@@ -473,7 +508,7 @@ class ToolRecordRepository:
         try:
             return self._load_card(tool_id, path)
         except (FileNotFoundError, json.JSONDecodeError, ValueError):
-            self.db.execute('DELETE FROM tool_cards WHERE tool_id = ?', (tool_id,))
+            raise
             return None
 
     def _load_task(self, task_id: str, path: str) -> ToolTask:
@@ -483,7 +518,7 @@ class ToolRecordRepository:
         try:
             return self._load_task(task_id, path)
         except (FileNotFoundError, json.JSONDecodeError, ValueError):
-            self.db.execute('DELETE FROM tool_tasks WHERE task_id = ?', (task_id,))
+            raise
             return None
 
     def _load_result(self, result_id: str, path: str) -> ToolResult:
@@ -493,7 +528,7 @@ class ToolRecordRepository:
         try:
             return self._load_result(result_id, path)
         except (FileNotFoundError, json.JSONDecodeError, ValueError):
-            self.db.execute('DELETE FROM tool_results WHERE result_id = ?', (result_id,))
+            raise
             return None
 
     def _load_interaction_pattern(self, pattern_id: str, path: str) -> InteractionPattern:
@@ -503,7 +538,7 @@ class ToolRecordRepository:
         try:
             return self._load_interaction_pattern(pattern_id, path)
         except (FileNotFoundError, json.JSONDecodeError, ValueError):
-            self.db.execute('DELETE FROM interaction_patterns WHERE pattern_id = ?', (pattern_id,))
+            raise
             return None
 
     def _load_interaction_observation(self, observation_id: str, path: str) -> InteractionObservation:
@@ -513,7 +548,7 @@ class ToolRecordRepository:
         try:
             return self._load_interaction_observation(observation_id, path)
         except (FileNotFoundError, json.JSONDecodeError, ValueError):
-            self.db.execute('DELETE FROM interaction_observations WHERE observation_id = ?', (observation_id,))
+            raise
             return None
 
     def _load_interaction_episode(self, interaction_episode_id: str, path: str) -> InteractionEpisode:
@@ -523,7 +558,7 @@ class ToolRecordRepository:
         try:
             return self._load_interaction_episode(interaction_episode_id, path)
         except (FileNotFoundError, json.JSONDecodeError, ValueError):
-            self.db.execute('DELETE FROM interaction_episodes WHERE interaction_episode_id = ?', (interaction_episode_id,))
+            raise
             return None
 
     def _load_json(self, relative_path: str, path: str) -> dict[str, Any]:
@@ -536,5 +571,5 @@ class ToolRecordRepository:
         try:
             return self._load_json(f'log/{log_id}.json', path)
         except (FileNotFoundError, json.JSONDecodeError, ValueError):
-            self.db.execute('DELETE FROM tool_execution_log WHERE log_id = ?', (log_id,))
+            raise
             return None
