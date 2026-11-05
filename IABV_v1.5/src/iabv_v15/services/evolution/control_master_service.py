@@ -746,30 +746,64 @@ class ControlMasterService:
         if self.pending_issue_repository is None:
             self._record_work_queue_source("pending_issue_repository", "NOT_CONFIGURED")
             return []
-        items: list[dict[str, Any]] = []
         candidates: list[Any] = []
-        method_errors: list[str] = []
-        method_succeeded = False
-        for method_name in ('list_recent', 'list_open', 'list_pending', 'list_all'):
-            method = getattr(self.pending_issue_repository, method_name, None)
-            if method is None:
-                continue
+        diagnostic_reader = getattr(
+            self.pending_issue_repository, "list_recent_with_diagnostics", None
+        )
+        if callable(diagnostic_reader):
             try:
-                candidates = list(method())
-                method_succeeded = True
-                break
-            except Exception:
-                method_errors.append(method_name)
-                continue
-        if not method_succeeded:
-            self._record_work_queue_error(
-                "PENDING_ISSUES_READ_FAILED" if method_errors else "PENDING_ISSUES_READER_UNAVAILABLE"
-            )
-            self._record_work_queue_source(
-                "pending_issue_repository", "READ_FAILED" if method_errors else "READER_UNAVAILABLE"
-            )
+                report = diagnostic_reader(limit=15)
+            except Exception as exc:
+                report = getattr(exc, "report", None)
+                if report is not None:
+                    self._record_work_queue_read_report("pending_issue_repository", report)
+                report_status = getattr(
+                    getattr(report, "status", None), "value", ""
+                ) if report is not None else ""
+                status = "READ_PARTIAL" if report_status == "READ_PARTIAL" else "READ_FAILED"
+                self._record_work_queue_source("pending_issue_repository", status)
+                self._record_work_queue_error(f"PENDING_ISSUES_{status}")
+            else:
+                self._record_work_queue_read_report("pending_issue_repository", report)
+                report_status = getattr(
+                    getattr(report, "status", None), "value", ""
+                )
+                if report_status in ("READ_OK", "NO_RECORDS_OBSERVED"):
+                    candidates = report.items
+                    self._record_work_queue_source("pending_issue_repository", "READ_OK")
+                else:
+                    status = "READ_PARTIAL" if report_status == "READ_PARTIAL" else "READ_FAILED"
+                    self._record_work_queue_source("pending_issue_repository", status)
+                    self._record_work_queue_error(f"PENDING_ISSUES_{status}")
         else:
-            self._record_work_queue_source("pending_issue_repository", "READ_OK")
+            method = None
+            for method_name in ("list_recent", "list_open", "list_pending", "list_all"):
+                candidate = getattr(self.pending_issue_repository, method_name, None)
+                if callable(candidate):
+                    method = candidate
+                    break
+            if method is None:
+                self._record_work_queue_error("PENDING_ISSUES_READER_UNAVAILABLE")
+                self._record_work_queue_source(
+                    "pending_issue_repository", "READER_UNAVAILABLE"
+                )
+            else:
+                try:
+                    candidates = list(method())
+                except Exception as exc:
+                    report = getattr(exc, "report", None)
+                    if report is not None:
+                        self._record_work_queue_read_report("pending_issue_repository", report)
+                    report_status = getattr(
+                        getattr(report, "status", None), "value", ""
+                    ) if report is not None else ""
+                    status = "READ_PARTIAL" if report_status == "READ_PARTIAL" else "READ_FAILED"
+                    self._record_work_queue_source("pending_issue_repository", status)
+                    self._record_work_queue_error(f"PENDING_ISSUES_{status}")
+                else:
+                    self._record_work_queue_source("pending_issue_repository", "READ_OK")
+
+        items: list[dict[str, Any]] = []
         for issue in candidates[:15]:
             iid = f'issue:{getattr(issue, "issue_id", "") or id(issue)}'
             if iid in seen_ids:
