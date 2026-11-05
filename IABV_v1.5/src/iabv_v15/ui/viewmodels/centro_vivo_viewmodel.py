@@ -121,6 +121,9 @@ class CentroVivoViewModel(QObject):
         if report is None:
             self._source_reports.pop(source, None)
             return
+        if isinstance(report, dict):
+            self._source_reports[source] = dict(report)
+            return
         serializer = getattr(report, 'to_dict', None)
         if callable(serializer):
             self._source_reports[source] = serializer()
@@ -458,7 +461,25 @@ class CentroVivoViewModel(QObject):
             'requires_human_approval': True,
         }
 
-        self._record_source_status('account_inventory', 'READ_OK')
+        source_coverage = dict(getattr(snapshot, 'source_coverage', {}) or {})
+        source_errors = dict(getattr(snapshot, 'source_errors', {}) or {})
+        self._record_source_report('account_inventory', {
+            'source_coverage': source_coverage,
+            'source_errors': source_errors,
+        })
+        if not source_coverage:
+            inventory_status = 'UNVERIFIED'
+        elif any(status == 'READ_FAILED' for status in source_coverage.values()):
+            inventory_status = 'READ_FAILED'
+        elif any(status != 'READ_OK' for status in source_coverage.values()):
+            inventory_status = 'READ_PARTIAL'
+        else:
+            inventory_status = 'READ_OK'
+        self._record_source_status(
+            'account_inventory',
+            inventory_status,
+            ';'.join(f'{key}={value}' for key, value in source_errors.items()),
+        )
         return {'entries': entries, 'summary': summary}
 
     @Slot(str, str)
