@@ -100,3 +100,110 @@ def test_backlog_read_permission_error_is_reported(monkeypatch, tmp_path) -> Non
     assert report.error_type == 'PermissionError'
     with pytest.raises(EvolutionBacklogReadError):
         load_backlog(str(tmp_path))
+
+
+
+def test_legacy_backlog_variant_without_id_is_reported_without_rewriting(tmp_path) -> None:
+    path = _backlog_path(tmp_path)
+    path.parent.mkdir(parents=True)
+    legacy_task = {
+        'title': 'Legacy resource deduction',
+        'area': 'resource_management',
+        'priority': 'high',
+        'status': 'pending',
+        'evidence': 'Historical task uses the added_by identity variant.',
+        'added_by': 'resource_management_deduction',
+    }
+    original = json.dumps([legacy_task], ensure_ascii=False)
+    path.write_text(original, encoding='utf-8')
+
+    report = load_backlog_with_diagnostics(str(tmp_path))
+    payload = report.to_mcp_payload()
+
+    assert report.status == 'READ_OK'
+    assert report.items == (legacy_task,)
+    assert report.legacy_items_without_id == (1,)
+    assert payload['legacy_items_without_id_count'] == 1
+    assert payload['legacy_item_indexes_without_id'] == [1]
+    assert load_backlog(str(tmp_path)) == [legacy_task]
+    assert path.read_text(encoding='utf-8') == original
+
+
+def test_backlog_task_missing_required_field_is_schema_unsupported(tmp_path) -> None:
+    path = _backlog_path(tmp_path)
+    path.parent.mkdir(parents=True)
+    task = {
+        'id': 'task-1',
+        'area': 'integrity',
+        'priority': 'high',
+        'status': 'pending',
+        'source': 'test',
+        'created_at': '2026-11-05T00:00:00+00:00',
+        'evidence': 'A title is required for task projection.',
+    }
+    original = json.dumps([task])
+    path.write_text(original, encoding='utf-8')
+
+    report = load_backlog_with_diagnostics(str(tmp_path))
+
+    assert report.status == 'SCHEMA_UNSUPPORTED'
+    assert report.error_type == 'InvalidBacklogSchema'
+    assert 'task[1].title' in report.error_message
+    assert report.to_mcp_payload()['total_all'] is None
+    with pytest.raises(EvolutionBacklogReadError):
+        load_backlog(str(tmp_path))
+    with pytest.raises(EvolutionBacklogReadError):
+        add_task(
+            title='Must not overwrite malformed task',
+            area='integrity',
+            workspace=str(tmp_path),
+        )
+    assert path.read_text(encoding='utf-8') == original
+
+
+def test_backlog_task_invalid_priority_and_dependency_shape_are_rejected(tmp_path) -> None:
+    path = _backlog_path(tmp_path)
+    path.parent.mkdir(parents=True)
+    task = {
+        'id': 'task-1',
+        'title': 'Malformed task',
+        'area': 'integrity',
+        'priority': ['high'],
+        'status': 'pending',
+        'source': 'test',
+        'created_at': '2026-11-05T00:00:00+00:00',
+        'evidence': 'Priority must be a supported scalar.',
+        'depends_on': 'task-0',
+    }
+    path.write_text(json.dumps([task]), encoding='utf-8')
+
+    report = load_backlog_with_diagnostics(str(tmp_path))
+
+    assert report.status == 'SCHEMA_UNSUPPORTED'
+    assert 'task[1].priority' in report.error_message
+    with pytest.raises(EvolutionBacklogReadError):
+        load_backlog(str(tmp_path))
+
+
+def test_backlog_duplicate_task_identity_is_schema_unsupported(tmp_path) -> None:
+    path = _backlog_path(tmp_path)
+    path.parent.mkdir(parents=True)
+    task = {
+        'id': 'duplicate-task',
+        'title': 'Task',
+        'area': 'integrity',
+        'priority': 'medium',
+        'status': 'pending',
+        'source': 'test',
+        'created_at': '2026-11-05T00:00:00+00:00',
+        'evidence': 'Task identity must be unique.',
+        'depends_on': [],
+    }
+    path.write_text(json.dumps([task, dict(task, title='Second task')]), encoding='utf-8')
+
+    report = load_backlog_with_diagnostics(str(tmp_path))
+
+    assert report.status == 'SCHEMA_UNSUPPORTED'
+    assert 'duplicates an earlier task identity' in report.error_message
+    with pytest.raises(EvolutionBacklogReadError):
+        load_backlog(str(tmp_path))
