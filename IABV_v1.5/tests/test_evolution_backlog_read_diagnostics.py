@@ -174,14 +174,24 @@ def test_backlog_task_invalid_priority_and_dependency_shape_are_rejected(tmp_pat
         'source': 'test',
         'created_at': '2026-11-05T00:00:00+00:00',
         'evidence': 'Priority must be a supported scalar.',
-        'depends_on': 'task-0',
+        'depends_on': [],
     }
     path.write_text(json.dumps([task]), encoding='utf-8')
 
-    report = load_backlog_with_diagnostics(str(tmp_path))
+    priority_report = load_backlog_with_diagnostics(str(tmp_path))
 
-    assert report.status == 'SCHEMA_UNSUPPORTED'
-    assert 'task[1].priority' in report.error_message
+    assert priority_report.status == 'SCHEMA_UNSUPPORTED'
+    assert 'task[1].priority' in priority_report.error_message
+    with pytest.raises(EvolutionBacklogReadError):
+        load_backlog(str(tmp_path))
+
+    task['priority'] = 'high'
+    task['depends_on'] = 'task-0'
+    path.write_text(json.dumps([task]), encoding='utf-8')
+    dependency_report = load_backlog_with_diagnostics(str(tmp_path))
+
+    assert dependency_report.status == 'SCHEMA_UNSUPPORTED'
+    assert 'task[1].depends_on' in dependency_report.error_message
     with pytest.raises(EvolutionBacklogReadError):
         load_backlog(str(tmp_path))
 
