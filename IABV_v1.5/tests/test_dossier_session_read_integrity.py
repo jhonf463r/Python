@@ -529,7 +529,7 @@ def test_read_only_reindex_plan_distinguishes_noncanonical_safe_index_paths(
 ) -> None:
     db, repository = _dossier_repository(tmp_path)
     dossier = repository.save(_dossier("noncanonical-index-path"))
-    alternate_relative = "legacy/dossiers/noncanonical-index-path.json"
+    alternate_relative = "dossiers/noncanonical-index-path-legacy-name.json"
     alternate_path = Path(
         repository.storage.save_json_atomic(
             alternate_relative, dossier.model_dump(mode="json")
@@ -579,3 +579,31 @@ def test_reindex_report_does_not_expose_payload_values_from_schema_errors(
     )
     assert issue.status.value == "SCHEMA_UNSUPPORTED"
     assert issue.error_message == "Artifact JSON does not match the supported schema."
+
+
+
+def test_read_only_reindex_plan_rejects_indexed_path_in_other_managed_subdirectory(
+    tmp_path: Path,
+) -> None:
+    db, repository = _dossier_repository(tmp_path)
+    dossier = repository.save(_dossier("other-subdirectory-index-path"))
+    alternate_relative = "legacy/dossiers/other-subdirectory-index-path.json"
+    alternate_path = Path(
+        repository.storage.save_json_atomic(
+            alternate_relative, dossier.model_dump(mode="json")
+        )
+    )
+    db.execute(
+        "UPDATE execution_dossiers SET path = ? WHERE dossier_id = ?",
+        (str(alternate_path), dossier.dossier_id),
+    )
+
+    report = repository.plan_reindex_with_diagnostics()
+
+    issue = next(
+        item for item in report.index_path_results
+        if item.artifact_id == dossier.dossier_id
+    )
+    assert issue.status.value == "INVALID_PATH"
+    assert issue.sha256 == ""
+    assert dossier.dossier_id in report.index_path_issues
