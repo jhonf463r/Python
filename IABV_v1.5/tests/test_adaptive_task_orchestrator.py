@@ -1782,6 +1782,8 @@ def test_control_master_signal_is_bound_before_strategy_and_into_decision_contex
         assert intake["CONTROL_MASTER_TOP_QUEUE_ITEM_IDS"] == ["objective:OBJ-42"]
         assert intake["CONTROL_MASTER_NEXT_ACTIONS_AND_DEPENDENCIES"][0]["dependencies"] == ["OBJ-41"]
         assert intake["CONTROL_MASTER_EVIDENCE_REFS"] == ["evidence://OBJ-42/review"]
+        assert intake["VERIFICATION_STATUS"] == "NOT_VERIFIED"
+        assert intake["SUPERSESSION_CONFLICT_CHECK"] == "NOT_EVALUATED"
         assert intake["CONTROL_MASTER_DECISION_INFLUENCE"] == "NOT_EVALUATED"
         assert decision_intake == intake
         assert result.raw_output["control_master_signal_intake"] == intake

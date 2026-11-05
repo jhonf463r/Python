@@ -3031,12 +3031,19 @@ class AdaptiveTaskOrchestrator:
             "FRESH", "STALE", "UNAVAILABLE", "UNVERIFIED", "CONFLICTED", "NOT_APPLICABLE",
         }:
             freshness = "UNVERIFIED"
-        evidence_refs = list(dict.fromkeys(
-            str(ref)
-            for item in queue_items if isinstance(item, dict)
-            for ref in (item.get("evidence_refs") or [])
-            if str(ref).strip()
-        ))
+        evidence_refs = list(dict.fromkeys([
+            *[
+                str(ref).strip()
+                for ref in (getattr(digest, "source_evidence_refs", []) or [])
+                if str(ref).strip()
+            ],
+            *[
+                str(ref).strip()
+                for item in queue_items if isinstance(item, dict)
+                for ref in (item.get("evidence_refs") or [])
+                if str(ref).strip()
+            ],
+        ]))
         return {
             "PROJECT_ID": project_id,
             "TASK_ID": task_id,
@@ -3052,7 +3059,9 @@ class AdaptiveTaskOrchestrator:
             "OBSERVED_AT": _iso(getattr(digest, "observed_at_utc", None)),
             "RECORDED_AT": datetime.now(timezone.utc).isoformat(),
             "VERIFIED_AT": None,
+            "VERIFICATION_STATUS": "NOT_VERIFIED",
             "SUPERSEDES_OR_CONFLICTS_WITH": [],
+            "SUPERSESSION_CONFLICT_CHECK": "NOT_EVALUATED",
             "FRESHNESS_OR_VALIDITY": freshness,
             "CONTROL_MASTER_SIGNAL_STATUS": freshness,
             "CONTROL_MASTER_TRANSPORT_STATUS": str(getattr(digest, "signal_status", "UNVERIFIED")),
@@ -3091,6 +3100,9 @@ class AdaptiveTaskOrchestrator:
                 for item in queue_items if isinstance(item, dict)
             ],
             "CONTROL_MASTER_EVIDENCE_REFS": evidence_refs,
+            "CONTROL_MASTER_SOURCE_EVIDENCE_REFS": list(
+                getattr(digest, "source_evidence_refs", []) or []
+            ),
             "SIGNAL_CONSIDERED": "NOT_EVALUATED",
             "PROMPT_DELIVERY": {"status": "NOT_DELIVERED"},
             "CONTROL_MASTER_DECISION_INFLUENCE": "NOT_EVALUATED",

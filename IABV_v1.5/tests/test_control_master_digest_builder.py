@@ -282,6 +282,10 @@ def test_digest_carries_d021_source_times_scope_and_queue_lineage() -> None:
     state = ControlMasterState(
         state_id="state-d021-001",
         current_vision="governed project",
+        evidence_links=[
+            "evidence://control-master/vision",
+            "evidence://control-master/rule-01",
+        ],
         metadata={
             "_space_time_control_master_source_provenance": {
                 "project_id": "IABV_v1.5",
@@ -324,11 +328,16 @@ def test_digest_carries_d021_source_times_scope_and_queue_lineage() -> None:
     assert digest.top_work_queue_items[0]["item_id"] == "objective:OBJ-42"
     assert digest.top_work_queue_items[0]["dependencies"] == ["OBJ-41"]
     assert digest.top_work_queue_items[0]["evidence_refs"] == ["evidence://OBJ-42/review"]
+    assert digest.source_evidence_refs == [
+        "evidence://control-master/vision",
+        "evidence://control-master/rule-01",
+    ]
     rendered = render_digest_markdown(digest)
     assert "Vigencia D021: FRESH" in rendered
     assert "state-d021-001" in rendered
     assert "objective:OBJ-42" in rendered
     assert "evidence://OBJ-42/review" in rendered
+    assert "evidence://control-master/vision" in rendered
 
 
 def test_signal_availability_is_independent_from_unverified_queue_coverage() -> None:

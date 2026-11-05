@@ -138,6 +138,11 @@ class ControlMasterDigestBuilder:
         top_queue_items = _compact_work_queue_items(
             work_queue if resolved_queue_status == "AVAILABLE" else None
         )
+        source_evidence_refs = list(dict.fromkeys(
+            str(value).strip()
+            for value in (state.evidence_links or [])
+            if str(value).strip()
+        ))[:20]
         source_provenance = dict(
             state.metadata.get("_space_time_control_master_source_provenance") or {}
         )
@@ -188,6 +193,7 @@ class ControlMasterDigestBuilder:
             source_generated_at_utc=source_provenance.get("source_generated_at_utc"),
             observed_at_utc=observed_at_utc or utc_now(),
             control_master_signal_status=freshness_status,
+            source_evidence_refs=source_evidence_refs,
             top_work_queue_items=top_queue_items,
         )
         return _truncate(digest, self.max_chars)
@@ -340,6 +346,10 @@ def render_digest_markdown(digest: ControlMasterDigest) -> str:
         lines.append(f"Source state ID: {digest.source_state_id}")
     if digest.source_revision_or_digest:
         lines.append(f"Source revision/digest: {digest.source_revision_or_digest}")
+    if digest.source_evidence_refs:
+        lines.append("Control Master source evidence:")
+        for evidence_ref in digest.source_evidence_refs[:20]:
+            lines.append(f"- {evidence_ref}")
     if digest.source_generated_at_utc:
         lines.append(f"Source generated: {digest.source_generated_at_utc.isoformat()}")
     if digest.generated_at_utc:

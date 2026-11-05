@@ -255,6 +255,9 @@ class SystemPromptBuilder:
             parts.append(f'Control Master state: {digest.source_state_id}')
         if digest.source_revision_or_digest:
             parts.append(f'Source revision/digest: {digest.source_revision_or_digest}')
+        if digest.source_evidence_refs:
+            parts.append('Control Master source evidence:')
+            parts.extend(f'- {item}' for item in digest.source_evidence_refs[:20])
         if digest.source_generated_at_utc:
             parts.append(f'Source generated: {digest.source_generated_at_utc.isoformat()}')
         if digest.generated_at_utc:
@@ -350,6 +353,8 @@ class SystemPromptBuilder:
             parts.append(f'State ID: {digest.source_state_id}')
         if digest.source_revision_or_digest:
             parts.append(f'Source digest: {digest.source_revision_or_digest[:80]}')
+        if digest.source_evidence_refs:
+            parts.append('Source evidence: ' + ', '.join(digest.source_evidence_refs[:4]))
         if digest.source_generated_at_utc:
             parts.append(f'Generado: {digest.source_generated_at_utc.isoformat()}')
         if digest.generated_at_utc:

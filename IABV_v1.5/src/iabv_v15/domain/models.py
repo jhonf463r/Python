@@ -2683,6 +2683,7 @@ class ControlMasterDigest(BaseModel):
     source_generated_at_utc: datetime | None = None
     # D021 freshness is distinct from transport/read availability.
     control_master_signal_status: str = "UNVERIFIED"
+    source_evidence_refs: list[str] = Field(default_factory=list)
     top_work_queue_items: list[dict[str, Any]] = Field(default_factory=list)
 
 
