@@ -4229,10 +4229,10 @@ _REQUIRED_SOURCE_IDS = (
             return []
 
         try:
-            with log_path.open('r', encoding='utf-8', errors='replace') as fh:
+            with log_path.open('r', encoding='utf-8') as fh:
                 # Read only last N lines to avoid loading huge files
                 lines = fh.readlines()[-self._LOG_TAIL_LINES:]
-        except OSError as exc:
+        except (OSError, UnicodeError) as exc:
             self._record_source_status('runtime_log', 'READ_FAILED', type(exc).__name__)
             return []
         self._record_source_status('runtime_log', 'READ_OK')
@@ -4283,6 +4283,7 @@ _REQUIRED_SOURCE_IDS = (
         try:
             from iabv_v15.services.account_resource_scanner import scan_browser_accounts
             browser_info = scan_browser_accounts()
+            self._record_source_status('account_resource_scanner', 'READ_OK')
             acct_count = browser_info.get('count', 0)
             if acct_count > 0:
                 accounts = browser_info.get('accounts', [])
@@ -4319,8 +4320,8 @@ _REQUIRED_SOURCE_IDS = (
                             metadata={'browser_accounts': browser_info},
                         )
                     )
-        except Exception:
-            pass  # scanner not available or failed — not critical
+        except Exception as exc:
+            self._record_source_status('account_resource_scanner', 'READ_FAILED', type(exc).__name__)
 
         # Auto-correction loop: when the program detects anomalies in its
         # own logs, attempt corrective actions automatically.
