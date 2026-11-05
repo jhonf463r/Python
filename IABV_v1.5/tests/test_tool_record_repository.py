@@ -302,3 +302,103 @@ def test_tool_record_sqlite_fetchall_failure_replaces_stale_report(monkeypatch) 
         assert exc_info.value.report is repository.last_read_report
     finally:
         shutil.rmtree(root, ignore_errors=True)
+
+
+
+def test_tool_record_task_missing_payload_is_reported_without_pruning_index() -> None:
+    root, db, repository = _read_integrity_repository('tool_record_missing_task')
+    try:
+        task = ToolTask(
+            tool_id='task-tool',
+            title='Synthetic task',
+            objective='Verify task artifact read integrity.',
+            requested_by_role=TaskRole.TOOL_USE,
+            execution_scope='read_only',
+            approval_decision=ApprovalDecision.SKIPPED,
+        )
+        repository.save_task(task)
+        row = db.fetchone(
+            'SELECT task_id, path FROM tool_tasks WHERE task_id = ?',
+            (task.task_id,),
+        )
+        assert row is not None
+        Path(row['path']).unlink()
+
+        report = repository.list_tasks_with_diagnostics()
+
+        assert report.status == RepositoryReadStatus.READ_FAILED
+        assert report.records_seen == 1
+        assert report.records_loaded == 0
+        assert report.missing_ids == [task.task_id]
+        assert report.results[0].status == ArtifactReadStatus.CONFIRMED_NOT_FOUND
+        assert repository.last_read_report is report
+        assert db.fetchone(
+            'SELECT task_id FROM tool_tasks WHERE task_id = ?',
+            (task.task_id,),
+        ) is not None
+        with pytest.raises(RepositoryReadError) as exc_info:
+            repository.list_tasks()
+        assert exc_info.value.report.status == RepositoryReadStatus.READ_FAILED
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_tool_record_log_requires_json_object_and_fails_closed() -> None:
+    root, db, repository = _read_integrity_repository('tool_record_invalid_log_shape')
+    try:
+        log_id = repository.log_execution(
+            tool_id='shell_command',
+            task_id=None,
+            action_type='read_only_check',
+            state='executed',
+            payload={'ok': True},
+            created_at_utc='2026-11-05T00:00:00+00:00',
+        )
+        row = db.fetchone(
+            'SELECT log_id, path FROM tool_execution_log WHERE log_id = ?',
+            (log_id,),
+        )
+        assert row is not None
+        Path(row['path']).write_text('[]', encoding='utf-8')
+
+        report = repository.list_log_with_diagnostics()
+
+        assert report.status == RepositoryReadStatus.READ_FAILED
+        assert report.records_seen == 1
+        assert report.results[0].status == ArtifactReadStatus.SCHEMA_UNSUPPORTED
+        assert report.results[0].artifact_id == log_id
+        with pytest.raises(RepositoryReadError) as exc_info:
+            repository.list_log()
+        assert exc_info.value.report.status == RepositoryReadStatus.READ_FAILED
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_tool_record_collection_readers_report_sqlite_errors_without_stale_reports(monkeypatch) -> None:
+    root, db, repository = _read_integrity_repository('tool_record_all_collection_sqlite_errors')
+    try:
+        previous = repository.list_cards_with_diagnostics()
+        assert previous.status == RepositoryReadStatus.NO_RECORDS_OBSERVED
+
+        def fail_fetchall(*args, **kwargs):
+            raise sqlite3.OperationalError('database is locked')
+
+        monkeypatch.setattr(db, 'fetchall', fail_fetchall)
+        readers = (
+            repository.list_tasks_with_diagnostics,
+            repository.list_results_with_diagnostics,
+            repository.list_log_with_diagnostics,
+            repository.list_interaction_patterns_with_diagnostics,
+            repository.list_interaction_observations_with_diagnostics,
+            repository.list_interaction_episodes_with_diagnostics,
+        )
+        for read_collection in readers:
+            report = read_collection()
+            assert report.status == RepositoryReadStatus.READ_FAILED
+            assert report.collection_error_type == 'OperationalError'
+            assert 'database is locked' in report.collection_error_message
+            assert report.scope.startswith('SQLITE_INDEX_ROWS:')
+            assert repository.last_read_report is report
+            assert report is not previous
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
