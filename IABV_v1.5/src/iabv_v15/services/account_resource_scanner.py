@@ -375,8 +375,10 @@ def _firefox_accounts_scan_with_coverage() -> tuple[list[dict[str, str]], list[s
 
 
 def _firefox_accounts_with_diagnostics() -> tuple[list[dict[str, str]], list[str]]:
-    """Compatibility wrapper; preserve the historical two-value return shape."""
-    accounts, errors, _status = _firefox_accounts_scan_with_coverage()
+    """Preserve root-discovery state for callers using the legacy diagnostic shape."""
+    accounts, errors, status = _firefox_accounts_scan_with_coverage()
+    if status not in {'READ_OK', 'READ_PARTIAL'}:
+        errors = [f'firefox_root:{status}', *errors]
     return accounts, errors
 
 

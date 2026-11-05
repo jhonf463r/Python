@@ -431,3 +431,40 @@ def test_browser_scans_do_not_report_unconfigured_roots_as_clean_empty(monkeypat
     assert accounts["source_coverage"]["browser_accounts"] == "NOT_CONFIGURED"
     assert sessions["sessions"] == []
     assert sessions["source_coverage"]["browser_sessions"] == "NOT_CONFIGURED"
+
+def test_firefox_legacy_diagnostics_preserve_unconfigured_root(monkeypatch) -> None:
+    monkeypatch.setattr(
+        account_resource_scanner,
+        "_firefox_accounts_scan_with_coverage",
+        lambda: ([], [], "NOT_CONFIGURED"),
+    )
+
+    accounts, errors = account_resource_scanner._firefox_accounts_with_diagnostics()
+
+    assert accounts == []
+    assert errors == ["firefox_root:NOT_CONFIGURED"]
+
+
+def test_windows_browser_roots_are_not_reported_as_confirmed_empty(monkeypatch) -> None:
+    monkeypatch.setattr(account_resource_scanner.os, "name", "nt")
+    monkeypatch.delenv("LOCALAPPDATA", raising=False)
+    monkeypatch.delenv("APPDATA", raising=False)
+
+    dirs, errors, status = account_resource_scanner._chromium_browser_dirs_with_diagnostics()
+    firefox_accounts, firefox_errors, firefox_status = account_resource_scanner._firefox_accounts_scan_with_coverage()
+
+    assert dirs == []
+    assert status == "NOT_CONFIGURED"
+    assert "chromium_root_config:LOCALAPPDATA_NOT_CONFIGURED" in errors
+    assert firefox_accounts == []
+    assert firefox_status == "NOT_CONFIGURED"
+    assert firefox_errors == []
+
+
+def test_browser_status_combination_preserves_unverified_component() -> None:
+    assert account_resource_scanner._combine_browser_source_status(
+        ["READ_OK", "NOT_CONFIGURED"]
+    ) == "READ_PARTIAL"
+    assert account_resource_scanner._combine_browser_source_status(
+        ["CONFIRMED_NOT_FOUND", "NOT_CONFIGURED"]
+    ) == "NOT_CONFIGURED"
