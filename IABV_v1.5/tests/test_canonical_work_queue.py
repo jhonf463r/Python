@@ -80,7 +80,7 @@ def _fake_self_examination_service(findings: list[SelfExaminationFinding] | None
     svc = MagicMock()
     snapshot = MagicMock()
     snapshot.findings = findings or []
-    svc.current_review.return_value = snapshot
+    svc.current_review_cached.return_value = snapshot
     return svc
 
 
@@ -717,9 +717,9 @@ class TestBootstrapWiring:
 
 
 class TestOSESCurrentReview:
-    """ControlMasterService reads OSES via current_review() per AGENTS.md."""
+    """ControlMasterService reads OSES via current_review_cached() per AGENTS.md."""
 
-    def test_oses_reads_via_current_review(self) -> None:
+    def test_oses_reads_via_current_review_cached(self) -> None:
         ws = _workspace()
         try:
             finding = SelfExaminationFinding(
@@ -729,11 +729,11 @@ class TestOSESCurrentReview:
                 recommendation="Fix phased populate_ui",
                 summary="populate_ui blocked main thread",
             )
-            # Mock service that only exposes current_review(), not current_snapshot
+            # Mock service that only exposes current_review_cached(), not current_snapshot
             svc_mock = MagicMock(spec=[])
             snapshot = MagicMock()
             snapshot.findings = [finding]
-            svc_mock.current_review = MagicMock(return_value=snapshot)
+            svc_mock.current_review_cached = MagicMock(return_value=snapshot)
 
             cms = ControlMasterService(
                 repository=_fake_repo(),
@@ -763,7 +763,7 @@ class TestOSESCurrentReview:
             svc_mock = MagicMock(spec=[])
             snapshot = MagicMock()
             snapshot.findings = [finding]
-            svc_mock.current_review = MagicMock(return_value=snapshot)
+            svc_mock.current_review_cached = MagicMock(return_value=snapshot)
 
             cms = ControlMasterService(
                 repository=_fake_repo(),
