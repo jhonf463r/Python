@@ -798,7 +798,7 @@ def test_runtime_audit_work_item_carries_matching_fsync_ack() -> None:
         }
         audit = root / "data" / "logs" / "runtime_audit.jsonl"
         audit.parent.mkdir(parents=True, exist_ok=True)
-        audit.write_text(json.dumps(event) + "\\n", encoding="utf-8")
+        audit.write_text(json.dumps(event) + "\n", encoding="utf-8")
         ack = {
             "status": "FILE_FSYNCED",
             "path": "runtime_audit.jsonl",
@@ -844,7 +844,7 @@ def test_runtime_audit_work_item_does_not_promote_missing_ack() -> None:
         }
         audit = root / "data" / "logs" / "runtime_audit.jsonl"
         audit.parent.mkdir(parents=True, exist_ok=True)
-        audit.write_text(json.dumps(event) + "\\n", encoding="utf-8")
+        audit.write_text(json.dumps(event) + "\n", encoding="utf-8")
 
         class Lifecycle:
             def interaction_info(self, interaction_id):
