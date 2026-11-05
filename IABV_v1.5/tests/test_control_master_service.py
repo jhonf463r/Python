@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+from types import SimpleNamespace
 import shutil
 from pathlib import Path
 from uuid import uuid4
@@ -634,5 +635,76 @@ def test_current_state_marks_unconfigured_live_projections_as_unresolved() -> No
         assert "UNRESOLVED:objective_repository_not_connected" in state.unresolved_items
         assert "UNRESOLVED:pending_issue_repository_not_connected" in state.unresolved_items
         assert "UNRESOLVED:self_examination_service_not_connected" in state.unresolved_items
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_current_work_queue_retains_partial_objective_report_without_actionable_items():
+    root = _workspace()
+    try:
+        service, _ = _build_service(root)
+        report = SimpleNamespace(
+            status=SimpleNamespace(value='READ_PARTIAL'),
+            items=[],
+            records_seen=2,
+            records_loaded=1,
+            failed_ids=['objective-corrupt'],
+            to_dict=lambda: {
+                'status': 'READ_PARTIAL',
+                'records_seen': 2,
+                'records_loaded': 1,
+                'failed_ids': ['objective-corrupt'],
+            },
+        )
+
+        class PartialObjectiveRepository:
+            def list_recent_with_diagnostics(self, **kwargs):
+                return report
+
+        service.objective_repository = PartialObjectiveRepository()
+        queue = service.current_work_queue(limit=20)
+
+        assert service.last_work_queue_source_coverage['objective_repository'] == 'READ_PARTIAL'
+        assert any(error.startswith('OBJECTIVES_READ_PARTIAL:') for error in service.last_work_queue_errors)
+        assert set(service.last_work_queue_read_reports) == {
+            'objective_repository:active',
+            'objective_repository:pending',
+            'objective_repository:blocked',
+        }
+        assert not any(item.get('source') == 'objective_repository' for item in queue)
+        assert service.last_work_queue_read_reports['objective_repository:active'].records_loaded == 1
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_current_work_queue_retains_partial_pending_issue_report_without_actionable_items():
+    root = _workspace()
+    try:
+        service, _ = _build_service(root)
+        report = SimpleNamespace(
+            status=SimpleNamespace(value='READ_PARTIAL'),
+            items=[],
+            records_seen=3,
+            records_loaded=2,
+            failed_ids=['issue-corrupt'],
+            to_dict=lambda: {
+                'status': 'READ_PARTIAL',
+                'records_seen': 3,
+                'records_loaded': 2,
+                'failed_ids': ['issue-corrupt'],
+            },
+        )
+
+        class PartialPendingIssueRepository:
+            def list_recent_with_diagnostics(self, limit=15):
+                return report
+
+        service.pending_issue_repository = PartialPendingIssueRepository()
+        queue = service.current_work_queue(limit=20)
+
+        assert service.last_work_queue_source_coverage['pending_issue_repository'] == 'READ_PARTIAL'
+        assert 'PENDING_ISSUES_READ_PARTIAL' in service.last_work_queue_errors
+        assert service.last_work_queue_read_reports['pending_issue_repository'] is report
+        assert not any(item.get('source') == 'pending_issue_repository' for item in queue)
     finally:
         shutil.rmtree(root, ignore_errors=True)
