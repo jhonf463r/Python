@@ -39,6 +39,7 @@ class PerceptionCrossValidator:
         self._created_at = time.time()
         self._check_statuses: dict[str, str] = {}
         self._check_reasons: dict[str, str] = {}
+        self._check_reports: dict[str, dict[str, Any]] = {}
 
     def _set_check_status(self, check: str, status: str, reason: str = '') -> None:
         self._check_statuses[check] = status
@@ -72,6 +73,7 @@ class PerceptionCrossValidator:
         )
         self._check_statuses = {}
         self._check_reasons = {}
+        self._check_reports = {}
 
         proc_inconsistencies = self._run_check(
             'tools_vs_processes', self._cross_tools_vs_processes
@@ -113,6 +115,7 @@ class PerceptionCrossValidator:
             'checks_passed': checks_passed,
             'checks_status': dict(self._check_statuses),
             'checks_unavailable': checks_unavailable,
+            'checks_read_reports': dict(self._check_reports),
             'total_inconsistencies': len(inconsistencies),
             'total_auto_corrections': len(auto_corrections),
             'total_checks': 4,
@@ -219,7 +222,21 @@ class PerceptionCrossValidator:
         try:
             cards = self.tool_registry.list_cards()
         except Exception as exc:
-            self._set_check_status('tools_vs_processes', 'READ_FAILED', type(exc).__name__)
+            report = getattr(exc, 'report', None)
+            if report is not None:
+                payload = report.to_dict() if callable(getattr(report, 'to_dict', None)) else {
+                    'status': getattr(getattr(report, 'status', None), 'value', str(getattr(report, 'status', 'UNKNOWN'))),
+                    'records_seen': getattr(report, 'records_seen', None),
+                    'records_loaded': getattr(report, 'records_loaded', None),
+                    'failed_ids': list(getattr(report, 'failed_ids', []) or []),
+                }
+                self._check_reports['tools_vs_processes'] = payload
+                report_status = getattr(getattr(report, 'status', None), 'value', '')
+                status = 'READ_PARTIAL' if report_status == 'READ_PARTIAL' else 'READ_FAILED'
+                reason = getattr(report, 'collection_error_type', '') or type(exc).__name__
+                self._set_check_status('tools_vs_processes', status, reason)
+            else:
+                self._set_check_status('tools_vs_processes', 'READ_FAILED', type(exc).__name__)
             return inconsistencies
 
         for card in cards:
@@ -314,7 +331,21 @@ class PerceptionCrossValidator:
             wm_tool_ids = {t.tool_id for t in snapshot.tool_live_status}
             cards = self.tool_registry.list_cards()
         except Exception as exc:
-            self._set_check_status('audit_vs_worldmodel', 'READ_FAILED', type(exc).__name__)
+            report = getattr(exc, 'report', None)
+            if report is not None:
+                payload = report.to_dict() if callable(getattr(report, 'to_dict', None)) else {
+                    'status': getattr(getattr(report, 'status', None), 'value', str(getattr(report, 'status', 'UNKNOWN'))),
+                    'records_seen': getattr(report, 'records_seen', None),
+                    'records_loaded': getattr(report, 'records_loaded', None),
+                    'failed_ids': list(getattr(report, 'failed_ids', []) or []),
+                }
+                self._check_reports['audit_vs_worldmodel'] = payload
+                report_status = getattr(getattr(report, 'status', None), 'value', '')
+                status = 'READ_PARTIAL' if report_status == 'READ_PARTIAL' else 'READ_FAILED'
+                reason = getattr(report, 'collection_error_type', '') or type(exc).__name__
+                self._set_check_status('audit_vs_worldmodel', status, reason)
+            else:
+                self._set_check_status('audit_vs_worldmodel', 'READ_FAILED', type(exc).__name__)
             return inconsistencies
 
         for card in cards:
