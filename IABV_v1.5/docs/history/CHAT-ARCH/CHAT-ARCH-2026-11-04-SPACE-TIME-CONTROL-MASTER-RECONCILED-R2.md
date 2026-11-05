@@ -106,3 +106,49 @@ The review comment on the former line-349 declaration was replied to and its now
 At the moment of the implementation commit readback, no workflow run or status check had been returned for `c08b00a…`. Earlier run `41938573679` (#527) belongs to the preceding `eecf456…` HEAD and ended `startup_failure` with zero jobs. No dispatch or retry was made.
 
 This correction closes the specific false-`READ_OK` defect at source level only. It does not establish source-applicability policy, live Control Master state, runtime success, independent acceptance, or the full D021 temporal contract of origin/scope, generation/observation times, per-source freshness, evidence/dependency linkage and causal influence. The Space-Time organ remains `PARTIAL`; PR #610 remains Draft and unmerged.
+
+## D021 task-bound Control Master intake — 2026-11-04
+
+Implementation is now present on the same isolated PR branch. The exact code HEAD before this receipt update is `f33d4c8f38ebc2d9e706bccbeab192337157deec` (11 commits ahead, 0 behind; 17 paths). Base remains `main@56e4d8b11846a8d8f3cb8cda08efd773ec235651`.
+
+### Source-level implementation
+
+- `ControlMasterService.current_state()` captures the persisted source snapshot before rebuilding its projection. The digest carries the source state ID, normalized SHA-256 content digest, source object `control_master/latest.json`, hashed workspace-scope ID and source generation time. Missing source produces `UNAVAILABLE`; ambiguous time or scope produces `UNVERIFIED`. No freshness TTL was invented.
+- The ephemeral observation envelope is removed by `save_state()` before persistence; observation provenance is not written back as governance state.
+- `ControlMasterDigest` now distinguishes source generation, digest generation and task observation; carries D021 freshness separately from transport availability and work-queue state; and retains source evidence refs plus bounded per-item IDs, priorities, next actions, dependencies and evidence refs.
+- `signal_status` is derived from whether the source snapshot was actually read (`READ_OK`, `NO_SOURCE_SNAPSHOT`, `READ_FAILED`), independently from `work_queue_status`. Thus a readable Control Master source can be `AVAILABLE` while queue coverage is `UNVERIFIED`. A missing source remains `UNAVAILABLE`.
+- The existing `AdaptiveTaskOrchestrator` retrieves the digest once at the start of request handling, places the same digest/intake in `request.metadata` before intent classification, then binds it to the existing PerceptionSnapshot, TaskContext, AdaptiveSession and DecisionContext. The prompt consumer reuses the task-bound digest rather than making a second read.
+- The receipt preserves `PROJECT_ID`, `TASK_ID` and its origin, actor session binding, operating context, memory scope, source object/revision digest, event/observation/record times, source/state/digest IDs, freshness, queue status, item identities/priorities/actions/dependencies and source/queue evidence refs.
+- Verification and supersession/conflict checks are explicit: `VERIFICATION_STATUS=NOT_VERIFIED`, `VERIFIED_AT=null`, `SUPERSESSION_CONFLICT_CHECK=NOT_EVALUATED`. Signal consideration and causal influence remain `NOT_EVALUATED`.
+- The local-chat path records prompt hash, prompt mode, provider and whether the final prompt contained the exact digest ID. A completed provider call is not treated as evidence that the model considered the signal or that it changed a decision.
+- Full and compact prompt sections preserve source identity/freshness/times and priority actions. Both state that Control Master grants no authority/permissions and does not replace `CURRENT-STATE.md`; both prohibit inferring causal influence from mere inclusion/delivery.
+- Existing bootstrap wiring was re-read from main: `bootstrap.py` constructs `ControlMasterService` and `ControlMasterDigestBuilder` and assigns them to `AdaptiveTaskOrchestrator`. This confirms static wiring only, not a live runtime.
+
+### Regression coverage authored (not executed)
+
+New/extended tests cover source absence and actual source generation preservation, removal of ephemeral provenance on save, digest source identity/time/scope/evidence/queue lineage, independent signal-versus-queue statuses, full/compact prompt boundaries and priority order, and a task-level probe asserting one source/queue read and that the classifier receives the task-bound digest before routing. The prior canonical TestEvidence regressions remain.
+
+### Current verification boundary
+
+- Latest HEAD at time of this receipt: `f33d4c8f38ebc2d9e706bccbeab192337157deec`.
+- Associated Actions run #541 (`41943291373`) ended `startup_failure`; jobs endpoint returned zero jobs. No test/build step ran. Combined status checks are empty.
+- `TESTS/BUILD/RUNTIME=NOT_RUN`; no independent reviewer acceptance is claimed.
+- Repository is PRIVATE; PR #610 remains OPEN / DRAFT / UNMERGED; `mergeable=true` is only GitHub metadata.
+- The full D021 lifecycle is not complete: no verified route reconciliation against a task-pinned authoritative `CURRENT-STATE.md`, no supersession/conflict adjudication, no verified signal-consideration/influence outcome, no cross-session causal-reuse proof and no real-task non-identical continuity experiment. The intake records these as not evaluated, not as successful.
+- Live local Control Master state was not accessible in this ChatGPT execution surface; the committed snapshot previously examined remains historical/STALE.
+- Source applicability policy for queue sources remains NOT_ESTABLISHED.
+
+```text
+D021_SOURCE_PROVENANCE=IMPLEMENTED_SOURCE_LEVEL
+D021_TASK_SESSION_BINDING=IMPLEMENTED_SOURCE_LEVEL
+D021_PROMPT_DELIVERY_RECEIPT=IMPLEMENTED_SOURCE_LEVEL
+D021_SIGNAL_INFLUENCE=NOT_EVALUATED
+D021_VERIFICATION_AND_CONFLICT_CHECK=NOT_EVALUATED
+D021_CROSS_SESSION_CAUSAL_REUSE=NOT_PROVEN
+D021_REAL_TASK_CONTINUITY_EXPERIMENT=NOT_RUN
+TESTS/BUILD/RUNTIME=NOT_RUN
+SPACE_TIME_ORGAN=PARTIAL
+BRIDGE=BRIDGE_NOT_READY
+M1A=UNCHANGED
+MERGE=NOT_AUTHORIZED
+```
