@@ -16,6 +16,7 @@ name: IABV persistence read-contract candidate tests
       - "IABV_v1.5/tests/test_dossier_session_read_integrity.py"
       - "IABV_v1.5/tests/test_scenario_strategy_read_integrity.py"
       - "IABV_v1.5/tests/test_runtime_capability_read_integrity.py"
+      - "IABV_v1.5/tests/test_approval_replay_read_integrity.py"
       - "IABV_v1.5/pyproject.toml"
       - ".github/workflows/iabv-persistence-focused-tests.yml"
 
@@ -60,4 +61,5 @@ jobs:
           IABV_v1.5/tests/test_dossier_session_read_integrity.py
           IABV_v1.5/tests/test_scenario_strategy_read_integrity.py
           IABV_v1.5/tests/test_runtime_capability_read_integrity.py
+          IABV_v1.5/tests/test_approval_replay_read_integrity.py
           -q
