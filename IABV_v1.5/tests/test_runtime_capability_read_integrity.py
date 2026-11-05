@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from iabv_v15.domain.models import CapabilityReadiness, RuntimeTuningProfile
+from iabv_v15.domain.models import CapabilityReadiness, RuntimeAdjustment, RuntimeTuningProfile
 from iabv_v15.infra.persistence.capability_repository import CapabilityRepository
 from iabv_v15.infra.persistence.database import AppDatabase
 from iabv_v15.infra.persistence.read_results import (
@@ -171,7 +171,9 @@ def test_runtime_tuning_append_adjustment_fails_closed_on_corrupt_existing_profi
     Path(row["path"]).write_text("{", encoding="utf-8")
 
     with pytest.raises(RepositoryReadError) as exc_info:
-        repository.append_adjustment(None)  # type: ignore[arg-type]
+        repository.append_adjustment(
+            RuntimeAdjustment(target_key="confidence_threshold", reason="synthetic regression")
+        )
 
     assert exc_info.value.report.status == RepositoryReadStatus.READ_FAILED
     assert db.fetchone(
