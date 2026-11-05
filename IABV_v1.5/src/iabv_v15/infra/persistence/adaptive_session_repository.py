@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sqlite3
+from datetime import datetime, timezone
 from pathlib import Path
 from threading import local
 
@@ -11,7 +12,12 @@ from iabv_v15.infra.persistence.read_results import (
     ArtifactReadStatus,
     RepositoryReadError,
     RepositoryReadReport,
+    inspect_model_file_with_digest,
     read_model_from_paths,
+    IndexReconciliationFileResult,
+    IndexReconciliationIndexPathResult,
+    IndexReconciliationPathStatus,
+    RepositoryIndexReconciliationReport,
 )
 from iabv_v15.infra.persistence.storage import ArtifactStorage
 
@@ -33,6 +39,147 @@ class AdaptiveSessionRepository:
     ) -> RepositoryReadReport[AdaptiveSession]:
         self._read_state.report = report
         return report
+
+
+    def plan_reindex_with_diagnostics(self) -> RepositoryIndexReconciliationReport:
+        """Compare adaptive-session JSON files with SQLite IDs; strictly read-only."""
+        scope = "READ_ONLY_INDEX_RECONCILIATION:adaptive_sessions"
+        indexed_ids: tuple[str, ...] = ()
+        rows: list[dict[str, object]] = []
+        collection_error_type = ""
+        collection_error_message = ""
+        try:
+            rows = self.db.fetchall(
+                "SELECT session_id, path FROM adaptive_sessions ORDER BY session_id ASC"
+            )
+            indexed_ids = tuple(sorted({str(row["session_id"]) for row in rows}))
+        except sqlite3.Error as exc:
+            collection_error_type = type(exc).__name__
+            collection_error_message = str(exc)[:300]
+
+        index_path_results: list[IndexReconciliationIndexPathResult] = []
+        for row in (rows if not collection_error_type else ()):
+            artifact_id = str(row["session_id"])
+            try:
+                indexed_path = self.storage.resolve_managed_path(row["path"])
+                canonical_path = self.storage.resolve_managed_path(
+                    f"adaptive_sessions/{artifact_id}.json"
+                )
+            except (OSError, TypeError, ValueError) as exc:
+                index_path_results.append(
+                    IndexReconciliationIndexPathResult(
+                        artifact_id=artifact_id,
+                        status=IndexReconciliationPathStatus.INVALID_PATH,
+                        error_type=type(exc).__name__,
+                        error_message=str(exc)[:300],
+                    )
+                )
+                continue
+
+            index_result, index_digest, index_size = inspect_model_file_with_digest(
+                indexed_path, artifact_id, AdaptiveSession
+            )
+            if index_result.status == ArtifactReadStatus.CONFIRMED_NOT_FOUND:
+                path_status = IndexReconciliationPathStatus.MISSING_PATH
+            elif index_result.status == ArtifactReadStatus.READ_FAILED:
+                path_status = IndexReconciliationPathStatus.READ_FAILED
+            elif index_result.status == ArtifactReadStatus.CORRUPT:
+                path_status = IndexReconciliationPathStatus.CORRUPT
+            elif index_result.status == ArtifactReadStatus.SCHEMA_UNSUPPORTED:
+                path_status = IndexReconciliationPathStatus.SCHEMA_UNSUPPORTED
+            elif index_result.value is None or index_result.value.session_id != artifact_id:
+                path_status = IndexReconciliationPathStatus.IDENTITY_MISMATCH
+            elif indexed_path == canonical_path:
+                path_status = IndexReconciliationPathStatus.SAFE_CANONICAL_PATH
+            else:
+                path_status = IndexReconciliationPathStatus.SAFE_NONCANONICAL_PATH
+
+            index_path_results.append(
+                IndexReconciliationIndexPathResult(
+                    artifact_id=artifact_id,
+                    status=path_status,
+                    error_type=index_result.error_type,
+                    error_message=index_result.error_message,
+                    sha256=index_digest,
+                    size_bytes=index_size,
+                )
+            )
+
+        files: list[IndexReconciliationFileResult] = []
+        directory_exists = False
+        filesystem_error_type = ""
+        filesystem_error_message = ""
+        ignored_entries = 0
+        try:
+            directory = self.storage.resolve_managed_path("adaptive_sessions")
+            expected_directory = self.storage.root / "adaptive_sessions"
+            if directory != expected_directory:
+                raise ValueError("Managed reconciliation directory must not be a symlink.")
+            if directory.is_dir():
+                directory_exists = True
+                directory_root = directory.resolve(strict=True)
+                entries = sorted(directory.iterdir(), key=lambda item: item.name)
+                json_files = [item for item in entries if item.suffix.lower() == ".json"]
+                ignored_entries = len(entries) - len(json_files)
+                for candidate in json_files:
+                    session_id = candidate.stem
+                    try:
+                        safe_path = self.storage.resolve_managed_path(candidate)
+                        if directory_root not in safe_path.parents:
+                            raise ValueError("Artifact resolves outside its expected managed subdirectory.")
+                    except (OSError, TypeError, ValueError) as exc:
+                        files.append(
+                            IndexReconciliationFileResult(
+                                artifact_id=session_id,
+                                path=candidate.name,
+                                status=ArtifactReadStatus.READ_FAILED,
+                                error_type=type(exc).__name__,
+                                error_message=str(exc)[:300],
+                            )
+                        )
+                        continue
+                    result, digest, size_bytes = inspect_model_file_with_digest(
+                        safe_path, session_id, AdaptiveSession
+                    )
+                    status = result.status
+                    error_type = result.error_type
+                    error_message = result.error_message
+                    if status == ArtifactReadStatus.FOUND and result.value is not None:
+                        if result.value.session_id != session_id:
+                            status = ArtifactReadStatus.SCHEMA_UNSUPPORTED
+                            error_type = "ArtifactIdentityMismatch"
+                            error_message = "Filename session ID does not match the JSON session_id."
+                    files.append(
+                        IndexReconciliationFileResult(
+                            artifact_id=session_id,
+                            path=candidate.name,
+                            status=status,
+                            error_type=error_type,
+                            error_message=error_message,
+                            sha256=digest,
+                            size_bytes=size_bytes,
+                        )
+                    )
+            elif directory.exists():
+                filesystem_error_type = "NotADirectoryError"
+                filesystem_error_message = "The managed adaptive_sessions path is not a directory."
+        except (OSError, TypeError, ValueError) as exc:
+            filesystem_error_type = type(exc).__name__
+            filesystem_error_message = str(exc)[:300]
+
+        return RepositoryIndexReconciliationReport(
+            scope=scope,
+            indexed_ids=indexed_ids,
+            files=tuple(files),
+            index_path_results=tuple(index_path_results),
+            directory_exists=directory_exists,
+            observed_at_utc=datetime.now(timezone.utc).isoformat(),
+            collection_error_type=collection_error_type,
+            collection_error_message=collection_error_message,
+            filesystem_error_type=filesystem_error_type,
+            filesystem_error_message=filesystem_error_message,
+            ignored_entries=ignored_entries,
+        )
 
     def save(self, session: AdaptiveSession) -> AdaptiveSession:
         relative_path = f"adaptive_sessions/{session.session_id}.json"
