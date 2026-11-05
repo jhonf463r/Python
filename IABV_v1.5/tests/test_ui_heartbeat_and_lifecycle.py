@@ -1610,3 +1610,48 @@ class TestBootstrapBridgeReadinessWiring:
         if bridge is not None:
             bridge.mark_shell_ready(source)
         # No exception raised — success
+
+
+
+def test_resolve_interaction_retains_verified_fsync_ack(tmp_path: Path) -> None:
+    tracer = RuntimeAuditTracer(log_dir=tmp_path)
+    lifecycle = ChatInteractionLifecycle()
+    interaction_id = lifecycle.open_interaction("durability acknowledgement")
+
+    with patch(
+        "iabv_v15.services.evolution.runtime_audit_tracer.get_runtime_tracer",
+        return_value=tracer,
+    ):
+        record = lifecycle.resolve_interaction(
+            interaction_id, outcome="resolved", provider="test-provider"
+        )
+
+    assert record is not None
+    assert record["runtime_audit_durability"]["status"] == "FILE_FSYNCED"
+    assert record["runtime_audit_durability_check"]["accepted"] is True
+    assert record["runtime_audit_event_seq"] == record["runtime_audit_durability"]["seq"]
+    rows = [
+        json.loads(line)
+        for line in (tmp_path / "runtime_audit.jsonl").read_text(encoding="utf-8").splitlines()
+    ]
+    resolved = [row for row in rows if row.get("kind") == "interaction_resolved"]
+    assert len(resolved) == 1
+    assert resolved[0]["seq"] == record["runtime_audit_event_seq"]
+
+
+def test_resolve_interaction_retains_memory_only_as_non_durable(tmp_path: Path) -> None:
+    tracer = RuntimeAuditTracer()
+    lifecycle = ChatInteractionLifecycle()
+    interaction_id = lifecycle.open_interaction("memory only interaction")
+
+    with patch(
+        "iabv_v15.services.evolution.runtime_audit_tracer.get_runtime_tracer",
+        return_value=tracer,
+    ):
+        record = lifecycle.resolve_interaction(
+            interaction_id, outcome="resolved", provider="test-provider"
+        )
+
+    assert record is not None
+    assert record["runtime_audit_durability"]["status"] == "MEMORY_ONLY"
+    assert record["runtime_audit_durability_check"]["accepted"] is False

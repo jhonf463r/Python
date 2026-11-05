@@ -208,3 +208,50 @@ class TestInMemoryLimit:
                 os.environ['IABV_RUNTIME_TRACE'] = old
             else:
                 os.environ.pop('IABV_RUNTIME_TRACE', None)
+
+
+
+def test_trace_memory_only_ack_is_not_accepted(tmp_path: Path) -> None:
+    from iabv_v15.services.evolution.runtime_audit_tracer import validate_durability_ack
+
+    tracer = RuntimeAuditTracer()
+    event = tracer.trace("memory_only_event")
+    acknowledgement = event["durability_ack"]
+    assert acknowledgement["status"] == "MEMORY_ONLY"
+    assert validate_durability_ack(
+        acknowledgement, expected_seq=event["seq"]
+    )["accepted"] is False
+
+
+def test_trace_ack_validator_rejects_malformed_receipts() -> None:
+    from iabv_v15.services.evolution.runtime_audit_tracer import validate_durability_ack
+
+    valid = {
+        "status": "FILE_FSYNCED",
+        "path": "runtime_audit.jsonl",
+        "seq": 4,
+        "byte_start": 10,
+        "byte_end": 100,
+        "line_sha256": "a" * 64,
+    }
+    assert validate_durability_ack(valid, expected_seq=4)["accepted"] is True
+    assert validate_durability_ack(valid, expected_seq=5)["status"] == "ACK_INVALID"
+    assert validate_durability_ack({**valid, "line_sha256": "bad"})["status"] == "ACK_INVALID"
+    assert validate_durability_ack({**valid, "path": "../runtime_audit.jsonl"})["status"] == "ACK_INVALID"
+
+
+def test_trace_write_failure_returns_explicit_non_durable_ack(tmp_path: Path, monkeypatch) -> None:
+    from pathlib import Path as _Path
+
+    tracer = RuntimeAuditTracer(log_dir=tmp_path)
+    original_open = _Path.open
+
+    def fail_log_write(self, *args, **kwargs):
+        if self.name == "runtime_audit.jsonl":
+            raise PermissionError("synthetic denied write")
+        return original_open(self, *args, **kwargs)
+
+    monkeypatch.setattr(_Path, "open", fail_log_write)
+    event = tracer.trace("write_failure_event")
+    assert event["durability_ack"]["status"] == "WRITE_FAILED"
+    assert tracer.events()[-1]["kind"] == "write_failure_event"

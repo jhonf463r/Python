@@ -1277,13 +1277,16 @@ class ChatInteractionLifecycle:
                     (now - record.get('_t0', now)) * 1000.0, 1,
                 )
                 self._interactions[interaction_id] = record
-        # Trace — persist the record for durable reconstruction.
+        # Trace the lifecycle and retain the sink acknowledgement on the episode.
+        # A returned lifecycle record must not imply durability on memory-only or failed writes.
         trace_kind = 'interaction_resolved' if is_final else 'interaction_outcome'
+        trace_event_seq: int | None = None
         try:
             from iabv_v15.services.evolution.runtime_audit_tracer import (
                 get_runtime_tracer,
+                validate_durability_ack,
             )
-            get_runtime_tracer().trace(
+            trace_event = get_runtime_tracer().trace(
                 trace_kind,
                 interaction_id=interaction_id,
                 message_preview=record.get('message_preview', ''),
@@ -1306,8 +1309,30 @@ class ChatInteractionLifecycle:
                 ),
                 is_final=is_final,
             )
-        except Exception:
-            pass
+            trace_event_seq = trace_event.get('seq') if isinstance(trace_event, dict) else None
+            acknowledgement = (
+                trace_event.get('durability_ack')
+                if isinstance(trace_event, dict)
+                else None
+            )
+            durability_check = validate_durability_ack(
+                acknowledgement,
+                expected_seq=trace_event_seq if isinstance(trace_event_seq, int) else None,
+            )
+            if not isinstance(acknowledgement, dict):
+                acknowledgement = {'status': 'ACK_UNAVAILABLE'}
+            else:
+                acknowledgement = dict(acknowledgement)
+        except Exception as exc:
+            acknowledgement = {
+                'status': 'TRACE_FAILED',
+                'error_type': type(exc).__name__,
+            }
+            durability_check = {'status': 'TRACE_FAILED', 'accepted': False}
+        with self._lock:
+            record['runtime_audit_event_seq'] = trace_event_seq
+            record['runtime_audit_durability'] = acknowledgement
+            record['runtime_audit_durability_check'] = durability_check
         return record
 
     # --- Query ---

@@ -189,7 +189,11 @@ class RuntimeAuditTracer:
     # ------------------------------------------------------------------
 
     def trace(self, kind: str, **data: Any) -> dict[str, Any]:
-        """Record one trace event. Returns the event dict."""
+        """Record one trace event and return its explicit persistence receipt.
+
+        `durability_ack` is attached to the returned/in-memory event after
+        the write attempt. The JSONL row does not claim its own future durability.
+        """
         now_pc = time.perf_counter()
         event: dict[str, Any] = {
             'ts': datetime.now(timezone.utc).isoformat(timespec='milliseconds'),
@@ -204,8 +208,16 @@ class RuntimeAuditTracer:
             self._in_memory.append(event)
             if len(self._in_memory) > self._max_in_memory:
                 self._in_memory = self._in_memory[-self._max_in_memory:]
-            if self._enabled and self._log_dir is not None:
-                self._append(event)
+            if not self._enabled:
+                acknowledgement = {'status': 'DISABLED'}
+            elif self._log_dir is None:
+                acknowledgement = {
+                    'status': 'MEMORY_ONLY',
+                    'reason': 'log_directory_not_configured',
+                }
+            else:
+                acknowledgement = self._append(event)
+            event['durability_ack'] = acknowledgement
         return event
 
     # ------------------------------------------------------------------
@@ -897,17 +909,95 @@ class RuntimeAuditTracer:
     # Internal
     # ------------------------------------------------------------------
 
-    def _append(self, event: dict[str, Any]) -> None:
+    def _append(self, event: dict[str, Any]) -> dict[str, Any]:
+        """Append one JSONL record and acknowledge only after file fsync."""
         if self._log_dir is None:
-            return
+            return {
+                'status': 'MEMORY_ONLY',
+                'reason': 'log_directory_not_configured',
+            }
+        import hashlib
+
         try:
             self._log_dir.mkdir(parents=True, exist_ok=True)
             target = self._log_dir / 'runtime_audit.jsonl'
-            with target.open('a', encoding='utf-8') as fh:
-                fh.write(json.dumps(event, ensure_ascii=False, default=str) + '\n')
+            line = (json.dumps(event, ensure_ascii=False, default=str) + '\n').encode('utf-8')
+            with target.open('ab') as handle:
+                byte_start = handle.tell()
+                written = handle.write(line)
+                if written != len(line):
+                    raise OSError('short_write_to_runtime_audit_log')
+                handle.flush()
+                os.fsync(handle.fileno())
+                byte_end = handle.tell()
+            return {
+                'status': 'FILE_FSYNCED',
+                'path': target.name,
+                'seq': event.get('seq'),
+                'byte_start': byte_start,
+                'byte_end': byte_end,
+                'line_sha256': hashlib.sha256(line).hexdigest(),
+            }
         except Exception as exc:
             logger.warning('RuntimeAuditTracer._append failed (log_dir=%s): %s', self._log_dir, exc)
+            return {
+                'status': 'WRITE_FAILED',
+                'error_type': type(exc).__name__,
+            }
 
+
+
+
+
+def validate_durability_ack(
+    acknowledgement: Any,
+    *,
+    expected_seq: int | None = None,
+) -> dict[str, Any]:
+    """Validate the structural contract of a RuntimeAuditTracer file-fsync receipt.
+
+    This validates the tracer's receipt, not an independent disk re-read.
+    Consumers must not promote MEMORY_ONLY, DISABLED, WRITE_FAILED, or
+    malformed receipts to durable evidence.
+    """
+    if not isinstance(acknowledgement, dict):
+        return {"status": "ACK_UNAVAILABLE", "accepted": False}
+    status = str(acknowledgement.get("status") or "ACK_UNAVAILABLE")
+    if status != "FILE_FSYNCED":
+        return {"status": status, "accepted": False}
+
+    path = acknowledgement.get("path")
+    seq = acknowledgement.get("seq")
+    byte_start = acknowledgement.get("byte_start")
+    byte_end = acknowledgement.get("byte_end")
+    digest = str(acknowledgement.get("line_sha256") or "").lower()
+    if (
+        path != "runtime_audit.jsonl"
+        or isinstance(seq, bool)
+        or not isinstance(seq, int)
+        or seq <= 0
+        or (expected_seq is not None and seq != expected_seq)
+        or isinstance(byte_start, bool)
+        or not isinstance(byte_start, int)
+        or byte_start < 0
+        or isinstance(byte_end, bool)
+        or not isinstance(byte_end, int)
+        or byte_end <= byte_start
+        or len(digest) != 64
+        or any(char not in "0123456789abcdef" for char in digest)
+    ):
+        return {"status": "ACK_INVALID", "accepted": False}
+
+    return {
+        "status": "FILE_FSYNCED",
+        "accepted": True,
+        "path": path,
+        "seq": seq,
+        "byte_start": byte_start,
+        "byte_end": byte_end,
+        "line_sha256": digest,
+        "verification": "TRACER_RETURNED_FSYNC_RECEIPT",
+    }
 
 # ======================================================================
 # Global singleton
