@@ -2925,8 +2925,10 @@ _REQUIRED_SOURCE_IDS = (
         """
         log_path = Path(self.workspace_root) / 'data' / 'logs' / 'startup_timeline.jsonl'
         if not log_path.exists():
+            self._record_source_status('startup_timeline_log', 'CONFIRMED_NOT_FOUND')
             return []
         events: list[dict[str, Any]] = []
+        malformed_lines = False
         try:
             with log_path.open('r', encoding='utf-8') as fh:
                 for line in fh:
@@ -2934,11 +2936,22 @@ _REQUIRED_SOURCE_IDS = (
                     if not line:
                         continue
                     try:
-                        events.append(json.loads(line))
+                        event = json.loads(line)
                     except json.JSONDecodeError:
+                        malformed_lines = True
                         continue
-        except OSError:
+                    if isinstance(event, dict):
+                        events.append(event)
+                    else:
+                        malformed_lines = True
+        except OSError as exc:
+            self._record_source_status('startup_timeline_log', 'READ_FAILED', type(exc).__name__)
             return []
+        self._record_source_status(
+            'startup_timeline_log',
+            'READ_PARTIAL' if malformed_lines else 'READ_OK',
+            'malformed_or_non_object_jsonl_rows' if malformed_lines else '',
+        )
         if not events:
             return []
         last_run: list[dict[str, Any]] = [events[-1]]
@@ -3571,9 +3584,13 @@ _REQUIRED_SOURCE_IDS = (
         try:
             incident_path = Path(self.evolution_dir) / 'self_examination' / 'startup_sqlite_incident.json'
             if not incident_path.exists():
+                self._record_source_status('sqlite_incident_file', 'CONFIRMED_NOT_FOUND')
                 return findings
             import json
             incident = json.loads(incident_path.read_text(encoding='utf-8'))
+            if not isinstance(incident, dict):
+                raise TypeError('sqlite_incident_payload_not_object')
+            self._record_source_status('sqlite_incident_file', 'READ_OK')
             findings.append(SelfExaminationFinding(
                 category=incident.get('category', 'sqlite_lock_contention'),
                 title=incident.get('title', 'database is locked durante startup'),
@@ -3588,8 +3605,8 @@ _REQUIRED_SOURCE_IDS = (
                     'source': 'startup_sqlite_incident.json',
                 },
             ))
-        except Exception:
-            pass
+        except Exception as exc:
+            self._record_source_status('sqlite_incident_file', 'READ_FAILED', type(exc).__name__)
         return findings
 
     # ------------------------------------------------------------------
@@ -3920,15 +3937,20 @@ _REQUIRED_SOURCE_IDS = (
 
         backlog_dir = Path(self.workspace_root) / 'data' / 'chat_research_backlog'
         if not backlog_dir.exists() or not backlog_dir.is_dir():
+            self._record_source_status('chat_research_backlog', 'CONFIRMED_NOT_FOUND')
             return []
 
         try:
             files = sorted(backlog_dir.glob('*.jsonl'))
-        except OSError:
+        except OSError as exc:
+            self._record_source_status('chat_research_backlog', 'READ_FAILED', type(exc).__name__)
             return []
         if not files:
+            self._record_source_status('chat_research_backlog', 'READ_OK')
             return []
 
+        malformed_rows = False
+        failed_files = 0
         # Agrupacion por ``kind``: nos quedamos con la entrada mas reciente
         # por kind para tener la evidencia mas actual sin duplicar findings.
         per_kind: dict[str, dict[str, Any]] = {}
@@ -3944,8 +3966,10 @@ _REQUIRED_SOURCE_IDS = (
                         try:
                             record = json.loads(stripped)
                         except json.JSONDecodeError:
+                            malformed_rows = True
                             continue
                         if not isinstance(record, dict):
+                            malformed_rows = True
                             continue
                         if str(record.get('status') or 'open') != 'open':
                             continue
@@ -3966,7 +3990,15 @@ _REQUIRED_SOURCE_IDS = (
                         if str(record.get('detected_at_utc') or '') > str(existing.get('detected_at_utc') or ''):
                             per_kind[kind] = record
             except OSError:
+                failed_files += 1
                 continue
+
+        if failed_files or malformed_rows:
+            status = 'READ_FAILED' if failed_files == len(files) else 'READ_PARTIAL'
+            reason = 'all_backlog_files_unreadable' if failed_files == len(files) else 'some_backlog_rows_or_files_unreadable'
+            self._record_source_status('chat_research_backlog', status, reason)
+        else:
+            self._record_source_status('chat_research_backlog', 'READ_OK')
 
         if not per_kind:
             return []
@@ -4120,14 +4152,17 @@ _REQUIRED_SOURCE_IDS = (
         if not log_path.exists():
             log_path = Path(self.workspace_root) / 'iabv_v15.log'
         if not log_path.exists():
+            self._record_source_status('runtime_log', 'CONFIRMED_NOT_FOUND')
             return []
 
         try:
             with log_path.open('r', encoding='utf-8', errors='replace') as fh:
                 # Read only last N lines to avoid loading huge files
                 lines = fh.readlines()[-self._LOG_TAIL_LINES:]
-        except OSError:
+        except OSError as exc:
+            self._record_source_status('runtime_log', 'READ_FAILED', type(exc).__name__)
             return []
+        self._record_source_status('runtime_log', 'READ_OK')
 
         if not lines:
             return []
