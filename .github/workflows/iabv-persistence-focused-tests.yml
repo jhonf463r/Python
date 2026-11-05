@@ -10,6 +10,7 @@ name: IABV persistence read-contract candidate tests
     paths:
       - "IABV_v1.5/src/iabv_v15/infra/persistence/**"
       - "IABV_v1.5/tests/test_control_master_repository.py"
+      - "IABV_v1.5/tests/test_replace_with_retry.py"
       - "IABV_v1.5/tests/test_objective_repository.py"
       - "IABV_v1.5/tests/test_pending_issue_repository.py"
       - "IABV_v1.5/tests/test_tool_record_repository.py"
@@ -55,6 +56,7 @@ jobs:
         run: >-
           python -m pytest
           IABV_v1.5/tests/test_control_master_repository.py
+          IABV_v1.5/tests/test_replace_with_retry.py
           IABV_v1.5/tests/test_objective_repository.py
           IABV_v1.5/tests/test_pending_issue_repository.py
           IABV_v1.5/tests/test_tool_record_repository.py
