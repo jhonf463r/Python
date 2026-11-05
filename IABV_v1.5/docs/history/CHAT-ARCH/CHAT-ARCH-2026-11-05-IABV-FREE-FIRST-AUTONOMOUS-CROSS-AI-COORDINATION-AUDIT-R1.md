@@ -309,7 +309,7 @@ No promover una herramienta a `VALIDATED` por README, estrellas, una demo o una 
 | Capacidades de IABV ya integradas | Coordinación, selección, historial y ejecución local | Composición end-to-end no demostrada |
 | Ollama local | Proveedor potencial sin API pagada | Tarjeta estática no validada; estado y RAM actuales desconocidos |
 | Playwright | Navegar e inspeccionar sitios web y aplicaciones permitidas | No extraer Output de ChatGPT |
-| Codex incluido en Free | Recurso de desarrollo que el Owner ya utiliza | Límites del plan; no equivale a chats normales de ChatGPT |
+| Codex incluido en Free | Recurso de desarrollo que el Owner ya utiliza | Acceso de prueba limitado; no equivale a chats normales de ChatGPT |
 | ChatGPT Free | Segunda perspectiva de razonamiento con intervención humana | No automatizar envío/captura programática de Output |
 | GitHub API/conector autorizado | Leer estado, historial y documentación del repo | No es un runtime local ni un bus de agentes automático |
 
@@ -481,4 +481,4 @@ No iniciar implementación, runtime ni pruebas hasta una autorización separada 
 - [IABV as laptop mind / agent intermediary](./CHAT-ARCH-2026-10-05-059-product-vision-iabv-as-laptop-mind-and-agent-intermediary.md)
 - [Symbiosis cumulative developmental control loop](./CHAT-ARCH-2026-10-08-148-symbiosis-cumulative-developmental-control-loop.md)
 - [UAAL-D020 — progress utility and strategy switching](./CHAT-ARCH-2026-10-28-UAAL-D020-VERIFIED-PROGRESS-UTILITY-STRATEGY-SWITCH.md)
-- [OpenAI Terms of Use — effective 2026-01-01](https://openai.com/policies/terms-of-use/)
+- [OpenAI Terms of Use — effective 2026-01-01](https://openai.com/policies/terms-of-use/)\n- [Codex pricing — Free has limited trial access](https://chatgpt.com/codex/pricing/)
