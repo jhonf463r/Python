@@ -496,16 +496,16 @@ class ControlMasterService:
     ) -> list[dict[str, Any]]:
         if self.self_examination_service is None:
             return []
-        snapshot = None
-        for method_name in ('current_review', 'current_snapshot', 'latest_snapshot', 'current', 'latest'):
-            method = getattr(self.self_examination_service, method_name, None)
-            if method is None:
-                continue
-            try:
-                snapshot = method()
-                break
-            except Exception:
-                continue
+        # OSES current_review() may rebuild a stale snapshot and trigger
+        # persistence, auto-correction and pending-work materialization.
+        # Work-queue projection is read-only: consume only its validated cache.
+        cached_reader = getattr(self.self_examination_service, 'current_review_cached', None)
+        if not callable(cached_reader):
+            return []
+        try:
+            snapshot = cached_reader()
+        except Exception:
+            return []
         if snapshot is None:
             return []
         findings = getattr(snapshot, 'findings', None) or []

@@ -658,7 +658,7 @@ class PortableContextService:
 
     def _self_examination_snapshot(self) -> dict[str, Any]:
         service = self.self_examination_service
-        if service is None or not hasattr(service, 'current_review'):
+        if service is None or not callable(getattr(service, 'current_review_cached', None)):
             return {
                 'summary': '',
                 'summary_payload': {},
@@ -668,10 +668,10 @@ class PortableContextService:
                 'validated_improvements': [],
                 'recommendation_feedback': [],
                 'feedback_summary': {},
-                'unresolved_risks': ['UNRESOLVED:self_examination'],
+                'unresolved_risks': ['UNRESOLVED:self_examination_cached_review_unavailable'],
             }
         try:
-            review = service.current_review(refresh=True)
+            review = service.current_review_cached()
             if hasattr(service, 'review_summary'):
                 summary_payload = dict(service.review_summary(review) or {})
             else:
