@@ -187,7 +187,7 @@ At code HEAD `f2ada0ea105a10a38082742d6244806a19434d5b`, GitHub Actions run #549
 
 The Space-Time organ remains `PARTIAL`. The D021 lifecycle fields now distinguish retrieval, route reconciliation, consideration, influence, action outcome and later reuse; they do not make those stages automatically occur. M1A, `main`, protected reads, Option D, MCP allowlist, tunnel, bridge and production authorization remain unchanged.
 
-## D021 §6D.5 consumer parity — shared reader, Evolution Center and CLI — 2026-11-05
+## D021 §6D.5 consumer parity — shared reader, Evolution Center and CLI — 2026-11-04
 
 Code implementation commit: `93497b8a2f13d5e8a9b6ffcb2de536c96f770777`.
 Base remains `main@56e4d8b11846a8d8f3cb8cda08efd773ec235651`.
