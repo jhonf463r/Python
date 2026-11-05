@@ -497,19 +497,56 @@ def _render_coordination_patterns(patterns: list[dict[str, Any]] | None) -> str:
 
 
 def _render_tests_brief(tests_state: dict) -> str:
-    if not tests_state:
-        return ""
+    """Render the ControlMaster mirror without implying canonical freshness.
+
+    The queue reads canonical TestEvidence independently. This summary is
+    only a best-effort mirror, so its age is labelled and never promoted to
+    canonical source status here.
+    """
+    from datetime import datetime
+
+    if not isinstance(tests_state, dict) or not tests_state:
+        return "mirror_status=MIRROR_UNVERIFIED; canonical_queue_read=SEPARATE"
+
     parts: list[str] = []
+    evidence_id = str(tests_state.get("evidence_id") or "").strip()
+    timestamp = str(tests_state.get("timestamp") or "").strip()
+    mirror_status = "MIRROR_UNVERIFIED"
+    if evidence_id and timestamp:
+        try:
+            generated_at = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+            if generated_at.tzinfo is not None and generated_at.utcoffset() is not None:
+                age_seconds = (utc_now() - generated_at).total_seconds()
+                if age_seconds < -60:
+                    mirror_status = "MIRROR_FUTURE"
+                elif age_seconds > 86400:
+                    mirror_status = "MIRROR_STALE"
+                else:
+                    mirror_status = "MIRROR_FRESHNESS_ONLY"
+        except (TypeError, ValueError, OverflowError):
+            pass
+    parts.append(f"mirror_status={mirror_status}")
+    parts.append("canonical_queue_read=SEPARATE")
+
     passed = tests_state.get("passed")
     failed = tests_state.get("failed")
     total = tests_state.get("total")
     if passed is not None or failed is not None or total is not None:
         parts.append(f"passed={passed}, failed={failed}, total={total}")
+    if evidence_id:
+        parts.append(f"evidence_id={evidence_id[:36]}")
+    if timestamp:
+        parts.append(f"timestamp={timestamp[:40]}")
+    commit_sha = str(tests_state.get("commit_sha") or "").strip()
+    if commit_sha:
+        parts.append(f"commit={commit_sha[:12]}")
+    suite = str(tests_state.get("suite") or "").strip()
+    if suite:
+        parts.append(f"suite={suite[:80]}")
     summary = tests_state.get("summary")
     if summary:
         parts.append(str(summary))
     return " | ".join(parts)
-
 
 def render_digest_markdown(digest: ControlMasterDigest) -> str:
     lines: list[str] = ["## Control Maestro (digest)"]

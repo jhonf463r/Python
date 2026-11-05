@@ -547,3 +547,38 @@ def test_build_from_service_queue_exception_is_unavailable_not_empty() -> None:
     assert digest.work_queue_status == "UNAVAILABLE"
     assert digest.work_queue_brief == []
     assert digest.signal_reason == "CONTROL_MASTER_QUEUE_READ_FAILED:RuntimeError"
+
+
+def test_digest_labels_test_state_mirror_freshness() -> None:
+    from datetime import datetime, timedelta, timezone
+    from iabv_v15.services.evolution.control_master_digest_builder import _render_tests_brief
+
+    missing = _render_tests_brief({})
+    assert "mirror_status=MIRROR_UNVERIFIED" in missing
+    assert "canonical_queue_read=SEPARATE" in missing
+
+    stale_timestamp = (datetime.now(timezone.utc) - timedelta(days=2)).isoformat()
+    stale = _render_tests_brief({
+        "evidence_id": "evidence-stale-001",
+        "timestamp": stale_timestamp,
+        "passed": 10,
+        "failed": 3,
+        "total": 13,
+    })
+    assert "mirror_status=MIRROR_STALE" in stale
+    assert "failed=3" in stale
+
+    fresh_timestamp = datetime.now(timezone.utc).isoformat()
+    fresh = _render_tests_brief({
+        "evidence_id": "evidence-fresh-001",
+        "timestamp": fresh_timestamp,
+        "commit_sha": "a" * 40,
+        "suite": "tests/test_control_master_service.py",
+        "passed": 12,
+        "failed": 0,
+        "total": 12,
+    })
+    assert "mirror_status=MIRROR_FRESHNESS_ONLY" in fresh
+    assert "canonical_queue_read=SEPARATE" in fresh
+    assert "evidence_id=evidence-fresh-001" in fresh
+    assert "commit=aaaaaaaaaaaa" in fresh
