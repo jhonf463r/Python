@@ -9516,23 +9516,41 @@ _REQUIRED_SOURCE_IDS = (
         # Check test evidence freshness
         te_path = root / 'data' / 'evolution' / 'test_evidence' / 'latest.json'
         test_evidence_fresh = False
-        if not te_path.exists():
+        try:
+            te_raw = te_path.read_bytes()
+        except FileNotFoundError:
             self._record_source_status('test_evidence_file', 'CONFIRMED_NOT_FOUND')
+        except (OSError, UnicodeError) as exc:
+            self._record_source_status('test_evidence_file', 'READ_FAILED', type(exc).__name__)
         else:
             try:
                 import json as _json
-                te = _json.loads(te_path.read_text(encoding='utf-8'))
+                te = _json.loads(te_raw.decode('utf-8'))
                 if not isinstance(te, dict):
-                    raise TypeError('test_evidence_payload_not_object')
-                self._record_source_status('test_evidence_file', 'READ_OK')
-                from datetime import datetime as _dt, timezone as _tz
-                ts_str = te.get('timestamp', '')
-                if ts_str:
-                    ts = _dt.fromisoformat(ts_str)
-                    if ts.tzinfo is None:
-                        ts = ts.replace(tzinfo=_tz.utc)
-                    age_h = (_dt.now(_tz.utc) - ts).total_seconds() / 3600
-                    test_evidence_fresh = age_h < 24
+                    self._record_source_status(
+                        'test_evidence_file', 'SCHEMA_UNSUPPORTED', 'test_evidence_payload_not_object'
+                    )
+                else:
+                    from iabv_v15.infra.mcp.audit_tools import load_latest_test_evidence
+                    trusted_evidence = load_latest_test_evidence(root)
+                    if trusted_evidence is None:
+                        self._record_source_status(
+                            'test_evidence_file',
+                            'READ_PARTIAL',
+                            'fresh_commit_bound_evidence_not_verified',
+                        )
+                    else:
+                        self._record_source_status('test_evidence_file', 'READ_OK')
+                        from datetime import datetime as _dt, timezone as _tz
+                        ts = _dt.fromisoformat(str(trusted_evidence['timestamp']))
+                        if ts.tzinfo is None:
+                            ts = ts.replace(tzinfo=_tz.utc)
+                        age_h = (_dt.now(_tz.utc) - ts).total_seconds() / 3600
+                        test_evidence_fresh = 0 <= age_h < 24
+            except _json.JSONDecodeError:
+                self._record_source_status(
+                    'test_evidence_file', 'CORRUPT', 'test_evidence_invalid_json'
+                )
             except Exception as exc:
                 self._record_source_status('test_evidence_file', 'READ_FAILED', type(exc).__name__)
 
