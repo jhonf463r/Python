@@ -11,6 +11,8 @@ name: IABV observation truth and backlog diagnostics tests
       - "IABV_v1.5/src/iabv_v15/services/evolution/perception_cross_validator.py"
       - "IABV_v1.5/tests/test_perception_cross_validator_ui.py"
       - "IABV_v1.5/src/iabv_v15/services/evolution_backlog.py"
+      - "IABV_v1.5/src/iabv_v15/services/account_resource_scanner.py"
+      - "IABV_v1.5/tests/test_account_resource_scanner_diagnostics.py"
       - "IABV_v1.5/tests/test_evolution_backlog_read_diagnostics.py"
       - "IABV_v1.5/src/iabv_v15/services/evolution/operational_self_examination_service.py"
       - "IABV_v1.5/tests/test_oses_read_coverage_contract.py"
@@ -68,4 +70,5 @@ jobs:
           IABV_v1.5/tests/test_runtime_p029_test_governance_observability.py
           IABV_v1.5/tests/test_runtime_audit_tracer.py
           IABV_v1.5/tests/test_centro_vivo_viewmodel.py
+          IABV_v1.5/tests/test_account_resource_scanner_diagnostics.py
           -q
