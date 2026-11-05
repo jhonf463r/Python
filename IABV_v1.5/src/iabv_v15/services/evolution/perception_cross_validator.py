@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import logging
 import os
+from collections import Counter
 import time
 from datetime import datetime, timezone
 from typing import Any
@@ -400,11 +401,19 @@ class PerceptionCrossValidator:
         return inconsistencies
 
     def _cross_windows_consistency(self) -> list[dict[str, Any]]:
-        """Compare WorldModel windows against live window enumeration."""
+        """Compare the WorldModel snapshot with an independent live Win32 read."""
         inconsistencies: list[dict[str, Any]] = []
         if self.world_model_service is None:
             self._set_check_status('windows_consistency', 'NOT_CONFIGURED', 'world_model_service_not_connected')
             return inconsistencies
+        if os.name != 'nt':
+            self._set_check_status(
+                'windows_consistency',
+                'NOT_APPLICABLE',
+                'win32_window_enumeration_not_supported_on_this_platform',
+            )
+            return inconsistencies
+
         try:
             snapshot = self.world_model_service.current_snapshot()
             if snapshot is None or not hasattr(snapshot, 'active_windows'):
@@ -413,34 +422,88 @@ class PerceptionCrossValidator:
             self._set_check_status('windows_consistency', 'READ_FAILED', type(exc).__name__)
             return inconsistencies
 
+        try:
+            live_window_titles = self._enumerate_window_titles()
+            if not isinstance(live_window_titles, (list, tuple)) or any(
+                not isinstance(title, str) for title in live_window_titles
+            ):
+                raise TypeError('live_window_title_enumeration_returned_invalid_shape')
+        except Exception as exc:
+            self._set_check_status(
+                'windows_consistency',
+                'READ_FAILED',
+                'window_enumeration_failed',
+            )
+            logger.warning('perception_windows_enumeration_failed: %s', type(exc).__name__)
+            return inconsistencies
+
         wm_window_count = len(snapshot.active_windows)
-        if wm_window_count == 0 and os.name == 'nt':
+        if wm_window_count == 0:
             inconsistencies.append({
                 'check': 'windows_consistency',
                 'severity': 'high',
                 'tool_id': '',
                 'expected': 'WorldModel should detect open windows on Windows',
-                'actual': '0 windows detected',
-                'detail': 'No windows in WorldModel — window enumeration may have failed.',
+                'actual': '0 windows detected in WorldModel snapshot',
+                'detail': 'The WorldModel snapshot is empty; compare its state with the completed live enumeration.',
+            })
+
+        def normalize(title: Any) -> str:
+            return str(title or '').strip().casefold()
+
+        wm_title_counts = Counter(
+            title
+            for window in snapshot.active_windows
+            if (title := normalize(getattr(window, 'title', '')))
+        )
+        live_title_counts = Counter(
+            title for raw_title in live_window_titles
+            if (title := normalize(raw_title))
+        )
+        wm_only_count = sum((wm_title_counts - live_title_counts).values())
+        live_only_count = sum((live_title_counts - wm_title_counts).values())
+
+        self._check_reports['windows_consistency'] = {
+            'world_model_window_count': wm_window_count,
+            'live_window_count': len(live_window_titles),
+            'world_model_unique_title_count': len(wm_title_counts),
+            'live_unique_title_count': len(live_title_counts),
+            'world_model_only_window_count': wm_only_count,
+            'live_only_window_count': live_only_count,
+            'comparison': 'casefolded_window_title_multiset',
+        }
+
+        if wm_only_count or live_only_count:
+            inconsistencies.append({
+                'check': 'windows_consistency',
+                'severity': 'high' if live_only_count else 'medium',
+                'tool_id': '',
+                'expected': 'WorldModel window inventory should match an independent live enumeration',
+                'actual': (
+                    f'WorldModel-only windows={wm_only_count}; '
+                    f'live-only windows={live_only_count}'
+                ),
+                'detail': 'The WorldModel snapshot and live Win32 enumeration disagree; title values are omitted from diagnostics.',
             })
 
         focused = snapshot.focused_window
         if focused is not None and wm_window_count > 0:
-            wm_titles = {w.title for w in snapshot.active_windows}
-            if focused.title and focused.title not in wm_titles:
+            wm_titles = set(wm_title_counts)
+            focused_title = normalize(getattr(focused, 'title', ''))
+            if focused_title and focused_title not in wm_titles:
                 inconsistencies.append({
                     'check': 'windows_consistency',
                     'severity': 'medium',
                     'tool_id': '',
                     'expected': 'Focused window should be in active_windows list',
-                    'actual': f'Focused window "{focused.title}" not in active_windows',
-                    'detail': 'The focused window is not found in the active windows list.',
+                    'actual': 'Focused window is not present in active_windows',
+                    'detail': 'The focused window is not found in the WorldModel active windows list.',
                 })
 
         self._set_check_status('windows_consistency', 'READ_OK')
         return inconsistencies
 
-    # ------------------------------------------------------------------
+        # ------------------------------------------------------------------
     # UI Self-Awareness: IABV checks its own window state
     # ------------------------------------------------------------------
 
