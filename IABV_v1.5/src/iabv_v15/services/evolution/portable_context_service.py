@@ -3367,34 +3367,49 @@ class PortableContextService:
                 last_updated=now,
                 unresolved_fields=['UNRESOLVED:canonical_work_queue_not_connected'],
             )
+        from iabv_v15.services.evolution.control_master_digest_builder import (
+            ControlMasterDigestBuilder,
+        )
+
         try:
-            queue = cms.current_work_queue(limit=5)
+            digest = ControlMasterDigestBuilder().build_from_service(cms, limit=5)
         except Exception:
-            queue = []
-        items: list[dict[str, Any]] = []
-        for wq_item in queue:
-            items.append({
-                'id': wq_item.get('id', ''),
-                'title': wq_item.get('title', ''),
-                'status': wq_item.get('status', ''),
-                'priority_score': wq_item.get('priority_score', 0),
-                'priority_label': wq_item.get('priority_label', ''),
-                'source': wq_item.get('source', ''),
-                'next_action': wq_item.get('next_action', ''),
-                'evidence_refs': wq_item.get('evidence_refs', []),
-            })
-        summary = f'{len(queue)} items prioritarios en cola canónica de trabajo.'
-        if not items:
-            summary = 'Cola canónica vacía o sin fuentes conectadas.'
+            digest = None
+
+        queue_status = str(getattr(digest, "work_queue_status", "UNAVAILABLE") or "UNAVAILABLE").upper()
+        items = (
+            list(getattr(digest, "top_work_queue_items", []) or [])
+            if queue_status == "AVAILABLE"
+            else []
+        )
+        if queue_status == "AVAILABLE":
+            summary = f'{len(items)} items prioritarios en cola canónica con cobertura completa.'
+            unresolved_fields: list[str] = []
+            confidence = 0.9
+        elif queue_status == "EMPTY_QUEUE":
+            summary = 'Cola consultada correctamente: vacía.'
+            unresolved_fields = []
+            confidence = 0.85
+        elif queue_status == "UNAVAILABLE":
+            reason = str(getattr(digest, "signal_reason", "") or "source read failed")
+            summary = f'Cola no disponible: {reason}. No inferir que está vacía.'
+            unresolved_fields = ['UNRESOLVED:canonical_work_queue_read_failed']
+            confidence = 0.0
+        else:
+            reason = str(getattr(digest, "signal_reason", "") or "source coverage unverified")
+            summary = f'Cola no verificada: {reason}. No inferir que está vacía.'
+            unresolved_fields = ['UNRESOLVED:canonical_work_queue_not_verified']
+            confidence = 0.0
         return self._section(
             section_id='canonical_work_queue',
             title='Cola canónica de trabajo',
             summary=summary,
             items=items,
             source_kind='control_master',
-            source_refs=['ControlMasterService', 'ObjectiveRepository', 'PlatformPendingQueue', 'PendingIssueRepository', 'OSES', 'runtime_audit'],
-            confidence=0.9 if items else 0.0,
+            source_refs=['ControlMasterDigestBuilder', 'ControlMasterService', 'ObjectiveRepository', 'PlatformPendingQueue', 'PendingIssueRepository', 'OSES', 'runtime_audit', 'TestEvidence'],
+            confidence=confidence,
             last_updated=now,
+            unresolved_fields=unresolved_fields,
         )
 
     def _unresolved_section(self, *, unresolved: list[str], now) -> PortableContextSection:

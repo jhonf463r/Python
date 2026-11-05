@@ -561,3 +561,78 @@ def test_current_state_preserves_source_generation_before_projection_refresh() -
         assert "_space_time_control_master_source_provenance" not in persisted.metadata
     finally:
         shutil.rmtree(root, ignore_errors=True)
+
+
+def test_current_state_does_not_collapse_objective_read_failure_to_empty_buckets() -> None:
+    root = _workspace()
+    try:
+        service, objectives = _build_service(root)
+
+        def fail_list_recent(**kwargs):
+            raise RuntimeError("objective index unavailable")
+
+        objectives.list_recent = fail_list_recent  # type: ignore[method-assign]
+        import pytest
+        with pytest.raises(RuntimeError, match="objective index unavailable"):
+            service.current_state()
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_current_state_does_not_collapse_pending_issue_read_failure_to_empty_backlog() -> None:
+    root = _workspace()
+    try:
+        storage = ArtifactStorage(str(root))
+        repo = ControlMasterRepository(storage)
+
+        class _FailingPendingIssueRepository:
+            def list_recent_with_diagnostics(self):
+                raise RuntimeError("pending issue index unavailable")
+
+        service = ControlMasterService(
+            repository=repo,
+            pending_issue_repository=_FailingPendingIssueRepository(),
+        )
+        import pytest
+        with pytest.raises(RuntimeError, match="pending issue index unavailable"):
+            service.current_state()
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_current_state_uses_oses_current_review_and_does_not_hide_review_failure() -> None:
+    root = _workspace()
+    try:
+        storage = ArtifactStorage(str(root))
+        repo = ControlMasterRepository(storage)
+
+        class _FailingOSES:
+            def current_review(self):
+                raise RuntimeError("OSES review unavailable")
+
+            def current_snapshot(self):
+                return type("Snapshot", (), {"findings": [], "unresolved_risks": []})()
+
+        service = ControlMasterService(
+            repository=repo,
+            self_examination_service=_FailingOSES(),
+        )
+        import pytest
+        with pytest.raises(RuntimeError, match="OSES review unavailable"):
+            service.current_state()
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_current_state_marks_unconfigured_live_projections_as_unresolved() -> None:
+    root = _workspace()
+    try:
+        storage = ArtifactStorage(str(root))
+        repo = ControlMasterRepository(storage)
+        service = ControlMasterService(repository=repo)
+        state = service.current_state()
+        assert "UNRESOLVED:objective_repository_not_connected" in state.unresolved_items
+        assert "UNRESOLVED:pending_issue_repository_not_connected" in state.unresolved_items
+        assert "UNRESOLVED:self_examination_service_not_connected" in state.unresolved_items
+    finally:
+        shutil.rmtree(root, ignore_errors=True)

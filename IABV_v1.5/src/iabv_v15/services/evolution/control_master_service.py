@@ -164,8 +164,16 @@ class ControlMasterService:
         backlog = self._project_backlog()
         risks = self._project_risks()
         account_inventory = self._project_account_inventory()
+        projection_unresolved: list[str] = []
+        if self.objective_repository is None:
+            projection_unresolved.append("UNRESOLVED:objective_repository_not_connected")
+        if self.pending_issue_repository is None:
+            projection_unresolved.append("UNRESOLVED:pending_issue_repository_not_connected")
+        if self.self_examination_service is None:
+            projection_unresolved.append("UNRESOLVED:self_examination_service_not_connected")
         unresolved = list(dict.fromkeys([
             *base.unresolved_items,
+            *projection_unresolved,
             *self._project_unresolved(),
             *account_inventory.get('unresolved_items', []),
         ]))
@@ -575,12 +583,14 @@ class ControlMasterService:
             self._record_work_queue_source("objective_repository", "NOT_CONFIGURED")
             return []
         items: list[dict[str, Any]] = []
-        read_failed = False
+        successful_reads = 0
+        failed_reads = 0
         for status_val in (ObjectiveStatus.ACTIVE, ObjectiveStatus.PENDING, ObjectiveStatus.BLOCKED):
             try:
                 nodes = self.objective_repository.list_recent(status=status_val, limit=20)
+                successful_reads += 1
             except Exception:
-                read_failed = True
+                failed_reads += 1
                 self._record_work_queue_error(f"OBJECTIVES_READ_FAILED:{status_val.value}")
                 continue
             for node in nodes:
@@ -608,9 +618,12 @@ class ControlMasterService:
                     updated_at=node.updated_at_utc.isoformat(),
                     reason=node.summary,
                 ))
-        self._record_work_queue_source(
-            "objective_repository", "READ_PARTIAL" if read_failed else "READ_OK"
+        objective_status = (
+            "READ_FAILED" if failed_reads and successful_reads == 0
+            else "READ_PARTIAL" if failed_reads
+            else "READ_OK"
         )
+        self._record_work_queue_source("objective_repository", objective_status)
         return items
 
     def _project_platform_pending_items(
@@ -898,18 +911,17 @@ class ControlMasterService:
         }
         if self.objective_repository is None:
             return buckets
-        try:
-            active = self.objective_repository.list_recent(
-                status=ObjectiveStatus.ACTIVE, limit=50
-            )
-            completed = self.objective_repository.list_recent(
-                status=ObjectiveStatus.COMPLETED, limit=50
-            )
-            paused = self.objective_repository.list_recent(
-                status=ObjectiveStatus.PAUSED, limit=50
-            )
-        except Exception:
-            return buckets
+        # A configured repository that cannot be read is not an empty inventory.
+        # Let the shared digest boundary classify the current-state projection as unavailable.
+        active = self.objective_repository.list_recent(
+            status=ObjectiveStatus.ACTIVE, limit=50
+        )
+        completed = self.objective_repository.list_recent(
+            status=ObjectiveStatus.COMPLETED, limit=50
+        )
+        paused = self.objective_repository.list_recent(
+            status=ObjectiveStatus.PAUSED, limit=50
+        )
         for node in active:
             buckets["active"].append(node.objective_id)
         for node in completed:
@@ -924,16 +936,30 @@ class ControlMasterService:
     def _project_backlog(self) -> list[dict[str, Any]]:
         if self.pending_issue_repository is None:
             return []
-        candidates: list[Any] = []
-        for method_name in ("list_recent", "list_open", "list_pending", "list_all"):
-            method = getattr(self.pending_issue_repository, method_name, None)
-            if method is None:
-                continue
-            try:
-                candidates = list(method())
-                break
-            except Exception:
-                continue
+        diagnostic_reader = getattr(
+            self.pending_issue_repository, "list_recent_with_diagnostics", None
+        )
+        if callable(diagnostic_reader):
+            report = diagnostic_reader()
+            # Keep partial records inside the exception for diagnostics, but do not
+            # project an incomplete collection into the governance state.
+            candidates = report.require_complete()
+        else:
+            candidates: list[Any] | None = None
+            last_error: Exception | None = None
+            for method_name in ("list_recent", "list_open", "list_pending", "list_all"):
+                method = getattr(self.pending_issue_repository, method_name, None)
+                if method is None:
+                    continue
+                try:
+                    candidates = list(method())
+                    break
+                except Exception as exc:
+                    last_error = exc
+            if candidates is None:
+                if last_error is not None:
+                    raise RuntimeError("pending_issue_projection_read_failed") from last_error
+                raise RuntimeError("pending_issue_projection_reader_unavailable")
         backlog: list[dict[str, Any]] = []
         for item in candidates[:20]:
             if hasattr(item, "model_dump"):
@@ -947,18 +973,29 @@ class ControlMasterService:
     def _project_risks(self) -> list[dict[str, Any]]:
         if self.self_examination_service is None:
             return []
-        snapshot = None
-        for method_name in ("current_snapshot", "latest_snapshot", "current", "latest"):
-            method = getattr(self.self_examination_service, method_name, None)
-            if method is None:
-                continue
-            try:
-                snapshot = method()
-                break
-            except Exception:
-                continue
+        current_review = getattr(self.self_examination_service, "current_review", None)
+        if callable(current_review):
+            # OSES' canonical public API is current_review(); do not downgrade
+            # a failed review to an apparently clean legacy snapshot.
+            snapshot = current_review()
+        else:
+            snapshot = None
+            last_error: Exception | None = None
+            for method_name in ("current_snapshot", "latest_snapshot", "current", "latest"):
+                method = getattr(self.self_examination_service, method_name, None)
+                if method is None:
+                    continue
+                try:
+                    snapshot = method()
+                    break
+                except Exception as exc:
+                    last_error = exc
+            if snapshot is None:
+                if last_error is not None:
+                    raise RuntimeError("self_examination_projection_read_failed") from last_error
+                raise RuntimeError("self_examination_projection_reader_unavailable")
         if snapshot is None:
-            return []
+            raise RuntimeError("self_examination_projection_returned_no_snapshot")
         findings = getattr(snapshot, "findings", None) or []
         risks: list[dict[str, Any]] = []
         for finding in findings[:10]:
@@ -1033,17 +1070,27 @@ class ControlMasterService:
     def _project_unresolved(self) -> list[str]:
         if self.self_examination_service is None:
             return []
+        current_review = getattr(self.self_examination_service, "current_review", None)
+        if callable(current_review):
+            snapshot = current_review()
+            if snapshot is None:
+                raise RuntimeError("self_examination_unresolved_reader_returned_no_snapshot")
+            unresolved = getattr(snapshot, "unresolved_risks", None) or []
+            return [str(item) for item in unresolved]
+        last_error: Exception | None = None
         for method_name in ("current_snapshot", "latest_snapshot", "current", "latest"):
             method = getattr(self.self_examination_service, method_name, None)
             if method is None:
                 continue
             try:
                 snapshot = method()
-            except Exception:
-                continue
-            unresolved = getattr(snapshot, "unresolved_risks", None) or []
-            return [str(item) for item in unresolved]
-        return []
+                unresolved = getattr(snapshot, "unresolved_risks", None) or []
+                return [str(item) for item in unresolved]
+            except Exception as exc:
+                last_error = exc
+        if last_error is not None:
+            raise RuntimeError("self_examination_unresolved_read_failed") from last_error
+        raise RuntimeError("self_examination_unresolved_reader_unavailable")
 
 
 # ----------------------------------------------------------------------
