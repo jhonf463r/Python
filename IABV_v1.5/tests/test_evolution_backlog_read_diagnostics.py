@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import pytest
 
@@ -207,3 +208,17 @@ def test_backlog_duplicate_task_identity_is_schema_unsupported(tmp_path) -> None
     assert 'duplicates an earlier task identity' in report.error_message
     with pytest.raises(EvolutionBacklogReadError):
         load_backlog(str(tmp_path))
+
+
+
+def test_checked_in_backlog_satisfies_supported_task_schema() -> None:
+    workspace = Path(__file__).resolve().parents[1]
+    backlog_file = _backlog_path(workspace)
+    assert backlog_file.is_file()
+
+    report = load_backlog_with_diagnostics(str(workspace))
+
+    assert report.status == 'READ_OK'
+    assert len(report.items) > 0
+    assert report.legacy_items_without_id
+    assert all(index > 0 for index in report.legacy_items_without_id)
