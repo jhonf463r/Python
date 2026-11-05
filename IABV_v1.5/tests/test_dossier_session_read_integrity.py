@@ -241,3 +241,143 @@ def test_empty_dossier_issue_query_is_explicitly_not_executed_and_legacy_noop_is
     assert repository.find_by_issue("") == []
     assert repository.last_read_report is not None
     assert repository.last_read_report.status == RepositoryReadStatus.QUERY_NOT_EXECUTED
+
+
+def test_execution_dossier_missing_payload_is_reported_without_pruning_index(
+    tmp_path: Path,
+) -> None:
+    db, repository = _dossier_repository(tmp_path)
+    dossier = repository.save(_dossier("missing-dossier"))
+    row = db.fetchone(
+        "SELECT path FROM execution_dossiers WHERE dossier_id = ?",
+        (dossier.dossier_id,),
+    )
+    assert row is not None
+    Path(row["path"]).unlink()
+
+    report = repository.list_recent_with_diagnostics()
+
+    assert report.status == RepositoryReadStatus.READ_FAILED
+    assert report.missing_ids == [dossier.dossier_id]
+    assert report.results[0].status == ArtifactReadStatus.CONFIRMED_NOT_FOUND
+    assert db.fetchone(
+        "SELECT dossier_id FROM execution_dossiers WHERE dossier_id = ?",
+        (dossier.dossier_id,),
+    ) is not None
+    with pytest.raises(RepositoryReadError) as exc_info:
+        repository.list_recent()
+    assert exc_info.value.report.missing_ids == [dossier.dossier_id]
+
+
+def test_adaptive_session_partial_read_preserves_valid_items_and_index_rows(
+    tmp_path: Path,
+) -> None:
+    db, repository = _session_repository(tmp_path)
+    valid = repository.save(_session("valid-session"))
+    corrupt = repository.save(_session("partial-corrupt-session"))
+    row = db.fetchone(
+        "SELECT path FROM adaptive_sessions WHERE session_id = ?",
+        (corrupt.session_id,),
+    )
+    assert row is not None
+    Path(row["path"]).write_text("{", encoding="utf-8")
+
+    report = repository.list_recent_with_diagnostics()
+
+    assert report.status == RepositoryReadStatus.READ_PARTIAL
+    assert report.records_seen == 2
+    assert report.records_loaded == 1
+    assert [item.session_id for item in report.items] == [valid.session_id]
+    failed = next(result for result in report.results if result.artifact_id == corrupt.session_id)
+    assert failed.status == ArtifactReadStatus.CORRUPT
+    assert db.fetchone(
+        "SELECT session_id FROM adaptive_sessions WHERE session_id = ?",
+        (corrupt.session_id,),
+    ) is not None
+    with pytest.raises(RepositoryReadError) as exc_info:
+        repository.list_recent()
+    assert len(exc_info.value.report.items) == 1
+    assert exc_info.value.report.results == report.results
+
+
+def test_execution_dossier_point_lookup_found_and_confirmed_absence(
+    tmp_path: Path,
+) -> None:
+    _, repository = _dossier_repository(tmp_path)
+    dossier = repository.save(_dossier("point-dossier"))
+
+    found = repository.get_with_diagnostics(dossier.dossier_id)
+
+    assert found.status == ArtifactReadStatus.FOUND
+    assert found.value is not None
+    assert found.value.dossier_id == dossier.dossier_id
+    assert repository.get(dossier.dossier_id) is not None
+
+    missing = repository.get_with_diagnostics("absent-dossier")
+
+    assert missing.status == ArtifactReadStatus.CONFIRMED_NOT_FOUND
+    assert missing.error_type == "IndexRowNotFound"
+    assert repository.get("absent-dossier") is None
+    assert repository.last_read_report is not None
+    assert repository.last_read_report.results[0].error_type == "IndexRowNotFound"
+
+
+def test_adaptive_session_pack_filter_and_get_keep_legacy_return_shapes(
+    tmp_path: Path,
+) -> None:
+    _, repository = _session_repository(tmp_path)
+    selected = repository.save(
+        _session("selected-pack-session").model_copy(
+            update={"chosen_pack_id": "pack-selected"}
+        )
+    )
+    repository.save(_session("other-pack-session").model_copy(
+        update={"chosen_pack_id": "pack-other"}
+    ))
+
+    report = repository.find_by_pack_with_diagnostics("pack-selected")
+
+    assert report.status == RepositoryReadStatus.READ_OK
+    assert [item.session_id for item in report.require_complete()] == [selected.session_id]
+    loaded = repository.get(selected.session_id)
+    assert loaded is not None
+    assert loaded.session_id == selected.session_id
+    assert repository.get("absent-session") is None
+
+
+def test_execution_dossier_query_filters_preserve_expected_scope(
+    tmp_path: Path,
+) -> None:
+    _, repository = _dossier_repository(tmp_path)
+    target = repository.save(
+        ExecutionDossier(
+            dossier_id="query-target",
+            scope=DossierScope.TEACHING,
+            title="Navigation dossier",
+            summary="Navigation issue summary",
+            run_id="run-target",
+            episode_id="episode-target",
+            issue_hint_text="navigation_stall",
+        )
+    )
+    repository.save(
+        ExecutionDossier(
+            dossier_id="query-other",
+            scope=DossierScope.TEACHING,
+            title="Other dossier",
+            summary="Other issue summary",
+            run_id="run-other",
+            episode_id="episode-other",
+            issue_hint_text="other_issue",
+        )
+    )
+
+    assert [item.dossier_id for item in repository.find_by_run("run-target")] == [
+        target.dossier_id
+    ]
+    assert [item.dossier_id for item in repository.find_by_episode("episode-target")] == [
+        target.dossier_id
+    ]
+    issue_report = repository.find_by_issue_with_diagnostics("navigation_stall")
+    assert issue_report.status == RepositoryReadStatus.READ_OK
+    assert [item.dossier_id for item in issue_report.items] == [target.dossier_id]
