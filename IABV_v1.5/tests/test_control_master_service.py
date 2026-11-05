@@ -107,6 +107,23 @@ def _build_service(root: Path) -> tuple[ControlMasterService, _FakeObjectiveRepo
     return service, objectives
 
 
+def test_current_work_queue_reports_every_registered_source_even_when_unconfigured() -> None:
+    root = _workspace()
+    try:
+        service, _ = _build_service(root)
+        service.current_work_queue(limit=10)
+        assert set(service.last_work_queue_source_coverage) == {
+            "objective_repository",
+            "platform_pending_queue",
+            "pending_issue_repository",
+            "self_examination_service",
+            "runtime_audit",
+            "tests_state",
+        }
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
 def test_current_state_is_empty_when_nothing_saved() -> None:
     root = _workspace()
     try:
