@@ -9525,14 +9525,15 @@ _REQUIRED_SOURCE_IDS = (
         except Exception as exc:
             self._record_source_status('runtime_audit_log', 'READ_FAILED', type(exc).__name__)
 
-        # Check test evidence freshness
+        # Only accept fresh TestEvidence whose exact source revision and
+        # clean worktree were bound across the complete pytest invocation.
         te_path = root / 'data' / 'evolution' / 'test_evidence' / 'latest.json'
         test_evidence_fresh = False
         try:
             te_raw = te_path.read_bytes()
         except FileNotFoundError:
             self._record_source_status('test_evidence_file', 'CONFIRMED_NOT_FOUND')
-        except (OSError, UnicodeError) as exc:
+        except OSError as exc:
             self._record_source_status('test_evidence_file', 'READ_FAILED', type(exc).__name__)
         else:
             try:
@@ -9543,13 +9544,22 @@ _REQUIRED_SOURCE_IDS = (
                         'test_evidence_file', 'SCHEMA_UNSUPPORTED', 'test_evidence_payload_not_object'
                     )
                 else:
-                    # R24 remains a separate owner-policy and provenance gate.
-                    # A readable timestamp alone does not bind evidence to the tested commit/worktree.
-                    self._record_source_status(
-                        'test_evidence_file',
-                        'READ_UNVERIFIED',
-                        'R24_commit_bound_provenance_and_freshness_not_integrated',
-                    )
+                    from iabv_v15.infra.mcp.audit_tools import load_latest_test_evidence
+                    trusted_evidence = load_latest_test_evidence(root)
+                    if trusted_evidence is None:
+                        self._record_source_status(
+                            'test_evidence_file',
+                            'READ_PARTIAL',
+                            'fresh_commit_bound_evidence_not_verified',
+                        )
+                    else:
+                        self._record_source_status('test_evidence_file', 'READ_OK')
+                        from datetime import datetime as _dt, timezone as _tz
+                        ts = _dt.fromisoformat(str(trusted_evidence['timestamp']))
+                        if ts.tzinfo is None:
+                            ts = ts.replace(tzinfo=_tz.utc)
+                        age_h = (_dt.now(_tz.utc) - ts).total_seconds() / 3600
+                        test_evidence_fresh = 0 <= age_h < 24
             except _json.JSONDecodeError:
                 self._record_source_status(
                     'test_evidence_file', 'CORRUPT', 'test_evidence_invalid_json'

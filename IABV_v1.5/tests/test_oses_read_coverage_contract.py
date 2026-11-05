@@ -252,9 +252,9 @@ def test_existing_test_evidence_without_r24_commit_provenance_stays_unverified(t
         encoding="utf-8",
     )
     service._metacognitive_starvation_findings()
-    assert service._source_coverage["test_evidence_file"] == "READ_UNVERIFIED"
+    assert service._source_coverage["test_evidence_file"] == "READ_PARTIAL"
     assert service._source_errors["test_evidence_file"] == (
-        "R24_commit_bound_provenance_and_freshness_not_integrated"
+        "fresh_commit_bound_evidence_not_verified"
     )
 
 
@@ -325,3 +325,41 @@ def test_oses_coverage_report_marks_unexpected_reader_ids_incomplete(tmp_path) -
 
     assert report["complete"] is False
     assert report["unexpected_source_ids"] == ["unregistered_reader"]
+
+
+def test_oses_accepts_fresh_commit_bound_test_evidence(tmp_path, monkeypatch) -> None:
+    from iabv_v15.infra.mcp import audit_tools
+
+    service = _service(tmp_path)
+    evidence_path = tmp_path / "data" / "evolution" / "test_evidence" / "latest.json"
+    evidence_path.parent.mkdir(parents=True, exist_ok=True)
+    evidence = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "passed": 10,
+        "failed": 0,
+        "errors": 0,
+        "commit_sha": "a" * 40,
+        "branch": "test-branch",
+        "worktree_clean": True,
+        "provenance_status": "COMMIT_BOUND_CLEAN",
+        "worktree_status_sha256": "b" * 64,
+        "metadata": {},
+    }
+    evidence["payload_sha256"] = audit_tools._test_evidence_payload_sha256(evidence)
+    evidence_path.write_text(json.dumps(evidence), encoding="utf-8")
+    monkeypatch.setattr(
+        audit_tools,
+        "_collect_test_git_provenance",
+        lambda _root: {
+            "commit_sha": "a" * 40,
+            "branch": "test-branch",
+            "worktree_clean": True,
+            "provenance_status": "COMMIT_BOUND_CLEAN",
+            "worktree_status_sha256": "b" * 64,
+        },
+    )
+
+    service._metacognitive_starvation_findings()
+
+    assert service._source_coverage["test_evidence_file"] == "READ_OK"
+    assert service._source_errors.get("test_evidence_file", "") == ""
