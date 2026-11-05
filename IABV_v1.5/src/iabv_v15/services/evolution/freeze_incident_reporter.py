@@ -1317,7 +1317,11 @@ class ChatInteractionLifecycle:
             )
             durability_check = validate_durability_ack(
                 acknowledgement,
-                expected_seq=trace_event_seq if isinstance(trace_event_seq, int) else None,
+                expected_seq=(
+                    trace_event_seq
+                    if isinstance(trace_event_seq, int) and not isinstance(trace_event_seq, bool)
+                    else -1
+                ),
             )
             if not isinstance(acknowledgement, dict):
                 acknowledgement = {'status': 'ACK_UNAVAILABLE'}

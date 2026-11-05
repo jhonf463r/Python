@@ -236,6 +236,8 @@ def test_trace_ack_validator_rejects_malformed_receipts() -> None:
     }
     assert validate_durability_ack(valid, expected_seq=4)["accepted"] is True
     assert validate_durability_ack(valid, expected_seq=5)["status"] == "ACK_INVALID"
+    assert validate_durability_ack(valid, expected_seq=True)["status"] == "ACK_INVALID"
+    assert validate_durability_ack(valid, expected_seq="4")["status"] == "ACK_INVALID"
     assert validate_durability_ack({**valid, "line_sha256": "bad"})["status"] == "ACK_INVALID"
     assert validate_durability_ack({**valid, "path": "../runtime_audit.jsonl"})["status"] == "ACK_INVALID"
 

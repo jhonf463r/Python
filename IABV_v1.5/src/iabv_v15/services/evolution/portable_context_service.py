@@ -3151,7 +3151,11 @@ class PortableContextService:
             expected_seq = episode.get('runtime_audit_event_seq')
             episode['runtime_audit_durability_check'] = validate_durability_ack(
                 episode.get('runtime_audit_durability'),
-                expected_seq=expected_seq if isinstance(expected_seq, int) else -1,
+                expected_seq=(
+                    expected_seq
+                    if isinstance(expected_seq, int) and not isinstance(expected_seq, bool)
+                    else -1
+                ),
             )
 
         acknowledged = sum(

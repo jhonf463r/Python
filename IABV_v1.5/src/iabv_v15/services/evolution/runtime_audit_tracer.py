@@ -976,7 +976,14 @@ def validate_durability_ack(
         or isinstance(seq, bool)
         or not isinstance(seq, int)
         or seq <= 0
-        or (expected_seq is not None and seq != expected_seq)
+        or isinstance(expected_seq, bool)
+        or (
+            expected_seq is not None
+            and (
+                not isinstance(expected_seq, int)
+                or seq != expected_seq
+            )
+        )
         or isinstance(byte_start, bool)
         or not isinstance(byte_start, int)
         or byte_start < 0
