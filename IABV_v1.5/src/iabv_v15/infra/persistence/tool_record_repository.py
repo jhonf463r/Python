@@ -3,7 +3,7 @@
 import json
 from pathlib import Path
 from threading import local
-from typing import Any
+from typing import Any, Callable, Sequence, TypeVar
 from uuid import uuid4
 
 from iabv_v15.domain.models import InteractionEpisode, InteractionObservation, InteractionPattern, ToolCard, ToolResult, ToolTask
@@ -13,9 +13,12 @@ from iabv_v15.infra.persistence.read_results import (
     ArtifactReadStatus,
     RepositoryReadError,
     RepositoryReadReport,
+    read_json_mapping_from_paths,
     read_model_from_paths,
 )
 from iabv_v15.infra.persistence.storage import ArtifactStorage
+
+TRecord = TypeVar('TRecord')
 
 
 class ToolRecordRepository:
@@ -32,6 +35,54 @@ class ToolRecordRepository:
     def _remember_report(self, report: RepositoryReadReport[Any]) -> RepositoryReadReport[Any]:
         self._read_state.report = report
         return report
+
+    def _read_indexed_collection(
+        self,
+        *,
+        table: str,
+        id_column: str,
+        relative_directory: str,
+        sql: str,
+        parameters: Sequence[object],
+        reader: Callable[[Sequence[Path], str], ArtifactReadResult[TRecord]],
+    ) -> RepositoryReadReport[TRecord]:
+        """Read one bounded SQLite collection and retain every row outcome."""
+        scope = f"SQLITE_INDEX_ROWS:{table}"
+        try:
+            rows = self.db.fetchall(sql, tuple(parameters))
+        except Exception as exc:
+            return self._remember_report(
+                RepositoryReadReport.from_collection_error(scope, exc)
+            )
+
+        results: list[ArtifactReadResult[TRecord]] = []
+        for row in rows:
+            artifact_id = str(row[id_column])
+            try:
+                candidate = Path(row["path"])
+            except (TypeError, ValueError, OSError) as exc:
+                results.append(
+                    ArtifactReadResult(
+                        artifact_id=artifact_id,
+                        path="",
+                        status=ArtifactReadStatus.READ_FAILED,
+                        error_type=type(exc).__name__,
+                        error_message=str(exc)[:300],
+                    )
+                )
+                continue
+
+            paths: list[Path] = []
+            if candidate.is_absolute():
+                paths.append(candidate)
+            paths.append(
+                self.storage.root / relative_directory / f"{artifact_id}.json"
+            )
+            results.append(reader(paths, artifact_id))
+
+        return self._remember_report(
+            RepositoryReadReport.from_results(scope, results)
+        )
 
     def save_card(self, card: ToolCard) -> ToolCard:
         relative_path = f"cards/{card.tool_id}.json"
@@ -137,22 +188,26 @@ class ToolRecordRepository:
         )
         return task
 
-    def list_tasks(self, limit: int = 20) -> list[ToolTask]:
-        rows = self.db.fetchall(
-            """
-            SELECT task_id, path
-            FROM tool_tasks
-            ORDER BY updated_at_utc DESC
-            LIMIT ?
+    def list_tasks_with_diagnostics(self, limit: int = 20) -> RepositoryReadReport[ToolTask]:
+        return self._read_indexed_collection(
+            table="tool_tasks",
+            id_column="task_id",
+            relative_directory="tasks",
+            sql="""
+                SELECT task_id, path
+                FROM tool_tasks
+                ORDER BY updated_at_utc DESC
+                LIMIT ?
             """,
-            (limit,),
+            parameters=(limit,),
+            reader=lambda paths, artifact_id: read_model_from_paths(
+                paths, artifact_id, ToolTask
+            ),
         )
-        items: list[ToolTask] = []
-        for row in rows:
-            loaded = self._load_task_safe(row['task_id'], row['path'])
-            if loaded is not None:
-                items.append(loaded)
-        return items
+
+    def list_tasks(self, limit: int = 20) -> list[ToolTask]:
+        """Legacy list API; fail closed and retain the diagnostic report."""
+        return self.list_tasks_with_diagnostics(limit).require_complete()
 
     def get_task(self, task_id: str) -> ToolTask | None:
         row = self.db.fetchone(
@@ -189,27 +244,40 @@ class ToolRecordRepository:
         )
         return result
 
-    def list_results(self, *, tool_id: str | None = None, task_id: str | None = None, limit: int = 20) -> list[ToolResult]:
+    def list_results_with_diagnostics(
+        self, *, tool_id: str | None = None, task_id: str | None = None, limit: int = 20
+    ) -> RepositoryReadReport[ToolResult]:
         sql = "SELECT result_id, path FROM tool_results"
         parameters: list[object] = []
         clauses: list[str] = []
         if tool_id:
-            clauses.append('tool_id = ?')
+            clauses.append("tool_id = ?")
             parameters.append(tool_id)
         if task_id:
-            clauses.append('task_id = ?')
+            clauses.append("task_id = ?")
             parameters.append(task_id)
         if clauses:
-            sql += ' WHERE ' + ' AND '.join(clauses)
-        sql += ' ORDER BY created_at_utc DESC LIMIT ?'
+            sql += " WHERE " + " AND ".join(clauses)
+        sql += " ORDER BY created_at_utc DESC LIMIT ?"
         parameters.append(limit)
-        rows = self.db.fetchall(sql, tuple(parameters))
-        items: list[ToolResult] = []
-        for row in rows:
-            loaded = self._load_result_safe(row['result_id'], row['path'])
-            if loaded is not None:
-                items.append(loaded)
-        return items
+        return self._read_indexed_collection(
+            table="tool_results",
+            id_column="result_id",
+            relative_directory="results",
+            sql=sql,
+            parameters=parameters,
+            reader=lambda paths, artifact_id: read_model_from_paths(
+                paths, artifact_id, ToolResult
+            ),
+        )
+
+    def list_results(
+        self, *, tool_id: str | None = None, task_id: str | None = None, limit: int = 20
+    ) -> list[ToolResult]:
+        """Legacy list API; fail closed and retain the diagnostic report."""
+        return self.list_results_with_diagnostics(
+            tool_id=tool_id, task_id=task_id, limit=limit
+        ).require_complete()
 
     def log_execution(self, *, tool_id: str, task_id: str | None, action_type: str, state: str, payload: dict[str, Any], created_at_utc: str) -> str:
         log_id = str(uuid4())
@@ -236,28 +304,38 @@ class ToolRecordRepository:
         )
         return log_id
 
-    def list_log(self, *, tool_id: str | None = None, task_id: str | None = None, limit: int = 50) -> list[dict[str, Any]]:
-        sql = 'SELECT log_id, path FROM tool_execution_log'
+    def list_log_with_diagnostics(
+        self, *, tool_id: str | None = None, task_id: str | None = None, limit: int = 50
+    ) -> RepositoryReadReport[dict[str, Any]]:
+        sql = "SELECT log_id, path FROM tool_execution_log"
         parameters: list[object] = []
         clauses: list[str] = []
         if tool_id:
-            clauses.append('tool_id = ?')
+            clauses.append("tool_id = ?")
             parameters.append(tool_id)
         if task_id:
-            clauses.append('task_id = ?')
+            clauses.append("task_id = ?")
             parameters.append(task_id)
         if clauses:
-            sql += ' WHERE ' + ' AND '.join(clauses)
-        sql += ' ORDER BY created_at_utc DESC LIMIT ?'
+            sql += " WHERE " + " AND ".join(clauses)
+        sql += " ORDER BY created_at_utc DESC LIMIT ?"
         parameters.append(limit)
-        rows = self.db.fetchall(sql, tuple(parameters))
-        items: list[dict[str, Any]] = []
-        for row in rows:
-            loaded = self._load_log_safe(row['log_id'], row['path'])
-            if loaded is not None:
-                items.append(loaded)
-        return items
+        return self._read_indexed_collection(
+            table="tool_execution_log",
+            id_column="log_id",
+            relative_directory="log",
+            sql=sql,
+            parameters=parameters,
+            reader=read_json_mapping_from_paths,
+        )
 
+    def list_log(
+        self, *, tool_id: str | None = None, task_id: str | None = None, limit: int = 50
+    ) -> list[dict[str, Any]]:
+        """Legacy list API; fail closed and retain the diagnostic report."""
+        return self.list_log_with_diagnostics(
+            tool_id=tool_id, task_id=task_id, limit=limit
+        ).require_complete()
 
     def save_interaction_pattern(self, pattern: InteractionPattern) -> InteractionPattern:
         relative_path = f"interaction_patterns/{pattern.pattern_id}.json"
@@ -308,6 +386,41 @@ class ToolRecordRepository:
             return None
         return self._load_interaction_pattern_safe(row['pattern_id'], row['path'])
 
+    def list_interaction_patterns_with_diagnostics(
+        self,
+        *,
+        channel: str | None = None,
+        tool_id: str | None = None,
+        site_id: str | None = None,
+        limit: int = 20,
+    ) -> RepositoryReadReport[InteractionPattern]:
+        sql = "SELECT pattern_id, path FROM interaction_patterns"
+        parameters: list[object] = []
+        clauses: list[str] = []
+        if channel:
+            clauses.append("channel = ?")
+            parameters.append(channel)
+        if tool_id:
+            clauses.append("tool_id = ?")
+            parameters.append(tool_id)
+        if site_id:
+            clauses.append("site_id = ?")
+            parameters.append(site_id)
+        if clauses:
+            sql += " WHERE " + " AND ".join(clauses)
+        sql += " ORDER BY updated_at_utc DESC LIMIT ?"
+        parameters.append(limit)
+        return self._read_indexed_collection(
+            table="interaction_patterns",
+            id_column="pattern_id",
+            relative_directory="interaction_patterns",
+            sql=sql,
+            parameters=parameters,
+            reader=lambda paths, artifact_id: read_model_from_paths(
+                paths, artifact_id, InteractionPattern
+            ),
+        )
+
     def list_interaction_patterns(
         self,
         *,
@@ -316,29 +429,10 @@ class ToolRecordRepository:
         site_id: str | None = None,
         limit: int = 20,
     ) -> list[InteractionPattern]:
-        sql = 'SELECT pattern_id, path FROM interaction_patterns'
-        parameters: list[object] = []
-        clauses: list[str] = []
-        if channel:
-            clauses.append('channel = ?')
-            parameters.append(channel)
-        if tool_id:
-            clauses.append('tool_id = ?')
-            parameters.append(tool_id)
-        if site_id:
-            clauses.append('site_id = ?')
-            parameters.append(site_id)
-        if clauses:
-            sql += ' WHERE ' + ' AND '.join(clauses)
-        sql += ' ORDER BY updated_at_utc DESC LIMIT ?'
-        parameters.append(limit)
-        rows = self.db.fetchall(sql, tuple(parameters))
-        items: list[InteractionPattern] = []
-        for row in rows:
-            loaded = self._load_interaction_pattern_safe(row['pattern_id'], row['path'])
-            if loaded is not None:
-                items.append(loaded)
-        return items
+        """Legacy list API; fail closed and retain the diagnostic report."""
+        return self.list_interaction_patterns_with_diagnostics(
+            channel=channel, tool_id=tool_id, site_id=site_id, limit=limit
+        ).require_complete()
 
     def save_interaction_observation(self, observation: InteractionObservation) -> InteractionObservation:
         relative_path = f"interaction_observations/{observation.observation_id}.json"
@@ -364,6 +458,37 @@ class ToolRecordRepository:
         )
         return observation
 
+    def list_interaction_observations_with_diagnostics(
+        self,
+        *,
+        pattern_id: str | None = None,
+        tool_id: str | None = None,
+        limit: int = 20,
+    ) -> RepositoryReadReport[InteractionObservation]:
+        sql = "SELECT observation_id, path FROM interaction_observations"
+        parameters: list[object] = []
+        clauses: list[str] = []
+        if pattern_id:
+            clauses.append("pattern_id = ?")
+            parameters.append(pattern_id)
+        if tool_id:
+            clauses.append("tool_id = ?")
+            parameters.append(tool_id)
+        if clauses:
+            sql += " WHERE " + " AND ".join(clauses)
+        sql += " ORDER BY created_at_utc DESC LIMIT ?"
+        parameters.append(limit)
+        return self._read_indexed_collection(
+            table="interaction_observations",
+            id_column="observation_id",
+            relative_directory="interaction_observations",
+            sql=sql,
+            parameters=parameters,
+            reader=lambda paths, artifact_id: read_model_from_paths(
+                paths, artifact_id, InteractionObservation
+            ),
+        )
+
     def list_interaction_observations(
         self,
         *,
@@ -371,26 +496,10 @@ class ToolRecordRepository:
         tool_id: str | None = None,
         limit: int = 20,
     ) -> list[InteractionObservation]:
-        sql = 'SELECT observation_id, path FROM interaction_observations'
-        parameters: list[object] = []
-        clauses: list[str] = []
-        if pattern_id:
-            clauses.append('pattern_id = ?')
-            parameters.append(pattern_id)
-        if tool_id:
-            clauses.append('tool_id = ?')
-            parameters.append(tool_id)
-        if clauses:
-            sql += ' WHERE ' + ' AND '.join(clauses)
-        sql += ' ORDER BY created_at_utc DESC LIMIT ?'
-        parameters.append(limit)
-        rows = self.db.fetchall(sql, tuple(parameters))
-        items: list[InteractionObservation] = []
-        for row in rows:
-            loaded = self._load_interaction_observation_safe(row['observation_id'], row['path'])
-            if loaded is not None:
-                items.append(loaded)
-        return items
+        """Legacy list API; fail closed and retain the diagnostic report."""
+        return self.list_interaction_observations_with_diagnostics(
+            pattern_id=pattern_id, tool_id=tool_id, limit=limit
+        ).require_complete()
 
     def save_interaction_episode(self, episode: InteractionEpisode) -> InteractionEpisode:
         episode_relative_path = f"interaction_episodes/{episode.interaction_episode_id}.json"
@@ -456,6 +565,41 @@ class ToolRecordRepository:
             )
         return episode
 
+    def list_interaction_episodes_with_diagnostics(
+        self,
+        *,
+        tool_id: str | None = None,
+        mode_used: str | None = None,
+        site_id: str | None = None,
+        limit: int = 20,
+    ) -> RepositoryReadReport[InteractionEpisode]:
+        sql = "SELECT interaction_episode_id, path FROM interaction_episodes"
+        parameters: list[object] = []
+        clauses: list[str] = []
+        if tool_id:
+            clauses.append("tool_id = ?")
+            parameters.append(tool_id)
+        if mode_used:
+            clauses.append("mode_used = ?")
+            parameters.append(mode_used)
+        if site_id:
+            clauses.append("site_id = ?")
+            parameters.append(site_id)
+        if clauses:
+            sql += " WHERE " + " AND ".join(clauses)
+        sql += " ORDER BY updated_at_utc DESC LIMIT ?"
+        parameters.append(limit)
+        return self._read_indexed_collection(
+            table="interaction_episodes",
+            id_column="interaction_episode_id",
+            relative_directory="interaction_episodes",
+            sql=sql,
+            parameters=parameters,
+            reader=lambda paths, artifact_id: read_model_from_paths(
+                paths, artifact_id, InteractionEpisode
+            ),
+        )
+
     def list_interaction_episodes(
         self,
         *,
@@ -464,29 +608,10 @@ class ToolRecordRepository:
         site_id: str | None = None,
         limit: int = 20,
     ) -> list[InteractionEpisode]:
-        sql = 'SELECT interaction_episode_id, path FROM interaction_episodes'
-        parameters: list[object] = []
-        clauses: list[str] = []
-        if tool_id:
-            clauses.append('tool_id = ?')
-            parameters.append(tool_id)
-        if mode_used:
-            clauses.append('mode_used = ?')
-            parameters.append(mode_used)
-        if site_id:
-            clauses.append('site_id = ?')
-            parameters.append(site_id)
-        if clauses:
-            sql += ' WHERE ' + ' AND '.join(clauses)
-        sql += ' ORDER BY updated_at_utc DESC LIMIT ?'
-        parameters.append(limit)
-        rows = self.db.fetchall(sql, tuple(parameters))
-        items: list[InteractionEpisode] = []
-        for row in rows:
-            loaded = self._load_interaction_episode_safe(row['interaction_episode_id'], row['path'])
-            if loaded is not None:
-                items.append(loaded)
-        return items
+        """Legacy list API; fail closed and retain the diagnostic report."""
+        return self.list_interaction_episodes_with_diagnostics(
+            tool_id=tool_id, mode_used=mode_used, site_id=site_id, limit=limit
+        ).require_complete()
 
     def get_interaction_episode(self, interaction_episode_id: str) -> InteractionEpisode | None:
         row = self.db.fetchone(
