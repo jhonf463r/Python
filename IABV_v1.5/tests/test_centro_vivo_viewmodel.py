@@ -356,3 +356,41 @@ def test_centro_vivo_marks_unconfigured_services_without_claiming_empty_is_verif
     assert statuses['tool_record_repository'] == 'NOT_CONFIGURED'
     assert statuses['self_examination_service'] == 'NOT_CONFIGURED'
     assert 'Fuentes no verificadas:' in vm.get_status_text()
+
+
+def test_centro_vivo_preserves_partial_tool_record_diagnostics(tmp_path):
+    report = type('Report', (), {
+        'status': type('Status', (), {'value': 'READ_PARTIAL'})(),
+        'records_seen': 2,
+        'records_loaded': 1,
+        'failed_ids': ['corrupt-card'],
+        'missing_ids': [],
+        'collection_error_type': '',
+        'to_dict': lambda self: {
+            'status': 'READ_PARTIAL',
+            'records_seen': 2,
+            'records_loaded': 1,
+            'failed_ids': ['corrupt-card'],
+        },
+    })()
+
+    class ReportedReadError(RuntimeError):
+        def __init__(self):
+            super().__init__('partial ToolRecord read')
+            self.report = report
+
+    class PartialToolRecordRepository:
+        last_read_report = report
+
+        def list_cards(self):
+            raise ReportedReadError()
+
+    vm = CentroVivoViewModel(
+        tool_record_repository=PartialToolRecordRepository(),
+        data_root=str(tmp_path),
+    )
+
+    assert vm.get_ia_distribution() == []
+    assert vm.get_source_statuses()['tool_record_repository'] == 'READ_PARTIAL'
+    assert vm.get_source_reports()['tool_record_repository']['records_loaded'] == 1
+    assert 'tool_record_repository=READ_PARTIAL' in vm.get_status_text()
