@@ -1004,11 +1004,21 @@ def verify_account_sessions() -> dict[str, Any]:
         for t in v['tools_available']:
             tools_with_accounts.setdefault(t, []).append(v['email'])
 
+    source_coverage = {
+        **dict(accounts.get('source_coverage') or {}),
+        **dict(sessions.get('source_coverage') or {}),
+    }
+    source_errors = {
+        **dict(accounts.get('source_errors') or {}),
+        **dict(sessions.get('source_errors') or {}),
+    }
     return {
         'accounts': verified,
         'account_count': len(verified),
         'tools_with_accounts': tools_with_accounts,
         'total_sessions_found': sessions.get('session_count', 0),
+        'source_coverage': source_coverage,
+        'source_errors': source_errors,
     }
 
 
@@ -1090,6 +1100,14 @@ def estimate_available_workers() -> dict[str, Any]:
 
     total_remaining = sum(w['remaining_messages'] for w in workers)
 
+    source_coverage = {
+        **dict(verified.get('source_coverage') or {}),
+        **dict(all_quota.get('source_coverage') or {}),
+    }
+    source_errors = {
+        **dict(verified.get('source_errors') or {}),
+        **dict(all_quota.get('source_errors') or {}),
+    }
     return {
         'workers': workers,
         'exhausted': exhausted_workers,
@@ -1098,6 +1116,8 @@ def estimate_available_workers() -> dict[str, Any]:
         'by_tool': by_tool,
         'total_remaining_messages': total_remaining,
         'tools_available': list(by_tool.keys()),
+        'source_coverage': source_coverage,
+        'source_errors': source_errors,
     }
 
 
@@ -1276,6 +1296,21 @@ def build_inventory_snapshot(
         'UNRESOLVED:visible_account_state_requires_user_permission'
     )
 
+    source_coverage = {
+        **dict(pool.get('source_coverage') or {}),
+        **dict(all_quota.get('source_coverage') or {}),
+    }
+    source_errors = {
+        **dict(pool.get('source_errors') or {}),
+        **dict(all_quota.get('source_errors') or {}),
+    }
+    for source, status in source_coverage.items():
+        if status != 'READ_OK':
+            all_unresolved.append(f'UNRESOLVED:{source}:{status}')
+    for source, error in source_errors.items():
+        if error:
+            all_unresolved.append(f'UNRESOLVED:{source}_ERROR:{error}')
+
     return AccountInventorySnapshot(
         entries=entries,
         continuity_queue=continuity_queue,
@@ -1287,6 +1322,8 @@ def build_inventory_snapshot(
         total_remaining_messages=total_remaining,
         tools_available=tools_available,
         unresolved_items=list(dict.fromkeys(all_unresolved)),
+        source_coverage=source_coverage,
+        source_errors=source_errors,
     )
 
 
