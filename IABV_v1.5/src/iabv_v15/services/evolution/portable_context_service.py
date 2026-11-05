@@ -49,6 +49,7 @@ class PortableContextService:
         adaptive_task_orchestrator: Any | None = None,
         adaptive_session_repository: Any | None = None,
         platform_pending_queue: Any | None = None,
+        discernment_frame_service: Any | None = None,
     ) -> None:
         self.workspace_root = workspace_root
         self.storage = storage
@@ -66,6 +67,7 @@ class PortableContextService:
         self.adaptive_task_orchestrator = adaptive_task_orchestrator
         self.adaptive_session_repository = adaptive_session_repository
         self.platform_pending_queue = platform_pending_queue
+        self.discernment_frame_service = discernment_frame_service
         self.control_master_service: Any | None = None
         self.decision_audit_trail: Any | None = None
         self.code_audit_trail: Any | None = None
@@ -4018,21 +4020,26 @@ class PortableContextService:
         )
 
     def _discernment_frame_section(self, *, now) -> PortableContextSection:
-        """P0.69: export latest discernment frame as compact section."""
+        """P0.69: export the latest frame from the shared discernment history."""
         items: list[dict[str, Any]] = []
         unresolved: list[str] = []
-        try:
-            from iabv_v15.services.evolution.discernment_frame_service import DiscernmentFrameService
-            svc = DiscernmentFrameService()
-            export = svc.compact_export()
-            if export.get('status') == 'no_frame':
-                items.append({'status': 'no_frame_yet'})
-                unresolved.append('no_discernment_frame_generated')
-            else:
-                items.append(export)
-        except Exception:
-            items.append({'status': 'service_unavailable'})
-            unresolved.append('discernment_frame_service_unavailable')
+        service = getattr(self, 'discernment_frame_service', None)
+        if service is None:
+            items.append({'status': 'service_unavailable', 'reason': 'shared_service_not_injected'})
+            unresolved.append('discernment_frame_service_not_configured')
+        else:
+            try:
+                export = service.compact_export()
+                if not isinstance(export, dict):
+                    raise TypeError('discernment_export_not_dict')
+                if export.get('status') == 'no_frame':
+                    items.append({'status': 'no_frame_yet'})
+                    unresolved.append('no_discernment_frame_generated')
+                else:
+                    items.append(export)
+            except Exception as exc:
+                items.append({'status': 'service_unavailable', 'reason': type(exc).__name__})
+                unresolved.append('discernment_frame_service_unavailable')
         phase = items[0].get('phase', 'unknown') if items else 'unknown'
         grounding = items[0].get('grounding_status', 'unknown') if items else 'unknown'
         conf = items[0].get('confidence', 0.0) if items else 0.0
