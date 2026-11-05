@@ -167,6 +167,26 @@ def test_run_pytest_persists_evidence_when_requested() -> None:
         assert "failed: 1" in md
 
 
+def test_unbound_passing_test_run_does_not_render_green_control_master_state() -> None:
+    with tempfile.TemporaryDirectory() as tmpdir:
+        src_dir = Path(tmpdir) / "src"
+        src_dir.mkdir()
+        result = run_pytest(
+            tmpdir,
+            runner=_fake_subprocess_runner(passed=5, failed=0, errors=0, returncode=0),
+            persist_evidence=True,
+        )
+
+        cm_latest = Path(tmpdir) / "data" / "evolution" / "control_master" / "latest.json"
+        cm_data = json.loads(cm_latest.read_text(encoding="utf-8"))
+        tests_state = cm_data["current_tests_state"]
+
+        assert result["evidence_persistence"]["provenance_status"] == "UNKNOWN"
+        assert tests_state["health"] == "unknown"
+        assert tests_state["provenance_status"] == "UNKNOWN"
+        assert tests_state["worktree_clean"] is None
+
+
 def test_run_pytest_does_not_persist_without_flag() -> None:
     """run_pytest() without persist_evidence must NOT write latest.json."""
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -528,6 +548,7 @@ def test_atomic_evidence_writer_returns_file_and_projection_receipts(tmp_path) -
     assert receipt["artifact_sha256"] == __import__("hashlib").sha256(evidence_path.read_bytes()).hexdigest()
     assert evidence["payload_sha256"] == _test_evidence_payload_sha256(evidence)
     assert evidence["commit_sha"] == _TEST_EVIDENCE_COMMIT
+    assert receipt["control_master_sync"]["status"] == "SYNCED"
 
 
 def test_atomic_evidence_writer_surfaces_replace_failure(tmp_path, monkeypatch) -> None:
