@@ -318,3 +318,129 @@ def test_oses_runtime_audit_log_permission_failure_is_reported(monkeypatch, tmp_
 
     assert service._source_coverage['runtime_audit_log'] == 'READ_FAILED'
     assert service._source_errors['runtime_audit_log'] == 'PermissionError'
+
+
+
+def test_oses_discernment_service_requires_shared_instance(tmp_path) -> None:
+    service = _service(tmp_path)
+
+    assert service._discernment_frame_findings() == []
+    assert service._source_coverage['discernment_frame_service'] == 'NOT_CONFIGURED'
+    assert service._source_errors['discernment_frame_service'] == 'shared_discernment_frame_service_not_injected'
+
+
+def test_oses_discernment_service_records_shared_instance_read(tmp_path) -> None:
+    class SharedDiscernmentService:
+        def recent_frames(self, limit=10):
+            return []
+
+    service = _service(tmp_path)
+    service.discernment_frame_service = SharedDiscernmentService()
+
+    findings = service._discernment_frame_findings()
+
+    assert findings
+    assert service._source_coverage['discernment_frame_service'] == 'READ_OK'
+
+
+def test_oses_ui_bridge_records_freeze_reporter_and_missing_startup_log(tmp_path, monkeypatch) -> None:
+    tracer_module = import_module('iabv_v15.services.evolution.runtime_audit_tracer')
+
+    class EmptyTracer:
+        def events(self, *, limit: int):
+            return []
+
+    class EmptyReporter:
+        def list_reports(self, *, limit: int):
+            return []
+
+        def get_report(self, filename: str):
+            raise AssertionError('no report should be requested for an empty listing')
+
+    monkeypatch.setattr(tracer_module, 'get_runtime_tracer', lambda: EmptyTracer())
+    service = _service(tmp_path)
+    service._freeze_incident_reporter = EmptyReporter()
+
+    assert service._ui_bridge_truth_findings() == []
+    assert service._source_coverage['runtime_audit_tracer'] == 'READ_OK'
+    assert service._source_coverage['freeze_incident_reporter'] == 'READ_OK'
+    assert service._source_coverage['startup_ui_presence_log'] == 'CONFIRMED_NOT_FOUND'
+
+
+def test_oses_ui_bridge_startup_presence_malformed_rows_are_partial(tmp_path, monkeypatch) -> None:
+    tracer_module = import_module('iabv_v15.services.evolution.runtime_audit_tracer')
+
+    class EmptyTracer:
+        def events(self, *, limit: int):
+            return []
+
+    class EmptyReporter:
+        def list_reports(self, *, limit: int):
+            return []
+
+        def get_report(self, filename: str):
+            raise AssertionError('no report should be requested for an empty listing')
+
+    trace_path = tmp_path / 'data' / 'logs' / 'startup_ui_presence.jsonl'
+    trace_path.parent.mkdir(parents=True)
+    trace_path.write_text(
+        '{"kind":"ui_bridge_port_conflict"}\\n'
+        '{malformed}\\n',
+        encoding='utf-8',
+    )
+    monkeypatch.setattr(tracer_module, 'get_runtime_tracer', lambda: EmptyTracer())
+    service = _service(tmp_path)
+    service._freeze_incident_reporter = EmptyReporter()
+
+    service._ui_bridge_truth_findings()
+
+    assert service._source_coverage['startup_ui_presence_log'] == 'READ_PARTIAL'
+    assert service._source_errors['startup_ui_presence_log'] == 'malformed_jsonl_rows'
+
+
+def test_oses_ui_bridge_preserves_runtime_tracer_failure(tmp_path, monkeypatch) -> None:
+    tracer_module = import_module('iabv_v15.services.evolution.runtime_audit_tracer')
+
+    class BrokenTracer:
+        def events(self, *, limit: int):
+            raise PermissionError('synthetic UI bridge tracer read failure')
+
+    class EmptyReporter:
+        def list_reports(self, *, limit: int):
+            return []
+
+        def get_report(self, filename: str):
+            raise AssertionError('no report should be requested for an empty listing')
+
+    monkeypatch.setattr(tracer_module, 'get_runtime_tracer', lambda: BrokenTracer())
+    service = _service(tmp_path)
+    service._freeze_incident_reporter = EmptyReporter()
+
+    service._ui_bridge_truth_findings()
+
+    assert service._source_coverage['runtime_audit_tracer'] == 'READ_FAILED'
+    assert service._source_errors['runtime_audit_tracer'] == 'PermissionError'
+
+
+def test_oses_ui_bridge_freeze_report_parse_error_is_partial(tmp_path, monkeypatch) -> None:
+    tracer_module = import_module('iabv_v15.services.evolution.runtime_audit_tracer')
+
+    class EmptyTracer:
+        def events(self, *, limit: int):
+            return []
+
+    class BrokenReporter:
+        def list_reports(self, *, limit: int):
+            return [{'file': 'freeze_bad.json', 'error': 'parse_failed'}]
+
+        def get_report(self, filename: str):
+            raise AssertionError('parse-failed report must not be opened again')
+
+    monkeypatch.setattr(tracer_module, 'get_runtime_tracer', lambda: EmptyTracer())
+    service = _service(tmp_path)
+    service._freeze_incident_reporter = BrokenReporter()
+
+    service._ui_bridge_truth_findings()
+
+    assert service._source_coverage['freeze_incident_reporter'] == 'READ_PARTIAL'
+    assert service._source_errors['freeze_incident_reporter'] == 'incident_report_parse_or_shape_error'
