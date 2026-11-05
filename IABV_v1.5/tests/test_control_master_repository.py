@@ -6,6 +6,8 @@ import shutil
 from pathlib import Path
 from uuid import uuid4
 
+import pytest
+
 from iabv_v15.domain.models import (
     ControlDecision,
     ControlDecisionStatus,
@@ -16,6 +18,11 @@ from iabv_v15.domain.models import (
 from iabv_v15.infra.persistence.control_master_repository import (
     ControlMasterRepository,
     render_state_markdown,
+)
+from iabv_v15.infra.persistence.read_results import (
+    ArtifactReadStatus,
+    RepositoryReadError,
+    RepositoryReadStatus,
 )
 from iabv_v15.infra.persistence.storage import ArtifactStorage
 
@@ -118,3 +125,91 @@ def test_render_state_markdown_has_all_governance_sections() -> None:
         assert heading in text
     assert "Regla X" in text
     assert "item-a" in text
+
+
+
+def test_rules_report_partial_records_when_one_artifact_is_corrupt() -> None:
+    storage, root = _storage()
+    try:
+        repo = ControlMasterRepository(storage)
+        valid_rule = ControlRule(
+            title="Regla válida",
+            severity=ControlRuleSeverity.STRICT,
+        )
+        repo.upsert_rule(valid_rule)
+        corrupt_path = root / "control_master" / "rules" / "corrupt-rule.json"
+        corrupt_path.write_text("{", encoding="utf-8")
+
+        report = repo.list_rules_with_diagnostics()
+
+        assert report.status == RepositoryReadStatus.READ_PARTIAL
+        assert [rule.rule_id for rule in report.items] == [valid_rule.rule_id]
+        corrupt = next(result for result in report.results if result.artifact_id == "corrupt-rule")
+        assert corrupt.status == ArtifactReadStatus.CORRUPT
+        with pytest.raises(RepositoryReadError):
+            repo.list_rules()
+        assert corrupt_path.exists()
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_decisions_report_schema_failure_without_discarding_valid_records() -> None:
+    storage, root = _storage()
+    try:
+        repo = ControlMasterRepository(storage)
+        valid_decision = ControlDecision(
+            summary="Decisión válida",
+            status=ControlDecisionStatus.ACCEPTED,
+        )
+        repo.record_decision(valid_decision)
+        unsupported_path = root / "control_master" / "decisions" / "unsupported-decision.json"
+        unsupported_path.write_text("{}", encoding="utf-8")
+
+        report = repo.list_decisions_with_diagnostics()
+
+        assert report.status == RepositoryReadStatus.READ_PARTIAL
+        assert [decision.decision_id for decision in report.items] == [valid_decision.decision_id]
+        unsupported = next(
+            result for result in report.results if result.artifact_id == "unsupported-decision"
+        )
+        assert unsupported.status == ArtifactReadStatus.SCHEMA_UNSUPPORTED
+        with pytest.raises(RepositoryReadError):
+            repo.list_decisions()
+        assert unsupported_path.exists()
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_corrupt_latest_state_is_reported_and_not_returned_as_missing() -> None:
+    storage, root = _storage()
+    try:
+        repo = ControlMasterRepository(storage)
+        repo.save_state(ControlMasterState(current_vision="Gobernanza preservada"))
+        latest_path = root / "control_master" / "latest.json"
+        latest_path.write_text("{", encoding="utf-8")
+
+        result = repo.load_latest_state_with_diagnostics()
+
+        assert result.status == ArtifactReadStatus.CORRUPT
+        with pytest.raises(RepositoryReadError):
+            repo.load_latest_state()
+        assert latest_path.exists()
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_absent_control_master_artifacts_are_not_labelled_as_verified_empty() -> None:
+    storage, root = _storage()
+    try:
+        repo = ControlMasterRepository(storage)
+
+        rules = repo.list_rules_with_diagnostics()
+        decisions = repo.list_decisions_with_diagnostics()
+        state = repo.load_latest_state_with_diagnostics()
+
+        assert rules.status == RepositoryReadStatus.NO_RECORDS_OBSERVED
+        assert decisions.status == RepositoryReadStatus.NO_RECORDS_OBSERVED
+        assert state.status == ArtifactReadStatus.CONFIRMED_NOT_FOUND
+        assert not (root / "control_master").exists()
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
