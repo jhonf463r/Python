@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from uuid import uuid4
 
 from iabv_v15.domain.models import (
     AmbiguityLevel,
@@ -23,16 +22,8 @@ from iabv_v15.services.training.payload_archive_service import PayloadArchiveSer
 from iabv_v15.services.training.training_orchestrator import TrainingOrchestrator
 
 
-def _workspace(name: str) -> Path:
-    base = Path(__file__).resolve().parents[1] / 'data' / 'test_runs'
-    base.mkdir(parents=True, exist_ok=True)
-    root = base / f'{name}_{uuid4().hex}'
-    root.mkdir(parents=True, exist_ok=True)
-    return root
-
-
-def test_training_payload_prepare_and_archive() -> None:
-    root = _workspace('training')
+def test_training_payload_prepare_and_archive(tmp_path: Path) -> None:
+    root = tmp_path
     db = AppDatabase(str(root / 'app.sqlite'))
     episodes = EpisodeRepository(str(root / 'episodes'), db)
     knowledge = KnowledgeRepository(db)

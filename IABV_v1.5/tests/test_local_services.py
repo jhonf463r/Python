@@ -1,7 +1,6 @@
 ﻿from __future__ import annotations
 
 from pathlib import Path
-from uuid import uuid4
 
 from iabv_v15.domain.models import CapturedStep, InferenceRequest, InferenceResult, ReasoningMode, RoleRoute, RunRecord, RunStatus, SessionArtifact, TaskRole, ToolCapability
 from iabv_v15.infra.persistence.database import AppDatabase
@@ -14,16 +13,8 @@ from iabv_v15.services.roles.analytics_strategy_service import AnalyticsStrategy
 from iabv_v15.services.roles.teaching_gap_analyzer import TeachingGapAnalyzer
 
 
-def _workspace(name: str) -> Path:
-    base = Path(__file__).resolve().parents[1] / 'data' / 'test_runs'
-    base.mkdir(parents=True, exist_ok=True)
-    root = base / f'{name}_{uuid4().hex}'
-    root.mkdir(parents=True, exist_ok=True)
-    return root
-
-
-def test_analytics_strategy_service_uses_real_metrics() -> None:
-    root = _workspace('analytics')
+def test_analytics_strategy_service_uses_real_metrics(tmp_path: Path) -> None:
+    root = tmp_path
     db = AppDatabase(str(root / 'app.sqlite'))
     episodes = EpisodeRepository(str(root / 'episodes'), db)
     knowledge = KnowledgeRepository(db)
