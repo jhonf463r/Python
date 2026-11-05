@@ -12,6 +12,7 @@ name: IABV persistence read-contract candidate tests
       - "IABV_v1.5/tests/test_control_master_repository.py"
       - "IABV_v1.5/tests/test_objective_repository.py"
       - "IABV_v1.5/tests/test_pending_issue_repository.py"
+      - "IABV_v1.5/tests/test_tool_record_repository.py"
       - "IABV_v1.5/pyproject.toml"
       - ".github/workflows/iabv-persistence-focused-tests.yml"
 
@@ -52,4 +53,5 @@ jobs:
           IABV_v1.5/tests/test_control_master_repository.py
           IABV_v1.5/tests/test_objective_repository.py
           IABV_v1.5/tests/test_pending_issue_repository.py
+          IABV_v1.5/tests/test_tool_record_repository.py
           -q
