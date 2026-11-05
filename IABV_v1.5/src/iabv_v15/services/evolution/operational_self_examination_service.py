@@ -1069,6 +1069,24 @@ class OperationalSelfExaminationService:
         except Exception:
             pass
 
+        # Refresh the coverage receipt after the adaptive-threshold read above.
+        # The earlier snapshot construction precedes that optional source read.
+        source_coverage_report = self._source_coverage_report()
+        coverage_metadata = {
+            **dict(review.metadata or {}),
+            'source_coverage_contract': source_coverage_report["contract"],
+            'required_source_ids': list(source_coverage_report["required_source_ids"]),
+            'source_coverage': dict(source_coverage_report["source_coverage"]),
+            'source_errors': dict(source_coverage_report["source_errors"]),
+            'source_coverage_complete': bool(source_coverage_report["complete"]),
+            'source_coverage_incomplete_ids': list(source_coverage_report["incomplete_source_ids"]),
+        }
+        review = review.model_copy(update={
+            'source_coverage': dict(source_coverage_report["source_coverage"]),
+            'source_errors': dict(source_coverage_report["source_errors"]),
+            'metadata': coverage_metadata,
+        })
+
         # Persist metacognitive ledger from the FULL findings list (before
         # truncation to 8) so MEDIUM-severity entries are not lost.
         self._persist_metacognitive_ledger_from_findings(
