@@ -953,6 +953,9 @@ def validate_durability_ack(
     acknowledgement: Any,
     *,
     expected_seq: int | None = None,
+    expected_line_sha256: str | None = None,
+    expected_byte_start: int | None = None,
+    expected_byte_end: int | None = None,
 ) -> dict[str, Any]:
     """Validate the structural contract of a RuntimeAuditTracer file-fsync receipt.
 
@@ -992,6 +995,19 @@ def validate_durability_ack(
         or byte_end <= byte_start
         or len(digest) != 64
         or any(char not in "0123456789abcdef" for char in digest)
+        or (
+            expected_line_sha256 is not None
+            and (
+                not isinstance(expected_line_sha256, str)
+                or digest != expected_line_sha256.lower()
+                or isinstance(expected_byte_start, bool)
+                or not isinstance(expected_byte_start, int)
+                or isinstance(expected_byte_end, bool)
+                or not isinstance(expected_byte_end, int)
+                or byte_start != expected_byte_start
+                or byte_end != expected_byte_end
+            )
+        )
     ):
         return {"status": "ACK_INVALID", "accepted": False}
 
@@ -1003,7 +1019,11 @@ def validate_durability_ack(
         "byte_start": byte_start,
         "byte_end": byte_end,
         "line_sha256": digest,
-        "verification": "TRACER_RETURNED_FSYNC_RECEIPT",
+        "verification": (
+            "TRACER_RECEIPT_MATCHED_TO_READ_ROW"
+            if expected_line_sha256 is not None
+            else "TRACER_RETURNED_FSYNC_RECEIPT"
+        ),
     }
 
 # ======================================================================

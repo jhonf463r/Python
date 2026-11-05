@@ -3140,6 +3140,11 @@ class PortableContextService:
 
         # JSONL reconstruction recovers the row, but not the caller-retained ACK.
         audit_recent = self._interaction_episodes_from_audit(limit=3)
+        audit_by_id = {
+            str(row.get('interaction_id') or ''): row
+            for row in audit_recent
+            if row.get('interaction_id')
+        }
         seen_ids = {r.get('interaction_id') for r in in_memory_recent}
         for ar in audit_recent:
             if ar.get('interaction_id') not in seen_ids:
@@ -3148,6 +3153,11 @@ class PortableContextService:
         in_memory_recent = in_memory_recent[-3:]
 
         for episode in in_memory_recent:
+            audit_row = audit_by_id.get(str(episode.get('interaction_id') or ''))
+            if audit_row is not None:
+                episode['_audit_line_sha256'] = audit_row.get('_audit_line_sha256')
+                episode['_audit_byte_start'] = audit_row.get('_audit_byte_start')
+                episode['_audit_byte_end'] = audit_row.get('_audit_byte_end')
             expected_seq = episode.get('runtime_audit_event_seq')
             episode['runtime_audit_durability_check'] = validate_durability_ack(
                 episode.get('runtime_audit_durability'),
@@ -3156,6 +3166,9 @@ class PortableContextService:
                     if isinstance(expected_seq, int) and not isinstance(expected_seq, bool)
                     else -1
                 ),
+                expected_line_sha256=episode.get('_audit_line_sha256', ''),
+                expected_byte_start=episode.get('_audit_byte_start', -1),
+                expected_byte_end=episode.get('_audit_byte_end', -1),
             )
 
         acknowledged = sum(
@@ -3244,6 +3257,7 @@ class PortableContextService:
         same id, only the most recent event is kept.  Since the file is read
         in reverse chronological order, the first occurrence per id wins.
         """
+        import hashlib as _hashlib
         import json as _json
         audit_path = Path(self.workspace_root) / 'data' / 'logs' / 'runtime_audit.jsonl'
         if not audit_path.exists():
@@ -3251,11 +3265,17 @@ class PortableContextService:
         seen_ids: set[str] = set()
         episodes: list[dict[str, Any]] = []
         try:
-            lines = audit_path.read_text(encoding='utf-8', errors='replace').splitlines()
-            for line in reversed(lines):
-                if not line.strip():
+            raw_lines = audit_path.read_bytes().splitlines(keepends=True)
+            line_ranges: list[tuple[int, int]] = []
+            byte_cursor = 0
+            for raw_line in raw_lines:
+                line_ranges.append((byte_cursor, byte_cursor + len(raw_line)))
+                byte_cursor += len(raw_line)
+            for raw_line, (line_start, line_end) in reversed(list(zip(raw_lines, line_ranges))):
+                if not raw_line.strip():
                     continue
                 try:
+                    line = raw_line.decode('utf-8')
                     event = _json.loads(line)
                 except Exception:
                     continue
@@ -3272,6 +3292,9 @@ class PortableContextService:
                 episodes.append({
                     'interaction_id': iid,
                     'runtime_audit_event_seq': event.get('seq'),
+                    '_audit_line_sha256': _hashlib.sha256(raw_line).hexdigest(),
+                    '_audit_byte_start': line_start,
+                    '_audit_byte_end': line_end,
                     'message_preview': data.get('message_preview', ''),
                     'outcome': ep_outcome,
                     'provider': data.get('provider', ''),

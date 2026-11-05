@@ -934,6 +934,7 @@ class ControlMasterService:
             )
             return []
 
+        import hashlib as _hashlib
         import json as _json
         audit_path = Path(str(self.workspace_root)) / 'data' / 'logs' / 'runtime_audit.jsonl'
         if not audit_path.exists():
@@ -949,14 +950,20 @@ class ControlMasterService:
         durability_unverified = False
         invalid_lines = False
         try:
-            lines = audit_path.read_text(encoding='utf-8', errors='replace').splitlines()
+            raw_lines = audit_path.read_bytes().splitlines(keepends=True)
+            line_ranges: list[tuple[int, int]] = []
+            byte_cursor = 0
+            for raw_line in raw_lines:
+                line_ranges.append((byte_cursor, byte_cursor + len(raw_line)))
+                byte_cursor += len(raw_line)
             count = 0
-            for line in reversed(lines):
+            for raw_line, (line_start, line_end) in reversed(list(zip(raw_lines, line_ranges))):
                 if count >= 10:
                     break
-                if not line.strip():
+                if not raw_line.strip():
                     continue
                 try:
+                    line = raw_line.decode('utf-8')
                     event = _json.loads(line)
                 except Exception:
                     invalid_lines = True
@@ -988,7 +995,13 @@ class ControlMasterService:
                     if isinstance(lifecycle_record, dict)
                     else None
                 )
-                ack_check = validate_durability_ack(raw_ack, expected_seq=expected_seq)
+                ack_check = validate_durability_ack(
+                    raw_ack,
+                    expected_seq=expected_seq,
+                    expected_line_sha256=_hashlib.sha256(raw_line).hexdigest(),
+                    expected_byte_start=line_start,
+                    expected_byte_end=line_end,
+                )
                 if not ack_check.get("accepted"):
                     durability_unverified = True
 
