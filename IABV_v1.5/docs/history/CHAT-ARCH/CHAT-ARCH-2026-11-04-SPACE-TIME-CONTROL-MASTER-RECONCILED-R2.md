@@ -186,3 +186,76 @@ The exact `main` ref used for the candidate remains `56e4d8b11846a8d8f3cb8cda08e
 At code HEAD `f2ada0ea105a10a38082742d6244806a19434d5b`, GitHub Actions run #549 (`41944077000`) ended `startup_failure`; the jobs endpoint returned zero jobs. No runner, test or build step ran; combined statuses were empty. Tests/build/runtime remain `NOT_RUN`. This run belongs to the code HEAD above; the receipt-only commit that follows has its own run state.
 
 The Space-Time organ remains `PARTIAL`. The D021 lifecycle fields now distinguish retrieval, route reconciliation, consideration, influence, action outcome and later reuse; they do not make those stages automatically occur. M1A, `main`, protected reads, Option D, MCP allowlist, tunnel, bridge and production authorization remain unchanged.
+
+## D021 §6D.5 consumer parity — shared reader, Evolution Center and CLI — 2026-11-05
+
+Code implementation commit: `93497b8a2f13d5e8a9b6ffcb2de536c96f770777`.
+Base remains `main@56e4d8b11846a8d8f3cb8cda08efd773ec235651`.
+At code read-back: 16 commits ahead / 0 behind; 24 changed paths; repository PRIVATE.
+
+### Shared read contract
+
+A single existing `ControlMasterDigestBuilder.build_from_service()` adapter now owns the state/queue read classification and is reused by:
+- `AdaptiveTaskOrchestrator._control_master_digest()`;
+- `EvolutionCenterViewModel.refresh()`;
+- `AppBootstrap.export_control_master_digest()`, and therefore the existing CLI export command.
+
+This is a method on the existing builder, not a new service, coordinator, router or authority source. It preserves the caller's `refresh` argument when used by the bootstrap export path.
+
+- State read failure / missing service / builder failure is explicit UNAVAILABLE.
+- A queue exception remains `work_queue_status=UNAVAILABLE`; it cannot become `EMPTY_QUEUE`.
+- `EMPTY_QUEUE` is produced only when the queue read returns a list and the observed source-coverage map contains only `READ_OK` entries. `NOT_CONFIGURED`, `NO_FILE`, unknown states or missing coverage remain UNVERIFIED. Source applicability policy is still NOT_ESTABLISHED; this adapter does not invent it.
+- Source signal availability remains orthogonal to queue status: a successful state read can be AVAILABLE while queue coverage is UNAVAILABLE/UNVERIFIED.
+
+### Evolution Center UI
+
+The view-model now exposes an explicit digest status even when the service is absent; it no longer catches a queue error and substitutes an empty list. The Control Master panel in `EvolutionCenterPage.qml` now consumes the already exposed `controlMasterDigest` and `controlMasterBrief` properties.
+
+The panel shows:
+- signal availability, D021 freshness and queue state separately;
+- source object, state ID, workspace-scope ID, digest ID and source revision/content digest;
+- source-generation and observation times;
+- source evidence refs and signal/coverage diagnostic reason;
+- structured queue item ID, priority, next action, dependencies and evidence refs;
+- explicit statement that Control Master is a priority signal, grants no permissions and does not replace `CURRENT-STATE.md`.
+
+The panel's truth badge follows the digest's evidence status, not merely whether a service object is wired.
+
+### CLI/export Markdown
+
+`AppBootstrap.export_control_master_digest()` uses the same reader, including its `refresh` option. The existing CLI JSON payload therefore preserves the complete digest model. Its Markdown formatter now includes signal/freshness/queue status, source/state/scope identity, source digest, source/digest/observation times, signal reason, source evidence and structured queue item IDs/priorities/actions/dependencies/evidence refs. It explicitly states when a queue is UNAVAILABLE/UNVERIFIED rather than inferring emptiness.
+
+### Regression coverage authored (not run)
+
+- Shared reader: all six currently instrumented queue sources READ_OK + actual empty list => EMPTY_QUEUE; queue exception => UNAVAILABLE, not EMPTY_QUEUE.
+- Evolution Center: queue exception preserves a readable source and its generation/scope while marking queue UNAVAILABLE; missing service becomes explicit UNAVAILABLE/unresolved.
+- Bootstrap export: queue exception cannot turn into empty queue.
+- Orchestrator no-service case expects explicit UNAVAILABLE digest rather than `None`.
+- CLI Markdown output preserves source, freshness, queue state, times, source/item evidence and dependencies.
+
+All are authored tests only. No local IABV execution occurred.
+
+### Exact execution boundary
+
+For code HEAD `93497b8a2f13d5e8a9b6ffcb2de536c96f770777`, GitHub Actions run #554 (`41945438345`) ended `startup_failure`; the jobs endpoint returned zero jobs. No runner job, test step or build step ran. Combined status checks are empty. No dispatch/retry was attempted. `TESTS/BUILD/RUNTIME=NOT_RUN`.
+
+### Current status
+
+```text
+D021_SHARED_READ_CLASSIFICATION=IMPLEMENTED_SOURCE_LEVEL
+D021_ORCHESTRATOR_CONSUMER=IMPLEMENTED_SOURCE_LEVEL
+D021_EVOLUTION_CENTER_STATUS_AND_EVIDENCE_PANEL=IMPLEMENTED_SOURCE_LEVEL
+D021_BOOTSTRAP_EXPORT_AND_CLI_MARKDOWN=IMPLEMENTED_SOURCE_LEVEL
+D021_EMPTY_VS_FAILED_QUEUE=EXPLICIT_CONSERVATIVE_STATES
+SOURCE_APPLICABILITY_POLICY=NOT_ESTABLISHED
+TESTS/BUILD/RUNTIME=NOT_RUN
+RUN_554=startup_failure; JOBS=0
+INDEPENDENT_ACCEPTANCE=NOT_ESTABLISHED
+SPACE_TIME_ORGAN=PARTIAL
+BRIDGE=BRIDGE_NOT_READY
+M1A=UNCHANGED
+MAIN=UNCHANGED
+MERGE=NOT_AUTHORIZED
+```
+
+The D021 consumer surface is statically integrated across the orchestrator, dashboard/view-model and CLI export. This does not prove a live runtime read, model consideration, causal influence, cross-session reuse or completion of the Space-Time organ. No merge or production activation is authorized.
