@@ -65,6 +65,8 @@ class AdaptiveSessionRepository:
                 canonical_path = self.storage.resolve_managed_path(
                     f"adaptive_sessions/{artifact_id}.json"
                 )
+                if indexed_path.parent != canonical_path.parent:
+                    raise ValueError("Indexed artifact path must remain in its managed subdirectory.")
             except (OSError, TypeError, ValueError) as exc:
                 index_path_results.append(
                     IndexReconciliationIndexPathResult(
