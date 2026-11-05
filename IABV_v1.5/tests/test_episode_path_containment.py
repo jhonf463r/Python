@@ -41,7 +41,7 @@ def test_artifact_storage_rejects_traversal_and_absolute_paths_before_creating_d
 
     with pytest.raises(ValueError, match="traversal|outside"):
         storage.resolve("../outside/payload.json")
-    with pytest.raises(ValueError, match="relative"):
+    with pytest.raises(ValueError, match="outside"):
         storage.resolve(str(outside))
     with pytest.raises(ValueError, match="outside"):
         storage.resolve_managed_path(str(outside))
@@ -229,3 +229,15 @@ def test_replay_annotation_collection_rejects_external_index_path(
     assert report.results[0].status == ArtifactReadStatus.READ_FAILED
     assert report.results[0].error_type == "ValueError"
     assert outside.exists()
+
+
+
+def test_artifact_storage_keeps_absolute_paths_returned_by_its_own_writes_compatible(
+    tmp_path: Path,
+) -> None:
+    storage = ArtifactStorage(str(tmp_path / "storage"))
+    saved = storage.save_json_atomic("episode-a/payload.json", {"ok": True})
+
+    assert Path(saved).is_absolute()
+    assert storage.resolve(saved) == Path(saved).resolve()
+    assert storage.load_json(saved) == {"ok": True}
