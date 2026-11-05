@@ -2986,6 +2986,8 @@ class TestEvidence(BaseModel):
     branch: str = ""
     worktree_clean: bool | None = None
     provenance_status: str = "UNKNOWN"
+    worktree_status_sha256: str = ""
+    payload_sha256: str = ""
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
