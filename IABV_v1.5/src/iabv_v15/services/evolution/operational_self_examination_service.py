@@ -7232,6 +7232,7 @@ _REQUIRED_SOURCE_IDS = (
                     source_refs=['RuntimeAuditTracer.devin_repair_worker'],
                 ))
 
+        self._record_source_status('runtime_audit_tracer', 'READ_OK')
         return findings
 
     def _web_session_findings(self) -> list[SelfExaminationFinding]:
@@ -9344,7 +9345,6 @@ _REQUIRED_SOURCE_IDS = (
                     'pattern': 'isolated_profile_blocks_user_logged_in_browser',
                 },
             ))
-        self._record_source_status('runtime_audit_tracer', 'READ_OK')
         return findings
 
     # -- P0.30 Task F: metacognitive maintenance starvation --
