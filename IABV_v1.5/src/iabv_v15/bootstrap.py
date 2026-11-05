@@ -728,12 +728,19 @@ class AppBootstrap:
         self._tracer.trace('phase_world_model_done')
         # P0.69/P0.70: one bounded in-memory history shared by OSES, TCA and
         # PortableContext. The service owns no new persistence store or worker.
-        from iabv_v15.services.evolution.discernment_frame_service import (
-            DiscernmentFrameService,
-        )
-        self.discernment_frame_service = DiscernmentFrameService(
-            workspace_root=self.config.workspace_root,
-        )
+        if _is_mcp_sub:
+            # A child process cannot share the UI process's in-memory frame
+            # history and deliberately skips deferred birth-frame capture.
+            # Leave the dependency absent rather than creating a private,
+            # empty ring that could be mistaken for shared observation.
+            self.discernment_frame_service = None
+        else:
+            from iabv_v15.services.evolution.discernment_frame_service import (
+                DiscernmentFrameService,
+            )
+            self.discernment_frame_service = DiscernmentFrameService(
+                workspace_root=self.config.workspace_root,
+            )
         self.interaction_learning_service = InteractionLearningService(self.tool_record_repository)
         self.interaction_mode_selector = InteractionModeSelector(self.tool_registry, self.tool_record_repository)
         self.tool_memory = ToolMemory(self.tool_record_repository, self.interaction_learning_service)
