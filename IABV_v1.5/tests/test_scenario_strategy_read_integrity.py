@@ -113,13 +113,15 @@ def test_scenario_run_sqlite_fetchall_failure_replaces_stale_report(
     assert previous.status == RepositoryReadStatus.NO_RECORDS_OBSERVED
 
     def fail_fetchall(*args, **kwargs):
-        raise sqlite3.OperationalError("database is locked")
+        raise sqlite3.OperationalError("PRIVATE_DB_ERROR_CANARY")
 
     monkeypatch.setattr(db, "fetchall", fail_fetchall)
     report = repository.find_by_run_with_diagnostics("run-a")
 
     assert report.status == RepositoryReadStatus.READ_FAILED
     assert report.collection_error_type == "OperationalError"
+    assert report.collection_error_message == "Repository read failed."
+    assert "PRIVATE_DB_ERROR_CANARY" not in str(report.to_dict())
     assert repository.last_read_report is report
     assert report is not previous
     with pytest.raises(RepositoryReadError) as exc_info:
@@ -135,12 +137,13 @@ def test_strategy_pack_point_lookup_sqlite_failure_replaces_stale_report(
     previous = repository.last_read_report
 
     def fail_fetchone(*args, **kwargs):
-        raise sqlite3.OperationalError("database is locked")
+        raise sqlite3.OperationalError("PRIVATE_DB_ERROR_CANARY")
 
     monkeypatch.setattr(db, "fetchone", fail_fetchone)
     result = repository.get_with_diagnostics("requested-pack")
 
     assert result.status == ArtifactReadStatus.READ_FAILED
+    assert result.error_message == "Repository read failed."
     assert repository.last_read_report is not None
     assert repository.last_read_report.requested_artifact_id == "requested-pack"
     assert repository.last_read_report is not previous
