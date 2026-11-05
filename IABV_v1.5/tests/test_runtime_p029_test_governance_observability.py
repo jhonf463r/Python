@@ -144,6 +144,7 @@ def test_run_pytest_persists_evidence_when_requested() -> None:
         assert len(data["payload_sha256"]) == 64
         assert result["evidence_persistence"]["status"] == "PERSISTED"
         assert result["evidence_persistence"]["artifact_sha256"]
+        assert result["evidence_persistence"]["provenance_status"] == "UNKNOWN"
 
         control_master = Path(tmpdir) / "data" / "evolution" / "control_master"
         cm_latest = control_master / "latest.json"
@@ -213,6 +214,9 @@ def test_self_audit_tests_observed_true_with_evidence(monkeypatch) -> None:
         assert summary["passed"] == 10
         assert summary["failed"] == 0
         assert summary["errors"] == 0
+        assert summary["commit_sha"] == _TEST_EVIDENCE_COMMIT
+        assert summary["branch"] == _TEST_EVIDENCE_BRANCH
+        assert summary["provenance_status"] == "COMMIT_BOUND_CLEAN"
 
 
 def test_self_audit_tests_observed_false_without_evidence() -> None:
@@ -297,6 +301,8 @@ def test_portable_context_includes_test_evidence_section(monkeypatch) -> None:
         items_str = json.dumps(section.items)
         assert "output_tail" not in items_str
         assert "stderr" not in items_str
+        assert _TEST_EVIDENCE_COMMIT in items_str
+        assert "COMMIT_BOUND_CLEAN" in items_str
 
 
 def test_portable_context_no_evidence_returns_unresolved() -> None:
@@ -423,6 +429,8 @@ def test_test_evidence_model_validates() -> None:
     assert ev.commit_sha == ""
     assert ev.worktree_clean is None
     assert ev.provenance_status == "UNKNOWN"
+    assert ev.worktree_status_sha256 == ""
+    assert ev.payload_sha256 == ""
 
 
 
