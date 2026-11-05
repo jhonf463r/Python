@@ -653,3 +653,34 @@ def test_bootstrap_deferred_self_examination_builds_birth_frame_from_live_snapsh
     assert 'startup_timeline' in frame.sensor_sources
     assert 'world_model' in frame.trusted_sources
     assert 'environment_self_model' in frame.trusted_sources
+
+
+
+def test_component_constructors_accept_the_same_shared_discernment_service(tmp_path) -> None:
+    shared = DiscernmentFrameService(workspace_root=str(tmp_path))
+    marker = object()
+
+    assembler = TaskContextAssembler(
+        episode_repository=marker,
+        knowledge_repository=marker,
+        run_repository=marker,
+        dossier_repository=marker,
+        hidden_incident_repository=marker,
+        site_policy_registry=marker,
+        capability_repository=marker,
+        adaptive_session_repository=marker,
+        discernment_frame_service=shared,
+    )
+    portable = PortableContextService(
+        workspace_root=str(tmp_path),
+        storage=ArtifactStorage(str(tmp_path / 'portable')),
+        discernment_frame_service=shared,
+    )
+    oses = _service(
+        tmp_path,
+        discernment_frame_service=shared,
+    )
+
+    assert assembler.discernment_frame_service is shared
+    assert portable.discernment_frame_service is shared
+    assert oses.discernment_frame_service is shared
