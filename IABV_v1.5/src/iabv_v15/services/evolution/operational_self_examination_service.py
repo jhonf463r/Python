@@ -1212,6 +1212,9 @@ _REQUIRED_SOURCE_IDS = (
     'runtime_audit_tracer',
     'runtime_audit_log',
     'startup_timeline_log',
+    'startup_ui_presence_log',
+    'freeze_incident_reporter',
+    'discernment_frame_service',
     'runtime_log',
     'boot_profile_store',
     'chat_research_backlog',
@@ -2267,8 +2270,12 @@ _REQUIRED_SOURCE_IDS = (
             return False
         try:
             from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
-            elapsed_ms = float(get_runtime_tracer().current_elapsed_ms())
-        except Exception:
+            tracer = get_runtime_tracer()
+            if tracer is None:
+                raise RuntimeError('runtime_audit_tracer_not_available')
+            elapsed_ms = float(tracer.current_elapsed_ms())
+        except Exception as exc:
+            self._record_source_status('runtime_audit_tracer', 'READ_FAILED', type(exc).__name__)
             elapsed_ms = 0.0
         return elapsed_ms < 120_000.0
 
@@ -10153,12 +10160,22 @@ def _discernment_frame_findings_impl(self) -> list:
     - stale_external_data_overrode_live_world_model: stale data used over live
     """
     findings: list = []
-    try:
-        from iabv_v15.services.evolution.discernment_frame_service import DiscernmentFrameService
-        svc = DiscernmentFrameService(workspace_root=getattr(self, 'workspace_root', ''))
-        frames = svc.recent_frames(limit=10)
-    except Exception:
+    svc = getattr(self, 'discernment_frame_service', None)
+    if svc is None:
+        self._record_source_status(
+            'discernment_frame_service',
+            'NOT_CONFIGURED',
+            'shared_discernment_frame_service_not_injected',
+        )
         return findings
+    try:
+        frames = svc.recent_frames(limit=10)
+        if not isinstance(frames, list):
+            raise TypeError('discernment_frames_not_list')
+    except Exception as exc:
+        self._record_source_status('discernment_frame_service', 'READ_FAILED', type(exc).__name__)
+        return findings
+    self._record_source_status('discernment_frame_service', 'READ_OK')
 
     from iabv_v15.domain.models import SelfExaminationFinding, IssueSeverity
 
@@ -10306,8 +10323,14 @@ def _ui_bridge_truth_findings_impl(self) -> list:
     try:
         from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
         tracer = get_runtime_tracer()
+        if tracer is None:
+            raise RuntimeError('runtime_audit_tracer_not_available')
         events = tracer.events(limit=200)
+        if not isinstance(events, list):
+            raise TypeError('runtime_tracer_events_not_list')
         for ev in events:
+            if not isinstance(ev, dict):
+                continue
             kind = ev.get('kind', '')
             data = ev.get('data', {})
             if kind == 'ui_bridge_port_conflict':
@@ -10319,50 +10342,83 @@ def _ui_bridge_truth_findings_impl(self) -> list:
                 provider = data.get('provider', '')
                 if provider == 'local' and duration_ms > 5000:
                     local_slow_count += 1
-    except Exception:
-        pass
+        self._record_source_status('runtime_audit_tracer', 'READ_OK')
+    except Exception as exc:
+        self._record_source_status('runtime_audit_tracer', 'READ_FAILED', type(exc).__name__)
 
-    # Read recent freeze incidents for unknown-cause stalls
-    try:
-        from iabv_v15.services.evolution.freeze_incident_reporter import FreezeIncidentReporter
-        workspace = getattr(self, 'workspace_root', '')
-        if workspace:
-            import os
-            evo_dir = os.path.join(workspace, 'data', 'evolution')
-            reporter = FreezeIncidentReporter(evo_dir)
-            for inc in reporter.recent_incidents(limit=10):
-                extra = inc or {}
-                if extra.get('incident_type', '') in ('chat_stall', 'startup_freeze'):
-                    bridge_state = {}
-                    full = reporter.get_report(extra.get('file', ''))
-                    if full:
-                        bridge_state = full.get('ui_bridge_state', {})
-                    if bridge_state.get('bridge_reachable') and not bridge_state.get('control_vm_bound'):
-                        bridge_ready_no_vm += 1
-    except Exception:
-        pass
+    # Read recent freeze incidents from the already-wired reporter.
+    reporter = getattr(self, '_freeze_incident_reporter', None)
+    if reporter is None:
+        self._record_source_status('freeze_incident_reporter', 'NOT_CONFIGURED')
+    else:
+        try:
+            reports = reporter.list_reports(limit=10)
+            if not isinstance(reports, list):
+                raise TypeError('freeze_report_list_not_list')
+            partial = False
+            for meta in reports:
+                if not isinstance(meta, dict):
+                    partial = True
+                    continue
+                if meta.get('error'):
+                    partial = True
+                    continue
+                filename = str(meta.get('file') or '')
+                full = reporter.get_report(filename) if filename else None
+                if not isinstance(full, dict):
+                    partial = True
+                    continue
+                extra = full.get('extra', {})
+                if not isinstance(extra, dict):
+                    partial = True
+                    continue
+                if extra.get('incident_type', full.get('trigger', '')) in ('chat_stall', 'startup_freeze'):
+                    bridge_state = full.get('ui_bridge_state', {})
+                    if isinstance(bridge_state, dict):
+                        if bridge_state.get('bridge_reachable') and not bridge_state.get('control_vm_bound'):
+                            bridge_ready_no_vm += 1
+            self._record_source_status(
+                'freeze_incident_reporter',
+                'READ_PARTIAL' if partial else 'READ_OK',
+                'incident_report_parse_or_shape_error' if partial else '',
+            )
+        except Exception as exc:
+            self._record_source_status('freeze_incident_reporter', 'READ_FAILED', type(exc).__name__)
 
-    # Read startup trace for duplicate bridge
-    try:
-        import os
-        workspace = getattr(self, 'workspace_root', '')
-        if workspace:
-            trace_path = os.path.join(workspace, 'data', 'logs', 'startup_ui_presence.jsonl')
-            if os.path.exists(trace_path):
-                import json
-                with open(trace_path, 'r', encoding='utf-8') as f:
-                    for line in f:
-                        line = line.strip()
-                        if not line:
+    # Read startup trace for duplicate bridge.
+    import os
+    workspace = getattr(self, 'workspace_root', '')
+    if not workspace:
+        self._record_source_status('startup_ui_presence_log', 'NOT_CONFIGURED')
+    else:
+        trace_path = os.path.join(workspace, 'data', 'logs', 'startup_ui_presence.jsonl')
+        if not os.path.exists(trace_path):
+            self._record_source_status('startup_ui_presence_log', 'CONFIRMED_NOT_FOUND')
+        else:
+            malformed_rows = False
+            try:
+                with open(trace_path, 'r', encoding='utf-8') as handle:
+                    for line in handle:
+                        stripped = line.strip()
+                        if not stripped:
                             continue
                         try:
-                            entry = json.loads(line)
-                            if entry.get('kind') == 'ui_bridge_port_conflict':
-                                duplicate_bridge += 1
+                            entry = json.loads(stripped)
                         except Exception:
-                            pass
-    except Exception:
-        pass
+                            malformed_rows = True
+                            continue
+                        if not isinstance(entry, dict):
+                            malformed_rows = True
+                            continue
+                        if entry.get('kind') == 'ui_bridge_port_conflict':
+                            duplicate_bridge += 1
+                self._record_source_status(
+                    'startup_ui_presence_log',
+                    'READ_PARTIAL' if malformed_rows else 'READ_OK',
+                    'malformed_jsonl_rows' if malformed_rows else '',
+                )
+            except Exception as exc:
+                self._record_source_status('startup_ui_presence_log', 'READ_FAILED', type(exc).__name__)
 
     if bridge_ready_no_vm >= 1:
         findings.append(SelfExaminationFinding(
