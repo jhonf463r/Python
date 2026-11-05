@@ -2348,7 +2348,8 @@ _REQUIRED_SOURCE_IDS = (
                 episodes.append(data)
                 if len(episodes) >= 5:
                     break
-        except Exception:
+        except Exception as exc:
+            self._record_source_status('runtime_audit_log', 'READ_FAILED', type(exc).__name__)
             return []
         if not episodes:
             return []
@@ -2510,7 +2511,8 @@ _REQUIRED_SOURCE_IDS = (
             return []
         try:
             lines = audit_path.read_text(encoding='utf-8', errors='replace').splitlines()
-        except OSError:
+        except OSError as exc:
+            self._record_source_status('runtime_audit_log', 'READ_FAILED', type(exc).__name__)
             return []
 
         resource_pressure_blocks: list[dict[str, Any]] = []
@@ -2672,7 +2674,8 @@ _REQUIRED_SOURCE_IDS = (
             return []
         try:
             lines = audit_path.read_text(encoding='utf-8', errors='replace').splitlines()
-        except OSError:
+        except OSError as exc:
+            self._record_source_status('runtime_audit_log', 'READ_FAILED', type(exc).__name__)
             return []
 
         _BLOCKED_STATES = {
@@ -2770,7 +2773,8 @@ _REQUIRED_SOURCE_IDS = (
             return []
         try:
             lines = audit_path.read_text(encoding='utf-8', errors='replace').splitlines()
-        except OSError:
+        except OSError as exc:
+            self._record_source_status('runtime_audit_log', 'READ_FAILED', type(exc).__name__)
             return []
 
         window_unbound: list[dict[str, Any]] = []
@@ -8958,7 +8962,8 @@ _REQUIRED_SOURCE_IDS = (
                 if len(events) >= 50:
                     break
             events.reverse()  # restore chronological order
-        except Exception:
+        except Exception as exc:
+            self._record_source_status('runtime_audit_log', 'READ_FAILED', type(exc).__name__)
             return []
         if len(events) < 2:
             return []
@@ -9165,7 +9170,8 @@ _REQUIRED_SOURCE_IDS = (
                 if len(events) >= 50:
                     break
             events.reverse()
-        except Exception:
+        except Exception as exc:
+            self._record_source_status('runtime_audit_log', 'READ_FAILED', type(exc).__name__)
             return []
         if len(events) < 2:
             return []
@@ -9361,8 +9367,8 @@ _REQUIRED_SOURCE_IDS = (
                         data = entry.get('data', {})
                         if data.get('block_type') == 'browser_security_verification':
                             block_count += 1
-        except Exception:
-            pass
+        except Exception as exc:
+            self._record_source_status('runtime_audit_log', 'READ_FAILED', type(exc).__name__)
         if block_count >= 2:
             findings.append(SelfExaminationFinding(
                 category='isolated_profile_blocks_user_logged_in_browser',
@@ -9431,8 +9437,8 @@ _REQUIRED_SOURCE_IDS = (
                         data = entry.get('data', {})
                         if data.get('task_name') == 'chat' and data.get('provider', '') == 'Adaptive local orchestrator':
                             heavy_self_audit_count += 1
-        except Exception:
-            pass
+        except Exception as exc:
+            self._record_source_status('runtime_audit_log', 'READ_FAILED', type(exc).__name__)
 
         # Check test evidence freshness
         te_path = root / 'data' / 'evolution' / 'test_evidence' / 'latest.json'
@@ -9534,8 +9540,8 @@ _REQUIRED_SOURCE_IDS = (
                     ):
                         block_then_local += 1
                         saw_block = False
-        except Exception:
-            pass
+        except Exception as exc:
+            self._record_source_status('runtime_audit_log', 'READ_FAILED', type(exc).__name__)
 
         # Source 2: DecisionAuditTrail chat_routing records
         try:
@@ -9568,8 +9574,8 @@ _REQUIRED_SOURCE_IDS = (
                         ):
                             block_then_local += 1
                             saw_block_d = False
-        except Exception:
-            pass
+        except Exception as exc:
+            self._record_source_status('decision_audit_trail', 'READ_FAILED', type(exc).__name__)
 
         if block_then_local >= 2:
             findings.append(SelfExaminationFinding(
@@ -9627,8 +9633,8 @@ _REQUIRED_SOURCE_IDS = (
                         cap = entry.get('data', {}).get('capability', '')
                         if cap and cap not in capabilities:
                             capabilities.append(cap)
-        except Exception:
-            pass
+        except Exception as exc:
+            self._record_source_status('runtime_audit_log', 'READ_FAILED', type(exc).__name__)
         if promised_count >= 1:
             findings.append(SelfExaminationFinding(
                 category='capability_promised_but_unavailable',
