@@ -228,7 +228,7 @@ def test_trace_returns_file_fsync_ack(tmp_path: Path) -> None:
     assert acknowledgement['byte_start'] == 0
     assert acknowledgement['byte_end'] == len(raw_line)
     assert acknowledgement['line_sha256'] == hashlib.sha256(raw_line).hexdigest()
-    assert raw_line.endswith(b'\\n')
+    assert raw_line.endswith(b'\n')
     assert disk_event['kind'] == 'durable_event'
     assert 'durability_ack' not in disk_event
     assert tracer.events()[-1]['durability_ack'] == acknowledgement
