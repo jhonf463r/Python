@@ -10385,40 +10385,40 @@ def _ui_bridge_truth_findings_impl(self) -> list:
         except Exception as exc:
             self._record_source_status('freeze_incident_reporter', 'READ_FAILED', type(exc).__name__)
 
-    # Read startup trace for duplicate bridge.
-    import os
+    # Read startup trace for duplicate bridge. Open directly so access errors
+    # cannot be mistaken for an absent optional log.
     workspace = getattr(self, 'workspace_root', '')
     if not workspace:
         self._record_source_status('startup_ui_presence_log', 'NOT_CONFIGURED')
     else:
-        trace_path = os.path.join(workspace, 'data', 'logs', 'startup_ui_presence.jsonl')
-        if not os.path.exists(trace_path):
+        trace_path = Path(workspace) / 'data' / 'logs' / 'startup_ui_presence.jsonl'
+        malformed_rows = False
+        try:
+            with trace_path.open('r', encoding='utf-8') as handle:
+                for line in handle:
+                    stripped = line.strip()
+                    if not stripped:
+                        continue
+                    try:
+                        entry = json.loads(stripped)
+                    except Exception:
+                        malformed_rows = True
+                        continue
+                    if not isinstance(entry, dict):
+                        malformed_rows = True
+                        continue
+                    if entry.get('kind') == 'ui_bridge_port_conflict':
+                        duplicate_bridge += 1
+        except FileNotFoundError:
             self._record_source_status('startup_ui_presence_log', 'CONFIRMED_NOT_FOUND')
+        except Exception as exc:
+            self._record_source_status('startup_ui_presence_log', 'READ_FAILED', type(exc).__name__)
         else:
-            malformed_rows = False
-            try:
-                with open(trace_path, 'r', encoding='utf-8') as handle:
-                    for line in handle:
-                        stripped = line.strip()
-                        if not stripped:
-                            continue
-                        try:
-                            entry = json.loads(stripped)
-                        except Exception:
-                            malformed_rows = True
-                            continue
-                        if not isinstance(entry, dict):
-                            malformed_rows = True
-                            continue
-                        if entry.get('kind') == 'ui_bridge_port_conflict':
-                            duplicate_bridge += 1
-                self._record_source_status(
-                    'startup_ui_presence_log',
-                    'READ_PARTIAL' if malformed_rows else 'READ_OK',
-                    'malformed_jsonl_rows' if malformed_rows else '',
-                )
-            except Exception as exc:
-                self._record_source_status('startup_ui_presence_log', 'READ_FAILED', type(exc).__name__)
+            self._record_source_status(
+                'startup_ui_presence_log',
+                'READ_PARTIAL' if malformed_rows else 'READ_OK',
+                'malformed_jsonl_rows' if malformed_rows else '',
+            )
 
     if bridge_ready_no_vm >= 1:
         findings.append(SelfExaminationFinding(
