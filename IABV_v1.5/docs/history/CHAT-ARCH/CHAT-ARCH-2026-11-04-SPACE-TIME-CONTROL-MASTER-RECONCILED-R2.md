@@ -79,7 +79,9 @@ PRODUCTION_ACTIVATION=NOT_AUTHORIZED
 No credentials, authority assets, protected data, local checkout, secrets, branch-protection settings or production state were accessed or changed.
 
 
-## Post-R2 revalidation — 2026-11-04
+## Historical R2 revalidation snapshot — 2026-11-04 (superseded)
+
+This section records the state observed at the then-current branch tip `e335a6e6f47b346f9e112ea684d7c92d31bb1ef1` (4 commits ahead). It is historical evidence only; it does not describe the later `eecf456…` or `c08b00a…` candidate tips. Use the latest PR #610 metadata and issue #454 writebacks for current refs.
 
 - PR #610 was re-fetched: OPEN, Draft, unmerged; base `main@56e4d8b11846a8d8f3cb8cda08efd773ec235651`; HEAD `e335a6e6f47b346f9e112ea684d7c92d31bb1ef1`.
 - Exact compare: 4 commits ahead / 0 behind; 14 changed paths. No review submissions or inline review threads were present at revalidation.
@@ -88,3 +90,19 @@ No credentials, authority assets, protected data, local checkout, secrets, branc
 - Static reinspection covered the queue projection, source diagnostics, digest builder, orchestrator handoff, full/compact prompt rendering, PortableContext freshness and regression patches. This is a static model review, not an independent human review and not runtime evidence.
 - The source-applicability policy remains unestablished. `NOT_CONFIGURED` and `NO_FILE` stay `UNVERIFIED`; no source was reclassified as optional.
 - Tests/build/runtime remain `NOT_RUN`; the committed Control Master snapshot remains historical/STALE; no live digest was retrieved.
+
+## Source-coverage correction — 2026-11-04
+
+Implementation follow-up was made on the same PR branch, with implementation commit `c08b00ae654e8dc453ce430549c7afc3256ce37a` (child of the previously revalidated `eecf4563f6c31c666a926c8821ba03af1ef733d0`).
+
+- The prior `tests_state=READ_OK` declaration was unsound: it read `ControlMasterState.current_tests_state`, a best-effort mirror whose default is an empty dictionary.
+- Queue coverage now reads the existing P0.29 canonical artifact `data/evolution/test_evidence/latest.json`; no new evidence store or coordinator was introduced.
+- Missing artifact is `NO_FILE`; invalid JSON/read failure is `READ_FAILED`; incomplete, naive, future-dated or older-than-24-hour evidence is `UNVERIFIED`; only a well-formed record with an explicit timezone and a valid age is `READ_OK`.
+- A failed or timed-out test record creates a queue item with a reference to the canonical evidence artifact.
+- Regression cases were added for missing evidence, fresh passing evidence, failed evidence with artifact reference, and naive/future/stale timestamps. These tests are authored but **NOT RUN**.
+
+The review comment on the former line-349 declaration was replied to and its now-outdated thread resolved after this source-level correction. The review is `COMMENTED`, authored under the PR author's own identity; this is not independent human approval. The attempted `REQUEST_CHANGES` action was rejected by GitHub because an author cannot request changes on their own pull request.
+
+At the moment of the implementation commit readback, no workflow run or status check had been returned for `c08b00a…`. Earlier run `41938573679` (#527) belongs to the preceding `eecf456…` HEAD and ended `startup_failure` with zero jobs. No dispatch or retry was made.
+
+This correction closes the specific false-`READ_OK` defect at source level only. It does not establish source-applicability policy, live Control Master state, runtime success, independent acceptance, or the full D021 temporal contract of origin/scope, generation/observation times, per-source freshness, evidence/dependency linkage and causal influence. The Space-Time organ remains `PARTIAL`; PR #610 remains Draft and unmerged.
