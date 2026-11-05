@@ -90,6 +90,16 @@ class TestPlatformPendingQueue:
     def test_get_nonexistent(self, queue: PlatformPendingQueue):
         assert queue.get('nonexistent') is None
 
+    def test_missing_platform_pending_directory_is_not_an_empty_queue(self, queue: PlatformPendingQueue):
+        queue._resume_dir.rmdir()
+        queue._dir.rmdir()
+
+        report = queue.list_all_with_diagnostics()
+
+        assert report.status == 'READ_FAILED'
+        assert report.tasks == ()
+        assert any('DIRECTORY_UNAVAILABLE' in failure for failure in report.failed_paths)
+
     def test_list_all_sorted_by_priority(self, queue: PlatformPendingQueue):
         queue.upsert(PlatformPendingTask(id='low', title='Low', priority='low'))
         queue.upsert(PlatformPendingTask(id='crit', title='Critical', priority='critical'))

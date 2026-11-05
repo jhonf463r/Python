@@ -107,6 +107,11 @@ class PlatformPendingQueue:
         """Scan every task file and retain both readable tasks and failures."""
         tasks: list[PlatformPendingTask] = []
         failed_paths: list[str] = []
+        if not self._dir.is_dir():
+            return PlatformPendingQueueReadReport(
+                tasks=(),
+                failed_paths=(f"{self._dir}:DIRECTORY_UNAVAILABLE",),
+            )
         try:
             paths = sorted(self._dir.glob('task_*.json'))
             for path in paths:
