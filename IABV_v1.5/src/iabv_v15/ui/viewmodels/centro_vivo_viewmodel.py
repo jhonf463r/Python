@@ -65,6 +65,7 @@ class CentroVivoViewModel(QObject):
         self._last_refresh_utc = ''
         self._source_statuses: dict[str, str] = {}
         self._source_errors: dict[str, str] = {}
+        self._source_reports: dict[str, dict[str, Any]] = {}
         if defer_initial_refresh:
             QTimer.singleShot(0, self.refresh)
         else:
@@ -106,12 +107,32 @@ class CentroVivoViewModel(QObject):
     def get_source_statuses(self) -> dict[str, str]:
         return dict(self._source_statuses)
 
+    def get_source_reports(self) -> dict[str, dict[str, Any]]:
+        return {key: dict(value) for key, value in self._source_reports.items()}
+
     def _record_source_status(self, source: str, status: str, error: str = '') -> None:
         self._source_statuses[source] = status
         if error:
             self._source_errors[source] = error[:160]
         else:
             self._source_errors.pop(source, None)
+
+    def _record_source_report(self, source: str, report: Any) -> None:
+        if report is None:
+            self._source_reports.pop(source, None)
+            return
+        serializer = getattr(report, 'to_dict', None)
+        if callable(serializer):
+            self._source_reports[source] = serializer()
+        else:
+            self._source_reports[source] = {
+                'status': getattr(getattr(report, 'status', None), 'value', str(getattr(report, 'status', 'UNKNOWN'))),
+                'records_seen': getattr(report, 'records_seen', None),
+                'records_loaded': getattr(report, 'records_loaded', None),
+                'missing_ids': list(getattr(report, 'missing_ids', []) or []),
+                'failed_ids': list(getattr(report, 'failed_ids', []) or []),
+                'collection_error_type': getattr(report, 'collection_error_type', ''),
+            }
 
     def get_working(self) -> bool:
         return self._working
@@ -192,8 +213,13 @@ class CentroVivoViewModel(QObject):
         try:
             cards = repo.list_cards()
         except Exception as exc:
-            self._record_source_status('tool_record_repository', 'READ_FAILED', type(exc).__name__)
+            report = getattr(exc, 'report', None) or getattr(repo, 'last_read_report', None)
+            self._record_source_report('tool_record_repository', report)
+            report_status = getattr(getattr(report, 'status', None), 'value', '')
+            status = 'READ_PARTIAL' if report_status == 'READ_PARTIAL' else 'READ_FAILED'
+            self._record_source_status('tool_record_repository', status, type(exc).__name__)
             return []
+        self._record_source_report('tool_record_repository', getattr(repo, 'last_read_report', None))
         items: list[dict[str, Any]] = []
         for card in cards:
             dumped = card.model_dump(mode='json') if hasattr(card, 'model_dump') else {}
