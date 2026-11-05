@@ -745,11 +745,53 @@ class OperationalSelfExaminationService:
 
         return findings[:3]
 
+    def _inspect_runtime_audit_log(self) -> None:
+        """Verify the shared runtime audit JSONL without trusting its consumers."""
+        workspace = str(getattr(self, 'workspace_root', '') or '').strip()
+        if not workspace:
+            self._record_source_status('runtime_audit_log', 'NOT_CONFIGURED', 'workspace_root_missing')
+            return
+
+        audit_path = Path(workspace) / 'data' / 'logs' / 'runtime_audit.jsonl'
+        malformed_rows = 0
+        try:
+            with audit_path.open('r', encoding='utf-8') as handle:
+                for line in handle:
+                    stripped = line.strip()
+                    if not stripped:
+                        continue
+                    try:
+                        payload = json.loads(stripped)
+                    except json.JSONDecodeError:
+                        malformed_rows += 1
+                        continue
+                    if not isinstance(payload, dict):
+                        malformed_rows += 1
+        except FileNotFoundError:
+            self._record_source_status('runtime_audit_log', 'CONFIRMED_NOT_FOUND')
+            return
+        except (OSError, UnicodeError) as exc:
+            self._record_source_status('runtime_audit_log', 'READ_FAILED', type(exc).__name__)
+            return
+        except Exception as exc:
+            self._record_source_status('runtime_audit_log', 'READ_FAILED', type(exc).__name__)
+            return
+
+        if malformed_rows:
+            self._record_source_status(
+                'runtime_audit_log',
+                'READ_PARTIAL',
+                f'malformed_jsonl_rows:{malformed_rows}',
+            )
+        else:
+            self._record_source_status('runtime_audit_log', 'READ_OK')
+
     def build_review(self) -> SelfExaminationSnapshot:
         self._source_coverage = {
             source: "NOT_INSTRUMENTED" for source in _REQUIRED_SOURCE_IDS
         }
         self._source_errors = {}
+        self._inspect_runtime_audit_log()
         now = utc_now()
         previous_review = self._load_latest_review()
         recent_runs = self._recent_runs()
