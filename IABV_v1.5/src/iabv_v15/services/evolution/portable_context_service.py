@@ -4113,18 +4113,35 @@ class PortableContextService:
         """P0.70: collect unresolved metacognitive links across frame + roadmap."""
         items: list[dict[str, Any]] = []
         unresolved: list[str] = []
-        try:
-            from iabv_v15.services.evolution.discernment_frame_service import DiscernmentFrameService
-            svc = DiscernmentFrameService()
-            frame = svc.latest_frame()
-            if frame and frame.unresolved_fields:
+        service = getattr(self, 'discernment_frame_service', None)
+        if service is None:
+            items.append({
+                'source': 'discernment_frame',
+                'status': 'service_unavailable',
+            })
+            unresolved.append('discernment_frame_service_not_configured')
+        else:
+            try:
+                frame = service.latest_frame()
+                if frame is None:
+                    items.append({
+                        'source': 'discernment_frame',
+                        'status': 'no_frame_yet',
+                    })
+                    unresolved.append('no_discernment_frame_generated')
+                elif frame.unresolved_fields:
+                    items.append({
+                        'source': 'discernment_frame',
+                        'unresolved': frame.unresolved_fields[:10],
+                    })
+                    unresolved.extend(frame.unresolved_fields[:10])
+            except Exception as exc:
                 items.append({
                     'source': 'discernment_frame',
-                    'unresolved': frame.unresolved_fields[:10],
+                    'status': 'service_unavailable',
+                    'reason': type(exc).__name__,
                 })
-                unresolved.extend(frame.unresolved_fields[:10])
-        except Exception:
-            pass
+                unresolved.append('discernment_frame_service_unavailable')
         try:
             import json as _json
             from pathlib import Path as _Path
