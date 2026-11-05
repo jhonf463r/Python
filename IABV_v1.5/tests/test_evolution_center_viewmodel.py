@@ -358,19 +358,22 @@ def test_evolution_center_refresh_reuses_cached_self_examination_after_portable_
         service = bootstrap.operational_self_examination_service
         assert service is not None
 
-        original = service.current_review
-        calls: list[bool] = []
+        original_cached_reader = service.current_review_cached
+        cached_calls: list[bool] = []
 
-        def tracked_current_review(*, refresh: bool = False, max_age_seconds: int = 300):
-            calls.append(bool(refresh))
-            return original(refresh=refresh, max_age_seconds=max_age_seconds)
+        def tracked_cached_reader(*, max_age_seconds: int = 300):
+            cached_calls.append(True)
+            return original_cached_reader(max_age_seconds=max_age_seconds)
 
-        service.current_review = tracked_current_review  # type: ignore[assignment]
+        def fail_active_review(*, refresh: bool = False, max_age_seconds: int = 300):
+            raise AssertionError('Evolution Center must not rebuild OSES')
+
+        service.current_review_cached = tracked_cached_reader  # type: ignore[assignment]
+        service.current_review = fail_active_review  # type: ignore[assignment]
 
         vm.refresh()
 
-        assert calls
-        assert all(c is False for c in calls)
+        assert cached_calls
     finally:
         shutil.rmtree(workspace, ignore_errors=True)
 
