@@ -15,13 +15,13 @@ def test_browser_account_scan_reports_directory_enumeration_failure(monkeypatch)
 
     monkeypatch.setattr(
         account_resource_scanner,
-        "_chromium_browser_dirs",
-        lambda: [("Chrome", root)],
+        "_chromium_browser_dirs_with_diagnostics",
+        lambda: ([("Chrome", root)], [], "READ_OK"),
     )
     monkeypatch.setattr(
         account_resource_scanner,
-        "_firefox_accounts_with_diagnostics",
-        lambda: ([], []),
+        "_firefox_accounts_scan_with_coverage",
+        lambda: ([], [], "CONFIRMED_NOT_FOUND"),
     )
     monkeypatch.setattr(Path, "iterdir", fail_iterdir)
 
@@ -42,8 +42,8 @@ def test_browser_session_scan_reports_directory_enumeration_failure(monkeypatch)
 
     monkeypatch.setattr(
         account_resource_scanner,
-        "_chromium_browser_dirs",
-        lambda: [("Chrome", root)],
+        "_chromium_browser_dirs_with_diagnostics",
+        lambda: ([("Chrome", root)], [], "READ_OK"),
     )
     monkeypatch.setattr(Path, "iterdir", fail_iterdir)
 
@@ -382,3 +382,52 @@ def test_ollama_missing_models_field_is_not_verified_empty(monkeypatch) -> None:
     assert result['available'] is False
     assert result['source_coverage']['ollama_api'] == 'READ_FAILED'
     assert result['source_errors']['ollama_api'] == 'TypeError'
+
+def test_chromium_root_discovery_confirms_absent_known_roots(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(Path, "home", classmethod(lambda cls: tmp_path))
+
+    dirs, errors, status = account_resource_scanner._chromium_browser_dirs_with_diagnostics()
+
+    assert dirs == []
+    assert errors == []
+    assert status == "CONFIRMED_NOT_FOUND"
+
+
+def test_chromium_root_discovery_preserves_access_denial(monkeypatch, tmp_path) -> None:
+    root = tmp_path / ".config" / "google-chrome"
+    original_stat = Path.stat
+    monkeypatch.setattr(Path, "home", classmethod(lambda cls: tmp_path))
+
+    def stat_with_denial(self, *args, **kwargs):
+        if self == root:
+            raise PermissionError("synthetic browser root denial")
+        return original_stat(self, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "stat", stat_with_denial)
+
+    dirs, errors, status = account_resource_scanner._chromium_browser_dirs_with_diagnostics()
+
+    assert dirs == []
+    assert status == "READ_FAILED"
+    assert "chromium_root:Chrome:PermissionError" in errors
+
+
+def test_browser_scans_do_not_report_unconfigured_roots_as_clean_empty(monkeypatch) -> None:
+    monkeypatch.setattr(
+        account_resource_scanner,
+        "_chromium_browser_dirs_with_diagnostics",
+        lambda: ([], ["chromium_root_config:LOCALAPPDATA_NOT_CONFIGURED"], "NOT_CONFIGURED"),
+    )
+    monkeypatch.setattr(
+        account_resource_scanner,
+        "_firefox_accounts_scan_with_coverage",
+        lambda: ([], [], "NOT_CONFIGURED"),
+    )
+
+    accounts = account_resource_scanner.scan_browser_accounts()
+    sessions = account_resource_scanner.scan_browser_sessions()
+
+    assert accounts["accounts"] == []
+    assert accounts["source_coverage"]["browser_accounts"] == "NOT_CONFIGURED"
+    assert sessions["sessions"] == []
+    assert sessions["source_coverage"]["browser_sessions"] == "NOT_CONFIGURED"

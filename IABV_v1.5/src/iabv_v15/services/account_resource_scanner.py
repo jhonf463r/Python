@@ -20,6 +20,7 @@ import os
 import re
 import subprocess
 import sqlite3
+import stat as stat_module
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -219,27 +220,40 @@ def scan_ollama_api() -> dict[str, Any]:
 # Browser Account Detection
 # ──────────────────────────────────────────────────────────────
 
-def _chromium_browser_dirs() -> list[tuple[str, Path]]:
-    """Return ``(browser_name, user_data_dir)`` for all Chromium-based browsers."""
+def _chromium_browser_dirs_with_diagnostics() -> tuple[list[tuple[str, Path]], list[str], str]:
+    """Discover Chromium roots without collapsing inaccessible paths into absence."""
     dirs: list[tuple[str, Path]] = []
+    errors: list[str] = []
+    candidates: list[tuple[str, Path]] = []
+
     if os.name == 'nt':
-        local_app = os.environ.get('LOCALAPPDATA', '')
+        local_app = os.environ.get('LOCALAPPDATA', '').strip()
+        app_data = os.environ.get('APPDATA', '').strip()
         if not local_app:
-            return dirs
-        base = Path(local_app)
-        candidates: list[tuple[str, Path]] = [
-            ('Chrome', base / 'Google' / 'Chrome' / 'User Data'),
-            ('Edge', base / 'Microsoft' / 'Edge' / 'User Data'),
-            ('Brave', base / 'BraveSoftware' / 'Brave-Browser' / 'User Data'),
-            ('Opera', Path(os.environ.get('APPDATA', '')) / 'Opera Software' / 'Opera Stable'),
-            ('Opera GX', Path(os.environ.get('APPDATA', '')) / 'Opera Software' / 'Opera GX Stable'),
-            ('Vivaldi', base / 'Vivaldi' / 'User Data'),
-        ]
-        for name, path in candidates:
-            if path.exists():
-                dirs.append((name, path))
+            errors.append('chromium_root_config:LOCALAPPDATA_NOT_CONFIGURED')
+        if not app_data:
+            errors.append('chromium_root_config:APPDATA_NOT_CONFIGURED')
+        if local_app:
+            base = Path(local_app)
+            candidates.extend([
+                ('Chrome', base / 'Google' / 'Chrome' / 'User Data'),
+                ('Edge', base / 'Microsoft' / 'Edge' / 'User Data'),
+                ('Brave', base / 'BraveSoftware' / 'Brave-Browser' / 'User Data'),
+                ('Vivaldi', base / 'Vivaldi' / 'User Data'),
+            ])
+        if app_data:
+            app_base = Path(app_data)
+            candidates.extend([
+                ('Opera', app_base / 'Opera Software' / 'Opera Stable'),
+                ('Opera GX', app_base / 'Opera Software' / 'Opera GX Stable'),
+            ])
+        if not local_app and not app_data:
+            return dirs, errors, 'NOT_CONFIGURED'
     else:
-        home = Path.home()
+        try:
+            home = Path.home()
+        except Exception as exc:
+            return dirs, [f'chromium_browser_roots:{type(exc).__name__}'], 'READ_FAILED'
         candidates = [
             ('Chrome', home / '.config' / 'google-chrome'),
             ('Chromium', home / '.config' / 'chromium'),
@@ -248,35 +262,103 @@ def _chromium_browser_dirs() -> list[tuple[str, Path]]:
             ('Vivaldi', home / '.config' / 'vivaldi'),
             ('Opera', home / '.config' / 'opera'),
         ]
-        for name, path in candidates:
-            if path.exists():
-                dirs.append((name, path))
+
+    for name, path in candidates:
+        try:
+            path_stat = path.stat()
+        except FileNotFoundError:
+            continue
+        except OSError as exc:
+            errors.append(f'chromium_root:{name}:{type(exc).__name__}')
+            continue
+        if not stat_module.S_ISDIR(path_stat.st_mode):
+            errors.append(f'chromium_root:{name}:NotADirectoryError')
+            continue
+        dirs.append((name, path))
+
+    if dirs:
+        return dirs, errors, 'READ_PARTIAL' if errors else 'READ_OK'
+    if errors and any('NOT_CONFIGURED' not in item for item in errors):
+        return dirs, errors, 'READ_FAILED'
+    if errors:
+        return dirs, errors, 'NOT_CONFIGURED'
+    return dirs, errors, 'CONFIRMED_NOT_FOUND'
+
+
+def _chromium_browser_dirs() -> list[tuple[str, Path]]:
+    """Compatibility view; completeness-sensitive readers use diagnostics."""
+    dirs, _errors, _status = _chromium_browser_dirs_with_diagnostics()
     return dirs
 
 
-def _firefox_accounts_with_diagnostics() -> tuple[list[dict[str, str]], list[str]]:
-    """Read Firefox account metadata and retain per-profile read failures."""
+def _combine_browser_source_status(statuses: list[str]) -> str:
+    """Combine independent browser-root outcomes without turning unknown into empty."""
+    normalized = [str(item) for item in statuses if item]
+    if not normalized:
+        return 'NOT_EXECUTED'
+    if 'READ_PARTIAL' in normalized:
+        return 'READ_PARTIAL'
+    if 'READ_FAILED' in normalized:
+        return 'READ_PARTIAL' if 'READ_OK' in normalized else 'READ_FAILED'
+    if 'NOT_CONFIGURED' in normalized:
+        return 'READ_PARTIAL' if 'READ_OK' in normalized else 'NOT_CONFIGURED'
+    if 'READ_OK' in normalized:
+        return 'READ_OK'
+    if all(item == 'CONFIRMED_NOT_FOUND' for item in normalized):
+        return 'CONFIRMED_NOT_FOUND'
+    return 'READ_UNVERIFIED'
+
+
+
+
+def _firefox_accounts_scan_with_coverage() -> tuple[list[dict[str, str]], list[str], str]:
+    """Read Firefox account metadata with an explicit root-discovery outcome."""
     accounts: list[dict[str, str]] = []
     errors: list[str] = []
     if os.name == 'nt':
-        ff_root = Path(os.environ.get('APPDATA', '')) / 'Mozilla' / 'Firefox' / 'Profiles'
+        app_data = os.environ.get('APPDATA', '').strip()
+        if not app_data:
+            return accounts, [], 'NOT_CONFIGURED'
+        ff_root = Path(app_data) / 'Mozilla' / 'Firefox' / 'Profiles'
     else:
-        ff_root = Path.home() / '.mozilla' / 'firefox'
+        try:
+            ff_root = Path.home() / '.mozilla' / 'firefox'
+        except Exception as exc:
+            return accounts, [f'firefox_root:{type(exc).__name__}'], 'READ_FAILED'
+
     try:
-        if not ff_root.exists():
-            return accounts, errors
+        root_stat = ff_root.stat()
+    except FileNotFoundError:
+        return accounts, [], 'CONFIRMED_NOT_FOUND'
+    except OSError as exc:
+        return accounts, [f'firefox_directory:{type(exc).__name__}'], 'READ_FAILED'
+    if not stat_module.S_ISDIR(root_stat.st_mode):
+        return accounts, ['firefox_directory:NotADirectoryError'], 'READ_FAILED'
+
+    try:
         profile_dirs = list(ff_root.iterdir())
     except Exception as exc:
-        return accounts, [f'firefox_directory:{type(exc).__name__}']
+        return accounts, [f'firefox_directory:{type(exc).__name__}'], 'READ_FAILED'
+
     for profile_dir in profile_dirs:
         try:
-            if not profile_dir.is_dir():
+            profile_stat = profile_dir.stat()
+            if not stat_module.S_ISDIR(profile_stat.st_mode):
                 continue
             signed_in = profile_dir / 'signedInUser.json'
-            if not signed_in.exists():
+            try:
+                signed_stat = signed_in.stat()
+            except FileNotFoundError:
+                continue
+            if not stat_module.S_ISREG(signed_stat.st_mode):
+                errors.append(f'firefox_profile:{profile_dir.name}:signedInUser_not_regular_file')
                 continue
             data = json.loads(signed_in.read_text(encoding='utf-8', errors='replace'))
+            if not isinstance(data, dict):
+                raise TypeError('signedInUser_not_object')
             acct = data.get('accountData', {})
+            if not isinstance(acct, dict):
+                raise TypeError('accountData_not_object')
             email = acct.get('email', '')
             if email:
                 accounts.append({
@@ -285,9 +367,19 @@ def _firefox_accounts_with_diagnostics() -> tuple[list[dict[str, str]], list[str
                     'email': email,
                     'full_name': acct.get('displayName', ''),
                 })
+        except FileNotFoundError:
+            errors.append(f'firefox_profile:{profile_dir.name}:vanished_during_scan')
         except Exception as exc:
             errors.append(f'firefox_profile:{profile_dir.name}:{type(exc).__name__}')
+    return accounts, errors, 'READ_PARTIAL' if errors else 'READ_OK'
+
+
+def _firefox_accounts_with_diagnostics() -> tuple[list[dict[str, str]], list[str]]:
+    """Compatibility wrapper; preserve the historical two-value return shape."""
+    accounts, errors, _status = _firefox_accounts_scan_with_coverage()
     return accounts, errors
+
+
 
 
 def _firefox_accounts() -> list[dict[str, str]]:
@@ -297,34 +389,46 @@ def _firefox_accounts() -> list[dict[str, str]]:
 
 
 def scan_browser_accounts() -> dict[str, Any]:
-    """Detect browser account metadata and expose skipped-profile coverage."""
+    """Detect browser account metadata and expose incomplete root/profile scans."""
     accounts: list[dict[str, str]] = []
     browsers_scanned: list[str] = []
     errors: list[str] = []
 
     try:
-        browser_dirs = _chromium_browser_dirs()
+        browser_dirs, root_errors, chromium_status = _chromium_browser_dirs_with_diagnostics()
     except Exception as exc:
-        browser_dirs = []
-        errors.append(f'chromium_browser_roots:{type(exc).__name__}')
+        browser_dirs, root_errors, chromium_status = [], [f'chromium_browser_roots:{type(exc).__name__}'], 'READ_FAILED'
+    errors.extend(root_errors)
 
+    chromium_profile_errors: list[str] = []
     for browser_name, chrome_dir in browser_dirs:
         browsers_scanned.append(str(chrome_dir))
         try:
             profile_dirs = list(chrome_dir.iterdir())
         except Exception as exc:
-            errors.append(f'chromium_directory:{browser_name}:{type(exc).__name__}')
+            chromium_profile_errors.append(f'chromium_directory:{browser_name}:{type(exc).__name__}')
             continue
         for profile_dir in profile_dirs:
             try:
-                if not profile_dir.is_dir():
+                profile_stat = profile_dir.stat()
+                if not stat_module.S_ISDIR(profile_stat.st_mode):
                     continue
                 prefs_file = profile_dir / 'Preferences'
-                if not prefs_file.exists():
+                try:
+                    prefs_stat = prefs_file.stat()
+                except FileNotFoundError:
                     continue
+                if not stat_module.S_ISREG(prefs_stat.st_mode):
+                    raise TypeError('preferences_not_regular_file')
                 prefs = json.loads(prefs_file.read_text(encoding='utf-8', errors='replace'))
+                if not isinstance(prefs, dict):
+                    raise TypeError('preferences_not_object')
                 account_info = prefs.get('account_info', [])
+                if not isinstance(account_info, list):
+                    raise TypeError('account_info_not_list')
                 for acc in account_info:
+                    if not isinstance(acc, dict):
+                        raise TypeError('account_info_entry_not_object')
                     email = acc.get('email', '')
                     if email:
                         accounts.append({
@@ -333,34 +437,44 @@ def scan_browser_accounts() -> dict[str, Any]:
                             'email': email,
                             'full_name': acc.get('full_name', ''),
                         })
-                signin = prefs.get('google', {}).get('services', {}).get('signin', {})
+                google = prefs.get('google', {})
+                signin = google.get('services', {}).get('signin', {}) if isinstance(google, dict) else {}
+                if not isinstance(signin, dict):
+                    raise TypeError('google_signin_not_object')
                 if signin.get('allowed') and not account_info:
                     accounts.append({
                         'browser': browser_name,
                         'profile': profile_dir.name,
                         'email': 'signed_in (details unavailable)',
                     })
+            except FileNotFoundError:
+                chromium_profile_errors.append(f'chromium_profile:{browser_name}:{profile_dir.name}:vanished_during_scan')
             except Exception as exc:
-                errors.append(f'chromium_profile:{browser_name}:{profile_dir.name}:{type(exc).__name__}')
+                chromium_profile_errors.append(f'chromium_profile:{browser_name}:{profile_dir.name}:{type(exc).__name__}')
 
-    ff_accounts, ff_errors = _firefox_accounts_with_diagnostics()
+    errors.extend(chromium_profile_errors)
+    if chromium_profile_errors:
+        chromium_status = 'READ_PARTIAL' if browser_dirs else 'READ_FAILED'
+
+    ff_accounts, ff_errors, firefox_status = _firefox_accounts_scan_with_coverage()
     accounts.extend(ff_accounts)
     errors.extend(ff_errors)
-    if ff_accounts or ff_errors:
+    if firefox_status in {'READ_OK', 'READ_PARTIAL'}:
         if os.name == 'nt':
-            browsers_scanned.append(str(Path(os.environ.get('APPDATA', '')) / 'Mozilla' / 'Firefox'))
+            browsers_scanned.append(str(Path(os.environ['APPDATA']) / 'Mozilla' / 'Firefox'))
         else:
             browsers_scanned.append(str(Path.home() / '.mozilla' / 'firefox'))
 
+    coverage = _combine_browser_source_status([chromium_status, firefox_status])
     return {
         'accounts': accounts,
         'count': len(accounts),
         'browsers_scanned': browsers_scanned,
-        'source_coverage': {
-            'browser_accounts': 'READ_PARTIAL' if errors else 'READ_OK',
-        },
+        'source_coverage': {'browser_accounts': coverage},
         'source_errors': {'browser_accounts': ';'.join(errors[:20])} if errors else {},
     }
+
+
 
 
 # Domains that indicate an active session for each assistant tool.
@@ -374,35 +488,41 @@ _TOOL_SESSION_DOMAINS: dict[str, list[str]] = {
 
 
 def scan_browser_sessions() -> dict[str, Any]:
-    """Detect session-domain rows without exposing cookie values; retain coverage."""
+    """Detect session-domain rows without exposing cookie values; retain root coverage."""
     import shutil as _shutil
     import tempfile as _tempfile
 
     sessions: list[dict[str, Any]] = []
     errors: list[str] = []
     try:
-        browser_dirs = _chromium_browser_dirs()
+        browser_dirs, root_errors, root_status = _chromium_browser_dirs_with_diagnostics()
     except Exception as exc:
-        browser_dirs = []
-        errors.append(f'chromium_browser_roots:{type(exc).__name__}')
+        browser_dirs, root_errors, root_status = [], [f'chromium_browser_roots:{type(exc).__name__}'], 'READ_FAILED'
+    errors.extend(root_errors)
 
+    profile_errors: list[str] = []
     for browser_name, chrome_dir in browser_dirs:
         try:
             profile_dirs = list(chrome_dir.iterdir())
         except Exception as exc:
-            errors.append(f'chromium_directory:{browser_name}:{type(exc).__name__}')
+            profile_errors.append(f'chromium_directory:{browser_name}:{type(exc).__name__}')
             continue
         for profile_dir in profile_dirs:
             try:
-                if not profile_dir.is_dir():
+                profile_stat = profile_dir.stat()
+                if not stat_module.S_ISDIR(profile_stat.st_mode):
                     continue
                 cookies_db = profile_dir / 'Cookies'
-                if not cookies_db.exists():
+                try:
+                    cookies_db.stat()
+                except FileNotFoundError:
                     cookies_db = profile_dir / 'Network' / 'Cookies'
-                if not cookies_db.exists():
-                    continue
+                    try:
+                        cookies_db.stat()
+                    except FileNotFoundError:
+                        continue
             except Exception as exc:
-                errors.append(f'profile_metadata:{browser_name}:{profile_dir.name}:{type(exc).__name__}')
+                profile_errors.append(f'profile_metadata:{browser_name}:{profile_dir.name}:{type(exc).__name__}')
                 continue
 
             tmp_path: str | None = None
@@ -431,22 +551,26 @@ def scan_browser_sessions() -> dict[str, Any]:
                                     'has_session': True,
                                 })
                         except Exception as exc:
-                            errors.append(
+                            profile_errors.append(
                                 f'cookie_index:{browser_name}:{profile_dir.name}:{domain}:{type(exc).__name__}'
                             )
             except Exception as exc:
-                errors.append(f'cookie_database:{browser_name}:{profile_dir.name}:{type(exc).__name__}')
+                profile_errors.append(f'cookie_database:{browser_name}:{profile_dir.name}:{type(exc).__name__}')
             finally:
                 if conn is not None:
                     try:
                         conn.close()
                     except Exception as exc:
-                        errors.append(f'cookie_close:{browser_name}:{profile_dir.name}:{type(exc).__name__}')
+                        profile_errors.append(f'cookie_close:{browser_name}:{profile_dir.name}:{type(exc).__name__}')
                 if tmp_path is not None:
                     try:
                         os.unlink(tmp_path)
                     except Exception as exc:
-                        errors.append(f'temp_cleanup:{browser_name}:{profile_dir.name}:{type(exc).__name__}')
+                        profile_errors.append(f'temp_cleanup:{browser_name}:{profile_dir.name}:{type(exc).__name__}')
+
+    errors.extend(profile_errors)
+    if profile_errors:
+        root_status = 'READ_PARTIAL' if browser_dirs else 'READ_FAILED'
 
     tool_sessions: dict[str, list[dict[str, Any]]] = {}
     for item in sessions:
@@ -457,11 +581,11 @@ def scan_browser_sessions() -> dict[str, Any]:
         'session_count': len(sessions),
         'tools_with_sessions': list(tool_sessions.keys()),
         'by_tool': tool_sessions,
-        'source_coverage': {
-            'browser_sessions': 'READ_PARTIAL' if errors else 'READ_OK',
-        },
+        'source_coverage': {'browser_sessions': root_status},
         'source_errors': {'browser_sessions': ';'.join(errors[:20])} if errors else {},
     }
+
+
 
 
 def diagnose_browser_access() -> str:
