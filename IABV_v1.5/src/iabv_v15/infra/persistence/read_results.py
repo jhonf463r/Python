@@ -286,3 +286,69 @@ def read_model_from_paths(
         error_type="FileNotFoundError",
         error_message="No candidate artifact path exists.",
     )
+
+
+
+def read_json_mapping_from_paths(
+    paths: Sequence[Path],
+    artifact_id: str,
+) -> ArtifactReadResult[dict[str, Any]]:
+    """Read a JSON object from indexed paths without hiding I/O or shape errors."""
+    attempted: list[str] = []
+    for path in paths:
+        attempted.append(str(path))
+        try:
+            raw = path.read_text(encoding="utf-8")
+        except FileNotFoundError:
+            continue
+        except UnicodeError as exc:
+            return ArtifactReadResult(
+                artifact_id=artifact_id,
+                path=str(path),
+                status=ArtifactReadStatus.CORRUPT,
+                error_type=type(exc).__name__,
+                error_message=str(exc)[:300],
+            )
+        except OSError as exc:
+            return ArtifactReadResult(
+                artifact_id=artifact_id,
+                path=str(path),
+                status=ArtifactReadStatus.READ_FAILED,
+                error_type=type(exc).__name__,
+                error_message=str(exc)[:300],
+            )
+
+        try:
+            payload = json.loads(raw)
+        except json.JSONDecodeError as exc:
+            return ArtifactReadResult(
+                artifact_id=artifact_id,
+                path=str(path),
+                status=ArtifactReadStatus.CORRUPT,
+                error_type=type(exc).__name__,
+                error_message=str(exc)[:300],
+            )
+
+        if not isinstance(payload, dict):
+            return ArtifactReadResult(
+                artifact_id=artifact_id,
+                path=str(path),
+                status=ArtifactReadStatus.SCHEMA_UNSUPPORTED,
+                error_type="TypeError",
+                error_message="Expected a JSON object at the artifact root.",
+            )
+
+        return ArtifactReadResult(
+            artifact_id=artifact_id,
+            path=str(path),
+            status=ArtifactReadStatus.FOUND,
+            value=payload,
+        )
+
+    return ArtifactReadResult(
+        artifact_id=artifact_id,
+        path=" -> ".join(attempted),
+        status=ArtifactReadStatus.CONFIRMED_NOT_FOUND,
+        error_type="FileNotFoundError",
+        error_message="No candidate artifact path exists.",
+    )
