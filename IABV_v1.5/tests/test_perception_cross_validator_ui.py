@@ -241,3 +241,32 @@ def test_partial_tool_registry_report_is_not_reported_as_read_ok() -> None:
     assert inconsistencies == []
     assert validator._check_statuses['audit_vs_worldmodel'] == 'READ_PARTIAL'
     assert validator._check_reports['audit_vs_worldmodel']['records_loaded'] == 2
+
+
+def test_partial_process_read_does_not_trigger_availability_auto_correction() -> None:
+    validator = _make_validator(windows=[])
+    correction_calls: list[list[dict[str, object]]] = []
+
+    def partial_process_check() -> list[dict[str, object]]:
+        validator._set_check_status(
+            'tools_vs_processes',
+            'READ_PARTIAL',
+            'window_enumeration_failed',
+        )
+        return [{
+            'check': 'tools_vs_processes',
+            'severity': 'high',
+            'tool_id': 'codex',
+        }]
+
+    validator._cross_tools_vs_processes = partial_process_check  # type: ignore[method-assign]
+    validator._auto_correct_availability = (  # type: ignore[method-assign]
+        lambda items: correction_calls.append(items) or []
+    )
+
+    result = validator.run_cross_validation()
+
+    assert correction_calls == []
+    assert result['auto_corrections'] == []
+    assert result['checks_status']['tools_vs_processes'] == 'READ_PARTIAL'
+    assert 'tools_vs_processes' not in result['checks_passed']
