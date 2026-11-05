@@ -12,6 +12,7 @@ from typing import Any
 from iabv_v15.domain.models import (
     EnvironmentSelfModel,
     ObjectiveNodeKind,
+    ObjectiveStatus,
     PortableContextPackage,
     PortableContextSection,
     TaskContext,
@@ -238,8 +239,8 @@ class PortableContextService:
             task_context=task_context,
         )
         task_packet_summary = self._task_packet_summary_snapshot()
-        pending_items = self._pending_items()
-        backlog_items = self._backlog_items()
+        pending_items, pending_read_status, pending_read_error = self._pending_items()
+        backlog_items, backlog_read_status, backlog_read_error = self._backlog_items()
         decision_history = self._decision_history(recommendations=recommendations)
         unresolved = self._unresolved_fields(
             environment=environment,
@@ -248,7 +249,11 @@ class PortableContextService:
             recommendations=recommendations,
             goal_context=goal_context,
         )
-        unresolved = list(dict.fromkeys([*unresolved, *list(self_examination.get('unresolved_risks') or [])]))
+        unresolved = list(dict.fromkeys([
+            *unresolved,
+            *list(goal_context.get('unresolved_fields') or []),
+            *list(self_examination.get('unresolved_risks') or []),
+        ]))
         sections = [
             self._project_state_section(
                 goal_context=goal_context,
@@ -298,7 +303,15 @@ class PortableContextService:
                 now=now,
             ),
             self._decision_history_section(decision_history=decision_history, now=now),
-            self._pending_section(pending_items=pending_items, backlog_items=backlog_items, now=now),
+            self._pending_section(
+                pending_items=pending_items,
+                backlog_items=backlog_items,
+                pending_read_status=pending_read_status,
+                pending_read_error=pending_read_error,
+                backlog_read_status=backlog_read_status,
+                backlog_read_error=backlog_read_error,
+                now=now,
+            ),
             self._canonical_work_queue_section(now=now),
             self._shared_reality_section(review=self_examination, now=now),
             self._user_chrome_bridge_section(now=now),
@@ -535,9 +548,25 @@ class PortableContextService:
                 'project': dict(goal.project or {}),
                 'task': dict(goal.task or {}),
             }
-        objective = self._latest_objective(kind=ObjectiveNodeKind.OBJECTIVE)
-        project = self._latest_objective(kind=ObjectiveNodeKind.PROJECT)
-        task = self._latest_objective(kind=ObjectiveNodeKind.TASK)
+        objective, objective_status, objective_error = self._latest_objective_with_diagnostics(
+            kind=ObjectiveNodeKind.OBJECTIVE
+        )
+        project, project_status, project_error = self._latest_objective_with_diagnostics(
+            kind=ObjectiveNodeKind.PROJECT
+        )
+        task, task_status, task_error = self._latest_objective_with_diagnostics(
+            kind=ObjectiveNodeKind.TASK
+        )
+        objective_statuses = {
+            'objective': objective_status,
+            'project': project_status,
+            'task': task_status,
+        }
+        unresolved_fields = [
+            f'UNRESOLVED:active_{kind}_read_{status.lower()}'
+            for kind, status in objective_statuses.items()
+            if status != 'READ_OK'
+        ]
         active_title = str((getattr(task, 'title', '') or getattr(project, 'title', '') or getattr(objective, 'title', '') or '')).strip()
         active_objective_id = str((getattr(task, 'objective_id', '') or getattr(project, 'objective_id', '') or getattr(objective, 'objective_id', '') or ''))
         site_id = str((getattr(task, 'site_id', '') or getattr(project, 'site_id', '') or getattr(objective, 'site_id', '') or ''))
@@ -566,6 +595,15 @@ class PortableContextService:
             'project': project.model_dump(mode='json') if project is not None else {},
             'task': task.model_dump(mode='json') if task is not None else {},
             'metadata': fallback_metadata,
+            'source_statuses': objective_statuses,
+            'unresolved_fields': unresolved_fields,
+            'source_errors': {
+                key: value for key, value in {
+                    'objective': objective_error,
+                    'project': project_error,
+                    'task': task_error,
+                }.items() if value
+            },
         }
 
     def _recent_user_goal_fallback(self) -> dict[str, Any] | None:
@@ -622,14 +660,74 @@ class PortableContextService:
             'site_id': site_id,
         }
 
-    def _latest_objective(self, *, kind: ObjectiveNodeKind) -> Any | None:
+    def _latest_objective_with_diagnostics(
+        self, *, kind: ObjectiveNodeKind
+    ) -> tuple[Any | None, str, str]:
         repository = self.objective_repository
-        if repository is None or not hasattr(repository, 'latest_active'):
-            return None
+        if repository is None:
+            return None, 'NOT_CONFIGURED', 'objective_repository_not_connected'
+
+        diagnostic_reader = getattr(repository, 'list_recent_with_diagnostics', None)
+        if callable(diagnostic_reader):
+            for status_filter in (
+                ObjectiveStatus.ACTIVE,
+                ObjectiveStatus.BLOCKED,
+                ObjectiveStatus.PENDING,
+                ObjectiveStatus.PAUSED,
+            ):
+                try:
+                    report = diagnostic_reader(
+                        kind=kind,
+                        status=status_filter,
+                        limit=1,
+                    )
+                except Exception as exc:
+                    report = getattr(exc, 'report', None)
+                    report_status = getattr(
+                        getattr(report, 'status', None), 'value', ''
+                    ) if report is not None else ''
+                    status = (
+                        'READ_PARTIAL' if report_status == 'READ_PARTIAL'
+                        else 'READ_FAILED' if report_status == 'READ_FAILED'
+                        else 'UNVERIFIED' if report_status == 'QUERY_NOT_EXECUTED'
+                        else 'READ_FAILED'
+                    )
+                    return None, status, type(exc).__name__
+
+                report_status = getattr(
+                    getattr(report, 'status', None), 'value', ''
+                )
+                if report_status in ('READ_OK', 'NO_RECORDS_OBSERVED'):
+                    nodes = list(getattr(report, 'items', ()) or ())
+                    if nodes:
+                        return nodes[0], 'READ_OK', ''
+                    continue
+                if report_status == 'READ_PARTIAL':
+                    return None, 'READ_PARTIAL', 'objective_collection_read_partial'
+                if report_status == 'READ_FAILED':
+                    return None, 'READ_FAILED', 'objective_collection_read_failed'
+                return None, 'UNVERIFIED', (
+                    report_status or 'objective_collection_status_unknown'
+                )
+
+            return None, 'READ_OK', ''
+
+        legacy_reader = getattr(repository, 'latest_active', None)
+        if not callable(legacy_reader):
+            return None, 'READER_UNAVAILABLE', 'objective_repository_reader_unavailable'
         try:
-            return repository.latest_active(kind=kind)
-        except Exception:
-            return None
+            return legacy_reader(kind=kind), 'READ_OK', ''
+        except Exception as exc:
+            return None, 'READ_FAILED', type(exc).__name__
+
+    def _latest_objective(self, *, kind: ObjectiveNodeKind) -> Any | None:
+        objective, status, error = self._latest_objective_with_diagnostics(kind=kind)
+        if status != 'READ_OK':
+            raise RuntimeError(
+                f'objective_repository_{status.lower()}'
+                + (f':{error}' if error else '')
+            )
+        return objective
 
     def _environment_self_model(self) -> EnvironmentSelfModel:
         service = self.environment_self_awareness_service
@@ -2387,35 +2485,86 @@ class PortableContextService:
             })
         return patterns
 
-    def _pending_items(self) -> list[dict[str, Any]]:
+    def _pending_items(self) -> tuple[list[dict[str, Any]], str, str]:
         repository = self.pending_issue_repository
-        if repository is None or not hasattr(repository, 'list_recent'):
-            return []
-        items: list[dict[str, Any]] = []
-        try:
-            for issue in repository.list_recent(limit=6):
-                items.append(
-                    {
-                        'issue_id': str(getattr(issue, 'issue_id', '') or ''),
-                        'summary': str(getattr(issue, 'summary', '') or ''),
-                        'category': str(getattr(getattr(issue, 'category', None), 'value', getattr(issue, 'category', '')) or ''),
-                        'status': str(getattr(getattr(issue, 'status', None), 'value', getattr(issue, 'status', '')) or ''),
-                        'probable_cause': str(getattr(issue, 'probable_cause', '') or ''),
-                        'recommended_change': str(getattr(issue, 'recommended_change', '') or ''),
-                        'updated_at_utc': str(getattr(issue, 'created_at_utc', '') or ''),
-                    }
-                )
-        except Exception:
-            return []
-        return items
+        if repository is None:
+            return [], 'NOT_CONFIGURED', 'pending_issue_repository_not_connected'
 
-    def _backlog_items(self) -> list[dict[str, Any]]:
+        diagnostic_reader = getattr(repository, 'list_recent_with_diagnostics', None)
+        if callable(diagnostic_reader):
+            try:
+                report = diagnostic_reader(limit=6)
+            except Exception as exc:
+                report = getattr(exc, 'report', None)
+                report_status = getattr(
+                    getattr(report, 'status', None), 'value', ''
+                ) if report is not None else ''
+                status = (
+                    'READ_PARTIAL' if report_status == 'READ_PARTIAL'
+                    else 'UNVERIFIED' if report_status == 'QUERY_NOT_EXECUTED'
+                    else 'READ_FAILED'
+                )
+                return [], status, type(exc).__name__
+            report_status = getattr(getattr(report, 'status', None), 'value', '')
+            if report_status in ('READ_OK', 'NO_RECORDS_OBSERVED'):
+                candidates = list(getattr(report, 'items', ()) or ())
+            elif report_status == 'READ_PARTIAL':
+                return [], 'READ_PARTIAL', (
+                    f'records_seen={getattr(report, "records_seen", 0)};'
+                    f'records_loaded={getattr(report, "records_loaded", 0)};'
+                    f'records_failed={len(getattr(report, "failed_ids", ()) or ())}'
+                )
+            elif report_status == 'READ_FAILED':
+                return [], 'READ_FAILED', (
+                    getattr(report, 'collection_error_type', '')
+                    or 'pending_issue_collection_read_failed'
+                )
+            else:
+                return [], 'UNVERIFIED', report_status or 'pending_issue_status_unknown'
+        else:
+            legacy_reader = getattr(repository, 'list_recent', None)
+            if not callable(legacy_reader):
+                return [], 'READER_UNAVAILABLE', 'pending_issue_repository_reader_unavailable'
+            try:
+                candidates = list(legacy_reader(limit=6))
+            except Exception as exc:
+                report = getattr(exc, 'report', None)
+                report_status = getattr(
+                    getattr(report, 'status', None), 'value', ''
+                ) if report is not None else ''
+                status = (
+                    'READ_PARTIAL' if report_status == 'READ_PARTIAL'
+                    else 'UNVERIFIED' if report_status == 'QUERY_NOT_EXECUTED'
+                    else 'READ_FAILED'
+                )
+                return [], status, type(exc).__name__
+
+        items: list[dict[str, Any]] = []
+        for issue in candidates:
+            items.append(
+                {
+                    'issue_id': str(getattr(issue, 'issue_id', '') or ''),
+                    'summary': str(getattr(issue, 'summary', '') or ''),
+                    'category': str(getattr(getattr(issue, 'category', None), 'value', getattr(issue, 'category', '')) or ''),
+                    'status': str(getattr(getattr(issue, 'status', None), 'value', getattr(issue, 'status', '')) or ''),
+                    'probable_cause': str(getattr(issue, 'probable_cause', '') or ''),
+                    'recommended_change': str(getattr(issue, 'recommended_change', '') or ''),
+                    'updated_at_utc': str(getattr(issue, 'created_at_utc', '') or ''),
+                }
+            )
+        return items, 'READ_OK', ''
+
+    def _backlog_items(self) -> tuple[list[dict[str, Any]], str, str]:
         service = self.evolution_review_service
-        if service is None or not hasattr(service, 'build_improvement_backlog'):
-            return []
+        if service is None:
+            return [], 'NOT_CONFIGURED', 'evolution_review_service_not_connected'
+        reader = getattr(service, 'build_improvement_backlog', None)
+        if not callable(reader):
+            return [], 'READER_UNAVAILABLE', 'improvement_backlog_reader_unavailable'
         items: list[dict[str, Any]] = []
         try:
-            for proposal in service.build_improvement_backlog(limit=6):
+            proposals = reader(limit=6)
+            for proposal in proposals:
                 items.append(
                     {
                         'title': str(getattr(proposal, 'title', '') or ''),
@@ -2425,9 +2574,9 @@ class PortableContextService:
                         'suggested_tests': list(getattr(proposal, 'suggested_tests', []) or []),
                     }
                 )
-        except Exception:
-            return []
-        return items
+        except Exception as exc:
+            return [], 'READ_FAILED', type(exc).__name__
+        return items, 'READ_OK', ''
 
     def _decision_history(self, *, recommendations: list[dict[str, Any]]) -> list[dict[str, Any]]:
         history: list[dict[str, Any]] = []
@@ -3321,30 +3470,78 @@ class PortableContextService:
             unresolved_fields=[] if decision_history else ['UNRESOLVED:decision_history'],
         )
 
-    def _pending_section(self, *, pending_items: list[dict[str, Any]], backlog_items: list[dict[str, Any]], now) -> PortableContextSection:
+    def _pending_section(
+        self,
+        *,
+        pending_items: list[dict[str, Any]],
+        backlog_items: list[dict[str, Any]],
+        pending_read_status: str = 'READ_OK',
+        pending_read_error: str = '',
+        backlog_read_status: str = 'READ_OK',
+        backlog_read_error: str = '',
+        now,
+    ) -> PortableContextSection:
         platform_items, platform_status, platform_error = self._platform_pending_items()
         items = pending_items[:4] + backlog_items[:4] + platform_items[:4]
-        platform_summary = ''
+        notices: list[str] = []
         unresolved_fields: list[str] = []
-        if platform_status == 'READ_FAILED':
-            platform_summary = f' La cola de plataforma no se pudo leer ({platform_error}); no inferir que está vacía.'
-            unresolved_fields.append('UNRESOLVED:platform_pending_queue_read_failed')
-        elif platform_status == 'READ_PARTIAL':
-            platform_summary = f' La cola de plataforma tuvo lectura parcial ({platform_error}); sus elementos no se ofrecen como accionables.'
-            unresolved_fields.append('UNRESOLVED:platform_pending_queue_read_partial')
-        elif platform_status == 'READER_UNAVAILABLE':
-            platform_summary = ' El lector de la cola de plataforma no está disponible.'
-            unresolved_fields.append('UNRESOLVED:platform_pending_queue_reader_unavailable')
-        elif platform_status == 'NOT_CONFIGURED':
-            platform_summary = ' La cola de plataforma no está conectada.'
-            unresolved_fields.append('UNRESOLVED:platform_pending_queue_not_connected')
+
+        status_messages = {
+            'pending_issue_repository': {
+                'READ_FAILED': 'El repositorio de pendientes no se pudo leer; no inferir que está vacío.',
+                'READ_PARTIAL': 'El repositorio de pendientes tuvo una lectura parcial; los elementos parciales no se ofrecen como accionables.',
+                'NOT_CONFIGURED': 'El repositorio de pendientes no está conectado.',
+                'READER_UNAVAILABLE': 'El lector del repositorio de pendientes no está disponible.',
+                'UNVERIFIED': 'La lectura del repositorio de pendientes no está verificada.',
+            },
+            'evolution_review_service': {
+                'READ_FAILED': 'El backlog de mejoras no se pudo leer; no inferir que está vacío.',
+                'NOT_CONFIGURED': 'El servicio de backlog de mejoras no está conectado.',
+                'READER_UNAVAILABLE': 'El lector del backlog de mejoras no está disponible.',
+            },
+            'platform_pending_queue': {
+                'READ_FAILED': 'La cola de plataforma no se pudo leer; no inferir que está vacía.',
+                'READ_PARTIAL': 'La cola de plataforma tuvo una lectura parcial; los elementos parciales no se ofrecen como accionables.',
+                'READER_UNAVAILABLE': 'El lector de la cola de plataforma no está disponible.',
+                'NOT_CONFIGURED': 'La cola de plataforma no está conectada.',
+            },
+        }
+        status_values = {
+            'pending_issue_repository': pending_read_status,
+            'evolution_review_service': backlog_read_status,
+            'platform_pending_queue': platform_status,
+        }
+        status_errors = {
+            'pending_issue_repository': pending_read_error,
+            'evolution_review_service': backlog_read_error,
+            'platform_pending_queue': platform_error,
+        }
+        for source, status in status_values.items():
+            if status == 'READ_OK':
+                continue
+            message = status_messages.get(source, {}).get(
+                status, f'{source}: estado de lectura no reconocido ({status}).'
+            )
+            detail = status_errors.get(source, '')
+            if detail:
+                message += f' Detalle: {detail}.'
+            notices.append(message)
+            unresolved_fields.append(
+                f'UNRESOLVED:{source}:{status.lower()}'
+            )
+
         if platform_items:
-            platform_summary = f' {len(platform_items)} tareas de plataforma pendientes.'
-        summary = f'{len(pending_items)} pending issues y {len(backlog_items)} mejoras priorizadas.{platform_summary}'
+            notices.append(f'{len(platform_items)} tareas de plataforma pendientes.')
+        summary = (
+            f'{len(pending_items)} pending issues y '
+            f'{len(backlog_items)} mejoras priorizadas.'
+        )
+        if notices:
+            summary += ' ' + ' '.join(notices)
         if not items and not unresolved_fields:
             summary = 'No tengo pendientes priorizados confirmados por evidencia persistida.'
         if not items and unresolved_fields:
-            summary = f'No se puede confirmar el inventario completo de pendientes.{platform_summary}'
+            summary = 'No se puede confirmar el inventario completo de pendientes. ' + ' '.join(notices)
         unresolved_fields = list(dict.fromkeys([
             *unresolved_fields,
             *([] if items else ['UNRESOLVED:pending_backlog']),
