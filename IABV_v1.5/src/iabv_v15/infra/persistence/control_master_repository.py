@@ -18,7 +18,8 @@ from __future__ import annotations
 
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from threading import local
+from typing import Any, TypeVar
 
 from iabv_v15.domain.models import (
     ControlDecision,
@@ -26,10 +27,18 @@ from iabv_v15.domain.models import (
     ControlRule,
     utc_now,
 )
+from iabv_v15.infra.persistence.read_results import (
+    ArtifactReadResult,
+    ArtifactReadStatus,
+    RepositoryReadError,
+    RepositoryReadReport,
+    read_model_file,
+)
 from iabv_v15.infra.persistence.storage import ArtifactStorage
 
 
 _CONTROL_MASTER_SUBDIR = "control_master"
+T = TypeVar("T")
 
 
 class ControlMasterRepository:
@@ -37,6 +46,19 @@ class ControlMasterRepository:
 
     def __init__(self, storage: ArtifactStorage) -> None:
         self.storage = storage
+        self._read_state = local()
+
+    @property
+    def last_read_report(self) -> RepositoryReadReport[object] | None:
+        """Diagnostics for the most recent read on this thread."""
+        return getattr(self._read_state, "report", None)
+
+    def _remember_report(self, report: RepositoryReadReport[T]) -> RepositoryReadReport[T]:
+        self._read_state.report = report
+        return report
+
+    def _single_report(self, result: ArtifactReadResult[T]) -> RepositoryReadReport[T]:
+        return RepositoryReadReport.from_results("DIRECT_ARTIFACT_LOOKUP", [result])
 
     # ------------------------------------------------------------------
     # State (composite)
@@ -57,12 +79,21 @@ class ControlMasterRepository:
         )
         return state
 
+    def load_latest_state_with_diagnostics(self) -> ArtifactReadResult[ControlMasterState]:
+        path = self.storage.root / _CONTROL_MASTER_SUBDIR / "latest.json"
+        result = read_model_file(path, "latest", ControlMasterState)
+        self._remember_report(self._single_report(result))
+        return result
+
     def load_latest_state(self) -> ControlMasterState | None:
-        relative = f"{_CONTROL_MASTER_SUBDIR}/latest.json"
-        if not self.storage.exists(relative):
+        result = self.load_latest_state_with_diagnostics()
+        if result.status == ArtifactReadStatus.FOUND:
+            return result.value
+        if result.status == ArtifactReadStatus.CONFIRMED_NOT_FOUND:
             return None
-        payload = self.storage.load_json(relative)
-        return ControlMasterState.model_validate(payload)
+        report = self.last_read_report
+        assert report is not None
+        raise RepositoryReadError(report)
 
     def list_history(self) -> list[str]:
         directory = f"{_CONTROL_MASTER_SUBDIR}/history"
@@ -79,22 +110,27 @@ class ControlMasterRepository:
         )
         return rule
 
+    def get_rule_with_diagnostics(self, rule_id: str) -> ArtifactReadResult[ControlRule]:
+        path = self.storage.root / _CONTROL_MASTER_SUBDIR / "rules" / f"{rule_id}.json"
+        result = read_model_file(path, rule_id, ControlRule)
+        self._remember_report(self._single_report(result))
+        return result
+
     def get_rule(self, rule_id: str) -> ControlRule | None:
-        relative = f"{_CONTROL_MASTER_SUBDIR}/rules/{rule_id}.json"
-        if not self.storage.exists(relative):
+        result = self.get_rule_with_diagnostics(rule_id)
+        if result.status == ArtifactReadStatus.FOUND:
+            return result.value
+        if result.status == ArtifactReadStatus.CONFIRMED_NOT_FOUND:
             return None
-        return ControlRule.model_validate(self.storage.load_json(relative))
+        report = self.last_read_report
+        assert report is not None
+        raise RepositoryReadError(report)
+
+    def list_rules_with_diagnostics(self) -> RepositoryReadReport[ControlRule]:
+        return self._list_model_artifacts("rules", ControlRule)
 
     def list_rules(self) -> list[ControlRule]:
-        directory = f"{_CONTROL_MASTER_SUBDIR}/rules"
-        items = self.storage.list(directory)
-        rules: list[ControlRule] = []
-        for absolute_path in items:
-            path = Path(absolute_path)
-            if path.suffix != ".json":
-                continue
-            rules.append(ControlRule.model_validate_json(path.read_text(encoding="utf-8")))
-        return rules
+        return self.list_rules_with_diagnostics().require_complete()
 
     # ------------------------------------------------------------------
     # Decisions
@@ -107,22 +143,56 @@ class ControlMasterRepository:
         )
         return decision
 
+    def get_decision_with_diagnostics(
+        self, decision_id: str
+    ) -> ArtifactReadResult[ControlDecision]:
+        path = self.storage.root / _CONTROL_MASTER_SUBDIR / "decisions" / f"{decision_id}.json"
+        result = read_model_file(path, decision_id, ControlDecision)
+        self._remember_report(self._single_report(result))
+        return result
+
     def get_decision(self, decision_id: str) -> ControlDecision | None:
-        relative = f"{_CONTROL_MASTER_SUBDIR}/decisions/{decision_id}.json"
-        if not self.storage.exists(relative):
+        result = self.get_decision_with_diagnostics(decision_id)
+        if result.status == ArtifactReadStatus.FOUND:
+            return result.value
+        if result.status == ArtifactReadStatus.CONFIRMED_NOT_FOUND:
             return None
-        return ControlDecision.model_validate(self.storage.load_json(relative))
+        report = self.last_read_report
+        assert report is not None
+        raise RepositoryReadError(report)
+
+    def list_decisions_with_diagnostics(self) -> RepositoryReadReport[ControlDecision]:
+        return self._list_model_artifacts("decisions", ControlDecision)
 
     def list_decisions(self) -> list[ControlDecision]:
-        directory = f"{_CONTROL_MASTER_SUBDIR}/decisions"
-        items = self.storage.list(directory)
-        decisions: list[ControlDecision] = []
-        for absolute_path in items:
-            path = Path(absolute_path)
-            if path.suffix != ".json":
-                continue
-            decisions.append(ControlDecision.model_validate_json(path.read_text(encoding="utf-8")))
-        return decisions
+        return self.list_decisions_with_diagnostics().require_complete()
+
+    def _list_model_artifacts(
+        self,
+        subdirectory: str,
+        model_type: type[T],
+    ) -> RepositoryReadReport[T]:
+        directory = self.storage.root / _CONTROL_MASTER_SUBDIR / subdirectory
+        try:
+            paths = sorted(
+                path for path in directory.iterdir()
+                if path.suffix == ".json"
+            )
+        except FileNotFoundError:
+            return self._remember_report(
+                RepositoryReadReport.from_results("DIRECTORY_LISTING", [])
+            )
+        except OSError as exc:
+            report = RepositoryReadReport.from_collection_error("DIRECTORY_LISTING", exc)
+            return self._remember_report(report)
+
+        results = [
+            read_model_file(path, path.stem, model_type)
+            for path in paths
+        ]
+        return self._remember_report(
+            RepositoryReadReport.from_results("DIRECTORY_LISTING", results)
+        )
 
 
 def _timestamp_slug(ts: datetime | None = None) -> str:

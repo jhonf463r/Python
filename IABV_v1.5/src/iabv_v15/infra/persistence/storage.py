@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 import json
 import logging
 import os
@@ -34,38 +34,59 @@ def _replace_with_retry(src: str | Path, dst: str | Path) -> None:
                 src, dst, attempt + 1, _REPLACE_MAX_ATTEMPTS, exc,
             )
             time.sleep(_REPLACE_RETRY_DELAY * (attempt + 1))
-    # All retries exhausted on Windows — fall back to non-atomic overwrite
-    # so the process doesn't crash.
-    if _IS_WINDOWS and last_err is not None:
-        try:
-            import shutil
-            shutil.copy2(str(src), str(dst))
-            try:
-                os.unlink(str(src))
-            except OSError:
-                pass
-            logger.warning(
-                'os.replace(%s -> %s) failed after %d attempts; '
-                'used shutil.copy2 fallback: %s',
-                src, dst, _REPLACE_MAX_ATTEMPTS, last_err,
-            )
-            return
-        except Exception:
-            pass
-    raise last_err  # type: ignore[misc]
+    # A direct copy over the destination is not an atomic replacement. If
+    # Windows keeps the destination locked, fail closed and retain the source
+    # temporary file for recovery; never overwrite the previous destination
+    # with a copy that can be interrupted halfway through.
+    if last_err is not None:
+        logger.error(
+            'os.replace(%s -> %s) failed after %d attempts; '
+            'destination left untouched and source retained: %s',
+            src, dst, max(1, _REPLACE_MAX_ATTEMPTS), last_err,
+        )
+        raise last_err
+    raise OSError("os.replace did not execute because the retry count was zero.")
 
 
 class ArtifactStorage:
     """Filesystem-backed artifact storage with atomic JSON helpers."""
 
     def __init__(self, root: str):
-        self.root = Path(root)
+        self.root = Path(root).resolve(strict=False)
         self.root.mkdir(parents=True, exist_ok=True)
+        self.root = self.root.resolve(strict=True)
+
+    def resolve_managed_path(self, path_like: str | Path) -> Path:
+        """Resolve an indexed or relative artifact path without leaving this storage root."""
+        raw = str(path_like)
+        if not raw or "\x00" in raw:
+            raise ValueError("Artifact path must be a non-empty path without NUL bytes.")
+
+        candidate = Path(raw)
+        windows_candidate = PureWindowsPath(raw)
+        if not candidate.is_absolute():
+            if windows_candidate.is_absolute() or windows_candidate.drive:
+                raise ValueError("Artifact path must be relative to ArtifactStorage.")
+            if any(part == ".." for part in candidate.parts) or any(
+                part == ".." for part in windows_candidate.parts
+            ):
+                raise ValueError("Artifact path traversal is not allowed.")
+            candidate = self.root / candidate
+
+        resolved = candidate.resolve(strict=False)
+        root = self.root.resolve(strict=True)
+        if resolved != root and root not in resolved.parents:
+            raise ValueError("Artifact path is outside the configured storage root.")
+        return resolved
 
     def resolve(self, relative_path: str) -> Path:
-        path = self.root / relative_path
-        path.parent.mkdir(parents=True, exist_ok=True)
-        return path
+        """Resolve a path within this storage root, rejecting traversal and escapes."""
+        resolved = self.resolve_managed_path(relative_path)
+        resolved.parent.mkdir(parents=True, exist_ok=True)
+        # Re-check after parent creation so a pre-existing symlink cannot redirect
+        # the path outside the storage root. Absolute legacy paths remain supported
+        # only when they resolve beneath the configured root.
+        return self.resolve_managed_path(relative_path)
 
     def exists(self, relative_path: str) -> bool:
         return self.resolve(relative_path).exists()

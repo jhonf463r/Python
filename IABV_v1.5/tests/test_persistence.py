@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from uuid import uuid4
 
 import pytest
 
@@ -20,16 +19,8 @@ from iabv_v15.services.training.payload_archive_service import PayloadArchiveSer
 from iabv_v15.services.training.training_orchestrator import TrainingOrchestrator
 
 
-def _workspace(name: str) -> Path:
-    base = Path(__file__).resolve().parents[1] / 'data' / 'test_runs'
-    base.mkdir(parents=True, exist_ok=True)
-    root = base / f'{name}_{uuid4().hex}'
-    root.mkdir(parents=True, exist_ok=True)
-    return root
-
-
-def test_episode_repository_and_artifacts_roundtrip() -> None:
-    root = _workspace('persistence')
+def test_episode_repository_and_artifacts_roundtrip(tmp_path: Path) -> None:
+    root = tmp_path
     db = AppDatabase(str(root / 'app.sqlite'))
     repo = EpisodeRepository(str(root / 'episodes'), db)
     artifact_repo = SessionArtifactRepository(db, ArtifactStorage(str(root / 'artifacts')))
@@ -59,8 +50,8 @@ def test_episode_repository_and_artifacts_roundtrip() -> None:
     saved = screenshots.save_bytes(manifest.episode_id, 'frame.png', b'png-bytes')
     assert Path(saved).exists()
 
-def test_training_payload_includes_browser_artifacts() -> None:
-    root = _workspace('payload')
+def test_training_payload_includes_browser_artifacts(tmp_path: Path) -> None:
+    root = tmp_path
     db = AppDatabase(str(root / 'app.sqlite'))
     episode_repo = EpisodeRepository(str(root / 'episodes'), db)
     knowledge_repo = KnowledgeRepository(db)
@@ -105,8 +96,8 @@ def test_training_payload_includes_browser_artifacts() -> None:
     snapshot = manager.load_snapshot('training_payload_v2.json')
     assert 'artifacts' in snapshot['spec']['fields']
 
-def test_session_state_store_backup_and_snapshot_manager() -> None:
-    root = _workspace('state')
+def test_session_state_store_backup_and_snapshot_manager(tmp_path: Path) -> None:
+    root = tmp_path
     store = SessionStateStore()
     state_path = root / 'state.json'
     store.save_json_atomic({'session': 'ok'}, str(state_path))
