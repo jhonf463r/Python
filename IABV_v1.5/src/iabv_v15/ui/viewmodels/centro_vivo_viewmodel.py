@@ -351,12 +351,49 @@ class CentroVivoViewModel(QObject):
             self._record_source_status('self_examination_service', 'NOT_CONFIGURED')
             return []
         try:
-            review = service.current_review(refresh=False)
+            cached_reader = getattr(service, 'current_review_cached', None)
+            if callable(cached_reader):
+                review = cached_reader()
+            else:
+                legacy_reader = getattr(service, 'current_review', None)
+                if not callable(legacy_reader):
+                    raise RuntimeError('oses_cached_review_reader_unavailable')
+                review = legacy_reader(refresh=False)
         except Exception as exc:
-            self._record_source_status('self_examination_service', 'READ_FAILED', type(exc).__name__)
+            status = (
+                'READ_UNVERIFIED'
+                if str(exc).startswith(('oses_cached_review', 'oses_source_coverage'))
+                else 'READ_FAILED'
+            )
+            self._record_source_status('self_examination_service', status, type(exc).__name__)
             return []
         if review is None:
             self._record_source_status('self_examination_service', 'CONFIRMED_NOT_FOUND')
+            return []
+        metadata = getattr(review, 'metadata', {}) or {}
+        coverage = getattr(review, 'source_coverage', None) or (
+            metadata.get('source_coverage') if isinstance(metadata, dict) else None
+        )
+        errors = getattr(review, 'source_errors', None) or (
+            metadata.get('source_errors', {}) if isinstance(metadata, dict) else {}
+        )
+        self._record_source_report('self_examination_service', {
+            'source_coverage': dict(coverage or {}),
+            'source_errors': dict(errors or {}),
+        })
+        if not isinstance(coverage, dict) or not coverage:
+            self._record_source_status('self_examination_service', 'READ_UNVERIFIED')
+            return []
+        bad_coverage = {
+            str(key): str(value)
+            for key, value in coverage.items()
+            if value != 'READ_OK'
+        }
+        if bad_coverage:
+            status = 'READ_FAILED' if 'READ_FAILED' in bad_coverage.values() else 'READ_PARTIAL'
+            self._record_source_status(
+                'self_examination_service', status, str(bad_coverage)
+            )
             return []
         dumped = review.model_dump(mode='json') if hasattr(review, 'model_dump') else {}
         findings_raw = dumped.get('findings', [])
