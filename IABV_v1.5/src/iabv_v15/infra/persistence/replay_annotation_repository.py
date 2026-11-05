@@ -67,7 +67,7 @@ class ReplayAnnotationRepository:
         for row in rows:
             annotation_id = str(row["annotation_id"])
             try:
-                candidate = Path(row["path"])
+                candidate = self.storage.resolve_managed_path(row["path"])
             except (TypeError, ValueError, OSError) as exc:
                 results.append(
                     ArtifactReadResult(
@@ -79,11 +79,24 @@ class ReplayAnnotationRepository:
                     )
                 )
                 continue
-            paths: list[Path] = []
-            if candidate.is_absolute():
-                paths.append(candidate)
-            paths.append(self.storage.root / "annotations" / f"{annotation_id}.json")
-            results.append(read_model_from_paths(paths, annotation_id, ReplayAnnotation))
+            try:
+                fallback = self.storage.resolve_managed_path(
+                    f"annotations/{annotation_id}.json"
+                )
+            except (TypeError, ValueError, OSError) as exc:
+                results.append(
+                    ArtifactReadResult(
+                        artifact_id=annotation_id,
+                        path="",
+                        status=ArtifactReadStatus.READ_FAILED,
+                        error_type=type(exc).__name__,
+                        error_message=str(exc)[:300],
+                    )
+                )
+                continue
+            results.append(
+                read_model_from_paths([candidate, fallback], annotation_id, ReplayAnnotation)
+            )
         return self._remember_report(
             RepositoryReadReport.from_results(
                 "SQLITE_INDEX_ROWS:replay_annotations", results
@@ -176,7 +189,7 @@ class ReplayAnnotationRepository:
         else:
             resolved_id = str(row["annotation_id"])
             try:
-                candidate = Path(row["path"])
+                candidate = self.storage.resolve_managed_path(row["path"])
             except (TypeError, ValueError, OSError) as exc:
                 result = ArtifactReadResult(
                     artifact_id=resolved_id,
@@ -186,11 +199,22 @@ class ReplayAnnotationRepository:
                     error_message=str(exc)[:300],
                 )
             else:
-                paths: list[Path] = []
-                if candidate.is_absolute():
-                    paths.append(candidate)
-                paths.append(self.storage.root / "annotations" / f"{resolved_id}.json")
-                result = read_model_from_paths(paths, resolved_id, ReplayAnnotation)
+                try:
+                    fallback = self.storage.resolve_managed_path(
+                        f"annotations/{resolved_id}.json"
+                    )
+                except (TypeError, ValueError, OSError) as exc:
+                    result = ArtifactReadResult(
+                        artifact_id=resolved_id,
+                        path="",
+                        status=ArtifactReadStatus.READ_FAILED,
+                        error_type=type(exc).__name__,
+                        error_message=str(exc)[:300],
+                    )
+                else:
+                    result = read_model_from_paths(
+                        [candidate, fallback], resolved_id, ReplayAnnotation
+                    )
 
         self._remember_report(RepositoryReadReport.from_results(scope, [result]))
         return result

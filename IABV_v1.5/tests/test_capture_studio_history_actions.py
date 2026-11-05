@@ -1,6 +1,7 @@
 ﻿from __future__ import annotations
 
 from pathlib import Path
+import pytest
 from uuid import uuid4
 
 from iabv_v15.domain.models import (
@@ -234,3 +235,81 @@ def test_capture_studio_history_rebuilds_legacy_frame_fallback_login_replay() ->
     assert all(step['learning_relevant'] for step in viewmodel.replaySteps[:4])
     assert all(step['learning_priority'] > 0 for step in viewmodel.replaySteps[:4])
     assert any('Aprender' not in (step.get('learning_reason') or '') or step['learning_reason'] for step in viewmodel.replaySteps[:4])
+
+
+
+def test_capture_studio_delete_refuses_artifact_from_another_episode_before_deletion() -> None:
+    root = _workspace('capture_history_cross_episode_path')
+    viewmodel = _build_viewmodel(root)
+    episode = viewmodel.episode_repository.create_episode(
+        title='Target episode',
+        tags=['browser_teach'],
+        notes='teach_url=https://example.com',
+    )
+    other_episode = viewmodel.episode_repository.create_episode(
+        title='Other episode',
+        tags=['browser_teach'],
+        notes='teach_url=https://example.org',
+    )
+    foreign_relative = f'{other_episode.episode_id}/foreign.json'
+    foreign_path = Path(
+        viewmodel.artifact_repository.storage.save_json_atomic(
+            foreign_relative, {'owner': other_episode.episode_id}
+        )
+    )
+    artifact = viewmodel.artifact_repository.save(
+        SessionArtifact(
+            episode_id=episode.episode_id,
+            kind='learning_bundle',
+            path=foreign_relative,
+        )
+    )
+
+    target_episode_dir = Path(viewmodel.config.episodes_dir) / episode.episode_id
+    assert target_episode_dir.exists()
+    assert foreign_path.exists()
+    viewmodel.deleteTeachingEpisode(episode.episode_id)
+
+    assert target_episode_dir.exists()
+    assert foreign_path.exists()
+    assert viewmodel.episode_repository.db.fetchone(
+        "SELECT episode_id FROM episodes WHERE episode_id = ?",
+        (episode.episode_id,),
+    ) is not None
+    assert viewmodel.artifact_repository.db.fetchone(
+        "SELECT artifact_id FROM session_artifacts WHERE artifact_id = ?",
+        (artifact.artifact_id,),
+    ) is not None
+    assert "outside" in viewmodel.teachingStatus.lower() or "managed" in viewmodel.teachingStatus.lower()
+
+
+def test_capture_studio_delete_refuses_external_screenshot_path_before_deletion() -> None:
+    root = _workspace('capture_history_external_screenshot')
+    viewmodel = _build_viewmodel(root)
+    episode = viewmodel.episode_repository.create_episode(
+        title='Episode with external screenshot',
+        tags=['browser_teach'],
+        notes='teach_url=https://example.com',
+    )
+    outside = root.parent / f'{root.name}_outside.png'
+    outside.write_bytes(b'external screenshot must remain untouched')
+    viewmodel.episode_repository.save_step(
+        episode.episode_id,
+        CapturedStep(
+            episode_id=episode.episode_id,
+            action_type='click',
+            screenshot_path=str(outside),
+        ),
+    )
+
+    episode_dir = Path(viewmodel.config.episodes_dir) / episode.episode_id
+    assert episode_dir.exists()
+    viewmodel.deleteTeachingEpisode(episode.episode_id)
+
+    assert episode_dir.exists()
+    assert outside.read_bytes() == b'external screenshot must remain untouched'
+    assert viewmodel.episode_repository.db.fetchone(
+        "SELECT episode_id FROM episodes WHERE episode_id = ?",
+        (episode.episode_id,),
+    ) is not None
+    assert "outside" in viewmodel.teachingStatus.lower() or "managed" in viewmodel.teachingStatus.lower()
