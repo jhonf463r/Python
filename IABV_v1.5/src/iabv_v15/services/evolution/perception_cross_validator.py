@@ -79,8 +79,12 @@ class PerceptionCrossValidator:
             'tools_vs_processes', self._cross_tools_vs_processes
         )
         inconsistencies.extend(proc_inconsistencies)
-        corrections = self._auto_correct_availability(proc_inconsistencies)
-        auto_corrections.extend(corrections)
+        # Cache refresh is allowed only when the cross-source sensor read
+        # completed. Partial/failed observations remain diagnostic evidence,
+        # but must not drive even a best-effort availability correction.
+        if self._check_statuses.get('tools_vs_processes') == 'READ_OK':
+            corrections = self._auto_correct_availability(proc_inconsistencies)
+            auto_corrections.extend(corrections)
         inconsistencies.extend(self._run_check(
             'audit_vs_worldmodel', self._cross_audit_vs_worldmodel
         ))
