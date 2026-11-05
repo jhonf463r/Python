@@ -489,6 +489,11 @@ class SelfAuditService:
                 "errors": int(test_evidence.get("errors") or 0),
                 "suite": str(test_evidence.get("suite") or ""),
                 "timestamp": str(test_evidence.get("timestamp") or ""),
+                "commit_sha": str(test_evidence.get("commit_sha") or ""),
+                "branch": str(test_evidence.get("branch") or ""),
+                "worktree_clean": test_evidence.get("worktree_clean"),
+                "provenance_status": str(test_evidence.get("provenance_status") or "UNKNOWN"),
+                "payload_sha256": str(test_evidence.get("payload_sha256") or ""),
             }
         return result
 
