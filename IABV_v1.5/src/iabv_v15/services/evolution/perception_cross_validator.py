@@ -49,6 +49,18 @@ class PerceptionCrossValidator:
         else:
             self._check_reasons.pop(check, None)
 
+    def _current_world_model_snapshot(self) -> Any:
+        """Read the connected WorldModel through its supported snapshot API."""
+        if self.world_model_service is None:
+            raise RuntimeError('world_model_service_not_connected')
+        for method_name in ('current_snapshot', 'current_model'):
+            reader = getattr(self.world_model_service, method_name, None)
+            if callable(reader):
+                snapshot = reader()
+                if snapshot is not None:
+                    return snapshot
+        raise RuntimeError('world_model_snapshot_unavailable')
+
     def _run_check(self, check: str, runner) -> list[dict[str, Any]]:
         try:
             return runner()
@@ -330,7 +342,7 @@ class PerceptionCrossValidator:
             self._set_check_status('audit_vs_worldmodel', 'NOT_CONFIGURED', 'world_model_or_tool_registry_not_connected')
             return inconsistencies
         try:
-            snapshot = self.world_model_service.current_snapshot()
+            snapshot = self._current_world_model_snapshot()
             if snapshot is None:
                 raise RuntimeError('world_model_snapshot_missing')
             wm_tool_ids = {t.tool_id for t in snapshot.tool_live_status}
@@ -415,7 +427,7 @@ class PerceptionCrossValidator:
             return inconsistencies
 
         try:
-            snapshot = self.world_model_service.current_snapshot()
+            snapshot = self._current_world_model_snapshot()
             if snapshot is None or not hasattr(snapshot, 'active_windows'):
                 raise RuntimeError('world_model_windows_snapshot_unavailable')
         except Exception as exc:
@@ -523,7 +535,7 @@ class PerceptionCrossValidator:
             self._set_check_status('ui_self_awareness', 'NOT_CONFIGURED', 'world_model_service_not_connected')
             return inconsistencies
         try:
-            snapshot = self.world_model_service.current_snapshot()
+            snapshot = self._current_world_model_snapshot()
             if snapshot is None or not hasattr(snapshot, 'active_windows'):
                 raise RuntimeError('world_model_windows_snapshot_unavailable')
         except Exception as exc:
