@@ -851,7 +851,12 @@ class ControlMasterService:
                 # therefore never falls through to its active rebuild method.
                 if callable(loader) or hasattr(service, "_current_review"):
                     raise RuntimeError("oses_cached_review_unavailable")
-                legacy_reader = getattr(service, "current_review", None)
+                legacy_reader = None
+                for method_name in ("current_review", "current_snapshot", "latest_snapshot", "current", "latest"):
+                    candidate = getattr(service, method_name, None)
+                    if callable(candidate):
+                        legacy_reader = candidate
+                        break
                 if not callable(legacy_reader):
                     raise RuntimeError("oses_cached_review_reader_unavailable")
                 snapshot = legacy_reader()
