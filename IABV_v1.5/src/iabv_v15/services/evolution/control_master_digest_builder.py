@@ -147,14 +147,20 @@ class ControlMasterDigestBuilder:
         }:
             freshness_status = "UNVERIFIED"
 
-        resolved_signal_status = (
-            "AVAILABLE" if resolved_queue_status in {"AVAILABLE", "EMPTY_QUEUE"}
-            else ("UNAVAILABLE" if resolved_queue_status == "UNAVAILABLE" else "UNVERIFIED")
-        )
+        # Signal availability answers whether the Control Master state source
+        # was actually read. Queue coverage is an independent dimension.
+        source_read_status = str(source_provenance.get("read_status") or "").upper()
+        if source_read_status == "READ_OK":
+            resolved_signal_status = "AVAILABLE"
+        elif source_read_status in {"NO_SOURCE_SNAPSHOT", "READ_FAILED"}:
+            resolved_signal_status = "UNAVAILABLE"
+        else:
+            resolved_signal_status = "UNVERIFIED"
+
         resolved_signal_reason = str(signal_reason or "").strip()
-        if not resolved_signal_reason and resolved_signal_status == "UNAVAILABLE":
+        if not resolved_signal_reason and resolved_queue_status == "UNAVAILABLE":
             resolved_signal_reason = "WORK_QUEUE_UNAVAILABLE"
-        elif not resolved_signal_reason and resolved_signal_status == "UNVERIFIED":
+        elif not resolved_signal_reason and resolved_queue_status == "UNVERIFIED":
             resolved_signal_reason = "WORK_QUEUE_NOT_VERIFIED"
 
         digest = ControlMasterDigest(

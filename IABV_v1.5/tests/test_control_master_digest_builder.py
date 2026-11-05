@@ -329,3 +329,50 @@ def test_digest_carries_d021_source_times_scope_and_queue_lineage() -> None:
     assert "state-d021-001" in rendered
     assert "objective:OBJ-42" in rendered
     assert "evidence://OBJ-42/review" in rendered
+
+
+def test_signal_availability_is_independent_from_unverified_queue_coverage() -> None:
+    state = ControlMasterState(
+        state_id="cm-state-readable",
+        metadata={
+            "_space_time_control_master_source_provenance": {
+                "read_status": "READ_OK",
+                "freshness_status": "FRESH",
+                "source_state_id": "cm-state-readable",
+                "source_generated_at_utc": "2026-11-04T12:00:00+00:00",
+                "project_id": "IABV_v1.5",
+                "source_object": "control_master/latest.json",
+                "workspace_scope_id": "scope-001",
+                "source_revision_or_digest": "sha256:source001",
+            }
+        },
+    )
+    digest = ControlMasterDigestBuilder().build(
+        state,
+        work_queue=None,
+        work_queue_status="UNVERIFIED",
+        signal_reason="SOURCE_APPLICABILITY_OR_COVERAGE_UNRESOLVED",
+    )
+    assert digest.signal_status == "AVAILABLE"
+    assert digest.work_queue_status == "UNVERIFIED"
+    assert digest.control_master_signal_status == "FRESH"
+
+
+def test_missing_control_master_source_is_unavailable_even_if_queue_state_is_separate() -> None:
+    state = ControlMasterState(
+        metadata={
+            "_space_time_control_master_source_provenance": {
+                "read_status": "NO_SOURCE_SNAPSHOT",
+                "freshness_status": "UNAVAILABLE",
+                "project_id": "IABV_v1.5",
+                "source_object": "control_master/latest.json",
+            }
+        },
+    )
+    digest = ControlMasterDigestBuilder().build(
+        state,
+        work_queue=None,
+        work_queue_status="UNVERIFIED",
+    )
+    assert digest.signal_status == "UNAVAILABLE"
+    assert digest.work_queue_status == "UNVERIFIED"
