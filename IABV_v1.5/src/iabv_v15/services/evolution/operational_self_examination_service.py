@@ -93,6 +93,8 @@ class OperationalSelfExaminationService:
         self.boot_profile_store: Any | None = None
         self.chat_message_repository: Any | None = None
         self._current_review: SelfExaminationSnapshot | None = None
+        self._source_coverage: dict[str, str] = {}
+        self._source_errors: dict[str, str] = {}
         # Read-only cache for GitHub API rate-limit data.  Populated
         # externally (e.g. auto-correction scan); _account_resource_health_findings
         # never probes — it only reads if fresh, otherwise skips the finding.
@@ -116,6 +118,43 @@ class OperationalSelfExaminationService:
         review = self.build_review()
         self._current_review = review
         return review
+
+    def current_review_cached(
+        self,
+        *,
+        max_age_seconds: int = 300,
+    ) -> SelfExaminationSnapshot:
+        """Return a fresh persisted review without starting a rebuild or side effects."""
+        cached = self._current_review
+        if cached is None:
+            cached = self._load_latest_review()
+            self._current_review = cached
+        if cached is None:
+            raise RuntimeError("oses_cached_review_unavailable")
+        if not self._is_fresh(cached, max_age_seconds=max_age_seconds):
+            raise RuntimeError("oses_cached_review_stale")
+        coverage = getattr(cached, "source_coverage", None) or dict(
+            (cached.metadata or {}).get("source_coverage") or {}
+        )
+        if not coverage:
+            raise RuntimeError("oses_source_coverage_unverified")
+        incomplete = {
+            str(source): str(status)
+            for source, status in coverage.items()
+            if status != "READ_OK"
+        }
+        if incomplete:
+            raise RuntimeError("oses_source_coverage_incomplete:" + str(incomplete))
+        return cached
+
+    def _record_source_status(
+        self, source: str, status: str, error: str = "",
+    ) -> None:
+        self._source_coverage[source] = status
+        if error:
+            self._source_errors[source] = error[:200]
+        else:
+            self._source_errors.pop(source, None)
 
     def review_summary(self, review: SelfExaminationSnapshot | None = None) -> dict[str, Any]:
         resolved = review or self.current_review()
@@ -653,6 +692,8 @@ class OperationalSelfExaminationService:
         return findings[:3]
 
     def build_review(self) -> SelfExaminationSnapshot:
+        self._source_coverage = {}
+        self._source_errors = {}
         now = utc_now()
         previous_review = self._load_latest_review()
         recent_runs = self._recent_runs()
@@ -1230,7 +1271,13 @@ class OperationalSelfExaminationService:
                 'assistant_brief': self._render_assistant_brief(review),
                 'package_path': str(self.storage.resolve('self_examination/latest.json')),
                 'markdown_path': str(self.storage.resolve('self_examination/latest.md')),
-                'metadata': metadata_update,
+                'source_coverage': dict(self._source_coverage),
+                'source_errors': dict(self._source_errors),
+                'metadata': {
+                    **metadata_update,
+                    'source_coverage': dict(self._source_coverage),
+                    'source_errors': dict(self._source_errors),
+                },
             }
         )
         archive_json_rel = f'self_examination/history/{review.review_id}.json'
@@ -1299,89 +1346,128 @@ class OperationalSelfExaminationService:
     def _recent_runs(self) -> list[RunRecord]:
         repository = self.run_repository
         if repository is None or not hasattr(repository, 'list_recent'):
+            self._record_source_status('run_repository', 'NOT_CONFIGURED')
             return []
         try:
-            return list(repository.list_recent(limit=60))
-        except Exception:
+            result = list(repository.list_recent(limit=60))
+        except Exception as exc:
+            self._record_source_status('run_repository', 'READ_FAILED', type(exc).__name__)
             return []
+        self._record_source_status('run_repository', 'READ_OK')
+        return result
 
     def _recent_adaptive_sessions(self) -> list[Any]:
         repository = self.adaptive_session_repository
         if repository is None or not hasattr(repository, 'list_recent'):
+            self._record_source_status('adaptive_session_repository', 'NOT_CONFIGURED')
             return []
         try:
-            return list(repository.list_recent(limit=40))
-        except Exception:
+            result = list(repository.list_recent(limit=40))
+        except Exception as exc:
+            self._record_source_status('adaptive_session_repository', 'READ_FAILED', type(exc).__name__)
             return []
+        self._record_source_status('adaptive_session_repository', 'READ_OK')
+        return result
 
     def _recent_experiment_runs(self) -> list[ExperimentRun]:
         repository = self.experiment_lab_repository
         if repository is None or not hasattr(repository, 'list_runs'):
+            self._record_source_status('experiment_runs', 'NOT_CONFIGURED')
             return []
         try:
-            return list(repository.list_runs(limit=60))
-        except Exception:
+            result = list(repository.list_runs(limit=60))
+        except Exception as exc:
+            self._record_source_status('experiment_runs', 'READ_FAILED', type(exc).__name__)
             return []
+        self._record_source_status('experiment_runs', 'READ_OK')
+        return result
 
     def _recent_recommendations(self) -> list[ExperimentRecommendation]:
         repository = self.experiment_lab_repository
         if repository is None or not hasattr(repository, 'list_recommendations'):
+            self._record_source_status('experiment_recommendations', 'NOT_CONFIGURED')
             return []
         try:
-            return list(repository.list_recommendations(limit=12))
-        except Exception:
+            result = list(repository.list_recommendations(limit=12))
+        except Exception as exc:
+            self._record_source_status('experiment_recommendations', 'READ_FAILED', type(exc).__name__)
             return []
+        self._record_source_status('experiment_recommendations', 'READ_OK')
+        return result
 
     def _recent_scenario_runs(self) -> list[Any]:
         repository = self.scenario_run_repository
         if repository is None or not hasattr(repository, 'list_recent'):
+            self._record_source_status('scenario_run_repository', 'NOT_CONFIGURED')
             return []
         try:
-            return list(repository.list_recent(limit=30))
-        except Exception:
+            result = list(repository.list_recent(limit=30))
+        except Exception as exc:
+            self._record_source_status('scenario_run_repository', 'READ_FAILED', type(exc).__name__)
             return []
+        self._record_source_status('scenario_run_repository', 'READ_OK')
+        return result
 
     def _project_health_snapshot(self) -> dict[str, Any]:
         service = self.evolution_review_service
         if service is None or not hasattr(service, 'build_project_health'):
+            self._record_source_status('project_health', 'NOT_CONFIGURED')
             return {}
         try:
-            return service.build_project_health().model_dump(mode='json')
-        except Exception:
+            result = service.build_project_health().model_dump(mode='json')
+        except Exception as exc:
+            self._record_source_status('project_health', 'READ_FAILED', type(exc).__name__)
             return {}
+        self._record_source_status('project_health', 'READ_OK')
+        return result
 
     def _improvement_backlog(self) -> list[dict[str, Any]]:
         service = self.evolution_review_service
         if service is None or not hasattr(service, 'build_improvement_backlog'):
+            self._record_source_status('improvement_backlog', 'NOT_CONFIGURED')
             return []
         try:
-            return [item.model_dump(mode='json') for item in service.build_improvement_backlog(limit=8)]
-        except Exception:
+            result = [
+                item.model_dump(mode='json')
+                for item in service.build_improvement_backlog(limit=8)
+            ]
+        except Exception as exc:
+            self._record_source_status('improvement_backlog', 'READ_FAILED', type(exc).__name__)
             return []
+        self._record_source_status('improvement_backlog', 'READ_OK')
+        return result
 
     def _world_model(self) -> WorldModelSnapshot:
         service = self.world_model_service
         if service is None or not hasattr(service, 'current_model'):
+            self._record_source_status('world_model_service', 'NOT_CONFIGURED')
             return WorldModelSnapshot(unresolved_fields=['UNRESOLVED:world_model'])
         try:
-            return service.current_model()
-        except Exception:
+            result = service.current_model()
+        except Exception as exc:
+            self._record_source_status('world_model_service', 'READ_FAILED', type(exc).__name__)
             return WorldModelSnapshot(unresolved_fields=['UNRESOLVED:world_model'])
+        self._record_source_status('world_model_service', 'READ_OK')
+        return result
 
     def _validation_snapshot(self) -> AutonomousValidationSnapshot:
         service = self.autonomous_validation_cycle
         if service is None or not hasattr(service, 'current_snapshot'):
+            self._record_source_status('autonomous_validation_cycle', 'NOT_CONFIGURED')
             return AutonomousValidationSnapshot(
                 status='idle',
                 unresolved_fields=['UNRESOLVED:validation_cycle'],
             )
         try:
-            return service.current_snapshot()
-        except Exception:
+            result = service.current_snapshot()
+        except Exception as exc:
+            self._record_source_status('autonomous_validation_cycle', 'READ_FAILED', type(exc).__name__)
             return AutonomousValidationSnapshot(
                 status='degraded',
                 unresolved_fields=['UNRESOLVED:validation_cycle'],
             )
+        self._record_source_status('autonomous_validation_cycle', 'READ_OK')
+        return result
 
     # Ventana de recurrencia real para "fallo repetido". Runs anteriores a
     # este margen se consideran historia fria y no cuentan, evitando que un
