@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from importlib import import_module
+from types import SimpleNamespace
 import pytest
 
 from iabv_v15.domain.models import SelfExaminationSnapshot
@@ -140,3 +142,116 @@ def test_oses_source_status_does_not_erase_failure_with_later_success(tmp_path) 
 
     assert service._source_coverage["runtime_audit_tracer"] == "READ_FAILED"
     assert service._source_errors["runtime_audit_tracer"] == "OSError"
+
+
+
+def test_oses_environment_model_reader_uses_configured_service(tmp_path) -> None:
+    environment = SimpleNamespace(risk_signals=[])
+    world_model = SimpleNamespace(
+        current_model=lambda: SimpleNamespace(environment=None),
+        environment_self_awareness_service=SimpleNamespace(
+            current_model=lambda: environment,
+        ),
+    )
+    service = _service(tmp_path, world_model_service=world_model)
+
+    assert service._environment_model() is environment
+    assert service._source_coverage['environment_self_awareness_service'] == 'READ_OK'
+
+
+def test_oses_low_load_reads_environment_self_awareness_service(tmp_path) -> None:
+    environment = SimpleNamespace(
+        risk_signals=[SimpleNamespace(severity='HIGH')],
+    )
+    world_model_service = SimpleNamespace(
+        current_model=lambda: SimpleNamespace(environment=None),
+        environment_self_awareness_service=SimpleNamespace(
+            current_model=lambda: environment,
+        ),
+    )
+    service = _service(tmp_path, world_model_service=world_model_service)
+
+    assert service._is_low_load(SimpleNamespace(block_records=[])) is False
+    assert service._source_coverage['environment_self_awareness_service'] == 'READ_OK'
+
+
+def test_oses_environment_model_failure_is_not_reported_as_clean(tmp_path) -> None:
+    class BrokenEnvironmentService:
+        def current_model(self):
+            raise PermissionError('synthetic environment read failure')
+
+    class BrokenWorldModel:
+        def current_model(self):
+            raise RuntimeError('snapshot unavailable')
+
+        environment_self_awareness_service = BrokenEnvironmentService()
+
+    service = _service(tmp_path, world_model_service=BrokenWorldModel())
+
+    assert service._environment_model() is None
+    assert service._source_coverage['environment_self_awareness_service'] == 'READ_FAILED'
+    assert service._source_errors['environment_self_awareness_service'] == 'PermissionError'
+
+
+def test_oses_runtime_tracer_records_success_only_after_all_reads(tmp_path, monkeypatch) -> None:
+    tracer_module = import_module('iabv_v15.services.evolution.runtime_audit_tracer')
+
+    class EmptyTracer:
+        def events(self, *, kind: str, limit: int):
+            return []
+
+        def recent_dispatch_lifecycles(self, *, limit: int):
+            return []
+
+    monkeypatch.setattr(tracer_module, 'get_runtime_tracer', lambda: EmptyTracer())
+    service = _service(tmp_path)
+
+    assert service._resource_quiescence_web_skill_findings() == []
+    assert service._source_coverage['runtime_audit_tracer'] == 'READ_OK'
+
+
+def test_oses_runtime_tracer_read_failure_is_preserved(tmp_path, monkeypatch) -> None:
+    tracer_module = import_module('iabv_v15.services.evolution.runtime_audit_tracer')
+
+    class BrokenTracer:
+        def events(self, *, kind: str, limit: int):
+            raise PermissionError('synthetic tracer read failure')
+
+        def recent_dispatch_lifecycles(self, *, limit: int):
+            return []
+
+    monkeypatch.setattr(tracer_module, 'get_runtime_tracer', lambda: BrokenTracer())
+    service = _service(tmp_path)
+
+    assert service._resource_quiescence_web_skill_findings() == []
+    assert service._source_coverage['runtime_audit_tracer'] == 'READ_FAILED'
+    assert service._source_errors['runtime_audit_tracer'] == 'PermissionError'
+
+
+def test_oses_account_scanner_records_complete_quota_and_secret_reads(tmp_path, monkeypatch) -> None:
+    scanner = import_module('iabv_v15.services.account_resource_scanner')
+    monkeypatch.setattr(
+        scanner,
+        'get_all_quota_status',
+        lambda: {'exhausted_count': 0, 'available_count': 0, 'exhausted_keys': []},
+    )
+    monkeypatch.setattr(scanner, 'scan_configured_secrets', lambda: {'missing': []})
+    service = _service(tmp_path)
+
+    assert service._account_resource_health_findings() == []
+    assert service._source_coverage['account_resource_scanner'] == 'READ_OK'
+
+
+def test_oses_account_scanner_failure_is_not_erased_by_later_success(tmp_path, monkeypatch) -> None:
+    scanner = import_module('iabv_v15.services.account_resource_scanner')
+
+    def fail_quota_read():
+        raise PermissionError('synthetic quota read failure')
+
+    monkeypatch.setattr(scanner, 'get_all_quota_status', fail_quota_read)
+    monkeypatch.setattr(scanner, 'scan_configured_secrets', lambda: {'missing': []})
+    service = _service(tmp_path)
+
+    assert service._account_resource_health_findings() == []
+    assert service._source_coverage['account_resource_scanner'] == 'READ_FAILED'
+    assert service._source_errors['account_resource_scanner'] == 'PermissionError'
