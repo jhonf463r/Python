@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from hashlib import sha256
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum
@@ -178,6 +179,260 @@ class RepositoryReadReport(Generic[T]):
         ):
             raise RepositoryReadError(self)
         return self.items
+
+
+def inspect_model_file_with_digest(
+    path: Path,
+    artifact_id: str,
+    model_type: type[T],
+) -> tuple[ArtifactReadResult[T], str, int]:
+    """Read one model once, returning its typed outcome and exact byte digest."""
+    try:
+        raw_bytes = path.read_bytes()
+    except FileNotFoundError:
+        return (
+            ArtifactReadResult(
+                artifact_id=artifact_id,
+                path=str(path),
+                status=ArtifactReadStatus.CONFIRMED_NOT_FOUND,
+                error_type="FileNotFoundError",
+            ),
+            "",
+            0,
+        )
+    except OSError as exc:
+        return (
+            ArtifactReadResult(
+                artifact_id=artifact_id,
+                path=str(path),
+                status=ArtifactReadStatus.READ_FAILED,
+                error_type=type(exc).__name__,
+                error_message=str(exc)[:300],
+            ),
+            "",
+            0,
+        )
+
+    digest = sha256(raw_bytes).hexdigest()
+    size_bytes = len(raw_bytes)
+    try:
+        raw_text = raw_bytes.decode("utf-8")
+    except UnicodeError as exc:
+        return (
+            ArtifactReadResult(
+                artifact_id=artifact_id,
+                path=str(path),
+                status=ArtifactReadStatus.CORRUPT,
+                error_type=type(exc).__name__,
+                error_message=str(exc)[:300],
+            ),
+            digest,
+            size_bytes,
+        )
+
+    try:
+        payload = json.loads(raw_text)
+    except json.JSONDecodeError as exc:
+        return (
+            ArtifactReadResult(
+                artifact_id=artifact_id,
+                path=str(path),
+                status=ArtifactReadStatus.CORRUPT,
+                error_type=type(exc).__name__,
+                error_message=str(exc)[:300],
+            ),
+            digest,
+            size_bytes,
+        )
+
+    try:
+        value = model_type.model_validate(payload)
+    except ValidationError as exc:
+        return (
+            ArtifactReadResult(
+                artifact_id=artifact_id,
+                path=str(path),
+                status=ArtifactReadStatus.SCHEMA_UNSUPPORTED,
+                error_type=type(exc).__name__,
+                error_message=str(exc)[:300],
+            ),
+            digest,
+            size_bytes,
+        )
+    except Exception as exc:
+        return (
+            ArtifactReadResult(
+                artifact_id=artifact_id,
+                path=str(path),
+                status=ArtifactReadStatus.READ_FAILED,
+                error_type=type(exc).__name__,
+                error_message=str(exc)[:300],
+            ),
+            digest,
+            size_bytes,
+        )
+
+    return (
+        ArtifactReadResult(
+            artifact_id=artifact_id,
+            path=str(path),
+            status=ArtifactReadStatus.FOUND,
+            value=value,
+        ),
+        digest,
+        size_bytes,
+    )
+
+
+class IndexReconciliationStatus(str, Enum):
+    IN_SYNC = "IN_SYNC"
+    REVIEW_REQUIRED = "REVIEW_REQUIRED"
+    READ_FAILED = "READ_FAILED"
+    DIRECTORY_ABSENT = "DIRECTORY_ABSENT"
+
+class IndexReconciliationPathStatus(str, Enum):
+    SAFE_CANONICAL_PATH = "SAFE_CANONICAL_PATH"
+    SAFE_NONCANONICAL_PATH = "SAFE_NONCANONICAL_PATH"
+    MISSING_PATH = "MISSING_PATH"
+    INVALID_PATH = "INVALID_PATH"
+    READ_FAILED = "READ_FAILED"
+    CORRUPT = "CORRUPT"
+    SCHEMA_UNSUPPORTED = "SCHEMA_UNSUPPORTED"
+    IDENTITY_MISMATCH = "IDENTITY_MISMATCH"
+
+
+@dataclass(frozen=True)
+class IndexReconciliationIndexPathResult:
+    artifact_id: str
+    status: IndexReconciliationPathStatus
+    error_type: str = ""
+    error_message: str = ""
+    sha256: str = ""
+    size_bytes: int = 0
+
+
+@dataclass(frozen=True)
+class IndexReconciliationFileResult:
+    """Metadata-only result for one JSON filename discovered during a read-only scan."""
+
+    artifact_id: str
+    path: str
+    status: ArtifactReadStatus
+    error_type: str = ""
+    error_message: str = ""
+    sha256: str = ""
+    size_bytes: int = 0
+
+
+@dataclass(frozen=True)
+class RepositoryIndexReconciliationReport:
+    """Read-only comparison of one SQLite index with its managed JSON directory.
+
+    The report contains IDs and outcomes only; it deliberately does not retain
+    deserialized dossier/session payloads and provides no method that writes rows.
+    """
+
+    scope: str
+    indexed_ids: tuple[str, ...]
+    files: tuple[IndexReconciliationFileResult, ...]
+    index_path_results: tuple[IndexReconciliationIndexPathResult, ...]
+    directory_exists: bool
+    observed_at_utc: str
+    collection_error_type: str = ""
+    collection_error_message: str = ""
+    filesystem_error_type: str = ""
+    filesystem_error_message: str = ""
+    ignored_entries: int = 0
+
+    @property
+    def filesystem_ids(self) -> list[str]:
+        return [item.artifact_id for item in self.files]
+
+    @property
+    def unindexed_valid_ids(self) -> list[str]:
+        if self.collection_error_type or self.filesystem_error_type or not self.directory_exists:
+            return []
+        indexed = set(self.indexed_ids)
+        return [
+            item.artifact_id
+            for item in self.files
+            if item.status == ArtifactReadStatus.FOUND and item.artifact_id not in indexed
+        ]
+
+    @property
+    def indexed_without_file_ids(self) -> list[str]:
+        if self.collection_error_type or self.filesystem_error_type or not self.directory_exists:
+            return []
+        observed = set(self.filesystem_ids)
+        return [item for item in self.indexed_ids if item not in observed]
+
+    @property
+    def index_path_issues(self) -> list[str]:
+        return [
+            item.artifact_id
+            for item in self.index_path_results
+            if item.status != IndexReconciliationPathStatus.SAFE_CANONICAL_PATH
+        ]
+
+    @property
+    def invalid_file_ids(self) -> list[str]:
+        return [
+            item.artifact_id
+            for item in self.files
+            if item.status != ArtifactReadStatus.FOUND
+        ]
+
+    @property
+    def status(self) -> IndexReconciliationStatus:
+        if self.collection_error_type or self.filesystem_error_type:
+            return IndexReconciliationStatus.READ_FAILED
+        if self.unindexed_valid_ids or self.indexed_without_file_ids or self.invalid_file_ids or self.index_path_issues:
+            return IndexReconciliationStatus.REVIEW_REQUIRED
+        if not self.directory_exists:
+            return IndexReconciliationStatus.DIRECTORY_ABSENT
+        return IndexReconciliationStatus.IN_SYNC
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "scope": self.scope,
+            "status": self.status.value,
+            "observed_at_utc": self.observed_at_utc,
+            "directory_exists": self.directory_exists,
+            "indexed_count": len(self.indexed_ids),
+            "filesystem_count": len(self.files),
+            "unindexed_valid_ids": self.unindexed_valid_ids,
+            "indexed_without_file_ids": self.indexed_without_file_ids,
+            "invalid_file_ids": self.invalid_file_ids,
+            "index_path_issues": self.index_path_issues,
+            "index_paths": [
+                {
+                    "artifact_id": item.artifact_id,
+                    "status": item.status.value,
+                    "error_type": item.error_type,
+                    "error_message": item.error_message,
+                    "sha256": item.sha256,
+                    "size_bytes": item.size_bytes,
+                }
+                for item in self.index_path_results
+            ],
+            "collection_error_type": self.collection_error_type,
+            "collection_error_message": self.collection_error_message,
+            "filesystem_error_type": self.filesystem_error_type,
+            "filesystem_error_message": self.filesystem_error_message,
+            "ignored_entries": self.ignored_entries,
+            "files": [
+                {
+                    "artifact_id": item.artifact_id,
+                    "path": item.path,
+                    "status": item.status.value,
+                    "error_type": item.error_type,
+                    "error_message": item.error_message,
+                    "sha256": item.sha256,
+                    "size_bytes": item.size_bytes,
+                }
+                for item in self.files
+            ],
+        }
 
 
 class RepositoryReadError(RuntimeError):
