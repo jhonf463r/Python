@@ -394,3 +394,37 @@ def test_centro_vivo_preserves_partial_tool_record_diagnostics(tmp_path):
     assert vm.get_source_statuses()['tool_record_repository'] == 'READ_PARTIAL'
     assert vm.get_source_reports()['tool_record_repository']['records_loaded'] == 1
     assert 'tool_record_repository=READ_PARTIAL' in vm.get_status_text()
+
+
+def test_centro_vivo_account_inventory_propagates_partial_subsource_coverage(tmp_path, monkeypatch):
+    from iabv_v15.domain.models import AccountInventorySnapshot
+    from iabv_v15.services.evolution import account_resource_scanner
+
+    snapshot = AccountInventorySnapshot(
+        source_coverage={
+            'browser_accounts': 'READ_OK',
+            'browser_sessions': 'READ_PARTIAL',
+            'quota_tracker': 'READ_FAILED',
+        },
+        source_errors={
+            'browser_sessions': 'PermissionError',
+            'quota_tracker': 'PermissionError',
+        },
+    )
+    monkeypatch.setattr(
+        account_resource_scanner,
+        'build_inventory_snapshot',
+        lambda: snapshot,
+    )
+    vm = CentroVivoViewModel(
+        data_root=str(tmp_path),
+        defer_initial_refresh=True,
+    )
+
+    vm.refresh()
+
+    assert vm.get_account_inventory() == []
+    assert vm.get_source_statuses()['account_inventory'] == 'READ_FAILED'
+    reports = vm.get_source_reports()['account_inventory']
+    assert reports['source_coverage']['browser_sessions'] == 'READ_PARTIAL'
+    assert reports['source_coverage']['quota_tracker'] == 'READ_FAILED'
