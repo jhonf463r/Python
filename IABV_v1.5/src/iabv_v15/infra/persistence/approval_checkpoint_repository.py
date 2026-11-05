@@ -1,33 +1,56 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
-import json
-import logging
+import sqlite3
 from pathlib import Path
+from threading import local
 
 from iabv_v15.domain.models import ApprovalCheckpoint
 from iabv_v15.infra.persistence.database import AppDatabase
+from iabv_v15.infra.persistence.read_results import (
+    ArtifactReadResult,
+    ArtifactReadStatus,
+    RepositoryReadError,
+    RepositoryReadReport,
+    read_model_from_paths,
+)
 from iabv_v15.infra.persistence.storage import ArtifactStorage
-
-_log = logging.getLogger(__name__)
 
 
 class ApprovalCheckpointRepository:
+    """SQLite-indexed approval checkpoints with non-destructive diagnostic reads."""
+
     def __init__(self, db: AppDatabase, storage: ArtifactStorage):
         self.db = db
         self.storage = storage
+        self._read_state = local()
 
-    def save_many(self, checkpoints: list[ApprovalCheckpoint]) -> list[ApprovalCheckpoint]:
+    @property
+    def last_read_report(self) -> RepositoryReadReport[ApprovalCheckpoint] | None:
+        return getattr(self._read_state, "report", None)
+
+    def _remember_report(
+        self, report: RepositoryReadReport[ApprovalCheckpoint]
+    ) -> RepositoryReadReport[ApprovalCheckpoint]:
+        self._read_state.report = report
+        return report
+
+    def save_many(
+        self, checkpoints: list[ApprovalCheckpoint]
+    ) -> list[ApprovalCheckpoint]:
         for checkpoint in checkpoints:
             self.save(checkpoint)
         return checkpoints
 
     def save(self, checkpoint: ApprovalCheckpoint) -> ApprovalCheckpoint:
         relative_path = f"approvals/{checkpoint.checkpoint_id}.json"
-        saved_path = self.storage.save_json_atomic(relative_path, checkpoint.model_dump(mode='json'))
+        saved_path = self.storage.save_json_atomic(
+            relative_path, checkpoint.model_dump(mode="json")
+        )
         self.db.execute(
             """
             INSERT OR REPLACE INTO approval_checkpoints
-            (checkpoint_id, session_id, playbook_id, decision, phase_key, risk_level, title, path, created_at_utc)
+            (checkpoint_id, session_id, playbook_id, decision, phase_key,
+             risk_level, title, path, created_at_utc)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
@@ -44,65 +67,129 @@ class ApprovalCheckpointRepository:
         )
         return checkpoint
 
-    def list_for_session(self, session_id: str) -> list[ApprovalCheckpoint]:
-        rows = self.db.fetchall(
-            """
-            SELECT checkpoint_id, path
-            FROM approval_checkpoints
-            WHERE session_id = ?
-            ORDER BY created_at_utc ASC
-            """,
-            (session_id,),
+    def _read_rows(
+        self, rows: list[dict[str, str]]
+    ) -> RepositoryReadReport[ApprovalCheckpoint]:
+        results: list[ArtifactReadResult[ApprovalCheckpoint]] = []
+        for row in rows:
+            checkpoint_id = str(row["checkpoint_id"])
+            try:
+                candidate = Path(row["path"])
+            except (TypeError, ValueError, OSError) as exc:
+                results.append(
+                    ArtifactReadResult(
+                        artifact_id=checkpoint_id,
+                        path="",
+                        status=ArtifactReadStatus.READ_FAILED,
+                        error_type=type(exc).__name__,
+                        error_message=str(exc)[:300],
+                    )
+                )
+                continue
+            paths: list[Path] = []
+            if candidate.is_absolute():
+                paths.append(candidate)
+            paths.append(self.storage.root / "approvals" / f"{checkpoint_id}.json")
+            results.append(
+                read_model_from_paths(paths, checkpoint_id, ApprovalCheckpoint)
+            )
+        return self._remember_report(
+            RepositoryReadReport.from_results(
+                "SQLITE_INDEX_ROWS:approval_checkpoints", results
+            )
         )
-        return self._collect(rows)
+
+    def list_for_session_with_diagnostics(
+        self, session_id: str
+    ) -> RepositoryReadReport[ApprovalCheckpoint]:
+        try:
+            rows = self.db.fetchall(
+                """
+                SELECT checkpoint_id, path
+                FROM approval_checkpoints
+                WHERE session_id = ?
+                ORDER BY created_at_utc ASC
+                """,
+                (session_id,),
+            )
+        except sqlite3.Error as exc:
+            return self._remember_report(
+                RepositoryReadReport.from_collection_error(
+                    "SQLITE_INDEX_ROWS:approval_checkpoints", exc
+                )
+            )
+        return self._read_rows(rows)
+
+    def list_for_session(self, session_id: str) -> list[ApprovalCheckpoint]:
+        return self.list_for_session_with_diagnostics(session_id).require_complete()
+
+    def get_with_diagnostics(
+        self, checkpoint_id: str
+    ) -> ArtifactReadResult[ApprovalCheckpoint]:
+        scope = "SQLITE_INDEX_LOOKUP:approval_checkpoints"
+        try:
+            row = self.db.fetchone(
+                """
+                SELECT checkpoint_id, path
+                FROM approval_checkpoints
+                WHERE checkpoint_id = ?
+                """,
+                (checkpoint_id,),
+            )
+        except sqlite3.Error as exc:
+            self._remember_report(
+                RepositoryReadReport.from_collection_error(
+                    scope, exc, requested_artifact_id=checkpoint_id
+                )
+            )
+            return ArtifactReadResult(
+                artifact_id=checkpoint_id,
+                path="",
+                status=ArtifactReadStatus.READ_FAILED,
+                error_type=type(exc).__name__,
+                error_message=str(exc)[:300],
+            )
+
+        if row is None:
+            result = ArtifactReadResult(
+                artifact_id=checkpoint_id,
+                path="",
+                status=ArtifactReadStatus.CONFIRMED_NOT_FOUND,
+                error_type="IndexRowNotFound",
+                error_message="No approval-checkpoint row exists in the SQLite index.",
+            )
+        else:
+            resolved_id = str(row["checkpoint_id"])
+            try:
+                candidate = Path(row["path"])
+            except (TypeError, ValueError, OSError) as exc:
+                result = ArtifactReadResult(
+                    artifact_id=resolved_id,
+                    path="",
+                    status=ArtifactReadStatus.READ_FAILED,
+                    error_type=type(exc).__name__,
+                    error_message=str(exc)[:300],
+                )
+            else:
+                paths: list[Path] = []
+                if candidate.is_absolute():
+                    paths.append(candidate)
+                paths.append(self.storage.root / "approvals" / f"{resolved_id}.json")
+                result = read_model_from_paths(paths, resolved_id, ApprovalCheckpoint)
+
+        self._remember_report(RepositoryReadReport.from_results(scope, [result]))
+        return result
 
     def get(self, checkpoint_id: str) -> ApprovalCheckpoint | None:
-        row = self.db.fetchone(
-            """
-            SELECT checkpoint_id, path
-            FROM approval_checkpoints
-            WHERE checkpoint_id = ?
-            """,
-            (checkpoint_id,),
-        )
-        if row is None:
+        result = self.get_with_diagnostics(checkpoint_id)
+        if result.status == ArtifactReadStatus.FOUND:
+            return result.value
+        if (
+            result.status == ArtifactReadStatus.CONFIRMED_NOT_FOUND
+            and result.error_type == "IndexRowNotFound"
+        ):
             return None
-        return self._load(row['checkpoint_id'], row['path'])
-
-    def _collect(self, rows: list[dict[str, str]]) -> list[ApprovalCheckpoint]:
-        results: list[ApprovalCheckpoint] = []
-        orphan_ids: list[str] = []
-        for row in rows:
-            item = self._load(row['checkpoint_id'], row['path'])
-            if item is not None:
-                results.append(item)
-            else:
-                orphan_ids.append(row['checkpoint_id'])
-        if orphan_ids:
-            self._prune_orphans(orphan_ids)
-        return results
-
-    def _prune_orphans(self, ids: list[str]) -> None:
-        if not ids:
-            return
-        placeholders = ','.join('?' for _ in ids)
-        try:
-            self.db.execute(
-                f"DELETE FROM approval_checkpoints WHERE checkpoint_id IN ({placeholders})",
-                tuple(ids),
-            )
-            _log.info("checkpoint_cleanup: pruned %d orphaned DB entries", len(ids))
-        except Exception:
-            pass
-
-    def _load(self, checkpoint_id: str, path: str) -> ApprovalCheckpoint | None:
-        candidate = Path(path)
-        try:
-            if candidate.is_absolute() and candidate.exists():
-                payload = json.loads(candidate.read_text(encoding='utf-8'))
-            else:
-                payload = self.storage.load_json(f'approvals/{checkpoint_id}.json')
-            return ApprovalCheckpoint.model_validate(payload)
-        except (FileNotFoundError, json.JSONDecodeError, OSError, Exception) as exc:
-            _log.debug("checkpoint %s: file missing or corrupt — %s", checkpoint_id, exc)
-            return None
+        report = self.last_read_report
+        if report is None:
+            raise RuntimeError("approval_checkpoint_read_report_not_recorded")
+        raise RepositoryReadError(report)
