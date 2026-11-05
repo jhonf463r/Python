@@ -726,6 +726,21 @@ class AppBootstrap:
             full_scan_interval_seconds=600.0 if _is_mcp_sub else WorldModelService._DEFAULT_FULL_SCAN_INTERVAL,
         )
         self._tracer.trace('phase_world_model_done')
+        # P0.69/P0.70: one bounded in-memory history shared by OSES, TCA and
+        # PortableContext. The service owns no new persistence store or worker.
+        if _is_mcp_sub:
+            # A child process cannot share the UI process's in-memory frame
+            # history and deliberately skips deferred birth-frame capture.
+            # Leave the dependency absent rather than creating a private,
+            # empty ring that could be mistaken for shared observation.
+            self.discernment_frame_service = None
+        else:
+            from iabv_v15.services.evolution.discernment_frame_service import (
+                DiscernmentFrameService,
+            )
+            self.discernment_frame_service = DiscernmentFrameService(
+                workspace_root=self.config.workspace_root,
+            )
         self.interaction_learning_service = InteractionLearningService(self.tool_record_repository)
         self.interaction_mode_selector = InteractionModeSelector(self.tool_registry, self.tool_record_repository)
         self.tool_memory = ToolMemory(self.tool_record_repository, self.interaction_learning_service)
@@ -922,6 +937,7 @@ class AppBootstrap:
             autonomous_validation_cycle=self.autonomous_validation_cycle,
             adaptive_weight_layer=self.adaptive_weight_layer,
             token_rotation_ledger=self.token_rotation_ledger,
+            discernment_frame_service=self.discernment_frame_service,
         )
 
         self._tracer.trace('phase_oses_done')
@@ -1095,6 +1111,7 @@ class AppBootstrap:
             tool_evolution_monitor=self.tool_evolution_monitor,
             adaptive_session_repository=self.adaptive_session_repository,
             platform_pending_queue=self.platform_pending_queue,
+            discernment_frame_service=self.discernment_frame_service,
         )
         # Wire FreezeIncidentReporter into PortableContext for promotion.
         self.portable_context_service.freeze_incident_reporter = (
@@ -1390,6 +1407,7 @@ class AppBootstrap:
             world_model_service=self.world_model_service,
             autonomous_validation_cycle=self.autonomous_validation_cycle,
             portable_context_service=self.portable_context_service,
+            discernment_frame_service=self.discernment_frame_service,
         )
         self.capability_readiness_service = CapabilityReadinessService(self.capability_repository, self.tool_record_repository)
         self.strategy_pack_registry = StrategyPackRegistry(self.strategy_pack_repository)
