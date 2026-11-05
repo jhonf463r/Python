@@ -342,3 +342,49 @@ def test_windows_consistency_matching_live_enumeration_can_pass() -> None:
     assert result['checks_read_reports']['windows_consistency']['world_model_only_window_count'] == 0
     assert result['checks_read_reports']['windows_consistency']['live_only_window_count'] == 0
     assert 'windows_consistency' in result['checks_passed']
+
+
+
+def test_perception_validator_supports_world_model_current_model_api() -> None:
+    snapshot = WorldModelSnapshot(
+        active_windows=[WindowObservation(title='IABV v1.5', pid=100)],
+    )
+
+    class CurrentModelOnlyService:
+        def current_model(self) -> WorldModelSnapshot:
+            return snapshot
+
+    validator = PerceptionCrossValidator(
+        world_model_service=CurrentModelOnlyService(),
+        tool_registry=SimpleNamespace(list_cards=lambda: []),
+    )
+
+    ui_issues = validator._cross_ui_self_awareness()
+    audit_issues = validator._cross_audit_vs_worldmodel()
+
+    assert ui_issues == []
+    assert audit_issues == []
+    assert validator._check_statuses['ui_self_awareness'] == 'READ_OK'
+    assert validator._check_statuses['audit_vs_worldmodel'] == 'READ_OK'
+
+
+@pytest.mark.skipif(os.name != 'nt', reason='live Win32 window enumeration is Windows-only')
+def test_windows_consistency_uses_world_model_current_model_api() -> None:
+    snapshot = WorldModelSnapshot(
+        active_windows=[WindowObservation(title='IABV v1.5', pid=100)],
+    )
+
+    class CurrentModelOnlyService:
+        def current_model(self) -> WorldModelSnapshot:
+            return snapshot
+
+    validator = PerceptionCrossValidator(
+        world_model_service=CurrentModelOnlyService(),
+        tool_registry=None,
+    )
+    validator._enumerate_window_titles = lambda: ['iabv v1.5']  # type: ignore[method-assign]
+
+    issues = validator._cross_windows_consistency()
+
+    assert issues == []
+    assert validator._check_statuses['windows_consistency'] == 'READ_OK'
