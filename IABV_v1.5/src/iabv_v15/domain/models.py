@@ -1969,6 +1969,8 @@ class SelfExaminationSnapshot(BaseModel):
     unresolved_risks: list[str] = Field(default_factory=list)
     package_path: str = ""
     markdown_path: str = ""
+    source_coverage: dict[str, str] = Field(default_factory=dict)
+    source_errors: dict[str, str] = Field(default_factory=dict)
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
