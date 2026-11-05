@@ -27,8 +27,8 @@ Included:
 - ExperimentRecommendation.created_at_utc is preserved in task insight projection.
 
 Source coverage semantics:
-- NOT_CONFIGURED means an optional source dependency was not wired in this service instance; it is not evidence that the source was empty.
-- NO_FILE means the optional runtime_audit file did not exist at the inspected workspace path; it is not a read failure.
+- NOT_CONFIGURED means no reader dependency was wired in this service instance. This records wiring only; it does not establish that the source is optional or out of scope, and it is not evidence that the source was empty.
+- NO_FILE means runtime_audit.jsonl did not exist at the inspected workspace path. This records path state only; it does not establish that the source is optional or out of scope, and it is not a read failure.
 - READ_OK means a configured reader returned successfully.
 - READ_PARTIAL, READ_FAILED or READER_UNAVAILABLE are diagnostics; any recorded source error makes the unified signal and queue UNAVAILABLE, never EMPTY_QUEUE.
 - NOT_CONFIGURED, NO_FILE or unknown coverage states do not establish that the source is optional/not-applicable. Until an explicit source-applicability policy exists, the unified signal and queue remain UNVERIFIED and do not expose partial items as actionable context.
@@ -77,3 +77,14 @@ PRODUCTION_ACTIVATION=NOT_AUTHORIZED
 ```
 
 No credentials, authority assets, protected data, local checkout, secrets, branch-protection settings or production state were accessed or changed.
+
+
+## Post-R2 revalidation — 2026-11-04
+
+- PR #610 was re-fetched: OPEN, Draft, unmerged; base `main@56e4d8b11846a8d8f3cb8cda08efd773ec235651`; HEAD `e335a6e6f47b346f9e112ea684d7c92d31bb1ef1`.
+- Exact compare: 4 commits ahead / 0 behind; 14 changed paths. No review submissions or inline review threads were present at revalidation.
+- PR-associated Actions runs `41935888528` and `41935825437` ended `startup_failure`; both returned zero jobs. No job or test step ran. No retry was attempted.
+- The current assistant execution environment exposed no repository checkout or project-runtime executor. Its isolated container contained no IABV checkout. This is scoped to this execution surface; it is not a claim about the Owner's Windows machine.
+- Static reinspection covered the queue projection, source diagnostics, digest builder, orchestrator handoff, full/compact prompt rendering, PortableContext freshness and regression patches. This is a static model review, not an independent human review and not runtime evidence.
+- The source-applicability policy remains unestablished. `NOT_CONFIGURED` and `NO_FILE` stay `UNVERIFIED`; no source was reclassified as optional.
+- Tests/build/runtime remain `NOT_RUN`; the committed Control Master snapshot remains historical/STALE; no live digest was retrieved.
