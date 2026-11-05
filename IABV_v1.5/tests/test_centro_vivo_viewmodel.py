@@ -315,3 +315,44 @@ def test_centro_vivo_navigation_route_exists():
 
     nav.navigate('centro_vivo')
     assert nav.get_current_route() == 'centro_vivo'
+
+
+def test_centro_vivo_exposes_read_failures_instead_of_clean_empty_panels(tmp_path):
+    class FailingSessionRepository:
+        def list_recent(self, limit=20):
+            raise RuntimeError('session repository unavailable')
+
+    class FailingWorldModel:
+        def current_model(self):
+            raise RuntimeError('world model unavailable')
+
+    vm = CentroVivoViewModel(
+        adaptive_session_repository=FailingSessionRepository(),
+        world_model_service=FailingWorldModel(),
+        data_root=str(tmp_path),
+    )
+
+    assert vm.get_orchestrator_queue() == []
+    assert vm.get_source_statuses()['adaptive_session_repository'] == 'READ_FAILED'
+    assert vm.get_source_statuses()['world_model_service'] == 'READ_FAILED'
+    assert 'Fuentes no verificadas:' in vm.get_status_text()
+    assert 'adaptive_session_repository=READ_FAILED' in vm.get_status_text()
+    assert 'world_model_service=READ_FAILED' in vm.get_status_text()
+
+
+def test_centro_vivo_distinguishes_missing_learning_gap_source_from_verified_empty(tmp_path):
+    vm = CentroVivoViewModel(data_root=str(tmp_path))
+
+    assert vm.get_learning_gaps() == []
+    assert vm.get_source_statuses()['learning_gaps'] == 'CONFIRMED_NOT_FOUND'
+    assert 'learning_gaps=CONFIRMED_NOT_FOUND' in vm.get_status_text()
+
+
+def test_centro_vivo_marks_unconfigured_services_without_claiming_empty_is_verified():
+    vm = CentroVivoViewModel()
+
+    statuses = vm.get_source_statuses()
+    assert statuses['adaptive_session_repository'] == 'NOT_CONFIGURED'
+    assert statuses['tool_record_repository'] == 'NOT_CONFIGURED'
+    assert statuses['self_examination_service'] == 'NOT_CONFIGURED'
+    assert 'Fuentes no verificadas:' in vm.get_status_text()

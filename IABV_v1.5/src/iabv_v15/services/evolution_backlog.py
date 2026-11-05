@@ -28,6 +28,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -47,18 +48,108 @@ def _utc_now_iso() -> str:
     return datetime.now(timezone.utc).isoformat(timespec='seconds')
 
 
-def load_backlog(workspace: str | None = None) -> list[dict[str, Any]]:
-    """Load the full evolution backlog from disk."""
+@dataclass(frozen=True)
+class EvolutionBacklogReadReport:
+    """Truthful outcome of one read of the canonical evolution backlog."""
+
+    status: str
+    path: str
+    items: tuple[dict[str, Any], ...] = ()
+    error_type: str = ''
+    error_message: str = ''
+
+    def to_mcp_payload(self) -> dict[str, Any]:
+        if self.status != 'READ_OK':
+            return {
+                'status': self.status,
+                'path': self.path,
+                'pending': [],
+                'total_pending': None,
+                'total_all': None,
+                'completed': None,
+                'error_type': self.error_type,
+                'error_message': self.error_message,
+            }
+        all_tasks = list(self.items)
+        priority_order = {'critical': 0, 'high': 1, 'medium': 2, 'low': 3}
+        pending = [
+            item for item in all_tasks
+            if item.get('status') in ('pending', 'in_progress')
+        ]
+        pending.sort(key=lambda item: priority_order.get(item.get('priority', 'medium'), 2))
+        return {
+            'status': 'READ_OK',
+            'path': self.path,
+            'pending': pending,
+            'total_pending': len(pending),
+            'total_all': len(all_tasks),
+            'completed': sum(1 for item in all_tasks if item.get('status') == 'completed'),
+            'error_type': '',
+            'error_message': '',
+        }
+
+
+class EvolutionBacklogReadError(RuntimeError):
+    """Fail-closed error that preserves diagnostics for a corrupt/unreadable backlog."""
+
+    def __init__(self, report: EvolutionBacklogReadReport) -> None:
+        self.report = report
+        super().__init__(
+            f'Evolution backlog read {report.status}: '
+            f'{report.error_type or "no valid snapshot"} at {report.path}'
+        )
+
+
+def load_backlog_with_diagnostics(
+    workspace: str | None = None,
+) -> EvolutionBacklogReadReport:
+    """Read the canonical backlog without conflating errors with no saved file."""
     path = _default_backlog_path(workspace)
-    if not path.exists():
-        return []
     try:
-        data = json.loads(path.read_text(encoding='utf-8'))
-        if isinstance(data, list):
-            return data
-    except Exception as exc:
-        logger.warning('Failed to load backlog: %s', exc)
-    return []
+        raw = path.read_text(encoding='utf-8')
+    except FileNotFoundError:
+        return EvolutionBacklogReadReport(status='CONFIRMED_NOT_FOUND', path=str(path))
+    except UnicodeError as exc:
+        return EvolutionBacklogReadReport(
+            status='CORRUPT', path=str(path),
+            error_type=type(exc).__name__, error_message=str(exc)[:300],
+        )
+    except OSError as exc:
+        return EvolutionBacklogReadReport(
+            status='READ_FAILED', path=str(path),
+            error_type=type(exc).__name__, error_message=str(exc)[:300],
+        )
+
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        return EvolutionBacklogReadReport(
+            status='CORRUPT', path=str(path),
+            error_type=type(exc).__name__, error_message=str(exc)[:300],
+        )
+    if not isinstance(data, list) or any(not isinstance(item, dict) for item in data):
+        return EvolutionBacklogReadReport(
+            status='SCHEMA_UNSUPPORTED', path=str(path),
+            error_type='InvalidBacklogSchema',
+            error_message='Expected a JSON array of task objects',
+        )
+    return EvolutionBacklogReadReport(
+        status='READ_OK', path=str(path), items=tuple(data),
+    )
+
+
+def load_backlog(workspace: str | None = None) -> list[dict[str, Any]]:
+    """Load tasks; only a confirmed absent file is treated as a new empty backlog."""
+    report = load_backlog_with_diagnostics(workspace)
+    if report.status == 'CONFIRMED_NOT_FOUND':
+        return []
+    if report.status != 'READ_OK':
+        logger.warning(
+            'Failed to load backlog: status=%s error=%s',
+            report.status, report.error_type,
+        )
+        raise EvolutionBacklogReadError(report)
+    return list(report.items)
 
 
 def save_backlog(items: list[dict[str, Any]], workspace: str | None = None) -> str:

@@ -156,3 +156,52 @@ def test_not_responding_english_detected() -> None:
     issues = validator._cross_ui_self_awareness()
     zombie_issues = [i for i in issues if 'zombie' in i.get('expected', '').lower()]
     assert len(zombie_issues) == 1
+
+
+def test_unconfigured_perception_checks_are_not_reported_as_passed() -> None:
+    validator = PerceptionCrossValidator(
+        world_model_service=None,
+        tool_registry=None,
+    )
+
+    result = validator.run_cross_validation()
+
+    assert result['checks_passed'] == []
+    assert result['checks_status'] == {
+        'tools_vs_processes': 'NOT_CONFIGURED',
+        'audit_vs_worldmodel': 'NOT_CONFIGURED',
+        'windows_consistency': 'NOT_CONFIGURED',
+        'ui_self_awareness': 'NOT_CONFIGURED',
+    }
+    assert set(result['checks_unavailable']) == {
+        'tools_vs_processes',
+        'audit_vs_worldmodel',
+        'windows_consistency',
+        'ui_self_awareness',
+    }
+
+
+def test_world_model_read_exception_is_not_reported_as_passed() -> None:
+    wm_svc = MagicMock()
+    wm_svc.current_snapshot.side_effect = RuntimeError('snapshot unavailable')
+    validator = PerceptionCrossValidator(
+        world_model_service=wm_svc,
+        tool_registry=MagicMock(),
+    )
+
+    result = validator.run_cross_validation()
+
+    for check in ('audit_vs_worldmodel', 'windows_consistency', 'ui_self_awareness'):
+        assert result['checks_status'][check] == 'READ_FAILED'
+        assert check not in result['checks_passed']
+        assert result['checks_unavailable'][check]['reason'] == 'RuntimeError'
+
+
+def test_empty_window_snapshot_is_unverified_not_a_passed_ui_check() -> None:
+    validator = _make_validator(windows=[])
+
+    result = validator.run_cross_validation()
+
+    assert result['checks_status']['ui_self_awareness'] == 'UNVERIFIED'
+    assert 'ui_self_awareness' not in result['checks_passed']
+    assert result['checks_unavailable']['ui_self_awareness']['reason'] == 'no_windows_observed'
