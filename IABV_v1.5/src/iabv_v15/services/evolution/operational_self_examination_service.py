@@ -2197,7 +2197,8 @@ _REQUIRED_SOURCE_IDS = (
                         events.append(json.loads(line))
                     except json.JSONDecodeError:
                         continue
-        except OSError:
+        except OSError as exc:
+            self._record_source_status('startup_timeline_log', 'READ_FAILED', type(exc).__name__)
             return False
         if not events:
             return False
@@ -3795,8 +3796,8 @@ _REQUIRED_SOURCE_IDS = (
                                 'boot_count': boot_count,
                             },
                         ))
-            except Exception:
-                pass
+            except Exception as exc:
+                self._record_source_status('boot_profile_store', 'READ_PARTIAL', type(exc).__name__)
 
         return findings
 
@@ -9708,8 +9709,8 @@ _REQUIRED_SOURCE_IDS = (
                     if kind == 'web_skill_profile_built':
                         if data.get('cdp_status') == 'unavailable':
                             cdp_unavailable_count += 1
-        except Exception:
-            pass
+        except Exception as exc:
+            self._record_source_status('runtime_audit_log', 'READ_FAILED', type(exc).__name__)
         if blocked_count >= 2:
             findings.append(SelfExaminationFinding(
                 category='external_readiness_missing',
@@ -9852,8 +9853,8 @@ _REQUIRED_SOURCE_IDS = (
                                 or 'resource_snapshot_refresh_in_flight' in phase
                                 or 'resource_snapshot_refresh_in_flight' in phase_at_detection):
                             prebuild_resource_snapshot_stall_count += 1
-        except Exception:
-            pass
+        except Exception as exc:
+            self._record_source_status('runtime_audit_log', 'READ_FAILED', type(exc).__name__)
         if external_intent_local_count >= 1:
             findings.append(SelfExaminationFinding(
                 category='external_intent_misrouted_local',
