@@ -162,6 +162,59 @@ class ControlMasterDigestBuilder:
                     work_queue_status = "EMPTY_QUEUE" if not observed_queue else "AVAILABLE"
                     signal_reason = ""
 
+        # current_state() and current_work_queue() are separate live reads.
+        # Recheck the persisted state identity after queue projection so a
+        # concurrent Control Master state update cannot be paired with a queue
+        # built against an earlier state. This is a drift check, not an
+        # invented cross-repository transaction.
+        if work_queue_status in {"AVAILABLE", "EMPTY_QUEUE"}:
+            before_metadata = dict(getattr(state, "metadata", {}) or {})
+            before_provenance = dict(
+                before_metadata.get("_space_time_control_master_source_provenance") or {}
+            )
+            before_read_status = str(before_provenance.get("read_status") or "").upper()
+            if before_read_status == "READ_OK":
+                before_state_id = str(before_provenance.get("source_state_id") or "").strip()
+                before_digest = str(before_provenance.get("source_revision_or_digest") or "").strip()
+                if not before_state_id or not before_digest:
+                    work_queue = None
+                    work_queue_status = "UNVERIFIED"
+                    signal_reason = "CONTROL_MASTER_STATE_PROVENANCE_INCOMPLETE"
+                    before_provenance["read_status"] = "UNVERIFIED"
+                    before_provenance["freshness_status"] = "UNVERIFIED"
+                    before_metadata["_space_time_control_master_source_provenance"] = before_provenance
+                    state = state.model_copy(update={"metadata": before_metadata})
+                else:
+                    try:
+                        state_after_queue = service.current_state(refresh=False)
+                    except Exception as exc:
+                        work_queue = None
+                        work_queue_status = "UNAVAILABLE"
+                        signal_reason = "CONTROL_MASTER_STATE_RECHECK_FAILED:" + type(exc).__name__
+                        before_provenance["read_status"] = "READ_FAILED"
+                        before_provenance["freshness_status"] = "UNVERIFIED"
+                        before_provenance["recheck_error"] = type(exc).__name__
+                        before_metadata["_space_time_control_master_source_provenance"] = before_provenance
+                        state = state.model_copy(update={"metadata": before_metadata})
+                    else:
+                        after_metadata = dict(getattr(state_after_queue, "metadata", {}) or {})
+                        after_provenance = dict(
+                            after_metadata.get("_space_time_control_master_source_provenance") or {}
+                        )
+                        after_read_status = str(after_provenance.get("read_status") or "").upper()
+                        after_state_id = str(after_provenance.get("source_state_id") or "").strip()
+                        after_digest = str(after_provenance.get("source_revision_or_digest") or "").strip()
+                        if after_read_status != "READ_OK" or not after_state_id or not after_digest:
+                            work_queue = None
+                            work_queue_status = "UNVERIFIED"
+                            signal_reason = "CONTROL_MASTER_STATE_RECHECK_UNVERIFIED"
+                            state = state_after_queue
+                        elif after_state_id != before_state_id or after_digest != before_digest:
+                            work_queue = None
+                            work_queue_status = "UNVERIFIED"
+                            signal_reason = "CONTROL_MASTER_STATE_CHANGED_DURING_WORK_QUEUE_READ"
+                            state = state_after_queue
+
         if not source_coverage:
             source_coverage = dict(
                 getattr(service, "last_work_queue_source_coverage", {}) or {}
