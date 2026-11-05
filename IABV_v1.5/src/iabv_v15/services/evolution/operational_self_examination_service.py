@@ -133,27 +133,81 @@ class OperationalSelfExaminationService:
             raise RuntimeError("oses_cached_review_unavailable")
         if not self._is_fresh(cached, max_age_seconds=max_age_seconds):
             raise RuntimeError("oses_cached_review_stale")
-        coverage = getattr(cached, "source_coverage", None) or dict(
-            (cached.metadata or {}).get("source_coverage") or {}
-        )
+        metadata = dict(cached.metadata or {})
+        if metadata.get("source_coverage_contract") != _SOURCE_COVERAGE_CONTRACT:
+            raise RuntimeError("oses_source_coverage_contract_unverified")
+        declared_sources = metadata.get("required_source_ids")
+        if (
+            not isinstance(declared_sources, list)
+            or len(declared_sources) != len(_REQUIRED_SOURCE_IDS)
+            or set(declared_sources) != set(_REQUIRED_SOURCE_IDS)
+        ):
+            raise RuntimeError("oses_source_coverage_contract_mismatch")
+
+        coverage = dict(getattr(cached, "source_coverage", None) or {})
         if not coverage:
-            raise RuntimeError("oses_source_coverage_unverified")
+            coverage = dict(metadata.get("source_coverage") or {})
+        missing = sorted(set(_REQUIRED_SOURCE_IDS) - set(coverage))
+        unexpected = sorted(set(coverage) - set(_REQUIRED_SOURCE_IDS))
+        if missing or unexpected:
+            raise RuntimeError(
+                "oses_source_coverage_missing:"
+                + str({"missing": missing, "unexpected": unexpected})
+            )
         incomplete = {
-            str(source): str(status)
-            for source, status in coverage.items()
-            if status != "READ_OK"
+            source: str(coverage[source])
+            for source in _REQUIRED_SOURCE_IDS
+            if coverage[source] != "READ_OK"
         }
         if incomplete:
-            raise RuntimeError("oses_source_coverage_incomplete:" + str(incomplete))
+            errors = dict(getattr(cached, "source_errors", None) or metadata.get("source_errors") or {})
+            raise RuntimeError(
+                "oses_source_coverage_incomplete:"
+                + str({"statuses": incomplete, "errors": errors})
+            )
         return cached
+
+    def _source_coverage_report(self) -> dict[str, Any]:
+        """Build an explicit inventory; never infer READ_OK from an absent status."""
+        coverage = {
+            source: self._source_coverage.get(source, "NOT_INSTRUMENTED")
+            for source in _REQUIRED_SOURCE_IDS
+        }
+        errors = {
+            source: self._source_errors[source]
+            for source in _REQUIRED_SOURCE_IDS
+            if source in self._source_errors
+        }
+        missing = [
+            source for source, status in coverage.items()
+            if status != "READ_OK"
+        ]
+        return {
+            "contract": _SOURCE_COVERAGE_CONTRACT,
+            "required_source_ids": list(_REQUIRED_SOURCE_IDS),
+            "source_coverage": coverage,
+            "source_errors": errors,
+            "complete": not missing,
+            "incomplete_source_ids": missing,
+        }
 
     def _record_source_status(
         self, source: str, status: str, error: str = "",
     ) -> None:
-        self._source_coverage[source] = status
+        previous = self._source_coverage.get(source)
+        # NOT_INSTRUMENTED is a census placeholder and is replaced by the
+        # first observed result. A later success must not erase an earlier
+        # failure from another read of the same source during this review.
+        if previous == "NOT_INSTRUMENTED" or previous is None:
+            self._source_coverage[source] = status
+        elif previous == "READ_OK" and status != "READ_OK":
+            self._source_coverage[source] = status
+        elif previous not in {"READ_FAILED", "READ_PARTIAL", "CORRUPT", "SCHEMA_UNSUPPORTED"}:
+            if status in {"READ_FAILED", "READ_PARTIAL", "CORRUPT", "SCHEMA_UNSUPPORTED", "NOT_CONFIGURED", "CONFIRMED_NOT_FOUND"}:
+                self._source_coverage[source] = status
         if error:
             self._source_errors[source] = error[:200]
-        else:
+        elif status == "READ_OK" and self._source_coverage.get(source) == "READ_OK":
             self._source_errors.pop(source, None)
 
     def review_summary(self, review: SelfExaminationSnapshot | None = None) -> dict[str, Any]:
@@ -692,7 +746,9 @@ class OperationalSelfExaminationService:
         return findings[:3]
 
     def build_review(self) -> SelfExaminationSnapshot:
-        self._source_coverage = {}
+        self._source_coverage = {
+            source: "NOT_INSTRUMENTED" for source in _REQUIRED_SOURCE_IDS
+        }
         self._source_errors = {}
         now = utc_now()
         previous_review = self._load_latest_review()
@@ -955,6 +1011,7 @@ class OperationalSelfExaminationService:
             experiment_runs=experiment_runs,
             validated_improvements=validated_improvements,
         )
+        source_coverage_report = self._source_coverage_report()
         review = SelfExaminationSnapshot(
             created_at_utc=now,
             updated_at_utc=now,
@@ -965,7 +1022,15 @@ class OperationalSelfExaminationService:
             recommended_adjustments=recommended_adjustments[:6],
             validated_improvements=validated_improvements[:4],
             unresolved_risks=unresolved_risks[:8],
+            source_coverage=dict(source_coverage_report["source_coverage"]),
+            source_errors=dict(source_coverage_report["source_errors"]),
             metadata={
+                'source_coverage_contract': source_coverage_report["contract"],
+                'required_source_ids': list(source_coverage_report["required_source_ids"]),
+                'source_coverage': dict(source_coverage_report["source_coverage"]),
+                'source_errors': dict(source_coverage_report["source_errors"]),
+                'source_coverage_complete': bool(source_coverage_report["complete"]),
+                'source_coverage_incomplete_ids': list(source_coverage_report["incomplete_source_ids"]),
                 'recommendation_feedback': recommendation_feedback[:6],
                 'feedback_summary': feedback_summary,
                 'solution_proposals': solution_proposals[:4],
@@ -1055,6 +1120,37 @@ class OperationalSelfExaminationService:
 
         import logging
         logger = logging.getLogger(__name__)
+
+_SOURCE_COVERAGE_CONTRACT = 'OSES_SOURCE_COVERAGE_R1'
+_REQUIRED_SOURCE_IDS = (
+    'run_repository',
+    'adaptive_session_repository',
+    'experiment_runs',
+    'experiment_recommendations',
+    'scenario_run_repository',
+    'project_health',
+    'improvement_backlog',
+    'world_model_service',
+    'autonomous_validation_cycle',
+    'previous_review_snapshot',
+    'token_rotation_ledger',
+    'decision_audit_trail',
+    'runtime_audit_tracer',
+    'runtime_audit_log',
+    'startup_timeline_log',
+    'runtime_log',
+    'boot_profile_store',
+    'chat_research_backlog',
+    'account_resource_scanner',
+    'chat_message_repository',
+    'code_audit_trail',
+    'sqlite_incident_file',
+    'environment_self_awareness_service',
+    'pending_queue',
+    'test_evidence_file',
+    'experiment_lab_threshold',
+    'metacognition_evolution',
+)
 
         for finding in actionable[:3]:
             action_name = _CATEGORY_TO_ACTION[finding.category]
@@ -1241,6 +1337,14 @@ class OperationalSelfExaminationService:
         metadata_update: dict[str, Any] = {
             **dict(review.metadata or {}),
             'workspace_root': self.workspace_root,
+            'source_coverage_contract': _SOURCE_COVERAGE_CONTRACT,
+            'required_source_ids': list(_REQUIRED_SOURCE_IDS),
+            'source_coverage': dict(review.source_coverage or {}),
+            'source_errors': dict(review.source_errors or {}),
+            'source_coverage_complete': (
+                set(review.source_coverage or {}) == set(_REQUIRED_SOURCE_IDS)
+                and all(status == 'READ_OK' for status in (review.source_coverage or {}).values())
+            ),
             'source_refs': [
                 'RunRepository',
                 'AdaptiveSessionRepository',
