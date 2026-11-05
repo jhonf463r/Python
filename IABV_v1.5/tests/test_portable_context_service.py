@@ -495,3 +495,58 @@ def test_portable_context_service_rejects_future_full_context_timestamp() -> Non
         )
     finally:
         shutil.rmtree(root, ignore_errors=True)
+
+
+def test_pending_section_reports_platform_queue_read_failure_instead_of_empty() -> None:
+    from iabv_v15.domain.models import PlatformPendingTask, utc_now
+    from iabv_v15.infra.persistence.storage import ArtifactStorage
+    from iabv_v15.services.evolution.platform_pending_queue import PlatformPendingQueue
+    from iabv_v15.services.evolution.portable_context_service import PortableContextService
+
+    root = _workspace('pending_section_platform_read_failure')
+    try:
+        queue = PlatformPendingQueue(root / 'data' / 'evolution')
+        queue.upsert(PlatformPendingTask(id='visible-task', title='Readable platform task'))
+        queue._task_path('corrupt').write_text('{', encoding='utf-8')
+        service = PortableContextService(
+            workspace_root=str(root),
+            storage=ArtifactStorage(str(root / 'data')),
+            platform_pending_queue=queue,
+        )
+
+        section = service._pending_section(
+            pending_items=[],
+            backlog_items=[],
+            now=utc_now(),
+        )
+
+        assert section.items == []
+        assert 'lectura parcial' in section.summary.lower()
+        assert 'UNRESOLVED:platform_pending_queue_read_partial' in section.unresolved_fields
+        assert 'UNRESOLVED:pending_backlog' in section.unresolved_fields
+        assert section.confidence == 0.0
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_pending_section_distinguishes_unconfigured_platform_queue() -> None:
+    from iabv_v15.domain.models import utc_now
+    from iabv_v15.infra.persistence.storage import ArtifactStorage
+    from iabv_v15.services.evolution.portable_context_service import PortableContextService
+
+    root = _workspace('pending_section_platform_not_configured')
+    try:
+        service = PortableContextService(
+            workspace_root=str(root),
+            storage=ArtifactStorage(str(root / 'data')),
+        )
+        section = service._pending_section(
+            pending_items=[],
+            backlog_items=[],
+            now=utc_now(),
+        )
+        assert 'no está conectada' in section.summary.lower()
+        assert 'UNRESOLVED:platform_pending_queue_not_connected' in section.unresolved_fields
+        assert section.confidence == 0.0
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
