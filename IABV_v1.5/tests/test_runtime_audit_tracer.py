@@ -208,3 +208,64 @@ class TestInMemoryLimit:
                 os.environ['IABV_RUNTIME_TRACE'] = old
             else:
                 os.environ.pop('IABV_RUNTIME_TRACE', None)
+
+
+
+def test_trace_returns_file_fsync_ack(tmp_path: Path) -> None:
+    import hashlib
+
+    tracer = RuntimeAuditTracer(log_dir=tmp_path)
+    event = tracer.trace('durable_event', value='verified')
+    acknowledgement = event['durability_ack']
+
+    log_file = tmp_path / 'runtime_audit.jsonl'
+    raw_line = log_file.read_bytes()
+    disk_event = json.loads(raw_line.decode('utf-8').strip())
+
+    assert acknowledgement['status'] == 'FILE_FSYNCED'
+    assert acknowledgement['path'] == 'runtime_audit.jsonl'
+    assert acknowledgement['seq'] == event['seq'] == 1
+    assert acknowledgement['byte_start'] == 0
+    assert acknowledgement['byte_end'] == len(raw_line)
+    assert acknowledgement['line_sha256'] == hashlib.sha256(raw_line).hexdigest()
+    assert raw_line.endswith(b'\\n')
+    assert disk_event['kind'] == 'durable_event'
+    assert 'durability_ack' not in disk_event
+    assert tracer.events()[-1]['durability_ack'] == acknowledgement
+
+
+def test_trace_fsync_failure_returns_write_failed_ack(tmp_path: Path, monkeypatch) -> None:
+    import iabv_v15.services.evolution.runtime_audit_tracer as tracer_module
+
+    def fail_fsync(_fd: int) -> None:
+        raise OSError('synthetic fsync failure')
+
+    monkeypatch.setattr(tracer_module.os, 'fsync', fail_fsync)
+    tracer = RuntimeAuditTracer(log_dir=tmp_path)
+
+    event = tracer.trace('not_durable_event')
+    acknowledgement = event['durability_ack']
+
+    assert acknowledgement['status'] == 'WRITE_FAILED'
+    assert acknowledgement['error_type'] == 'OSError'
+    assert len(tracer.events()) == 1
+
+
+def test_trace_without_log_directory_is_memory_only() -> None:
+    tracer = RuntimeAuditTracer()
+
+    event = tracer.trace('memory_only_event')
+
+    assert event['durability_ack']['status'] == 'MEMORY_ONLY'
+    assert len(tracer.events()) == 1
+
+
+def test_disabled_trace_returns_disabled_ack(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setenv('IABV_RUNTIME_TRACE', '0')
+    tracer = RuntimeAuditTracer(log_dir=tmp_path)
+
+    event = tracer.trace('disabled_event')
+
+    assert event['durability_ack']['status'] == 'DISABLED'
+    assert len(tracer.events()) == 1
+    assert not (tmp_path / 'runtime_audit.jsonl').exists()
