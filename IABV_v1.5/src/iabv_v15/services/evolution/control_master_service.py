@@ -17,6 +17,7 @@ never drifts from live repositories.
 from __future__ import annotations
 
 import hashlib
+import json
 import re
 from datetime import datetime
 from pathlib import Path
@@ -100,8 +101,59 @@ class ControlMasterService:
 
     def current_state(self, *, refresh: bool = False) -> ControlMasterState:
         base = self.repository.load_latest_state() if not refresh else None
+        source_observed_at = utc_now()
+        source_provenance: dict[str, Any]
         if base is None:
+            source_provenance = {
+                "project_id": "IABV_v1.5",
+                "source_object": "control_master/latest.json",
+                "source_state_id": "",
+                "source_revision_or_digest": "",
+                "source_generated_at_utc": None,
+                "source_observed_at_utc": source_observed_at.isoformat(),
+                "workspace_scope_id": "",
+                "freshness_status": "UNAVAILABLE",
+                "read_status": "NO_SOURCE_SNAPSHOT",
+            }
             base = ControlMasterState()
+        else:
+            generated_at = base.last_updated
+            scope_root = self.workspace_root or getattr(
+                getattr(self.repository, "storage", None), "root", None
+            )
+            scope_id = ""
+            if scope_root:
+                scope_material = str(Path(str(scope_root)).resolve()).casefold()
+                scope_id = hashlib.sha256(scope_material.encode("utf-8")).hexdigest()[:20]
+            source_payload = base.model_dump(mode="json")
+            source_metadata = dict(source_payload.get("metadata") or {})
+            source_metadata.pop("_space_time_control_master_source_provenance", None)
+            source_payload["metadata"] = source_metadata
+            source_digest = hashlib.sha256(
+                json.dumps(
+                    source_payload, sort_keys=True, ensure_ascii=False,
+                    separators=(",", ":"),
+                ).encode("utf-8")
+            ).hexdigest()
+            timestamp_valid = (
+                isinstance(generated_at, datetime)
+                and generated_at.tzinfo is not None
+                and generated_at.utcoffset() is not None
+                and generated_at <= source_observed_at
+            )
+            freshness = "FRESH" if timestamp_valid and scope_id else "UNVERIFIED"
+            source_provenance = {
+                "project_id": "IABV_v1.5",
+                "source_object": "control_master/latest.json",
+                "source_state_id": base.state_id,
+                "source_revision_or_digest": "sha256:" + source_digest,
+                "source_generated_at_utc": generated_at.isoformat()
+                if isinstance(generated_at, datetime) else None,
+                "source_observed_at_utc": source_observed_at.isoformat(),
+                "workspace_scope_id": scope_id,
+                "freshness_status": freshness,
+                "read_status": "READ_OK" if freshness == "FRESH" else "UNVERIFIED",
+            }
         rules = self.repository.list_rules()
         decisions = sorted(
             self.repository.list_decisions(),
@@ -118,6 +170,8 @@ class ControlMasterService:
             *account_inventory.get('unresolved_items', []),
         ]))
         metadata = dict(base.metadata)
+        # Read provenance belongs to this projection only; never persist it as a new state.
+        metadata['_space_time_control_master_source_provenance'] = source_provenance
         metadata['account_inventory'] = account_inventory
         state = base.model_copy(
             update={

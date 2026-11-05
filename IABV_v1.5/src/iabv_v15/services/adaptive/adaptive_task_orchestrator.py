@@ -1470,6 +1470,14 @@ class AdaptiveTaskOrchestrator:
     ) -> tuple[RoleRoute, InferenceResult, AdaptiveSession]:
         import time as _time
 
+        # D021 intake: read the existing Control Master surface once, before
+        # intent/strategy selection. This is a prioritization signal, not authority.
+        control_master_digest = self._control_master_digest()
+        control_master_intake = self._build_control_master_signal_intake(
+            request=request,
+            digest=control_master_digest,
+        )
+
         # ETAPA 2: Clasificación semántica mejorada con IntentSchema
         intent, intent_schema = self.intent_service.classify_with_schema(
             request.user_goal,
@@ -1485,6 +1493,19 @@ class AdaptiveTaskOrchestrator:
         synaptic_decision = self._maybe_synaptic_decision(intent)
         self._inject_synaptic_into_decision_context(perception.decision_context, synaptic_decision)
         context = perception.task_context
+        perception_metadata = dict(perception.metadata or {})
+        digest_payload = control_master_digest.model_dump(mode="json")
+        perception_metadata["control_master_digest"] = digest_payload
+        perception_metadata["control_master_signal_intake"] = control_master_intake
+        perception.metadata = perception_metadata
+        perception_decision_metadata = dict(perception.decision_context.metadata or {})
+        perception_decision_metadata["control_master_signal_intake"] = control_master_intake
+        perception_decision_metadata["control_master_digest_id"] = control_master_digest.digest_id
+        perception.decision_context.metadata = perception_decision_metadata
+        context_metadata = dict(context.metadata or {})
+        context_metadata["control_master_digest"] = digest_payload
+        context_metadata["control_master_signal_intake"] = control_master_intake
+        context.metadata = context_metadata
 
         # A: Stimulus awareness — evaluar presión de recursos ANTES de
         # decidir la profundidad de procesamiento. Bajo presión CRITICAL
@@ -1609,6 +1630,17 @@ class AdaptiveTaskOrchestrator:
         )
         if control_master_objective_id:
             session.metadata['control_master_objective_id'] = control_master_objective_id
+        control_master_intake["ACTOR_SESSION_ID"] = session.session_id
+        control_master_intake["SESSION_BINDING_STATUS"] = "BOUND"
+        session.metadata["control_master_digest"] = digest_payload
+        session.metadata["control_master_signal_intake"] = control_master_intake
+        session.context.metadata["control_master_digest"] = digest_payload
+        session.context.metadata["control_master_signal_intake"] = control_master_intake
+        perception_metadata["control_master_signal_intake"] = control_master_intake
+        perception.metadata = perception_metadata
+        perception_decision_metadata["control_master_signal_intake"] = control_master_intake
+        perception.decision_context.metadata = perception_decision_metadata
+        session.metadata["perception_snapshot"] = perception.model_dump(mode="json")
         if parallel_comparison_result is not None:
             session.metadata['parallel_ia_comparison'] = parallel_comparison_result
         elif parallel_comparison_block_reason:
@@ -2640,6 +2672,27 @@ class AdaptiveTaskOrchestrator:
         perception_snapshot_payload = dict(session.metadata.get('perception_snapshot') or session.context.metadata.get('perception_snapshot') or {})
         assistant_guidance = dict(session.metadata.get('assistant_guidance') or decision_context_payload.get('assistant_guidance') or self._build_assistant_guidance(session, pack))
         llm_chat = self._maybe_invoke_local_chat_llm(session=session, request=request)
+        control_master_prompt_delivery = (
+            dict(llm_chat.get("control_master_prompt_delivery") or {})
+            if llm_chat else {}
+        )
+        if control_master_prompt_delivery:
+            intake = dict(session.metadata.get("control_master_signal_intake") or {})
+            intake["PROMPT_DELIVERY"] = control_master_prompt_delivery
+            intake["SIGNAL_CONSIDERED"] = "NOT_EVALUATED"
+            intake["CONTROL_MASTER_DECISION_INFLUENCE"] = "NOT_EVALUATED"
+            session.metadata["control_master_signal_intake"] = intake
+            session.context.metadata["control_master_signal_intake"] = intake
+            dc_metadata = dict(decision_context_payload.get("metadata") or {})
+            dc_metadata["control_master_signal_intake"] = intake
+            decision_context_payload["metadata"] = dc_metadata
+            session.metadata["decision_context"] = decision_context_payload
+            session.context.metadata["decision_context"] = decision_context_payload
+            perception_metadata = dict(perception_snapshot_payload.get("metadata") or {})
+            perception_metadata["control_master_signal_intake"] = intake
+            perception_snapshot_payload["metadata"] = perception_metadata
+            session.metadata["perception_snapshot"] = perception_snapshot_payload
+            session.context.metadata["perception_snapshot"] = perception_snapshot_payload
         llm_summary = llm_chat.get('summary') if llm_chat else ''
         summary = str(llm_summary or assistant_guidance.get('prompt') or self._render_summary(session))
         role_profile = next((item for item in self.role_router.role_profiles if item.role == session.intent.detected_role), self.role_router.role_profiles[0])
@@ -2684,6 +2737,8 @@ class AdaptiveTaskOrchestrator:
                 'session_health': perception_snapshot_payload.get('session_health'),
                 'assistant_guidance': assistant_guidance,
                 'decision_context': decision_context_payload,
+                'control_master_digest': dict(session.metadata.get("control_master_digest") or {}),
+                'control_master_signal_intake': dict(session.metadata.get("control_master_signal_intake") or {}),
                 'perception_snapshot': perception_snapshot_payload,
                 'runtime_signals': list(perception_snapshot_payload.get('runtime_signals') or []),
                 'ia_trace': list(perception_snapshot_payload.get('ia_trace') or []),
@@ -2742,7 +2797,17 @@ class AdaptiveTaskOrchestrator:
         tool_cards = self._tool_cards()
         governance_snapshot = self._governance_for_chat(session)
 
-        control_master_digest = self._control_master_digest()
+        from iabv_v15.domain.models import ControlMasterDigest
+        digest_payload = dict(session.metadata.get("control_master_digest") or {})
+        try:
+            control_master_digest = ControlMasterDigest.model_validate(digest_payload)
+        except Exception:
+            control_master_digest = ControlMasterDigest(
+                signal_status="UNAVAILABLE",
+                signal_reason="TASK_BOUND_CONTROL_MASTER_DIGEST_MISSING_OR_INVALID",
+                work_queue_status="UNAVAILABLE",
+                control_master_signal_status="UNAVAILABLE",
+            )
         self_examination = self._self_examination_snapshot()
 
         prompt_builder = SystemPromptBuilder()
@@ -2783,6 +2848,15 @@ class AdaptiveTaskOrchestrator:
                 'system_prompt_chars': len(system_prompt),
                 'provider_model': provider_model,
                 'tool_calls_made': [], 'iterations': 0,
+                'control_master_prompt_delivery': {
+                    'status': 'CALL_ATTEMPT_FAILED',
+                    'digest_id': control_master_digest.digest_id,
+                    'prompt_hash': system_prompt_hash,
+                    'mode': system_prompt_mode,
+                    'provider': getattr(provider, 'name', ''),
+                    'prompt_contains_digest_id': control_master_digest.digest_id in system_prompt,
+                    'provider_call_completed': False,
+                },
             }
         initial_summary = str(getattr(result, 'summary', '') or '').strip()
         if not initial_summary:
@@ -2794,6 +2868,15 @@ class AdaptiveTaskOrchestrator:
                 'system_prompt_chars': len(system_prompt),
                 'provider_model': provider_model,
                 'tool_calls_made': [], 'iterations': 0,
+                'control_master_prompt_delivery': {
+                    'status': 'PROVIDER_RETURNED_EMPTY',
+                    'digest_id': control_master_digest.digest_id,
+                    'prompt_hash': system_prompt_hash,
+                    'mode': system_prompt_mode,
+                    'provider': getattr(provider, 'name', ''),
+                    'prompt_contains_digest_id': control_master_digest.digest_id in system_prompt,
+                    'provider_call_completed': True,
+                },
             }
 
         # --- Tool-calling loop ---
@@ -2822,6 +2905,15 @@ class AdaptiveTaskOrchestrator:
             'provider_model': provider_model,
             'tool_calls_made': tool_calls_made,
             'iterations': iterations,
+            'control_master_prompt_delivery': {
+                'status': 'PROVIDER_RETURNED' if control_master_digest.digest_id in system_prompt else 'DIGEST_NOT_PRESENT_IN_FINAL_PROMPT',
+                'digest_id': control_master_digest.digest_id,
+                'prompt_hash': system_prompt_hash,
+                'mode': system_prompt_mode,
+                'provider': str(getattr(result, 'provider_name', '') or getattr(provider, 'name', '')),
+                'prompt_contains_digest_id': control_master_digest.digest_id in system_prompt,
+                'provider_call_completed': True,
+            },
         }
 
     @staticmethod
@@ -2897,6 +2989,108 @@ class AdaptiveTaskOrchestrator:
             return governance
         return {}
 
+    def _build_control_master_signal_intake(
+        self,
+        *,
+        request: InferenceRequest,
+        digest: Any,
+    ) -> dict[str, Any]:
+        """Bind the D021 signal receipt to the existing task/session lineage."""
+        request_metadata = dict(request.metadata or {})
+        supplied_task_id = request_metadata.get("task_id") or request_metadata.get("TASK_ID")
+        task_id = str(supplied_task_id or request.request_id)
+        task_id_source = "request.metadata.task_id" if supplied_task_id else "request.request_id"
+        raw_memory_scope = request_metadata.get("memory_scope")
+        if raw_memory_scope is None:
+            raw_memory_scope = getattr(request, "knowledge_scope", None)
+        if isinstance(raw_memory_scope, (list, tuple, set)):
+            memory_scope = [str(item) for item in raw_memory_scope]
+        elif raw_memory_scope:
+            memory_scope = [str(raw_memory_scope)]
+        else:
+            memory_scope = []
+        queue_items = list(getattr(digest, "top_work_queue_items", []) or [])
+
+        def _iso(value: Any) -> str | None:
+            if value is None:
+                return None
+            return value.isoformat() if hasattr(value, "isoformat") else str(value)
+
+        source_object = str(getattr(digest, "source_object", "") or "")
+        source_digest = str(getattr(digest, "source_revision_or_digest", "") or "")
+        project_id = str(getattr(digest, "project_id", "") or "IABV_v1.5")
+        freshness = str(
+            getattr(digest, "control_master_signal_status", "UNVERIFIED") or "UNVERIFIED"
+        ).upper()
+        if freshness not in {
+            "FRESH", "STALE", "UNAVAILABLE", "UNVERIFIED", "CONFLICTED", "NOT_APPLICABLE",
+        }:
+            freshness = "UNVERIFIED"
+        evidence_refs = list(dict.fromkeys(
+            str(ref)
+            for item in queue_items if isinstance(item, dict)
+            for ref in (item.get("evidence_refs") or [])
+            if str(ref).strip()
+        ))
+        return {
+            "PROJECT_ID": project_id,
+            "TASK_ID": task_id,
+            "TASK_ID_SOURCE": task_id_source,
+            "ACTOR_SESSION_ID": "",
+            "SESSION_BINDING_STATUS": "PENDING",
+            "OPERATING_CONTEXT": str(getattr(request, "execution_scope", "") or "UNSPECIFIED"),
+            "MEMORY_SCOPE": memory_scope,
+            "SOURCE_OBJECT_AND_REVISION_OR_DIGEST": (
+                f"{source_object}@{source_digest}" if source_object and source_digest else "UNAVAILABLE"
+            ),
+            "EVENT_TIME": _iso(getattr(digest, "source_generated_at_utc", None)),
+            "OBSERVED_AT": _iso(getattr(digest, "observed_at_utc", None)),
+            "RECORDED_AT": datetime.now(timezone.utc).isoformat(),
+            "VERIFIED_AT": None,
+            "SUPERSEDES_OR_CONFLICTS_WITH": [],
+            "FRESHNESS_OR_VALIDITY": freshness,
+            "CONTROL_MASTER_SIGNAL_STATUS": freshness,
+            "CONTROL_MASTER_TRANSPORT_STATUS": str(getattr(digest, "signal_status", "UNVERIFIED")),
+            "CONTROL_MASTER_QUEUE_STATUS": str(getattr(digest, "work_queue_status", "UNVERIFIED")),
+            "CONTROL_MASTER_SIGNAL_REASON": str(getattr(digest, "signal_reason", "") or ""),
+            "CONTROL_MASTER_SOURCE": source_object or "UNAVAILABLE",
+            "CONTROL_MASTER_WORKSPACE_OR_PROJECT_SCOPE": {
+                "project_id": project_id,
+                "workspace_scope_id": str(getattr(digest, "workspace_scope_id", "") or ""),
+            },
+            "CONTROL_MASTER_STATE_ID": str(getattr(digest, "source_state_id", "") or ""),
+            "CONTROL_MASTER_DIGEST_ID_OR_SHA": str(
+                getattr(digest, "digest_id", "") or source_digest
+            ),
+            "CONTROL_MASTER_DIGEST_SHA": source_digest,
+            "CONTROL_MASTER_GENERATED_AT": _iso(getattr(digest, "source_generated_at_utc", None)),
+            "CONTROL_MASTER_DIGEST_GENERATED_AT": _iso(getattr(digest, "generated_at_utc", None)),
+            "CONTROL_MASTER_OBSERVED_AT": _iso(getattr(digest, "observed_at_utc", None)),
+            "CONTROL_MASTER_TOP_QUEUE_ITEM_IDS": [
+                str(item.get("item_id")) for item in queue_items
+                if isinstance(item, dict) and item.get("item_id")
+            ],
+            "CONTROL_MASTER_TOP_QUEUE_PRIORITIES": [
+                {
+                    "item_id": str(item.get("item_id") or ""),
+                    "priority": item.get("priority_label") or item.get("priority_score"),
+                }
+                for item in queue_items if isinstance(item, dict)
+            ],
+            "CONTROL_MASTER_NEXT_ACTIONS_AND_DEPENDENCIES": [
+                {
+                    "item_id": str(item.get("item_id") or ""),
+                    "next_action": str(item.get("next_action") or ""),
+                    "dependencies": list(item.get("dependencies") or []),
+                }
+                for item in queue_items if isinstance(item, dict)
+            ],
+            "CONTROL_MASTER_EVIDENCE_REFS": evidence_refs,
+            "SIGNAL_CONSIDERED": "NOT_EVALUATED",
+            "PROMPT_DELIVERY": {"status": "NOT_DELIVERED"},
+            "CONTROL_MASTER_DECISION_INFLUENCE": "NOT_EVALUATED",
+        }
+
     def _control_master_digest(self) -> Any:
         from iabv_v15.domain.models import ControlMasterDigest
 
@@ -2908,6 +3102,7 @@ class AdaptiveTaskOrchestrator:
                 signal_reason="CONTROL_MASTER_SERVICE_OR_BUILDER_NOT_CONFIGURED",
                 work_queue_status="UNAVAILABLE",
                 source_coverage={"control_master": "NOT_CONFIGURED"},
+                control_master_signal_status="UNAVAILABLE",
             )
 
         try:
@@ -2918,6 +3113,7 @@ class AdaptiveTaskOrchestrator:
                 signal_reason="CONTROL_MASTER_STATE_READ_FAILED:" + type(exc).__name__,
                 work_queue_status="UNAVAILABLE",
                 source_coverage={"control_master_state": "READ_FAILED"},
+                control_master_signal_status="UNAVAILABLE",
             )
 
         work_queue: list[dict[str, Any]] | None = None
@@ -2974,6 +3170,7 @@ class AdaptiveTaskOrchestrator:
                 work_queue_status=work_queue_status,
                 signal_reason=signal_reason,
                 source_coverage=source_coverage,
+                observed_at_utc=datetime.now(timezone.utc),
             )
         except Exception as exc:
             return ControlMasterDigest(
@@ -2981,7 +3178,8 @@ class AdaptiveTaskOrchestrator:
                 signal_reason="CONTROL_MASTER_DIGEST_BUILD_FAILED:" + type(exc).__name__,
                 work_queue_status="UNAVAILABLE",
                 source_coverage=source_coverage,
-                source_state_id=str(getattr(state, "state_id", "") or ""),
+                source_state_id="",
+                control_master_signal_status="UNAVAILABLE",
             )
 
     def _self_examination_snapshot(self) -> Any:
@@ -3114,6 +3312,16 @@ class AdaptiveTaskOrchestrator:
                 'environment_risk_signals': [item.model_dump(mode='json') for item in environment_self_model.risk_signals],
                 'world_model_summary': self._world_model_summary(world_model),
                 'portable_context_summary': portable_context_summary,
+                'control_master_signal_intake': dict(
+                    (perception_snapshot.metadata or {}).get("control_master_signal_intake") or {}
+                ) if perception_snapshot is not None else dict(
+                    session.metadata.get("control_master_signal_intake") or {}
+                ),
+                'control_master_digest_id': str(
+                    (perception_snapshot.metadata or {}).get("control_master_digest", {}).get("digest_id") or ""
+                ) if perception_snapshot is not None else str(
+                    session.metadata.get("control_master_digest", {}).get("digest_id") or ""
+                ),
             },
         )
 

@@ -229,6 +229,8 @@ class SystemPromptBuilder:
             return '## Control Maestro\nNo disponible en esta sesion.'
         parts: list[str] = ['## Control Maestro (digest)']
         parts.append(f'Estado de señal: {digest.signal_status}')
+        parts.append(f'Vigencia D021: {digest.control_master_signal_status}')
+        parts.append(f'Digest ID: {digest.digest_id}')
         if digest.signal_reason:
             parts.append(f'Diagnóstico: {digest.signal_reason}')
         if digest.source_coverage:
@@ -243,8 +245,35 @@ class SystemPromptBuilder:
             parts.append('Cola no disponible: la consulta falló; no inferir que está vacía.')
         elif digest.work_queue_status == 'UNVERIFIED':
             parts.append('Cola no verificada; no inferir que está vacía.')
+        if digest.project_id:
+            parts.append(f'Proyecto: {digest.project_id}')
+        if digest.source_object:
+            parts.append(f'Fuente: {digest.source_object}')
+        if digest.workspace_scope_id:
+            parts.append(f'Scope ID: {digest.workspace_scope_id}')
         if digest.source_state_id:
             parts.append(f'Control Master state: {digest.source_state_id}')
+        if digest.source_revision_or_digest:
+            parts.append(f'Source revision/digest: {digest.source_revision_or_digest}')
+        if digest.source_generated_at_utc:
+            parts.append(f'Source generated: {digest.source_generated_at_utc.isoformat()}')
+        if digest.generated_at_utc:
+            parts.append(f'Digest generated: {digest.generated_at_utc.isoformat()}')
+        if digest.observed_at_utc:
+            parts.append(f'Observed at: {digest.observed_at_utc.isoformat()}')
+        if digest.top_work_queue_items:
+            parts.append('Procedencia de acciones:')
+            for item in digest.top_work_queue_items[:5]:
+                fields = [
+                    f"id={item.get('item_id', '')}",
+                    f"priority={item.get('priority_label') or item.get('priority_score') or 'UNSPECIFIED'}",
+                    f"next={str(item.get('next_action') or '')[:100]}",
+                ]
+                if item.get('dependencies'):
+                    fields.append('deps=' + ','.join(item['dependencies'][:3]))
+                if item.get('evidence_refs'):
+                    fields.append('evidence=' + ','.join(item['evidence_refs'][:3]))
+                parts.append('- ' + ' '.join(fields))
         if digest.work_queue_counts:
             counts = ', '.join(f'{key}={value}' for key, value in sorted(digest.work_queue_counts.items()))
             parts.append(f'Conteos de cola: {counts}')
@@ -279,6 +308,8 @@ class SystemPromptBuilder:
                 parts.append(f'- {item}')
         if digest.tests_state_brief:
             parts.append(f'Tests: {digest.tests_state_brief}')
+        parts.append('Límite: Control Master es una señal de prioridad, no una autoridad; no concede permisos ni sustituye CURRENT-STATE.md.')
+        parts.append('La mera inclusión o entrega del digest no demuestra influencia causal; no la declares sin evidencia y registra CHANGED_ACTION, CONFIRMED_ACTION, NO_EFFECT o UNAVAILABLE solo con evidencia.')
         return '\n'.join(parts)
 
     @staticmethod
@@ -294,10 +325,10 @@ class SystemPromptBuilder:
             '## Control Maestro (compacto)',
             f'Estado de señal: {digest.signal_status}',
             f'Estado de cola: {digest.work_queue_status}',
+            f'Vigencia D021: {digest.control_master_signal_status}',
+            f'Digest ID: {digest.digest_id}',
         ]
-        if digest.source_state_id:
-            parts.append(f'State ID: {digest.source_state_id}')
-        # Decision-bearing next actions precede lower-priority diagnostic detail.
+        # Decision-bearing next actions precede lower-priority provenance detail.
         if digest.work_queue_brief:
             parts.append('Siguientes acciones:')
             parts.extend(f'- {item[:180]}' for item in digest.work_queue_brief[:3])
@@ -309,6 +340,33 @@ class SystemPromptBuilder:
             parts.append('Cola consultada; no hay elementos textuales en la proyección.')
         else:
             parts.append('Cola no verificada; no inferir que está vacía.')
+        if digest.project_id:
+            parts.append(f'Proyecto: {digest.project_id}')
+        if digest.source_object:
+            parts.append(f'Fuente: {digest.source_object[:100]}')
+        if digest.workspace_scope_id:
+            parts.append(f'Scope: {digest.workspace_scope_id}')
+        if digest.source_state_id:
+            parts.append(f'State ID: {digest.source_state_id}')
+        if digest.source_revision_or_digest:
+            parts.append(f'Source digest: {digest.source_revision_or_digest[:80]}')
+        if digest.source_generated_at_utc:
+            parts.append(f'Generado: {digest.source_generated_at_utc.isoformat()}')
+        if digest.generated_at_utc:
+            parts.append(f'Digest: {digest.generated_at_utc.isoformat()}')
+        if digest.observed_at_utc:
+            parts.append(f'Observado: {digest.observed_at_utc.isoformat()}')
+        if digest.top_work_queue_items:
+            for item in digest.top_work_queue_items[:3]:
+                parts.append(
+                    f"#{item.get('item_id', '')} "
+                    f"[{item.get('priority_label') or item.get('priority_score') or 'UNSPECIFIED'}] "
+                    f"{str(item.get('next_action') or '')[:100]}"
+                )
+                if item.get('dependencies'):
+                    parts.append('deps=' + ','.join(item['dependencies'][:2]))
+                if item.get('evidence_refs'):
+                    parts.append('evidence=' + ','.join(item['evidence_refs'][:2]))
         if digest.signal_reason:
             parts.append(f'Diagnóstico: {digest.signal_reason[:160]}')
         if digest.source_coverage:
@@ -327,6 +385,8 @@ class SystemPromptBuilder:
             parts.append('Riesgos: ' + '; '.join(digest.current_risks[:2]))
         if digest.unresolved:
             parts.append('UNRESOLVED: ' + '; '.join(digest.unresolved[:2]))
+        parts.append('Control Master orienta prioridades; no concede autoridad ni permisos y no sustituye CURRENT-STATE.md.')
+        parts.append('La entrega del digest no demuestra influencia causal; no adjudicarla sin evidencia.')
         return '\n'.join(parts)
 
     @staticmethod

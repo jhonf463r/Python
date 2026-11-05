@@ -1684,3 +1684,91 @@ def test_orchestrator_propagates_routing_disabled_flag() -> None:
     assert payload is not None
     assert payload['routing_enabled'] is False
     assert 'feature flag off' in payload['reason'].lower()
+
+
+
+def test_control_master_signal_is_bound_before_strategy_and_into_decision_context() -> None:
+    from datetime import datetime, timezone
+
+    from iabv_v15.domain.models import ControlMasterState
+    from iabv_v15.services.evolution.control_master_digest_builder import ControlMasterDigestBuilder
+
+    root = _workspace("adaptive_d021_intake")
+    try:
+        orchestrator, _ = _orchestrator(root)
+
+        class _ControlMasterProbe:
+            def __init__(self):
+                self.state_reads = 0
+                self.queue_reads = 0
+                self.last_work_queue_errors = ()
+                self.last_work_queue_source_coverage = {
+                    "objectives": "READ_OK",
+                    "platform_pending_queue": "READ_OK",
+                    "pending_issues": "READ_OK",
+                    "oses_findings": "READ_OK",
+                    "runtime_audit": "READ_OK",
+                    "tests_state": "READ_OK",
+                }
+
+            def current_state(self, *, refresh=False):
+                self.state_reads += 1
+                return ControlMasterState(
+                    state_id="state-task-intake",
+                    metadata={
+                        "_space_time_control_master_source_provenance": {
+                            "project_id": "IABV_v1.5",
+                            "source_object": "control_master/latest.json",
+                            "source_state_id": "state-task-intake",
+                            "source_revision_or_digest": "sha256:source001",
+                            "source_generated_at_utc": datetime(2026, 11, 4, 12, 0, tzinfo=timezone.utc).isoformat(),
+                            "source_observed_at_utc": datetime(2026, 11, 4, 12, 1, tzinfo=timezone.utc).isoformat(),
+                            "workspace_scope_id": "scope-task-01",
+                            "freshness_status": "FRESH",
+                            "read_status": "READ_OK",
+                        }
+                    },
+                )
+
+            def current_work_queue(self, *, limit=10):
+                self.queue_reads += 1
+                return [{
+                    "id": "objective:OBJ-42",
+                    "priority_label": "HIGH",
+                    "priority_score": 80,
+                    "title": "Close objective",
+                    "status": "pending",
+                    "next_action": "Inspect causal dependency",
+                    "dependencies": ["OBJ-41"],
+                    "evidence_refs": ["evidence://OBJ-42/review"],
+                    "source": "objective",
+                }]
+
+        probe = _ControlMasterProbe()
+        orchestrator.control_master_service = probe
+        orchestrator.control_master_digest_builder = ControlMasterDigestBuilder()
+        request = InferenceRequest(
+            user_goal="Resume el estado del sistema y sus prioridades",
+            metadata={"task_id": "task-d021-42"},
+            auto_route=True,
+        )
+        _, result, session = orchestrator.handle_request(request)
+        intake = session.metadata["control_master_signal_intake"]
+        decision_intake = session.metadata["decision_context"]["metadata"]["control_master_signal_intake"]
+        assert probe.state_reads == 1
+        assert probe.queue_reads == 1
+        assert intake["TASK_ID"] == "task-d021-42"
+        assert intake["ACTOR_SESSION_ID"] == session.session_id
+        assert intake["SESSION_BINDING_STATUS"] == "BOUND"
+        assert intake["CONTROL_MASTER_SIGNAL_STATUS"] == "FRESH"
+        assert intake["CONTROL_MASTER_STATE_ID"] == "state-task-intake"
+        assert intake["CONTROL_MASTER_TOP_QUEUE_ITEM_IDS"] == ["objective:OBJ-42"]
+        assert intake["CONTROL_MASTER_NEXT_ACTIONS_AND_DEPENDENCIES"][0]["dependencies"] == ["OBJ-41"]
+        assert intake["CONTROL_MASTER_EVIDENCE_REFS"] == ["evidence://OBJ-42/review"]
+        assert intake["CONTROL_MASTER_DECISION_INFLUENCE"] == "NOT_EVALUATED"
+        assert decision_intake == intake
+        assert result.raw_output["control_master_signal_intake"] == intake
+        assert result.raw_output["control_master_digest"]["digest_id"] == session.metadata["control_master_digest"]["digest_id"]
+    finally:
+        import shutil
+        shutil.rmtree(root, ignore_errors=True)

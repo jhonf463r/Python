@@ -271,3 +271,61 @@ def test_render_work_queue_compact_format() -> None:
     # Title truncated to 40 chars, action to 30 chars.
     assert len(brief[0]) < 80 + 60, "Brief line must be shorter than raw fields"
     assert "src=" not in brief[0], "Compact format must not use 'src=' prefix"
+
+
+
+def test_digest_carries_d021_source_times_scope_and_queue_lineage() -> None:
+    from datetime import datetime, timezone
+
+    source_generated = datetime(2026, 11, 4, 12, 0, tzinfo=timezone.utc)
+    observed = datetime(2026, 11, 4, 12, 1, tzinfo=timezone.utc)
+    state = ControlMasterState(
+        state_id="state-d021-001",
+        current_vision="governed project",
+        metadata={
+            "_space_time_control_master_source_provenance": {
+                "project_id": "IABV_v1.5",
+                "source_object": "control_master/latest.json",
+                "source_state_id": "state-d021-001",
+                "source_revision_or_digest": "sha256:abc123",
+                "source_generated_at_utc": source_generated.isoformat(),
+                "source_observed_at_utc": observed.isoformat(),
+                "workspace_scope_id": "scope-001",
+                "freshness_status": "FRESH",
+                "read_status": "READ_OK",
+            }
+        },
+    )
+    digest = ControlMasterDigestBuilder().build(
+        state,
+        work_queue=[{
+            "id": "objective:OBJ-42",
+            "priority_label": "HIGH",
+            "priority_score": 80,
+            "title": "Close objective",
+            "status": "pending",
+            "next_action": "Inspect causal dependency",
+            "dependencies": ["OBJ-41"],
+            "evidence_refs": ["evidence://OBJ-42/review"],
+            "source": "objective",
+        }],
+        work_queue_status="AVAILABLE",
+        source_coverage={"objectives": "READ_OK"},
+        observed_at_utc=observed,
+    )
+    assert digest.control_master_signal_status == "FRESH"
+    assert digest.source_state_id == "state-d021-001"
+    assert digest.source_object == "control_master/latest.json"
+    assert digest.project_id == "IABV_v1.5"
+    assert digest.workspace_scope_id == "scope-001"
+    assert digest.source_revision_or_digest == "sha256:abc123"
+    assert digest.source_generated_at_utc == source_generated
+    assert digest.observed_at_utc == observed
+    assert digest.top_work_queue_items[0]["item_id"] == "objective:OBJ-42"
+    assert digest.top_work_queue_items[0]["dependencies"] == ["OBJ-41"]
+    assert digest.top_work_queue_items[0]["evidence_refs"] == ["evidence://OBJ-42/review"]
+    rendered = render_digest_markdown(digest)
+    assert "Vigencia D021: FRESH" in rendered
+    assert "state-d021-001" in rendered
+    assert "objective:OBJ-42" in rendered
+    assert "evidence://OBJ-42/review" in rendered

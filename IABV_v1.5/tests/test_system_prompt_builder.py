@@ -426,3 +426,59 @@ def test_prompt_identity_mentions_control_maestro() -> None:
     assert 'Claude' in prompt
     assert 'ChatGPT' in prompt
     assert 'Ollama' in prompt
+
+
+
+def test_full_and_compact_prompts_render_d021_intake_without_granting_authority() -> None:
+    from datetime import datetime, timezone
+
+    generated = datetime(2026, 11, 4, 12, 0, tzinfo=timezone.utc)
+    observed = datetime(2026, 11, 4, 12, 1, tzinfo=timezone.utc)
+    digest = ControlMasterDigest(
+        digest_id="digest-d021-001",
+        signal_status="AVAILABLE",
+        signal_reason="",
+        work_queue_status="AVAILABLE",
+        control_master_signal_status="FRESH",
+        project_id="IABV_v1.5",
+        source_object="control_master/latest.json",
+        workspace_scope_id="scope-001",
+        source_state_id="state-d021-001",
+        source_revision_or_digest="sha256:abc123",
+        source_generated_at_utc=generated,
+        generated_at_utc=generated,
+        observed_at_utc=observed,
+        work_queue_brief=["[HIGH] #objective:OBJ-42 Close objective (objective) inspect"],
+        top_work_queue_items=[{
+            "item_id": "objective:OBJ-42",
+            "priority_label": "HIGH",
+            "next_action": "Inspect causal dependency",
+            "dependencies": ["OBJ-41"],
+            "evidence_refs": ["evidence://OBJ-42/review"],
+        }],
+    )
+    builder = SystemPromptBuilder()
+    full = builder.build(
+        perception=None,
+        world_model=None,
+        env_self_model=None,
+        portable_context=None,
+        tool_registry=[],
+        control_master_digest=digest,
+    )
+    compact = builder.build_compact(
+        world_model=None,
+        env_self_model=None,
+        control_master_digest=digest,
+    )
+    for prompt in (full, compact):
+        assert "Vigencia D021: FRESH" in prompt
+        assert "digest-d021-001" in prompt
+        assert "state-d021-001" in prompt
+        assert "scope-001" in prompt
+        assert "Inspect causal dependency" in prompt
+        assert "OBJ-41" in prompt
+        assert "evidence://OBJ-42/review" in prompt
+        assert "no concede autoridad" in prompt
+        assert "no demuestra influencia causal" in prompt
+    assert compact.index("Siguientes acciones:") < compact.index("Source digest:")

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
 import shutil
 from pathlib import Path
 from uuid import uuid4
@@ -9,6 +10,7 @@ from uuid import uuid4
 from iabv_v15.domain.models import (
     ControlDecision,
     ControlDecisionStatus,
+    ControlMasterState,
     ControlRule,
     ControlRuleSeverity,
     ObjectiveNode,
@@ -496,5 +498,45 @@ def test_auto_close_is_safe_when_repository_has_no_list_children() -> None:
         updated = service.mark_objective(node.objective_id, "completed")
         assert updated is not None
         assert updated.status == ObjectiveStatus.COMPLETED
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+
+def test_current_state_marks_missing_persisted_source_unavailable() -> None:
+    root = _workspace()
+    try:
+        service, _ = _build_service(root)
+        state = service.current_state()
+        provenance = state.metadata["_space_time_control_master_source_provenance"]
+        assert provenance["freshness_status"] == "UNAVAILABLE"
+        assert provenance["read_status"] == "NO_SOURCE_SNAPSHOT"
+        assert provenance["source_state_id"] == ""
+        assert provenance["source_generated_at_utc"] is None
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_current_state_preserves_source_generation_before_projection_refresh() -> None:
+    root = _workspace()
+    try:
+        service, _ = _build_service(root)
+        source_generated = datetime.now(timezone.utc) - timedelta(minutes=1)
+        service.save_state(
+            ControlMasterState(
+                state_id="cm-source-state-001",
+                last_updated=source_generated,
+                current_vision="persisted source state",
+            )
+        )
+        projected = service.current_state()
+        provenance = projected.metadata["_space_time_control_master_source_provenance"]
+        assert provenance["source_state_id"] == "cm-source-state-001"
+        assert provenance["source_generated_at_utc"] == source_generated.isoformat()
+        assert provenance["source_observed_at_utc"]
+        assert provenance["source_revision_or_digest"].startswith("sha256:")
+        assert provenance["workspace_scope_id"]
+        assert provenance["freshness_status"] == "FRESH"
+        assert projected.last_updated >= source_generated
     finally:
         shutil.rmtree(root, ignore_errors=True)

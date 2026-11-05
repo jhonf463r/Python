@@ -13,6 +13,7 @@ so it can be composed into `SystemPromptBuilder` via the existing
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any
 
 from iabv_v15.domain.models import (
@@ -20,6 +21,7 @@ from iabv_v15.domain.models import (
     ControlMasterState,
     ControlRuleSeverity,
     ControlRuleStatus,
+    utc_now,
 )
 
 
@@ -60,6 +62,7 @@ class ControlMasterDigestBuilder:
         work_queue_status: str | None = None,
         signal_reason: str = "",
         source_coverage: dict[str, str] | None = None,
+        observed_at_utc: datetime | None = None,
     ) -> ControlMasterDigest:
         rules = [
             rule
@@ -132,6 +135,18 @@ class ControlMasterDigestBuilder:
             # Do not expose partial/unverified queue items as actionable prompt content.
             wq_brief, wq_counts = [], {}
 
+        top_queue_items = _compact_work_queue_items(
+            work_queue if resolved_queue_status == "AVAILABLE" else None
+        )
+        source_provenance = dict(
+            state.metadata.get("_space_time_control_master_source_provenance") or {}
+        )
+        freshness_status = str(source_provenance.get("freshness_status") or "UNVERIFIED").upper()
+        if freshness_status not in {
+            "FRESH", "STALE", "UNAVAILABLE", "UNVERIFIED", "CONFLICTED", "NOT_APPLICABLE",
+        }:
+            freshness_status = "UNVERIFIED"
+
         resolved_signal_status = (
             "AVAILABLE" if resolved_queue_status in {"AVAILABLE", "EMPTY_QUEUE"}
             else ("UNAVAILABLE" if resolved_queue_status == "UNAVAILABLE" else "UNVERIFIED")
@@ -159,7 +174,15 @@ class ControlMasterDigestBuilder:
             signal_status=resolved_signal_status,
             signal_reason=resolved_signal_reason,
             source_coverage=dict(source_coverage or {}),
-            source_state_id=state.state_id,
+            source_state_id=str(source_provenance.get("source_state_id") or ""),
+            project_id=str(source_provenance.get("project_id") or ""),
+            source_object=str(source_provenance.get("source_object") or ""),
+            workspace_scope_id=str(source_provenance.get("workspace_scope_id") or ""),
+            source_revision_or_digest=str(source_provenance.get("source_revision_or_digest") or ""),
+            source_generated_at_utc=source_provenance.get("source_generated_at_utc"),
+            observed_at_utc=observed_at_utc or utc_now(),
+            control_master_signal_status=freshness_status,
+            top_work_queue_items=top_queue_items,
         )
         return _truncate(digest, self.max_chars)
 
@@ -181,11 +204,54 @@ def _render_work_queue(
         source = item.get('source', '')
         title = str(item.get('title', ''))[:40]
         action = str(item.get('next_action', ''))[:30]
-        brief.append(f"[{label}] {title} ({source}) {action}")
+        item_id = str(item.get('id') or item.get('item_id') or '')[:48]
+        identity = f"#{item_id} " if item_id else ""
+        brief.append(f"[{label}] {identity}{title} ({source}) {action}")
     for item in work_queue:
         status = item.get('status', 'unknown')
         counts[status] = counts.get(status, 0) + 1
     return brief, counts
+
+
+def _compact_work_queue_items(
+    work_queue: list[dict[str, Any]] | None,
+) -> list[dict[str, Any]]:
+    """Keep decision-bearing queue provenance in a bounded structured form."""
+    if not isinstance(work_queue, list):
+        return []
+    compact: list[dict[str, Any]] = []
+    for item in work_queue[:5]:
+        if not isinstance(item, dict):
+            continue
+        item_id = str(item.get("id") or item.get("item_id") or "").strip()
+        if not item_id:
+            continue
+        raw_dependencies = item.get("dependencies") or item.get("depends_on") or []
+        if isinstance(raw_dependencies, str):
+            dependencies = [raw_dependencies[:100]]
+        elif isinstance(raw_dependencies, list):
+            dependencies = [str(value)[:100] for value in raw_dependencies[:4] if value is not None]
+        else:
+            dependencies = []
+        raw_evidence = item.get("evidence_refs") or []
+        if isinstance(raw_evidence, str):
+            evidence_refs = [raw_evidence[:160]]
+        elif isinstance(raw_evidence, list):
+            evidence_refs = [str(value)[:160] for value in raw_evidence[:4] if value is not None]
+        else:
+            evidence_refs = []
+        compact.append({
+            "item_id": item_id[:96],
+            "source": str(item.get("source") or "")[:64],
+            "priority_label": str(item.get("priority_label") or "")[:24],
+            "priority_score": item.get("priority_score"),
+            "title": str(item.get("title") or "")[:120],
+            "status": str(item.get("status") or "")[:32],
+            "next_action": str(item.get("next_action") or "")[:160],
+            "dependencies": dependencies,
+            "evidence_refs": evidence_refs,
+        })
+    return compact
 
 
 def _render_autonomy_metrics(metrics: dict[str, Any] | None) -> str:
@@ -256,6 +322,24 @@ def render_digest_markdown(digest: ControlMasterDigest) -> str:
         coverage = ", ".join(f"{key}={value}" for key, value in sorted(digest.source_coverage.items()))
         lines.append(f"Cobertura de fuentes: {coverage}")
     lines.append(f"Estado de cola: {digest.work_queue_status}")
+    lines.append(f"Vigencia D021: {digest.control_master_signal_status}")
+    lines.append(f"Digest ID: {digest.digest_id}")
+    if digest.project_id:
+        lines.append(f"Proyecto: {digest.project_id}")
+    if digest.source_object:
+        lines.append(f"Fuente: {digest.source_object}")
+    if digest.workspace_scope_id:
+        lines.append(f"Scope ID: {digest.workspace_scope_id}")
+    if digest.source_state_id:
+        lines.append(f"Source state ID: {digest.source_state_id}")
+    if digest.source_revision_or_digest:
+        lines.append(f"Source revision/digest: {digest.source_revision_or_digest}")
+    if digest.source_generated_at_utc:
+        lines.append(f"Source generated: {digest.source_generated_at_utc.isoformat()}")
+    if digest.generated_at_utc:
+        lines.append(f"Digest generated: {digest.generated_at_utc.isoformat()}")
+    if digest.observed_at_utc:
+        lines.append(f"Observed at: {digest.observed_at_utc.isoformat()}")
     if digest.work_queue_status == "EMPTY_QUEUE":
         lines.append("Cola consultada correctamente: vacía.")
     elif digest.work_queue_status == "UNAVAILABLE":
@@ -292,6 +376,19 @@ def render_digest_markdown(digest: ControlMasterDigest) -> str:
         lines.append("Cola de trabajo (top next actions):")
         for item in digest.work_queue_brief:
             lines.append(f"- {item}")
+    if digest.top_work_queue_items:
+        lines.append("Queue item provenance:")
+        for item in digest.top_work_queue_items[:5]:
+            item_parts = [
+                f"id={item.get('item_id', '')}",
+                f"priority={item.get('priority_label') or item.get('priority_score') or 'UNSPECIFIED'}",
+                f"next={str(item.get('next_action') or '')[:80]}",
+            ]
+            if item.get("dependencies"):
+                item_parts.append("deps=" + ",".join(item["dependencies"][:2]))
+            if item.get("evidence_refs"):
+                item_parts.append("evidence=" + ",".join(item["evidence_refs"][:2]))
+            lines.append("- " + " ".join(item_parts))
     if digest.work_queue_counts:
         parts = [f"{k}={v}" for k, v in sorted(digest.work_queue_counts.items())]
         lines.append(f"Work queue counts: {', '.join(parts)}")
@@ -314,6 +411,7 @@ def _truncate(digest: ControlMasterDigest, max_chars: int) -> ControlMasterDiges
         "coordination_patterns_brief",
         "autonomy_metrics_brief",
         "work_queue_counts",
+        "top_work_queue_items",
         "tests_state_brief",
         "recent_decisions_brief",
         "top_backlog",

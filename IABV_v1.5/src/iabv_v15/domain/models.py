@@ -2672,8 +2672,18 @@ class ControlMasterDigest(BaseModel):
     signal_status: str = "UNVERIFIED"
     signal_reason: str = ""
     source_coverage: dict[str, str] = Field(default_factory=dict)
+    # Digest build time is separate from source generation and task observation.
     generated_at_utc: datetime = Field(default_factory=utc_now)
+    observed_at_utc: datetime | None = None
     source_state_id: str = ""
+    project_id: str = ""
+    source_object: str = ""
+    workspace_scope_id: str = ""
+    source_revision_or_digest: str = ""
+    source_generated_at_utc: datetime | None = None
+    # D021 freshness is distinct from transport/read availability.
+    control_master_signal_status: str = "UNVERIFIED"
+    top_work_queue_items: list[dict[str, Any]] = Field(default_factory=list)
 
 
 
