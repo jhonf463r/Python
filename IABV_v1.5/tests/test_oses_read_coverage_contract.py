@@ -741,3 +741,38 @@ def test_oses_metacognitive_error_ledger_valid_empty_file_is_read_ok(tmp_path) -
 
     assert findings == []
     assert service._source_coverage['metacognitive_error_ledger'] == 'READ_OK'
+
+
+
+def test_oses_runtime_log_invalid_utf8_is_not_read_ok(tmp_path) -> None:
+    service = _service(tmp_path)
+    log_path = tmp_path / 'data' / 'logs' / 'iabv_v15.log'
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    log_path.write_bytes(b'valid line\ninvalid: \xff\xfe\n')
+
+    findings = service._runtime_log_findings()
+
+    assert findings == []
+    assert service._source_coverage['runtime_log'] == 'READ_FAILED'
+    assert service._source_errors['runtime_log'] == 'UnicodeDecodeError'
+
+
+def test_oses_runtime_log_surfaces_account_scanner_failure(tmp_path, monkeypatch) -> None:
+    from importlib import import_module
+
+    scanner = import_module('iabv_v15.services.account_resource_scanner')
+
+    def fail_scan():
+        raise PermissionError('synthetic account scan failure')
+
+    monkeypatch.setattr(scanner, 'scan_browser_accounts', fail_scan)
+    service = _service(tmp_path)
+    log_path = tmp_path / 'data' / 'logs' / 'iabv_v15.log'
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    log_path.write_text('', encoding='utf-8')
+
+    service._runtime_log_findings()
+
+    assert service._source_coverage['runtime_log'] == 'READ_OK'
+    assert service._source_coverage['account_resource_scanner'] == 'READ_FAILED'
+    assert service._source_errors['account_resource_scanner'] == 'PermissionError'
