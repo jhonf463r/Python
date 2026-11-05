@@ -398,7 +398,7 @@ def test_centro_vivo_preserves_partial_tool_record_diagnostics(tmp_path):
 
 def test_centro_vivo_account_inventory_propagates_partial_subsource_coverage(tmp_path, monkeypatch):
     from iabv_v15.domain.models import AccountInventorySnapshot
-    from iabv_v15.services.evolution import account_resource_scanner
+    from iabv_v15.services import account_resource_scanner
 
     snapshot = AccountInventorySnapshot(
         source_coverage={
