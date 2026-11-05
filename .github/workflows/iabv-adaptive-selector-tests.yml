@@ -1,0 +1,50 @@
+name: IABV adaptive web-session eligibility tests
+
+"on":
+  push:
+    branches:
+      - "codex/450-adaptive-web-session-fail-closed-r1-20261105"
+  pull_request:
+    branches:
+      - "main"
+    paths:
+      - "IABV_v1.5/src/iabv_v15/services/adaptive/adaptive_model_selector.py"
+      - "IABV_v1.5/tests/test_login_gobernado.py"
+      - "IABV_v1.5/tests/test_adaptive_model_selector.py"
+      - "IABV_v1.5/pyproject.toml"
+      - ".github/workflows/iabv-adaptive-selector-tests.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  adaptive-web-session-eligibility:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    env:
+      PYTHONPATH: IABV_v1.5/src
+      QT_QPA_PLATFORM: offscreen
+    steps:
+      - name: Check out the reviewed candidate
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v7.1.0
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: IABV_v1.5/pyproject.toml
+
+      - name: Install declared test environment
+        run: >-
+          python -m pip install --disable-pip-version-check
+          -e "IABV_v1.5[dev]"
+
+      - name: Run adaptive selector and governed-session tests
+        run: >-
+          python -m pytest
+          IABV_v1.5/tests/test_login_gobernado.py
+          IABV_v1.5/tests/test_adaptive_model_selector.py
+          -q
