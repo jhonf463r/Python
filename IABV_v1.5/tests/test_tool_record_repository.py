@@ -404,3 +404,104 @@ def test_tool_record_collection_readers_report_sqlite_errors_without_stale_repor
             assert report is not previous
     finally:
         shutil.rmtree(root, ignore_errors=True)
+
+
+def test_tool_record_point_lookup_reports_found_and_confirmed_index_absence() -> None:
+    root, db, repository = _read_integrity_repository("tool_record_point_lookup")
+    try:
+        card = repository.save_card(_read_integrity_card("point-card"))
+
+        found = repository.get_card_with_diagnostics(card.tool_id)
+
+        assert found.status == ArtifactReadStatus.FOUND
+        assert found.value is not None
+        assert found.value.tool_id == card.tool_id
+        assert repository.last_read_report is not None
+        assert repository.last_read_report.scope == "SQLITE_INDEX_LOOKUP:tool_cards"
+        assert repository.last_read_report.results == (found,)
+
+        missing = repository.get_card_with_diagnostics("absent-card")
+
+        assert missing.status == ArtifactReadStatus.CONFIRMED_NOT_FOUND
+        assert missing.error_type == "IndexRowNotFound"
+        assert repository.last_read_report is not None
+        assert repository.last_read_report.results == (missing,)
+        assert repository.get_card("absent-card") is None
+        assert repository.last_read_report.results[0].error_type == "IndexRowNotFound"
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_tool_record_point_lookup_sqlite_failures_replace_stale_report(monkeypatch) -> None:
+    root, db, repository = _read_integrity_repository("tool_record_point_lookup_sqlite_failure")
+    try:
+        previous = repository.list_cards_with_diagnostics()
+        assert previous.status == RepositoryReadStatus.NO_RECORDS_OBSERVED
+
+        def fail_fetchone(*args, **kwargs):
+            raise sqlite3.OperationalError("database is locked")
+
+        monkeypatch.setattr(db, "fetchone", fail_fetchone)
+        lookups = (
+            ("card-id", repository.get_card_with_diagnostics, lambda: repository.get_card("card-id")),
+            ("task-id", repository.get_task_with_diagnostics, lambda: repository.get_task("task-id")),
+            (
+                "pattern-signature",
+                repository.get_interaction_pattern_by_signature_with_diagnostics,
+                lambda: repository.get_interaction_pattern_by_signature("pattern-signature"),
+            ),
+            (
+                "pattern-id",
+                repository.get_interaction_pattern_with_diagnostics,
+                lambda: repository.get_interaction_pattern("pattern-id"),
+            ),
+            (
+                "episode-id",
+                repository.get_interaction_episode_with_diagnostics,
+                lambda: repository.get_interaction_episode("episode-id"),
+            ),
+        )
+        for requested_id, diagnostic_reader, legacy_reader in lookups:
+            result = diagnostic_reader(requested_id)
+            assert result.status == ArtifactReadStatus.READ_FAILED
+            assert result.error_type == "OperationalError"
+            report = repository.last_read_report
+            assert report is not None
+            assert report.status == RepositoryReadStatus.READ_FAILED
+            assert report.requested_artifact_id == requested_id
+            assert report.collection_error_type == "OperationalError"
+            assert report is not previous
+            with pytest.raises(RepositoryReadError) as exc_info:
+                legacy_reader()
+            assert exc_info.value.report is repository.last_read_report
+            assert exc_info.value.report.requested_artifact_id == requested_id
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_tool_record_corrupt_point_lookup_preserves_index_and_fails_closed() -> None:
+    root, db, repository = _read_integrity_repository("tool_record_corrupt_point_lookup")
+    try:
+        card = repository.save_card(_read_integrity_card("corrupt-point-card"))
+        row = db.fetchone(
+            "SELECT path FROM tool_cards WHERE tool_id = ?",
+            (card.tool_id,),
+        )
+        assert row is not None
+        Path(row["path"]).write_text("{", encoding="utf-8")
+
+        result = repository.get_card_with_diagnostics(card.tool_id)
+
+        assert result.status == ArtifactReadStatus.CORRUPT
+        assert repository.last_read_report is not None
+        assert repository.last_read_report.status == RepositoryReadStatus.READ_FAILED
+        assert repository.last_read_report.results == (result,)
+        assert db.fetchone(
+            "SELECT tool_id FROM tool_cards WHERE tool_id = ?",
+            (card.tool_id,),
+        ) is not None
+        with pytest.raises(RepositoryReadError) as exc_info:
+            repository.get_card(card.tool_id)
+        assert exc_info.value.report.results[0].status == ArtifactReadStatus.CORRUPT
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
