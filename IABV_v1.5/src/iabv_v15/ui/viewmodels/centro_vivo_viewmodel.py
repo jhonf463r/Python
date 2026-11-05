@@ -55,6 +55,7 @@ class CentroVivoViewModel(QObject):
         self._experiment_metrics: list[dict[str, Any]] = []
         self._learning_gaps: list[dict[str, Any]] = []
         self._self_examination_findings: list[dict[str, Any]] = []
+        self._self_examination_status = 'UNRESOLVED'
         self._world_model_summary: dict[str, Any] = {}
         self._account_inventory: list[dict[str, Any]] = []
         self._account_inventory_summary: dict[str, Any] = {}
@@ -87,6 +88,9 @@ class CentroVivoViewModel(QObject):
     def get_self_examination_findings(self) -> list[dict[str, Any]]:
         return self._self_examination_findings
 
+    def get_self_examination_status(self) -> str:
+        return self._self_examination_status
+
     def get_world_model_summary(self) -> dict[str, Any]:
         return self._world_model_summary
 
@@ -114,6 +118,7 @@ class CentroVivoViewModel(QObject):
     experimentMetrics = Property(list, get_experiment_metrics, notify=dataChanged)
     learningGaps = Property(list, get_learning_gaps, notify=dataChanged)
     selfExaminationFindings = Property(list, get_self_examination_findings, notify=dataChanged)
+    selfExaminationStatus = Property(str, get_self_examination_status, notify=dataChanged)
     worldModelSummary = Property(dict, get_world_model_summary, notify=dataChanged)
     accountInventory = Property(list, get_account_inventory, notify=dataChanged)
     accountInventorySummary = Property(dict, get_account_inventory_summary, notify=dataChanged)
@@ -262,13 +267,38 @@ class CentroVivoViewModel(QObject):
     def _build_self_examination_findings(self) -> list[dict[str, Any]]:
         service = self.self_examination_service
         if service is None:
+            self._self_examination_status = 'NOT_CONFIGURED'
+            return []
+        cached_reader = getattr(service, 'current_review_cached', None)
+        if not callable(cached_reader):
+            self._self_examination_status = 'READ_UNVERIFIED'
             return []
         try:
-            review = service.current_review(refresh=False)
-        except Exception:
+            review = cached_reader()
+        except Exception as exc:
+            self._self_examination_status = (
+                'READ_UNVERIFIED'
+                if str(exc).startswith(('oses_cached_review', 'oses_source_coverage'))
+                else 'READ_FAILED'
+            )
             return []
         if review is None:
+            self._self_examination_status = 'READ_UNVERIFIED'
             return []
+        metadata = getattr(review, 'metadata', {}) or {}
+        coverage = getattr(review, 'source_coverage', None) or (
+            metadata.get('source_coverage') if isinstance(metadata, dict) else None
+        )
+        errors = getattr(review, 'source_errors', None)
+        if not isinstance(errors, dict):
+            errors = metadata.get('source_errors', {}) if isinstance(metadata, dict) else {}
+        if not isinstance(coverage, dict) or not coverage:
+            self._self_examination_status = 'READ_UNVERIFIED'
+            return []
+        if errors or any(status != 'READ_OK' for status in coverage.values()):
+            self._self_examination_status = 'READ_PARTIAL'
+            return []
+        self._self_examination_status = 'READ_OK'
         dumped = review.model_dump(mode='json') if hasattr(review, 'model_dump') else {}
         findings_raw = dumped.get('findings', [])
         items: list[dict[str, Any]] = []
@@ -415,6 +445,7 @@ class CentroVivoViewModel(QObject):
         parts.append(f'{tools_ready}/{tool_count} herramientas listas')
         if inv_active or inv_exhausted:
             parts.append(f'{inv_active} cuentas activas, {inv_exhausted} agotadas')
+        parts.append(f'OSES {self._self_examination_status}')
         if findings_count:
             parts.append(f'{findings_count} hallazgos de autoexaminacion')
         if gaps_count:

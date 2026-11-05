@@ -75,8 +75,11 @@ class FakeSelfExaminationService:
     def __init__(self, review: SelfExaminationSnapshot | None = None):
         self._review = review
 
-    def current_review(self, *, refresh: bool = False) -> SelfExaminationSnapshot | None:
+    def current_review_cached(self) -> SelfExaminationSnapshot | None:
         return self._review
+
+    def current_review(self, *, refresh: bool = False) -> SelfExaminationSnapshot | None:
+        raise AssertionError('Centro Vivo must not use the active OSES reader')
 
 
 class FakeWorldModelService:
@@ -176,6 +179,7 @@ def test_centro_vivo_self_examination_findings():
     review = SelfExaminationSnapshot(
         review_id='r1',
         findings=findings,
+        metadata={'source_coverage': {'run_repository': 'READ_OK'}},
     )
     service = FakeSelfExaminationService(review)
     vm = CentroVivoViewModel(self_examination_service=service)
@@ -315,3 +319,15 @@ def test_centro_vivo_navigation_route_exists():
 
     nav.navigate('centro_vivo')
     assert nav.get_current_route() == 'centro_vivo'
+
+def test_centro_vivo_does_not_fall_back_to_active_oses_reader_when_cache_missing():
+    class LegacyOnlyOSES:
+        def current_review(self, *, refresh: bool = False):
+            raise AssertionError('active OSES reader must not be called')
+
+    vm = CentroVivoViewModel(self_examination_service=LegacyOnlyOSES())
+
+    assert vm.get_self_examination_findings() == []
+    assert vm.get_self_examination_status() == 'READ_UNVERIFIED'
+    assert 'OSES READ_UNVERIFIED' in vm.get_status_text()
+\n
