@@ -2981,6 +2981,11 @@ class TestEvidence(BaseModel):
     timestamp: datetime = Field(default_factory=utc_now)
     linked_pending_task: str = ""
     changed_files: list[str] = Field(default_factory=list)
+    # Commit provenance for the exact source revision under test.
+    commit_sha: str = ""
+    branch: str = ""
+    worktree_clean: bool | None = None
+    provenance_status: str = "UNKNOWN"
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
