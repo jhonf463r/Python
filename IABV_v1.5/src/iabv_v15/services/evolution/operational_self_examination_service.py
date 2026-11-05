@@ -5293,6 +5293,10 @@ _REQUIRED_SOURCE_IDS = (
         diagnostic categories are reliable and which need recalibration.
         """
         results: list[SelfExaminationFinding] = []
+        # This ledger is an input source in its own right. Read it on every
+        # review so source coverage does not depend on there being enough
+        # post-review experiment runs for calibration math.
+        ledger = self._load_metacognitive_ledger()
         if previous_review is None or not experiment_runs:
             return results
 
@@ -5497,9 +5501,7 @@ _REQUIRED_SOURCE_IDS = (
 
         post_success_rate = sum(1 for r in post_runs if r.success) / max(len(post_runs), 1)
 
-        # Historical calibration: load ledger to detect persistent patterns.
-        # Runs independently of calibrated_findings — only needs the ledger.
-        ledger = self._load_metacognitive_ledger()
+        # Historical calibration uses the ledger read at method entry.
         if ledger:
             total_fp = sum(len(entry.get('false_positives') or []) for entry in ledger)
             total_fn = sum(len(entry.get('false_negatives') or []) for entry in ledger)
