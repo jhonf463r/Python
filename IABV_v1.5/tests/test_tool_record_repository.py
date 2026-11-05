@@ -264,7 +264,10 @@ def test_tool_record_partial_card_report_preserves_valid_items_and_index_rows() 
         assert report.records_seen == 2
         assert report.records_loaded == 1
         assert [item.tool_id for item in report.items] == [valid.tool_id]
-        assert report.results[1].status == ArtifactReadStatus.CORRUPT
+        corrupt_result = next(
+            result for result in report.results if result.artifact_id == corrupt.tool_id
+        )
+        assert corrupt_result.status == ArtifactReadStatus.CORRUPT
         assert db.fetchone(
             'SELECT tool_id FROM tool_cards WHERE tool_id = ?',
             (corrupt.tool_id,),
