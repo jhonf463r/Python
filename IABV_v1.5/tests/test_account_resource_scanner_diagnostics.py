@@ -92,3 +92,19 @@ def test_account_inventory_snapshot_carries_partial_source_coverage(monkeypatch)
     }
     assert "UNRESOLVED:browser_sessions:READ_PARTIAL" in snapshot.unresolved_items
     assert "UNRESOLVED:quota_tracker:READ_FAILED" in snapshot.unresolved_items
+
+
+def test_quota_tracker_path_lookup_does_not_create_directories(monkeypatch, tmp_path) -> None:
+    workspace = tmp_path / 'synthetic-workspace'
+    home = tmp_path / 'synthetic-home'
+    monkeypatch.setenv('IABV_WORKSPACE', str(workspace))
+    monkeypatch.setattr(Path, 'home', classmethod(lambda cls: home))
+
+    path = account_resource_scanner._quota_file()
+
+    assert path == workspace / 'data' / 'evolution' / 'quota_tracker.json'
+    assert not path.parent.exists()
+    _state, status, error = account_resource_scanner._load_quota_state_with_diagnostics()
+    assert status == 'CONFIRMED_NOT_FOUND'
+    assert error == 'quota_tracker_not_found'
+    assert not path.parent.exists()
