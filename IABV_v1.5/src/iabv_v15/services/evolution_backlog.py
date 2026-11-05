@@ -15,12 +15,16 @@ Cada tarea tiene:
   - title: descripción corta
   - area: categoría (metacognition, hardware, gpu, tools, learning, etc.)
   - priority: critical / high / medium / low
-  - status: pending / in_progress / completed / deferred
+  - status: pending / in_progress / completed / deferred / blocked / partial
   - source: quién la creó (audit, human, auto_analysis, devin, etc.)
   - created_at: cuándo se descubrió
   - completed_at: cuándo se completó (si aplica)
   - evidence: por qué es necesaria
   - depends_on: IDs de tareas que deben completarse primero
+
+Los registros históricos sin `id`, `source` y `created_at` se conservan
+solo cuando incluyen `added_by`; el lector informa sus posiciones y no los
+reescribe ni les inventa una identidad.
 """
 
 from __future__ import annotations
