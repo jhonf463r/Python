@@ -108,3 +108,83 @@ def test_quota_tracker_path_lookup_does_not_create_directories(monkeypatch, tmp_
     assert status == 'CONFIRMED_NOT_FOUND'
     assert error == 'quota_tracker_not_found'
     assert not path.parent.exists()
+
+
+def test_worker_without_quota_tracking_is_not_available(monkeypatch) -> None:
+    monkeypatch.setattr(
+        account_resource_scanner,
+        "verify_account_sessions",
+        lambda: {
+            "accounts": [{
+                "email": "account@example.test",
+                "browser": "Chrome",
+                "profile": "Default",
+                "tools": [{"tool": "chatgpt", "has_session": True}],
+            }],
+            "source_coverage": {"browser_accounts": "READ_OK", "browser_sessions": "READ_OK"},
+            "source_errors": {},
+        },
+    )
+    monkeypatch.setattr(
+        account_resource_scanner,
+        "get_all_quota_status",
+        lambda: {
+            "statuses": [],
+            "source_coverage": {"quota_tracker": "CONFIRMED_NOT_FOUND"},
+            "source_errors": {},
+        },
+    )
+
+    pool = account_resource_scanner.estimate_available_workers()
+
+    assert pool["workers"] == []
+    assert pool["available_count"] == 0
+    assert pool["tools_available"] == []
+    assert pool["total_remaining_messages"] == 0
+    assert pool["unverified_count"] == 1
+    assert pool["unverified"][0]["quota_verified"] is False
+    assert pool["source_coverage"]["quota_tracker"] == "CONFIRMED_NOT_FOUND"
+    assert account_resource_scanner.rank_workers_for_target("chatgpt", pool=pool) == []
+
+
+def test_inventory_keeps_untracked_quota_account_unresolved(monkeypatch) -> None:
+    pool = {
+        "workers": [],
+        "exhausted": [],
+        "unverified": [{
+            "email": "account@example.test",
+            "full_name": "",
+            "tool": "chatgpt",
+            "browser": "Chrome",
+            "profile": "Default",
+            "remaining_messages": 0,
+            "used_in_window": 0,
+            "limit": 80,
+            "window_hours": 3,
+            "exhausted": False,
+            "quota_verified": False,
+            "label": "ChatGPT",
+            "resets_at": None,
+        }],
+        "source_coverage": {"browser_accounts": "READ_OK", "browser_sessions": "READ_OK", "quota_tracker": "CONFIRMED_NOT_FOUND"},
+        "source_errors": {},
+    }
+    monkeypatch.setattr(account_resource_scanner, "estimate_available_workers", lambda: pool)
+    monkeypatch.setattr(
+        account_resource_scanner,
+        "get_all_quota_status",
+        lambda: {"statuses": [], "source_coverage": {"quota_tracker": "CONFIRMED_NOT_FOUND"}, "source_errors": {}},
+    )
+    monkeypatch.setattr(account_resource_scanner, "rank_workers_for_target", lambda *args, **kwargs: [])
+
+    snapshot = account_resource_scanner.build_inventory_snapshot()
+
+    from iabv_v15.domain.models import AccountStatus
+    assert len(snapshot.entries) == 1
+    assert snapshot.entries[0].status == AccountStatus.UNRESOLVED
+    assert snapshot.entries[0].quota_remaining == 0
+    assert snapshot.entries[0].metadata["quota_verified"] is False
+    assert snapshot.continuity_queue == []
+    assert snapshot.active_count == 0
+    assert snapshot.unresolved_count == 1
+    assert any("quota_never_tracked" in item for item in snapshot.unresolved_items)

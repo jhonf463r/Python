@@ -1046,6 +1046,7 @@ def estimate_available_workers() -> dict[str, Any]:
 
     workers: list[dict[str, Any]] = []
     exhausted_workers: list[dict[str, Any]] = []
+    unverified_workers: list[dict[str, Any]] = []
 
     for acc in verified.get('accounts', []):
         email = acc['email']
@@ -1065,8 +1066,8 @@ def estimate_available_workers() -> dict[str, Any]:
                 exhausted = quota['exhausted']
                 used = quota['used_in_window']
             else:
-                # No tracking data yet — assume full quota available
-                remaining = max_msgs
+                # A missing quota row is not evidence of remaining capacity.
+                remaining = 0
                 exhausted = False
                 used = 0
 
@@ -1081,11 +1082,14 @@ def estimate_available_workers() -> dict[str, Any]:
                 'limit': max_msgs,
                 'window_hours': limits.get('window_hours', 3),
                 'exhausted': exhausted,
+                'quota_verified': quota is not None,
                 'label': limits.get('label', tool),
                 'resets_at': quota.get('resets_at') if quota else None,
             }
 
-            if exhausted:
+            if quota is None:
+                unverified_workers.append(worker)
+            elif exhausted:
                 exhausted_workers.append(worker)
             else:
                 workers.append(worker)
@@ -1111,6 +1115,8 @@ def estimate_available_workers() -> dict[str, Any]:
     return {
         'workers': workers,
         'exhausted': exhausted_workers,
+        'unverified': unverified_workers,
+        'unverified_count': len(unverified_workers),
         'available_count': len(workers),
         'exhausted_count': len(exhausted_workers),
         'by_tool': by_tool,
@@ -1195,8 +1201,12 @@ def build_inventory_snapshot(
     entries: list[AccountInventoryEntry] = []
     now = utc_now()
 
-    # Process all workers (available + exhausted)
-    all_workers = [*pool.get('workers', []), *pool.get('exhausted', [])]
+    # Keep session-bearing accounts with unknown quota visible but non-actionable.
+    all_workers = [
+        *pool.get('workers', []),
+        *pool.get('exhausted', []),
+        *pool.get('unverified', []),
+    ]
     for w in all_workers:
         email = w.get('email', '')
         tool = w.get('tool', '')
@@ -1211,8 +1221,11 @@ def build_inventory_snapshot(
             except (ValueError, TypeError):
                 pass
 
-        # Determine status
-        if exhausted:
+        # Unknown quota is unresolved, never promoted to available.
+        quota_verified = w.get('quota_verified', True)
+        if not quota_verified:
+            status = AccountStatus.UNRESOLVED
+        elif exhausted:
             status = AccountStatus.EXHAUSTED
         elif remaining > 0:
             status = AccountStatus.ACTIVE
@@ -1247,6 +1260,7 @@ def build_inventory_snapshot(
                 'window_hours': w.get('window_hours', 0),
                 'label': w.get('label', ''),
                 'used_in_window': w.get('used_in_window', 0),
+                'quota_verified': quota_verified,
             },
         )
         entries.append(entry)
