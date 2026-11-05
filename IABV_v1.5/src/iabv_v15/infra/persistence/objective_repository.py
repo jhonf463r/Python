@@ -1,21 +1,63 @@
 from __future__ import annotations
 
-import json
 import logging
 from pathlib import Path
+from threading import local
 from typing import Iterable
 
 from iabv_v15.domain.models import ObjectiveNode, ObjectiveNodeKind, ObjectiveStatus
 from iabv_v15.infra.persistence.database import AppDatabase
+from iabv_v15.infra.persistence.read_results import (
+    ArtifactReadResult,
+    ArtifactReadStatus,
+    RepositoryReadError,
+    RepositoryReadReport,
+    read_model_from_paths,
+)
 from iabv_v15.infra.persistence.storage import ArtifactStorage
 
 _log = logging.getLogger(__name__)
 
 
 class ObjectiveRepository:
+    """JSON payload repository indexed by SQLite.
+
+    Ordinary reads are strictly non-destructive. An unreadable/missing payload
+    is reported to the caller and never causes its SQLite index row to be
+    pruned. The report scope is the selected SQLite rows, not a filesystem-wide
+    inventory of unindexed objective JSON files.
+    """
+
     def __init__(self, db: AppDatabase, storage: ArtifactStorage):
         self.db = db
         self.storage = storage
+        self._read_state = local()
+
+    @property
+    def last_read_report(self) -> RepositoryReadReport[ObjectiveNode] | None:
+        """Diagnostics for the most recent read on this thread."""
+        return getattr(self._read_state, "report", None)
+
+    def _remember_report(
+        self, report: RepositoryReadReport[ObjectiveNode]
+    ) -> RepositoryReadReport[ObjectiveNode]:
+        self._read_state.report = report
+        return report
+
+    def _remember_collection_error(
+        self,
+        scope: str,
+        error: Exception,
+        *,
+        requested_artifact_id: str = "",
+    ) -> RepositoryReadReport[ObjectiveNode]:
+        return self._remember_report(
+            RepositoryReadReport.from_collection_error(
+                scope,
+                error,
+                requested_artifact_id=requested_artifact_id,
+            )
+        )
 
     def save(self, node: ObjectiveNode) -> ObjectiveNode:
         if not node.root_id:
@@ -44,27 +86,69 @@ class ObjectiveRepository:
         )
         return node
 
-    def get(self, objective_id: str) -> ObjectiveNode | None:
-        row = self.db.fetchone(
-            """
-            SELECT objective_id, path
-            FROM objective_nodes
-            WHERE objective_id = ?
-            """,
-            (objective_id,),
-        )
+    def get_with_diagnostics(self, objective_id: str) -> ArtifactReadResult[ObjectiveNode]:
+        try:
+            row = self.db.fetchone(
+                """
+                SELECT objective_id, path
+                FROM objective_nodes
+                WHERE objective_id = ?
+                """,
+                (objective_id,),
+            )
+        except Exception as exc:
+            self._remember_collection_error(
+                "SQLITE_INDEX_LOOKUP",
+                exc,
+                requested_artifact_id=objective_id,
+            )
+            return ArtifactReadResult(
+                artifact_id=objective_id,
+                path="",
+                status=ArtifactReadStatus.READ_FAILED,
+                error_type=type(exc).__name__,
+                error_message=str(exc)[:300],
+            )
         if row is None:
-            return None
-        return self._load(row['objective_id'], row['path'])
+            result = ArtifactReadResult(
+                artifact_id=objective_id,
+                path="",
+                status=ArtifactReadStatus.CONFIRMED_NOT_FOUND,
+                error_type="IndexRowNotFound",
+                error_message="No objective row exists in the SQLite index.",
+            )
+            self._remember_report(
+                RepositoryReadReport.from_results("SQLITE_INDEX_LOOKUP", [result])
+            )
+            return result
 
-    def list_recent(
+        result = self._load_result(row['objective_id'], row['path'])
+        self._remember_report(
+            RepositoryReadReport.from_results("SQLITE_INDEX_LOOKUP", [result])
+        )
+        return result
+
+    def get(self, objective_id: str) -> ObjectiveNode | None:
+        result = self.get_with_diagnostics(objective_id)
+        if result.status == ArtifactReadStatus.FOUND:
+            return result.value
+        if (
+            result.status == ArtifactReadStatus.CONFIRMED_NOT_FOUND
+            and result.error_type == "IndexRowNotFound"
+        ):
+            return None
+        report = self.last_read_report
+        assert report is not None
+        raise RepositoryReadError(report)
+
+    def list_recent_with_diagnostics(
         self,
         *,
         kind: ObjectiveNodeKind | None = None,
         status: ObjectiveStatus | None = None,
         site_id: str | None = None,
         limit: int = 20,
-    ) -> list[ObjectiveNode]:
+    ) -> RepositoryReadReport[ObjectiveNode]:
         sql = "SELECT objective_id, path FROM objective_nodes"
         clauses: list[str] = []
         parameters: list[object] = []
@@ -81,17 +165,29 @@ class ObjectiveRepository:
             sql += ' WHERE ' + ' AND '.join(clauses)
         sql += ' ORDER BY updated_at_utc DESC LIMIT ?'
         parameters.append(limit)
-        rows = self.db.fetchall(sql, tuple(parameters))
-        return self._collect(rows)
+        return self._fetchall_with_diagnostics(sql, tuple(parameters))
 
-    def list_children(
+    def list_recent(
+        self,
+        *,
+        kind: ObjectiveNodeKind | None = None,
+        status: ObjectiveStatus | None = None,
+        site_id: str | None = None,
+        limit: int = 20,
+    ) -> list[ObjectiveNode]:
+        report = self.list_recent_with_diagnostics(
+            kind=kind, status=status, site_id=site_id, limit=limit
+        )
+        return report.require_complete()
+
+    def list_children_with_diagnostics(
         self,
         parent_id: str,
         *,
         kind: ObjectiveNodeKind | None = None,
         status: ObjectiveStatus | None = None,
         limit: int = 40,
-    ) -> list[ObjectiveNode]:
+    ) -> RepositoryReadReport[ObjectiveNode]:
         sql = 'SELECT objective_id, path FROM objective_nodes WHERE parent_id = ?'
         parameters: list[object] = [parent_id]
         if kind is not None:
@@ -102,8 +198,20 @@ class ObjectiveRepository:
             parameters.append(status.value)
         sql += ' ORDER BY priority ASC, updated_at_utc DESC LIMIT ?'
         parameters.append(limit)
-        rows = self.db.fetchall(sql, tuple(parameters))
-        return self._collect(rows)
+        return self._fetchall_with_diagnostics(sql, tuple(parameters))
+
+    def list_children(
+        self,
+        parent_id: str,
+        *,
+        kind: ObjectiveNodeKind | None = None,
+        status: ObjectiveStatus | None = None,
+        limit: int = 40,
+    ) -> list[ObjectiveNode]:
+        report = self.list_children_with_diagnostics(
+            parent_id, kind=kind, status=status, limit=limit
+        )
+        return report.require_complete()
 
     def latest_active(self, *, kind: ObjectiveNodeKind | None = None, site_id: str | None = None) -> ObjectiveNode | None:
         candidates: list[ObjectiveStatus] = [ObjectiveStatus.ACTIVE, ObjectiveStatus.BLOCKED, ObjectiveStatus.PENDING, ObjectiveStatus.PAUSED]
@@ -113,7 +221,7 @@ class ObjectiveRepository:
                 return items[0]
         return None
 
-    def find_equivalent(
+    def find_equivalent_with_diagnostics(
         self,
         *,
         kind: ObjectiveNodeKind,
@@ -122,10 +230,14 @@ class ObjectiveRepository:
         root_id: str | None = None,
         site_id: str | None = None,
         limit: int = 8,
-    ) -> list[ObjectiveNode]:
+    ) -> tuple[list[ObjectiveNode], RepositoryReadReport[ObjectiveNode]]:
         probe = self._normalize_title(title)
         if not probe:
-            return []
+            report = self._remember_report(
+                RepositoryReadReport.from_not_executed("SQLITE_INDEX_ROWS")
+            )
+            return [], report
+
         sql = 'SELECT objective_id, path FROM objective_nodes WHERE kind = ?'
         parameters: list[object] = [kind.value]
         if parent_id is not None:
@@ -139,12 +251,34 @@ class ObjectiveRepository:
             parameters.extend([site_id or '', site_id or ''])
         sql += ' ORDER BY updated_at_utc DESC LIMIT ?'
         parameters.append(limit)
-        rows = self.db.fetchall(sql, tuple(parameters))
-        matches: list[ObjectiveNode] = []
-        for row in rows:
-            node = self._load(row['objective_id'], row['path'])
-            if node is not None and self._normalize_title(node.title) == probe:
-                matches.append(node)
+        report = self._fetchall_with_diagnostics(sql, tuple(parameters))
+        matches = [
+            node for node in report.items
+            if self._normalize_title(node.title) == probe
+        ]
+        return matches, report
+
+    def find_equivalent(
+        self,
+        *,
+        kind: ObjectiveNodeKind,
+        title: str,
+        parent_id: str | None = None,
+        root_id: str | None = None,
+        site_id: str | None = None,
+        limit: int = 8,
+    ) -> list[ObjectiveNode]:
+        matches, report = self.find_equivalent_with_diagnostics(
+            kind=kind,
+            title=title,
+            parent_id=parent_id,
+            root_id=root_id,
+            site_id=site_id,
+            limit=limit,
+        )
+        if report.status == RepositoryReadStatus.QUERY_NOT_EXECUTED:
+            return matches
+        report.require_complete()
         return matches
 
     def save_many(self, nodes: Iterable[ObjectiveNode]) -> list[ObjectiveNode]:
@@ -153,43 +287,44 @@ class ObjectiveRepository:
             saved.append(self.save(node))
         return saved
 
-    def _collect(self, rows: list[dict[str, str]]) -> list[ObjectiveNode]:
-        results: list[ObjectiveNode] = []
-        orphan_ids: list[str] = []
-        for row in rows:
-            node = self._load(row['objective_id'], row['path'])
-            if node is not None:
-                results.append(node)
-            else:
-                orphan_ids.append(row['objective_id'])
-        if orphan_ids:
-            self._prune_orphans(orphan_ids)
-        return results
+    def _collect_with_diagnostics(
+        self,
+        rows: list[dict[str, str]],
+        *,
+        scope: str,
+    ) -> RepositoryReadReport[ObjectiveNode]:
+        results = [
+            self._load_result(row['objective_id'], row['path'])
+            for row in rows
+        ]
+        return self._remember_report(RepositoryReadReport.from_results(scope, results))
 
-    def _prune_orphans(self, ids: list[str]) -> None:
-        if not ids:
-            return
-        placeholders = ','.join('?' for _ in ids)
+    def _fetchall_with_diagnostics(
+        self,
+        sql: str,
+        parameters: tuple[object, ...],
+    ) -> RepositoryReadReport[ObjectiveNode]:
         try:
-            self.db.execute(
-                f"DELETE FROM objective_nodes WHERE objective_id IN ({placeholders})",
-                tuple(ids),
+            rows = self.db.fetchall(sql, parameters)
+        except Exception as exc:
+            return self._remember_collection_error("SQLITE_INDEX_ROWS", exc)
+        return self._collect_with_diagnostics(rows, scope="SQLITE_INDEX_ROWS")
+
+    def _load_result(self, objective_id: str, path: str) -> ArtifactReadResult[ObjectiveNode]:
+        candidate = Path(path)
+        paths: list[Path] = []
+        if candidate.is_absolute():
+            paths.append(candidate)
+        paths.append(self.storage.root / f"objectives/{objective_id}.json")
+        result = read_model_from_paths(paths, objective_id, ObjectiveNode)
+        if result.status != ArtifactReadStatus.FOUND:
+            _log.warning(
+                "objective read incomplete: id=%s status=%s error=%s",
+                objective_id,
+                result.status.value,
+                result.error_type or result.error_message,
             )
-            _log.info("objective_cleanup: pruned %d orphaned DB entries", len(ids))
-        except Exception:
-            pass
+        return result
 
     def _normalize_title(self, title: str) -> str:
         return ' '.join((title or '').strip().lower().split())
-
-    def _load(self, objective_id: str, path: str) -> ObjectiveNode | None:
-        candidate = Path(path)
-        try:
-            if candidate.is_absolute() and candidate.exists():
-                payload = json.loads(candidate.read_text(encoding='utf-8'))
-            else:
-                payload = self.storage.load_json(f'objectives/{objective_id}.json')
-            return ObjectiveNode.model_validate(payload)
-        except (FileNotFoundError, json.JSONDecodeError, OSError, Exception) as exc:
-            _log.debug("objective %s: file missing or corrupt — %s", objective_id, exc)
-            return None
