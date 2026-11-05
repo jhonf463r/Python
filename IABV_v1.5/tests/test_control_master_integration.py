@@ -21,6 +21,7 @@ from iabv_v15.domain.models import (
 from iabv_v15.services.evolution.control_master_digest_builder import (
     ControlMasterDigestBuilder,
     render_digest_markdown,
+    _EXPECTED_WORK_QUEUE_SOURCE_KEYS,
 )
 from iabv_v15.services.llm.system_prompt_builder import SystemPromptBuilder
 
@@ -227,3 +228,109 @@ def test_export_control_master_digest_queue_exception_is_not_empty() -> None:
         assert "CONTROL_MASTER_QUEUE_READ_FAILED:RuntimeError" == payload["signal_reason"]
     finally:
         shutil.rmtree(root, ignore_errors=True)
+
+
+
+def _state_with_source_provenance(state_id: str, source_digest: str) -> ControlMasterState:
+    from datetime import datetime, timezone
+
+    observed_at = datetime.now(timezone.utc)
+    return ControlMasterState(
+        current_vision='Vision from one persisted state',
+        metadata={
+            '_space_time_control_master_source_provenance': {
+                'read_status': 'READ_OK',
+                'freshness_status': 'FRESH',
+                'source_state_id': state_id,
+                'source_revision_or_digest': source_digest,
+                'source_generated_at_utc': observed_at.isoformat(),
+                'source_observed_at_utc': observed_at.isoformat(),
+                'workspace_scope_id': 'scope-test',
+            },
+        },
+    )
+
+
+class _DigestQueueService:
+    def __init__(self, states: list[ControlMasterState]) -> None:
+        self._states = list(states)
+        self.state_reads = 0
+        self.last_work_queue_errors: tuple[str, ...] = ()
+        self.last_work_queue_source_coverage = {
+            source: 'READ_OK' for source in _EXPECTED_WORK_QUEUE_SOURCE_KEYS
+        }
+
+    def current_state(self, *, refresh: bool = False) -> ControlMasterState:
+        self.state_reads += 1
+        index = min(self.state_reads - 1, len(self._states) - 1)
+        return self._states[index]
+
+    def current_work_queue(self, *, limit: int = 10) -> list[dict]:
+        return [{
+            'id': 'task-1',
+            'title': 'Synthetic work item',
+            'status': 'pending',
+            'priority_score': 10,
+            'priority_label': 'HIGH',
+            'source': 'objective_repository',
+            'next_action': 'Inspect evidence',
+            'evidence_refs': ['objective:task-1'],
+        }][:limit]
+
+
+def test_digest_marks_work_queue_unverified_when_state_changes_during_projection() -> None:
+    service = _DigestQueueService([
+        _state_with_source_provenance('state-1', 'sha256:before'),
+        _state_with_source_provenance('state-2', 'sha256:after'),
+    ])
+
+    digest = ControlMasterDigestBuilder().build_from_service(service)
+
+    assert service.state_reads == 2
+    assert digest.work_queue_status == 'UNVERIFIED'
+    assert digest.work_queue_brief == []
+    assert digest.top_work_queue_items == []
+    assert digest.signal_reason == 'CONTROL_MASTER_STATE_CHANGED_DURING_WORK_QUEUE_READ'
+    assert digest.source_state_id == 'state-2'
+
+
+def test_digest_detects_state_content_change_without_state_id_change() -> None:
+    service = _DigestQueueService([
+        _state_with_source_provenance('state-1', 'sha256:before'),
+        _state_with_source_provenance('state-1', 'sha256:after'),
+    ])
+
+    digest = ControlMasterDigestBuilder().build_from_service(service)
+
+    assert digest.work_queue_status == 'UNVERIFIED'
+    assert digest.top_work_queue_items == []
+    assert digest.signal_reason == 'CONTROL_MASTER_STATE_CHANGED_DURING_WORK_QUEUE_READ'
+
+
+def test_digest_fails_closed_when_state_recheck_fails() -> None:
+    class RecheckFails(_DigestQueueService):
+        def current_state(self, *, refresh: bool = False) -> ControlMasterState:
+            self.state_reads += 1
+            if self.state_reads == 1:
+                return _state_with_source_provenance('state-1', 'sha256:before')
+            raise PermissionError('synthetic state recheck failure')
+
+    digest = ControlMasterDigestBuilder().build_from_service(RecheckFails([]))
+
+    assert digest.signal_status == 'UNAVAILABLE'
+    assert digest.work_queue_status == 'UNAVAILABLE'
+    assert digest.work_queue_brief == []
+    assert 'CONTROL_MASTER_STATE_RECHECK_FAILED:PermissionError' == digest.signal_reason
+
+
+def test_digest_preserves_queue_when_state_is_stable_during_projection() -> None:
+    service = _DigestQueueService([
+        _state_with_source_provenance('state-1', 'sha256:stable'),
+        _state_with_source_provenance('state-1', 'sha256:stable'),
+    ])
+
+    digest = ControlMasterDigestBuilder().build_from_service(service)
+
+    assert service.state_reads == 2
+    assert digest.work_queue_status == 'AVAILABLE'
+    assert digest.top_work_queue_items[0]['item_id'] == 'task-1'
