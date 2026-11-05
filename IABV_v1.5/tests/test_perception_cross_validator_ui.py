@@ -8,6 +8,7 @@ Verifies the program can detect its own UI state anomalies:
 
 from __future__ import annotations
 
+from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 from iabv_v15.domain.models import WindowObservation, WorldModelSnapshot
@@ -205,3 +206,38 @@ def test_empty_window_snapshot_is_unverified_not_a_passed_ui_check() -> None:
     assert result['checks_status']['ui_self_awareness'] == 'UNVERIFIED'
     assert 'ui_self_awareness' not in result['checks_passed']
     assert result['checks_unavailable']['ui_self_awareness']['reason'] == 'no_windows_observed'
+
+
+def test_partial_tool_registry_report_is_not_reported_as_read_ok() -> None:
+    report = SimpleNamespace(
+        status=SimpleNamespace(value='READ_PARTIAL'),
+        records_seen=3,
+        records_loaded=2,
+        failed_ids=['tool-corrupt'],
+        missing_ids=[],
+        collection_error_type='',
+        to_dict=lambda: {
+            'status': 'READ_PARTIAL',
+            'records_seen': 3,
+            'records_loaded': 2,
+            'failed_ids': ['tool-corrupt'],
+        },
+    )
+
+    class ReportedReadError(RuntimeError):
+        def __init__(self):
+            super().__init__('partial ToolRecord read')
+            self.report = report
+
+    class FailingToolRegistry:
+        def list_cards(self):
+            raise ReportedReadError()
+
+    validator = _make_validator()
+    validator.tool_registry = FailingToolRegistry()
+
+    inconsistencies = validator._cross_audit_vs_worldmodel()
+
+    assert inconsistencies == []
+    assert validator._check_statuses['audit_vs_worldmodel'] == 'READ_PARTIAL'
+    assert validator._check_reports['audit_vs_worldmodel']['records_loaded'] == 2
