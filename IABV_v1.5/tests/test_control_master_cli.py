@@ -10,7 +10,7 @@ from pathlib import Path
 import pytest
 
 from iabv_v15.bootstrap import AppBootstrap
-from iabv_v15.cli.control_master import main as cm_main
+from iabv_v15.cli.control_master import _format_digest_markdown, main as cm_main
 
 
 def _workspace(label: str) -> Path:
@@ -220,3 +220,37 @@ def test_mark_objective_missing_returns_error(capsys: pytest.CaptureFixture[str]
         assert "not found" in err
     finally:
         shutil.rmtree(root, ignore_errors=True)
+
+
+def test_export_digest_markdown_preserves_d021_source_and_queue_provenance() -> None:
+    markdown = _format_digest_markdown({
+        "signal_status": "AVAILABLE",
+        "control_master_signal_status": "STALE",
+        "work_queue_status": "UNVERIFIED",
+        "source_object": "control_master/latest.json",
+        "source_state_id": "cm-state-001",
+        "workspace_scope_id": "scope-001",
+        "source_revision_or_digest": "sha256:source",
+        "source_generated_at_utc": "2026-04-19T19:23:46.389095+00:00",
+        "generated_at_utc": "2026-11-05T12:00:00+00:00",
+        "observed_at_utc": "2026-11-05T12:00:01+00:00",
+        "signal_reason": "SOURCE_APPLICABILITY_OR_COVERAGE_UNRESOLVED",
+        "source_evidence_refs": ["evidence://control-master/source"],
+        "top_work_queue_items": [{
+            "item_id": "objective:OBJ-01",
+            "priority_label": "HIGH",
+            "next_action": "Inspect dependency",
+            "dependencies": ["OBJ-00"],
+            "evidence_refs": ["evidence://OBJ-01/source"],
+        }],
+    })
+    assert "Freshness:** STALE" in markdown
+    assert "Queue:** UNVERIFIED" in markdown
+    assert "cm-state-001" in markdown
+    assert "scope-001" in markdown
+    assert "2026-04-19T19:23:46.389095+00:00" in markdown
+    assert "2026-11-05T12:00:01+00:00" in markdown
+    assert "evidence://control-master/source" in markdown
+    assert "objective:OBJ-01" in markdown
+    assert "OBJ-00" in markdown
+    assert "do not infer that it is empty" in markdown

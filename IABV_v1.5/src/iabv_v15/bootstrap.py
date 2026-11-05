@@ -4143,16 +4143,25 @@ class AppBootstrap:
         return package.model_dump(mode='json')
 
     def export_control_master_digest(self, *, refresh: bool = False) -> dict[str, object]:
+        from iabv_v15.domain.models import ControlMasterDigest
+
         service = getattr(self, 'control_master_service', None)
         builder = getattr(self, 'control_master_digest_builder', None)
-        if service is None or builder is None:
-            return {}
-        state = service.current_state(refresh=refresh)
-        try:
-            work_queue = service.current_work_queue(limit=10)
-        except Exception:
-            work_queue = []
-        return builder.build(state, work_queue=work_queue).model_dump(mode='json')
+        if builder is None:
+            digest = ControlMasterDigest(
+                signal_status="UNAVAILABLE",
+                signal_reason="CONTROL_MASTER_DIGEST_BUILDER_NOT_CONFIGURED",
+                work_queue_status="UNAVAILABLE",
+                source_coverage={"control_master": "NOT_CONFIGURED"},
+                control_master_signal_status="UNAVAILABLE",
+            )
+        else:
+            digest = builder.build_from_service(
+                service,
+                limit=10,
+                refresh=refresh,
+            )
+        return digest.model_dump(mode='json')
 
     def _seed_control_master_from_agents_md(self) -> None:
         service = getattr(self, 'control_master_service', None)

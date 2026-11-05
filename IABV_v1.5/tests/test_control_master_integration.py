@@ -168,7 +168,11 @@ def test_orchestrator_digest_helper_is_safe_without_service() -> None:
         boot = AppBootstrap(str(root))
         orch = boot.adaptive_task_orchestrator
         orch.control_master_service = None
-        assert orch._control_master_digest() is None
+        digest = orch._control_master_digest()
+        assert digest is not None
+        assert digest.signal_status == "UNAVAILABLE"
+        assert digest.work_queue_status == "UNAVAILABLE"
+        assert digest.control_master_signal_status == "UNAVAILABLE"
     finally:
         shutil.rmtree(root, ignore_errors=True)
 
@@ -200,5 +204,26 @@ def test_orchestrator_digest_preserves_persisted_vision() -> None:
         digest = boot.adaptive_task_orchestrator._control_master_digest()
         assert digest is not None
         assert digest.current_vision == "Vision gobernable viva"
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_export_control_master_digest_queue_exception_is_not_empty() -> None:
+    root = _workspace("control_master_export_queue_failure")
+    try:
+        boot = AppBootstrap(str(root))
+        boot.control_master_service.set_vision("Vision de prueba con cola no disponible")
+
+        def _raise_queue_error(*, limit: int = 10):
+            raise RuntimeError("queue unavailable")
+
+        boot.control_master_service.current_work_queue = _raise_queue_error
+        payload = boot.export_control_master_digest()
+
+        assert payload["signal_status"] == "AVAILABLE"
+        assert payload["work_queue_status"] == "UNAVAILABLE"
+        assert payload["control_master_signal_status"] == "FRESH"
+        assert payload["work_queue_brief"] == []
+        assert "CONTROL_MASTER_QUEUE_READ_FAILED:RuntimeError" == payload["signal_reason"]
     finally:
         shutil.rmtree(root, ignore_errors=True)

@@ -6,9 +6,10 @@ governance picture (vision + irrevocable rules + active objectives +
 risks + recent decisions + unresolved) without pasting the full chat
 history.
 
-This builder is a pure helper -- no IO, no services, no side effects --
-so it can be composed into `SystemPromptBuilder` via the existing
-``governance_rules`` parameter.
+The `build()` method is a pure projection from an existing state object.
+The shared `build_from_service()` adapter performs the authorized state/queue
+read and applies the same failure/coverage contract for orchestrator, UI and
+export consumers.
 """
 
 from __future__ import annotations
@@ -52,6 +53,108 @@ class ControlMasterDigestBuilder:
         self.max_decisions = max_decisions
         self.max_unresolved = max_unresolved
         self.max_chars = max_chars
+
+    def build_from_service(
+        self,
+        service: Any | None,
+        *,
+        limit: int = 10,
+        refresh: bool = False,
+    ) -> ControlMasterDigest:
+        """Read Control Master once and build a digest without collapsing failures.
+
+        Shared by the task orchestrator and Evolution Center so both consumers
+        apply the same queue/source-coverage contract.
+        """
+        if service is None:
+            return ControlMasterDigest(
+                signal_status="UNAVAILABLE",
+                signal_reason="CONTROL_MASTER_SERVICE_NOT_CONFIGURED",
+                work_queue_status="UNAVAILABLE",
+                source_coverage={"control_master": "NOT_CONFIGURED"},
+                control_master_signal_status="UNAVAILABLE",
+            )
+
+        try:
+            state = service.current_state(refresh=refresh)
+        except Exception as exc:
+            return ControlMasterDigest(
+                signal_status="UNAVAILABLE",
+                signal_reason="CONTROL_MASTER_STATE_READ_FAILED:" + type(exc).__name__,
+                work_queue_status="UNAVAILABLE",
+                source_coverage={"control_master_state": "READ_FAILED"},
+                control_master_signal_status="UNAVAILABLE",
+            )
+
+        work_queue: list[dict[str, Any]] | None = None
+        work_queue_status = "UNVERIFIED"
+        signal_reason = "WORK_QUEUE_NOT_VERIFIED"
+        source_coverage: dict[str, str] = {}
+        try:
+            observed_queue = service.current_work_queue(limit=limit)
+        except Exception as exc:
+            work_queue_status = "UNAVAILABLE"
+            signal_reason = "CONTROL_MASTER_QUEUE_READ_FAILED:" + type(exc).__name__
+        else:
+            source_errors = tuple(getattr(service, "last_work_queue_errors", ()) or ())
+            source_coverage = dict(getattr(service, "last_work_queue_source_coverage", {}) or {})
+            if not isinstance(observed_queue, list):
+                work_queue_status = "UNVERIFIED"
+                signal_reason = "WORK_QUEUE_RESULT_NOT_LIST"
+            elif source_errors:
+                work_queue_status = "UNAVAILABLE"
+                signal_reason = "QUEUE_SOURCE_ERRORS:" + ",".join(source_errors)
+            else:
+                read_failures = {
+                    key: value for key, value in source_coverage.items()
+                    if value in {"READ_PARTIAL", "READ_FAILED", "READER_UNAVAILABLE"}
+                }
+                unresolved_sources = {
+                    key: value for key, value in source_coverage.items()
+                    if value in {"NOT_CONFIGURED", "NO_FILE"}
+                }
+                unknown_sources = {
+                    key: value for key, value in source_coverage.items()
+                    if value != "READ_OK"
+                    and value not in {
+                        "READ_PARTIAL", "READ_FAILED", "READER_UNAVAILABLE",
+                        "NOT_CONFIGURED", "NO_FILE",
+                    }
+                }
+                if read_failures:
+                    work_queue_status = "UNAVAILABLE"
+                    signal_reason = "SOURCE_COVERAGE_READ_INCOMPLETE"
+                elif unresolved_sources or unknown_sources or not source_coverage:
+                    work_queue_status = "UNVERIFIED"
+                    signal_reason = "SOURCE_APPLICABILITY_OR_COVERAGE_UNRESOLVED"
+                else:
+                    work_queue = observed_queue
+                    work_queue_status = "EMPTY_QUEUE" if not observed_queue else "AVAILABLE"
+                    signal_reason = ""
+
+        if not source_coverage:
+            source_coverage = dict(
+                getattr(service, "last_work_queue_source_coverage", {}) or {}
+            )
+        if work_queue_status == "UNAVAILABLE" and not source_coverage:
+            source_coverage = {"work_queue": "READ_FAILED"}
+        try:
+            return self.build(
+                state,
+                work_queue=work_queue,
+                work_queue_status=work_queue_status,
+                signal_reason=signal_reason,
+                source_coverage=source_coverage,
+                observed_at_utc=utc_now(),
+            )
+        except Exception as exc:
+            return ControlMasterDigest(
+                signal_status="UNAVAILABLE",
+                signal_reason="CONTROL_MASTER_DIGEST_BUILD_FAILED:" + type(exc).__name__,
+                work_queue_status="UNAVAILABLE",
+                source_coverage=source_coverage,
+                control_master_signal_status="UNAVAILABLE",
+            )
 
     def build(
         self,

@@ -385,3 +385,80 @@ def test_missing_control_master_source_is_unavailable_even_if_queue_state_is_sep
     )
     assert digest.signal_status == "UNAVAILABLE"
     assert digest.work_queue_status == "UNVERIFIED"
+
+
+def test_build_from_service_reports_empty_only_after_complete_successful_reads() -> None:
+    from datetime import datetime, timezone
+
+    class _Service:
+        last_work_queue_errors = ()
+        last_work_queue_source_coverage = {
+            "objectives": "READ_OK",
+            "platform_pending_queue": "READ_OK",
+            "pending_issues": "READ_OK",
+            "oses_findings": "READ_OK",
+            "runtime_audit": "READ_OK",
+            "tests_state": "READ_OK",
+        }
+
+        def current_state(self, *, refresh: bool = False):
+            return ControlMasterState(
+                state_id="state-reader-empty",
+                current_vision="live source read",
+                metadata={
+                    "_space_time_control_master_source_provenance": {
+                        "project_id": "IABV_v1.5",
+                        "source_object": "control_master/latest.json",
+                        "source_state_id": "state-reader-empty",
+                        "source_revision_or_digest": "sha256:reader-empty",
+                        "source_generated_at_utc": datetime.now(timezone.utc).isoformat(),
+                        "workspace_scope_id": "scope-reader",
+                        "freshness_status": "FRESH",
+                        "read_status": "READ_OK",
+                    }
+                },
+            )
+
+        def current_work_queue(self, *, limit: int = 10):
+            return []
+
+    digest = ControlMasterDigestBuilder().build_from_service(_Service())
+    assert digest.signal_status == "AVAILABLE"
+    assert digest.work_queue_status == "EMPTY_QUEUE"
+    assert digest.control_master_signal_status == "FRESH"
+
+
+def test_build_from_service_queue_exception_is_unavailable_not_empty() -> None:
+    from datetime import datetime, timezone
+
+    class _Service:
+        last_work_queue_errors = ()
+        last_work_queue_source_coverage = {
+            "objectives": "READ_OK",
+        }
+
+        def current_state(self, *, refresh: bool = False):
+            return ControlMasterState(
+                state_id="state-reader-failure",
+                metadata={
+                    "_space_time_control_master_source_provenance": {
+                        "project_id": "IABV_v1.5",
+                        "source_object": "control_master/latest.json",
+                        "source_state_id": "state-reader-failure",
+                        "source_revision_or_digest": "sha256:reader-failure",
+                        "source_generated_at_utc": datetime.now(timezone.utc).isoformat(),
+                        "workspace_scope_id": "scope-reader",
+                        "freshness_status": "FRESH",
+                        "read_status": "READ_OK",
+                    }
+                },
+            )
+
+        def current_work_queue(self, *, limit: int = 10):
+            raise RuntimeError("queue unavailable")
+
+    digest = ControlMasterDigestBuilder().build_from_service(_Service())
+    assert digest.signal_status == "AVAILABLE"
+    assert digest.work_queue_status == "UNAVAILABLE"
+    assert digest.work_queue_brief == []
+    assert digest.signal_reason == "CONTROL_MASTER_QUEUE_READ_FAILED:RuntimeError"

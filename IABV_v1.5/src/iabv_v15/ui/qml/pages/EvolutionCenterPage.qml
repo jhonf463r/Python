@@ -21,6 +21,8 @@ Item {
     property var environmentSelfModel: evolutionCenterViewModel ? evolutionCenterViewModel.environmentSelfModel : ({})
     property var worldModel: evolutionCenterViewModel ? evolutionCenterViewModel.worldModel : ({})
     property var evidenceBasis: evolutionCenterViewModel ? evolutionCenterViewModel.evidenceBasis : ({})
+    property var controlMasterDigest: evolutionCenterViewModel ? evolutionCenterViewModel.controlMasterDigest : ({})
+    property string controlMasterBrief: evolutionCenterViewModel ? evolutionCenterViewModel.controlMasterBrief : ""
     property string latestToolStatus: evolutionCenterViewModel ? evolutionCenterViewModel.latestToolStatus : ""
     property string incidentFilter: evolutionCenterViewModel ? evolutionCenterViewModel.incidentFilter : "all"
     property var statusCards: healthSnapshot.status_cards || []
@@ -779,6 +781,168 @@ Item {
                         Label {
                             visible: (evidenceBasis.unresolved || []).length > 0
                             text: "UNRESOLVED: " + (evidenceBasis.unresolved || []).join(", ")
+                            color: textSecondary
+                            font.family: bodyFontFamily
+                            font.pixelSize: 11
+                            wrapMode: Label.WordWrap
+                            width: parent.width
+                        }
+                    }
+                }
+
+                Rectangle {
+                    width: parent.width
+                    radius: 18
+                    color: "#22313a"
+                    border.width: 1
+                    border.color: borderSoft
+                    implicitHeight: controlMasterCol.implicitHeight + 24
+
+                    Column {
+                        id: controlMasterCol
+                        anchors.fill: parent
+                        anchors.margins: 14
+                        spacing: 7
+
+                        RowLayout {
+                            spacing: 8
+                            Label {
+                                text: "Control Master · señal de prioridad"
+                                color: textPrimary
+                                font.family: titleFontFamily
+                                font.pixelSize: 16
+                            }
+                            TruthStateBadge { truthState: (controlMasterDigest.truthState || "unresolved") }
+                        }
+
+                        Label {
+                            text: "Señal " + (controlMasterDigest.signal_status || "UNAVAILABLE")
+                                  + " | vigencia " + (controlMasterDigest.control_master_signal_status || "UNVERIFIED")
+                                  + " | cola " + (controlMasterDigest.work_queue_status || "UNVERIFIED")
+                            color: textSecondary
+                            font.family: bodyFontFamily
+                            font.pixelSize: 12
+                            wrapMode: Label.WordWrap
+                            width: parent.width
+                        }
+
+                        Label {
+                            text: "Fuente " + (controlMasterDigest.source_object || "UNAVAILABLE")
+                                  + " | state " + (controlMasterDigest.source_state_id || "UNAVAILABLE")
+                                  + " | scope " + (controlMasterDigest.workspace_scope_id || "UNAVAILABLE")
+                            color: textSecondary
+                            font.family: bodyFontFamily
+                            font.pixelSize: 11
+                            wrapMode: Label.WordWrap
+                            width: parent.width
+                        }
+
+                        Label {
+                            text: "Digest " + (controlMasterDigest.digest_id || "UNAVAILABLE")
+                                  + " | revision " + (controlMasterDigest.source_revision_or_digest || "UNAVAILABLE")
+                            color: textSecondary
+                            font.family: bodyFontFamily
+                            font.pixelSize: 11
+                            wrapMode: Label.WordWrap
+                            width: parent.width
+                        }
+
+                        Label {
+                            text: "Generado " + (controlMasterDigest.source_generated_at_utc || "UNAVAILABLE")
+                                  + " | observado " + (controlMasterDigest.observed_at_utc || "UNAVAILABLE")
+                            color: textSecondary
+                            font.family: bodyFontFamily
+                            font.pixelSize: 11
+                            wrapMode: Label.WordWrap
+                            width: parent.width
+                        }
+
+                        Label {
+                            visible: (controlMasterDigest.source_evidence_refs || []).length > 0
+                            text: "Evidencia fuente: " + (controlMasterDigest.source_evidence_refs || []).join(" | ")
+                            color: textSecondary
+                            font.family: bodyFontFamily
+                            font.pixelSize: 11
+                            wrapMode: Label.WordWrap
+                            width: parent.width
+                        }
+
+                        Label {
+                            text: controlMasterBrief || "Sin evidencia de Control Master disponible."
+                            color: textSecondary
+                            font.family: bodyFontFamily
+                            font.pixelSize: 12
+                            wrapMode: Label.WordWrap
+                            width: parent.width
+                        }
+
+                        Label {
+                            visible: !!(controlMasterDigest.signal_reason || "").length
+                            text: "Diagnóstico: " + (controlMasterDigest.signal_reason || "")
+                            color: textSecondary
+                            font.family: bodyFontFamily
+                            font.pixelSize: 11
+                            wrapMode: Label.WordWrap
+                            width: parent.width
+                        }
+
+                        Label {
+                            visible: controlMasterDigest.work_queue_status === "EMPTY_QUEUE"
+                            text: "Cola consultada correctamente: vacía."
+                            color: textSecondary
+                            font.family: bodyFontFamily
+                            font.pixelSize: 11
+                            wrapMode: Label.WordWrap
+                            width: parent.width
+                        }
+
+                        Repeater {
+                            model: controlMasterDigest.top_work_queue_items || []
+                            delegate: Column {
+                                width: controlMasterCol.width
+                                spacing: 2
+
+                                Label {
+                                    text: "#" + (modelData.item_id || "UNAVAILABLE")
+                                          + " | " + (modelData.priority_label || modelData.priority_score || "UNSPECIFIED")
+                                          + " | " + (modelData.source || "source n/d")
+                                    color: textSecondary
+                                    font.family: bodyFontFamily
+                                    font.pixelSize: 11
+                                    wrapMode: Label.WordWrap
+                                    width: parent.width
+                                }
+                                Label {
+                                    text: "Siguiente acción: " + (modelData.next_action || "UNAVAILABLE")
+                                    color: textSecondary
+                                    font.family: bodyFontFamily
+                                    font.pixelSize: 11
+                                    wrapMode: Label.WordWrap
+                                    width: parent.width
+                                }
+                                Label {
+                                    visible: (modelData.dependencies || []).length > 0
+                                    text: "Dependencias: " + (modelData.dependencies || []).join(", ")
+                                    color: textSecondary
+                                    font.family: bodyFontFamily
+                                    font.pixelSize: 10
+                                    wrapMode: Label.WordWrap
+                                    width: parent.width
+                                }
+                                Label {
+                                    visible: (modelData.evidence_refs || []).length > 0
+                                    text: "Evidencia: " + (modelData.evidence_refs || []).join(" | ")
+                                    color: textSecondary
+                                    font.family: bodyFontFamily
+                                    font.pixelSize: 10
+                                    wrapMode: Label.WordWrap
+                                    width: parent.width
+                                }
+                            }
+                        }
+
+                        Label {
+                            text: "Señal de prioridad; no concede permisos ni reemplaza CURRENT-STATE.md."
                             color: textSecondary
                             font.family: bodyFontFamily
                             font.pixelSize: 11

@@ -3127,93 +3127,16 @@ class AdaptiveTaskOrchestrator:
     def _control_master_digest(self) -> Any:
         from iabv_v15.domain.models import ControlMasterDigest
 
-        service = self.control_master_service
         builder = self.control_master_digest_builder
-        if service is None or builder is None:
+        if builder is None:
             return ControlMasterDigest(
                 signal_status="UNAVAILABLE",
-                signal_reason="CONTROL_MASTER_SERVICE_OR_BUILDER_NOT_CONFIGURED",
+                signal_reason="CONTROL_MASTER_DIGEST_BUILDER_NOT_CONFIGURED",
                 work_queue_status="UNAVAILABLE",
                 source_coverage={"control_master": "NOT_CONFIGURED"},
                 control_master_signal_status="UNAVAILABLE",
             )
-
-        try:
-            state = service.current_state(refresh=False)
-        except Exception as exc:
-            return ControlMasterDigest(
-                signal_status="UNAVAILABLE",
-                signal_reason="CONTROL_MASTER_STATE_READ_FAILED:" + type(exc).__name__,
-                work_queue_status="UNAVAILABLE",
-                source_coverage={"control_master_state": "READ_FAILED"},
-                control_master_signal_status="UNAVAILABLE",
-            )
-
-        work_queue: list[dict[str, Any]] | None = None
-        work_queue_status = "UNVERIFIED"
-        signal_reason = "WORK_QUEUE_NOT_VERIFIED"
-        source_coverage: dict[str, str] = {}
-        try:
-            observed_queue = service.current_work_queue(limit=10)
-        except Exception as exc:
-            work_queue_status = "UNAVAILABLE"
-            signal_reason = "CONTROL_MASTER_QUEUE_READ_FAILED:" + type(exc).__name__
-        else:
-            source_errors = tuple(getattr(service, "last_work_queue_errors", ()) or ())
-            source_coverage = dict(getattr(service, "last_work_queue_source_coverage", {}) or {})
-            if not isinstance(observed_queue, list):
-                work_queue_status = "UNVERIFIED"
-                signal_reason = "WORK_QUEUE_RESULT_NOT_LIST"
-            elif source_errors:
-                work_queue_status = "UNAVAILABLE"
-                signal_reason = "QUEUE_SOURCE_ERRORS:" + ",".join(source_errors)
-            else:
-                read_failures = {
-                    key: value for key, value in source_coverage.items()
-                    if value in {"READ_PARTIAL", "READ_FAILED", "READER_UNAVAILABLE"}
-                }
-                unresolved_sources = {
-                    key: value for key, value in source_coverage.items()
-                    if value in {"NOT_CONFIGURED", "NO_FILE"}
-                }
-                unknown_sources = {
-                    key: value for key, value in source_coverage.items()
-                    if value != "READ_OK"
-                    and value not in {"READ_PARTIAL", "READ_FAILED", "READER_UNAVAILABLE", "NOT_CONFIGURED", "NO_FILE"}
-                }
-                if read_failures:
-                    work_queue_status = "UNAVAILABLE"
-                    signal_reason = "SOURCE_COVERAGE_READ_INCOMPLETE"
-                elif unresolved_sources or unknown_sources or not source_coverage:
-                    work_queue_status = "UNVERIFIED"
-                    signal_reason = "SOURCE_APPLICABILITY_OR_COVERAGE_UNRESOLVED"
-                else:
-                    work_queue = observed_queue
-                    work_queue_status = "EMPTY_QUEUE" if not observed_queue else "AVAILABLE"
-                    signal_reason = ""
-
-        if not source_coverage:
-            source_coverage = dict(
-                getattr(service, "last_work_queue_source_coverage", {}) or {}
-            )
-        try:
-            return builder.build(
-                state,
-                work_queue=work_queue,
-                work_queue_status=work_queue_status,
-                signal_reason=signal_reason,
-                source_coverage=source_coverage,
-                observed_at_utc=datetime.now(timezone.utc),
-            )
-        except Exception as exc:
-            return ControlMasterDigest(
-                signal_status="UNAVAILABLE",
-                signal_reason="CONTROL_MASTER_DIGEST_BUILD_FAILED:" + type(exc).__name__,
-                work_queue_status="UNAVAILABLE",
-                source_coverage=source_coverage,
-                source_state_id="",
-                control_master_signal_status="UNAVAILABLE",
-            )
+        return builder.build_from_service(self.control_master_service, limit=10)
 
     def _self_examination_snapshot(self) -> Any:
         service = self.self_examination_service

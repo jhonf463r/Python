@@ -6,7 +6,7 @@ from typing import Any, Mapping
 
 logger = logging.getLogger(__name__)
 
-from iabv_v15.domain.models import InferenceRequest, IncidentQuery, RunStatus, TaskRole
+from iabv_v15.domain.models import ControlMasterDigest, InferenceRequest, IncidentQuery, RunStatus, TaskRole
 from iabv_v15.infra.persistence.execution_dossier_repository import ExecutionDossierRepository
 from iabv_v15.infra.persistence.experiment_lab_repository import ExperimentLabRepository
 from iabv_v15.infra.persistence.hidden_incident_repository import HiddenIncidentRepository
@@ -303,17 +303,20 @@ class EvolutionCenterViewModel(QObject):
         except Exception as exc:
             logger.warning('evolution_center: self_examination failed: %s', exc)
             self_examination = {}
-        control_master_digest: dict[str, Any] = {}
-        if self.control_master_service is not None and self.control_master_digest_builder is not None:
-            try:
-                state = self.control_master_service.current_state(refresh=False)
-                try:
-                    work_queue = self.control_master_service.current_work_queue(limit=10)
-                except Exception:
-                    work_queue = []
-                control_master_digest = self.control_master_digest_builder.build(state, work_queue=work_queue).model_dump(mode='json')
-            except Exception:
-                control_master_digest = {}
+        if self.control_master_digest_builder is None:
+            control_master_model = ControlMasterDigest(
+                signal_status="UNAVAILABLE",
+                signal_reason="CONTROL_MASTER_DIGEST_BUILDER_NOT_CONFIGURED",
+                work_queue_status="UNAVAILABLE",
+                source_coverage={"control_master": "NOT_CONFIGURED"},
+                control_master_signal_status="UNAVAILABLE",
+            )
+        else:
+            control_master_model = self.control_master_digest_builder.build_from_service(
+                self.control_master_service,
+                limit=10,
+            )
+        control_master_digest: dict[str, Any] = control_master_model.model_dump(mode="json")
         self._health_snapshot = snapshot.model_dump(mode='json') if snapshot is not None else self._health_snapshot
         self._recent_dossiers = dossiers
         self._recent_incidents = filtered_incidents
@@ -359,10 +362,17 @@ class EvolutionCenterViewModel(QObject):
         if dashboard_brief:
             self._proactive_dashboard_brief = dashboard_brief
         self._recent_ui_screenshots = self._build_recent_ui_screenshots()
-        control_master_digest['truthState'] = self._classify_panel_truth(
-            has_live_source=self.control_master_service is not None,
-            payload=control_master_digest,
-        )
+        control_master_signal = str(control_master_digest.get("signal_status") or "UNVERIFIED").upper()
+        if control_master_signal == "AVAILABLE":
+            control_master_truth = "observed"
+        elif (
+            control_master_digest.get("source_state_id")
+            or control_master_digest.get("current_vision")
+        ):
+            control_master_truth = "inferred"
+        else:
+            control_master_truth = "unresolved"
+        control_master_digest["truthState"] = control_master_truth
         self._control_master_digest = control_master_digest
         control_master_brief = self._format_control_master_brief(control_master_digest)
         if control_master_brief:
@@ -499,7 +509,33 @@ class EvolutionCenterViewModel(QObject):
     def _format_control_master_brief(digest: dict[str, Any]) -> str:
         if not digest:
             return ''
-        parts: list[str] = []
+        signal_status = str(digest.get("signal_status") or "UNVERIFIED").upper()
+        freshness = str(digest.get("control_master_signal_status") or "UNVERIFIED").upper()
+        queue_status = str(digest.get("work_queue_status") or "UNVERIFIED").upper()
+        parts: list[str] = [
+            f"Señal: {signal_status} | vigencia: {freshness} | cola: {queue_status}"
+        ]
+        source_object = str(digest.get("source_object") or "").strip()
+        source_state_id = str(digest.get("source_state_id") or "").strip()
+        if source_object or source_state_id:
+            parts.append(
+                "Fuente: " + (source_object or "UNAVAILABLE")
+                + " | state: " + (source_state_id or "UNAVAILABLE")
+            )
+        source_generated = str(digest.get("source_generated_at_utc") or "").strip()
+        observed = str(digest.get("observed_at_utc") or "").strip()
+        if source_generated or observed:
+            parts.append(
+                "Generado: " + (source_generated or "UNAVAILABLE")
+                + " | observado: " + (observed or "UNAVAILABLE")
+            )
+        reason = str(digest.get("signal_reason") or "").strip()
+        if reason:
+            parts.append("Diagnóstico: " + reason[:200])
+        if queue_status == "EMPTY_QUEUE":
+            parts.append("Cola consultada correctamente: vacía.")
+        elif queue_status in {"UNAVAILABLE", "UNVERIFIED"}:
+            parts.append("Cola no confirmada; no inferir que está vacía.")
         vision = str(digest.get('current_vision') or '').strip()
         if vision:
             parts.append(f'Vision: {vision}')
