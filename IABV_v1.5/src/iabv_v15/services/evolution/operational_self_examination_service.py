@@ -5869,7 +5869,7 @@ _REQUIRED_SOURCE_IDS = (
         except FileNotFoundError:
             self._record_source_status('validation_feedback_history', 'CONFIRMED_NOT_FOUND')
             return tried
-        except (OSError, UnicodeError) as exc:
+        except Exception as exc:
             self._record_source_status('validation_feedback_history', 'READ_FAILED', type(exc).__name__)
             return tried
 
@@ -5886,21 +5886,17 @@ _REQUIRED_SOURCE_IDS = (
                 malformed_rows += 1
                 continue
             decision = str(entry.get('decision') or '')
-                if decision not in {'discarded', 'unresolved'}:
-                    continue
-                kind = str(entry.get('proposal_kind') or entry.get('proposal_key') or '').strip()
-                candidate = str(entry.get('candidate_assistant_kind') or '').strip().lower()
-                current = str(entry.get('current_assistant_kind') or '').strip().lower()
-                if kind and candidate and current:
-                    tried.add(f'route_substitution:{current}:{candidate}')
-                if kind and candidate and current:
-                    tried.add(f'collaborative_execution:{candidate}:{current}')
-                    tried.add(f'collaborative_execution:{current}:{candidate}')
-                    tried.add(f'validated_collaboration:{candidate}:{current}')
-                    tried.add(f'validated_collaboration:{current}:{candidate}')
-        except Exception as exc:
-            self._record_source_status('validation_feedback_history', 'READ_FAILED', type(exc).__name__)
-            return tried
+            if decision not in {'discarded', 'unresolved'}:
+                continue
+            kind = str(entry.get('proposal_kind') or entry.get('proposal_key') or '').strip()
+            candidate = str(entry.get('candidate_assistant_kind') or '').strip().lower()
+            current = str(entry.get('current_assistant_kind') or '').strip().lower()
+            if kind and candidate and current:
+                tried.add(f'route_substitution:{current}:{candidate}')
+                tried.add(f'collaborative_execution:{candidate}:{current}')
+                tried.add(f'collaborative_execution:{current}:{candidate}')
+                tried.add(f'validated_collaboration:{candidate}:{current}')
+                tried.add(f'validated_collaboration:{current}:{candidate}')
 
         if malformed_rows:
             self._record_source_status(
