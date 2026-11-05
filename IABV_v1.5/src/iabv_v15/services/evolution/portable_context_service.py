@@ -1508,6 +1508,9 @@ class PortableContextService:
         errors = int(evidence.get('errors') or 0)
         suite = str(evidence.get('suite') or '')
         ts = str(evidence.get('timestamp') or '')
+        commit_sha = str(evidence.get('commit_sha') or '')
+        branch = str(evidence.get('branch') or '')
+        provenance_status = str(evidence.get('provenance_status') or 'UNKNOWN')
         total = passed + failed + errors
         health = 'green' if failed == 0 and errors == 0 else 'red'
         summary = f'{passed}/{total} passed'
@@ -1517,15 +1520,24 @@ class PortableContextService:
             summary += f', {errors} errors'
         if suite:
             summary += f' [{suite}]'
+        summary += f' · provenance {provenance_status}'
+        if commit_sha:
+            summary += f' · commit {commit_sha[:12]}'
         items: list[dict[str, Any]] = [
             {'label': 'health', 'value': health},
             {'label': 'passed', 'value': passed},
             {'label': 'failed', 'value': failed},
             {'label': 'errors', 'value': errors},
             {'label': 'timestamp', 'value': ts},
+            {'label': 'provenance_status', 'value': provenance_status},
+            {'label': 'worktree_clean', 'value': bool(evidence.get('worktree_clean'))},
         ]
         if suite:
             items.append({'label': 'suite', 'value': suite})
+        if commit_sha:
+            items.append({'label': 'commit_sha', 'value': commit_sha})
+        if branch:
+            items.append({'label': 'branch', 'value': branch})
         return self._section(
             section_id='test_evidence',
             title='Evidencia de tests',
