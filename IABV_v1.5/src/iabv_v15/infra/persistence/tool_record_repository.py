@@ -509,7 +509,6 @@ class ToolRecordRepository:
             return self._load_card(tool_id, path)
         except (FileNotFoundError, json.JSONDecodeError, ValueError):
             raise
-            return None
 
     def _load_task(self, task_id: str, path: str) -> ToolTask:
         return ToolTask.model_validate(self._load_json(f'tasks/{task_id}.json', path))
@@ -519,7 +518,6 @@ class ToolRecordRepository:
             return self._load_task(task_id, path)
         except (FileNotFoundError, json.JSONDecodeError, ValueError):
             raise
-            return None
 
     def _load_result(self, result_id: str, path: str) -> ToolResult:
         return ToolResult.model_validate(self._load_json(f'results/{result_id}.json', path))
@@ -529,7 +527,6 @@ class ToolRecordRepository:
             return self._load_result(result_id, path)
         except (FileNotFoundError, json.JSONDecodeError, ValueError):
             raise
-            return None
 
     def _load_interaction_pattern(self, pattern_id: str, path: str) -> InteractionPattern:
         return InteractionPattern.model_validate(self._load_json(f'interaction_patterns/{pattern_id}.json', path))
@@ -539,7 +536,6 @@ class ToolRecordRepository:
             return self._load_interaction_pattern(pattern_id, path)
         except (FileNotFoundError, json.JSONDecodeError, ValueError):
             raise
-            return None
 
     def _load_interaction_observation(self, observation_id: str, path: str) -> InteractionObservation:
         return InteractionObservation.model_validate(self._load_json(f'interaction_observations/{observation_id}.json', path))
@@ -549,7 +545,6 @@ class ToolRecordRepository:
             return self._load_interaction_observation(observation_id, path)
         except (FileNotFoundError, json.JSONDecodeError, ValueError):
             raise
-            return None
 
     def _load_interaction_episode(self, interaction_episode_id: str, path: str) -> InteractionEpisode:
         return InteractionEpisode.model_validate(self._load_json(f'interaction_episodes/{interaction_episode_id}.json', path))
@@ -559,7 +554,6 @@ class ToolRecordRepository:
             return self._load_interaction_episode(interaction_episode_id, path)
         except (FileNotFoundError, json.JSONDecodeError, ValueError):
             raise
-            return None
 
     def _load_json(self, relative_path: str, path: str) -> dict[str, Any]:
         candidate = Path(path)
@@ -572,4 +566,3 @@ class ToolRecordRepository:
             return self._load_json(f'log/{log_id}.json', path)
         except (FileNotFoundError, json.JSONDecodeError, ValueError):
             raise
-            return None
