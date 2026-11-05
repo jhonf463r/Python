@@ -8,6 +8,9 @@ Verifies the program can detect its own UI state anomalies:
 
 from __future__ import annotations
 
+import os
+
+import pytest
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
@@ -26,10 +29,16 @@ def _make_validator(
     )
     wm_svc.current_snapshot.return_value = snapshot
     wm_svc.current_model.return_value = snapshot
-    return PerceptionCrossValidator(
+    validator = PerceptionCrossValidator(
         world_model_service=wm_svc,
         tool_registry=None,
     )
+    validator._enumerate_window_titles = lambda: [
+        str(window.title).strip().casefold()
+        for window in snapshot.active_windows
+        if str(window.title or '').strip()
+    ]  # type: ignore[method-assign]
+    return validator
 
 
 def test_no_iabv_window_detected() -> None:
@@ -270,3 +279,66 @@ def test_partial_process_read_does_not_trigger_availability_auto_correction() ->
     assert result['auto_corrections'] == []
     assert result['checks_status']['tools_vs_processes'] == 'READ_PARTIAL'
     assert 'tools_vs_processes' not in result['checks_passed']
+
+
+
+@pytest.mark.skipif(os.name != 'nt', reason='live Win32 window enumeration is Windows-only')
+def test_windows_consistency_compares_world_model_with_live_enumeration() -> None:
+    validator = _make_validator(windows=[
+        WindowObservation(title='Editor - Workspace', pid=101),
+        WindowObservation(title='Terminal', pid=102),
+    ])
+    validator._enumerate_window_titles = lambda: [  # type: ignore[method-assign]
+        'editor - workspace',
+        'Browser - IABV',
+    ]
+
+    result = validator.run_cross_validation()
+
+    report = result['checks_read_reports']['windows_consistency']
+    assert result['checks_status']['windows_consistency'] == 'READ_OK'
+    assert report['world_model_window_count'] == 2
+    assert report['live_window_count'] == 2
+    assert report['world_model_only_window_count'] == 1
+    assert report['live_only_window_count'] == 1
+    assert 'windows_consistency' not in result['checks_passed']
+    mismatch = next(
+        item for item in result['inconsistencies']
+        if item['check'] == 'windows_consistency'
+        and 'live-only windows' in item['actual']
+    )
+    assert 'WorldModel-only windows=1' in mismatch['actual']
+    assert 'live-only windows=1' in mismatch['actual']
+    assert 'Editor - Workspace' not in mismatch['actual']
+
+
+@pytest.mark.skipif(os.name != 'nt', reason='live Win32 window enumeration is Windows-only')
+def test_windows_consistency_live_enumeration_failure_is_not_a_pass() -> None:
+    validator = _make_validator(windows=[
+        WindowObservation(title='Editor - Workspace', pid=101),
+    ])
+
+    def fail_live_enumeration() -> list[str]:
+        raise RuntimeError('synthetic EnumWindows failure')
+
+    validator._enumerate_window_titles = fail_live_enumeration  # type: ignore[method-assign]
+    result = validator.run_cross_validation()
+
+    assert result['checks_status']['windows_consistency'] == 'READ_FAILED'
+    assert result['checks_unavailable']['windows_consistency']['reason'] == 'window_enumeration_failed'
+    assert 'windows_consistency' not in result['checks_passed']
+
+
+@pytest.mark.skipif(os.name != 'nt', reason='live Win32 window enumeration is Windows-only')
+def test_windows_consistency_matching_live_enumeration_can_pass() -> None:
+    validator = _make_validator(windows=[
+        WindowObservation(title='Editor - Workspace', pid=101),
+        WindowObservation(title='Terminal', pid=102),
+    ])
+
+    result = validator.run_cross_validation()
+
+    assert result['checks_status']['windows_consistency'] == 'READ_OK'
+    assert result['checks_read_reports']['windows_consistency']['world_model_only_window_count'] == 0
+    assert result['checks_read_reports']['windows_consistency']['live_only_window_count'] == 0
+    assert 'windows_consistency' in result['checks_passed']
