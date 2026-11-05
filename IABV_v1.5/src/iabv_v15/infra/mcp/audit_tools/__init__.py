@@ -814,7 +814,7 @@ def _persist_test_evidence(
         )
         return {
             "status": "PERSISTED",
-            "path": str(latest.relative_to(workspace_root)),
+            "path": str(Path(_TEST_EVIDENCE_SUBDIR) / "latest.json").replace(os.sep, "/"),
             "artifact_sha256": artifact_sha256,
             "payload_sha256": evidence["payload_sha256"],
             "commit_sha": evidence["commit_sha"],
@@ -931,11 +931,18 @@ def load_latest_test_evidence(
         if data.get("provenance_status") != "COMMIT_BOUND_CLEAN":
             return None
 
+        worktree_status_sha = data.get("worktree_status_sha256")
+        if not isinstance(worktree_status_sha, str) or not _re.fullmatch(r"[0-9a-f]{64}", worktree_status_sha):
+            return None
         expected_payload_sha = data.get("payload_sha256")
         if not isinstance(expected_payload_sha, str) or not _re.fullmatch(r"[0-9a-f]{64}", expected_payload_sha):
             return None
         if _test_evidence_payload_sha256(data) != expected_payload_sha:
             return None
+        for count_field in ("passed", "failed", "errors"):
+            count_value = data.get(count_field)
+            if not isinstance(count_value, int) or isinstance(count_value, bool) or count_value < 0:
+                return None
 
         current = _collect_test_git_provenance(root)
         if (
@@ -943,6 +950,7 @@ def load_latest_test_evidence(
             or current.get("worktree_clean") is not True
             or str(current.get("commit_sha") or "").lower() != commit_sha.lower()
             or str(current.get("branch") or "") != branch_name
+            or str(current.get("worktree_status_sha256") or "") != worktree_status_sha
         ):
             return None
         return data
