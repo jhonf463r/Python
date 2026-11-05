@@ -2234,20 +2234,24 @@ class AdaptiveTaskOrchestrator:
             except Exception:
                 pass
 
-        # Pre-scan: inject OSES cloud findings if available
+        # Pre-scan: inject only a fresh, source-covered cached OSES review.
         if self.self_examination_service is not None:
             try:
-                review = self.self_examination_service.current_review(refresh=False)
-                if review is not None:
-                    cloud_findings = [
-                        f for f in (getattr(review, 'findings', None) or [])
-                        if hasattr(f, 'category') and str(getattr(f, 'category', '')).startswith('cloud_')
-                    ]
-                    for finding in cloud_findings[:3]:
-                        title = getattr(finding, 'title', '')
-                        rec = getattr(finding, 'recommendation', '')
-                        if title:
-                            context_parts.append(f'OSES finding: {title}. Recommendation: {rec[:120]}')
+                cached_reader = getattr(
+                    self.self_examination_service, 'current_review_cached', None
+                )
+                if callable(cached_reader):
+                    review = cached_reader()
+                    if review is not None:
+                        cloud_findings = [
+                            f for f in (getattr(review, 'findings', None) or [])
+                            if hasattr(f, 'category') and str(getattr(f, 'category', '')).startswith('cloud_')
+                        ]
+                        for finding in cloud_findings[:3]:
+                            title = getattr(finding, 'title', '')
+                            rec = getattr(finding, 'recommendation', '')
+                            if title:
+                                context_parts.append(f'OSES finding: {title}. Recommendation: {rec[:120]}')
             except Exception:
                 pass
 
@@ -3140,10 +3144,13 @@ class AdaptiveTaskOrchestrator:
 
     def _self_examination_snapshot(self) -> Any:
         service = self.self_examination_service
-        if service is None or not hasattr(service, 'current_review'):
+        if service is None:
+            return None
+        cached_reader = getattr(service, 'current_review_cached', None)
+        if not callable(cached_reader):
             return None
         try:
-            return service.current_review(refresh=False, max_age_seconds=600)
+            return cached_reader(max_age_seconds=600)
         except Exception:
             return None
 
