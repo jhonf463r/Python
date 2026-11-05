@@ -801,6 +801,30 @@ class TestDigestWorkQueueInOrchestrator:
         md = render_digest_markdown(digest)
         assert 'Orchestrator sees this' in md
 
+    def test_partial_platform_pending_read_is_not_reported_read_ok(self) -> None:
+        from iabv_v15.services.evolution.platform_pending_queue import PlatformPendingQueue
+
+        ws = _workspace()
+        try:
+            pending = PlatformPendingQueue(ws / "data" / "evolution")
+            pending.upsert(PlatformPendingTask(id="visible-task", title="Visible task"))
+            pending._task_path("corrupt-task").write_text("{", encoding="utf-8")
+            svc = ControlMasterService(
+                repository=_fake_repo(),
+                platform_pending_queue=pending,
+                workspace_root=str(ws),
+            )
+
+            queue = svc.current_work_queue()
+
+            assert any(item["id"] == "platform:visible-task" for item in queue)
+            assert svc.last_work_queue_source_coverage["platform_pending_queue"] == "READ_PARTIAL"
+            assert "PLATFORM_PENDING_QUEUE_READ_PARTIAL" in svc.last_work_queue_errors
+        finally:
+            shutil.rmtree(ws, ignore_errors=True)
+
+
+
 class TestQueueSourceFailureVisibilityR2:
     """Source failures and omitted source coverage remain explicit."""
 

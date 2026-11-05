@@ -638,9 +638,20 @@ class ControlMasterService:
             self._record_work_queue_error("PLATFORM_PENDING_QUEUE_READER_UNAVAILABLE")
             self._record_work_queue_source("platform_pending_queue", "READER_UNAVAILABLE")
             return items
+        queue_read_status = "READ_OK"
         try:
             from iabv_v15.domain.models import PendingTaskStatus as _PTS
-            all_tasks = queue.list_all()
+            diagnostic_reader = getattr(type(queue), "list_all_with_diagnostics", None)
+            if callable(diagnostic_reader):
+                report = queue.list_all_with_diagnostics()
+                all_tasks = list(report.tasks)
+                queue_read_status = str(report.status).upper()
+                if queue_read_status != "READ_OK":
+                    self._record_work_queue_error(
+                        f"PLATFORM_PENDING_QUEUE_{queue_read_status}"
+                    )
+            else:
+                all_tasks = queue.list_all()
         except Exception:
             self._record_work_queue_error("PLATFORM_PENDING_QUEUE_READ_FAILED")
             self._record_work_queue_source("platform_pending_queue", "READ_FAILED")
@@ -670,7 +681,7 @@ class ControlMasterService:
                 updated_at=task.updated_at.isoformat(),
                 reason=task.reason or task.description,
             ))
-        self._record_work_queue_source("platform_pending_queue", "READ_OK")
+        self._record_work_queue_source("platform_pending_queue", queue_read_status)
         return items
 
     def _project_pending_issue_items(
