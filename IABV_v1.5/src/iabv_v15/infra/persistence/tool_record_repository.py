@@ -1,6 +1,7 @@
 ﻿from __future__ import annotations
 
 import json
+import sqlite3
 from pathlib import Path
 from threading import local
 from typing import Any, Callable, Sequence, TypeVar
@@ -84,6 +85,85 @@ class ToolRecordRepository:
             RepositoryReadReport.from_results(scope, results)
         )
 
+    def _read_indexed_item(
+        self,
+        *,
+        table: str,
+        id_column: str,
+        artifact_id: str,
+        sql: str,
+        parameters: Sequence[object],
+        relative_directory: str,
+        reader: Callable[[Sequence[Path], str], ArtifactReadResult[TRecord]],
+    ) -> ArtifactReadResult[TRecord]:
+        """Read one SQLite-indexed artifact and replace the current diagnostic report."""
+        scope = f"SQLITE_INDEX_LOOKUP:{table}"
+        try:
+            row = self.db.fetchone(sql, tuple(parameters))
+        except sqlite3.Error as exc:
+            report = RepositoryReadReport.from_collection_error(
+                scope,
+                exc,
+                requested_artifact_id=artifact_id,
+            )
+            self._remember_report(report)
+            return ArtifactReadResult(
+                artifact_id=artifact_id,
+                path="",
+                status=ArtifactReadStatus.READ_FAILED,
+                error_type=type(exc).__name__,
+                error_message=str(exc)[:300],
+            )
+
+        if row is None:
+            result = ArtifactReadResult(
+                artifact_id=artifact_id,
+                path="",
+                status=ArtifactReadStatus.CONFIRMED_NOT_FOUND,
+                error_type="IndexRowNotFound",
+                error_message=f"No {table} row exists in the SQLite index.",
+            )
+        else:
+            resolved_id = str(row[id_column])
+            try:
+                candidate = Path(row["path"])
+            except (TypeError, ValueError, OSError) as exc:
+                result = ArtifactReadResult(
+                    artifact_id=resolved_id,
+                    path="",
+                    status=ArtifactReadStatus.READ_FAILED,
+                    error_type=type(exc).__name__,
+                    error_message=str(exc)[:300],
+                )
+            else:
+                paths: list[Path] = []
+                if candidate.is_absolute():
+                    paths.append(candidate)
+                paths.append(
+                    self.storage.root / relative_directory / f"{resolved_id}.json"
+                )
+                result = reader(paths, resolved_id)
+
+        self._remember_report(RepositoryReadReport.from_results(scope, [result]))
+        return result
+
+    def _legacy_item_value(
+        self,
+        result: ArtifactReadResult[TRecord],
+    ) -> TRecord | None:
+        """Preserve legacy None-on-absent behavior; fail closed on unreadable records."""
+        if result.status == ArtifactReadStatus.FOUND:
+            return result.value
+        if (
+            result.status == ArtifactReadStatus.CONFIRMED_NOT_FOUND
+            and result.error_type == "IndexRowNotFound"
+        ):
+            return None
+        report = self.last_read_report
+        if report is None:
+            raise RuntimeError("indexed_item_read_report_not_recorded")
+        raise RepositoryReadError(report)
+
     def save_card(self, card: ToolCard) -> ToolCard:
         relative_path = f"cards/{card.tool_id}.json"
         saved_path = self.storage.save_json_atomic(relative_path, card.model_dump(mode='json'))
@@ -144,18 +224,21 @@ class ToolRecordRepository:
         """Legacy list API; fail closed and retain the diagnostic report."""
         return self.list_cards_with_diagnostics().require_complete()
 
-    def get_card(self, tool_id: str) -> ToolCard | None:
-        row = self.db.fetchone(
-            """
-            SELECT tool_id, path
-            FROM tool_cards
-            WHERE tool_id = ?
-            """,
-            (tool_id,),
+    def get_card_with_diagnostics(self, tool_id: str) -> ArtifactReadResult[ToolCard]:
+        return self._read_indexed_item(
+            table="tool_cards",
+            id_column="tool_id",
+            artifact_id=tool_id,
+            sql="SELECT tool_id, path FROM tool_cards WHERE tool_id = ?",
+            parameters=(tool_id,),
+            relative_directory="cards",
+            reader=lambda paths, artifact_id: read_model_from_paths(
+                paths, artifact_id, ToolCard
+            ),
         )
-        if row is None:
-            return None
-        return self._load_card_safe(row['tool_id'], row['path'])
+
+    def get_card(self, tool_id: str) -> ToolCard | None:
+        return self._legacy_item_value(self.get_card_with_diagnostics(tool_id))
 
     def save_task(self, task: ToolTask) -> ToolTask:
         relative_path = f"tasks/{task.task_id}.json"
@@ -209,18 +292,21 @@ class ToolRecordRepository:
         """Legacy list API; fail closed and retain the diagnostic report."""
         return self.list_tasks_with_diagnostics(limit).require_complete()
 
-    def get_task(self, task_id: str) -> ToolTask | None:
-        row = self.db.fetchone(
-            """
-            SELECT task_id, path
-            FROM tool_tasks
-            WHERE task_id = ?
-            """,
-            (task_id,),
+    def get_task_with_diagnostics(self, task_id: str) -> ArtifactReadResult[ToolTask]:
+        return self._read_indexed_item(
+            table="tool_tasks",
+            id_column="task_id",
+            artifact_id=task_id,
+            sql="SELECT task_id, path FROM tool_tasks WHERE task_id = ?",
+            parameters=(task_id,),
+            relative_directory="tasks",
+            reader=lambda paths, artifact_id: read_model_from_paths(
+                paths, artifact_id, ToolTask
+            ),
         )
-        if row is None:
-            return None
-        return self._load_task_safe(row['task_id'], row['path'])
+
+    def get_task(self, task_id: str) -> ToolTask | None:
+        return self._legacy_item_value(self.get_task_with_diagnostics(task_id))
 
     def save_result(self, result: ToolResult) -> ToolResult:
         relative_path = f"results/{result.result_id}.json"
@@ -360,31 +446,47 @@ class ToolRecordRepository:
         )
         return pattern
 
-    def get_interaction_pattern_by_signature(self, signature: str) -> InteractionPattern | None:
-        row = self.db.fetchone(
-            """
-            SELECT pattern_id, path
-            FROM interaction_patterns
-            WHERE signature = ?
-            """,
-            (signature,),
+    def get_interaction_pattern_by_signature_with_diagnostics(
+        self, signature: str
+    ) -> ArtifactReadResult[InteractionPattern]:
+        return self._read_indexed_item(
+            table="interaction_patterns",
+            id_column="pattern_id",
+            artifact_id=signature,
+            sql="SELECT pattern_id, path FROM interaction_patterns WHERE signature = ?",
+            parameters=(signature,),
+            relative_directory="interaction_patterns",
+            reader=lambda paths, artifact_id: read_model_from_paths(
+                paths, artifact_id, InteractionPattern
+            ),
         )
-        if row is None:
-            return None
-        return self._load_interaction_pattern_safe(row['pattern_id'], row['path'])
+
+    def get_interaction_pattern_by_signature(
+        self, signature: str
+    ) -> InteractionPattern | None:
+        return self._legacy_item_value(
+            self.get_interaction_pattern_by_signature_with_diagnostics(signature)
+        )
+
+    def get_interaction_pattern_with_diagnostics(
+        self, pattern_id: str
+    ) -> ArtifactReadResult[InteractionPattern]:
+        return self._read_indexed_item(
+            table="interaction_patterns",
+            id_column="pattern_id",
+            artifact_id=pattern_id,
+            sql="SELECT pattern_id, path FROM interaction_patterns WHERE pattern_id = ?",
+            parameters=(pattern_id,),
+            relative_directory="interaction_patterns",
+            reader=lambda paths, artifact_id: read_model_from_paths(
+                paths, artifact_id, InteractionPattern
+            ),
+        )
 
     def get_interaction_pattern(self, pattern_id: str) -> InteractionPattern | None:
-        row = self.db.fetchone(
-            """
-            SELECT pattern_id, path
-            FROM interaction_patterns
-            WHERE pattern_id = ?
-            """,
-            (pattern_id,),
+        return self._legacy_item_value(
+            self.get_interaction_pattern_with_diagnostics(pattern_id)
         )
-        if row is None:
-            return None
-        return self._load_interaction_pattern_safe(row['pattern_id'], row['path'])
 
     def list_interaction_patterns_with_diagnostics(
         self,
@@ -613,18 +715,30 @@ class ToolRecordRepository:
             tool_id=tool_id, mode_used=mode_used, site_id=site_id, limit=limit
         ).require_complete()
 
-    def get_interaction_episode(self, interaction_episode_id: str) -> InteractionEpisode | None:
-        row = self.db.fetchone(
-            """
-            SELECT interaction_episode_id, path
-            FROM interaction_episodes
-            WHERE interaction_episode_id = ?
-            """,
-            (interaction_episode_id,),
+    def get_interaction_episode_with_diagnostics(
+        self, interaction_episode_id: str
+    ) -> ArtifactReadResult[InteractionEpisode]:
+        return self._read_indexed_item(
+            table="interaction_episodes",
+            id_column="interaction_episode_id",
+            artifact_id=interaction_episode_id,
+            sql=(
+                "SELECT interaction_episode_id, path "
+                "FROM interaction_episodes WHERE interaction_episode_id = ?"
+            ),
+            parameters=(interaction_episode_id,),
+            relative_directory="interaction_episodes",
+            reader=lambda paths, artifact_id: read_model_from_paths(
+                paths, artifact_id, InteractionEpisode
+            ),
         )
-        if row is None:
-            return None
-        return self._load_interaction_episode(row['interaction_episode_id'], row['path'])
+
+    def get_interaction_episode(
+        self, interaction_episode_id: str
+    ) -> InteractionEpisode | None:
+        return self._legacy_item_value(
+            self.get_interaction_episode_with_diagnostics(interaction_episode_id)
+        )
 
     def _load_card(self, tool_id: str, path: str) -> ToolCard:
         return ToolCard.model_validate(self._load_json(f'cards/{tool_id}.json', path))
