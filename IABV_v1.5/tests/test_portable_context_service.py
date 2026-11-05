@@ -200,7 +200,8 @@ def test_portable_context_service_builds_and_persists_package_from_live_state() 
                 'discarded_signals': [],
             },
         )
-        bootstrap.operational_self_examination_service.current_review = lambda **kwargs: SelfExaminationSnapshot(  # type: ignore[assignment]
+        bootstrap.operational_self_examination_service.current_review = lambda **kwargs: (_ for _ in ()).throw(AssertionError('portable context must not trigger OSES rebuild'))
+        bootstrap.operational_self_examination_service.current_review_cached = lambda: SelfExaminationSnapshot(  # type: ignore[assignment]
             summary='La autoexaminacion confirma un bloqueo recurrente y un ajuste recomendado.',
             status='needs_attention',
             findings=[
