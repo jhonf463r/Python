@@ -65,6 +65,7 @@ class OperationalSelfExaminationService:
         autonomous_validation_cycle: Any | None = None,
         adaptive_weight_layer: Any | None = None,
         token_rotation_ledger: Any | None = None,
+        discernment_frame_service: Any | None = None,
     ) -> None:
         self.workspace_root = workspace_root
         self._created_at = time.time()
@@ -83,6 +84,9 @@ class OperationalSelfExaminationService:
         # permite cerrar el loop "detectar el patron de expiracion antes
         # de que el user lo note" sin inventar observacion nueva.
         self.token_rotation_ledger: Any | None = token_rotation_ledger
+        # One shared P0.69/P0.70 frame history is injected by AppBootstrap.
+        # OSES must not create a fresh instance just to read an empty ring.
+        self.discernment_frame_service: Any | None = discernment_frame_service
         # PCS v1 — hook opcional. Si un provider con ``snapshot()`` está
         # presente, `_persist_review` incluye las violaciones de
         # encarnamiento en ``metadata['embodiment_violations']`` sin
