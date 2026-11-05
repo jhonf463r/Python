@@ -252,6 +252,14 @@ class PortableContextService:
         unresolved = list(dict.fromkeys([
             *unresolved,
             *list(goal_context.get('unresolved_fields') or []),
+            *(
+                [f'UNRESOLVED:pending_issue_repository:{pending_read_status.lower()}']
+                if pending_read_status != 'READ_OK' else []
+            ),
+            *(
+                [f'UNRESOLVED:evolution_review_service:{backlog_read_status.lower()}']
+                if backlog_read_status != 'READ_OK' else []
+            ),
             *list(self_examination.get('unresolved_risks') or []),
         ]))
         sections = [
