@@ -16,6 +16,7 @@ from __future__ import annotations
 import json
 import shutil
 import uuid
+from datetime import timedelta
 from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock
@@ -852,6 +853,115 @@ class TestQueueSourceFailureVisibilityR2:
         assert digest.work_queue_status == "UNVERIFIED"
         assert digest.signal_reason == "SOURCE_APPLICABILITY_OR_COVERAGE_UNRESOLVED"
         assert digest.work_queue_brief == []
+
+    def test_missing_test_evidence_is_not_reported_as_read_ok(self) -> None:
+        ws = _workspace()
+        try:
+            svc = ControlMasterService(
+                repository=_fake_repo(),
+                workspace_root=str(ws),
+            )
+            svc.current_work_queue()
+            assert svc.last_work_queue_source_coverage["tests_state"] == "NO_FILE"
+            assert "TEST_EVIDENCE_READ_FAILED" not in svc.last_work_queue_errors
+        finally:
+            shutil.rmtree(ws, ignore_errors=True)
+
+    def test_fresh_canonical_test_evidence_is_read_ok(self) -> None:
+        ws = _workspace()
+        try:
+            evidence = {
+                "evidence_id": "test-evidence-001",
+                "suite": "tests/test_example.py",
+                "passed": 5,
+                "failed": 0,
+                "errors": 0,
+                "returncode": 0,
+                "timed_out": False,
+                "timestamp": utc_now().isoformat(),
+            }
+            evidence_dir = ws / "data" / "evolution" / "test_evidence"
+            evidence_dir.mkdir(parents=True, exist_ok=True)
+            (evidence_dir / "latest.json").write_text(
+                json.dumps(evidence), encoding="utf-8"
+            )
+            svc = ControlMasterService(
+                repository=_fake_repo(),
+                workspace_root=str(ws),
+            )
+            queue = svc.current_work_queue()
+            assert svc.last_work_queue_source_coverage["tests_state"] == "READ_OK"
+            assert not any(item["source"] == "tests_state" for item in queue)
+        finally:
+            shutil.rmtree(ws, ignore_errors=True)
+
+    def test_failed_canonical_test_evidence_creates_queue_item_with_ref(self) -> None:
+        ws = _workspace()
+        try:
+            evidence = {
+                "evidence_id": "test-evidence-failed",
+                "suite": "tests/test_example.py",
+                "passed": 4,
+                "failed": 1,
+                "errors": 0,
+                "returncode": 1,
+                "timed_out": False,
+                "timestamp": utc_now().isoformat(),
+            }
+            evidence_dir = ws / "data" / "evolution" / "test_evidence"
+            evidence_dir.mkdir(parents=True, exist_ok=True)
+            (evidence_dir / "latest.json").write_text(
+                json.dumps(evidence), encoding="utf-8"
+            )
+            svc = ControlMasterService(
+                repository=_fake_repo(),
+                workspace_root=str(ws),
+            )
+            queue = svc.current_work_queue()
+            item = next(item for item in queue if item["source"] == "tests_state")
+            assert item["id"] == "tests:test-evidence-failed"
+            assert item["evidence_refs"] == [
+                "data/evolution/test_evidence/latest.json#test-evidence-failed"
+            ]
+            assert svc.last_work_queue_source_coverage["tests_state"] == "READ_OK"
+        finally:
+            shutil.rmtree(ws, ignore_errors=True)
+
+    @pytest.mark.parametrize(
+        "timestamp",
+        [
+            utc_now().replace(tzinfo=None).isoformat(),
+            (utc_now() + timedelta(hours=1)).isoformat(),
+            (utc_now() - timedelta(hours=25)).isoformat(),
+        ],
+        ids=["naive", "future", "stale"],
+    )
+    def test_non_verifiable_test_evidence_timestamp_is_unverified(self, timestamp: str) -> None:
+        ws = _workspace()
+        try:
+            evidence = {
+                "evidence_id": "test-evidence-time",
+                "suite": "tests/test_example.py",
+                "passed": 5,
+                "failed": 0,
+                "errors": 0,
+                "returncode": 0,
+                "timed_out": False,
+                "timestamp": timestamp,
+            }
+            evidence_dir = ws / "data" / "evolution" / "test_evidence"
+            evidence_dir.mkdir(parents=True, exist_ok=True)
+            (evidence_dir / "latest.json").write_text(
+                json.dumps(evidence), encoding="utf-8"
+            )
+            svc = ControlMasterService(
+                repository=_fake_repo(),
+                workspace_root=str(ws),
+            )
+            svc.current_work_queue()
+            assert svc.last_work_queue_source_coverage["tests_state"] == "UNVERIFIED"
+        finally:
+            shutil.rmtree(ws, ignore_errors=True)
 
     def test_complete_source_coverage_can_confirm_empty_queue(self) -> None:
         from iabv_v15.services.adaptive.adaptive_task_orchestrator import AdaptiveTaskOrchestrator

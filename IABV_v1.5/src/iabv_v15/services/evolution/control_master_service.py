@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import hashlib
 import re
+from datetime import datetime
 from pathlib import Path
 from threading import local
 from typing import Any
@@ -343,23 +344,8 @@ class ControlMasterService:
         # 5. Failed/stalled interaction episodes from runtime_audit
         items.extend(self._project_runtime_audit_items(seen_ids))
 
-        # 6. Tests state
-        state = self.current_state()
-        ts = state.current_tests_state
-        self._record_work_queue_source("tests_state", "READ_OK")
-        if ts and ts.get('failed', 0) > 0:
-            tid = 'tests:failing'
-            if tid not in seen_ids:
-                seen_ids.add(tid)
-                items.append(self._make_item(
-                    item_id=tid,
-                    title=f"Tests failing: {ts.get('failed')} of {ts.get('total', '?')}",
-                    status='needs_fix',
-                    source='tests_state',
-                    evidence_refs=[],
-                    next_action='Fix failing tests before merging',
-                    score_components={'test_failure': 70, 'base': 10},
-                ))
+        # 6. Canonical TestEvidence (not the defaultable ControlMaster mirror).
+        items.extend(self._project_test_evidence_items(seen_ids))
 
         # Score and sort
         for item in items:
@@ -368,6 +354,127 @@ class ControlMasterService:
             item['priority_label'] = _score_to_label(item['priority_score'])
         items.sort(key=lambda x: x.get('priority_score', 0), reverse=True)
         return items[:limit]
+
+    def _project_test_evidence_items(
+        self, seen_ids: set[str],
+    ) -> list[dict[str, Any]]:
+        """Project queue work only from canonical, fresh TestEvidence.
+
+        ControlMasterState.current_tests_state is a best-effort mirror and
+        defaults to an empty dict. It is not proof that tests were observed.
+        The canonical P0.29 artifact is data/evolution/test_evidence/latest.json.
+        """
+        if not self.workspace_root:
+            self._record_work_queue_source("tests_state", "NOT_CONFIGURED")
+            return []
+
+        evidence_path = (
+            Path(str(self.workspace_root))
+            / "data"
+            / "evolution"
+            / "test_evidence"
+            / "latest.json"
+        )
+        try:
+            raw = evidence_path.read_text(encoding="utf-8")
+        except FileNotFoundError:
+            self._record_work_queue_source("tests_state", "NO_FILE")
+            return []
+        except OSError:
+            self._record_work_queue_error("TEST_EVIDENCE_READ_FAILED")
+            self._record_work_queue_source("tests_state", "READ_FAILED")
+            return []
+
+        import json as _json
+
+        try:
+            evidence = _json.loads(raw)
+        except (TypeError, ValueError):
+            self._record_work_queue_error("TEST_EVIDENCE_INVALID_JSON")
+            self._record_work_queue_source("tests_state", "READ_FAILED")
+            return []
+
+        if not isinstance(evidence, dict):
+            self._record_work_queue_source("tests_state", "UNVERIFIED")
+            return []
+
+        evidence_id = str(evidence.get("evidence_id") or "").strip()
+        timestamp_value = str(evidence.get("timestamp") or "").strip()
+        if not evidence_id or not timestamp_value:
+            self._record_work_queue_source("tests_state", "UNVERIFIED")
+            return []
+
+        try:
+            generated_at = datetime.fromisoformat(
+                timestamp_value.replace("Z", "+00:00")
+            )
+        except (TypeError, ValueError):
+            self._record_work_queue_source("tests_state", "UNVERIFIED")
+            return []
+        if generated_at.tzinfo is None or generated_at.utcoffset() is None:
+            self._record_work_queue_source("tests_state", "UNVERIFIED")
+            return []
+
+        age_seconds = (utc_now() - generated_at).total_seconds()
+        # The canonical TestEvidence reader's existing freshness contract is 24h.
+        if age_seconds < 0 or age_seconds > 86400:
+            self._record_work_queue_source("tests_state", "UNVERIFIED")
+            return []
+
+        counters: dict[str, int] = {}
+        for key in ("passed", "failed", "errors"):
+            value = evidence.get(key)
+            if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+                self._record_work_queue_source("tests_state", "UNVERIFIED")
+                return []
+            counters[key] = value
+
+        returncode = evidence.get("returncode")
+        timed_out = evidence.get("timed_out")
+        if (
+            isinstance(returncode, bool)
+            or not isinstance(returncode, int)
+            or not isinstance(timed_out, bool)
+        ):
+            self._record_work_queue_source("tests_state", "UNVERIFIED")
+            return []
+
+        self._record_work_queue_source("tests_state", "READ_OK")
+        has_failures = (
+            counters["failed"] > 0
+            or counters["errors"] > 0
+            or returncode != 0
+            or timed_out
+        )
+        item_id = f"tests:{evidence_id}"
+        if not has_failures or item_id in seen_ids:
+            return []
+
+        seen_ids.add(item_id)
+        title = (
+            f"Tests failed: {counters['failed']} failed, "
+            f"{counters['errors']} errors"
+        )
+        if timed_out:
+            title += " (timeout)"
+        return [
+            self._make_item(
+                item_id=item_id,
+                title=title,
+                status="needs_fix",
+                source="tests_state",
+                evidence_refs=[
+                    f"data/evolution/test_evidence/latest.json#{evidence_id}"
+                ],
+                next_action="Review the recorded pytest evidence and resolve the failing suite",
+                score_components={"test_failure": 70, "base": 10},
+                updated_at=timestamp_value,
+                reason=(
+                    f"suite={str(evidence.get('suite') or '')[:120]} "
+                    f"returncode={returncode}"
+                ),
+            )
+        ]
 
     def _make_item(
         self,
