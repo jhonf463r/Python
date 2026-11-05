@@ -251,20 +251,14 @@ class OperationalSelfExaminationService:
         ``WorldModelSnapshot``.  ``WorldModelSnapshot`` has ``block_records``
         (list[OperationalBlockRecord]) and ``detected_blocks`` (list[str]).
         """
-        # Check risk signals from EnvironmentSelfModel (if accessible).
-        try:
-            wm_service = self.world_model_service
-            if wm_service is not None:
-                env_service = getattr(wm_service, 'environment_model', None)
-                if env_service is not None and hasattr(env_service, 'current_model'):
-                    env_model = env_service.current_model()
-                    if env_model is not None:
-                        for signal in (env_model.risk_signals or []):
-                            severity = str(getattr(signal, 'severity', '') or '').upper()
-                            if severity in {'CRITICAL', 'HIGH'}:
-                                return False
-        except Exception:
-            pass
+        # Use the existing EnvironmentSelfAwarenessService reader so its
+        # success/failure is represented in the same source-coverage ledger.
+        env_model = self._environment_model()
+        if env_model is not None:
+            for signal in (env_model.risk_signals or []):
+                severity = str(getattr(signal, 'severity', '') or '').upper()
+                if severity in {'CRITICAL', 'HIGH'}:
+                    return False
 
         # Check operational blocks from WorldModelSnapshot.block_records.
         active_blocks = [
@@ -8783,7 +8777,7 @@ _REQUIRED_SOURCE_IDS = (
         """Read EnvironmentSelfModel through WorldModel or its configured source."""
         wms = self.world_model_service
         if wms is None:
-            self._record_source_status('environment_model', 'NOT_CONFIGURED')
+            self._record_source_status('environment_self_awareness_service', 'NOT_CONFIGURED')
             return None
 
         snapshot_error = ''
@@ -8793,7 +8787,7 @@ _REQUIRED_SOURCE_IDS = (
                 raise RuntimeError('world_model_snapshot_unavailable')
             environment = getattr(snapshot, 'environment', None)
             if environment is not None:
-                self._record_source_status('environment_model', 'READ_OK')
+                self._record_source_status('environment_self_awareness_service', 'READ_OK')
                 return environment
         except Exception as exc:
             snapshot_error = type(exc).__name__
@@ -8801,7 +8795,7 @@ _REQUIRED_SOURCE_IDS = (
         esas = getattr(wms, 'environment_self_awareness_service', None)
         if esas is None or not callable(getattr(esas, 'current_model', None)):
             self._record_source_status(
-                'environment_model',
+                'environment_self_awareness_service',
                 'READ_FAILED' if snapshot_error else 'NOT_CONFIGURED',
                 snapshot_error or 'environment_model_not_exposed',
             )
@@ -8810,13 +8804,13 @@ _REQUIRED_SOURCE_IDS = (
             environment = esas.current_model()
             if environment is None:
                 self._record_source_status(
-                    'environment_model', 'READ_PARTIAL', 'environment_model_returned_none'
+                    'environment_self_awareness_service', 'READ_PARTIAL', 'environment_model_returned_none'
                 )
                 return None
-            self._record_source_status('environment_model', 'READ_OK')
+            self._record_source_status('environment_self_awareness_service', 'READ_OK')
             return environment
         except Exception as exc:
-            self._record_source_status('environment_model', 'READ_FAILED', type(exc).__name__)
+            self._record_source_status('environment_self_awareness_service', 'READ_FAILED', type(exc).__name__)
             return None
 
     # ------------------------------------------------------------------
