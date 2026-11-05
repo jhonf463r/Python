@@ -684,3 +684,31 @@ def test_component_constructors_accept_the_same_shared_discernment_service(tmp_p
     assert assembler.discernment_frame_service is shared
     assert portable.discernment_frame_service is shared
     assert oses.discernment_frame_service is shared
+
+
+
+def test_portable_context_unresolved_links_reads_shared_discernment_service(tmp_path) -> None:
+    shared = _shared_birth_frame_service(tmp_path)
+    latest = shared.latest_frame()
+    assert latest is not None
+    latest.unresolved_fields.append('synthetic_unresolved_sensor')
+
+    portable = PortableContextService.__new__(PortableContextService)
+    portable.discernment_frame_service = shared
+
+    section = portable._unresolved_metacognitive_links_section(
+        now=datetime.now(timezone.utc),
+    )
+
+    assert 'synthetic_unresolved_sensor' in section.unresolved_fields
+    assert section.items[0]['source'] == 'discernment_frame'
+
+
+def test_portable_context_unresolved_links_do_not_claim_all_clear_without_shared_service() -> None:
+    portable = PortableContextService.__new__(PortableContextService)
+
+    section = portable._unresolved_metacognitive_links_section(
+        now=datetime.now(timezone.utc),
+    )
+
+    assert 'discernment_frame_service_not_configured' in section.unresolved_fields
