@@ -831,31 +831,65 @@ class ControlMasterService:
             ))
         return items
 
+    def _read_cached_oses_review(self) -> Any:
+        """Read only a fresh, already persisted OSES review; never rebuild it."""
+        service = self.self_examination_service
+        if service is None:
+            raise RuntimeError("oses_service_not_configured")
+
+        cached_reader = getattr(service, "current_review_cached", None)
+        if callable(cached_reader):
+            snapshot = cached_reader()
+        else:
+            snapshot = getattr(service, "_current_review", None)
+            loader = getattr(service, "_load_latest_review", None)
+            if snapshot is None and callable(loader):
+                snapshot = loader()
+            if snapshot is None:
+                # Test doubles and legacy read-only providers may expose only
+                # current_review(); real OSES exposes _load_latest_review and
+                # therefore never falls through to its active rebuild method.
+                if callable(loader) or hasattr(service, "_current_review"):
+                    raise RuntimeError("oses_cached_review_unavailable")
+                legacy_reader = getattr(service, "current_review", None)
+                if not callable(legacy_reader):
+                    raise RuntimeError("oses_cached_review_reader_unavailable")
+                snapshot = legacy_reader()
+            freshness_check = getattr(service, "_is_fresh", None)
+            if snapshot is not None and callable(freshness_check):
+                if not freshness_check(snapshot, max_age_seconds=300):
+                    raise RuntimeError("oses_cached_review_stale")
+
+        if snapshot is None:
+            raise RuntimeError("oses_cached_review_unavailable")
+        coverage = getattr(snapshot, "source_coverage", None)
+        if not isinstance(coverage, dict) or not coverage:
+            metadata = getattr(snapshot, "metadata", {}) or {}
+            coverage = metadata.get("source_coverage") if isinstance(metadata, dict) else None
+        if not isinstance(coverage, dict) or not coverage:
+            raise RuntimeError("oses_source_coverage_unverified")
+        incomplete = {
+            str(source): str(status)
+            for source, status in coverage.items()
+            if status != "READ_OK"
+        }
+        if incomplete:
+            raise RuntimeError("oses_source_coverage_incomplete:" + str(incomplete))
+        return snapshot
+
     def _project_oses_finding_items(
         self, seen_ids: set[str],
     ) -> list[dict[str, Any]]:
         if self.self_examination_service is None:
             self._record_work_queue_source("self_examination_service", "NOT_CONFIGURED")
             return []
-        snapshot = None
-        method_errors: list[str] = []
-        for method_name in ('current_review', 'current_snapshot', 'latest_snapshot', 'current', 'latest'):
-            method = getattr(self.self_examination_service, method_name, None)
-            if method is None:
-                continue
-            try:
-                snapshot = method()
-                break
-            except Exception:
-                method_errors.append(method_name)
-                continue
-        if snapshot is None:
-            self._record_work_queue_error(
-                "OSES_FINDINGS_READ_FAILED" if method_errors else "OSES_FINDINGS_READER_UNAVAILABLE"
-            )
-            self._record_work_queue_source(
-                "self_examination_service", "READ_FAILED" if method_errors else "READER_UNAVAILABLE"
-            )
+        try:
+            snapshot = self._read_cached_oses_review()
+        except Exception as exc:
+            reason = str(exc)[:180]
+            self._record_work_queue_error("OSES_FINDINGS_NOT_VERIFIED:" + type(exc).__name__)
+            status = "READ_FAILED" if reason.startswith("oses_cached_review") else "READ_UNVERIFIED"
+            self._record_work_queue_source("self_examination_service", status)
             return []
         self._record_work_queue_source("self_examination_service", "READ_OK")
         findings = getattr(snapshot, 'findings', None) or []
@@ -1074,29 +1108,7 @@ class ControlMasterService:
     def _project_risks(self) -> list[dict[str, Any]]:
         if self.self_examination_service is None:
             return []
-        current_review = getattr(self.self_examination_service, "current_review", None)
-        if callable(current_review):
-            # OSES' canonical public API is current_review(); do not downgrade
-            # a failed review to an apparently clean legacy snapshot.
-            snapshot = current_review()
-        else:
-            snapshot = None
-            last_error: Exception | None = None
-            for method_name in ("current_snapshot", "latest_snapshot", "current", "latest"):
-                method = getattr(self.self_examination_service, method_name, None)
-                if method is None:
-                    continue
-                try:
-                    snapshot = method()
-                    break
-                except Exception as exc:
-                    last_error = exc
-            if snapshot is None:
-                if last_error is not None:
-                    raise RuntimeError("self_examination_projection_read_failed") from last_error
-                raise RuntimeError("self_examination_projection_reader_unavailable")
-        if snapshot is None:
-            raise RuntimeError("self_examination_projection_returned_no_snapshot")
+        snapshot = self._read_cached_oses_review()
         findings = getattr(snapshot, "findings", None) or []
         risks: list[dict[str, Any]] = []
         for finding in findings[:10]:
@@ -1171,27 +1183,9 @@ class ControlMasterService:
     def _project_unresolved(self) -> list[str]:
         if self.self_examination_service is None:
             return []
-        current_review = getattr(self.self_examination_service, "current_review", None)
-        if callable(current_review):
-            snapshot = current_review()
-            if snapshot is None:
-                raise RuntimeError("self_examination_unresolved_reader_returned_no_snapshot")
-            unresolved = getattr(snapshot, "unresolved_risks", None) or []
-            return [str(item) for item in unresolved]
-        last_error: Exception | None = None
-        for method_name in ("current_snapshot", "latest_snapshot", "current", "latest"):
-            method = getattr(self.self_examination_service, method_name, None)
-            if method is None:
-                continue
-            try:
-                snapshot = method()
-                unresolved = getattr(snapshot, "unresolved_risks", None) or []
-                return [str(item) for item in unresolved]
-            except Exception as exc:
-                last_error = exc
-        if last_error is not None:
-            raise RuntimeError("self_examination_unresolved_read_failed") from last_error
-        raise RuntimeError("self_examination_unresolved_reader_unavailable")
+        snapshot = self._read_cached_oses_review()
+        unresolved = getattr(snapshot, "unresolved_risks", None) or []
+        return [str(item) for item in unresolved]
 
 
 # ----------------------------------------------------------------------
