@@ -78,7 +78,7 @@ class StrategyPackRepository:
                         path="",
                         status=ArtifactReadStatus.READ_FAILED,
                         error_type=type(exc).__name__,
-                        error_message=str(exc)[:300],
+                        error_message="Repository read failed.",
                     )
                 )
                 continue
@@ -137,7 +137,7 @@ class StrategyPackRepository:
                 path="",
                 status=ArtifactReadStatus.READ_FAILED,
                 error_type=type(exc).__name__,
-                error_message=str(exc)[:300],
+                error_message="Repository read failed.",
             )
 
         if row is None:
@@ -158,7 +158,7 @@ class StrategyPackRepository:
                     path="",
                     status=ArtifactReadStatus.READ_FAILED,
                     error_type=type(exc).__name__,
-                    error_message=str(exc)[:300],
+                    error_message="Repository read failed.",
                 )
             else:
                 paths: list[Path] = []
