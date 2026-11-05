@@ -6801,6 +6801,7 @@ _REQUIRED_SOURCE_IDS = (
             accounts = scan_browser_accounts()
             sessions = scan_browser_sessions()
             verified = verify_account_sessions()
+            self._record_source_status('account_resource_scanner', 'READ_OK')
 
             session_browsers = {s.get('browser', '') for s in sessions.get('sessions', [])}
             account_browsers = {a.get('browser', '') for a in accounts.get('accounts', [])}
@@ -6839,6 +6840,7 @@ _REQUIRED_SOURCE_IDS = (
             if accounts_with_sessions:
                 from iabv_v15.services.account_resource_scanner import get_all_quota_status
                 quotas = get_all_quota_status()
+                self._record_source_status('account_resource_scanner', 'READ_OK')
                 tracked_count = len(quotas.get('statuses', []))
                 if tracked_count == 0 and len(accounts_with_sessions) > 0:
                     findings.append(SelfExaminationFinding(
@@ -6860,8 +6862,8 @@ _REQUIRED_SOURCE_IDS = (
                             'accounts_with_sessions': len(accounts_with_sessions),
                         },
                     ))
-        except Exception:
-            pass
+        except Exception as exc:
+            self._record_source_status('account_resource_scanner', 'READ_FAILED', type(exc).__name__)
 
         # Gap 3: Cloud API keys available but not used by intent classifier
         try:
@@ -6869,6 +6871,7 @@ _REQUIRED_SOURCE_IDS = (
             has_anthropic = bool(os.environ.get('ANTHROPIC_API_KEY'))
             from iabv_v15.services.account_resource_scanner import _load_training_examples
             training_count = len(_load_training_examples())
+            self._record_source_status('account_resource_scanner', 'READ_OK')
 
             if (has_openai or has_anthropic) and training_count == 0:
                 cloud_name = 'OpenAI' if has_openai else 'Anthropic'
@@ -6912,8 +6915,8 @@ _REQUIRED_SOURCE_IDS = (
                         'training_examples': training_count,
                     },
                 ))
-        except Exception:
-            pass
+        except Exception as exc:
+            self._record_source_status('account_resource_scanner', 'READ_FAILED', type(exc).__name__)
 
         # Gap 4: Ollama available but not being leveraged for all classifiers
         try:
@@ -6971,12 +6974,14 @@ _REQUIRED_SOURCE_IDS = (
                 get_all_quota_status,
                 scan_configured_secrets,
             )
-        except Exception:
+        except Exception as exc:
+            self._record_source_status('account_resource_scanner', 'READ_FAILED', type(exc).__name__)
             return findings
 
         # Finding 1: Exhausted quotas blocking execution
         try:
             quotas = get_all_quota_status()
+            self._record_source_status('account_resource_scanner', 'READ_OK')
             exhausted_count = quotas.get('exhausted_count', 0)
             available_count = quotas.get('available_count', 0)
             total = exhausted_count + available_count
@@ -7012,8 +7017,8 @@ _REQUIRED_SOURCE_IDS = (
                             'exhaustion_ratio': round(ratio, 2),
                         },
                     ))
-        except Exception:
-            pass
+        except Exception as exc:
+            self._record_source_status('account_resource_scanner', 'READ_FAILED', type(exc).__name__)
 
         # Finding 2: API health — consume prior cache only, never probe here.
         # _gh_api_cache is populated externally; if absent or stale we skip.
@@ -7047,6 +7052,7 @@ _REQUIRED_SOURCE_IDS = (
         # Finding 3: Critical secrets missing
         try:
             secrets = scan_configured_secrets()
+            self._record_source_status('account_resource_scanner', 'READ_OK')
             missing = secrets.get('missing', [])
             critical_missing = [
                 s for s in missing
@@ -7073,8 +7079,8 @@ _REQUIRED_SOURCE_IDS = (
                         'missing_secrets': critical_missing,
                     },
                 ))
-        except Exception:
-            pass
+        except Exception as exc:
+            self._record_source_status('account_resource_scanner', 'READ_FAILED', type(exc).__name__)
 
         return findings
 
@@ -7093,11 +7099,19 @@ _REQUIRED_SOURCE_IDS = (
         try:
             from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
             tracer = get_runtime_tracer()
-        except Exception:
+        except Exception as exc:
+            self._record_source_status('runtime_audit_tracer', 'READ_FAILED', type(exc).__name__)
+            return findings
+        if tracer is None:
+            self._record_source_status('runtime_audit_tracer', 'NOT_CONFIGURED', 'runtime_tracer_unavailable')
             return findings
 
         # 1. repeated_resource_pressure_blocks
-        quiescence_events = tracer.events(kind='external_consultation_quiescence', limit=50)
+        try:
+            quiescence_events = tracer.events(kind='external_consultation_quiescence', limit=50)
+        except Exception as exc:
+            self._record_source_status('runtime_audit_tracer', 'READ_FAILED', type(exc).__name__)
+            return findings
         deferred_count = sum(
             1 for e in quiescence_events
             if e.get('data', {}).get('decision') in ('defer', 'cleanup_needed')
@@ -7117,7 +7131,11 @@ _REQUIRED_SOURCE_IDS = (
             ))
 
         # 2. startup_heavy_work_starvation
-        startup_events = tracer.events(kind='startup_heavy_work_state', limit=10)
+        try:
+            startup_events = tracer.events(kind='startup_heavy_work_state', limit=10)
+        except Exception as exc:
+            self._record_source_status('runtime_audit_tracer', 'READ_FAILED', type(exc).__name__)
+            return findings
         inhibited = [e for e in startup_events if e.get('data', {}).get('inhibited')]
         if len(inhibited) >= 2:
             findings.append(SelfExaminationFinding(
@@ -7133,7 +7151,11 @@ _REQUIRED_SOURCE_IDS = (
             ))
 
         # 3. stale_security_verification_repeated
-        scan_events = tracer.events(kind='assistant_web_skill_scan', limit=30)
+        try:
+            scan_events = tracer.events(kind='assistant_web_skill_scan', limit=30)
+        except Exception as exc:
+            self._record_source_status('runtime_audit_tracer', 'READ_FAILED', type(exc).__name__)
+            return findings
         sec_verif_count = sum(
             1 for e in scan_events
             if e.get('data', {}).get('auth_status') == 'security_verification'
@@ -7157,7 +7179,11 @@ _REQUIRED_SOURCE_IDS = (
 
         # 4. web_skill_profile_missing
         if not scan_events:
-            dispatches = tracer.recent_dispatch_lifecycles(limit=10)
+            try:
+                dispatches = tracer.recent_dispatch_lifecycles(limit=10)
+            except Exception as exc:
+                self._record_source_status('runtime_audit_tracer', 'READ_FAILED', type(exc).__name__)
+                return findings
             ext_dispatches = [d for d in dispatches if d.get('task_name') == 'external_consultation']
             if ext_dispatches:
                 findings.append(SelfExaminationFinding(
@@ -7173,7 +7199,11 @@ _REQUIRED_SOURCE_IDS = (
                 ))
 
         # 5. devin_repair_worker_available_but_unused
-        devin_events = tracer.events(kind='devin_repair_worker', limit=10)
+        try:
+            devin_events = tracer.events(kind='devin_repair_worker', limit=10)
+        except Exception as exc:
+            self._record_source_status('runtime_audit_tracer', 'READ_FAILED', type(exc).__name__)
+            return findings
         devin_available = any(
             e.get('data', {}).get('available') for e in devin_events
         )
@@ -7181,10 +7211,14 @@ _REQUIRED_SOURCE_IDS = (
             e.get('data', {}).get('phase') == 'session_created' for e in devin_events
         )
         if devin_available and not devin_used:
-            unresolved_dispatches = [
-                d for d in tracer.recent_dispatch_lifecycles(limit=20)
-                if d.get('unresolved') or 'blocked' in (d.get('terminal_state') or '')
-            ]
+            try:
+                unresolved_dispatches = [
+                    d for d in tracer.recent_dispatch_lifecycles(limit=20)
+                    if d.get('unresolved') or 'blocked' in (d.get('terminal_state') or '')
+                ]
+            except Exception as exc:
+                self._record_source_status('runtime_audit_tracer', 'READ_FAILED', type(exc).__name__)
+                return findings
             if len(unresolved_dispatches) >= 2:
                 findings.append(SelfExaminationFinding(
                     category='devin_repair_worker_available_but_unused',
@@ -9310,6 +9344,7 @@ _REQUIRED_SOURCE_IDS = (
                     'pattern': 'isolated_profile_blocks_user_logged_in_browser',
                 },
             ))
+        self._record_source_status('runtime_audit_tracer', 'READ_OK')
         return findings
 
     # -- P0.30 Task F: metacognitive maintenance starvation --
