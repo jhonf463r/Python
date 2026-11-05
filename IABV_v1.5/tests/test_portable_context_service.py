@@ -550,3 +550,117 @@ def test_pending_section_distinguishes_unconfigured_platform_queue() -> None:
         assert section.confidence == 0.0
     finally:
         shutil.rmtree(root, ignore_errors=True)
+
+
+def test_portable_context_partial_pending_issue_read_is_not_projected_as_complete() -> None:
+    from types import SimpleNamespace
+
+    from iabv_v15.domain.models import utc_now
+    from iabv_v15.infra.persistence.storage import ArtifactStorage
+    from iabv_v15.services.evolution.portable_context_service import PortableContextService
+
+    class PartialRepository:
+        def list_recent_with_diagnostics(self, *, limit: int):
+            return SimpleNamespace(
+                status=SimpleNamespace(value='READ_PARTIAL'),
+                items=[SimpleNamespace(issue_id='readable', summary='Readable candidate')],
+                records_seen=3,
+                records_loaded=2,
+                failed_ids=['corrupt'],
+            )
+
+    root = _workspace('portable_context_partial_pending_issue')
+    try:
+        service = PortableContextService(
+            workspace_root=str(root),
+            storage=ArtifactStorage(str(root / 'data')),
+            pending_issue_repository=PartialRepository(),
+        )
+        items, status, error = service._pending_items()
+
+        assert items == []
+        assert status == 'READ_PARTIAL'
+        assert 'records_loaded=2' in error
+        section = service._pending_section(
+            pending_items=items,
+            backlog_items=[],
+            pending_read_status=status,
+            pending_read_error=error,
+            backlog_read_status='READ_OK',
+            now=utc_now(),
+        )
+        assert section.items == []
+        assert 'UNRESOLVED:pending_issue_repository:read_partial' in section.unresolved_fields
+        assert 'parcial' in section.summary.lower()
+        assert section.confidence == 0.0
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_portable_context_pending_issue_read_failure_is_not_empty_backlog() -> None:
+    from iabv_v15.domain.models import utc_now
+    from iabv_v15.infra.persistence.storage import ArtifactStorage
+    from iabv_v15.services.evolution.portable_context_service import PortableContextService
+
+    class FailedRepository:
+        def list_recent_with_diagnostics(self, *, limit: int):
+            raise OSError('index unavailable')
+
+    root = _workspace('portable_context_failed_pending_issue')
+    try:
+        service = PortableContextService(
+            workspace_root=str(root),
+            storage=ArtifactStorage(str(root / 'data')),
+            pending_issue_repository=FailedRepository(),
+        )
+        items, status, error = service._pending_items()
+
+        assert items == []
+        assert status == 'READ_FAILED'
+        section = service._pending_section(
+            pending_items=items,
+            backlog_items=[],
+            pending_read_status=status,
+            pending_read_error=error,
+            backlog_read_status='READ_OK',
+            now=utc_now(),
+        )
+        assert 'UNRESOLVED:pending_issue_repository:read_failed' in section.unresolved_fields
+        assert 'no se pudo leer' in section.summary.lower()
+        assert section.confidence == 0.0
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_portable_context_goal_preserves_objective_repository_read_failure() -> None:
+    from iabv_v15.domain.models import ObjectiveNodeKind
+    from iabv_v15.infra.persistence.storage import ArtifactStorage
+    from iabv_v15.services.evolution.portable_context_service import PortableContextService
+
+    class FailedObjectiveRepository:
+        def list_recent_with_diagnostics(self, *, kind, status, limit: int):
+            return type('Report', (), {
+                'status': type('Status', (), {'value': 'READ_FAILED'})(),
+                'items': [],
+            })()
+
+    root = _workspace('portable_context_failed_objective_read')
+    try:
+        service = PortableContextService(
+            workspace_root=str(root),
+            storage=ArtifactStorage(str(root / 'data')),
+            objective_repository=FailedObjectiveRepository(),
+        )
+        goal = service._goal_context(task_context=None)
+
+        assert goal['source_statuses'] == {
+            'objective': 'READ_FAILED',
+            'project': 'READ_FAILED',
+            'task': 'READ_FAILED',
+        }
+        assert 'UNRESOLVED:active_objective_read_read_failed' in goal['unresolved_fields']
+        assert 'UNRESOLVED:active_project_read_read_failed' in goal['unresolved_fields']
+        assert 'UNRESOLVED:active_task_read_read_failed' in goal['unresolved_fields']
+        assert goal['active_title'] == ''
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
