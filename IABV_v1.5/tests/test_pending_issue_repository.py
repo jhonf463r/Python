@@ -124,7 +124,7 @@ def test_pending_fetchone_sqlite_failure_preserves_requested_id(monkeypatch) -> 
         db, repository = _repository(root)
 
         def fail_fetchone(*args, **kwargs):
-            raise sqlite3.OperationalError("database is locked")
+            raise sqlite3.OperationalError("PRIVATE_DB_ERROR_CANARY")
 
         monkeypatch.setattr(db, "fetchone", fail_fetchone)
         result = repository.get_with_diagnostics("issue-requested")
@@ -151,14 +151,15 @@ def test_pending_fetchall_sqlite_failure_replaces_stale_report(monkeypatch) -> N
         assert previous.status == RepositoryReadStatus.NO_RECORDS_OBSERVED
 
         def fail_fetchall(*args, **kwargs):
-            raise sqlite3.OperationalError("database is locked")
+            raise sqlite3.OperationalError("PRIVATE_DB_ERROR_CANARY")
 
         monkeypatch.setattr(db, "fetchall", fail_fetchall)
         report = repository.list_recent_with_diagnostics()
 
         assert report.status == RepositoryReadStatus.READ_FAILED
         assert report.collection_error_type == "OperationalError"
-        assert "database is locked" in report.collection_error_message
+        assert report.collection_error_message == "Repository read failed."
+        assert "PRIVATE_DB_ERROR_CANARY" not in str(report.to_dict())
         assert repository.last_read_report is report
         assert report is not previous
 
