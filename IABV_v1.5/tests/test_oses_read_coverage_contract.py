@@ -1,9 +1,15 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from importlib import import_module
 from pathlib import Path
 from types import SimpleNamespace
+
 import pytest
+
+from iabv_v15.services.adaptive.task_context_assembler import TaskContextAssembler
+from iabv_v15.services.evolution.discernment_frame_service import DiscernmentFrameService
+from iabv_v15.services.evolution.portable_context_service import PortableContextService
 
 from iabv_v15.domain.models import SelfExaminationSnapshot
 from iabv_v15.infra.persistence.storage import ArtifactStorage
@@ -514,3 +520,136 @@ def test_oses_coverage_report_is_incomplete_when_error_map_is_nonempty(tmp_path)
     assert report['complete'] is False
     assert 'runtime_audit_tracer' in report['incomplete_source_ids']
     assert report['source_errors']['runtime_audit_tracer'] == 'PermissionError'
+
+
+
+def _shared_birth_frame_service(tmp_path) -> DiscernmentFrameService:
+    service = DiscernmentFrameService(workspace_root=str(tmp_path))
+    service.build_birth_frame(
+        startup_events=[
+            {'phase': 'bootstrap_init_start', 't_ms_from_start': 0.0},
+            {'phase': 'phase_world_model_done', 't_ms_from_start': 120.0},
+        ],
+        world_model={
+            'active_windows': [],
+            'network': {'connected': True, 'status': 'connected'},
+        },
+        environment_self_model={
+            'known_environment': True,
+            'scan_status': 'ready',
+            'risk_signals': [],
+        },
+    )
+    return service
+
+
+def test_oses_tca_and_portable_context_read_the_same_shared_frame_history(tmp_path) -> None:
+    shared = _shared_birth_frame_service(tmp_path)
+
+    oses = _service(tmp_path, discernment_frame_service=shared)
+    assert oses._discernment_frame_findings() == []
+    assert oses._source_coverage['discernment_frame_service'] == 'READ_OK'
+
+    assembler = TaskContextAssembler.__new__(TaskContextAssembler)
+    assembler.discernment_frame_service = shared
+    summary = assembler._discernment_frame_summary()
+    assert summary['phase'] == 'birth'
+
+    portable = PortableContextService.__new__(PortableContextService)
+    portable.discernment_frame_service = shared
+    section = portable._discernment_frame_section(now=datetime.now(timezone.utc))
+    assert section.items[0]['phase'] == 'birth'
+    assert section.unresolved_fields == []
+
+
+def test_tca_and_portable_context_do_not_create_private_empty_discernment_instances() -> None:
+    assembler = TaskContextAssembler.__new__(TaskContextAssembler)
+    portable = PortableContextService.__new__(PortableContextService)
+
+    assert assembler._discernment_frame_summary()['reason'] == 'shared_service_not_injected'
+    section = portable._discernment_frame_section(now=datetime.now(timezone.utc))
+    assert section.items[0]['reason'] == 'shared_service_not_injected'
+    assert 'discernment_frame_service_not_configured' in section.unresolved_fields
+
+
+def test_partial_environment_model_is_available_but_not_trusted(tmp_path) -> None:
+    service = DiscernmentFrameService(workspace_root=str(tmp_path))
+
+    frame = service.build_frame(
+        phase='observe',
+        trigger_source='test',
+        world_model={'active_windows': [], 'network': {'connected': True}},
+        environment_self_model={
+            'known_environment': False,
+            'scan_status': 'partial',
+        },
+    )
+
+    assert 'environment_self_model' in frame.sensor_sources
+    assert 'environment_self_model' in frame.untrusted_sources
+    assert 'environment_self_model' not in frame.trusted_sources
+
+
+def test_bootstrap_deferred_self_examination_builds_birth_frame_from_live_snapshots(tmp_path, monkeypatch) -> None:
+    from iabv_v15.bootstrap import AppBootstrap
+
+    class FakeWorldModel:
+        def current_model(self):
+            return SimpleNamespace(model_dump=lambda mode='json': {
+                'active_windows': [{'title': 'Codex', 'app_name': 'Codex'}],
+                'network_status': {'connected': True, 'status': 'connected'},
+                'tool_live_status': [],
+                'observation_sources': ['test_world_model'],
+                'detected_blocks': [],
+                'confidence': 0.8,
+            })
+
+    class FakeEnvironment:
+        def current_model(self):
+            return SimpleNamespace(model_dump=lambda mode='json': {
+                'known_environment': True,
+                'scan_status': 'ready',
+                'risk_signals': [],
+            })
+
+    class FakeTimeline:
+        def events(self):
+            return [
+                {'phase': 'bootstrap_init_start', 't_ms_from_start': 0.0},
+                {'phase': 'phase_world_model_done', 't_ms_from_start': 100.0},
+            ]
+
+    class FakeFreezeReporter:
+        def recent_incidents(self, limit=5):
+            return []
+
+    class FakeOSES:
+        def __init__(self):
+            self.source_status = []
+
+        def _startup_health_findings(self):
+            return []
+
+        def _record_source_status(self, source, status, error=''):
+            self.source_status.append((source, status, error))
+
+    bootstrap = AppBootstrap.__new__(AppBootstrap)
+    bootstrap.discernment_frame_service = DiscernmentFrameService(workspace_root=str(tmp_path))
+    bootstrap.world_model_service = FakeWorldModel()
+    bootstrap.environment_self_awareness_service = FakeEnvironment()
+    bootstrap._timeline = FakeTimeline()
+    bootstrap.freeze_incident_reporter = FakeFreezeReporter()
+    bootstrap.operational_self_examination_service = FakeOSES()
+    bootstrap.perception_cross_validator = None
+    bootstrap.autonomy_cycle_service = None
+    monkeypatch.setenv('IABV_MCP_SUBPROCESS', '0')
+
+    bootstrap._startup_self_examination()
+
+    frame = bootstrap.discernment_frame_service.latest_frame()
+    assert frame is not None
+    assert frame.phase == 'birth'
+    assert frame.trigger_source == 'startup'
+    assert 'startup_timeline' in frame.sensor_sources
+    assert 'world_model' in frame.trusted_sources
+    assert 'environment_self_model' in frame.trusted_sources
