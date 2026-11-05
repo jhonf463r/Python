@@ -1,7 +1,6 @@
 ﻿from __future__ import annotations
 
 from pathlib import Path
-import pytest
 from uuid import uuid4
 
 from iabv_v15.domain.models import (
