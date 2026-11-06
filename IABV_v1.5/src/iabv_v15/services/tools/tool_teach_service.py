@@ -709,6 +709,10 @@ class ToolTeachService:
                     )
                 )
             rollback_actions = safe_rollback_actions
+            if 'rollback_actions' in persisted_goal_parameters:
+                persisted_goal_parameters['rollback_actions'] = [
+                    action.model_dump(mode='json') for action in safe_rollback_actions
+                ]
         now = datetime.now(timezone.utc).isoformat()
         now = datetime.now(timezone.utc).isoformat()
         assistant_configuration = self._assistant_configuration_snapshot(
