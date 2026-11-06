@@ -1209,10 +1209,14 @@ class PortableContextService:
         elif st == 'partial_failure':
             failed = ', '.join(read_failures) if read_failures else 'lectura parcial'
             parts = [f'Lectura parcial ({failed})']
+            if quota_source_status not in {'READ_OK', 'CONFIRMED_NOT_FOUND'}:
+                parts.append(f'quota tracker {quota_source_status} no verificable')
             if avail > 0:
                 parts.append(f'{avail} workers disponibles')
             if exhausted > 0:
                 parts.append(f'{exhausted} cuentas agotadas')
+            if unverified_count > 0:
+                parts.append(f'{unverified_count} sesiones con cuota no verificada')
             summary = ' | '.join(parts)
         elif quota_source_status not in {'READ_OK', 'CONFIRMED_NOT_FOUND'}:
             summary = (
