@@ -201,8 +201,23 @@ class OperationalSelfExaminationService:
         if not isinstance(coverage, dict) or not coverage:
             self._record_source_status('account_resource_scanner', 'READ_UNVERIFIED', 'scanner_source_coverage_missing')
             return
-        statuses = [str(value) for value in coverage.values()]
-        error_keys = sorted(errors) if isinstance(errors, dict) else []
+        if any(
+            not isinstance(key, str) or not key.strip()
+            or not isinstance(value, str) or not value.strip()
+            for key, value in coverage.items()
+        ):
+            self._record_source_status('account_resource_scanner', 'READ_UNVERIFIED', 'scanner_source_coverage_invalid')
+            return
+        if errors is None:
+            errors = {}
+        elif not isinstance(errors, dict) or any(
+            not isinstance(key, str) or not key.strip() or not isinstance(value, str)
+            for key, value in errors.items()
+        ):
+            self._record_source_status('account_resource_scanner', 'READ_UNVERIFIED', 'scanner_source_errors_invalid')
+            return
+        statuses = list(coverage.values())
+        error_keys = sorted(errors)
         if any(value in {'READ_FAILED', 'CORRUPT', 'SCHEMA_UNSUPPORTED'} for value in statuses):
             status = 'READ_FAILED'
         elif all(value == 'READ_OK' for value in statuses):

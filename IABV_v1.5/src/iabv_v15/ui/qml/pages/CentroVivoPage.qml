@@ -28,13 +28,15 @@ Item {
 
     function emptySourceMessage(source, defaultMessage) {
         var status = sourceStatuses[source] || "UNKNOWN"
-        if (status === "READ_FAILED" || status === "READ_PARTIAL")
+        if (status === "READ_FAILED" || status === "READ_PARTIAL" || status === "CORRUPT" || status === "SCHEMA_UNSUPPORTED")
             return "No se pudo verificar esta fuente; no equivale a una lista vacía."
         if (status === "NOT_CONFIGURED")
             return "Fuente no conectada."
         if (status === "CONFIRMED_NOT_FOUND")
             return "Fuente persistida no encontrada."
-        if (status === "UNAVAILABLE" || status === "UNVERIFIED" || status === "READ_UNVERIFIED")
+        if (status === "NOT_APPLICABLE")
+            return "Fuente no aplicable en este entorno."
+        if (status === "UNAVAILABLE" || status === "UNVERIFIED" || status === "READ_UNVERIFIED" || status === "UNKNOWN" || status === "NOT_INSTRUMENTED" || status === "NOT_EXECUTED")
             return "Fuente no verificada."
         return defaultMessage
     }

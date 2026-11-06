@@ -454,3 +454,43 @@ def test_centro_vivo_account_inventory_propagates_partial_subsource_coverage(tmp
     reports = vm.get_source_reports()['account_inventory']
     assert reports['source_coverage']['browser_sessions'] == 'READ_PARTIAL'
     assert reports['source_coverage']['quota_tracker'] == 'READ_FAILED'
+
+
+
+def test_centro_vivo_preserves_read_failed_self_examination_status() -> None:
+    review = SelfExaminationSnapshot(
+        review_id='r-failed',
+        findings=[],
+        source_coverage={'run_repository': 'READ_FAILED'},
+        source_errors={'run_repository': 'PermissionError'},
+        metadata={
+            'source_coverage_contract': 'OSES_SOURCE_COVERAGE_R1',
+            'required_source_ids': ['run_repository'],
+            'source_coverage': {'run_repository': 'READ_FAILED'},
+            'source_errors': {'run_repository': 'PermissionError'},
+        },
+    )
+    vm = CentroVivoViewModel(self_examination_service=FakeSelfExaminationService(review))
+
+    assert vm.get_self_examination_findings() == []
+    assert vm._self_examination_status == 'READ_FAILED'
+
+
+import pytest
+
+
+@pytest.mark.parametrize('status', ['READ_FAILED', 'CORRUPT', 'SCHEMA_UNSUPPORTED'])
+def test_centro_vivo_maps_corrupt_account_subsources_to_read_failed(tmp_path, monkeypatch, status) -> None:
+    from iabv15.domain.models import AccountInventorySnapshot
+    from iabv15.services import account_resource_scanner
+
+    snapshot = AccountInventorySnapshot(
+        source_coverage={'quota_tracker': status},
+        source_errors={'quota_tracker': 'invalid_or_unreadable'},
+    )
+    monkeypatch.setattr(account_resource_scanner, 'build_inventory_snapshot', lambda: snapshot)
+    vm = CentroVivoViewModel(data_root=str(tmp_path), defer_initial_refresh=True)
+
+    vm.refresh()
+
+    assert vm.get_source_statuses()['account_inventory'] == 'READ_FAILED'

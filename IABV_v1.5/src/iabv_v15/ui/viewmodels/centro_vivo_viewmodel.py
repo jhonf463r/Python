@@ -373,10 +373,24 @@ class CentroVivoViewModel(QObject):
             metadata.get('source_coverage') if isinstance(metadata, dict) else None
         )
         errors = getattr(review, 'source_errors', None)
-        if not isinstance(errors, dict):
+        if errors is None:
             errors = metadata.get('source_errors', {}) if isinstance(metadata, dict) else {}
         if not isinstance(coverage, dict) or not coverage:
             self._self_examination_status = 'READ_UNVERIFIED'
+            return []
+        if (
+            not isinstance(errors, dict)
+            or any(not isinstance(key, str) or not key.strip() for key in coverage)
+            or any(not isinstance(status, str) or not status.strip() for status in coverage.values())
+            or any(
+                not isinstance(key, str) or not key.strip() or not isinstance(value, str)
+                for key, value in errors.items()
+            )
+        ):
+            self._self_examination_status = 'READ_UNVERIFIED'
+            return []
+        if any(status in {'READ_FAILED', 'CORRUPT', 'SCHEMA_UNSUPPORTED'} for status in coverage.values()):
+            self._self_examination_status = 'READ_FAILED'
             return []
         if errors or any(status != 'READ_OK' for status in coverage.values()):
             self._self_examination_status = 'READ_PARTIAL'
@@ -493,7 +507,10 @@ class CentroVivoViewModel(QObject):
         })
         if not source_coverage:
             inventory_status = 'UNVERIFIED'
-        elif any(status == 'READ_FAILED' for status in source_coverage.values()):
+        elif any(
+            status in {'READ_FAILED', 'CORRUPT', 'SCHEMA_UNSUPPORTED'}
+            for status in source_coverage.values()
+        ):
             inventory_status = 'READ_FAILED'
         elif source_errors or any(status != 'READ_OK' for status in source_coverage.values()):
             inventory_status = 'READ_PARTIAL'

@@ -425,3 +425,16 @@ def test_oses_account_scanner_residual_errors_prevent_read_ok(tmp_path) -> None:
     )
     assert service._source_coverage["account_resource_scanner"] == "READ_PARTIAL"
     assert "error_sources=browser_accounts" in service._source_errors["account_resource_scanner"]
+
+
+
+def test_oses_account_scanner_malformed_source_errors_are_unverified(tmp_path) -> None:
+    service = _service(tmp_path)
+    service._record_account_resource_coverage(
+        {
+            "source_coverage": {"browser_accounts": "READ_OK"},
+            "source_errors": ["invalid-shape"],
+        }
+    )
+    assert service._source_coverage["account_resource_scanner"] == "READ_UNVERIFIED"
+    assert service._source_errors["account_resource_scanner"] == "scanner_source_errors_invalid"
