@@ -148,7 +148,7 @@ class EvolutionBacklogReadReport:
         pending.sort(key=lambda item: priority_order.get(item.get('priority', 'medium'), 2))
         return {
             'status': 'READ_OK',
-            'path': self.path,
+            'path': 'data/evolution/backlog.json',
             'pending': pending,
             'total_pending': len(pending),
             'total_all': len(all_tasks),

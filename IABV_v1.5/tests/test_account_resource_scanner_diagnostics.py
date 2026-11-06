@@ -517,3 +517,25 @@ def test_quota_tracker_rejects_malformed_account_messages(monkeypatch, tmp_path)
     with pytest.raises(RuntimeError, match="quota_tracker_schema_unsupported"):
         account_resource_scanner.record_message_sent("chatgpt", "account@example.test")
     assert '"messages":"invalid"' in quota_path.read_text(encoding="utf-8")
+
+
+
+def test_browser_account_scan_does_not_export_absolute_browser_roots(monkeypatch, tmp_path) -> None:
+    private_root = tmp_path / "private-user" / "Chrome" / "User Data"
+    private_root.mkdir(parents=True)
+    monkeypatch.setattr(
+        account_resource_scanner,
+        "_chromium_browser_dirs_with_diagnostics",
+        lambda: ([("Chrome", private_root)], [], "READ_OK"),
+    )
+    monkeypatch.setattr(
+        account_resource_scanner,
+        "_firefox_accounts_scan_with_coverage",
+        lambda: ([], [], "NOT_CONFIGURED"),
+    )
+
+    result = account_resource_scanner.scan_browser_accounts()
+
+    assert result["browsers_scanned"] == ["Chrome"]
+    assert "private-user" not in repr(result)
+    assert str(tmp_path) not in repr(result)

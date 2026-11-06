@@ -405,7 +405,7 @@ def scan_browser_accounts() -> dict[str, Any]:
 
     chromium_profile_errors: list[str] = []
     for browser_name, chrome_dir in browser_dirs:
-        browsers_scanned.append(str(chrome_dir))
+        browsers_scanned.append(browser_name)
         try:
             profile_dirs = list(chrome_dir.iterdir())
         except Exception as exc:
@@ -464,9 +464,9 @@ def scan_browser_accounts() -> dict[str, Any]:
     errors.extend(ff_errors)
     if firefox_status in {'READ_OK', 'READ_PARTIAL'}:
         if os.name == 'nt':
-            browsers_scanned.append(str(Path(os.environ['APPDATA']) / 'Mozilla' / 'Firefox'))
+            browsers_scanned.append('Firefox')
         else:
-            browsers_scanned.append(str(Path.home() / '.mozilla' / 'firefox'))
+            browsers_scanned.append('Firefox')
 
     coverage = _combine_browser_source_status([chromium_status, firefox_status])
     return {

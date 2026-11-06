@@ -566,8 +566,10 @@ def test_repository_read_report_redacts_absolute_paths_but_keeps_internal_path(t
     result = ArtifactReadResult(
         artifact_id="artifact-canary",
         path=str(artifact_path),
-        status=ArtifactReadStatus.FOUND,
-        value={"ok": True},
+        status=ArtifactReadStatus.READ_FAILED,
+        value=None,
+        error_type="PermissionError",
+        error_message=f"Private path canary: {artifact_path}",
     )
     report = RepositoryReadReport.from_results(
         scope="path_redaction_canary",
@@ -578,5 +580,6 @@ def test_repository_read_report_redacts_absolute_paths_but_keeps_internal_path(t
 
     assert result.path == str(artifact_path)
     assert payload["records"][0]["path"] == "<redacted>"
+    assert payload["records"][0]["error_message"] == "Artifact read or validation failed."
     assert "private-user" not in repr(payload)
     assert str(tmp_path) not in repr(payload)

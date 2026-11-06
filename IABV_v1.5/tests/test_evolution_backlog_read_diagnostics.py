@@ -253,3 +253,18 @@ def test_backlog_mcp_payload_redacts_host_path_on_corrupt_file(tmp_path) -> None
     assert payload["path"] == "data/evolution/backlog.json"
     assert str(tmp_path) not in repr(payload)
     assert "private-user" not in repr(payload)
+
+
+
+def test_backlog_mcp_payload_redacts_host_path_on_success(tmp_path) -> None:
+    path = _backlog_path(tmp_path)
+    path.parent.mkdir(parents=True)
+    path.write_text("[]", encoding="utf-8")
+
+    report = load_backlog_with_diagnostics(str(tmp_path))
+    payload = report.to_mcp_payload()
+
+    assert report.status == "READ_OK"
+    assert report.path == str(path)
+    assert payload["path"] == "data/evolution/backlog.json"
+    assert str(tmp_path) not in repr(payload)

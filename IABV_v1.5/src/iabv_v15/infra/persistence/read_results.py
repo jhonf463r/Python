@@ -159,7 +159,7 @@ class RepositoryReadReport(Generic[T]):
                     "path": "<redacted>" if result.path else "",
                     "status": result.status.value,
                     "error_type": result.error_type,
-                    "error_message": result.error_message,
+                    "error_message": "" if result.status == ArtifactReadStatus.FOUND else "Artifact read or validation failed.",
                 }
                 for result in self.results
             ],
