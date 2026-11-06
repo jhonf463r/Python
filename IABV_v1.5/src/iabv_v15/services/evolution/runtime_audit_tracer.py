@@ -42,6 +42,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 import subprocess
 import threading
 import time
@@ -225,6 +226,34 @@ class RuntimeAuditTracer:
     # Typed trace helpers
     # ------------------------------------------------------------------
 
+    @staticmethod
+    def _safe_trace_diagnostic(value: Any, *, max_chars: int = 400) -> str:
+        text = str(value or '')
+        if not text:
+            return ''
+        text = re.sub(r"(?i)\bBearer\s+[^\s\"']+", 'Bearer [REDACTED]', text)
+        text = re.sub(
+            r"(?i)([?&](?:token|api[_-]?key|password|secret)=)[^&\s]+",
+            r'\1[REDACTED]',
+            text,
+        )
+        text = re.sub(r"(?i)\b(https?://)[^/\s@]+@", r'\1[REDACTED]@', text)
+        text = re.sub(r"(?i)\b[A-Z]:\\[^\r\n\"']+", '[LOCAL_PATH]', text)
+        text = re.sub(
+            r"(?<![\w.])/(?:home|Users|mnt|tmp|var|opt|workspace)/[^\s\"']+",
+            '[LOCAL_PATH]',
+            text,
+        )
+        text = re.sub(r"\b[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}\b", '[EMAIL]', text)
+        return text[:max(1, min(int(max_chars), 1000))]
+
+    @staticmethod
+    def _safe_trace_error_type(value: Any) -> str:
+        raw = str(value or '').strip()
+        if re.fullmatch(r'[A-Za-z_][A-Za-z0-9_.-]{0,79}', raw):
+            return raw
+        return 'Exception'
+
     def trace_service_init(
         self,
         service_name: str,
@@ -240,7 +269,7 @@ class RuntimeAuditTracer:
             service=service_name,
             duration_ms=round(duration_ms, 1),
             status=status,
-            error=error,
+            error=self._safe_trace_diagnostic(error, max_chars=400),
             dependencies=dependencies or [],
         )
 
@@ -281,8 +310,8 @@ class RuntimeAuditTracer:
             operation=operation,
             status=status,
             duration_ms=round(duration_ms, 1),
-            error=error,
-            response_summary=response_summary,
+            error=self._safe_trace_diagnostic(error, max_chars=400),
+            response_summary=self._safe_trace_diagnostic(response_summary, max_chars=400),
         )
 
     def trace_permission(
@@ -300,7 +329,7 @@ class RuntimeAuditTracer:
             permission_id=permission_id,
             action=action,
             granted=granted,
-            reason=reason,
+            reason=self._safe_trace_diagnostic(reason, max_chars=240),
             dialog_shown=dialog_shown,
         )
 
@@ -331,10 +360,10 @@ class RuntimeAuditTracer:
         """Record an exception or error."""
         return self.trace(
             'error',
-            context=context,
-            error_type=error_type,
-            message=message,
-            **extra,
+            context=self._safe_trace_diagnostic(context, max_chars=120),
+            error_type=self._safe_trace_error_type(error_type),
+            message=self._safe_trace_diagnostic(message, max_chars=500),
+            extra_fields_omitted=bool(extra),
         )
 
     def trace_dispatch_started(
@@ -1024,7 +1053,7 @@ class RuntimeAuditTracer:
                 'line_sha256': hashlib.sha256(line).hexdigest(),
             }
         except Exception as exc:
-            logger.warning('RuntimeAuditTracer._append failed (log_dir=%s): %s', self._log_dir, exc)
+            logger.warning('RuntimeAuditTracer._append failed (%s)', type(exc).__name__)
             return {
                 'status': 'WRITE_FAILED',
                 'error_type': type(exc).__name__,
