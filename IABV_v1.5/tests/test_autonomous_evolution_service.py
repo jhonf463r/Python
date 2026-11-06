@@ -561,7 +561,7 @@ def test_autonomous_evolution_service_preserves_verified_account_binding() -> No
         assert 'account_limited' in result['external_state_flags']
         assert 'cuota disponible' in result['detail']
         assert result['actual_account_binding']['schema'] == 'ACCOUNT_BINDING_R1'
-        assert result['actual_account_binding']['status'] == 'UNVERIFIED'
+        assert result['actual_account_binding']['status'] == 'VERIFIED'
         assert result['actual_account_binding']['actual_tool'] == 'codex'
         assert result['actual_account_binding']['account_email'] == 'owner@test.com'
         assert result['actual_account_binding']['identity_source'] == 'authenticated_session'
