@@ -860,3 +860,35 @@ def test_runtime_audit_work_item_does_not_promote_missing_ack() -> None:
         assert service.last_work_queue_source_coverage["runtime_audit_durability"] == "READ_UNVERIFIED"
     finally:
         shutil.rmtree(root, ignore_errors=True)
+
+
+
+def test_test_evidence_zero_collected_is_unverified_for_work_queue() -> None:
+    import json
+
+    root = _workspace()
+    try:
+        service, _ = _build_service(root)
+        service.workspace_root = str(root)
+        evidence_path = root / "data" / "evolution" / "test_evidence" / "latest.json"
+        evidence_path.parent.mkdir(parents=True, exist_ok=True)
+        evidence_path.write_text(
+            json.dumps({
+                "evidence_id": "zero-collected-run",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "passed": 0,
+                "failed": 0,
+                "errors": 0,
+                "returncode": 0,
+                "timed_out": False,
+                "suite": "tests/",
+            }),
+            encoding="utf-8",
+        )
+
+        items = service._project_test_evidence_items(set())
+
+        assert items == []
+        assert service.last_work_queue_source_coverage["tests_state"] == "READ_UNVERIFIED"
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
