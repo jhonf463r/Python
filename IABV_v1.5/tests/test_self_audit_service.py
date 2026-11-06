@@ -34,6 +34,7 @@ from iabv_v15.domain.models import (
     ToolType,
     ToolValidationStatus,
     WorldModelSnapshot,
+    WindowObservation,
 )
 from iabv_v15.services.evolution.self_audit_service import SelfAuditService
 
@@ -459,3 +460,27 @@ def test_self_audit_test_evidence_summary_includes_r24_provenance(tmp_path: Path
     assert summary["worktree_clean"] is True
     assert summary["provenance_status"] == "COMMIT_BOUND_CLEAN"
     assert summary["payload_sha256"] == evidence["payload_sha256"]
+
+
+
+def test_self_audit_redacts_focused_window_title_from_persisted_digest(tmp_path: Path) -> None:
+    private_title = "PRIVATE_DOCUMENT_TITLE_CANARY — Budget Q4"
+    world = _world(live_ids=["codex"])
+    world.focused_window = WindowObservation(
+        title=private_title,
+        app_name="Editor",
+        pid=2345,
+        focused=True,
+    )
+    service = _make_service(
+        tmp_path,
+        environment=_env(),
+        world_model=world,
+    )
+
+    snapshot = service.run(reason="privacy_canary")
+
+    assert snapshot.world_model_digest["focused_window_title"] == "<redacted>"
+    assert private_title not in json.dumps(snapshot.world_model_digest)
+    persisted = tmp_path / "data" / "evolution" / "self_audit" / "latest.json"
+    assert private_title not in persisted.read_text(encoding="utf-8")

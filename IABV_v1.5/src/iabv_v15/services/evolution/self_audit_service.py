@@ -417,7 +417,8 @@ class SelfAuditService:
             "freshness_ms": int(getattr(world_model, "freshness_ms", 0) or 0),
             "confidence": float(getattr(world_model, "confidence", 0.0) or 0.0),
             "active_window_count": len(getattr(world_model, "active_windows", []) or []),
-            "focused_window_title": getattr(focused, "title", "") if focused is not None else "",
+            # Window titles can contain private document or message content.
+            "focused_window_title": "<redacted>" if focused is not None else "",
             "tool_live_count": len(live_tools),
             "tool_live_ids": sorted(
                 {
