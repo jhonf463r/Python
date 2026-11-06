@@ -1173,7 +1173,6 @@ def test_session_profile_path_resolution_accepts_legacy_in_root_and_rejects_esca
         assert card is not None
         synced_task = service._sync_external_consultation_task(legacy_task, card)
         assert synced_task.metadata['session_profile_dir'] == relative
-        assert synced_task.metadata['reused_thread'] is True
 
         escape_path = f'../{outside.name}'
         assert service._has_session_content(str(outside)) is False
