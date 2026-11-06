@@ -1214,6 +1214,11 @@ class PortableContextService:
             if exhausted > 0:
                 parts.append(f'{exhausted} cuentas agotadas')
             summary = ' | '.join(parts)
+        elif quota_source_status not in {'READ_OK', 'CONFIRMED_NOT_FOUND'}:
+            summary = (
+                f'Quota tracker no verificable ({quota_source_status}); '
+                'no inferir ausencia de cuentas ni capacidad disponible.'
+            )
         elif unverified_count > 0 and avail == 0 and exhausted == 0:
             summary = (
                 f'{unverified_count} sesiones detectadas con cuota no verificada; '
@@ -1242,14 +1247,28 @@ class PortableContextService:
             source_refs=['account_resource_scanner', 'quota_tracker.json'],
             confidence=(
                 0.85
-                if st == 'ok' and unverified_count == 0
+                if (
+                    st == 'ok'
+                    and quota_source_status in {'READ_OK', 'CONFIRMED_NOT_FOUND'}
+                    and unverified_count == 0
+                )
                 else 0.5
-                if st == 'partial_failure' or unverified_count > 0
+                if (
+                    st == 'partial_failure'
+                    or quota_source_status not in {'READ_OK', 'CONFIRMED_NOT_FOUND'}
+                    or unverified_count > 0
+                )
                 else 0.0
             ),
             last_updated=now,
             unresolved_fields=(
                 [f'UNRESOLVED:{failure}' for failure in read_failures]
+                + (
+                    [f'UNRESOLVED:quota_tracker:{quota_source_status}']
+                    if quota_source_status not in {'READ_OK', 'CONFIRMED_NOT_FOUND'}
+                    and not read_failures
+                    else []
+                )
                 + (['UNRESOLVED:worker_quota_unverified'] if unverified_count else [])
             ),
             metadata={
