@@ -476,9 +476,6 @@ def test_centro_vivo_preserves_read_failed_self_examination_status() -> None:
     assert vm._self_examination_status == 'READ_FAILED'
 
 
-import pytest
-
-
 @pytest.mark.parametrize('status', ['READ_FAILED', 'CORRUPT', 'SCHEMA_UNSUPPORTED'])
 def test_centro_vivo_maps_corrupt_account_subsources_to_read_failed(tmp_path, monkeypatch, status) -> None:
     from iabv15.domain.models import AccountInventorySnapshot
