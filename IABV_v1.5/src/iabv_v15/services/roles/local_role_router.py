@@ -84,6 +84,7 @@ class LocalRoleRouter:
         self._worker_health_lock = threading.RLock()
         self._worker_pool_cache: dict[str, Any] | None = None
         self._worker_pool_cached_at: float = 0.0
+        self._worker_pool_quota_revision: tuple[str, int, int, int, int] | None = None
         self._WORKER_HEALTH_TTL = 30.0
         self._model_profiles = self._build_model_profiles()
         self._role_profiles = self._build_role_profiles()
@@ -165,33 +166,70 @@ class LocalRoleRouter:
     # ------------------------------------------------------------------
 
     def _get_worker_pool(self, *, refresh: bool = False) -> dict[str, Any]:
-        """Return the raw scanner pool, cached with a 30 s TTL.
+        """Return the raw scanner pool, bounded by TTL and quota-file revision.
 
         The cache stores the **unfiltered** pool so that
         ``worker_health_gate`` can filter by ``target_assistant`` on every
-        call without re-scanning.
+        call without re-scanning. An atomic quota-tracker replacement invalidates
+        the cache immediately; the TTL remains a secondary freshness bound.
         """
+        from iabv_v15.services.account_resource_scanner import quota_tracker_revision
+
+        def _revision() -> tuple[str, int, int, int, int] | None:
+            try:
+                return quota_tracker_revision()
+            except Exception:
+                # If freshness cannot be established, never reuse a cached pool.
+                return None
+
+        def _scan() -> dict[str, Any]:
+            try:
+                return self._account_resource_scanner()
+            except Exception as exc:
+                return {
+                    'available_count': 0,
+                    'workers': [],
+                    'error': str(exc),
+                }
+
+        revision_before = _revision()
         now = time.monotonic()
-        if not refresh:
+        if not refresh and revision_before is not None:
             with self._worker_health_lock:
                 if (
                     self._worker_pool_cache is not None
+                    and self._worker_pool_quota_revision == revision_before
                     and (now - self._worker_pool_cached_at) <= self._WORKER_HEALTH_TTL
                 ):
                     return dict(self._worker_pool_cache)
 
-        try:
-            pool = self._account_resource_scanner()
-        except Exception as exc:
-            pool = {
-                'available_count': 0,
-                'workers': [],
-                'error': str(exc),
-            }
+        pool = _scan()
+        revision_after = _revision()
+        cache_revision = (
+            revision_after
+            if revision_before is not None and revision_after == revision_before
+            else None
+        )
+
+        # If the tracker changed while the pool was being scanned, retry once
+        # against the new revision. A second concurrent change disables reuse.
+        if (
+            revision_before is not None
+            and revision_after is not None
+            and revision_after != revision_before
+        ):
+            pool = _scan()
+            retry_revision = _revision()
+            cache_revision = (
+                retry_revision
+                if retry_revision is not None and retry_revision == revision_after
+                else None
+            )
 
         with self._worker_health_lock:
             self._worker_pool_cache = dict(pool)
-            self._worker_pool_cached_at = now
+            self._worker_pool_cached_at = time.monotonic()
+            self._worker_pool_quota_revision = cache_revision
         return pool
 
     def worker_health_gate(
