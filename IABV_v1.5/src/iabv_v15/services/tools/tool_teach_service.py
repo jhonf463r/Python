@@ -1182,7 +1182,10 @@ class ToolTeachService:
         session_scope = str(card.metadata.get('session_scope') or task.metadata.get('session_scope') or '')
         session_label = str(card.metadata.get('session_label') or task.metadata.get('session_label') or '')
         isolated_session_required = bool(card.metadata.get('isolated_session_required', task.metadata.get('isolated_session_required', False)))
-        stored_session_profile = str(task.metadata.get('session_profile_dir') or '').strip()
+        goal_parameters = dict(task.metadata.get('goal_parameters') or {})
+        stored_session_profile = str(
+            task.metadata.get('session_profile_dir') or goal_parameters.get('session_profile_dir') or ''
+        ).strip()
         if stored_session_profile:
             resolved_session_profile = self._resolve_session_profile_path(stored_session_profile)
             session_profile_dir = (
@@ -1197,9 +1200,12 @@ class ToolTeachService:
                 background_capture_mode=background_capture_mode,
                 isolated_session_required=isolated_session_required,
             )
+        if 'session_profile_dir' in goal_parameters or stored_session_profile:
+            goal_parameters['session_profile_dir'] = session_profile_dir
         capture_lane = str(task.metadata.get('capture_lane') or self._lane_for_consultation(response_capture_mode=response_capture_mode, background_capture_mode=background_capture_mode))
         metadata = {
             **dict(task.metadata or {}),
+            'goal_parameters': goal_parameters,
             'requested_assistant_kind': requested_assistant_kind,
             'assistant_kind': assistant_kind,
             'actual_assistant_kind': assistant_kind,
