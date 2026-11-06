@@ -120,10 +120,10 @@ def test_external_consultation_filters_known_secrets_and_workspace_path_before_t
             user_goal='consulta de owner@example.com',
             assistant_preference='chatgpt',
             context_pack=(
-                f'Workspace: {root}\\\\src\\\\IABV_v1.5\\n'
-                'Contacto: owner@example.com\\n'
-                'Authorization: Bearer top-secret-token\\n'
-                '&token=another-secret-token\\n'
+                f'Workspace: {root}/src/IABV_v1.5\n'
+                'Contacto: owner@example.com\n'
+                'Authorization: Bearer top-secret-token\n'
+                '&token=another-secret-token\n'
             ),
             site_id='wplay',
             diagnostic_category='need_teaching',
@@ -148,7 +148,6 @@ def test_external_consultation_filters_known_secrets_and_workspace_path_before_t
         assert task.metadata['context_pack'] == query_action.value
     finally:
         shutil.rmtree(root, ignore_errors=True)
-
 
 def test_tool_teach_service_normalizes_verified_actual_account_binding() -> None:
     binding = ToolTeachService._normalize_actual_account_binding({
