@@ -152,6 +152,57 @@ def test_external_consultation_filters_known_secrets_and_workspace_path_before_t
     finally:
         shutil.rmtree(root, ignore_errors=True)
 
+
+def test_external_assistant_task_omits_operational_launch_paths_from_persisted_task() -> None:
+    root = _workspace('tool_teach_service_launch_target_reference')
+    try:
+        service, _repository = _service(root)
+        executable = root / 'private-bin' / 'ChatGPT.exe'
+        executable.parent.mkdir(parents=True, exist_ok=True)
+        executable.write_text('stub', encoding='utf-8')
+        request = InferenceRequest(
+            user_goal='consulta externa de ChatGPT',
+            prompt='contexto de consulta',
+            task_role=TaskRole.TOOL_USE,
+            goal_parameters={
+                'tool_id': 'chatgpt_web_assisted',
+                'allowed_tool_ids': ['chatgpt_web_assisted'],
+                'title': 'Consultar ChatGPT',
+                'expected_outcome': 'Respuesta capturada',
+                'consultation_scope': 'external_assistant',
+                'assistant_kind': 'chatgpt',
+                'assistant_preference': 'chatgpt',
+                'launch_mode': 'web_assisted',
+                'web_url': 'https://chatgpt.com/share/private-path?token=private-web-token',
+                'executable_path': str(executable),
+                'context_pack': 'contexto de consulta',
+                'response_capture_mode': 'manual_pasteback',
+                'requires_manual_pasteback': True,
+            },
+        )
+
+        task = service.build_task_from_request(request)
+        persisted_parameters = dict(task.metadata['goal_parameters'])
+        launch_action = next(
+            action for action in task.actions
+            if action.action_type == ToolActionType.LAUNCH_APP
+        )
+
+        assert task.metadata['launch_target_ref'] == 'web:chatgpt'
+        assert persisted_parameters['launch_target_ref'] == 'web:chatgpt'
+        assert 'web_url' not in persisted_parameters
+        assert 'executable_path' not in persisted_parameters
+        assert persisted_parameters['web_url_omitted'] is True
+        assert persisted_parameters['executable_path_omitted'] is True
+        assert launch_action.target == 'web:chatgpt'
+        assert launch_action.metadata['launch_target_ref'] == 'web:chatgpt'
+        assert str(executable) not in repr(task.metadata)
+        assert 'private-web-token' not in repr(task.metadata)
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+
 def test_tool_teach_service_normalizes_verified_actual_account_binding() -> None:
     binding = ToolTeachService._normalize_actual_account_binding({
         'status': 'VERIFIED',
