@@ -24,6 +24,9 @@ import pytest
 
 from iabv_v15.services.account_resource_scanner import (
     governed_quota_rotation,
+    best_account_for_tool,
+    format_quota_report,
+    format_worker_pool_report,
     get_all_quota_status,
     record_message_sent,
     _load_quota_state,
@@ -258,7 +261,7 @@ class TestGovernedQuotaRotation:
 
     def test_no_accounts_returns_no_accounts_action(self, tmp_path: Path) -> None:
         with patch('iabv_v15.services.account_resource_scanner.get_all_quota_status',
-                   return_value={'statuses': [], 'total_tracked': 0,
+                   return_value={'source_coverage': {'quota_tracker': 'READ_OK'}, 'statuses': [], 'total_tracked': 0,
                                  'exhausted_count': 0, 'available_count': 0,
                                  'exhausted_keys': [], 'available_keys': []}):
             result = governed_quota_rotation('chatgpt', 'nobody@t.com')
@@ -431,3 +434,84 @@ class TestGovernedQuotaRotation:
             result = governed_quota_rotation('  ChatGPT  ', 'u@t.com')
 
         assert result['action'] == 'keep'
+
+
+
+def test_best_account_does_not_turn_corrupt_tracker_into_no_account() -> None:
+    with patch(
+        'iabv_v15.services.account_resource_scanner.get_all_quota_status',
+        return_value={
+            'statuses': [],
+            'total_tracked': 0,
+            'source_coverage': {'quota_tracker': 'CORRUPT'},
+            'source_errors': {'quota_tracker': 'JSONDecodeError'},
+        },
+    ):
+        with pytest.raises(RuntimeError, match='quota_tracker_unverified:corrupt'):
+            best_account_for_tool('chatgpt')
+
+
+def test_rotation_reports_unverified_when_quota_tracker_is_corrupt() -> None:
+    with patch(
+        'iabv_v15.services.account_resource_scanner.get_all_quota_status',
+        return_value={
+            'statuses': [],
+            'total_tracked': 0,
+            'source_coverage': {'quota_tracker': 'CORRUPT'},
+            'source_errors': {'quota_tracker': 'JSONDecodeError'},
+        },
+    ):
+        result = governed_quota_rotation('chatgpt', 'user@test.com')
+
+    assert result['action'] == 'unverified'
+    assert result['next'] is None
+    assert result['rotation_trace']['decision'] == 'unverified'
+    assert result['rotation_trace']['source_status'] == 'CORRUPT'
+    assert 'no inferir' in result['reason'].lower()
+
+
+def test_quota_report_does_not_claim_empty_inventory_on_read_failure() -> None:
+    with patch(
+        'iabv_v15.services.account_resource_scanner.get_all_quota_status',
+        return_value={
+            'statuses': [],
+            'total_tracked': 0,
+            'source_coverage': {'quota_tracker': 'READ_FAILED'},
+            'source_errors': {'quota_tracker': 'PermissionError'},
+        },
+    ):
+        report = format_quota_report()
+
+    assert 'READ_FAILED' in report
+    assert 'No inferir' in report
+    assert 'No hay cuentas rastreadas' not in report
+
+
+def test_worker_pool_report_surfaces_unverified_sessions_and_quota_state() -> None:
+    pool = {
+        'workers': [],
+        'exhausted': [],
+        'unverified': [{
+            'tool': 'chatgpt',
+            'email': 'user@test.com',
+            'browser': 'Chrome',
+            'profile': 'Default',
+        }],
+        'unverified_count': 1,
+        'available_count': 0,
+        'exhausted_count': 0,
+        'source_coverage': {
+            'browser_sessions': 'READ_OK',
+            'quota_tracker': 'SCHEMA_UNSUPPORTED',
+        },
+    }
+    with patch(
+        'iabv_v15.services.account_resource_scanner.estimate_available_workers',
+        return_value=pool,
+    ):
+        report = format_worker_pool_report()
+
+    assert 'SCHEMA_UNSUPPORTED' in report
+    assert 'cuota no verificada' in report
+    assert 'NO VERIFICADA' in report
+    assert 'No hay asistentes con sesión activa detectados' not in report
