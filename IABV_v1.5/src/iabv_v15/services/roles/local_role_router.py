@@ -248,7 +248,30 @@ class LocalRoleRouter:
         ranked = rank_workers_for_target(target, pool=pool, block_signals=block_signals or {})
 
         if not ranked:
-            if available == 0:
+            quota_coverage = pool.get('source_coverage')
+            quota_status = (
+                quota_coverage.get('quota_tracker')
+                if isinstance(quota_coverage, dict)
+                else 'UNVERIFIED'
+            )
+            unverified_count = pool.get('unverified_count', 0)
+            if not isinstance(unverified_count, int) or isinstance(unverified_count, bool):
+                unverified_count = 0
+            if (
+                quota_status not in {'READ_OK', 'CONFIRMED_NOT_FOUND'}
+                or unverified_count > 0
+            ):
+                status_label = (
+                    str(quota_status).strip()
+                    if isinstance(quota_status, str) and quota_status.strip()
+                    else 'UNVERIFIED'
+                )
+                reason = (
+                    f'UNRESOLVED:quota_tracker_{status_label.lower()} — '
+                    f'{unverified_count} sesión(es) con cuota no verificada; '
+                    'no inferir que no hay sesiones ni que todas están agotadas.'
+                )
+            elif available == 0:
                 reason = 'No hay workers con sesion activa y cuota disponible.'
             elif target:
                 reason = f'No hay worker usable para {target} (agotados o sin sesion).'
@@ -261,6 +284,9 @@ class LocalRoleRouter:
                 'workers': [],
                 'top_worker': None,
                 'ranked_workers': [],
+                'unverified_count': unverified_count,
+                'source_coverage': dict(quota_coverage or {}) if isinstance(quota_coverage, dict) else {},
+                'source_errors': dict(pool.get('source_errors') or {}),
             }
 
         top = ranked[0]
@@ -308,6 +334,9 @@ class LocalRoleRouter:
             'ranked_workers': [_compact(w) for w in ranked[:5]],
             'account_selection_source': account_selection_source,
             'fallback_used': fallback_used,
+            'source_coverage': dict(pool.get('source_coverage') or {}),
+            'source_errors': dict(pool.get('source_errors') or {}),
+            'unverified_count': pool.get('unverified_count', 0),
         }
         if approved_ref:
             result['approved_account'] = approved_ref
@@ -934,7 +963,6 @@ class LocalRoleRouter:
         ``rank_workers_for_target``) with the local provider health check.
         """
         from iabv_v15.services.account_resource_scanner import (
-            best_account_for_tool,
             get_web_session_status,
             rank_workers_for_target,
             scan_ollama_api,
