@@ -1120,8 +1120,12 @@ def test_tool_teach_service_external_consultation_tracks_dedicated_session_metad
         assert task.metadata['lane_priority'] == ['background', 'app', 'manual']
         assert task.metadata['thread_key'].startswith('iabv::chatgpt::')
         assert task.metadata['thread_title'].startswith('IABV ChatGPT')
-        assert task.metadata['session_profile_dir'].endswith('browser_profile')
-        assert Path(task.metadata['session_profile_dir']).exists()
+        session_profile_ref = Path(task.metadata['session_profile_dir'])
+        assert not session_profile_ref.is_absolute()
+        assert session_profile_ref.as_posix().endswith('browser_profile')
+        session_profile_path = service.workspace_root / session_profile_ref
+        assert session_profile_path.exists()
+        assert service._has_session_content(str(session_profile_path)) is False
         assert 'IABV_THREAD_KEY:' in str(task.metadata['context_pack'])
         assert result.execution_state.state == 'awaiting_response'
         assert result.execution_state.metadata['manual_pasteback_required'] is False
@@ -1133,6 +1137,30 @@ def test_tool_teach_service_external_consultation_tracks_dedicated_session_metad
         assert result.execution_state.metadata['actual_account_binding']['reason'] == 'adapter_account_binding_missing'
     finally:
         shutil.rmtree(root, ignore_errors=True)
+
+
+
+def test_session_profile_path_resolution_accepts_legacy_in_root_and_rejects_escape_paths() -> None:
+    root = _workspace('tool_teach_service_session_profile_path_scope')
+    outside = root.parent / 'external_profile_scope'
+    try:
+        service, _repository = _service(root)
+        in_root = root / 'data' / 'tool_teaching' / 'external_assistants' / 'legacy_profile'
+        in_root.mkdir(parents=True, exist_ok=True)
+        (in_root / 'session.marker').write_text('present', encoding='utf-8')
+        outside.mkdir(parents=True, exist_ok=True)
+        (outside / 'session.marker').write_text('outside', encoding='utf-8')
+
+        relative = 'data/tool_teaching/external_assistants/legacy_profile'
+        assert service._has_session_content(relative) is True
+        assert service._has_session_content(str(in_root)) is True
+        assert service._has_session_content(str(outside)) is False
+        assert service._has_session_content('../external_profile_scope') is False
+        assert service._resolve_session_profile_path('../external_profile_scope') is None
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+        shutil.rmtree(outside, ignore_errors=True)
+
 
 
 def test_tool_teach_service_explicit_chatgpt_preference_stays_in_chatgpt_family_under_technical_pressure() -> None:
