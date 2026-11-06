@@ -135,6 +135,56 @@ class TestTypedTraceHelpers:
         assert e['kind'] == 'error'
         assert e['data']['error_type'] == 'ImportError'
 
+    def test_typed_error_traces_mask_paths_emails_bearer_and_query_tokens(self, tracer: RuntimeAuditTracer) -> None:
+        raw_error = r"Unable to open 'C:\\Users\\Owner\\private.json' for alice@example.com; Bearer secret-token; ?token=secret-query"
+
+        service = tracer.trace_service_init(
+            'database',
+            5.0,
+            status='error',
+            error=raw_error,
+        )
+        external = tracer.trace_external_query(
+            'chatgpt',
+            'completion',
+            status='error',
+            error=raw_error,
+            response_summary=raw_error,
+        )
+        error = tracer.trace_error(
+            'bootstrap',
+            'OSError',
+            raw_error,
+            debug_path=r'C:\\Users\\Owner\\private.json',
+        )
+        permission = tracer.trace_permission(
+            'browser',
+            'deny',
+            granted=False,
+            reason=raw_error,
+        )
+
+        assert '[LOCAL_PATH]' in service['data']['error']
+        assert '[EMAIL]' in service['data']['error']
+        assert 'Bearer [REDACTED]' in service['data']['error']
+        assert '?token=[REDACTED]' in service['data']['error']
+        assert '[LOCAL_PATH]' in external['data']['error']
+        assert '[EMAIL]' in external['data']['response_summary']
+        assert '[LOCAL_PATH]' in error['data']['message']
+        assert error['data']['error_type'] == 'OSError'
+        assert error['data']['extra_fields_omitted'] is True
+        assert 'debug_path' not in error['data']
+        assert '[EMAIL]' in permission['data']['reason']
+
+        serialized = repr((service, external, error, permission))
+        for private_value in (
+            'C:\\Users\\Owner\\private.json',
+            'alice@example.com',
+            'Bearer secret-token',
+            'secret-query',
+        ):
+            assert private_value not in serialized
+
     def test_trace_ui_event(self, tracer: RuntimeAuditTracer) -> None:
         e = tracer.trace_ui_event('page_load', component='EvolutionCenter')
         assert e['kind'] == 'ui_event'
