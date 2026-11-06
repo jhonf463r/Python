@@ -168,6 +168,7 @@ def test_quota_attribution_does_not_count_sandbox_dry_run() -> None:
     assert tracking == {
         'status': 'NOT_COUNTED',
         'reason': 'sandbox_dry_run',
+        'source': 'unit_test',
     }
     mock_quota.assert_not_called()
 
