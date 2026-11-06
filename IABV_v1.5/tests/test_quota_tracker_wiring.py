@@ -263,16 +263,6 @@ def test_deductive_context_does_not_claim_no_accounts_when_quota_is_corrupt(
     tmp_path: Path, monkeypatch,
 ) -> None:
     from iabv_v15.services.auto_correction_engine import _build_deductive_context
-    from iabv_v15.services.account_resource_scanner import (
-        estimate_available_workers,
-        get_all_quota_status,
-        scan_browser_accounts,
-        scan_browser_sessions,
-        scan_devin_api,
-        scan_github_api,
-        scan_ollama_api,
-    )
-
     class _EmptyToolRegistry:
         def __init__(self, workspace_root: str):
             self.workspace_root = workspace_root
