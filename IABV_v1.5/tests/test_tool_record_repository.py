@@ -583,3 +583,21 @@ def test_repository_read_report_redacts_absolute_paths_but_keeps_internal_path(t
     assert payload["records"][0]["error_message"] == "Artifact read or validation failed."
     assert "private-user" not in repr(payload)
     assert str(tmp_path) not in repr(payload)
+
+
+
+def test_repository_collection_report_redacts_error_message(tmp_path) -> None:
+    private_path = tmp_path / "private-user" / "workspace" / "artifacts"
+    report = RepositoryReadReport(
+        scope="collection_path_redaction_canary",
+        results=(),
+        observed_at_utc="2026-11-06T00:00:00+00:00",
+        collection_error_type="PermissionError",
+        collection_error_message=f"Access denied: {private_path}",
+    )
+
+    payload = report.to_dict()
+
+    assert payload["collection_error_message"] == "Repository collection read failed."
+    assert "private-user" not in repr(payload)
+    assert str(tmp_path) not in repr(payload)

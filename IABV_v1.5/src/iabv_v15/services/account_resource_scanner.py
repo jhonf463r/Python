@@ -747,7 +747,14 @@ def _load_quota_state_with_diagnostics() -> tuple[dict[str, Any], str, str]:
             return {'accounts': {}}, 'SCHEMA_UNSUPPORTED', 'quota_tracker_account_entry_invalid'
         messages = entry.get('messages')
         if not isinstance(messages, list) or any(
-            type(timestamp) not in (int, float) or not math.isfinite(timestamp)
+            not (
+                (type(timestamp) is int and 0 <= timestamp <= 253402300799)
+                or (
+                    type(timestamp) is float
+                    and math.isfinite(timestamp)
+                    and 0.0 <= timestamp <= 253402300799.0
+                )
+            )
             for timestamp in messages
         ):
             return {'accounts': {}}, 'SCHEMA_UNSUPPORTED', 'quota_tracker_messages_invalid'

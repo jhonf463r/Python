@@ -539,3 +539,21 @@ def test_browser_account_scan_does_not_export_absolute_browser_roots(monkeypatch
     assert result["browsers_scanned"] == ["Chrome"]
     assert "private-user" not in repr(result)
     assert str(tmp_path) not in repr(result)
+
+
+
+def test_quota_tracker_rejects_unbounded_integer_timestamps(monkeypatch, tmp_path) -> None:
+    workspace = tmp_path / "quota-timestamp-workspace"
+    quota_path = workspace / "data" / "evolution" / "quota_tracker.json"
+    quota_path.parent.mkdir(parents=True)
+    huge_integer = "1" + ("0" * 400)
+    quota_path.write_text(
+        '{"accounts":{"chatgpt:account@example.test":{"messages":[' + huge_integer + ']}}}',
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("IABV_WORKSPACE", str(workspace))
+
+    result = account_resource_scanner.get_all_quota_status()
+
+    assert result["source_coverage"]["quota_tracker"] == "SCHEMA_UNSUPPORTED"
+    assert result["statuses"] == []

@@ -152,7 +152,7 @@ class RepositoryReadReport(Generic[T]):
             "missing_ids": self.missing_ids,
             "failed_ids": self.failed_ids,
             "collection_error_type": self.collection_error_type,
-            "collection_error_message": self.collection_error_message,
+            "collection_error_message": "Repository collection read failed." if self.collection_error_type else "",
             "records": [
                 {
                     "artifact_id": result.artifact_id,
