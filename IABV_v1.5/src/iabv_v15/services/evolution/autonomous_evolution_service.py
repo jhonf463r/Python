@@ -182,11 +182,19 @@ class AutonomousEvolutionService:
             detail = 'La consulta externa fue abierta, pero la respuesta todavia no ha sido ingerida por IABV.'
         elif status == 'blocked_external' and not detail:
             detail = 'La ruta externa quedo bloqueada por cuenta, sesion o verificacion. IABV debe notificarlo y seguir por la mejor via local disponible.'
+        account_binding = result.execution_state.metadata.get('actual_account_binding')
+        if not isinstance(account_binding, dict):
+            account_binding = {
+                'schema': 'ACCOUNT_BINDING_R1',
+                'status': 'UNVERIFIED',
+                'reason': 'execution_account_binding_missing',
+            }
         consultation_state = {
             'status': status,
             'assistant_kind': actual_assistant_kind,
             'requested_assistant_kind': requested_assistant_kind,
             'actual_assistant_kind': actual_assistant_kind,
+            'actual_account_binding': dict(account_binding),
             'assistant_configuration': dict(
                 result.execution_state.metadata.get('assistant_configuration')
                 or result.metadata.get('assistant_configuration')
