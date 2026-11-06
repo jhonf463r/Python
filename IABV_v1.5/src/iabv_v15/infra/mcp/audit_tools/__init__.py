@@ -974,15 +974,41 @@ def _sync_control_master_tests_state(
             and evidence.get("worktree_clean") is True
             and bool(evidence.get("commit_sha"))
         )
-        run_failed = (
+        returncode = evidence.get("returncode")
+        timed_out = evidence.get("timed_out")
+        execution_failed = (
             failed > 0
             or errors > 0
-            or int(evidence.get("returncode") or 0) != 0
-            or bool(evidence.get("timed_out"))
+            or (type(returncode) is int and returncode != 0)
+            or timed_out is True
         )
-        health = "red" if run_failed else ("green" if provenance_clean else "unknown")
+        execution_verified = (
+            type(returncode) is int
+            and returncode == 0
+            and type(timed_out) is bool
+            and timed_out is False
+            and total > 0
+            and passed > 0
+            and failed == 0
+            and errors == 0
+        )
+        execution_status = (
+            "FAILED"
+            if execution_failed
+            else "PASSED"
+            if execution_verified
+            else "UNVERIFIED"
+        )
+        health = (
+            "red"
+            if execution_failed
+            else "green"
+            if execution_verified and provenance_clean
+            else "unknown"
+        )
         tests_state = {
             "health": health,
+            "execution_status": execution_status,
             "passed": passed,
             "failed": failed,
             "errors": errors,
@@ -990,8 +1016,8 @@ def _sync_control_master_tests_state(
             "suite": str(evidence.get("suite") or ""),
             "timestamp": str(evidence.get("timestamp") or ""),
             "duration_s": float(evidence.get("duration_s") or 0.0),
-            "returncode": int(evidence.get("returncode") or 0),
-            "timed_out": bool(evidence.get("timed_out")),
+            "returncode": returncode,
+            "timed_out": timed_out,
             "linked_pending_task": str(evidence.get("linked_pending_task") or ""),
             "evidence_id": str(evidence.get("evidence_id") or ""),
             "commit_sha": str(evidence.get("commit_sha") or ""),
@@ -1080,6 +1106,10 @@ def load_latest_test_evidence(
             count_value = data.get(count_field)
             if not isinstance(count_value, int) or isinstance(count_value, bool) or count_value < 0:
                 return None
+        if type(data.get("returncode")) is not int:
+            return None
+        if type(data.get("timed_out")) is not bool:
+            return None
 
         current = _collect_test_git_provenance(root)
         if (
