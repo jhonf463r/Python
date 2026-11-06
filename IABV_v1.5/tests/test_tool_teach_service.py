@@ -1130,6 +1130,8 @@ def test_tool_teach_service_external_consultation_tracks_dedicated_session_metad
         assert result.execution_state.state == 'awaiting_response'
         assert result.execution_state.metadata['manual_pasteback_required'] is False
         assert result.execution_state.metadata['session_scope'] == 'program_chat'
+        assert result.execution_state.metadata['session_profile_dir'] == task.metadata['session_profile_dir']
+        assert not Path(result.execution_state.metadata['session_profile_dir']).is_absolute()
         assert result.execution_state.metadata['thread_key'] == task.metadata['thread_key']
         assert result.execution_state.metadata['capture_lane'] == 'background'
         assert result.execution_state.metadata['actual_account_binding']['schema'] == 'ACCOUNT_BINDING_R1'
