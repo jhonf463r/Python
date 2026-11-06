@@ -717,6 +717,33 @@ def _quota_file() -> Path:
     return candidates[0]
 
 
+def quota_tracker_revision() -> tuple[str, int, int, int, int]:
+    """Return a non-content fingerprint for invalidating cached worker pools.
+
+    The fingerprint changes when the tracker is atomically replaced, edited,
+    removed, or moved to another resolved workspace path. It exposes no quota
+    records or account identifiers.
+    """
+    quota_path = _quota_file()
+    try:
+        identity = str(quota_path.resolve(strict=False))
+    except OSError:
+        identity = str(quota_path)
+    try:
+        stat_result = quota_path.stat()
+    except FileNotFoundError:
+        return (identity, 0, 0, 0, 0)
+    except OSError:
+        return (identity, -1, -1, -1, -1)
+    return (
+        identity,
+        int(stat_result.st_dev),
+        int(stat_result.st_ino),
+        int(stat_result.st_mtime_ns),
+        int(stat_result.st_size),
+    )
+
+
 def _load_quota_state_with_diagnostics() -> tuple[dict[str, Any], str, str]:
     qf = _quota_file()
     try:
