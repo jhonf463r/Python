@@ -376,7 +376,7 @@ def test_oses_account_scanner_partial_coverage_cannot_be_promoted_to_read_ok(tmp
             "source_errors": {"browser_accounts": "profile_read_failed"},
         }
     )
-    assert service._source_coverage["account_resource_scanner"] == "READ_FAILED"
+    assert service._source_coverage["account_resource_scanner"] == "READ_PARTIAL"
     assert "error_sources=browser_accounts" in service._source_errors["account_resource_scanner"]
 
 
