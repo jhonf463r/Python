@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timedelta, timezone
+from importlib import import_module
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -438,3 +439,231 @@ def test_oses_account_scanner_malformed_source_errors_are_unverified(tmp_path) -
     )
     assert service._source_coverage["account_resource_scanner"] == "READ_UNVERIFIED"
     assert service._source_errors["account_resource_scanner"] == "scanner_source_errors_invalid"
+
+
+
+def test_oses_recent_run_reader_records_read_failure(tmp_path) -> None:
+    class BrokenRunRepository:
+        def list_recent(self, limit=60):
+            raise PermissionError("synthetic repository read failure")
+
+    service = _service(tmp_path, run_repository=BrokenRunRepository())
+
+    assert service._recent_runs() == []
+    assert service._source_coverage["run_repository"] == "READ_FAILED"
+    assert service._source_errors["run_repository"] == "PermissionError"
+
+
+def test_oses_unconfigured_adaptive_session_reader_is_not_verified_empty(tmp_path) -> None:
+    service = _service(tmp_path)
+
+    assert service._recent_adaptive_sessions() == []
+    assert service._source_coverage["adaptive_session_repository"] == "NOT_CONFIGURED"
+
+
+def test_oses_environment_reader_uses_configured_service(tmp_path) -> None:
+    environment = SimpleNamespace(risk_signals=[])
+    world_model = SimpleNamespace(
+        current_model=lambda: SimpleNamespace(environment=None),
+        environment_self_awareness_service=SimpleNamespace(current_model=lambda: environment),
+    )
+    service = _service(tmp_path, world_model_service=world_model)
+
+    assert service._environment_model() is environment
+    assert service._source_coverage["environment_self_awareness_service"] == "READ_OK"
+
+
+def test_oses_environment_reader_failure_is_not_reported_as_clean(tmp_path) -> None:
+    class BrokenEnvironmentService:
+        def current_model(self):
+            raise PermissionError("synthetic environment read failure")
+
+    class BrokenWorldModel:
+        def current_model(self):
+            raise RuntimeError("snapshot unavailable")
+
+        environment_self_awareness_service = BrokenEnvironmentService()
+
+    service = _service(tmp_path, world_model_service=BrokenWorldModel())
+
+    assert service._environment_model() is None
+    assert service._source_coverage["environment_self_awareness_service"] == "READ_FAILED"
+    assert service._source_errors["environment_self_awareness_service"] == "PermissionError"
+
+
+def test_oses_runtime_audit_log_valid_jsonl_is_read_ok(tmp_path) -> None:
+    audit_path = tmp_path / "data" / "logs" / "runtime_audit.jsonl"
+    audit_path.parent.mkdir(parents=True)
+    audit_path.write_text(
+        '{"kind":"dispatch_started","data":{"task_name":"chat"}}\n'
+        '{"kind":"dispatch_terminal","data":{"terminal_state":"completed"}}\n',
+        encoding="utf-8",
+    )
+    service = _service(tmp_path)
+
+    service._inspect_runtime_audit_log()
+
+    assert service._source_coverage["runtime_audit_log"] == "READ_OK"
+    assert "runtime_audit_log" not in service._source_errors
+
+
+def test_oses_runtime_audit_log_malformed_rows_are_partial(tmp_path) -> None:
+    audit_path = tmp_path / "data" / "logs" / "runtime_audit.jsonl"
+    audit_path.parent.mkdir(parents=True)
+    audit_path.write_text('{"kind":"valid"}\n[]\n{malformed}\n', encoding="utf-8")
+    service = _service(tmp_path)
+
+    service._inspect_runtime_audit_log()
+
+    assert service._source_coverage["runtime_audit_log"] == "READ_PARTIAL"
+    assert service._source_errors["runtime_audit_log"] == "malformed_jsonl_rows:2"
+
+
+def test_oses_runtime_audit_log_absence_is_confirmed_not_verified_empty(tmp_path) -> None:
+    service = _service(tmp_path)
+
+    service._inspect_runtime_audit_log()
+
+    assert service._source_coverage["runtime_audit_log"] == "CONFIRMED_NOT_FOUND"
+
+
+def test_oses_runtime_audit_log_permission_failure_is_read_failed(monkeypatch, tmp_path) -> None:
+    audit_path = tmp_path / "data" / "logs" / "runtime_audit.jsonl"
+    audit_path.parent.mkdir(parents=True)
+    audit_path.write_text('{"kind":"event"}\n', encoding="utf-8")
+    original_open = Path.open
+
+    def deny_audit_open(target, *args, **kwargs):
+        if target == audit_path:
+            raise PermissionError("synthetic audit log access denied")
+        return original_open(target, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "open", deny_audit_open)
+    service = _service(tmp_path)
+
+    service._inspect_runtime_audit_log()
+
+    assert service._source_coverage["runtime_audit_log"] == "READ_FAILED"
+    assert service._source_errors["runtime_audit_log"] == "PermissionError"
+
+
+def test_oses_runtime_tracer_failure_is_preserved(tmp_path, monkeypatch) -> None:
+    tracer_module = import_module("iabv_v15.services.evolution.runtime_audit_tracer")
+
+    class BrokenTracer:
+        def events(self, *, kind: str, limit: int):
+            raise PermissionError("synthetic tracer read failure")
+
+        def recent_dispatch_lifecycles(self, *, limit: int):
+            return []
+
+    monkeypatch.setattr(tracer_module, "get_runtime_tracer", lambda: BrokenTracer())
+    service = _service(tmp_path)
+
+    assert service._resource_quiescence_web_skill_findings() == []
+    assert service._source_coverage["runtime_audit_tracer"] == "READ_FAILED"
+    assert service._source_errors["runtime_audit_tracer"] == "PermissionError"
+
+
+def test_oses_metacognitive_ledger_valid_empty_file_is_read_ok(tmp_path) -> None:
+    service = _service(tmp_path)
+    service.storage.save_bytes("self_examination/metacognitive_ledger.jsonl", b"")
+
+    assert service._load_metacognitive_ledger() == []
+    assert service._source_coverage["metacognitive_error_ledger"] == "READ_OK"
+
+
+def test_oses_metacognitive_ledger_malformed_rows_are_partial(tmp_path) -> None:
+    service = _service(tmp_path)
+    service.storage.save_bytes(
+        "self_examination/metacognitive_ledger.jsonl",
+        b'{"valid":true}\n[]\n{malformed}\n',
+    )
+
+    assert service._load_metacognitive_ledger() == [{"valid": True}]
+    assert service._source_coverage["metacognitive_error_ledger"] == "READ_PARTIAL"
+    assert service._source_errors["metacognitive_error_ledger"] == "malformed_jsonl_rows:2"
+
+
+def test_oses_metacognitive_ledger_invalid_utf8_is_read_failed(tmp_path) -> None:
+    service = _service(tmp_path)
+    service.storage.save_bytes("self_examination/metacognitive_ledger.jsonl", b'{"valid":true}\n\xff')
+
+    assert service._load_metacognitive_ledger() == []
+    assert service._source_coverage["metacognitive_error_ledger"] == "READ_FAILED"
+    assert service._source_errors["metacognitive_error_ledger"] == "UnicodeDecodeError"
+
+
+def test_validation_feedback_history_valid_jsonl_is_read_ok(tmp_path) -> None:
+    service = _service(tmp_path)
+    history = tmp_path / "data" / "evolution" / "validation_feedback" / "history.jsonl"
+    history.parent.mkdir(parents=True, exist_ok=True)
+    history.write_text(
+        json.dumps({
+            "decision": "discarded",
+            "proposal_kind": "route_substitution",
+            "candidate_assistant_kind": "claude",
+            "current_assistant_kind": "chatgpt",
+        }) + "\n",
+        encoding="utf-8",
+    )
+
+    tried = service._load_tried_proposal_keys()
+
+    assert "route_substitution:chatgpt:claude" in tried
+    assert service._source_coverage["validation_feedback_history"] == "READ_OK"
+
+
+def test_validation_feedback_history_malformed_jsonl_is_partial(tmp_path) -> None:
+    service = _service(tmp_path)
+    history = tmp_path / "data" / "evolution" / "validation_feedback" / "history.jsonl"
+    history.parent.mkdir(parents=True, exist_ok=True)
+    valid = {
+        "decision": "discarded",
+        "proposal_kind": "route_substitution",
+        "candidate_assistant_kind": "claude",
+        "current_assistant_kind": "chatgpt",
+    }
+    history.write_text(json.dumps(valid) + "\n[]\n{malformed\n", encoding="utf-8")
+
+    service._load_tried_proposal_keys()
+
+    assert service._source_coverage["validation_feedback_history"] == "READ_PARTIAL"
+    assert service._source_errors["validation_feedback_history"] == "malformed_jsonl_rows:2"
+
+
+def test_validation_feedback_history_absence_is_confirmed_not_found(tmp_path) -> None:
+    service = _service(tmp_path)
+
+    assert service._load_tried_proposal_keys() == set()
+    assert service._source_coverage["validation_feedback_history"] == "CONFIRMED_NOT_FOUND"
+
+
+def test_validation_feedback_history_permission_failure_is_read_failed(monkeypatch, tmp_path) -> None:
+    history = tmp_path / "data" / "evolution" / "validation_feedback" / "history.jsonl"
+    history.parent.mkdir(parents=True, exist_ok=True)
+    history.write_text("{}\n", encoding="utf-8")
+    original_read_text = Path.read_text
+
+    def deny_history_read(target, *args, **kwargs):
+        if target == history:
+            raise PermissionError("synthetic feedback history permission failure")
+        return original_read_text(target, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", deny_history_read)
+    service = _service(tmp_path)
+
+    assert service._load_tried_proposal_keys() == set()
+    assert service._source_coverage["validation_feedback_history"] == "READ_FAILED"
+    assert service._source_errors["validation_feedback_history"] == "PermissionError"
+
+
+def test_oses_runtime_log_invalid_utf8_is_not_read_ok(tmp_path) -> None:
+    log_path = tmp_path / "data" / "logs" / "iabv_v15.log"
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    log_path.write_bytes(b"valid line\ninvalid: \xff\xfe\n")
+    service = _service(tmp_path)
+
+    assert service._runtime_log_findings() == []
+    assert service._source_coverage["runtime_log"] == "READ_FAILED"
+    assert service._source_errors["runtime_log"] == "UnicodeDecodeError"
