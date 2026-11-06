@@ -346,6 +346,8 @@ class TestControlMasterProjection:
             total_remaining_messages=10,
             tools_available=["chatgpt"],
             unresolved_items=["UNRESOLVED:test_item"],
+            source_coverage={"quota_tracker": "READ_OK"},
+            source_errors={},
         )
 
         service = ControlMasterService(
@@ -361,6 +363,53 @@ class TestControlMasterProjection:
         assert inv['next_recommended'] is not None
         assert inv['next_recommended']['email'] == 'test@test.com'
 
+    def test_corrupt_quota_snapshot_is_not_projected_as_available(self):
+        from iabv_v15.services.evolution.control_master_service import ControlMasterService
+        repo = _FakeControlMasterRepo()
+
+        entry = AccountInventoryEntry(
+            email="stale@test.com", tool="chatgpt",
+            score=0.9, quota_remaining=12, quota_limit=15,
+            status=AccountStatus.ACTIVE,
+        )
+        snapshot = AccountInventorySnapshot(
+            entries=[entry],
+            continuity_queue=[entry],
+            active_count=1,
+            exhausted_count=0,
+            total_remaining_messages=12,
+            tools_available=["chatgpt"],
+            source_coverage={"quota_tracker": "CORRUPT"},
+            source_errors={"quota_tracker": "JSONDecodeError"},
+        )
+
+        service = ControlMasterService(
+            repository=repo,
+            account_resource_scanner=snapshot,
+        )
+        state = service.current_state()
+        inv = state.metadata["account_inventory"]
+
+        assert inv["status"] == "partial_failure"
+        assert inv["source_status"] == "READ_FAILED"
+        assert inv["quota_source_status"] == "CORRUPT"
+        assert inv["source_coverage"]["quota_tracker"] == "CORRUPT"
+        assert inv["source_errors"]["quota_tracker"] == "JSONDecodeError"
+        assert inv["active_count"] == 0
+        assert inv["exhausted_count"] == 0
+        assert inv["total_remaining_messages"] == 0
+        assert inv["tools_available"] == []
+        assert inv["continuity_queue_size"] == 0
+        assert inv["next_recommended"] is None
+        assert any(
+            "UNRESOLVED:quota_tracker:CORRUPT" in item
+            for item in inv["unresolved_items"]
+        )
+        assert any(
+            "UNRESOLVED:quota_tracker:CORRUPT" in item
+            for item in state.unresolved_items
+        )
+
     def test_scanner_callable(self):
         from iabv_v15.services.evolution.control_master_service import ControlMasterService
         repo = _FakeControlMasterRepo()
@@ -373,6 +422,8 @@ class TestControlMasterProjection:
             entries=[entry], continuity_queue=[entry],
             active_count=1, total_remaining_messages=5,
             tools_available=["claude"],
+            source_coverage={"quota_tracker": "READ_OK"},
+            source_errors={},
         )
 
         service = ControlMasterService(
