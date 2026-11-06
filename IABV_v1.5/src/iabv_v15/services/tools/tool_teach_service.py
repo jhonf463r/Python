@@ -1694,11 +1694,17 @@ class ToolTeachService:
         objective = dict(goal_context.get('objective') or {})
         project = dict(goal_context.get('project') or {})
         task = dict(goal_context.get('task') or {})
-        scope_title = str(task.get('title') or project.get('title') or objective.get('title') or user_goal or 'consulta').strip()
+        scope_title = self._sanitize_external_context_pack(
+            str(task.get('title') or project.get('title') or objective.get('title') or user_goal or 'consulta')
+        )
         site_fragment = self._slug_fragment(site_id or 'general')
-        scope_fragment = self._slug_fragment(scope_title or user_goal or 'consulta')
-        thread_key = str(goal_payload.get('thread_key') or f'iabv::{assistant_kind}::{site_fragment}::{scope_fragment}')
-        thread_title = str(goal_payload.get('thread_title') or f'IABV {assistant_title} | {scope_title[:48]}')
+        scope_fragment = self._slug_fragment(scope_title or 'consulta')
+        thread_key = self._sanitize_external_context_pack(
+            str(goal_payload.get('thread_key') or f'iabv::{assistant_kind}::{site_fragment}::{scope_fragment}')
+        )
+        thread_title = self._sanitize_external_context_pack(
+            str(goal_payload.get('thread_title') or f'IABV {assistant_title} | {scope_title[:48]}')
+        )
         capture_lane = self._lane_for_consultation(
             response_capture_mode=response_capture_mode,
             background_capture_mode=background_capture_mode,
@@ -1729,6 +1735,7 @@ class ToolTeachService:
                 enriched_context = f"{enriched_context}\n\n{marker_block}".strip()
         else:
             enriched_context = marker_block
+        enriched_context = self._sanitize_external_context_pack(enriched_context)
         return {
             'thread_key': thread_key,
             'thread_title': thread_title,
