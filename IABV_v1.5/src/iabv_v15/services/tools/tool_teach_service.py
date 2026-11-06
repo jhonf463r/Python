@@ -638,6 +638,7 @@ class ToolTeachService:
             str(goal_parameters.get('consultation_scope') or '').strip().lower() == 'external_assistant'
             and tool_id != 'ollama_llm'
         ):
+            persisted_goal_parameters = self._remove_external_launch_path_fields(persisted_goal_parameters)
             assistant_kind_for_ref = re.sub(
                 r'[^a-z0-9_-]+',
                 '',
