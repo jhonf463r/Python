@@ -1808,10 +1808,55 @@ class DesktopHumanToolAdapter:
 class ExternalAssistantToolAdapter(ToolAdapter):
     tool_type = ToolType.CUSTOM
 
-    def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False) -> dict[str, Any]:
-        result = super().run(card, task, sandbox=sandbox)
-        if sandbox:
+    @staticmethod
+    def _launch_target_reference(card: ToolCard) -> str:
+        assistant_kind = re.sub(
+            r'[^a-z0-9_-]+',
+            '',
+            str(card.metadata.get('assistant_kind') or card.tool_id or 'assistant').strip().lower(),
+        ) or 'assistant'
+        launch_mode = str(card.metadata.get('launch_mode') or '').strip().lower()
+        mode = 'web' if launch_mode == 'web_assisted' else 'desktop' if launch_mode == 'desktop_app' else 'assistant'
+        return f'{mode}:{assistant_kind}'
+
+    @classmethod
+    def _remove_operational_launch_targets(cls, value: Any, *, safe_reference: str) -> Any:
+        if isinstance(value, dict):
+            cleaned: dict[str, Any] = {}
+            for key, item in value.items():
+                normalized_key = str(key).strip().lower()
+                if normalized_key == 'launch_target':
+                    cleaned['launch_target_ref'] = safe_reference
+                elif normalized_key in {'executable_path', 'install_path', 'app_path'}:
+                    cleaned[f'{normalized_key}_omitted'] = bool(item)
+                else:
+                    cleaned[key] = cls._remove_operational_launch_targets(item, safe_reference=safe_reference)
+            return cleaned
+        if isinstance(value, list):
+            return [cls._remove_operational_launch_targets(item, safe_reference=safe_reference) for item in value]
+        if isinstance(value, tuple):
+            return [cls._remove_operational_launch_targets(item, safe_reference=safe_reference) for item in value]
+        return value
+
+    def _sanitize_persistable_launch_metadata(self, result: dict[str, Any], *, card: ToolCard) -> dict[str, Any]:
+        safe_reference = self._launch_target_reference(card)
+        cleaned = self._remove_operational_launch_targets(result, safe_reference=safe_reference)
+        if not isinstance(cleaned, dict):
             return result
+        metadata = dict(cleaned.get('metadata') or {})
+        if any(
+            isinstance(mapping, dict) and 'launch_target_ref' in mapping
+            for mapping in (metadata, dict(cleaned.get('extracted_data') or {}))
+        ):
+            metadata['launch_target_ref'] = safe_reference
+        cleaned['metadata'] = metadata
+        return cleaned
+
+    def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False) -> dict[str, Any]:
+        result = self._sanitize_persistable_launch_metadata(
+            super().run(card, task, sandbox=sandbox),
+            card=card,
+        )
         assistant_kind = str(card.metadata.get('assistant_kind') or card.tool_id)
         worker_kind = str(card.metadata.get('worker_kind') or assistant_kind).lower()
         telemetry = ToolAdapter._build_worker_telemetry(
