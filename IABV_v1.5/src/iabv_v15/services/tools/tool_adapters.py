@@ -1148,7 +1148,7 @@ class ToolAdapter:
                 }
             response_capture_pending = bool(launched and not direct_capture)
             if requires_manual_pasteback:
-                output_text = f'Asistente externo {card.title} preparado. Copia el prompt redactado y devuelve la respuesta a IABV.'
+                output_text = f'Asistente externo {card.title} preparado. Copia el contexto de consulta y devuelve la respuesta a IABV.'
             elif response_capture_mode in {'clipboard_capture', 'dom_capture', 'browser_dom'}:
                 output_text = f'Asistente externo {card.title} preparado. IABV queda esperando capturar la respuesta automaticamente.'
             else:
