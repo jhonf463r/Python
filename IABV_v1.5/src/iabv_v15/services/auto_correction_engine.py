@@ -1833,6 +1833,15 @@ def _execute_rotate_account(params: dict[str, Any]) -> dict[str, Any]:
             'status': 'needs_user',
             'detail': f'{tool}: all accounts exhausted, no alternative available',
         }
+    except RuntimeError as exc:
+        detail = str(exc)
+        if detail.startswith('quota_tracker_unverified:'):
+            return {
+                'action': 'rotate_account',
+                'status': 'unverified',
+                'detail': detail,
+            }
+        return {'action': 'rotate_account', 'status': 'error', 'detail': detail}
     except Exception as exc:
         return {'action': 'rotate_account', 'status': 'error', 'detail': str(exc)}
 
