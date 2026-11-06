@@ -354,7 +354,7 @@ def _firefox_accounts_scan_with_coverage() -> tuple[list[dict[str, str]], list[s
             if not stat_module.S_ISREG(signed_stat.st_mode):
                 errors.append(f'firefox_profile:{profile_dir.name}:signedInUser_not_regular_file')
                 continue
-            data = json.loads(signed_in.read_text(encoding='utf-8', errors='replace'))
+            data = json.loads(signed_in.read_text(encoding='utf-8'))
             if not isinstance(data, dict):
                 raise TypeError('signedInUser_not_object')
             acct = data.get('accountData', {})
@@ -423,7 +423,7 @@ def scan_browser_accounts() -> dict[str, Any]:
                     continue
                 if not stat_module.S_ISREG(prefs_stat.st_mode):
                     raise TypeError('preferences_not_regular_file')
-                prefs = json.loads(prefs_file.read_text(encoding='utf-8', errors='replace'))
+                prefs = json.loads(prefs_file.read_text(encoding='utf-8'))
                 if not isinstance(prefs, dict):
                     raise TypeError('preferences_not_object')
                 account_info = prefs.get('account_info', [])
@@ -1803,7 +1803,7 @@ def scan_configured_secrets() -> dict[str, Any]:
         file_error = type(exc).__name__
     else:
         try:
-            content = secrets_file.read_text(encoding='utf-8', errors='replace')
+            content = secrets_file.read_text(encoding='utf-8')
         except OSError as exc:
             file_status = 'READ_FAILED'
             file_error = type(exc).__name__

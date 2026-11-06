@@ -557,3 +557,56 @@ def test_quota_tracker_rejects_unbounded_integer_timestamps(monkeypatch, tmp_pat
 
     assert result["source_coverage"]["quota_tracker"] == "SCHEMA_UNSUPPORTED"
     assert result["statuses"] == []
+
+
+
+def test_chromium_invalid_utf8_profile_is_partial_and_keeps_valid_siblings(monkeypatch, tmp_path) -> None:
+    root = tmp_path / "chrome-user-data"
+    invalid_profile = root / "Default"
+    valid_profile = root / "Profile 1"
+    invalid_profile.mkdir(parents=True)
+    valid_profile.mkdir(parents=True)
+
+    # Replacement decoding would silently turn this into a valid JSON email.
+    (invalid_profile / "Preferences").write_bytes(
+        b'{"account_info":[{"email":"private-canary@example.test\xff"}]}'
+    )
+    (valid_profile / "Preferences").write_text(
+        '{"account_info":[{"email":"valid@example.test"}]}',
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr(
+        account_resource_scanner,
+        "_chromium_browser_dirs_with_diagnostics",
+        lambda: ([("Chrome", root)], [], "READ_OK"),
+    )
+    monkeypatch.setattr(
+        account_resource_scanner,
+        "_firefox_accounts_scan_with_coverage",
+        lambda: ([], [], "CONFIRMED_NOT_FOUND"),
+    )
+
+    result = account_resource_scanner.scan_browser_accounts()
+
+    assert [account["email"] for account in result["accounts"]] == ["valid@example.test"]
+    assert result["source_coverage"]["browser_accounts"] == "READ_PARTIAL"
+    assert "UnicodeDecodeError" in result["source_errors"]["browser_accounts"]
+    assert "private-canary" not in repr(result)
+
+
+def test_firefox_invalid_utf8_profile_is_partial(tmp_path, monkeypatch) -> None:
+    firefox_root = tmp_path / ".mozilla" / "firefox"
+    profile = firefox_root / "default-release"
+    profile.mkdir(parents=True)
+    (profile / "signedInUser.json").write_bytes(
+        b'{"accountData":{"email":"private-canary@example.test\xff"}}'
+    )
+    monkeypatch.setattr(Path, "home", lambda: tmp_path)
+
+    accounts, errors, status = account_resource_scanner._firefox_accounts_scan_with_coverage()
+
+    assert accounts == []
+    assert status == "READ_PARTIAL"
+    assert any("UnicodeDecodeError" in error for error in errors)
+    assert "private-canary" not in repr(accounts)
