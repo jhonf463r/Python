@@ -156,7 +156,7 @@ class RepositoryReadReport(Generic[T]):
             "records": [
                 {
                     "artifact_id": result.artifact_id,
-                    "path": result.path,
+                    "path": "<redacted>" if result.path else "",
                     "status": result.status.value,
                     "error_type": result.error_type,
                     "error_message": result.error_message,

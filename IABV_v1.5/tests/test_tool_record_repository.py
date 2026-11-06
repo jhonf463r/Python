@@ -29,8 +29,10 @@ from iabv_v15.domain.models import (
 )
 from iabv_v15.infra.persistence.database import AppDatabase
 from iabv_v15.infra.persistence.read_results import (
+    ArtifactReadResult,
     ArtifactReadStatus,
     RepositoryReadError,
+    RepositoryReadReport,
     RepositoryReadStatus,
 )
 from iabv_v15.infra.persistence.storage import ArtifactStorage
@@ -557,3 +559,24 @@ def test_tool_record_file_read_errors_redact_exception_details(monkeypatch) -> N
         assert "PRIVATE_FILE_ERROR_CANARY" not in str(log_report.to_dict())
     finally:
         shutil.rmtree(root, ignore_errors=True)
+
+
+def test_repository_read_report_redacts_absolute_paths_but_keeps_internal_path(tmp_path) -> None:
+    artifact_path = tmp_path / "private-user" / "workspace" / "artifacts" / "record.json"
+    result = ArtifactReadResult(
+        artifact_id="artifact-canary",
+        path=str(artifact_path),
+        status=ArtifactReadStatus.FOUND,
+        value={"ok": True},
+    )
+    report = RepositoryReadReport.from_results(
+        scope="path_redaction_canary",
+        results=(result,),
+    )
+
+    payload = report.to_dict()
+
+    assert result.path == str(artifact_path)
+    assert payload["records"][0]["path"] == "<redacted>"
+    assert "private-user" not in repr(payload)
+    assert str(tmp_path) not in repr(payload)

@@ -24,6 +24,8 @@ def test_missing_backlog_file_is_distinct_from_verified_empty(tmp_path) -> None:
     assert report.items == ()
     payload = report.to_mcp_payload()
     assert payload['status'] == 'CONFIRMED_NOT_FOUND'
+    assert payload['path'] == 'data/evolution/backlog.json'
+    assert str(tmp_path) not in repr(payload)
     assert payload['total_all'] is None
     assert payload['total_pending'] is None
     assert load_backlog(str(tmp_path)) == []
@@ -99,8 +101,13 @@ def test_backlog_read_permission_error_is_reported(monkeypatch, tmp_path) -> Non
 
     assert report.status == 'READ_FAILED'
     assert report.error_type == 'PermissionError'
-    with pytest.raises(EvolutionBacklogReadError):
+    payload = report.to_mcp_payload()
+    assert payload['path'] == 'data/evolution/backlog.json'
+    assert payload['error_message'] == 'backlog_read_failed'
+    assert str(tmp_path) not in repr(payload)
+    with pytest.raises(EvolutionBacklogReadError) as exc_info:
         load_backlog(str(tmp_path))
+    assert str(tmp_path) not in str(exc_info.value)
 
 
 
@@ -232,3 +239,17 @@ def test_checked_in_backlog_satisfies_supported_task_schema() -> None:
     assert len(report.items) > 0
     assert report.legacy_items_without_id
     assert all(index > 0 for index in report.legacy_items_without_id)
+
+
+def test_backlog_mcp_payload_redacts_host_path_on_corrupt_file(tmp_path) -> None:
+    path = _backlog_path(tmp_path)
+    path.parent.mkdir(parents=True)
+    path.write_text("{", encoding="utf-8")
+
+    report = load_backlog_with_diagnostics(str(tmp_path))
+    payload = report.to_mcp_payload()
+
+    assert report.path == str(path)
+    assert payload["path"] == "data/evolution/backlog.json"
+    assert str(tmp_path) not in repr(payload)
+    assert "private-user" not in repr(payload)

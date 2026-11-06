@@ -129,7 +129,7 @@ class EvolutionBacklogReadReport:
         if self.status != 'READ_OK':
             return {
                 'status': self.status,
-                'path': self.path,
+                'path': 'data/evolution/backlog.json',
                 'pending': [],
                 'total_pending': None,
                 'total_all': None,
@@ -167,7 +167,7 @@ class EvolutionBacklogReadError(RuntimeError):
         self.report = report
         super().__init__(
             f'Evolution backlog read {report.status}: '
-            f'{report.error_type or "no valid snapshot"} at {report.path}'
+            f'{report.error_type or "no valid snapshot"} at data/evolution/backlog.json'
         )
 
 
@@ -183,12 +183,12 @@ def load_backlog_with_diagnostics(
     except UnicodeError as exc:
         return EvolutionBacklogReadReport(
             status='CORRUPT', path=str(path),
-            error_type=type(exc).__name__, error_message=str(exc)[:300],
+            error_type=type(exc).__name__, error_message='backlog_utf8_decode_failed',
         )
     except OSError as exc:
         return EvolutionBacklogReadReport(
             status='READ_FAILED', path=str(path),
-            error_type=type(exc).__name__, error_message=str(exc)[:300],
+            error_type=type(exc).__name__, error_message='backlog_read_failed',
         )
 
     try:
@@ -196,7 +196,7 @@ def load_backlog_with_diagnostics(
     except json.JSONDecodeError as exc:
         return EvolutionBacklogReadReport(
             status='CORRUPT', path=str(path),
-            error_type=type(exc).__name__, error_message=str(exc)[:300],
+            error_type=type(exc).__name__, error_message=f'json_decode_error:{exc.lineno}:{exc.colno}',
         )
     if not isinstance(data, list) or any(not isinstance(item, dict) for item in data):
         return EvolutionBacklogReadReport(
