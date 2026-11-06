@@ -1381,6 +1381,7 @@ class AppBootstrap:
             account_resource_scanner=build_inventory_snapshot,
             platform_pending_queue=self.platform_pending_queue,
             workspace_root=self.config.workspace_root,
+            chat_interaction_lifecycle=self.chat_interaction_lifecycle,
         )
         self.control_master_digest_builder = ControlMasterDigestBuilder()
         self.git_sync_service = GitSyncService(

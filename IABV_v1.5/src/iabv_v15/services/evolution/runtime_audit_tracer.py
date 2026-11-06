@@ -947,6 +947,83 @@ class RuntimeAuditTracer:
 
 
 
+def validate_durability_ack(
+    acknowledgement: Any,
+    *,
+    expected_seq: int | None = None,
+    expected_line_sha256: str | None = None,
+    expected_byte_start: int | None = None,
+    expected_byte_end: int | None = None,
+) -> dict[str, Any]:
+    """Validate the structural contract of a RuntimeAuditTracer file-fsync receipt.
+
+    This validates the tracer's receipt, not an independent disk re-read.
+    Consumers must not promote MEMORY_ONLY, DISABLED, WRITE_FAILED, or
+    malformed receipts to durable evidence.
+    """
+    if not isinstance(acknowledgement, dict):
+        return {"status": "ACK_UNAVAILABLE", "accepted": False}
+    status = str(acknowledgement.get("status") or "ACK_UNAVAILABLE")
+    if status != "FILE_FSYNCED":
+        return {"status": status, "accepted": False}
+
+    path = acknowledgement.get("path")
+    seq = acknowledgement.get("seq")
+    byte_start = acknowledgement.get("byte_start")
+    byte_end = acknowledgement.get("byte_end")
+    digest = str(acknowledgement.get("line_sha256") or "").lower()
+    if (
+        path != "runtime_audit.jsonl"
+        or isinstance(seq, bool)
+        or not isinstance(seq, int)
+        or seq <= 0
+        or isinstance(expected_seq, bool)
+        or (
+            expected_seq is not None
+            and (
+                not isinstance(expected_seq, int)
+                or seq != expected_seq
+            )
+        )
+        or isinstance(byte_start, bool)
+        or not isinstance(byte_start, int)
+        or byte_start < 0
+        or isinstance(byte_end, bool)
+        or not isinstance(byte_end, int)
+        or byte_end <= byte_start
+        or len(digest) != 64
+        or any(char not in "0123456789abcdef" for char in digest)
+        or (
+            expected_line_sha256 is not None
+            and (
+                not isinstance(expected_line_sha256, str)
+                or digest != expected_line_sha256.lower()
+                or isinstance(expected_byte_start, bool)
+                or not isinstance(expected_byte_start, int)
+                or isinstance(expected_byte_end, bool)
+                or not isinstance(expected_byte_end, int)
+                or byte_start != expected_byte_start
+                or byte_end != expected_byte_end
+            )
+        )
+    ):
+        return {"status": "ACK_INVALID", "accepted": False}
+
+    return {
+        "status": "FILE_FSYNCED",
+        "accepted": True,
+        "path": path,
+        "seq": seq,
+        "byte_start": byte_start,
+        "byte_end": byte_end,
+        "line_sha256": digest,
+        "verification": (
+            "TRACER_RECEIPT_MATCHED_TO_READ_ROW"
+            if expected_line_sha256 is not None
+            else "TRACER_RETURNED_FSYNC_RECEIPT"
+        ),
+    }
+
 # ======================================================================
 # Global singleton
 # ======================================================================

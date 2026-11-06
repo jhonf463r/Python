@@ -317,3 +317,55 @@ def test_interaction_resolution_exposes_fsync_failure_ack(tmp_path, monkeypatch)
     retained = lifecycle.interaction_info(interaction_id)
     assert retained is not None
     assert retained['runtime_audit_durability']['status'] == 'WRITE_FAILED'
+
+
+@pytest.mark.parametrize("fail_fsync", [False, True])
+def test_audit_consumers_distinguish_receipt_from_recovered_row(
+    tmp_path, monkeypatch, fail_fsync,
+) -> None:
+    from iabv_v15.domain.models import utc_now
+    from iabv_v15.infra.persistence.storage import ArtifactStorage
+    from iabv_v15.services.evolution import runtime_audit_tracer
+    from iabv_v15.services.evolution.control_master_service import ControlMasterService
+    from iabv_v15.services.evolution.freeze_incident_reporter import ChatInteractionLifecycle
+    from iabv_v15.services.evolution.portable_context_service import PortableContextService
+
+    logs = tmp_path / "data" / "logs"
+    tracer = RuntimeAuditTracer(log_dir=str(logs))
+    tracer.configure(logs)
+    monkeypatch.setattr(runtime_audit_tracer, "get_runtime_tracer", lambda: tracer)
+    lifecycle = ChatInteractionLifecycle()
+    interaction_id = lifecycle.open_interaction("synthetic interaction")
+
+    def fail(_fd):
+        raise OSError("synthetic fsync failure")
+
+    with monkeypatch.context() as m:
+        if fail_fsync:
+            m.setattr(runtime_audit_tracer.os, "fsync", fail)
+        lifecycle.resolve_interaction(interaction_id, outcome="failed", provider="test")
+
+    for active_lifecycle in (lifecycle, None):
+        control = ControlMasterService(
+            repository=None,
+            workspace_root=str(tmp_path),
+            chat_interaction_lifecycle=active_lifecycle,
+        )
+        portable = PortableContextService(
+            workspace_root=str(tmp_path),
+            storage=ArtifactStorage(str(tmp_path / "artifacts")),
+        )
+        portable.chat_interaction_lifecycle = active_lifecycle
+        if active_lifecycle is None:
+            expected = "ACK_UNAVAILABLE"
+        else:
+            expected = "WRITE_FAILED" if fail_fsync else "FILE_FSYNCED"
+
+        item = control._project_runtime_audit_items(set())[0]
+        episode = portable._interaction_lifecycle_section(now=utc_now()).items[0]
+        assert item["id"] == f"audit:{interaction_id}"
+        assert episode["interaction_id"] == interaction_id
+        assert item["runtime_audit_durability"]["status"] == expected
+        assert episode["runtime_audit_durability_status"] == expected
+        assert item["runtime_audit_durability"]["accepted"] == (expected == "FILE_FSYNCED")
+        assert episode["runtime_audit_durability_accepted"] == (expected == "FILE_FSYNCED")

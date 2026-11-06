@@ -1280,6 +1280,7 @@ class ChatInteractionLifecycle:
         # Trace the interaction and retain the sink's acknowledgement on the
         # episode itself. A returned lifecycle record must not imply durability
         # when the JSONL append failed or was only memory-backed.
+        trace_event_seq: int | None = None
         try:
             from iabv_v15.services.evolution.runtime_audit_tracer import (
                 get_runtime_tracer,
@@ -1307,6 +1308,8 @@ class ChatInteractionLifecycle:
                 ),
                 is_final=is_final,
             )
+            if isinstance(trace_event, dict):
+                trace_event_seq = trace_event.get('seq')
             acknowledgement = (
                 trace_event.get('durability_ack')
                 if isinstance(trace_event, dict)
@@ -1322,6 +1325,7 @@ class ChatInteractionLifecycle:
                 'error_type': type(exc).__name__,
             }
         with self._lock:
+            record['runtime_audit_event_seq'] = trace_event_seq
             record['runtime_audit_durability'] = acknowledgement
         return record
 

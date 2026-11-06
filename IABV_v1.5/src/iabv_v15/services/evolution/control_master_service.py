@@ -54,6 +54,7 @@ class ControlMasterService:
         platform_pending_queue: Any | None = None,
         workspace_root: str | None = None,
         recent_decisions_limit: int = 10,
+        chat_interaction_lifecycle: Any | None = None,
     ) -> None:
         self.repository = repository
         self.objective_repository = objective_repository
@@ -64,6 +65,7 @@ class ControlMasterService:
         self.platform_pending_queue = platform_pending_queue
         self.workspace_root = workspace_root
         self.recent_decisions_limit = recent_decisions_limit
+        self.chat_interaction_lifecycle = chat_interaction_lifecycle
 
     # ------------------------------------------------------------------
     # Read API
@@ -577,14 +579,19 @@ class ControlMasterService:
         if not self.workspace_root:
             return []
         import json as _json
+        from iabv_v15.services.evolution.runtime_audit_tracer import validate_durability_ack
         audit_path = Path(str(self.workspace_root)) / 'data' / 'logs' / 'runtime_audit.jsonl'
         if not audit_path.exists():
             return []
         items: list[dict[str, Any]] = []
         try:
-            lines = audit_path.read_text(encoding='utf-8', errors='replace').splitlines()
+            raw = audit_path.read_bytes()
+            byte_end = len(raw)
+            lifecycle = self.chat_interaction_lifecycle
             count = 0
-            for line in reversed(lines):
+            for line in reversed(raw.splitlines(keepends=True)):
+                line_end = byte_end
+                byte_end -= len(line)
                 if count >= 10:
                     break
                 if not line.strip():
@@ -603,6 +610,15 @@ class ControlMasterService:
                 if outcome == 'resolved' and not stalls:
                     continue
                 iid_raw = data.get('interaction_id', '')
+                record = lifecycle.interaction_info(iid_raw) if lifecycle is not None else None
+                event_seq = event.get('seq')
+                receipt = validate_durability_ack(
+                    record.get('runtime_audit_durability') if isinstance(record, dict) else None,
+                    expected_seq=event_seq if type(event_seq) is int else -1,
+                    expected_line_sha256=hashlib.sha256(line).hexdigest(),
+                    expected_byte_start=byte_end,
+                    expected_byte_end=line_end,
+                )
                 aid = f'audit:{iid_raw}'
                 if aid in seen_ids:
                     continue
@@ -612,7 +628,7 @@ class ControlMasterService:
                     score['failed_interaction'] = 35
                 if stalls:
                     score['ui_stalls'] = min(len(stalls) * 15, 45)
-                items.append(self._make_item(
+                item = self._make_item(
                     item_id=aid,
                     title=(
                         f'Interaction {outcome}: '
@@ -629,7 +645,9 @@ class ControlMasterService:
                         f'stalls={len(stalls)} '
                         f'window_inactive={data.get("window_went_inactive", False)}'
                     ),
-                ))
+                )
+                item['runtime_audit_durability'] = receipt
+                items.append(item)
         except Exception:
             pass
         return items

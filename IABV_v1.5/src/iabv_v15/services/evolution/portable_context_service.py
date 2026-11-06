@@ -2964,31 +2964,63 @@ class PortableContextService:
         Merges in-memory lifecycle data with durable records from
         ``runtime_audit.jsonl`` so that episodes survive process death.
         """
+        from iabv_v15.services.evolution.runtime_audit_tracer import validate_durability_ack
+
         lifecycle = getattr(self, 'chat_interaction_lifecycle', None)
         in_memory_recent: list[dict[str, Any]] = []
         summary: dict[str, Any] = {}
         if lifecycle is not None and hasattr(lifecycle, 'summary'):
             try:
                 summary = lifecycle.summary()
-                in_memory_recent = lifecycle.recent_completed(limit=3)
+                in_memory_recent = [
+                    dict(record) for record in lifecycle.recent_completed(limit=3)
+                ]
             except Exception:
                 pass
 
-        # Reconstruct from runtime_audit.jsonl if in-memory is empty/missing
+        # JSONL reconstruction recovers the row, but not the caller-retained ACK.
         audit_recent = self._interaction_episodes_from_audit(limit=3)
-        # Merge: prefer in-memory for IDs we already have, append audit-only
+        audit_by_id = {
+            str(row.get('interaction_id') or ''): row
+            for row in audit_recent
+            if row.get('interaction_id')
+        }
         seen_ids = {r.get('interaction_id') for r in in_memory_recent}
         for ar in audit_recent:
             if ar.get('interaction_id') not in seen_ids:
                 in_memory_recent.append(ar)
                 seen_ids.add(ar.get('interaction_id'))
-        # Keep only most recent 3
         in_memory_recent = in_memory_recent[-3:]
+
+        for episode in in_memory_recent:
+            audit_row = audit_by_id.get(str(episode.get('interaction_id') or ''))
+            if audit_row is not None:
+                episode['_audit_line_sha256'] = audit_row.get('_audit_line_sha256')
+                episode['_audit_byte_start'] = audit_row.get('_audit_byte_start')
+                episode['_audit_byte_end'] = audit_row.get('_audit_byte_end')
+            expected_seq = episode.get('runtime_audit_event_seq')
+            episode['runtime_audit_durability_check'] = validate_durability_ack(
+                episode.get('runtime_audit_durability'),
+                expected_seq=(
+                    expected_seq
+                    if isinstance(expected_seq, int) and not isinstance(expected_seq, bool)
+                    else -1
+                ),
+                expected_line_sha256=episode.get('_audit_line_sha256', ''),
+                expected_byte_start=episode.get('_audit_byte_start', -1),
+                expected_byte_end=episode.get('_audit_byte_end', -1),
+            )
+
+        acknowledged = sum(
+            bool(ep.get('runtime_audit_durability_check', {}).get('accepted'))
+            for ep in in_memory_recent
+        )
         summary['recent_completed'] = in_memory_recent
-        # reconstructed_from_audit = true if ANY episode came from audit
         summary['reconstructed_from_audit'] = any(
             ep.get('_source') == 'runtime_audit' for ep in in_memory_recent
         )
+        summary['durability_acknowledged_count'] = acknowledged
+        summary['durability_ack_unverified_count'] = len(in_memory_recent) - acknowledged
         return summary
 
     def _interaction_lifecycle_section(self, *, now) -> PortableContextSection:
@@ -3000,13 +3032,23 @@ class PortableContextService:
         """
         lifecycle_data = self._interaction_lifecycle_summary()
         recent = list(lifecycle_data.get('recent_completed') or [])
-        reconstructed = bool(lifecycle_data.get('reconstructed_from_audit'))
         items: list[dict[str, Any]] = []
+        unresolved: list[str] = []
+        acknowledged_count = 0
         for ep in recent:
             stall_count = len(ep.get('stalls_during') or [])
             outcome = ep.get('outcome', '')
             is_resolved = ep.get('resolved', outcome == 'resolved')
             is_final = ep.get('is_final', outcome not in ('prepared', 'awaiting_external_response', 'reused_context'))
+            durability_check = dict(ep.get('runtime_audit_durability_check') or {})
+            accepted = bool(durability_check.get('accepted'))
+            if accepted:
+                acknowledged_count += 1
+            else:
+                unresolved.append(
+                    'UNRESOLVED:runtime_audit_durability_ack:'
+                    + str(ep.get('interaction_id') or 'unknown')
+                )
             items.append({
                 'interaction_id': ep.get('interaction_id', ''),
                 'message_preview': ep.get('message_preview', ''),
@@ -3019,6 +3061,9 @@ class PortableContextService:
                 'had_early_technical_response': ep.get('had_early_technical_response', False),
                 'window_went_inactive': ep.get('window_went_inactive', False),
                 'source': ep.get('_source', 'in_memory'),
+                'runtime_audit_event_seq': ep.get('runtime_audit_event_seq'),
+                'runtime_audit_durability_status': durability_check.get('status', 'ACK_UNAVAILABLE'),
+                'runtime_audit_durability_accepted': accepted,
             })
         if not items:
             summary_text = 'Sin episodios de interaccion recientes.'
@@ -3026,18 +3071,19 @@ class PortableContextService:
             sources = set(i.get('source', '') for i in items)
             source_note = ' (reconstruido desde runtime_audit)' if 'runtime_audit' in sources else ''
             summary_text = (
-                f'{len(items)} episodio(s) reciente(s){source_note}.'
+                f'{len(items)} episodio(s) reciente(s){source_note}; '
+                f'ACK fsync aceptados={acknowledged_count}.'
             )
         return self._section(
             section_id='interaction_lifecycle',
             title='Ciclo de vida de interacciones recientes',
             summary=summary_text,
             items=items,
-            source_kind='runtime_audit_jsonl+in_memory',
+            source_kind='runtime_audit_jsonl+in_memory+fsync_ack',
             source_refs=['data/logs/runtime_audit.jsonl', 'ChatInteractionLifecycle'],
-            confidence=0.9 if items else 0.0,
+            confidence=0.9 if items and acknowledged_count == len(items) else 0.0,
             last_updated=now,
-            unresolved_fields=[],
+            unresolved_fields=unresolved,
             metadata=lifecycle_data,
         )
 
@@ -3051,6 +3097,7 @@ class PortableContextService:
         same id, only the most recent event is kept.  Since the file is read
         in reverse chronological order, the first occurrence per id wins.
         """
+        import hashlib as _hashlib
         import json as _json
         audit_path = Path(self.workspace_root) / 'data' / 'logs' / 'runtime_audit.jsonl'
         if not audit_path.exists():
@@ -3058,11 +3105,17 @@ class PortableContextService:
         seen_ids: set[str] = set()
         episodes: list[dict[str, Any]] = []
         try:
-            lines = audit_path.read_text(encoding='utf-8', errors='replace').splitlines()
-            for line in reversed(lines):
-                if not line.strip():
+            raw_lines = audit_path.read_bytes().splitlines(keepends=True)
+            line_ranges: list[tuple[int, int]] = []
+            byte_cursor = 0
+            for raw_line in raw_lines:
+                line_ranges.append((byte_cursor, byte_cursor + len(raw_line)))
+                byte_cursor += len(raw_line)
+            for raw_line, (line_start, line_end) in reversed(list(zip(raw_lines, line_ranges))):
+                if not raw_line.strip():
                     continue
                 try:
+                    line = raw_line.decode('utf-8')
                     event = _json.loads(line)
                 except Exception:
                     continue
@@ -3078,6 +3131,10 @@ class PortableContextService:
                 ep_outcome = data.get('outcome', '')
                 episodes.append({
                     'interaction_id': iid,
+                    'runtime_audit_event_seq': event.get('seq'),
+                    '_audit_line_sha256': _hashlib.sha256(raw_line).hexdigest(),
+                    '_audit_byte_start': line_start,
+                    '_audit_byte_end': line_end,
                     'message_preview': data.get('message_preview', ''),
                     'outcome': ep_outcome,
                     'provider': data.get('provider', ''),
@@ -3398,6 +3455,10 @@ class PortableContextService:
                 'next_action': wq_item.get('next_action', ''),
                 'evidence_refs': wq_item.get('evidence_refs', []),
             })
+            receipt = wq_item.get('runtime_audit_durability')
+            if isinstance(receipt, dict):
+                items[-1]['runtime_audit_durability_status'] = receipt['status']
+                items[-1]['runtime_audit_durability_accepted'] = receipt['accepted']
         summary = f'{len(queue)} items prioritarios en cola canónica de trabajo.'
         if not items:
             summary = 'Cola canónica vacía o sin fuentes conectadas.'
@@ -3621,7 +3682,8 @@ class PortableContextService:
                         f'- [{iid}] "{preview}" | outcome={outcome} resolved={str(resolved).lower()} '
                         f'is_final={str(is_final).lower()} '
                         f'provider={provider} duration={dur}ms stalls={stalls} '
-                        f'early_technical={early} window_inactive={inactive} source={src}'
+                        f'early_technical={early} window_inactive={inactive} source={src} '
+                        f'fsync={item.get("runtime_audit_durability_status", "ACK_UNAVAILABLE")}'
                     )
                 elif section.section_id == 'canonical_work_queue':
                     wid = str(item.get('id') or 'n/d')
