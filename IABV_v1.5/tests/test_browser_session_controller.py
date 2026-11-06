@@ -154,3 +154,33 @@ def test_browser_session_controller_uses_storage_state_only_without_user_data_di
 
     assert controller.user_data_dir is None
     assert str(controller.storage_state_path).endswith('state.json')
+
+def test_browser_session_close_trace_omits_raw_exception_details(monkeypatch) -> None:
+    from iabv_v15.services.evolution import runtime_audit_tracer
+
+    trace_calls: list[tuple[str, dict]] = []
+
+    class _Tracer:
+        def trace(self, kind: str, **data) -> dict:
+            trace_calls.append((kind, data))
+            return {'kind': kind, 'data': data}
+
+    class _BrokenContext:
+        def close(self) -> None:
+            raise OSError(r'C:\\Users\\Owner\\private-state.json token=private-close-token')
+
+    monkeypatch.setattr(runtime_audit_tracer, 'get_runtime_tracer', lambda: _Tracer())
+    controller = BrowserSessionController()
+    controller._context = _BrokenContext()
+
+    controller._do_close(None)
+
+    assert len(trace_calls) == 1
+    kind, data = trace_calls[0]
+    assert kind == 'browser_session_close_unresolved'
+    assert data['error_type'] == 'OSError'
+    assert data['reason'] == 'exception_during_close'
+    assert 'error' not in data
+    assert 'private-state.json' not in repr(trace_calls)
+    assert 'private-close-token' not in repr(trace_calls)
+
