@@ -588,6 +588,79 @@ def test_atomic_evidence_writer_returns_file_and_projection_receipts(tmp_path) -
     assert receipt["control_master_sync"]["status"] == "SYNCED"
 
 
+def test_control_master_mirror_does_not_mark_zero_collected_run_green(tmp_path) -> None:
+    provenance = {
+        "commit_sha": _TEST_EVIDENCE_COMMIT,
+        "branch": _TEST_EVIDENCE_BRANCH,
+        "worktree_clean": True,
+        "provenance_status": "COMMIT_BOUND_CLEAN",
+        "worktree_status_sha256": "b" * 64,
+        "metadata": {
+            "provenance_before": {
+                "commit_sha": _TEST_EVIDENCE_COMMIT,
+                "branch": _TEST_EVIDENCE_BRANCH,
+                "worktree_clean": True,
+                "provenance_status": "COMMIT_BOUND_CLEAN",
+                "worktree_status_sha256": "b" * 64,
+            },
+            "provenance_after": {
+                "commit_sha": _TEST_EVIDENCE_COMMIT,
+                "branch": _TEST_EVIDENCE_BRANCH,
+                "worktree_clean": True,
+                "provenance_status": "COMMIT_BOUND_CLEAN",
+                "worktree_status_sha256": "b" * 64,
+            },
+        },
+    }
+    _persist_test_evidence(
+        workspace_root=tmp_path,
+        payload={
+            "suite": "tests/",
+            "keyword": "",
+            "passed": 0,
+            "failed": 0,
+            "errors": 0,
+            "duration_s": 0.1,
+            "returncode": 0,
+            "timed_out": False,
+        },
+        command="python -m pytest tests/ -q",
+        linked_pending_task="r24-empty-run",
+        changed_files=[],
+        provenance=provenance,
+    )
+
+    cm_latest = tmp_path / "data" / "evolution" / "control_master" / "latest.json"
+    tests_state = json.loads(cm_latest.read_text(encoding="utf-8"))["current_tests_state"]
+
+    assert tests_state["total"] == 0
+    assert tests_state["execution_status"] == "UNVERIFIED"
+    assert tests_state["health"] == "unknown"
+
+
+def test_evidence_without_returncode_or_timeout_is_rejected(tmp_path, monkeypatch) -> None:
+    _install_matching_git_provenance(monkeypatch)
+    path = _write_fresh_evidence(str(tmp_path))
+    raw = json.loads(path.read_text(encoding="utf-8"))
+    raw.pop("returncode")
+    raw["payload_sha256"] = _test_evidence_payload_sha256(raw)
+    path.write_text(json.dumps(raw), encoding="utf-8")
+
+    assert load_latest_test_evidence(tmp_path) is None
+
+
+def test_evidence_with_coerced_execution_outcome_types_is_rejected(tmp_path, monkeypatch) -> None:
+    _install_matching_git_provenance(monkeypatch)
+    path = _write_fresh_evidence(str(tmp_path))
+    raw = json.loads(path.read_text(encoding="utf-8"))
+    raw["returncode"] = True
+    raw["timed_out"] = "false"
+    raw["payload_sha256"] = _test_evidence_payload_sha256(raw)
+    path.write_text(json.dumps(raw), encoding="utf-8")
+
+    assert load_latest_test_evidence(tmp_path) is None
+
+
 def test_atomic_evidence_writer_surfaces_replace_failure(tmp_path, monkeypatch) -> None:
     from iabv_v15.infra.mcp import audit_tools
 
