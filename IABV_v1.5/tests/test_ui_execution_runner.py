@@ -475,6 +475,44 @@ def test_ui_execution_runner_uses_shared_cdp_when_selected(monkeypatch) -> None:
         shutil.rmtree(root, ignore_errors=True)
 
 
+
+def test_browser_dom_result_drops_raw_observation_when_fingerprint_fails() -> None:
+    root = _workspace('ui_execution_runner_observation_fingerprint_failure')
+    marker = 'private marker test@example.com'
+    try:
+        runner = UIExecutionRunner(str(root))
+        captured = runner._browser_dom_result(
+            launched=True,
+            focused=True,
+            focused_title='ChatGPT',
+            prompt_pasted=False,
+            response_captured=False,
+            captured_text='',
+            capture_source='browser_dom_shared_cdp',
+            error_message='assistant_login_required',
+            started=0.0,
+            metadata={
+                'shared_cdp': True,
+                'page_observation': {
+                    'source': 'cdp',
+                    'url': 'https://chatgpt.com:invalid/',
+                    'body_text': marker,
+                    'interactive_elements': [],
+                    'metadata': {},
+                },
+            },
+        )
+
+        metadata = captured['metadata']
+        fingerprint = metadata['page_observation_fingerprint']
+        assert fingerprint['schema'] == 'WEB_PAGE_OBSERVATION_FINGERPRINT_R1'
+        assert fingerprint['status'] == 'FINGERPRINT_FAILED'
+        assert 'page_observation' not in metadata
+        assert marker not in repr(metadata)
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
 def test_ui_execution_runner_propagates_codex_state_missing_from_rollout_probe(monkeypatch) -> None:
     root = _workspace('ui_execution_runner_codex_state_missing')
     try:
