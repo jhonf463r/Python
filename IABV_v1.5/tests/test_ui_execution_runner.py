@@ -373,7 +373,7 @@ def test_ui_execution_runner_uses_shared_cdp_when_selected(monkeypatch) -> None:
                 return ['S'] if self.page.submitted else []
 
             def inner_text(self, timeout: int = 0) -> str:
-                return 'ChatGPT Pregunta lo que quieras Enviar'
+                return 'ChatGPT private marker account test@example.com Pregunta lo que quieras Enviar'
 
         class _Page:
             url = 'https://chatgpt.com/'
@@ -399,6 +399,7 @@ def test_ui_execution_runner_uses_shared_cdp_when_selected(monkeypatch) -> None:
                 return [
                     {'tag': 'TEXTAREA', 'placeholder': 'Pregunta lo que quieras', 'visible': True},
                     {'tag': 'BUTTON', 'text': 'Enviar', 'visible': True},
+                    {'tag': 'BUTTON', 'text': 'Cuenta test@example.com', 'aria': 'Cuenta test@example.com', 'visible': True},
                 ]
 
             def press(self, key: str) -> None:
@@ -458,6 +459,14 @@ def test_ui_execution_runner_uses_shared_cdp_when_selected(monkeypatch) -> None:
         assert captured['captured_text'] == 'S'
         assert captured['capture_source'] == 'browser_dom_shared_cdp'
         assert captured['metadata']['shared_cdp'] is True
+        fingerprint = captured['metadata']['page_observation_fingerprint']
+        assert fingerprint['schema'] == 'WEB_PAGE_OBSERVATION_FINGERPRINT_R1'
+        assert fingerprint['body_text_chars'] > 0
+        assert fingerprint['interactive_element_count'] == 3
+        assert len(fingerprint['sha256']) == 64
+        assert 'page_observation' not in captured['metadata']
+        assert 'test@example.com' not in repr(captured['metadata'])
+        assert 'private marker account' not in repr(captured['metadata'])
         assert calls[0] == 'cdp:http://127.0.0.1:9223'
         assert 'pw.stop' in calls
     finally:
