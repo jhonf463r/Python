@@ -677,6 +677,8 @@ def test_portable_test_evidence_section_includes_r24_provenance() -> None:
             'passed': 12,
             'failed': 0,
             'errors': 0,
+            'returncode': 0,
+            'timed_out': False,
             'suite': 'R24-focused',
             'timestamp': '2026-11-05T18:00:00+00:00',
             'commit_sha': 'a' * 40,
@@ -699,6 +701,95 @@ def test_portable_test_evidence_section_includes_r24_provenance() -> None:
         assert items['worktree_clean'] is True
         assert items['worktree_status_sha256'] == evidence['worktree_status_sha256']
         assert items['payload_sha256'] == evidence['payload_sha256']
+        assert items['execution_status'] == 'PASSED'
+        assert items['returncode'] == 0
+        assert items['timed_out'] is False
+        assert items['health'] == 'green'
         assert section.confidence == 0.9
     finally:
         shutil.rmtree(root, ignore_errors=True)
+
+
+
+def _render_portable_test_evidence_section_for_outcome(evidence: dict[str, Any]):
+    root = _workspace('portable_test_evidence_outcome')
+    try:
+        service = AppBootstrap(str(root)).portable_context_service
+        service._load_test_evidence = lambda: evidence
+        return service._test_evidence_section(
+            now=__import__('datetime').datetime.now(__import__('datetime').timezone.utc)
+        )
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_portable_test_evidence_nonzero_exit_without_summary_is_not_green() -> None:
+    evidence = {
+        'passed': 0,
+        'failed': 0,
+        'errors': 0,
+        'returncode': 5,
+        'timed_out': False,
+        'provenance_status': 'COMMIT_BOUND_CLEAN',
+        'worktree_clean': True,
+    }
+
+    section = _render_portable_test_evidence_section_for_outcome(evidence)
+    items = {item['label']: item['value'] for item in section.items}
+
+    assert items['total'] == 0
+    assert items['execution_status'] == 'FAILED'
+    assert items['health'] == 'red'
+
+
+def test_portable_test_evidence_timeout_is_not_green() -> None:
+    evidence = {
+        'passed': 4,
+        'failed': 0,
+        'errors': 0,
+        'returncode': 1,
+        'timed_out': True,
+        'provenance_status': 'COMMIT_BOUND_CLEAN',
+        'worktree_clean': True,
+    }
+
+    section = _render_portable_test_evidence_section_for_outcome(evidence)
+    items = {item['label']: item['value'] for item in section.items}
+
+    assert items['execution_status'] == 'FAILED'
+    assert items['health'] == 'red'
+
+
+def test_portable_test_evidence_zero_collected_tests_is_unverified() -> None:
+    evidence = {
+        'passed': 0,
+        'failed': 0,
+        'errors': 0,
+        'returncode': 0,
+        'timed_out': False,
+        'provenance_status': 'COMMIT_BOUND_CLEAN',
+        'worktree_clean': True,
+    }
+
+    section = _render_portable_test_evidence_section_for_outcome(evidence)
+    items = {item['label']: item['value'] for item in section.items}
+
+    assert items['execution_status'] == 'UNVERIFIED'
+    assert items['health'] == 'unknown'
+    assert section.confidence == 0.0
+
+
+def test_portable_test_evidence_missing_run_outcome_is_unverified() -> None:
+    evidence = {
+        'passed': 5,
+        'failed': 0,
+        'errors': 0,
+        'provenance_status': 'COMMIT_BOUND_CLEAN',
+        'worktree_clean': True,
+    }
+
+    section = _render_portable_test_evidence_section_for_outcome(evidence)
+    items = {item['label']: item['value'] for item in section.items}
+
+    assert items['execution_status'] == 'UNVERIFIED'
+    assert items['health'] == 'unknown'
