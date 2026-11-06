@@ -1090,6 +1090,24 @@ class UIExecutionRunner:
             },
         )
 
+    @staticmethod
+    def _safe_cdp_endpoint_reference(value: Any) -> str:
+        raw = str(value or '').strip()
+        if not raw:
+            return ''
+        try:
+            parsed = urlsplit(raw)
+            if parsed.scheme.lower() not in {'http', 'https'} or not parsed.hostname:
+                return ''
+            host = parsed.hostname.lower()
+            if host not in {'localhost', '127.0.0.1', '::1'}:
+                return 'remote_cdp_endpoint'
+            port = parsed.port
+        except ValueError:
+            return ''
+        suffix = f':{port}' if port is not None else ''
+        return f'{parsed.scheme.lower()}://localhost{suffix}'
+
     def _browser_dom_result(
         self,
         *,
@@ -1105,6 +1123,11 @@ class UIExecutionRunner:
         metadata: dict[str, Any],
     ) -> dict[str, Any]:
         enriched_metadata = dict(metadata or {})
+        # Persist only a coarse CDP endpoint reference, never credentials,
+        # paths, query strings or fragments from a configurable endpoint.
+        raw_cdp_url = enriched_metadata.pop('cdp_url', None)
+        if raw_cdp_url:
+            enriched_metadata['cdp_endpoint_ref'] = self._safe_cdp_endpoint_reference(raw_cdp_url)
         # Keep the DOM observation in memory for perception, but never persist
         # raw page text or control labels with the ToolResult / execution log.
         page_observation = enriched_metadata.pop('page_observation', None)
