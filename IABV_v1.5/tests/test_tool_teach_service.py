@@ -111,6 +111,45 @@ def _service(root: Path, *, fail_shell_execute: bool = False, external_adapter: 
     return service, repository
 
 
+
+def test_external_consultation_filters_known_secrets_and_workspace_path_before_task_build() -> None:
+    root = _workspace('tool_teach_service_external_context_redaction')
+    try:
+        service, _repository = _service(root)
+        request = service._build_external_consultation_request(
+            user_goal='consulta de owner@example.com',
+            assistant_preference='chatgpt',
+            context_pack=(
+                f'Workspace: {root}\\\\src\\\\IABV_v1.5\\n'
+                'Contacto: owner@example.com\\n'
+                'Authorization: Bearer top-secret-token\\n'
+                '&token=another-secret-token\\n'
+            ),
+            site_id='wplay',
+            diagnostic_category='need_teaching',
+            incident_kind='',
+            launch_dry_run=True,
+            allow_local_automatic_consultation=False,
+        )
+        task = service.build_task_from_request(request)
+        query_action = next(
+            action for action in task.actions
+            if action.action_type == ToolActionType.LLM_QUERY
+        )
+
+        assert query_action.label == 'Contexto de consulta'
+        assert str(root) not in query_action.value
+        assert '[IABV_WORKSPACE]' in query_action.value
+        assert 'o***@example.com' in query_action.value
+        assert 'Bearer [REDACTED]' in query_action.value
+        assert '&token=[REDACTED]' in query_action.value
+        assert 'top-secret-token' not in query_action.value
+        assert 'another-secret-token' not in query_action.value
+        assert task.metadata['context_pack'] == query_action.value
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
 def test_tool_teach_service_normalizes_verified_actual_account_binding() -> None:
     binding = ToolTeachService._normalize_actual_account_binding({
         'status': 'VERIFIED',
