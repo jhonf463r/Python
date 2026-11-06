@@ -50,6 +50,41 @@ BOOT_WIRING_AVG_MS_DEGRADED = 20000.0
 BOOT_REGRESSION_RATIO = 1.4
 
 
+_SOURCE_COVERAGE_CONTRACT = 'OSES_SOURCE_COVERAGE_R1'
+_REQUIRED_SOURCE_IDS = (
+    'run_repository',
+    'adaptive_session_repository',
+    'experiment_runs',
+    'experiment_recommendations',
+    'scenario_run_repository',
+    'project_health',
+    'improvement_backlog',
+    'world_model_service',
+    'autonomous_validation_cycle',
+    'previous_review_snapshot',
+    'metacognitive_error_ledger',
+    'validation_feedback_history',
+    'token_rotation_ledger',
+    'decision_audit_trail',
+    'runtime_audit_tracer',
+    'runtime_audit_log',
+    'startup_timeline_log',
+    'startup_ui_presence_log',
+    'freeze_incident_reporter',
+    'discernment_frame_service',
+    'runtime_log',
+    'boot_profile_store',
+    'chat_research_backlog',
+    'account_resource_scanner',
+    'chat_message_repository',
+    'code_audit_trail',
+    'sqlite_incident_file',
+    'environment_self_awareness_service',
+    'test_evidence_file',
+    'experiment_lab_threshold',
+    'metacognition_evolution',
+)
+
 class OperationalSelfExaminationService:
     def __init__(
         self,
@@ -1224,40 +1259,6 @@ class OperationalSelfExaminationService:
             except Exception as exc:
                 logger.debug('oses_auto_correct: failed for %s: %s', finding.category, exc)
 
-_SOURCE_COVERAGE_CONTRACT = 'OSES_SOURCE_COVERAGE_R1'
-_REQUIRED_SOURCE_IDS = (
-    'run_repository',
-    'adaptive_session_repository',
-    'experiment_runs',
-    'experiment_recommendations',
-    'scenario_run_repository',
-    'project_health',
-    'improvement_backlog',
-    'world_model_service',
-    'autonomous_validation_cycle',
-    'previous_review_snapshot',
-    'metacognitive_error_ledger',
-    'validation_feedback_history',
-    'token_rotation_ledger',
-    'decision_audit_trail',
-    'runtime_audit_tracer',
-    'runtime_audit_log',
-    'startup_timeline_log',
-    'startup_ui_presence_log',
-    'freeze_incident_reporter',
-    'discernment_frame_service',
-    'runtime_log',
-    'boot_profile_store',
-    'chat_research_backlog',
-    'account_resource_scanner',
-    'chat_message_repository',
-    'code_audit_trail',
-    'sqlite_incident_file',
-    'environment_self_awareness_service',
-    'test_evidence_file',
-    'experiment_lab_threshold',
-    'metacognition_evolution',
-)
 
     def _apply_metacognitive_feedback(
         self,
