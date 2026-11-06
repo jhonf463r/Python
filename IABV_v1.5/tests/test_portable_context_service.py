@@ -711,7 +711,7 @@ def test_portable_test_evidence_section_includes_r24_provenance() -> None:
 
 
 
-def _render_portable_test_evidence_section_for_outcome(evidence: dict[str, Any]):
+def _render_portable_test_evidence_section_for_outcome(evidence: dict[str, object]):
     root = _workspace('portable_test_evidence_outcome')
     try:
         service = AppBootstrap(str(root)).portable_context_service
