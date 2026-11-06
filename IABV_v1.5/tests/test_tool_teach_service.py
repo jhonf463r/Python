@@ -141,6 +141,9 @@ def test_external_consultation_filters_known_secrets_and_workspace_path_before_t
         assert str(root) not in query_action.value
         assert '[IABV_WORKSPACE]' in query_action.value
         assert 'o***@example.com' in query_action.value
+        assert 'owner@example.com' not in query_action.value
+        assert 'owner@example.com' not in task.metadata['thread_title']
+        assert 'owner@example.com' not in task.metadata['thread_key']
         assert 'Bearer [REDACTED]' in query_action.value
         assert '&token=[REDACTED]' in query_action.value
         assert 'top-secret-token' not in query_action.value
