@@ -381,6 +381,8 @@ class TestControlMasterProjection:
             tools_available=["chatgpt"],
             source_coverage={"quota_tracker": "CORRUPT"},
             source_errors={"quota_tracker": "JSONDecodeError"},
+            unresolved_count=1,
+            unresolved_items=["UNRESOLVED:inventory_entry"],
         )
 
         service = ControlMasterService(
@@ -401,6 +403,7 @@ class TestControlMasterProjection:
         assert inv["tools_available"] == []
         assert inv["continuity_queue_size"] == 0
         assert inv["next_recommended"] is None
+        assert inv["unresolved_count"] == 1
         assert any(
             "UNRESOLVED:quota_tracker:CORRUPT" in item
             for item in inv["unresolved_items"]
