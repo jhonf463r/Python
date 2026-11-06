@@ -448,6 +448,73 @@ def test_worker_health_gate_invalidates_cache_when_quota_tracker_revision_change
     assert call_count['n'] == 2
 
 
+def test_worker_health_gate_retries_when_quota_revision_changes_during_scan(
+    monkeypatch,
+) -> None:
+    from iabv_v15.services import account_resource_scanner
+
+    revisions = iter([
+        ('quota-tracker', 1, 10, 100, 10),
+        ('quota-tracker', 1, 10, 200, 10),
+        ('quota-tracker', 1, 10, 200, 10),
+    ])
+    monkeypatch.setattr(
+        account_resource_scanner,
+        'quota_tracker_revision',
+        lambda: next(revisions),
+    )
+    call_count = {'n': 0}
+
+    def _changing_scanner() -> dict[str, Any]:
+        call_count['n'] += 1
+        pool = _fake_pool_healthy()
+        pool['workers'][0]['email'] = (
+            'stale@test.com' if call_count['n'] == 1 else 'fresh@test.com'
+        )
+        return pool
+
+    router = _router(
+        _workspace('whg_quota_revision_scan_race'),
+        account_resource_scanner=_changing_scanner,
+    )
+    gate = router.worker_health_gate(target_assistant='chatgpt')
+
+    assert call_count['n'] == 2
+    assert gate['usable'] is True
+    assert gate['top_worker']['email'] == 'fresh@test.com'
+
+
+def test_worker_health_gate_does_not_cache_transient_scanner_error(
+    monkeypatch,
+) -> None:
+    from iabv_v15.services import account_resource_scanner
+
+    monkeypatch.setattr(
+        account_resource_scanner,
+        'quota_tracker_revision',
+        lambda: ('quota-tracker', 1, 10, 100, 10),
+    )
+    call_count = {'n': 0}
+
+    def _recovering_scanner() -> dict[str, Any]:
+        call_count['n'] += 1
+        if call_count['n'] == 1:
+            raise RuntimeError('temporary scanner interruption')
+        return _fake_pool_healthy()
+
+    router = _router(
+        _workspace('whg_scanner_error_not_cached'),
+        account_resource_scanner=_recovering_scanner,
+    )
+    first = router.worker_health_gate()
+    second = router.worker_health_gate()
+
+    assert first['usable'] is False
+    assert 'temporary scanner interruption' in first['reason']
+    assert second['usable'] is True
+    assert call_count['n'] == 2
+
+
 def test_worker_health_gate_different_targets_not_cross_contaminated() -> None:
     """Cache stores raw pool; different target_assistant values filter independently."""
     call_count = {'n': 0}
