@@ -1154,6 +1154,27 @@ def test_session_profile_path_resolution_accepts_legacy_in_root_and_rejects_esca
         relative = 'data/tool_teaching/external_assistants/legacy_profile'
         assert service._has_session_content(relative) is True
         assert service._has_session_content(str(in_root)) is True
+
+        request = service._build_external_consultation_request(
+            user_goal='continuidad de sesión',
+            assistant_preference='chatgpt',
+            context_pack='contexto local',
+            site_id='wplay',
+            diagnostic_category='',
+            incident_kind='',
+            launch_dry_run=True,
+            allow_local_automatic_consultation=False,
+        )
+        legacy_task = service.build_task_from_request(request)
+        legacy_task = legacy_task.model_copy(
+            update={'metadata': {**legacy_task.metadata, 'session_profile_dir': str(in_root)}}
+        )
+        card = _repository.get_card(legacy_task.tool_id)
+        assert card is not None
+        synced_task = service._sync_external_consultation_task(legacy_task, card)
+        assert synced_task.metadata['session_profile_dir'] == relative
+        assert synced_task.metadata['reused_thread'] is True
+
         escape_path = f'../{outside.name}'
         assert service._has_session_content(str(outside)) is False
         assert service._has_session_content(escape_path) is False
