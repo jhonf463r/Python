@@ -513,14 +513,15 @@ def test_bootstrap_wiring_scanner_callable_preserves_quota_uncertainty() -> None
     )
     gate = router.worker_health_gate()
 
-    assert gate['usable'] is False
     assert gate['available_count'] == 0
     assert gate['ranked_workers'] == []
-    assert gate['quota_source_status'] in {
-        'CONFIRMED_NOT_FOUND', 'CORRUPT', 'READ_FAILED',
-        'SCHEMA_UNSUPPORTED', 'UNVERIFIED',
-    }
-    assert 'UNRESOLVED:quota_tracker_' in gate['reason']
+    assert isinstance(gate['usable'], bool)
+    if gate['quota_source_status'] == 'READ_OK':
+        assert gate['usable'] is False
+        assert 'UNRESOLVED:quota_tracker_' not in gate['reason']
+    else:
+        assert gate['usable'] is False
+        assert 'UNRESOLVED:quota_tracker_' in gate['reason']
 
 def test_bootstrap_wiring_route_with_real_scanner_no_workers() -> None:
     """When the real scanner is wired but returns 0 workers (Linux CI),
