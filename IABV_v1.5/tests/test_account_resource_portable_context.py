@@ -65,7 +65,7 @@ def test_snapshot_returns_ok_when_no_quotas_tracked() -> None:
     svc = _make_portable_service(root)
 
     def mock_quotas():
-        return {'statuses': [], 'total_tracked': 0, 'exhausted_count': 0,
+        return {'source_coverage': {'quota_tracker': 'READ_OK'}, 'statuses': [], 'total_tracked': 0, 'exhausted_count': 0,
                 'available_count': 0, 'exhausted_keys': [], 'available_keys': []}
 
     def mock_workers():
@@ -97,6 +97,7 @@ def test_snapshot_includes_exhausted_accounts() -> None:
 
     def mock_quotas():
         return {
+            'source_coverage': {'quota_tracker': 'READ_OK'},
             'statuses': [
                 {'tool': 'chatgpt', 'email': 'user@test.com', 'exhausted': True,
                  'remaining': 0, 'limit': 15, 'resets_at': '2026-04-21T00:00:00Z',
@@ -210,6 +211,68 @@ def test_snapshot_cache_expires_after_ttl() -> None:
     assert snap2['quota_total_tracked'] == 2
 
 
+def test_snapshot_quota_corruption_remains_unverified_in_portable_context() -> None:
+    root = _workspace('acct_snap_quota_corrupt')
+    svc = _make_portable_service(root)
+
+    def mock_quotas():
+        return {
+            'statuses': [],
+            'total_tracked': 0,
+            'exhausted_count': 0,
+            'available_count': 0,
+            'source_coverage': {'quota_tracker': 'CORRUPT'},
+            'source_errors': {'quota_tracker': 'JSONDecodeError'},
+        }
+
+    def mock_workers():
+        return {
+            'workers': [],
+            'exhausted': [],
+            'unverified': [{
+                'tool': 'chatgpt',
+                'email': 'user@test.com',
+                'browser': 'Chrome',
+                'profile': 'Default',
+            }],
+            'unverified_count': 1,
+            'available_count': 0,
+            'exhausted_count': 0,
+            'by_tool': {},
+            'total_remaining_messages': 0,
+            'tools_available': [],
+            'source_coverage': {'quota_tracker': 'CORRUPT'},
+            'source_errors': {'quota_tracker': 'JSONDecodeError'},
+        }
+
+    def mock_secrets():
+        return {
+            'configured': [],
+            'missing': [],
+            'configured_count': 0,
+            'missing_count': 0,
+            'secrets_file_exists': False,
+            'secrets_in_file': [],
+        }
+
+    with patch('iabv_v15.services.account_resource_scanner.get_all_quota_status', mock_quotas), \
+         patch('iabv_v15.services.account_resource_scanner.estimate_available_workers', mock_workers), \
+         patch('iabv_v15.services.account_resource_scanner.scan_configured_secrets', mock_secrets):
+        snapshot = svc._account_resource_snapshot()
+
+    assert snapshot['status'] == 'partial_failure'
+    assert 'quota_tracker_corrupt' in snapshot['read_failures']
+    assert snapshot['quota_source_status'] == 'CORRUPT'
+    assert snapshot['worker_unverified_count'] == 1
+
+    from iabv_v15.domain.models import utc_now
+    section = svc._account_resource_section(status=snapshot, now=utc_now())
+
+    assert 'Quota tracker no verificable (CORRUPT)' in section.summary
+    assert section.confidence == 0.5
+    assert 'UNRESOLVED:quota_tracker_corrupt' in section.unresolved_fields
+
+
 def test_snapshot_survives_scanner_import_failure() -> None:
     """If account_resource_scanner can't be imported, snapshot degrades gracefully."""
     root = _workspace('acct_snap_import_fail')
@@ -261,6 +324,7 @@ def test_section_summary_shows_workers_and_messages() -> None:
 
     status = {
         'status': 'ok',
+        'quota_source_status': 'READ_OK',
         'worker_available_count': 3,
         'quota_exhausted_count': 1,
         'worker_total_remaining_messages': 45,
@@ -332,7 +396,7 @@ def test_oses_finding_when_all_quotas_exhausted() -> None:
     oses = _make_oses(root)
 
     def mock_quotas():
-        return {'exhausted_count': 3, 'available_count': 0,
+        return {'source_coverage': {'quota_tracker': 'READ_OK'}, 'exhausted_count': 3, 'available_count': 0,
                 'exhausted_keys': ['chatgpt:a@t.com', 'chatgpt:b@t.com', 'claude:a@t.com'],
                 'statuses': []}
 
