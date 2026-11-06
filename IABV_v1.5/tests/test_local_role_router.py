@@ -499,10 +499,12 @@ def test_route_from_decision_no_external_skips_gate() -> None:
 # ── Bootstrap wiring tests ──────────────────────────────────────
 
 
-def test_bootstrap_wiring_scanner_callable_produces_real_gate() -> None:
-    """Verify that passing estimate_available_workers as the scanner
-    produces a real gate result (not UNRESOLVED) — this mirrors the
-    bootstrap.py wiring pattern."""
+def test_bootstrap_wiring_scanner_callable_preserves_quota_uncertainty() -> None:
+    """A connected scanner is not equivalent to a verified quota source.
+
+    On a clean Linux CI workspace the quota tracker may be confirmed absent;
+    the gate must preserve that state instead of advertising an empty pool.
+    """
     from iabv_v15.services.account_resource_scanner import estimate_available_workers
 
     router = _router(
@@ -510,13 +512,15 @@ def test_bootstrap_wiring_scanner_callable_produces_real_gate() -> None:
         account_resource_scanner=estimate_available_workers,
     )
     gate = router.worker_health_gate()
-    # On a Linux CI box there are no browser sessions, so available_count
-    # will be 0 — but the gate must still report a REAL result (not
-    # UNRESOLVED) because the scanner *is* wired and callable.
-    assert 'UNRESOLVED' not in gate['reason']
-    assert isinstance(gate['usable'], bool)
-    assert isinstance(gate['available_count'], int)
 
+    assert gate['usable'] is False
+    assert gate['available_count'] == 0
+    assert gate['ranked_workers'] == []
+    assert gate['quota_source_status'] in {
+        'CONFIRMED_NOT_FOUND', 'CORRUPT', 'READ_FAILED',
+        'SCHEMA_UNSUPPORTED', 'UNVERIFIED',
+    }
+    assert 'UNRESOLVED:quota_tracker_' in gate['reason']
 
 def test_bootstrap_wiring_route_with_real_scanner_no_workers() -> None:
     """When the real scanner is wired but returns 0 workers (Linux CI),
