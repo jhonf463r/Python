@@ -1289,7 +1289,7 @@ class ControlMasterService:
             'expired_count': data.get('expired_count', 0),
             'unresolved_count': max(
                 int(data.get('unresolved_count', 0) or 0),
-                len(unresolved_items) if not quota_verified else 0,
+                1 if not quota_verified else 0,
             ),
             'total_remaining_messages': (
                 data.get('total_remaining_messages', 0) if quota_verified else 0
