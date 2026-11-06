@@ -14,6 +14,7 @@ Covers:
 from __future__ import annotations
 
 import json
+import hashlib
 import shutil
 import uuid
 from datetime import timedelta
@@ -1156,3 +1157,133 @@ class TestQueueSourceFailureVisibilityR2:
             assert svc.last_work_queue_source_coverage["objective_repository"] == "READ_PARTIAL"
         finally:
             shutil.rmtree(ws, ignore_errors=True)
+
+
+
+def _write_interaction_audit_row(workspace: Path, event: dict[str, Any]) -> tuple[bytes, Path]:
+    line = (json.dumps(event) + "\n").encode("utf-8")
+    path = workspace / "data" / "logs" / "runtime_audit.jsonl"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(line)
+    return line, path
+
+
+def _durable_ack_for_line(line: bytes, *, seq: int) -> dict[str, Any]:
+    return {
+        "status": "FILE_FSYNCED",
+        "path": "runtime_audit.jsonl",
+        "seq": seq,
+        "byte_start": 0,
+        "byte_end": len(line),
+        "line_sha256": hashlib.sha256(line).hexdigest(),
+    }
+
+
+def test_control_master_consumes_only_ack_matching_exact_audit_row() -> None:
+    ws = _workspace()
+    try:
+        event = {
+            "seq": 31,
+            "kind": "interaction_resolved",
+            "data": {
+                "interaction_id": "chat-ack-exact",
+                "message_preview": "durable failure",
+                "outcome": "failed",
+                "provider": "test",
+                "stalls_during": [],
+            },
+        }
+        line, _ = _write_interaction_audit_row(ws, event)
+        lifecycle = MagicMock()
+        lifecycle.interaction_info.return_value = {
+            "runtime_audit_durability": _durable_ack_for_line(line, seq=31)
+        }
+        service = ControlMasterService(
+            repository=_fake_repo(),
+            workspace_root=str(ws),
+            chat_interaction_lifecycle=lifecycle,
+        )
+
+        items = [item for item in service.current_work_queue() if item["source"] == "runtime_audit"]
+
+        assert len(items) == 1
+        assert items[0]["runtime_audit_durability"]["accepted"] is True
+        assert items[0]["runtime_audit_durability"]["verification"] == "TRACER_RECEIPT_MATCHED_TO_READ_ROW"
+        assert service.last_work_queue_source_coverage["runtime_audit_durability"] == "READ_OK"
+    finally:
+        shutil.rmtree(ws, ignore_errors=True)
+
+
+def test_control_master_rejects_ack_when_audit_row_bytes_changed() -> None:
+    ws = _workspace()
+    try:
+        original_event = {
+            "seq": 32,
+            "kind": "interaction_resolved",
+            "data": {
+                "interaction_id": "chat-ack-tampered",
+                "message_preview": "original failure",
+                "outcome": "failed",
+                "provider": "test",
+                "stalls_during": [],
+            },
+        }
+        original_line = (json.dumps(original_event) + "\n").encode("utf-8")
+        tampered_event = {
+            **original_event,
+            "data": {**original_event["data"], "message_preview": "altered failure"},
+        }
+        _write_interaction_audit_row(ws, tampered_event)
+        lifecycle = MagicMock()
+        lifecycle.interaction_info.return_value = {
+            "runtime_audit_durability": _durable_ack_for_line(original_line, seq=32)
+        }
+        service = ControlMasterService(
+            repository=_fake_repo(),
+            workspace_root=str(ws),
+            chat_interaction_lifecycle=lifecycle,
+        )
+
+        items = [item for item in service.current_work_queue() if item["source"] == "runtime_audit"]
+
+        assert len(items) == 1
+        assert items[0]["runtime_audit_durability"]["status"] == "ACK_INVALID"
+        assert items[0]["runtime_audit_durability"]["accepted"] is False
+        assert service.last_work_queue_source_coverage["runtime_audit_durability"] == "READ_UNVERIFIED"
+    finally:
+        shutil.rmtree(ws, ignore_errors=True)
+
+
+def test_control_master_keeps_memory_only_ack_unverified() -> None:
+    ws = _workspace()
+    try:
+        event = {
+            "seq": 33,
+            "kind": "interaction_resolved",
+            "data": {
+                "interaction_id": "chat-ack-memory-only",
+                "message_preview": "memory only failure",
+                "outcome": "failed",
+                "provider": "test",
+                "stalls_during": [],
+            },
+        }
+        _write_interaction_audit_row(ws, event)
+        lifecycle = MagicMock()
+        lifecycle.interaction_info.return_value = {
+            "runtime_audit_durability": {"status": "MEMORY_ONLY"}
+        }
+        service = ControlMasterService(
+            repository=_fake_repo(),
+            workspace_root=str(ws),
+            chat_interaction_lifecycle=lifecycle,
+        )
+
+        items = [item for item in service.current_work_queue() if item["source"] == "runtime_audit"]
+
+        assert len(items) == 1
+        assert items[0]["runtime_audit_durability"]["status"] == "MEMORY_ONLY"
+        assert items[0]["runtime_audit_durability"]["accepted"] is False
+        assert service.last_work_queue_source_coverage["runtime_audit_durability"] == "READ_UNVERIFIED"
+    finally:
+        shutil.rmtree(ws, ignore_errors=True)
