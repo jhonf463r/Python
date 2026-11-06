@@ -209,6 +209,50 @@ def test_quota_attribution_rejects_actual_tool_mismatch() -> None:
     mock_quota.assert_not_called()
 
 
+def test_quota_attribution_rejects_account_email_mismatch() -> None:
+    result = {
+        'status': 'prepared',
+        'dry_run': False,
+        'actual_assistant_kind': 'chatgpt',
+        'actual_account_email': 'other@test.com',
+    }
+    with patch.object(
+        AdaptiveTaskOrchestrator, '_record_quota_usage',
+    ) as mock_quota:
+        tracking = AdaptiveTaskOrchestrator._record_quota_usage_if_verified(
+            result,
+            expected_tool='chatgpt',
+            expected_email='alice@test.com',
+            source='governed_dispatch',
+        )
+
+    assert tracking['status'] == 'UNVERIFIED'
+    assert tracking['reason'] == 'actual_account_mismatch'
+    assert tracking['source'] == 'governed_dispatch'
+    mock_quota.assert_not_called()
+
+
+def test_quota_attribution_rejects_missing_dry_run_state() -> None:
+    result = {
+        'status': 'prepared',
+        'actual_assistant_kind': 'chatgpt',
+        'actual_account_email': 'alice@test.com',
+    }
+    with patch.object(
+        AdaptiveTaskOrchestrator, '_record_quota_usage',
+    ) as mock_quota:
+        tracking = AdaptiveTaskOrchestrator._record_quota_usage_if_verified(
+            result,
+            expected_tool='chatgpt',
+            expected_email='alice@test.com',
+            source='governed_dispatch',
+        )
+
+    assert tracking['status'] == 'UNVERIFIED'
+    assert tracking['reason'] == 'dry_run_state_missing'
+    mock_quota.assert_not_called()
+
+
 def test_quota_attribution_records_only_exact_actual_identity() -> None:
     result = {
         'status': 'prepared',
@@ -231,6 +275,7 @@ def test_quota_attribution_records_only_exact_actual_identity() -> None:
 
     assert tracking['status'] == 'RECORDED'
     assert tracking['quota_status'] == quota
+    assert tracking['source'] == 'unit_test'
     mock_quota.assert_called_once_with('chatgpt', 'alice@test.com', source='unit_test')
 
 
