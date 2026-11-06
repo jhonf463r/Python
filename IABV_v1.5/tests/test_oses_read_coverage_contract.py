@@ -363,3 +363,35 @@ def test_oses_accepts_fresh_commit_bound_test_evidence(tmp_path, monkeypatch) ->
 
     assert service._source_coverage["test_evidence_file"] == "READ_OK"
     assert service._source_errors.get("test_evidence_file", "") == ""
+
+
+def test_oses_account_scanner_partial_coverage_cannot_be_promoted_to_read_ok(tmp_path) -> None:
+    service = _service(tmp_path)
+    service._record_account_resource_coverage(
+        {
+            "source_coverage": {
+                "browser_accounts": "READ_PARTIAL",
+                "quota_tracker": "READ_OK",
+            },
+            "source_errors": {"browser_accounts": "profile_read_failed"},
+        }
+    )
+    assert service._source_coverage["account_resource_scanner"] == "READ_FAILED"
+    assert "error_sources=browser_accounts" in service._source_errors["account_resource_scanner"]
+
+
+def test_oses_account_scanner_missing_coverage_is_unverified(tmp_path) -> None:
+    service = _service(tmp_path)
+    service._record_account_resource_coverage({"accounts": [], "count": 0})
+    assert service._source_coverage["account_resource_scanner"] == "READ_UNVERIFIED"
+
+
+def test_oses_account_scanner_partial_state_survives_later_success(tmp_path) -> None:
+    service = _service(tmp_path)
+    service._record_account_resource_coverage(
+        {"source_coverage": {"browser_sessions": "READ_PARTIAL"}, "source_errors": {}}
+    )
+    service._record_account_resource_coverage(
+        {"source_coverage": {"quota_tracker": "READ_OK"}, "source_errors": {}}
+    )
+    assert service._source_coverage["account_resource_scanner"] == "READ_PARTIAL"

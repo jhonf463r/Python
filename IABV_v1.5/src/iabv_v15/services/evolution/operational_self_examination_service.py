@@ -191,6 +191,33 @@ class OperationalSelfExaminationService:
             )
         return cached
 
+    def _record_account_resource_coverage(self, result: Any) -> None:
+        """Propagate nested scanner outcomes without promoting partial reads."""
+        if not isinstance(result, dict):
+            self._record_source_status('account_resource_scanner', 'READ_UNVERIFIED', 'scanner_result_not_object')
+            return
+        coverage = result.get('source_coverage')
+        errors = result.get('source_errors')
+        if not isinstance(coverage, dict) or not coverage:
+            self._record_source_status('account_resource_scanner', 'READ_UNVERIFIED', 'scanner_source_coverage_missing')
+            return
+        statuses = [str(value) for value in coverage.values()]
+        error_keys = sorted(errors) if isinstance(errors, dict) else []
+        if any(value in {'READ_FAILED', 'CORRUPT', 'SCHEMA_UNSUPPORTED'} for value in statuses):
+            status = 'READ_FAILED'
+        elif all(value == 'READ_OK' for value in statuses) and not error_keys:
+            status = 'READ_OK'
+        elif len(set(statuses)) == 1:
+            status = statuses[0]
+        else:
+            status = 'READ_PARTIAL'
+        reason = 'nested_sources=' + ','.join(
+            f'{key}:{coverage[key]}' for key in sorted(coverage)
+        )
+        if error_keys:
+            reason += ';error_sources=' + ','.join(error_keys)
+        self._record_source_status('account_resource_scanner', status, reason[:200])
+
     def _source_coverage_report(self) -> dict[str, Any]:
         """Build an explicit inventory; never infer READ_OK from an absent status."""
         coverage = {
@@ -4307,7 +4334,7 @@ _REQUIRED_SOURCE_IDS = (
         try:
             from iabv_v15.services.account_resource_scanner import scan_browser_accounts
             browser_info = scan_browser_accounts()
-            self._record_source_status('account_resource_scanner', 'READ_OK')
+            self._record_account_resource_coverage(browser_info)
             acct_count = browser_info.get('count', 0)
             if acct_count > 0:
                 accounts = browser_info.get('accounts', [])
@@ -6944,7 +6971,9 @@ _REQUIRED_SOURCE_IDS = (
             accounts = scan_browser_accounts()
             sessions = scan_browser_sessions()
             verified = verify_account_sessions()
-            self._record_source_status('account_resource_scanner', 'READ_OK')
+            self._record_account_resource_coverage(accounts)
+            self._record_account_resource_coverage(sessions)
+            self._record_account_resource_coverage(verified)
 
             session_browsers = {s.get('browser', '') for s in sessions.get('sessions', [])}
             account_browsers = {a.get('browser', '') for a in accounts.get('accounts', [])}
@@ -6983,7 +7012,7 @@ _REQUIRED_SOURCE_IDS = (
             if accounts_with_sessions:
                 from iabv_v15.services.account_resource_scanner import get_all_quota_status
                 quotas = get_all_quota_status()
-                self._record_source_status('account_resource_scanner', 'READ_OK')
+                self._record_account_resource_coverage(quotas)
                 tracked_count = len(quotas.get('statuses', []))
                 if tracked_count == 0 and len(accounts_with_sessions) > 0:
                     findings.append(SelfExaminationFinding(
@@ -7014,7 +7043,6 @@ _REQUIRED_SOURCE_IDS = (
             has_anthropic = bool(os.environ.get('ANTHROPIC_API_KEY'))
             from iabv_v15.services.account_resource_scanner import _load_training_examples
             training_count = len(_load_training_examples())
-            self._record_source_status('account_resource_scanner', 'READ_OK')
 
             if (has_openai or has_anthropic) and training_count == 0:
                 cloud_name = 'OpenAI' if has_openai else 'Anthropic'
@@ -7124,7 +7152,7 @@ _REQUIRED_SOURCE_IDS = (
         # Finding 1: Exhausted quotas blocking execution
         try:
             quotas = get_all_quota_status()
-            self._record_source_status('account_resource_scanner', 'READ_OK')
+            self._record_account_resource_coverage(quotas)
             exhausted_count = quotas.get('exhausted_count', 0)
             available_count = quotas.get('available_count', 0)
             total = exhausted_count + available_count
@@ -7195,7 +7223,7 @@ _REQUIRED_SOURCE_IDS = (
         # Finding 3: Critical secrets missing
         try:
             secrets = scan_configured_secrets()
-            self._record_source_status('account_resource_scanner', 'READ_OK')
+            self._record_account_resource_coverage(secrets)
             missing = secrets.get('missing', [])
             critical_missing = [
                 s for s in missing
@@ -7391,16 +7419,25 @@ _REQUIRED_SOURCE_IDS = (
                 check_web_session_health,
                 _WEB_SESSION_COOKIE_DOMAINS,
             )
-        except Exception:
+        except Exception as exc:
+            self._record_source_status('account_resource_scanner', 'READ_FAILED', type(exc).__name__)
             return findings
 
+        health_outcomes: list[str] = []
         for provider in _WEB_SESSION_COOKIE_DOMAINS:
             try:
                 health = check_web_session_health(provider)
             except Exception:
+                health_outcomes.append('READ_FAILED')
+                continue
+            if not isinstance(health, dict):
+                health_outcomes.append('READ_FAILED')
                 continue
 
-            status = health.get('status', 'unknown')
+            status = str(health.get('status') or 'unknown').strip().lower()
+            health_outcomes.append(
+                'READ_OK' if status in {'active', 'expired'} else 'READ_UNVERIFIED'
+            )
             if status == 'expired':
                 label_map = {
                     'chatgpt_web': 'ChatGPT Web',
@@ -7439,6 +7476,19 @@ _REQUIRED_SOURCE_IDS = (
                     },
                 ))
 
+        if health_outcomes:
+            if 'READ_FAILED' in health_outcomes:
+                web_status = 'READ_FAILED'
+            elif all(item == 'READ_OK' for item in health_outcomes):
+                web_status = 'READ_OK'
+            else:
+                web_status = 'READ_UNVERIFIED'
+            self._record_source_status('account_resource_scanner', web_status)
+        else:
+            self._record_source_status(
+                'account_resource_scanner', 'READ_UNVERIFIED',
+                'no_web_provider_health_checks_executed',
+            )
         return findings
 
     # ==================================================================

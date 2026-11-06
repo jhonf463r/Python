@@ -3177,6 +3177,8 @@ class AccountInventorySnapshot(BaseModel):
     total_remaining_messages: int = 0
     tools_available: list[str] = Field(default_factory=list)
     unresolved_items: list[str] = Field(default_factory=list)
+    source_coverage: dict[str, str] = Field(default_factory=dict)
+    source_errors: dict[str, str] = Field(default_factory=dict)
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 

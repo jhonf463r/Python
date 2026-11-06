@@ -20,6 +20,7 @@ import os
 import re
 import subprocess
 import sqlite3
+import stat as stat_module
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -60,13 +61,15 @@ def _safe_request(url: str, headers: dict[str, str] | None = None,
 # ──────────────────────────────────────────────────────────────
 
 def scan_github_api() -> dict[str, Any]:
-    """Check GitHub API access and rate limits."""
+    """Check GitHub API access and expose the read outcome."""
     token = os.environ.get('GITHUB_TOKEN_IABV') or os.environ.get('GITHUB_TOKEN') or ''
     if not token:
         return {
             'available': False,
             'reason': 'no_token',
             'detail': 'GITHUB_TOKEN_IABV ni GITHUB_TOKEN están configurados',
+            'source_coverage': {'github_api': 'NOT_CONFIGURED'},
+            'source_errors': {},
         }
 
     resp = _safe_request(
@@ -74,104 +77,183 @@ def scan_github_api() -> dict[str, Any]:
         headers={'Authorization': f'token {token}', 'Accept': 'application/vnd.github.v3+json'},
     )
     if not resp.get('ok'):
+        error = str(resp.get('error') or f'HTTP {resp.get("status")}')
         return {
             'available': False,
             'reason': 'api_error',
-            'detail': resp.get('error', f'HTTP {resp.get("status")}'),
+            'detail': error,
+            'source_coverage': {'github_api': 'READ_FAILED'},
+            'source_errors': {'github_api': error},
         }
 
     try:
         data = json.loads(resp['body'])
-        core = data.get('resources', {}).get('core', {})
+        if not isinstance(data, dict):
+            raise TypeError('github_rate_limit_response_not_object')
+        resources = data.get('resources')
+        if not isinstance(resources, dict):
+            raise TypeError('github_rate_limit_resources_not_object')
+        core = resources.get('core')
+        if not isinstance(core, dict):
+            raise TypeError('github_rate_limit_core_not_object')
+        limit = core.get('limit')
+        remaining = core.get('remaining')
+        if type(limit) is not int or type(remaining) is not int or limit < 0 or remaining < 0 or remaining > limit:
+            raise ValueError('github_rate_limit_counters_invalid')
+        reset = core.get('reset')
+        reset_at = datetime.fromtimestamp(reset, tz=timezone.utc).isoformat() if isinstance(reset, (int, float)) and not isinstance(reset, bool) and reset > 0 else None
         return {
             'available': True,
-            'rate_limit': core.get('limit', 0),
-            'remaining': core.get('remaining', 0),
-            'reset_at': datetime.fromtimestamp(
-                core.get('reset', 0), tz=timezone.utc
-            ).isoformat() if core.get('reset') else None,
-            'usage_pct': round(
-                (1 - core.get('remaining', 0) / max(core.get('limit', 1), 1)) * 100, 1
-            ),
+            'rate_limit': limit,
+            'remaining': remaining,
+            'reset_at': reset_at,
+            'usage_pct': round((1 - remaining / max(limit, 1)) * 100, 1),
+            'source_coverage': {'github_api': 'READ_OK'},
+            'source_errors': {},
         }
     except Exception as exc:
-        return {'available': False, 'reason': 'parse_error', 'detail': str(exc)}
-
+        error = type(exc).__name__
+        return {
+            'available': False,
+            'reason': 'parse_error',
+            'detail': error,
+            'source_coverage': {'github_api': 'READ_FAILED'},
+            'source_errors': {'github_api': error},
+        }
 
 def scan_devin_api() -> dict[str, Any]:
-    """Check Devin API access."""
+    """Check Devin API access and expose whether the probe was performed."""
     token = os.environ.get('DEVIN_API_KEY_IABV') or os.environ.get('DEVIN_API_KEY') or ''
     if not token:
         return {
             'available': False,
             'reason': 'no_token',
             'detail': 'DEVIN_API_KEY_IABV ni DEVIN_API_KEY están configurados',
+            'source_coverage': {'devin_api': 'NOT_CONFIGURED'},
+            'source_errors': {},
         }
 
     resp = _safe_request(
         'https://api.devin.ai/v1/sessions',
         headers={'Authorization': f'Bearer {token}', 'Accept': 'application/json'},
     )
+    if resp.get('ok'):
+        return {
+            'available': True,
+            'status_code': resp.get('status', 0),
+            'detail': 'ok',
+            'source_coverage': {'devin_api': 'READ_OK'},
+            'source_errors': {},
+        }
+    error = str(resp.get('error') or f'HTTP {resp.get("status")}')
     return {
-        'available': resp.get('ok', False),
+        'available': False,
+        'reason': 'api_error',
         'status_code': resp.get('status', 0),
-        'detail': 'ok' if resp.get('ok') else resp.get('error', f'HTTP {resp.get("status")}'),
+        'detail': error,
+        'source_coverage': {'devin_api': 'READ_FAILED'},
+        'source_errors': {'devin_api': error},
     }
 
-
 def scan_ollama_api() -> dict[str, Any]:
-    """Check Ollama local API and loaded models."""
+    """Check Ollama and validate its model-list response before reporting it."""
     resp = _safe_request('http://localhost:11434/api/tags', timeout=5)
     if not resp.get('ok'):
+        error = str(resp.get('error') or 'ollama_http_error')
         return {
             'available': False,
             'reason': 'not_running',
-            'detail': resp.get('error', 'Ollama no responde en localhost:11434'),
+            'detail': error,
+            'source_coverage': {'ollama_api': 'READ_FAILED'},
+            'source_errors': {'ollama_api': error},
         }
 
     try:
         data = json.loads(resp['body'])
-        models = data.get('models', [])
+        if not isinstance(data, dict) or 'models' not in data or not isinstance(data['models'], list):
+            raise TypeError('ollama_models_response_invalid_shape')
+        raw_models = data['models']
+        valid_models: list[dict[str, Any]] = []
+        invalid_count = 0
+        for model in raw_models:
+            if not isinstance(model, dict):
+                invalid_count += 1
+                continue
+            name = model.get('name')
+            size = model.get('size', 0)
+            if not isinstance(name, str) or not name.strip() or not isinstance(size, (int, float)) or isinstance(size, bool):
+                invalid_count += 1
+                continue
+            import math
+            try:
+                normalized_size = float(size)
+            except (OverflowError, TypeError, ValueError):
+                invalid_count += 1
+                continue
+            if not math.isfinite(normalized_size) or normalized_size < 0:
+                invalid_count += 1
+                continue
+            valid_models.append({'name': name, 'size_gb': round(normalized_size / (1024**3), 1)})
+        coverage = 'READ_PARTIAL' if invalid_count else 'READ_OK'
+        errors = {'ollama_api': f'invalid_model_entries:{invalid_count}'} if invalid_count else {}
         return {
             'available': True,
-            'models_count': len(models),
-            'models': [
-                {
-                    'name': m.get('name', ''),
-                    'size_gb': round(m.get('size', 0) / (1024**3), 1),
-                }
-                for m in models[:10]
-            ],
+            'models_count': len(raw_models),
+            'models_valid_count': len(valid_models),
+            'models': valid_models[:10],
+            'source_coverage': {'ollama_api': coverage},
+            'source_errors': errors,
         }
     except Exception as exc:
-        return {'available': True, 'models_count': 0, 'parse_error': str(exc)}
-
+        error = type(exc).__name__
+        return {
+            'available': False,
+            'reason': 'parse_error',
+            'detail': error,
+            'models_count': 0,
+            'models': [],
+            'source_coverage': {'ollama_api': 'READ_FAILED'},
+            'source_errors': {'ollama_api': error},
+        }
 
 # ──────────────────────────────────────────────────────────────
 # Browser Account Detection
 # ──────────────────────────────────────────────────────────────
 
-def _chromium_browser_dirs() -> list[tuple[str, Path]]:
-    """Return ``(browser_name, user_data_dir)`` for all Chromium-based browsers."""
+def _chromium_browser_dirs_with_diagnostics() -> tuple[list[tuple[str, Path]], list[str], str]:
+    """Discover Chromium roots without collapsing inaccessible paths into absence."""
     dirs: list[tuple[str, Path]] = []
+    errors: list[str] = []
+    candidates: list[tuple[str, Path]] = []
+
     if os.name == 'nt':
-        local_app = os.environ.get('LOCALAPPDATA', '')
+        local_app = os.environ.get('LOCALAPPDATA', '').strip()
+        app_data = os.environ.get('APPDATA', '').strip()
         if not local_app:
-            return dirs
-        base = Path(local_app)
-        candidates: list[tuple[str, Path]] = [
-            ('Chrome', base / 'Google' / 'Chrome' / 'User Data'),
-            ('Edge', base / 'Microsoft' / 'Edge' / 'User Data'),
-            ('Brave', base / 'BraveSoftware' / 'Brave-Browser' / 'User Data'),
-            ('Opera', Path(os.environ.get('APPDATA', '')) / 'Opera Software' / 'Opera Stable'),
-            ('Opera GX', Path(os.environ.get('APPDATA', '')) / 'Opera Software' / 'Opera GX Stable'),
-            ('Vivaldi', base / 'Vivaldi' / 'User Data'),
-        ]
-        for name, path in candidates:
-            if path.exists():
-                dirs.append((name, path))
+            errors.append('chromium_root_config:LOCALAPPDATA_NOT_CONFIGURED')
+        if not app_data:
+            errors.append('chromium_root_config:APPDATA_NOT_CONFIGURED')
+        if local_app:
+            base = Path(local_app)
+            candidates.extend([
+                ('Chrome', base / 'Google' / 'Chrome' / 'User Data'),
+                ('Edge', base / 'Microsoft' / 'Edge' / 'User Data'),
+                ('Brave', base / 'BraveSoftware' / 'Brave-Browser' / 'User Data'),
+                ('Vivaldi', base / 'Vivaldi' / 'User Data'),
+            ])
+        if app_data:
+            app_base = Path(app_data)
+            candidates.extend([
+                ('Opera', app_base / 'Opera Software' / 'Opera Stable'),
+                ('Opera GX', app_base / 'Opera Software' / 'Opera GX Stable'),
+            ])
+        if not local_app and not app_data:
+            return dirs, errors, 'NOT_CONFIGURED'
     else:
-        home = Path.home()
+        try:
+            home = Path.home()
+        except Exception as exc:
+            return dirs, [f'chromium_browser_roots:{type(exc).__name__}'], 'READ_FAILED'
         candidates = [
             ('Chrome', home / '.config' / 'google-chrome'),
             ('Chromium', home / '.config' / 'chromium'),
@@ -180,30 +262,103 @@ def _chromium_browser_dirs() -> list[tuple[str, Path]]:
             ('Vivaldi', home / '.config' / 'vivaldi'),
             ('Opera', home / '.config' / 'opera'),
         ]
-        for name, path in candidates:
-            if path.exists():
-                dirs.append((name, path))
+
+    for name, path in candidates:
+        try:
+            path_stat = path.stat()
+        except FileNotFoundError:
+            continue
+        except OSError as exc:
+            errors.append(f'chromium_root:{name}:{type(exc).__name__}')
+            continue
+        if not stat_module.S_ISDIR(path_stat.st_mode):
+            errors.append(f'chromium_root:{name}:NotADirectoryError')
+            continue
+        dirs.append((name, path))
+
+    if dirs:
+        return dirs, errors, 'READ_PARTIAL' if errors else 'READ_OK'
+    if errors and any('NOT_CONFIGURED' not in item for item in errors):
+        return dirs, errors, 'READ_FAILED'
+    if errors:
+        return dirs, errors, 'NOT_CONFIGURED'
+    return dirs, errors, 'CONFIRMED_NOT_FOUND'
+
+
+def _chromium_browser_dirs() -> list[tuple[str, Path]]:
+    """Compatibility view; completeness-sensitive readers use diagnostics."""
+    dirs, _errors, _status = _chromium_browser_dirs_with_diagnostics()
     return dirs
 
 
-def _firefox_accounts() -> list[dict[str, str]]:
-    """Detect Firefox accounts from profile signedInUser.json files."""
+def _combine_browser_source_status(statuses: list[str]) -> str:
+    """Combine independent browser-root outcomes without turning unknown into empty."""
+    normalized = [str(item) for item in statuses if item]
+    if not normalized:
+        return 'NOT_EXECUTED'
+    if 'READ_PARTIAL' in normalized:
+        return 'READ_PARTIAL'
+    if 'READ_FAILED' in normalized:
+        return 'READ_PARTIAL' if 'READ_OK' in normalized else 'READ_FAILED'
+    if 'NOT_CONFIGURED' in normalized:
+        return 'READ_PARTIAL' if 'READ_OK' in normalized else 'NOT_CONFIGURED'
+    if 'READ_OK' in normalized:
+        return 'READ_OK'
+    if all(item == 'CONFIRMED_NOT_FOUND' for item in normalized):
+        return 'CONFIRMED_NOT_FOUND'
+    return 'READ_UNVERIFIED'
+
+
+
+
+def _firefox_accounts_scan_with_coverage() -> tuple[list[dict[str, str]], list[str], str]:
+    """Read Firefox account metadata with an explicit root-discovery outcome."""
     accounts: list[dict[str, str]] = []
+    errors: list[str] = []
     if os.name == 'nt':
-        ff_root = Path(os.environ.get('APPDATA', '')) / 'Mozilla' / 'Firefox' / 'Profiles'
+        app_data = os.environ.get('APPDATA', '').strip()
+        if not app_data:
+            return accounts, [], 'NOT_CONFIGURED'
+        ff_root = Path(app_data) / 'Mozilla' / 'Firefox' / 'Profiles'
     else:
-        ff_root = Path.home() / '.mozilla' / 'firefox'
-    if not ff_root.exists():
-        return accounts
-    for profile_dir in ff_root.iterdir():
-        if not profile_dir.is_dir():
-            continue
-        signed_in = profile_dir / 'signedInUser.json'
-        if not signed_in.exists():
-            continue
         try:
+            ff_root = Path.home() / '.mozilla' / 'firefox'
+        except Exception as exc:
+            return accounts, [f'firefox_root:{type(exc).__name__}'], 'READ_FAILED'
+
+    try:
+        root_stat = ff_root.stat()
+    except FileNotFoundError:
+        return accounts, [], 'CONFIRMED_NOT_FOUND'
+    except OSError as exc:
+        return accounts, [f'firefox_directory:{type(exc).__name__}'], 'READ_FAILED'
+    if not stat_module.S_ISDIR(root_stat.st_mode):
+        return accounts, ['firefox_directory:NotADirectoryError'], 'READ_FAILED'
+
+    try:
+        profile_dirs = list(ff_root.iterdir())
+    except Exception as exc:
+        return accounts, [f'firefox_directory:{type(exc).__name__}'], 'READ_FAILED'
+
+    for profile_dir in profile_dirs:
+        try:
+            profile_stat = profile_dir.stat()
+            if not stat_module.S_ISDIR(profile_stat.st_mode):
+                continue
+            signed_in = profile_dir / 'signedInUser.json'
+            try:
+                signed_stat = signed_in.stat()
+            except FileNotFoundError:
+                continue
+            if not stat_module.S_ISREG(signed_stat.st_mode):
+                errors.append(f'firefox_profile:{profile_dir.name}:signedInUser_not_regular_file')
+                continue
             data = json.loads(signed_in.read_text(encoding='utf-8', errors='replace'))
+            if not isinstance(data, dict):
+                raise TypeError('signedInUser_not_object')
             acct = data.get('accountData', {})
+            if not isinstance(acct, dict):
+                raise TypeError('accountData_not_object')
             email = acct.get('email', '')
             if email:
                 accounts.append({
@@ -212,32 +367,70 @@ def _firefox_accounts() -> list[dict[str, str]]:
                     'email': email,
                     'full_name': acct.get('displayName', ''),
                 })
-        except Exception:
-            continue
+        except FileNotFoundError:
+            errors.append(f'firefox_profile:{profile_dir.name}:vanished_during_scan')
+        except Exception as exc:
+            errors.append(f'firefox_profile:{profile_dir.name}:{type(exc).__name__}')
+    return accounts, errors, 'READ_PARTIAL' if errors else 'READ_OK'
+
+
+def _firefox_accounts_with_diagnostics() -> tuple[list[dict[str, str]], list[str]]:
+    """Preserve root-discovery state for callers using the legacy diagnostic shape."""
+    accounts, errors, status = _firefox_accounts_scan_with_coverage()
+    if status not in {'READ_OK', 'READ_PARTIAL'}:
+        errors = [f'firefox_root:{status}', *errors]
+    return accounts, errors
+
+
+
+
+def _firefox_accounts() -> list[dict[str, str]]:
+    """Compatibility wrapper; callers needing completeness use diagnostics."""
+    accounts, _errors = _firefox_accounts_with_diagnostics()
     return accounts
 
 
 def scan_browser_accounts() -> dict[str, Any]:
-    """Detect active browser sessions/accounts from all supported browsers.
-
-    Scans: Chrome, Edge, Brave, Opera, Opera GX, Vivaldi (Chromium-based)
-    and Firefox (signedInUser.json).
-    """
+    """Detect browser account metadata and expose incomplete root/profile scans."""
     accounts: list[dict[str, str]] = []
     browsers_scanned: list[str] = []
+    errors: list[str] = []
 
-    for browser_name, chrome_dir in _chromium_browser_dirs():
+    try:
+        browser_dirs, root_errors, chromium_status = _chromium_browser_dirs_with_diagnostics()
+    except Exception as exc:
+        browser_dirs, root_errors, chromium_status = [], [f'chromium_browser_roots:{type(exc).__name__}'], 'READ_FAILED'
+    errors.extend(root_errors)
+
+    chromium_profile_errors: list[str] = []
+    for browser_name, chrome_dir in browser_dirs:
         browsers_scanned.append(str(chrome_dir))
-        for profile_dir in chrome_dir.iterdir():
-            if not profile_dir.is_dir():
-                continue
-            prefs_file = profile_dir / 'Preferences'
-            if not prefs_file.exists():
-                continue
+        try:
+            profile_dirs = list(chrome_dir.iterdir())
+        except Exception as exc:
+            chromium_profile_errors.append(f'chromium_directory:{browser_name}:{type(exc).__name__}')
+            continue
+        for profile_dir in profile_dirs:
             try:
+                profile_stat = profile_dir.stat()
+                if not stat_module.S_ISDIR(profile_stat.st_mode):
+                    continue
+                prefs_file = profile_dir / 'Preferences'
+                try:
+                    prefs_stat = prefs_file.stat()
+                except FileNotFoundError:
+                    continue
+                if not stat_module.S_ISREG(prefs_stat.st_mode):
+                    raise TypeError('preferences_not_regular_file')
                 prefs = json.loads(prefs_file.read_text(encoding='utf-8', errors='replace'))
+                if not isinstance(prefs, dict):
+                    raise TypeError('preferences_not_object')
                 account_info = prefs.get('account_info', [])
+                if not isinstance(account_info, list):
+                    raise TypeError('account_info_not_list')
                 for acc in account_info:
+                    if not isinstance(acc, dict):
+                        raise TypeError('account_info_entry_not_object')
                     email = acc.get('email', '')
                     if email:
                         accounts.append({
@@ -246,30 +439,44 @@ def scan_browser_accounts() -> dict[str, Any]:
                             'email': email,
                             'full_name': acc.get('full_name', ''),
                         })
-                signin = prefs.get('google', {}).get('services', {}).get('signin', {})
+                google = prefs.get('google', {})
+                signin = google.get('services', {}).get('signin', {}) if isinstance(google, dict) else {}
+                if not isinstance(signin, dict):
+                    raise TypeError('google_signin_not_object')
                 if signin.get('allowed') and not account_info:
                     accounts.append({
                         'browser': browser_name,
                         'profile': profile_dir.name,
                         'email': 'signed_in (details unavailable)',
                     })
-            except Exception:
-                continue
+            except FileNotFoundError:
+                chromium_profile_errors.append(f'chromium_profile:{browser_name}:{profile_dir.name}:vanished_during_scan')
+            except Exception as exc:
+                chromium_profile_errors.append(f'chromium_profile:{browser_name}:{profile_dir.name}:{type(exc).__name__}')
 
-    # Firefox accounts
-    ff_accounts = _firefox_accounts()
-    if ff_accounts:
-        accounts.extend(ff_accounts)
+    errors.extend(chromium_profile_errors)
+    if chromium_profile_errors:
+        chromium_status = 'READ_PARTIAL' if browser_dirs else 'READ_FAILED'
+
+    ff_accounts, ff_errors, firefox_status = _firefox_accounts_scan_with_coverage()
+    accounts.extend(ff_accounts)
+    errors.extend(ff_errors)
+    if firefox_status in {'READ_OK', 'READ_PARTIAL'}:
         if os.name == 'nt':
-            browsers_scanned.append(str(Path(os.environ.get('APPDATA', '')) / 'Mozilla' / 'Firefox'))
+            browsers_scanned.append(str(Path(os.environ['APPDATA']) / 'Mozilla' / 'Firefox'))
         else:
             browsers_scanned.append(str(Path.home() / '.mozilla' / 'firefox'))
 
+    coverage = _combine_browser_source_status([chromium_status, firefox_status])
     return {
         'accounts': accounts,
         'count': len(accounts),
         'browsers_scanned': browsers_scanned,
+        'source_coverage': {'browser_accounts': coverage},
+        'source_errors': {'browser_accounts': ';'.join(errors[:20])} if errors else {},
     }
+
+
 
 
 # Domains that indicate an active session for each assistant tool.
@@ -283,43 +490,51 @@ _TOOL_SESSION_DOMAINS: dict[str, list[str]] = {
 
 
 def scan_browser_sessions() -> dict[str, Any]:
-    """Detect which tool services have active cookies in the user's browsers.
-
-    Reads the Chrome/Edge Cookies SQLite database (copy to temp to avoid
-    locking) and checks for session cookies from known tool domains.
-    This tells the program: "the user has an active ChatGPT session in
-    Chrome Profile 2" — which means CDP mode can reuse that session.
-
-    NOTE: Chrome encrypts cookie values on Windows (DPAPI). We do NOT
-    read cookie values — we only check if rows EXIST for the domain,
-    which is enough to confirm an active session.
-    """
+    """Detect session-domain rows without exposing cookie values; retain root coverage."""
     import shutil as _shutil
     import tempfile as _tempfile
 
     sessions: list[dict[str, Any]] = []
+    errors: list[str] = []
+    try:
+        browser_dirs, root_errors, root_status = _chromium_browser_dirs_with_diagnostics()
+    except Exception as exc:
+        browser_dirs, root_errors, root_status = [], [f'chromium_browser_roots:{type(exc).__name__}'], 'READ_FAILED'
+    errors.extend(root_errors)
 
-    for browser_name, chrome_dir in _chromium_browser_dirs():
-        for profile_dir in chrome_dir.iterdir():
-            if not profile_dir.is_dir():
-                continue
-            cookies_db = profile_dir / 'Cookies'
-            # Newer Chrome versions use Network/Cookies
-            if not cookies_db.exists():
-                cookies_db = profile_dir / 'Network' / 'Cookies'
-            if not cookies_db.exists():
+    profile_errors: list[str] = []
+    for browser_name, chrome_dir in browser_dirs:
+        try:
+            profile_dirs = list(chrome_dir.iterdir())
+        except Exception as exc:
+            profile_errors.append(f'chromium_directory:{browser_name}:{type(exc).__name__}')
+            continue
+        for profile_dir in profile_dirs:
+            try:
+                profile_stat = profile_dir.stat()
+                if not stat_module.S_ISDIR(profile_stat.st_mode):
+                    continue
+                cookies_db = profile_dir / 'Cookies'
+                try:
+                    cookies_db.stat()
+                except FileNotFoundError:
+                    cookies_db = profile_dir / 'Network' / 'Cookies'
+                    try:
+                        cookies_db.stat()
+                    except FileNotFoundError:
+                        continue
+            except Exception as exc:
+                profile_errors.append(f'profile_metadata:{browser_name}:{profile_dir.name}:{type(exc).__name__}')
                 continue
 
-            # Copy database to temp to avoid locking issues
+            tmp_path: str | None = None
+            conn: sqlite3.Connection | None = None
             try:
                 with _tempfile.NamedTemporaryFile(suffix='.db', delete=False) as tmp:
                     tmp_path = tmp.name
                 _shutil.copy2(str(cookies_db), tmp_path)
-
                 conn = sqlite3.connect(tmp_path)
-                conn.execute('PRAGMA journal_mode=WAL')
                 cursor = conn.cursor()
-
                 for tool_name, domains in _TOOL_SESSION_DOMAINS.items():
                     for domain in domains:
                         try:
@@ -337,32 +552,42 @@ def scan_browser_sessions() -> dict[str, Any]:
                                     'cookie_count': count,
                                     'has_session': True,
                                 })
-                        except Exception:
-                            continue
-
-                conn.close()
-            except Exception:
-                continue
+                        except Exception as exc:
+                            profile_errors.append(
+                                f'cookie_index:{browser_name}:{profile_dir.name}:{domain}:{type(exc).__name__}'
+                            )
+            except Exception as exc:
+                profile_errors.append(f'cookie_database:{browser_name}:{profile_dir.name}:{type(exc).__name__}')
             finally:
-                try:
-                    os.unlink(tmp_path)
-                except Exception:
-                    pass
+                if conn is not None:
+                    try:
+                        conn.close()
+                    except Exception as exc:
+                        profile_errors.append(f'cookie_close:{browser_name}:{profile_dir.name}:{type(exc).__name__}')
+                if tmp_path is not None:
+                    try:
+                        os.unlink(tmp_path)
+                    except Exception as exc:
+                        profile_errors.append(f'temp_cleanup:{browser_name}:{profile_dir.name}:{type(exc).__name__}')
 
-    # Aggregate by tool
+    errors.extend(profile_errors)
+    if profile_errors:
+        root_status = 'READ_PARTIAL' if browser_dirs else 'READ_FAILED'
+
     tool_sessions: dict[str, list[dict[str, Any]]] = {}
-    for s in sessions:
-        tool = s['tool']
-        if tool not in tool_sessions:
-            tool_sessions[tool] = []
-        tool_sessions[tool].append(s)
+    for item in sessions:
+        tool_sessions.setdefault(item['tool'], []).append(item)
 
     return {
         'sessions': sessions,
         'session_count': len(sessions),
         'tools_with_sessions': list(tool_sessions.keys()),
         'by_tool': tool_sessions,
+        'source_coverage': {'browser_sessions': root_status},
+        'source_errors': {'browser_sessions': ';'.join(errors[:20])} if errors else {},
     }
+
+
 
 
 def diagnose_browser_access() -> str:
@@ -487,18 +712,30 @@ def _quota_file() -> Path:
     for p in candidates:
         if p.parent.exists():
             return p
-    candidates[0].parent.mkdir(parents=True, exist_ok=True)
+    # Path resolution is read-only; _save_quota_state creates parents on writes.
     return candidates[0]
 
 
-def _load_quota_state() -> dict[str, Any]:
+def _load_quota_state_with_diagnostics() -> tuple[dict[str, Any], str, str]:
     qf = _quota_file()
-    if qf.exists():
-        try:
-            return json.loads(qf.read_text(encoding='utf-8'))
-        except Exception:
-            pass
-    return {'accounts': {}}
+    try:
+        raw = qf.read_text(encoding='utf-8')
+    except FileNotFoundError:
+        return {'accounts': {}}, 'CONFIRMED_NOT_FOUND', 'quota_tracker_not_found'
+    except Exception as exc:
+        return {'accounts': {}}, 'READ_FAILED', type(exc).__name__
+    try:
+        state = json.loads(raw)
+    except Exception as exc:
+        return {'accounts': {}}, 'READ_FAILED', type(exc).__name__
+    if not isinstance(state, dict) or not isinstance(state.get('accounts', {}), dict):
+        return {'accounts': {}}, 'SCHEMA_UNSUPPORTED', 'quota_tracker_schema_unsupported'
+    return state, 'READ_OK', ''
+
+
+def _load_quota_state() -> dict[str, Any]:
+    """Compatibility wrapper; diagnostics are exposed by get_all_quota_status."""
+    return _load_quota_state_with_diagnostics()[0]
 
 
 def _save_quota_state(state: dict[str, Any]) -> None:
@@ -578,8 +815,8 @@ def _quota_status_for_entry(entry: dict[str, Any], tool: str) -> dict[str, Any]:
 
 
 def get_all_quota_status() -> dict[str, Any]:
-    """Return quota status for every tracked account+tool pair."""
-    state = _load_quota_state()
+    """Return quota status plus the integrity outcome of its backing file."""
+    state, source_status, source_error = _load_quota_state_with_diagnostics()
     statuses: list[dict[str, Any]] = []
     exhausted_keys: list[str] = []
     available_keys: list[str] = []
@@ -600,6 +837,8 @@ def get_all_quota_status() -> dict[str, Any]:
         'available_count': len(available_keys),
         'exhausted_keys': exhausted_keys,
         'available_keys': available_keys,
+        'source_coverage': {'quota_tracker': source_status},
+        'source_errors': {'quota_tracker': source_error} if source_error else {},
     }
 
 
@@ -959,11 +1198,21 @@ def verify_account_sessions() -> dict[str, Any]:
         for t in v['tools_available']:
             tools_with_accounts.setdefault(t, []).append(v['email'])
 
+    source_coverage = {
+        **dict(accounts.get('source_coverage') or {}),
+        **dict(sessions.get('source_coverage') or {}),
+    }
+    source_errors = {
+        **dict(accounts.get('source_errors') or {}),
+        **dict(sessions.get('source_errors') or {}),
+    }
     return {
         'accounts': verified,
         'account_count': len(verified),
         'tools_with_accounts': tools_with_accounts,
         'total_sessions_found': sessions.get('session_count', 0),
+        'source_coverage': source_coverage,
+        'source_errors': source_errors,
     }
 
 
@@ -991,6 +1240,7 @@ def estimate_available_workers() -> dict[str, Any]:
 
     workers: list[dict[str, Any]] = []
     exhausted_workers: list[dict[str, Any]] = []
+    unverified_workers: list[dict[str, Any]] = []
 
     for acc in verified.get('accounts', []):
         email = acc['email']
@@ -1010,8 +1260,8 @@ def estimate_available_workers() -> dict[str, Any]:
                 exhausted = quota['exhausted']
                 used = quota['used_in_window']
             else:
-                # No tracking data yet — assume full quota available
-                remaining = max_msgs
+                # A missing quota row is not evidence of remaining capacity.
+                remaining = 0
                 exhausted = False
                 used = 0
 
@@ -1026,11 +1276,14 @@ def estimate_available_workers() -> dict[str, Any]:
                 'limit': max_msgs,
                 'window_hours': limits.get('window_hours', 3),
                 'exhausted': exhausted,
+                'quota_verified': quota is not None,
                 'label': limits.get('label', tool),
                 'resets_at': quota.get('resets_at') if quota else None,
             }
 
-            if exhausted:
+            if quota is None:
+                unverified_workers.append(worker)
+            elif exhausted:
                 exhausted_workers.append(worker)
             else:
                 workers.append(worker)
@@ -1045,14 +1298,26 @@ def estimate_available_workers() -> dict[str, Any]:
 
     total_remaining = sum(w['remaining_messages'] for w in workers)
 
+    source_coverage = {
+        **dict(verified.get('source_coverage') or {}),
+        **dict(all_quota.get('source_coverage') or {}),
+    }
+    source_errors = {
+        **dict(verified.get('source_errors') or {}),
+        **dict(all_quota.get('source_errors') or {}),
+    }
     return {
         'workers': workers,
         'exhausted': exhausted_workers,
+        'unverified': unverified_workers,
+        'unverified_count': len(unverified_workers),
         'available_count': len(workers),
         'exhausted_count': len(exhausted_workers),
         'by_tool': by_tool,
         'total_remaining_messages': total_remaining,
         'tools_available': list(by_tool.keys()),
+        'source_coverage': source_coverage,
+        'source_errors': source_errors,
     }
 
 
@@ -1130,8 +1395,12 @@ def build_inventory_snapshot(
     entries: list[AccountInventoryEntry] = []
     now = utc_now()
 
-    # Process all workers (available + exhausted)
-    all_workers = [*pool.get('workers', []), *pool.get('exhausted', [])]
+    # Keep session-bearing accounts with unknown quota visible but non-actionable.
+    all_workers = [
+        *pool.get('workers', []),
+        *pool.get('exhausted', []),
+        *pool.get('unverified', []),
+    ]
     for w in all_workers:
         email = w.get('email', '')
         tool = w.get('tool', '')
@@ -1146,8 +1415,11 @@ def build_inventory_snapshot(
             except (ValueError, TypeError):
                 pass
 
-        # Determine status
-        if exhausted:
+        # Unknown quota is unresolved, never promoted to available.
+        quota_verified = w.get('quota_verified', True)
+        if not quota_verified:
+            status = AccountStatus.UNRESOLVED
+        elif exhausted:
             status = AccountStatus.EXHAUSTED
         elif remaining > 0:
             status = AccountStatus.ACTIVE
@@ -1182,6 +1454,7 @@ def build_inventory_snapshot(
                 'window_hours': w.get('window_hours', 0),
                 'label': w.get('label', ''),
                 'used_in_window': w.get('used_in_window', 0),
+                'quota_verified': quota_verified,
             },
         )
         entries.append(entry)
@@ -1231,6 +1504,21 @@ def build_inventory_snapshot(
         'UNRESOLVED:visible_account_state_requires_user_permission'
     )
 
+    source_coverage = {
+        **dict(pool.get('source_coverage') or {}),
+        **dict(all_quota.get('source_coverage') or {}),
+    }
+    source_errors = {
+        **dict(pool.get('source_errors') or {}),
+        **dict(all_quota.get('source_errors') or {}),
+    }
+    for source, status in source_coverage.items():
+        if status != 'READ_OK':
+            all_unresolved.append(f'UNRESOLVED:{source}:{status}')
+    for source, error in source_errors.items():
+        if error:
+            all_unresolved.append(f'UNRESOLVED:{source}_ERROR:{error}')
+
     return AccountInventorySnapshot(
         entries=entries,
         continuity_queue=continuity_queue,
@@ -1242,6 +1530,8 @@ def build_inventory_snapshot(
         total_remaining_messages=total_remaining,
         tools_available=tools_available,
         unresolved_items=list(dict.fromkeys(all_unresolved)),
+        source_coverage=source_coverage,
+        source_errors=source_errors,
     )
 
 
@@ -1429,18 +1719,11 @@ def top_worker_for_target(
 # ──────────────────────────────────────────────────────────────
 
 def scan_configured_secrets() -> dict[str, Any]:
-    """Detect which secret/env vars are configured (names only, never values).
-
-    Secrets that are aliases of each other (e.g. GITHUB_TOKEN_IABV and
-    GITHUB_TOKEN) are grouped: if ANY alias in the group is configured, the
-    whole group is satisfied and none of its members appear as missing.
-    """
-    # Groups of aliases — if any name in a group is set, the group is OK.
+    """Detect configured secret names; never read or expose secret values."""
     _alias_groups: list[tuple[str, ...]] = [
         ('GITHUB_TOKEN_IABV', 'IABV_GITHUB_TOKEN', 'GITHUB_TOKEN', 'GH_TOKEN'),
         ('DEVIN_API_KEY_IABV', 'IABV_DEVIN_API_KEY', 'DEVIN_API_KEY'),
     ]
-    # Standalone secrets (not aliased).
     _standalone = [
         'OPENAI_API_KEY', 'ANTHROPIC_API_KEY',
         'CLOUDFLARE_TUNNEL_TOKEN', 'CLOUDFLARED_TOKEN',
@@ -1448,6 +1731,7 @@ def scan_configured_secrets() -> dict[str, Any]:
     ]
     configured: list[str] = []
     missing: list[str] = []
+    unverified: list[str] = []
 
     for group in _alias_groups:
         found = [name for name in group if os.environ.get(name)]
@@ -1462,87 +1746,167 @@ def scan_configured_secrets() -> dict[str, Any]:
         else:
             missing.append(name)
 
-    # Check secrets file — secrets configured here with ANY alias name
-    # should satisfy the whole alias group, just like env vars do.
     secrets_file = Path.home() / '.iabv_secrets.ps1'
     secrets_from_file: list[str] = []
-    if secrets_file.exists():
+    secrets_file_exists: bool | None = False
+    file_status = 'CONFIRMED_NOT_FOUND'
+    file_error = ''
+    try:
+        secrets_file.stat()
+        secrets_file_exists = True
+    except FileNotFoundError:
+        secrets_file_exists = False
+    except OSError as exc:
+        secrets_file_exists = None
+        file_status = 'READ_FAILED'
+        file_error = type(exc).__name__
+    else:
         try:
             content = secrets_file.read_text(encoding='utf-8', errors='replace')
+        except OSError as exc:
+            file_status = 'READ_FAILED'
+            file_error = type(exc).__name__
+        else:
+            file_status = 'READ_OK'
             for line in content.splitlines():
-                m = re.match(r'\$env:(\w+)\s*=', line)
-                if m:
-                    secrets_from_file.append(m.group(1))
-        except Exception:
-            pass
+                match = re.match(r'\$env:(\w+)\s*=', line)
+                if match:
+                    secrets_from_file.append(match.group(1))
 
-    # Cross-reference file-based secrets against alias groups to resolve
-    # names that are configured in the file but not yet loaded into env.
-    if secrets_from_file:
+    if file_status == 'READ_FAILED':
+        # An unreadable file may satisfy any environment-missing alias.
+        # Do not misreport those names as definitely absent.
+        unverified = list(missing)
+        missing.clear()
+    elif secrets_from_file:
         file_set = set(secrets_from_file)
-        resolved_from_file: list[str] = []
         for primary in list(missing):
             group = next((g for g in _alias_groups if g[0] == primary), None)
             if group:
-                found_in_file = [n for n in group if n in file_set]
+                found_in_file = [name for name in group if name in file_set]
                 if found_in_file:
                     missing.remove(primary)
                     configured.extend(found_in_file)
-                    resolved_from_file.extend(found_in_file)
             elif primary in file_set:
                 missing.remove(primary)
                 configured.append(primary)
-                resolved_from_file.append(primary)
 
     return {
         'configured': configured,
         'missing': missing,
+        'unverified': unverified,
         'configured_count': len(configured),
         'missing_count': len(missing),
-        'secrets_file_exists': secrets_file.exists(),
+        'secrets_file_exists': secrets_file_exists,
         'secrets_in_file': secrets_from_file,
+        'source_coverage': {
+            'environment': 'READ_OK',
+            'secrets_file': file_status,
+        },
+        'source_errors': {'secrets_file': file_error} if file_error else {},
     }
-
 
 # ──────────────────────────────────────────────────────────────
 # Cloudflare Tunnel Status
 # ──────────────────────────────────────────────────────────────
 
 def scan_cloudflare_tunnel() -> dict[str, Any]:
-    """Check if cloudflared tunnel is running."""
+    """Check cloudflared installation and process state without false negatives."""
     try:
-        r = subprocess.run(
+        result = subprocess.run(
             ['cloudflared', 'version'],
             capture_output=True, text=True, timeout=5,
         )
-        version = r.stdout.strip() if r.returncode == 0 else 'unknown'
-    except (FileNotFoundError, subprocess.TimeoutExpired):
-        return {'available': False, 'reason': 'cloudflared not installed'}
+    except FileNotFoundError:
+        return {
+            'available': False,
+            'reason': 'cloudflared_not_installed',
+            'version': None,
+            'tunnel_running': None,
+            'source_coverage': {
+                'cloudflared_binary': 'CONFIRMED_NOT_FOUND',
+                'cloudflared_processes': 'NOT_EXECUTED',
+            },
+            'source_errors': {},
+        }
+    except subprocess.TimeoutExpired:
+        return {
+            'available': False,
+            'reason': 'cloudflared_version_timeout',
+            'version': None,
+            'tunnel_running': None,
+            'source_coverage': {
+                'cloudflared_binary': 'READ_FAILED',
+                'cloudflared_processes': 'NOT_EXECUTED',
+            },
+            'source_errors': {'cloudflared_binary': 'TimeoutExpired'},
+        }
+    except OSError as exc:
+        error = type(exc).__name__
+        return {
+            'available': False,
+            'reason': 'cloudflared_version_error',
+            'version': None,
+            'tunnel_running': None,
+            'source_coverage': {
+                'cloudflared_binary': 'READ_FAILED',
+                'cloudflared_processes': 'NOT_EXECUTED',
+            },
+            'source_errors': {'cloudflared_binary': error},
+        }
 
-    # Check if tunnel process is running
-    running = False
-    if os.name == 'nt':
-        try:
-            r = subprocess.run(
+    if result.returncode != 0:
+        error = f'cloudflared_version_exit:{result.returncode}'
+        return {
+            'available': False,
+            'reason': 'cloudflared_version_failed',
+            'version': None,
+            'tunnel_running': None,
+            'source_coverage': {
+                'cloudflared_binary': 'READ_FAILED',
+                'cloudflared_processes': 'NOT_EXECUTED',
+            },
+            'source_errors': {'cloudflared_binary': error},
+        }
+
+    version = result.stdout.strip() or 'unknown'
+    process_status = 'READ_OK'
+    process_error = ''
+    running: bool | None = None
+    try:
+        if os.name == 'nt':
+            process_result = subprocess.run(
                 ['tasklist', '/FI', 'IMAGENAME eq cloudflared.exe', '/FO', 'CSV', '/NH'],
                 capture_output=True, text=True, timeout=5,
             )
-            running = 'cloudflared' in r.stdout.lower()
-        except Exception:
-            pass
-    else:
-        try:
-            r = subprocess.run(['pgrep', '-f', 'cloudflared'], capture_output=True, timeout=5)
-            running = r.returncode == 0
-        except Exception:
-            pass
+            if process_result.returncode != 0:
+                raise OSError(f'tasklist_exit:{process_result.returncode}')
+            running = 'cloudflared' in process_result.stdout.lower()
+        else:
+            process_result = subprocess.run(
+                ['pgrep', '-f', 'cloudflared'], capture_output=True, text=True, timeout=5,
+            )
+            if process_result.returncode == 0:
+                running = True
+            elif process_result.returncode == 1:
+                running = False
+            else:
+                raise OSError(f'pgrep_exit:{process_result.returncode}')
+    except Exception as exc:
+        process_status = 'READ_FAILED'
+        process_error = type(exc).__name__
+        running = None
 
     return {
         'available': True,
         'version': version,
         'tunnel_running': running,
+        'source_coverage': {
+            'cloudflared_binary': 'READ_OK',
+            'cloudflared_processes': process_status,
+        },
+        'source_errors': {'cloudflared_processes': process_error} if process_error else {},
     }
-
 
 # ──────────────────────────────────────────────────────────────
 # Full Account & Resource Report
@@ -1557,10 +1921,8 @@ def account_resource_scan() -> dict[str, Any]:
     secrets = scan_configured_secrets()
     tunnel = scan_cloudflare_tunnel()
 
-    # Calculate overall resource health
     total_resources = 6
-    available_count = sum(1 for r in [github, devin, ollama, tunnel]
-                         if r.get('available'))
+    available_count = sum(1 for r in [github, devin, ollama, tunnel] if r.get('available'))
     available_count += 1 if secrets['configured_count'] > 0 else 0
     available_count += 1 if browser['count'] > 0 else 0
 
@@ -1575,7 +1937,19 @@ def account_resource_scan() -> dict[str, Any]:
         alerts.append(f'Ollama: {ollama.get("detail", "no disponible")}')
     if secrets['missing_count'] > 2:
         alerts.append(f'Secretos faltantes: {", ".join(secrets["missing"][:3])}...')
+    if secrets.get('unverified'):
+        alerts.append('Configuración de secretos parcialmente no verificable: archivo inaccesible')
 
+    source_coverage: dict[str, str] = {}
+    source_errors: dict[str, str] = {}
+    for scanner_result in (github, devin, ollama, tunnel, browser):
+        source_coverage.update(dict(scanner_result.get('source_coverage') or {}))
+        source_errors.update(dict(scanner_result.get('source_errors') or {}))
+    source_coverage.update({
+        'secrets_environment': secrets['source_coverage']['environment'],
+        'secrets_file': secrets['source_coverage']['secrets_file'],
+    })
+    source_errors.update(dict(secrets.get('source_errors') or {}))
     return {
         'github_api': github,
         'devin_api': devin,
@@ -1583,6 +1957,8 @@ def account_resource_scan() -> dict[str, Any]:
         'browser_accounts': browser,
         'secrets': secrets,
         'cloudflare_tunnel': tunnel,
+        'source_coverage': source_coverage,
+        'source_errors': source_errors,
         'summary': {
             'total_resources': total_resources,
             'available': available_count,
@@ -1591,7 +1967,6 @@ def account_resource_scan() -> dict[str, Any]:
             'alert_count': len(alerts),
         },
     }
-
 
 def format_account_resource_report(scan: dict[str, Any]) -> str:
     """Format account/resource scan for the auto-analysis report."""

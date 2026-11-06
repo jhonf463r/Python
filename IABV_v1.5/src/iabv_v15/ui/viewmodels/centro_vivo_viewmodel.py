@@ -15,6 +15,8 @@ Properties para que la QML page lo renderice.
 from __future__ import annotations
 
 import json
+import os
+import stat
 import threading
 from datetime import datetime, timezone
 from pathlib import Path
@@ -62,6 +64,9 @@ class CentroVivoViewModel(QObject):
         self._status_text = 'Centro Vivo listo. Pulsa Actualizar para cargar el estado operativo.'
         self._working = False
         self._last_refresh_utc = ''
+        self._source_statuses: dict[str, str] = {}
+        self._source_errors: dict[str, str] = {}
+        self._source_reports: dict[str, dict[str, Any]] = {}
         if defer_initial_refresh:
             QTimer.singleShot(0, self.refresh)
         else:
@@ -103,6 +108,36 @@ class CentroVivoViewModel(QObject):
     def get_status_text(self) -> str:
         return self._status_text
 
+    def get_source_statuses(self) -> dict[str, str]:
+        return dict(self._source_statuses)
+
+    def get_source_reports(self) -> dict[str, dict[str, Any]]:
+        return {key: dict(value) for key, value in self._source_reports.items()}
+
+    def _record_source_status(self, source: str, status: str, error: str = '') -> None:
+        self._source_statuses[source] = status
+        if error:
+            self._source_errors[source] = error[:160]
+        else:
+            self._source_errors.pop(source, None)
+
+    def _record_source_report(self, source: str, report: Any) -> None:
+        if report is None:
+            self._source_reports.pop(source, None)
+            return
+        if isinstance(report, dict):
+            self._source_reports[source] = dict(report)
+            return
+        # Whitelist diagnostics; report.to_dict() may include absolute ArtifactReadResult.path.
+        self._source_reports[source] = {
+            'status': getattr(getattr(report, 'status', None), 'value', str(getattr(report, 'status', 'UNKNOWN'))),
+            'records_seen': getattr(report, 'records_seen', None),
+            'records_loaded': getattr(report, 'records_loaded', None),
+            'missing_ids': list(getattr(report, 'missing_ids', []) or []),
+            'failed_ids': list(getattr(report, 'failed_ids', []) or []),
+            'collection_error_type': getattr(report, 'collection_error_type', ''),
+        }
+
     def get_working(self) -> bool:
         return self._working
 
@@ -123,6 +158,7 @@ class CentroVivoViewModel(QObject):
     accountInventory = Property(list, get_account_inventory, notify=dataChanged)
     accountInventorySummary = Property(dict, get_account_inventory_summary, notify=dataChanged)
     statusText = Property(str, get_status_text, notify=dataChanged)
+    sourceStatuses = Property(dict, get_source_statuses, notify=dataChanged)
     working = Property(bool, get_working, notify=dataChanged)
     lastRefreshUtc = Property(str, get_last_refresh_utc, notify=dataChanged)
 
@@ -131,6 +167,8 @@ class CentroVivoViewModel(QObject):
     # ------------------------------------------------------------------
     @Slot()
     def refresh(self) -> None:
+        self._source_statuses = {}
+        self._source_errors = {}
         self._orchestrator_queue = self._build_orchestrator_queue()
         self._ia_distribution = self._build_ia_distribution()
         self._heuristic_decisions = self._build_heuristic_decisions()
@@ -151,10 +189,12 @@ class CentroVivoViewModel(QObject):
     def _build_orchestrator_queue(self) -> list[dict[str, Any]]:
         repo = self.adaptive_session_repository
         if repo is None:
+            self._record_source_status('adaptive_session_repository', 'NOT_CONFIGURED')
             return []
         try:
             sessions = repo.list_recent(limit=20)
-        except Exception:
+        except Exception as exc:
+            self._record_source_status('adaptive_session_repository', 'READ_FAILED', type(exc).__name__)
             return []
         items: list[dict[str, Any]] = []
         for session in sessions:
@@ -167,16 +207,24 @@ class CentroVivoViewModel(QObject):
                 'created_at': dumped.get('created_at_utc', ''),
                 'updated_at': dumped.get('updated_at_utc', ''),
             })
+        self._record_source_status('adaptive_session_repository', 'READ_OK')
         return items
 
     def _build_ia_distribution(self) -> list[dict[str, Any]]:
         repo = self.tool_record_repository
         if repo is None:
+            self._record_source_status('tool_record_repository', 'NOT_CONFIGURED')
             return []
         try:
             cards = repo.list_cards()
-        except Exception:
+        except Exception as exc:
+            report = getattr(exc, 'report', None) or getattr(repo, 'last_read_report', None)
+            self._record_source_report('tool_record_repository', report)
+            report_status = getattr(getattr(report, 'status', None), 'value', '')
+            status = 'READ_PARTIAL' if report_status == 'READ_PARTIAL' else 'READ_FAILED'
+            self._record_source_status('tool_record_repository', status, type(exc).__name__)
             return []
+        self._record_source_report('tool_record_repository', getattr(repo, 'last_read_report', None))
         items: list[dict[str, Any]] = []
         for card in cards:
             dumped = card.model_dump(mode='json') if hasattr(card, 'model_dump') else {}
@@ -190,15 +238,18 @@ class CentroVivoViewModel(QObject):
                 'category': category,
                 'last_used': last_used,
             })
+        self._record_source_status('tool_record_repository', 'READ_OK')
         return items
 
     def _build_heuristic_decisions(self) -> list[dict[str, Any]]:
         lab_repo = self.experiment_lab_repository
         if lab_repo is None:
+            self._record_source_status('experiment_recommendations', 'NOT_CONFIGURED')
             return []
         try:
             recommendations = lab_repo.list_recommendations(limit=10)
-        except Exception:
+        except Exception as exc:
+            self._record_source_status('experiment_recommendations', 'READ_FAILED', type(exc).__name__)
             return []
         items: list[dict[str, Any]] = []
         for rec in recommendations:
@@ -212,15 +263,18 @@ class CentroVivoViewModel(QObject):
                 'confidence': dumped.get('confidence', 0.0),
                 'summary': dumped.get('summary', ''),
             })
+        self._record_source_status('experiment_recommendations', 'READ_OK')
         return items
 
     def _build_experiment_metrics(self) -> list[dict[str, Any]]:
         lab_repo = self.experiment_lab_repository
         if lab_repo is None:
+            self._record_source_status('experiment_runs', 'NOT_CONFIGURED')
             return []
         try:
             runs = lab_repo.list_runs(limit=20)
-        except Exception:
+        except Exception as exc:
+            self._record_source_status('experiment_runs', 'READ_FAILED', type(exc).__name__)
             return []
         items: list[dict[str, Any]] = []
         for run in runs:
@@ -234,21 +288,43 @@ class CentroVivoViewModel(QObject):
                 'duration_ms': dumped.get('duration_ms', 0),
                 'assistant_kind': dumped.get('assistant_kind', ''),
             })
+        self._record_source_status('experiment_runs', 'READ_OK')
         return items
 
     def _build_learning_gaps(self) -> list[dict[str, Any]]:
         backlog_dir = self._data_root / 'chat_research_backlog'
-        if not backlog_dir.is_dir():
+        try:
+            directory_stat = backlog_dir.stat()
+        except FileNotFoundError:
+            self._record_source_status('learning_gaps', 'CONFIRMED_NOT_FOUND')
+            return []
+        except OSError as exc:
+            self._record_source_status('learning_gaps', 'READ_FAILED', type(exc).__name__)
+            return []
+        if not stat.S_ISDIR(directory_stat.st_mode):
+            self._record_source_status('learning_gaps', 'READ_FAILED', 'backlog_path_is_not_directory')
             return []
         entries: list[dict[str, Any]] = []
+        partial = False
         try:
-            files = sorted(backlog_dir.glob('*.jsonl'), reverse=True)
+            files = sorted(
+                (Path(entry.path) for entry in os.scandir(backlog_dir)
+                 if entry.is_file() and entry.name.endswith('.jsonl')),
+                reverse=True,
+            )
             for fp in files[:5]:
-                for line in fp.read_text(encoding='utf-8').strip().splitlines():
+                try:
+                    raw_lines = fp.read_text(encoding='utf-8').splitlines()
+                except Exception:
+                    partial = True
+                    continue
+                for line in raw_lines:
                     if not line.strip():
                         continue
                     try:
                         entry = json.loads(line)
+                        if not isinstance(entry, dict):
+                            raise TypeError('backlog_line_not_object')
                         entries.append({
                             'kind': entry.get('kind', ''),
                             'label': entry.get('label', ''),
@@ -312,24 +388,28 @@ class CentroVivoViewModel(QObject):
                 'recommendation': f.get('recommendation', ''),
                 'status': f.get('status', ''),
             })
+        self._record_source_status('self_examination_service', 'READ_OK')
         return items
 
     def _build_world_model_summary(self) -> dict[str, Any]:
         service = self.world_model_service
         if service is None:
+            self._record_source_status('world_model_service', 'NOT_CONFIGURED')
             return {}
         try:
             snapshot = service.current_model()
-        except Exception:
+        except Exception as exc:
+            self._record_source_status('world_model_service', 'READ_FAILED', type(exc).__name__)
             return {}
         if snapshot is None:
+            self._record_source_status('world_model_service', 'CONFIRMED_NOT_FOUND')
             return {}
         dumped = snapshot.model_dump(mode='json') if hasattr(snapshot, 'model_dump') else {}
         windows = dumped.get('active_windows', dumped.get('windows', []))
         tools = dumped.get('tool_live_status', [])
         network = dumped.get('network_status', dumped.get('network', {}))
         focus = dumped.get('focused_window', dumped.get('focus_window', ''))
-        return {
+        summary = {
             'window_count': len(windows),
             'focus_window': focus,
             'tool_count': len(tools),
@@ -338,6 +418,8 @@ class CentroVivoViewModel(QObject):
             'network_connected': bool(network.get('connected', False) or str(network.get('status', '')).strip() in ('conectado', 'lento')),
             'active_blockages': dumped.get('active_blockages', []),
         }
+        self._record_source_status('world_model_service', 'READ_OK')
+        return summary
 
     def _build_account_inventory(self) -> dict[str, Any]:
         """Build account inventory from the formal snapshot.
@@ -350,7 +432,8 @@ class CentroVivoViewModel(QObject):
                 build_inventory_snapshot,
             )
             snapshot = build_inventory_snapshot()
-        except Exception:
+        except Exception as exc:
+            self._record_source_status('account_inventory', 'READ_FAILED', type(exc).__name__)
             return {'entries': [], 'summary': {}}
 
         entries: list[dict[str, Any]] = []
@@ -395,6 +478,25 @@ class CentroVivoViewModel(QObject):
             'requires_human_approval': True,
         }
 
+        source_coverage = dict(getattr(snapshot, 'source_coverage', {}) or {})
+        source_errors = dict(getattr(snapshot, 'source_errors', {}) or {})
+        self._record_source_report('account_inventory', {
+            'source_coverage': source_coverage,
+            'source_errors': source_errors,
+        })
+        if not source_coverage:
+            inventory_status = 'UNVERIFIED'
+        elif any(status == 'READ_FAILED' for status in source_coverage.values()):
+            inventory_status = 'READ_FAILED'
+        elif source_errors or any(status != 'READ_OK' for status in source_coverage.values()):
+            inventory_status = 'READ_PARTIAL'
+        else:
+            inventory_status = 'READ_OK'
+        self._record_source_status(
+            'account_inventory',
+            inventory_status,
+            ';'.join(f'{key}={value}' for key, value in source_errors.items()),
+        )
         return {'entries': entries, 'summary': summary}
 
     @Slot(str, str)
@@ -450,4 +552,11 @@ class CentroVivoViewModel(QObject):
             parts.append(f'{findings_count} hallazgos de autoexaminacion')
         if gaps_count:
             parts.append(f'{gaps_count} areas de investigacion pendientes')
+        non_confirmed = [
+            f'{source}={status}'
+            for source, status in sorted(self._source_statuses.items())
+            if status != 'READ_OK'
+        ]
+        if non_confirmed:
+            parts.append('Fuentes no verificadas: ' + ', '.join(non_confirmed))
         return ' | '.join(parts)

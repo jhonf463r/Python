@@ -24,6 +24,20 @@ Item {
     property var worldModelSummary: centroVivoViewModel ? centroVivoViewModel.worldModelSummary : ({})
     property var accountInventory: centroVivoViewModel ? centroVivoViewModel.accountInventory : []
     property var accountInventorySummary: centroVivoViewModel ? centroVivoViewModel.accountInventorySummary : ({})
+    property var sourceStatuses: centroVivoViewModel ? centroVivoViewModel.sourceStatuses : ({})
+
+    function emptySourceMessage(source, defaultMessage) {
+        var status = sourceStatuses[source] || "UNKNOWN"
+        if (status === "READ_FAILED" || status === "READ_PARTIAL")
+            return "No se pudo verificar esta fuente; no equivale a una lista vacía."
+        if (status === "NOT_CONFIGURED")
+            return "Fuente no conectada."
+        if (status === "CONFIRMED_NOT_FOUND")
+            return "Fuente persistida no encontrada."
+        if (status === "UNAVAILABLE" || status === "UNVERIFIED")
+            return "Fuente no verificada."
+        return defaultMessage
+    }
 
     GlassPanel {
         anchors.fill: parent
@@ -154,7 +168,7 @@ Item {
 
                         Label {
                             visible: orchestratorQueue.length === 0
-                            text: "Sin sesiones en cola."
+                            text: emptySourceMessage("adaptive_session_repository", "Sin sesiones en cola.")
                             color: textSecondary
                             font.family: bodyFontFamily
                             font.pixelSize: 12
@@ -235,7 +249,7 @@ Item {
 
                         Label {
                             visible: iaDistribution.length === 0
-                            text: "Sin herramientas registradas."
+                            text: emptySourceMessage("tool_record_repository", "Sin herramientas registradas.")
                             color: textSecondary
                             font.family: bodyFontFamily
                             font.pixelSize: 12
@@ -312,7 +326,7 @@ Item {
 
                         Label {
                             visible: heuristicDecisions.length === 0
-                            text: "Sin recomendaciones registradas."
+                            text: emptySourceMessage("experiment_recommendations", "Sin recomendaciones registradas.")
                             color: textSecondary
                             font.family: bodyFontFamily
                             font.pixelSize: 12
@@ -387,7 +401,7 @@ Item {
 
                         Label {
                             visible: experimentMetrics.length === 0
-                            text: "Sin experimentos registrados."
+                            text: emptySourceMessage("experiment_runs", "Sin experimentos registrados.")
                             color: textSecondary
                             font.family: bodyFontFamily
                             font.pixelSize: 12
@@ -459,7 +473,7 @@ Item {
 
                         Label {
                             visible: learningGaps.length === 0
-                            text: "Sin areas de investigacion pendientes."
+                            text: emptySourceMessage("learning_gaps", "Sin areas de investigacion pendientes.")
                             color: textSecondary
                             font.family: bodyFontFamily
                             font.pixelSize: 12
@@ -534,7 +548,7 @@ Item {
 
                         Label {
                             visible: selfExaminationFindings.length === 0
-                            text: "Sin hallazgos de autoexaminacion."
+                            text: emptySourceMessage("self_examination_service", "Sin hallazgos de autoexaminacion.")
                             color: textSecondary
                             font.family: bodyFontFamily
                             font.pixelSize: 12
@@ -700,7 +714,7 @@ Item {
                         // Account list
                         Label {
                             visible: accountInventory.length === 0
-                            text: "Sin cuentas detectadas. Inicie sesion en un navegador para que el scanner detecte cuentas."
+                            text: emptySourceMessage("account_inventory", "Sin cuentas detectadas. Inicie sesion en un navegador para que el scanner detecte cuentas.")
                             color: textSecondary
                             font.family: bodyFontFamily
                             font.pixelSize: 12
