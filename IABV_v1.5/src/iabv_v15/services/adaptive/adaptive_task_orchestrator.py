@@ -738,10 +738,10 @@ class AdaptiveTaskOrchestrator:
                 'reason': 'dry_run_state_missing',
             }
 
+        # assistant_kind can be the requested family; only the executor's
+        # explicit actual_assistant_kind proves what ran.
         actual_tool = str(
-            result.get('actual_assistant_kind')
-            or result.get('assistant_kind')
-            or ''
+            result.get('actual_assistant_kind') or ''
         ).strip().lower()
         actual_email = str(result.get('actual_account_email') or '').strip()
         expected_tool = str(expected_tool or '').strip().lower()
