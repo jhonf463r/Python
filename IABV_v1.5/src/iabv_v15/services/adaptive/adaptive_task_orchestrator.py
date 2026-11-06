@@ -714,13 +714,11 @@ class AdaptiveTaskOrchestrator:
         expected_email: str,
         source: str = '',
     ) -> dict[str, Any]:
-        """Record quota only when execution and actual account identity agree.
+        """Record quota only from an executor-verified account binding.
 
         A worker selected during preflight is not proof of the account used by
-        the external executor. Sandbox runs, missing actual identity, or a
-        tool/email mismatch are retained as explicit non-recording outcomes.
-        The source label is returned for traceability, without persisting an
-        account identity that the executor did not verify.
+        the external executor. The adapter must provide ACCOUNT_BINDING_R1
+        with tool, account email, identity source and evidence reference.
         """
         source_label = str(source or '').strip()
 
@@ -745,28 +743,29 @@ class AdaptiveTaskOrchestrator:
         if result.get('dry_run') is not False:
             return _outcome('UNVERIFIED', 'dry_run_state_missing')
 
-        # assistant_kind can be the requested family; only the executor's
-        # explicit actual_assistant_kind proves what ran.
-        actual_tool = str(result.get('actual_assistant_kind') or '').strip().lower()
-        actual_email = str(result.get('actual_account_email') or '').strip()
+        binding = result.get('actual_account_binding')
+        if not isinstance(binding, dict):
+            return _outcome('UNVERIFIED', 'actual_account_binding_missing')
+        if binding.get('schema') != 'ACCOUNT_BINDING_R1' or binding.get('status') != 'VERIFIED':
+            reason = str(binding.get('reason') or 'actual_account_binding_unverified')[:160]
+            return _outcome('UNVERIFIED', reason)
+
+        actual_tool = str(binding.get('actual_tool') or '').strip().lower()
+        actual_email = str(binding.get('account_email') or '').strip()
+        identity_source = str(binding.get('identity_source') or '').strip()
+        evidence_ref = str(binding.get('evidence_ref') or '').strip()
         expected_tool = str(expected_tool or '').strip().lower()
         expected_email = str(expected_email or '').strip()
 
         if not expected_tool or not expected_email:
             return _outcome('UNVERIFIED', 'preflight_worker_identity_missing')
-        if not actual_tool:
-            return _outcome('UNVERIFIED', 'actual_tool_identity_missing')
+        if not actual_tool or not actual_email or not identity_source or not evidence_ref:
+            return _outcome('UNVERIFIED', 'actual_account_binding_incomplete')
         if actual_tool != expected_tool:
             return _outcome(
                 'UNVERIFIED',
                 'actual_tool_mismatch',
                 expected_tool=expected_tool,
-                actual_tool=actual_tool,
-            )
-        if not actual_email:
-            return _outcome(
-                'UNVERIFIED',
-                'actual_account_identity_missing',
                 actual_tool=actual_tool,
             )
         if actual_email.casefold() != expected_email.casefold():
@@ -786,11 +785,13 @@ class AdaptiveTaskOrchestrator:
                 'UNVERIFIED',
                 'quota_tracker_write_not_confirmed',
                 actual_tool=actual_tool,
+                identity_source=identity_source,
             )
         return {
             'status': 'RECORDED',
             'source': source_label,
             'actual_tool': actual_tool,
+            'identity_source': identity_source,
             'quota_status': quota,
         }
 
