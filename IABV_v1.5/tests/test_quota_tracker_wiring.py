@@ -1,8 +1,7 @@
-"""Tests for Fase 2: quota tracker wiring in AdaptiveTaskOrchestrator.
+"""Tests for evidence-gated quota tracking in AdaptiveTaskOrchestrator.
 
-Verifies that ``record_message_sent`` is called through ``_record_quota_usage``
-whenever the orchestrator dispatches to an external assistant via
-``plan_or_execute``.
+Quota is recorded only when the result is non-sandboxed and explicitly binds the
+actual tool/account identity to the worker selected during preflight.
 """
 from __future__ import annotations
 
@@ -143,12 +142,113 @@ def test_record_quota_usage_never_raises() -> None:
         assert result is None
 
 
+def test_quota_attribution_does_not_count_sandbox_dry_run() -> None:
+    result = {
+        'status': 'prepared',
+        'dry_run': True,
+        'actual_assistant_kind': 'chatgpt',
+        'actual_account_email': 'alice@test.com',
+    }
+    with patch.object(
+        AdaptiveTaskOrchestrator, '_record_quota_usage',
+    ) as mock_quota:
+        tracking = AdaptiveTaskOrchestrator._record_quota_usage_if_verified(
+            result,
+            expected_tool='chatgpt',
+            expected_email='alice@test.com',
+            source='unit_test',
+        )
+
+    assert tracking == {
+        'status': 'NOT_COUNTED',
+        'reason': 'sandbox_dry_run',
+    }
+    mock_quota.assert_not_called()
+
+
+def test_quota_attribution_requires_actual_account_identity() -> None:
+    result = {
+        'status': 'prepared',
+        'dry_run': False,
+        'actual_assistant_kind': 'chatgpt',
+    }
+    with patch.object(
+        AdaptiveTaskOrchestrator, '_record_quota_usage',
+    ) as mock_quota:
+        tracking = AdaptiveTaskOrchestrator._record_quota_usage_if_verified(
+            result,
+            expected_tool='chatgpt',
+            expected_email='alice@test.com',
+            source='unit_test',
+        )
+
+    assert tracking['status'] == 'UNVERIFIED'
+    assert tracking['reason'] == 'actual_account_identity_missing'
+    mock_quota.assert_not_called()
+
+
+def test_quota_attribution_rejects_actual_tool_mismatch() -> None:
+    result = {
+        'status': 'prepared',
+        'dry_run': False,
+        'actual_assistant_kind': 'claude',
+        'actual_account_email': 'alice@test.com',
+    }
+    with patch.object(
+        AdaptiveTaskOrchestrator, '_record_quota_usage',
+    ) as mock_quota:
+        tracking = AdaptiveTaskOrchestrator._record_quota_usage_if_verified(
+            result,
+            expected_tool='chatgpt',
+            expected_email='alice@test.com',
+            source='unit_test',
+        )
+
+    assert tracking['status'] == 'UNVERIFIED'
+    assert tracking['reason'] == 'actual_tool_mismatch'
+    mock_quota.assert_not_called()
+
+
+def test_quota_attribution_records_only_exact_actual_identity() -> None:
+    result = {
+        'status': 'prepared',
+        'dry_run': False,
+        'actual_assistant_kind': 'chatgpt',
+        'actual_account_email': 'alice@test.com',
+    }
+    quota = {'tool': 'chatgpt', 'email': 'alice@test.com', 'used_in_window': 1}
+    with patch.object(
+        AdaptiveTaskOrchestrator,
+        '_record_quota_usage',
+        return_value=quota,
+    ) as mock_quota:
+        tracking = AdaptiveTaskOrchestrator._record_quota_usage_if_verified(
+            result,
+            expected_tool='chatgpt',
+            expected_email='alice@test.com',
+            source='unit_test',
+        )
+
+    assert tracking['status'] == 'RECORDED'
+    assert tracking['quota_status'] == quota
+    mock_quota.assert_called_once_with('chatgpt', 'alice@test.com', source='unit_test')
+
+
 # ---------------------------------------------------------------------------
 # 2. govern_adaptive_payload wires quota after successful dispatch
 # ---------------------------------------------------------------------------
 
-def test_govern_payload_records_quota_on_prepared() -> None:
-    orchestrator, router, evo_svc = _make_orchestrator()
+def test_govern_payload_records_quota_on_prepared_with_actual_identity() -> None:
+    orchestrator, router, evo_svc = _make_orchestrator(
+        evolution_result={
+            'status': 'prepared',
+            'assistant_kind': 'chatgpt',
+            'actual_assistant_kind': 'chatgpt',
+            'actual_account_email': 'alice@test.com',
+            'dry_run': False,
+            'reason': 'test',
+        },
+    )
     dc = _make_dc(governance={'should_consult': True, 'assistant_kind': 'chatgpt'})
     with patch.object(
         orchestrator, '_decision_context_from_payload', return_value=dc,
@@ -163,6 +263,57 @@ def test_govern_payload_records_quota_on_prepared() -> None:
         call_args = mock_quota.call_args
         assert call_args[0][0] == 'chatgpt'
         assert call_args[0][1] == 'alice@test.com'
+
+
+def test_govern_payload_does_not_count_sandbox_dry_run() -> None:
+    orchestrator, router, evo_svc = _make_orchestrator(
+        evolution_result={
+            'status': 'prepared',
+            'assistant_kind': 'chatgpt',
+            'actual_assistant_kind': 'chatgpt',
+            'actual_account_email': 'alice@test.com',
+            'dry_run': True,
+        },
+    )
+    dc = _make_dc(governance={'should_consult': True, 'assistant_kind': 'chatgpt'})
+    with patch.object(
+        orchestrator, '_decision_context_from_payload', return_value=dc,
+    ), patch.object(
+        AdaptiveTaskOrchestrator, '_record_quota_usage',
+    ) as mock_quota:
+        payload = {'metadata': {}}
+        result = orchestrator.govern_adaptive_payload(
+            payload, user_goal='test goal', source='test',
+        )
+        ae = (result.get('metadata') or {}).get('autonomous_evolution') or {}
+        assert ae['quota_tracking']['status'] == 'NOT_COUNTED'
+        assert ae['quota_tracking']['reason'] == 'sandbox_dry_run'
+        mock_quota.assert_not_called()
+
+
+def test_govern_payload_keeps_missing_account_identity_unverified() -> None:
+    orchestrator, router, evo_svc = _make_orchestrator(
+        evolution_result={
+            'status': 'prepared',
+            'assistant_kind': 'chatgpt',
+            'actual_assistant_kind': 'chatgpt',
+            'dry_run': False,
+        },
+    )
+    dc = _make_dc(governance={'should_consult': True, 'assistant_kind': 'chatgpt'})
+    with patch.object(
+        orchestrator, '_decision_context_from_payload', return_value=dc,
+    ), patch.object(
+        AdaptiveTaskOrchestrator, '_record_quota_usage',
+    ) as mock_quota:
+        payload = {'metadata': {}}
+        result = orchestrator.govern_adaptive_payload(
+            payload, user_goal='test goal', source='test',
+        )
+        ae = (result.get('metadata') or {}).get('autonomous_evolution') or {}
+        assert ae['quota_tracking']['status'] == 'UNVERIFIED'
+        assert ae['quota_tracking']['reason'] == 'actual_account_identity_missing'
+        mock_quota.assert_not_called()
 
 
 def test_govern_payload_skips_quota_on_noop() -> None:
@@ -205,10 +356,18 @@ def test_govern_payload_skips_quota_on_failed() -> None:
 
 def test_parallel_comparison_records_quota() -> None:
     orchestrator, router, evo_svc = _make_orchestrator(
+        gate_result={
+            'usable': True,
+            'top_worker': {'email': 'alice@test.com', 'tool': 'claude', 'score': 0.9},
+            'available_count': 1,
+            'ranked_workers': [{'email': 'alice@test.com', 'tool': 'claude'}],
+        },
         evolution_result={
             'status': 'prepared',
             'assistant_kind': 'claude',
             'actual_assistant_kind': 'claude',
+            'actual_account_email': 'alice@test.com',
+            'dry_run': False,
         },
     )
     with patch.object(
@@ -223,6 +382,36 @@ def test_parallel_comparison_records_quota() -> None:
         )
         mock_quota.assert_called_once()
         assert result.get('quota_status') is not None
+
+
+def test_parallel_comparison_does_not_count_without_actual_account_identity() -> None:
+    orchestrator, router, evo_svc = _make_orchestrator(
+        gate_result={
+            'usable': True,
+            'top_worker': {'email': 'alice@test.com', 'tool': 'claude', 'score': 0.9},
+            'available_count': 1,
+            'ranked_workers': [{'email': 'alice@test.com', 'tool': 'claude'}],
+        },
+        evolution_result={
+            'status': 'prepared',
+            'assistant_kind': 'claude',
+            'actual_assistant_kind': 'claude',
+            'dry_run': False,
+        },
+    )
+    with patch.object(
+        AdaptiveTaskOrchestrator, '_record_quota_usage',
+    ) as mock_quota:
+        request = InferenceRequest(user_goal='test', auto_route=False)
+        result = orchestrator._run_single_ia_consultation(
+            request=request,
+            candidate={'assistant_kind': 'claude', 'score': 0.8},
+            synaptic_decision=None,
+            decision_context=None,
+        )
+        assert result['quota_tracking']['status'] == 'UNVERIFIED'
+        assert result['quota_tracking']['reason'] == 'actual_account_identity_missing'
+        mock_quota.assert_not_called()
 
 
 def test_parallel_comparison_skips_quota_on_noop() -> None:
@@ -247,7 +436,15 @@ def test_parallel_comparison_skips_quota_on_noop() -> None:
 # ---------------------------------------------------------------------------
 
 def test_quota_status_in_govern_result(tmp_path: Path) -> None:
-    orchestrator, router, evo_svc = _make_orchestrator()
+    orchestrator, router, evo_svc = _make_orchestrator(
+        evolution_result={
+            'status': 'prepared',
+            'assistant_kind': 'chatgpt',
+            'actual_assistant_kind': 'chatgpt',
+            'actual_account_email': 'alice@test.com',
+            'dry_run': False,
+        },
+    )
     dc = _make_dc(governance={'should_consult': True, 'assistant_kind': 'chatgpt'})
     with patch.dict('os.environ', {'IABV_WORKSPACE': str(tmp_path)}):
         (tmp_path / 'data' / 'evolution').mkdir(parents=True, exist_ok=True)
