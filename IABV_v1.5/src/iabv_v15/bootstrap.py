@@ -4994,10 +4994,13 @@ class AppBootstrap:
                 logger.info('startup_evolution: background cycle complete')
                 self._trace_startup_evolution('startup_evolution_finished')
             except Exception as exc:
-                logger.warning('startup_evolution: unexpected error: %s', exc)
+                error_type = type(exc).__name__
+                logger.warning('startup_evolution: unexpected error (%s)', error_type)
                 self._trace_startup_evolution(
                     'startup_evolution_finished',
-                    error=str(exc),
+                    status='error',
+                    error_type=error_type,
+                    reason_code='unexpected_error',
                 )
             finally:
                 self._startup_evolution_active = False
