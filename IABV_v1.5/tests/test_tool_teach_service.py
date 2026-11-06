@@ -111,6 +111,45 @@ def _service(root: Path, *, fail_shell_execute: bool = False, external_adapter: 
     return service, repository
 
 
+def test_tool_teach_service_normalizes_verified_actual_account_binding() -> None:
+    binding = ToolTeachService._normalize_actual_account_binding({
+        'status': 'VERIFIED',
+        'actual_tool': 'ChatGPT',
+        'account_email': ' Alice@Test.com ',
+        'identity_source': 'browser_session_account_panel',
+        'evidence_ref': 'browser-session:profile-7:account-panel',
+    })
+
+    assert binding == {
+        'schema': 'ACCOUNT_BINDING_R1',
+        'status': 'VERIFIED',
+        'actual_tool': 'chatgpt',
+        'account_email': 'Alice@Test.com',
+        'identity_source': 'browser_session_account_panel',
+        'evidence_ref': 'browser-session:profile-7:account-panel',
+    }
+
+
+def test_tool_teach_service_does_not_infer_account_from_session_profile() -> None:
+    binding = ToolTeachService._normalize_actual_account_binding({
+        'status': 'VERIFIED',
+        'actual_tool': 'chatgpt',
+        'session_profile_dir': 'C:/Users/test/browser_profile',
+    })
+
+    assert binding['schema'] == 'ACCOUNT_BINDING_R1'
+    assert binding['status'] == 'UNVERIFIED'
+    assert binding['reason'] == 'adapter_account_binding_incomplete:account_email,identity_source,evidence_ref'
+
+
+def test_tool_teach_service_marks_missing_adapter_binding_unverified() -> None:
+    binding = ToolTeachService._normalize_actual_account_binding(None)
+
+    assert binding['schema'] == 'ACCOUNT_BINDING_R1'
+    assert binding['status'] == 'UNVERIFIED'
+    assert binding['reason'] == 'adapter_account_binding_missing'
+
+
 def test_tool_teach_service_preserves_tool_sandbox_route_and_executes_read_only() -> None:
     root = _workspace('tool_teach_service_read_only')
     shutil.rmtree(root, ignore_errors=True)
@@ -1048,6 +1087,9 @@ def test_tool_teach_service_external_consultation_tracks_dedicated_session_metad
         assert result.execution_state.metadata['session_scope'] == 'program_chat'
         assert result.execution_state.metadata['thread_key'] == task.metadata['thread_key']
         assert result.execution_state.metadata['capture_lane'] == 'background'
+        assert result.execution_state.metadata['actual_account_binding']['schema'] == 'ACCOUNT_BINDING_R1'
+        assert result.execution_state.metadata['actual_account_binding']['status'] == 'UNVERIFIED'
+        assert result.execution_state.metadata['actual_account_binding']['reason'] == 'adapter_account_binding_missing'
     finally:
         shutil.rmtree(root, ignore_errors=True)
 
