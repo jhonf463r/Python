@@ -201,10 +201,13 @@ def test_world_model_read_exception_is_not_reported_as_passed() -> None:
 
     result = validator.run_cross_validation()
 
-    for check in ('audit_vs_worldmodel', 'windows_consistency', 'ui_self_awareness'):
+    for check in ('audit_vs_worldmodel', 'ui_self_awareness'):
         assert result['checks_status'][check] == 'READ_FAILED'
         assert check not in result['checks_passed']
         assert result['checks_unavailable'][check]['reason'] == 'RuntimeError'
+    expected_windows_status = 'READ_FAILED' if os.name == 'nt' else 'NOT_APPLICABLE'
+    assert result['checks_status']['windows_consistency'] == expected_windows_status
+    assert 'windows_consistency' not in result['checks_passed']
 
 
 def test_empty_window_snapshot_is_unverified_not_a_passed_ui_check() -> None:

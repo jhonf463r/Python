@@ -77,7 +77,7 @@ def _fake_platform_pending_queue(tasks: list[PlatformPendingTask] | None = None)
 
 def _fake_self_examination_service(findings: list[SelfExaminationFinding] | None = None):
     svc = MagicMock()
-    snapshot = MagicMock()
+    snapshot = MagicMock(source_coverage={"fixture": "READ_OK"}, source_errors={})
     snapshot.findings = findings or []
     svc.current_review_cached.return_value = snapshot
     return svc
@@ -599,7 +599,7 @@ class TestOSESCurrentReview:
             )
             # Mock service that only exposes current_review_cached(), not current_snapshot
             svc_mock = MagicMock(spec=[])
-            snapshot = MagicMock()
+            snapshot = MagicMock(source_coverage={"fixture": "READ_OK"}, source_errors={})
             snapshot.findings = [finding]
             svc_mock.current_review_cached = MagicMock(return_value=snapshot)
 
@@ -629,7 +629,7 @@ class TestOSESCurrentReview:
             finding.summary = "Test string severity"
 
             svc_mock = MagicMock(spec=[])
-            snapshot = MagicMock()
+            snapshot = MagicMock(source_coverage={"fixture": "READ_OK"}, source_errors={})
             snapshot.findings = [finding]
             svc_mock.current_review_cached = MagicMock(return_value=snapshot)
 
@@ -658,8 +658,8 @@ class TestOSESCurrentReview:
                 self_examination_service=svc_mock,
                 workspace_root=str(ws),
             )
-            queue = cms.current_work_queue()
-            assert not [item for item in queue if item['source'] == 'oses_finding']
+            with pytest.raises(RuntimeError, match="oses_cached_review_reader_unavailable"):
+                cms.current_work_queue()
             svc_mock.current_review.assert_not_called()
         finally:
             shutil.rmtree(ws, ignore_errors=True)
@@ -688,3 +688,25 @@ class TestDigestWorkQueueInOrchestrator:
         assert 'Orchestrator sees this' in digest.work_queue_brief[0]
         md = render_digest_markdown(digest)
         assert 'Orchestrator sees this' in md
+
+
+def test_partial_platform_queue_is_not_projected_as_complete(tmp_path) -> None:
+    from iabv_v15.services.evolution.platform_pending_queue import (
+        PlatformPendingQueue,
+        PlatformPendingQueueReadError,
+    )
+
+    queue = PlatformPendingQueue(tmp_path / 'evolution')
+    valid_task = queue.upsert(PlatformPendingTask(title='Readable task'))
+    (queue._dir / 'task_corrupt.json').write_text('{', encoding='utf-8')
+    cms = ControlMasterService(
+        repository=_fake_repo(),
+        platform_pending_queue=queue,
+        workspace_root=str(tmp_path),
+    )
+
+    with pytest.raises(PlatformPendingQueueReadError) as error:
+        cms.current_work_queue()
+
+    assert error.value.report.status == 'READ_PARTIAL'
+    assert [task.id for task in error.value.report.tasks] == [valid_task.id]

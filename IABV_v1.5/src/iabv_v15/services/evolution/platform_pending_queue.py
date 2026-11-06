@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import json
 import os
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -36,6 +37,38 @@ CATEGORY_OSES_FINDING = 'oses_finding'
 CATEGORY_CAPABILITY_DISCOVERY = 'capability_discovery'
 CATEGORY_WINDOWS_NATIVE = 'windows_native'
 CATEGORY_INVESTIGATION = 'investigation'
+
+
+@dataclass(frozen=True)
+class PlatformPendingQueueReadReport:
+    """Outcome of one bounded scan of the existing platform-pending directory."""
+
+    tasks: tuple[PlatformPendingTask, ...]
+    failed_paths: tuple[str, ...] = ()
+
+    @property
+    def status(self) -> str:
+        if self.failed_paths and not self.tasks:
+            return "READ_FAILED"
+        if self.failed_paths:
+            return "READ_PARTIAL"
+        return "READ_OK"
+
+    def require_complete(self) -> list[PlatformPendingTask]:
+        if self.failed_paths:
+            raise PlatformPendingQueueReadError(self)
+        return list(self.tasks)
+
+
+class PlatformPendingQueueReadError(RuntimeError):
+    """Fail-closed error carrying the readable tasks and failed file paths."""
+
+    def __init__(self, report: PlatformPendingQueueReadReport) -> None:
+        self.report = report
+        super().__init__(
+            f"Platform pending queue {report.status}: "
+            f"{len(report.tasks)} readable tasks; {len(report.failed_paths)} failed files"
+        )
 
 
 class PlatformPendingQueue:
@@ -70,17 +103,38 @@ class PlatformPendingQueue:
         except Exception:
             return None
 
-    def list_all(self) -> list[PlatformPendingTask]:
-        """Return all pending tasks sorted by priority (critical > high > medium > low)."""
+    def list_all_with_diagnostics(self) -> PlatformPendingQueueReadReport:
+        """Scan every task file and retain both readable tasks and failures."""
         tasks: list[PlatformPendingTask] = []
-        for path in sorted(self._dir.glob('task_*.json')):
-            try:
-                tasks.append(PlatformPendingTask.model_validate_json(path.read_text(encoding='utf-8')))
-            except Exception:
-                continue
+        failed_paths: list[str] = []
+        if not self._dir.is_dir():
+            return PlatformPendingQueueReadReport(
+                tasks=(),
+                failed_paths=(f"{self._dir}:DIRECTORY_UNAVAILABLE",),
+            )
+        try:
+            paths = sorted(self._dir.glob('task_*.json'))
+            for path in paths:
+                try:
+                    tasks.append(
+                        PlatformPendingTask.model_validate_json(
+                            path.read_text(encoding='utf-8')
+                        )
+                    )
+                except Exception as exc:
+                    failed_paths.append(f"{path}:{type(exc).__name__}")
+        except OSError as exc:
+            failed_paths.append(f"{self._dir}:{type(exc).__name__}")
         priority_order = {'critical': 0, 'high': 1, 'medium': 2, 'low': 3}
         tasks.sort(key=lambda t: priority_order.get(t.priority, 99))
-        return tasks
+        return PlatformPendingQueueReadReport(
+            tasks=tuple(tasks),
+            failed_paths=tuple(failed_paths),
+        )
+
+    def list_all(self) -> list[PlatformPendingTask]:
+        """Return all tasks only when every task file was read successfully."""
+        return self.list_all_with_diagnostics().require_complete()
 
     # Alias for consistent external naming (the prompt and MCP tools
     # refer to ``list_tasks``).

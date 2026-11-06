@@ -33,6 +33,7 @@ from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
 from typing import Any, Callable
+from uuid import uuid4
 
 logger = logging.getLogger(__name__)
 
@@ -121,6 +122,14 @@ class PlatformProfile:
         )
 
 
+@dataclass(frozen=True)
+class ObjectiveEvidence:
+    attempt_id: str
+    platform_id: str
+    goal: str
+    source: str
+
+
 @dataclass
 class LearningAttempt:
     platform_id: str
@@ -134,6 +143,8 @@ class LearningAttempt:
     error: str = ''
     adjustments_made: list[str] = field(default_factory=list)
     timestamp_utc: str = ''
+    attempt_id: str = ''
+    outcome: str = 'UNVERIFIED'
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -141,6 +152,8 @@ class LearningAttempt:
             'goal': self.goal,
             'phase': self.phase.value if isinstance(self.phase, LearningPhase) else self.phase,
             'success': self.success,
+            'attempt_id': self.attempt_id,
+            'outcome': self.outcome,
             'verification_sources_used': self.verification_sources_used,
             'verification_passed': self.verification_passed,
             'verification_total': self.verification_total,
@@ -299,12 +312,19 @@ class PlatformLearningOrchestrator:
         platform_id: str,
         goal: str,
         executor: Callable[[str, dict[str, Any]], bool] | None = None,
+        *,
+        verify_objective: Callable[[str, str, str], ObjectiveEvidence | None] | None = None,
     ) -> LearningAttempt:
-        """Execute full learning cycle: perceive → plan → act → verify → adjust → persist."""
+        """Learn only from a completed action and an observed objective postcondition.
+
+        The verifier must inspect the result of this attempt. It returns None if
+        it cannot establish the postcondition from its own observation.
+        """
         start = time.monotonic()
         attempt = LearningAttempt(
             platform_id=platform_id,
             goal=goal,
+            attempt_id=uuid4().hex,
             timestamp_utc=datetime.now(timezone.utc).isoformat(),
         )
 
@@ -313,22 +333,8 @@ class PlatformLearningOrchestrator:
             profile = PlatformProfile(platform_id=platform_id, name=platform_id)
             self._platforms[platform_id] = profile
 
-        # Fast-path: if confidence is high and decision_simplifier can handle it
-        if profile.confidence >= 0.7 and self.decision_simplifier:
-            result = self.decision_simplifier.resolve_if_ready(
-                f'platform:{platform_id} goal:{goal}',
-                context={'platform_id': platform_id},
-            )
-            if result and result.success:
-                profile.success_count += 1
-                profile.last_used_utc = datetime.now(timezone.utc).isoformat()
-                attempt.success = True
-                attempt.phase = LearningPhase.PERSIST
-                attempt.duration_seconds = time.monotonic() - start
-                self._persist_attempt(attempt)
-                self._save_platforms()
-                return attempt
-
+        # The decision simplifier persists execution results before objective
+        # verification. Keep that path out of platform learning.
         try:
             # Phase 1: PERCEIVE
             attempt.phase = LearningPhase.PERCEIVE
@@ -340,27 +346,24 @@ class PlatformLearningOrchestrator:
 
             # Phase 3: ACT
             attempt.phase = LearningPhase.ACT
-            act_ok = self._act(profile, plan, executor)
-
-            # Phase 4: VERIFY (source-of-truth crossing)
-            attempt.phase = LearningPhase.VERIFY
-            v_passed, v_total, v_sources, v_failed = self._verify(profile, goal)
-            attempt.verification_passed = v_passed
-            attempt.verification_total = v_total
-            attempt.verification_sources_used = v_sources
-
-            if v_total > 0 and v_passed >= (v_total * 2 / 3):
-                # Success: at least 2/3 of verification sources confirm
-                attempt.success = True
-                profile.success_count += 1
-                profile.confidence = min(1.0, profile.confidence + 0.1)
-            else:
-                # Phase 5: ADJUST
-                attempt.phase = LearningPhase.ADJUST
-                adjustments = self._adjust(profile, goal, v_failed)
-                attempt.adjustments_made = adjustments
-                profile.failure_count += 1
-                profile.confidence = max(0.0, profile.confidence - 0.05)
+            if executor is not None and plan:
+                if not self._act(profile, plan, executor, attempt.attempt_id):
+                    attempt.outcome = 'FAILED'
+                    attempt.error = 'Execution failed or was rejected'
+                    profile.failure_count += 1
+                    profile.confidence = max(0.0, profile.confidence - 0.05)
+                elif verify_objective is not None:
+                    attempt.phase = LearningPhase.VERIFY
+                    evidence = verify_objective(attempt.attempt_id, platform_id, goal)
+                    if evidence and evidence.source.strip() and (
+                        evidence.attempt_id, evidence.platform_id, evidence.goal
+                    ) == (attempt.attempt_id, platform_id, goal):
+                        attempt.verification_passed = attempt.verification_total = 1
+                        attempt.verification_sources_used = [evidence.source]
+                        attempt.outcome = 'VERIFIED_SUCCESS'
+                        attempt.success = True
+                        profile.success_count += 1
+                        profile.confidence = min(1.0, profile.confidence + 0.1)
 
             # Phase 6: PERSIST
             attempt.phase = LearningPhase.PERSIST
@@ -368,8 +371,6 @@ class PlatformLearningOrchestrator:
 
         except Exception as exc:
             attempt.error = str(exc)[:300]
-            profile.failure_count += 1
-            profile.confidence = max(0.0, profile.confidence - 0.1)
             logger.warning('platform_learning: error in %s: %s', platform_id, exc)
 
         attempt.duration_seconds = time.monotonic() - start
@@ -429,107 +430,21 @@ class PlatformLearningOrchestrator:
         self,
         profile: PlatformProfile,
         plan: list[dict[str, str]],
-        executor: Callable[[str, dict[str, Any]], bool] | None = None,
+        executor: Callable[[str, dict[str, Any]], bool],
+        attempt_id: str,
     ) -> bool:
-        """Execute the plan steps."""
         for step in plan:
-            action = step.get('action', '')
-            target = step.get('target', '')
-            if executor:
-                try:
-                    ok = executor(action, {'target': target, 'profile': profile.to_dict()})
-                    if not ok:
-                        return False
-                except Exception as exc:
-                    logger.warning('platform_learning: act failed: %s', exc)
+            try:
+                if not executor(step.get('action', ''), {
+                    'target': step.get('target', ''),
+                    'profile': profile.to_dict(),
+                    'attempt_id': attempt_id,
+                }):
                     return False
-            else:
-                logger.debug('platform_learning: dry-run step %s → %s', action, target)
+            except Exception as exc:
+                logger.warning('platform_learning: act failed: %s', exc)
+                return False
         return True
-
-    def _verify(
-        self,
-        profile: PlatformProfile,
-        goal: str,
-    ) -> tuple[int, int, list[str], list[str]]:
-        """Cross-check sources of truth. Returns (passed, total, sources_used, failed_sources)."""
-        sources_used: list[str] = []
-        failed_sources: list[str] = []
-        passed = 0
-        total = 0
-
-        # Source 1: URL / API response check
-        if profile.platform_type == PlatformType.API and profile.url:
-            total += 1
-            source_name = VerificationSource.API_RESPONSE.value
-            sources_used.append(source_name)
-            source_passed = False
-            try:
-                import httpx
-                with httpx.Client(timeout=10.0) as client:
-                    resp = client.get(profile.url)
-                    if resp.status_code < 500:
-                        passed += 1
-                        source_passed = True
-            except Exception:
-                pass
-            if not source_passed:
-                failed_sources.append(source_name)
-
-        # Source 2: State change (API key configured after goal)
-        if self.api_key_discovery and 'key' in goal.lower():
-            total += 1
-            source_name = VerificationSource.STATE_CHANGE.value
-            sources_used.append(source_name)
-            scan = self.api_key_discovery.scan_configured_keys()
-            if any(s['configured'] for s in scan):
-                passed += 1
-            else:
-                failed_sources.append(source_name)
-
-        # Source 3: Replay confidence (if browser interaction)
-        if profile.platform_type == PlatformType.BROWSER and self.replay_confidence:
-            total += 1
-            source_name = VerificationSource.VISUAL.value
-            sources_used.append(source_name)
-            source_passed = False
-            try:
-                conf = self.replay_confidence.current_confidence()
-                if conf and conf >= 0.5:
-                    passed += 1
-                    source_passed = True
-            except Exception:
-                pass
-            if not source_passed:
-                failed_sources.append(source_name)
-
-        # Minimum: always have at least one check (existence)
-        if total == 0:
-            total = 1
-            sources_used.append('existence')
-            passed = 1  # platform exists
-
-        return passed, total, sources_used, failed_sources
-
-    def _adjust(
-        self,
-        profile: PlatformProfile,
-        goal: str,
-        failed_sources: list[str],
-    ) -> list[str]:
-        """Record adjustments when verification fails."""
-        adjustments: list[str] = []
-
-        if 'api_response' in failed_sources:
-            adjustments.append(f'API endpoint {profile.url} may be down; schedule retry')
-
-        if 'visual' in failed_sources:
-            adjustments.append('Browser verification failed; page may need different login flow')
-
-        if not adjustments:
-            adjustments.append(f'Goal "{goal}" not fully verified; needs manual review')
-
-        return adjustments
 
     # ------------------------------------------------------------------
     # Discovery

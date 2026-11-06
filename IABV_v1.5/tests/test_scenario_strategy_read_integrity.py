@@ -120,7 +120,7 @@ def test_scenario_run_sqlite_fetchall_failure_replaces_stale_report(
 
     assert report.status == RepositoryReadStatus.READ_FAILED
     assert report.collection_error_type == "OperationalError"
-    assert report.collection_error_message == "Repository read failed."
+    assert report.collection_error_message == "Repository collection read failed."
     assert "PRIVATE_DB_ERROR_CANARY" not in str(report.to_dict())
     assert repository.last_read_report is report
     assert report is not previous

@@ -4237,9 +4237,6 @@ class OperationalSelfExaminationService:
             return []
         self._record_source_status('runtime_log', 'READ_OK')
 
-        if not lines:
-            return []
-
         findings: list[SelfExaminationFinding] = []
         for pattern_str, category, title, recommendation in self._LOG_ANOMALY_PATTERNS:
             matching_lines = [
@@ -5316,10 +5313,6 @@ class OperationalSelfExaminationService:
         diagnostic categories are reliable and which need recalibration.
         """
         results: list[SelfExaminationFinding] = []
-        # This ledger is an input source in its own right. Read it on every
-        # review so source coverage does not depend on there being enough
-        # post-review experiment runs for calibration math.
-        ledger = self._load_metacognitive_ledger()
         if previous_review is None or not experiment_runs:
             return results
 
@@ -5510,6 +5503,10 @@ class OperationalSelfExaminationService:
         that the system should learn to correct.
         """
         results: list[SelfExaminationFinding] = []
+        # This ledger is an input source in its own right. Read it on every
+        # review so source coverage does not depend on there being enough
+        # post-review experiment runs for calibration math.
+        ledger = self._load_metacognitive_ledger()
         if previous_review is None or not experiment_runs:
             return results
 

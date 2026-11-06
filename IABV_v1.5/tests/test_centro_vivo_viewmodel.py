@@ -443,7 +443,6 @@ def test_centro_vivo_does_not_fall_back_to_active_oses_reader_when_cache_missing
 
     assert vm.get_self_examination_findings() == []
     assert vm.get_source_statuses()['self_examination_service'] == 'READ_UNVERIFIED'
-\n
 
 
 def test_centro_vivo_qml_requires_read_ok_before_showing_empty_state():

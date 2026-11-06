@@ -3036,28 +3036,6 @@ class AccountInventoryEntry(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
-class AccountInventorySnapshot(BaseModel):
-    """Point-in-time account inventory with explicit scanner coverage.
-
-    Every list/count is a projection of the same scan. Source coverage records
-    which underlying observations were complete; an empty list is not by itself
-    proof that browser/session/quota sources were fully observed.
-    """
-
-    entries: list[AccountInventoryEntry] = Field(default_factory=list)
-    continuity_queue: list[AccountInventoryEntry] = Field(default_factory=list)
-    scanned_at: datetime = Field(default_factory=utc_now)
-    active_count: int = 0
-    exhausted_count: int = 0
-    expired_count: int = 0
-    unresolved_count: int = 0
-    total_remaining_messages: int = 0
-    tools_available: list[str] = Field(default_factory=list)
-    unresolved_items: list[str] = Field(default_factory=list)
-    source_coverage: dict[str, str] = Field(default_factory=dict)
-    source_errors: dict[str, str] = Field(default_factory=dict)
-
-
 # ---------------------------------------------------------------------------
 # Cross-Agent Synchronization — Handoff Knowledge
 # ---------------------------------------------------------------------------
@@ -3169,6 +3147,8 @@ class AccountInventorySnapshot(BaseModel):
     total_remaining_messages: int = 0
     tools_available: list[str] = Field(default_factory=list)
     unresolved_items: list[str] = Field(default_factory=list)
+    source_coverage: dict[str, str] = Field(default_factory=dict)
+    source_errors: dict[str, str] = Field(default_factory=dict)
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 

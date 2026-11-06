@@ -791,7 +791,7 @@ def test_validation_feedback_history_valid_jsonl_is_read_ok(tmp_path) -> None:
         'candidate_assistant_kind': 'claude',
         'current_assistant_kind': 'chatgpt',
     }
-    history.write_text(json.dumps(entry) + '\\n', encoding='utf-8')
+    history.write_text(json.dumps(entry) + '\n', encoding='utf-8')
 
     service._loop_closure_findings(findings_so_far=[], experiment_runs=[])
     tried = service._load_tried_proposal_keys()
@@ -814,7 +814,7 @@ def test_validation_feedback_history_malformed_jsonl_is_partial(tmp_path) -> Non
         'current_assistant_kind': 'chatgpt',
     }
     history.write_text(
-        json.dumps(valid) + '\\n[]\\n{malformed\\n',
+        json.dumps(valid) + '\n[]\n{malformed\n',
         encoding='utf-8',
     )
 
@@ -841,7 +841,7 @@ def test_validation_feedback_history_permission_failure_is_not_not_found(tmp_pat
     service = _service(tmp_path)
     history = tmp_path / 'data' / 'evolution' / 'validation_feedback' / 'history.jsonl'
     history.parent.mkdir(parents=True, exist_ok=True)
-    history.write_text('{}\\n', encoding='utf-8')
+    history.write_text('{}\n', encoding='utf-8')
     original_read_text = Path.read_text
 
     def deny_history_read(path, *args, **kwargs):

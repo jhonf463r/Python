@@ -416,11 +416,8 @@ class ControlMasterService:
         if queue is None:
             return []
         items: list[dict[str, Any]] = []
-        try:
-            from iabv_v15.domain.models import PendingTaskStatus as _PTS
-            all_tasks = queue.list_all() if hasattr(queue, 'list_all') else []
-        except Exception:
-            return []
+        from iabv_v15.domain.models import PendingTaskStatus as _PTS
+        all_tasks = queue.list_all()
         for task in all_tasks:
             if task.status == _PTS.COMPLETED:
                 continue

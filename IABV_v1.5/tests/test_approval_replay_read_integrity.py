@@ -182,8 +182,8 @@ def test_approval_and_replay_sqlite_collection_failures_replace_stale_reports(
 
     assert approval_report.status == RepositoryReadStatus.READ_FAILED
     assert replay_report.status == RepositoryReadStatus.READ_FAILED
-    assert approval_report.collection_error_message == "Repository read failed."
-    assert replay_report.collection_error_message == "Repository read failed."
+    assert approval_report.collection_error_message == "Repository collection read failed."
+    assert replay_report.collection_error_message == "Repository collection read failed."
     assert "PRIVATE_DB_ERROR_CANARY" not in str(approval_report.to_dict())
     assert "PRIVATE_DB_ERROR_CANARY" not in str(replay_report.to_dict())
     assert approval_repo.last_read_report is approval_report

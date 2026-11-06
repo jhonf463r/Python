@@ -19,6 +19,7 @@ from iabv_v15.domain.models import (
     utc_now,
 )
 from iabv_v15.infra.persistence.storage import ArtifactStorage
+from iabv_v15.services.evolution.platform_pending_queue import PlatformPendingQueueReadError
 
 
 class PortableContextService:
@@ -3320,7 +3321,7 @@ class PortableContextService:
         )
 
     def _pending_section(self, *, pending_items: list[dict[str, Any]], backlog_items: list[dict[str, Any]], now) -> PortableContextSection:
-        platform_items = self._platform_pending_items()
+        platform_items, platform_read_status = self._platform_pending_items()
         items = pending_items[:4] + backlog_items[:4] + platform_items[:4]
         platform_summary = ''
         if platform_items:
@@ -3328,6 +3329,10 @@ class PortableContextService:
         summary = f'{len(pending_items)} pending issues y {len(backlog_items)} mejoras priorizadas.{platform_summary}'
         if not items:
             summary = 'No tengo pendientes priorizados confirmados por evidencia persistida.'
+        unresolved_fields = [] if items else ['UNRESOLVED:pending_backlog']
+        if platform_read_status:
+            unresolved_fields.append(f'UNRESOLVED:platform_pending_queue:{platform_read_status}')
+            summary += ' La cola de plataforma no pudo verificarse por completo.'
         return self._section(
             section_id='pending',
             title='Pendientes priorizados',
@@ -3337,18 +3342,20 @@ class PortableContextService:
             source_refs=['pending_issue_repository', 'evolution_review_service', 'platform_pending_queue'],
             confidence=0.8 if items else 0.0,
             last_updated=now,
-            unresolved_fields=[] if items else ['UNRESOLVED:pending_backlog'],
+            unresolved_fields=unresolved_fields,
         )
 
-    def _platform_pending_items(self) -> list[dict[str, Any]]:
+    def _platform_pending_items(self) -> tuple[list[dict[str, Any]], str | None]:
         """Read structured pending items from PlatformPendingQueue."""
         queue = self.platform_pending_queue
         if queue is None or not hasattr(queue, 'to_portable_items'):
-            return []
+            return [], 'UNAVAILABLE'
         try:
-            return queue.to_portable_items(limit=6)
+            return queue.to_portable_items(limit=6), None
+        except PlatformPendingQueueReadError as error:
+            return [], error.report.status
         except Exception:
-            return []
+            return [], 'READ_FAILED'
 
     def _canonical_work_queue_section(self, *, now) -> PortableContextSection:
         """Project top-5 canonical work queue items from ControlMasterService."""
@@ -3368,7 +3375,17 @@ class PortableContextService:
         try:
             queue = cms.current_work_queue(limit=5)
         except Exception:
-            queue = []
+            return self._section(
+                section_id='canonical_work_queue',
+                title='Cola canónica de trabajo',
+                summary='No se pudo verificar la cola canónica.',
+                items=[],
+                source_kind='control_master',
+                source_refs=['ControlMasterService'],
+                confidence=0.0,
+                last_updated=now,
+                unresolved_fields=['UNRESOLVED:canonical_work_queue_read_failed'],
+            )
         items: list[dict[str, Any]] = []
         for wq_item in queue:
             items.append({

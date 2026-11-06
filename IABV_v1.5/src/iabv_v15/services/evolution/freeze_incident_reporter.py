@@ -1285,7 +1285,7 @@ class ChatInteractionLifecycle:
                 get_runtime_tracer,
             )
             trace_event = get_runtime_tracer().trace(
-                trace_kind,
+                'interaction_resolved' if is_final else 'interaction_outcome',
                 interaction_id=interaction_id,
                 message_preview=record.get('message_preview', ''),
                 outcome=outcome,
