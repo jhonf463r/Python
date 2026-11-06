@@ -1168,13 +1168,19 @@ def test_session_profile_path_resolution_accepts_legacy_in_root_and_rejects_esca
             allow_local_automatic_consultation=False,
         )
         legacy_task = service.build_task_from_request(request)
-        legacy_task = legacy_task.model_copy(
-            update={'metadata': {**legacy_task.metadata, 'session_profile_dir': str(in_root)}}
-        )
+        legacy_metadata = dict(legacy_task.metadata)
+        legacy_goal_parameters = dict(legacy_metadata.get('goal_parameters') or {})
+        legacy_goal_parameters['session_profile_dir'] = str(in_root)
+        legacy_metadata.update({
+            'session_profile_dir': str(in_root),
+            'goal_parameters': legacy_goal_parameters,
+        })
+        legacy_task = legacy_task.model_copy(update={'metadata': legacy_metadata})
         card = _repository.get_card(legacy_task.tool_id)
         assert card is not None
         synced_task = service._sync_external_consultation_task(legacy_task, card)
         assert synced_task.metadata['session_profile_dir'] == relative
+        assert synced_task.metadata['goal_parameters']['session_profile_dir'] == relative
 
         escape_path = f'../{outside.name}'
         assert service._has_session_content(str(outside)) is False
