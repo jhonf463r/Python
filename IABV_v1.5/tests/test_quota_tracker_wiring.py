@@ -328,3 +328,23 @@ def test_deductive_context_does_not_claim_no_accounts_when_quota_is_corrupt(
     assert "Sesiones detectadas sin cuota verificada: 1" in report
     assert "Sin cuentas rastreadas todavia" not in report
     assert "Sin asistentes con sesion activa detectados" not in report
+
+
+
+def test_deductive_rotate_account_preserves_unverified_quota_state() -> None:
+    from iabv_v15.services.auto_correction_engine import _execute_rotate_account
+
+    with patch(
+        'iabv_v15.services.account_resource_scanner.best_account_for_tool',
+        side_effect=RuntimeError('quota_tracker_unverified:corrupt'),
+    ):
+        result = _execute_rotate_account({
+            'tool': 'chatgpt',
+            'exhausted_email': 'user@test.com',
+            'reason': 'quota exceeded',
+        })
+
+    assert result['action'] == 'rotate_account'
+    assert result['status'] == 'unverified'
+    assert result['detail'] == 'quota_tracker_unverified:corrupt'
+    assert 'corrected' != result['status']
