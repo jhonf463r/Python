@@ -1305,12 +1305,20 @@ class PortableContextService:
         """
         items: list[dict[str, Any]] = []
         unresolved_fields: list[str] = []
+        quota_source_status = 'UNAVAILABLE'
+        snapshot_active_count = 0
+        snapshot_unresolved_count = 0
 
         try:
             from iabv_v15.services.account_resource_scanner import (
                 build_inventory_snapshot,
             )
             snapshot = build_inventory_snapshot()
+            quota_source_status = (
+                (snapshot.source_coverage or {}).get('quota_tracker', 'UNVERIFIED')
+            )
+            snapshot_active_count = snapshot.active_count
+            snapshot_unresolved_count = snapshot.unresolved_count
 
             # Active accounts
             for entry in snapshot.continuity_queue[:6]:
@@ -1399,9 +1407,9 @@ class PortableContextService:
             metadata={
                 'section_purpose': 'continuity_for_next_session',
                 'requires_human_approval': True,
-                'quota_source_status': locals().get('quota_source_status', 'UNAVAILABLE'),
-                'snapshot_active_count': locals().get('snapshot').active_count if 'snapshot' in locals() else 0,
-                'snapshot_unresolved_count': locals().get('snapshot').unresolved_count if 'snapshot' in locals() else 0,
+                'quota_source_status': quota_source_status,
+                'snapshot_active_count': snapshot_active_count,
+                'snapshot_unresolved_count': snapshot_unresolved_count,
             },
         )
 
