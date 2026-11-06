@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
@@ -9,6 +10,7 @@ import time
 import webbrowser
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit
 
 try:
     import ctypes
@@ -1103,7 +1105,46 @@ class UIExecutionRunner:
         metadata: dict[str, Any],
     ) -> dict[str, Any]:
         enriched_metadata = dict(metadata or {})
-        page_observation = enriched_metadata.get('page_observation')
+        # Keep the DOM observation in memory for perception, but never persist
+        # raw page text or control labels with the ToolResult / execution log.
+        page_observation = enriched_metadata.pop('page_observation', None)
+        if isinstance(page_observation, dict):
+            try:
+                observation_bytes = json.dumps(
+                    page_observation,
+                    ensure_ascii=False,
+                    sort_keys=True,
+                    separators=(',', ':'),
+                    default=str,
+                ).encode('utf-8')
+                parsed_url = urlsplit(str(page_observation.get('url') or ''))
+                origin = ''
+                if parsed_url.scheme and parsed_url.hostname:
+                    origin = f'{parsed_url.scheme.lower()}://{parsed_url.hostname.lower()}'
+                    if parsed_url.port:
+                        origin += f':{parsed_url.port}'
+                interactive_elements = page_observation.get('interactive_elements')
+                enriched_metadata['page_observation_fingerprint'] = {
+                    'schema': 'WEB_PAGE_OBSERVATION_FINGERPRINT_R1',
+                    'source': str(page_observation.get('source') or '')[:40],
+                    'origin': origin,
+                    'body_text_chars': len(str(page_observation.get('body_text') or '')),
+                    'interactive_element_count': (
+                        len(interactive_elements)
+                        if isinstance(interactive_elements, (list, tuple))
+                        else 0
+                    ),
+                    'recorded_at_unix': time.time(),
+                    'sha256': hashlib.sha256(observation_bytes).hexdigest(),
+                }
+            except Exception:
+                # The private observation is still dropped if fingerprinting
+                # fails; a diagnostic must never cause raw content to persist.
+                enriched_metadata['page_observation_fingerprint'] = {
+                    'schema': 'WEB_PAGE_OBSERVATION_FINGERPRINT_R1',
+                    'status': 'FINGERPRINT_FAILED',
+                    'recorded_at_unix': time.time(),
+                }
         if isinstance(page_observation, dict):
             try:
                 from iabv_v15.services.capture.universal_perception_service import UniversalPerceptionService
