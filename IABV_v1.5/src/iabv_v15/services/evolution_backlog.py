@@ -15,12 +15,16 @@ Cada tarea tiene:
   - title: descripción corta
   - area: categoría (metacognition, hardware, gpu, tools, learning, etc.)
   - priority: critical / high / medium / low
-  - status: pending / in_progress / completed / deferred
+  - status: pending / in_progress / completed / deferred / blocked / partial
   - source: quién la creó (audit, human, auto_analysis, devin, etc.)
   - created_at: cuándo se descubrió
   - completed_at: cuándo se completó (si aplica)
   - evidence: por qué es necesaria
   - depends_on: IDs de tareas que deben completarse primero
+
+Los registros históricos sin `id`, `source` y `created_at` se conservan
+solo cuando incluyen `added_by`; el lector informa sus posiciones y no los
+reescribe ni les inventa una identidad.
 """
 
 from __future__ import annotations
@@ -28,6 +32,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -47,18 +52,195 @@ def _utc_now_iso() -> str:
     return datetime.now(timezone.utc).isoformat(timespec='seconds')
 
 
-def load_backlog(workspace: str | None = None) -> list[dict[str, Any]]:
-    """Load the full evolution backlog from disk."""
+_BACKLOG_PRIORITIES = frozenset({'critical', 'high', 'medium', 'low'})
+_BACKLOG_STATUSES = frozenset({'pending', 'in_progress', 'completed', 'blocked', 'partial', 'deferred'})
+
+
+def _validate_backlog_task(
+    item: dict[str, Any],
+    *,
+    position: int,
+    seen_ids: set[str],
+) -> tuple[str, bool]:
+    """Validate operational task fields while preserving the observed legacy shape."""
+    for field in ('title', 'area', 'priority', 'status', 'evidence'):
+        value = item.get(field)
+        if not isinstance(value, str) or not value.strip():
+            return f'task[{position}].{field} must be a non-empty string', False
+
+    if item['priority'] not in _BACKLOG_PRIORITIES:
+        return f'task[{position}].priority has an unsupported value', False
+    if item['status'] not in _BACKLOG_STATUSES:
+        return f'task[{position}].status has an unsupported value', False
+
+    legacy_without_id = 'id' not in item
+    if legacy_without_id:
+        added_by = item.get('added_by')
+        if not isinstance(added_by, str) or not added_by.strip():
+            return f'task[{position}] without id must carry a non-empty added_by legacy marker', False
+    else:
+        task_id = item.get('id')
+        if not isinstance(task_id, str) or not task_id.strip():
+            return f'task[{position}].id must be a non-empty string', False
+        if task_id in seen_ids:
+            return f'task[{position}].id duplicates an earlier task identity', False
+        seen_ids.add(task_id)
+        for field in ('source', 'created_at'):
+            value = item.get(field)
+            if not isinstance(value, str) or not value.strip():
+                return f'task[{position}].{field} must be a non-empty string when id is present', False
+
+    for field in ('source', 'created_at', 'added_by', 'owner', 'block_reason'):
+        if field in item:
+            value = item[field]
+            if not isinstance(value, str) or not value.strip():
+                return f'task[{position}].{field} must be a non-empty string when present', False
+
+    if 'completed_at' in item:
+        completed_at = item['completed_at']
+        if completed_at is not None and (
+            not isinstance(completed_at, str) or not completed_at.strip()
+        ):
+            return f'task[{position}].completed_at must be a non-empty string or null', False
+
+    if 'depends_on' in item:
+        depends_on = item['depends_on']
+        if not isinstance(depends_on, list) or any(
+            not isinstance(dependency, str) or not dependency.strip()
+            for dependency in depends_on
+        ):
+            return f'task[{position}].depends_on must be an array of non-empty task IDs', False
+
+    return '', legacy_without_id
+
+
+@dataclass(frozen=True)
+class EvolutionBacklogReadReport:
+    """Truthful outcome of one read of the canonical evolution backlog."""
+
+    status: str
+    path: str
+    items: tuple[dict[str, Any], ...] = ()
+    error_type: str = ''
+    error_message: str = ''
+    legacy_items_without_id: tuple[int, ...] = ()
+
+    def to_mcp_payload(self) -> dict[str, Any]:
+        if self.status != 'READ_OK':
+            return {
+                'status': self.status,
+                'path': self.path,
+                'pending': [],
+                'total_pending': None,
+                'total_all': None,
+                'completed': None,
+                'legacy_items_without_id_count': None,
+                'legacy_item_indexes_without_id': None,
+                'error_type': self.error_type,
+                'error_message': self.error_message,
+            }
+        all_tasks = list(self.items)
+        priority_order = {'critical': 0, 'high': 1, 'medium': 2, 'low': 3}
+        pending = [
+            item for item in all_tasks
+            if item.get('status') in ('pending', 'in_progress')
+        ]
+        pending.sort(key=lambda item: priority_order.get(item.get('priority', 'medium'), 2))
+        return {
+            'status': 'READ_OK',
+            'path': self.path,
+            'pending': pending,
+            'total_pending': len(pending),
+            'total_all': len(all_tasks),
+            'completed': sum(1 for item in all_tasks if item.get('status') == 'completed'),
+            'legacy_items_without_id_count': len(self.legacy_items_without_id),
+            'legacy_item_indexes_without_id': list(self.legacy_items_without_id),
+            'error_type': '',
+            'error_message': '',
+        }
+
+
+class EvolutionBacklogReadError(RuntimeError):
+    """Fail-closed error that preserves diagnostics for a corrupt/unreadable backlog."""
+
+    def __init__(self, report: EvolutionBacklogReadReport) -> None:
+        self.report = report
+        super().__init__(
+            f'Evolution backlog read {report.status}: '
+            f'{report.error_type or "no valid snapshot"} at {report.path}'
+        )
+
+
+def load_backlog_with_diagnostics(
+    workspace: str | None = None,
+) -> EvolutionBacklogReadReport:
+    """Read the canonical backlog without conflating errors with no saved file."""
     path = _default_backlog_path(workspace)
-    if not path.exists():
-        return []
     try:
-        data = json.loads(path.read_text(encoding='utf-8'))
-        if isinstance(data, list):
-            return data
-    except Exception as exc:
-        logger.warning('Failed to load backlog: %s', exc)
-    return []
+        raw = path.read_text(encoding='utf-8')
+    except FileNotFoundError:
+        return EvolutionBacklogReadReport(status='CONFIRMED_NOT_FOUND', path=str(path))
+    except UnicodeError as exc:
+        return EvolutionBacklogReadReport(
+            status='CORRUPT', path=str(path),
+            error_type=type(exc).__name__, error_message=str(exc)[:300],
+        )
+    except OSError as exc:
+        return EvolutionBacklogReadReport(
+            status='READ_FAILED', path=str(path),
+            error_type=type(exc).__name__, error_message=str(exc)[:300],
+        )
+
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        return EvolutionBacklogReadReport(
+            status='CORRUPT', path=str(path),
+            error_type=type(exc).__name__, error_message=str(exc)[:300],
+        )
+    if not isinstance(data, list) or any(not isinstance(item, dict) for item in data):
+        return EvolutionBacklogReadReport(
+            status='SCHEMA_UNSUPPORTED', path=str(path),
+            error_type='InvalidBacklogSchema',
+            error_message='Expected a JSON array of task objects',
+        )
+
+    seen_ids: set[str] = set()
+    legacy_items_without_id: list[int] = []
+    for position, item in enumerate(data, start=1):
+        error, is_legacy_without_id = _validate_backlog_task(
+            item, position=position, seen_ids=seen_ids
+        )
+        if error:
+            return EvolutionBacklogReadReport(
+                status='SCHEMA_UNSUPPORTED',
+                path=str(path),
+                error_type='InvalidBacklogSchema',
+                error_message=error[:300],
+            )
+        if is_legacy_without_id:
+            legacy_items_without_id.append(position)
+
+    return EvolutionBacklogReadReport(
+        status='READ_OK',
+        path=str(path),
+        items=tuple(data),
+        legacy_items_without_id=tuple(legacy_items_without_id),
+    )
+
+
+def load_backlog(workspace: str | None = None) -> list[dict[str, Any]]:
+    """Load tasks; only a confirmed absent file is treated as a new empty backlog."""
+    report = load_backlog_with_diagnostics(workspace)
+    if report.status == 'CONFIRMED_NOT_FOUND':
+        return []
+    if report.status != 'READ_OK':
+        logger.warning(
+            'Failed to load backlog: status=%s error=%s',
+            report.status, report.error_type,
+        )
+        raise EvolutionBacklogReadError(report)
+    return list(report.items)
 
 
 def save_backlog(items: list[dict[str, Any]], workspace: str | None = None) -> str:
