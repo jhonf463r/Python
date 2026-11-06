@@ -402,3 +402,26 @@ def test_zombie_window_diagnostics_do_not_export_private_window_titles() -> None
     assert 1864 in issues[0]['zombie_pids']
     assert 'PRIVATE_DOCUMENT_TITLE_CANARY' not in repr(issues)
     assert private_title not in repr(issues)
+
+
+
+@pytest.mark.skipif(os.name != 'nt', reason='live Win32 window comparison is Windows-only')
+def test_windows_consistency_diagnostics_do_not_export_private_window_titles() -> None:
+    private_title = "PRIVATE_DOCUMENT_TITLE_CANARY — Acquisition Plan"
+    validator = _make_validator(windows=[
+        WindowObservation(title=private_title, pid=101),
+        WindowObservation(title="Terminal", pid=102),
+    ])
+    validator._enumerate_window_titles = lambda: [
+        "PRIVATE_DOCUMENT_TITLE_CANARY — Acquisition Plan",
+        "Browser - IABV",
+    ]  # type: ignore[method-assign]
+
+    issues = validator._cross_windows_consistency()
+    reports = validator._check_reports.get("windows_consistency", {})
+
+    assert issues
+    assert reports["world_model_only_window_count"] == 1
+    assert reports["live_only_window_count"] == 1
+    assert "PRIVATE_DOCUMENT_TITLE_CANARY" not in repr(issues)
+    assert "PRIVATE_DOCUMENT_TITLE_CANARY" not in repr(reports)
