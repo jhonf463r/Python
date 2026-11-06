@@ -1323,7 +1323,7 @@ class PortableContextService:
                     'browser': entry.browser,
                 })
 
-            # Exhausted accounts
+            # Exhausted and unresolved accounts remain visible but non-actionable.
             for entry in snapshot.entries:
                 if entry.exhausted and len(items) < 10:
                     resets = ''
@@ -1334,8 +1334,21 @@ class PortableContextService:
                         'status': 'exhausted',
                         'resets_at': resets,
                     })
+                elif (
+                    getattr(entry.status, 'value', entry.status) == 'unresolved'
+                    and len(items) < 10
+                ):
+                    items.append({
+                        'label': f"{entry.tool}: {entry.email}",
+                        'status': 'unverified',
+                        'quota_remaining': 0,
+                        'detail': 'cuota no verificable; no accionable',
+                    })
 
             unresolved_fields = list(snapshot.unresolved_items)
+            quota_source_status = (
+                (snapshot.source_coverage or {}).get('quota_tracker', 'UNVERIFIED')
+            )
 
             # Summary
             parts: list[str] = []
@@ -1350,10 +1363,21 @@ class PortableContextService:
                     f'siguiente recomendada: {top.email} ({top.tool}, '
                     f'score={top.score:.2f})'
                 )
+            if quota_source_status != 'READ_OK':
+                parts.append(
+                    f'quota tracker no verificado ({quota_source_status}); '
+                    'cola no accionable'
+                )
             if snapshot.unresolved_count:
                 parts.append(f'{snapshot.unresolved_count} UNRESOLVED')
             summary = ' | '.join(parts)
-            confidence = 0.85
+            confidence = (
+                0.0
+                if quota_source_status != 'READ_OK'
+                else 0.5
+                if snapshot.unresolved_count
+                else 0.85
+            )
 
         except Exception:
             summary = 'AccountInventorySnapshot no disponible. Continuidad de cuentas desconocida.'
@@ -1375,6 +1399,9 @@ class PortableContextService:
             metadata={
                 'section_purpose': 'continuity_for_next_session',
                 'requires_human_approval': True,
+                'quota_source_status': locals().get('quota_source_status', 'UNAVAILABLE'),
+                'snapshot_active_count': locals().get('snapshot').active_count if 'snapshot' in locals() else 0,
+                'snapshot_unresolved_count': locals().get('snapshot').unresolved_count if 'snapshot' in locals() else 0,
             },
         )
 
