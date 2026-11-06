@@ -388,3 +388,17 @@ def test_windows_consistency_uses_world_model_current_model_api() -> None:
 
     assert issues == []
     assert validator._check_statuses['windows_consistency'] == 'READ_OK'
+
+
+def test_zombie_window_diagnostics_do_not_export_private_window_titles() -> None:
+    private_title = 'IABV - PRIVATE_DOCUMENT_TITLE_CANARY - Not Responding'
+    validator = _make_validator(windows=[
+        WindowObservation(title=private_title, pid=1864),
+    ])
+    issues = validator._cross_ui_self_awareness()
+
+    assert len(issues) == 1
+    assert issues[0]['actual'] == '1 zombie window(s) detected'
+    assert 1864 in issues[0]['zombie_pids']
+    assert 'PRIVATE_DOCUMENT_TITLE_CANARY' not in repr(issues)
+    assert private_title not in repr(issues)

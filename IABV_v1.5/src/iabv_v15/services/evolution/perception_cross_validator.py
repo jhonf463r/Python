@@ -583,13 +583,12 @@ class PerceptionCrossValidator:
             })
 
         if zombie_windows:
-            zombie_titles = [w.title for w in zombie_windows]
             inconsistencies.append({
                 'check': 'ui_self_awareness',
                 'severity': 'high',
                 'tool_id': 'iabv_ui',
                 'expected': 'No zombie IABV windows',
-                'actual': f'{len(zombie_windows)} zombie window(s): {zombie_titles}',
+                'actual': f'{len(zombie_windows)} zombie window(s) detected',
                 'detail': (
                     'Detected IABV window(s) in "No responde" state. This '
                     'indicates the UI event loop is blocked or the process '
