@@ -33,6 +33,8 @@ from iabv_v15.domain.models import (
     ToolValidationStatus,
     canonical_external_state_flags,
 )
+from iabv_v15.services.capture.redaction_engine import RedactionEngine
+from iabv_v15.services.capture.sensitive_field_detector import SensitiveFieldDetector
 from iabv_v15.services.lab.experiment_lab import ExperimentLab
 from iabv_v15.services.evolution.live_audit_supervisor import LiveAuditSupervisor
 from iabv_v15.services.tools.interaction_learning_service import InteractionLearningService
@@ -79,6 +81,8 @@ class ToolTeachService:
         self.experiment_lab = experiment_lab
         self.live_audit_supervisor = live_audit_supervisor
         self.synaptic_router = synaptic_router
+        # Outbound context filtering only; no secret values are stored in a vault.
+        self._external_context_redactor = RedactionEngine(SensitiveFieldDetector())
 
     @staticmethod
     def _normalize_actual_account_binding(value: Any) -> dict[str, str]:
@@ -1028,7 +1032,7 @@ class ToolTeachService:
                 ),
                 ToolAction(
                     action_type=ToolActionType.LLM_QUERY,
-                    label='Contexto redactado',
+                    label='Contexto de consulta',
                     value=prompt_text,
                     expected_signal='manual_pasteback' if response_capture_mode == 'manual_pasteback' else 'tool_result',
                     metadata={
@@ -1207,9 +1211,9 @@ class ToolTeachService:
     def _preview_summary(self, card, task: ToolTask, interaction_patterns: list[dict[str, Any]] | None = None, mode_selection: dict[str, Any] | None = None) -> str:
         if task.metadata.get('consultation_scope') == 'external_assistant':
             if card.tool_id == 'ollama_llm':
-                base = f'Preparare una consulta automatica local con {card.title}. Primero validare la via elegida y luego ejecutare el contexto redactado sin salir de IABV.'
+                base = f'Preparare una consulta automatica local con {card.title}. Primero validare la via elegida y luego ejecutare el contexto de consulta sin salir de IABV.'
             else:
-                base = f'Preparare una consulta externa guiada con {card.title}. Primero validare la via elegida y luego abrire el asistente con un contexto redactado y copiable.'
+                base = f'Preparare una consulta externa guiada con {card.title}. Primero validare la via elegida y luego abrire el asistente con el contexto de consulta filtrado y copiable.'
         elif bool(task.metadata.get('approval_required')):
             base = f'Use {card.title} primero en sandbox y luego pedire aprobacion antes de ejecutar fuera del sandbox.'
         else:
@@ -1533,6 +1537,21 @@ class ToolTeachService:
         if state in {'adapter_missing', 'missing_tool'}:
             return state
         return ''
+    def _sanitize_external_context_pack(self, context_pack: str) -> str:
+        """Apply known-pattern redaction before any external assistant dispatch.
+
+        This is a best-effort filter, not a guarantee that arbitrary prose contains
+        no personal data. The local workspace root is replaced while preserving
+        project-relative evidence paths.
+        """
+        sanitized = self._external_context_redactor.redact_free_text(str(context_pack or '')) or ''
+        workspace_root = str(self.workspace_root or '').strip().rstrip('\\/')
+        if workspace_root:
+            normalized_root = workspace_root.replace('\\', '/')
+            root_pattern = re.escape(normalized_root).replace('/', r'[\\/]')
+            sanitized = re.sub(root_pattern, '[IABV_WORKSPACE]', sanitized, flags=re.IGNORECASE)
+        return sanitized.strip()
+
     def _build_external_consultation_request(
         self,
         *,
@@ -1548,6 +1567,7 @@ class ToolTeachService:
     ) -> InferenceRequest:
         assistant = (assistant_preference or '').strip().lower() or 'codex'
         goal_payload = dict(goal_parameters or {})
+        context_pack = self._sanitize_external_context_pack(context_pack)
         lab_recommendation = self._external_lab_recommendation(
             assistant_preference=assistant,
             site_id=site_id,
