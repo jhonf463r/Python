@@ -140,8 +140,10 @@ class TestAccountInventorySnapshot:
 # ──────────────────────────────────────────────────────────────
 
 def _mock_pool() -> dict[str, Any]:
-    """Simulated worker pool from estimate_available_workers."""
+    """Simulated worker pool from one verified estimate_available_workers read."""
     return {
+        'source_coverage': {'quota_tracker': 'READ_OK'},
+        'source_errors': {},
         'workers': [
             {
                 'email': 'user1@test.com',
@@ -154,6 +156,7 @@ def _mock_pool() -> dict[str, Any]:
                 'limit': 15,
                 'window_hours': 3,
                 'exhausted': False,
+                'quota_verified': True,
                 'label': 'ChatGPT Free',
                 'resets_at': None,
             },
@@ -168,6 +171,7 @@ def _mock_pool() -> dict[str, Any]:
                 'limit': 20,
                 'window_hours': 8,
                 'exhausted': False,
+                'quota_verified': True,
                 'label': 'Claude Free',
                 'resets_at': None,
             },
@@ -184,6 +188,7 @@ def _mock_pool() -> dict[str, Any]:
                 'limit': 15,
                 'window_hours': 3,
                 'exhausted': True,
+                'quota_verified': True,
                 'label': 'ChatGPT Free',
                 'resets_at': '2026-05-03T20:00:00+00:00',
             },
@@ -199,17 +204,11 @@ def _mock_pool() -> dict[str, Any]:
     }
 
 
-def _mock_quota() -> dict[str, Any]:
-    return {
-        'statuses': [
-            {'tool': 'chatgpt', 'email': 'user1@test.com', 'remaining': 10, 'exhausted': False, 'used_in_window': 5},
-            {'tool': 'claude', 'email': 'user2@test.com', 'remaining': 5, 'exhausted': False, 'used_in_window': 15},
-            {'tool': 'chatgpt', 'email': 'user3@test.com', 'remaining': 0, 'exhausted': True, 'used_in_window': 15},
-        ],
-        'total_tracked': 3,
-        'exhausted_count': 1,
-        'available_count': 2,
-    }
+def _mock_pool_corrupt() -> dict[str, Any]:
+    pool = _mock_pool()
+    pool['source_coverage'] = {'quota_tracker': 'CORRUPT'}
+    pool['source_errors'] = {'quota_tracker': 'JSONDecodeError'}
+    return pool
 
 
 def _mock_ranked(target: str, *, pool=None, block_signals=None) -> list[dict[str, Any]]:
@@ -224,9 +223,8 @@ def _mock_ranked(target: str, *, pool=None, block_signals=None) -> list[dict[str
 
 class TestBuildInventorySnapshot:
     @patch('iabv_v15.services.account_resource_scanner.rank_workers_for_target', side_effect=_mock_ranked)
-    @patch('iabv_v15.services.account_resource_scanner.get_all_quota_status', side_effect=_mock_quota)
     @patch('iabv_v15.services.account_resource_scanner.estimate_available_workers', side_effect=_mock_pool)
-    def test_basic_snapshot(self, mock_pool, mock_quota, mock_ranked):
+    def test_basic_snapshot(self, mock_pool, mock_ranked):
         from iabv_v15.services.account_resource_scanner import build_inventory_snapshot
         snap = build_inventory_snapshot()
 
@@ -237,9 +235,8 @@ class TestBuildInventorySnapshot:
         assert snap.total_remaining_messages == 15
 
     @patch('iabv_v15.services.account_resource_scanner.rank_workers_for_target', side_effect=_mock_ranked)
-    @patch('iabv_v15.services.account_resource_scanner.get_all_quota_status', side_effect=_mock_quota)
     @patch('iabv_v15.services.account_resource_scanner.estimate_available_workers', side_effect=_mock_pool)
-    def test_continuity_queue_order(self, mock_pool, mock_quota, mock_ranked):
+    def test_continuity_queue_order(self, mock_pool, mock_ranked):
         from iabv_v15.services.account_resource_scanner import build_inventory_snapshot
         snap = build_inventory_snapshot()
 
@@ -249,9 +246,8 @@ class TestBuildInventorySnapshot:
         assert snap.continuity_queue[0].email == 'user1@test.com'
 
     @patch('iabv_v15.services.account_resource_scanner.rank_workers_for_target', side_effect=_mock_ranked)
-    @patch('iabv_v15.services.account_resource_scanner.get_all_quota_status', side_effect=_mock_quota)
     @patch('iabv_v15.services.account_resource_scanner.estimate_available_workers', side_effect=_mock_pool)
-    def test_exhausted_not_in_queue(self, mock_pool, mock_quota, mock_ranked):
+    def test_exhausted_not_in_queue(self, mock_pool, mock_ranked):
         from iabv_v15.services.account_resource_scanner import build_inventory_snapshot
         snap = build_inventory_snapshot()
 
@@ -259,18 +255,40 @@ class TestBuildInventorySnapshot:
         assert 'user3@test.com' not in queue_emails
 
     @patch('iabv_v15.services.account_resource_scanner.rank_workers_for_target', side_effect=_mock_ranked)
-    @patch('iabv_v15.services.account_resource_scanner.get_all_quota_status', side_effect=_mock_quota)
     @patch('iabv_v15.services.account_resource_scanner.estimate_available_workers', side_effect=_mock_pool)
-    def test_unresolved_items(self, mock_pool, mock_quota, mock_ranked):
+    def test_unresolved_items(self, mock_pool, mock_ranked):
         from iabv_v15.services.account_resource_scanner import build_inventory_snapshot
         snap = build_inventory_snapshot()
 
         assert any('UNRESOLVED' in u for u in snap.unresolved_items)
 
     @patch('iabv_v15.services.account_resource_scanner.rank_workers_for_target', side_effect=_mock_ranked)
-    @patch('iabv_v15.services.account_resource_scanner.get_all_quota_status', side_effect=_mock_quota)
+    @patch('iabv_v15.services.account_resource_scanner.estimate_available_workers', side_effect=lambda: _mock_pool_corrupt())
+    def test_corrupt_quota_source_never_promotes_pool_workers(
+        self, mock_pool, mock_ranked,
+    ):
+        from iabv_v15.services.account_resource_scanner import build_inventory_snapshot
+
+        with patch(
+            'iabv_v15.services.account_resource_scanner.get_all_quota_status',
+            side_effect=AssertionError('snapshot must not perform a second quota read'),
+        ) as quota_reader:
+            snap = build_inventory_snapshot()
+
+        quota_reader.assert_not_called()
+        assert snap.entries
+        assert all(entry.status == AccountStatus.UNRESOLVED for entry in snap.entries)
+        assert snap.continuity_queue == []
+        assert snap.active_count == 0
+        assert snap.exhausted_count == 0
+        assert snap.unresolved_count == len(snap.entries)
+        assert snap.total_remaining_messages == 0
+        assert snap.tools_available == []
+        assert any('UNRESOLVED:quota_tracker:CORRUPT' in item for item in snap.unresolved_items)
+
+    @patch('iabv_v15.services.account_resource_scanner.rank_workers_for_target', side_effect=_mock_ranked)
     @patch('iabv_v15.services.account_resource_scanner.estimate_available_workers', side_effect=_mock_pool)
-    def test_tools_available(self, mock_pool, mock_quota, mock_ranked):
+    def test_tools_available(self, mock_pool, mock_ranked):
         from iabv_v15.services.account_resource_scanner import build_inventory_snapshot
         snap = build_inventory_snapshot()
 
@@ -386,9 +404,8 @@ class TestControlMasterProjection:
 
 class TestPortableContextSection:
     @patch('iabv_v15.services.account_resource_scanner.rank_workers_for_target', side_effect=_mock_ranked)
-    @patch('iabv_v15.services.account_resource_scanner.get_all_quota_status', side_effect=_mock_quota)
     @patch('iabv_v15.services.account_resource_scanner.estimate_available_workers', side_effect=_mock_pool)
-    def test_section_creation(self, mock_pool, mock_quota, mock_ranked):
+    def test_section_creation(self, mock_pool, mock_ranked):
         from iabv_v15.infra.persistence.storage import ArtifactStorage
         from iabv_v15.services.evolution.portable_context_service import PortableContextService
 
@@ -446,9 +463,8 @@ class TestPortableContextSection:
 
 class TestViewModelAccountInventory:
     @patch('iabv_v15.services.account_resource_scanner.rank_workers_for_target', side_effect=_mock_ranked)
-    @patch('iabv_v15.services.account_resource_scanner.get_all_quota_status', side_effect=_mock_quota)
     @patch('iabv_v15.services.account_resource_scanner.estimate_available_workers', side_effect=_mock_pool)
-    def test_build_account_inventory(self, mock_pool, mock_quota, mock_ranked):
+    def test_build_account_inventory(self, mock_pool, mock_ranked):
         """Test _build_account_inventory returns structured data."""
         from iabv_v15.ui.viewmodels.centro_vivo_viewmodel import CentroVivoViewModel
         vm = CentroVivoViewModel(defer_initial_refresh=False)
@@ -463,9 +479,8 @@ class TestViewModelAccountInventory:
         assert summary['next_recommended'] is not None
 
     @patch('iabv_v15.services.account_resource_scanner.rank_workers_for_target', side_effect=_mock_ranked)
-    @patch('iabv_v15.services.account_resource_scanner.get_all_quota_status', side_effect=_mock_quota)
     @patch('iabv_v15.services.account_resource_scanner.estimate_available_workers', side_effect=_mock_pool)
-    def test_approve_account_switch(self, mock_pool, mock_quota, mock_ranked):
+    def test_approve_account_switch(self, mock_pool, mock_ranked):
         """Test approveAccountSwitch persists via ledger."""
         tmp = Path('/tmp/test_vm_approval')
         if tmp.exists():
