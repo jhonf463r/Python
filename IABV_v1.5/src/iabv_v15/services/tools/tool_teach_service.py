@@ -632,6 +632,52 @@ class ToolTeachService:
             tool_id = str(selection.selected_tool_id or suggested_tool_id)
         reusable_pattern = self._pattern_from_selection(selection)
         actions = self._build_actions(request, tool_id, reusable_pattern)
+        persisted_goal_parameters = dict(goal_parameters)
+        launch_target_ref = ''
+        if (
+            str(goal_parameters.get('consultation_scope') or '').strip().lower() == 'external_assistant'
+            and tool_id != 'ollama_llm'
+        ):
+            assistant_kind_for_ref = re.sub(
+                r'[^a-z0-9_-]+',
+                '',
+                str(goal_parameters.get('assistant_kind') or goal_parameters.get('assistant_preference') or self._assistant_family_for_tool_id(tool_id)).strip().lower(),
+            ) or 'assistant'
+            launch_mode_for_ref = str(goal_parameters.get('launch_mode') or '').strip().lower()
+            if not launch_mode_for_ref:
+                launch_mode_for_ref = 'web_assisted' if tool_id.endswith('_web_assisted') else 'desktop_app'
+            launch_mode_ref = 'web' if launch_mode_for_ref == 'web_assisted' else 'desktop'
+            launch_target_ref = f'{launch_mode_ref}:{assistant_kind_for_ref}'
+            for key in ('executable_path', 'install_path', 'app_path', 'launch_target', 'web_url'):
+                value = persisted_goal_parameters.pop(key, None)
+                if value:
+                    persisted_goal_parameters[f'{key}_omitted'] = True
+            persisted_goal_parameters['launch_target_ref'] = launch_target_ref
+            safe_actions: list[ToolAction] = []
+            for action in actions:
+                if action.action_type in {ToolActionType.LAUNCH_APP, ToolActionType.OPEN_URL}:
+                    action_metadata = dict(action.metadata or {})
+                    action_metadata['launch_target_ref'] = launch_target_ref
+                    safe_parameters = self._remove_external_launch_path_fields(dict(action.parameters or {}))
+                    safe_actions.append(
+                        action.model_copy(
+                            update={
+                                'target': launch_target_ref,
+                                'metadata': action_metadata,
+                                'parameters': safe_parameters,
+                            }
+                        )
+                    )
+                else:
+                    safe_actions.append(
+                        action.model_copy(
+                            update={
+                                'parameters': self._remove_external_launch_path_fields(dict(action.parameters or {})),
+                                'metadata': self._remove_external_launch_path_fields(dict(action.metadata or {})),
+                            }
+                        )
+                    )
+            actions = safe_actions
         now = datetime.now(timezone.utc).isoformat()
         assistant_configuration = self._assistant_configuration_snapshot(
             request=request,
@@ -667,7 +713,7 @@ class ToolTeachService:
             site_id=site_id,
             expected_outcome=expected,
             metadata={
-                'goal_parameters': dict(request.goal_parameters),
+                'goal_parameters': persisted_goal_parameters,
                 'created_at_utc': now,
                 'updated_at_utc': now,
                 'mode_selection': selection.model_dump(mode='json'),
@@ -687,6 +733,7 @@ class ToolTeachService:
                 'requested_assistant_kind': str(goal_parameters.get('assistant_preference') or goal_parameters.get('assistant_kind') or ''),
                 'assistant_kind': str(goal_parameters.get('assistant_kind') or goal_parameters.get('assistant_preference') or ''),
                 'actual_assistant_kind': self._assistant_family_for_tool_id(tool_id),
+                'launch_target_ref': launch_target_ref,
                 'consultation_scope': str(goal_parameters.get('consultation_scope') or ''),
                 'response_capture_mode': str(goal_parameters.get('response_capture_mode') or ''),
                 'requires_manual_pasteback': bool(goal_parameters.get('requires_manual_pasteback', False)),
@@ -990,6 +1037,23 @@ class ToolTeachService:
             result = self.live_audit_supervisor.audit_tool_result(card=card, task=task, result=result)
             self.memory.repository.save_result(result)
         return result
+
+    @classmethod
+    def _remove_external_launch_path_fields(cls, value: Any) -> Any:
+        if isinstance(value, dict):
+            cleaned: dict[str, Any] = {}
+            for key, item in value.items():
+                normalized_key = str(key).strip().lower()
+                if normalized_key in {'executable_path', 'install_path', 'app_path', 'launch_target', 'web_url'}:
+                    cleaned[f'{normalized_key}_omitted'] = bool(item)
+                else:
+                    cleaned[key] = cls._remove_external_launch_path_fields(item)
+            return cleaned
+        if isinstance(value, list):
+            return [cls._remove_external_launch_path_fields(item) for item in value]
+        if isinstance(value, tuple):
+            return [cls._remove_external_launch_path_fields(item) for item in value]
+        return value
 
     def _build_actions(self, request: InferenceRequest, tool_id: str, reusable_pattern: InteractionPattern | None = None) -> list[ToolAction]:
         goal_parameters = request.goal_parameters or {}
