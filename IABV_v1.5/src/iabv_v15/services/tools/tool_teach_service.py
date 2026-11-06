@@ -80,6 +80,60 @@ class ToolTeachService:
         self.live_audit_supervisor = live_audit_supervisor
         self.synaptic_router = synaptic_router
 
+    @staticmethod
+    def _normalize_actual_account_binding(value: Any) -> dict[str, str]:
+        """Normalize adapter-supplied account identity evidence.
+
+        The adapter is the only layer allowed to assert the account actually
+        used. A selected worker, requested assistant, or session directory is
+        not sufficient evidence. VERIFIED requires tool, account email,
+        identity source and an evidence reference from the adapter.
+        """
+        if not isinstance(value, dict):
+            return {
+                'schema': 'ACCOUNT_BINDING_R1',
+                'status': 'UNVERIFIED',
+                'reason': 'adapter_account_binding_missing',
+            }
+
+        status = str(value.get('status') or '').strip().upper()
+        if status != 'VERIFIED':
+            return {
+                'schema': 'ACCOUNT_BINDING_R1',
+                'status': 'UNVERIFIED',
+                'reason': str(value.get('reason') or 'adapter_account_binding_unverified')[:160],
+            }
+
+        actual_tool = str(value.get('actual_tool') or '').strip().lower()
+        account_email = str(value.get('account_email') or '').strip()
+        identity_source = str(value.get('identity_source') or '').strip()
+        evidence_ref = str(value.get('evidence_ref') or '').strip()
+        missing = [
+            field
+            for field, field_value in (
+                ('actual_tool', actual_tool),
+                ('account_email', account_email),
+                ('identity_source', identity_source),
+                ('evidence_ref', evidence_ref),
+            )
+            if not field_value
+        ]
+        if missing:
+            return {
+                'schema': 'ACCOUNT_BINDING_R1',
+                'status': 'UNVERIFIED',
+                'reason': 'adapter_account_binding_incomplete:' + ','.join(missing),
+            }
+
+        return {
+            'schema': 'ACCOUNT_BINDING_R1',
+            'status': 'VERIFIED',
+            'actual_tool': actual_tool,
+            'account_email': account_email,
+            'identity_source': identity_source[:120],
+            'evidence_ref': evidence_ref[:240],
+        }
+
     def _assistant_configuration_snapshot(
         self,
         *,
@@ -853,6 +907,9 @@ class ToolTeachService:
         sandbox_mode = launch_dry_run
         payload = adapter.run(card, task, sandbox=sandbox_mode)
         payload_metadata = dict(payload.get('metadata') or {})
+        payload_metadata['actual_account_binding'] = self._normalize_actual_account_binding(
+            payload_metadata.get('actual_account_binding')
+        )
         state_hint = str(payload_metadata.get('state_hint') or '').strip()
         execution_state_name = state_hint or ('executed' if payload.get('success') else 'failed')
         execution_detail = str(payload.get('error_message') or 'Fallo en la herramienta.') if not payload.get('success') else str(
