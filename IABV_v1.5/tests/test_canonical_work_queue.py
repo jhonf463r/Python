@@ -522,6 +522,9 @@ class TestRuntimeAuditFailedCreatesItem:
             assert len(audit_items) == 1
             assert audit_items[0]['id'] == 'audit:chat-fail-1'
             assert 'runtime_audit.jsonl' in audit_items[0]['evidence_refs'][0]
+            assert audit_items[0]['runtime_audit_durability']['status'] == 'ACK_UNAVAILABLE'
+            assert audit_items[0]['runtime_audit_durability']['accepted'] is False
+            assert svc.last_work_queue_source_coverage['runtime_audit_durability'] == 'NOT_CONFIGURED'
         finally:
             shutil.rmtree(ws, ignore_errors=True)
 
