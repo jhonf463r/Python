@@ -1182,7 +1182,21 @@ class ToolTeachService:
         session_scope = str(card.metadata.get('session_scope') or task.metadata.get('session_scope') or '')
         session_label = str(card.metadata.get('session_label') or task.metadata.get('session_label') or '')
         isolated_session_required = bool(card.metadata.get('isolated_session_required', task.metadata.get('isolated_session_required', False)))
-        session_profile_dir = str(task.metadata.get('session_profile_dir') or self._session_profile_dir_for_tool(tool_id=card.tool_id, assistant_kind=assistant_kind, background_capture_mode=background_capture_mode, isolated_session_required=isolated_session_required))
+        stored_session_profile = str(task.metadata.get('session_profile_dir') or '').strip()
+        if stored_session_profile:
+            resolved_session_profile = self._resolve_session_profile_path(stored_session_profile)
+            session_profile_dir = (
+                resolved_session_profile.relative_to(self.workspace_root.resolve()).as_posix()
+                if resolved_session_profile is not None
+                else ''
+            )
+        else:
+            session_profile_dir = self._session_profile_dir_for_tool(
+                tool_id=card.tool_id,
+                assistant_kind=assistant_kind,
+                background_capture_mode=background_capture_mode,
+                isolated_session_required=isolated_session_required,
+            )
         capture_lane = str(task.metadata.get('capture_lane') or self._lane_for_consultation(response_capture_mode=response_capture_mode, background_capture_mode=background_capture_mode))
         metadata = {
             **dict(task.metadata or {}),
