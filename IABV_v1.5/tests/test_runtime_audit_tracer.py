@@ -168,6 +168,74 @@ def test_governed_browser_trace_persists_only_safe_launch_reference(tmp_path: Pa
     assert 'private-web-token' not in persisted
 
 
+
+def test_governed_browser_trace_minimizes_endpoint_profile_reason_and_extra(tmp_path: Path) -> None:
+    tracer = RuntimeAuditTracer(log_dir=str(tmp_path))
+    tracer.configure(tmp_path)
+    raw_endpoint = 'http://operator:private-pass@localhost:9223/devtools/browser/private-id?token=private-cdp-token'
+    raw_profile = r'C:\Users\Owner\chatgpt_program_session\browser_profile'
+    raw_reason = r'failed at C:\Users\Owner\private-state.json alice@example.com Bearer private-bearer'
+
+    governed = tracer.trace_governed_browser_session(
+        'started',
+        assistant_kind='ChatGPT',
+        cdp_url=raw_endpoint,
+        profile_label=raw_profile,
+        launch_target='https://chatgpt.com/private?token=private-web-token',
+        reason=raw_reason,
+        extra_profile_path=raw_profile,
+        extra_secret='private-extra-secret',
+    )
+    data = governed['data']
+    assert data['assistant_kind'] == 'chatgpt'
+    assert data['cdp_endpoint_ref'] == 'http://localhost:9223'
+    assert data['profile_ref'] == 'chatgpt_profile'
+    assert data['launch_target_ref'] == 'web:chatgpt'
+    assert data['reason_code'] == 'other'
+    assert data['extra_fields_omitted'] is True
+    assert 'cdp_url' not in data
+    assert 'profile_label' not in data
+    assert 'extra_profile_path' not in data
+    assert 'extra_secret' not in data
+
+    unbound = tracer.trace_security_window_unbound(
+        incident_id='inc-p072-1',
+        assistant_kind='chatgpt',
+        profile_label=raw_profile,
+        reason=raw_reason,
+    )
+    assert unbound['data']['profile_ref'] == 'chatgpt_profile'
+    assert unbound['data']['reason_code'] == 'other'
+    assert 'profile_label' not in unbound['data']
+
+    fallback = tracer.trace_visible_fallback(
+        'blocked_no_target',
+        assistant_kind='chatgpt',
+        reason=raw_reason,
+        target_available=False,
+        diagnostic_path=raw_profile,
+    )
+    assert fallback['data']['reason_code'] == 'other'
+    assert fallback['data']['extra_fields_omitted'] is True
+    assert 'diagnostic_path' not in fallback['data']
+
+    persisted = (tmp_path / 'runtime_audit.jsonl').read_text(encoding='utf-8')
+    for private_value in (
+        raw_endpoint,
+        raw_profile,
+        raw_reason,
+        'private-pass',
+        'private-cdp-token',
+        'private-web-token',
+        'private-bearer',
+        'private-extra-secret',
+        'alice@example.com',
+    ):
+        assert private_value not in persisted
+    assert RuntimeAuditTracer._safe_cdp_endpoint_ref('http://10.0.0.7:9223/private') == 'remote_cdp_endpoint'
+
+
+
 class TestBootReport:
     """Export a structured boot report for AI analysis."""
 
