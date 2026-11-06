@@ -599,6 +599,44 @@ def test_external_assistant_adapter_persists_only_relative_profile_reference_and
 
 
 
+def test_external_assistant_adapter_redacts_private_capture_diagnostics() -> None:
+    raw_path = r'C:\Users\jhon\Private profile'
+    raw_email = 'alice@example.com'
+    raw_bearer = 'abc123'
+
+    class _Runner:
+        def __init__(self, workspace_root: str) -> None:
+            self.workspace_root = workspace_root
+
+        def capture_response_from_app(self, **kwargs) -> dict[str, object]:
+            return {
+                'launched': True,
+                'focused_title': f'ChatGPT - billing notes for {raw_email}',
+                'response_captured': False,
+                'captured_text': '',
+                'capture_source': 'browser_dom',
+                'browser_profile_dir': '',
+                'error_message': f"Unable to access '{raw_path}': {raw_email} Bearer {raw_bearer}",
+            }
+
+    adapter = ExternalAssistantToolAdapter(runner_factory=lambda workspace_root: _Runner(workspace_root))
+    result = adapter.run(_chatgpt_web_card(), _chatgpt_task(), sandbox=False)
+
+    metadata = result['metadata']
+    persisted = repr(result)
+    assert result['success'] is False
+    assert '[LOCAL_PATH]' in result['error_message']
+    assert '[EMAIL]' in result['error_message']
+    assert 'Bearer [REDACTED]' in result['error_message']
+    assert metadata['auto_capture_reason'] == result['error_message']
+    assert metadata['focused_title'] == 'chatgpt'
+    assert 'alice@example.com' not in persisted
+    assert raw_path not in persisted
+    assert 'Bearer abc123' not in persisted
+
+
+
+
 class _FakeCredentialBroker:
     """Double minimo del CredentialBroker usado en tests de integracion."""
 
