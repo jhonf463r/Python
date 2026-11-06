@@ -674,15 +674,42 @@ class ToolTeachService:
                         )
                     )
                 else:
+                    raw_target = str(action.target or '').strip()
+                    target_needs_replacement = self._is_external_operational_target(raw_target)
                     safe_actions.append(
                         action.model_copy(
                             update={
+                                'target': launch_target_ref if target_needs_replacement else action.target,
                                 'parameters': self._remove_external_launch_path_fields(dict(action.parameters or {})),
                                 'metadata': self._remove_external_launch_path_fields(dict(action.metadata or {})),
                             }
                         )
                     )
             actions = safe_actions
+            if 'actions' in persisted_goal_parameters:
+                persisted_goal_parameters['actions'] = [
+                    action.model_dump(mode='json') for action in safe_actions
+                ]
+        rollback_actions = self._build_rollback_actions(request, tool_id)
+        if launch_target_ref:
+            safe_rollback_actions: list[ToolAction] = []
+            for action in rollback_actions:
+                raw_target = str(action.target or '').strip()
+                target_needs_replacement = (
+                    action.action_type in {ToolActionType.LAUNCH_APP, ToolActionType.OPEN_URL}
+                    or self._is_external_operational_target(raw_target)
+                )
+                safe_rollback_actions.append(
+                    action.model_copy(
+                        update={
+                            'target': launch_target_ref if target_needs_replacement else action.target,
+                            'parameters': self._remove_external_launch_path_fields(dict(action.parameters or {})),
+                            'metadata': self._remove_external_launch_path_fields(dict(action.metadata or {})),
+                        }
+                    )
+                )
+            rollback_actions = safe_rollback_actions
+        now = datetime.now(timezone.utc).isoformat()
         now = datetime.now(timezone.utc).isoformat()
         assistant_configuration = self._assistant_configuration_snapshot(
             request=request,
@@ -712,7 +739,7 @@ class ToolTeachService:
             objective=request.user_goal,
             requested_by_role=request.task_role if request.task_role in {TaskRole.TOOL_USE, TaskRole.TOOL_SANDBOX} else TaskRole.TOOL_USE,
             actions=actions,
-            rollback_actions=self._build_rollback_actions(request, tool_id),
+            rollback_actions=rollback_actions,
             execution_scope=str(request.goal_parameters.get('execution_scope') or 'read_only'),
             sandbox_first=True,
             site_id=site_id,
@@ -1043,13 +1070,24 @@ class ToolTeachService:
             self.memory.repository.save_result(result)
         return result
 
+    @staticmethod
+    def _is_external_operational_target(value: str) -> bool:
+        target = str(value or '').strip()
+        if not target:
+            return False
+        return (
+            target.lower().startswith(('http://', 'https://', 'file://'))
+            or Path(target).is_absolute()
+            or PureWindowsPath(target).is_absolute()
+        )
+
     @classmethod
     def _remove_external_launch_path_fields(cls, value: Any) -> Any:
         if isinstance(value, dict):
             cleaned: dict[str, Any] = {}
             for key, item in value.items():
                 normalized_key = str(key).strip().lower()
-                if normalized_key in {'executable_path', 'install_path', 'app_path', 'launch_target', 'web_url'}:
+                if normalized_key in {'executable_path', 'install_path', 'app_path', 'launch_target', 'web_url', 'url', 'uri'}:
                     cleaned[f'{normalized_key}_omitted'] = bool(item)
                 else:
                     cleaned[key] = cls._remove_external_launch_path_fields(item)
