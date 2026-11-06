@@ -278,7 +278,7 @@ class TestGovernedQuotaRotation:
              'window_hours': 3, 'resets_at': None, 'total_sent_all_time': 20, 'label': 'ChatGPT'},
         ]
         with patch('iabv_v15.services.account_resource_scanner.get_all_quota_status',
-                   return_value={'statuses': statuses, 'total_tracked': 1,
+                   return_value={'source_coverage': {'quota_tracker': 'READ_OK'}, 'statuses': statuses, 'total_tracked': 1,
                                  'exhausted_count': 0, 'available_count': 1,
                                  'exhausted_keys': [], 'available_keys': ['chatgpt:user@t.com']}):
             result = governed_quota_rotation('chatgpt', 'user@t.com')
@@ -301,7 +301,7 @@ class TestGovernedQuotaRotation:
              'total_sent_all_time': 10, 'label': 'ChatGPT'},
         ]
         with patch('iabv_v15.services.account_resource_scanner.get_all_quota_status',
-                   return_value={'statuses': statuses, 'total_tracked': 2,
+                   return_value={'source_coverage': {'quota_tracker': 'READ_OK'}, 'statuses': statuses, 'total_tracked': 2,
                                  'exhausted_count': 1, 'available_count': 1,
                                  'exhausted_keys': ['chatgpt:exhausted@t.com'],
                                  'available_keys': ['chatgpt:fresh@t.com']}):
@@ -327,7 +327,7 @@ class TestGovernedQuotaRotation:
              'total_sent_all_time': 30, 'label': 'ChatGPT'},
         ]
         with patch('iabv_v15.services.account_resource_scanner.get_all_quota_status',
-                   return_value={'statuses': statuses, 'total_tracked': 2,
+                   return_value={'source_coverage': {'quota_tracker': 'READ_OK'}, 'statuses': statuses, 'total_tracked': 2,
                                  'exhausted_count': 2, 'available_count': 0,
                                  'exhausted_keys': ['chatgpt:a@t.com', 'chatgpt:b@t.com'],
                                  'available_keys': []}):
@@ -350,7 +350,7 @@ class TestGovernedQuotaRotation:
              'total_sent_all_time': 5, 'label': 'Claude'},
         ]
         with patch('iabv_v15.services.account_resource_scanner.get_all_quota_status',
-                   return_value={'statuses': statuses, 'total_tracked': 2,
+                   return_value={'source_coverage': {'quota_tracker': 'READ_OK'}, 'statuses': statuses, 'total_tracked': 2,
                                  'exhausted_count': 0, 'available_count': 2,
                                  'exhausted_keys': [],
                                  'available_keys': ['claude:low@t.com', 'claude:high@t.com']}):
@@ -361,7 +361,7 @@ class TestGovernedQuotaRotation:
 
     def test_rotation_trace_has_timestamp(self, tmp_path: Path) -> None:
         with patch('iabv_v15.services.account_resource_scanner.get_all_quota_status',
-                   return_value={'statuses': [], 'total_tracked': 0,
+                   return_value={'source_coverage': {'quota_tracker': 'READ_OK'}, 'statuses': [], 'total_tracked': 0,
                                  'exhausted_count': 0, 'available_count': 0,
                                  'exhausted_keys': [], 'available_keys': []}):
             result = governed_quota_rotation('chatgpt')
@@ -377,7 +377,7 @@ class TestGovernedQuotaRotation:
              'total_sent_all_time': 20, 'label': 'ChatGPT'},
         ]
         with patch('iabv_v15.services.account_resource_scanner.get_all_quota_status',
-                   return_value={'statuses': statuses, 'total_tracked': 1,
+                   return_value={'source_coverage': {'quota_tracker': 'READ_OK'}, 'statuses': statuses, 'total_tracked': 1,
                                  'exhausted_count': 0, 'available_count': 1,
                                  'exhausted_keys': [],
                                  'available_keys': ['chatgpt:User@Test.com']}):
@@ -393,7 +393,7 @@ class TestGovernedQuotaRotation:
              'total_sent_all_time': 15, 'label': 'ChatGPT'},
         ]
         with patch('iabv_v15.services.account_resource_scanner.get_all_quota_status',
-                   return_value={'statuses': statuses, 'total_tracked': 1,
+                   return_value={'source_coverage': {'quota_tracker': 'READ_OK'}, 'statuses': statuses, 'total_tracked': 1,
                                  'exhausted_count': 0, 'available_count': 1,
                                  'exhausted_keys': [],
                                  'available_keys': ['chatgpt:any@t.com']}):
@@ -410,7 +410,7 @@ class TestGovernedQuotaRotation:
              'total_sent_all_time': 30, 'label': 'ChatGPT'},
         ]
         with patch('iabv_v15.services.account_resource_scanner.get_all_quota_status',
-                   return_value={'statuses': statuses, 'total_tracked': 1,
+                   return_value={'source_coverage': {'quota_tracker': 'READ_OK'}, 'statuses': statuses, 'total_tracked': 1,
                                  'exhausted_count': 1, 'available_count': 0,
                                  'exhausted_keys': ['chatgpt:x@t.com'],
                                  'available_keys': []}):
@@ -427,7 +427,7 @@ class TestGovernedQuotaRotation:
              'total_sent_all_time': 25, 'label': 'ChatGPT'},
         ]
         with patch('iabv_v15.services.account_resource_scanner.get_all_quota_status',
-                   return_value={'statuses': statuses, 'total_tracked': 1,
+                   return_value={'source_coverage': {'quota_tracker': 'READ_OK'}, 'statuses': statuses, 'total_tracked': 1,
                                  'exhausted_count': 0, 'available_count': 1,
                                  'exhausted_keys': [],
                                  'available_keys': ['chatgpt:u@t.com']}):
