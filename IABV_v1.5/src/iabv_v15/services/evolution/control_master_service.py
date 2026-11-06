@@ -1251,18 +1251,50 @@ class ControlMasterService:
                 ],
             }
 
-        # Build compact summary for governance
-        queue = data.get('continuity_queue', [])
+        # Coverage is part of the inventory contract, not optional decoration.
+        source_coverage = dict(data.get('source_coverage') or {})
+        source_errors = dict(data.get('source_errors') or {})
+        if not source_coverage:
+            source_status = 'UNVERIFIED'
+        elif any(
+            status in {'READ_FAILED', 'CORRUPT', 'SCHEMA_UNSUPPORTED'}
+            for status in source_coverage.values()
+        ):
+            source_status = 'READ_FAILED'
+        elif source_errors or any(status != 'READ_OK' for status in source_coverage.values()):
+            source_status = 'READ_PARTIAL'
+        else:
+            source_status = 'READ_OK'
+
+        quota_source_status = source_coverage.get('quota_tracker', 'UNVERIFIED')
+        quota_verified = quota_source_status == 'READ_OK'
+        # Never rebuild an actionable recommendation from a snapshot whose
+        # quota proof is absent, failed, corrupt, or unsupported.
+        queue = data.get('continuity_queue', []) if quota_verified else []
         next_recommended = queue[0] if queue else None
+        unresolved_items = list(data.get('unresolved_items', []) or [])
+        if not quota_verified:
+            unresolved_items.append(
+                f'UNRESOLVED:quota_tracker:{quota_source_status}'
+            )
 
         return {
-            'status': 'ok',
-            'active_count': data.get('active_count', 0),
-            'exhausted_count': data.get('exhausted_count', 0),
+            'status': 'ok' if source_status == 'READ_OK' else 'partial_failure',
+            'source_status': source_status,
+            'source_coverage': source_coverage,
+            'source_errors': source_errors,
+            'quota_source_status': quota_source_status,
+            'active_count': data.get('active_count', 0) if quota_verified else 0,
+            'exhausted_count': data.get('exhausted_count', 0) if quota_verified else 0,
             'expired_count': data.get('expired_count', 0),
-            'unresolved_count': data.get('unresolved_count', 0),
-            'total_remaining_messages': data.get('total_remaining_messages', 0),
-            'tools_available': data.get('tools_available', []),
+            'unresolved_count': max(
+                int(data.get('unresolved_count', 0) or 0),
+                len(unresolved_items) if not quota_verified else 0,
+            ),
+            'total_remaining_messages': (
+                data.get('total_remaining_messages', 0) if quota_verified else 0
+            ),
+            'tools_available': data.get('tools_available', []) if quota_verified else [],
             'continuity_queue_size': len(queue),
             'next_recommended': {
                 'email': next_recommended.get('email', ''),
@@ -1271,7 +1303,7 @@ class ControlMasterService:
                 'quota_remaining': next_recommended.get('quota_remaining', 0),
             } if next_recommended else None,
             'scanned_at': data.get('scanned_at', ''),
-            'unresolved_items': data.get('unresolved_items', []),
+            'unresolved_items': list(dict.fromkeys(unresolved_items)),
         }
 
     def _project_unresolved(self) -> list[str]:
