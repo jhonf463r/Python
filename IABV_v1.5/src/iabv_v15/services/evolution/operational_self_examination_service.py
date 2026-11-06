@@ -1197,6 +1197,32 @@ class OperationalSelfExaminationService:
 
         import logging
         logger = logging.getLogger(__name__)
+        for finding in actionable[:3]:
+            action_name = _CATEGORY_TO_ACTION[finding.category]
+            try:
+                from iabv_v15.services.auto_correction_engine import (
+                    execute_corrections,
+                )
+                deductions = [{
+                    'conclusion': finding.category,
+                    'action': action_name,
+                    'severity': finding.severity.value if hasattr(finding.severity, 'value') else str(finding.severity),
+                    'safe': True,
+                    'description': finding.summary,
+                    'source': 'oses_self_audit',
+                    'finding_title': finding.title,
+                }]
+                result = execute_corrections(
+                    deductions=deductions,
+                    context={'source': 'oses_auto_correction', 'review_findings': True},
+                )
+                logger.info(
+                    'oses_auto_correct: %s → %s (applied=%d)',
+                    finding.category, action_name,
+                    result.get('applied_count', 0),
+                )
+            except Exception as exc:
+                logger.debug('oses_auto_correct: failed for %s: %s', finding.category, exc)
 
 _SOURCE_COVERAGE_CONTRACT = 'OSES_SOURCE_COVERAGE_R1'
 _REQUIRED_SOURCE_IDS = (
@@ -1232,33 +1258,6 @@ _REQUIRED_SOURCE_IDS = (
     'experiment_lab_threshold',
     'metacognition_evolution',
 )
-
-        for finding in actionable[:3]:
-            action_name = _CATEGORY_TO_ACTION[finding.category]
-            try:
-                from iabv_v15.services.auto_correction_engine import (
-                    execute_corrections,
-                )
-                deductions = [{
-                    'conclusion': finding.category,
-                    'action': action_name,
-                    'severity': finding.severity.value if hasattr(finding.severity, 'value') else str(finding.severity),
-                    'safe': True,
-                    'description': finding.summary,
-                    'source': 'oses_self_audit',
-                    'finding_title': finding.title,
-                }]
-                result = execute_corrections(
-                    deductions=deductions,
-                    context={'source': 'oses_auto_correction', 'review_findings': True},
-                )
-                logger.info(
-                    'oses_auto_correct: %s → %s (applied=%d)',
-                    finding.category, action_name,
-                    result.get('applied_count', 0),
-                )
-            except Exception as exc:
-                logger.debug('oses_auto_correct: failed for %s: %s', finding.category, exc)
 
     def _apply_metacognitive_feedback(
         self,
