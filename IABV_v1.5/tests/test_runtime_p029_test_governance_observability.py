@@ -101,7 +101,22 @@ def _write_fresh_evidence(tmpdir: str, *, passed: int = 10, failed: int = 0, err
         "worktree_clean": True,
         "provenance_status": "COMMIT_BOUND_CLEAN",
         "worktree_status_sha256": "b" * 64,
-        "metadata": {},
+        "metadata": {
+            "provenance_before": {
+            "commit_sha": "a" * 40,
+            "branch": "test-branch",
+            "worktree_clean": True,
+            "provenance_status": "COMMIT_BOUND_CLEAN",
+            "worktree_status_sha256": "b" * 64,
+        },
+            "provenance_after": {
+            "commit_sha": "a" * 40,
+            "branch": "test-branch",
+            "worktree_clean": True,
+            "provenance_status": "COMMIT_BOUND_CLEAN",
+            "worktree_status_sha256": "b" * 64,
+        },
+        },
     }
     evidence["payload_sha256"] = _test_evidence_payload_sha256(evidence)
     latest = evidence_dir / "latest.json"
@@ -187,8 +202,14 @@ def test_unbound_passing_test_run_does_not_render_green_control_master_state() -
         assert tests_state["worktree_clean"] is None
 
 
-def test_run_pytest_does_not_persist_without_flag() -> None:
-    """run_pytest() without persist_evidence must NOT write latest.json."""
+def test_run_pytest_does_not_persist_without_flag(monkeypatch) -> None:
+    """run_pytest() without persist_evidence must not persist or probe Git."""
+    from iabv15.infra.mcp import audit_tools
+
+    def forbidden_git_probe(_root):
+        raise AssertionError("default run must not collect Git provenance")
+
+    monkeypatch.setattr(audit_tools, "_collect_test_git_provenance", forbidden_git_probe)
     with tempfile.TemporaryDirectory() as tmpdir:
         runner = _fake_subprocess_runner(passed=3)
         src_dir = Path(tmpdir) / "src"
@@ -520,6 +541,22 @@ def test_atomic_evidence_writer_returns_file_and_projection_receipts(tmp_path) -
         "worktree_clean": True,
         "provenance_status": "COMMIT_BOUND_CLEAN",
         "worktree_status_sha256": "b" * 64,
+        "metadata": {
+            "provenance_before": {
+            "commit_sha": "a" * 40,
+            "branch": "test-branch",
+            "worktree_clean": True,
+            "provenance_status": "COMMIT_BOUND_CLEAN",
+            "worktree_status_sha256": "b" * 64,
+        },
+            "provenance_after": {
+            "commit_sha": "a" * 40,
+            "branch": "test-branch",
+            "worktree_clean": True,
+            "provenance_status": "COMMIT_BOUND_CLEAN",
+            "worktree_status_sha256": "b" * 64,
+        },
+        },
     }
     receipt = _persist_test_evidence(
         workspace_root=tmp_path,
@@ -597,4 +634,57 @@ def test_evidence_worktree_status_digest_must_match_current_tree(tmp_path, monke
         },
     )
 
+    assert load_latest_test_evidence(tmp_path) is None
+
+
+def test_test_evidence_is_untrusted_when_source_changes_during_pytest(tmp_path, monkeypatch) -> None:
+    from iabv15.infra.mcp import audit_tools
+
+    src_dir = tmp_path / "src"
+    src_dir.mkdir()
+    snapshots = [
+        {
+            "commit_sha": "a" * 40,
+            "branch": "test-branch",
+            "worktree_clean": True,
+            "provenance_status": "COMMIT_BOUND_CLEAN",
+            "worktree_status_sha256": "b" * 64,
+        },
+        {
+            "commit_sha": "c" * 40,
+            "branch": "test-branch",
+            "worktree_clean": True,
+            "provenance_status": "COMMIT_BOUND_CLEAN",
+            "worktree_status_sha256": "d" * 64,
+        },
+    ]
+    monkeypatch.setattr(
+        audit_tools,
+        "_collect_test_git_provenance",
+        lambda _root: snapshots.pop(0),
+    )
+    result = run_pytest(
+        tmp_path,
+        runner=_fake_subprocess_runner(passed=4, failed=0, errors=0),
+        persist_evidence=True,
+    )
+    evidence_path = tmp_path / "data" / "evolution" / "test_evidence" / "latest.json"
+    evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
+    assert evidence["provenance_status"] == "SOURCE_CHANGED_DURING_TEST"
+    assert evidence["worktree_clean"] is False
+    assert evidence["metadata"]["provenance_before"]["commit_sha"] == "a" * 40
+    assert evidence["metadata"]["provenance_after"]["commit_sha"] == "c" * 40
+    assert result["evidence_persistence"]["provenance_status"] == "SOURCE_CHANGED_DURING_TEST"
+    assert load_latest_test_evidence(tmp_path) is None
+
+
+def test_test_evidence_without_pre_post_pair_is_rejected(tmp_path, monkeypatch) -> None:
+    from iabv15.infra.mcp import audit_tools
+
+    _install_matching_git_provenance(monkeypatch)
+    path = _write_fresh_evidence(str(tmp_path))
+    evidence = json.loads(path.read_text(encoding="utf-8"))
+    evidence["metadata"] = {}
+    evidence["payload_sha256"] = _test_evidence_payload_sha256(evidence)
+    path.write_text(json.dumps(evidence), encoding="utf-8")
     assert load_latest_test_evidence(tmp_path) is None

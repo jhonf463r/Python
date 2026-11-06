@@ -343,7 +343,22 @@ def test_oses_accepts_fresh_commit_bound_test_evidence(tmp_path, monkeypatch) ->
         "worktree_clean": True,
         "provenance_status": "COMMIT_BOUND_CLEAN",
         "worktree_status_sha256": "b" * 64,
-        "metadata": {},
+        "metadata": {
+            "provenance_before": {
+            "commit_sha": "a" * 40,
+            "branch": "test-branch",
+            "worktree_clean": True,
+            "provenance_status": "COMMIT_BOUND_CLEAN",
+            "worktree_status_sha256": "b" * 64,
+        },
+            "provenance_after": {
+            "commit_sha": "a" * 40,
+            "branch": "test-branch",
+            "worktree_clean": True,
+            "provenance_status": "COMMIT_BOUND_CLEAN",
+            "worktree_status_sha256": "b" * 64,
+        },
+        },
     }
     evidence["payload_sha256"] = audit_tools._test_evidence_payload_sha256(evidence)
     evidence_path.write_text(json.dumps(evidence), encoding="utf-8")

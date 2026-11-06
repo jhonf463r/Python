@@ -762,6 +762,43 @@ def _test_evidence_payload_sha256(evidence: dict[str, Any]) -> str:
     return _hashlib.sha256(canonical).hexdigest()
 
 
+def _test_evidence_has_stable_provenance_pair(
+    metadata: Any,
+    *,
+    commit_sha: Any,
+    branch: Any,
+    worktree_status_sha256: Any,
+) -> bool:
+    """Require both clean pre/post snapshots to match the persisted identity."""
+    import re as _re
+
+    if not isinstance(metadata, dict):
+        return False
+    before = metadata.get("provenance_before")
+    after = metadata.get("provenance_after")
+    if not isinstance(before, dict) or not isinstance(after, dict):
+        return False
+    if (
+        not isinstance(commit_sha, str)
+        or not _re.fullmatch(r"[0-9a-fA-F]{40}|[0-9a-fA-F]{64}", commit_sha)
+        or not isinstance(branch, str)
+        or not branch.strip()
+        or not isinstance(worktree_status_sha256, str)
+        or not _re.fullmatch(r"[0-9a-f]{64}", worktree_status_sha256)
+    ):
+        return False
+    for snapshot in (before, after):
+        if (
+            snapshot.get("provenance_status") != "COMMIT_BOUND_CLEAN"
+            or snapshot.get("worktree_clean") is not True
+            or str(snapshot.get("commit_sha") or "").lower() != commit_sha.lower()
+            or str(snapshot.get("branch") or "") != branch
+            or str(snapshot.get("worktree_status_sha256") or "") != worktree_status_sha256
+        ):
+            return False
+    return True
+
+
 def _reconcile_test_git_provenance(
     before: dict[str, Any],
     after: dict[str, Any],
@@ -826,6 +863,22 @@ def _persist_test_evidence(
     try:
         evidence_dir.mkdir(parents=True, exist_ok=True)
         git_provenance = dict(provenance or _collect_test_git_provenance(workspace_root))
+        if (
+            git_provenance.get("provenance_status") == "COMMIT_BOUND_CLEAN"
+            and not _test_evidence_has_stable_provenance_pair(
+                git_provenance.get("metadata"),
+                commit_sha=git_provenance.get("commit_sha"),
+                branch=git_provenance.get("branch"),
+                worktree_status_sha256=git_provenance.get("worktree_status_sha256"),
+            )
+        ):
+            git_provenance.update({
+                "commit_sha": "",
+                "branch": "",
+                "worktree_clean": None,
+                "provenance_status": "UNKNOWN",
+                "worktree_status_sha256": "",
+            })
         evidence = {
             "evidence_id": str(uuid4()),
             "command": command,
@@ -1001,6 +1054,13 @@ def load_latest_test_evidence(
 
         worktree_status_sha = data.get("worktree_status_sha256")
         if not isinstance(worktree_status_sha, str) or not _re.fullmatch(r"[0-9a-f]{64}", worktree_status_sha):
+            return None
+        if not _test_evidence_has_stable_provenance_pair(
+            data.get("metadata"),
+            commit_sha=commit_sha,
+            branch=branch_name,
+            worktree_status_sha256=worktree_status_sha,
+        ):
             return None
         expected_payload_sha = data.get("payload_sha256")
         if not isinstance(expected_payload_sha, str) or not _re.fullmatch(r"[0-9a-f]{64}", expected_payload_sha):
