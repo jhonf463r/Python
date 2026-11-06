@@ -175,6 +175,10 @@ def test_external_assistant_task_omits_operational_launch_paths_from_persisted_t
                 'launch_mode': 'web_assisted',
                 'web_url': 'https://chatgpt.com/share/private-path?token=private-web-token',
                 'executable_path': str(executable),
+                'launch_configuration': {
+                    'executable_path': str(executable),
+                    'web_url': 'https://chatgpt.com/nested-config?token=nested-config-secret',
+                },
                 'context_pack': 'contexto de consulta',
                 'response_capture_mode': 'manual_pasteback',
                 'requires_manual_pasteback': True,
@@ -218,6 +222,8 @@ def test_external_assistant_task_omits_operational_launch_paths_from_persisted_t
         assert 'executable_path' not in persisted_parameters
         assert persisted_parameters['web_url_omitted'] is True
         assert persisted_parameters['executable_path_omitted'] is True
+        assert persisted_parameters['launch_configuration']['executable_path_omitted'] is True
+        assert persisted_parameters['launch_configuration']['web_url_omitted'] is True
         assert launch_action.target == expected_launch_ref
         assert launch_action.metadata['launch_target_ref'] == expected_launch_ref
         assert launch_action.parameters['app_path_omitted'] is True
@@ -233,6 +239,7 @@ def test_external_assistant_task_omits_operational_launch_paths_from_persisted_t
         assert 'private-web-token' not in repr(task.metadata)
         assert 'nested-action-token' not in repr(task.metadata)
         assert 'rollback-secret' not in repr(task.metadata)
+        assert 'nested-config-secret' not in repr(task.metadata)
     finally:
         shutil.rmtree(root, ignore_errors=True)
 
