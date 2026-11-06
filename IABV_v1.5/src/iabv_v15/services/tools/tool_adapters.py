@@ -1825,7 +1825,7 @@ class ExternalAssistantToolAdapter(ToolAdapter):
             cleaned: dict[str, Any] = {}
             for key, item in value.items():
                 normalized_key = str(key).strip().lower()
-                if normalized_key == 'launch_target':
+                if normalized_key in {'launch_target', 'launch_target_ref', 'web_url'}:
                     cleaned['launch_target_ref'] = safe_reference
                 elif normalized_key in {'executable_path', 'install_path', 'app_path'}:
                     cleaned[f'{normalized_key}_omitted'] = bool(item)
