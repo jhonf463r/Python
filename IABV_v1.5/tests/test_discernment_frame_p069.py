@@ -283,3 +283,29 @@ class TestNoPIIInExport(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+
+class TestEnvironmentSelfModelTrust(unittest.TestCase):
+    def test_bootstrapping_environment_model_is_available_but_untrusted(self):
+        sensors = DiscernmentFrameService._collect_sensor_sources(
+            world_model=None,
+            environment_self_model={'scan_status': 'bootstrapping'},
+            startup_events=None,
+        )
+
+        self.assertIn('environment_self_model', sensors['available'])
+        self.assertNotIn('environment_self_model', sensors['trusted'])
+        self.assertIn('environment_self_model', sensors['untrusted'])
+        self.assertNotIn('environment_self_model', sensors['missing'])
+
+    def test_ready_environment_model_is_trusted(self):
+        sensors = DiscernmentFrameService._collect_sensor_sources(
+            world_model=None,
+            environment_self_model={'scan_status': 'ready'},
+            startup_events=None,
+        )
+
+        self.assertIn('environment_self_model', sensors['available'])
+        self.assertIn('environment_self_model', sensors['trusted'])
+        self.assertNotIn('environment_self_model', sensors['untrusted'])
