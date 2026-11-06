@@ -476,6 +476,42 @@ def test_ui_execution_runner_uses_shared_cdp_when_selected(monkeypatch) -> None:
 
 
 
+
+def test_browser_dom_result_persists_only_safe_cdp_endpoint_reference() -> None:
+    root = _workspace('ui_execution_runner_cdp_endpoint_privacy')
+    try:
+        runner = UIExecutionRunner(str(root))
+        raw_endpoint = 'http://operator:private-pass@localhost:9223/devtools?token=private-cdp-token'
+        captured = runner._browser_dom_result(
+            launched=True,
+            focused=True,
+            focused_title='ChatGPT',
+            prompt_pasted=False,
+            response_captured=False,
+            captured_text='',
+            capture_source='browser_dom_shared_cdp',
+            error_message='browser_input_missing',
+            started=0.0,
+            metadata={
+                'shared_cdp': True,
+                'cdp_url': raw_endpoint,
+            },
+        )
+
+        metadata = captured['metadata']
+        persisted = repr(captured)
+        assert metadata['cdp_endpoint_ref'] == 'http://localhost:9223'
+        assert 'cdp_url' not in metadata
+        assert raw_endpoint not in persisted
+        assert 'operator' not in persisted
+        assert 'private-pass' not in persisted
+        assert 'private-cdp-token' not in persisted
+        assert '/devtools' not in persisted
+        assert UIExecutionRunner._safe_cdp_endpoint_reference('http://10.0.0.7:9223/private') == 'remote_cdp_endpoint'
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
 def test_browser_dom_result_drops_raw_observation_when_fingerprint_fails() -> None:
     root = _workspace('ui_execution_runner_observation_fingerprint_failure')
     marker = 'private marker test@example.com'
