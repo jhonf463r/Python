@@ -477,6 +477,63 @@ def test_centro_vivo_preserves_read_failed_self_examination_status() -> None:
 
 
 @pytest.mark.parametrize('status', ['READ_FAILED', 'CORRUPT', 'SCHEMA_UNSUPPORTED'])
+def test_centro_vivo_never_exposes_stale_active_account_for_corrupt_quota(
+    tmp_path, monkeypatch,
+) -> None:
+    from iabv_v15.domain.models import (
+        AccountInventoryEntry,
+        AccountInventorySnapshot,
+        AccountStatus,
+    )
+    from iabv_v15.services import account_resource_scanner
+
+    stale_entry = AccountInventoryEntry(
+        email='stale@test.com',
+        tool='chatgpt',
+        score=0.95,
+        quota_remaining=14,
+        quota_limit=15,
+        status=AccountStatus.ACTIVE,
+    )
+    snapshot = AccountInventorySnapshot(
+        entries=[stale_entry],
+        continuity_queue=[stale_entry],
+        active_count=1,
+        exhausted_count=0,
+        total_remaining_messages=14,
+        tools_available=['chatgpt'],
+        source_coverage={'quota_tracker': 'CORRUPT'},
+        source_errors={'quota_tracker': 'JSONDecodeError'},
+    )
+    monkeypatch.setattr(
+        account_resource_scanner,
+        'build_inventory_snapshot',
+        lambda: snapshot,
+    )
+    vm = CentroVivoViewModel(
+        data_root=str(tmp_path),
+        defer_initial_refresh=True,
+    )
+
+    result = vm._build_account_inventory()
+
+    assert len(result['entries']) == 1
+    assert result['entries'][0]['status'] == 'unverified'
+    assert result['entries'][0]['quota_remaining'] == 0
+    assert result['entries'][0]['quota_limit'] == 0
+    assert result['entries'][0]['score'] == 0.0
+    assert result['entries'][0]['quota_resets_at'] == ''
+    assert result['summary']['active_count'] == 0
+    assert result['summary']['exhausted_count'] == 0
+    assert result['summary']['total_remaining_messages'] == 0
+    assert result['summary']['tools_available'] == []
+    assert result['summary']['continuity_queue'] == []
+    assert result['summary']['next_recommended'] is None
+    assert result['summary']['quota_source_status'] == 'CORRUPT'
+    assert 'UNRESOLVED:quota_tracker:CORRUPT' in result['summary']['unresolved_items']
+    assert vm.get_source_statuses()['account_inventory'] == 'READ_FAILED'
+
+
 def test_centro_vivo_maps_corrupt_account_subsources_to_read_failed(tmp_path, monkeypatch, status) -> None:
     from iabv15.domain.models import AccountInventorySnapshot
     from iabv15.services import account_resource_scanner
