@@ -965,9 +965,9 @@ class EvolutionCenterViewModel(QObject):
         launch_mode = str(metadata.get('launch_mode') or '').strip()
         if launch_mode:
             lines.append(f'Via: {launch_mode}')
-        launch_target = str(metadata.get('launch_target') or '').strip()
-        if launch_target:
-            lines.append(f'Destino: {launch_target}')
+        launch_target_ref = str(metadata.get('launch_target_ref') or '').strip()
+        if launch_target_ref:
+            lines.append(f'Destino: {launch_target_ref}')
         response_capture_mode = str(metadata.get('response_capture_mode') or '').strip().lower()
         if response_capture_mode == 'clipboard_capture':
             lines.append('Respuesta: captura automatica por clipboard con fallback manual si no aparece texto util')
