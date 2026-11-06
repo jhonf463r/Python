@@ -688,3 +688,28 @@ def test_test_evidence_without_pre_post_pair_is_rejected(tmp_path, monkeypatch) 
     evidence["payload_sha256"] = _test_evidence_payload_sha256(evidence)
     path.write_text(json.dumps(evidence), encoding="utf-8")
     assert load_latest_test_evidence(tmp_path) is None
+
+
+
+def test_test_evidence_provenance_pair_rejects_string_coerced_snapshot_fields() -> None:
+    from iabv15.infra.mcp.audit_tools import _test_evidence_has_stable_provenance_pair
+
+    commit_sha = "1" * 40
+    branch = "123"
+    digest = "1" * 64
+    before = {
+        "provenance_status": "COMMIT_BOUND_CLEAN",
+        "worktree_clean": True,
+        "commit_sha": int(commit_sha),
+        "branch": int(branch),
+        "worktree_status_sha256": int(digest),
+    }
+    after = dict(before)
+    metadata = {"provenance_before": before, "provenance_after": after}
+
+    assert not _test_evidence_has_stable_provenance_pair(
+        metadata,
+        commit_sha=commit_sha,
+        branch=branch,
+        worktree_status_sha256=digest,
+    )

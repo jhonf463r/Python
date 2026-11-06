@@ -788,12 +788,21 @@ def _test_evidence_has_stable_provenance_pair(
     ):
         return False
     for snapshot in (before, after):
+        snapshot_commit = snapshot.get("commit_sha")
+        snapshot_branch = snapshot.get("branch")
+        snapshot_digest = snapshot.get("worktree_status_sha256")
         if (
             snapshot.get("provenance_status") != "COMMIT_BOUND_CLEAN"
             or snapshot.get("worktree_clean") is not True
-            or str(snapshot.get("commit_sha") or "").lower() != commit_sha.lower()
-            or str(snapshot.get("branch") or "") != branch
-            or str(snapshot.get("worktree_status_sha256") or "") != worktree_status_sha256
+            or not isinstance(snapshot_commit, str)
+            or not _re.fullmatch(r"[0-9a-fA-F]{40}|[0-9a-fA-F]{64}", snapshot_commit)
+            or snapshot_commit.lower() != commit_sha.lower()
+            or not isinstance(snapshot_branch, str)
+            or not snapshot_branch.strip()
+            or snapshot_branch != branch
+            or not isinstance(snapshot_digest, str)
+            or not _re.fullmatch(r"[0-9a-f]{64}", snapshot_digest)
+            or snapshot_digest != worktree_status_sha256
         ):
             return False
     return True
