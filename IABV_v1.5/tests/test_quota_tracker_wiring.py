@@ -146,8 +146,14 @@ def test_quota_attribution_does_not_count_sandbox_dry_run() -> None:
     result = {
         'status': 'prepared',
         'dry_run': True,
-        'actual_assistant_kind': 'chatgpt',
-        'actual_account_email': 'alice@test.com',
+        'actual_account_binding': {
+            'schema': 'ACCOUNT_BINDING_R1',
+            'status': 'VERIFIED',
+            'actual_tool': 'chatgpt',
+            'account_email': 'alice@test.com',
+            'identity_source': 'test_adapter',
+            'evidence_ref': 'exec-sandbox-1',
+        },
     }
     with patch.object(
         AdaptiveTaskOrchestrator, '_record_quota_usage',
@@ -183,7 +189,7 @@ def test_quota_attribution_requires_actual_account_identity() -> None:
         )
 
     assert tracking['status'] == 'UNVERIFIED'
-    assert tracking['reason'] == 'actual_account_identity_missing'
+    assert tracking['reason'] == 'actual_account_binding_missing'
     mock_quota.assert_not_called()
 
 
@@ -191,8 +197,14 @@ def test_quota_attribution_rejects_actual_tool_mismatch() -> None:
     result = {
         'status': 'prepared',
         'dry_run': False,
-        'actual_assistant_kind': 'claude',
-        'actual_account_email': 'alice@test.com',
+        'actual_account_binding': {
+            'schema': 'ACCOUNT_BINDING_R1',
+            'status': 'VERIFIED',
+            'actual_tool': 'claude',
+            'account_email': 'alice@test.com',
+            'identity_source': 'test_adapter',
+            'evidence_ref': 'exec-tool-mismatch-1',
+        },
     }
     with patch.object(
         AdaptiveTaskOrchestrator, '_record_quota_usage',
@@ -213,8 +225,14 @@ def test_quota_attribution_rejects_account_email_mismatch() -> None:
     result = {
         'status': 'prepared',
         'dry_run': False,
-        'actual_assistant_kind': 'chatgpt',
-        'actual_account_email': 'other@test.com',
+        'actual_account_binding': {
+            'schema': 'ACCOUNT_BINDING_R1',
+            'status': 'VERIFIED',
+            'actual_tool': 'chatgpt',
+            'account_email': 'other@test.com',
+            'identity_source': 'test_adapter',
+            'evidence_ref': 'exec-email-mismatch-1',
+        },
     }
     with patch.object(
         AdaptiveTaskOrchestrator, '_record_quota_usage',
@@ -235,8 +253,14 @@ def test_quota_attribution_rejects_account_email_mismatch() -> None:
 def test_quota_attribution_rejects_missing_dry_run_state() -> None:
     result = {
         'status': 'prepared',
-        'actual_assistant_kind': 'chatgpt',
-        'actual_account_email': 'alice@test.com',
+        'actual_account_binding': {
+            'schema': 'ACCOUNT_BINDING_R1',
+            'status': 'VERIFIED',
+            'actual_tool': 'chatgpt',
+            'account_email': 'alice@test.com',
+            'identity_source': 'test_adapter',
+            'evidence_ref': 'exec-no-dryrun-1',
+        },
     }
     with patch.object(
         AdaptiveTaskOrchestrator, '_record_quota_usage',
@@ -257,8 +281,14 @@ def test_quota_attribution_records_only_exact_actual_identity() -> None:
     result = {
         'status': 'prepared',
         'dry_run': False,
-        'actual_assistant_kind': 'chatgpt',
-        'actual_account_email': 'alice@test.com',
+        'actual_account_binding': {
+            'schema': 'ACCOUNT_BINDING_R1',
+            'status': 'VERIFIED',
+            'actual_tool': 'chatgpt',
+            'account_email': 'alice@test.com',
+            'identity_source': 'test_adapter',
+            'evidence_ref': 'exec-exact-1',
+        },
     }
     quota = {'tool': 'chatgpt', 'email': 'alice@test.com', 'used_in_window': 1}
     with patch.object(
@@ -288,8 +318,14 @@ def test_govern_payload_records_quota_on_prepared_with_actual_identity() -> None
         evolution_result={
             'status': 'prepared',
             'assistant_kind': 'chatgpt',
-            'actual_assistant_kind': 'chatgpt',
-            'actual_account_email': 'alice@test.com',
+            'actual_account_binding': {
+            'schema': 'ACCOUNT_BINDING_R1',
+            'status': 'VERIFIED',
+            'actual_tool': 'chatgpt',
+            'account_email': 'alice@test.com',
+            'identity_source': 'test_adapter',
+            'evidence_ref': 'exec-govern-1',
+        },
             'dry_run': False,
             'reason': 'test',
         },
@@ -315,8 +351,14 @@ def test_govern_payload_does_not_count_sandbox_dry_run() -> None:
         evolution_result={
             'status': 'prepared',
             'assistant_kind': 'chatgpt',
-            'actual_assistant_kind': 'chatgpt',
-            'actual_account_email': 'alice@test.com',
+            'actual_account_binding': {
+            'schema': 'ACCOUNT_BINDING_R1',
+            'status': 'VERIFIED',
+            'actual_tool': 'chatgpt',
+            'account_email': 'alice@test.com',
+            'identity_source': 'test_adapter',
+            'evidence_ref': 'exec-govern-sandbox-1',
+        },
             'dry_run': True,
         },
     )
@@ -357,7 +399,7 @@ def test_govern_payload_keeps_missing_account_identity_unverified() -> None:
         )
         ae = (result.get('metadata') or {}).get('autonomous_evolution') or {}
         assert ae['quota_tracking']['status'] == 'UNVERIFIED'
-        assert ae['quota_tracking']['reason'] == 'actual_account_identity_missing'
+        assert ae['quota_tracking']['reason'] == 'actual_account_binding_missing'
         mock_quota.assert_not_called()
 
 
@@ -410,8 +452,14 @@ def test_parallel_comparison_records_quota() -> None:
         evolution_result={
             'status': 'prepared',
             'assistant_kind': 'claude',
-            'actual_assistant_kind': 'claude',
-            'actual_account_email': 'alice@test.com',
+            'actual_account_binding': {
+            'schema': 'ACCOUNT_BINDING_R1',
+            'status': 'VERIFIED',
+            'actual_tool': 'claude',
+            'account_email': 'alice@test.com',
+            'identity_source': 'test_adapter',
+            'evidence_ref': 'exec-parallel-1',
+        },
             'dry_run': False,
         },
     )
@@ -455,7 +503,7 @@ def test_parallel_comparison_does_not_count_without_actual_account_identity() ->
             decision_context=None,
         )
         assert result['quota_tracking']['status'] == 'UNVERIFIED'
-        assert result['quota_tracking']['reason'] == 'actual_account_identity_missing'
+        assert result['quota_tracking']['reason'] == 'actual_account_binding_missing'
         mock_quota.assert_not_called()
 
 
@@ -485,8 +533,14 @@ def test_quota_status_in_govern_result(tmp_path: Path) -> None:
         evolution_result={
             'status': 'prepared',
             'assistant_kind': 'chatgpt',
-            'actual_assistant_kind': 'chatgpt',
-            'actual_account_email': 'alice@test.com',
+            'actual_account_binding': {
+            'schema': 'ACCOUNT_BINDING_R1',
+            'status': 'VERIFIED',
+            'actual_tool': 'chatgpt',
+            'account_email': 'alice@test.com',
+            'identity_source': 'test_adapter',
+            'evidence_ref': 'exec-quota-result-1',
+        },
             'dry_run': False,
         },
     )
