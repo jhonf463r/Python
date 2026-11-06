@@ -1693,6 +1693,7 @@ def _build_deductive_context(
             pool['available_count'] == 0
             and pool['exhausted_count'] == 0
             and not unverified_workers
+            and pool_quota_status in {'READ_OK', 'CONFIRMED_NOT_FOUND'}
         ):
             parts.append('- Sin asistentes con sesion activa detectados.')
         else:
