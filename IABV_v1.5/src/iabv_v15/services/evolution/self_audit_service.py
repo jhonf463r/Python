@@ -500,10 +500,43 @@ class SelfAuditService:
             ),
         }
         if test_evidence is not None:
+            passed = int(test_evidence.get("passed") or 0)
+            failed = int(test_evidence.get("failed") or 0)
+            errors = int(test_evidence.get("errors") or 0)
+            total = passed + failed + errors
+            returncode = test_evidence.get("returncode")
+            timed_out = test_evidence.get("timed_out")
+            execution_failed = (
+                failed > 0
+                or errors > 0
+                or (type(returncode) is int and returncode != 0)
+                or timed_out is True
+            )
+            execution_verified = (
+                type(returncode) is int
+                and returncode == 0
+                and type(timed_out) is bool
+                and timed_out is False
+                and total > 0
+                and passed > 0
+                and failed == 0
+                and errors == 0
+            )
+            execution_status = (
+                "FAILED"
+                if execution_failed
+                else "PASSED"
+                if execution_verified
+                else "UNVERIFIED"
+            )
             result["test_evidence_summary"] = {
-                "passed": int(test_evidence.get("passed") or 0),
-                "failed": int(test_evidence.get("failed") or 0),
-                "errors": int(test_evidence.get("errors") or 0),
+                "passed": passed,
+                "failed": failed,
+                "errors": errors,
+                "total": total,
+                "returncode": returncode,
+                "timed_out": timed_out,
+                "execution_status": execution_status,
                 "suite": str(test_evidence.get("suite") or ""),
                 "timestamp": str(test_evidence.get("timestamp") or ""),
                 "commit_sha": str(test_evidence.get("commit_sha") or ""),
