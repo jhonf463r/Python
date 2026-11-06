@@ -457,10 +457,15 @@ class CentroVivoViewModel(QObject):
             self._record_source_status('account_inventory', 'READ_FAILED', type(exc).__name__)
             return {'entries': [], 'summary': {}}
 
+        source_coverage = dict(getattr(snapshot, 'source_coverage', {}) or {})
+        source_errors = dict(getattr(snapshot, 'source_errors', {}) or {})
+        quota_source_status = source_coverage.get('quota_tracker', 'UNVERIFIED')
+        quota_verified = quota_source_status == 'READ_OK'
+
         entries: list[dict[str, Any]] = []
         for entry in snapshot.entries:
             resets_at = ''
-            if entry.quota_resets_at:
+            if quota_verified and entry.quota_resets_at:
                 resets_at = entry.quota_resets_at.isoformat()
             entries.append({
                 'email': entry.email,
@@ -468,34 +473,44 @@ class CentroVivoViewModel(QObject):
                 'profile': entry.profile,
                 'tool': entry.tool,
                 'has_session': entry.has_session,
-                'quota_remaining': entry.quota_remaining,
-                'quota_limit': entry.quota_limit,
+                'quota_remaining': entry.quota_remaining if quota_verified else 0,
+                'quota_limit': entry.quota_limit if quota_verified else 0,
                 'quota_resets_at': resets_at,
-                'exhausted': entry.exhausted,
-                'score': round(entry.score, 4),
-                'status': entry.status.value,
-                'block_signals': entry.block_signals,
+                'exhausted': entry.exhausted if quota_verified else False,
+                'score': round(entry.score, 4) if quota_verified else 0.0,
+                'status': entry.status.value if quota_verified else 'unverified',
+                'block_signals': entry.block_signals if quota_verified else [],
             })
 
-        # Build continuity queue (top entries)
+        # Build continuity queue only from a verified quota snapshot.
         queue: list[dict[str, Any]] = []
-        for entry in snapshot.continuity_queue[:5]:
-            queue.append({
-                'email': entry.email,
-                'tool': entry.tool,
-                'score': round(entry.score, 4),
-                'quota_remaining': entry.quota_remaining,
-            })
+        if quota_verified:
+            for entry in snapshot.continuity_queue[:5]:
+                queue.append({
+                    'email': entry.email,
+                    'tool': entry.tool,
+                    'score': round(entry.score, 4),
+                    'quota_remaining': entry.quota_remaining,
+                })
+
+        unresolved_items = list(snapshot.unresolved_items or [])
+        if not quota_verified:
+            unresolved_items.append(f'UNRESOLVED:quota_tracker:{quota_source_status}')
+        unresolved_items = list(dict.fromkeys(unresolved_items))
 
         summary = {
-            'active_count': snapshot.active_count,
-            'exhausted_count': snapshot.exhausted_count,
-            'unresolved_count': snapshot.unresolved_count,
-            'total_remaining_messages': snapshot.total_remaining_messages,
-            'tools_available': snapshot.tools_available,
+            'active_count': snapshot.active_count if quota_verified else 0,
+            'exhausted_count': snapshot.exhausted_count if quota_verified else 0,
+            'unresolved_count': max(
+                snapshot.unresolved_count,
+                len(snapshot.entries) if not quota_verified else 0,
+            ),
+            'total_remaining_messages': snapshot.total_remaining_messages if quota_verified else 0,
+            'tools_available': snapshot.tools_available if quota_verified else [],
             'continuity_queue': queue,
             'next_recommended': queue[0] if queue else None,
-            'unresolved_items': snapshot.unresolved_items,
+            'unresolved_items': unresolved_items,
+            'quota_source_status': quota_source_status,
             'requires_human_approval': True,
         }
 
