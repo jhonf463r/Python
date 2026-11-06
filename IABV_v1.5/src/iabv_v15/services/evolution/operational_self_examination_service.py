@@ -7028,8 +7028,45 @@ _REQUIRED_SOURCE_IDS = (
                 from iabv_v15.services.account_resource_scanner import get_all_quota_status
                 quotas = get_all_quota_status()
                 self._record_account_resource_coverage(quotas)
+                quota_coverage = quotas.get('source_coverage')
+                quota_source_status = (
+                    quota_coverage.get('quota_tracker')
+                    if isinstance(quota_coverage, dict)
+                    else 'UNVERIFIED'
+                )
+                quota_errors = quotas.get('source_errors')
+                quota_source_error = (
+                    quota_errors.get('quota_tracker', '')
+                    if isinstance(quota_errors, dict)
+                    else ''
+                )
                 tracked_count = len(quotas.get('statuses', []))
-                if tracked_count == 0 and len(accounts_with_sessions) > 0:
+                if quota_source_status not in {'READ_OK', 'CONFIRMED_NOT_FOUND'}:
+                    findings.append(SelfExaminationFinding(
+                        category='functional_gap',
+                        title='Cuotas de asistentes no verificables',
+                        summary=(
+                            f'{len(accounts_with_sessions)} sesiones de asistentes están detectadas, '
+                            f'pero la lectura del quota tracker está en {quota_source_status}. '
+                            'No inferir que no existen cuentas ni que todavía no hay consumos registrados.'
+                        ),
+                        severity=IssueSeverity.MEDIUM,
+                        confidence=0.95,
+                        recommendation=(
+                            'Restaurar una lectura íntegra del quota tracker y verificar la atribución '
+                            'tool/cuenta antes de usar esos saldos para selección.'
+                        ),
+                        evidence_refs=[
+                            f'quota_tracker_status:{quota_source_status}',
+                        ],
+                        metadata={
+                            'gap_type': 'quota_tracker_unverified',
+                            'quota_source_status': quota_source_status,
+                            'quota_source_error': str(quota_source_error)[:120],
+                            'accounts_with_sessions': len(accounts_with_sessions),
+                        },
+                    ))
+                elif tracked_count == 0:
                     findings.append(SelfExaminationFinding(
                         category='functional_gap',
                         title='Asistentes con sesion activa sin rastreo de cuotas',
@@ -7047,6 +7084,7 @@ _REQUIRED_SOURCE_IDS = (
                         metadata={
                             'gap_type': 'untracked_quotas',
                             'accounts_with_sessions': len(accounts_with_sessions),
+                            'quota_source_status': quota_source_status,
                         },
                     ))
         except Exception as exc:
@@ -7168,11 +7206,46 @@ _REQUIRED_SOURCE_IDS = (
         try:
             quotas = get_all_quota_status()
             self._record_account_resource_coverage(quotas)
+            quota_coverage = quotas.get('source_coverage')
+            quota_source_status = (
+                quota_coverage.get('quota_tracker')
+                if isinstance(quota_coverage, dict)
+                else 'UNVERIFIED'
+            )
+            quota_errors = quotas.get('source_errors')
+            quota_source_error = (
+                quota_errors.get('quota_tracker', '')
+                if isinstance(quota_errors, dict)
+                else ''
+            )
+            if quota_source_status not in {'READ_OK', 'CONFIRMED_NOT_FOUND'}:
+                findings.append(SelfExaminationFinding(
+                    category='functional_gap',
+                    title='Integridad del quota tracker no verificable',
+                    summary=(
+                        f'OSES no puede evaluar disponibilidad ni agotamiento de cuotas: '
+                        f'quota_tracker={quota_source_status}. No inferir un pool vacío '
+                        'ni un estado de agotamiento a partir de esta lectura.'
+                    ),
+                    severity=IssueSeverity.MEDIUM,
+                    confidence=0.95,
+                    recommendation=(
+                        'Recuperar una lectura íntegra del tracker y volver a generar '
+                        'el snapshot antes de evaluar agotamiento o capacidad disponible.'
+                    ),
+                    evidence_refs=[f'quota_tracker_status:{quota_source_status}'],
+                    metadata={
+                        'gap_type': 'quota_tracker_unverified',
+                        'quota_source_status': quota_source_status,
+                        'quota_source_error': str(quota_source_error)[:120],
+                    },
+                ))
+
             exhausted_count = quotas.get('exhausted_count', 0)
             available_count = quotas.get('available_count', 0)
             total = exhausted_count + available_count
 
-            if total > 0 and exhausted_count > 0:
+            if quota_source_status == 'READ_OK' and total > 0 and exhausted_count > 0:
                 ratio = exhausted_count / total
                 if ratio >= 0.5:
                     exhausted_keys = quotas.get('exhausted_keys', [])
@@ -10217,7 +10290,28 @@ def get_functional_gap_summary() -> list[dict[str, str]]:
         active = [a for a in pool_accounts if a.get('tool_count', 0) > 0]
         if active:
             quotas = get_all_quota_status()
-            if len(quotas.get('statuses', [])) == 0:
+            quota_coverage = quotas.get('source_coverage')
+            quota_source_status = (
+                quota_coverage.get('quota_tracker')
+                if isinstance(quota_coverage, dict)
+                else 'UNVERIFIED'
+            )
+            quota_errors = quotas.get('source_errors')
+            quota_source_error = (
+                quota_errors.get('quota_tracker', '')
+                if isinstance(quota_errors, dict)
+                else ''
+            )
+            if quota_source_status not in {'READ_OK', 'CONFIRMED_NOT_FOUND'}:
+                gaps.append({
+                    'title': 'Cuotas de workers no verificables',
+                    'detail': (
+                        f'{len(active)} asistentes tienen sesiones detectadas, pero '
+                        f'quota_tracker={quota_source_status}; no inferir que el inventario está vacío. '
+                        f'Diagnóstico: {str(quota_source_error)[:100]}'
+                    ),
+                })
+            elif len(quotas.get('statuses', [])) == 0:
                 gaps.append({
                     'title': 'Workers sin rastreo de cuotas',
                     'detail': (
