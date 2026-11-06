@@ -825,7 +825,22 @@ class IABVMCPServer:
             recomendados por `OperationalSelfExaminationService`.
             """
             svc = self._self_examination_service()
-            review = svc.current_review(refresh=bool(refresh))
+            if refresh:
+                # Refresh is an explicit caller request; the default read is cache-only.
+                review = svc.current_review(refresh=True)
+            else:
+                cached_reader = getattr(svc, "current_review_cached", None)
+                if not callable(cached_reader):
+                    return {"error": "oses_cached_review_reader_unavailable"}
+                try:
+                    review = cached_reader()
+                except Exception as exc:
+                    return {
+                        "error": "oses_cached_review_unavailable",
+                        "error_type": type(exc).__name__,
+                    }
+                if review is None:
+                    return {"error": "oses_cached_review_unavailable"}
             summary = svc.review_summary(review)
             result = {"review": _to_jsonable(review), "summary": _to_jsonable(summary)}
 

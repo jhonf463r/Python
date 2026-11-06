@@ -62,6 +62,11 @@ class _FakeSelfExaminationService:
     def __init__(self, review: SelfExaminationSnapshot) -> None:
         self._review = review
         self.calls: list[bool] = []
+        self.cached_calls = 0
+
+    def current_review_cached(self) -> SelfExaminationSnapshot:
+        self.cached_calls += 1
+        return self._review
 
     def current_review(self, *, refresh: bool = False) -> SelfExaminationSnapshot:
         self.calls.append(refresh)
@@ -362,10 +367,41 @@ def test_portable_context_get_marks_lightweight_package_unverified() -> None:
 
 
 def test_self_examination_current_returns_review_and_summary() -> None:
-    server = IABVMCPServer(_build_container())
+    service = _FakeSelfExaminationService(SelfExaminationSnapshot())
+    server = IABVMCPServer(_build_container(operational_self_examination_service=service))
     payload = _call_tool(server, "self_examination_current")
     assert isinstance(payload, dict)
     assert "review" in payload and "summary" in payload
+    assert service.cached_calls == 1
+    assert service.calls == []
+
+
+def test_self_examination_current_refresh_true_uses_explicit_active_refresh() -> None:
+    service = _FakeSelfExaminationService(SelfExaminationSnapshot())
+    server = IABVMCPServer(_build_container(operational_self_examination_service=service))
+    payload = _call_tool(server, "self_examination_current", refresh=True)
+
+    assert "review" in payload and "summary" in payload
+    assert service.calls == [True]
+    assert service.cached_calls == 0
+
+
+def test_self_examination_current_cache_failure_does_not_fallback_to_active_review() -> None:
+    class _FailingCachedService(_FakeSelfExaminationService):
+        def current_review_cached(self):
+            raise RuntimeError("cache_stale")
+
+        def current_review(self, *, refresh: bool = False):
+            raise AssertionError("active OSES refresh must not run")
+
+    service = _FailingCachedService(SelfExaminationSnapshot())
+    server = IABVMCPServer(_build_container(operational_self_examination_service=service))
+    payload = _call_tool(server, "self_examination_current")
+
+    assert payload == {
+        "error": "oses_cached_review_unavailable",
+        "error_type": "RuntimeError",
+    }
 
 
 def test_site_exploration_explore_persists_manual_when_success() -> None:
