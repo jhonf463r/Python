@@ -1916,6 +1916,7 @@ class ExternalAssistantToolAdapter(ToolAdapter):
             card=card,
         )
         assistant_kind = str(card.metadata.get('assistant_kind') or card.tool_id)
+        result = self._sanitize_persisted_capture_diagnostics(result, assistant_kind=assistant_kind)
         worker_kind = str(card.metadata.get('worker_kind') or assistant_kind).lower()
         telemetry = ToolAdapter._build_worker_telemetry(
             result=result,
