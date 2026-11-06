@@ -1852,6 +1852,64 @@ class ExternalAssistantToolAdapter(ToolAdapter):
         cleaned['metadata'] = metadata
         return cleaned
 
+    @staticmethod
+    def _safe_focused_window_label(value: Any, assistant_kind: str) -> str:
+        raw = str(value or '').strip().lower()
+        if not raw:
+            return ''
+        aliases = {
+            'chatgpt': ('chatgpt', 'openai'),
+            'claude': ('claude', 'anthropic'),
+            'codex': ('codex',),
+            'ollama': ('ollama',),
+        }
+        for family, markers in aliases.items():
+            if any(marker in raw for marker in markers):
+                return family
+        if 'just a moment' in raw or 'security verification' in raw:
+            return 'interstitial_page'
+        return 'other_window'
+
+    @staticmethod
+    def _safe_external_diagnostic(value: Any) -> str:
+        diagnostic = str(value or '')
+        if not diagnostic:
+            return ''
+        diagnostic = re.sub(r"(?i)\bBearer\s+[^\s\"']+", 'Bearer [REDACTED]', diagnostic)
+        diagnostic = re.sub(
+            r"(?i)([?&](?:token|api[_-]?key|password|secret)=)[^&\s]+",
+            r'\1[REDACTED]',
+            diagnostic,
+        )
+        diagnostic = re.sub(r"(?i)\b[A-Z]:\\[^\r\n\"']+", '[LOCAL_PATH]', diagnostic)
+        diagnostic = re.sub(r"(?<![\w.])/(?:home|Users|mnt|tmp|var|opt|workspace)/[^\s\"']+", '[LOCAL_PATH]', diagnostic)
+        diagnostic = re.sub(r"\b[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}\b", '[EMAIL]', diagnostic)
+        return diagnostic[:1000]
+
+    def _sanitize_persisted_capture_diagnostics(
+        self,
+        result: dict[str, Any],
+        *,
+        assistant_kind: str,
+    ) -> dict[str, Any]:
+        cleaned = dict(result)
+        extracted = dict(cleaned.get('extracted_data') or {})
+        metadata = dict(cleaned.get('metadata') or {})
+        for record in (extracted, metadata):
+            if 'focused_title' in record:
+                record['focused_title'] = self._safe_focused_window_label(
+                    record.get('focused_title'),
+                    assistant_kind,
+                )
+            for key in ('error_message', 'auto_capture_reason'):
+                if key in record:
+                    record[key] = self._safe_external_diagnostic(record.get(key))
+        cleaned['extracted_data'] = extracted
+        cleaned['metadata'] = metadata
+        if 'error_message' in cleaned:
+            cleaned['error_message'] = self._safe_external_diagnostic(cleaned.get('error_message'))
+        return cleaned
+
     def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False) -> dict[str, Any]:
         result = self._sanitize_persistable_launch_metadata(
             super().run(card, task, sandbox=sandbox),
