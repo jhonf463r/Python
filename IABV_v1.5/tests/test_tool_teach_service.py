@@ -1154,9 +1154,10 @@ def test_session_profile_path_resolution_accepts_legacy_in_root_and_rejects_esca
         relative = 'data/tool_teaching/external_assistants/legacy_profile'
         assert service._has_session_content(relative) is True
         assert service._has_session_content(str(in_root)) is True
+        escape_path = f'../{outside.name}'
         assert service._has_session_content(str(outside)) is False
-        assert service._has_session_content('../external_profile_scope') is False
-        assert service._resolve_session_profile_path('../external_profile_scope') is None
+        assert service._has_session_content(escape_path) is False
+        assert service._resolve_session_profile_path(escape_path) is None
     finally:
         shutil.rmtree(root, ignore_errors=True)
         shutil.rmtree(outside, ignore_errors=True)
