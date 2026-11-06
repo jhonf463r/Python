@@ -1630,6 +1630,17 @@ class PortableContextService:
         errors = int(evidence.get('errors') or 0)
         suite = str(evidence.get('suite') or '')
         ts = str(evidence.get('timestamp') or '')
+        commit_sha = evidence.get('commit_sha')
+        commit_sha = commit_sha if isinstance(commit_sha, str) else ''
+        branch = evidence.get('branch')
+        branch = branch if isinstance(branch, str) else ''
+        provenance_status = evidence.get('provenance_status')
+        provenance_status = provenance_status if isinstance(provenance_status, str) else 'UNKNOWN'
+        worktree_clean = evidence.get('worktree_clean') is True
+        worktree_status_sha256 = evidence.get('worktree_status_sha256')
+        worktree_status_sha256 = worktree_status_sha256 if isinstance(worktree_status_sha256, str) else ''
+        payload_sha256 = evidence.get('payload_sha256')
+        payload_sha256 = payload_sha256 if isinstance(payload_sha256, str) else ''
         total = passed + failed + errors
         health = 'green' if failed == 0 and errors == 0 else 'red'
         summary = f'{passed}/{total} passed'
@@ -1639,15 +1650,28 @@ class PortableContextService:
             summary += f', {errors} errors'
         if suite:
             summary += f' [{suite}]'
+        summary += f' · provenance {provenance_status}'
+        if commit_sha:
+            summary += f' · commit {commit_sha[:12]}'
         items: list[dict[str, Any]] = [
             {'label': 'health', 'value': health},
             {'label': 'passed', 'value': passed},
             {'label': 'failed', 'value': failed},
             {'label': 'errors', 'value': errors},
             {'label': 'timestamp', 'value': ts},
+            {'label': 'provenance_status', 'value': provenance_status},
+            {'label': 'worktree_clean', 'value': worktree_clean},
         ]
         if suite:
             items.append({'label': 'suite', 'value': suite})
+        if commit_sha:
+            items.append({'label': 'commit_sha', 'value': commit_sha})
+        if branch:
+            items.append({'label': 'branch', 'value': branch})
+        if worktree_status_sha256:
+            items.append({'label': 'worktree_status_sha256', 'value': worktree_status_sha256})
+        if payload_sha256:
+            items.append({'label': 'payload_sha256', 'value': payload_sha256})
         return self._section(
             section_id='test_evidence',
             title='Evidencia de tests',
@@ -1655,7 +1679,11 @@ class PortableContextService:
             items=items,
             source_kind='audit_tools',
             source_refs=['iabv_v15.infra.mcp.audit_tools'],
-            confidence=0.9 if health == 'green' else 0.5,
+            confidence=(
+                0.9
+                if health == 'green' and provenance_status == 'COMMIT_BOUND_CLEAN'
+                else 0.5
+            ),
             last_updated=now,
         )
 

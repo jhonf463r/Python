@@ -665,3 +665,40 @@ def test_portable_context_goal_preserves_objective_repository_read_failure() -> 
         assert goal['active_title'] == ''
     finally:
         shutil.rmtree(root, ignore_errors=True)
+
+
+
+def test_portable_test_evidence_section_includes_r24_provenance() -> None:
+    root = _workspace('portable_test_evidence_provenance')
+    try:
+        bootstrap = AppBootstrap(str(root))
+        service = bootstrap.portable_context_service
+        evidence = {
+            'passed': 12,
+            'failed': 0,
+            'errors': 0,
+            'suite': 'R24-focused',
+            'timestamp': '2026-11-05T18:00:00+00:00',
+            'commit_sha': 'a' * 40,
+            'branch': 'candidate',
+            'worktree_clean': True,
+            'provenance_status': 'COMMIT_BOUND_CLEAN',
+            'worktree_status_sha256': 'b' * 64,
+            'payload_sha256': 'c' * 64,
+        }
+        service._load_test_evidence = lambda: evidence
+
+        section = service._test_evidence_section(
+            now=__import__('datetime').datetime.now(__import__('datetime').timezone.utc)
+        )
+        items = {item['label']: item['value'] for item in section.items}
+
+        assert 'provenance COMMIT_BOUND_CLEAN' in section.summary
+        assert items['commit_sha'] == evidence['commit_sha']
+        assert items['branch'] == evidence['branch']
+        assert items['worktree_clean'] is True
+        assert items['worktree_status_sha256'] == evidence['worktree_status_sha256']
+        assert items['payload_sha256'] == evidence['payload_sha256']
+        assert section.confidence == 0.9
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
