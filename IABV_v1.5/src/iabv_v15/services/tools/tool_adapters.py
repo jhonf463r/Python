@@ -792,8 +792,8 @@ class ToolAdapter:
                                 'thread_verification': 'unverified',
                                 'capture_unverified': True,
                                 'used_fallback_capture': bool(captured.get('used_fallback_capture')),
-                                'rollout_path': str(captured.get('rollout_path') or ''),
-                                'browser_profile_dir': str(captured.get('browser_profile_dir') or ''),
+                                'rollout_observed': bool(captured.get('rollout_path')),
+                                'browser_profile_ref': self._workspace_relative_path_reference(captured.get('browser_profile_dir'), workspace_root),
                                 'browser_dom_metadata': dict(captured.get('metadata') or {}),
                             },
                         }
@@ -834,8 +834,8 @@ class ToolAdapter:
                                 'thread_mismatch': True,
                                 'capture_unverified': True,
                                 'used_fallback_capture': bool(captured.get('used_fallback_capture')),
-                                'rollout_path': str(captured.get('rollout_path') or ''),
-                                'browser_profile_dir': str(captured.get('browser_profile_dir') or ''),
+                                'rollout_observed': bool(captured.get('rollout_path')),
+                                'browser_profile_ref': self._workspace_relative_path_reference(captured.get('browser_profile_dir'), workspace_root),
                                 'browser_dom_metadata': dict(captured.get('metadata') or {}),
                             },
                         }
@@ -872,8 +872,8 @@ class ToolAdapter:
                             'capture_source': capture_source,
                             'thread_verification': 'verified' if bool(captured.get('thread_verified')) else '',
                             'used_fallback_capture': bool(captured.get('used_fallback_capture')),
-                            'rollout_path': str(captured.get('rollout_path') or ''),
-                            'browser_profile_dir': str(captured.get('browser_profile_dir') or ''),
+                            'rollout_observed': bool(captured.get('rollout_path')),
+                            'browser_profile_ref': self._workspace_relative_path_reference(captured.get('browser_profile_dir'), workspace_root),
                             'browser_dom_metadata': dict(captured.get('metadata') or {}),
                         },
                     }
@@ -921,7 +921,7 @@ class ToolAdapter:
                                     'isolated_session': isolated_session,
                     **consultation_metadata,
                                     'capture_source': str(captured.get('capture_source') or 'browser_dom').strip().lower() or 'browser_dom',
-                                    'browser_profile_dir': str(captured.get('browser_profile_dir') or ''),
+                                    'browser_profile_ref': self._workspace_relative_path_reference(captured.get('browser_profile_dir'), workspace_root),
                                     'browser_dom_metadata': dict(captured.get('metadata') or {}),
                                 },
                             }
@@ -963,7 +963,7 @@ class ToolAdapter:
                                 'isolated_session': isolated_session,
                     **consultation_metadata,
                                 'capture_source': str(captured.get('capture_source') or 'browser_dom').strip().lower() or 'browser_dom',
-                                'browser_profile_dir': str(captured.get('browser_profile_dir') or ''),
+                                'browser_profile_ref': self._workspace_relative_path_reference(captured.get('browser_profile_dir'), workspace_root),
                                 'browser_dom_metadata': dict(captured.get('metadata') or {}),
                             },
                         }
@@ -1274,6 +1274,20 @@ class ToolAdapter:
         return markers[:6]
 
 
+
+    def _workspace_relative_path_reference(self, path_value: Any, workspace_root: str) -> str:
+        """Return a workspace-relative path for diagnostics, never an absolute host path."""
+        raw_path = str(path_value or '').strip()
+        if not raw_path:
+            return ''
+        try:
+            root = Path(workspace_root).resolve()
+            candidate = Path(raw_path)
+            if not candidate.is_absolute():
+                return ''
+            return candidate.resolve().relative_to(root).as_posix()
+        except (OSError, RuntimeError, ValueError):
+            return ''
 
     def _consultation_runtime_metadata(self, *, card: ToolCard, task: ToolTask, capture_attempt_utc: str) -> dict[str, Any]:
         task_metadata = dict(task.metadata or {})
