@@ -581,7 +581,7 @@ def test_external_assistant_adapter_persists_only_relative_profile_reference_and
     metadata = result['metadata']
     assert result['success'] is True
     assert metadata['browser_profile_ref'] == 'data/tool_teaching/external_assistants/chatgpt_program_session/browser_profile'
-    assert metadata['rollout_observed'] is True
+    assert metadata['rollout_path_reported'] is True
     assert 'browser_profile_dir' not in metadata
     assert 'rollout_path' not in metadata
     assert str(root) not in repr(metadata)
