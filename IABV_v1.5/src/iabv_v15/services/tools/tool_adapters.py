@@ -1886,29 +1886,75 @@ class ExternalAssistantToolAdapter(ToolAdapter):
         diagnostic = re.sub(r"\b[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}\b", '[EMAIL]', diagnostic)
         return diagnostic[:1000]
 
+    @staticmethod
+    def _safe_cdp_endpoint_reference(value: Any) -> str:
+        raw = str(value or '').strip()
+        if not raw:
+            return ''
+        try:
+            parsed = urlparse(raw)
+            if parsed.scheme.lower() not in {'http', 'https'} or not parsed.hostname:
+                return ''
+            host = parsed.hostname.lower()
+            if host not in {'localhost', '127.0.0.1', '::1'}:
+                return 'remote_cdp_endpoint'
+            port = parsed.port
+        except ValueError:
+            return ''
+        suffix = f':{port}' if port is not None else ''
+        return f'{parsed.scheme.lower()}://localhost{suffix}'
+
+    @staticmethod
+    def _safe_persisted_profile_label(value: Any) -> str:
+        raw = str(value or '').strip().lower()
+        if not raw:
+            return ''
+        if 'governed' in raw:
+            return 'governed_profile'
+        for assistant in ('chatgpt', 'claude', 'codex', 'ollama'):
+            if assistant in raw:
+                return f'{assistant}_profile'
+        return 'isolated_profile'
+
     def _sanitize_persisted_capture_diagnostics(
         self,
         result: dict[str, Any],
         *,
         assistant_kind: str,
     ) -> dict[str, Any]:
-        cleaned = dict(result)
-        extracted = dict(cleaned.get('extracted_data') or {})
-        metadata = dict(cleaned.get('metadata') or {})
-        for record in (extracted, metadata):
-            if 'focused_title' in record:
-                record['focused_title'] = self._safe_focused_window_label(
-                    record.get('focused_title'),
-                    assistant_kind,
-                )
-            for key in ('error_message', 'auto_capture_reason'):
-                if key in record:
-                    record[key] = self._safe_external_diagnostic(record.get(key))
-        cleaned['extracted_data'] = extracted
-        cleaned['metadata'] = metadata
-        if 'error_message' in cleaned:
-            cleaned['error_message'] = self._safe_external_diagnostic(cleaned.get('error_message'))
-        return cleaned
+        diagnostic_keys = {
+            'error_message',
+            'auto_capture_reason',
+            'visual_signal_error',
+            'original_error',
+            'error',
+            'reason',
+        }
+
+        def sanitize(value: Any) -> Any:
+            if isinstance(value, dict):
+                cleaned: dict[str, Any] = {}
+                for key, item in value.items():
+                    normalized_key = str(key).strip().lower()
+                    if normalized_key == 'focused_title':
+                        cleaned[key] = self._safe_focused_window_label(item, assistant_kind)
+                    elif normalized_key in diagnostic_keys:
+                        cleaned[key] = self._safe_external_diagnostic(item)
+                    elif normalized_key == 'cdp_url':
+                        cleaned['cdp_endpoint_ref'] = self._safe_cdp_endpoint_reference(item)
+                    elif normalized_key == 'profile_label':
+                        cleaned['profile_ref'] = self._safe_persisted_profile_label(item)
+                    else:
+                        cleaned[key] = sanitize(item)
+                return cleaned
+            if isinstance(value, list):
+                return [sanitize(item) for item in value]
+            if isinstance(value, tuple):
+                return [sanitize(item) for item in value]
+            return value
+
+        cleaned = sanitize(result)
+        return cleaned if isinstance(cleaned, dict) else result
 
     def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False) -> dict[str, Any]:
         result = self._sanitize_persistable_launch_metadata(
