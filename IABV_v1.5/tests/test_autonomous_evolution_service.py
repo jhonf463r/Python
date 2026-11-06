@@ -477,6 +477,9 @@ def test_autonomous_evolution_service_marks_structured_quota_block_as_blocked_ex
         assert result['status'] == 'blocked_external'
         assert 'account_limited' in result['external_state_flags']
         assert 'cuota disponible' in result['detail']
+        assert result['actual_account_binding']['schema'] == 'ACCOUNT_BINDING_R1'
+        assert result['actual_account_binding']['status'] == 'UNVERIFIED'
+        assert result['actual_account_binding']['reason'] == 'execution_account_binding_missing'
     finally:
         _cleanup_bootstrap(bootstrap)
 
