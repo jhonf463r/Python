@@ -612,6 +612,7 @@ def test_external_assistant_adapter_redacts_private_capture_diagnostics() -> Non
     raw_path = r'C:\Users\jhon\Private profile'
     raw_email = 'alice@example.com'
     raw_bearer = 'abc123'
+    raw_cdp = 'http://operator:private-pass@localhost:9223/devtools/private?token=private-cdp-token'
 
     class _Runner:
         def __init__(self, workspace_root: str) -> None:
@@ -626,6 +627,11 @@ def test_external_assistant_adapter_redacts_private_capture_diagnostics() -> Non
                 'capture_source': 'browser_dom',
                 'browser_profile_dir': '',
                 'error_message': f"Unable to access '{raw_path}': {raw_email} Bearer {raw_bearer}",
+                'metadata': {
+                    'visual_signal_error': f"perception failed at {raw_path} for {raw_email}",
+                    'cdp_url': raw_cdp,
+                    'profile_label': raw_path,
+                },
             }
 
     adapter = ExternalAssistantToolAdapter(runner_factory=lambda workspace_root: _Runner(workspace_root))
@@ -639,8 +645,18 @@ def test_external_assistant_adapter_redacts_private_capture_diagnostics() -> Non
     assert 'Bearer [REDACTED]' in result['error_message']
     assert metadata['auto_capture_reason'] == result['error_message']
     assert metadata['focused_title'] == 'chatgpt'
+    browser_meta = metadata['browser_dom_metadata']
+    assert browser_meta['cdp_endpoint_ref'] == 'http://localhost:9223'
+    assert browser_meta['profile_ref'] == 'isolated_profile'
+    assert '[LOCAL_PATH]' in browser_meta['visual_signal_error']
+    assert '[EMAIL]' in browser_meta['visual_signal_error']
+    assert 'cdp_url' not in browser_meta
+    assert 'profile_label' not in browser_meta
     assert 'alice@example.com' not in persisted
     assert raw_path not in persisted
+    assert raw_cdp not in persisted
+    assert 'private-pass' not in persisted
+    assert 'private-cdp-token' not in persisted
     assert 'Bearer abc123' not in persisted
 
 
