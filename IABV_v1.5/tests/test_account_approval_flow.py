@@ -204,6 +204,35 @@ class TestStructuralFlow:
         assert approval is not None
         assert approval.valid is True
 
+    def test_mismatched_approval_tool_is_ignored(self):
+        pool = _multi_tool_pool()
+
+        class _MismatchedLedger:
+            def __init__(self):
+                self.mark_validated_calls = []
+
+            def get_approved(self, tool):
+                assert tool == 'chatgpt'
+                return AccountApproval(
+                    tool='claude',
+                    email='alice@test.com',
+                    origin='legacy_corrupt_record',
+                )
+
+            def mark_validated(self, tool, *, valid=True, snapshot_id=''):
+                self.mark_validated_calls.append((tool, valid, snapshot_id))
+
+        ledger = _MismatchedLedger()
+        router = _make_router(pool, ledger=ledger)
+        gate = router.worker_health_gate(target_assistant='chatgpt')
+
+        assert gate['usable'] is True
+        assert gate['top_worker']['tool'] == 'chatgpt'
+        assert gate['account_selection_source'] == 'auto_ranked'
+        assert gate['fallback_used'] is False
+        assert 'approved_account' not in gate
+        assert ledger.mark_validated_calls == []
+
     def test_no_approval_uses_ranking(self):
         """Without any approval, gate returns auto-ranked top."""
         pool = _multi_tool_pool()
