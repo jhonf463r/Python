@@ -267,3 +267,92 @@ def test_backward_compatible(tmp_path):
     assert result['provider_id'] in ('gemini', 'groq', 'openrouter', 'together', 'ollama_local')
     assert 'scores' in result
     assert 'fallback_chain' in result
+
+
+# ──────────────────────────────────────────────────────────────
+# Test 6b: Unknown or unavailable session health must fail closed
+# ──────────────────────────────────────────────────────────────
+
+def _web_provider_world():
+    return _make_world_model(
+        gates=[
+            _make_gate('chatgpt', True),
+            _make_gate('claude', True),
+            _make_gate('gemini', True),
+        ],
+        tools={
+            'chatgpt': {'usable': True, 'available_accounts': 1},
+            'claude': {'usable': True, 'available_accounts': 1},
+            'gemini': {'usable': True, 'available_accounts': 1},
+        },
+    )
+
+
+def _assert_web_providers_are_ineligible(result, expected_reason: str) -> None:
+    web_scores = [
+        score for score in result['scores']
+        if score['provider_id'].endswith('_web')
+    ]
+    assert len(web_scores) == 3
+    for score in web_scores:
+        assert score['total_score'] == 0.0
+        assert score['reason'] == expected_reason
+    assert not result['provider_id'].endswith('_web')
+
+
+def test_selector_fails_closed_when_web_session_health_is_unknown(tmp_path):
+    selector = _make_selector(tmp_path)
+    with patch(
+        'iabv_v15.services.auto_correction_engine.check_web_session_health',
+        return_value={
+            'status': 'unknown',
+            'needs_human': False,
+            'reason': 'Browser scan unavailable',
+        },
+    ):
+        result = selector.select_best_provider(
+            task_type='general',
+            world_model=_web_provider_world(),
+        )
+
+    _assert_web_providers_are_ineligible(result, 'web_session_unknown')
+
+
+def test_selector_fails_closed_when_web_session_health_raises(tmp_path):
+    selector = _make_selector(tmp_path)
+    with patch(
+        'iabv_v15.services.auto_correction_engine.check_web_session_health',
+        side_effect=RuntimeError('scanner unavailable'),
+    ):
+        result = selector.select_best_provider(
+            task_type='general',
+            world_model=_web_provider_world(),
+        )
+
+    _assert_web_providers_are_ineligible(result, 'session_check_unavailable')
+
+
+def test_selector_rejects_malformed_web_session_health(tmp_path):
+    selector = _make_selector(tmp_path)
+    with patch(
+        'iabv_v15.services.auto_correction_engine.check_web_session_health',
+        return_value=None,
+    ):
+        result = selector.select_best_provider(
+            task_type='general',
+            world_model=_web_provider_world(),
+        )
+
+    _assert_web_providers_are_ineligible(result, 'web_session_health_invalid')
+
+
+def test_selector_allows_web_provider_only_when_session_is_active(tmp_path):
+    selector = _make_selector(tmp_path)
+    with patch(
+        'iabv_v15.services.auto_correction_engine.check_web_session_health',
+        return_value={'status': 'active'},
+    ):
+        allowed, reason = selector._is_web_session_active('chatgpt_web')
+
+    assert allowed is True
+    assert reason == 'web_session_active'

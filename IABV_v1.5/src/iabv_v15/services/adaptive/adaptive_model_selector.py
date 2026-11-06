@@ -360,11 +360,11 @@ class AdaptiveModelSelector:
         self,
         provider_id: str,
     ) -> tuple[bool, str]:
-        """Check if the web provider has an active browser session.
+        """Check if a web provider session is positively verified as active.
 
-        Returns (active, reason).  When the health check is unavailable
-        (import error, scanner crash) the provider is allowed through
-        (fail-open) so existing behaviour is preserved.
+        The permission gate is checked by the caller first. This check is an
+        additional eligibility condition: UNKNOWN, malformed health data, and
+        scanner/import errors are not evidence of an active session.
         """
         try:
             from iabv_v15.services.auto_correction_engine import (
@@ -372,12 +372,14 @@ class AdaptiveModelSelector:
             )
             health = check_web_session_health(provider_id)
         except Exception:
-            return True, 'session_check_unavailable'
+            return False, 'session_check_unavailable'
 
-        status = health.get('status', 'unknown')
-        if status == 'expired':
-            return False, 'web_session_expired'
-        return True, f'web_session_{status}'
+        if not isinstance(health, dict):
+            return False, 'web_session_health_invalid'
+        status = str(health.get('status') or 'unknown').strip().lower()
+        if status != 'active':
+            return False, f'web_session_{status}'
+        return True, 'web_session_active'
 
     _TOOL_MAP: dict[str, str] = {
         'gemini': 'gemini',
