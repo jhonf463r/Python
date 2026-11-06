@@ -442,6 +442,8 @@ def test_self_audit_test_evidence_summary_includes_r24_provenance(tmp_path: Path
         "passed": 7,
         "failed": 0,
         "errors": 0,
+        "returncode": 0,
+        "timed_out": False,
         "suite": "focused",
         "timestamp": "2026-11-05T18:00:00+00:00",
         "commit_sha": "a" * 40,
@@ -455,6 +457,10 @@ def test_self_audit_test_evidence_summary_includes_r24_provenance(tmp_path: Path
     snapshot = svc.run(reason="provenance_summary")
     summary = snapshot.cross_source_truth["test_evidence_summary"]
 
+    assert summary["execution_status"] == "PASSED"
+    assert summary["total"] == 7
+    assert summary["returncode"] == 0
+    assert summary["timed_out"] is False
     assert summary["commit_sha"] == evidence["commit_sha"]
     assert summary["branch"] == evidence["branch"]
     assert summary["worktree_clean"] is True
@@ -484,3 +490,31 @@ def test_self_audit_redacts_focused_window_title_from_persisted_digest(tmp_path:
     assert private_title not in json.dumps(snapshot.world_model_digest)
     persisted = tmp_path / "data" / "evolution" / "self_audit" / "latest.json"
     assert private_title not in persisted.read_text(encoding="utf-8")
+
+
+
+def test_self_audit_test_summary_keeps_zero_collected_run_unverified(
+    tmp_path: Path, monkeypatch,
+) -> None:
+    svc = _make_service(tmp_path)
+    evidence = {
+        "passed": 0,
+        "failed": 0,
+        "errors": 0,
+        "returncode": 0,
+        "timed_out": False,
+        "suite": "empty",
+        "commit_sha": "a" * 40,
+        "branch": "candidate",
+        "worktree_clean": True,
+        "provenance_status": "COMMIT_BOUND_CLEAN",
+        "payload_sha256": "b" * 64,
+    }
+    monkeypatch.setattr(svc, "_load_latest_test_evidence", lambda: evidence)
+
+    snapshot = svc.run(reason="empty_test_evidence")
+    summary = snapshot.cross_source_truth["test_evidence_summary"]
+
+    assert snapshot.cross_source_truth["tests_observed"] is True
+    assert summary["total"] == 0
+    assert summary["execution_status"] == "UNVERIFIED"
