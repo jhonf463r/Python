@@ -521,6 +521,23 @@ class ControlMasterService:
             self._record_work_queue_source("tests_state", "UNVERIFIED")
             return []
 
+        try:
+            from iabv_v15.infra.mcp.audit_tools import load_latest_test_evidence
+            validated_evidence = load_latest_test_evidence(
+                Path(str(self.workspace_root))
+            )
+        except Exception:
+            self._record_work_queue_error("TEST_EVIDENCE_VALIDATION_FAILED")
+            self._record_work_queue_source("tests_state", "READ_FAILED")
+            return []
+        if (
+            not isinstance(validated_evidence, dict)
+            or validated_evidence.get("evidence_id") != evidence_id
+            or validated_evidence.get("payload_sha256") != evidence.get("payload_sha256")
+        ):
+            self._record_work_queue_source("tests_state", "READ_UNVERIFIED")
+            return []
+
         has_failures = (
             counters["failed"] > 0
             or counters["errors"] > 0
