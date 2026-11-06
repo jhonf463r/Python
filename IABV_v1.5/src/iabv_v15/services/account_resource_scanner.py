@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 import os
 import re
 import subprocess
@@ -722,20 +723,53 @@ def _load_quota_state_with_diagnostics() -> tuple[dict[str, Any], str, str]:
         raw = qf.read_text(encoding='utf-8')
     except FileNotFoundError:
         return {'accounts': {}}, 'CONFIRMED_NOT_FOUND', 'quota_tracker_not_found'
-    except Exception as exc:
+    except UnicodeError as exc:
+        return {'accounts': {}}, 'CORRUPT', type(exc).__name__
+    except OSError as exc:
         return {'accounts': {}}, 'READ_FAILED', type(exc).__name__
+
     try:
         state = json.loads(raw)
+    except (json.JSONDecodeError, UnicodeError) as exc:
+        return {'accounts': {}}, 'CORRUPT', type(exc).__name__
     except Exception as exc:
         return {'accounts': {}}, 'READ_FAILED', type(exc).__name__
-    if not isinstance(state, dict) or not isinstance(state.get('accounts', {}), dict):
-        return {'accounts': {}}, 'SCHEMA_UNSUPPORTED', 'quota_tracker_schema_unsupported'
+
+    if (
+        not isinstance(state, dict)
+        or 'accounts' not in state
+        or not isinstance(state.get('accounts'), dict)
+    ):
+        return {'accounts': {}}, 'SCHEMA_UNSUPPORTED', 'quota_tracker_accounts_mapping_required'
+
+    for account_key, entry in state['accounts'].items():
+        if not isinstance(account_key, str) or not account_key.strip() or not isinstance(entry, dict):
+            return {'accounts': {}}, 'SCHEMA_UNSUPPORTED', 'quota_tracker_account_entry_invalid'
+        messages = entry.get('messages')
+        if not isinstance(messages, list) or any(
+            type(timestamp) not in (int, float) or not math.isfinite(timestamp)
+            for timestamp in messages
+        ):
+            return {'accounts': {}}, 'SCHEMA_UNSUPPORTED', 'quota_tracker_messages_invalid'
+        for field in ('tool', 'email'):
+            if field in entry and (
+                not isinstance(entry[field], str) or not entry[field].strip()
+            ):
+                return {'accounts': {}}, 'SCHEMA_UNSUPPORTED', f'quota_tracker_{field}_invalid'
+        if 'total_sent' in entry and (
+            type(entry['total_sent']) is not int or entry['total_sent'] < 0
+        ):
+            return {'accounts': {}}, 'SCHEMA_UNSUPPORTED', 'quota_tracker_total_sent_invalid'
+
     return state, 'READ_OK', ''
 
 
 def _load_quota_state() -> dict[str, Any]:
-    """Compatibility wrapper; diagnostics are exposed by get_all_quota_status."""
-    return _load_quota_state_with_diagnostics()[0]
+    """Load for mutation only when the persisted quota state is trustworthy."""
+    state, status, error = _load_quota_state_with_diagnostics()
+    if status in {'READ_OK', 'CONFIRMED_NOT_FOUND'}:
+        return state
+    raise RuntimeError(f'quota_tracker_{status.lower()}:{error or "invalid_state"}')
 
 
 def _save_quota_state(state: dict[str, Any]) -> None:

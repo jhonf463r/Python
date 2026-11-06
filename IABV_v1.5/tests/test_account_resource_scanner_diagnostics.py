@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from iabv_v15.services import account_resource_scanner
 
 
@@ -468,3 +470,50 @@ def test_browser_status_combination_preserves_unverified_component() -> None:
     assert account_resource_scanner._combine_browser_source_status(
         ["CONFIRMED_NOT_FOUND", "NOT_CONFIGURED"]
     ) == "NOT_CONFIGURED"
+
+def test_quota_tracker_requires_explicit_accounts_mapping(monkeypatch, tmp_path) -> None:
+    workspace = tmp_path / "quota-schema-workspace"
+    quota_path = workspace / "data" / "evolution" / "quota_tracker.json"
+    quota_path.parent.mkdir(parents=True)
+    quota_path.write_text("{}", encoding="utf-8")
+    monkeypatch.setenv("IABV_WORKSPACE", str(workspace))
+
+    result = account_resource_scanner.get_all_quota_status()
+
+    assert result["source_coverage"]["quota_tracker"] == "SCHEMA_UNSUPPORTED"
+    assert result["statuses"] == []
+    assert quota_path.read_text(encoding="utf-8") == "{}"
+
+
+def test_quota_tracker_corruption_is_preserved_and_mutations_fail_closed(monkeypatch, tmp_path) -> None:
+    workspace = tmp_path / "quota-corrupt-workspace"
+    quota_path = workspace / "data" / "evolution" / "quota_tracker.json"
+    quota_path.parent.mkdir(parents=True)
+    original = "{"
+    quota_path.write_text(original, encoding="utf-8")
+    monkeypatch.setenv("IABV_WORKSPACE", str(workspace))
+
+    result = account_resource_scanner.get_all_quota_status()
+
+    assert result["source_coverage"]["quota_tracker"] == "CORRUPT"
+    with pytest.raises(RuntimeError, match="quota_tracker_corrupt"):
+        account_resource_scanner.record_message_sent("chatgpt", "account@example.test")
+    assert quota_path.read_text(encoding="utf-8") == original
+
+
+def test_quota_tracker_rejects_malformed_account_messages(monkeypatch, tmp_path) -> None:
+    workspace = tmp_path / "quota-entry-workspace"
+    quota_path = workspace / "data" / "evolution" / "quota_tracker.json"
+    quota_path.parent.mkdir(parents=True)
+    quota_path.write_text(
+        '{"accounts":{"chatgpt:account@example.test":{"messages":"invalid"}}}',
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("IABV_WORKSPACE", str(workspace))
+
+    result = account_resource_scanner.get_all_quota_status()
+
+    assert result["source_coverage"]["quota_tracker"] == "SCHEMA_UNSUPPORTED"
+    with pytest.raises(RuntimeError, match="quota_tracker_schema_unsupported"):
+        account_resource_scanner.record_message_sent("chatgpt", "account@example.test")
+    assert '"messages":"invalid"' in quota_path.read_text(encoding="utf-8")
