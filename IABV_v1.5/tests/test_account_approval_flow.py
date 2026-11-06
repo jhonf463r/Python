@@ -55,6 +55,8 @@ def _make_ledger() -> AccountApprovalLedger:
 def _multi_tool_pool() -> dict[str, Any]:
     """Pool with chatgpt (2 workers) + claude (1 worker)."""
     return {
+        'source_coverage': {'quota_tracker': 'READ_OK'},
+        'source_errors': {},
         'workers': [
             {'email': 'alice@test.com', 'tool': 'chatgpt', 'browser': 'chrome',
              'profile': 'Default', 'remaining_messages': 10, 'used_in_window': 5,
@@ -173,6 +175,34 @@ class TestStructuralFlow:
         assert gate_claude['account_selection_source'] == 'auto_ranked'
         assert gate_claude['fallback_used'] is False
         assert 'approved_account' not in gate_claude
+
+    def test_corrupt_quota_preflight_does_not_consult_stale_approval(self):
+        ledger = _make_ledger()
+        ledger.approve(AccountApproval(
+            tool='chatgpt',
+            email='bob@test.com',
+            origin='centro_vivo_ui',
+        ))
+        pool = _multi_tool_pool()
+        pool['source_coverage'] = {'quota_tracker': 'CORRUPT'}
+        pool['source_errors'] = {'quota_tracker': 'JSONDecodeError'}
+        router = _make_router(pool, ledger=ledger)
+
+        with patch.object(ledger, 'mark_validated') as mark_validated:
+            gate = router.worker_health_gate(target_assistant='chatgpt')
+
+        assert gate['usable'] is False
+        assert gate['ranked_workers'] == []
+        assert gate['top_worker'] is None
+        assert gate['available_count'] == 0
+        assert gate['quota_source_status'] == 'CORRUPT'
+        assert 'approved_account' not in gate
+        assert 'UNRESOLVED:quota_tracker_corrupt' in gate['reason']
+        mark_validated.assert_not_called()
+        # An unverifiable read is not evidence that the user's approval is invalid.
+        approval = ledger.get_approved('chatgpt')
+        assert approval is not None
+        assert approval.valid is True
 
     def test_no_approval_uses_ranking(self):
         """Without any approval, gate returns auto-ranked top."""
