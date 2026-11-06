@@ -141,6 +141,33 @@ class TestTypedTraceHelpers:
         assert e['data']['component'] == 'EvolutionCenter'
 
 
+def test_governed_browser_trace_persists_only_safe_launch_reference(tmp_path: Path) -> None:
+    tracer = RuntimeAuditTracer(log_dir=str(tmp_path))
+    tracer.configure(tmp_path)
+    desktop_target = r'C:\\Users\\Owner\\AppData\\Local\\Programs\\Codex\\Codex.exe'
+    web_target = 'https://chatgpt.com/share/private-path?token=private-web-token'
+
+    desktop_event = tracer.trace_governed_browser_session(
+        'started',
+        assistant_kind='codex',
+        launch_target=desktop_target,
+    )
+    web_event = tracer.trace_governed_browser_session(
+        'result',
+        assistant_kind='chatgpt',
+        launch_target=web_target,
+    )
+
+    assert desktop_event['data']['launch_target_ref'] == 'desktop:codex'
+    assert web_event['data']['launch_target_ref'] == 'web:chatgpt'
+    assert 'launch_target' not in desktop_event['data']
+    assert 'launch_target' not in web_event['data']
+    persisted = (tmp_path / 'runtime_audit.jsonl').read_text(encoding='utf-8')
+    assert desktop_target not in persisted
+    assert web_target not in persisted
+    assert 'private-web-token' not in persisted
+
+
 class TestBootReport:
     """Export a structured boot report for AI analysis."""
 
