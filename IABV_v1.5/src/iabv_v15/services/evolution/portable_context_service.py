@@ -1642,7 +1642,42 @@ class PortableContextService:
         payload_sha256 = evidence.get('payload_sha256')
         payload_sha256 = payload_sha256 if isinstance(payload_sha256, str) else ''
         total = passed + failed + errors
-        health = 'green' if failed == 0 and errors == 0 else 'red'
+        returncode = evidence.get('returncode')
+        timed_out = evidence.get('timed_out')
+        execution_failed = (
+            failed > 0
+            or errors > 0
+            or (type(returncode) is int and returncode != 0)
+            or timed_out is True
+        )
+        execution_verified = (
+            type(returncode) is int
+            and returncode == 0
+            and type(timed_out) is bool
+            and timed_out is False
+            and total > 0
+            and passed > 0
+            and failed == 0
+            and errors == 0
+        )
+        execution_status = (
+            'FAILED'
+            if execution_failed
+            else 'PASSED'
+            if execution_verified
+            else 'UNVERIFIED'
+        )
+        provenance_clean = (
+            provenance_status == 'COMMIT_BOUND_CLEAN'
+            and worktree_clean is True
+        )
+        health = (
+            'red'
+            if execution_failed
+            else 'green'
+            if execution_verified and provenance_clean
+            else 'unknown'
+        )
         summary = f'{passed}/{total} passed'
         if failed:
             summary += f', {failed} failed'
@@ -1650,11 +1685,16 @@ class PortableContextService:
             summary += f', {errors} errors'
         if suite:
             summary += f' [{suite}]'
+        summary += f' · execution {execution_status.lower()}'
         summary += f' · provenance {provenance_status}'
         if commit_sha:
             summary += f' · commit {commit_sha[:12]}'
         items: list[dict[str, Any]] = [
             {'label': 'health', 'value': health},
+            {'label': 'execution_status', 'value': execution_status},
+            {'label': 'total', 'value': total},
+            {'label': 'returncode', 'value': returncode},
+            {'label': 'timed_out', 'value': timed_out},
             {'label': 'passed', 'value': passed},
             {'label': 'failed', 'value': failed},
             {'label': 'errors', 'value': errors},
