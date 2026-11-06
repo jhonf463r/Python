@@ -67,8 +67,11 @@ class _FakeSelfExamService:
     def __init__(self, review: SelfExaminationSnapshot | None) -> None:
         self._review = review
 
-    def current_review(self, *, refresh: bool = False) -> SelfExaminationSnapshot | None:
+    def current_review_cached(self) -> SelfExaminationSnapshot | None:
         return self._review
+
+    def current_review(self, *, refresh: bool = False) -> SelfExaminationSnapshot | None:
+        raise AssertionError("active OSES review must not be used by SelfAuditService")
 
 
 class _FakePortableContextService:
@@ -398,3 +401,61 @@ def test_toolcard_dry_check_unavailable_returns_missing() -> None:
     assert result.available is False
     assert result.status == "missing"
     assert result.reason is not None
+
+
+
+def test_self_audit_uses_only_cached_oses_review(tmp_path: Path) -> None:
+    svc = _make_service(
+        tmp_path,
+        review=SelfExaminationSnapshot(
+            findings=[SelfExaminationFinding(title="cached finding", description="verified cache")],
+        ),
+    )
+
+    pending = svc._collect_pending_issues()
+
+    assert "cached finding" in pending
+    assert svc._self_examination_read_status == "READ_OK"
+
+
+def test_self_audit_cached_oses_failure_is_visible_without_active_fallback(tmp_path: Path) -> None:
+    class _FailingCachedOSES:
+        def current_review_cached(self):
+            raise RuntimeError("oses_cached_review_stale")
+
+        def current_review(self, *, refresh: bool = False):
+            raise AssertionError("active OSES review must never be called")
+
+    svc = _make_service(tmp_path)
+    svc.operational_self_examination_service = _FailingCachedOSES()
+
+    snapshot = svc.run(reason="cache_failure")
+
+    assert snapshot.cross_source_truth["self_examination_status"] == "READ_FAILED"
+    assert "UNRESOLVED:self_examination_READ_FAILED" in snapshot.cross_source_truth["unresolved"]
+
+
+def test_self_audit_test_evidence_summary_includes_r24_provenance(tmp_path: Path, monkeypatch) -> None:
+    svc = _make_service(tmp_path)
+    evidence = {
+        "passed": 7,
+        "failed": 0,
+        "errors": 0,
+        "suite": "focused",
+        "timestamp": "2026-11-05T18:00:00+00:00",
+        "commit_sha": "a" * 40,
+        "branch": "candidate",
+        "worktree_clean": True,
+        "provenance_status": "COMMIT_BOUND_CLEAN",
+        "payload_sha256": "b" * 64,
+    }
+    monkeypatch.setattr(svc, "_load_latest_test_evidence", lambda: evidence)
+
+    snapshot = svc.run(reason="provenance_summary")
+    summary = snapshot.cross_source_truth["test_evidence_summary"]
+
+    assert summary["commit_sha"] == evidence["commit_sha"]
+    assert summary["branch"] == evidence["branch"]
+    assert summary["worktree_clean"] is True
+    assert summary["provenance_status"] == "COMMIT_BOUND_CLEAN"
+    assert summary["payload_sha256"] == evidence["payload_sha256"]
