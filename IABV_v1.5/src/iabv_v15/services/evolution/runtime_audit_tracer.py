@@ -48,6 +48,7 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit
 
 logger = logging.getLogger(__name__)
 
@@ -631,6 +632,78 @@ class RuntimeAuditTracer:
     # P0.72: Governed browser session launch + human-assist bridge traces
     # ------------------------------------------------------------------
 
+    @staticmethod
+    def _safe_browser_assistant_ref(value: Any) -> str:
+        raw = str(value or '').strip().lower()
+        safe = ''.join(character for character in raw if character.isalnum() or character in {'_', '-'})
+        return safe[:48] or 'assistant'
+
+    @staticmethod
+    def _safe_cdp_endpoint_ref(value: Any) -> str:
+        raw = str(value or '').strip()
+        if not raw:
+            return ''
+        try:
+            parsed = urlsplit(raw)
+            if parsed.scheme.lower() not in {'http', 'https'} or not parsed.hostname:
+                return ''
+            host = parsed.hostname.lower()
+            if host not in {'localhost', '127.0.0.1', '::1'}:
+                return 'remote_cdp_endpoint'
+            port = parsed.port
+        except ValueError:
+            return ''
+        suffix = f':{port}' if port is not None else ''
+        return f'{parsed.scheme.lower()}://localhost{suffix}'
+
+    @staticmethod
+    def _safe_browser_profile_ref(value: Any) -> str:
+        raw = str(value or '').strip().lower()
+        if not raw:
+            return ''
+        if 'governed' in raw:
+            return 'governed_profile'
+        for assistant in ('chatgpt', 'claude', 'codex', 'ollama'):
+            if assistant in raw:
+                return f'{assistant}_profile'
+        return 'isolated_profile'
+
+    @staticmethod
+    def _safe_browser_reason_code(value: Any) -> str:
+        raw = str(value or '').strip().lower()
+        if not raw:
+            return ''
+        allowed = {
+            'ok',
+            'no_hwnd_or_observable_tab',
+            'security_window_unbound',
+            'profile_mismatch_cdp_unavailable',
+            'user_browser_cdp_unavailable',
+            'user_requested_chrome_bridge',
+            'user_explicit_permission',
+            'user_revoked_cdp_permission',
+            'cdp_unavailable',
+            'connection_failed',
+            'timed_out',
+            'browser_not_available',
+            'launch_failed',
+            'owner_thread_unavailable',
+            'exception_during_close',
+        }
+        code = raw.split(':', 1)[0].strip()
+        return code if code in allowed else 'other'
+
+    @staticmethod
+    def _safe_trace_identifier(value: Any) -> str:
+        raw = str(value or '').strip()
+        if not raw or len(raw) > 80:
+            return ''
+        if any(character in raw for character in ('/', '\\', '@', ':', '?', '#')):
+            return ''
+        if not all(character.isalnum() or character in {'_', '-'} for character in raw):
+            return ''
+        return raw
+
     def trace_governed_browser_session(
         self,
         event_type: str,
@@ -655,24 +728,22 @@ class RuntimeAuditTracer:
         debugging — never the user's normal Chrome profile. No cookies,
         tokens or credentials are read or copied.
         """
-        assistant_ref = ''.join(
-            character for character in str(assistant_kind or '').strip().lower()
-            if character.isalnum() or character in {'_', '-'}
-        ) or 'assistant'
+        assistant_ref = self._safe_browser_assistant_ref(assistant_kind)
+        safe_event_type = event_type if event_type in {'offered', 'started', 'result'} else 'other'
         launch_target_ref = ''
         if launch_target:
             target_mode = 'web' if str(launch_target).strip().lower().startswith(('http://', 'https://')) else 'desktop'
             launch_target_ref = f'{target_mode}:{assistant_ref}'
         return self.trace(
-            f'governed_browser_session_launch_{event_type}',
-            assistant_kind=assistant_kind,
-            cdp_url=cdp_url[:200] if cdp_url else '',
-            profile_label=profile_label,
+            f'governed_browser_session_launch_{safe_event_type}',
+            assistant_kind=assistant_ref,
+            cdp_endpoint_ref=self._safe_cdp_endpoint_ref(cdp_url),
+            profile_ref=self._safe_browser_profile_ref(profile_label),
             launch_target_ref=launch_target_ref,
-            human_login_required=human_login_required,
-            success=success,
-            reason=reason[:200] if reason else '',
-            **extra,
+            human_login_required=bool(human_login_required),
+            success=bool(success),
+            reason_code=self._safe_browser_reason_code(reason),
+            extra_fields_omitted=bool(extra),
         )
 
     def trace_security_window_unbound(
@@ -690,10 +761,10 @@ class RuntimeAuditTracer:
         """
         return self.trace(
             'external_security_verification_window_unbound',
-            incident_id=incident_id,
-            assistant_kind=assistant_kind,
-            profile_label=profile_label,
-            reason=reason[:200] if reason else '',
+            incident_id=self._safe_trace_identifier(incident_id),
+            assistant_kind=self._safe_browser_assistant_ref(assistant_kind),
+            profile_ref=self._safe_browser_profile_ref(profile_label),
+            reason_code=self._safe_browser_reason_code(reason),
         )
 
     def trace_visible_fallback(
@@ -711,12 +782,13 @@ class RuntimeAuditTracer:
         - ``requested_by_user`` -> ``visible_fallback_requested_by_user``
         - ``blocked_no_target`` -> ``visible_fallback_blocked_no_target``
         """
+        safe_event_type = event_type if event_type in {'requested_by_user', 'blocked_no_target'} else 'other'
         return self.trace(
-            f'visible_fallback_{event_type}',
-            assistant_kind=assistant_kind,
-            reason=reason[:200] if reason else '',
-            target_available=target_available,
-            **extra,
+            f'visible_fallback_{safe_event_type}',
+            assistant_kind=self._safe_browser_assistant_ref(assistant_kind),
+            reason_code=self._safe_browser_reason_code(reason),
+            target_available=bool(target_available),
+            extra_fields_omitted=bool(extra),
         )
 
     def trace_human_assist_bridge_message(
