@@ -276,6 +276,7 @@ class TestBuildInventorySnapshot:
             snap = build_inventory_snapshot()
 
         quota_reader.assert_not_called()
+        mock_ranked.assert_not_called()
         assert snap.entries
         assert all(entry.status == AccountStatus.UNRESOLVED for entry in snap.entries)
         assert snap.continuity_queue == []
@@ -429,6 +430,32 @@ class TestPortableContextSection:
         assert section.metadata.get('requires_human_approval') is True
 
         shutil.rmtree(tmp, ignore_errors=True)
+
+    @patch('iabv_v15.services.account_resource_scanner.rank_workers_for_target', side_effect=_mock_ranked)
+    @patch(
+        'iabv_v15.services.account_resource_scanner.estimate_available_workers',
+        side_effect=_mock_pool_corrupt,
+    )
+    def test_corrupt_quota_inventory_is_not_exported_as_active_continuity(
+        self, mock_pool, mock_ranked, tmp_path: Path,
+    ):
+        from iabv_v15.infra.persistence.storage import ArtifactStorage
+        from iabv_v15.services.evolution.portable_context_service import PortableContextService
+
+        service = PortableContextService(
+            workspace_root=str(tmp_path),
+            storage=ArtifactStorage(str(tmp_path)),
+        )
+        section = service._account_inventory_continuity_section(now=utc_now())
+
+        assert section.confidence == 0.0
+        assert 'quota tracker no verificado (CORRUPT)' in section.summary
+        assert 'UNRESOLVED:quota_tracker:CORRUPT' in section.unresolved_fields
+        assert section.metadata['quota_source_status'] == 'CORRUPT'
+        assert section.metadata['snapshot_active_count'] == 0
+        assert section.metadata['snapshot_unresolved_count'] == 3
+        assert all(item.get('status') == 'unverified' for item in section.items)
+        mock_ranked.assert_not_called()
 
     def test_section_handles_scanner_failure(self):
         from iabv_v15.infra.persistence.storage import ArtifactStorage
