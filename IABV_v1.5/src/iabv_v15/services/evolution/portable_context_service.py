@@ -1250,7 +1250,9 @@ class PortableContextService:
             source_kind='account_resource_scanner',
             source_refs=['account_resource_scanner', 'quota_tracker.json'],
             confidence=(
-                0.85
+                0.0
+                if st == 'scanner_unavailable'
+                else 0.85
                 if (
                     st == 'ok'
                     and quota_source_status in {'READ_OK', 'CONFIRMED_NOT_FOUND'}
