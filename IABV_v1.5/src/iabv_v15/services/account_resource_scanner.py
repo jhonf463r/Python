@@ -717,7 +717,7 @@ def _quota_file() -> Path:
     return candidates[0]
 
 
-def quota_tracker_revision() -> tuple[str, int, int, int, int]:
+def quota_tracker_revision() -> tuple[str, int, int, int, int] | None:
     """Return a non-content fingerprint for invalidating cached worker pools.
 
     The fingerprint changes when the tracker is atomically replaced, edited,
@@ -734,7 +734,7 @@ def quota_tracker_revision() -> tuple[str, int, int, int, int]:
     except FileNotFoundError:
         return (identity, 0, 0, 0, 0)
     except OSError:
-        return (identity, -1, -1, -1, -1)
+        return None
     return (
         identity,
         int(stat_result.st_dev),
