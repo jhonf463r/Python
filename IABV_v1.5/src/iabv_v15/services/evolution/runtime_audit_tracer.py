@@ -635,8 +635,8 @@ class RuntimeAuditTracer:
     @staticmethod
     def _safe_browser_assistant_ref(value: Any) -> str:
         raw = str(value or '').strip().lower()
-        safe = ''.join(character for character in raw if character.isalnum() or character in {'_', '-'})
-        return safe[:48] or 'assistant'
+        allowed = {'chatgpt', 'claude', 'codex', 'ollama'}
+        return raw if raw in allowed else 'assistant'
 
     @staticmethod
     def _safe_cdp_endpoint_ref(value: Any) -> str:
@@ -696,13 +696,18 @@ class RuntimeAuditTracer:
     @staticmethod
     def _safe_trace_identifier(value: Any) -> str:
         raw = str(value or '').strip()
-        if not raw or len(raw) > 80:
+        if not raw:
             return ''
-        if any(character in raw for character in ('/', '\\', '@', ':', '?', '#')):
-            return ''
-        if not all(character.isalnum() or character in {'_', '-'} for character in raw):
-            return ''
-        return raw
+        if raw.startswith('inc-') and len(raw) <= 48:
+            suffix = raw[4:]
+            return raw if suffix and all(character.isalnum() or character in {'_', '-'} for character in suffix) else ''
+        if (
+            len(raw) == 36
+            and raw.count('-') == 4
+            and all(character in '0123456789abcdef-' for character in raw.lower())
+        ):
+            return raw
+        return ''
 
     def trace_governed_browser_session(
         self,
