@@ -548,6 +548,47 @@ def test_external_assistant_adapter_treats_browser_security_verification_as_fail
     assert result['metadata']['auto_capture_reason'] == 'browser_security_verification'
 
 
+
+def test_external_assistant_adapter_persists_only_relative_profile_reference_and_no_rollout_path() -> None:
+    root = _workspace('external_assistant_capture_path_privacy')
+    external_rollout = root.parent / 'external_user_sessions' / 'rollout-secret-location.jsonl'
+
+    class _Runner:
+        def __init__(self, workspace_root: str) -> None:
+            self.workspace_root = workspace_root
+
+        def capture_response_from_app(self, **kwargs) -> dict[str, object]:
+            return {
+                'launched': True,
+                'focused_title': 'ChatGPT',
+                'response_captured': True,
+                'captured_text': 'respuesta capturada',
+                'capture_source': 'browser_dom',
+                'browser_profile_dir': str(root / 'data' / 'tool_teaching' / 'external_assistants' / 'chatgpt_program_session' / 'browser_profile'),
+                'rollout_path': str(external_rollout),
+                'thread_verified': True,
+                'error_message': '',
+            }
+
+    adapter = ExternalAssistantToolAdapter(runner_factory=lambda workspace_root: _Runner(workspace_root))
+    task = _chatgpt_task_with_metadata({
+        'workspace_root': str(root),
+        'session_scope': 'program_chat',
+        'session_profile_dir': 'data/tool_teaching/external_assistants/chatgpt_program_session/browser_profile',
+    })
+    result = adapter.run(_chatgpt_web_card(workspace_root=str(root)), task, sandbox=False)
+
+    metadata = result['metadata']
+    assert result['success'] is True
+    assert metadata['browser_profile_ref'] == 'data/tool_teaching/external_assistants/chatgpt_program_session/browser_profile'
+    assert metadata['rollout_observed'] is True
+    assert 'browser_profile_dir' not in metadata
+    assert 'rollout_path' not in metadata
+    assert str(root) not in repr(metadata)
+    assert str(external_rollout) not in repr(metadata)
+
+
+
 class _FakeCredentialBroker:
     """Double minimo del CredentialBroker usado en tests de integracion."""
 
