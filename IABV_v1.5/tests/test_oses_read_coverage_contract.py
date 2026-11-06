@@ -395,3 +395,18 @@ def test_oses_account_scanner_partial_state_survives_later_success(tmp_path) -> 
         {"source_coverage": {"quota_tracker": "READ_OK"}, "source_errors": {}}
     )
     assert service._source_coverage["account_resource_scanner"] == "READ_PARTIAL"
+
+
+def test_oses_account_scanner_residual_errors_prevent_read_ok(tmp_path) -> None:
+    service = _service(tmp_path)
+    service._record_account_resource_coverage(
+        {
+            "source_coverage": {
+                "browser_accounts": "READ_OK",
+                "quota_tracker": "READ_OK",
+            },
+            "source_errors": {"browser_accounts": "profile_discovery_warning"},
+        }
+    )
+    assert service._source_coverage["account_resource_scanner"] == "READ_PARTIAL"
+    assert "error_sources=browser_accounts" in service._source_errors["account_resource_scanner"]

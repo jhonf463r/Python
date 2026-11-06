@@ -205,8 +205,8 @@ class OperationalSelfExaminationService:
         error_keys = sorted(errors) if isinstance(errors, dict) else []
         if any(value in {'READ_FAILED', 'CORRUPT', 'SCHEMA_UNSUPPORTED'} for value in statuses):
             status = 'READ_FAILED'
-        elif all(value == 'READ_OK' for value in statuses) and not error_keys:
-            status = 'READ_OK'
+        elif all(value == 'READ_OK' for value in statuses):
+            status = 'READ_PARTIAL' if error_keys else 'READ_OK'
         elif len(set(statuses)) == 1:
             status = statuses[0]
         else:

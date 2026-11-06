@@ -34,7 +34,7 @@ Item {
             return "Fuente no conectada."
         if (status === "CONFIRMED_NOT_FOUND")
             return "Fuente persistida no encontrada."
-        if (status === "UNAVAILABLE" || status === "UNVERIFIED")
+        if (status === "UNAVAILABLE" || status === "UNVERIFIED" || status === "READ_UNVERIFIED")
             return "Fuente no verificada."
         return defaultMessage
     }

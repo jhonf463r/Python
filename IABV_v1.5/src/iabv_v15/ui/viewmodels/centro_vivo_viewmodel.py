@@ -333,11 +333,18 @@ class CentroVivoViewModel(QObject):
                             'timestamp': entry.get('timestamp', ''),
                             'session_id': entry.get('session_id', ''),
                         })
-                    except (json.JSONDecodeError, KeyError):
-                        continue
-        except Exception:
-            pass
+                    except (json.JSONDecodeError, KeyError, TypeError):
+                        partial = True
+        except Exception as exc:
+            self._record_source_status(
+                'learning_gaps', 'READ_PARTIAL' if entries else 'READ_FAILED', type(exc).__name__
+            )
+            return entries[:30]
         entries.sort(key=lambda e: e.get('timestamp', ''), reverse=True)
+        self._record_source_status(
+            'learning_gaps', 'READ_PARTIAL' if partial else 'READ_OK',
+            'one_or_more_backlog_entries_unreadable' if partial else '',
+        )
         return entries[:30]
 
     def _build_self_examination_findings(self) -> list[dict[str, Any]]:
