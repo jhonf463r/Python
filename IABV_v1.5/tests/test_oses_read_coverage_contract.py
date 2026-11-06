@@ -667,3 +667,144 @@ def test_oses_runtime_log_invalid_utf8_is_not_read_ok(tmp_path) -> None:
     assert service._runtime_log_findings() == []
     assert service._source_coverage["runtime_log"] == "READ_FAILED"
     assert service._source_errors["runtime_log"] == "UnicodeDecodeError"
+
+
+
+def test_oses_ui_bridge_startup_presence_malformed_rows_are_partial(tmp_path, monkeypatch) -> None:
+    tracer_module = import_module("iabv_v15.services.evolution.runtime_audit_tracer")
+
+    class EmptyTracer:
+        def events(self, *, limit: int):
+            return []
+
+    class EmptyReporter:
+        def list_reports(self, *, limit: int):
+            return []
+
+    trace = tmp_path / "data" / "logs" / "startup_ui_presence.jsonl"
+    trace.parent.mkdir(parents=True)
+    trace.write_text('{"kind":"ui_bridge_port_conflict"}\n{malformed}\n', encoding="utf-8")
+    monkeypatch.setattr(tracer_module, "get_runtime_tracer", lambda: EmptyTracer())
+    service = _service(tmp_path)
+    service._freeze_incident_reporter = EmptyReporter()
+
+    service._ui_bridge_truth_findings()
+
+    assert service._source_coverage["startup_ui_presence_log"] == "READ_PARTIAL"
+    assert service._source_errors["startup_ui_presence_log"] == "malformed_jsonl_rows"
+
+
+def test_oses_ui_bridge_freeze_report_shape_error_is_partial(tmp_path, monkeypatch) -> None:
+    tracer_module = import_module("iabv15.services.evolution.runtime_audit_tracer")
+
+    class EmptyTracer:
+        def events(self, *, limit: int):
+            return []
+
+    class BrokenReporter:
+        def list_reports(self, *, limit: int):
+            return [{"file": "freeze_bad.json", "error": "parse_failed"}]
+
+        def get_report(self, filename: str):
+            raise AssertionError("parse-failed report must not be opened again")
+
+    monkeypatch.setattr(tracer_module, "get_runtime_tracer", lambda: EmptyTracer())
+    service = _service(tmp_path)
+    service._freeze_incident_reporter = BrokenReporter()
+
+    service._ui_bridge_truth_findings()
+
+    assert service._source_coverage["freeze_incident_reporter"] == "READ_PARTIAL"
+    assert service._source_errors["freeze_incident_reporter"] == "incident_report_parse_or_shape_error"
+
+
+def test_oses_ui_bridge_runtime_tracer_failure_is_preserved(tmp_path, monkeypatch) -> None:
+    tracer_module = import_module("iabv15.services.evolution.runtime_audit_tracer")
+
+    class BrokenTracer:
+        def events(self, *, limit: int):
+            raise PermissionError("synthetic UI bridge tracer failure")
+
+    monkeypatch.setattr(tracer_module, "get_runtime_tracer", lambda: BrokenTracer())
+    service = _service(tmp_path)
+
+    service._ui_bridge_truth_findings()
+
+    assert service._source_coverage["runtime_audit_tracer"] == "READ_FAILED"
+    assert service._source_errors["runtime_audit_tracer"] == "PermissionError"
+
+
+def test_oses_test_evidence_without_commit_provenance_is_partial(tmp_path) -> None:
+    path = tmp_path / "data" / "evolution" / "test_evidence" / "latest.json"
+    path.parent.mkdir(parents=True)
+    path.write_text(
+        json.dumps({
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "passed": 10,
+            "failed": 0,
+            "errors": 0,
+        }),
+        encoding="utf-8",
+    )
+    service = _service(tmp_path)
+
+    service._metacognitive_starvation_findings()
+
+    assert service._source_coverage["test_evidence_file"] == "READ_PARTIAL"
+    assert service._source_errors["test_evidence_file"] == "fresh_commit_bound_evidence_not_verified"
+
+
+def test_oses_test_evidence_permission_failure_is_not_absence(tmp_path, monkeypatch) -> None:
+    path = tmp_path / "data" / "evolution" / "test_evidence" / "latest.json"
+    path.parent.mkdir(parents=True)
+    path.write_text("{}", encoding="utf-8")
+    original_read_bytes = Path.read_bytes
+
+    def deny_evidence_read(target, *args, **kwargs):
+        if target == path:
+            raise PermissionError("synthetic TestEvidence read denial")
+        return original_read_bytes(target, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_bytes", deny_evidence_read)
+    service = _service(tmp_path)
+
+    service._metacognitive_starvation_findings()
+
+    assert service._source_coverage["test_evidence_file"] == "READ_FAILED"
+    assert service._source_errors["test_evidence_file"] == "PermissionError"
+
+
+def test_oses_test_evidence_missing_file_is_confirmed_not_found(tmp_path) -> None:
+    service = _service(tmp_path)
+
+    service._metacognitive_starvation_findings()
+
+    assert service._source_coverage["test_evidence_file"] == "CONFIRMED_NOT_FOUND"
+
+
+def test_oses_adaptive_threshold_failure_survives_later_success(tmp_path, monkeypatch) -> None:
+    service = _service(tmp_path, experiment_lab_repository=object())
+    attempts = 0
+
+    def fail_once_then_succeed():
+        nonlocal attempts
+        attempts += 1
+        if attempts == 1:
+            service._record_source_status("experiment_lab_threshold", "READ_FAILED", "OperationalError")
+            return None
+        service._record_source_status("experiment_lab_threshold", "READ_OK")
+        return 4
+
+    monkeypatch.setattr(service, "_compute_current_adaptive_nc", fail_once_then_succeed)
+
+    assert service._adaptive_threshold_shift_findings() == []
+    assert attempts == 1
+    assert service._source_coverage["experiment_lab_threshold"] == "READ_FAILED"
+
+    assert service._compute_current_adaptive_nc() == 4
+    assert service._source_coverage["experiment_lab_threshold"] == "READ_FAILED"
+    assert service._source_errors["experiment_lab_threshold"] == "OperationalError"
+
+    report = service._source_coverage_report()
+    assert report["complete"] is False
+    assert "experiment_lab_threshold" in report["incomplete_source_ids"]
