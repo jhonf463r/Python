@@ -863,28 +863,65 @@ def test_runtime_audit_work_item_does_not_promote_missing_ack() -> None:
 
 
 
-def test_test_evidence_zero_collected_is_unverified_for_work_queue() -> None:
+def test_test_evidence_zero_collected_is_unverified_for_work_queue(monkeypatch) -> None:
     import json
+    from iabv_v15.infra.mcp import audit_tools
 
     root = _workspace()
     try:
         service, _ = _build_service(root)
         service.workspace_root = str(root)
+        evidence = {
+            "evidence_id": "zero-collected-run",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "passed": 0,
+            "failed": 0,
+            "errors": 0,
+            "returncode": 0,
+            "timed_out": False,
+            "suite": "tests/",
+            "payload_sha256": "c" * 64,
+        }
+        monkeypatch.setattr(
+            audit_tools, "load_latest_test_evidence", lambda _root: evidence
+        )
         evidence_path = root / "data" / "evolution" / "test_evidence" / "latest.json"
         evidence_path.parent.mkdir(parents=True, exist_ok=True)
-        evidence_path.write_text(
-            json.dumps({
-                "evidence_id": "zero-collected-run",
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-                "passed": 0,
-                "failed": 0,
-                "errors": 0,
-                "returncode": 0,
-                "timed_out": False,
-                "suite": "tests/",
-            }),
-            encoding="utf-8",
+        evidence_path.write_text(json.dumps(evidence), encoding="utf-8")
+
+        items = service._project_test_evidence_items(set())
+
+        assert items == []
+        assert service.last_work_queue_source_coverage["tests_state"] == "READ_UNVERIFIED"
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_control_master_work_queue_rejects_unverified_test_evidence(monkeypatch) -> None:
+    import json
+    from iabv_v15.infra.mcp import audit_tools
+
+    root = _workspace()
+    try:
+        service, _ = _build_service(root)
+        service.workspace_root = str(root)
+        evidence = {
+            "evidence_id": "unverified-run",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "passed": 6,
+            "failed": 0,
+            "errors": 0,
+            "returncode": 0,
+            "timed_out": False,
+            "suite": "tests/",
+            "payload_sha256": "d" * 64,
+        }
+        monkeypatch.setattr(
+            audit_tools, "load_latest_test_evidence", lambda _root: None
         )
+        evidence_path = root / "data" / "evolution" / "test_evidence" / "latest.json"
+        evidence_path.parent.mkdir(parents=True, exist_ok=True)
+        evidence_path.write_text(json.dumps(evidence), encoding="utf-8")
 
         items = service._project_test_evidence_items(set())
 
