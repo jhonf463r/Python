@@ -1546,7 +1546,7 @@ def build_inventory_snapshot(
         limit = w.get('limit', 0)
 
         resets_at = None
-        if w.get('resets_at'):
+        if quota_verified and w.get('resets_at'):
             try:
                 resets_at = datetime.fromisoformat(str(w['resets_at']))
             except (ValueError, TypeError):
