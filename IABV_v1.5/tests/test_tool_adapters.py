@@ -628,7 +628,7 @@ def test_external_assistant_adapter_redacts_private_capture_diagnostics() -> Non
                 'browser_profile_dir': '',
                 'error_message': f"Unable to access '{raw_path}': {raw_email} Bearer {raw_bearer}",
                 'metadata': {
-                    'visual_signal_error': f"perception failed at {raw_path} for {raw_email}",
+                    'visual_signal_error': f"perception failed at '{raw_path}' for {raw_email}",
                     'cdp_url': raw_cdp,
                     'profile_label': raw_path,
                 },
