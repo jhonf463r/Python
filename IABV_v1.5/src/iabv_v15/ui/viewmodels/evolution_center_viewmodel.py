@@ -295,13 +295,31 @@ class EvolutionCenterViewModel(QObject):
             logger.warning('evolution_center: portable_context failed: %s', exc)
             portable_context = {}
         try:
-            self_examination = (
-                self.self_examination_service.current_review(refresh=False).model_dump(mode='json')
-                if self.self_examination_service is not None and hasattr(self.self_examination_service, 'current_review')
-                else {}
-            )
+            self_examination = {}
+            if self.self_examination_service is not None:
+                cached_reader = getattr(
+                    self.self_examination_service, 'current_review_cached', None
+                )
+                if not callable(cached_reader):
+                    raise RuntimeError('oses_cached_review_reader_unavailable')
+                review = cached_reader()
+                if review is None:
+                    raise RuntimeError('oses_cached_review_unavailable')
+                metadata = getattr(review, 'metadata', {}) or {}
+                coverage = getattr(review, 'source_coverage', None) or (
+                    metadata.get('source_coverage') if isinstance(metadata, dict) else None
+                )
+                if not isinstance(coverage, dict) or not coverage:
+                    raise RuntimeError('oses_source_coverage_unverified')
+                incomplete = {key: value for key, value in coverage.items() if value != 'READ_OK'}
+                errors = getattr(review, 'source_errors', None)
+                if not isinstance(errors, dict):
+                    errors = metadata.get('source_errors', {}) if isinstance(metadata, dict) else {}
+                if incomplete or errors:
+                    raise RuntimeError('oses_source_coverage_incomplete')
+                self_examination = review.model_dump(mode='json')
         except Exception as exc:
-            logger.warning('evolution_center: self_examination failed: %s', exc)
+            logger.warning('evolution_center: self_examination unavailable or unverified: %s', exc)
             self_examination = {}
         control_master_digest: dict[str, Any] = {}
         if self.control_master_service is not None and self.control_master_digest_builder is not None:

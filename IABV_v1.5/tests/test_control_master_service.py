@@ -498,3 +498,74 @@ def test_auto_close_is_safe_when_repository_has_no_list_children() -> None:
         assert updated.status == ObjectiveStatus.COMPLETED
     finally:
         shutil.rmtree(root, ignore_errors=True)
+
+def test_control_master_oses_projections_use_only_the_public_cached_reader():
+    root = _workspace()
+    try:
+        service, _ = _build_service(root)
+        snapshot = type(
+            "Snapshot",
+            (),
+            {
+                "findings": [],
+                "unresolved_risks": ["review-source-needs-follow-up"],
+                "source_coverage": {"run_repository": "READ_OK"},
+                "source_errors": {},
+                "metadata": {},
+            },
+        )()
+
+        class CachedOnlyOSES:
+            def __init__(self):
+                self.calls = 0
+
+            def current_review_cached(self):
+                self.calls += 1
+                return snapshot
+
+            def current_review(self):
+                raise AssertionError("projection must never rebuild OSES")
+
+            def current_snapshot(self):
+                raise AssertionError("projection must never use generic snapshots")
+
+        oses = CachedOnlyOSES()
+        service.self_examination_service = oses
+
+        assert service._project_risks() == []
+        assert service._project_unresolved() == ["review-source-needs-follow-up"]
+        assert service._project_oses_finding_items(set()) == []
+        assert oses.calls == 3
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_control_master_oses_read_failure_is_not_collapsed_to_empty():
+    root = _workspace()
+    try:
+        service, _ = _build_service(root)
+
+        class IncompleteCachedOSES:
+            def current_review_cached(self):
+                raise RuntimeError("oses_source_coverage_incomplete")
+
+            def current_review(self):
+                raise AssertionError("projection must not fall back to active OSES")
+
+            def current_snapshot(self):
+                raise AssertionError("projection must not fall back to generic snapshots")
+
+        service.self_examination_service = IncompleteCachedOSES()
+        import pytest
+
+        with pytest.raises(RuntimeError, match="oses_source_coverage_incomplete"):
+            service._project_risks()
+        with pytest.raises(RuntimeError, match="oses_source_coverage_incomplete"):
+            service._project_unresolved()
+        with pytest.raises(RuntimeError, match="oses_source_coverage_incomplete"):
+            service._project_oses_finding_items(set())
+        with pytest.raises(RuntimeError, match="oses_source_coverage_incomplete"):
+            service.current_work_queue(limit=20)
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+

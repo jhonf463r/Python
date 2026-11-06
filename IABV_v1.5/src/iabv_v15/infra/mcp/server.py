@@ -1364,7 +1364,7 @@ class IABVMCPServer:
                         None,
                     )
                     if oses is not None:
-                        review = oses.current_review(refresh=False)
+                        review = oses.current_review_cached()
                         if review is not None:
                             session_health = SessionHealthSnapshot(
                                 health_label=review.status or "unknown",
@@ -2149,7 +2149,7 @@ class IABVMCPServer:
             try:
                 oses = getattr(self.container, 'operational_self_examination_service', None)
                 if oses:
-                    review = oses.current_review(refresh=False, max_age_seconds=600)
+                    review = oses.current_review_cached(max_age_seconds=600)
                     report['subsystems']['oses'] = {
                         'status': 'ok',
                         'review_status': review.status,
@@ -2313,7 +2313,7 @@ class IABVMCPServer:
                     elif sub == 'oses':
                         oses = getattr(self.container, 'operational_self_examination_service', None)
                         if oses:
-                            review = oses.current_review(refresh=False, max_age_seconds=600)
+                            review = oses.current_review_cached(max_age_seconds=600)
                             report['subsystems']['oses'] = {
                                 'status': 'ok',
                                 'findings_count': len(review.findings),
@@ -2695,16 +2695,10 @@ class IABVMCPServer:
 
             Muestra todas las tareas pendientes priorizadas por severidad.
             """
-            from iabv_v15.services.evolution_backlog import get_pending_tasks, load_backlog
+            from iabv_v15.services.evolution_backlog import load_backlog_with_diagnostics
             ws = self._workspace_root()
-            pending = get_pending_tasks(workspace=ws)
-            all_tasks = load_backlog(workspace=ws)
-            return _to_jsonable({
-                'pending': pending,
-                'total_pending': len(pending),
-                'total_all': len(all_tasks),
-                'completed': len([t for t in all_tasks if t.get('status') == 'completed']),
-            })
+            report = load_backlog_with_diagnostics(workspace=ws)
+            return _to_jsonable(report.to_mcp_payload())
 
         @mcp.tool()
         def evolution_backlog_add(

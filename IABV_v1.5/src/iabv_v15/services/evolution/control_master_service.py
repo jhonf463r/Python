@@ -491,23 +491,50 @@ class ControlMasterService:
             ))
         return items
 
+    def _read_cached_oses_review(self) -> Any:
+        """Return only a fresh, complete OSES cache; never rebuild or fall back."""
+        service = self.self_examination_service
+        if service is None:
+            raise RuntimeError("oses_service_not_configured")
+
+        cached_reader = getattr(service, "current_review_cached", None)
+        if not callable(cached_reader):
+            raise RuntimeError("oses_cached_review_reader_unavailable")
+
+        snapshot = cached_reader()
+        if snapshot is None:
+            raise RuntimeError("oses_cached_review_unavailable")
+
+        metadata = getattr(snapshot, "metadata", {}) or {}
+        coverage = getattr(snapshot, "source_coverage", None)
+        if not isinstance(coverage, dict) or not coverage:
+            coverage = metadata.get("source_coverage") if isinstance(metadata, dict) else None
+        if not isinstance(coverage, dict) or not coverage:
+            raise RuntimeError("oses_source_coverage_unverified")
+
+        errors = getattr(snapshot, "source_errors", None)
+        if not isinstance(errors, dict):
+            errors = metadata.get("source_errors", {}) if isinstance(metadata, dict) else {}
+        incomplete = {
+            str(source): str(status)
+            for source, status in coverage.items()
+            if status != "READ_OK"
+        }
+        if incomplete or errors:
+            raise RuntimeError(
+                "oses_source_coverage_incomplete:"
+                + str({"statuses": incomplete, "errors": errors})
+            )
+        return snapshot
+
     def _project_oses_finding_items(
         self, seen_ids: set[str],
     ) -> list[dict[str, Any]]:
         if self.self_examination_service is None:
             return []
-        snapshot = None
-        for method_name in ('current_review', 'current_snapshot', 'latest_snapshot', 'current', 'latest'):
-            method = getattr(self.self_examination_service, method_name, None)
-            if method is None:
-                continue
-            try:
-                snapshot = method()
-                break
-            except Exception:
-                continue
-        if snapshot is None:
-            return []
+        # OSES current_review() can rebuild and persist. The canonical queue
+        # must consume only the public cached reader and must surface failures.
+        snapshot = self._read_cached_oses_review()
         findings = getattr(snapshot, 'findings', None) or []
         items: list[dict[str, Any]] = []
         for finding in findings:
@@ -702,18 +729,7 @@ class ControlMasterService:
     def _project_risks(self) -> list[dict[str, Any]]:
         if self.self_examination_service is None:
             return []
-        snapshot = None
-        for method_name in ("current_snapshot", "latest_snapshot", "current", "latest"):
-            method = getattr(self.self_examination_service, method_name, None)
-            if method is None:
-                continue
-            try:
-                snapshot = method()
-                break
-            except Exception:
-                continue
-        if snapshot is None:
-            return []
+        snapshot = self._read_cached_oses_review()
         findings = getattr(snapshot, "findings", None) or []
         risks: list[dict[str, Any]] = []
         for finding in findings[:10]:
@@ -788,17 +804,9 @@ class ControlMasterService:
     def _project_unresolved(self) -> list[str]:
         if self.self_examination_service is None:
             return []
-        for method_name in ("current_snapshot", "latest_snapshot", "current", "latest"):
-            method = getattr(self.self_examination_service, method_name, None)
-            if method is None:
-                continue
-            try:
-                snapshot = method()
-            except Exception:
-                continue
-            unresolved = getattr(snapshot, "unresolved_risks", None) or []
-            return [str(item) for item in unresolved]
-        return []
+        snapshot = self._read_cached_oses_review()
+        unresolved = getattr(snapshot, "unresolved_risks", None) or []
+        return [str(item) for item in unresolved]
 
 
 # ----------------------------------------------------------------------

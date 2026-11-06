@@ -1,25 +1,45 @@
 from __future__ import annotations
 
-import json
-import logging
+import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
+from threading import local
 
 from iabv_v15.domain.models import RuntimeAdjustment, RuntimeTuningProfile
 from iabv_v15.infra.persistence.database import AppDatabase
+from iabv_v15.infra.persistence.read_results import (
+    ArtifactReadResult,
+    ArtifactReadStatus,
+    RepositoryReadError,
+    RepositoryReadReport,
+    read_model_from_paths,
+)
 from iabv_v15.infra.persistence.storage import ArtifactStorage
-
-_log = logging.getLogger(__name__)
 
 
 class RuntimeTuningRepository:
+    """SQLite-indexed runtime-tuning profiles with non-destructive reads."""
+
     def __init__(self, db: AppDatabase, storage: ArtifactStorage):
         self.db = db
         self.storage = storage
+        self._read_state = local()
+
+    @property
+    def last_read_report(self) -> RepositoryReadReport[RuntimeTuningProfile] | None:
+        return getattr(self._read_state, "report", None)
+
+    def _remember_report(
+        self, report: RepositoryReadReport[RuntimeTuningProfile]
+    ) -> RepositoryReadReport[RuntimeTuningProfile]:
+        self._read_state.report = report
+        return report
 
     def save(self, profile: RuntimeTuningProfile) -> RuntimeTuningProfile:
         relative_path = f"runtime_tuning/{profile.scope_key}.json"
-        saved_path = self.storage.save_json_atomic(relative_path, profile.model_dump(mode='json'))
+        saved_path = self.storage.save_json_atomic(
+            relative_path, profile.model_dump(mode="json")
+        )
         self.db.execute(
             """
             INSERT OR REPLACE INTO runtime_tuning_profiles
@@ -35,73 +55,141 @@ class RuntimeTuningRepository:
         )
         return profile
 
-    def get(self, scope_key: str = 'global') -> RuntimeTuningProfile | None:
-        row = self.db.fetchone(
-            """
-            SELECT scope_key, path
-            FROM runtime_tuning_profiles
-            WHERE scope_key = ?
-            ORDER BY updated_at_utc DESC
-            LIMIT 1
-            """,
-            (scope_key,),
+    def _read_rows(
+        self, rows: list[dict[str, str]]
+    ) -> RepositoryReadReport[RuntimeTuningProfile]:
+        results: list[ArtifactReadResult[RuntimeTuningProfile]] = []
+        for row in rows:
+            scope_key = str(row["scope_key"])
+            try:
+                candidate = Path(row["path"])
+            except (TypeError, ValueError, OSError) as exc:
+                results.append(
+                    ArtifactReadResult(
+                        artifact_id=scope_key,
+                        path="",
+                        status=ArtifactReadStatus.READ_FAILED,
+                        error_type=type(exc).__name__,
+                        error_message="Repository read failed.",
+                    )
+                )
+                continue
+            paths: list[Path] = []
+            if candidate.is_absolute():
+                paths.append(candidate)
+            paths.append(self.storage.root / "runtime_tuning" / f"{scope_key}.json")
+            results.append(read_model_from_paths(paths, scope_key, RuntimeTuningProfile))
+        return self._remember_report(
+            RepositoryReadReport.from_results(
+                "SQLITE_INDEX_ROWS:runtime_tuning_profiles", results
+            )
         )
-        if row is None:
-            return None
-        return self._load(row['scope_key'], row['path'])
+
+    def list_recent_with_diagnostics(
+        self, limit: int = 10
+    ) -> RepositoryReadReport[RuntimeTuningProfile]:
+        try:
+            rows = self.db.fetchall(
+                """
+                SELECT scope_key, path
+                FROM runtime_tuning_profiles
+                ORDER BY updated_at_utc DESC
+                LIMIT ?
+                """,
+                (limit,),
+            )
+        except sqlite3.Error as exc:
+            return self._remember_report(
+                RepositoryReadReport.from_collection_error(
+                    "SQLITE_INDEX_ROWS:runtime_tuning_profiles", exc
+                )
+            )
+        return self._read_rows(rows)
 
     def list_recent(self, limit: int = 10) -> list[RuntimeTuningProfile]:
-        rows = self.db.fetchall(
-            """
-            SELECT scope_key, path
-            FROM runtime_tuning_profiles
-            ORDER BY updated_at_utc DESC
-            LIMIT ?
-            """,
-            (limit,),
-        )
-        return self._collect(rows)
+        return self.list_recent_with_diagnostics(limit).require_complete()
 
-    def append_adjustment(self, adjustment: RuntimeAdjustment, scope_key: str = 'global') -> RuntimeTuningProfile:
-        profile = self.get(scope_key) or RuntimeTuningProfile(scope_key=scope_key)
+    def get_with_diagnostics(
+        self, scope_key: str = "global"
+    ) -> ArtifactReadResult[RuntimeTuningProfile]:
+        scope = "SQLITE_INDEX_LOOKUP:runtime_tuning_profiles"
+        try:
+            row = self.db.fetchone(
+                """
+                SELECT scope_key, path
+                FROM runtime_tuning_profiles
+                WHERE scope_key = ?
+                ORDER BY updated_at_utc DESC
+                LIMIT 1
+                """,
+                (scope_key,),
+            )
+        except sqlite3.Error as exc:
+            self._remember_report(
+                RepositoryReadReport.from_collection_error(
+                    scope, exc, requested_artifact_id=scope_key
+                )
+            )
+            return ArtifactReadResult(
+                artifact_id=scope_key,
+                path="",
+                status=ArtifactReadStatus.READ_FAILED,
+                error_type=type(exc).__name__,
+                error_message="Repository read failed.",
+            )
+
+        if row is None:
+            result = ArtifactReadResult(
+                artifact_id=scope_key,
+                path="",
+                status=ArtifactReadStatus.CONFIRMED_NOT_FOUND,
+                error_type="IndexRowNotFound",
+                error_message="No runtime-tuning profile row exists for this scope.",
+            )
+        else:
+            resolved_key = str(row["scope_key"])
+            try:
+                candidate = Path(row["path"])
+            except (TypeError, ValueError, OSError) as exc:
+                result = ArtifactReadResult(
+                    artifact_id=resolved_key,
+                    path="",
+                    status=ArtifactReadStatus.READ_FAILED,
+                    error_type=type(exc).__name__,
+                    error_message="Repository read failed.",
+                )
+            else:
+                paths: list[Path] = []
+                if candidate.is_absolute():
+                    paths.append(candidate)
+                paths.append(
+                    self.storage.root / "runtime_tuning" / f"{resolved_key}.json"
+                )
+                result = read_model_from_paths(paths, resolved_key, RuntimeTuningProfile)
+
+        self._remember_report(RepositoryReadReport.from_results(scope, [result]))
+        return result
+
+    def get(self, scope_key: str = "global") -> RuntimeTuningProfile | None:
+        result = self.get_with_diagnostics(scope_key)
+        if result.status == ArtifactReadStatus.FOUND:
+            return result.value
+        if (
+            result.status == ArtifactReadStatus.CONFIRMED_NOT_FOUND
+            and result.error_type == "IndexRowNotFound"
+        ):
+            return None
+        report = self.last_read_report
+        if report is None:
+            raise RuntimeError("runtime_tuning_read_report_not_recorded")
+        raise RepositoryReadError(report)
+
+    def append_adjustment(
+        self, adjustment: RuntimeAdjustment, scope_key: str = "global"
+    ) -> RuntimeTuningProfile:
+        profile = self.get(scope_key)
+        if profile is None:
+            profile = RuntimeTuningProfile(scope_key=scope_key)
         profile.adjustments.append(adjustment)
         profile.updated_at_utc = datetime.now(timezone.utc)
         return self.save(profile)
-
-    def _collect(self, rows: list[dict[str, str]]) -> list[RuntimeTuningProfile]:
-        results: list[RuntimeTuningProfile] = []
-        orphan_ids: list[str] = []
-        for row in rows:
-            item = self._load(row['scope_key'], row['path'])
-            if item is not None:
-                results.append(item)
-            else:
-                orphan_ids.append(row['scope_key'])
-        if orphan_ids:
-            self._prune_orphans(orphan_ids)
-        return results
-
-    def _prune_orphans(self, ids: list[str]) -> None:
-        if not ids:
-            return
-        placeholders = ','.join('?' for _ in ids)
-        try:
-            self.db.execute(
-                f"DELETE FROM runtime_tuning_profiles WHERE scope_key IN ({placeholders})",
-                tuple(ids),
-            )
-            _log.info("tuning_cleanup: pruned %d orphaned DB entries", len(ids))
-        except Exception:
-            pass
-
-    def _load(self, scope_key: str, path: str) -> RuntimeTuningProfile | None:
-        candidate = Path(path)
-        try:
-            if candidate.is_absolute() and candidate.exists():
-                payload = json.loads(candidate.read_text(encoding='utf-8'))
-            else:
-                payload = self.storage.load_json(f'runtime_tuning/{scope_key}.json')
-            return RuntimeTuningProfile.model_validate(payload)
-        except (FileNotFoundError, json.JSONDecodeError, OSError, Exception) as exc:
-            _log.debug("tuning %s: file missing or corrupt — %s", scope_key, exc)
-            return None

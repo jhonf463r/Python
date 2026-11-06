@@ -75,8 +75,11 @@ class FakeSelfExaminationService:
     def __init__(self, review: SelfExaminationSnapshot | None = None):
         self._review = review
 
-    def current_review(self, *, refresh: bool = False) -> SelfExaminationSnapshot | None:
+    def current_review_cached(self) -> SelfExaminationSnapshot | None:
         return self._review
+
+    def current_review(self, *, refresh: bool = False) -> SelfExaminationSnapshot | None:
+        raise AssertionError('Centro Vivo must not use the active OSES reader')
 
 
 class FakeWorldModelService:
@@ -176,6 +179,8 @@ def test_centro_vivo_self_examination_findings():
     review = SelfExaminationSnapshot(
         review_id='r1',
         findings=findings,
+        source_coverage={'run_repository': 'READ_OK'},
+        source_errors={},
     )
     service = FakeSelfExaminationService(review)
     vm = CentroVivoViewModel(self_examination_service=service)
@@ -315,3 +320,143 @@ def test_centro_vivo_navigation_route_exists():
 
     nav.navigate('centro_vivo')
     assert nav.get_current_route() == 'centro_vivo'
+
+
+def test_centro_vivo_exposes_read_failures_instead_of_clean_empty_panels(tmp_path):
+    class FailingSessionRepository:
+        def list_recent(self, limit=20):
+            raise RuntimeError('session repository unavailable')
+
+    class FailingWorldModel:
+        def current_model(self):
+            raise RuntimeError('world model unavailable')
+
+    vm = CentroVivoViewModel(
+        adaptive_session_repository=FailingSessionRepository(),
+        world_model_service=FailingWorldModel(),
+        data_root=str(tmp_path),
+    )
+
+    assert vm.get_orchestrator_queue() == []
+    assert vm.get_source_statuses()['adaptive_session_repository'] == 'READ_FAILED'
+    assert vm.get_source_statuses()['world_model_service'] == 'READ_FAILED'
+    assert 'Fuentes no verificadas:' in vm.get_status_text()
+    assert 'adaptive_session_repository=READ_FAILED' in vm.get_status_text()
+    assert 'world_model_service=READ_FAILED' in vm.get_status_text()
+
+
+def test_centro_vivo_distinguishes_missing_learning_gap_source_from_verified_empty(tmp_path):
+    vm = CentroVivoViewModel(data_root=str(tmp_path))
+
+    assert vm.get_learning_gaps() == []
+    assert vm.get_source_statuses()['learning_gaps'] == 'CONFIRMED_NOT_FOUND'
+    assert 'learning_gaps=CONFIRMED_NOT_FOUND' in vm.get_status_text()
+
+
+def test_centro_vivo_marks_unconfigured_services_without_claiming_empty_is_verified():
+    vm = CentroVivoViewModel()
+
+    statuses = vm.get_source_statuses()
+    assert statuses['adaptive_session_repository'] == 'NOT_CONFIGURED'
+    assert statuses['tool_record_repository'] == 'NOT_CONFIGURED'
+    assert statuses['self_examination_service'] == 'NOT_CONFIGURED'
+    assert 'Fuentes no verificadas:' in vm.get_status_text()
+
+
+def test_centro_vivo_preserves_partial_tool_record_diagnostics(tmp_path):
+    report = type('Report', (), {
+        'status': type('Status', (), {'value': 'READ_PARTIAL'})(),
+        'records_seen': 2,
+        'records_loaded': 1,
+        'failed_ids': ['corrupt-card'],
+        'missing_ids': [],
+        'collection_error_type': '',
+        'to_dict': lambda self: {
+            'status': 'READ_PARTIAL',
+            'records_seen': 2,
+            'records_loaded': 1,
+            'failed_ids': ['corrupt-card'],
+        },
+    })()
+
+    class ReportedReadError(RuntimeError):
+        def __init__(self):
+            super().__init__('partial ToolRecord read')
+            self.report = report
+
+    class PartialToolRecordRepository:
+        last_read_report = report
+
+        def list_cards(self):
+            raise ReportedReadError()
+
+    vm = CentroVivoViewModel(
+        tool_record_repository=PartialToolRecordRepository(),
+        data_root=str(tmp_path),
+    )
+
+    assert vm.get_ia_distribution() == []
+    assert vm.get_source_statuses()['tool_record_repository'] == 'READ_PARTIAL'
+    assert vm.get_source_reports()['tool_record_repository']['records_loaded'] == 1
+    assert 'tool_record_repository=READ_PARTIAL' in vm.get_status_text()
+
+
+def test_centro_vivo_account_inventory_propagates_partial_subsource_coverage(tmp_path, monkeypatch):
+    from iabv_v15.domain.models import AccountInventorySnapshot
+    from iabv_v15.services import account_resource_scanner
+
+    snapshot = AccountInventorySnapshot(
+        source_coverage={
+            'browser_accounts': 'READ_OK',
+            'browser_sessions': 'READ_PARTIAL',
+            'quota_tracker': 'READ_FAILED',
+        },
+        source_errors={
+            'browser_sessions': 'PermissionError',
+            'quota_tracker': 'PermissionError',
+        },
+    )
+    monkeypatch.setattr(
+        account_resource_scanner,
+        'build_inventory_snapshot',
+        lambda: snapshot,
+    )
+    vm = CentroVivoViewModel(
+        data_root=str(tmp_path),
+        defer_initial_refresh=True,
+    )
+
+    vm.refresh()
+
+    assert vm.get_account_inventory() == []
+    assert vm.get_source_statuses()['account_inventory'] == 'READ_FAILED'
+    reports = vm.get_source_reports()['account_inventory']
+    assert reports['source_coverage']['browser_sessions'] == 'READ_PARTIAL'
+    assert reports['source_coverage']['quota_tracker'] == 'READ_FAILED'
+
+def test_centro_vivo_does_not_fall_back_to_active_oses_reader_when_cache_missing():
+    class LegacyOnlyOSES:
+        def current_review(self, *, refresh: bool = False):
+            raise AssertionError('active OSES reader must not be called')
+
+    vm = CentroVivoViewModel(self_examination_service=LegacyOnlyOSES())
+
+    assert vm.get_self_examination_findings() == []
+    assert vm.get_source_statuses()['self_examination_service'] == 'READ_UNVERIFIED'
+\n
+
+
+def test_centro_vivo_qml_requires_read_ok_before_showing_empty_state():
+    """Unknown and READ_UNVERIFIED statuses must not fall through to empty labels."""
+    qml_path = (
+        REPO_ROOT
+        / 'src'
+        / 'iabv_v15'
+        / 'ui'
+        / 'qml'
+        / 'pages'
+        / 'CentroVivoPage.qml'
+    )
+    qml_source = qml_path.read_text(encoding='utf-8')
+    assert 'if (status !== "READ_OK")' in qml_source
+    assert 'no equivale a una lista vacía.' in qml_source

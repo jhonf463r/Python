@@ -208,3 +208,112 @@ class TestInMemoryLimit:
                 os.environ['IABV_RUNTIME_TRACE'] = old
             else:
                 os.environ.pop('IABV_RUNTIME_TRACE', None)
+
+
+
+def test_trace_returns_file_fsync_ack(tmp_path: Path) -> None:
+    import hashlib
+
+    tracer = RuntimeAuditTracer(log_dir=tmp_path)
+    event = tracer.trace('durable_event', value='verified')
+    acknowledgement = event['durability_ack']
+
+    log_file = tmp_path / 'runtime_audit.jsonl'
+    raw_line = log_file.read_bytes()
+    disk_event = json.loads(raw_line.decode('utf-8').strip())
+
+    assert acknowledgement['status'] == 'FILE_FSYNCED'
+    assert acknowledgement['path'] == 'runtime_audit.jsonl'
+    assert acknowledgement['seq'] == event['seq'] == 1
+    assert acknowledgement['byte_start'] == 0
+    assert acknowledgement['byte_end'] == len(raw_line)
+    assert acknowledgement['line_sha256'] == hashlib.sha256(raw_line).hexdigest()
+    assert raw_line.endswith(b'\n')
+    assert disk_event['kind'] == 'durable_event'
+    assert 'durability_ack' not in disk_event
+    assert tracer.events()[-1]['durability_ack'] == acknowledgement
+
+
+def test_trace_fsync_failure_returns_write_failed_ack(tmp_path: Path, monkeypatch) -> None:
+    import iabv_v15.services.evolution.runtime_audit_tracer as tracer_module
+
+    def fail_fsync(_fd: int) -> None:
+        raise OSError('synthetic fsync failure')
+
+    monkeypatch.setattr(tracer_module.os, 'fsync', fail_fsync)
+    tracer = RuntimeAuditTracer(log_dir=tmp_path)
+
+    event = tracer.trace('not_durable_event')
+    acknowledgement = event['durability_ack']
+
+    assert acknowledgement['status'] == 'WRITE_FAILED'
+    assert acknowledgement['error_type'] == 'OSError'
+    assert len(tracer.events()) == 1
+
+
+def test_trace_without_log_directory_is_memory_only() -> None:
+    tracer = RuntimeAuditTracer()
+
+    event = tracer.trace('memory_only_event')
+
+    assert event['durability_ack']['status'] == 'MEMORY_ONLY'
+    assert len(tracer.events()) == 1
+
+
+def test_disabled_trace_returns_disabled_ack(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setenv('IABV_RUNTIME_TRACE', '0')
+    tracer = RuntimeAuditTracer(log_dir=tmp_path)
+
+    event = tracer.trace('disabled_event')
+
+    assert event['durability_ack']['status'] == 'DISABLED'
+    assert len(tracer.events()) == 1
+    assert not (tmp_path / 'runtime_audit.jsonl').exists()
+
+
+def test_interaction_resolution_exposes_file_fsync_durability_ack(tmp_path, monkeypatch) -> None:
+    from iabv_v15.services.evolution import runtime_audit_tracer
+    from iabv_v15.services.evolution.freeze_incident_reporter import ChatInteractionLifecycle
+
+    tracer = RuntimeAuditTracer(log_dir=str(tmp_path))
+    tracer.configure(tmp_path)
+    monkeypatch.setattr(runtime_audit_tracer, 'get_runtime_tracer', lambda: tracer)
+    lifecycle = ChatInteractionLifecycle()
+    interaction_id = lifecycle.open_interaction('durability ack test')
+
+    record = lifecycle.resolve_interaction(interaction_id, outcome='resolved', provider='test')
+
+    assert record is not None
+    acknowledgement = record['runtime_audit_durability']
+    assert acknowledgement['status'] == 'FILE_FSYNCED'
+    assert acknowledgement['seq'] == 2
+    assert len(acknowledgement['line_sha256']) == 64
+    retained = lifecycle.interaction_info(interaction_id)
+    assert retained is not None
+    assert retained['runtime_audit_durability'] == acknowledgement
+
+
+def test_interaction_resolution_exposes_fsync_failure_ack(tmp_path, monkeypatch) -> None:
+    from iabv_v15.services.evolution import runtime_audit_tracer
+    from iabv_v15.services.evolution.freeze_incident_reporter import ChatInteractionLifecycle
+
+    def fail_fsync(_fd: int) -> None:
+        raise OSError('synthetic fsync failure')
+
+    monkeypatch.setattr(runtime_audit_tracer.os, 'fsync', fail_fsync)
+    tracer = RuntimeAuditTracer(log_dir=str(tmp_path))
+    tracer.configure(tmp_path)
+    monkeypatch.setattr(runtime_audit_tracer, 'get_runtime_tracer', lambda: tracer)
+    lifecycle = ChatInteractionLifecycle()
+    interaction_id = lifecycle.open_interaction('durability failure test')
+
+    record = lifecycle.resolve_interaction(interaction_id, outcome='failed', provider='test')
+
+    assert record is not None
+    assert record['runtime_audit_durability'] == {
+        'status': 'WRITE_FAILED',
+        'error_type': 'OSError',
+    }
+    retained = lifecycle.interaction_info(interaction_id)
+    assert retained is not None
+    assert retained['runtime_audit_durability']['status'] == 'WRITE_FAILED'

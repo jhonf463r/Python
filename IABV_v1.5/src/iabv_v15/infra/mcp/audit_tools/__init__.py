@@ -618,12 +618,14 @@ def run_pytest(
     }
 
     if persist_evidence:
-        _persist_test_evidence(
+        provenance = _collect_test_git_provenance(root)
+        payload["evidence_persistence"] = _persist_test_evidence(
             workspace_root=root,
             payload=payload,
             command=" ".join(cmd),
             linked_pending_task=linked_pending_task,
             changed_files=list(changed_files or []),
+            provenance=provenance,
         )
 
     return payload
@@ -634,6 +636,117 @@ def run_pytest(
 
 _TEST_EVIDENCE_SUBDIR = "data/evolution/test_evidence"
 _TEST_EVIDENCE_MAX_AGE_S = 86400.0  # 24 h
+_TEST_EVIDENCE_FUTURE_SKEW_S = 60.0
+
+
+def _collect_test_git_provenance(workspace_root: Path) -> dict[str, Any]:
+    """Capture the exact repository revision and cleanliness for a test run.
+
+    Generated TestEvidence and ControlMaster projections are excluded from
+    the worktree check because this helper runs immediately before persisting
+    those outputs. No remote URL, credentials, or environment secrets are read.
+    """
+    import hashlib as _hashlib
+    import re as _re
+
+    unknown = {
+        "commit_sha": "",
+        "branch": "",
+        "worktree_clean": None,
+        "provenance_status": "UNKNOWN",
+        "worktree_status_sha256": "",
+    }
+    try:
+        root = Path(workspace_root).resolve()
+        top = subprocess.run(
+            ["git", "rev-parse", "--show-toplevel"],
+            cwd=str(root),
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=False,
+        )
+        if top.returncode != 0 or not top.stdout.strip():
+            return unknown
+        repo_root = Path(top.stdout.strip()).resolve()
+
+        commit = subprocess.run(
+            ["git", "rev-parse", "--verify", "HEAD"],
+            cwd=str(repo_root),
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=False,
+        )
+        if commit.returncode != 0:
+            return unknown
+        commit_sha = commit.stdout.strip().lower()
+        if not _re.fullmatch(r"[0-9a-f]{40}|[0-9a-f]{64}", commit_sha):
+            return unknown
+
+        branch_result = subprocess.run(
+            ["git", "branch", "--show-current"],
+            cwd=str(repo_root),
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=False,
+        )
+        if branch_result.returncode != 0:
+            return unknown
+        branch_name = branch_result.stdout.strip() or "DETACHED"
+
+        status_result = subprocess.run(
+            ["git", "status", "--porcelain=v1", "--untracked-files=all"],
+            cwd=str(repo_root),
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=False,
+        )
+        if status_result.returncode != 0:
+            return unknown
+
+        relevant_status: list[str] = []
+        for line in status_result.stdout.splitlines():
+            if not line.strip():
+                continue
+            relative_path = line[3:].strip().replace("\\", "/").strip('"')
+            normalized = f"/{relative_path.lstrip('/')}"
+            if normalized.endswith("/data/evolution/test_evidence/latest.json"):
+                continue
+            if "/data/evolution/control_master/" in normalized:
+                continue
+            relevant_status.append(line)
+
+        status_text = "\n".join(relevant_status)
+        clean = not relevant_status
+        return {
+            "commit_sha": commit_sha,
+            "branch": branch_name,
+            "worktree_clean": clean,
+            "provenance_status": "COMMIT_BOUND_CLEAN" if clean else "COMMIT_BOUND_DIRTY",
+            "worktree_status_sha256": _hashlib.sha256(status_text.encode("utf-8")).hexdigest(),
+        }
+    except Exception:
+        return unknown
+
+
+def _test_evidence_payload_sha256(evidence: dict[str, Any]) -> str:
+    """Hash the canonical evidence fields, excluding their own digest field."""
+    import hashlib as _hashlib
+    import json as _json
+
+    payload = dict(evidence)
+    payload.pop("payload_sha256", None)
+    canonical = _json.dumps(
+        payload,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+        default=str,
+    ).encode("utf-8")
+    return _hashlib.sha256(canonical).hexdigest()
 
 
 def _persist_test_evidence(
@@ -643,15 +756,21 @@ def _persist_test_evidence(
     command: str,
     linked_pending_task: str,
     changed_files: list[str],
-) -> None:
-    """Best-effort persistence — never raises."""
+    provenance: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Persist a commit-bound TestEvidence atomically and return its receipt."""
+    import hashlib as _hashlib
+    import json as _json
+    from datetime import datetime as _dt, timezone as _tz
+    from uuid import uuid4
+
+    evidence_dir = workspace_root / _TEST_EVIDENCE_SUBDIR
+    temporary: Path | None = None
     try:
-        import json as _json
-        from datetime import datetime as _dt, timezone as _tz
-        evidence_dir = workspace_root / _TEST_EVIDENCE_SUBDIR
         evidence_dir.mkdir(parents=True, exist_ok=True)
+        git_provenance = dict(provenance or _collect_test_git_provenance(workspace_root))
         evidence = {
-            "evidence_id": str(time.time()),
+            "evidence_id": str(uuid4()),
             "command": command,
             "suite": str(payload.get("suite") or ""),
             "keyword": str(payload.get("keyword") or ""),
@@ -664,33 +783,62 @@ def _persist_test_evidence(
             "timestamp": _dt.now(_tz.utc).isoformat(),
             "linked_pending_task": linked_pending_task,
             "changed_files": changed_files[:20],
+            "commit_sha": str(git_provenance.get("commit_sha") or ""),
+            "branch": str(git_provenance.get("branch") or ""),
+            "worktree_clean": git_provenance.get("worktree_clean"),
+            "provenance_status": str(git_provenance.get("provenance_status") or "UNKNOWN"),
+            "worktree_status_sha256": str(git_provenance.get("worktree_status_sha256") or ""),
             "metadata": {},
         }
+        evidence["payload_sha256"] = _test_evidence_payload_sha256(evidence)
+        serialized = _json.dumps(
+            evidence,
+            indent=2,
+            sort_keys=True,
+            ensure_ascii=False,
+            default=str,
+        ).encode("utf-8")
+        artifact_sha256 = _hashlib.sha256(serialized).hexdigest()
         latest = evidence_dir / "latest.json"
-        latest.write_text(
-            _json.dumps(evidence, indent=2, default=str),
-            encoding="utf-8",
-        )
-        _sync_control_master_tests_state(
+        temporary = evidence_dir / f".latest.{uuid4().hex}.tmp"
+        with temporary.open("xb") as handle:
+            handle.write(serialized)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary, latest)
+        temporary = None
+
+        control_master_receipt = _sync_control_master_tests_state(
             workspace_root=workspace_root,
             evidence=evidence,
         )
-    except Exception:
-        pass
+        return {
+            "status": "PERSISTED",
+            "path": str(Path(_TEST_EVIDENCE_SUBDIR) / "latest.json").replace(os.sep, "/"),
+            "artifact_sha256": artifact_sha256,
+            "payload_sha256": evidence["payload_sha256"],
+            "commit_sha": evidence["commit_sha"],
+            "provenance_status": evidence["provenance_status"],
+            "control_master_sync": control_master_receipt,
+        }
+    except Exception as exc:
+        if temporary is not None:
+            try:
+                temporary.unlink(missing_ok=True)
+            except OSError:
+                pass
+        return {
+            "status": "WRITE_FAILED",
+            "error_type": type(exc).__name__,
+        }
 
 
 def _sync_control_master_tests_state(
     *,
     workspace_root: Path,
     evidence: dict[str, Any],
-) -> None:
-    """Mirror compact test evidence into ControlMaster.
-
-    This is intentionally best-effort and only runs after an explicit
-    ``persist_evidence=True`` test run.  It does not execute tests, infer
-    results, or create another analyzer; it keeps the existing ControlMaster
-    projection aligned with the canonical TestEvidence artifact.
-    """
+) -> dict[str, Any]:
+    """Best-effort ControlMaster projection; the TestEvidence file is canonical."""
     try:
         from iabv_v15.domain.models import ControlMasterState, utc_now
         from iabv_v15.infra.persistence.control_master_repository import (
@@ -702,7 +850,18 @@ def _sync_control_master_tests_state(
         failed = int(evidence.get("failed") or 0)
         errors = int(evidence.get("errors") or 0)
         total = passed + failed + errors
-        health = "green" if failed == 0 and errors == 0 else "red"
+        provenance_clean = (
+            evidence.get("provenance_status") == "COMMIT_BOUND_CLEAN"
+            and evidence.get("worktree_clean") is True
+            and bool(evidence.get("commit_sha"))
+        )
+        run_failed = (
+            failed > 0
+            or errors > 0
+            or int(evidence.get("returncode") or 0) != 0
+            or bool(evidence.get("timed_out"))
+        )
+        health = "red" if run_failed else ("green" if provenance_clean else "unknown")
         tests_state = {
             "health": health,
             "passed": passed,
@@ -716,6 +875,11 @@ def _sync_control_master_tests_state(
             "timed_out": bool(evidence.get("timed_out")),
             "linked_pending_task": str(evidence.get("linked_pending_task") or ""),
             "evidence_id": str(evidence.get("evidence_id") or ""),
+            "commit_sha": str(evidence.get("commit_sha") or ""),
+            "branch": str(evidence.get("branch") or ""),
+            "worktree_clean": evidence.get("worktree_clean"),
+            "provenance_status": str(evidence.get("provenance_status") or "UNKNOWN"),
+            "payload_sha256": str(evidence.get("payload_sha256") or ""),
         }
         repository = ControlMasterRepository(
             ArtifactStorage(workspace_root / "data" / "evolution")
@@ -734,8 +898,9 @@ def _sync_control_master_tests_state(
                 }
             )
         )
-    except Exception:
-        pass
+        return {"status": "SYNCED"}
+    except Exception as exc:
+        return {"status": "SYNC_FAILED", "error_type": type(exc).__name__}
 
 
 def load_latest_test_evidence(
@@ -743,23 +908,62 @@ def load_latest_test_evidence(
     *,
     max_age_s: float = _TEST_EVIDENCE_MAX_AGE_S,
 ) -> dict[str, Any] | None:
-    """Load latest TestEvidence if fresh enough. Returns None otherwise."""
+    """Load TestEvidence only when its digest, freshness and current Git state agree."""
     import json as _json
+    import re as _re
     from datetime import datetime as _dt, timezone as _tz
+
     try:
         root = Path(workspace_root).resolve()
         latest = root / _TEST_EVIDENCE_SUBDIR / "latest.json"
-        if not latest.exists():
+        raw = latest.read_bytes()
+        data = _json.loads(raw.decode("utf-8"))
+        if not isinstance(data, dict):
             return None
-        data = _json.loads(latest.read_text(encoding="utf-8"))
-        ts_str = data.get("timestamp", "")
-        if ts_str:
-            ts = _dt.fromisoformat(ts_str)
-            if ts.tzinfo is None:
-                ts = ts.replace(tzinfo=_tz.utc)
-            age = (_dt.now(_tz.utc) - ts).total_seconds()
-            if age > max_age_s:
+
+        timestamp = data.get("timestamp")
+        if not isinstance(timestamp, str) or not timestamp.strip():
+            return None
+        recorded_at = _dt.fromisoformat(timestamp)
+        if recorded_at.tzinfo is None:
+            recorded_at = recorded_at.replace(tzinfo=_tz.utc)
+        age = (_dt.now(_tz.utc) - recorded_at).total_seconds()
+        if age < -_TEST_EVIDENCE_FUTURE_SKEW_S or age > float(max_age_s):
+            return None
+
+        commit_sha = data.get("commit_sha")
+        branch_name = data.get("branch")
+        if not isinstance(commit_sha, str) or not _re.fullmatch(r"[0-9a-fA-F]{40}|[0-9a-fA-F]{64}", commit_sha):
+            return None
+        if not isinstance(branch_name, str) or not branch_name.strip():
+            return None
+        if data.get("worktree_clean") is not True:
+            return None
+        if data.get("provenance_status") != "COMMIT_BOUND_CLEAN":
+            return None
+
+        worktree_status_sha = data.get("worktree_status_sha256")
+        if not isinstance(worktree_status_sha, str) or not _re.fullmatch(r"[0-9a-f]{64}", worktree_status_sha):
+            return None
+        expected_payload_sha = data.get("payload_sha256")
+        if not isinstance(expected_payload_sha, str) or not _re.fullmatch(r"[0-9a-f]{64}", expected_payload_sha):
+            return None
+        if _test_evidence_payload_sha256(data) != expected_payload_sha:
+            return None
+        for count_field in ("passed", "failed", "errors"):
+            count_value = data.get(count_field)
+            if not isinstance(count_value, int) or isinstance(count_value, bool) or count_value < 0:
                 return None
+
+        current = _collect_test_git_provenance(root)
+        if (
+            current.get("provenance_status") != "COMMIT_BOUND_CLEAN"
+            or current.get("worktree_clean") is not True
+            or str(current.get("commit_sha") or "").lower() != commit_sha.lower()
+            or str(current.get("branch") or "") != branch_name
+            or str(current.get("worktree_status_sha256") or "") != worktree_status_sha
+        ):
+            return None
         return data
     except Exception:
         return None

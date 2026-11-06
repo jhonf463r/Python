@@ -726,6 +726,21 @@ class AppBootstrap:
             full_scan_interval_seconds=600.0 if _is_mcp_sub else WorldModelService._DEFAULT_FULL_SCAN_INTERVAL,
         )
         self._tracer.trace('phase_world_model_done')
+        # P0.69/P0.70: one bounded in-memory history shared by OSES, TCA and
+        # PortableContext. The service owns no new persistence store or worker.
+        if _is_mcp_sub:
+            # A child process cannot share the UI process's in-memory frame
+            # history and deliberately skips deferred birth-frame capture.
+            # Leave the dependency absent rather than creating a private,
+            # empty ring that could be mistaken for shared observation.
+            self.discernment_frame_service = None
+        else:
+            from iabv_v15.services.evolution.discernment_frame_service import (
+                DiscernmentFrameService,
+            )
+            self.discernment_frame_service = DiscernmentFrameService(
+                workspace_root=self.config.workspace_root,
+            )
         self.interaction_learning_service = InteractionLearningService(self.tool_record_repository)
         self.interaction_mode_selector = InteractionModeSelector(self.tool_registry, self.tool_record_repository)
         self.tool_memory = ToolMemory(self.tool_record_repository, self.interaction_learning_service)
@@ -922,6 +937,7 @@ class AppBootstrap:
             autonomous_validation_cycle=self.autonomous_validation_cycle,
             adaptive_weight_layer=self.adaptive_weight_layer,
             token_rotation_ledger=self.token_rotation_ledger,
+            discernment_frame_service=self.discernment_frame_service,
         )
 
         self._tracer.trace('phase_oses_done')
@@ -1095,6 +1111,7 @@ class AppBootstrap:
             tool_evolution_monitor=self.tool_evolution_monitor,
             adaptive_session_repository=self.adaptive_session_repository,
             platform_pending_queue=self.platform_pending_queue,
+            discernment_frame_service=self.discernment_frame_service,
         )
         # Wire FreezeIncidentReporter into PortableContext for promotion.
         self.portable_context_service.freeze_incident_reporter = (
@@ -1390,6 +1407,7 @@ class AppBootstrap:
             world_model_service=self.world_model_service,
             autonomous_validation_cycle=self.autonomous_validation_cycle,
             portable_context_service=self.portable_context_service,
+            discernment_frame_service=self.discernment_frame_service,
         )
         self.capability_readiness_service = CapabilityReadinessService(self.capability_repository, self.tool_record_repository)
         self.strategy_pack_registry = StrategyPackRegistry(self.strategy_pack_repository)
@@ -3092,6 +3110,101 @@ class AppBootstrap:
         """
         if os.environ.get('IABV_MCP_SUBPROCESS') == '1':
             return
+
+        # Generate one birth frame from the already available, read-only
+        # startup sources. This method runs in the existing post-window
+        # metacognition thread, not on the critical UI startup path.
+        discernment = getattr(self, 'discernment_frame_service', None)
+        if discernment is not None:
+            try:
+                latest_frame = getattr(discernment, 'latest_frame', None)
+                if not callable(latest_frame) or latest_frame() is None:
+                    startup_events = []
+                    try:
+                        startup_events = self._timeline.events()
+                    except Exception as exc:
+                        logger.debug('discernment_startup_timeline_unavailable: %s', type(exc).__name__)
+
+                    world_payload = None
+                    world_service = getattr(self, 'world_model_service', None)
+                    if world_service is not None:
+                        try:
+                            snapshot = world_service.current_model()
+                            if isinstance(snapshot, dict):
+                                world_payload = dict(snapshot)
+                            elif callable(getattr(snapshot, 'model_dump', None)):
+                                world_payload = snapshot.model_dump(mode='json')
+                            if isinstance(world_payload, dict):
+                                network = world_payload.get('network') or world_payload.get('network_status')
+                                if isinstance(network, dict):
+                                    world_payload.setdefault('network', network)
+                                has_network_observation = bool(
+                                    isinstance(network, dict)
+                                    and (
+                                        network.get('connected')
+                                        or str(network.get('status') or '').lower()
+                                        not in {'', 'unknown', 'desconocido'}
+                                    )
+                                )
+                                has_world_observation = bool(
+                                    world_payload.get('active_windows')
+                                    or world_payload.get('focused_window')
+                                    or world_payload.get('tool_live_status')
+                                    or world_payload.get('observation_sources')
+                                    or world_payload.get('detected_blocks')
+                                    or has_network_observation
+                                    or float(world_payload.get('confidence') or 0.0) > 0.0
+                                )
+                                if not has_world_observation:
+                                    world_payload = None
+                        except Exception as exc:
+                            world_payload = None
+                            logger.debug('discernment_world_model_unavailable: %s', type(exc).__name__)
+
+                    environment_payload = None
+                    environment_service = getattr(self, 'environment_self_awareness_service', None)
+                    if environment_service is not None:
+                        try:
+                            environment_model = environment_service.current_model()
+                            if isinstance(environment_model, dict):
+                                environment_payload = dict(environment_model)
+                            elif callable(getattr(environment_model, 'model_dump', None)):
+                                environment_payload = environment_model.model_dump(mode='json')
+                        except Exception as exc:
+                            environment_payload = None
+                            logger.debug('discernment_environment_model_unavailable: %s', type(exc).__name__)
+
+                    freeze_reports = []
+                    reporter = getattr(self, 'freeze_incident_reporter', None)
+                    if reporter is not None:
+                        try:
+                            freeze_reports = reporter.recent_incidents(limit=5)
+                        except Exception as exc:
+                            logger.debug('discernment_freeze_history_unavailable: %s', type(exc).__name__)
+
+                    frame = discernment.build_birth_frame(
+                        startup_events=startup_events,
+                        world_model=world_payload,
+                        environment_self_model=environment_payload,
+                        freeze_reports=freeze_reports,
+                    )
+                    logger.info(
+                        'discernment_birth_frame: grounding=%s confidence=%s missing=%s untrusted=%s',
+                        frame.grounding_status,
+                        frame.confidence,
+                        list(frame.missing_sources),
+                        list(frame.untrusted_sources),
+                    )
+            except Exception as exc:
+                oses_for_discernment = getattr(self, 'operational_self_examination_service', None)
+                if oses_for_discernment is not None and callable(
+                    getattr(oses_for_discernment, '_record_source_status', None)
+                ):
+                    oses_for_discernment._record_source_status(
+                        'discernment_frame_service', 'READ_FAILED', type(exc).__name__,
+                    )
+                logger.warning('discernment_birth_frame_failed: %s', type(exc).__name__)
+
         validator = getattr(self, 'perception_cross_validator', None)
         if validator is not None:
             try:

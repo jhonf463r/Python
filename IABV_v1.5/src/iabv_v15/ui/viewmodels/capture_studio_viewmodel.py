@@ -1061,15 +1061,46 @@ class CaptureStudioViewModel(QObject):
             self.dataChanged.emit()
             return
         try:
+            # Validate every indexed path before deleting the first file or directory.
             steps = self.episode_repository.load_episode(target_episode_id)
             artifacts = self.artifact_repository.list_for_episode(target_episode_id)
+            screenshot_root = Path(self.config.screenshots_dir)
+            artifact_root = Path(self.config.browser_artifacts_dir)
+            episode_root = Path(self.config.episodes_dir)
             for step in steps:
-                self._delete_managed_path(step.screenshot_path)
+                self._resolve_episode_managed_path(
+                    step.screenshot_path,
+                    storage_root=screenshot_root,
+                    episode_id=target_episode_id,
+                )
             for artifact in artifacts:
-                self._delete_managed_path(artifact.path)
-            self._delete_managed_path(Path(self.config.screenshots_dir) / target_episode_id)
-            self._delete_managed_path(Path(self.config.browser_artifacts_dir) / target_episode_id)
-            self._delete_managed_path(Path(self.config.episodes_dir) / target_episode_id)
+                self._resolve_episode_managed_path(
+                    artifact.path,
+                    storage_root=artifact_root,
+                    episode_id=target_episode_id,
+                )
+            managed_directories = [
+                self._resolve_episode_managed_path(
+                    screenshot_root / target_episode_id,
+                    storage_root=screenshot_root,
+                    episode_id=target_episode_id,
+                ),
+                self._resolve_episode_managed_path(
+                    artifact_root / target_episode_id,
+                    storage_root=artifact_root,
+                    episode_id=target_episode_id,
+                ),
+                self._resolve_episode_managed_path(
+                    episode_root / target_episode_id,
+                    storage_root=episode_root,
+                    episode_id=target_episode_id,
+                ),
+            ]
+            for directory in managed_directories:
+                if directory.is_dir():
+                    shutil.rmtree(directory)
+                elif directory.exists():
+                    directory.unlink()
             self.episode_repository.db.execute('DELETE FROM episodes WHERE episode_id = ?', (target_episode_id,))
             self.artifact_repository.db.execute('DELETE FROM session_artifacts WHERE episode_id = ?', (target_episode_id,))
             if self._selected_history_episode_id == target_episode_id:
@@ -2664,10 +2695,8 @@ class CaptureStudioViewModel(QObject):
         if artifact is None:
             return None
         try:
-            path = Path(artifact.path)
-            if path.is_absolute() and path.exists():
-                return json.loads(path.read_text(encoding='utf-8'))
-            return self.artifact_repository.storage.load_json(artifact.path)
+            path = self.artifact_repository.storage.resolve_managed_path(artifact.path)
+            return json.loads(path.read_text(encoding='utf-8'))
         except Exception:
             return None
 
@@ -2696,40 +2725,30 @@ class CaptureStudioViewModel(QObject):
             selected.append('API')
         return ', '.join(selected) or 'Visible'
 
-    def _delete_managed_path(self, path_like) -> None:
+    def _resolve_episode_managed_path(
+        self,
+        path_like,
+        *,
+        storage_root: Path,
+        episode_id: str,
+    ) -> Path | None:
         if not path_like:
-            return
+            return None
+        root = Path(storage_root).resolve(strict=False)
+        episode_root = (root / episode_id).resolve(strict=False)
+        if episode_root != root and root not in episode_root.parents:
+            raise ValueError(
+                f"Episode directory resolves outside its configured root: {episode_id}"
+            )
         candidate = Path(path_like)
         if not candidate.is_absolute():
-            candidate = self.artifact_repository.storage.root / candidate
-        try:
-            resolved = candidate.resolve(strict=False)
-        except Exception:
-            return
-        managed_roots = [
-            Path(self.config.data_dir).resolve(strict=False),
-            Path(self.config.workspace_root).resolve(strict=False),
-        ]
-        if not any(resolved == root or root in resolved.parents for root in managed_roots):
-            return
-        if resolved.is_dir():
-            shutil.rmtree(resolved, ignore_errors=True)
-            return
-        if resolved.exists():
-            resolved.unlink(missing_ok=True)
-            self._delete_empty_parents(resolved.parent, stop_roots=managed_roots)
-
-    def _delete_empty_parents(self, directory: Path, *, stop_roots: list[Path]) -> None:
-        current = directory
-        while current and all(current != root for root in stop_roots):
-            try:
-                if current.exists() and not any(current.iterdir()):
-                    current.rmdir()
-                    current = current.parent
-                    continue
-            except Exception:
-                return
-            break
+            candidate = root / candidate
+        resolved = candidate.resolve(strict=False)
+        if resolved != episode_root and episode_root not in resolved.parents:
+            raise ValueError(
+                f"Episode artifact path is outside its managed episode directory: {path_like}"
+            )
+        return resolved
 
     episodes = Property(list, get_episodes, notify=dataChanged)
     flowSteps = Property(list, get_flow_steps, constant=True)

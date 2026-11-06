@@ -79,7 +79,7 @@ def _fake_self_examination_service(findings: list[SelfExaminationFinding] | None
     svc = MagicMock()
     snapshot = MagicMock()
     snapshot.findings = findings or []
-    svc.current_review.return_value = snapshot
+    svc.current_review_cached.return_value = snapshot
     return svc
 
 
@@ -585,9 +585,9 @@ class TestBootstrapWiring:
 
 
 class TestOSESCurrentReview:
-    """ControlMasterService reads OSES via current_review() per AGENTS.md."""
+    """ControlMasterService consumes only the validated cached OSES review."""
 
-    def test_oses_reads_via_current_review(self) -> None:
+    def test_oses_reads_via_current_review_cached(self) -> None:
         ws = _workspace()
         try:
             finding = SelfExaminationFinding(
@@ -597,11 +597,11 @@ class TestOSESCurrentReview:
                 recommendation="Fix phased populate_ui",
                 summary="populate_ui blocked main thread",
             )
-            # Mock service that only exposes current_review(), not current_snapshot
+            # Mock service that only exposes current_review_cached(), not current_snapshot
             svc_mock = MagicMock(spec=[])
             snapshot = MagicMock()
             snapshot.findings = [finding]
-            svc_mock.current_review = MagicMock(return_value=snapshot)
+            svc_mock.current_review_cached = MagicMock(return_value=snapshot)
 
             cms = ControlMasterService(
                 repository=_fake_repo(),
@@ -631,7 +631,7 @@ class TestOSESCurrentReview:
             svc_mock = MagicMock(spec=[])
             snapshot = MagicMock()
             snapshot.findings = [finding]
-            svc_mock.current_review = MagicMock(return_value=snapshot)
+            svc_mock.current_review_cached = MagicMock(return_value=snapshot)
 
             cms = ControlMasterService(
                 repository=_fake_repo(),
@@ -641,6 +641,26 @@ class TestOSESCurrentReview:
             queue = cms.current_work_queue()
             oses_items = [i for i in queue if i['source'] == 'oses_finding']
             assert len(oses_items) == 1
+        finally:
+            shutil.rmtree(ws, ignore_errors=True)
+
+
+    def test_oses_projection_fails_closed_without_cached_review_reader(self) -> None:
+        ws = _workspace()
+        try:
+            svc_mock = MagicMock(spec=[])
+            svc_mock.current_review_cached = None
+            svc_mock.current_review = MagicMock(
+                side_effect=AssertionError("projection must not trigger OSES rebuild")
+            )
+            cms = ControlMasterService(
+                repository=_fake_repo(),
+                self_examination_service=svc_mock,
+                workspace_root=str(ws),
+            )
+            queue = cms.current_work_queue()
+            assert not [item for item in queue if item['source'] == 'oses_finding']
+            svc_mock.current_review.assert_not_called()
         finally:
             shutil.rmtree(ws, ignore_errors=True)
 

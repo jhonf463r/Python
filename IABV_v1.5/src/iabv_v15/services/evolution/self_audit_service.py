@@ -361,13 +361,19 @@ class SelfAuditService:
         svc = self.operational_self_examination_service
         if svc is None:
             return None
+        cached_getter = getattr(svc, "current_review_cached", None)
+        if callable(cached_getter):
+            try:
+                return cached_getter()
+            except Exception:
+                return None
         getter = getattr(svc, "current_review", None) or getattr(svc, "current", None)
         if getter is None:
             return None
         try:
             return getter(refresh=False)
         except TypeError:
-            # current_review accepts refresh kw; retry without args.
+            # Compatibility path for legacy providers without a cached-only API.
             return getter()
 
     def _current_portable_package(self) -> PortableContextPackage | None:
@@ -483,6 +489,11 @@ class SelfAuditService:
                 "errors": int(test_evidence.get("errors") or 0),
                 "suite": str(test_evidence.get("suite") or ""),
                 "timestamp": str(test_evidence.get("timestamp") or ""),
+                "commit_sha": str(test_evidence.get("commit_sha") or ""),
+                "branch": str(test_evidence.get("branch") or ""),
+                "worktree_clean": test_evidence.get("worktree_clean"),
+                "provenance_status": str(test_evidence.get("provenance_status") or "UNKNOWN"),
+                "payload_sha256": str(test_evidence.get("payload_sha256") or ""),
             }
         return result
 

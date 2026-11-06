@@ -49,6 +49,7 @@ class PortableContextService:
         adaptive_task_orchestrator: Any | None = None,
         adaptive_session_repository: Any | None = None,
         platform_pending_queue: Any | None = None,
+        discernment_frame_service: Any | None = None,
     ) -> None:
         self.workspace_root = workspace_root
         self.storage = storage
@@ -66,6 +67,7 @@ class PortableContextService:
         self.adaptive_task_orchestrator = adaptive_task_orchestrator
         self.adaptive_session_repository = adaptive_session_repository
         self.platform_pending_queue = platform_pending_queue
+        self.discernment_frame_service = discernment_frame_service
         self.control_master_service: Any | None = None
         self.decision_audit_trail: Any | None = None
         self.code_audit_trail: Any | None = None
@@ -656,7 +658,7 @@ class PortableContextService:
 
     def _self_examination_snapshot(self) -> dict[str, Any]:
         service = self.self_examination_service
-        if service is None or not hasattr(service, 'current_review'):
+        if service is None or not callable(getattr(service, 'current_review_cached', None)):
             return {
                 'summary': '',
                 'summary_payload': {},
@@ -666,10 +668,10 @@ class PortableContextService:
                 'validated_improvements': [],
                 'recommendation_feedback': [],
                 'feedback_summary': {},
-                'unresolved_risks': ['UNRESOLVED:self_examination'],
+                'unresolved_risks': ['UNRESOLVED:self_examination_cached_review_unavailable'],
             }
         try:
-            review = service.current_review(refresh=True)
+            review = service.current_review_cached()
             if hasattr(service, 'review_summary'):
                 summary_payload = dict(service.review_summary(review) or {})
             else:
@@ -1506,6 +1508,9 @@ class PortableContextService:
         errors = int(evidence.get('errors') or 0)
         suite = str(evidence.get('suite') or '')
         ts = str(evidence.get('timestamp') or '')
+        commit_sha = str(evidence.get('commit_sha') or '')
+        branch = str(evidence.get('branch') or '')
+        provenance_status = str(evidence.get('provenance_status') or 'UNKNOWN')
         total = passed + failed + errors
         health = 'green' if failed == 0 and errors == 0 else 'red'
         summary = f'{passed}/{total} passed'
@@ -1515,15 +1520,24 @@ class PortableContextService:
             summary += f', {errors} errors'
         if suite:
             summary += f' [{suite}]'
+        summary += f' · provenance {provenance_status}'
+        if commit_sha:
+            summary += f' · commit {commit_sha[:12]}'
         items: list[dict[str, Any]] = [
             {'label': 'health', 'value': health},
             {'label': 'passed', 'value': passed},
             {'label': 'failed', 'value': failed},
             {'label': 'errors', 'value': errors},
             {'label': 'timestamp', 'value': ts},
+            {'label': 'provenance_status', 'value': provenance_status},
+            {'label': 'worktree_clean', 'value': bool(evidence.get('worktree_clean'))},
         ]
         if suite:
             items.append({'label': 'suite', 'value': suite})
+        if commit_sha:
+            items.append({'label': 'commit_sha', 'value': commit_sha})
+        if branch:
+            items.append({'label': 'branch', 'value': branch})
         return self._section(
             section_id='test_evidence',
             title='Evidencia de tests',
@@ -4018,21 +4032,26 @@ class PortableContextService:
         )
 
     def _discernment_frame_section(self, *, now) -> PortableContextSection:
-        """P0.69: export latest discernment frame as compact section."""
+        """P0.69: export the latest frame from the shared discernment history."""
         items: list[dict[str, Any]] = []
         unresolved: list[str] = []
-        try:
-            from iabv_v15.services.evolution.discernment_frame_service import DiscernmentFrameService
-            svc = DiscernmentFrameService()
-            export = svc.compact_export()
-            if export.get('status') == 'no_frame':
-                items.append({'status': 'no_frame_yet'})
-                unresolved.append('no_discernment_frame_generated')
-            else:
-                items.append(export)
-        except Exception:
-            items.append({'status': 'service_unavailable'})
-            unresolved.append('discernment_frame_service_unavailable')
+        service = getattr(self, 'discernment_frame_service', None)
+        if service is None:
+            items.append({'status': 'service_unavailable', 'reason': 'shared_service_not_injected'})
+            unresolved.append('discernment_frame_service_not_configured')
+        else:
+            try:
+                export = service.compact_export()
+                if not isinstance(export, dict):
+                    raise TypeError('discernment_export_not_dict')
+                if export.get('status') == 'no_frame':
+                    items.append({'status': 'no_frame_yet'})
+                    unresolved.append('no_discernment_frame_generated')
+                else:
+                    items.append(export)
+            except Exception as exc:
+                items.append({'status': 'service_unavailable', 'reason': type(exc).__name__})
+                unresolved.append('discernment_frame_service_unavailable')
         phase = items[0].get('phase', 'unknown') if items else 'unknown'
         grounding = items[0].get('grounding_status', 'unknown') if items else 'unknown'
         conf = items[0].get('confidence', 0.0) if items else 0.0
@@ -4106,18 +4125,35 @@ class PortableContextService:
         """P0.70: collect unresolved metacognitive links across frame + roadmap."""
         items: list[dict[str, Any]] = []
         unresolved: list[str] = []
-        try:
-            from iabv_v15.services.evolution.discernment_frame_service import DiscernmentFrameService
-            svc = DiscernmentFrameService()
-            frame = svc.latest_frame()
-            if frame and frame.unresolved_fields:
+        service = getattr(self, 'discernment_frame_service', None)
+        if service is None:
+            items.append({
+                'source': 'discernment_frame',
+                'status': 'service_unavailable',
+            })
+            unresolved.append('discernment_frame_service_not_configured')
+        else:
+            try:
+                frame = service.latest_frame()
+                if frame is None:
+                    items.append({
+                        'source': 'discernment_frame',
+                        'status': 'no_frame_yet',
+                    })
+                    unresolved.append('no_discernment_frame_generated')
+                elif frame.unresolved_fields:
+                    items.append({
+                        'source': 'discernment_frame',
+                        'unresolved': frame.unresolved_fields[:10],
+                    })
+                    unresolved.extend(frame.unresolved_fields[:10])
+            except Exception as exc:
                 items.append({
                     'source': 'discernment_frame',
-                    'unresolved': frame.unresolved_fields[:10],
+                    'status': 'service_unavailable',
+                    'reason': type(exc).__name__,
                 })
-                unresolved.extend(frame.unresolved_fields[:10])
-        except Exception:
-            pass
+                unresolved.append('discernment_frame_service_unavailable')
         try:
             import json as _json
             from pathlib import Path as _Path

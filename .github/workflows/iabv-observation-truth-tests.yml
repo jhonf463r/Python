@@ -1,0 +1,74 @@
+name: IABV observation truth and backlog diagnostics tests
+
+"on":
+  push:
+    branches:
+      - "codex/450-observation-false-clean-r1-20261105"
+  pull_request:
+    branches:
+      - "main"
+    paths:
+      - "IABV_v1.5/src/iabv_v15/services/evolution/perception_cross_validator.py"
+      - "IABV_v1.5/tests/test_perception_cross_validator_ui.py"
+      - "IABV_v1.5/src/iabv_v15/services/evolution_backlog.py"
+      - "IABV_v1.5/src/iabv_v15/services/account_resource_scanner.py"
+      - "IABV_v1.5/tests/test_account_resource_scanner_diagnostics.py"
+      - "IABV_v1.5/tests/test_evolution_backlog_read_diagnostics.py"
+      - "IABV_v1.5/src/iabv_v15/services/evolution/operational_self_examination_service.py"
+      - "IABV_v1.5/tests/test_oses_read_coverage_contract.py"
+      - "IABV_v1.5/src/iabv_v15/domain/models.py"
+      - "IABV_v1.5/src/iabv_v15/infra/mcp/audit_tools/__init__.py"
+      - "IABV_v1.5/src/iabv_v15/services/evolution/self_audit_service.py"
+      - "IABV_v1.5/src/iabv_v15/services/evolution/portable_context_service.py"
+      - "IABV_v1.5/src/iabv_v15/services/evolution/runtime_audit_tracer.py"
+      - "IABV_v1.5/tests/test_runtime_p029_test_governance_observability.py"
+      - "IABV_v1.5/tests/test_runtime_audit_tracer.py"
+      - "IABV_v1.5/src/iabv_v15/infra/mcp/server.py"
+      - "IABV_v1.5/src/iabv_v15/ui/viewmodels/centro_vivo_viewmodel.py"
+      - "IABV_v1.5/src/iabv_v15/ui/qml/pages/CentroVivoPage.qml"
+      - "IABV_v1.5/tests/test_centro_vivo_viewmodel.py"
+      - "IABV_v1.5/pyproject.toml"
+      - ".github/workflows/iabv-observation-truth-tests.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  observation-truth-and-backlog:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    env:
+      PYTHONPATH: IABV_v1.5/src
+      QT_QPA_PLATFORM: offscreen
+    steps:
+      - name: Check out the reviewed candidate
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v7.1.0
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: IABV_v1.5/pyproject.toml
+
+      - name: Install declared test environment
+        run: >-
+          python -m pip install --disable-pip-version-check
+          -e "IABV_v1.5[dev]"
+
+      - name: Check dependency consistency
+        run: python -m pip check
+
+      - name: Run observation and backlog truth tests
+        run: >-
+          python -m pytest
+          IABV_v1.5/tests/test_perception_cross_validator_ui.py
+          IABV_v1.5/tests/test_evolution_backlog_read_diagnostics.py
+          IABV_v1.5/tests/test_oses_read_coverage_contract.py
+          IABV_v1.5/tests/test_runtime_p029_test_governance_observability.py
+          IABV_v1.5/tests/test_runtime_audit_tracer.py
+          IABV_v1.5/tests/test_centro_vivo_viewmodel.py
+          IABV_v1.5/tests/test_account_resource_scanner_diagnostics.py
+          -q
