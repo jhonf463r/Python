@@ -103,6 +103,27 @@ def test_record_quota_usage_calls_record_message_sent(tmp_path: Path) -> None:
         assert 'chatgpt:alice@test.com' in state['accounts']
 
 
+def test_quota_tracker_revision_changes_after_atomic_usage_write(
+    tmp_path: Path,
+) -> None:
+    from iabv_v15.services.account_resource_scanner import (
+        quota_tracker_revision,
+        record_message_sent,
+    )
+
+    with patch.dict('os.environ', {'IABV_WORKSPACE': str(tmp_path)}):
+        quota_dir = tmp_path / 'data' / 'evolution'
+        quota_dir.mkdir(parents=True, exist_ok=True)
+        before = quota_tracker_revision()
+
+        result = record_message_sent('chatgpt', 'quota-fingerprint@test.com')
+        after = quota_tracker_revision()
+
+    assert result['tool'] == 'chatgpt'
+    assert before[0] == after[0]
+    assert before != after
+
+
 def test_record_quota_usage_noop_without_tool() -> None:
     assert AdaptiveTaskOrchestrator._record_quota_usage('', 'alice@test.com') is None
 
