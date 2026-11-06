@@ -204,7 +204,7 @@ def test_unbound_passing_test_run_does_not_render_green_control_master_state() -
 
 def test_run_pytest_does_not_persist_without_flag(monkeypatch) -> None:
     """run_pytest() without persist_evidence must not persist or probe Git."""
-    from iabv15.infra.mcp import audit_tools
+    from iabv_v15.infra.mcp import audit_tools
 
     def forbidden_git_probe(_root):
         raise AssertionError("default run must not collect Git provenance")
@@ -638,7 +638,7 @@ def test_evidence_worktree_status_digest_must_match_current_tree(tmp_path, monke
 
 
 def test_test_evidence_is_untrusted_when_source_changes_during_pytest(tmp_path, monkeypatch) -> None:
-    from iabv15.infra.mcp import audit_tools
+    from iabv_v15.infra.mcp import audit_tools
 
     src_dir = tmp_path / "src"
     src_dir.mkdir()
@@ -679,7 +679,7 @@ def test_test_evidence_is_untrusted_when_source_changes_during_pytest(tmp_path, 
 
 
 def test_test_evidence_without_pre_post_pair_is_rejected(tmp_path, monkeypatch) -> None:
-    from iabv15.infra.mcp import audit_tools
+    from iabv_v15.infra.mcp import audit_tools
 
     _install_matching_git_provenance(monkeypatch)
     path = _write_fresh_evidence(str(tmp_path))
@@ -692,7 +692,7 @@ def test_test_evidence_without_pre_post_pair_is_rejected(tmp_path, monkeypatch) 
 
 
 def test_test_evidence_provenance_pair_rejects_string_coerced_snapshot_fields() -> None:
-    from iabv15.infra.mcp.audit_tools import _test_evidence_has_stable_provenance_pair
+    from iabv_v15.infra.mcp.audit_tools import _test_evidence_has_stable_provenance_pair
 
     commit_sha = "1" * 40
     branch = "123"
