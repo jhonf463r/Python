@@ -93,6 +93,7 @@ def _router(
 
 def _pool_chatgpt_available() -> dict[str, Any]:
     return {
+        'source_coverage': {'quota_tracker': 'READ_OK'},
         'available_count': 2,
         'exhausted_count': 0,
         'total_remaining_messages': 50,
@@ -107,6 +108,7 @@ def _pool_chatgpt_available() -> dict[str, Any]:
 
 def _pool_all_exhausted() -> dict[str, Any]:
     return {
+        'source_coverage': {'quota_tracker': 'READ_OK'},
         'available_count': 0,
         'exhausted_count': 2,
         'total_remaining_messages': 0,
@@ -515,3 +517,41 @@ def test_worker_pool_report_surfaces_unverified_sessions_and_quota_state() -> No
     assert 'cuota no verificada' in report
     assert 'NO VERIFICADA' in report
     assert 'No hay asistentes con sesión activa detectados' not in report
+
+
+
+def test_worker_health_gate_reports_unverified_quota_source(tmp_path: Path) -> None:
+    pool = {
+        'available_count': 0,
+        'exhausted_count': 0,
+        'total_remaining_messages': 0,
+        'workers': [],
+        'exhausted': [],
+        'unverified': [{
+            'email': 'user@test.com',
+            'tool': 'chatgpt',
+            'browser': 'Chrome',
+            'profile': 'Default',
+            'quota_verified': False,
+        }],
+        'unverified_count': 1,
+        'tools_available': [],
+        'source_coverage': {
+            'browser_sessions': 'READ_OK',
+            'quota_tracker': 'CORRUPT',
+        },
+        'source_errors': {'quota_tracker': 'JSONDecodeError'},
+    }
+    router = _router(
+        _workspace(tmp_path, 'quota_unverified_gate'),
+        account_resource_scanner=lambda: pool,
+    )
+
+    result = router.worker_health_gate(target_assistant='chatgpt')
+
+    assert result['usable'] is False
+    assert result['ranked_workers'] == []
+    assert result['unverified_count'] == 1
+    assert result['source_coverage']['quota_tracker'] == 'CORRUPT'
+    assert 'UNRESOLVED:quota_tracker_corrupt' in result['reason']
+    assert 'no inferir' in result['reason'].lower()
