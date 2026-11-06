@@ -655,12 +655,20 @@ class RuntimeAuditTracer:
         debugging — never the user's normal Chrome profile. No cookies,
         tokens or credentials are read or copied.
         """
+        assistant_ref = ''.join(
+            character for character in str(assistant_kind or '').strip().lower()
+            if character.isalnum() or character in {'_', '-'}
+        ) or 'assistant'
+        launch_target_ref = ''
+        if launch_target:
+            target_mode = 'web' if str(launch_target).strip().lower().startswith(('http://', 'https://')) else 'desktop'
+            launch_target_ref = f'{target_mode}:{assistant_ref}'
         return self.trace(
             f'governed_browser_session_launch_{event_type}',
             assistant_kind=assistant_kind,
             cdp_url=cdp_url[:200] if cdp_url else '',
             profile_label=profile_label,
-            launch_target=launch_target[:200] if launch_target else '',
+            launch_target_ref=launch_target_ref,
             human_login_required=human_login_required,
             success=success,
             reason=reason[:200] if reason else '',
