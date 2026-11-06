@@ -427,7 +427,7 @@ def test_oses_finding_when_half_quotas_exhausted() -> None:
     oses = _make_oses(root)
 
     def mock_quotas():
-        return {'exhausted_count': 2, 'available_count': 1,
+        return {'source_coverage': {'quota_tracker': 'READ_OK'}, 'exhausted_count': 2, 'available_count': 1,
                 'exhausted_keys': ['chatgpt:a@t.com', 'chatgpt:b@t.com'],
                 'statuses': []}
 
@@ -453,7 +453,7 @@ def test_oses_no_finding_when_quotas_healthy() -> None:
     oses = _make_oses(root)
 
     def mock_quotas():
-        return {'exhausted_count': 1, 'available_count': 5,
+        return {'source_coverage': {'quota_tracker': 'READ_OK'}, 'exhausted_count': 1, 'available_count': 5,
                 'exhausted_keys': ['chatgpt:a@t.com'], 'statuses': []}
 
     def mock_secrets():
@@ -479,7 +479,7 @@ def test_oses_gh_no_cache_no_probe_no_finding() -> None:
     call_count = 0
 
     def mock_quotas():
-        return {'exhausted_count': 0, 'available_count': 0, 'exhausted_keys': [], 'statuses': []}
+        return {'source_coverage': {'quota_tracker': 'READ_OK'}, 'exhausted_count': 0, 'available_count': 0, 'exhausted_keys': [], 'statuses': []}
 
     def mock_secrets():
         return {'configured': [], 'missing': [], 'configured_count': 0, 'missing_count': 0}
@@ -512,7 +512,7 @@ def test_oses_gh_fresh_cache_emits_finding() -> None:
     oses._gh_api_cached_at = time.monotonic()
 
     def mock_quotas():
-        return {'exhausted_count': 0, 'available_count': 0, 'exhausted_keys': [], 'statuses': []}
+        return {'source_coverage': {'quota_tracker': 'READ_OK'}, 'exhausted_count': 0, 'available_count': 0, 'exhausted_keys': [], 'statuses': []}
 
     def mock_secrets():
         return {'configured': [], 'missing': [], 'configured_count': 0, 'missing_count': 0}
@@ -539,7 +539,7 @@ def test_oses_gh_expired_cache_no_probe_no_finding() -> None:
     call_count = 0
 
     def mock_quotas():
-        return {'exhausted_count': 0, 'available_count': 0, 'exhausted_keys': [], 'statuses': []}
+        return {'source_coverage': {'quota_tracker': 'READ_OK'}, 'exhausted_count': 0, 'available_count': 0, 'exhausted_keys': [], 'statuses': []}
 
     def mock_secrets():
         return {'configured': [], 'missing': [], 'configured_count': 0, 'missing_count': 0}
@@ -565,7 +565,7 @@ def test_oses_finding_critical_secrets_missing() -> None:
     oses = _make_oses(root)
 
     def mock_quotas():
-        return {'exhausted_count': 0, 'available_count': 0, 'exhausted_keys': [], 'statuses': []}
+        return {'source_coverage': {'quota_tracker': 'READ_OK'}, 'exhausted_count': 0, 'available_count': 0, 'exhausted_keys': [], 'statuses': []}
 
     def mock_secrets():
         return {'configured': [], 'missing': ['GITHUB_TOKEN_IABV', 'OPENAI_API_KEY'],
@@ -587,7 +587,7 @@ def test_oses_no_finding_when_non_critical_secrets_missing() -> None:
     oses = _make_oses(root)
 
     def mock_quotas():
-        return {'exhausted_count': 0, 'available_count': 0, 'exhausted_keys': [], 'statuses': []}
+        return {'source_coverage': {'quota_tracker': 'READ_OK'}, 'exhausted_count': 0, 'available_count': 0, 'exhausted_keys': [], 'statuses': []}
 
     def mock_secrets():
         return {'configured': ['GITHUB_TOKEN_IABV'], 'missing': ['OPENAI_API_KEY'],
@@ -599,6 +599,187 @@ def test_oses_no_finding_when_non_critical_secrets_missing() -> None:
 
     config_findings = [f for f in findings if f.category == 'configuration_gap']
     assert len(config_findings) == 0
+
+
+def test_oses_quota_tracker_corruption_emits_integrity_finding_not_exhaustion() -> None:
+    root = _workspace('oses_quota_tracker_corrupt')
+    oses = _make_oses(root)
+
+    def mock_quotas():
+        return {
+            'statuses': [],
+            'total_tracked': 0,
+            'exhausted_count': 0,
+            'available_count': 0,
+            'exhausted_keys': [],
+            'available_keys': [],
+            'source_coverage': {'quota_tracker': 'CORRUPT'},
+            'source_errors': {'quota_tracker': 'JSONDecodeError'},
+        }
+
+    def mock_secrets():
+        return {'configured': [], 'missing': [], 'configured_count': 0, 'missing_count': 0}
+
+    with patch(
+        'iabv_v15.services.account_resource_scanner.get_all_quota_status',
+        mock_quotas,
+    ), patch(
+        'iabv_v15.services.account_resource_scanner.scan_configured_secrets',
+        mock_secrets,
+    ):
+        findings = oses._account_resource_health_findings()
+
+    integrity = [
+        item for item in findings
+        if item.metadata.get('gap_type') == 'quota_tracker_unverified'
+    ]
+    exhaustion = [item for item in findings if item.category == 'resource_exhaustion']
+
+    assert len(integrity) == 1
+    assert integrity[0].metadata['quota_source_status'] == 'CORRUPT'
+    assert integrity[0].severity.value == 'medium'
+    assert exhaustion == []
+
+
+def test_oses_functional_gap_does_not_call_corrupt_tracker_untracked() -> None:
+    root = _workspace('oses_functional_gap_quota_corrupt')
+    oses = _make_oses(root)
+
+    accounts = {
+        'accounts': [],
+        'count': 0,
+        'source_coverage': {'browser_accounts': 'READ_OK'},
+        'source_errors': {},
+    }
+    sessions = {
+        'sessions': [{
+            'browser': 'Chrome',
+            'profile': 'Default',
+            'tool': 'chatgpt',
+            'cookie_count': 1,
+        }],
+        'session_count': 1,
+        'source_coverage': {'browser_sessions': 'READ_OK'},
+        'source_errors': {},
+    }
+    verified = {
+        'accounts': [{
+            'email': 'user@test.com',
+            'browser': 'Chrome',
+            'profile': 'Default',
+            'tools_available': ['chatgpt'],
+            'tool_count': 1,
+        }],
+        'account_count': 1,
+        'source_coverage': {
+            'browser_accounts': 'READ_OK',
+            'browser_sessions': 'READ_OK',
+        },
+        'source_errors': {},
+    }
+    quotas = {
+        'statuses': [],
+        'total_tracked': 0,
+        'exhausted_count': 0,
+        'available_count': 0,
+        'source_coverage': {'quota_tracker': 'CORRUPT'},
+        'source_errors': {'quota_tracker': 'JSONDecodeError'},
+    }
+
+    with patch(
+        'iabv_v15.services.account_resource_scanner.scan_browser_accounts',
+        return_value=accounts,
+    ), patch(
+        'iabv_v15.services.account_resource_scanner.scan_browser_sessions',
+        return_value=sessions,
+    ), patch(
+        'iabv_v15.services.account_resource_scanner.verify_account_sessions',
+        return_value=verified,
+    ), patch(
+        'iabv_v15.services.account_resource_scanner.get_all_quota_status',
+        return_value=quotas,
+    ):
+        findings = oses._functional_gap_findings()
+
+    quota_findings = [
+        item for item in findings
+        if item.metadata.get('gap_type') in {'quota_tracker_unverified', 'untracked_quotas'}
+    ]
+    assert len(quota_findings) == 1
+    assert quota_findings[0].metadata['gap_type'] == 'quota_tracker_unverified'
+    assert quota_findings[0].metadata['quota_source_status'] == 'CORRUPT'
+
+
+def test_functional_gap_summary_preserves_corrupt_quota_state(monkeypatch) -> None:
+    from iabv15.services.evolution.operational_self_examination_service import (
+        get_functional_gap_summary,
+    )
+
+    accounts = {
+        'accounts': [],
+        'count': 0,
+        'source_coverage': {'browser_accounts': 'READ_OK'},
+        'source_errors': {},
+    }
+    sessions = {
+        'sessions': [{
+            'browser': 'Chrome',
+            'profile': 'Default',
+            'tool': 'chatgpt',
+            'cookie_count': 1,
+        }],
+        'session_count': 1,
+        'source_coverage': {'browser_sessions': 'READ_OK'},
+        'source_errors': {},
+    }
+    verified = {
+        'accounts': [{
+            'email': 'user@test.com',
+            'browser': 'Chrome',
+            'profile': 'Default',
+            'tools_available': ['chatgpt'],
+            'tool_count': 1,
+        }],
+        'account_count': 1,
+        'source_coverage': {
+            'browser_accounts': 'READ_OK',
+            'browser_sessions': 'READ_OK',
+        },
+        'source_errors': {},
+    }
+    quotas = {
+        'statuses': [],
+        'total_tracked': 0,
+        'exhausted_count': 0,
+        'available_count': 0,
+        'source_coverage': {'quota_tracker': 'READ_FAILED'},
+        'source_errors': {'quota_tracker': 'PermissionError'},
+    }
+
+    monkeypatch.setattr(
+        'iabv_v15.services.account_resource_scanner.scan_browser_accounts',
+        lambda: accounts,
+    )
+    monkeypatch.setattr(
+        'iabv_v15.services.account_resource_scanner.scan_browser_sessions',
+        lambda: sessions,
+    )
+    monkeypatch.setattr(
+        'iabv_v15.services.account_resource_scanner.verify_account_sessions',
+        lambda: verified,
+    )
+    monkeypatch.setattr(
+        'iabv_v15.services.account_resource_scanner.get_all_quota_status',
+        lambda: quotas,
+    )
+
+    gaps = get_functional_gap_summary()
+    quota_gaps = [item for item in gaps if 'cuotas' in item['title'].lower()]
+
+    assert len(quota_gaps) == 1
+    assert quota_gaps[0]['title'] == 'Cuotas de workers no verificables'
+    assert 'READ_FAILED' in quota_gaps[0]['detail']
+    assert 'sin rastreo' not in quota_gaps[0]['title'].lower()
 
 
 def test_oses_survives_scanner_failure() -> None:
