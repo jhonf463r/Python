@@ -1281,7 +1281,7 @@ class AdaptiveTaskOrchestrator:
         )
         primary_dict['quota_tracking'] = quota_tracking
         if quota_tracking['status'] == 'RECORDED':
-            primary_dict['quota_status'] = quota_tracking['quota_status'
+            primary_dict['quota_status'] = quota_tracking['quota_status']
         secondary_ia = str(best.get('secondary_ia') or '')
         chained_result = None
         if secondary_ia and self._has_external_response(primary_dict):
