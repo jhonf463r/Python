@@ -665,6 +665,19 @@ Item {
                             }
                         }
 
+                        Label {
+                            visible: accountInventorySummary.quota_source_status !== undefined
+                                && accountInventorySummary.quota_source_status !== "READ_OK"
+                            text: "Quota tracker no verificado (" +
+                                (accountInventorySummary.quota_source_status || "UNVERIFIED") +
+                                "). Las sesiones detectadas no son accionables; no equivale a un inventario vacío."
+                            color: accentAmber
+                            font.family: bodyFontFamily
+                            font.pixelSize: 12
+                            wrapMode: Label.WordWrap
+                            width: parent.width
+                        }
+
                         // Next recommended account
                         Rectangle {
                             visible: accountInventorySummary.next_recommended !== undefined && accountInventorySummary.next_recommended !== null
@@ -763,7 +776,7 @@ Item {
                                                 var s = modelData.status || ""
                                                 if (s === "active") return accentGreen
                                                 if (s === "exhausted") return accentRed
-                                                if (s === "expired") return accentAmber
+                                                if (s === "expired" || s === "unverified") return accentAmber
                                                 return textSecondary
                                             }
                                         }
