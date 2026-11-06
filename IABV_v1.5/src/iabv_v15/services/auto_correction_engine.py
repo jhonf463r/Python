@@ -1634,7 +1634,21 @@ def _build_deductive_context(
     try:
         from iabv_v15.services.account_resource_scanner import get_all_quota_status
         qs = get_all_quota_status()
-        if qs['total_tracked'] == 0:
+        coverage = qs.get('source_coverage')
+        quota_status = (
+            coverage.get('quota_tracker')
+            if isinstance(coverage, dict)
+            else 'UNVERIFIED'
+        )
+        if quota_status not in {'READ_OK', 'CONFIRMED_NOT_FOUND'}:
+            parts.append(
+                f'- Cuotas no verificables ({quota_status}); '
+                'no inferir que no hay cuentas ni que todas están agotadas.'
+            )
+            quota_error = (qs.get('source_errors') or {}).get('quota_tracker')
+            if quota_error:
+                parts.append(f'  Diagnóstico: {str(quota_error)[:120]}')
+        elif qs['total_tracked'] == 0:
             parts.append('- Sin cuentas rastreadas todavia.')
         else:
             for s in qs['statuses']:
@@ -1658,7 +1672,28 @@ def _build_deductive_context(
     try:
         from iabv_v15.services.account_resource_scanner import estimate_available_workers
         pool = estimate_available_workers()
-        if pool['available_count'] == 0 and pool['exhausted_count'] == 0:
+        pool_coverage = pool.get('source_coverage')
+        pool_quota_status = (
+            pool_coverage.get('quota_tracker')
+            if isinstance(pool_coverage, dict)
+            else 'UNVERIFIED'
+        )
+        unverified_workers = pool.get('unverified') or []
+        if pool_quota_status not in {'READ_OK', 'CONFIRMED_NOT_FOUND'}:
+            parts.append(
+                f'- Capacidad de cuota no verificable ({pool_quota_status}); '
+                'no seleccionar estos workers.'
+            )
+        if unverified_workers:
+            parts.append(
+                f'- Sesiones detectadas sin cuota verificada: {len(unverified_workers)} '
+                '(no disponibles para despacho).'
+            )
+        if (
+            pool['available_count'] == 0
+            and pool['exhausted_count'] == 0
+            and not unverified_workers
+        ):
             parts.append('- Sin asistentes con sesion activa detectados.')
         else:
             for w in pool.get('workers', []):
