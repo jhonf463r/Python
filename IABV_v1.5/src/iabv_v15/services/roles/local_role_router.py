@@ -226,6 +226,10 @@ class LocalRoleRouter:
                 else None
             )
 
+        if 'error' in pool:
+            # Transient scanner failures must not be cached as a healthy empty pool.
+            cache_revision = None
+
         with self._worker_health_lock:
             self._worker_pool_cache = dict(pool)
             self._worker_pool_cached_at = time.monotonic()
