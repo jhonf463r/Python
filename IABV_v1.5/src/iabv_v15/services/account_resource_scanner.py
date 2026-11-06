@@ -957,7 +957,7 @@ def governed_quota_rotation(
       4. Never auto-switch without traceability — every rotation is logged.
 
     Returns a dict with:
-    - ``action``: 'keep' | 'rotate' | 'wait' | 'no_accounts'
+    - ``action``: 'keep' | 'rotate' | 'wait' | 'no_accounts' | 'unverified'
     - ``current``: status of current account (or None)
     - ``next``: recommended next account (or None)
     - ``wait_until``: ISO timestamp when the earliest account resets (if waiting)
