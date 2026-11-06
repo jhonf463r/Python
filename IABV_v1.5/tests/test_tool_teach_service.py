@@ -178,6 +178,28 @@ def test_external_assistant_task_omits_operational_launch_paths_from_persisted_t
                 'context_pack': 'contexto de consulta',
                 'response_capture_mode': 'manual_pasteback',
                 'requires_manual_pasteback': True,
+                'actions': [
+                    {
+                        'action_type': 'launch_app',
+                        'label': 'Abrir asistente externo',
+                        'target': str(executable),
+                        'requires_approval': True,
+                        'parameters': {'app_path': str(executable)},
+                        'metadata': {'web_url': 'https://chatgpt.com/private?token=nested-action-token'},
+                    },
+                    {
+                        'action_type': 'llm_query',
+                        'label': 'Contexto de consulta',
+                        'value': 'contexto de consulta',
+                    },
+                ],
+                'rollback_actions': [
+                    {
+                        'action_type': 'open_url',
+                        'label': 'Rollback URL',
+                        'target': 'https://chatgpt.com/rollback?token=rollback-secret',
+                    },
+                ],
             },
         )
 
@@ -198,8 +220,19 @@ def test_external_assistant_task_omits_operational_launch_paths_from_persisted_t
         assert persisted_parameters['executable_path_omitted'] is True
         assert launch_action.target == expected_launch_ref
         assert launch_action.metadata['launch_target_ref'] == expected_launch_ref
+        assert launch_action.parameters['app_path_omitted'] is True
+        assert launch_action.metadata['web_url_omitted'] is True
+        assert task.rollback_actions[0].target == expected_launch_ref
+        assert persisted_parameters['actions'][0]['target'] == expected_launch_ref
+        assert persisted_parameters['actions'][0]['parameters']['app_path_omitted'] is True
+        assert persisted_parameters['actions'][0]['metadata']['web_url_omitted'] is True
+        assert persisted_parameters['rollback_actions'][0]['target'] == expected_launch_ref
         assert str(executable) not in repr(task.metadata)
+        assert str(executable) not in repr(task.actions)
+        assert str(executable) not in repr(task.rollback_actions)
         assert 'private-web-token' not in repr(task.metadata)
+        assert 'nested-action-token' not in repr(task.metadata)
+        assert 'rollback-secret' not in repr(task.metadata)
     finally:
         shutil.rmtree(root, ignore_errors=True)
 
