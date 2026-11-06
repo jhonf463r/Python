@@ -238,6 +238,47 @@ class LocalRoleRouter:
                 'ranked_workers': [],
             }
 
+        quota_coverage = pool.get('source_coverage')
+        quota_status = (
+            quota_coverage.get('quota_tracker')
+            if isinstance(quota_coverage, dict)
+            else 'UNVERIFIED'
+        )
+        source_errors = pool.get('source_errors')
+        source_errors = source_errors if isinstance(source_errors, dict) else {}
+        quota_error = source_errors.get('quota_tracker')
+        status_label = (
+            str(quota_status).strip()
+            if isinstance(quota_status, str) and quota_status.strip()
+            else 'UNVERIFIED'
+        )
+        unverified_count = pool.get('unverified_count', 0)
+        if not isinstance(unverified_count, int) or isinstance(unverified_count, bool):
+            unverified_count = 0
+
+        # Fail closed before ranking or consulting the approval ledger. An old
+        # user approval must never turn an unverified quota read into a worker.
+        if quota_status != 'READ_OK' or quota_error:
+            if quota_status == 'READ_OK' and quota_error:
+                status_label = 'READ_FAILED'
+            reason = (
+                f'UNRESOLVED:quota_tracker_{status_label.lower()} — '
+                'no seleccionar workers ni reutilizar aprobaciones previas '
+                'sin una lectura de cuota verificada.'
+            )
+            return {
+                'usable': False,
+                'reason': reason,
+                'available_count': 0,
+                'workers': [],
+                'top_worker': None,
+                'ranked_workers': [],
+                'unverified_count': unverified_count,
+                'source_coverage': dict(quota_coverage or {}) if isinstance(quota_coverage, dict) else {},
+                'source_errors': dict(source_errors),
+                'quota_source_status': status_label,
+            }
+
         from iabv_v15.services.account_resource_scanner import (
             rank_workers_for_target,
         )
@@ -248,28 +289,11 @@ class LocalRoleRouter:
         ranked = rank_workers_for_target(target, pool=pool, block_signals=block_signals or {})
 
         if not ranked:
-            quota_coverage = pool.get('source_coverage')
-            quota_status = (
-                quota_coverage.get('quota_tracker')
-                if isinstance(quota_coverage, dict)
-                else 'UNVERIFIED'
-            )
-            unverified_count = pool.get('unverified_count', 0)
-            if not isinstance(unverified_count, int) or isinstance(unverified_count, bool):
-                unverified_count = 0
-            if (
-                quota_status not in {'READ_OK', 'CONFIRMED_NOT_FOUND'}
-                or unverified_count > 0
-            ):
-                status_label = (
-                    str(quota_status).strip()
-                    if isinstance(quota_status, str) and quota_status.strip()
-                    else 'UNVERIFIED'
-                )
+            if unverified_count > 0:
                 reason = (
-                    f'UNRESOLVED:quota_tracker_{status_label.lower()} — '
-                    f'{unverified_count} sesión(es) con cuota no verificada; '
-                    'no inferir que no hay sesiones ni que todas están agotadas.'
+                    f'UNRESOLVED:account_quota_missing — {unverified_count} '
+                    'sesión(es) detectadas sin una cuota individual verificada; '
+                    'no son accionables.'
                 )
             elif available == 0:
                 reason = 'No hay workers con sesion activa y cuota disponible.'
@@ -286,7 +310,8 @@ class LocalRoleRouter:
                 'ranked_workers': [],
                 'unverified_count': unverified_count,
                 'source_coverage': dict(quota_coverage or {}) if isinstance(quota_coverage, dict) else {},
-                'source_errors': dict(pool.get('source_errors') or {}),
+                'source_errors': dict(source_errors),
+                'quota_source_status': status_label,
             }
 
         top = ranked[0]
