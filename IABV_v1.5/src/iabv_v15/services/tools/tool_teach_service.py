@@ -643,7 +643,12 @@ class ToolTeachService:
                 '',
                 str(goal_parameters.get('assistant_kind') or goal_parameters.get('assistant_preference') or self._assistant_family_for_tool_id(tool_id)).strip().lower(),
             ) or 'assistant'
-            launch_mode_for_ref = str(goal_parameters.get('launch_mode') or '').strip().lower()
+            selected_card_for_ref = self.registry.get_card(tool_id)
+            launch_mode_for_ref = str(
+                (selected_card_for_ref.metadata.get('launch_mode') if selected_card_for_ref is not None else '')
+                or goal_parameters.get('launch_mode')
+                or ''
+            ).strip().lower()
             if not launch_mode_for_ref:
                 launch_mode_for_ref = 'web_assisted' if tool_id.endswith('_web_assisted') else 'desktop_app'
             launch_mode_ref = 'web' if launch_mode_for_ref == 'web_assisted' else 'desktop'
@@ -656,7 +661,7 @@ class ToolTeachService:
             safe_actions: list[ToolAction] = []
             for action in actions:
                 if action.action_type in {ToolActionType.LAUNCH_APP, ToolActionType.OPEN_URL}:
-                    action_metadata = dict(action.metadata or {})
+                    action_metadata = self._remove_external_launch_path_fields(dict(action.metadata or {}))
                     action_metadata['launch_target_ref'] = launch_target_ref
                     safe_parameters = self._remove_external_launch_path_fields(dict(action.parameters or {}))
                     safe_actions.append(
