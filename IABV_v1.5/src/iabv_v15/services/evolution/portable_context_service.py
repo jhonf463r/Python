@@ -1086,8 +1086,24 @@ class PortableContextService:
             secrets = {'error': 'secrets_read_failed'}
 
         failures: list[str] = []
+        quota_coverage = quotas.get('source_coverage')
+        quota_source_status = (
+            quota_coverage.get('quota_tracker')
+            if isinstance(quota_coverage, dict)
+            else None
+        )
         if 'error' in quotas:
+            quota_source_status = 'READ_FAILED'
             failures.append('quota_read_failed')
+        elif quota_source_status not in {'READ_OK', 'CONFIRMED_NOT_FOUND'}:
+            quota_source_status = (
+                quota_source_status
+                if isinstance(quota_source_status, str) and quota_source_status.strip()
+                else 'UNVERIFIED'
+            )
+            failure_code = f'quota_tracker_{quota_source_status.lower()}'
+            if failure_code not in failures:
+                failures.append(failure_code)
         if 'error' in workers:
             failures.append('worker_read_failed')
         if 'error' in secrets:
@@ -1106,20 +1122,37 @@ class PortableContextService:
             }
             for w in workers.get('workers', [])[:15]
         ]
+        unverified_workers = [
+            {
+                'tool': w.get('tool', ''),
+                'email': w.get('email', ''),
+                'browser': w.get('browser', ''),
+                'profile': w.get('profile', ''),
+            }
+            for w in workers.get('unverified', [])[:15]
+        ]
 
         status = 'partial_failure' if failures else 'ok'
         return {
             'status': status,
             'read_failures': failures,
+            'quota_source_status': quota_source_status or 'UNVERIFIED',
+            'quota_source_error': (
+                (quotas.get('source_errors') or {}).get('quota_tracker', '')
+                if isinstance(quotas.get('source_errors') or {}, dict)
+                else ''
+            ),
             'quota_total_tracked': quotas.get('total_tracked', 0),
             'quota_exhausted_count': quotas.get('exhausted_count', 0),
             'quota_available_count': quotas.get('available_count', 0),
             'exhausted_accounts': exhausted[:10],
             'worker_available_count': workers.get('available_count', 0),
             'worker_exhausted_count': workers.get('exhausted_count', 0),
+            'worker_unverified_count': workers.get('unverified_count', len(unverified_workers)),
             'worker_total_remaining_messages': workers.get('total_remaining_messages', 0),
             'workers_by_tool': list(workers.get('tools_available', [])),
             'available_workers': available_workers,
+            'unverified_workers': unverified_workers,
             'secrets_configured': secrets.get('configured_count', 0),
             'secrets_missing': list(secrets.get('missing', []))[:5],
         }
@@ -1148,6 +1181,13 @@ class PortableContextService:
                     'status': 'exhausted',
                     'resets_at': e.get('resets_at', ''),
                 })
+            for w in status.get('unverified_workers', [])[:8]:
+                items.append({
+                    'label': f"{w.get('tool', '?')}: {w.get('email', '?')}",
+                    'status': 'unverified',
+                    'browser': w.get('browser', ''),
+                    'profile': w.get('profile', ''),
+                })
             for m in status.get('secrets_missing', [])[:3]:
                 items.append({
                     'label': f'Secreto faltante: {m}',
@@ -1156,11 +1196,13 @@ class PortableContextService:
 
         avail = status.get('worker_available_count', 0)
         exhausted = status.get('quota_exhausted_count', 0)
+        unverified_count = status.get('worker_unverified_count', 0)
         remaining = status.get('worker_total_remaining_messages', 0)
         tools = status.get('workers_by_tool', [])
         missing_secrets = status.get('secrets_missing', [])
 
         read_failures = status.get('read_failures', [])
+        quota_source_status = status.get('quota_source_status', 'UNVERIFIED')
 
         if st == 'scanner_unavailable':
             summary = 'AccountResourceScanner no disponible. Cuotas y workers desconocidos.'
@@ -1172,6 +1214,11 @@ class PortableContextService:
             if exhausted > 0:
                 parts.append(f'{exhausted} cuentas agotadas')
             summary = ' | '.join(parts)
+        elif unverified_count > 0 and avail == 0 and exhausted == 0:
+            summary = (
+                f'{unverified_count} sesiones detectadas con cuota no verificada; '
+                'no son accionables hasta recuperar la integridad del tracker.'
+            )
         elif avail == 0 and exhausted == 0:
             summary = 'Sin cuentas rastreadas. El rastreo comienza al enviar mensajes.'
         else:
@@ -1193,12 +1240,25 @@ class PortableContextService:
             items=items,
             source_kind='account_resource_scanner',
             source_refs=['account_resource_scanner', 'quota_tracker.json'],
-            confidence=0.85 if st == 'ok' else (0.5 if st == 'partial_failure' else 0.0),
+            confidence=(
+                0.85
+                if st == 'ok' and unverified_count == 0
+                else 0.5
+                if st == 'partial_failure' or unverified_count > 0
+                else 0.0
+            ),
             last_updated=now,
+            unresolved_fields=(
+                [f'UNRESOLVED:{failure}' for failure in read_failures]
+                + (['UNRESOLVED:worker_quota_unverified'] if unverified_count else [])
+            ),
             metadata={
                 'status': st,
                 'worker_available_count': avail,
                 'quota_exhausted_count': exhausted,
+                'worker_unverified_count': unverified_count,
+                'quota_source_status': quota_source_status,
+                'quota_source_error': status.get('quota_source_error', ''),
                 'total_remaining_messages': remaining,
                 'tools_available': tools,
                 'secrets_configured': status.get('secrets_configured', 0),
