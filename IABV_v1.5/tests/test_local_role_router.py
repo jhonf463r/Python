@@ -298,6 +298,8 @@ def test_local_role_router_caches_health_snapshot_until_forced() -> None:
 
 def _fake_pool_healthy() -> dict[str, Any]:
     return {
+        'source_coverage': {'quota_tracker': 'READ_OK'},
+        'source_errors': {},
         'available_count': 2,
         'exhausted_count': 0,
         'total_remaining_messages': 30,
@@ -312,6 +314,8 @@ def _fake_pool_healthy() -> dict[str, Any]:
 
 def _fake_pool_exhausted() -> dict[str, Any]:
     return {
+        'source_coverage': {'quota_tracker': 'READ_OK'},
+        'source_errors': {},
         'available_count': 0,
         'exhausted_count': 2,
         'total_remaining_messages': 0,
