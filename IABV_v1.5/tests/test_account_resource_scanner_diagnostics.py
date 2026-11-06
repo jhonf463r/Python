@@ -610,3 +610,24 @@ def test_firefox_invalid_utf8_profile_is_partial(tmp_path, monkeypatch) -> None:
     assert status == "READ_PARTIAL"
     assert any("UnicodeDecodeError" in error for error in errors)
     assert "private-canary" not in repr(accounts)
+
+
+
+def test_quota_tracker_atomic_write_failure_preserves_previous_file_and_fails_closed(monkeypatch, tmp_path) -> None:
+    workspace = tmp_path / "quota-write-failure-workspace"
+    quota_path = workspace / "data" / "evolution" / "quota_tracker.json"
+    quota_path.parent.mkdir(parents=True)
+    original = '{"accounts":{"chatgpt:account@example.test":{"tool":"chatgpt","email":"account@example.test","messages":[],"total_sent":2}}}'
+    quota_path.write_text(original, encoding="utf-8")
+    monkeypatch.setenv("IABV_WORKSPACE", str(workspace))
+
+    def fail_replace(source, destination):
+        raise PermissionError("synthetic replace denied")
+
+    monkeypatch.setattr(account_resource_scanner.os, "replace", fail_replace)
+
+    with pytest.raises(RuntimeError, match="quota_tracker_write_failed:PermissionError"):
+        account_resource_scanner.record_message_sent("chatgpt", "account@example.test")
+
+    assert quota_path.read_text(encoding="utf-8") == original
+    assert list(quota_path.parent.glob(".quota_tracker.json.*.tmp")) == []

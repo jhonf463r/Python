@@ -780,12 +780,37 @@ def _load_quota_state() -> dict[str, Any]:
 
 
 def _save_quota_state(state: dict[str, Any]) -> None:
+    """Persist quota state atomically; never report success after a failed write."""
+    import tempfile as _tempfile
+
     qf = _quota_file()
+    temporary: Path | None = None
     try:
+        serialized = json.dumps(state, indent=2, ensure_ascii=False)
         qf.parent.mkdir(parents=True, exist_ok=True)
-        qf.write_text(json.dumps(state, indent=2, ensure_ascii=False), encoding='utf-8')
+        with _tempfile.NamedTemporaryFile(
+            mode='w',
+            encoding='utf-8',
+            newline='',
+            prefix=f'.{qf.name}.',
+            suffix='.tmp',
+            dir=qf.parent,
+            delete=False,
+        ) as handle:
+            temporary = Path(handle.name)
+            handle.write(serialized)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary, qf)
+        temporary = None
     except Exception as exc:
-        logger.debug('quota_tracker: failed to save state: %s', exc)
+        if temporary is not None:
+            try:
+                temporary.unlink(missing_ok=True)
+            except OSError:
+                pass
+        logger.warning('quota_tracker: atomic save failed (%s)', type(exc).__name__)
+        raise RuntimeError(f'quota_tracker_write_failed:{type(exc).__name__}') from exc
 
 
 def record_message_sent(tool: str, email: str) -> dict[str, Any]:
