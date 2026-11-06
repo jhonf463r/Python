@@ -4,7 +4,7 @@ import inspect
 import re
 from collections import Counter
 from datetime import datetime, timezone
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 from typing import Any
 
 from iabv_v15.domain.models import (
@@ -1787,14 +1787,38 @@ class ToolTeachService:
         else:
             return ''
         profile_dir.mkdir(parents=True, exist_ok=True)
-        return str(profile_dir)
+        try:
+            return profile_dir.resolve().relative_to(self.workspace_root.resolve()).as_posix()
+        except ValueError:
+            return ''
 
-    def _has_session_content(self, path_value: str) -> bool:
+    def _resolve_session_profile_path(self, path_value: str) -> Path | None:
         path_text = str(path_value or '').strip()
         if not path_text:
-            return False
-        path = Path(path_text)
-        if not path.exists():
+            return None
+        root = self.workspace_root.resolve()
+        candidate = Path(path_text)
+        if candidate.is_absolute():
+            resolved = candidate.resolve()
+        else:
+            # Windows-absolute paths must not be mistaken for relative paths
+            # when legacy records are inspected on a non-Windows host.
+            if PureWindowsPath(path_text).is_absolute():
+                return None
+            normalized = path_text.replace('\\', '/')
+            relative = Path(normalized)
+            if '..' in relative.parts:
+                return None
+            resolved = (root / relative).resolve()
+        try:
+            resolved.relative_to(root)
+        except ValueError:
+            return None
+        return resolved
+
+    def _has_session_content(self, path_value: str) -> bool:
+        path = self._resolve_session_profile_path(path_value)
+        if path is None or not path.exists() or not path.is_dir():
             return False
         try:
             return any(path.iterdir())
