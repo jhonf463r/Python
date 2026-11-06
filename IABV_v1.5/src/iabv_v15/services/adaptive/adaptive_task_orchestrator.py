@@ -719,77 +719,77 @@ class AdaptiveTaskOrchestrator:
         A worker selected during preflight is not proof of the account used by
         the external executor. Sandbox runs, missing actual identity, or a
         tool/email mismatch are retained as explicit non-recording outcomes.
+        The source label is returned for traceability, without persisting an
+        account identity that the executor did not verify.
         """
-        status = str(result.get('status') or '').strip().lower()
-        if status in {'noop', 'failed', 'blocked_external', 'unavailable', ''}:
+        source_label = str(source or '').strip()
+
+        def _outcome(
+            status: str,
+            reason: str,
+            **fields: Any,
+        ) -> dict[str, Any]:
             return {
-                'status': 'NOT_COUNTED',
-                'reason': 'dispatch_not_successful',
+                'status': status,
+                'reason': reason,
+                'source': source_label,
+                **fields,
             }
 
+        result_status = str(result.get('status') or '').strip().lower()
+        if result_status in {'noop', 'failed', 'blocked_external', 'unavailable', ''}:
+            return _outcome('NOT_COUNTED', 'dispatch_not_successful')
+
         if result.get('dry_run') is True or result.get('sandboxed') is True:
-            return {
-                'status': 'NOT_COUNTED',
-                'reason': 'sandbox_dry_run',
-            }
+            return _outcome('NOT_COUNTED', 'sandbox_dry_run')
         if result.get('dry_run') is not False:
-            return {
-                'status': 'UNVERIFIED',
-                'reason': 'dry_run_state_missing',
-            }
+            return _outcome('UNVERIFIED', 'dry_run_state_missing')
 
         # assistant_kind can be the requested family; only the executor's
         # explicit actual_assistant_kind proves what ran.
-        actual_tool = str(
-            result.get('actual_assistant_kind') or ''
-        ).strip().lower()
+        actual_tool = str(result.get('actual_assistant_kind') or '').strip().lower()
         actual_email = str(result.get('actual_account_email') or '').strip()
         expected_tool = str(expected_tool or '').strip().lower()
         expected_email = str(expected_email or '').strip()
 
         if not expected_tool or not expected_email:
-            return {
-                'status': 'UNVERIFIED',
-                'reason': 'preflight_worker_identity_missing',
-            }
+            return _outcome('UNVERIFIED', 'preflight_worker_identity_missing')
         if not actual_tool:
-            return {
-                'status': 'UNVERIFIED',
-                'reason': 'actual_tool_identity_missing',
-            }
+            return _outcome('UNVERIFIED', 'actual_tool_identity_missing')
         if actual_tool != expected_tool:
-            return {
-                'status': 'UNVERIFIED',
-                'reason': 'actual_tool_mismatch',
-                'expected_tool': expected_tool,
-                'actual_tool': actual_tool,
-            }
+            return _outcome(
+                'UNVERIFIED',
+                'actual_tool_mismatch',
+                expected_tool=expected_tool,
+                actual_tool=actual_tool,
+            )
         if not actual_email:
-            return {
-                'status': 'UNVERIFIED',
-                'reason': 'actual_account_identity_missing',
-                'actual_tool': actual_tool,
-            }
+            return _outcome(
+                'UNVERIFIED',
+                'actual_account_identity_missing',
+                actual_tool=actual_tool,
+            )
         if actual_email.casefold() != expected_email.casefold():
-            return {
-                'status': 'UNVERIFIED',
-                'reason': 'actual_account_mismatch',
-                'actual_tool': actual_tool,
-            }
+            return _outcome(
+                'UNVERIFIED',
+                'actual_account_mismatch',
+                actual_tool=actual_tool,
+            )
 
         quota = cls._record_quota_usage(
             actual_tool,
             actual_email,
-            source=source,
+            source=source_label,
         )
         if quota is None:
-            return {
-                'status': 'UNVERIFIED',
-                'reason': 'quota_tracker_write_not_confirmed',
-                'actual_tool': actual_tool,
-            }
+            return _outcome(
+                'UNVERIFIED',
+                'quota_tracker_write_not_confirmed',
+                actual_tool=actual_tool,
+            )
         return {
             'status': 'RECORDED',
+            'source': source_label,
             'actual_tool': actual_tool,
             'quota_status': quota,
         }
