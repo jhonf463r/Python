@@ -521,24 +521,43 @@ class ControlMasterService:
             self._record_work_queue_source("tests_state", "UNVERIFIED")
             return []
 
-        self._record_work_queue_source("tests_state", "READ_OK")
         has_failures = (
             counters["failed"] > 0
             or counters["errors"] > 0
             or returncode != 0
             or timed_out
         )
+        execution_verified = (
+            returncode == 0
+            and timed_out is False
+            and counters["passed"] > 0
+            and counters["failed"] == 0
+            and counters["errors"] == 0
+        )
+        if not has_failures and not execution_verified:
+            self._record_work_queue_source("tests_state", "READ_UNVERIFIED")
+            return []
+
+        self._record_work_queue_source("tests_state", "READ_OK")
         item_id = f"tests:{evidence_id}"
         if not has_failures or item_id in seen_ids:
             return []
 
         seen_ids.add(item_id)
         title = (
-            f"Tests failed: {counters['failed']} failed, "
-            f"{counters['errors']} errors"
+            f"Test run exited with code {returncode} "
+            f"({counters['failed']} failed, {counters['errors']} errors)"
+            if returncode != 0
+            else (
+                f"Tests failed: {counters['failed']} failed, "
+                f"{counters['errors']} errors"
+            )
         )
         if timed_out:
-            title += " (timeout)"
+            title = (
+                f"Test execution timed out "
+                f"({counters['failed']} failed, {counters['errors']} errors)"
+            )
         return [
             self._make_item(
                 item_id=item_id,
