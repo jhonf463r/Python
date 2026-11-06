@@ -1077,15 +1077,15 @@ class AdaptiveTaskOrchestrator:
             result_dict.setdefault('assistant_kind', secondary_kind)
             result_dict['chained_from'] = primary_kind
             result_dict['chain_type'] = 'iterative_reasoning'
-            _status = str(result_dict.get('status') or '')
-            if _status not in ('noop', 'failed', 'blocked_external', ''):
-                quota = self._record_quota_usage(
-                    str(result_dict.get('actual_assistant_kind') or secondary_kind),
-                    _email,
-                    source='chained_ia_consultation',
-                )
-                if quota is not None:
-                    result_dict['quota_status'] = quota
+            quota_tracking = self._record_quota_usage_if_verified(
+                result_dict,
+                expected_tool=secondary_kind,
+                expected_email=_email,
+                source='chained_ia_consultation',
+            )
+            result_dict['quota_tracking'] = quota_tracking
+            if quota_tracking['status'] == 'RECORDED':
+                result_dict['quota_status'] = quota_tracking['quota_status']
             return result_dict
         except Exception:
             return None
@@ -1177,15 +1177,15 @@ class AdaptiveTaskOrchestrator:
             return None
         primary_dict = dict(primary_result or {})
         primary_dict.setdefault('assistant_kind', primary_ia)
-        _ps = str(primary_dict.get('status') or '')
-        if _ps not in ('noop', 'failed', 'blocked_external', ''):
-            _q = self._record_quota_usage(
-                str(primary_dict.get('actual_assistant_kind') or primary_ia),
-                _email_p,
-                source='coordinated_plan_primary',
-            )
-            if _q is not None:
-                primary_dict['quota_status'] = _q
+        quota_tracking = self._record_quota_usage_if_verified(
+            primary_dict,
+            expected_tool=primary_ia,
+            expected_email=_email_p,
+            source='coordinated_plan_primary',
+        )
+        primary_dict['quota_tracking'] = quota_tracking
+        if quota_tracking['status'] == 'RECORDED':
+            primary_dict['quota_status'] = quota_tracking['quota_status']
         chained_result = None
         if secondary_ia and self._has_external_response(primary_dict):
             request = InferenceRequest(
@@ -1273,15 +1273,15 @@ class AdaptiveTaskOrchestrator:
             return None
         primary_dict = dict(primary_result or {})
         primary_dict.setdefault('assistant_kind', primary_ia)
-        _aps = str(primary_dict.get('status') or '')
-        if _aps not in ('noop', 'failed', 'blocked_external', ''):
-            _aq = self._record_quota_usage(
-                str(primary_dict.get('actual_assistant_kind') or primary_ia),
-                _email_ap,
-                source='auto_execute_from_sync_pulse',
-            )
-            if _aq is not None:
-                primary_dict['quota_status'] = _aq
+        quota_tracking = self._record_quota_usage_if_verified(
+            primary_dict,
+            expected_tool=primary_ia,
+            expected_email=_email_ap,
+            source='auto_execute_from_sync_pulse',
+        )
+        primary_dict['quota_tracking'] = quota_tracking
+        if quota_tracking['status'] == 'RECORDED':
+            primary_dict['quota_status'] = quota_tracking['quota_status'
         secondary_ia = str(best.get('secondary_ia') or '')
         chained_result = None
         if secondary_ia and self._has_external_response(primary_dict):
