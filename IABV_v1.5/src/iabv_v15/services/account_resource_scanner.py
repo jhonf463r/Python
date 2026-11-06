@@ -1501,9 +1501,10 @@ def build_inventory_snapshot(
 ) -> 'AccountInventorySnapshot':
     """Build a formal ``AccountInventorySnapshot`` from live scanner data.
 
-    Composes ``verify_account_sessions``, ``get_all_quota_status``, and
-    ``rank_workers_for_target`` into a single typed contract that Control
-    Master, PortableContext and the UI can consume directly.
+    Composes the single-read worker pool (session verification + quota
+    coverage) with ``rank_workers_for_target`` into a typed contract that
+    Control Master, PortableContext and the UI can consume directly. Avoid
+    a second quota read so one snapshot cannot mix conflicting tracker states.
 
     The ``continuity_queue`` is the ranked subset of non-exhausted entries
     sorted by composite score (quota × block risk).  The first entry is
@@ -1519,12 +1520,10 @@ def build_inventory_snapshot(
     )
 
     pool = estimate_available_workers()
-    all_quota = get_all_quota_status()
-
-    # Build quota lookup
-    quota_lookup: dict[str, dict[str, Any]] = {}
-    for s in all_quota.get('statuses', []):
-        quota_lookup[f"{s['tool']}:{s['email']}"] = s
+    source_coverage = dict(pool.get('source_coverage') or {})
+    source_errors = dict(pool.get('source_errors') or {})
+    quota_source_status = source_coverage.get('quota_tracker', 'UNVERIFIED')
+    quota_source_trustworthy = quota_source_status == 'READ_OK'
 
     entries: list[AccountInventoryEntry] = []
     now = utc_now()
@@ -1538,8 +1537,12 @@ def build_inventory_snapshot(
     for w in all_workers:
         email = w.get('email', '')
         tool = w.get('tool', '')
-        exhausted = w.get('exhausted', False)
-        remaining = w.get('remaining_messages', 0)
+        quota_verified = (
+            w.get('quota_verified') is True
+            and quota_source_trustworthy
+        )
+        exhausted = w.get('exhausted', False) if quota_verified else False
+        remaining = w.get('remaining_messages', 0) if quota_verified else 0
         limit = w.get('limit', 0)
 
         resets_at = None
@@ -1549,8 +1552,7 @@ def build_inventory_snapshot(
             except (ValueError, TypeError):
                 pass
 
-        # Unknown quota is unresolved, never promoted to available.
-        quota_verified = w.get('quota_verified', True)
+        # Unknown or incoherent quota coverage is unresolved, never active.
         if not quota_verified:
             status = AccountStatus.UNRESOLVED
         elif exhausted:
@@ -1561,11 +1563,15 @@ def build_inventory_snapshot(
             status = AccountStatus.UNRESOLVED
 
         unresolved: list[str] = []
-        quota_key = f"{tool}:{email}"
-        if quota_key not in quota_lookup:
-            unresolved.append(
-                'UNRESOLVED:quota_never_tracked — cuota real desconocida'
-            )
+        if not quota_verified:
+            if quota_source_trustworthy:
+                unresolved.append(
+                    'UNRESOLVED:quota_never_tracked — cuota real desconocida'
+                )
+            else:
+                unresolved.append(
+                    f'UNRESOLVED:quota_tracker:{quota_source_status}'
+                )
 
         entry = AccountInventoryEntry(
             email=email,
@@ -1593,9 +1599,11 @@ def build_inventory_snapshot(
         )
         entries.append(entry)
 
-    # Compute scores via ranking engine (reuses existing block signal logic)
-    scored_workers = rank_workers_for_target(
-        '', pool=pool, block_signals=block_signals,
+    # Compute scores only from a quota snapshot with verified source coverage.
+    scored_workers = (
+        rank_workers_for_target('', pool=pool, block_signals=block_signals)
+        if quota_source_trustworthy
+        else []
     )
     score_lookup: dict[str, float] = {}
     risk_lookup: dict[str, list[str]] = {}
@@ -1627,7 +1635,11 @@ def build_inventory_snapshot(
     exhausted_count = sum(1 for e in entries if e.status == AccountStatus.EXHAUSTED)
     expired_count = sum(1 for e in entries if e.status == AccountStatus.EXPIRED)
     unresolved_count = sum(1 for e in entries if e.status == AccountStatus.UNRESOLVED)
-    total_remaining = sum(e.quota_remaining for e in entries if not e.exhausted)
+    total_remaining = sum(
+        e.quota_remaining
+        for e in entries
+        if e.status == AccountStatus.ACTIVE
+    )
     tools_available = sorted(set(e.tool for e in entries if e.status == AccountStatus.ACTIVE))
 
     # Collect all unresolved items
@@ -1638,14 +1650,9 @@ def build_inventory_snapshot(
         'UNRESOLVED:visible_account_state_requires_user_permission'
     )
 
-    source_coverage = {
-        **dict(pool.get('source_coverage') or {}),
-        **dict(all_quota.get('source_coverage') or {}),
-    }
-    source_errors = {
-        **dict(pool.get('source_errors') or {}),
-        **dict(all_quota.get('source_errors') or {}),
-    }
+    # Coverage and errors come from the same pool read as the entries.
+    source_coverage = dict(pool.get('source_coverage') or {})
+    source_errors = dict(pool.get('source_errors') or {})
     for source, status in source_coverage.items():
         if status != 'READ_OK':
             all_unresolved.append(f'UNRESOLVED:{source}:{status}')
