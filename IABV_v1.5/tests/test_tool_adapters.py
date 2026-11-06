@@ -48,11 +48,14 @@ def test_external_assistant_adapter_uses_clipboard_capture_when_runner_returns_t
     exe = root / 'Codex.exe'
     exe.write_text('stub', encoding='utf-8')
 
+    received_launch_targets: list[str] = []
+
     class _Runner:
         def __init__(self, workspace_root: str) -> None:
             self.workspace_root = workspace_root
 
         def capture_response_from_app(self, **kwargs) -> dict[str, object]:
+            received_launch_targets.append(str(kwargs.get('launch_target') or ''))
             return {
                 'launched': True,
                 'focused_title': 'Codex',
@@ -93,6 +96,13 @@ def test_external_assistant_adapter_uses_clipboard_capture_when_runner_returns_t
     assert result['metadata']['response_capture_mode'] == 'clipboard_capture'
     assert result['metadata']['manual_pasteback_required'] is False
     assert result['metadata']['response_captured'] is True
+    assert received_launch_targets == [str(exe)]
+    assert result['metadata']['launch_target_ref'] == 'desktop:codex'
+    assert 'launch_target' not in result['metadata']
+    assert result['extracted_data']['launch_target_ref'] == 'desktop:codex'
+    assert 'launch_target' not in result['extracted_data']
+    assert str(exe) not in repr(result['metadata'])
+    assert str(exe) not in repr(result['extracted_data'])
 
 
 def test_external_assistant_adapter_falls_back_to_manual_when_clipboard_capture_is_empty() -> None:
