@@ -188,14 +188,16 @@ def test_external_assistant_task_omits_operational_launch_paths_from_persisted_t
             if action.action_type == ToolActionType.LAUNCH_APP
         )
 
-        assert task.metadata['launch_target_ref'] == 'web:chatgpt'
-        assert persisted_parameters['launch_target_ref'] == 'web:chatgpt'
+        expected_mode = 'web' if task.tool_id.endswith('_web_assisted') else 'desktop'
+        expected_launch_ref = f'{expected_mode}:chatgpt'
+        assert task.metadata['launch_target_ref'] == expected_launch_ref
+        assert persisted_parameters['launch_target_ref'] == expected_launch_ref
         assert 'web_url' not in persisted_parameters
         assert 'executable_path' not in persisted_parameters
         assert persisted_parameters['web_url_omitted'] is True
         assert persisted_parameters['executable_path_omitted'] is True
-        assert launch_action.target == 'web:chatgpt'
-        assert launch_action.metadata['launch_target_ref'] == 'web:chatgpt'
+        assert launch_action.target == expected_launch_ref
+        assert launch_action.metadata['launch_target_ref'] == expected_launch_ref
         assert str(executable) not in repr(task.metadata)
         assert 'private-web-token' not in repr(task.metadata)
     finally:
