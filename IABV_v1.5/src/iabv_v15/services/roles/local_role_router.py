@@ -394,6 +394,15 @@ class LocalRoleRouter:
         if approval is None:
             return None
 
+        approval_tool = str(getattr(approval, 'tool', '') or '').strip().lower()
+        if not approval_tool or approval_tool != target:
+            logger.warning(
+                'worker_health_gate: approval tool binding mismatch '
+                '(requested=%s recorded=%s) — ignoring approval',
+                target or '(none)', approval_tool or '(empty)',
+            )
+            return None
+
         result: dict[str, Any] = {
             'email': approval.email,
             'tool': approval.tool,
@@ -405,7 +414,8 @@ class LocalRoleRouter:
         # Find matching worker in ranked list
         for w in ranked:
             if (
-                w.get('email', '').lower() == approval.email.lower()
+                str(w.get('tool', '')).strip().lower() == approval_tool
+                and w.get('email', '').lower() == approval.email.lower()
                 and not w.get('exhausted', False)
                 and w.get('remaining_messages', 0) > 0
             ):
