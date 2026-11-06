@@ -11,6 +11,7 @@ Verifica que el adaptador:
 
 from __future__ import annotations
 
+import asyncio
 from types import SimpleNamespace
 
 import pytest
@@ -35,6 +36,8 @@ from iabv_v15.services.tools.site_exploration_service import (  # noqa: E402
 
 
 class _FakeWorldModelService:
+    scan_stats = {"scan_count": 0}
+
     def __init__(self, snapshot: WorldModelSnapshot) -> None:
         self._snapshot = snapshot
         self.calls: list[tuple[str, bool]] = []
@@ -592,6 +595,7 @@ def test_audit_tools_blocked_when_audit_block_active(tmp_path) -> None:  # type:
     wm = _FakeWorldModelService(_default_snapshot(blocks=[block]))
     server = IABVMCPServer(
         _build_container(world_model_service=wm, workspace_root=str(tmp_path)),
+        allow_test_evidence_persistence=True,
     )
     for tool_name, kwargs in [
         ("read_repo_file", {"relative_path": "README.md"}),
@@ -599,6 +603,7 @@ def test_audit_tools_blocked_when_audit_block_active(tmp_path) -> None:  # type:
         ("capture_ui_screenshot", {}),
         ("git_status_and_log", {}),
         ("run_pytest", {}),
+        ("run_pytest", {"persist_evidence": True}),
     ]:
         payload = _call_tool(server, tool_name, **kwargs)
         assert payload["governance_blocked"] is True, f"{tool_name} no respetó el block"
@@ -655,7 +660,8 @@ def test_run_pytest_tool_signature_rejects_python_executable() -> None:
     tool = _get_tool(server, "run_pytest")
     sig = inspect.signature(tool.fn)
     assert "python_executable" not in sig.parameters
-    assert set(sig.parameters) <= {"suite", "keyword"}
+    assert set(sig.parameters) == {"suite", "keyword", "persist_evidence"}
+    assert sig.parameters["persist_evidence"].default is False
 
 
 def test_pytest_python_executable_prefers_environment_self_model(tmp_path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
@@ -1617,3 +1623,45 @@ def test_self_auto_merge_returns_governance_block_when_network_down() -> None:
     payload = _call_tool(server, "self_auto_merge", pr_number=5)
     assert payload.get("governance_blocked") is True
     assert payload.get("reason") == "network_unavailable"
+
+
+@pytest.mark.parametrize(
+    ("host_enabled", "requested", "obstructed", "expected"),
+    [
+        (False, None, False, None),
+        (True, None, False, None),
+        (False, True, False, "BLOCKED"),
+        (True, True, False, "PERSISTED"),
+        (True, True, True, "WRITE_FAILED"),
+    ],
+)
+def test_run_pytest_evidence_through_registered_tool(
+    tmp_path, monkeypatch, host_enabled, requested, obstructed, expected,
+) -> None:
+    from iabv_v15.infra.mcp import audit_tools
+
+    calls = []
+
+    def runner(**kwargs):
+        calls.append(kwargs)
+        return audit_tools.SubprocessResult(0, "1 passed in 0.01s", "", 0.01)
+
+    monkeypatch.setattr(audit_tools, "default_subprocess_runner", runner)
+    if obstructed:
+        (tmp_path / "data").touch()
+    server = IABVMCPServer(
+        _build_container(workspace_root=str(tmp_path)),
+        allow_test_evidence_persistence=host_enabled,
+    )
+    args = {} if requested is None else {"persist_evidence": requested}
+    _, result = asyncio.run(server.mcp.call_tool("run_pytest", args))
+
+    if expected == "BLOCKED":
+        assert result["reason"] == "test_evidence_persistence_not_enabled"
+        assert not calls
+    else:
+        assert len(calls) == 1
+        assert result["passed"] == 1
+        assert result.get("evidence_persistence", {}).get("status") == expected
+    evidence = tmp_path / "data" / "evolution" / "test_evidence" / "latest.json"
+    assert evidence.is_file() == (expected == "PERSISTED")

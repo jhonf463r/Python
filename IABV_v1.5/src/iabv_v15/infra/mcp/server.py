@@ -123,11 +123,13 @@ class IABVMCPServer:
         *,
         name: str = DEFAULT_SERVER_NAME,
         mcp: Any | None = None,
+        allow_test_evidence_persistence: bool = False,
     ) -> None:
         if container is None:
             raise ValueError("container no puede ser None")
         self.container = container
         self.name = name
+        self._allow_test_evidence_persistence = allow_test_evidence_persistence
         if mcp is None:
             from mcp.server.fastmcp import FastMCP  # lazy import
 
@@ -894,8 +896,9 @@ class IABVMCPServer:
         def run_pytest(
             suite: str | None = None,
             keyword: str | None = None,
+            persist_evidence: bool = False,
         ) -> dict[str, Any]:
-            """Ejecuta la batería oficial (o una suite whitelisted) read-only.
+            """Ejecuta una suite permitida. Por defecto no persiste evidencia.
 
             Args:
                 suite: ruta relativa al workspace (default ``tests/``).
@@ -903,6 +906,7 @@ class IABVMCPServer:
                     cualquier otra cosa se rechaza para evitar ejecución
                     arbitraria fuera del árbol de pruebas.
                 keyword: valor opcional de ``-k`` (alphanum + ``_.:[]-``).
+                persist_evidence: guarda TestEvidence si el servidor lo permite.
 
             El intérprete Python se resuelve server-side (desde
             ``container.config`` / ``EnvironmentSelfModel`` o la env var
@@ -916,12 +920,18 @@ class IABVMCPServer:
             )
             if block is not None:
                 return block
+            if persist_evidence and not self._allow_test_evidence_persistence:
+                return {
+                    "governance_blocked": True,
+                    "reason": "test_evidence_persistence_not_enabled",
+                }
             try:
                 return audit_tools.run_pytest(
                     self._workspace_root(),
                     suite=suite,
                     keyword=keyword,
                     python_executable=self._pytest_python_executable(),
+                    persist_evidence=persist_evidence,
                 )
             except audit_tools.AuditToolError as exc:
                 return exc.to_payload()
