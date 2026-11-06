@@ -1548,7 +1548,7 @@ class ToolTeachService:
         workspace_root = str(self.workspace_root or '').strip().rstrip('\\/')
         if workspace_root:
             normalized_root = workspace_root.replace('\\', '/')
-            root_pattern = re.escape(normalized_root).replace('/', r'[\\/]')
+            root_pattern = re.escape(normalized_root).replace('/', r'[\\/]') + r'(?=$|[\\/\s])'
             sanitized = re.sub(root_pattern, '[IABV_WORKSPACE]', sanitized, flags=re.IGNORECASE)
         return sanitized.strip()
 
