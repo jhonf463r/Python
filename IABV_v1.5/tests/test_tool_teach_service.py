@@ -1179,6 +1179,7 @@ def test_session_profile_path_resolution_accepts_legacy_in_root_and_rejects_esca
         assert service._has_session_content(str(outside)) is False
         assert service._has_session_content(escape_path) is False
         assert service._resolve_session_profile_path(escape_path) is None
+        assert service._resolve_session_profile_path(r'C:\\Users\\test\\browser_profile') is None
     finally:
         shutil.rmtree(root, ignore_errors=True)
         shutil.rmtree(outside, ignore_errors=True)
