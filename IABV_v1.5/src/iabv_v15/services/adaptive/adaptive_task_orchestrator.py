@@ -478,16 +478,16 @@ class AdaptiveTaskOrchestrator:
         result_dict.setdefault('assistant_kind', _candidate_kind)
         result_dict['candidate_score'] = float(candidate.get('score') or 0.0)
 
-        # Fase 2: record quota for parallel comparison dispatches too.
-        _status = str(result_dict.get('status') or '')
-        if _status not in ('noop', 'failed', 'blocked_external', 'unavailable', ''):
-            quota = self._record_quota_usage(
-                str(result_dict.get('actual_assistant_kind') or _candidate_kind),
-                _email,
-                source='parallel_ia_comparison',
-            )
-            if quota is not None:
-                result_dict['quota_status'] = quota
+        # Quota attribution is subject to the same actual-identity contract.
+        quota_tracking = self._record_quota_usage_if_verified(
+            result_dict,
+            expected_tool=_candidate_kind,
+            expected_email=_email,
+            source='parallel_ia_comparison',
+        )
+        result_dict['quota_tracking'] = quota_tracking
+        if quota_tracking['status'] == 'RECORDED':
+            result_dict['quota_status'] = quota_tracking['quota_status']
 
         return result_dict
 
@@ -704,6 +704,95 @@ class AdaptiveTaskOrchestrator:
                 exc_info=True,
             )
             return None
+
+    @classmethod
+    def _record_quota_usage_if_verified(
+        cls,
+        result: dict[str, Any],
+        *,
+        expected_tool: str,
+        expected_email: str,
+        source: str = '',
+    ) -> dict[str, Any]:
+        """Record quota only when execution and actual account identity agree.
+
+        A worker selected during preflight is not proof of the account used by
+        the external executor. Sandbox runs, missing actual identity, or a
+        tool/email mismatch are retained as explicit non-recording outcomes.
+        """
+        status = str(result.get('status') or '').strip().lower()
+        if status in {'noop', 'failed', 'blocked_external', 'unavailable', ''}:
+            return {
+                'status': 'NOT_COUNTED',
+                'reason': 'dispatch_not_successful',
+            }
+
+        if result.get('dry_run') is True or result.get('sandboxed') is True:
+            return {
+                'status': 'NOT_COUNTED',
+                'reason': 'sandbox_dry_run',
+            }
+        if result.get('dry_run') is not False:
+            return {
+                'status': 'UNVERIFIED',
+                'reason': 'dry_run_state_missing',
+            }
+
+        actual_tool = str(
+            result.get('actual_assistant_kind')
+            or result.get('assistant_kind')
+            or ''
+        ).strip().lower()
+        actual_email = str(result.get('actual_account_email') or '').strip()
+        expected_tool = str(expected_tool or '').strip().lower()
+        expected_email = str(expected_email or '').strip()
+
+        if not expected_tool or not expected_email:
+            return {
+                'status': 'UNVERIFIED',
+                'reason': 'preflight_worker_identity_missing',
+            }
+        if not actual_tool:
+            return {
+                'status': 'UNVERIFIED',
+                'reason': 'actual_tool_identity_missing',
+            }
+        if actual_tool != expected_tool:
+            return {
+                'status': 'UNVERIFIED',
+                'reason': 'actual_tool_mismatch',
+                'expected_tool': expected_tool,
+                'actual_tool': actual_tool,
+            }
+        if not actual_email:
+            return {
+                'status': 'UNVERIFIED',
+                'reason': 'actual_account_identity_missing',
+                'actual_tool': actual_tool,
+            }
+        if actual_email.casefold() != expected_email.casefold():
+            return {
+                'status': 'UNVERIFIED',
+                'reason': 'actual_account_mismatch',
+                'actual_tool': actual_tool,
+            }
+
+        quota = cls._record_quota_usage(
+            actual_tool,
+            actual_email,
+            source=source,
+        )
+        if quota is None:
+            return {
+                'status': 'UNVERIFIED',
+                'reason': 'quota_tracker_write_not_confirmed',
+                'actual_tool': actual_tool,
+            }
+        return {
+            'status': 'RECORDED',
+            'actual_tool': actual_tool,
+            'quota_status': quota,
+        }
 
     # ------------------------------------------------------------------
     # TemporalAwareness: track and detect task timing anomalies
@@ -1861,19 +1950,16 @@ class AdaptiveTaskOrchestrator:
             decision_context=decision_context,
         )
 
-        # Fase 2: record quota usage after successful external dispatch.
-        _result_status = str(result.get('status') or '')
-        if _result_status not in ('noop', 'failed', 'blocked_external', ''):
-            _actual_kind = str(
-                result.get('actual_assistant_kind')
-                or result.get('assistant_kind')
-                or _dispatch_tool
-            )
-            quota_status = self._record_quota_usage(
-                _actual_kind, _dispatch_email, source=source,
-            )
-            if quota_status is not None:
-                result['quota_status'] = quota_status
+        # Fase 2: quota attribution requires executor-confirmed account identity.
+        quota_tracking = self._record_quota_usage_if_verified(
+            result,
+            expected_tool=_dispatch_tool,
+            expected_email=_dispatch_email,
+            source=source,
+        )
+        result['quota_tracking'] = quota_tracking
+        if quota_tracking['status'] == 'RECORDED':
+            result['quota_status'] = quota_tracking['quota_status']
 
         # Incrementar contador de reintentos si es un reintento
         if needs_retry:
