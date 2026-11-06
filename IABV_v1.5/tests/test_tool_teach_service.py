@@ -1142,7 +1142,7 @@ def test_tool_teach_service_external_consultation_tracks_dedicated_session_metad
 
 def test_session_profile_path_resolution_accepts_legacy_in_root_and_rejects_escape_paths() -> None:
     root = _workspace('tool_teach_service_session_profile_path_scope')
-    outside = root.parent / 'external_profile_scope'
+    outside = root.parent / f'{root.name}_external_profile_scope'
     try:
         service, _repository = _service(root)
         in_root = root / 'data' / 'tool_teaching' / 'external_assistants' / 'legacy_profile'
