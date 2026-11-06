@@ -908,21 +908,37 @@ def get_all_quota_status() -> dict[str, Any]:
     }
 
 
-def best_account_for_tool(tool: str) -> dict[str, Any] | None:
-    """Pick the best available account for *tool* (least used, not exhausted).
+def _quota_tracker_source_status(all_status: dict[str, Any]) -> str:
+    """Return the explicit quota-tracker read state; missing coverage is unknown."""
+    coverage = all_status.get('source_coverage')
+    if not isinstance(coverage, dict):
+        return 'UNVERIFIED'
+    status = coverage.get('quota_tracker')
+    if not isinstance(status, str) or not status.strip():
+        return 'UNVERIFIED'
+    return status.strip()
 
-    Returns ``None`` if no accounts are tracked for the tool or all are
-    exhausted.  The program calls this before sending a query so it
-    automatically rotates to a fresh account.
+
+def best_account_for_tool(tool: str) -> dict[str, Any] | None:
+    """Pick an account only when the quota tracker read is trustworthy.
+
+    Returns None for a confirmed absent/empty tracker or when no account is
+    eligible. Raises a sanitized RuntimeError when tracker integrity is unknown,
+    so callers cannot mistake a corrupt read for an empty account inventory.
     """
     all_status = get_all_quota_status()
+    source_status = _quota_tracker_source_status(all_status)
+    if source_status == 'CONFIRMED_NOT_FOUND':
+        return None
+    if source_status != 'READ_OK':
+        raise RuntimeError(f'quota_tracker_unverified:{source_status.lower()}')
+
     candidates = [
         s for s in all_status['statuses']
         if s['tool'] == tool and not s['exhausted']
     ]
     if not candidates:
         return None
-    # Pick the one with the most remaining messages
     candidates.sort(key=lambda s: s['remaining'], reverse=True)
     return candidates[0]
 
@@ -952,6 +968,25 @@ def governed_quota_rotation(
 
     tool_lower = tool.strip().lower()
     all_status = get_all_quota_status()
+    source_status = _quota_tracker_source_status(all_status)
+
+    if source_status not in {'READ_OK', 'CONFIRMED_NOT_FOUND'}:
+        return {
+            'action': 'unverified',
+            'current': None,
+            'next': None,
+            'wait_until': None,
+            'reason': (
+                f'No se puede verificar el quota tracker ({source_status}); '
+                'no inferir que no hay cuentas ni que todas están agotadas.'
+            ),
+            'rotation_trace': {
+                'tool': tool_lower,
+                'decision': 'unverified',
+                'source_status': source_status,
+                'timestamp': datetime.now(timezone.utc).isoformat(),
+            },
+        }
 
     tool_accounts = [
         s for s in all_status['statuses']
@@ -1057,6 +1092,17 @@ def format_quota_report() -> str:
     """Human-readable report of quota status for all tracked accounts."""
     all_status = get_all_quota_status()
     lines: list[str] = ['== ESTADO DE CUOTAS POR CUENTA ==', '']
+
+    source_status = _quota_tracker_source_status(all_status)
+    if source_status not in {'READ_OK', 'CONFIRMED_NOT_FOUND'}:
+        lines.append(
+            f'No se puede verificar el quota tracker ({source_status}).'
+        )
+        error = (all_status.get('source_errors') or {}).get('quota_tracker')
+        if error:
+            lines.append(f'Diagnóstico: {str(error)[:120]}')
+        lines.append('No inferir que no hay cuentas ni que todas están agotadas.')
+        return '\n'.join(lines)
 
     if not all_status['statuses']:
         lines.append('No hay cuentas rastreadas todavía.')
@@ -1392,10 +1438,32 @@ def format_worker_pool_report() -> str:
     pool = estimate_available_workers()
     lines: list[str] = ['== POOL DE ASISTENTES DISPONIBLES ==', '']
 
+    source_status = _quota_tracker_source_status({
+        'source_coverage': pool.get('source_coverage')
+    })
+    unverified = pool.get('unverified') or []
     if not pool['workers'] and not pool['exhausted']:
-        lines.append('No hay asistentes con sesión activa detectados.')
-        lines.append('Para activar asistentes, inicia sesión en ChatGPT, Claude o Codex')
-        lines.append('en cualquier navegador (Chrome, Edge, Opera, Firefox, Brave, Vivaldi).')
+        if source_status not in {'READ_OK', 'CONFIRMED_NOT_FOUND'}:
+            lines.append(
+                f'Quota tracker no verificable ({source_status}); '
+                'capacidad disponible desconocida.'
+            )
+        if unverified:
+            lines.append(
+                f'{len(unverified)} sesiones detectadas con cuota no verificada; '
+                'no son accionables.'
+            )
+            for worker in unverified[:8]:
+                lines.append(
+                    f'  [NO VERIFICADA] {worker.get("tool", "?")}:'
+                    f'{worker.get("email", "?")} — '
+                    f'[{worker.get("browser", "?")}] {worker.get("profile", "?")}'
+                )
+            return '\n'.join(lines)
+        if source_status in {'READ_OK', 'CONFIRMED_NOT_FOUND'}:
+            lines.append('No hay asistentes con sesión activa detectados.')
+            lines.append('Para activar asistentes, inicia sesión en ChatGPT, Claude o Codex')
+            lines.append('en cualquier navegador (Chrome, Edge, Opera, Firefox, Brave, Vivaldi).')
         return '\n'.join(lines)
 
     if pool['workers']:
