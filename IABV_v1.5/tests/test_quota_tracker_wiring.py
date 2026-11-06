@@ -256,3 +256,85 @@ def test_cumulative_quota_counting(tmp_path: Path) -> None:
         assert r1 is not None and r2 is not None
         assert r2['total_sent_all_time'] == 2
         assert r2['used_in_window'] == 2
+
+
+
+def test_deductive_context_does_not_claim_no_accounts_when_quota_is_corrupt(
+    tmp_path: Path, monkeypatch,
+) -> None:
+    from iabv_v15.services.auto_correction_engine import _build_deductive_context
+    from iabv_v15.services.account_resource_scanner import (
+        estimate_available_workers,
+        get_all_quota_status,
+        scan_browser_accounts,
+        scan_browser_sessions,
+        scan_devin_api,
+        scan_github_api,
+        scan_ollama_api,
+    )
+
+    class _EmptyToolRegistry:
+        def __init__(self, workspace_root: str):
+            self.workspace_root = workspace_root
+
+        def list_cards(self):
+            return []
+
+    monkeypatch.setattr(
+        "iabv_v15.services.tools.tool_registry.ToolRegistry",
+        _EmptyToolRegistry,
+    )
+    monkeypatch.setattr(
+        "iabv_v15.services.account_resource_scanner.scan_browser_accounts",
+        lambda: {"count": 0, "accounts": []},
+    )
+    monkeypatch.setattr(
+        "iabv_v15.services.account_resource_scanner.scan_browser_sessions",
+        lambda: {"session_count": 0, "by_tool": {}},
+    )
+    monkeypatch.setattr(
+        "iabv_v15.services.account_resource_scanner.scan_ollama_api",
+        lambda: {"available": False},
+    )
+    monkeypatch.setattr(
+        "iabv_v15.services.account_resource_scanner.scan_devin_api",
+        lambda: {"available": False},
+    )
+    monkeypatch.setattr(
+        "iabv_v15.services.account_resource_scanner.scan_github_api",
+        lambda: {"available": False},
+    )
+    monkeypatch.setattr(
+        "iabv_v15.services.account_resource_scanner.get_all_quota_status",
+        lambda: {
+            "statuses": [],
+            "total_tracked": 0,
+            "source_coverage": {"quota_tracker": "CORRUPT"},
+            "source_errors": {"quota_tracker": "JSONDecodeError"},
+        },
+    )
+    monkeypatch.setattr(
+        "iabv_v15.services.account_resource_scanner.estimate_available_workers",
+        lambda: {
+            "workers": [],
+            "exhausted": [],
+            "unverified": [{
+                "tool": "chatgpt",
+                "email": "user@test.com",
+                "browser": "Chrome",
+                "profile": "Default",
+            }],
+            "unverified_count": 1,
+            "available_count": 0,
+            "exhausted_count": 0,
+            "total_remaining_messages": 0,
+            "source_coverage": {"quota_tracker": "CORRUPT"},
+        },
+    )
+
+    report = _build_deductive_context([], workspace=str(tmp_path))
+
+    assert "Cuotas no verificables (CORRUPT)" in report
+    assert "Sesiones detectadas sin cuota verificada: 1" in report
+    assert "Sin cuentas rastreadas todavia" not in report
+    assert "Sin asistentes con sesion activa detectados" not in report
