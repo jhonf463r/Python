@@ -1091,7 +1091,7 @@ class ToolTeachService:
             cleaned: dict[str, Any] = {}
             for key, item in value.items():
                 normalized_key = str(key).strip().lower()
-                if normalized_key in {'executable_path', 'install_path', 'app_path', 'launch_target', 'web_url', 'url', 'uri'}:
+                if normalized_key in {'executable_path', 'install_path', 'app_path', 'launch_target', 'launch_target_ref', 'web_url', 'url', 'uri'}:
                     cleaned[f'{normalized_key}_omitted'] = bool(item)
                 else:
                     cleaned[key] = cls._remove_external_launch_path_fields(item)
