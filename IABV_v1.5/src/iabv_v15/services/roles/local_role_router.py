@@ -361,6 +361,7 @@ class LocalRoleRouter:
             'fallback_used': fallback_used,
             'source_coverage': dict(pool.get('source_coverage') or {}),
             'source_errors': dict(pool.get('source_errors') or {}),
+            'quota_source_status': status_label,
             'unverified_count': pool.get('unverified_count', 0),
         }
         if approved_ref:
