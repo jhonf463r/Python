@@ -631,3 +631,23 @@ def test_quota_tracker_atomic_write_failure_preserves_previous_file_and_fails_cl
 
     assert quota_path.read_text(encoding="utf-8") == original
     assert list(quota_path.parent.glob(".quota_tracker.json.*.tmp")) == []
+
+
+
+def test_account_inventory_snapshot_has_effective_coverage_contract() -> None:
+    import iabv15.domain.models as domain_models
+    from iabv15.domain.models import AccountInventorySnapshot
+
+    model_source = Path(domain_models.__file__).read_text(encoding="utf-8")
+    assert model_source.count("class AccountInventorySnapshot(BaseModel):") == 1
+
+    snapshot = AccountInventorySnapshot(
+        source_coverage={"browser_accounts": "READ_PARTIAL", "quota_tracker": "READ_OK"},
+        source_errors={"browser_accounts": "UnicodeDecodeError"},
+    )
+
+    assert snapshot.source_coverage["browser_accounts"] == "READ_PARTIAL"
+    assert snapshot.source_errors["browser_accounts"] == "UnicodeDecodeError"
+    payload = snapshot.model_dump()
+    assert payload["source_coverage"] == snapshot.source_coverage
+    assert payload["source_errors"] == snapshot.source_errors

@@ -3054,18 +3054,6 @@ class AccountInventoryEntry(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
-class AccountInventorySnapshot(BaseModel):
-    """Point-in-time snapshot of every known account across all browsers.
-
-    Built by ``build_inventory_snapshot()`` in ``account_resource_scanner``.
-    Consumed by Control Master (governance), PortableContext (continuity)
-    and CentroVivo (UI).
-
-    ``continuity_queue`` is the ranked list of non-exhausted entries
-    sorted by score descending — the first entry is the recommended
-    next account.  The user must approve before any account is used."""
-
-
 # ---------------------------------------------------------------------------
 # Cross-Agent Synchronization — Handoff Knowledge
 # ---------------------------------------------------------------------------
