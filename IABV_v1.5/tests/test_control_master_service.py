@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
+from types import SimpleNamespace
 import shutil
 from pathlib import Path
 from uuid import uuid4
@@ -9,6 +11,7 @@ from uuid import uuid4
 from iabv_v15.domain.models import (
     ControlDecision,
     ControlDecisionStatus,
+    ControlMasterState,
     ControlRule,
     ControlRuleSeverity,
     ObjectiveNode,
@@ -103,6 +106,24 @@ def _build_service(root: Path) -> tuple[ControlMasterService, _FakeObjectiveRepo
         ),
     )
     return service, objectives
+
+
+def test_current_work_queue_reports_every_registered_source_even_when_unconfigured() -> None:
+    root = _workspace()
+    try:
+        service, _ = _build_service(root)
+        service.current_work_queue(limit=10)
+        assert set(service.last_work_queue_source_coverage) == {
+            "objective_repository",
+            "platform_pending_queue",
+            "pending_issue_repository",
+            "self_examination_service",
+            "runtime_audit",
+            "runtime_audit_durability",
+            "tests_state",
+        }
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
 
 
 def test_current_state_is_empty_when_nothing_saved() -> None:
@@ -496,5 +517,415 @@ def test_auto_close_is_safe_when_repository_has_no_list_children() -> None:
         updated = service.mark_objective(node.objective_id, "completed")
         assert updated is not None
         assert updated.status == ObjectiveStatus.COMPLETED
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+
+def test_current_state_marks_missing_persisted_source_unavailable() -> None:
+    root = _workspace()
+    try:
+        service, _ = _build_service(root)
+        state = service.current_state()
+        provenance = state.metadata["_space_time_control_master_source_provenance"]
+        assert provenance["freshness_status"] == "UNAVAILABLE"
+        assert provenance["read_status"] == "NO_SOURCE_SNAPSHOT"
+        assert provenance["source_state_id"] == ""
+        assert provenance["source_generated_at_utc"] is None
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_current_state_preserves_source_generation_before_projection_refresh() -> None:
+    root = _workspace()
+    try:
+        service, _ = _build_service(root)
+        source_generated = datetime.now(timezone.utc) - timedelta(minutes=1)
+        service.save_state(
+            ControlMasterState(
+                state_id="cm-source-state-001",
+                last_updated=source_generated,
+                current_vision="persisted source state",
+            )
+        )
+        projected = service.current_state()
+        provenance = projected.metadata["_space_time_control_master_source_provenance"]
+        assert provenance["source_state_id"] == "cm-source-state-001"
+        assert provenance["source_generated_at_utc"] == source_generated.isoformat()
+        assert provenance["source_observed_at_utc"]
+        assert provenance["source_revision_or_digest"].startswith("sha256:")
+        assert provenance["workspace_scope_id"]
+        assert provenance["freshness_status"] == "FRESH"
+        assert projected.last_updated >= source_generated
+        service.save_state(projected)
+        persisted = service.repository.load_latest_state()
+        assert persisted is not None
+        assert "_space_time_control_master_source_provenance" not in persisted.metadata
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_current_state_does_not_collapse_objective_read_failure_to_empty_buckets() -> None:
+    root = _workspace()
+    try:
+        service, objectives = _build_service(root)
+
+        def fail_list_recent(**kwargs):
+            raise RuntimeError("objective index unavailable")
+
+        objectives.list_recent = fail_list_recent  # type: ignore[method-assign]
+        import pytest
+        with pytest.raises(RuntimeError, match="objective index unavailable"):
+            service.current_state()
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_current_state_does_not_collapse_pending_issue_read_failure_to_empty_backlog() -> None:
+    root = _workspace()
+    try:
+        storage = ArtifactStorage(str(root))
+        repo = ControlMasterRepository(storage)
+
+        class _FailingPendingIssueRepository:
+            def list_recent_with_diagnostics(self):
+                raise RuntimeError("pending issue index unavailable")
+
+        service = ControlMasterService(
+            repository=repo,
+            pending_issue_repository=_FailingPendingIssueRepository(),
+        )
+        import pytest
+        with pytest.raises(RuntimeError, match="pending issue index unavailable"):
+            service.current_state()
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_current_state_uses_oses_current_review_and_does_not_hide_review_failure() -> None:
+    root = _workspace()
+    try:
+        storage = ArtifactStorage(str(root))
+        repo = ControlMasterRepository(storage)
+
+        class _FailingOSES:
+            def current_review_cached(self):
+                raise RuntimeError("OSES review unavailable")
+
+            def current_review(self):
+                raise AssertionError("projection must not use the active OSES reader")
+
+            def current_snapshot(self):
+                raise AssertionError("projection must not use generic snapshots")
+
+        service = ControlMasterService(
+            repository=repo,
+            self_examination_service=_FailingOSES(),
+        )
+        import pytest
+        with pytest.raises(RuntimeError, match="OSES review unavailable"):
+            service.current_state()
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_current_state_marks_unconfigured_live_projections_as_unresolved() -> None:
+    root = _workspace()
+    try:
+        storage = ArtifactStorage(str(root))
+        repo = ControlMasterRepository(storage)
+        service = ControlMasterService(repository=repo)
+        state = service.current_state()
+        assert "UNRESOLVED:objective_repository_not_connected" in state.unresolved_items
+        assert "UNRESOLVED:pending_issue_repository_not_connected" in state.unresolved_items
+        assert "UNRESOLVED:self_examination_service_not_connected" in state.unresolved_items
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_current_work_queue_retains_partial_objective_report_without_actionable_items():
+    root = _workspace()
+    try:
+        service, _ = _build_service(root)
+        report = SimpleNamespace(
+            status=SimpleNamespace(value='READ_PARTIAL'),
+            items=[],
+            records_seen=2,
+            records_loaded=1,
+            failed_ids=['objective-corrupt'],
+            to_dict=lambda: {
+                'status': 'READ_PARTIAL',
+                'records_seen': 2,
+                'records_loaded': 1,
+                'failed_ids': ['objective-corrupt'],
+            },
+        )
+
+        class PartialObjectiveRepository:
+            def list_recent_with_diagnostics(self, **kwargs):
+                return report
+
+        service.objective_repository = PartialObjectiveRepository()
+        queue = service.current_work_queue(limit=20)
+
+        assert service.last_work_queue_source_coverage['objective_repository'] == 'READ_PARTIAL'
+        assert any(error.startswith('OBJECTIVES_READ_PARTIAL:') for error in service.last_work_queue_errors)
+        assert set(service.last_work_queue_read_reports) == {
+            'objective_repository:active',
+            'objective_repository:pending',
+            'objective_repository:blocked',
+        }
+        assert not any(item.get('source') == 'objective_repository' for item in queue)
+        assert service.last_work_queue_read_reports['objective_repository:active'].records_loaded == 1
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_current_work_queue_retains_partial_pending_issue_report_without_actionable_items():
+    root = _workspace()
+    try:
+        service, _ = _build_service(root)
+        report = SimpleNamespace(
+            status=SimpleNamespace(value='READ_PARTIAL'),
+            items=[],
+            records_seen=3,
+            records_loaded=2,
+            failed_ids=['issue-corrupt'],
+            to_dict=lambda: {
+                'status': 'READ_PARTIAL',
+                'records_seen': 3,
+                'records_loaded': 2,
+                'failed_ids': ['issue-corrupt'],
+            },
+        )
+
+        class PartialPendingIssueRepository:
+            def list_recent_with_diagnostics(self, limit=15):
+                return report
+
+        service.pending_issue_repository = PartialPendingIssueRepository()
+        queue = service.current_work_queue(limit=20)
+
+        assert service.last_work_queue_source_coverage['pending_issue_repository'] == 'READ_PARTIAL'
+        assert 'PENDING_ISSUES_READ_PARTIAL' in service.last_work_queue_errors
+        assert service.last_work_queue_read_reports['pending_issue_repository'] is report
+        assert not any(item.get('source') == 'pending_issue_repository' for item in queue)
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_control_master_reads_only_fresh_cached_oses_review():
+    root = _workspace()
+    try:
+        service, _ = _build_service(root)
+        snapshot = SimpleNamespace(
+            findings=[],
+            unresolved_risks=[],
+            source_coverage={'recent_runs': 'READ_OK'},
+        )
+
+        class CachedOnlyOSES:
+            def current_review_cached(self):
+                return snapshot
+
+            def current_review(self):
+                raise AssertionError('projection must not trigger OSES rebuild')
+
+            def current_snapshot(self):
+                raise AssertionError('projection must not use generic snapshots')
+
+        service.self_examination_service = CachedOnlyOSES()
+
+        state = service.current_state()
+        queue = service.current_work_queue(limit=20)
+
+        assert state.current_risks == []
+        assert service.last_work_queue_source_coverage['self_examination_service'] == 'READ_OK'
+        assert not any(item.get('source') == 'oses_finding' for item in queue)
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_control_master_does_not_project_oses_findings_without_complete_source_coverage():
+    root = _workspace()
+    try:
+        service, _ = _build_service(root)
+        snapshot = SimpleNamespace(
+            findings=[],
+            unresolved_risks=[],
+            source_coverage={'recent_runs': 'READ_FAILED'},
+        )
+
+        class IncompleteCachedOSES:
+            def current_review_cached(self):
+                raise RuntimeError('oses_source_coverage_incomplete')
+
+            def current_review(self):
+                raise AssertionError('projection must not trigger OSES rebuild')
+
+            def current_snapshot(self):
+                raise AssertionError('projection must not use generic snapshots')
+
+        service.self_examination_service = IncompleteCachedOSES()
+        queue = service.current_work_queue(limit=20)
+
+        assert service.last_work_queue_source_coverage['self_examination_service'] == 'READ_UNVERIFIED'
+        assert any(error.startswith('OSES_FINDINGS_NOT_VERIFIED:') for error in service.last_work_queue_errors)
+        assert not any(item.get('source') == 'oses_finding' for item in queue)
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_runtime_audit_work_item_carries_matching_fsync_ack() -> None:
+    import json
+
+    root = _workspace()
+    try:
+        service, _ = _build_service(root)
+        service.workspace_root = str(root)
+        event = {
+            "seq": 7,
+            "kind": "interaction_resolved",
+            "data": {
+                "interaction_id": "chat-durable-7",
+                "outcome": "failed",
+                "message_preview": "durable failure",
+                "provider": "test",
+                "total_duration_ms": 100,
+                "stalls_during": [],
+                "window_went_inactive": False,
+            },
+        }
+        audit = root / "data" / "logs" / "runtime_audit.jsonl"
+        audit.parent.mkdir(parents=True, exist_ok=True)
+        line_bytes = (json.dumps(event, ensure_ascii=False, default=str) + "\n").encode("utf-8")
+        audit.write_bytes(line_bytes)
+        import hashlib
+        ack = {
+            "status": "FILE_FSYNCED",
+            "path": "runtime_audit.jsonl",
+            "seq": 7,
+            "byte_start": 0,
+            "byte_end": len(line_bytes),
+            "line_sha256": hashlib.sha256(line_bytes).hexdigest(),
+        }
+
+        class Lifecycle:
+            def interaction_info(self, interaction_id):
+                assert interaction_id == "chat-durable-7"
+                return {"runtime_audit_durability": ack}
+
+        service.chat_interaction_lifecycle = Lifecycle()
+        items = service._project_runtime_audit_items(set())
+        assert len(items) == 1
+        assert items[0]["runtime_audit_durability"]["accepted"] is True
+        assert service.last_work_queue_source_coverage["runtime_audit_durability"] == "READ_OK"
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_runtime_audit_work_item_does_not_promote_missing_ack() -> None:
+    import json
+
+    root = _workspace()
+    try:
+        service, _ = _build_service(root)
+        service.workspace_root = str(root)
+        event = {
+            "seq": 8,
+            "kind": "interaction_resolved",
+            "data": {
+                "interaction_id": "chat-no-ack",
+                "outcome": "failed",
+                "message_preview": "missing acknowledgement",
+                "provider": "test",
+                "total_duration_ms": 100,
+                "stalls_during": [],
+                "window_went_inactive": False,
+            },
+        }
+        audit = root / "data" / "logs" / "runtime_audit.jsonl"
+        audit.parent.mkdir(parents=True, exist_ok=True)
+        audit.write_text(json.dumps(event) + "\n", encoding="utf-8")
+
+        class Lifecycle:
+            def interaction_info(self, interaction_id):
+                return {}
+
+        service.chat_interaction_lifecycle = Lifecycle()
+        items = service._project_runtime_audit_items(set())
+        assert len(items) == 1
+        assert items[0]["runtime_audit_durability"]["accepted"] is False
+        assert items[0]["runtime_audit_durability"]["status"] == "ACK_UNAVAILABLE"
+        assert service.last_work_queue_source_coverage["runtime_audit_durability"] == "READ_UNVERIFIED"
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+
+def test_test_evidence_zero_collected_is_unverified_for_work_queue(monkeypatch) -> None:
+    import json
+    from iabv_v15.infra.mcp import audit_tools
+
+    root = _workspace()
+    try:
+        service, _ = _build_service(root)
+        service.workspace_root = str(root)
+        evidence = {
+            "evidence_id": "zero-collected-run",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "passed": 0,
+            "failed": 0,
+            "errors": 0,
+            "returncode": 0,
+            "timed_out": False,
+            "suite": "tests/",
+            "payload_sha256": "c" * 64,
+        }
+        monkeypatch.setattr(
+            audit_tools, "load_latest_test_evidence", lambda _root: evidence
+        )
+        evidence_path = root / "data" / "evolution" / "test_evidence" / "latest.json"
+        evidence_path.parent.mkdir(parents=True, exist_ok=True)
+        evidence_path.write_text(json.dumps(evidence), encoding="utf-8")
+
+        items = service._project_test_evidence_items(set())
+
+        assert items == []
+        assert service.last_work_queue_source_coverage["tests_state"] == "READ_UNVERIFIED"
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_control_master_work_queue_rejects_unverified_test_evidence(monkeypatch) -> None:
+    import json
+    from iabv_v15.infra.mcp import audit_tools
+
+    root = _workspace()
+    try:
+        service, _ = _build_service(root)
+        service.workspace_root = str(root)
+        evidence = {
+            "evidence_id": "unverified-run",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "passed": 6,
+            "failed": 0,
+            "errors": 0,
+            "returncode": 0,
+            "timed_out": False,
+            "suite": "tests/",
+            "payload_sha256": "d" * 64,
+        }
+        monkeypatch.setattr(
+            audit_tools, "load_latest_test_evidence", lambda _root: None
+        )
+        evidence_path = root / "data" / "evolution" / "test_evidence" / "latest.json"
+        evidence_path.parent.mkdir(parents=True, exist_ok=True)
+        evidence_path.write_text(json.dumps(evidence), encoding="utf-8")
+
+        items = service._project_test_evidence_items(set())
+
+        assert items == []
+        assert service.last_work_queue_source_coverage["tests_state"] == "READ_UNVERIFIED"
     finally:
         shutil.rmtree(root, ignore_errors=True)

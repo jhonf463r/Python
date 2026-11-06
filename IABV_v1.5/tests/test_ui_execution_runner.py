@@ -373,7 +373,7 @@ def test_ui_execution_runner_uses_shared_cdp_when_selected(monkeypatch) -> None:
                 return ['S'] if self.page.submitted else []
 
             def inner_text(self, timeout: int = 0) -> str:
-                return 'ChatGPT Pregunta lo que quieras Enviar'
+                return 'ChatGPT private marker account test@example.com Pregunta lo que quieras Enviar'
 
         class _Page:
             url = 'https://chatgpt.com/'
@@ -399,6 +399,7 @@ def test_ui_execution_runner_uses_shared_cdp_when_selected(monkeypatch) -> None:
                 return [
                     {'tag': 'TEXTAREA', 'placeholder': 'Pregunta lo que quieras', 'visible': True},
                     {'tag': 'BUTTON', 'text': 'Enviar', 'visible': True},
+                    {'tag': 'BUTTON', 'text': 'Cuenta test@example.com', 'aria': 'Cuenta test@example.com', 'visible': True},
                 ]
 
             def press(self, key: str) -> None:
@@ -458,11 +459,93 @@ def test_ui_execution_runner_uses_shared_cdp_when_selected(monkeypatch) -> None:
         assert captured['captured_text'] == 'S'
         assert captured['capture_source'] == 'browser_dom_shared_cdp'
         assert captured['metadata']['shared_cdp'] is True
+        fingerprint = captured['metadata']['page_observation_fingerprint']
+        assert fingerprint['schema'] == 'WEB_PAGE_OBSERVATION_FINGERPRINT_R1'
+        assert fingerprint['body_text_chars'] > 0
+        assert fingerprint['interactive_element_count'] == 3
+        assert len(fingerprint['sha256']) == 64
+        assert 'page_observation' not in captured['metadata']
+        assert 'test@example.com' not in repr(captured['metadata'])
+        assert 'private marker account' not in repr(captured['metadata'])
         assert calls[0] == 'cdp:http://127.0.0.1:9223'
         assert 'pw.stop' in calls
     finally:
         monkeypatch.delenv('IABV_PREFER_CDP_SESSION', raising=False)
         monkeypatch.delenv('IABV_SHARED_CDP_URL', raising=False)
+        shutil.rmtree(root, ignore_errors=True)
+
+
+
+
+def test_browser_dom_result_persists_only_safe_cdp_endpoint_reference() -> None:
+    root = _workspace('ui_execution_runner_cdp_endpoint_privacy')
+    try:
+        runner = UIExecutionRunner(str(root))
+        raw_endpoint = 'http://operator:private-pass@localhost:9223/devtools?token=private-cdp-token'
+        captured = runner._browser_dom_result(
+            launched=True,
+            focused=True,
+            focused_title='ChatGPT',
+            prompt_pasted=False,
+            response_captured=False,
+            captured_text='',
+            capture_source='browser_dom_shared_cdp',
+            error_message='browser_input_missing',
+            started=0.0,
+            metadata={
+                'shared_cdp': True,
+                'cdp_url': raw_endpoint,
+            },
+        )
+
+        metadata = captured['metadata']
+        persisted = repr(captured)
+        assert metadata['cdp_endpoint_ref'] == 'http://localhost:9223'
+        assert 'cdp_url' not in metadata
+        assert raw_endpoint not in persisted
+        assert 'operator' not in persisted
+        assert 'private-pass' not in persisted
+        assert 'private-cdp-token' not in persisted
+        assert '/devtools' not in persisted
+        assert UIExecutionRunner._safe_cdp_endpoint_reference('http://10.0.0.7:9223/private') == 'remote_cdp_endpoint'
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_browser_dom_result_drops_raw_observation_when_fingerprint_fails() -> None:
+    root = _workspace('ui_execution_runner_observation_fingerprint_failure')
+    marker = 'private marker test@example.com'
+    try:
+        runner = UIExecutionRunner(str(root))
+        captured = runner._browser_dom_result(
+            launched=True,
+            focused=True,
+            focused_title='ChatGPT',
+            prompt_pasted=False,
+            response_captured=False,
+            captured_text='',
+            capture_source='browser_dom_shared_cdp',
+            error_message='assistant_login_required',
+            started=0.0,
+            metadata={
+                'shared_cdp': True,
+                'page_observation': {
+                    'source': 'cdp',
+                    'url': 'https://chatgpt.com:invalid/',
+                    'body_text': marker,
+                    'interactive_elements': [],
+                    'metadata': {},
+                },
+            },
+        )
+
+        metadata = captured['metadata']
+        fingerprint = metadata['page_observation_fingerprint']
+        assert fingerprint['schema'] == 'WEB_PAGE_OBSERVATION_FINGERPRINT_R1'
+        assert fingerprint['status'] == 'FINGERPRINT_FAILED'
+        assert 'page_observation' not in metadata
+        assert marker not in repr(metadata)
+    finally:
         shutil.rmtree(root, ignore_errors=True)
 
 

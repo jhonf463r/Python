@@ -38,6 +38,47 @@ def _format_digest_markdown(digest: dict[str, Any]) -> str:
     version = digest.get("version") or "control_master"
     lines.append(f"# Control Maestro digest ({version})")
     lines.append("")
+    lines.append(
+        "**Signal:** "
+        + str(digest.get("signal_status") or "UNVERIFIED")
+        + " | **Freshness:** "
+        + str(digest.get("control_master_signal_status") or "UNVERIFIED")
+        + " | **Queue:** "
+        + str(digest.get("work_queue_status") or "UNVERIFIED")
+    )
+    source_object = str(digest.get("source_object") or "").strip()
+    source_state_id = str(digest.get("source_state_id") or "").strip()
+    workspace_scope_id = str(digest.get("workspace_scope_id") or "").strip()
+    if source_object or source_state_id or workspace_scope_id:
+        lines.append(
+            "**Source:** " + (source_object or "UNAVAILABLE")
+            + " | **State:** " + (source_state_id or "UNAVAILABLE")
+            + " | **Scope:** " + (workspace_scope_id or "UNAVAILABLE")
+        )
+    source_digest = str(digest.get("source_revision_or_digest") or "").strip()
+    if source_digest:
+        lines.append(f"**Source revision/digest:** {source_digest}")
+    source_generated = str(digest.get("source_generated_at_utc") or "").strip()
+    digest_generated = str(digest.get("generated_at_utc") or "").strip()
+    observed = str(digest.get("observed_at_utc") or "").strip()
+    if source_generated or digest_generated or observed:
+        lines.append(
+            "**Times:** source=" + (source_generated or "UNAVAILABLE")
+            + " | digest=" + (digest_generated or "UNAVAILABLE")
+            + " | observed=" + (observed or "UNAVAILABLE")
+        )
+    reason = str(digest.get("signal_reason") or "").strip()
+    if reason:
+        lines.append(f"**Signal reason:** {reason}")
+    if digest.get("source_evidence_refs"):
+        lines.append("## Control Master source evidence")
+        for evidence_ref in list(digest.get("source_evidence_refs") or [])[:20]:
+            lines.append(f"- {evidence_ref}")
+    if digest.get("work_queue_status") == "EMPTY_QUEUE":
+        lines.append("**Queue result:** successfully read and empty.")
+    elif digest.get("work_queue_status") in {"UNAVAILABLE", "UNVERIFIED"}:
+        lines.append("**Queue result:** not confirmed; do not infer that it is empty.")
+    lines.append("")
     vision = str(digest.get("current_vision") or "").strip()
     if vision:
         lines.append(f"**Vision:** {vision}")
@@ -71,6 +112,23 @@ def _format_digest_markdown(digest: dict[str, Any]) -> str:
         lines.append("## Riesgos actuales")
         for item in risks:
             lines.append(f"- {item}")
+        lines.append("")
+    queue_items = digest.get("top_work_queue_items") or []
+    if queue_items:
+        lines.append("## Priority queue provenance")
+        for item in list(queue_items)[:5]:
+            if not isinstance(item, dict):
+                continue
+            item_parts = [
+                f"id={item.get('item_id') or 'UNAVAILABLE'}",
+                f"priority={item.get('priority_label') or item.get('priority_score') or 'UNSPECIFIED'}",
+                f"next={str(item.get('next_action') or '')[:120]}",
+            ]
+            if item.get("dependencies"):
+                item_parts.append("dependencies=" + ",".join(map(str, item["dependencies"][:4])))
+            if item.get("evidence_refs"):
+                item_parts.append("evidence=" + ",".join(map(str, item["evidence_refs"][:4])))
+            lines.append("- " + " | ".join(item_parts))
         lines.append("")
     unresolved = digest.get("unresolved") or []
     if unresolved:

@@ -84,6 +84,7 @@ class LocalRoleRouter:
         self._worker_health_lock = threading.RLock()
         self._worker_pool_cache: dict[str, Any] | None = None
         self._worker_pool_cached_at: float = 0.0
+        self._worker_pool_quota_revision: tuple[str, int, int, int, int] | None = None
         self._WORKER_HEALTH_TTL = 30.0
         self._model_profiles = self._build_model_profiles()
         self._role_profiles = self._build_role_profiles()
@@ -165,33 +166,74 @@ class LocalRoleRouter:
     # ------------------------------------------------------------------
 
     def _get_worker_pool(self, *, refresh: bool = False) -> dict[str, Any]:
-        """Return the raw scanner pool, cached with a 30 s TTL.
+        """Return the raw scanner pool, bounded by TTL and quota-file revision.
 
         The cache stores the **unfiltered** pool so that
         ``worker_health_gate`` can filter by ``target_assistant`` on every
-        call without re-scanning.
+        call without re-scanning. An atomic quota-tracker replacement invalidates
+        the cache immediately; the TTL remains a secondary freshness bound.
         """
+        from iabv_v15.services.account_resource_scanner import quota_tracker_revision
+
+        def _revision() -> tuple[str, int, int, int, int] | None:
+            try:
+                return quota_tracker_revision()
+            except Exception:
+                # If freshness cannot be established, never reuse a cached pool.
+                return None
+
+        def _scan() -> dict[str, Any]:
+            try:
+                return self._account_resource_scanner()
+            except Exception as exc:
+                return {
+                    'available_count': 0,
+                    'workers': [],
+                    'error': str(exc),
+                }
+
+        revision_before = _revision()
         now = time.monotonic()
-        if not refresh:
+        if not refresh and revision_before is not None:
             with self._worker_health_lock:
                 if (
                     self._worker_pool_cache is not None
+                    and self._worker_pool_quota_revision == revision_before
                     and (now - self._worker_pool_cached_at) <= self._WORKER_HEALTH_TTL
                 ):
                     return dict(self._worker_pool_cache)
 
-        try:
-            pool = self._account_resource_scanner()
-        except Exception as exc:
-            pool = {
-                'available_count': 0,
-                'workers': [],
-                'error': str(exc),
-            }
+        pool = _scan()
+        revision_after = _revision()
+        cache_revision = (
+            revision_after
+            if revision_before is not None and revision_after == revision_before
+            else None
+        )
+
+        # If the tracker changed while the pool was being scanned, retry once
+        # against the new revision. A second concurrent change disables reuse.
+        if (
+            revision_before is not None
+            and revision_after is not None
+            and revision_after != revision_before
+        ):
+            pool = _scan()
+            retry_revision = _revision()
+            cache_revision = (
+                retry_revision
+                if retry_revision is not None and retry_revision == revision_after
+                else None
+            )
+
+        if 'error' in pool:
+            # Transient scanner failures must not be cached as a healthy empty pool.
+            cache_revision = None
 
         with self._worker_health_lock:
             self._worker_pool_cache = dict(pool)
-            self._worker_pool_cached_at = now
+            self._worker_pool_cached_at = time.monotonic()
+            self._worker_pool_quota_revision = cache_revision
         return pool
 
     def worker_health_gate(
@@ -238,6 +280,47 @@ class LocalRoleRouter:
                 'ranked_workers': [],
             }
 
+        quota_coverage = pool.get('source_coverage')
+        quota_status = (
+            quota_coverage.get('quota_tracker')
+            if isinstance(quota_coverage, dict)
+            else 'UNVERIFIED'
+        )
+        source_errors = pool.get('source_errors')
+        source_errors = source_errors if isinstance(source_errors, dict) else {}
+        quota_error = source_errors.get('quota_tracker')
+        status_label = (
+            str(quota_status).strip()
+            if isinstance(quota_status, str) and quota_status.strip()
+            else 'UNVERIFIED'
+        )
+        unverified_count = pool.get('unverified_count', 0)
+        if not isinstance(unverified_count, int) or isinstance(unverified_count, bool):
+            unverified_count = 0
+
+        # Fail closed before ranking or consulting the approval ledger. An old
+        # user approval must never turn an unverified quota read into a worker.
+        if quota_status != 'READ_OK' or quota_error:
+            if quota_status == 'READ_OK' and quota_error:
+                status_label = 'READ_FAILED'
+            reason = (
+                f'UNRESOLVED:quota_tracker_{status_label.lower()} — '
+                'no seleccionar workers ni reutilizar aprobaciones previas '
+                'sin una lectura de cuota verificada.'
+            )
+            return {
+                'usable': False,
+                'reason': reason,
+                'available_count': 0,
+                'workers': [],
+                'top_worker': None,
+                'ranked_workers': [],
+                'unverified_count': unverified_count,
+                'source_coverage': dict(quota_coverage or {}) if isinstance(quota_coverage, dict) else {},
+                'source_errors': dict(source_errors),
+                'quota_source_status': status_label,
+            }
+
         from iabv_v15.services.account_resource_scanner import (
             rank_workers_for_target,
         )
@@ -248,7 +331,13 @@ class LocalRoleRouter:
         ranked = rank_workers_for_target(target, pool=pool, block_signals=block_signals or {})
 
         if not ranked:
-            if available == 0:
+            if unverified_count > 0:
+                reason = (
+                    f'UNRESOLVED:account_quota_missing — {unverified_count} '
+                    'sesión(es) detectadas sin una cuota individual verificada; '
+                    'no son accionables.'
+                )
+            elif available == 0:
                 reason = 'No hay workers con sesion activa y cuota disponible.'
             elif target:
                 reason = f'No hay worker usable para {target} (agotados o sin sesion).'
@@ -261,6 +350,10 @@ class LocalRoleRouter:
                 'workers': [],
                 'top_worker': None,
                 'ranked_workers': [],
+                'unverified_count': unverified_count,
+                'source_coverage': dict(quota_coverage or {}) if isinstance(quota_coverage, dict) else {},
+                'source_errors': dict(source_errors),
+                'quota_source_status': status_label,
             }
 
         top = ranked[0]
@@ -308,6 +401,10 @@ class LocalRoleRouter:
             'ranked_workers': [_compact(w) for w in ranked[:5]],
             'account_selection_source': account_selection_source,
             'fallback_used': fallback_used,
+            'source_coverage': dict(pool.get('source_coverage') or {}),
+            'source_errors': dict(pool.get('source_errors') or {}),
+            'quota_source_status': status_label,
+            'unverified_count': pool.get('unverified_count', 0),
         }
         if approved_ref:
             result['approved_account'] = approved_ref
@@ -339,6 +436,15 @@ class LocalRoleRouter:
         if approval is None:
             return None
 
+        approval_tool = str(getattr(approval, 'tool', '') or '').strip().lower()
+        if not approval_tool or approval_tool != target:
+            logger.warning(
+                'worker_health_gate: approval tool binding mismatch '
+                '(requested=%s recorded=%s) — ignoring approval',
+                target or '(none)', approval_tool or '(empty)',
+            )
+            return None
+
         result: dict[str, Any] = {
             'email': approval.email,
             'tool': approval.tool,
@@ -350,7 +456,8 @@ class LocalRoleRouter:
         # Find matching worker in ranked list
         for w in ranked:
             if (
-                w.get('email', '').lower() == approval.email.lower()
+                str(w.get('tool', '')).strip().lower() == approval_tool
+                and w.get('email', '').lower() == approval.email.lower()
                 and not w.get('exhausted', False)
                 and w.get('remaining_messages', 0) > 0
             ):
@@ -934,7 +1041,6 @@ class LocalRoleRouter:
         ``rank_workers_for_target``) with the local provider health check.
         """
         from iabv_v15.services.account_resource_scanner import (
-            best_account_for_tool,
             get_web_session_status,
             rank_workers_for_target,
             scan_ollama_api,

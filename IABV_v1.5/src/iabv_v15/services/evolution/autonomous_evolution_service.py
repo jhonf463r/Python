@@ -182,11 +182,19 @@ class AutonomousEvolutionService:
             detail = 'La consulta externa fue abierta, pero la respuesta todavia no ha sido ingerida por IABV.'
         elif status == 'blocked_external' and not detail:
             detail = 'La ruta externa quedo bloqueada por cuenta, sesion o verificacion. IABV debe notificarlo y seguir por la mejor via local disponible.'
+        account_binding = result.execution_state.metadata.get('actual_account_binding')
+        if not isinstance(account_binding, dict):
+            account_binding = {
+                'schema': 'ACCOUNT_BINDING_R1',
+                'status': 'UNVERIFIED',
+                'reason': 'execution_account_binding_missing',
+            }
         consultation_state = {
             'status': status,
             'assistant_kind': actual_assistant_kind,
             'requested_assistant_kind': requested_assistant_kind,
             'actual_assistant_kind': actual_assistant_kind,
+            'actual_account_binding': dict(account_binding),
             'assistant_configuration': dict(
                 result.execution_state.metadata.get('assistant_configuration')
                 or result.metadata.get('assistant_configuration')
@@ -220,7 +228,7 @@ class AutonomousEvolutionService:
             'awaiting_reason': str(result.execution_state.metadata.get('awaiting_reason') or task.metadata.get('awaiting_reason') or ''),
             'last_capture_attempt_utc': str(result.execution_state.metadata.get('last_capture_attempt_utc') or task.metadata.get('last_capture_attempt_utc') or ''),
             'reused_thread': bool(result.execution_state.metadata.get('reused_thread', task.metadata.get('reused_thread', False))),
-            'session_profile_dir': str(result.execution_state.metadata.get('session_profile_dir') or result.execution_state.metadata.get('browser_profile_dir') or task.metadata.get('session_profile_dir') or ''),
+            'session_profile_dir': str(result.execution_state.metadata.get('session_profile_dir') or result.execution_state.metadata.get('browser_profile_ref') or task.metadata.get('session_profile_dir') or ''),
             'isolated_session': bool(result.execution_state.metadata.get('isolated_session')),
             'coherence_flags': coherence_flags,
             'external_state_flags': external_state_flags,
@@ -473,7 +481,7 @@ class AutonomousEvolutionService:
         lane = str(execution_metadata.get('capture_lane') or task_metadata.get('capture_lane') or '').strip().lower()
         session_scope = str(execution_metadata.get('session_scope') or task_metadata.get('session_scope') or '').strip().lower()
         thread_key = str(execution_metadata.get('thread_key') or task_metadata.get('thread_key') or '').strip()
-        session_profile_dir = str(execution_metadata.get('session_profile_dir') or execution_metadata.get('browser_profile_dir') or task_metadata.get('session_profile_dir') or '').strip()
+        session_profile_dir = str(execution_metadata.get('session_profile_dir') or execution_metadata.get('browser_profile_ref') or task_metadata.get('session_profile_dir') or '').strip()
         flags: list[str] = []
         if requested and actual_assistant and requested != actual_assistant and not (requested == 'codex' and actual_assistant in {'chatgpt', 'ollama'}) and not (requested == 'chatgpt' and actual_assistant == 'chatgpt') and not (requested == 'claude' and actual_assistant == 'claude'):
             flags.append(f'family_mismatch:{requested}->{actual_assistant}')

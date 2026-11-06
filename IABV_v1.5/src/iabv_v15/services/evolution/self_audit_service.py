@@ -84,6 +84,8 @@ class SelfAuditService:
         else:
             resolved_root = None
         self._storage_root: Path | None = resolved_root
+        # A failed/stale cache read must stay visible; never rebuild OSES here.
+        self._self_examination_read_status = "NOT_ATTEMPTED"
 
     # ------------------------------------------------------------------
     # API pública
@@ -358,17 +360,33 @@ class SelfAuditService:
         return items
 
     def _current_review(self) -> SelfExaminationSnapshot | None:
+        """Read only the validated OSES cache; never trigger an active review."""
         svc = self.operational_self_examination_service
         if svc is None:
+            self._self_examination_read_status = "NOT_CONFIGURED"
             return None
-        getter = getattr(svc, "current_review", None) or getattr(svc, "current", None)
-        if getter is None:
+
+        getter = getattr(svc, "current_review_cached", None)
+        if not callable(getter):
+            self._self_examination_read_status = "READ_UNVERIFIED"
             return None
+
         try:
-            return getter(refresh=False)
-        except TypeError:
-            # current_review accepts refresh kw; retry without args.
-            return getter()
+            review = getter()
+        except Exception as exc:
+            self._self_examination_read_status = "READ_FAILED"
+            logger.warning(
+                "self_audit cached OSES read failed (%s)",
+                type(exc).__name__,
+            )
+            return None
+
+        if not isinstance(review, SelfExaminationSnapshot):
+            self._self_examination_read_status = "READ_UNVERIFIED"
+            return None
+
+        self._self_examination_read_status = "READ_OK"
+        return review
 
     def _current_portable_package(self) -> PortableContextPackage | None:
         svc = self.portable_context_service
@@ -399,7 +417,8 @@ class SelfAuditService:
             "freshness_ms": int(getattr(world_model, "freshness_ms", 0) or 0),
             "confidence": float(getattr(world_model, "confidence", 0.0) or 0.0),
             "active_window_count": len(getattr(world_model, "active_windows", []) or []),
-            "focused_window_title": getattr(focused, "title", "") if focused is not None else "",
+            # Window titles can contain private document or message content.
+            "focused_window_title": "<redacted>" if focused is not None else "",
             "tool_live_count": len(live_tools),
             "tool_live_ids": sorted(
                 {
@@ -436,6 +455,9 @@ class SelfAuditService:
             if str(getattr(gate, "status", "") or "") == "requerido" and not bool(getattr(gate, "granted", False))
         ]
         unresolved: list[str] = []
+        self_examination_status = self._self_examination_read_status
+        if self_examination_status != "READ_OK":
+            unresolved.append(f"UNRESOLVED:self_examination_{self_examination_status}")
         if not local_laptop_observed:
             unresolved.append("UNRESOLVED:requires_local_laptop_audit")
         if pending_gates:
@@ -465,6 +487,7 @@ class SelfAuditService:
             "world_model_observed": world_model is not None,
             "code_contracts_observed": True,
             "tests_observed": tests_observed,
+            "self_examination_status": self_examination_status,
             "external_ia_audit_observed": False,
             "requires_external_ia": True,
             "requires_local_runtime": True,
@@ -477,12 +500,50 @@ class SelfAuditService:
             ),
         }
         if test_evidence is not None:
+            passed = int(test_evidence.get("passed") or 0)
+            failed = int(test_evidence.get("failed") or 0)
+            errors = int(test_evidence.get("errors") or 0)
+            total = passed + failed + errors
+            returncode = test_evidence.get("returncode")
+            timed_out = test_evidence.get("timed_out")
+            execution_failed = (
+                failed > 0
+                or errors > 0
+                or (type(returncode) is int and returncode != 0)
+                or timed_out is True
+            )
+            execution_verified = (
+                type(returncode) is int
+                and returncode == 0
+                and type(timed_out) is bool
+                and timed_out is False
+                and total > 0
+                and passed > 0
+                and failed == 0
+                and errors == 0
+            )
+            execution_status = (
+                "FAILED"
+                if execution_failed
+                else "PASSED"
+                if execution_verified
+                else "UNVERIFIED"
+            )
             result["test_evidence_summary"] = {
-                "passed": int(test_evidence.get("passed") or 0),
-                "failed": int(test_evidence.get("failed") or 0),
-                "errors": int(test_evidence.get("errors") or 0),
+                "passed": passed,
+                "failed": failed,
+                "errors": errors,
+                "total": total,
+                "returncode": returncode,
+                "timed_out": timed_out,
+                "execution_status": execution_status,
                 "suite": str(test_evidence.get("suite") or ""),
                 "timestamp": str(test_evidence.get("timestamp") or ""),
+                "commit_sha": str(test_evidence.get("commit_sha") or ""),
+                "branch": str(test_evidence.get("branch") or ""),
+                "worktree_clean": test_evidence.get("worktree_clean"),
+                "provenance_status": str(test_evidence.get("provenance_status") or "UNKNOWN"),
+                "payload_sha256": str(test_evidence.get("payload_sha256") or ""),
             }
         return result
 

@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import logging
 import os
+from collections import Counter
 import time
 from datetime import datetime, timezone
 from typing import Any
@@ -37,6 +38,36 @@ class PerceptionCrossValidator:
         self.world_model_service = world_model_service
         self.tool_registry = tool_registry
         self._created_at = time.time()
+        self._check_statuses: dict[str, str] = {}
+        self._check_reasons: dict[str, str] = {}
+        self._check_reports: dict[str, dict[str, Any]] = {}
+
+    def _set_check_status(self, check: str, status: str, reason: str = '') -> None:
+        self._check_statuses[check] = status
+        if reason:
+            self._check_reasons[check] = reason[:200]
+        else:
+            self._check_reasons.pop(check, None)
+
+    def _current_world_model_snapshot(self) -> Any:
+        """Read the connected WorldModel through its supported snapshot API."""
+        if self.world_model_service is None:
+            raise RuntimeError('world_model_service_not_connected')
+        for method_name in ('current_snapshot', 'current_model'):
+            reader = getattr(self.world_model_service, method_name, None)
+            if callable(reader):
+                snapshot = reader()
+                if snapshot is not None:
+                    return snapshot
+        raise RuntimeError('world_model_snapshot_unavailable')
+
+    def _run_check(self, check: str, runner) -> list[dict[str, Any]]:
+        try:
+            return runner()
+        except Exception as exc:
+            self._set_check_status(check, 'READ_FAILED', type(exc).__name__)
+            logger.warning('perception_check_failed: %s (%s)', check, type(exc).__name__)
+            return []
 
     def run_cross_validation(self) -> dict[str, Any]:
         """Execute full cross-validation and return structured results.
@@ -48,33 +79,60 @@ class PerceptionCrossValidator:
         """
         inconsistencies: list[dict[str, Any]] = []
         auto_corrections: list[dict[str, Any]] = []
-        checks_passed: list[str] = []
         checked_at = datetime.now(timezone.utc).isoformat()
+        check_names = (
+            'tools_vs_processes', 'audit_vs_worldmodel',
+            'windows_consistency', 'ui_self_awareness',
+        )
+        self._check_statuses = {}
+        self._check_reasons = {}
+        self._check_reports = {}
 
-        proc_inconsistencies = self._cross_tools_vs_processes()
+        proc_inconsistencies = self._run_check(
+            'tools_vs_processes', self._cross_tools_vs_processes
+        )
         inconsistencies.extend(proc_inconsistencies)
+        # Cache refresh is allowed only when the cross-source sensor read
+        # completed. Partial/failed observations remain diagnostic evidence,
+        # but must not drive even a best-effort availability correction.
+        if self._check_statuses.get('tools_vs_processes') == 'READ_OK':
+            corrections = self._auto_correct_availability(proc_inconsistencies)
+            auto_corrections.extend(corrections)
+        inconsistencies.extend(self._run_check(
+            'audit_vs_worldmodel', self._cross_audit_vs_worldmodel
+        ))
+        inconsistencies.extend(self._run_check(
+            'windows_consistency', self._cross_windows_consistency
+        ))
+        inconsistencies.extend(self._run_check(
+            'ui_self_awareness', self._cross_ui_self_awareness
+        ))
 
-        corrections = self._auto_correct_availability(proc_inconsistencies)
-        auto_corrections.extend(corrections)
-
-        inconsistencies.extend(self._cross_audit_vs_worldmodel())
-        inconsistencies.extend(self._cross_windows_consistency())
-        inconsistencies.extend(self._cross_ui_self_awareness())
-
-        if not any(i['check'] == 'tools_vs_processes' for i in inconsistencies):
-            checks_passed.append('tools_vs_processes')
-        if not any(i['check'] == 'audit_vs_worldmodel' for i in inconsistencies):
-            checks_passed.append('audit_vs_worldmodel')
-        if not any(i['check'] == 'windows_consistency' for i in inconsistencies):
-            checks_passed.append('windows_consistency')
-        if not any(i['check'] == 'ui_self_awareness' for i in inconsistencies):
-            checks_passed.append('ui_self_awareness')
+        for name in check_names:
+            if name not in self._check_statuses:
+                self._set_check_status(name, 'UNVERIFIED', 'check_did_not_report_execution_status')
+        checks_passed = [
+            name for name in check_names
+            if self._check_statuses.get(name) == 'READ_OK'
+            and not any(item.get('check') == name for item in inconsistencies)
+        ]
+        checks_unavailable = {
+            name: {
+                'status': self._check_statuses[name],
+                'reason': self._check_reasons.get(name, ''),
+            }
+            for name in check_names
+            if self._check_statuses[name] != 'READ_OK'
+        }
 
         return {
             'checked_at': checked_at,
             'inconsistencies': inconsistencies,
             'auto_corrections': auto_corrections,
             'checks_passed': checks_passed,
+            'checks_status': dict(self._check_statuses),
+            'checks_unavailable': checks_unavailable,
+            'checks_read_reports': dict(self._check_reports),
             'total_inconsistencies': len(inconsistencies),
             'total_auto_corrections': len(auto_corrections),
             'total_checks': 4,
@@ -141,18 +199,20 @@ class PerceptionCrossValidator:
         """
         inconsistencies: list[dict[str, Any]] = []
         if self.tool_registry is None:
+            self._set_check_status('tools_vs_processes', 'NOT_CONFIGURED', 'tool_registry_not_connected')
             return inconsistencies
-
         if os.name != 'nt':
+            self._set_check_status('tools_vs_processes', 'NOT_APPLICABLE', 'windows_process_sensor_not_applicable')
             return inconsistencies
-
         try:
             import psutil
         except ImportError:
+            self._set_check_status('tools_vs_processes', 'UNAVAILABLE', 'psutil_not_installed')
             return inconsistencies
 
         proc_names: set[str] = set()
         proc_exes: set[str] = set()
+        partial_process_reads = False
         try:
             for proc in psutil.process_iter(['name', 'exe']):
                 try:
@@ -163,18 +223,37 @@ class PerceptionCrossValidator:
                     if exe:
                         proc_exes.add(exe)
                 except (psutil.NoSuchProcess, psutil.AccessDenied):
-                    continue
-        except Exception:
+                    partial_process_reads = True
+        except Exception as exc:
+            self._set_check_status('tools_vs_processes', 'READ_FAILED', type(exc).__name__)
             return inconsistencies
 
         all_proc_text = ' '.join(proc_names) + ' ' + ' '.join(proc_exes)
-
-        window_titles = self._enumerate_window_titles()
+        try:
+            window_titles = self._enumerate_window_titles()
+        except Exception as exc:
+            partial_process_reads = True
+            self._check_reasons['tools_vs_processes'] = 'window_enumeration_failed:' + type(exc).__name__
+            window_titles = []
         all_window_text = ' '.join(window_titles)
-
         try:
             cards = self.tool_registry.list_cards()
-        except Exception:
+        except Exception as exc:
+            report = getattr(exc, 'report', None)
+            if report is not None:
+                payload = report.to_dict() if callable(getattr(report, 'to_dict', None)) else {
+                    'status': getattr(getattr(report, 'status', None), 'value', str(getattr(report, 'status', 'UNKNOWN'))),
+                    'records_seen': getattr(report, 'records_seen', None),
+                    'records_loaded': getattr(report, 'records_loaded', None),
+                    'failed_ids': list(getattr(report, 'failed_ids', []) or []),
+                }
+                self._check_reports['tools_vs_processes'] = payload
+                report_status = getattr(getattr(report, 'status', None), 'value', '')
+                status = 'READ_PARTIAL' if report_status == 'READ_PARTIAL' else 'READ_FAILED'
+                reason = getattr(report, 'collection_error_type', '') or type(exc).__name__
+                self._set_check_status('tools_vs_processes', status, reason)
+            else:
+                self._set_check_status('tools_vs_processes', 'READ_FAILED', type(exc).__name__)
             return inconsistencies
 
         for card in cards:
@@ -223,6 +302,12 @@ class PerceptionCrossValidator:
                     ),
                 })
 
+        self._set_check_status(
+            'tools_vs_processes',
+            'READ_PARTIAL' if partial_process_reads else 'READ_OK',
+            self._check_reasons.get('tools_vs_processes', 'sensor_read_incomplete')
+            if partial_process_reads else '',
+        )
         return inconsistencies
 
     @staticmethod
@@ -247,25 +332,37 @@ class PerceptionCrossValidator:
 
             user32.EnumWindows(_enum_cb, 0)
             return titles
-        except Exception:
-            return []
+        except Exception as exc:
+            raise RuntimeError('window_enumeration_failed') from exc
 
     def _cross_audit_vs_worldmodel(self) -> list[dict[str, Any]]:
         """Compare self-audit tool status against WorldModel tool_live_status."""
         inconsistencies: list[dict[str, Any]] = []
         if self.world_model_service is None or self.tool_registry is None:
+            self._set_check_status('audit_vs_worldmodel', 'NOT_CONFIGURED', 'world_model_or_tool_registry_not_connected')
             return inconsistencies
-
         try:
-            snapshot = self.world_model_service.current_snapshot()
-        except Exception:
-            return inconsistencies
-
-        wm_tool_ids = {t.tool_id for t in snapshot.tool_live_status}
-
-        try:
+            snapshot = self._current_world_model_snapshot()
+            if snapshot is None:
+                raise RuntimeError('world_model_snapshot_missing')
+            wm_tool_ids = {t.tool_id for t in snapshot.tool_live_status}
             cards = self.tool_registry.list_cards()
-        except Exception:
+        except Exception as exc:
+            report = getattr(exc, 'report', None)
+            if report is not None:
+                payload = report.to_dict() if callable(getattr(report, 'to_dict', None)) else {
+                    'status': getattr(getattr(report, 'status', None), 'value', str(getattr(report, 'status', 'UNKNOWN'))),
+                    'records_seen': getattr(report, 'records_seen', None),
+                    'records_loaded': getattr(report, 'records_loaded', None),
+                    'failed_ids': list(getattr(report, 'failed_ids', []) or []),
+                }
+                self._check_reports['audit_vs_worldmodel'] = payload
+                report_status = getattr(getattr(report, 'status', None), 'value', '')
+                status = 'READ_PARTIAL' if report_status == 'READ_PARTIAL' else 'READ_FAILED'
+                reason = getattr(report, 'collection_error_type', '') or type(exc).__name__
+                self._set_check_status('audit_vs_worldmodel', status, reason)
+            else:
+                self._set_check_status('audit_vs_worldmodel', 'READ_FAILED', type(exc).__name__)
             return inconsistencies
 
         for card in cards:
@@ -312,46 +409,113 @@ class PerceptionCrossValidator:
                 'detail': 'Availability status mismatch between WorldModel and ToolRegistry.',
             })
 
+        self._set_check_status('audit_vs_worldmodel', 'READ_OK')
         return inconsistencies
 
     def _cross_windows_consistency(self) -> list[dict[str, Any]]:
-        """Compare WorldModel windows against live window enumeration."""
+        """Compare the WorldModel snapshot with an independent live Win32 read."""
         inconsistencies: list[dict[str, Any]] = []
         if self.world_model_service is None:
+            self._set_check_status('windows_consistency', 'NOT_CONFIGURED', 'world_model_service_not_connected')
+            return inconsistencies
+        if os.name != 'nt':
+            self._set_check_status(
+                'windows_consistency',
+                'NOT_APPLICABLE',
+                'win32_window_enumeration_not_supported_on_this_platform',
+            )
             return inconsistencies
 
         try:
-            snapshot = self.world_model_service.current_snapshot()
-        except Exception:
+            snapshot = self._current_world_model_snapshot()
+            if snapshot is None or not hasattr(snapshot, 'active_windows'):
+                raise RuntimeError('world_model_windows_snapshot_unavailable')
+        except Exception as exc:
+            self._set_check_status('windows_consistency', 'READ_FAILED', type(exc).__name__)
+            return inconsistencies
+
+        try:
+            live_window_titles = self._enumerate_window_titles()
+            if not isinstance(live_window_titles, (list, tuple)) or any(
+                not isinstance(title, str) for title in live_window_titles
+            ):
+                raise TypeError('live_window_title_enumeration_returned_invalid_shape')
+        except Exception as exc:
+            self._set_check_status(
+                'windows_consistency',
+                'READ_FAILED',
+                'window_enumeration_failed',
+            )
+            logger.warning('perception_windows_enumeration_failed: %s', type(exc).__name__)
             return inconsistencies
 
         wm_window_count = len(snapshot.active_windows)
-        if wm_window_count == 0 and os.name == 'nt':
+        if wm_window_count == 0:
             inconsistencies.append({
                 'check': 'windows_consistency',
                 'severity': 'high',
                 'tool_id': '',
                 'expected': 'WorldModel should detect open windows on Windows',
-                'actual': '0 windows detected',
-                'detail': 'No windows in WorldModel — window enumeration may have failed.',
+                'actual': '0 windows detected in WorldModel snapshot',
+                'detail': 'The WorldModel snapshot is empty; compare its state with the completed live enumeration.',
+            })
+
+        def normalize(title: Any) -> str:
+            return str(title or '').strip().casefold()
+
+        wm_title_counts = Counter(
+            title
+            for window in snapshot.active_windows
+            if (title := normalize(getattr(window, 'title', '')))
+        )
+        live_title_counts = Counter(
+            title for raw_title in live_window_titles
+            if (title := normalize(raw_title))
+        )
+        wm_only_count = sum((wm_title_counts - live_title_counts).values())
+        live_only_count = sum((live_title_counts - wm_title_counts).values())
+
+        self._check_reports['windows_consistency'] = {
+            'world_model_window_count': wm_window_count,
+            'live_window_count': len(live_window_titles),
+            'world_model_unique_title_count': len(wm_title_counts),
+            'live_unique_title_count': len(live_title_counts),
+            'world_model_only_window_count': wm_only_count,
+            'live_only_window_count': live_only_count,
+            'comparison': 'casefolded_window_title_multiset',
+        }
+
+        if wm_only_count or live_only_count:
+            inconsistencies.append({
+                'check': 'windows_consistency',
+                'severity': 'high' if live_only_count else 'medium',
+                'tool_id': '',
+                'expected': 'WorldModel window inventory should match an independent live enumeration',
+                'actual': (
+                    f'WorldModel-only windows={wm_only_count}; '
+                    f'live-only windows={live_only_count}'
+                ),
+                'detail': 'The WorldModel snapshot and live Win32 enumeration disagree; title values are omitted from diagnostics.',
             })
 
         focused = snapshot.focused_window
         if focused is not None and wm_window_count > 0:
-            wm_titles = {w.title for w in snapshot.active_windows}
-            if focused.title and focused.title not in wm_titles:
+            wm_titles = set(wm_title_counts)
+            focused_title = normalize(getattr(focused, 'title', ''))
+            if focused_title and focused_title not in wm_titles:
                 inconsistencies.append({
                     'check': 'windows_consistency',
                     'severity': 'medium',
                     'tool_id': '',
                     'expected': 'Focused window should be in active_windows list',
-                    'actual': f'Focused window "{focused.title}" not in active_windows',
-                    'detail': 'The focused window is not found in the active windows list.',
+                    'actual': 'Focused window is not present in active_windows',
+                    'detail': 'The focused window is not found in the WorldModel active windows list.',
                 })
 
+        self._set_check_status('windows_consistency', 'READ_OK')
         return inconsistencies
 
-    # ------------------------------------------------------------------
+        # ------------------------------------------------------------------
     # UI Self-Awareness: IABV checks its own window state
     # ------------------------------------------------------------------
 
@@ -368,14 +532,18 @@ class PerceptionCrossValidator:
         """
         inconsistencies: list[dict[str, Any]] = []
         if self.world_model_service is None:
+            self._set_check_status('ui_self_awareness', 'NOT_CONFIGURED', 'world_model_service_not_connected')
             return inconsistencies
-
         try:
-            snapshot = self.world_model_service.current_snapshot()
-        except Exception:
+            snapshot = self._current_world_model_snapshot()
+            if snapshot is None or not hasattr(snapshot, 'active_windows'):
+                raise RuntimeError('world_model_windows_snapshot_unavailable')
+        except Exception as exc:
+            self._set_check_status('ui_self_awareness', 'READ_FAILED', type(exc).__name__)
             return inconsistencies
 
         if not snapshot.active_windows:
+            self._set_check_status('ui_self_awareness', 'UNVERIFIED', 'no_windows_observed')
             return inconsistencies
 
         iabv_windows: list[Any] = []
@@ -415,13 +583,12 @@ class PerceptionCrossValidator:
             })
 
         if zombie_windows:
-            zombie_titles = [w.title for w in zombie_windows]
             inconsistencies.append({
                 'check': 'ui_self_awareness',
                 'severity': 'high',
                 'tool_id': 'iabv_ui',
                 'expected': 'No zombie IABV windows',
-                'actual': f'{len(zombie_windows)} zombie window(s): {zombie_titles}',
+                'actual': f'{len(zombie_windows)} zombie window(s) detected',
                 'detail': (
                     'Detected IABV window(s) in "No responde" state. This '
                     'indicates the UI event loop is blocked or the process '
@@ -447,4 +614,5 @@ class PerceptionCrossValidator:
                 ),
             })
 
+        self._set_check_status('ui_self_awareness', 'READ_OK')
         return inconsistencies

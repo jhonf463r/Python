@@ -271,3 +271,317 @@ def test_render_work_queue_compact_format() -> None:
     # Title truncated to 40 chars, action to 30 chars.
     assert len(brief[0]) < 80 + 60, "Brief line must be shorter than raw fields"
     assert "src=" not in brief[0], "Compact format must not use 'src=' prefix"
+
+
+
+def test_digest_carries_d021_source_times_scope_and_queue_lineage() -> None:
+    from datetime import datetime, timezone
+
+    source_generated = datetime(2026, 11, 4, 12, 0, tzinfo=timezone.utc)
+    observed = datetime(2026, 11, 4, 12, 1, tzinfo=timezone.utc)
+    state = ControlMasterState(
+        state_id="state-d021-001",
+        current_vision="governed project",
+        evidence_links=[
+            "evidence://control-master/vision",
+            "evidence://control-master/rule-01",
+        ],
+        metadata={
+            "_space_time_control_master_source_provenance": {
+                "project_id": "IABV_v1.5",
+                "source_object": "control_master/latest.json",
+                "source_state_id": "state-d021-001",
+                "source_revision_or_digest": "sha256:abc123",
+                "source_generated_at_utc": source_generated.isoformat(),
+                "source_observed_at_utc": observed.isoformat(),
+                "workspace_scope_id": "scope-001",
+                "freshness_status": "FRESH",
+                "read_status": "READ_OK",
+            }
+        },
+    )
+    digest = ControlMasterDigestBuilder().build(
+        state,
+        work_queue=[{
+            "id": "objective:OBJ-42",
+            "priority_label": "HIGH",
+            "priority_score": 80,
+            "title": "Close objective",
+            "status": "pending",
+            "next_action": "Inspect causal dependency",
+            "dependencies": ["OBJ-41"],
+            "evidence_refs": ["evidence://OBJ-42/review"],
+            "source": "objective",
+        }],
+        work_queue_status="AVAILABLE",
+        source_coverage={"objectives": "READ_OK"},
+        observed_at_utc=observed,
+    )
+    assert digest.control_master_signal_status == "FRESH"
+    assert digest.source_state_id == "state-d021-001"
+    assert digest.source_object == "control_master/latest.json"
+    assert digest.project_id == "IABV_v1.5"
+    assert digest.workspace_scope_id == "scope-001"
+    assert digest.source_revision_or_digest == "sha256:abc123"
+    assert digest.source_generated_at_utc == source_generated
+    assert digest.observed_at_utc == observed
+    assert digest.top_work_queue_items[0]["item_id"] == "objective:OBJ-42"
+    assert digest.top_work_queue_items[0]["dependencies"] == ["OBJ-41"]
+    assert digest.top_work_queue_items[0]["evidence_refs"] == ["evidence://OBJ-42/review"]
+    assert digest.source_evidence_refs == [
+        "evidence://control-master/vision",
+        "evidence://control-master/rule-01",
+    ]
+    rendered = render_digest_markdown(digest)
+    assert "Vigencia D021: FRESH" in rendered
+    assert "state-d021-001" in rendered
+    assert "objective:OBJ-42" in rendered
+    assert "evidence://OBJ-42/review" in rendered
+    assert "evidence://control-master/vision" in rendered
+
+
+def test_signal_availability_is_independent_from_unverified_queue_coverage() -> None:
+    state = ControlMasterState(
+        state_id="cm-state-readable",
+        metadata={
+            "_space_time_control_master_source_provenance": {
+                "read_status": "READ_OK",
+                "freshness_status": "FRESH",
+                "source_state_id": "cm-state-readable",
+                "source_generated_at_utc": "2026-11-04T12:00:00+00:00",
+                "project_id": "IABV_v1.5",
+                "source_object": "control_master/latest.json",
+                "workspace_scope_id": "scope-001",
+                "source_revision_or_digest": "sha256:source001",
+            }
+        },
+    )
+    digest = ControlMasterDigestBuilder().build(
+        state,
+        work_queue=None,
+        work_queue_status="UNVERIFIED",
+        signal_reason="SOURCE_APPLICABILITY_OR_COVERAGE_UNRESOLVED",
+    )
+    assert digest.signal_status == "AVAILABLE"
+    assert digest.work_queue_status == "UNVERIFIED"
+    assert digest.control_master_signal_status == "FRESH"
+
+
+def test_missing_control_master_source_is_unavailable_even_if_queue_state_is_separate() -> None:
+    state = ControlMasterState(
+        metadata={
+            "_space_time_control_master_source_provenance": {
+                "read_status": "NO_SOURCE_SNAPSHOT",
+                "freshness_status": "UNAVAILABLE",
+                "project_id": "IABV_v1.5",
+                "source_object": "control_master/latest.json",
+            }
+        },
+    )
+    digest = ControlMasterDigestBuilder().build(
+        state,
+        work_queue=None,
+        work_queue_status="UNVERIFIED",
+    )
+    assert digest.signal_status == "UNAVAILABLE"
+    assert digest.work_queue_status == "UNVERIFIED"
+
+
+def test_build_from_service_reports_empty_only_after_complete_successful_reads() -> None:
+    from datetime import datetime, timezone
+
+    class _Service:
+        last_work_queue_errors = ()
+        last_work_queue_source_coverage = {
+            "objective_repository": "READ_OK",
+            "platform_pending_queue": "READ_OK",
+            "pending_issue_repository": "READ_OK",
+            "self_examination_service": "READ_OK",
+            "runtime_audit": "READ_OK",
+            "runtime_audit_durability": "READ_OK",
+            "tests_state": "READ_OK",
+        }
+
+        def current_state(self, *, refresh: bool = False):
+            return ControlMasterState(
+                state_id="state-reader-empty",
+                current_vision="live source read",
+                metadata={
+                    "_space_time_control_master_source_provenance": {
+                        "project_id": "IABV_v1.5",
+                        "source_object": "control_master/latest.json",
+                        "source_state_id": "state-reader-empty",
+                        "source_revision_or_digest": "sha256:reader-empty",
+                        "source_generated_at_utc": datetime.now(timezone.utc).isoformat(),
+                        "workspace_scope_id": "scope-reader",
+                        "freshness_status": "FRESH",
+                        "read_status": "READ_OK",
+                    }
+                },
+            )
+
+        def current_work_queue(self, *, limit: int = 10):
+            return []
+
+    digest = ControlMasterDigestBuilder().build_from_service(_Service())
+    assert digest.signal_status == "AVAILABLE"
+    assert digest.work_queue_status == "EMPTY_QUEUE"
+    assert digest.control_master_signal_status == "FRESH"
+
+
+def test_build_from_service_missing_expected_source_cannot_confirm_empty_queue() -> None:
+    from datetime import datetime, timezone
+
+    class _Service:
+        last_work_queue_errors = ()
+        # Five sources report READ_OK, but tests_state was never reported.
+        last_work_queue_source_coverage = {
+            "objective_repository": "READ_OK",
+            "platform_pending_queue": "READ_OK",
+            "pending_issue_repository": "READ_OK",
+            "self_examination_service": "READ_OK",
+            "runtime_audit": "READ_OK",
+            "runtime_audit_durability": "READ_OK",
+        }
+
+        def current_state(self, *, refresh: bool = False):
+            return ControlMasterState(
+                state_id="state-reader-missing-source",
+                current_vision="source snapshot",
+                metadata={
+                    "_space_time_control_master_source_provenance": {
+                        "project_id": "IABV_v1.5",
+                        "source_object": "control_master/latest.json",
+                        "source_state_id": "state-reader-missing-source",
+                        "source_revision_or_digest": "sha256:missing-source",
+                        "source_generated_at_utc": datetime.now(timezone.utc).isoformat(),
+                        "workspace_scope_id": "scope-reader",
+                        "freshness_status": "FRESH",
+                        "read_status": "READ_OK",
+                    }
+                },
+            )
+
+        def current_work_queue(self, *, limit: int = 10):
+            return []
+
+    digest = ControlMasterDigestBuilder().build_from_service(_Service())
+    assert digest.signal_status == "AVAILABLE"
+    assert digest.work_queue_status == "UNVERIFIED"
+    assert digest.work_queue_brief == []
+    assert "MISSING:tests_state" in digest.signal_reason
+
+
+def test_build_from_service_unexpected_source_cannot_confirm_empty_queue() -> None:
+    from datetime import datetime, timezone
+
+    class _Service:
+        last_work_queue_errors = ()
+        last_work_queue_source_coverage = {
+            "objective_repository": "READ_OK",
+            "platform_pending_queue": "READ_OK",
+            "pending_issue_repository": "READ_OK",
+            "self_examination_service": "READ_OK",
+            "runtime_audit": "READ_OK",
+            "runtime_audit_durability": "READ_OK",
+            "tests_state": "READ_OK",
+            "unregistered_source": "READ_OK",
+        }
+
+        def current_state(self, *, refresh: bool = False):
+            return ControlMasterState(
+                state_id="state-reader-unexpected-source",
+                current_vision="source snapshot",
+                metadata={
+                    "_space_time_control_master_source_provenance": {
+                        "project_id": "IABV_v1.5",
+                        "source_object": "control_master/latest.json",
+                        "source_state_id": "state-reader-unexpected-source",
+                        "source_revision_or_digest": "sha256:unexpected-source",
+                        "source_generated_at_utc": datetime.now(timezone.utc).isoformat(),
+                        "workspace_scope_id": "scope-reader",
+                        "freshness_status": "FRESH",
+                        "read_status": "READ_OK",
+                    }
+                },
+            )
+
+        def current_work_queue(self, *, limit: int = 10):
+            return []
+
+    digest = ControlMasterDigestBuilder().build_from_service(_Service())
+    assert digest.signal_status == "AVAILABLE"
+    assert digest.work_queue_status == "UNVERIFIED"
+    assert digest.work_queue_brief == []
+    assert "UNEXPECTED:unregistered_source" in digest.signal_reason
+
+
+def test_build_from_service_queue_exception_is_unavailable_not_empty() -> None:
+    from datetime import datetime, timezone
+
+    class _Service:
+        last_work_queue_errors = ()
+        last_work_queue_source_coverage = {
+            "objectives": "READ_OK",
+        }
+
+        def current_state(self, *, refresh: bool = False):
+            return ControlMasterState(
+                state_id="state-reader-failure",
+                metadata={
+                    "_space_time_control_master_source_provenance": {
+                        "project_id": "IABV_v1.5",
+                        "source_object": "control_master/latest.json",
+                        "source_state_id": "state-reader-failure",
+                        "source_revision_or_digest": "sha256:reader-failure",
+                        "source_generated_at_utc": datetime.now(timezone.utc).isoformat(),
+                        "workspace_scope_id": "scope-reader",
+                        "freshness_status": "FRESH",
+                        "read_status": "READ_OK",
+                    }
+                },
+            )
+
+        def current_work_queue(self, *, limit: int = 10):
+            raise RuntimeError("queue unavailable")
+
+    digest = ControlMasterDigestBuilder().build_from_service(_Service())
+    assert digest.signal_status == "AVAILABLE"
+    assert digest.work_queue_status == "UNAVAILABLE"
+    assert digest.work_queue_brief == []
+    assert digest.signal_reason == "CONTROL_MASTER_QUEUE_READ_FAILED:RuntimeError"
+
+
+def test_digest_labels_test_state_mirror_freshness() -> None:
+    from datetime import datetime, timedelta, timezone
+    from iabv_v15.services.evolution.control_master_digest_builder import _render_tests_brief
+
+    missing = _render_tests_brief({})
+    assert "mirror_status=MIRROR_UNVERIFIED" in missing
+    assert "canonical_queue_read=SEPARATE" in missing
+
+    stale_timestamp = (datetime.now(timezone.utc) - timedelta(days=2)).isoformat()
+    stale = _render_tests_brief({
+        "evidence_id": "evidence-stale-001",
+        "timestamp": stale_timestamp,
+        "passed": 10,
+        "failed": 3,
+        "total": 13,
+    })
+    assert "mirror_status=MIRROR_STALE" in stale
+    assert "failed=3" in stale
+
+    fresh_timestamp = datetime.now(timezone.utc).isoformat()
+    fresh = _render_tests_brief({
+        "evidence_id": "evidence-fresh-001",
+        "timestamp": fresh_timestamp,
+        "commit_sha": "a" * 40,
+        "suite": "tests/test_control_master_service.py",
+        "passed": 12,
+        "failed": 0,
+        "total": 12,
+    })
+    assert "mirror_status=MIRROR_FRESHNESS_ONLY" in fresh
+    assert "canonical_queue_read=SEPARATE" in fresh
+    assert "evidence_id=evidence-fresh-001" in fresh
+    assert "commit=aaaaaaaaaaaa" in fresh

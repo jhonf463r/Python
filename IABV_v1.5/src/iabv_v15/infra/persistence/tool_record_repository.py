@@ -1,19 +1,168 @@
 ﻿from __future__ import annotations
 
 import json
+import sqlite3
 from pathlib import Path
-from typing import Any
+from threading import local
+from typing import Any, Callable, Sequence, TypeVar
 from uuid import uuid4
 
 from iabv_v15.domain.models import InteractionEpisode, InteractionObservation, InteractionPattern, ToolCard, ToolResult, ToolTask
 from iabv_v15.infra.persistence.database import AppDatabase
+from iabv_v15.infra.persistence.read_results import (
+    ArtifactReadResult,
+    ArtifactReadStatus,
+    RepositoryReadError,
+    RepositoryReadReport,
+    read_json_mapping_from_paths,
+    read_model_from_paths,
+)
 from iabv_v15.infra.persistence.storage import ArtifactStorage
+
+TRecord = TypeVar('TRecord')
 
 
 class ToolRecordRepository:
     def __init__(self, db: AppDatabase, storage: ArtifactStorage):
         self.db = db
         self.storage = storage
+        self._read_state = local()
+
+    @property
+    def last_read_report(self) -> RepositoryReadReport[Any] | None:
+        """Per-thread diagnostics for the most recent collection read."""
+        return getattr(self._read_state, "report", None)
+
+    def _remember_report(self, report: RepositoryReadReport[Any]) -> RepositoryReadReport[Any]:
+        self._read_state.report = report
+        return report
+
+    def _read_indexed_collection(
+        self,
+        *,
+        table: str,
+        id_column: str,
+        relative_directory: str,
+        sql: str,
+        parameters: Sequence[object],
+        reader: Callable[[Sequence[Path], str], ArtifactReadResult[TRecord]],
+    ) -> RepositoryReadReport[TRecord]:
+        """Read one bounded SQLite collection and retain every row outcome."""
+        scope = f"SQLITE_INDEX_ROWS:{table}"
+        try:
+            rows = self.db.fetchall(sql, tuple(parameters))
+        except Exception as exc:
+            return self._remember_report(
+                RepositoryReadReport.from_collection_error(scope, exc)
+            )
+
+        results: list[ArtifactReadResult[TRecord]] = []
+        for row in rows:
+            artifact_id = str(row[id_column])
+            try:
+                candidate = Path(row["path"])
+            except (TypeError, ValueError, OSError) as exc:
+                results.append(
+                    ArtifactReadResult(
+                        artifact_id=artifact_id,
+                        path="",
+                        status=ArtifactReadStatus.READ_FAILED,
+                        error_type=type(exc).__name__,
+                        error_message="Indexed artifact path is invalid.",
+                    )
+                )
+                continue
+
+            paths: list[Path] = []
+            if candidate.is_absolute():
+                paths.append(candidate)
+            paths.append(
+                self.storage.root / relative_directory / f"{artifact_id}.json"
+            )
+            results.append(reader(paths, artifact_id))
+
+        return self._remember_report(
+            RepositoryReadReport.from_results(scope, results)
+        )
+
+    def _read_indexed_item(
+        self,
+        *,
+        table: str,
+        id_column: str,
+        artifact_id: str,
+        sql: str,
+        parameters: Sequence[object],
+        relative_directory: str,
+        reader: Callable[[Sequence[Path], str], ArtifactReadResult[TRecord]],
+    ) -> ArtifactReadResult[TRecord]:
+        """Read one SQLite-indexed artifact and replace the current diagnostic report."""
+        scope = f"SQLITE_INDEX_LOOKUP:{table}"
+        try:
+            row = self.db.fetchone(sql, tuple(parameters))
+        except sqlite3.Error as exc:
+            report = RepositoryReadReport.from_collection_error(
+                scope,
+                exc,
+                requested_artifact_id=artifact_id,
+            )
+            self._remember_report(report)
+            return ArtifactReadResult(
+                artifact_id=artifact_id,
+                path="",
+                status=ArtifactReadStatus.READ_FAILED,
+                error_type=type(exc).__name__,
+                error_message="Repository point lookup failed.",
+            )
+
+        if row is None:
+            result = ArtifactReadResult(
+                artifact_id=artifact_id,
+                path="",
+                status=ArtifactReadStatus.CONFIRMED_NOT_FOUND,
+                error_type="IndexRowNotFound",
+                error_message=f"No {table} row exists in the SQLite index.",
+            )
+        else:
+            resolved_id = str(row[id_column])
+            try:
+                candidate = Path(row["path"])
+            except (TypeError, ValueError, OSError) as exc:
+                result = ArtifactReadResult(
+                    artifact_id=resolved_id,
+                    path="",
+                    status=ArtifactReadStatus.READ_FAILED,
+                    error_type=type(exc).__name__,
+                    error_message="Indexed artifact path is invalid.",
+                )
+            else:
+                paths: list[Path] = []
+                if candidate.is_absolute():
+                    paths.append(candidate)
+                paths.append(
+                    self.storage.root / relative_directory / f"{resolved_id}.json"
+                )
+                result = reader(paths, resolved_id)
+
+        self._remember_report(RepositoryReadReport.from_results(scope, [result]))
+        return result
+
+    def _legacy_item_value(
+        self,
+        result: ArtifactReadResult[TRecord],
+    ) -> TRecord | None:
+        """Preserve legacy None-on-absent behavior; fail closed on unreadable records."""
+        if result.status == ArtifactReadStatus.FOUND:
+            return result.value
+        if (
+            result.status == ArtifactReadStatus.CONFIRMED_NOT_FOUND
+            and result.error_type == "IndexRowNotFound"
+        ):
+            return None
+        report = self.last_read_report
+        if report is None:
+            raise RuntimeError("indexed_item_read_report_not_recorded")
+        raise RepositoryReadError(report)
 
     def save_card(self, card: ToolCard) -> ToolCard:
         relative_path = f"cards/{card.tool_id}.json"
@@ -43,33 +192,65 @@ class ToolRecordRepository:
         )
         return card
 
-    def list_cards(self) -> list[ToolCard]:
-        rows = self.db.fetchall(
-            """
-            SELECT tool_id, path
-            FROM tool_cards
-            ORDER BY updated_at_utc DESC, title ASC
-            """
-        )
-        cards: list[ToolCard] = []
+    def list_cards_with_diagnostics(self) -> RepositoryReadReport[ToolCard]:
+        """Read the SQLite-indexed cards without pruning unreadable index rows."""
+        try:
+            rows = self.db.fetchall(
+                """
+                SELECT tool_id, path
+                FROM tool_cards
+                ORDER BY updated_at_utc DESC, title ASC
+                """
+            )
+        except Exception as exc:
+            return self._remember_report(
+                RepositoryReadReport.from_collection_error("SQLITE_INDEX_ROWS", exc)
+            )
+
+        results: list[ArtifactReadResult[ToolCard]] = []
         for row in rows:
-            card = self._load_card_safe(row['tool_id'], row['path'])
-            if card is not None:
-                cards.append(card)
-        return cards
+            tool_id = str(row["tool_id"])
+            try:
+                candidate = Path(row["path"])
+            except (TypeError, ValueError, OSError) as exc:
+                results.append(
+                    ArtifactReadResult(
+                        artifact_id=tool_id,
+                        path="",
+                        status=ArtifactReadStatus.READ_FAILED,
+                        error_type=type(exc).__name__,
+                        error_message="Indexed artifact path is invalid.",
+                    )
+                )
+                continue
+            paths: list[Path] = []
+            if candidate.is_absolute():
+                paths.append(candidate)
+            paths.append(self.storage.root / f"cards/{tool_id}.json")
+            results.append(read_model_from_paths(paths, tool_id, ToolCard))
+        return self._remember_report(
+            RepositoryReadReport.from_results("SQLITE_INDEX_ROWS", results)
+        )
+
+    def list_cards(self) -> list[ToolCard]:
+        """Legacy list API; fail closed and retain the diagnostic report."""
+        return self.list_cards_with_diagnostics().require_complete()
+
+    def get_card_with_diagnostics(self, tool_id: str) -> ArtifactReadResult[ToolCard]:
+        return self._read_indexed_item(
+            table="tool_cards",
+            id_column="tool_id",
+            artifact_id=tool_id,
+            sql="SELECT tool_id, path FROM tool_cards WHERE tool_id = ?",
+            parameters=(tool_id,),
+            relative_directory="cards",
+            reader=lambda paths, artifact_id: read_model_from_paths(
+                paths, artifact_id, ToolCard
+            ),
+        )
 
     def get_card(self, tool_id: str) -> ToolCard | None:
-        row = self.db.fetchone(
-            """
-            SELECT tool_id, path
-            FROM tool_cards
-            WHERE tool_id = ?
-            """,
-            (tool_id,),
-        )
-        if row is None:
-            return None
-        return self._load_card_safe(row['tool_id'], row['path'])
+        return self._legacy_item_value(self.get_card_with_diagnostics(tool_id))
 
     def save_task(self, task: ToolTask) -> ToolTask:
         relative_path = f"tasks/{task.task_id}.json"
@@ -102,35 +283,42 @@ class ToolRecordRepository:
         )
         return task
 
-    def list_tasks(self, limit: int = 20) -> list[ToolTask]:
-        rows = self.db.fetchall(
-            """
-            SELECT task_id, path
-            FROM tool_tasks
-            ORDER BY updated_at_utc DESC
-            LIMIT ?
+    def list_tasks_with_diagnostics(self, limit: int = 20) -> RepositoryReadReport[ToolTask]:
+        return self._read_indexed_collection(
+            table="tool_tasks",
+            id_column="task_id",
+            relative_directory="tasks",
+            sql="""
+                SELECT task_id, path
+                FROM tool_tasks
+                ORDER BY updated_at_utc DESC
+                LIMIT ?
             """,
-            (limit,),
+            parameters=(limit,),
+            reader=lambda paths, artifact_id: read_model_from_paths(
+                paths, artifact_id, ToolTask
+            ),
         )
-        items: list[ToolTask] = []
-        for row in rows:
-            loaded = self._load_task_safe(row['task_id'], row['path'])
-            if loaded is not None:
-                items.append(loaded)
-        return items
+
+    def list_tasks(self, limit: int = 20) -> list[ToolTask]:
+        """Legacy list API; fail closed and retain the diagnostic report."""
+        return self.list_tasks_with_diagnostics(limit).require_complete()
+
+    def get_task_with_diagnostics(self, task_id: str) -> ArtifactReadResult[ToolTask]:
+        return self._read_indexed_item(
+            table="tool_tasks",
+            id_column="task_id",
+            artifact_id=task_id,
+            sql="SELECT task_id, path FROM tool_tasks WHERE task_id = ?",
+            parameters=(task_id,),
+            relative_directory="tasks",
+            reader=lambda paths, artifact_id: read_model_from_paths(
+                paths, artifact_id, ToolTask
+            ),
+        )
 
     def get_task(self, task_id: str) -> ToolTask | None:
-        row = self.db.fetchone(
-            """
-            SELECT task_id, path
-            FROM tool_tasks
-            WHERE task_id = ?
-            """,
-            (task_id,),
-        )
-        if row is None:
-            return None
-        return self._load_task_safe(row['task_id'], row['path'])
+        return self._legacy_item_value(self.get_task_with_diagnostics(task_id))
 
     def save_result(self, result: ToolResult) -> ToolResult:
         relative_path = f"results/{result.result_id}.json"
@@ -154,27 +342,40 @@ class ToolRecordRepository:
         )
         return result
 
-    def list_results(self, *, tool_id: str | None = None, task_id: str | None = None, limit: int = 20) -> list[ToolResult]:
+    def list_results_with_diagnostics(
+        self, *, tool_id: str | None = None, task_id: str | None = None, limit: int = 20
+    ) -> RepositoryReadReport[ToolResult]:
         sql = "SELECT result_id, path FROM tool_results"
         parameters: list[object] = []
         clauses: list[str] = []
         if tool_id:
-            clauses.append('tool_id = ?')
+            clauses.append("tool_id = ?")
             parameters.append(tool_id)
         if task_id:
-            clauses.append('task_id = ?')
+            clauses.append("task_id = ?")
             parameters.append(task_id)
         if clauses:
-            sql += ' WHERE ' + ' AND '.join(clauses)
-        sql += ' ORDER BY created_at_utc DESC LIMIT ?'
+            sql += " WHERE " + " AND ".join(clauses)
+        sql += " ORDER BY created_at_utc DESC LIMIT ?"
         parameters.append(limit)
-        rows = self.db.fetchall(sql, tuple(parameters))
-        items: list[ToolResult] = []
-        for row in rows:
-            loaded = self._load_result_safe(row['result_id'], row['path'])
-            if loaded is not None:
-                items.append(loaded)
-        return items
+        return self._read_indexed_collection(
+            table="tool_results",
+            id_column="result_id",
+            relative_directory="results",
+            sql=sql,
+            parameters=parameters,
+            reader=lambda paths, artifact_id: read_model_from_paths(
+                paths, artifact_id, ToolResult
+            ),
+        )
+
+    def list_results(
+        self, *, tool_id: str | None = None, task_id: str | None = None, limit: int = 20
+    ) -> list[ToolResult]:
+        """Legacy list API; fail closed and retain the diagnostic report."""
+        return self.list_results_with_diagnostics(
+            tool_id=tool_id, task_id=task_id, limit=limit
+        ).require_complete()
 
     def log_execution(self, *, tool_id: str, task_id: str | None, action_type: str, state: str, payload: dict[str, Any], created_at_utc: str) -> str:
         log_id = str(uuid4())
@@ -201,28 +402,38 @@ class ToolRecordRepository:
         )
         return log_id
 
-    def list_log(self, *, tool_id: str | None = None, task_id: str | None = None, limit: int = 50) -> list[dict[str, Any]]:
-        sql = 'SELECT log_id, path FROM tool_execution_log'
+    def list_log_with_diagnostics(
+        self, *, tool_id: str | None = None, task_id: str | None = None, limit: int = 50
+    ) -> RepositoryReadReport[dict[str, Any]]:
+        sql = "SELECT log_id, path FROM tool_execution_log"
         parameters: list[object] = []
         clauses: list[str] = []
         if tool_id:
-            clauses.append('tool_id = ?')
+            clauses.append("tool_id = ?")
             parameters.append(tool_id)
         if task_id:
-            clauses.append('task_id = ?')
+            clauses.append("task_id = ?")
             parameters.append(task_id)
         if clauses:
-            sql += ' WHERE ' + ' AND '.join(clauses)
-        sql += ' ORDER BY created_at_utc DESC LIMIT ?'
+            sql += " WHERE " + " AND ".join(clauses)
+        sql += " ORDER BY created_at_utc DESC LIMIT ?"
         parameters.append(limit)
-        rows = self.db.fetchall(sql, tuple(parameters))
-        items: list[dict[str, Any]] = []
-        for row in rows:
-            loaded = self._load_log_safe(row['log_id'], row['path'])
-            if loaded is not None:
-                items.append(loaded)
-        return items
+        return self._read_indexed_collection(
+            table="tool_execution_log",
+            id_column="log_id",
+            relative_directory="log",
+            sql=sql,
+            parameters=parameters,
+            reader=read_json_mapping_from_paths,
+        )
 
+    def list_log(
+        self, *, tool_id: str | None = None, task_id: str | None = None, limit: int = 50
+    ) -> list[dict[str, Any]]:
+        """Legacy list API; fail closed and retain the diagnostic report."""
+        return self.list_log_with_diagnostics(
+            tool_id=tool_id, task_id=task_id, limit=limit
+        ).require_complete()
 
     def save_interaction_pattern(self, pattern: InteractionPattern) -> InteractionPattern:
         relative_path = f"interaction_patterns/{pattern.pattern_id}.json"
@@ -247,31 +458,82 @@ class ToolRecordRepository:
         )
         return pattern
 
-    def get_interaction_pattern_by_signature(self, signature: str) -> InteractionPattern | None:
-        row = self.db.fetchone(
-            """
-            SELECT pattern_id, path
-            FROM interaction_patterns
-            WHERE signature = ?
-            """,
-            (signature,),
+    def get_interaction_pattern_by_signature_with_diagnostics(
+        self, signature: str
+    ) -> ArtifactReadResult[InteractionPattern]:
+        return self._read_indexed_item(
+            table="interaction_patterns",
+            id_column="pattern_id",
+            artifact_id=signature,
+            sql="SELECT pattern_id, path FROM interaction_patterns WHERE signature = ?",
+            parameters=(signature,),
+            relative_directory="interaction_patterns",
+            reader=lambda paths, artifact_id: read_model_from_paths(
+                paths, artifact_id, InteractionPattern
+            ),
         )
-        if row is None:
-            return None
-        return self._load_interaction_pattern_safe(row['pattern_id'], row['path'])
+
+    def get_interaction_pattern_by_signature(
+        self, signature: str
+    ) -> InteractionPattern | None:
+        return self._legacy_item_value(
+            self.get_interaction_pattern_by_signature_with_diagnostics(signature)
+        )
+
+    def get_interaction_pattern_with_diagnostics(
+        self, pattern_id: str
+    ) -> ArtifactReadResult[InteractionPattern]:
+        return self._read_indexed_item(
+            table="interaction_patterns",
+            id_column="pattern_id",
+            artifact_id=pattern_id,
+            sql="SELECT pattern_id, path FROM interaction_patterns WHERE pattern_id = ?",
+            parameters=(pattern_id,),
+            relative_directory="interaction_patterns",
+            reader=lambda paths, artifact_id: read_model_from_paths(
+                paths, artifact_id, InteractionPattern
+            ),
+        )
 
     def get_interaction_pattern(self, pattern_id: str) -> InteractionPattern | None:
-        row = self.db.fetchone(
-            """
-            SELECT pattern_id, path
-            FROM interaction_patterns
-            WHERE pattern_id = ?
-            """,
-            (pattern_id,),
+        return self._legacy_item_value(
+            self.get_interaction_pattern_with_diagnostics(pattern_id)
         )
-        if row is None:
-            return None
-        return self._load_interaction_pattern_safe(row['pattern_id'], row['path'])
+
+    def list_interaction_patterns_with_diagnostics(
+        self,
+        *,
+        channel: str | None = None,
+        tool_id: str | None = None,
+        site_id: str | None = None,
+        limit: int = 20,
+    ) -> RepositoryReadReport[InteractionPattern]:
+        sql = "SELECT pattern_id, path FROM interaction_patterns"
+        parameters: list[object] = []
+        clauses: list[str] = []
+        if channel:
+            clauses.append("channel = ?")
+            parameters.append(channel)
+        if tool_id:
+            clauses.append("tool_id = ?")
+            parameters.append(tool_id)
+        if site_id:
+            clauses.append("site_id = ?")
+            parameters.append(site_id)
+        if clauses:
+            sql += " WHERE " + " AND ".join(clauses)
+        sql += " ORDER BY updated_at_utc DESC LIMIT ?"
+        parameters.append(limit)
+        return self._read_indexed_collection(
+            table="interaction_patterns",
+            id_column="pattern_id",
+            relative_directory="interaction_patterns",
+            sql=sql,
+            parameters=parameters,
+            reader=lambda paths, artifact_id: read_model_from_paths(
+                paths, artifact_id, InteractionPattern
+            ),
+        )
 
     def list_interaction_patterns(
         self,
@@ -281,29 +543,10 @@ class ToolRecordRepository:
         site_id: str | None = None,
         limit: int = 20,
     ) -> list[InteractionPattern]:
-        sql = 'SELECT pattern_id, path FROM interaction_patterns'
-        parameters: list[object] = []
-        clauses: list[str] = []
-        if channel:
-            clauses.append('channel = ?')
-            parameters.append(channel)
-        if tool_id:
-            clauses.append('tool_id = ?')
-            parameters.append(tool_id)
-        if site_id:
-            clauses.append('site_id = ?')
-            parameters.append(site_id)
-        if clauses:
-            sql += ' WHERE ' + ' AND '.join(clauses)
-        sql += ' ORDER BY updated_at_utc DESC LIMIT ?'
-        parameters.append(limit)
-        rows = self.db.fetchall(sql, tuple(parameters))
-        items: list[InteractionPattern] = []
-        for row in rows:
-            loaded = self._load_interaction_pattern_safe(row['pattern_id'], row['path'])
-            if loaded is not None:
-                items.append(loaded)
-        return items
+        """Legacy list API; fail closed and retain the diagnostic report."""
+        return self.list_interaction_patterns_with_diagnostics(
+            channel=channel, tool_id=tool_id, site_id=site_id, limit=limit
+        ).require_complete()
 
     def save_interaction_observation(self, observation: InteractionObservation) -> InteractionObservation:
         relative_path = f"interaction_observations/{observation.observation_id}.json"
@@ -329,6 +572,37 @@ class ToolRecordRepository:
         )
         return observation
 
+    def list_interaction_observations_with_diagnostics(
+        self,
+        *,
+        pattern_id: str | None = None,
+        tool_id: str | None = None,
+        limit: int = 20,
+    ) -> RepositoryReadReport[InteractionObservation]:
+        sql = "SELECT observation_id, path FROM interaction_observations"
+        parameters: list[object] = []
+        clauses: list[str] = []
+        if pattern_id:
+            clauses.append("pattern_id = ?")
+            parameters.append(pattern_id)
+        if tool_id:
+            clauses.append("tool_id = ?")
+            parameters.append(tool_id)
+        if clauses:
+            sql += " WHERE " + " AND ".join(clauses)
+        sql += " ORDER BY created_at_utc DESC LIMIT ?"
+        parameters.append(limit)
+        return self._read_indexed_collection(
+            table="interaction_observations",
+            id_column="observation_id",
+            relative_directory="interaction_observations",
+            sql=sql,
+            parameters=parameters,
+            reader=lambda paths, artifact_id: read_model_from_paths(
+                paths, artifact_id, InteractionObservation
+            ),
+        )
+
     def list_interaction_observations(
         self,
         *,
@@ -336,26 +610,10 @@ class ToolRecordRepository:
         tool_id: str | None = None,
         limit: int = 20,
     ) -> list[InteractionObservation]:
-        sql = 'SELECT observation_id, path FROM interaction_observations'
-        parameters: list[object] = []
-        clauses: list[str] = []
-        if pattern_id:
-            clauses.append('pattern_id = ?')
-            parameters.append(pattern_id)
-        if tool_id:
-            clauses.append('tool_id = ?')
-            parameters.append(tool_id)
-        if clauses:
-            sql += ' WHERE ' + ' AND '.join(clauses)
-        sql += ' ORDER BY created_at_utc DESC LIMIT ?'
-        parameters.append(limit)
-        rows = self.db.fetchall(sql, tuple(parameters))
-        items: list[InteractionObservation] = []
-        for row in rows:
-            loaded = self._load_interaction_observation_safe(row['observation_id'], row['path'])
-            if loaded is not None:
-                items.append(loaded)
-        return items
+        """Legacy list API; fail closed and retain the diagnostic report."""
+        return self.list_interaction_observations_with_diagnostics(
+            pattern_id=pattern_id, tool_id=tool_id, limit=limit
+        ).require_complete()
 
     def save_interaction_episode(self, episode: InteractionEpisode) -> InteractionEpisode:
         episode_relative_path = f"interaction_episodes/{episode.interaction_episode_id}.json"
@@ -421,6 +679,41 @@ class ToolRecordRepository:
             )
         return episode
 
+    def list_interaction_episodes_with_diagnostics(
+        self,
+        *,
+        tool_id: str | None = None,
+        mode_used: str | None = None,
+        site_id: str | None = None,
+        limit: int = 20,
+    ) -> RepositoryReadReport[InteractionEpisode]:
+        sql = "SELECT interaction_episode_id, path FROM interaction_episodes"
+        parameters: list[object] = []
+        clauses: list[str] = []
+        if tool_id:
+            clauses.append("tool_id = ?")
+            parameters.append(tool_id)
+        if mode_used:
+            clauses.append("mode_used = ?")
+            parameters.append(mode_used)
+        if site_id:
+            clauses.append("site_id = ?")
+            parameters.append(site_id)
+        if clauses:
+            sql += " WHERE " + " AND ".join(clauses)
+        sql += " ORDER BY updated_at_utc DESC LIMIT ?"
+        parameters.append(limit)
+        return self._read_indexed_collection(
+            table="interaction_episodes",
+            id_column="interaction_episode_id",
+            relative_directory="interaction_episodes",
+            sql=sql,
+            parameters=parameters,
+            reader=lambda paths, artifact_id: read_model_from_paths(
+                paths, artifact_id, InteractionEpisode
+            ),
+        )
+
     def list_interaction_episodes(
         self,
         *,
@@ -429,42 +722,35 @@ class ToolRecordRepository:
         site_id: str | None = None,
         limit: int = 20,
     ) -> list[InteractionEpisode]:
-        sql = 'SELECT interaction_episode_id, path FROM interaction_episodes'
-        parameters: list[object] = []
-        clauses: list[str] = []
-        if tool_id:
-            clauses.append('tool_id = ?')
-            parameters.append(tool_id)
-        if mode_used:
-            clauses.append('mode_used = ?')
-            parameters.append(mode_used)
-        if site_id:
-            clauses.append('site_id = ?')
-            parameters.append(site_id)
-        if clauses:
-            sql += ' WHERE ' + ' AND '.join(clauses)
-        sql += ' ORDER BY updated_at_utc DESC LIMIT ?'
-        parameters.append(limit)
-        rows = self.db.fetchall(sql, tuple(parameters))
-        items: list[InteractionEpisode] = []
-        for row in rows:
-            loaded = self._load_interaction_episode_safe(row['interaction_episode_id'], row['path'])
-            if loaded is not None:
-                items.append(loaded)
-        return items
+        """Legacy list API; fail closed and retain the diagnostic report."""
+        return self.list_interaction_episodes_with_diagnostics(
+            tool_id=tool_id, mode_used=mode_used, site_id=site_id, limit=limit
+        ).require_complete()
 
-    def get_interaction_episode(self, interaction_episode_id: str) -> InteractionEpisode | None:
-        row = self.db.fetchone(
-            """
-            SELECT interaction_episode_id, path
-            FROM interaction_episodes
-            WHERE interaction_episode_id = ?
-            """,
-            (interaction_episode_id,),
+    def get_interaction_episode_with_diagnostics(
+        self, interaction_episode_id: str
+    ) -> ArtifactReadResult[InteractionEpisode]:
+        return self._read_indexed_item(
+            table="interaction_episodes",
+            id_column="interaction_episode_id",
+            artifact_id=interaction_episode_id,
+            sql=(
+                "SELECT interaction_episode_id, path "
+                "FROM interaction_episodes WHERE interaction_episode_id = ?"
+            ),
+            parameters=(interaction_episode_id,),
+            relative_directory="interaction_episodes",
+            reader=lambda paths, artifact_id: read_model_from_paths(
+                paths, artifact_id, InteractionEpisode
+            ),
         )
-        if row is None:
-            return None
-        return self._load_interaction_episode(row['interaction_episode_id'], row['path'])
+
+    def get_interaction_episode(
+        self, interaction_episode_id: str
+    ) -> InteractionEpisode | None:
+        return self._legacy_item_value(
+            self.get_interaction_episode_with_diagnostics(interaction_episode_id)
+        )
 
     def _load_card(self, tool_id: str, path: str) -> ToolCard:
         return ToolCard.model_validate(self._load_json(f'cards/{tool_id}.json', path))
@@ -473,8 +759,7 @@ class ToolRecordRepository:
         try:
             return self._load_card(tool_id, path)
         except (FileNotFoundError, json.JSONDecodeError, ValueError):
-            self.db.execute('DELETE FROM tool_cards WHERE tool_id = ?', (tool_id,))
-            return None
+            raise
 
     def _load_task(self, task_id: str, path: str) -> ToolTask:
         return ToolTask.model_validate(self._load_json(f'tasks/{task_id}.json', path))
@@ -483,8 +768,7 @@ class ToolRecordRepository:
         try:
             return self._load_task(task_id, path)
         except (FileNotFoundError, json.JSONDecodeError, ValueError):
-            self.db.execute('DELETE FROM tool_tasks WHERE task_id = ?', (task_id,))
-            return None
+            raise
 
     def _load_result(self, result_id: str, path: str) -> ToolResult:
         return ToolResult.model_validate(self._load_json(f'results/{result_id}.json', path))
@@ -493,8 +777,7 @@ class ToolRecordRepository:
         try:
             return self._load_result(result_id, path)
         except (FileNotFoundError, json.JSONDecodeError, ValueError):
-            self.db.execute('DELETE FROM tool_results WHERE result_id = ?', (result_id,))
-            return None
+            raise
 
     def _load_interaction_pattern(self, pattern_id: str, path: str) -> InteractionPattern:
         return InteractionPattern.model_validate(self._load_json(f'interaction_patterns/{pattern_id}.json', path))
@@ -503,8 +786,7 @@ class ToolRecordRepository:
         try:
             return self._load_interaction_pattern(pattern_id, path)
         except (FileNotFoundError, json.JSONDecodeError, ValueError):
-            self.db.execute('DELETE FROM interaction_patterns WHERE pattern_id = ?', (pattern_id,))
-            return None
+            raise
 
     def _load_interaction_observation(self, observation_id: str, path: str) -> InteractionObservation:
         return InteractionObservation.model_validate(self._load_json(f'interaction_observations/{observation_id}.json', path))
@@ -513,8 +795,7 @@ class ToolRecordRepository:
         try:
             return self._load_interaction_observation(observation_id, path)
         except (FileNotFoundError, json.JSONDecodeError, ValueError):
-            self.db.execute('DELETE FROM interaction_observations WHERE observation_id = ?', (observation_id,))
-            return None
+            raise
 
     def _load_interaction_episode(self, interaction_episode_id: str, path: str) -> InteractionEpisode:
         return InteractionEpisode.model_validate(self._load_json(f'interaction_episodes/{interaction_episode_id}.json', path))
@@ -523,8 +804,7 @@ class ToolRecordRepository:
         try:
             return self._load_interaction_episode(interaction_episode_id, path)
         except (FileNotFoundError, json.JSONDecodeError, ValueError):
-            self.db.execute('DELETE FROM interaction_episodes WHERE interaction_episode_id = ?', (interaction_episode_id,))
-            return None
+            raise
 
     def _load_json(self, relative_path: str, path: str) -> dict[str, Any]:
         candidate = Path(path)
@@ -536,5 +816,4 @@ class ToolRecordRepository:
         try:
             return self._load_json(f'log/{log_id}.json', path)
         except (FileNotFoundError, json.JSONDecodeError, ValueError):
-            self.db.execute('DELETE FROM tool_execution_log WHERE log_id = ?', (log_id,))
-            return None
+            raise

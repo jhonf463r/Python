@@ -12,6 +12,7 @@ from typing import Any
 from iabv_v15.domain.models import (
     EnvironmentSelfModel,
     ObjectiveNodeKind,
+    ObjectiveStatus,
     PortableContextPackage,
     PortableContextSection,
     TaskContext,
@@ -49,6 +50,7 @@ class PortableContextService:
         adaptive_task_orchestrator: Any | None = None,
         adaptive_session_repository: Any | None = None,
         platform_pending_queue: Any | None = None,
+        discernment_frame_service: Any | None = None,
     ) -> None:
         self.workspace_root = workspace_root
         self.storage = storage
@@ -66,6 +68,7 @@ class PortableContextService:
         self.adaptive_task_orchestrator = adaptive_task_orchestrator
         self.adaptive_session_repository = adaptive_session_repository
         self.platform_pending_queue = platform_pending_queue
+        self.discernment_frame_service = discernment_frame_service
         self.control_master_service: Any | None = None
         self.decision_audit_trail: Any | None = None
         self.code_audit_trail: Any | None = None
@@ -238,8 +241,8 @@ class PortableContextService:
             task_context=task_context,
         )
         task_packet_summary = self._task_packet_summary_snapshot()
-        pending_items = self._pending_items()
-        backlog_items = self._backlog_items()
+        pending_items, pending_read_status, pending_read_error = self._pending_items()
+        backlog_items, backlog_read_status, backlog_read_error = self._backlog_items()
         decision_history = self._decision_history(recommendations=recommendations)
         unresolved = self._unresolved_fields(
             environment=environment,
@@ -248,7 +251,19 @@ class PortableContextService:
             recommendations=recommendations,
             goal_context=goal_context,
         )
-        unresolved = list(dict.fromkeys([*unresolved, *list(self_examination.get('unresolved_risks') or [])]))
+        unresolved = list(dict.fromkeys([
+            *unresolved,
+            *list(goal_context.get('unresolved_fields') or []),
+            *(
+                [f'UNRESOLVED:pending_issue_repository:{pending_read_status.lower()}']
+                if pending_read_status != 'READ_OK' else []
+            ),
+            *(
+                [f'UNRESOLVED:evolution_review_service:{backlog_read_status.lower()}']
+                if backlog_read_status != 'READ_OK' else []
+            ),
+            *list(self_examination.get('unresolved_risks') or []),
+        ]))
         sections = [
             self._project_state_section(
                 goal_context=goal_context,
@@ -298,7 +313,15 @@ class PortableContextService:
                 now=now,
             ),
             self._decision_history_section(decision_history=decision_history, now=now),
-            self._pending_section(pending_items=pending_items, backlog_items=backlog_items, now=now),
+            self._pending_section(
+                pending_items=pending_items,
+                backlog_items=backlog_items,
+                pending_read_status=pending_read_status,
+                pending_read_error=pending_read_error,
+                backlog_read_status=backlog_read_status,
+                backlog_read_error=backlog_read_error,
+                now=now,
+            ),
             self._canonical_work_queue_section(now=now),
             self._shared_reality_section(review=self_examination, now=now),
             self._user_chrome_bridge_section(now=now),
@@ -319,6 +342,7 @@ class PortableContextService:
         package = PortableContextPackage(
             created_at_utc=now,
             updated_at_utc=now,
+            full_context_generated_at_utc=now,
             summary=self._package_summary(
                 goal_context=goal_context,
                 recommendations=recommendations,
@@ -463,7 +487,9 @@ class PortableContextService:
 
             metadata = payload.get('metadata') or {}
             metadata['startup_health'] = dict(startup_health)
+            metadata['startup_health_updated_at_utc'] = utc_now().isoformat()
             payload['metadata'] = metadata
+            # This is a section-only mutation, not a new whole-context build.
             payload['updated_at_utc'] = utc_now().isoformat()
 
             self.storage.save_json_atomic('portable_context/latest.json', payload)
@@ -489,7 +515,20 @@ class PortableContextService:
 
     def _is_fresh(self, package: PortableContextPackage, *, max_age_seconds: int) -> bool:
         try:
-            age_seconds = (utc_now() - package.updated_at_utc).total_seconds()
+            # A lightweight unresolved package is not a complete context
+            # snapshot, even when its own created_at timestamp is recent.
+            if (
+                package.full_context_generated_at_utc is None
+                and (package.metadata or {}).get('source') == 'lightweight_unresolved_package'
+            ):
+                return False
+            # Legacy full snapshots fall back to creation time. A partial flush
+            # cannot renew the freshness window for every section.
+            generated_at = package.full_context_generated_at_utc or package.created_at_utc
+            age_seconds = (utc_now() - generated_at).total_seconds()
+            # Clock skew or a future-dated persisted value cannot establish freshness.
+            if age_seconds < 0:
+                return False
         except Exception:
             return False
         return age_seconds <= max_age_seconds
@@ -519,9 +558,25 @@ class PortableContextService:
                 'project': dict(goal.project or {}),
                 'task': dict(goal.task or {}),
             }
-        objective = self._latest_objective(kind=ObjectiveNodeKind.OBJECTIVE)
-        project = self._latest_objective(kind=ObjectiveNodeKind.PROJECT)
-        task = self._latest_objective(kind=ObjectiveNodeKind.TASK)
+        objective, objective_status, objective_error = self._latest_objective_with_diagnostics(
+            kind=ObjectiveNodeKind.OBJECTIVE
+        )
+        project, project_status, project_error = self._latest_objective_with_diagnostics(
+            kind=ObjectiveNodeKind.PROJECT
+        )
+        task, task_status, task_error = self._latest_objective_with_diagnostics(
+            kind=ObjectiveNodeKind.TASK
+        )
+        objective_statuses = {
+            'objective': objective_status,
+            'project': project_status,
+            'task': task_status,
+        }
+        unresolved_fields = [
+            f'UNRESOLVED:active_{kind}_read_{status.lower()}'
+            for kind, status in objective_statuses.items()
+            if status != 'READ_OK'
+        ]
         active_title = str((getattr(task, 'title', '') or getattr(project, 'title', '') or getattr(objective, 'title', '') or '')).strip()
         active_objective_id = str((getattr(task, 'objective_id', '') or getattr(project, 'objective_id', '') or getattr(objective, 'objective_id', '') or ''))
         site_id = str((getattr(task, 'site_id', '') or getattr(project, 'site_id', '') or getattr(objective, 'site_id', '') or ''))
@@ -550,6 +605,15 @@ class PortableContextService:
             'project': project.model_dump(mode='json') if project is not None else {},
             'task': task.model_dump(mode='json') if task is not None else {},
             'metadata': fallback_metadata,
+            'source_statuses': objective_statuses,
+            'unresolved_fields': unresolved_fields,
+            'source_errors': {
+                key: value for key, value in {
+                    'objective': objective_error,
+                    'project': project_error,
+                    'task': task_error,
+                }.items() if value
+            },
         }
 
     def _recent_user_goal_fallback(self) -> dict[str, Any] | None:
@@ -606,14 +670,74 @@ class PortableContextService:
             'site_id': site_id,
         }
 
-    def _latest_objective(self, *, kind: ObjectiveNodeKind) -> Any | None:
+    def _latest_objective_with_diagnostics(
+        self, *, kind: ObjectiveNodeKind
+    ) -> tuple[Any | None, str, str]:
         repository = self.objective_repository
-        if repository is None or not hasattr(repository, 'latest_active'):
-            return None
+        if repository is None:
+            return None, 'NOT_CONFIGURED', 'objective_repository_not_connected'
+
+        diagnostic_reader = getattr(repository, 'list_recent_with_diagnostics', None)
+        if callable(diagnostic_reader):
+            for status_filter in (
+                ObjectiveStatus.ACTIVE,
+                ObjectiveStatus.BLOCKED,
+                ObjectiveStatus.PENDING,
+                ObjectiveStatus.PAUSED,
+            ):
+                try:
+                    report = diagnostic_reader(
+                        kind=kind,
+                        status=status_filter,
+                        limit=1,
+                    )
+                except Exception as exc:
+                    report = getattr(exc, 'report', None)
+                    report_status = getattr(
+                        getattr(report, 'status', None), 'value', ''
+                    ) if report is not None else ''
+                    status = (
+                        'READ_PARTIAL' if report_status == 'READ_PARTIAL'
+                        else 'READ_FAILED' if report_status == 'READ_FAILED'
+                        else 'UNVERIFIED' if report_status == 'QUERY_NOT_EXECUTED'
+                        else 'READ_FAILED'
+                    )
+                    return None, status, type(exc).__name__
+
+                report_status = getattr(
+                    getattr(report, 'status', None), 'value', ''
+                )
+                if report_status in ('READ_OK', 'NO_RECORDS_OBSERVED'):
+                    nodes = list(getattr(report, 'items', ()) or ())
+                    if nodes:
+                        return nodes[0], 'READ_OK', ''
+                    continue
+                if report_status == 'READ_PARTIAL':
+                    return None, 'READ_PARTIAL', 'objective_collection_read_partial'
+                if report_status == 'READ_FAILED':
+                    return None, 'READ_FAILED', 'objective_collection_read_failed'
+                return None, 'UNVERIFIED', (
+                    report_status or 'objective_collection_status_unknown'
+                )
+
+            return None, 'READ_OK', ''
+
+        legacy_reader = getattr(repository, 'latest_active', None)
+        if not callable(legacy_reader):
+            return None, 'READER_UNAVAILABLE', 'objective_repository_reader_unavailable'
         try:
-            return repository.latest_active(kind=kind)
-        except Exception:
-            return None
+            return legacy_reader(kind=kind), 'READ_OK', ''
+        except Exception as exc:
+            return None, 'READ_FAILED', type(exc).__name__
+
+    def _latest_objective(self, *, kind: ObjectiveNodeKind) -> Any | None:
+        objective, status, error = self._latest_objective_with_diagnostics(kind=kind)
+        if status != 'READ_OK':
+            raise RuntimeError(
+                f'objective_repository_{status.lower()}'
+                + (f':{error}' if error else '')
+            )
+        return objective
 
     def _environment_self_model(self) -> EnvironmentSelfModel:
         service = self.environment_self_awareness_service
@@ -656,7 +780,7 @@ class PortableContextService:
 
     def _self_examination_snapshot(self) -> dict[str, Any]:
         service = self.self_examination_service
-        if service is None or not hasattr(service, 'current_review'):
+        if service is None or not callable(getattr(service, 'current_review_cached', None)):
             return {
                 'summary': '',
                 'summary_payload': {},
@@ -666,10 +790,10 @@ class PortableContextService:
                 'validated_improvements': [],
                 'recommendation_feedback': [],
                 'feedback_summary': {},
-                'unresolved_risks': ['UNRESOLVED:self_examination'],
+                'unresolved_risks': ['UNRESOLVED:self_examination_cached_review_unavailable'],
             }
         try:
-            review = service.current_review(refresh=True)
+            review = service.current_review_cached()
             if hasattr(service, 'review_summary'):
                 summary_payload = dict(service.review_summary(review) or {})
             else:
@@ -962,8 +1086,24 @@ class PortableContextService:
             secrets = {'error': 'secrets_read_failed'}
 
         failures: list[str] = []
+        quota_coverage = quotas.get('source_coverage')
+        quota_source_status = (
+            quota_coverage.get('quota_tracker')
+            if isinstance(quota_coverage, dict)
+            else None
+        )
         if 'error' in quotas:
+            quota_source_status = 'READ_FAILED'
             failures.append('quota_read_failed')
+        elif quota_source_status not in {'READ_OK', 'CONFIRMED_NOT_FOUND'}:
+            quota_source_status = (
+                quota_source_status
+                if isinstance(quota_source_status, str) and quota_source_status.strip()
+                else 'UNVERIFIED'
+            )
+            failure_code = f'quota_tracker_{quota_source_status.lower()}'
+            if failure_code not in failures:
+                failures.append(failure_code)
         if 'error' in workers:
             failures.append('worker_read_failed')
         if 'error' in secrets:
@@ -982,20 +1122,37 @@ class PortableContextService:
             }
             for w in workers.get('workers', [])[:15]
         ]
+        unverified_workers = [
+            {
+                'tool': w.get('tool', ''),
+                'email': w.get('email', ''),
+                'browser': w.get('browser', ''),
+                'profile': w.get('profile', ''),
+            }
+            for w in workers.get('unverified', [])[:15]
+        ]
 
         status = 'partial_failure' if failures else 'ok'
         return {
             'status': status,
             'read_failures': failures,
+            'quota_source_status': quota_source_status or 'UNVERIFIED',
+            'quota_source_error': (
+                (quotas.get('source_errors') or {}).get('quota_tracker', '')
+                if isinstance(quotas.get('source_errors') or {}, dict)
+                else ''
+            ),
             'quota_total_tracked': quotas.get('total_tracked', 0),
             'quota_exhausted_count': quotas.get('exhausted_count', 0),
             'quota_available_count': quotas.get('available_count', 0),
             'exhausted_accounts': exhausted[:10],
             'worker_available_count': workers.get('available_count', 0),
             'worker_exhausted_count': workers.get('exhausted_count', 0),
+            'worker_unverified_count': workers.get('unverified_count', len(unverified_workers)),
             'worker_total_remaining_messages': workers.get('total_remaining_messages', 0),
             'workers_by_tool': list(workers.get('tools_available', [])),
             'available_workers': available_workers,
+            'unverified_workers': unverified_workers,
             'secrets_configured': secrets.get('configured_count', 0),
             'secrets_missing': list(secrets.get('missing', []))[:5],
         }
@@ -1024,6 +1181,13 @@ class PortableContextService:
                     'status': 'exhausted',
                     'resets_at': e.get('resets_at', ''),
                 })
+            for w in status.get('unverified_workers', [])[:8]:
+                items.append({
+                    'label': f"{w.get('tool', '?')}: {w.get('email', '?')}",
+                    'status': 'unverified',
+                    'browser': w.get('browser', ''),
+                    'profile': w.get('profile', ''),
+                })
             for m in status.get('secrets_missing', [])[:3]:
                 items.append({
                     'label': f'Secreto faltante: {m}',
@@ -1032,22 +1196,38 @@ class PortableContextService:
 
         avail = status.get('worker_available_count', 0)
         exhausted = status.get('quota_exhausted_count', 0)
+        unverified_count = status.get('worker_unverified_count', 0)
         remaining = status.get('worker_total_remaining_messages', 0)
         tools = status.get('workers_by_tool', [])
         missing_secrets = status.get('secrets_missing', [])
 
         read_failures = status.get('read_failures', [])
+        quota_source_status = status.get('quota_source_status', 'UNVERIFIED')
 
         if st == 'scanner_unavailable':
             summary = 'AccountResourceScanner no disponible. Cuotas y workers desconocidos.'
         elif st == 'partial_failure':
             failed = ', '.join(read_failures) if read_failures else 'lectura parcial'
             parts = [f'Lectura parcial ({failed})']
+            if quota_source_status not in {'READ_OK', 'CONFIRMED_NOT_FOUND'}:
+                parts.append(f'quota tracker {quota_source_status} no verificable')
             if avail > 0:
                 parts.append(f'{avail} workers disponibles')
             if exhausted > 0:
                 parts.append(f'{exhausted} cuentas agotadas')
+            if unverified_count > 0:
+                parts.append(f'{unverified_count} sesiones con cuota no verificada')
             summary = ' | '.join(parts)
+        elif quota_source_status not in {'READ_OK', 'CONFIRMED_NOT_FOUND'}:
+            summary = (
+                f'Quota tracker no verificable ({quota_source_status}); '
+                'no inferir ausencia de cuentas ni capacidad disponible.'
+            )
+        elif unverified_count > 0 and avail == 0 and exhausted == 0:
+            summary = (
+                f'{unverified_count} sesiones detectadas con cuota no verificada; '
+                'no son accionables hasta recuperar la integridad del tracker.'
+            )
         elif avail == 0 and exhausted == 0:
             summary = 'Sin cuentas rastreadas. El rastreo comienza al enviar mensajes.'
         else:
@@ -1069,12 +1249,41 @@ class PortableContextService:
             items=items,
             source_kind='account_resource_scanner',
             source_refs=['account_resource_scanner', 'quota_tracker.json'],
-            confidence=0.85 if st == 'ok' else (0.5 if st == 'partial_failure' else 0.0),
+            confidence=(
+                0.0
+                if st == 'scanner_unavailable'
+                else 0.85
+                if (
+                    st == 'ok'
+                    and quota_source_status in {'READ_OK', 'CONFIRMED_NOT_FOUND'}
+                    and unverified_count == 0
+                )
+                else 0.5
+                if (
+                    st == 'partial_failure'
+                    or quota_source_status not in {'READ_OK', 'CONFIRMED_NOT_FOUND'}
+                    or unverified_count > 0
+                )
+                else 0.0
+            ),
             last_updated=now,
+            unresolved_fields=(
+                [f'UNRESOLVED:{failure}' for failure in read_failures]
+                + (
+                    [f'UNRESOLVED:quota_tracker:{quota_source_status}']
+                    if quota_source_status not in {'READ_OK', 'CONFIRMED_NOT_FOUND'}
+                    and not read_failures
+                    else []
+                )
+                + (['UNRESOLVED:worker_quota_unverified'] if unverified_count else [])
+            ),
             metadata={
                 'status': st,
                 'worker_available_count': avail,
                 'quota_exhausted_count': exhausted,
+                'worker_unverified_count': unverified_count,
+                'quota_source_status': quota_source_status,
+                'quota_source_error': status.get('quota_source_error', ''),
                 'total_remaining_messages': remaining,
                 'tools_available': tools,
                 'secrets_configured': status.get('secrets_configured', 0),
@@ -1096,12 +1305,20 @@ class PortableContextService:
         """
         items: list[dict[str, Any]] = []
         unresolved_fields: list[str] = []
+        quota_source_status = 'UNAVAILABLE'
+        snapshot_active_count = 0
+        snapshot_unresolved_count = 0
 
         try:
             from iabv_v15.services.account_resource_scanner import (
                 build_inventory_snapshot,
             )
             snapshot = build_inventory_snapshot()
+            quota_source_status = (
+                (snapshot.source_coverage or {}).get('quota_tracker', 'UNVERIFIED')
+            )
+            snapshot_active_count = snapshot.active_count
+            snapshot_unresolved_count = snapshot.unresolved_count
 
             # Active accounts
             for entry in snapshot.continuity_queue[:6]:
@@ -1114,7 +1331,7 @@ class PortableContextService:
                     'browser': entry.browser,
                 })
 
-            # Exhausted accounts
+            # Exhausted and unresolved accounts remain visible but non-actionable.
             for entry in snapshot.entries:
                 if entry.exhausted and len(items) < 10:
                     resets = ''
@@ -1125,8 +1342,21 @@ class PortableContextService:
                         'status': 'exhausted',
                         'resets_at': resets,
                     })
+                elif (
+                    getattr(entry.status, 'value', entry.status) == 'unresolved'
+                    and len(items) < 10
+                ):
+                    items.append({
+                        'label': f"{entry.tool}: {entry.email}",
+                        'status': 'unverified',
+                        'quota_remaining': 0,
+                        'detail': 'cuota no verificable; no accionable',
+                    })
 
             unresolved_fields = list(snapshot.unresolved_items)
+            quota_source_status = (
+                (snapshot.source_coverage or {}).get('quota_tracker', 'UNVERIFIED')
+            )
 
             # Summary
             parts: list[str] = []
@@ -1141,10 +1371,21 @@ class PortableContextService:
                     f'siguiente recomendada: {top.email} ({top.tool}, '
                     f'score={top.score:.2f})'
                 )
+            if quota_source_status != 'READ_OK':
+                parts.append(
+                    f'quota tracker no verificado ({quota_source_status}); '
+                    'cola no accionable'
+                )
             if snapshot.unresolved_count:
                 parts.append(f'{snapshot.unresolved_count} UNRESOLVED')
             summary = ' | '.join(parts)
-            confidence = 0.85
+            confidence = (
+                0.0
+                if quota_source_status != 'READ_OK'
+                else 0.5
+                if snapshot.unresolved_count
+                else 0.85
+            )
 
         except Exception:
             summary = 'AccountInventorySnapshot no disponible. Continuidad de cuentas desconocida.'
@@ -1166,6 +1407,9 @@ class PortableContextService:
             metadata={
                 'section_purpose': 'continuity_for_next_session',
                 'requires_human_approval': True,
+                'quota_source_status': quota_source_status,
+                'snapshot_active_count': snapshot_active_count,
+                'snapshot_unresolved_count': snapshot_unresolved_count,
             },
         )
 
@@ -1506,8 +1750,54 @@ class PortableContextService:
         errors = int(evidence.get('errors') or 0)
         suite = str(evidence.get('suite') or '')
         ts = str(evidence.get('timestamp') or '')
+        commit_sha = evidence.get('commit_sha')
+        commit_sha = commit_sha if isinstance(commit_sha, str) else ''
+        branch = evidence.get('branch')
+        branch = branch if isinstance(branch, str) else ''
+        provenance_status = evidence.get('provenance_status')
+        provenance_status = provenance_status if isinstance(provenance_status, str) else 'UNKNOWN'
+        worktree_clean = evidence.get('worktree_clean') is True
+        worktree_status_sha256 = evidence.get('worktree_status_sha256')
+        worktree_status_sha256 = worktree_status_sha256 if isinstance(worktree_status_sha256, str) else ''
+        payload_sha256 = evidence.get('payload_sha256')
+        payload_sha256 = payload_sha256 if isinstance(payload_sha256, str) else ''
         total = passed + failed + errors
-        health = 'green' if failed == 0 and errors == 0 else 'red'
+        returncode = evidence.get('returncode')
+        timed_out = evidence.get('timed_out')
+        execution_failed = (
+            failed > 0
+            or errors > 0
+            or (type(returncode) is int and returncode != 0)
+            or timed_out is True
+        )
+        execution_verified = (
+            type(returncode) is int
+            and returncode == 0
+            and type(timed_out) is bool
+            and timed_out is False
+            and total > 0
+            and passed > 0
+            and failed == 0
+            and errors == 0
+        )
+        execution_status = (
+            'FAILED'
+            if execution_failed
+            else 'PASSED'
+            if execution_verified
+            else 'UNVERIFIED'
+        )
+        provenance_clean = (
+            provenance_status == 'COMMIT_BOUND_CLEAN'
+            and worktree_clean is True
+        )
+        health = (
+            'red'
+            if execution_failed
+            else 'green'
+            if execution_verified and provenance_clean
+            else 'unknown'
+        )
         summary = f'{passed}/{total} passed'
         if failed:
             summary += f', {failed} failed'
@@ -1515,15 +1805,33 @@ class PortableContextService:
             summary += f', {errors} errors'
         if suite:
             summary += f' [{suite}]'
+        summary += f' · execution {execution_status.lower()}'
+        summary += f' · provenance {provenance_status}'
+        if commit_sha:
+            summary += f' · commit {commit_sha[:12]}'
         items: list[dict[str, Any]] = [
             {'label': 'health', 'value': health},
+            {'label': 'execution_status', 'value': execution_status},
+            {'label': 'total', 'value': total},
+            {'label': 'returncode', 'value': returncode},
+            {'label': 'timed_out', 'value': timed_out},
             {'label': 'passed', 'value': passed},
             {'label': 'failed', 'value': failed},
             {'label': 'errors', 'value': errors},
             {'label': 'timestamp', 'value': ts},
+            {'label': 'provenance_status', 'value': provenance_status},
+            {'label': 'worktree_clean', 'value': worktree_clean},
         ]
         if suite:
             items.append({'label': 'suite', 'value': suite})
+        if commit_sha:
+            items.append({'label': 'commit_sha', 'value': commit_sha})
+        if branch:
+            items.append({'label': 'branch', 'value': branch})
+        if worktree_status_sha256:
+            items.append({'label': 'worktree_status_sha256', 'value': worktree_status_sha256})
+        if payload_sha256:
+            items.append({'label': 'payload_sha256', 'value': payload_sha256})
         return self._section(
             section_id='test_evidence',
             title='Evidencia de tests',
@@ -1531,7 +1839,11 @@ class PortableContextService:
             items=items,
             source_kind='audit_tools',
             source_refs=['iabv_v15.infra.mcp.audit_tools'],
-            confidence=0.9 if health == 'green' else 0.5,
+            confidence=(
+                0.9
+                if health == 'green' and provenance_status == 'COMMIT_BOUND_CLEAN'
+                else 0.5
+            ),
             last_updated=now,
         )
 
@@ -2371,35 +2683,86 @@ class PortableContextService:
             })
         return patterns
 
-    def _pending_items(self) -> list[dict[str, Any]]:
+    def _pending_items(self) -> tuple[list[dict[str, Any]], str, str]:
         repository = self.pending_issue_repository
-        if repository is None or not hasattr(repository, 'list_recent'):
-            return []
-        items: list[dict[str, Any]] = []
-        try:
-            for issue in repository.list_recent(limit=6):
-                items.append(
-                    {
-                        'issue_id': str(getattr(issue, 'issue_id', '') or ''),
-                        'summary': str(getattr(issue, 'summary', '') or ''),
-                        'category': str(getattr(getattr(issue, 'category', None), 'value', getattr(issue, 'category', '')) or ''),
-                        'status': str(getattr(getattr(issue, 'status', None), 'value', getattr(issue, 'status', '')) or ''),
-                        'probable_cause': str(getattr(issue, 'probable_cause', '') or ''),
-                        'recommended_change': str(getattr(issue, 'recommended_change', '') or ''),
-                        'updated_at_utc': str(getattr(issue, 'created_at_utc', '') or ''),
-                    }
-                )
-        except Exception:
-            return []
-        return items
+        if repository is None:
+            return [], 'NOT_CONFIGURED', 'pending_issue_repository_not_connected'
 
-    def _backlog_items(self) -> list[dict[str, Any]]:
+        diagnostic_reader = getattr(repository, 'list_recent_with_diagnostics', None)
+        if callable(diagnostic_reader):
+            try:
+                report = diagnostic_reader(limit=6)
+            except Exception as exc:
+                report = getattr(exc, 'report', None)
+                report_status = getattr(
+                    getattr(report, 'status', None), 'value', ''
+                ) if report is not None else ''
+                status = (
+                    'READ_PARTIAL' if report_status == 'READ_PARTIAL'
+                    else 'UNVERIFIED' if report_status == 'QUERY_NOT_EXECUTED'
+                    else 'READ_FAILED'
+                )
+                return [], status, type(exc).__name__
+            report_status = getattr(getattr(report, 'status', None), 'value', '')
+            if report_status in ('READ_OK', 'NO_RECORDS_OBSERVED'):
+                candidates = list(getattr(report, 'items', ()) or ())
+            elif report_status == 'READ_PARTIAL':
+                return [], 'READ_PARTIAL', (
+                    f'records_seen={getattr(report, "records_seen", 0)};'
+                    f'records_loaded={getattr(report, "records_loaded", 0)};'
+                    f'records_failed={len(getattr(report, "failed_ids", ()) or ())}'
+                )
+            elif report_status == 'READ_FAILED':
+                return [], 'READ_FAILED', (
+                    getattr(report, 'collection_error_type', '')
+                    or 'pending_issue_collection_read_failed'
+                )
+            else:
+                return [], 'UNVERIFIED', report_status or 'pending_issue_status_unknown'
+        else:
+            legacy_reader = getattr(repository, 'list_recent', None)
+            if not callable(legacy_reader):
+                return [], 'READER_UNAVAILABLE', 'pending_issue_repository_reader_unavailable'
+            try:
+                candidates = list(legacy_reader(limit=6))
+            except Exception as exc:
+                report = getattr(exc, 'report', None)
+                report_status = getattr(
+                    getattr(report, 'status', None), 'value', ''
+                ) if report is not None else ''
+                status = (
+                    'READ_PARTIAL' if report_status == 'READ_PARTIAL'
+                    else 'UNVERIFIED' if report_status == 'QUERY_NOT_EXECUTED'
+                    else 'READ_FAILED'
+                )
+                return [], status, type(exc).__name__
+
+        items: list[dict[str, Any]] = []
+        for issue in candidates:
+            items.append(
+                {
+                    'issue_id': str(getattr(issue, 'issue_id', '') or ''),
+                    'summary': str(getattr(issue, 'summary', '') or ''),
+                    'category': str(getattr(getattr(issue, 'category', None), 'value', getattr(issue, 'category', '')) or ''),
+                    'status': str(getattr(getattr(issue, 'status', None), 'value', getattr(issue, 'status', '')) or ''),
+                    'probable_cause': str(getattr(issue, 'probable_cause', '') or ''),
+                    'recommended_change': str(getattr(issue, 'recommended_change', '') or ''),
+                    'updated_at_utc': str(getattr(issue, 'created_at_utc', '') or ''),
+                }
+            )
+        return items, 'READ_OK', ''
+
+    def _backlog_items(self) -> tuple[list[dict[str, Any]], str, str]:
         service = self.evolution_review_service
-        if service is None or not hasattr(service, 'build_improvement_backlog'):
-            return []
+        if service is None:
+            return [], 'NOT_CONFIGURED', 'evolution_review_service_not_connected'
+        reader = getattr(service, 'build_improvement_backlog', None)
+        if not callable(reader):
+            return [], 'READER_UNAVAILABLE', 'improvement_backlog_reader_unavailable'
         items: list[dict[str, Any]] = []
         try:
-            for proposal in service.build_improvement_backlog(limit=6):
+            proposals = reader(limit=6)
+            for proposal in proposals:
                 items.append(
                     {
                         'title': str(getattr(proposal, 'title', '') or ''),
@@ -2409,9 +2772,9 @@ class PortableContextService:
                         'suggested_tests': list(getattr(proposal, 'suggested_tests', []) or []),
                     }
                 )
-        except Exception:
-            return []
-        return items
+        except Exception as exc:
+            return [], 'READ_FAILED', type(exc).__name__
+        return items, 'READ_OK', ''
 
     def _decision_history(self, *, recommendations: list[dict[str, Any]]) -> list[dict[str, Any]]:
         history: list[dict[str, Any]] = []
@@ -2949,31 +3312,63 @@ class PortableContextService:
         Merges in-memory lifecycle data with durable records from
         ``runtime_audit.jsonl`` so that episodes survive process death.
         """
+        from iabv_v15.services.evolution.runtime_audit_tracer import validate_durability_ack
+
         lifecycle = getattr(self, 'chat_interaction_lifecycle', None)
         in_memory_recent: list[dict[str, Any]] = []
         summary: dict[str, Any] = {}
         if lifecycle is not None and hasattr(lifecycle, 'summary'):
             try:
                 summary = lifecycle.summary()
-                in_memory_recent = lifecycle.recent_completed(limit=3)
+                in_memory_recent = [
+                    dict(record) for record in lifecycle.recent_completed(limit=3)
+                ]
             except Exception:
                 pass
 
-        # Reconstruct from runtime_audit.jsonl if in-memory is empty/missing
+        # JSONL reconstruction recovers the row, but not the caller-retained ACK.
         audit_recent = self._interaction_episodes_from_audit(limit=3)
-        # Merge: prefer in-memory for IDs we already have, append audit-only
+        audit_by_id = {
+            str(row.get('interaction_id') or ''): row
+            for row in audit_recent
+            if row.get('interaction_id')
+        }
         seen_ids = {r.get('interaction_id') for r in in_memory_recent}
         for ar in audit_recent:
             if ar.get('interaction_id') not in seen_ids:
                 in_memory_recent.append(ar)
                 seen_ids.add(ar.get('interaction_id'))
-        # Keep only most recent 3
         in_memory_recent = in_memory_recent[-3:]
+
+        for episode in in_memory_recent:
+            audit_row = audit_by_id.get(str(episode.get('interaction_id') or ''))
+            if audit_row is not None:
+                episode['_audit_line_sha256'] = audit_row.get('_audit_line_sha256')
+                episode['_audit_byte_start'] = audit_row.get('_audit_byte_start')
+                episode['_audit_byte_end'] = audit_row.get('_audit_byte_end')
+            expected_seq = episode.get('runtime_audit_event_seq')
+            episode['runtime_audit_durability_check'] = validate_durability_ack(
+                episode.get('runtime_audit_durability'),
+                expected_seq=(
+                    expected_seq
+                    if isinstance(expected_seq, int) and not isinstance(expected_seq, bool)
+                    else -1
+                ),
+                expected_line_sha256=episode.get('_audit_line_sha256', ''),
+                expected_byte_start=episode.get('_audit_byte_start', -1),
+                expected_byte_end=episode.get('_audit_byte_end', -1),
+            )
+
+        acknowledged = sum(
+            bool(ep.get('runtime_audit_durability_check', {}).get('accepted'))
+            for ep in in_memory_recent
+        )
         summary['recent_completed'] = in_memory_recent
-        # reconstructed_from_audit = true if ANY episode came from audit
         summary['reconstructed_from_audit'] = any(
             ep.get('_source') == 'runtime_audit' for ep in in_memory_recent
         )
+        summary['durability_acknowledged_count'] = acknowledged
+        summary['durability_ack_unverified_count'] = len(in_memory_recent) - acknowledged
         return summary
 
     def _interaction_lifecycle_section(self, *, now) -> PortableContextSection:
@@ -2985,13 +3380,23 @@ class PortableContextService:
         """
         lifecycle_data = self._interaction_lifecycle_summary()
         recent = list(lifecycle_data.get('recent_completed') or [])
-        reconstructed = bool(lifecycle_data.get('reconstructed_from_audit'))
         items: list[dict[str, Any]] = []
+        unresolved: list[str] = []
+        acknowledged_count = 0
         for ep in recent:
             stall_count = len(ep.get('stalls_during') or [])
             outcome = ep.get('outcome', '')
             is_resolved = ep.get('resolved', outcome == 'resolved')
             is_final = ep.get('is_final', outcome not in ('prepared', 'awaiting_external_response', 'reused_context'))
+            durability_check = dict(ep.get('runtime_audit_durability_check') or {})
+            accepted = bool(durability_check.get('accepted'))
+            if accepted:
+                acknowledged_count += 1
+            else:
+                unresolved.append(
+                    'UNRESOLVED:runtime_audit_durability_ack:'
+                    + str(ep.get('interaction_id') or 'unknown')
+                )
             items.append({
                 'interaction_id': ep.get('interaction_id', ''),
                 'message_preview': ep.get('message_preview', ''),
@@ -3004,6 +3409,9 @@ class PortableContextService:
                 'had_early_technical_response': ep.get('had_early_technical_response', False),
                 'window_went_inactive': ep.get('window_went_inactive', False),
                 'source': ep.get('_source', 'in_memory'),
+                'runtime_audit_event_seq': ep.get('runtime_audit_event_seq'),
+                'runtime_audit_durability_status': durability_check.get('status', 'ACK_UNAVAILABLE'),
+                'runtime_audit_durability_accepted': accepted,
             })
         if not items:
             summary_text = 'Sin episodios de interaccion recientes.'
@@ -3011,18 +3419,19 @@ class PortableContextService:
             sources = set(i.get('source', '') for i in items)
             source_note = ' (reconstruido desde runtime_audit)' if 'runtime_audit' in sources else ''
             summary_text = (
-                f'{len(items)} episodio(s) reciente(s){source_note}.'
+                f'{len(items)} episodio(s) reciente(s){source_note}; '
+                f'ACK fsync aceptados={acknowledged_count}.'
             )
         return self._section(
             section_id='interaction_lifecycle',
             title='Ciclo de vida de interacciones recientes',
             summary=summary_text,
             items=items,
-            source_kind='runtime_audit_jsonl+in_memory',
+            source_kind='runtime_audit_jsonl+in_memory+fsync_ack',
             source_refs=['data/logs/runtime_audit.jsonl', 'ChatInteractionLifecycle'],
-            confidence=0.9 if items else 0.0,
+            confidence=0.9 if items and acknowledged_count == len(items) else 0.0,
             last_updated=now,
-            unresolved_fields=[],
+            unresolved_fields=unresolved,
             metadata=lifecycle_data,
         )
 
@@ -3036,6 +3445,7 @@ class PortableContextService:
         same id, only the most recent event is kept.  Since the file is read
         in reverse chronological order, the first occurrence per id wins.
         """
+        import hashlib as _hashlib
         import json as _json
         audit_path = Path(self.workspace_root) / 'data' / 'logs' / 'runtime_audit.jsonl'
         if not audit_path.exists():
@@ -3043,11 +3453,17 @@ class PortableContextService:
         seen_ids: set[str] = set()
         episodes: list[dict[str, Any]] = []
         try:
-            lines = audit_path.read_text(encoding='utf-8', errors='replace').splitlines()
-            for line in reversed(lines):
-                if not line.strip():
+            raw_lines = audit_path.read_bytes().splitlines(keepends=True)
+            line_ranges: list[tuple[int, int]] = []
+            byte_cursor = 0
+            for raw_line in raw_lines:
+                line_ranges.append((byte_cursor, byte_cursor + len(raw_line)))
+                byte_cursor += len(raw_line)
+            for raw_line, (line_start, line_end) in reversed(list(zip(raw_lines, line_ranges))):
+                if not raw_line.strip():
                     continue
                 try:
+                    line = raw_line.decode('utf-8')
                     event = _json.loads(line)
                 except Exception:
                     continue
@@ -3063,6 +3479,10 @@ class PortableContextService:
                 ep_outcome = data.get('outcome', '')
                 episodes.append({
                     'interaction_id': iid,
+                    'runtime_audit_event_seq': event.get('seq'),
+                    '_audit_line_sha256': _hashlib.sha256(raw_line).hexdigest(),
+                    '_audit_byte_start': line_start,
+                    '_audit_byte_end': line_end,
                     'message_preview': data.get('message_preview', ''),
                     'outcome': ep_outcome,
                     'provider': data.get('provider', ''),
@@ -3305,15 +3725,83 @@ class PortableContextService:
             unresolved_fields=[] if decision_history else ['UNRESOLVED:decision_history'],
         )
 
-    def _pending_section(self, *, pending_items: list[dict[str, Any]], backlog_items: list[dict[str, Any]], now) -> PortableContextSection:
-        platform_items = self._platform_pending_items()
+    def _pending_section(
+        self,
+        *,
+        pending_items: list[dict[str, Any]],
+        backlog_items: list[dict[str, Any]],
+        pending_read_status: str = 'READ_OK',
+        pending_read_error: str = '',
+        backlog_read_status: str = 'READ_OK',
+        backlog_read_error: str = '',
+        now,
+    ) -> PortableContextSection:
+        platform_items, platform_status, platform_error = self._platform_pending_items()
         items = pending_items[:4] + backlog_items[:4] + platform_items[:4]
-        platform_summary = ''
+        notices: list[str] = []
+        unresolved_fields: list[str] = []
+
+        status_messages = {
+            'pending_issue_repository': {
+                'READ_FAILED': 'El repositorio de pendientes no se pudo leer; no inferir que está vacío.',
+                'READ_PARTIAL': 'El repositorio de pendientes tuvo una lectura parcial; los elementos parciales no se ofrecen como accionables.',
+                'NOT_CONFIGURED': 'El repositorio de pendientes no está conectado.',
+                'READER_UNAVAILABLE': 'El lector del repositorio de pendientes no está disponible.',
+                'UNVERIFIED': 'La lectura del repositorio de pendientes no está verificada.',
+            },
+            'evolution_review_service': {
+                'READ_FAILED': 'El backlog de mejoras no se pudo leer; no inferir que está vacío.',
+                'NOT_CONFIGURED': 'El servicio de backlog de mejoras no está conectado.',
+                'READER_UNAVAILABLE': 'El lector del backlog de mejoras no está disponible.',
+            },
+            'platform_pending_queue': {
+                'READ_FAILED': 'La cola de plataforma no se pudo leer; no inferir que está vacía.',
+                'READ_PARTIAL': 'La cola de plataforma tuvo una lectura parcial; los elementos parciales no se ofrecen como accionables.',
+                'READER_UNAVAILABLE': 'El lector de la cola de plataforma no está disponible.',
+                'NOT_CONFIGURED': 'La cola de plataforma no está conectada.',
+            },
+        }
+        status_values = {
+            'pending_issue_repository': pending_read_status,
+            'evolution_review_service': backlog_read_status,
+            'platform_pending_queue': platform_status,
+        }
+        status_errors = {
+            'pending_issue_repository': pending_read_error,
+            'evolution_review_service': backlog_read_error,
+            'platform_pending_queue': platform_error,
+        }
+        for source, status in status_values.items():
+            if status == 'READ_OK':
+                continue
+            message = status_messages.get(source, {}).get(
+                status, f'{source}: estado de lectura no reconocido ({status}).'
+            )
+            detail = status_errors.get(source, '')
+            if detail:
+                message += f' Detalle: {detail}.'
+            notices.append(message)
+            unresolved_fields.append(
+                f'UNRESOLVED:{source}:{status.lower()}'
+            )
+
         if platform_items:
-            platform_summary = f' {len(platform_items)} tareas de plataforma pendientes.'
-        summary = f'{len(pending_items)} pending issues y {len(backlog_items)} mejoras priorizadas.{platform_summary}'
-        if not items:
+            notices.append(f'{len(platform_items)} tareas de plataforma pendientes.')
+        summary = (
+            f'{len(pending_items)} pending issues y '
+            f'{len(backlog_items)} mejoras priorizadas.'
+        )
+        if notices:
+            summary += ' ' + ' '.join(notices)
+        if not items and not unresolved_fields:
             summary = 'No tengo pendientes priorizados confirmados por evidencia persistida.'
+        if not items and unresolved_fields:
+            summary = 'No se puede confirmar el inventario completo de pendientes. ' + ' '.join(notices)
+        unresolved_fields = list(dict.fromkeys([
+            *unresolved_fields,
+            *([] if items else ['UNRESOLVED:pending_backlog']),
+        ]))
+        confidence = 0.8 if items and not unresolved_fields else 0.45 if items else 0.0
         return self._section(
             section_id='pending',
             title='Pendientes priorizados',
@@ -3321,20 +3809,56 @@ class PortableContextService:
             items=items,
             source_kind='persistent_backlog',
             source_refs=['pending_issue_repository', 'evolution_review_service', 'platform_pending_queue'],
-            confidence=0.8 if items else 0.0,
+            confidence=confidence,
             last_updated=now,
-            unresolved_fields=[] if items else ['UNRESOLVED:pending_backlog'],
+            unresolved_fields=unresolved_fields,
         )
 
-    def _platform_pending_items(self) -> list[dict[str, Any]]:
-        """Read structured pending items from PlatformPendingQueue."""
+    def _platform_pending_items(self) -> tuple[list[dict[str, Any]], str, str]:
+        """Read platform tasks without collapsing failed/partial reads to empty."""
         queue = self.platform_pending_queue
-        if queue is None or not hasattr(queue, 'to_portable_items'):
-            return []
+        if queue is None:
+            return [], 'NOT_CONFIGURED', ''
+        if not hasattr(queue, 'to_portable_items'):
+            return [], 'READER_UNAVAILABLE', ''
+        diagnostic_reader = getattr(type(queue), 'list_all_with_diagnostics', None)
+        if callable(diagnostic_reader):
+            try:
+                report = queue.list_all_with_diagnostics()
+                status = str(report.status).upper()
+                if status != 'READ_OK':
+                    return [], status, ';'.join(list(report.failed_paths)[:3])
+                tasks = list(report.require_complete())
+                actionable_statuses = {'PENDING', 'READY_FOR_NEXT_SLICE', 'BLOCKED'}
+                items: list[dict[str, Any]] = []
+                for task in tasks:
+                    status_value = (
+                        task.status.value if hasattr(task.status, 'value')
+                        else str(task.status)
+                    )
+                    if status_value not in actionable_statuses:
+                        continue
+                    if len(items) >= 6:
+                        break
+                    items.append({
+                        'id': task.id,
+                        'title': task.title,
+                        'description': task.description,
+                        'reason': task.reason,
+                        'dependency_missing': task.dependency_missing,
+                        'priority': task.priority,
+                        'next_action': task.next_action,
+                        'status': status_value,
+                        'category': task.category,
+                        'resume_hint': task.resume_hint,
+                    })
+                return items, 'READ_OK', ''
+            except Exception as exc:
+                return [], 'READ_FAILED', type(exc).__name__
         try:
-            return queue.to_portable_items(limit=6)
-        except Exception:
-            return []
+            return queue.to_portable_items(limit=6), 'READ_OK', ''
+        except Exception as exc:
+            return [], 'READ_FAILED', type(exc).__name__
 
     def _canonical_work_queue_section(self, *, now) -> PortableContextSection:
         """Project top-5 canonical work queue items from ControlMasterService."""
@@ -3351,34 +3875,64 @@ class PortableContextService:
                 last_updated=now,
                 unresolved_fields=['UNRESOLVED:canonical_work_queue_not_connected'],
             )
+        from iabv_v15.services.evolution.control_master_digest_builder import (
+            ControlMasterDigestBuilder,
+        )
+
         try:
-            queue = cms.current_work_queue(limit=5)
+            digest = ControlMasterDigestBuilder().build_from_service(cms, limit=5)
         except Exception:
-            queue = []
-        items: list[dict[str, Any]] = []
-        for wq_item in queue:
-            items.append({
-                'id': wq_item.get('id', ''),
-                'title': wq_item.get('title', ''),
-                'status': wq_item.get('status', ''),
-                'priority_score': wq_item.get('priority_score', 0),
-                'priority_label': wq_item.get('priority_label', ''),
-                'source': wq_item.get('source', ''),
-                'next_action': wq_item.get('next_action', ''),
-                'evidence_refs': wq_item.get('evidence_refs', []),
-            })
-        summary = f'{len(queue)} items prioritarios en cola canónica de trabajo.'
-        if not items:
-            summary = 'Cola canónica vacía o sin fuentes conectadas.'
+            digest = None
+
+        queue_status = str(getattr(digest, "work_queue_status", "UNAVAILABLE") or "UNAVAILABLE").upper()
+        raw_items = (
+            list(getattr(digest, "top_work_queue_items", []) or [])
+            if queue_status == "AVAILABLE"
+            else []
+        )
+        # Preserve the existing PortableContext item contract (id), while
+        # adapting the digest's compact provenance contract (item_id).
+        items = [
+            {
+                "id": item.get("item_id") or item.get("id") or "",
+                "title": item.get("title") or "",
+                "status": item.get("status") or "",
+                "priority_score": item.get("priority_score", 0),
+                "priority_label": item.get("priority_label") or "",
+                "source": item.get("source") or "",
+                "next_action": item.get("next_action") or "",
+                "evidence_refs": list(item.get("evidence_refs") or []),
+            }
+            for item in raw_items
+        ]
+        if queue_status == "AVAILABLE":
+            summary = f'{len(items)} items prioritarios en cola canónica con cobertura completa.'
+            unresolved_fields: list[str] = []
+            confidence = 0.9
+        elif queue_status == "EMPTY_QUEUE":
+            summary = 'Cola consultada correctamente: vacía.'
+            unresolved_fields = []
+            confidence = 0.85
+        elif queue_status == "UNAVAILABLE":
+            reason = str(getattr(digest, "signal_reason", "") or "source read failed")
+            summary = f'Cola no disponible: {reason}. No inferir que está vacía.'
+            unresolved_fields = ['UNRESOLVED:canonical_work_queue_read_failed']
+            confidence = 0.0
+        else:
+            reason = str(getattr(digest, "signal_reason", "") or "source coverage unverified")
+            summary = f'Cola no verificada: {reason}. No inferir que está vacía.'
+            unresolved_fields = ['UNRESOLVED:canonical_work_queue_not_verified']
+            confidence = 0.0
         return self._section(
             section_id='canonical_work_queue',
             title='Cola canónica de trabajo',
             summary=summary,
             items=items,
             source_kind='control_master',
-            source_refs=['ControlMasterService', 'ObjectiveRepository', 'PlatformPendingQueue', 'PendingIssueRepository', 'OSES', 'runtime_audit'],
-            confidence=0.9 if items else 0.0,
+            source_refs=['ControlMasterDigestBuilder', 'ControlMasterService', 'ObjectiveRepository', 'PlatformPendingQueue', 'PendingIssueRepository', 'OSES', 'runtime_audit', 'TestEvidence'],
+            confidence=confidence,
             last_updated=now,
+            unresolved_fields=unresolved_fields,
         )
 
     def _unresolved_section(self, *, unresolved: list[str], now) -> PortableContextSection:
@@ -4018,21 +4572,26 @@ class PortableContextService:
         )
 
     def _discernment_frame_section(self, *, now) -> PortableContextSection:
-        """P0.69: export latest discernment frame as compact section."""
+        """P0.69: export the latest frame from the shared discernment history."""
         items: list[dict[str, Any]] = []
         unresolved: list[str] = []
-        try:
-            from iabv_v15.services.evolution.discernment_frame_service import DiscernmentFrameService
-            svc = DiscernmentFrameService()
-            export = svc.compact_export()
-            if export.get('status') == 'no_frame':
-                items.append({'status': 'no_frame_yet'})
-                unresolved.append('no_discernment_frame_generated')
-            else:
-                items.append(export)
-        except Exception:
-            items.append({'status': 'service_unavailable'})
-            unresolved.append('discernment_frame_service_unavailable')
+        service = getattr(self, 'discernment_frame_service', None)
+        if service is None:
+            items.append({'status': 'service_unavailable', 'reason': 'shared_service_not_injected'})
+            unresolved.append('discernment_frame_service_not_configured')
+        else:
+            try:
+                export = service.compact_export()
+                if not isinstance(export, dict):
+                    raise TypeError('discernment_export_not_dict')
+                if export.get('status') == 'no_frame':
+                    items.append({'status': 'no_frame_yet'})
+                    unresolved.append('no_discernment_frame_generated')
+                else:
+                    items.append(export)
+            except Exception as exc:
+                items.append({'status': 'service_unavailable', 'reason': type(exc).__name__})
+                unresolved.append('discernment_frame_service_unavailable')
         phase = items[0].get('phase', 'unknown') if items else 'unknown'
         grounding = items[0].get('grounding_status', 'unknown') if items else 'unknown'
         conf = items[0].get('confidence', 0.0) if items else 0.0
@@ -4106,18 +4665,35 @@ class PortableContextService:
         """P0.70: collect unresolved metacognitive links across frame + roadmap."""
         items: list[dict[str, Any]] = []
         unresolved: list[str] = []
-        try:
-            from iabv_v15.services.evolution.discernment_frame_service import DiscernmentFrameService
-            svc = DiscernmentFrameService()
-            frame = svc.latest_frame()
-            if frame and frame.unresolved_fields:
+        service = getattr(self, 'discernment_frame_service', None)
+        if service is None:
+            items.append({
+                'source': 'discernment_frame',
+                'status': 'service_unavailable',
+            })
+            unresolved.append('discernment_frame_service_not_configured')
+        else:
+            try:
+                frame = service.latest_frame()
+                if frame is None:
+                    items.append({
+                        'source': 'discernment_frame',
+                        'status': 'no_frame_yet',
+                    })
+                    unresolved.append('no_discernment_frame_generated')
+                elif frame.unresolved_fields:
+                    items.append({
+                        'source': 'discernment_frame',
+                        'unresolved': frame.unresolved_fields[:10],
+                    })
+                    unresolved.extend(frame.unresolved_fields[:10])
+            except Exception as exc:
                 items.append({
                     'source': 'discernment_frame',
-                    'unresolved': frame.unresolved_fields[:10],
+                    'status': 'service_unavailable',
+                    'reason': type(exc).__name__,
                 })
-                unresolved.extend(frame.unresolved_fields[:10])
-        except Exception:
-            pass
+                unresolved.append('discernment_frame_service_unavailable')
         try:
             import json as _json
             from pathlib import Path as _Path

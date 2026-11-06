@@ -1292,8 +1292,10 @@ class TestPortableContextRenderingVisibility:
         assert 'Gemini' in md
         assert '2500' in md
         assert 'source=runtime_audit' in md
-        # Reconstructed episodes are confirmed by durable source — NOT unresolved
-        assert 'UNRESOLVED: interaction_lifecycle_reconstructed_from_audit' not in md
+        # A JSONL row can be reconstructed, but it carries no retained caller ACK.
+        assert 'UNRESOLVED:runtime_audit_durability_ack:chat-render-test' in section.unresolved_fields
+        assert item['runtime_audit_durability_accepted'] is False
+        assert item['runtime_audit_durability_status'] == 'ACK_UNAVAILABLE'
 
     def test_interaction_lifecycle_section_in_latest_json(self) -> None:
         """latest.json section must preserve full episode record."""
@@ -1610,3 +1612,141 @@ class TestBootstrapBridgeReadinessWiring:
         if bridge is not None:
             bridge.mark_shell_ready(source)
         # No exception raised — success
+
+
+
+def test_resolve_interaction_retains_verified_fsync_ack(tmp_path: Path) -> None:
+    tracer = RuntimeAuditTracer(log_dir=tmp_path)
+    lifecycle = ChatInteractionLifecycle()
+    interaction_id = lifecycle.open_interaction("durability acknowledgement")
+
+    with patch(
+        "iabv_v15.services.evolution.runtime_audit_tracer.get_runtime_tracer",
+        return_value=tracer,
+    ):
+        record = lifecycle.resolve_interaction(
+            interaction_id, outcome="resolved", provider="test-provider"
+        )
+
+    assert record is not None
+    assert record["runtime_audit_durability"]["status"] == "FILE_FSYNCED"
+    assert record["runtime_audit_durability_check"]["accepted"] is True
+    assert record["runtime_audit_event_seq"] == record["runtime_audit_durability"]["seq"]
+    rows = [
+        json.loads(line)
+        for line in (tmp_path / "runtime_audit.jsonl").read_text(encoding="utf-8").splitlines()
+    ]
+    resolved = [row for row in rows if row.get("kind") == "interaction_resolved"]
+    assert len(resolved) == 1
+    assert resolved[0]["seq"] == record["runtime_audit_event_seq"]
+
+
+def test_resolve_interaction_retains_memory_only_as_non_durable(tmp_path: Path) -> None:
+    tracer = RuntimeAuditTracer()
+    lifecycle = ChatInteractionLifecycle()
+    interaction_id = lifecycle.open_interaction("memory only interaction")
+
+    with patch(
+        "iabv_v15.services.evolution.runtime_audit_tracer.get_runtime_tracer",
+        return_value=tracer,
+    ):
+        record = lifecycle.resolve_interaction(
+            interaction_id, outcome="resolved", provider="test-provider"
+        )
+
+    assert record is not None
+    assert record["runtime_audit_durability"]["status"] == "MEMORY_ONLY"
+    assert record["runtime_audit_durability_check"]["accepted"] is False
+
+
+def test_portable_context_consumes_and_projects_file_fsync_ack() -> None:
+    from datetime import datetime, timezone
+    from types import SimpleNamespace
+
+    ws = _workspace()
+    try:
+        import hashlib
+        import json
+        storage = ArtifactStorage(root=str(ws))
+        pcs = PortableContextService(workspace_root=str(ws), storage=storage)
+        event = {
+            "seq": 19,
+            "kind": "interaction_resolved",
+            "data": {
+                "interaction_id": "chat-portable-ack",
+                "outcome": "resolved",
+                "provider": "test",
+                "message_preview": "ack",
+                "stalls_during": [],
+            },
+        }
+        line_bytes = (json.dumps(event, ensure_ascii=False, default=str) + "\n").encode("utf-8")
+        audit = ws / "data" / "logs" / "runtime_audit.jsonl"
+        audit.parent.mkdir(parents=True, exist_ok=True)
+        audit.write_bytes(line_bytes)
+        ack = {
+            "status": "FILE_FSYNCED",
+            "path": "runtime_audit.jsonl",
+            "seq": 19,
+            "byte_start": 0,
+            "byte_end": len(line_bytes),
+            "line_sha256": hashlib.sha256(line_bytes).hexdigest(),
+        }
+        episode = {
+            "interaction_id": "chat-portable-ack",
+            "runtime_audit_event_seq": 19,
+            "runtime_audit_durability": ack,
+            "outcome": "resolved",
+            "resolved": True,
+            "is_final": True,
+            "provider": "test",
+            "message_preview": "ack",
+            "stalls_during": [],
+        }
+        pcs.chat_interaction_lifecycle = SimpleNamespace(
+            summary=lambda: {"completed_count": 1},
+            recent_completed=lambda limit=3: [episode],
+        )
+        section = pcs._interaction_lifecycle_section(now=datetime.now(timezone.utc))
+        assert len(section.items) == 1
+        assert section.items[0]["runtime_audit_durability_status"] == "FILE_FSYNCED"
+        assert section.items[0]["runtime_audit_durability_accepted"] is True
+        assert section.unresolved_fields == []
+        assert section.metadata["durability_acknowledged_count"] == 1
+        assert section.metadata["recent_completed"][0]["runtime_audit_durability_check"]["accepted"] is True
+    finally:
+        shutil.rmtree(ws, ignore_errors=True)
+
+
+def test_portable_context_keeps_memory_only_ack_unresolved() -> None:
+    from datetime import datetime, timezone
+    from types import SimpleNamespace
+
+    ws = _workspace()
+    try:
+        storage = ArtifactStorage(root=str(ws))
+        pcs = PortableContextService(workspace_root=str(ws), storage=storage)
+        episode = {
+            "interaction_id": "chat-portable-memory",
+            "runtime_audit_event_seq": 20,
+            "runtime_audit_durability": {"status": "MEMORY_ONLY"},
+            "outcome": "resolved",
+            "resolved": True,
+            "is_final": True,
+            "provider": "test",
+            "message_preview": "memory only",
+            "stalls_during": [],
+        }
+        pcs.chat_interaction_lifecycle = SimpleNamespace(
+            summary=lambda: {"completed_count": 1},
+            recent_completed=lambda limit=3: [episode],
+        )
+        section = pcs._interaction_lifecycle_section(now=datetime.now(timezone.utc))
+        assert section.items[0]["runtime_audit_durability_accepted"] is False
+        assert section.items[0]["runtime_audit_durability_status"] == "MEMORY_ONLY"
+        assert section.unresolved_fields == [
+            "UNRESOLVED:runtime_audit_durability_ack:chat-portable-memory"
+        ]
+        assert section.confidence == 0.0
+    finally:
+        shutil.rmtree(ws, ignore_errors=True)

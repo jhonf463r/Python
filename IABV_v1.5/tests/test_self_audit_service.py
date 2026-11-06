@@ -34,6 +34,7 @@ from iabv_v15.domain.models import (
     ToolType,
     ToolValidationStatus,
     WorldModelSnapshot,
+    WindowObservation,
 )
 from iabv_v15.services.evolution.self_audit_service import SelfAuditService
 
@@ -67,8 +68,11 @@ class _FakeSelfExamService:
     def __init__(self, review: SelfExaminationSnapshot | None) -> None:
         self._review = review
 
-    def current_review(self, *, refresh: bool = False) -> SelfExaminationSnapshot | None:
+    def current_review_cached(self) -> SelfExaminationSnapshot | None:
         return self._review
+
+    def current_review(self, *, refresh: bool = False) -> SelfExaminationSnapshot | None:
+        raise AssertionError("active OSES review must not be used by SelfAuditService")
 
 
 class _FakePortableContextService:
@@ -398,3 +402,119 @@ def test_toolcard_dry_check_unavailable_returns_missing() -> None:
     assert result.available is False
     assert result.status == "missing"
     assert result.reason is not None
+
+
+
+def test_self_audit_uses_only_cached_oses_review(tmp_path: Path) -> None:
+    svc = _make_service(
+        tmp_path,
+        review=SelfExaminationSnapshot(
+            findings=[SelfExaminationFinding(title="cached finding", description="verified cache")],
+        ),
+    )
+
+    pending = svc._collect_pending_issues()
+
+    assert "cached finding" in pending
+    assert svc._self_examination_read_status == "READ_OK"
+
+
+def test_self_audit_cached_oses_failure_is_visible_without_active_fallback(tmp_path: Path) -> None:
+    class _FailingCachedOSES:
+        def current_review_cached(self):
+            raise RuntimeError("oses_cached_review_stale")
+
+        def current_review(self, *, refresh: bool = False):
+            raise AssertionError("active OSES review must never be called")
+
+    svc = _make_service(tmp_path)
+    svc.operational_self_examination_service = _FailingCachedOSES()
+
+    snapshot = svc.run(reason="cache_failure")
+
+    assert snapshot.cross_source_truth["self_examination_status"] == "READ_FAILED"
+    assert "UNRESOLVED:self_examination_READ_FAILED" in snapshot.cross_source_truth["unresolved"]
+
+
+def test_self_audit_test_evidence_summary_includes_r24_provenance(tmp_path: Path, monkeypatch) -> None:
+    svc = _make_service(tmp_path)
+    evidence = {
+        "passed": 7,
+        "failed": 0,
+        "errors": 0,
+        "returncode": 0,
+        "timed_out": False,
+        "suite": "focused",
+        "timestamp": "2026-11-05T18:00:00+00:00",
+        "commit_sha": "a" * 40,
+        "branch": "candidate",
+        "worktree_clean": True,
+        "provenance_status": "COMMIT_BOUND_CLEAN",
+        "payload_sha256": "b" * 64,
+    }
+    monkeypatch.setattr(svc, "_load_latest_test_evidence", lambda: evidence)
+
+    snapshot = svc.run(reason="provenance_summary")
+    summary = snapshot.cross_source_truth["test_evidence_summary"]
+
+    assert summary["execution_status"] == "PASSED"
+    assert summary["total"] == 7
+    assert summary["returncode"] == 0
+    assert summary["timed_out"] is False
+    assert summary["commit_sha"] == evidence["commit_sha"]
+    assert summary["branch"] == evidence["branch"]
+    assert summary["worktree_clean"] is True
+    assert summary["provenance_status"] == "COMMIT_BOUND_CLEAN"
+    assert summary["payload_sha256"] == evidence["payload_sha256"]
+
+
+
+def test_self_audit_redacts_focused_window_title_from_persisted_digest(tmp_path: Path) -> None:
+    private_title = "PRIVATE_DOCUMENT_TITLE_CANARY — Budget Q4"
+    world = _world(live_ids=["codex"])
+    world.focused_window = WindowObservation(
+        title=private_title,
+        app_name="Editor",
+        pid=2345,
+        focused=True,
+    )
+    service = _make_service(
+        tmp_path,
+        environment=_env(),
+        world_model=world,
+    )
+
+    snapshot = service.run(reason="privacy_canary")
+
+    assert snapshot.world_model_digest["focused_window_title"] == "<redacted>"
+    assert private_title not in json.dumps(snapshot.world_model_digest)
+    persisted = tmp_path / "data" / "evolution" / "self_audit" / "latest.json"
+    assert private_title not in persisted.read_text(encoding="utf-8")
+
+
+
+def test_self_audit_test_summary_keeps_zero_collected_run_unverified(
+    tmp_path: Path, monkeypatch,
+) -> None:
+    svc = _make_service(tmp_path)
+    evidence = {
+        "passed": 0,
+        "failed": 0,
+        "errors": 0,
+        "returncode": 0,
+        "timed_out": False,
+        "suite": "empty",
+        "commit_sha": "a" * 40,
+        "branch": "candidate",
+        "worktree_clean": True,
+        "provenance_status": "COMMIT_BOUND_CLEAN",
+        "payload_sha256": "b" * 64,
+    }
+    monkeypatch.setattr(svc, "_load_latest_test_evidence", lambda: evidence)
+
+    snapshot = svc.run(reason="empty_test_evidence")
+    summary = snapshot.cross_source_truth["test_evidence_summary"]
+
+    assert snapshot.cross_source_truth["tests_observed"] is True
+    assert summary["total"] == 0
+    assert summary["execution_status"] == "UNVERIFIED"

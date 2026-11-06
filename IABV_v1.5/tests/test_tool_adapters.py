@@ -48,17 +48,24 @@ def test_external_assistant_adapter_uses_clipboard_capture_when_runner_returns_t
     exe = root / 'Codex.exe'
     exe.write_text('stub', encoding='utf-8')
 
+    received_launch_targets: list[str] = []
+
     class _Runner:
         def __init__(self, workspace_root: str) -> None:
             self.workspace_root = workspace_root
 
         def capture_response_from_app(self, **kwargs) -> dict[str, object]:
+            received_launch_targets.append(str(kwargs.get('launch_target') or ''))
             return {
                 'launched': True,
                 'focused_title': 'Codex',
                 'response_captured': True,
                 'captured_text': 'Causa raiz probable: Bridge saturado. Cambio vertical recomendado: Ajustar drenado.',
                 'error_message': '',
+                'metadata': {
+                    'web_url': 'https://chatgpt.com/private-path?token=nested-result-token',
+                    'launch_target_ref': 'https://chatgpt.com/private-reference?token=reference-token',
+                },
             }
 
     card = ToolCard(
@@ -93,6 +100,18 @@ def test_external_assistant_adapter_uses_clipboard_capture_when_runner_returns_t
     assert result['metadata']['response_capture_mode'] == 'clipboard_capture'
     assert result['metadata']['manual_pasteback_required'] is False
     assert result['metadata']['response_captured'] is True
+    assert received_launch_targets == [str(exe)]
+    assert result['metadata']['launch_target_ref'] == 'desktop:codex'
+    assert 'launch_target' not in result['metadata']
+    assert result['extracted_data']['launch_target_ref'] == 'desktop:codex'
+    assert 'launch_target' not in result['extracted_data']
+    assert str(exe) not in repr(result['metadata'])
+    assert str(exe) not in repr(result['extracted_data'])
+    browser_metadata = result['metadata']['browser_dom_metadata']
+    assert browser_metadata['web_url_omitted'] is True
+    assert browser_metadata['launch_target_ref'] == 'desktop:codex'
+    assert 'nested-result-token' not in repr(result['metadata'])
+    assert 'reference-token' not in repr(result['metadata'])
 
 
 def test_external_assistant_adapter_falls_back_to_manual_when_clipboard_capture_is_empty() -> None:
@@ -546,6 +565,101 @@ def test_external_assistant_adapter_treats_browser_security_verification_as_fail
     assert result['success'] is False
     assert result['error_message'] == 'browser_security_verification'
     assert result['metadata']['auto_capture_reason'] == 'browser_security_verification'
+
+
+
+def test_external_assistant_adapter_persists_only_relative_profile_reference_and_no_rollout_path() -> None:
+    root = _workspace('external_assistant_capture_path_privacy')
+    external_rollout = root.parent / 'external_user_sessions' / 'rollout-secret-location.jsonl'
+
+    class _Runner:
+        def __init__(self, workspace_root: str) -> None:
+            self.workspace_root = workspace_root
+
+        def capture_response_from_app(self, **kwargs) -> dict[str, object]:
+            return {
+                'launched': True,
+                'focused_title': 'ChatGPT',
+                'response_captured': True,
+                'captured_text': 'respuesta capturada',
+                'capture_source': 'browser_dom',
+                'browser_profile_dir': str(root / 'data' / 'tool_teaching' / 'external_assistants' / 'chatgpt_program_session' / 'browser_profile'),
+                'rollout_path': str(external_rollout),
+                'thread_verified': True,
+                'error_message': '',
+            }
+
+    adapter = ExternalAssistantToolAdapter(runner_factory=lambda workspace_root: _Runner(workspace_root))
+    task = _chatgpt_task_with_metadata({
+        'workspace_root': str(root),
+        'session_scope': 'program_chat',
+        'session_profile_dir': 'data/tool_teaching/external_assistants/chatgpt_program_session/browser_profile',
+    })
+    result = adapter.run(_chatgpt_web_card(workspace_root=str(root)), task, sandbox=False)
+
+    metadata = result['metadata']
+    assert result['success'] is True
+    assert metadata['browser_profile_ref'] == 'data/tool_teaching/external_assistants/chatgpt_program_session/browser_profile'
+    assert metadata['rollout_path_reported'] is True
+    assert 'browser_profile_dir' not in metadata
+    assert 'rollout_path' not in metadata
+    assert str(root) not in repr(metadata)
+    assert str(external_rollout) not in repr(metadata)
+
+
+
+def test_external_assistant_adapter_redacts_private_capture_diagnostics() -> None:
+    raw_path = r'C:\Users\jhon\Private profile'
+    raw_email = 'alice@example.com'
+    raw_bearer = 'abc123'
+    raw_cdp = 'http://operator:private-pass@localhost:9223/devtools/private?token=private-cdp-token'
+
+    class _Runner:
+        def __init__(self, workspace_root: str) -> None:
+            self.workspace_root = workspace_root
+
+        def capture_response_from_app(self, **kwargs) -> dict[str, object]:
+            return {
+                'launched': True,
+                'focused_title': f'ChatGPT - billing notes for {raw_email}',
+                'response_captured': False,
+                'captured_text': '',
+                'capture_source': 'browser_dom',
+                'browser_profile_dir': '',
+                'error_message': f"Unable to access '{raw_path}': {raw_email} Bearer {raw_bearer}",
+                'metadata': {
+                    'visual_signal_error': f"perception failed at '{raw_path}' for {raw_email}",
+                    'cdp_url': raw_cdp,
+                    'profile_label': raw_path,
+                },
+            }
+
+    adapter = ExternalAssistantToolAdapter(runner_factory=lambda workspace_root: _Runner(workspace_root))
+    result = adapter.run(_chatgpt_web_card(), _chatgpt_task(), sandbox=False)
+
+    metadata = result['metadata']
+    persisted = repr(result)
+    assert result['success'] is False
+    assert '[LOCAL_PATH]' in result['error_message']
+    assert '[EMAIL]' in result['error_message']
+    assert 'Bearer [REDACTED]' in result['error_message']
+    assert metadata['auto_capture_reason'] == result['error_message']
+    assert metadata['focused_title'] == 'chatgpt'
+    browser_meta = metadata['browser_dom_metadata']
+    assert browser_meta['cdp_endpoint_ref'] == 'http://localhost:9223'
+    assert browser_meta['profile_ref'] == 'isolated_profile'
+    assert '[LOCAL_PATH]' in browser_meta['visual_signal_error']
+    assert '[EMAIL]' in browser_meta['visual_signal_error']
+    assert 'cdp_url' not in browser_meta
+    assert 'profile_label' not in browser_meta
+    assert 'alice@example.com' not in persisted
+    assert raw_path not in persisted
+    assert raw_cdp not in persisted
+    assert 'private-pass' not in persisted
+    assert 'private-cdp-token' not in persisted
+    assert 'Bearer abc123' not in persisted
+
+
 
 
 class _FakeCredentialBroker:

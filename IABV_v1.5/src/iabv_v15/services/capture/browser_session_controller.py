@@ -335,12 +335,13 @@ class BrowserSessionController:
                 self._pw = None
             self._owner_thread_id = None
         except Exception as exc:
-            logger.warning('Error closing browser session: %s', exc)
+            error_type = type(exc).__name__
+            logger.warning('Error closing browser session (%s)', error_type)
             try:
                 from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
                 get_runtime_tracer().trace(
                     'browser_session_close_unresolved',
-                    error=str(exc),
+                    error_type=error_type,
                     caller_thread=caller_tid,
                     reason='exception_during_close',
                 )

@@ -27,6 +27,7 @@ from iabv_v15.domain.models import (
     ToolLiveStatus,
     WindowObservation,
     WorldModelSnapshot,
+    ControlMasterState,
 )
 
 
@@ -333,9 +334,9 @@ def test_evolution_center_exposes_and_copies_self_examination(monkeypatch: pytes
 
         self_examination = vm.get_self_examination()
 
-        assert self_examination
-        assert self_examination.get('assistant_brief')
-        assert self_examination.get('package_path')
+        # This branch does not expose the validated cached OSES API yet.
+        # The panel must report unresolved rather than rebuild OSES on read.
+        assert self_examination.get('truthState') == 'unresolved'
 
         vm.copySelfExamination()
 
@@ -358,19 +359,18 @@ def test_evolution_center_refresh_reuses_cached_self_examination_after_portable_
         service = bootstrap.operational_self_examination_service
         assert service is not None
 
-        original = service.current_review
-        calls: list[bool] = []
+        active_calls: list[bool] = []
 
-        def tracked_current_review(*, refresh: bool = False, max_age_seconds: int = 300):
-            calls.append(bool(refresh))
-            return original(refresh=refresh, max_age_seconds=max_age_seconds)
+        def fail_active_review(*, refresh: bool = False, max_age_seconds: int = 300):
+            active_calls.append(bool(refresh))
+            raise AssertionError('Evolution Center must not rebuild OSES')
 
-        service.current_review = tracked_current_review  # type: ignore[assignment]
+        service.current_review = fail_active_review  # type: ignore[assignment]
 
         vm.refresh()
 
-        assert calls
-        assert all(c is False for c in calls)
+        assert not active_calls
+        assert vm.get_self_examination().get('truthState') == 'unresolved'
     finally:
         shutil.rmtree(workspace, ignore_errors=True)
 
@@ -938,5 +938,90 @@ def test_evolution_center_publish_pr_status_formatter() -> None:
 
         err = fmt({'success': False, 'branch': 'iabv-auto/x', 'error': 'push failed'})
         assert 'push failed' in err
+    finally:
+        shutil.rmtree(workspace, ignore_errors=True)
+
+
+
+def test_evolution_center_control_master_queue_failure_is_not_empty_and_preserves_provenance() -> None:
+    from iabv_v15.services.evolution.control_master_digest_builder import ControlMasterDigestBuilder
+
+    os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
+    workspace = _workspace('test_evolution_center_control_master_queue_failure')
+    shutil.rmtree(workspace, ignore_errors=True)
+    workspace.mkdir(parents=True, exist_ok=True)
+
+    class _QueueFailureService:
+        last_work_queue_errors: tuple[str, ...] = ()
+        last_work_queue_source_coverage = {'objectives': 'READ_OK'}
+
+        def current_state(self, *, refresh: bool = False) -> ControlMasterState:
+            generated = datetime.now(timezone.utc) - timedelta(minutes=1)
+            return ControlMasterState(
+                state_id='cm-ui-state-001',
+                current_vision='UI source provenance',
+                last_updated=generated,
+                metadata={
+                    '_space_time_control_master_source_provenance': {
+                        'project_id': 'IABV_v1.5',
+                        'source_object': 'control_master/latest.json',
+                        'source_state_id': 'cm-ui-state-001',
+                        'source_revision_or_digest': 'sha256:ui-source',
+                        'source_generated_at_utc': generated.isoformat(),
+                        'source_observed_at_utc': datetime.now(timezone.utc).isoformat(),
+                        'workspace_scope_id': 'scope-ui-001',
+                        'freshness_status': 'FRESH',
+                        'read_status': 'READ_OK',
+                    }
+                },
+            )
+
+        def current_work_queue(self, *, limit: int = 10) -> list[dict[str, object]]:
+            raise RuntimeError('queue unavailable')
+
+    try:
+        bootstrap = AppBootstrap(str(workspace))
+        bootstrap._build_ui_objects()
+        vm = bootstrap.evolution_center_viewmodel
+        vm.control_master_service = _QueueFailureService()
+        vm.control_master_digest_builder = ControlMasterDigestBuilder()
+        vm.refresh()
+
+        digest = vm.get_control_master_digest()
+        assert digest['signal_status'] == 'AVAILABLE'
+        assert digest['work_queue_status'] == 'UNAVAILABLE'
+        assert digest['control_master_signal_status'] == 'FRESH'
+        assert digest['source_state_id'] == 'cm-ui-state-001'
+        assert digest['source_revision_or_digest'] == 'sha256:ui-source'
+        assert digest['truthState'] == 'observed'
+        brief = vm.get_control_master_brief()
+        assert 'Señal: AVAILABLE' in brief
+        assert 'cola: UNAVAILABLE' in brief
+        assert 'no inferir que está vacía' in brief
+    finally:
+        shutil.rmtree(workspace, ignore_errors=True)
+
+
+def test_evolution_center_control_master_missing_service_is_explicitly_unavailable() -> None:
+    from iabv_v15.services.evolution.control_master_digest_builder import ControlMasterDigestBuilder
+
+    os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
+    workspace = _workspace('test_evolution_center_control_master_missing')
+    shutil.rmtree(workspace, ignore_errors=True)
+    workspace.mkdir(parents=True, exist_ok=True)
+    try:
+        bootstrap = AppBootstrap(str(workspace))
+        bootstrap._build_ui_objects()
+        vm = bootstrap.evolution_center_viewmodel
+        vm.control_master_service = None
+        vm.control_master_digest_builder = ControlMasterDigestBuilder()
+        vm.refresh()
+
+        digest = vm.get_control_master_digest()
+        assert digest['signal_status'] == 'UNAVAILABLE'
+        assert digest['work_queue_status'] == 'UNAVAILABLE'
+        assert digest['control_master_signal_status'] == 'UNAVAILABLE'
+        assert digest['truthState'] == 'unresolved'
+        assert 'Señal: UNAVAILABLE' in vm.get_control_master_brief()
     finally:
         shutil.rmtree(workspace, ignore_errors=True)

@@ -24,6 +24,22 @@ Item {
     property var worldModelSummary: centroVivoViewModel ? centroVivoViewModel.worldModelSummary : ({})
     property var accountInventory: centroVivoViewModel ? centroVivoViewModel.accountInventory : []
     property var accountInventorySummary: centroVivoViewModel ? centroVivoViewModel.accountInventorySummary : ({})
+    property var sourceStatuses: centroVivoViewModel ? centroVivoViewModel.sourceStatuses : ({})
+
+    function emptySourceMessage(source, defaultMessage) {
+        var status = sourceStatuses[source] || "UNKNOWN"
+        if (status === "READ_FAILED" || status === "READ_PARTIAL" || status === "CORRUPT" || status === "SCHEMA_UNSUPPORTED")
+            return "No se pudo verificar esta fuente; no equivale a una lista vacía."
+        if (status === "NOT_CONFIGURED")
+            return "Fuente no conectada."
+        if (status === "CONFIRMED_NOT_FOUND")
+            return "Fuente persistida no encontrada."
+        if (status === "NOT_APPLICABLE")
+            return "Fuente no aplicable en este entorno."
+        if (status === "UNAVAILABLE" || status === "UNVERIFIED" || status === "READ_UNVERIFIED" || status === "UNKNOWN" || status === "NOT_INSTRUMENTED" || status === "NOT_EXECUTED")
+            return "Fuente no verificada."
+        return defaultMessage
+    }
 
     GlassPanel {
         anchors.fill: parent
@@ -154,7 +170,7 @@ Item {
 
                         Label {
                             visible: orchestratorQueue.length === 0
-                            text: "Sin sesiones en cola."
+                            text: emptySourceMessage("adaptive_session_repository", "Sin sesiones en cola.")
                             color: textSecondary
                             font.family: bodyFontFamily
                             font.pixelSize: 12
@@ -235,7 +251,7 @@ Item {
 
                         Label {
                             visible: iaDistribution.length === 0
-                            text: "Sin herramientas registradas."
+                            text: emptySourceMessage("tool_record_repository", "Sin herramientas registradas.")
                             color: textSecondary
                             font.family: bodyFontFamily
                             font.pixelSize: 12
@@ -312,7 +328,7 @@ Item {
 
                         Label {
                             visible: heuristicDecisions.length === 0
-                            text: "Sin recomendaciones registradas."
+                            text: emptySourceMessage("experiment_recommendations", "Sin recomendaciones registradas.")
                             color: textSecondary
                             font.family: bodyFontFamily
                             font.pixelSize: 12
@@ -387,7 +403,7 @@ Item {
 
                         Label {
                             visible: experimentMetrics.length === 0
-                            text: "Sin experimentos registrados."
+                            text: emptySourceMessage("experiment_runs", "Sin experimentos registrados.")
                             color: textSecondary
                             font.family: bodyFontFamily
                             font.pixelSize: 12
@@ -459,7 +475,7 @@ Item {
 
                         Label {
                             visible: learningGaps.length === 0
-                            text: "Sin areas de investigacion pendientes."
+                            text: emptySourceMessage("learning_gaps", "Sin areas de investigacion pendientes.")
                             color: textSecondary
                             font.family: bodyFontFamily
                             font.pixelSize: 12
@@ -534,7 +550,7 @@ Item {
 
                         Label {
                             visible: selfExaminationFindings.length === 0
-                            text: "Sin hallazgos de autoexaminacion."
+                            text: emptySourceMessage("self_examination_service", "Sin hallazgos de autoexaminacion.")
                             color: textSecondary
                             font.family: bodyFontFamily
                             font.pixelSize: 12
@@ -649,6 +665,19 @@ Item {
                             }
                         }
 
+                        Label {
+                            visible: accountInventorySummary.quota_source_status !== undefined
+                                && accountInventorySummary.quota_source_status !== "READ_OK"
+                            text: "Quota tracker no verificado (" +
+                                (accountInventorySummary.quota_source_status || "UNVERIFIED") +
+                                "). Las sesiones detectadas no son accionables; no equivale a un inventario vacío."
+                            color: accentAmber
+                            font.family: bodyFontFamily
+                            font.pixelSize: 12
+                            wrapMode: Label.WordWrap
+                            width: parent.width
+                        }
+
                         // Next recommended account
                         Rectangle {
                             visible: accountInventorySummary.next_recommended !== undefined && accountInventorySummary.next_recommended !== null
@@ -700,7 +729,7 @@ Item {
                         // Account list
                         Label {
                             visible: accountInventory.length === 0
-                            text: "Sin cuentas detectadas. Inicie sesion en un navegador para que el scanner detecte cuentas."
+                            text: emptySourceMessage("account_inventory", "Sin cuentas detectadas. Inicie sesion en un navegador para que el scanner detecte cuentas.")
                             color: textSecondary
                             font.family: bodyFontFamily
                             font.pixelSize: 12
@@ -747,7 +776,7 @@ Item {
                                                 var s = modelData.status || ""
                                                 if (s === "active") return accentGreen
                                                 if (s === "exhausted") return accentRed
-                                                if (s === "expired") return accentAmber
+                                                if (s === "expired" || s === "unverified") return accentAmber
                                                 return textSecondary
                                             }
                                         }

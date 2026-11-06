@@ -469,6 +469,8 @@ def _fake_scanner_module(workers: list[dict[str, Any]]):
         call_count[0] += 1
         available = [w for w in workers if not w.get('exhausted', False)]
         return {
+            'source_coverage': {'quota_tracker': 'READ_OK'},
+            'source_errors': {},
             'workers': available,
             'exhausted': [w for w in workers if w.get('exhausted', False)],
             'available_count': len(available),

@@ -1927,6 +1927,8 @@ class PortableContextPackage(BaseModel):
     package_id: str = Field(default_factory=lambda: str(uuid4()))
     created_at_utc: datetime = Field(default_factory=utc_now)
     updated_at_utc: datetime = Field(default_factory=utc_now)
+    # Only a full build renews whole-context freshness; section flushes do not.
+    full_context_generated_at_utc: datetime | None = None
     package_version: str = "portable_context.v1"
     project_id: str = "IABV_v1.5"
     summary: str = ""
@@ -1969,6 +1971,8 @@ class SelfExaminationSnapshot(BaseModel):
     unresolved_risks: list[str] = Field(default_factory=list)
     package_path: str = ""
     markdown_path: str = ""
+    source_coverage: dict[str, str] = Field(default_factory=dict)
+    source_errors: dict[str, str] = Field(default_factory=dict)
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -2665,8 +2669,24 @@ class ControlMasterDigest(BaseModel):
     coordination_patterns_brief: str = ""
     work_queue_brief: list[str] = Field(default_factory=list)
     work_queue_counts: dict[str, int] = Field(default_factory=dict)
+    # Empty, failed and unattempted reads are different epistemic states.
+    work_queue_status: str = "UNVERIFIED"
+    signal_status: str = "UNVERIFIED"
+    signal_reason: str = ""
+    source_coverage: dict[str, str] = Field(default_factory=dict)
+    # Digest build time is separate from source generation and task observation.
     generated_at_utc: datetime = Field(default_factory=utc_now)
+    observed_at_utc: datetime | None = None
     source_state_id: str = ""
+    project_id: str = ""
+    source_object: str = ""
+    workspace_scope_id: str = ""
+    source_revision_or_digest: str = ""
+    source_generated_at_utc: datetime | None = None
+    # D021 freshness is distinct from transport/read availability.
+    control_master_signal_status: str = "UNVERIFIED"
+    source_evidence_refs: list[str] = Field(default_factory=list)
+    top_work_queue_items: list[dict[str, Any]] = Field(default_factory=list)
 
 
 
@@ -2979,6 +2999,13 @@ class TestEvidence(BaseModel):
     timestamp: datetime = Field(default_factory=utc_now)
     linked_pending_task: str = ""
     changed_files: list[str] = Field(default_factory=list)
+    # Commit provenance for the exact source revision under test.
+    commit_sha: str = ""
+    branch: str = ""
+    worktree_clean: bool | None = None
+    provenance_status: str = "UNKNOWN"
+    worktree_status_sha256: str = ""
+    payload_sha256: str = ""
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -3025,18 +3052,6 @@ class AccountInventoryEntry(BaseModel):
     status: AccountStatus = AccountStatus.UNRESOLVED
     unresolved: list[str] = Field(default_factory=list)
     metadata: dict[str, Any] = Field(default_factory=dict)
-
-
-class AccountInventorySnapshot(BaseModel):
-    """Point-in-time snapshot of every known account across all browsers.
-
-    Built by ``build_inventory_snapshot()`` in ``account_resource_scanner``.
-    Consumed by Control Master (governance), PortableContext (continuity)
-    and CentroVivo (UI).
-
-    ``continuity_queue`` is the ranked list of non-exhausted entries
-    sorted by score descending — the first entry is the recommended
-    next account.  The user must approve before any account is used."""
 
 
 # ---------------------------------------------------------------------------
@@ -3150,6 +3165,8 @@ class AccountInventorySnapshot(BaseModel):
     total_remaining_messages: int = 0
     tools_available: list[str] = Field(default_factory=list)
     unresolved_items: list[str] = Field(default_factory=list)
+    source_coverage: dict[str, str] = Field(default_factory=dict)
+    source_errors: dict[str, str] = Field(default_factory=dict)
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 

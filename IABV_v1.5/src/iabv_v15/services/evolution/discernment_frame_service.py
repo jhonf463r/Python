@@ -321,7 +321,13 @@ class DiscernmentFrameService:
 
         if environment_self_model:
             available.append('environment_self_model')
-            trusted.append('environment_self_model')
+            scan_status = str(environment_self_model.get('scan_status') or '').strip().lower()
+            if scan_status in {'ready', 'ok', 'complete', 'verified'}:
+                trusted.append('environment_self_model')
+            else:
+                # A present but partial/bootstrapping model is observable,
+                # not a trusted environmental baseline.
+                untrusted.append('environment_self_model')
         else:
             missing.append('environment_self_model')
 

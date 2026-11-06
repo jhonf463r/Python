@@ -42,12 +42,14 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 import subprocess
 import threading
 import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit
 
 logger = logging.getLogger(__name__)
 
@@ -189,7 +191,11 @@ class RuntimeAuditTracer:
     # ------------------------------------------------------------------
 
     def trace(self, kind: str, **data: Any) -> dict[str, Any]:
-        """Record one trace event. Returns the event dict."""
+        """Record one trace event and return its explicit persistence receipt.
+
+        `durability_ack` is attached to the returned/in-memory event after
+        the write attempt. The JSONL row does not claim its own future durability.
+        """
         now_pc = time.perf_counter()
         event: dict[str, Any] = {
             'ts': datetime.now(timezone.utc).isoformat(timespec='milliseconds'),
@@ -204,13 +210,49 @@ class RuntimeAuditTracer:
             self._in_memory.append(event)
             if len(self._in_memory) > self._max_in_memory:
                 self._in_memory = self._in_memory[-self._max_in_memory:]
-            if self._enabled and self._log_dir is not None:
-                self._append(event)
+            if not self._enabled:
+                acknowledgement = {'status': 'DISABLED'}
+            elif self._log_dir is None:
+                acknowledgement = {
+                    'status': 'MEMORY_ONLY',
+                    'reason': 'log_directory_not_configured',
+                }
+            else:
+                acknowledgement = self._append(event)
+            event['durability_ack'] = acknowledgement
         return event
 
     # ------------------------------------------------------------------
     # Typed trace helpers
     # ------------------------------------------------------------------
+
+    @staticmethod
+    def _safe_trace_diagnostic(value: Any, *, max_chars: int = 400) -> str:
+        text = str(value or '')
+        if not text:
+            return ''
+        text = re.sub(r"(?i)\bBearer\s+[^\s\"']+", 'Bearer [REDACTED]', text)
+        text = re.sub(
+            r"(?i)([?&](?:token|api[_-]?key|password|secret)=)[^&\s]+",
+            r'\1[REDACTED]',
+            text,
+        )
+        text = re.sub(r"(?i)\b(https?://)[^/\s@]+@", r'\1[REDACTED]@', text)
+        text = re.sub(r"(?i)\b[A-Z]:\\[^\r\n\"']+", '[LOCAL_PATH]', text)
+        text = re.sub(
+            r"(?<![\w.])/(?:home|Users|mnt|tmp|var|opt|workspace)/[^\s\"']+",
+            '[LOCAL_PATH]',
+            text,
+        )
+        text = re.sub(r"\b[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}\b", '[EMAIL]', text)
+        return text[:max(1, min(int(max_chars), 1000))]
+
+    @staticmethod
+    def _safe_trace_error_type(value: Any) -> str:
+        raw = str(value or '').strip()
+        if re.fullmatch(r'[A-Za-z_][A-Za-z0-9_.-]{0,79}', raw):
+            return raw
+        return 'Exception'
 
     def trace_service_init(
         self,
@@ -227,7 +269,7 @@ class RuntimeAuditTracer:
             service=service_name,
             duration_ms=round(duration_ms, 1),
             status=status,
-            error=error,
+            error=self._safe_trace_diagnostic(error, max_chars=400),
             dependencies=dependencies or [],
         )
 
@@ -268,8 +310,8 @@ class RuntimeAuditTracer:
             operation=operation,
             status=status,
             duration_ms=round(duration_ms, 1),
-            error=error,
-            response_summary=response_summary,
+            error=self._safe_trace_diagnostic(error, max_chars=400),
+            response_summary=self._safe_trace_diagnostic(response_summary, max_chars=400),
         )
 
     def trace_permission(
@@ -287,7 +329,7 @@ class RuntimeAuditTracer:
             permission_id=permission_id,
             action=action,
             granted=granted,
-            reason=reason,
+            reason=self._safe_trace_diagnostic(reason, max_chars=240),
             dialog_shown=dialog_shown,
         )
 
@@ -318,10 +360,10 @@ class RuntimeAuditTracer:
         """Record an exception or error."""
         return self.trace(
             'error',
-            context=context,
-            error_type=error_type,
-            message=message,
-            **extra,
+            context=self._safe_trace_diagnostic(context, max_chars=120),
+            error_type=self._safe_trace_error_type(error_type),
+            message=self._safe_trace_diagnostic(message, max_chars=500),
+            extra_fields_omitted=bool(extra),
         )
 
     def trace_dispatch_started(
@@ -619,6 +661,83 @@ class RuntimeAuditTracer:
     # P0.72: Governed browser session launch + human-assist bridge traces
     # ------------------------------------------------------------------
 
+    @staticmethod
+    def _safe_browser_assistant_ref(value: Any) -> str:
+        raw = str(value or '').strip().lower()
+        allowed = {'chatgpt', 'claude', 'codex', 'ollama'}
+        return raw if raw in allowed else 'assistant'
+
+    @staticmethod
+    def _safe_cdp_endpoint_ref(value: Any) -> str:
+        raw = str(value or '').strip()
+        if not raw:
+            return ''
+        try:
+            parsed = urlsplit(raw)
+            if parsed.scheme.lower() not in {'http', 'https'} or not parsed.hostname:
+                return ''
+            host = parsed.hostname.lower()
+            if host not in {'localhost', '127.0.0.1', '::1'}:
+                return 'remote_cdp_endpoint'
+            port = parsed.port
+        except ValueError:
+            return ''
+        suffix = f':{port}' if port is not None else ''
+        return f'{parsed.scheme.lower()}://localhost{suffix}'
+
+    @staticmethod
+    def _safe_browser_profile_ref(value: Any) -> str:
+        raw = str(value or '').strip().lower()
+        if not raw:
+            return ''
+        if 'governed' in raw:
+            return 'governed_profile'
+        for assistant in ('chatgpt', 'claude', 'codex', 'ollama'):
+            if assistant in raw:
+                return f'{assistant}_profile'
+        return 'isolated_profile'
+
+    @staticmethod
+    def _safe_browser_reason_code(value: Any) -> str:
+        raw = str(value or '').strip().lower()
+        if not raw:
+            return ''
+        allowed = {
+            'ok',
+            'no_hwnd_or_observable_tab',
+            'security_window_unbound',
+            'profile_mismatch_cdp_unavailable',
+            'user_browser_cdp_unavailable',
+            'user_requested_chrome_bridge',
+            'user_explicit_permission',
+            'user_revoked_cdp_permission',
+            'cdp_unavailable',
+            'connection_failed',
+            'timed_out',
+            'browser_not_available',
+            'launch_failed',
+            'owner_thread_unavailable',
+            'exception_during_close',
+        }
+        code = raw.split(':', 1)[0].strip()
+        return code if code in allowed else 'other'
+
+    @staticmethod
+    def _safe_trace_identifier(value: Any) -> str:
+        raw = str(value or '').strip()
+        if not raw:
+            return ''
+        if raw.startswith('inc-') and len(raw) <= 48:
+            suffix = raw[4:]
+            return raw if suffix and all(character.isalnum() or character in {'_', '-'} for character in suffix) else ''
+        if (
+            len(raw) == 36
+            and raw.count('-') == 4
+            and all(character in '0123456789abcdef-' for character in raw.lower())
+        ):
+            return raw
+        return ''
+
     def trace_governed_browser_session(
         self,
         event_type: str,
@@ -643,16 +762,22 @@ class RuntimeAuditTracer:
         debugging — never the user's normal Chrome profile. No cookies,
         tokens or credentials are read or copied.
         """
+        assistant_ref = self._safe_browser_assistant_ref(assistant_kind)
+        safe_event_type = event_type if event_type in {'offered', 'started', 'result'} else 'other'
+        launch_target_ref = ''
+        if launch_target:
+            target_mode = 'web' if str(launch_target).strip().lower().startswith(('http://', 'https://')) else 'desktop'
+            launch_target_ref = f'{target_mode}:{assistant_ref}'
         return self.trace(
-            f'governed_browser_session_launch_{event_type}',
-            assistant_kind=assistant_kind,
-            cdp_url=cdp_url[:200] if cdp_url else '',
-            profile_label=profile_label,
-            launch_target=launch_target[:200] if launch_target else '',
-            human_login_required=human_login_required,
-            success=success,
-            reason=reason[:200] if reason else '',
-            **extra,
+            f'governed_browser_session_launch_{safe_event_type}',
+            assistant_kind=assistant_ref,
+            cdp_endpoint_ref=self._safe_cdp_endpoint_ref(cdp_url),
+            profile_ref=self._safe_browser_profile_ref(profile_label),
+            launch_target_ref=launch_target_ref,
+            human_login_required=bool(human_login_required),
+            success=bool(success),
+            reason_code=self._safe_browser_reason_code(reason),
+            extra_fields_omitted=bool(extra),
         )
 
     def trace_security_window_unbound(
@@ -670,10 +795,10 @@ class RuntimeAuditTracer:
         """
         return self.trace(
             'external_security_verification_window_unbound',
-            incident_id=incident_id,
-            assistant_kind=assistant_kind,
-            profile_label=profile_label,
-            reason=reason[:200] if reason else '',
+            incident_id=self._safe_trace_identifier(incident_id),
+            assistant_kind=self._safe_browser_assistant_ref(assistant_kind),
+            profile_ref=self._safe_browser_profile_ref(profile_label),
+            reason_code=self._safe_browser_reason_code(reason),
         )
 
     def trace_visible_fallback(
@@ -691,12 +816,13 @@ class RuntimeAuditTracer:
         - ``requested_by_user`` -> ``visible_fallback_requested_by_user``
         - ``blocked_no_target`` -> ``visible_fallback_blocked_no_target``
         """
+        safe_event_type = event_type if event_type in {'requested_by_user', 'blocked_no_target'} else 'other'
         return self.trace(
-            f'visible_fallback_{event_type}',
-            assistant_kind=assistant_kind,
-            reason=reason[:200] if reason else '',
-            target_available=target_available,
-            **extra,
+            f'visible_fallback_{safe_event_type}',
+            assistant_kind=self._safe_browser_assistant_ref(assistant_kind),
+            reason_code=self._safe_browser_reason_code(reason),
+            target_available=bool(target_available),
+            extra_fields_omitted=bool(extra),
         )
 
     def trace_human_assist_bridge_message(
@@ -897,17 +1023,122 @@ class RuntimeAuditTracer:
     # Internal
     # ------------------------------------------------------------------
 
-    def _append(self, event: dict[str, Any]) -> None:
+    def _append(self, event: dict[str, Any]) -> dict[str, Any]:
+        """Append one JSONL record and acknowledge only after file fsync."""
         if self._log_dir is None:
-            return
+            return {
+                'status': 'MEMORY_ONLY',
+                'reason': 'log_directory_not_configured',
+            }
+        import hashlib
+
         try:
             self._log_dir.mkdir(parents=True, exist_ok=True)
             target = self._log_dir / 'runtime_audit.jsonl'
-            with target.open('a', encoding='utf-8') as fh:
-                fh.write(json.dumps(event, ensure_ascii=False, default=str) + '\n')
+            line = (json.dumps(event, ensure_ascii=False, default=str) + '\n').encode('utf-8')
+            with target.open('ab') as handle:
+                byte_start = handle.tell()
+                written = handle.write(line)
+                if written != len(line):
+                    raise OSError('short_write_to_runtime_audit_log')
+                handle.flush()
+                os.fsync(handle.fileno())
+                byte_end = handle.tell()
+            return {
+                'status': 'FILE_FSYNCED',
+                'path': target.name,
+                'seq': event.get('seq'),
+                'byte_start': byte_start,
+                'byte_end': byte_end,
+                'line_sha256': hashlib.sha256(line).hexdigest(),
+            }
         except Exception as exc:
-            logger.warning('RuntimeAuditTracer._append failed (log_dir=%s): %s', self._log_dir, exc)
+            logger.warning('RuntimeAuditTracer._append failed (%s)', type(exc).__name__)
+            return {
+                'status': 'WRITE_FAILED',
+                'error_type': type(exc).__name__,
+            }
 
+
+
+
+
+def validate_durability_ack(
+    acknowledgement: Any,
+    *,
+    expected_seq: int | None = None,
+    expected_line_sha256: str | None = None,
+    expected_byte_start: int | None = None,
+    expected_byte_end: int | None = None,
+) -> dict[str, Any]:
+    """Validate the structural contract of a RuntimeAuditTracer file-fsync receipt.
+
+    This validates the tracer's receipt, not an independent disk re-read.
+    Consumers must not promote MEMORY_ONLY, DISABLED, WRITE_FAILED, or
+    malformed receipts to durable evidence.
+    """
+    if not isinstance(acknowledgement, dict):
+        return {"status": "ACK_UNAVAILABLE", "accepted": False}
+    status = str(acknowledgement.get("status") or "ACK_UNAVAILABLE")
+    if status != "FILE_FSYNCED":
+        return {"status": status, "accepted": False}
+
+    path = acknowledgement.get("path")
+    seq = acknowledgement.get("seq")
+    byte_start = acknowledgement.get("byte_start")
+    byte_end = acknowledgement.get("byte_end")
+    digest = str(acknowledgement.get("line_sha256") or "").lower()
+    if (
+        path != "runtime_audit.jsonl"
+        or isinstance(seq, bool)
+        or not isinstance(seq, int)
+        or seq <= 0
+        or isinstance(expected_seq, bool)
+        or (
+            expected_seq is not None
+            and (
+                not isinstance(expected_seq, int)
+                or seq != expected_seq
+            )
+        )
+        or isinstance(byte_start, bool)
+        or not isinstance(byte_start, int)
+        or byte_start < 0
+        or isinstance(byte_end, bool)
+        or not isinstance(byte_end, int)
+        or byte_end <= byte_start
+        or len(digest) != 64
+        or any(char not in "0123456789abcdef" for char in digest)
+        or (
+            expected_line_sha256 is not None
+            and (
+                not isinstance(expected_line_sha256, str)
+                or digest != expected_line_sha256.lower()
+                or isinstance(expected_byte_start, bool)
+                or not isinstance(expected_byte_start, int)
+                or isinstance(expected_byte_end, bool)
+                or not isinstance(expected_byte_end, int)
+                or byte_start != expected_byte_start
+                or byte_end != expected_byte_end
+            )
+        )
+    ):
+        return {"status": "ACK_INVALID", "accepted": False}
+
+    return {
+        "status": "FILE_FSYNCED",
+        "accepted": True,
+        "path": path,
+        "seq": seq,
+        "byte_start": byte_start,
+        "byte_end": byte_end,
+        "line_sha256": digest,
+        "verification": (
+            "TRACER_RECEIPT_MATCHED_TO_READ_ROW"
+            if expected_line_sha256 is not None
+            else "TRACER_RETURNED_FSYNC_RECEIPT"
+        ),
+    }
 
 # ======================================================================
 # Global singleton

@@ -298,6 +298,8 @@ def test_local_role_router_caches_health_snapshot_until_forced() -> None:
 
 def _fake_pool_healthy() -> dict[str, Any]:
     return {
+        'source_coverage': {'quota_tracker': 'READ_OK'},
+        'source_errors': {},
         'available_count': 2,
         'exhausted_count': 0,
         'total_remaining_messages': 30,
@@ -312,6 +314,8 @@ def _fake_pool_healthy() -> dict[str, Any]:
 
 def _fake_pool_exhausted() -> dict[str, Any]:
     return {
+        'source_coverage': {'quota_tracker': 'READ_OK'},
+        'source_errors': {},
         'available_count': 0,
         'exhausted_count': 2,
         'total_remaining_messages': 0,
@@ -410,6 +414,107 @@ def test_worker_health_gate_caches_result() -> None:
     assert refreshed['usable'] is True
 
 
+def test_worker_health_gate_invalidates_cache_when_quota_tracker_revision_changes(
+    monkeypatch,
+) -> None:
+    from iabv_v15.services import account_resource_scanner
+
+    revisions = iter([
+        ('quota-tracker', 1, 10, 100, 10),
+        ('quota-tracker', 1, 10, 100, 10),
+        ('quota-tracker', 1, 10, 200, 10),
+        ('quota-tracker', 1, 10, 200, 10),
+    ])
+    monkeypatch.setattr(
+        account_resource_scanner,
+        'quota_tracker_revision',
+        lambda: next(revisions),
+    )
+    call_count = {'n': 0}
+
+    def _counting_scanner() -> dict[str, Any]:
+        call_count['n'] += 1
+        return _fake_pool_healthy()
+
+    router = _router(
+        _workspace('whg_quota_revision_invalidation'),
+        account_resource_scanner=_counting_scanner,
+    )
+    first = router.worker_health_gate()
+    second = router.worker_health_gate()
+
+    assert first['usable'] is True
+    assert second['usable'] is True
+    assert call_count['n'] == 2
+
+
+def test_worker_health_gate_retries_when_quota_revision_changes_during_scan(
+    monkeypatch,
+) -> None:
+    from iabv_v15.services import account_resource_scanner
+
+    revisions = iter([
+        ('quota-tracker', 1, 10, 100, 10),
+        ('quota-tracker', 1, 10, 200, 10),
+        ('quota-tracker', 1, 10, 200, 10),
+    ])
+    monkeypatch.setattr(
+        account_resource_scanner,
+        'quota_tracker_revision',
+        lambda: next(revisions),
+    )
+    call_count = {'n': 0}
+
+    def _changing_scanner() -> dict[str, Any]:
+        call_count['n'] += 1
+        pool = _fake_pool_healthy()
+        pool['workers'][0]['email'] = (
+            'stale@test.com' if call_count['n'] == 1 else 'fresh@test.com'
+        )
+        return pool
+
+    router = _router(
+        _workspace('whg_quota_revision_scan_race'),
+        account_resource_scanner=_changing_scanner,
+    )
+    gate = router.worker_health_gate(target_assistant='chatgpt')
+
+    assert call_count['n'] == 2
+    assert gate['usable'] is True
+    assert gate['top_worker']['email'] == 'fresh@test.com'
+
+
+def test_worker_health_gate_does_not_cache_transient_scanner_error(
+    monkeypatch,
+) -> None:
+    from iabv_v15.services import account_resource_scanner
+
+    monkeypatch.setattr(
+        account_resource_scanner,
+        'quota_tracker_revision',
+        lambda: ('quota-tracker', 1, 10, 100, 10),
+    )
+    call_count = {'n': 0}
+
+    def _recovering_scanner() -> dict[str, Any]:
+        call_count['n'] += 1
+        if call_count['n'] == 1:
+            raise RuntimeError('temporary scanner interruption')
+        return _fake_pool_healthy()
+
+    router = _router(
+        _workspace('whg_scanner_error_not_cached'),
+        account_resource_scanner=_recovering_scanner,
+    )
+    first = router.worker_health_gate()
+    second = router.worker_health_gate()
+
+    assert first['usable'] is False
+    assert 'temporary scanner interruption' in first['reason']
+    assert second['usable'] is True
+    assert call_count['n'] == 2
+
+
 def test_worker_health_gate_different_targets_not_cross_contaminated() -> None:
     """Cache stores raw pool; different target_assistant values filter independently."""
     call_count = {'n': 0}
@@ -495,10 +600,12 @@ def test_route_from_decision_no_external_skips_gate() -> None:
 # ── Bootstrap wiring tests ──────────────────────────────────────
 
 
-def test_bootstrap_wiring_scanner_callable_produces_real_gate() -> None:
-    """Verify that passing estimate_available_workers as the scanner
-    produces a real gate result (not UNRESOLVED) — this mirrors the
-    bootstrap.py wiring pattern."""
+def test_bootstrap_wiring_scanner_callable_preserves_quota_uncertainty() -> None:
+    """A connected scanner is not equivalent to a verified quota source.
+
+    On a clean Linux CI workspace the quota tracker may be confirmed absent;
+    the gate must preserve that state instead of advertising an empty pool.
+    """
     from iabv_v15.services.account_resource_scanner import estimate_available_workers
 
     router = _router(
@@ -506,13 +613,16 @@ def test_bootstrap_wiring_scanner_callable_produces_real_gate() -> None:
         account_resource_scanner=estimate_available_workers,
     )
     gate = router.worker_health_gate()
-    # On a Linux CI box there are no browser sessions, so available_count
-    # will be 0 — but the gate must still report a REAL result (not
-    # UNRESOLVED) because the scanner *is* wired and callable.
-    assert 'UNRESOLVED' not in gate['reason']
-    assert isinstance(gate['usable'], bool)
-    assert isinstance(gate['available_count'], int)
 
+    assert gate['available_count'] == 0
+    assert gate['ranked_workers'] == []
+    assert isinstance(gate['usable'], bool)
+    if gate['quota_source_status'] == 'READ_OK':
+        assert gate['usable'] is False
+        assert 'UNRESOLVED:quota_tracker_' not in gate['reason']
+    else:
+        assert gate['usable'] is False
+        assert 'UNRESOLVED:quota_tracker_' in gate['reason']
 
 def test_bootstrap_wiring_route_with_real_scanner_no_workers() -> None:
     """When the real scanner is wired but returns 0 workers (Linux CI),

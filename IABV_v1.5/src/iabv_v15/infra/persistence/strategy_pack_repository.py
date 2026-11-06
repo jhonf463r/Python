@@ -1,29 +1,50 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
-import json
-import logging
+import sqlite3
 from pathlib import Path
+from threading import local
 
 from iabv_v15.domain.models import StrategyPack
 from iabv_v15.infra.persistence.database import AppDatabase
+from iabv_v15.infra.persistence.read_results import (
+    ArtifactReadResult,
+    ArtifactReadStatus,
+    RepositoryReadError,
+    RepositoryReadReport,
+    read_model_from_paths,
+)
 from iabv_v15.infra.persistence.storage import ArtifactStorage
-
-_log = logging.getLogger(__name__)
 
 
 class StrategyPackRepository:
+    """SQLite-indexed strategy-pack storage with non-destructive diagnostic reads."""
+
     def __init__(self, db: AppDatabase, storage: ArtifactStorage):
         self.db = db
         self.storage = storage
+        self._read_state = local()
+
+    @property
+    def last_read_report(self) -> RepositoryReadReport[StrategyPack] | None:
+        return getattr(self._read_state, "report", None)
+
+    def _remember_report(
+        self, report: RepositoryReadReport[StrategyPack]
+    ) -> RepositoryReadReport[StrategyPack]:
+        self._read_state.report = report
+        return report
 
     def save(self, pack: StrategyPack) -> StrategyPack:
         relative_path = f"strategy_packs/{pack.pack_id}.json"
-        saved_path = self.storage.save_json_atomic(relative_path, pack.model_dump(mode='json'))
-        updated_at = str(pack.metadata.get('updated_at_utc') or '')
+        saved_path = self.storage.save_json_atomic(
+            relative_path, pack.model_dump(mode="json")
+        )
+        updated_at = str(pack.metadata.get("updated_at_utc") or "")
         if not updated_at:
-            updated_at = str(pack.metadata.get('created_at_utc') or '')
+            updated_at = str(pack.metadata.get("created_at_utc") or "")
         if not updated_at:
             from datetime import datetime, timezone
+
             updated_at = datetime.now(timezone.utc).isoformat()
         self.db.execute(
             """
@@ -42,63 +63,123 @@ class StrategyPackRepository:
         )
         return pack
 
-    def list_all(self) -> list[StrategyPack]:
-        rows = self.db.fetchall(
-            """
-            SELECT pack_id, path
-            FROM strategy_packs
-            ORDER BY domain_kind ASC, title ASC
-            """
+    def _read_rows(
+        self, rows: list[dict[str, str]]
+    ) -> RepositoryReadReport[StrategyPack]:
+        results: list[ArtifactReadResult[StrategyPack]] = []
+        for row in rows:
+            pack_id = str(row["pack_id"])
+            try:
+                candidate = Path(row["path"])
+            except (TypeError, ValueError, OSError) as exc:
+                results.append(
+                    ArtifactReadResult(
+                        artifact_id=pack_id,
+                        path="",
+                        status=ArtifactReadStatus.READ_FAILED,
+                        error_type=type(exc).__name__,
+                        error_message="Repository read failed.",
+                    )
+                )
+                continue
+            paths: list[Path] = []
+            if candidate.is_absolute():
+                paths.append(candidate)
+            paths.append(self.storage.root / "strategy_packs" / f"{pack_id}.json")
+            results.append(read_model_from_paths(paths, pack_id, StrategyPack))
+
+        return self._remember_report(
+            RepositoryReadReport.from_results("SQLITE_INDEX_ROWS:strategy_packs", results)
         )
-        return self._collect(rows)
+
+    def _fetchall_with_diagnostics(self) -> RepositoryReadReport[StrategyPack]:
+        try:
+            rows = self.db.fetchall(
+                """
+                SELECT pack_id, path
+                FROM strategy_packs
+                ORDER BY domain_kind ASC, title ASC
+                """
+            )
+        except sqlite3.Error as exc:
+            return self._remember_report(
+                RepositoryReadReport.from_collection_error(
+                    "SQLITE_INDEX_ROWS:strategy_packs", exc
+                )
+            )
+        return self._read_rows(rows)
+
+    def list_all_with_diagnostics(self) -> RepositoryReadReport[StrategyPack]:
+        return self._fetchall_with_diagnostics()
+
+    def list_all(self) -> list[StrategyPack]:
+        return self.list_all_with_diagnostics().require_complete()
+
+    def get_with_diagnostics(self, pack_id: str) -> ArtifactReadResult[StrategyPack]:
+        scope = "SQLITE_INDEX_LOOKUP:strategy_packs"
+        try:
+            row = self.db.fetchone(
+                """
+                SELECT pack_id, path
+                FROM strategy_packs
+                WHERE pack_id = ?
+                """,
+                (pack_id,),
+            )
+        except sqlite3.Error as exc:
+            self._remember_report(
+                RepositoryReadReport.from_collection_error(
+                    scope, exc, requested_artifact_id=pack_id
+                )
+            )
+            return ArtifactReadResult(
+                artifact_id=pack_id,
+                path="",
+                status=ArtifactReadStatus.READ_FAILED,
+                error_type=type(exc).__name__,
+                error_message="Repository read failed.",
+            )
+
+        if row is None:
+            result = ArtifactReadResult(
+                artifact_id=pack_id,
+                path="",
+                status=ArtifactReadStatus.CONFIRMED_NOT_FOUND,
+                error_type="IndexRowNotFound",
+                error_message="No strategy-pack row exists in the SQLite index.",
+            )
+        else:
+            resolved_id = str(row["pack_id"])
+            try:
+                candidate = Path(row["path"])
+            except (TypeError, ValueError, OSError) as exc:
+                result = ArtifactReadResult(
+                    artifact_id=resolved_id,
+                    path="",
+                    status=ArtifactReadStatus.READ_FAILED,
+                    error_type=type(exc).__name__,
+                    error_message="Repository read failed.",
+                )
+            else:
+                paths: list[Path] = []
+                if candidate.is_absolute():
+                    paths.append(candidate)
+                paths.append(self.storage.root / "strategy_packs" / f"{resolved_id}.json")
+                result = read_model_from_paths(paths, resolved_id, StrategyPack)
+
+        self._remember_report(RepositoryReadReport.from_results(scope, [result]))
+        return result
 
     def get(self, pack_id: str) -> StrategyPack | None:
-        row = self.db.fetchone(
-            """
-            SELECT pack_id, path
-            FROM strategy_packs
-            WHERE pack_id = ?
-            """,
-            (pack_id,),
-        )
-        if row is None:
+        result = self.get_with_diagnostics(pack_id)
+        if result.status == ArtifactReadStatus.FOUND:
+            return result.value
+        if (
+            result.status == ArtifactReadStatus.CONFIRMED_NOT_FOUND
+            and result.error_type == "IndexRowNotFound"
+        ):
             return None
-        return self._load(row['pack_id'], row['path'])
-
-    def _collect(self, rows: list[dict[str, str]]) -> list[StrategyPack]:
-        results: list[StrategyPack] = []
-        orphan_ids: list[str] = []
-        for row in rows:
-            item = self._load(row['pack_id'], row['path'])
-            if item is not None:
-                results.append(item)
-            else:
-                orphan_ids.append(row['pack_id'])
-        if orphan_ids:
-            self._prune_orphans(orphan_ids)
-        return results
-
-    def _prune_orphans(self, ids: list[str]) -> None:
-        if not ids:
-            return
-        placeholders = ','.join('?' for _ in ids)
-        try:
-            self.db.execute(
-                f"DELETE FROM strategy_packs WHERE pack_id IN ({placeholders})",
-                tuple(ids),
-            )
-            _log.info("pack_cleanup: pruned %d orphaned DB entries", len(ids))
-        except Exception:
-            pass
-
-    def _load(self, pack_id: str, path: str) -> StrategyPack | None:
-        candidate = Path(path)
-        try:
-            if candidate.is_absolute() and candidate.exists():
-                payload = json.loads(candidate.read_text(encoding='utf-8'))
-            else:
-                payload = self.storage.load_json(f'strategy_packs/{pack_id}.json')
-            return StrategyPack.model_validate(payload)
-        except (FileNotFoundError, json.JSONDecodeError, OSError, Exception) as exc:
-            _log.debug("pack %s: file missing or corrupt — %s", pack_id, exc)
-            return None
+        report = self.last_read_report
+        if report is None:
+            raise RuntimeError("strategy_pack_read_report_not_recorded")
+        raise RepositoryReadError(report)

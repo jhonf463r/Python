@@ -111,6 +111,179 @@ def _service(root: Path, *, fail_shell_execute: bool = False, external_adapter: 
     return service, repository
 
 
+
+def test_external_consultation_filters_known_secrets_and_workspace_path_before_task_build() -> None:
+    root = _workspace('tool_teach_service_external_context_redaction')
+    try:
+        service, _repository = _service(root)
+        request = service._build_external_consultation_request(
+            user_goal='consulta de owner@example.com',
+            assistant_preference='chatgpt',
+            context_pack=(
+                f'Workspace: {root}/src/IABV_v1.5\n'
+                'Contacto: owner@example.com\n'
+                'Authorization: Bearer top-secret-token\n'
+                '&token=another-secret-token\n'
+            ),
+            site_id='wplay',
+            diagnostic_category='need_teaching',
+            incident_kind='',
+            launch_dry_run=True,
+            allow_local_automatic_consultation=False,
+        )
+        task = service.build_task_from_request(request)
+        query_action = next(
+            action for action in task.actions
+            if action.action_type == ToolActionType.LLM_QUERY
+        )
+
+        assert query_action.label == 'Contexto de consulta'
+        assert str(root) not in query_action.value
+        assert '[IABV_WORKSPACE]' in query_action.value
+        assert 'o***@example.com' in query_action.value
+        assert 'owner@example.com' not in query_action.value
+        assert 'owner@example.com' not in task.metadata['thread_title']
+        assert 'owner@example.com' not in task.metadata['thread_key']
+        assert 'Bearer [REDACTED]' in query_action.value
+        assert '&token=[REDACTED]' in query_action.value
+        assert 'top-secret-token' not in query_action.value
+        assert 'another-secret-token' not in query_action.value
+        assert task.metadata['context_pack'] == query_action.value
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_external_assistant_task_omits_operational_launch_paths_from_persisted_task() -> None:
+    root = _workspace('tool_teach_service_launch_target_reference')
+    try:
+        service, _repository = _service(root)
+        executable = root / 'private-bin' / 'ChatGPT.exe'
+        executable.parent.mkdir(parents=True, exist_ok=True)
+        executable.write_text('stub', encoding='utf-8')
+        request = InferenceRequest(
+            user_goal='consulta externa de ChatGPT',
+            prompt='contexto de consulta',
+            task_role=TaskRole.TOOL_USE,
+            goal_parameters={
+                'tool_id': 'chatgpt_web_assisted',
+                'allowed_tool_ids': ['chatgpt_web_assisted'],
+                'title': 'Consultar ChatGPT',
+                'expected_outcome': 'Respuesta capturada',
+                'consultation_scope': 'external_assistant',
+                'assistant_kind': 'chatgpt',
+                'assistant_preference': 'chatgpt',
+                'launch_mode': 'web_assisted',
+                'web_url': 'https://chatgpt.com/share/private-path?token=private-web-token',
+                'executable_path': str(executable),
+                'launch_configuration': {
+                    'executable_path': str(executable),
+                    'web_url': 'https://chatgpt.com/nested-config?token=nested-config-secret',
+                },
+                'context_pack': 'contexto de consulta',
+                'response_capture_mode': 'manual_pasteback',
+                'requires_manual_pasteback': True,
+                'actions': [
+                    {
+                        'action_type': 'launch_app',
+                        'label': 'Abrir asistente externo',
+                        'target': str(executable),
+                        'requires_approval': True,
+                        'parameters': {'app_path': str(executable)},
+                        'metadata': {'web_url': 'https://chatgpt.com/private?token=nested-action-token'},
+                    },
+                    {
+                        'action_type': 'llm_query',
+                        'label': 'Contexto de consulta',
+                        'value': 'contexto de consulta',
+                    },
+                ],
+                'rollback_actions': [
+                    {
+                        'action_type': 'open_url',
+                        'label': 'Rollback URL',
+                        'target': 'https://chatgpt.com/rollback?token=rollback-secret',
+                    },
+                ],
+            },
+        )
+
+        task = service.build_task_from_request(request)
+        persisted_parameters = dict(task.metadata['goal_parameters'])
+        launch_action = next(
+            action for action in task.actions
+            if action.action_type == ToolActionType.LAUNCH_APP
+        )
+
+        expected_mode = 'web' if task.tool_id.endswith('_web_assisted') else 'desktop'
+        expected_launch_ref = f'{expected_mode}:chatgpt'
+        assert task.metadata['launch_target_ref'] == expected_launch_ref
+        assert persisted_parameters['launch_target_ref'] == expected_launch_ref
+        assert 'web_url' not in persisted_parameters
+        assert 'executable_path' not in persisted_parameters
+        assert persisted_parameters['web_url_omitted'] is True
+        assert persisted_parameters['executable_path_omitted'] is True
+        assert persisted_parameters['launch_configuration']['executable_path_omitted'] is True
+        assert persisted_parameters['launch_configuration']['web_url_omitted'] is True
+        assert launch_action.target == expected_launch_ref
+        assert launch_action.metadata['launch_target_ref'] == expected_launch_ref
+        assert launch_action.parameters['app_path_omitted'] is True
+        assert launch_action.metadata['web_url_omitted'] is True
+        assert task.rollback_actions[0].target == expected_launch_ref
+        assert persisted_parameters['actions'][0]['target'] == expected_launch_ref
+        assert persisted_parameters['actions'][0]['parameters']['app_path_omitted'] is True
+        assert persisted_parameters['actions'][0]['metadata']['web_url_omitted'] is True
+        assert persisted_parameters['rollback_actions'][0]['target'] == expected_launch_ref
+        assert str(executable) not in repr(task.metadata)
+        assert str(executable) not in repr(task.actions)
+        assert str(executable) not in repr(task.rollback_actions)
+        assert 'private-web-token' not in repr(task.metadata)
+        assert 'nested-action-token' not in repr(task.metadata)
+        assert 'rollback-secret' not in repr(task.metadata)
+        assert 'nested-config-secret' not in repr(task.metadata)
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+
+def test_tool_teach_service_normalizes_verified_actual_account_binding() -> None:
+    binding = ToolTeachService._normalize_actual_account_binding({
+        'status': 'VERIFIED',
+        'actual_tool': 'ChatGPT',
+        'account_email': ' Alice@Test.com ',
+        'identity_source': 'browser_session_account_panel',
+        'evidence_ref': 'browser-session:profile-7:account-panel',
+    })
+
+    assert binding == {
+        'schema': 'ACCOUNT_BINDING_R1',
+        'status': 'VERIFIED',
+        'actual_tool': 'chatgpt',
+        'account_email': 'Alice@Test.com',
+        'identity_source': 'browser_session_account_panel',
+        'evidence_ref': 'browser-session:profile-7:account-panel',
+    }
+
+
+def test_tool_teach_service_does_not_infer_account_from_session_profile() -> None:
+    binding = ToolTeachService._normalize_actual_account_binding({
+        'status': 'VERIFIED',
+        'actual_tool': 'chatgpt',
+        'session_profile_dir': 'C:/Users/test/browser_profile',
+    })
+
+    assert binding['schema'] == 'ACCOUNT_BINDING_R1'
+    assert binding['status'] == 'UNVERIFIED'
+    assert binding['reason'] == 'adapter_account_binding_incomplete:account_email,identity_source,evidence_ref'
+
+
+def test_tool_teach_service_marks_missing_adapter_binding_unverified() -> None:
+    binding = ToolTeachService._normalize_actual_account_binding(None)
+
+    assert binding['schema'] == 'ACCOUNT_BINDING_R1'
+    assert binding['status'] == 'UNVERIFIED'
+    assert binding['reason'] == 'adapter_account_binding_missing'
+
+
 def test_tool_teach_service_preserves_tool_sandbox_route_and_executes_read_only() -> None:
     root = _workspace('tool_teach_service_read_only')
     shutil.rmtree(root, ignore_errors=True)
@@ -1040,16 +1213,77 @@ def test_tool_teach_service_external_consultation_tracks_dedicated_session_metad
         assert task.metadata['lane_priority'] == ['background', 'app', 'manual']
         assert task.metadata['thread_key'].startswith('iabv::chatgpt::')
         assert task.metadata['thread_title'].startswith('IABV ChatGPT')
-        assert task.metadata['session_profile_dir'].endswith('browser_profile')
-        assert Path(task.metadata['session_profile_dir']).exists()
+        session_profile_ref = Path(task.metadata['session_profile_dir'])
+        assert not session_profile_ref.is_absolute()
+        assert session_profile_ref.as_posix().endswith('browser_profile')
+        session_profile_path = service.workspace_root / session_profile_ref
+        assert session_profile_path.exists()
+        assert service._has_session_content(str(session_profile_path)) is False
         assert 'IABV_THREAD_KEY:' in str(task.metadata['context_pack'])
         assert result.execution_state.state == 'awaiting_response'
         assert result.execution_state.metadata['manual_pasteback_required'] is False
         assert result.execution_state.metadata['session_scope'] == 'program_chat'
+        assert result.execution_state.metadata['session_profile_dir'] == task.metadata['session_profile_dir']
+        assert not Path(result.execution_state.metadata['session_profile_dir']).is_absolute()
         assert result.execution_state.metadata['thread_key'] == task.metadata['thread_key']
         assert result.execution_state.metadata['capture_lane'] == 'background'
+        assert result.execution_state.metadata['actual_account_binding']['schema'] == 'ACCOUNT_BINDING_R1'
+        assert result.execution_state.metadata['actual_account_binding']['status'] == 'UNVERIFIED'
+        assert result.execution_state.metadata['actual_account_binding']['reason'] == 'adapter_account_binding_missing'
     finally:
         shutil.rmtree(root, ignore_errors=True)
+
+
+
+def test_session_profile_path_resolution_accepts_legacy_in_root_and_rejects_escape_paths() -> None:
+    root = _workspace('tool_teach_service_session_profile_path_scope')
+    outside = root.parent / f'{root.name}_external_profile_scope'
+    try:
+        service, _repository = _service(root)
+        in_root = root / 'data' / 'tool_teaching' / 'external_assistants' / 'legacy_profile'
+        in_root.mkdir(parents=True, exist_ok=True)
+        (in_root / 'session.marker').write_text('present', encoding='utf-8')
+        outside.mkdir(parents=True, exist_ok=True)
+        (outside / 'session.marker').write_text('outside', encoding='utf-8')
+
+        relative = 'data/tool_teaching/external_assistants/legacy_profile'
+        assert service._has_session_content(relative) is True
+        assert service._has_session_content(str(in_root)) is True
+
+        request = service._build_external_consultation_request(
+            user_goal='continuidad de sesión',
+            assistant_preference='chatgpt',
+            context_pack='contexto local',
+            site_id='wplay',
+            diagnostic_category='',
+            incident_kind='',
+            launch_dry_run=True,
+            allow_local_automatic_consultation=False,
+        )
+        legacy_task = service.build_task_from_request(request)
+        legacy_metadata = dict(legacy_task.metadata)
+        legacy_goal_parameters = dict(legacy_metadata.get('goal_parameters') or {})
+        legacy_goal_parameters['session_profile_dir'] = str(in_root)
+        legacy_metadata.update({
+            'session_profile_dir': str(in_root),
+            'goal_parameters': legacy_goal_parameters,
+        })
+        legacy_task = legacy_task.model_copy(update={'metadata': legacy_metadata})
+        card = _repository.get_card(legacy_task.tool_id)
+        assert card is not None
+        synced_task = service._sync_external_consultation_task(legacy_task, card)
+        assert synced_task.metadata['session_profile_dir'] == relative
+        assert synced_task.metadata['goal_parameters']['session_profile_dir'] == relative
+
+        escape_path = f'../{outside.name}'
+        assert service._has_session_content(str(outside)) is False
+        assert service._has_session_content(escape_path) is False
+        assert service._resolve_session_profile_path(escape_path) is None
+        assert service._resolve_session_profile_path(r'C:\\Users\\test\\browser_profile') is None
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+        shutil.rmtree(outside, ignore_errors=True)
+
 
 
 def test_tool_teach_service_explicit_chatgpt_preference_stays_in_chatgpt_family_under_technical_pressure() -> None:

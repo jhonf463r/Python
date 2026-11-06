@@ -14,6 +14,7 @@ from iabv_v15.domain.models import (
 )
 from iabv_v15.services.evolution.platform_pending_queue import (
     PlatformPendingQueue,
+    PlatformPendingQueueReadError,
     _WINDOWS_INTEGRATION_TASKS,
 )
 
@@ -89,6 +90,16 @@ class TestPlatformPendingQueue:
     def test_get_nonexistent(self, queue: PlatformPendingQueue):
         assert queue.get('nonexistent') is None
 
+    def test_missing_platform_pending_directory_is_not_an_empty_queue(self, queue: PlatformPendingQueue):
+        queue._resume_dir.rmdir()
+        queue._dir.rmdir()
+
+        report = queue.list_all_with_diagnostics()
+
+        assert report.status == 'READ_FAILED'
+        assert report.tasks == ()
+        assert any('DIRECTORY_UNAVAILABLE' in failure for failure in report.failed_paths)
+
     def test_list_all_sorted_by_priority(self, queue: PlatformPendingQueue):
         queue.upsert(PlatformPendingTask(id='low', title='Low', priority='low'))
         queue.upsert(PlatformPendingTask(id='crit', title='Critical', priority='critical'))
@@ -98,6 +109,32 @@ class TestPlatformPendingQueue:
         tasks = queue.list_all()
         priorities = [t.priority for t in tasks]
         assert priorities == ['critical', 'high', 'medium', 'low']
+
+
+
+    def test_list_all_with_diagnostics_preserves_readable_tasks_and_reports_corrupt_file(self, queue: PlatformPendingQueue):
+        valid = PlatformPendingTask(id='valid', title='Readable task', priority='high')
+        queue.upsert(valid)
+        corrupt_path = queue._task_path('corrupt')
+        corrupt_path.write_text('{', encoding='utf-8')
+
+        report = queue.list_all_with_diagnostics()
+
+        assert report.status == 'READ_PARTIAL'
+        assert [task.id for task in report.tasks] == ['valid']
+        assert len(report.failed_paths) == 1
+        assert 'JSONDecodeError' in report.failed_paths[0]
+        with pytest.raises(PlatformPendingQueueReadError) as exc_info:
+            queue.list_all()
+        assert exc_info.value.report.status == 'READ_PARTIAL'
+
+
+    def test_all_corrupt_platform_task_files_are_read_failed(self, queue: PlatformPendingQueue):
+        queue._task_path('corrupt').write_text('{', encoding='utf-8')
+        report = queue.list_all_with_diagnostics()
+        assert report.status == 'READ_FAILED'
+        assert report.tasks == ()
+        assert len(report.failed_paths) == 1
 
     def test_list_actionable(self, queue: PlatformPendingQueue):
         queue.upsert(PlatformPendingTask(id='p', title='Pending', status=PendingTaskStatus.PENDING))

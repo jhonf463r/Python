@@ -14,8 +14,10 @@ Covers:
 from __future__ import annotations
 
 import json
+import hashlib
 import shutil
 import uuid
+from datetime import timedelta
 from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock
@@ -79,8 +81,37 @@ def _fake_self_examination_service(findings: list[SelfExaminationFinding] | None
     svc = MagicMock()
     snapshot = MagicMock()
     snapshot.findings = findings or []
-    svc.current_review.return_value = snapshot
+    svc.current_review_cached.return_value = snapshot
     return svc
+
+
+
+_COMPLETE_QUEUE_SOURCE_COVERAGE = {
+    "objective_repository": "READ_OK",
+    "platform_pending_queue": "READ_OK",
+    "pending_issue_repository": "READ_OK",
+    "self_examination_service": "READ_OK",
+    "runtime_audit": "READ_OK",
+    "tests_state": "READ_OK",
+}
+
+
+class _CompleteQueueDigestService:
+    def __init__(self, queue_items: list[dict[str, Any]] | None = None, *, fail: bool = False, coverage=None):
+        self._queue_items = list(queue_items or [])
+        self._fail = fail
+        self.last_work_queue_errors = ()
+        self.last_work_queue_source_coverage = dict(
+            _COMPLETE_QUEUE_SOURCE_COVERAGE if coverage is None else coverage
+        )
+
+    def current_state(self, *, refresh: bool = False):
+        return ControlMasterState()
+
+    def current_work_queue(self, *, limit: int = 10):
+        if self._fail:
+            raise RuntimeError("queue source read failed")
+        return self._queue_items[:limit]
 
 
 def _write_audit(workspace: Path, events: list[dict[str, Any]]) -> None:
@@ -317,6 +348,43 @@ class TestDigestRendersWorkQueue:
         assert 'Work queue counts' in md
 
 
+    def test_queue_status_keeps_empty_unavailable_and_unverified_distinct(self) -> None:
+        state = ControlMasterState()
+        builder = ControlMasterDigestBuilder(max_chars=4000)
+        unverified = builder.build(state)
+        empty = builder.build(state, work_queue=[], work_queue_status="EMPTY_QUEUE")
+        unavailable = builder.build(state, work_queue=None, work_queue_status="UNAVAILABLE")
+        available = builder.build(state, work_queue=[{
+            "title": "Close highest-priority objective",
+            "status": "active",
+            "priority_label": "critical",
+            "source": "objective_repository",
+            "next_action": "Inspect evidence refs",
+        }])
+        assert unverified.work_queue_status == "UNVERIFIED"
+        assert empty.work_queue_status == "EMPTY_QUEUE"
+        assert unavailable.work_queue_status == "UNAVAILABLE"
+        assert available.work_queue_status == "AVAILABLE"
+        assert "UNAVAILABLE" in render_digest_markdown(unavailable)
+
+    def test_orchestrator_preserves_work_queue_read_failure(self) -> None:
+        from iabv_v15.services.adaptive.adaptive_task_orchestrator import AdaptiveTaskOrchestrator
+
+        class _QueueReadFailure:
+            def current_state(self, *, refresh: bool = False) -> ControlMasterState:
+                return ControlMasterState()
+
+            def current_work_queue(self, *, limit: int = 10) -> list[dict[str, Any]]:
+                raise RuntimeError("queue storage unavailable")
+
+        orchestrator = object.__new__(AdaptiveTaskOrchestrator)
+        orchestrator.control_master_service = _QueueReadFailure()
+        orchestrator.control_master_digest_builder = ControlMasterDigestBuilder()
+        digest = orchestrator._control_master_digest()
+        assert digest is not None
+        assert digest.work_queue_status == "UNAVAILABLE"
+        assert digest.work_queue_brief == []
+
 class TestPortableContextCanonicalQueue:
     """portable context muestra la cola canónica."""
 
@@ -329,8 +397,7 @@ class TestPortableContextCanonicalQueue:
             storage = ArtifactStorage(root=str(ws / "data"))
             pcs = PortableContextService(workspace_root=str(ws), storage=storage)
             # Wire a mock ControlMasterService
-            cms = MagicMock()
-            cms.current_work_queue.return_value = [
+            cms = _CompleteQueueDigestService([
                 {
                     'id': 'objective:obj-vis',
                     'title': 'Visible in latest.md',
@@ -341,7 +408,7 @@ class TestPortableContextCanonicalQueue:
                     'next_action': 'Investigate',
                     'evidence_refs': ['ref1'],
                 },
-            ]
+            ])
             pcs.control_master_service = cms
             package = pcs.build_package()
             # Find the canonical work queue section
@@ -351,10 +418,77 @@ class TestPortableContextCanonicalQueue:
             )
             assert wq_section is not None
             assert len(wq_section.items) == 1
+            assert wq_section.items[0]['id'] == 'objective:obj-vis'
             assert wq_section.items[0]['title'] == 'Visible in latest.md'
             # Verify it renders in the assistant_brief / markdown
             assert 'Cola canónica de trabajo' in package.assistant_brief
             assert 'Visible in latest.md' in package.assistant_brief
+        finally:
+            shutil.rmtree(ws, ignore_errors=True)
+
+
+    def test_queue_failure_is_unavailable_not_empty(self) -> None:
+        from iabv_v15.services.evolution.portable_context_service import PortableContextService
+        from iabv_v15.infra.persistence.storage import ArtifactStorage
+
+        ws = _workspace()
+        try:
+            pcs = PortableContextService(
+                workspace_root=str(ws),
+                storage=ArtifactStorage(root=str(ws / "data")),
+            )
+            pcs.control_master_service = _CompleteQueueDigestService(fail=True)
+            section = pcs._canonical_work_queue_section(now=utc_now())
+            assert section.items == []
+            assert "no disponible" in section.summary.lower()
+            assert section.confidence == 0.0
+            assert "UNRESOLVED:canonical_work_queue_read_failed" in section.unresolved_fields
+            assert "vacía" not in section.summary.lower()
+        finally:
+            shutil.rmtree(ws, ignore_errors=True)
+
+    def test_missing_queue_source_coverage_is_unverified_not_empty(self) -> None:
+        from iabv_v15.services.evolution.portable_context_service import PortableContextService
+        from iabv_v15.infra.persistence.storage import ArtifactStorage
+
+        ws = _workspace()
+        try:
+            incomplete = {
+                key: value
+                for key, value in _COMPLETE_QUEUE_SOURCE_COVERAGE.items()
+                if key != "tests_state"
+            }
+            pcs = PortableContextService(
+                workspace_root=str(ws),
+                storage=ArtifactStorage(root=str(ws / "data")),
+            )
+            pcs.control_master_service = _CompleteQueueDigestService(
+                coverage=incomplete,
+            )
+            section = pcs._canonical_work_queue_section(now=utc_now())
+            assert section.items == []
+            assert "no verificada" in section.summary.lower()
+            assert section.confidence == 0.0
+            assert "UNRESOLVED:canonical_work_queue_not_verified" in section.unresolved_fields
+        finally:
+            shutil.rmtree(ws, ignore_errors=True)
+
+    def test_confirmed_empty_queue_is_distinct_from_unavailable(self) -> None:
+        from iabv_v15.services.evolution.portable_context_service import PortableContextService
+        from iabv_v15.infra.persistence.storage import ArtifactStorage
+
+        ws = _workspace()
+        try:
+            pcs = PortableContextService(
+                workspace_root=str(ws),
+                storage=ArtifactStorage(root=str(ws / "data")),
+            )
+            pcs.control_master_service = _CompleteQueueDigestService([])
+            section = pcs._canonical_work_queue_section(now=utc_now())
+            assert section.items == []
+            assert "consultada correctamente" in section.summary.lower()
+            assert section.confidence > 0
+            assert section.unresolved_fields == []
         finally:
             shutil.rmtree(ws, ignore_errors=True)
 
@@ -388,6 +522,9 @@ class TestRuntimeAuditFailedCreatesItem:
             assert len(audit_items) == 1
             assert audit_items[0]['id'] == 'audit:chat-fail-1'
             assert 'runtime_audit.jsonl' in audit_items[0]['evidence_refs'][0]
+            assert audit_items[0]['runtime_audit_durability']['status'] == 'ACK_UNAVAILABLE'
+            assert audit_items[0]['runtime_audit_durability']['accepted'] is False
+            assert svc.last_work_queue_source_coverage['runtime_audit_durability'] == 'NOT_CONFIGURED'
         finally:
             shutil.rmtree(ws, ignore_errors=True)
 
@@ -557,8 +694,7 @@ class TestBootstrapWiring:
         try:
             storage = ArtifactStorage(root=str(ws / "data"))
             pcs = PortableContextService(workspace_root=str(ws), storage=storage)
-            cms = MagicMock()
-            cms.current_work_queue.return_value = [
+            cms = _CompleteQueueDigestService([
                 {
                     'id': 'objective:bp-test',
                     'title': 'Wired correctly',
@@ -569,7 +705,7 @@ class TestBootstrapWiring:
                     'next_action': 'Verify',
                     'evidence_refs': [],
                 },
-            ]
+            ])
             pcs.control_master_service = cms
             package = pcs.build_package()
             wq_section = next(
@@ -585,9 +721,9 @@ class TestBootstrapWiring:
 
 
 class TestOSESCurrentReview:
-    """ControlMasterService reads OSES via current_review() per AGENTS.md."""
+    """ControlMasterService reads OSES via current_review_cached() per AGENTS.md."""
 
-    def test_oses_reads_via_current_review(self) -> None:
+    def test_oses_reads_via_current_review_cached(self) -> None:
         ws = _workspace()
         try:
             finding = SelfExaminationFinding(
@@ -597,11 +733,11 @@ class TestOSESCurrentReview:
                 recommendation="Fix phased populate_ui",
                 summary="populate_ui blocked main thread",
             )
-            # Mock service that only exposes current_review(), not current_snapshot
+            # Mock service that only exposes current_review_cached(), not current_snapshot
             svc_mock = MagicMock(spec=[])
             snapshot = MagicMock()
             snapshot.findings = [finding]
-            svc_mock.current_review = MagicMock(return_value=snapshot)
+            svc_mock.current_review_cached = MagicMock(return_value=snapshot)
 
             cms = ControlMasterService(
                 repository=_fake_repo(),
@@ -631,7 +767,7 @@ class TestOSESCurrentReview:
             svc_mock = MagicMock(spec=[])
             snapshot = MagicMock()
             snapshot.findings = [finding]
-            svc_mock.current_review = MagicMock(return_value=snapshot)
+            svc_mock.current_review_cached = MagicMock(return_value=snapshot)
 
             cms = ControlMasterService(
                 repository=_fake_repo(),
@@ -668,3 +804,489 @@ class TestDigestWorkQueueInOrchestrator:
         assert 'Orchestrator sees this' in digest.work_queue_brief[0]
         md = render_digest_markdown(digest)
         assert 'Orchestrator sees this' in md
+
+    def test_partial_platform_pending_read_is_not_reported_read_ok(self) -> None:
+        from iabv_v15.services.evolution.platform_pending_queue import PlatformPendingQueue
+
+        ws = _workspace()
+        try:
+            pending = PlatformPendingQueue(ws / "data" / "evolution")
+            pending.upsert(PlatformPendingTask(id="visible-task", title="Visible task"))
+            pending._task_path("corrupt-task").write_text("{", encoding="utf-8")
+            svc = ControlMasterService(
+                repository=_fake_repo(),
+                platform_pending_queue=pending,
+                workspace_root=str(ws),
+            )
+
+            queue = svc.current_work_queue()
+
+            assert any(item["id"] == "platform:visible-task" for item in queue)
+            assert svc.last_work_queue_source_coverage["platform_pending_queue"] == "READ_PARTIAL"
+            assert "PLATFORM_PENDING_QUEUE_READ_PARTIAL" in svc.last_work_queue_errors
+
+            digest = ControlMasterDigestBuilder().build_from_service(svc)
+            assert digest.work_queue_status == "UNAVAILABLE"
+            assert digest.top_work_queue_items == []
+            assert digest.work_queue_brief == []
+        finally:
+            shutil.rmtree(ws, ignore_errors=True)
+
+
+
+class TestQueueSourceFailureVisibilityR2:
+    """Source failures and omitted source coverage remain explicit."""
+
+    def test_queue_and_signal_statuses_are_orthogonal(self) -> None:
+        state = ControlMasterState()
+        builder = ControlMasterDigestBuilder(max_chars=4000)
+        unverified = builder.build(state)
+        empty = builder.build(state, work_queue=[], work_queue_status="EMPTY_QUEUE")
+        unavailable = builder.build(
+            state,
+            work_queue=None,
+            work_queue_status="UNAVAILABLE",
+            signal_reason="OBJECTIVES_READ_FAILED:active",
+            source_coverage={"objective_repository": "READ_PARTIAL"},
+        )
+
+        assert unverified.signal_status == "UNVERIFIED"
+        assert unverified.work_queue_status == "UNVERIFIED"
+        assert empty.signal_status == "AVAILABLE"
+        assert empty.work_queue_status == "EMPTY_QUEUE"
+        assert unavailable.signal_status == "UNAVAILABLE"
+        assert unavailable.work_queue_status == "UNAVAILABLE"
+        assert unavailable.signal_reason == "OBJECTIVES_READ_FAILED:active"
+        assert unavailable.source_coverage["objective_repository"] == "READ_PARTIAL"
+
+        # Contradictory status/content pairs must not become available.
+        mismatched_empty = builder.build(
+            state, work_queue=[], work_queue_status="AVAILABLE"
+        )
+        assert mismatched_empty.signal_status == "UNVERIFIED"
+        assert mismatched_empty.work_queue_status == "UNVERIFIED"
+        assert mismatched_empty.work_queue_brief == []
+
+        untrusted_partial = builder.build(
+            state,
+            work_queue=[{"title": "partial item", "status": "active"}],
+            work_queue_status="UNAVAILABLE",
+        )
+        assert untrusted_partial.signal_status == "UNAVAILABLE"
+        assert untrusted_partial.work_queue_brief == []
+
+    def test_objective_source_failures_are_recorded(self) -> None:
+        ws = _workspace()
+        try:
+            repo = MagicMock()
+            repo.list_recent.side_effect = RuntimeError("source unavailable")
+            svc = ControlMasterService(
+                repository=_fake_repo(),
+                objective_repository=repo,
+                workspace_root=str(ws),
+            )
+            assert svc.current_work_queue() == []
+            assert "OBJECTIVES_READ_FAILED:active" in svc.last_work_queue_errors
+            assert "OBJECTIVES_READ_FAILED:pending" in svc.last_work_queue_errors
+            assert "OBJECTIVES_READ_FAILED:blocked" in svc.last_work_queue_errors
+            assert svc.last_work_queue_source_coverage["objective_repository"] == "READ_PARTIAL"
+        finally:
+            shutil.rmtree(ws, ignore_errors=True)
+
+    def test_configured_pending_issue_reader_without_method_is_not_empty(self) -> None:
+        ws = _workspace()
+        try:
+            svc = ControlMasterService(
+                repository=_fake_repo(),
+                pending_issue_repository=object(),
+                workspace_root=str(ws),
+            )
+            svc.current_work_queue()
+            assert "PENDING_ISSUES_READER_UNAVAILABLE" in svc.last_work_queue_errors
+            assert svc.last_work_queue_source_coverage["pending_issue_repository"] == "READER_UNAVAILABLE"
+        finally:
+            shutil.rmtree(ws, ignore_errors=True)
+
+    def test_configured_oses_reader_without_method_is_not_empty(self) -> None:
+        ws = _workspace()
+        try:
+            svc = ControlMasterService(
+                repository=_fake_repo(),
+                self_examination_service=object(),
+                workspace_root=str(ws),
+            )
+            svc.current_work_queue()
+            assert "OSES_FINDINGS_READER_UNAVAILABLE" in svc.last_work_queue_errors
+            assert svc.last_work_queue_source_coverage["self_examination_service"] == "READER_UNAVAILABLE"
+        finally:
+            shutil.rmtree(ws, ignore_errors=True)
+
+    def test_orchestrator_surfaces_partial_source_failure(self) -> None:
+        from iabv_v15.services.adaptive.adaptive_task_orchestrator import AdaptiveTaskOrchestrator
+
+        class _PartialQueue:
+            def current_state(self, *, refresh: bool = False) -> ControlMasterState:
+                return ControlMasterState()
+
+            def current_work_queue(self, *, limit: int = 10) -> list[dict[str, Any]]:
+                return []
+
+            @property
+            def last_work_queue_errors(self) -> tuple[str, ...]:
+                return ("OBJECTIVES_READ_FAILED:active",)
+
+            @property
+            def last_work_queue_source_coverage(self) -> dict[str, str]:
+                return {"objective_repository": "READ_PARTIAL"}
+
+        orchestrator = object.__new__(AdaptiveTaskOrchestrator)
+        orchestrator.control_master_service = _PartialQueue()
+        orchestrator.control_master_digest_builder = ControlMasterDigestBuilder()
+        digest = orchestrator._control_master_digest()
+
+        assert digest.signal_status == "UNAVAILABLE"
+        assert digest.work_queue_status == "UNAVAILABLE"
+        assert digest.work_queue_brief == []
+        assert "OBJECTIVES_READ_FAILED:active" in digest.signal_reason
+
+    def test_unconfigured_or_missing_sources_prevent_confirmed_empty_queue(self) -> None:
+        from iabv_v15.services.adaptive.adaptive_task_orchestrator import AdaptiveTaskOrchestrator
+
+        class _IncompleteCoverageQueue:
+            def current_state(self, *, refresh: bool = False) -> ControlMasterState:
+                return ControlMasterState()
+
+            def current_work_queue(self, *, limit: int = 10) -> list[dict[str, Any]]:
+                return []
+
+            @property
+            def last_work_queue_errors(self) -> tuple[str, ...]:
+                return ()
+
+            @property
+            def last_work_queue_source_coverage(self) -> dict[str, str]:
+                return {
+                    "objective_repository": "READ_OK",
+                    "runtime_audit": "NO_FILE",
+                    "pending_issue_repository": "NOT_CONFIGURED",
+                }
+
+        orchestrator = object.__new__(AdaptiveTaskOrchestrator)
+        orchestrator.control_master_service = _IncompleteCoverageQueue()
+        orchestrator.control_master_digest_builder = ControlMasterDigestBuilder()
+        digest = orchestrator._control_master_digest()
+
+        assert digest.signal_status == "UNVERIFIED"
+        assert digest.work_queue_status == "UNVERIFIED"
+        assert digest.signal_reason == "SOURCE_APPLICABILITY_OR_COVERAGE_UNRESOLVED"
+        assert digest.work_queue_brief == []
+
+    def test_missing_test_evidence_is_not_reported_as_read_ok(self) -> None:
+        ws = _workspace()
+        try:
+            svc = ControlMasterService(
+                repository=_fake_repo(),
+                workspace_root=str(ws),
+            )
+            svc.current_work_queue()
+            assert svc.last_work_queue_source_coverage["tests_state"] == "NO_FILE"
+            assert "TEST_EVIDENCE_READ_FAILED" not in svc.last_work_queue_errors
+        finally:
+            shutil.rmtree(ws, ignore_errors=True)
+
+    def test_fresh_canonical_test_evidence_is_read_ok(self) -> None:
+        ws = _workspace()
+        try:
+            evidence = {
+                "evidence_id": "test-evidence-001",
+                "suite": "tests/test_example.py",
+                "passed": 5,
+                "failed": 0,
+                "errors": 0,
+                "returncode": 0,
+                "timed_out": False,
+                "timestamp": utc_now().isoformat(),
+            }
+            evidence_dir = ws / "data" / "evolution" / "test_evidence"
+            evidence_dir.mkdir(parents=True, exist_ok=True)
+            (evidence_dir / "latest.json").write_text(
+                json.dumps(evidence), encoding="utf-8"
+            )
+            svc = ControlMasterService(
+                repository=_fake_repo(),
+                workspace_root=str(ws),
+            )
+            queue = svc.current_work_queue()
+            assert svc.last_work_queue_source_coverage["tests_state"] == "READ_OK"
+            assert not any(item["source"] == "tests_state" for item in queue)
+        finally:
+            shutil.rmtree(ws, ignore_errors=True)
+
+    def test_failed_canonical_test_evidence_creates_queue_item_with_ref(self) -> None:
+        ws = _workspace()
+        try:
+            evidence = {
+                "evidence_id": "test-evidence-failed",
+                "suite": "tests/test_example.py",
+                "passed": 4,
+                "failed": 1,
+                "errors": 0,
+                "returncode": 1,
+                "timed_out": False,
+                "timestamp": utc_now().isoformat(),
+            }
+            evidence_dir = ws / "data" / "evolution" / "test_evidence"
+            evidence_dir.mkdir(parents=True, exist_ok=True)
+            (evidence_dir / "latest.json").write_text(
+                json.dumps(evidence), encoding="utf-8"
+            )
+            svc = ControlMasterService(
+                repository=_fake_repo(),
+                workspace_root=str(ws),
+            )
+            queue = svc.current_work_queue()
+            item = next(item for item in queue if item["source"] == "tests_state")
+            assert item["id"] == "tests:test-evidence-failed"
+            assert item["evidence_refs"] == [
+                "data/evolution/test_evidence/latest.json#test-evidence-failed"
+            ]
+            assert svc.last_work_queue_source_coverage["tests_state"] == "READ_OK"
+        finally:
+            shutil.rmtree(ws, ignore_errors=True)
+
+    @pytest.mark.parametrize(
+        "timestamp",
+        [
+            utc_now().replace(tzinfo=None).isoformat(),
+            (utc_now() + timedelta(hours=1)).isoformat(),
+            (utc_now() - timedelta(hours=25)).isoformat(),
+        ],
+        ids=["naive", "future", "stale"],
+    )
+    def test_non_verifiable_test_evidence_timestamp_is_unverified(self, timestamp: str) -> None:
+        ws = _workspace()
+        try:
+            evidence = {
+                "evidence_id": "test-evidence-time",
+                "suite": "tests/test_example.py",
+                "passed": 5,
+                "failed": 0,
+                "errors": 0,
+                "returncode": 0,
+                "timed_out": False,
+                "timestamp": timestamp,
+            }
+            evidence_dir = ws / "data" / "evolution" / "test_evidence"
+            evidence_dir.mkdir(parents=True, exist_ok=True)
+            (evidence_dir / "latest.json").write_text(
+                json.dumps(evidence), encoding="utf-8"
+            )
+            svc = ControlMasterService(
+                repository=_fake_repo(),
+                workspace_root=str(ws),
+            )
+            svc.current_work_queue()
+            assert svc.last_work_queue_source_coverage["tests_state"] == "UNVERIFIED"
+        finally:
+            shutil.rmtree(ws, ignore_errors=True)
+
+    def test_complete_source_coverage_can_confirm_empty_queue(self) -> None:
+        from iabv_v15.services.adaptive.adaptive_task_orchestrator import AdaptiveTaskOrchestrator
+
+        class _CompleteEmptyQueue:
+            def current_state(self, *, refresh: bool = False) -> ControlMasterState:
+                return ControlMasterState()
+
+            def current_work_queue(self, *, limit: int = 10) -> list[dict[str, Any]]:
+                return []
+
+            @property
+            def last_work_queue_errors(self) -> tuple[str, ...]:
+                return ()
+
+            @property
+            def last_work_queue_source_coverage(self) -> dict[str, str]:
+                return {
+                    "objective_repository": "READ_OK",
+                    "platform_pending_queue": "READ_OK",
+                    "pending_issue_repository": "READ_OK",
+                    "self_examination_service": "READ_OK",
+                    "runtime_audit": "READ_OK",
+                    "tests_state": "READ_OK",
+                }
+
+        orchestrator = object.__new__(AdaptiveTaskOrchestrator)
+        orchestrator.control_master_service = _CompleteEmptyQueue()
+        orchestrator.control_master_digest_builder = ControlMasterDigestBuilder()
+        digest = orchestrator._control_master_digest()
+
+        assert digest.signal_status == "AVAILABLE"
+        assert digest.work_queue_status == "EMPTY_QUEUE"
+        assert digest.signal_reason == ""
+
+
+
+    def test_all_objective_status_reads_failed_are_read_failed_not_partial(self) -> None:
+        ws = _workspace()
+        try:
+            repo = MagicMock()
+            repo.list_recent.side_effect = RuntimeError("objective index unavailable")
+            svc = ControlMasterService(
+                repository=_fake_repo(),
+                objective_repository=repo,
+                workspace_root=str(ws),
+            )
+            svc.current_work_queue()
+            assert svc.last_work_queue_source_coverage["objective_repository"] == "READ_FAILED"
+            assert len([e for e in svc.last_work_queue_errors if e.startswith("OBJECTIVES_READ_FAILED:")]) == 3
+        finally:
+            shutil.rmtree(ws, ignore_errors=True)
+
+    def test_one_objective_status_read_failure_is_read_partial(self) -> None:
+        ws = _workspace()
+        try:
+            repo = MagicMock()
+            repo.list_recent.side_effect = [
+                RuntimeError("active unavailable"),
+                [],
+                [],
+            ]
+            svc = ControlMasterService(
+                repository=_fake_repo(),
+                objective_repository=repo,
+                workspace_root=str(ws),
+            )
+            svc.current_work_queue()
+            assert svc.last_work_queue_source_coverage["objective_repository"] == "READ_PARTIAL"
+        finally:
+            shutil.rmtree(ws, ignore_errors=True)
+
+
+
+def _write_interaction_audit_row(workspace: Path, event: dict[str, Any]) -> tuple[bytes, Path]:
+    line = (json.dumps(event) + "\n").encode("utf-8")
+    path = workspace / "data" / "logs" / "runtime_audit.jsonl"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(line)
+    return line, path
+
+
+def _durable_ack_for_line(line: bytes, *, seq: int) -> dict[str, Any]:
+    return {
+        "status": "FILE_FSYNCED",
+        "path": "runtime_audit.jsonl",
+        "seq": seq,
+        "byte_start": 0,
+        "byte_end": len(line),
+        "line_sha256": hashlib.sha256(line).hexdigest(),
+    }
+
+
+def test_control_master_consumes_only_ack_matching_exact_audit_row() -> None:
+    ws = _workspace()
+    try:
+        event = {
+            "seq": 31,
+            "kind": "interaction_resolved",
+            "data": {
+                "interaction_id": "chat-ack-exact",
+                "message_preview": "durable failure",
+                "outcome": "failed",
+                "provider": "test",
+                "stalls_during": [],
+            },
+        }
+        line, _ = _write_interaction_audit_row(ws, event)
+        lifecycle = MagicMock()
+        lifecycle.interaction_info.return_value = {
+            "runtime_audit_durability": _durable_ack_for_line(line, seq=31)
+        }
+        service = ControlMasterService(
+            repository=_fake_repo(),
+            workspace_root=str(ws),
+            chat_interaction_lifecycle=lifecycle,
+        )
+
+        items = [item for item in service.current_work_queue() if item["source"] == "runtime_audit"]
+
+        assert len(items) == 1
+        assert items[0]["runtime_audit_durability"]["accepted"] is True
+        assert items[0]["runtime_audit_durability"]["verification"] == "TRACER_RECEIPT_MATCHED_TO_READ_ROW"
+        assert service.last_work_queue_source_coverage["runtime_audit_durability"] == "READ_OK"
+    finally:
+        shutil.rmtree(ws, ignore_errors=True)
+
+
+def test_control_master_rejects_ack_when_audit_row_bytes_changed() -> None:
+    ws = _workspace()
+    try:
+        original_event = {
+            "seq": 32,
+            "kind": "interaction_resolved",
+            "data": {
+                "interaction_id": "chat-ack-tampered",
+                "message_preview": "original failure",
+                "outcome": "failed",
+                "provider": "test",
+                "stalls_during": [],
+            },
+        }
+        original_line = (json.dumps(original_event) + "\n").encode("utf-8")
+        tampered_event = {
+            **original_event,
+            "data": {**original_event["data"], "message_preview": "altered failure"},
+        }
+        _write_interaction_audit_row(ws, tampered_event)
+        lifecycle = MagicMock()
+        lifecycle.interaction_info.return_value = {
+            "runtime_audit_durability": _durable_ack_for_line(original_line, seq=32)
+        }
+        service = ControlMasterService(
+            repository=_fake_repo(),
+            workspace_root=str(ws),
+            chat_interaction_lifecycle=lifecycle,
+        )
+
+        items = [item for item in service.current_work_queue() if item["source"] == "runtime_audit"]
+
+        assert len(items) == 1
+        assert items[0]["runtime_audit_durability"]["status"] == "ACK_INVALID"
+        assert items[0]["runtime_audit_durability"]["accepted"] is False
+        assert service.last_work_queue_source_coverage["runtime_audit_durability"] == "READ_UNVERIFIED"
+    finally:
+        shutil.rmtree(ws, ignore_errors=True)
+
+
+def test_control_master_keeps_memory_only_ack_unverified() -> None:
+    ws = _workspace()
+    try:
+        event = {
+            "seq": 33,
+            "kind": "interaction_resolved",
+            "data": {
+                "interaction_id": "chat-ack-memory-only",
+                "message_preview": "memory only failure",
+                "outcome": "failed",
+                "provider": "test",
+                "stalls_during": [],
+            },
+        }
+        _write_interaction_audit_row(ws, event)
+        lifecycle = MagicMock()
+        lifecycle.interaction_info.return_value = {
+            "runtime_audit_durability": {"status": "MEMORY_ONLY"}
+        }
+        service = ControlMasterService(
+            repository=_fake_repo(),
+            workspace_root=str(ws),
+            chat_interaction_lifecycle=lifecycle,
+        )
+
+        items = [item for item in service.current_work_queue() if item["source"] == "runtime_audit"]
+
+        assert len(items) == 1
+        assert items[0]["runtime_audit_durability"]["status"] == "MEMORY_ONLY"
+        assert items[0]["runtime_audit_durability"]["accepted"] is False
+        assert service.last_work_queue_source_coverage["runtime_audit_durability"] == "READ_UNVERIFIED"
+    finally:
+        shutil.rmtree(ws, ignore_errors=True)

@@ -792,8 +792,8 @@ class ToolAdapter:
                                 'thread_verification': 'unverified',
                                 'capture_unverified': True,
                                 'used_fallback_capture': bool(captured.get('used_fallback_capture')),
-                                'rollout_path': str(captured.get('rollout_path') or ''),
-                                'browser_profile_dir': str(captured.get('browser_profile_dir') or ''),
+                                'rollout_path_reported': bool(captured.get('rollout_path')),
+                                'browser_profile_ref': self._workspace_relative_path_reference(captured.get('browser_profile_dir'), workspace_root),
                                 'browser_dom_metadata': dict(captured.get('metadata') or {}),
                             },
                         }
@@ -834,8 +834,8 @@ class ToolAdapter:
                                 'thread_mismatch': True,
                                 'capture_unverified': True,
                                 'used_fallback_capture': bool(captured.get('used_fallback_capture')),
-                                'rollout_path': str(captured.get('rollout_path') or ''),
-                                'browser_profile_dir': str(captured.get('browser_profile_dir') or ''),
+                                'rollout_path_reported': bool(captured.get('rollout_path')),
+                                'browser_profile_ref': self._workspace_relative_path_reference(captured.get('browser_profile_dir'), workspace_root),
                                 'browser_dom_metadata': dict(captured.get('metadata') or {}),
                             },
                         }
@@ -872,8 +872,8 @@ class ToolAdapter:
                             'capture_source': capture_source,
                             'thread_verification': 'verified' if bool(captured.get('thread_verified')) else '',
                             'used_fallback_capture': bool(captured.get('used_fallback_capture')),
-                            'rollout_path': str(captured.get('rollout_path') or ''),
-                            'browser_profile_dir': str(captured.get('browser_profile_dir') or ''),
+                            'rollout_path_reported': bool(captured.get('rollout_path')),
+                            'browser_profile_ref': self._workspace_relative_path_reference(captured.get('browser_profile_dir'), workspace_root),
                             'browser_dom_metadata': dict(captured.get('metadata') or {}),
                         },
                     }
@@ -921,7 +921,7 @@ class ToolAdapter:
                                     'isolated_session': isolated_session,
                     **consultation_metadata,
                                     'capture_source': str(captured.get('capture_source') or 'browser_dom').strip().lower() or 'browser_dom',
-                                    'browser_profile_dir': str(captured.get('browser_profile_dir') or ''),
+                                    'browser_profile_ref': self._workspace_relative_path_reference(captured.get('browser_profile_dir'), workspace_root),
                                     'browser_dom_metadata': dict(captured.get('metadata') or {}),
                                 },
                             }
@@ -963,7 +963,7 @@ class ToolAdapter:
                                 'isolated_session': isolated_session,
                     **consultation_metadata,
                                 'capture_source': str(captured.get('capture_source') or 'browser_dom').strip().lower() or 'browser_dom',
-                                'browser_profile_dir': str(captured.get('browser_profile_dir') or ''),
+                                'browser_profile_ref': self._workspace_relative_path_reference(captured.get('browser_profile_dir'), workspace_root),
                                 'browser_dom_metadata': dict(captured.get('metadata') or {}),
                             },
                         }
@@ -1148,7 +1148,7 @@ class ToolAdapter:
                 }
             response_capture_pending = bool(launched and not direct_capture)
             if requires_manual_pasteback:
-                output_text = f'Asistente externo {card.title} preparado. Copia el prompt redactado y devuelve la respuesta a IABV.'
+                output_text = f'Asistente externo {card.title} preparado. Copia el contexto de consulta y devuelve la respuesta a IABV.'
             elif response_capture_mode in {'clipboard_capture', 'dom_capture', 'browser_dom'}:
                 output_text = f'Asistente externo {card.title} preparado. IABV queda esperando capturar la respuesta automaticamente.'
             else:
@@ -1274,6 +1274,20 @@ class ToolAdapter:
         return markers[:6]
 
 
+
+    def _workspace_relative_path_reference(self, path_value: Any, workspace_root: str) -> str:
+        """Return a workspace-relative path for diagnostics, never an absolute host path."""
+        raw_path = str(path_value or '').strip()
+        if not raw_path:
+            return ''
+        try:
+            root = Path(workspace_root).resolve()
+            candidate = Path(raw_path)
+            if not candidate.is_absolute():
+                return ''
+            return candidate.resolve().relative_to(root).as_posix()
+        except (OSError, RuntimeError, ValueError):
+            return ''
 
     def _consultation_runtime_metadata(self, *, card: ToolCard, task: ToolTask, capture_attempt_utc: str) -> dict[str, Any]:
         task_metadata = dict(task.metadata or {})
@@ -1794,11 +1808,161 @@ class DesktopHumanToolAdapter:
 class ExternalAssistantToolAdapter(ToolAdapter):
     tool_type = ToolType.CUSTOM
 
-    def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False) -> dict[str, Any]:
-        result = super().run(card, task, sandbox=sandbox)
-        if sandbox:
+    @staticmethod
+    def _launch_target_reference(card: ToolCard) -> str:
+        assistant_kind = re.sub(
+            r'[^a-z0-9_-]+',
+            '',
+            str(card.metadata.get('assistant_kind') or card.tool_id or 'assistant').strip().lower(),
+        ) or 'assistant'
+        launch_mode = str(card.metadata.get('launch_mode') or '').strip().lower()
+        mode = 'web' if launch_mode == 'web_assisted' else 'desktop' if launch_mode == 'desktop_app' else 'assistant'
+        return f'{mode}:{assistant_kind}'
+
+    @classmethod
+    def _remove_operational_launch_targets(cls, value: Any, *, safe_reference: str) -> Any:
+        if isinstance(value, dict):
+            cleaned: dict[str, Any] = {}
+            for key, item in value.items():
+                normalized_key = str(key).strip().lower()
+                if normalized_key in {'launch_target', 'launch_target_ref', 'web_url'}:
+                    cleaned['launch_target_ref'] = safe_reference
+                elif normalized_key in {'executable_path', 'install_path', 'app_path'}:
+                    cleaned[f'{normalized_key}_omitted'] = bool(item)
+                else:
+                    cleaned[key] = cls._remove_operational_launch_targets(item, safe_reference=safe_reference)
+            return cleaned
+        if isinstance(value, list):
+            return [cls._remove_operational_launch_targets(item, safe_reference=safe_reference) for item in value]
+        if isinstance(value, tuple):
+            return [cls._remove_operational_launch_targets(item, safe_reference=safe_reference) for item in value]
+        return value
+
+    def _sanitize_persistable_launch_metadata(self, result: dict[str, Any], *, card: ToolCard) -> dict[str, Any]:
+        safe_reference = self._launch_target_reference(card)
+        cleaned = self._remove_operational_launch_targets(result, safe_reference=safe_reference)
+        if not isinstance(cleaned, dict):
             return result
+        metadata = dict(cleaned.get('metadata') or {})
+        if any(
+            isinstance(mapping, dict) and 'launch_target_ref' in mapping
+            for mapping in (metadata, dict(cleaned.get('extracted_data') or {}))
+        ):
+            metadata['launch_target_ref'] = safe_reference
+        cleaned['metadata'] = metadata
+        return cleaned
+
+    @staticmethod
+    def _safe_focused_window_label(value: Any, assistant_kind: str) -> str:
+        raw = str(value or '').strip().lower()
+        if not raw:
+            return ''
+        aliases = {
+            'chatgpt': ('chatgpt', 'openai'),
+            'claude': ('claude', 'anthropic'),
+            'codex': ('codex',),
+            'ollama': ('ollama',),
+        }
+        for family, markers in aliases.items():
+            if any(marker in raw for marker in markers):
+                return family
+        if 'just a moment' in raw or 'security verification' in raw:
+            return 'interstitial_page'
+        return 'other_window'
+
+    @staticmethod
+    def _safe_external_diagnostic(value: Any) -> str:
+        diagnostic = str(value or '')
+        if not diagnostic:
+            return ''
+        diagnostic = re.sub(r"(?i)\bBearer\s+[^\s\"']+", 'Bearer [REDACTED]', diagnostic)
+        diagnostic = re.sub(
+            r"(?i)([?&](?:token|api[_-]?key|password|secret)=)[^&\s]+",
+            r'\1[REDACTED]',
+            diagnostic,
+        )
+        diagnostic = re.sub(r"(?i)\b[A-Z]:\\[^\r\n\"']+", '[LOCAL_PATH]', diagnostic)
+        diagnostic = re.sub(r"(?<![\w.])/(?:home|Users|mnt|tmp|var|opt|workspace)/[^\s\"']+", '[LOCAL_PATH]', diagnostic)
+        diagnostic = re.sub(r"\b[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}\b", '[EMAIL]', diagnostic)
+        return diagnostic[:1000]
+
+    @staticmethod
+    def _safe_cdp_endpoint_reference(value: Any) -> str:
+        raw = str(value or '').strip()
+        if not raw:
+            return ''
+        try:
+            parsed = urlparse(raw)
+            if parsed.scheme.lower() not in {'http', 'https'} or not parsed.hostname:
+                return ''
+            host = parsed.hostname.lower()
+            if host not in {'localhost', '127.0.0.1', '::1'}:
+                return 'remote_cdp_endpoint'
+            port = parsed.port
+        except ValueError:
+            return ''
+        suffix = f':{port}' if port is not None else ''
+        return f'{parsed.scheme.lower()}://localhost{suffix}'
+
+    @staticmethod
+    def _safe_persisted_profile_label(value: Any) -> str:
+        raw = str(value or '').strip().lower()
+        if not raw:
+            return ''
+        if 'governed' in raw:
+            return 'governed_profile'
+        for assistant in ('chatgpt', 'claude', 'codex', 'ollama'):
+            if assistant in raw:
+                return f'{assistant}_profile'
+        return 'isolated_profile'
+
+    def _sanitize_persisted_capture_diagnostics(
+        self,
+        result: dict[str, Any],
+        *,
+        assistant_kind: str,
+    ) -> dict[str, Any]:
+        diagnostic_keys = {
+            'error_message',
+            'auto_capture_reason',
+            'visual_signal_error',
+            'original_error',
+            'error',
+            'reason',
+        }
+
+        def sanitize(value: Any) -> Any:
+            if isinstance(value, dict):
+                cleaned: dict[str, Any] = {}
+                for key, item in value.items():
+                    normalized_key = str(key).strip().lower()
+                    if normalized_key == 'focused_title':
+                        cleaned[key] = self._safe_focused_window_label(item, assistant_kind)
+                    elif normalized_key in diagnostic_keys:
+                        cleaned[key] = self._safe_external_diagnostic(item)
+                    elif normalized_key == 'cdp_url':
+                        cleaned['cdp_endpoint_ref'] = self._safe_cdp_endpoint_reference(item)
+                    elif normalized_key == 'profile_label':
+                        cleaned['profile_ref'] = self._safe_persisted_profile_label(item)
+                    else:
+                        cleaned[key] = sanitize(item)
+                return cleaned
+            if isinstance(value, list):
+                return [sanitize(item) for item in value]
+            if isinstance(value, tuple):
+                return [sanitize(item) for item in value]
+            return value
+
+        cleaned = sanitize(result)
+        return cleaned if isinstance(cleaned, dict) else result
+
+    def run(self, card: ToolCard, task: ToolTask, *, sandbox: bool = False) -> dict[str, Any]:
+        result = self._sanitize_persistable_launch_metadata(
+            super().run(card, task, sandbox=sandbox),
+            card=card,
+        )
         assistant_kind = str(card.metadata.get('assistant_kind') or card.tool_id)
+        result = self._sanitize_persisted_capture_diagnostics(result, assistant_kind=assistant_kind)
         worker_kind = str(card.metadata.get('worker_kind') or assistant_kind).lower()
         telemetry = ToolAdapter._build_worker_telemetry(
             result=result,

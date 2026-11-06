@@ -200,7 +200,8 @@ def test_portable_context_service_builds_and_persists_package_from_live_state() 
                 'discarded_signals': [],
             },
         )
-        bootstrap.operational_self_examination_service.current_review = lambda **kwargs: SelfExaminationSnapshot(  # type: ignore[assignment]
+        bootstrap.operational_self_examination_service.current_review = lambda **kwargs: (_ for _ in ()).throw(AssertionError('portable context must not trigger OSES rebuild'))
+        bootstrap.operational_self_examination_service.current_review_cached = lambda: SelfExaminationSnapshot(  # type: ignore[assignment]
             summary='La autoexaminacion confirma un bloqueo recurrente y un ajuste recomendado.',
             status='needs_attention',
             findings=[
@@ -327,6 +328,11 @@ def test_flush_startup_health_patches_latest_json_in_place() -> None:
         latest_path = Path(pcs.storage.resolve('portable_context/latest.json'))
         assert latest_path.exists()
 
+        # Record whole-context timestamps before a section-only update.
+        before = json.loads(latest_path.read_text(encoding='utf-8'))
+        original_created_at = before['created_at_utc']
+        original_full_generation = before['full_context_generated_at_utc']
+        original_updated_at = before['updated_at_utc']
         # Tamper the startup_health section to simulate stale data.
         payload = json.loads(latest_path.read_text(encoding='utf-8'))
         for section in payload.get('sections', []):
@@ -361,6 +367,51 @@ def test_flush_startup_health_patches_latest_json_in_place() -> None:
             raise AssertionError('startup_health section not found in patched latest.json')
 
         assert patched['metadata']['startup_health']['status'] == 'analyzed'
+        assert patched['created_at_utc'] == original_created_at
+        assert patched['full_context_generated_at_utc'] == original_full_generation
+        assert patched['updated_at_utc'] >= original_updated_at
+        assert patched['metadata']['startup_health_updated_at_utc']
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_partial_section_update_does_not_extend_whole_package_freshness() -> None:
+    from datetime import datetime, timedelta, timezone
+    from iabv_v15.domain.models import PortableContextPackage
+
+    root = _workspace('partial_update_freshness')
+    try:
+        bootstrap = AppBootstrap(str(root))
+        now = datetime.now(timezone.utc)
+        generated = now - timedelta(hours=2)
+        package = PortableContextPackage(
+            created_at_utc=generated,
+            updated_at_utc=now,
+            full_context_generated_at_utc=generated,
+        )
+        assert not bootstrap.portable_context_service._is_fresh(package, max_age_seconds=300)
+        assert bootstrap.portable_context_service._is_fresh(
+            package, max_age_seconds=3 * 60 * 60
+        )
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_lightweight_unresolved_package_is_not_fresh_as_full_context() -> None:
+    from datetime import datetime, timezone
+    from iabv_v15.domain.models import PortableContextPackage
+
+    root = _workspace('lightweight_context_unverified')
+    try:
+        bootstrap = AppBootstrap(str(root))
+        package = PortableContextPackage(
+            created_at_utc=datetime.now(timezone.utc),
+            metadata={'source': 'lightweight_unresolved_package'},
+        )
+        assert not bootstrap.portable_context_service._is_fresh(
+            package,
+            max_age_seconds=300,
+        )
     finally:
         shutil.rmtree(root, ignore_errors=True)
 
@@ -427,3 +478,318 @@ def test_portable_context_service_keeps_unresolved_when_adaptive_session_is_stal
         assert 'UNRESOLVED:active_goal_context' in package.unresolved_fields
     finally:
         shutil.rmtree(root, ignore_errors=True)
+
+def test_portable_context_service_rejects_future_full_context_timestamp() -> None:
+    from datetime import datetime, timedelta, timezone
+
+    from iabv_v15.domain.models import PortableContextPackage
+
+    root = _workspace('portable_context_future_generated_at')
+    try:
+        bootstrap = AppBootstrap(str(root))
+        package = PortableContextPackage(
+            full_context_generated_at_utc=datetime.now(timezone.utc) + timedelta(hours=1),
+        )
+        assert not bootstrap.portable_context_service._is_fresh(
+            package,
+            max_age_seconds=300,
+        )
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_pending_section_reports_platform_queue_read_failure_instead_of_empty() -> None:
+    from iabv_v15.domain.models import PlatformPendingTask, utc_now
+    from iabv_v15.infra.persistence.storage import ArtifactStorage
+    from iabv_v15.services.evolution.platform_pending_queue import PlatformPendingQueue
+    from iabv_v15.services.evolution.portable_context_service import PortableContextService
+
+    root = _workspace('pending_section_platform_read_failure')
+    try:
+        queue = PlatformPendingQueue(root / 'data' / 'evolution')
+        queue.upsert(PlatformPendingTask(id='visible-task', title='Readable platform task'))
+        queue._task_path('corrupt').write_text('{', encoding='utf-8')
+        service = PortableContextService(
+            workspace_root=str(root),
+            storage=ArtifactStorage(str(root / 'data')),
+            platform_pending_queue=queue,
+        )
+
+        section = service._pending_section(
+            pending_items=[],
+            backlog_items=[],
+            now=utc_now(),
+        )
+
+        assert section.items == []
+        assert 'lectura parcial' in section.summary.lower()
+        assert 'UNRESOLVED:platform_pending_queue_read_partial' in section.unresolved_fields
+        assert 'UNRESOLVED:pending_backlog' in section.unresolved_fields
+        assert section.confidence == 0.0
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_pending_section_distinguishes_unconfigured_platform_queue() -> None:
+    from iabv_v15.domain.models import utc_now
+    from iabv_v15.infra.persistence.storage import ArtifactStorage
+    from iabv_v15.services.evolution.portable_context_service import PortableContextService
+
+    root = _workspace('pending_section_platform_not_configured')
+    try:
+        service = PortableContextService(
+            workspace_root=str(root),
+            storage=ArtifactStorage(str(root / 'data')),
+        )
+        section = service._pending_section(
+            pending_items=[],
+            backlog_items=[],
+            now=utc_now(),
+        )
+        assert 'no está conectada' in section.summary.lower()
+        assert 'UNRESOLVED:platform_pending_queue_not_connected' in section.unresolved_fields
+        assert section.confidence == 0.0
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_portable_context_partial_pending_issue_read_is_not_projected_as_complete() -> None:
+    from types import SimpleNamespace
+
+    from iabv_v15.domain.models import utc_now
+    from iabv_v15.infra.persistence.storage import ArtifactStorage
+    from iabv_v15.services.evolution.portable_context_service import PortableContextService
+
+    class PartialRepository:
+        def list_recent_with_diagnostics(self, *, limit: int):
+            return SimpleNamespace(
+                status=SimpleNamespace(value='READ_PARTIAL'),
+                items=[SimpleNamespace(issue_id='readable', summary='Readable candidate')],
+                records_seen=3,
+                records_loaded=2,
+                failed_ids=['corrupt'],
+            )
+
+    root = _workspace('portable_context_partial_pending_issue')
+    try:
+        service = PortableContextService(
+            workspace_root=str(root),
+            storage=ArtifactStorage(str(root / 'data')),
+            pending_issue_repository=PartialRepository(),
+        )
+        items, status, error = service._pending_items()
+
+        assert items == []
+        assert status == 'READ_PARTIAL'
+        assert 'records_loaded=2' in error
+        section = service._pending_section(
+            pending_items=items,
+            backlog_items=[],
+            pending_read_status=status,
+            pending_read_error=error,
+            backlog_read_status='READ_OK',
+            now=utc_now(),
+        )
+        assert section.items == []
+        assert 'UNRESOLVED:pending_issue_repository:read_partial' in section.unresolved_fields
+        assert 'parcial' in section.summary.lower()
+        assert section.confidence == 0.0
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_portable_context_pending_issue_read_failure_is_not_empty_backlog() -> None:
+    from iabv_v15.domain.models import utc_now
+    from iabv_v15.infra.persistence.storage import ArtifactStorage
+    from iabv_v15.services.evolution.portable_context_service import PortableContextService
+
+    class FailedRepository:
+        def list_recent_with_diagnostics(self, *, limit: int):
+            raise OSError('index unavailable')
+
+    root = _workspace('portable_context_failed_pending_issue')
+    try:
+        service = PortableContextService(
+            workspace_root=str(root),
+            storage=ArtifactStorage(str(root / 'data')),
+            pending_issue_repository=FailedRepository(),
+        )
+        items, status, error = service._pending_items()
+
+        assert items == []
+        assert status == 'READ_FAILED'
+        section = service._pending_section(
+            pending_items=items,
+            backlog_items=[],
+            pending_read_status=status,
+            pending_read_error=error,
+            backlog_read_status='READ_OK',
+            now=utc_now(),
+        )
+        assert 'UNRESOLVED:pending_issue_repository:read_failed' in section.unresolved_fields
+        assert 'no se pudo leer' in section.summary.lower()
+        assert section.confidence == 0.0
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_portable_context_goal_preserves_objective_repository_read_failure() -> None:
+    from iabv_v15.domain.models import ObjectiveNodeKind
+    from iabv_v15.infra.persistence.storage import ArtifactStorage
+    from iabv_v15.services.evolution.portable_context_service import PortableContextService
+
+    class FailedObjectiveRepository:
+        def list_recent_with_diagnostics(self, *, kind, status, limit: int):
+            return type('Report', (), {
+                'status': type('Status', (), {'value': 'READ_FAILED'})(),
+                'items': [],
+            })()
+
+    root = _workspace('portable_context_failed_objective_read')
+    try:
+        service = PortableContextService(
+            workspace_root=str(root),
+            storage=ArtifactStorage(str(root / 'data')),
+            objective_repository=FailedObjectiveRepository(),
+        )
+        goal = service._goal_context(task_context=None)
+
+        assert goal['source_statuses'] == {
+            'objective': 'READ_FAILED',
+            'project': 'READ_FAILED',
+            'task': 'READ_FAILED',
+        }
+        assert 'UNRESOLVED:active_objective_read_read_failed' in goal['unresolved_fields']
+        assert 'UNRESOLVED:active_project_read_read_failed' in goal['unresolved_fields']
+        assert 'UNRESOLVED:active_task_read_read_failed' in goal['unresolved_fields']
+        assert goal['active_title'] == ''
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+
+def test_portable_test_evidence_section_includes_r24_provenance() -> None:
+    root = _workspace('portable_test_evidence_provenance')
+    try:
+        bootstrap = AppBootstrap(str(root))
+        service = bootstrap.portable_context_service
+        evidence = {
+            'passed': 12,
+            'failed': 0,
+            'errors': 0,
+            'returncode': 0,
+            'timed_out': False,
+            'suite': 'R24-focused',
+            'timestamp': '2026-11-05T18:00:00+00:00',
+            'commit_sha': 'a' * 40,
+            'branch': 'candidate',
+            'worktree_clean': True,
+            'provenance_status': 'COMMIT_BOUND_CLEAN',
+            'worktree_status_sha256': 'b' * 64,
+            'payload_sha256': 'c' * 64,
+        }
+        service._load_test_evidence = lambda: evidence
+
+        section = service._test_evidence_section(
+            now=__import__('datetime').datetime.now(__import__('datetime').timezone.utc)
+        )
+        items = {item['label']: item['value'] for item in section.items}
+
+        assert 'provenance COMMIT_BOUND_CLEAN' in section.summary
+        assert items['commit_sha'] == evidence['commit_sha']
+        assert items['branch'] == evidence['branch']
+        assert items['worktree_clean'] is True
+        assert items['worktree_status_sha256'] == evidence['worktree_status_sha256']
+        assert items['payload_sha256'] == evidence['payload_sha256']
+        assert items['execution_status'] == 'PASSED'
+        assert items['returncode'] == 0
+        assert items['timed_out'] is False
+        assert items['health'] == 'green'
+        assert section.confidence == 0.9
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+
+def _render_portable_test_evidence_section_for_outcome(evidence: dict[str, object]):
+    root = _workspace('portable_test_evidence_outcome')
+    try:
+        service = AppBootstrap(str(root)).portable_context_service
+        service._load_test_evidence = lambda: evidence
+        return service._test_evidence_section(
+            now=__import__('datetime').datetime.now(__import__('datetime').timezone.utc)
+        )
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_portable_test_evidence_nonzero_exit_without_summary_is_not_green() -> None:
+    evidence = {
+        'passed': 0,
+        'failed': 0,
+        'errors': 0,
+        'returncode': 5,
+        'timed_out': False,
+        'provenance_status': 'COMMIT_BOUND_CLEAN',
+        'worktree_clean': True,
+    }
+
+    section = _render_portable_test_evidence_section_for_outcome(evidence)
+    items = {item['label']: item['value'] for item in section.items}
+
+    assert items['total'] == 0
+    assert items['execution_status'] == 'FAILED'
+    assert items['health'] == 'red'
+
+
+def test_portable_test_evidence_timeout_is_not_green() -> None:
+    evidence = {
+        'passed': 4,
+        'failed': 0,
+        'errors': 0,
+        'returncode': 1,
+        'timed_out': True,
+        'provenance_status': 'COMMIT_BOUND_CLEAN',
+        'worktree_clean': True,
+    }
+
+    section = _render_portable_test_evidence_section_for_outcome(evidence)
+    items = {item['label']: item['value'] for item in section.items}
+
+    assert items['execution_status'] == 'FAILED'
+    assert items['health'] == 'red'
+
+
+def test_portable_test_evidence_zero_collected_tests_is_unverified() -> None:
+    evidence = {
+        'passed': 0,
+        'failed': 0,
+        'errors': 0,
+        'returncode': 0,
+        'timed_out': False,
+        'provenance_status': 'COMMIT_BOUND_CLEAN',
+        'worktree_clean': True,
+    }
+
+    section = _render_portable_test_evidence_section_for_outcome(evidence)
+    items = {item['label']: item['value'] for item in section.items}
+
+    assert items['execution_status'] == 'UNVERIFIED'
+    assert items['health'] == 'unknown'
+    assert section.confidence == 0.0
+
+
+def test_portable_test_evidence_missing_run_outcome_is_unverified() -> None:
+    evidence = {
+        'passed': 5,
+        'failed': 0,
+        'errors': 0,
+        'provenance_status': 'COMMIT_BOUND_CLEAN',
+        'worktree_clean': True,
+    }
+
+    section = _render_portable_test_evidence_section_for_outcome(evidence)
+    items = {item['label']: item['value'] for item in section.items}
+
+    assert items['execution_status'] == 'UNVERIFIED'
+    assert items['health'] == 'unknown'

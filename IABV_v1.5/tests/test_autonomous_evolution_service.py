@@ -477,6 +477,95 @@ def test_autonomous_evolution_service_marks_structured_quota_block_as_blocked_ex
         assert result['status'] == 'blocked_external'
         assert 'account_limited' in result['external_state_flags']
         assert 'cuota disponible' in result['detail']
+        assert result['actual_account_binding']['schema'] == 'ACCOUNT_BINDING_R1'
+        assert result['actual_account_binding']['status'] == 'UNVERIFIED'
+        assert result['actual_account_binding']['reason'] == 'execution_account_binding_missing'
+    finally:
+        _cleanup_bootstrap(bootstrap)
+
+
+
+def test_autonomous_evolution_service_preserves_verified_account_binding() -> None:
+    bootstrap = _make_bootstrap('test_autonomous_evolution_service_verified_account_binding_workspace')
+    try:
+        payload = {
+            'session_id': 'adaptive-wplay-quota-block',
+            'intent': {'title': 'Abrir Wplay e iniciar sesion', 'intent_key': 'wplay.login', 'site_hint': 'wplay'},
+            'context': {
+                'site_id': 'wplay',
+                'site_display_name': 'Wplay',
+                'session_readiness': {'dominant_incident': 'bridge_lag'},
+                'recent_incidents': [{'incident_kind': 'bridge_lag'}],
+                'live_audit': {'summary': 'Bridge lag persistente despues de la ensenanza.', 'decision_action': 'consult_codex'},
+            },
+            'probe_diagnosis': {'category': 'need_codex_fix', 'summary': 'El problema parece tecnico y repetido.'},
+            'metadata': {},
+        }
+
+        def _fake_execute_external_consultation(**kwargs):
+            task = ToolTask(
+                tool_id='codex_installed',
+                title='Consulta externa Codex',
+                objective='abre Wplay e inicia sesion',
+                requested_by_role=TaskRole.TOOL_USE,
+                actions=[],
+                metadata={
+                    'assistant_kind': 'codex',
+                    'actual_assistant_kind': 'codex',
+                    'assistant_configuration': {},
+                    'config_signature': 'cfg-codex',
+                    'context_pack': 'consulta tecnica',
+                },
+            )
+            result = ToolResult(
+                task_id=task.task_id,
+                tool_id='codex_installed',
+                tool_type=ToolType.LLM_WEB_UI,
+                success=True,
+                validation_status=ToolValidationStatus.SANDBOX_PASS,
+                execution_state=ExecutionState(
+                    state='executed',
+                    detail='La cuenta externa no tiene cuota disponible.',
+                    metadata={
+                        'assistant_kind': 'codex',
+                        'launch_mode': 'desktop',
+                        'response_capture_mode': 'browser_dom',
+                        'launched': True,
+                        'credits_exhausted': True,
+                        'quota_status': 'exhausted',
+                        'account_status': 'limited',
+                        'actual_account_binding': {
+                            'schema': 'ACCOUNT_BINDING_R1',
+                            'status': 'VERIFIED',
+                            'actual_tool': 'codex',
+                            'account_email': 'owner@test.com',
+                            'identity_source': 'authenticated_session',
+                            'evidence_ref': 'codex-session:account-panel:run-42',
+                        },
+                    },
+                ),
+                output_text='La cuenta externa no tiene cuota disponible.',
+                metadata={'assistant_kind': 'codex'},
+            )
+            return task, result, {'summary': 'Preview Codex'}
+
+        bootstrap.tool_teach_service.execute_external_consultation = _fake_execute_external_consultation  # type: ignore[method-assign]
+
+        result = bootstrap.autonomous_evolution_service.plan_or_execute(
+            adaptive_payload=payload,
+            user_goal='abre Wplay e inicia sesion',
+            source='self_teach',
+        )
+
+        assert result['status'] == 'blocked_external'
+        assert 'account_limited' in result['external_state_flags']
+        assert 'cuota disponible' in result['detail']
+        assert result['actual_account_binding']['schema'] == 'ACCOUNT_BINDING_R1'
+        assert result['actual_account_binding']['status'] == 'VERIFIED'
+        assert result['actual_account_binding']['actual_tool'] == 'codex'
+        assert result['actual_account_binding']['account_email'] == 'owner@test.com'
+        assert result['actual_account_binding']['identity_source'] == 'authenticated_session'
+        assert result['actual_account_binding']['evidence_ref'] == 'codex-session:account-panel:run-42'
     finally:
         _cleanup_bootstrap(bootstrap)
 

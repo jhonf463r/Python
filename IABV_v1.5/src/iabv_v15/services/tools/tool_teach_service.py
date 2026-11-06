@@ -4,7 +4,7 @@ import inspect
 import re
 from collections import Counter
 from datetime import datetime, timezone
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 from typing import Any
 
 from iabv_v15.domain.models import (
@@ -33,6 +33,8 @@ from iabv_v15.domain.models import (
     ToolValidationStatus,
     canonical_external_state_flags,
 )
+from iabv_v15.services.capture.redaction_engine import RedactionEngine
+from iabv_v15.services.capture.sensitive_field_detector import SensitiveFieldDetector
 from iabv_v15.services.lab.experiment_lab import ExperimentLab
 from iabv_v15.services.evolution.live_audit_supervisor import LiveAuditSupervisor
 from iabv_v15.services.tools.interaction_learning_service import InteractionLearningService
@@ -79,6 +81,62 @@ class ToolTeachService:
         self.experiment_lab = experiment_lab
         self.live_audit_supervisor = live_audit_supervisor
         self.synaptic_router = synaptic_router
+        # Outbound context filtering only; no secret values are stored in a vault.
+        self._external_context_redactor = RedactionEngine(SensitiveFieldDetector())
+
+    @staticmethod
+    def _normalize_actual_account_binding(value: Any) -> dict[str, str]:
+        """Normalize adapter-supplied account identity evidence.
+
+        The adapter is the only layer allowed to assert the account actually
+        used. A selected worker, requested assistant, or session directory is
+        not sufficient evidence. VERIFIED requires tool, account email,
+        identity source and an evidence reference from the adapter.
+        """
+        if not isinstance(value, dict):
+            return {
+                'schema': 'ACCOUNT_BINDING_R1',
+                'status': 'UNVERIFIED',
+                'reason': 'adapter_account_binding_missing',
+            }
+
+        status = str(value.get('status') or '').strip().upper()
+        if status != 'VERIFIED':
+            return {
+                'schema': 'ACCOUNT_BINDING_R1',
+                'status': 'UNVERIFIED',
+                'reason': str(value.get('reason') or 'adapter_account_binding_unverified')[:160],
+            }
+
+        actual_tool = str(value.get('actual_tool') or '').strip().lower()
+        account_email = str(value.get('account_email') or '').strip()
+        identity_source = str(value.get('identity_source') or '').strip()
+        evidence_ref = str(value.get('evidence_ref') or '').strip()
+        missing = [
+            field
+            for field, field_value in (
+                ('actual_tool', actual_tool),
+                ('account_email', account_email),
+                ('identity_source', identity_source),
+                ('evidence_ref', evidence_ref),
+            )
+            if not field_value
+        ]
+        if missing:
+            return {
+                'schema': 'ACCOUNT_BINDING_R1',
+                'status': 'UNVERIFIED',
+                'reason': 'adapter_account_binding_incomplete:' + ','.join(missing),
+            }
+
+        return {
+            'schema': 'ACCOUNT_BINDING_R1',
+            'status': 'VERIFIED',
+            'actual_tool': actual_tool,
+            'account_email': account_email,
+            'identity_source': identity_source[:120],
+            'evidence_ref': evidence_ref[:240],
+        }
 
     def _assistant_configuration_snapshot(
         self,
@@ -574,6 +632,89 @@ class ToolTeachService:
             tool_id = str(selection.selected_tool_id or suggested_tool_id)
         reusable_pattern = self._pattern_from_selection(selection)
         actions = self._build_actions(request, tool_id, reusable_pattern)
+        persisted_goal_parameters = dict(goal_parameters)
+        launch_target_ref = ''
+        if (
+            str(goal_parameters.get('consultation_scope') or '').strip().lower() == 'external_assistant'
+            and tool_id != 'ollama_llm'
+        ):
+            persisted_goal_parameters = self._remove_external_launch_path_fields(persisted_goal_parameters)
+            assistant_kind_for_ref = re.sub(
+                r'[^a-z0-9_-]+',
+                '',
+                str(goal_parameters.get('assistant_kind') or goal_parameters.get('assistant_preference') or self._assistant_family_for_tool_id(tool_id)).strip().lower(),
+            ) or 'assistant'
+            selected_card_for_ref = self.registry.get_card(tool_id)
+            launch_mode_for_ref = str(
+                (selected_card_for_ref.metadata.get('launch_mode') if selected_card_for_ref is not None else '')
+                or goal_parameters.get('launch_mode')
+                or ''
+            ).strip().lower()
+            if not launch_mode_for_ref:
+                launch_mode_for_ref = 'web_assisted' if tool_id.endswith('_web_assisted') else 'desktop_app'
+            launch_mode_ref = 'web' if launch_mode_for_ref == 'web_assisted' else 'desktop'
+            launch_target_ref = f'{launch_mode_ref}:{assistant_kind_for_ref}'
+            for key in ('executable_path', 'install_path', 'app_path', 'launch_target', 'web_url'):
+                value = persisted_goal_parameters.pop(key, None)
+                if value:
+                    persisted_goal_parameters[f'{key}_omitted'] = True
+            persisted_goal_parameters['launch_target_ref'] = launch_target_ref
+            safe_actions: list[ToolAction] = []
+            for action in actions:
+                if action.action_type in {ToolActionType.LAUNCH_APP, ToolActionType.OPEN_URL}:
+                    action_metadata = self._remove_external_launch_path_fields(dict(action.metadata or {}))
+                    action_metadata['launch_target_ref'] = launch_target_ref
+                    safe_parameters = self._remove_external_launch_path_fields(dict(action.parameters or {}))
+                    safe_actions.append(
+                        action.model_copy(
+                            update={
+                                'target': launch_target_ref,
+                                'metadata': action_metadata,
+                                'parameters': safe_parameters,
+                            }
+                        )
+                    )
+                else:
+                    raw_target = str(action.target or '').strip()
+                    target_needs_replacement = self._is_external_operational_target(raw_target)
+                    safe_actions.append(
+                        action.model_copy(
+                            update={
+                                'target': launch_target_ref if target_needs_replacement else action.target,
+                                'parameters': self._remove_external_launch_path_fields(dict(action.parameters or {})),
+                                'metadata': self._remove_external_launch_path_fields(dict(action.metadata or {})),
+                            }
+                        )
+                    )
+            actions = safe_actions
+            if 'actions' in persisted_goal_parameters:
+                persisted_goal_parameters['actions'] = [
+                    action.model_dump(mode='json') for action in safe_actions
+                ]
+        rollback_actions = self._build_rollback_actions(request, tool_id)
+        if launch_target_ref:
+            safe_rollback_actions: list[ToolAction] = []
+            for action in rollback_actions:
+                raw_target = str(action.target or '').strip()
+                target_needs_replacement = (
+                    action.action_type in {ToolActionType.LAUNCH_APP, ToolActionType.OPEN_URL}
+                    or self._is_external_operational_target(raw_target)
+                )
+                safe_rollback_actions.append(
+                    action.model_copy(
+                        update={
+                            'target': launch_target_ref if target_needs_replacement else action.target,
+                            'parameters': self._remove_external_launch_path_fields(dict(action.parameters or {})),
+                            'metadata': self._remove_external_launch_path_fields(dict(action.metadata or {})),
+                        }
+                    )
+                )
+            rollback_actions = safe_rollback_actions
+            if 'rollback_actions' in persisted_goal_parameters:
+                persisted_goal_parameters['rollback_actions'] = [
+                    action.model_dump(mode='json') for action in safe_rollback_actions
+                ]
+        now = datetime.now(timezone.utc).isoformat()
         now = datetime.now(timezone.utc).isoformat()
         assistant_configuration = self._assistant_configuration_snapshot(
             request=request,
@@ -603,13 +744,13 @@ class ToolTeachService:
             objective=request.user_goal,
             requested_by_role=request.task_role if request.task_role in {TaskRole.TOOL_USE, TaskRole.TOOL_SANDBOX} else TaskRole.TOOL_USE,
             actions=actions,
-            rollback_actions=self._build_rollback_actions(request, tool_id),
+            rollback_actions=rollback_actions,
             execution_scope=str(request.goal_parameters.get('execution_scope') or 'read_only'),
             sandbox_first=True,
             site_id=site_id,
             expected_outcome=expected,
             metadata={
-                'goal_parameters': dict(request.goal_parameters),
+                'goal_parameters': persisted_goal_parameters,
                 'created_at_utc': now,
                 'updated_at_utc': now,
                 'mode_selection': selection.model_dump(mode='json'),
@@ -629,6 +770,7 @@ class ToolTeachService:
                 'requested_assistant_kind': str(goal_parameters.get('assistant_preference') or goal_parameters.get('assistant_kind') or ''),
                 'assistant_kind': str(goal_parameters.get('assistant_kind') or goal_parameters.get('assistant_preference') or ''),
                 'actual_assistant_kind': self._assistant_family_for_tool_id(tool_id),
+                'launch_target_ref': launch_target_ref,
                 'consultation_scope': str(goal_parameters.get('consultation_scope') or ''),
                 'response_capture_mode': str(goal_parameters.get('response_capture_mode') or ''),
                 'requires_manual_pasteback': bool(goal_parameters.get('requires_manual_pasteback', False)),
@@ -853,6 +995,9 @@ class ToolTeachService:
         sandbox_mode = launch_dry_run
         payload = adapter.run(card, task, sandbox=sandbox_mode)
         payload_metadata = dict(payload.get('metadata') or {})
+        payload_metadata['actual_account_binding'] = self._normalize_actual_account_binding(
+            payload_metadata.get('actual_account_binding')
+        )
         state_hint = str(payload_metadata.get('state_hint') or '').strip()
         execution_state_name = state_hint or ('executed' if payload.get('success') else 'failed')
         execution_detail = str(payload.get('error_message') or 'Fallo en la herramienta.') if not payload.get('success') else str(
@@ -930,6 +1075,34 @@ class ToolTeachService:
             self.memory.repository.save_result(result)
         return result
 
+    @staticmethod
+    def _is_external_operational_target(value: str) -> bool:
+        target = str(value or '').strip()
+        if not target:
+            return False
+        return (
+            target.lower().startswith(('http://', 'https://', 'file://'))
+            or Path(target).is_absolute()
+            or PureWindowsPath(target).is_absolute()
+        )
+
+    @classmethod
+    def _remove_external_launch_path_fields(cls, value: Any) -> Any:
+        if isinstance(value, dict):
+            cleaned: dict[str, Any] = {}
+            for key, item in value.items():
+                normalized_key = str(key).strip().lower()
+                if normalized_key in {'executable_path', 'install_path', 'app_path', 'launch_target', 'launch_target_ref', 'web_url', 'url', 'uri'}:
+                    cleaned[f'{normalized_key}_omitted'] = bool(item)
+                else:
+                    cleaned[key] = cls._remove_external_launch_path_fields(item)
+            return cleaned
+        if isinstance(value, list):
+            return [cls._remove_external_launch_path_fields(item) for item in value]
+        if isinstance(value, tuple):
+            return [cls._remove_external_launch_path_fields(item) for item in value]
+        return value
+
     def _build_actions(self, request: InferenceRequest, tool_id: str, reusable_pattern: InteractionPattern | None = None) -> list[ToolAction]:
         goal_parameters = request.goal_parameters or {}
         if goal_parameters.get('actions'):
@@ -971,7 +1144,7 @@ class ToolTeachService:
                 ),
                 ToolAction(
                     action_type=ToolActionType.LLM_QUERY,
-                    label='Contexto redactado',
+                    label='Contexto de consulta',
                     value=prompt_text,
                     expected_signal='manual_pasteback' if response_capture_mode == 'manual_pasteback' else 'tool_result',
                     metadata={
@@ -1121,10 +1294,30 @@ class ToolTeachService:
         session_scope = str(card.metadata.get('session_scope') or task.metadata.get('session_scope') or '')
         session_label = str(card.metadata.get('session_label') or task.metadata.get('session_label') or '')
         isolated_session_required = bool(card.metadata.get('isolated_session_required', task.metadata.get('isolated_session_required', False)))
-        session_profile_dir = str(task.metadata.get('session_profile_dir') or self._session_profile_dir_for_tool(tool_id=card.tool_id, assistant_kind=assistant_kind, background_capture_mode=background_capture_mode, isolated_session_required=isolated_session_required))
+        goal_parameters = dict(task.metadata.get('goal_parameters') or {})
+        stored_session_profile = str(
+            task.metadata.get('session_profile_dir') or goal_parameters.get('session_profile_dir') or ''
+        ).strip()
+        if stored_session_profile:
+            resolved_session_profile = self._resolve_session_profile_path(stored_session_profile)
+            session_profile_dir = (
+                resolved_session_profile.relative_to(self.workspace_root.resolve()).as_posix()
+                if resolved_session_profile is not None
+                else ''
+            )
+        else:
+            session_profile_dir = self._session_profile_dir_for_tool(
+                tool_id=card.tool_id,
+                assistant_kind=assistant_kind,
+                background_capture_mode=background_capture_mode,
+                isolated_session_required=isolated_session_required,
+            )
+        if 'session_profile_dir' in goal_parameters or stored_session_profile:
+            goal_parameters['session_profile_dir'] = session_profile_dir
         capture_lane = str(task.metadata.get('capture_lane') or self._lane_for_consultation(response_capture_mode=response_capture_mode, background_capture_mode=background_capture_mode))
         metadata = {
             **dict(task.metadata or {}),
+            'goal_parameters': goal_parameters,
             'requested_assistant_kind': requested_assistant_kind,
             'assistant_kind': assistant_kind,
             'actual_assistant_kind': assistant_kind,
@@ -1150,9 +1343,9 @@ class ToolTeachService:
     def _preview_summary(self, card, task: ToolTask, interaction_patterns: list[dict[str, Any]] | None = None, mode_selection: dict[str, Any] | None = None) -> str:
         if task.metadata.get('consultation_scope') == 'external_assistant':
             if card.tool_id == 'ollama_llm':
-                base = f'Preparare una consulta automatica local con {card.title}. Primero validare la via elegida y luego ejecutare el contexto redactado sin salir de IABV.'
+                base = f'Preparare una consulta automatica local con {card.title}. Primero validare la via elegida y luego ejecutare el contexto de consulta sin salir de IABV.'
             else:
-                base = f'Preparare una consulta externa guiada con {card.title}. Primero validare la via elegida y luego abrire el asistente con un contexto redactado y copiable.'
+                base = f'Preparare una consulta externa guiada con {card.title}. Primero validare la via elegida y luego abrire el asistente con el contexto de consulta filtrado y copiable.'
         elif bool(task.metadata.get('approval_required')):
             base = f'Use {card.title} primero en sandbox y luego pedire aprobacion antes de ejecutar fuera del sandbox.'
         else:
@@ -1476,6 +1669,21 @@ class ToolTeachService:
         if state in {'adapter_missing', 'missing_tool'}:
             return state
         return ''
+    def _sanitize_external_context_pack(self, context_pack: str) -> str:
+        """Apply known-pattern redaction before any external assistant dispatch.
+
+        This is a best-effort filter, not a guarantee that arbitrary prose contains
+        no personal data. The local workspace root is replaced while preserving
+        project-relative evidence paths.
+        """
+        sanitized = self._external_context_redactor.redact_free_text(str(context_pack or '')) or ''
+        workspace_root = str(self.workspace_root or '').strip().rstrip('\\/')
+        if workspace_root:
+            normalized_root = workspace_root.replace('\\', '/')
+            root_pattern = re.escape(normalized_root).replace('/', r'[\\/]') + r'(?=$|[\\/\s])'
+            sanitized = re.sub(root_pattern, '[IABV_WORKSPACE]', sanitized, flags=re.IGNORECASE)
+        return sanitized.strip()
+
     def _build_external_consultation_request(
         self,
         *,
@@ -1491,6 +1699,7 @@ class ToolTeachService:
     ) -> InferenceRequest:
         assistant = (assistant_preference or '').strip().lower() or 'codex'
         goal_payload = dict(goal_parameters or {})
+        context_pack = self._sanitize_external_context_pack(context_pack)
         lab_recommendation = self._external_lab_recommendation(
             assistant_preference=assistant,
             site_id=site_id,
@@ -1617,11 +1826,17 @@ class ToolTeachService:
         objective = dict(goal_context.get('objective') or {})
         project = dict(goal_context.get('project') or {})
         task = dict(goal_context.get('task') or {})
-        scope_title = str(task.get('title') or project.get('title') or objective.get('title') or user_goal or 'consulta').strip()
+        scope_title = self._sanitize_external_context_pack(
+            str(task.get('title') or project.get('title') or objective.get('title') or user_goal or 'consulta')
+        )
         site_fragment = self._slug_fragment(site_id or 'general')
-        scope_fragment = self._slug_fragment(scope_title or user_goal or 'consulta')
-        thread_key = str(goal_payload.get('thread_key') or f'iabv::{assistant_kind}::{site_fragment}::{scope_fragment}')
-        thread_title = str(goal_payload.get('thread_title') or f'IABV {assistant_title} | {scope_title[:48]}')
+        scope_fragment = self._slug_fragment(scope_title or 'consulta')
+        thread_key = self._sanitize_external_context_pack(
+            str(goal_payload.get('thread_key') or f'iabv::{assistant_kind}::{site_fragment}::{scope_fragment}')
+        )
+        thread_title = self._sanitize_external_context_pack(
+            str(goal_payload.get('thread_title') or f'IABV {assistant_title} | {scope_title[:48]}')
+        )
         capture_lane = self._lane_for_consultation(
             response_capture_mode=response_capture_mode,
             background_capture_mode=background_capture_mode,
@@ -1652,6 +1867,7 @@ class ToolTeachService:
                 enriched_context = f"{enriched_context}\n\n{marker_block}".strip()
         else:
             enriched_context = marker_block
+        enriched_context = self._sanitize_external_context_pack(enriched_context)
         return {
             'thread_key': thread_key,
             'thread_title': thread_title,
@@ -1703,14 +1919,38 @@ class ToolTeachService:
         else:
             return ''
         profile_dir.mkdir(parents=True, exist_ok=True)
-        return str(profile_dir)
+        try:
+            return profile_dir.resolve().relative_to(self.workspace_root.resolve()).as_posix()
+        except (OSError, RuntimeError, ValueError):
+            return ''
 
-    def _has_session_content(self, path_value: str) -> bool:
+    def _resolve_session_profile_path(self, path_value: str) -> Path | None:
         path_text = str(path_value or '').strip()
         if not path_text:
-            return False
-        path = Path(path_text)
-        if not path.exists():
+            return None
+        try:
+            root = self.workspace_root.resolve()
+            candidate = Path(path_text)
+            if candidate.is_absolute():
+                resolved = candidate.resolve()
+            else:
+                # Windows-absolute paths must not be mistaken for relative paths
+                # when legacy records are inspected on a non-Windows host.
+                if PureWindowsPath(path_text).is_absolute():
+                    return None
+                normalized = path_text.replace('\\', '/')
+                relative = Path(normalized)
+                if '..' in relative.parts:
+                    return None
+                resolved = (root / relative).resolve()
+            resolved.relative_to(root)
+            return resolved
+        except (OSError, RuntimeError, ValueError):
+            return None
+
+    def _has_session_content(self, path_value: str) -> bool:
+        path = self._resolve_session_profile_path(path_value)
+        if path is None or not path.exists() or not path.is_dir():
             return False
         try:
             return any(path.iterdir())

@@ -17,8 +17,11 @@ never drifts from live repositories.
 from __future__ import annotations
 
 import hashlib
+import json
 import re
+from datetime import datetime
 from pathlib import Path
+from threading import local
 from typing import Any
 
 from iabv_v15.domain.models import (
@@ -54,6 +57,7 @@ class ControlMasterService:
         platform_pending_queue: Any | None = None,
         workspace_root: str | None = None,
         recent_decisions_limit: int = 10,
+        chat_interaction_lifecycle: Any | None = None,
     ) -> None:
         self.repository = repository
         self.objective_repository = objective_repository
@@ -64,6 +68,46 @@ class ControlMasterService:
         self.platform_pending_queue = platform_pending_queue
         self.workspace_root = workspace_root
         self.recent_decisions_limit = recent_decisions_limit
+        self.chat_interaction_lifecycle = chat_interaction_lifecycle
+        self._work_queue_diagnostics = local()
+
+    @property
+    def last_work_queue_errors(self) -> tuple[str, ...]:
+        """Stable error codes for this thread's most recent queue projection."""
+        return tuple(getattr(self._work_queue_diagnostics, "errors", ()))
+
+    @property
+    def last_work_queue_source_coverage(self) -> dict[str, str]:
+        """Per-source read coverage for this thread's most recent queue projection."""
+        return dict(getattr(self._work_queue_diagnostics, "coverage", {}))
+
+    @property
+    def last_work_queue_read_reports(self) -> dict[str, Any]:
+        """Structured reports retained from the most recent queue projection."""
+        return dict(getattr(self._work_queue_diagnostics, "reports", {}))
+
+    def _record_work_queue_read_report(self, source: str, report: Any) -> None:
+        reports = getattr(self._work_queue_diagnostics, "reports", None)
+        if reports is None:
+            reports = {}
+            self._work_queue_diagnostics.reports = reports
+        reports[source] = report
+
+    def _record_work_queue_error(self, code: str) -> None:
+        errors = getattr(self._work_queue_diagnostics, "errors", None)
+        if errors is None:
+            errors = []
+            self._work_queue_diagnostics.errors = errors
+        if code not in errors:
+            errors.append(code)
+
+    def _record_work_queue_source(self, source: str, status: str) -> None:
+        coverage = getattr(self._work_queue_diagnostics, "coverage", None)
+        if coverage is None:
+            coverage = {}
+            self._work_queue_diagnostics.coverage = coverage
+        coverage[source] = status
+
 
     # ------------------------------------------------------------------
     # Read API
@@ -71,8 +115,59 @@ class ControlMasterService:
 
     def current_state(self, *, refresh: bool = False) -> ControlMasterState:
         base = self.repository.load_latest_state() if not refresh else None
+        source_observed_at = utc_now()
+        source_provenance: dict[str, Any]
         if base is None:
+            source_provenance = {
+                "project_id": "IABV_v1.5",
+                "source_object": "control_master/latest.json",
+                "source_state_id": "",
+                "source_revision_or_digest": "",
+                "source_generated_at_utc": None,
+                "source_observed_at_utc": source_observed_at.isoformat(),
+                "workspace_scope_id": "",
+                "freshness_status": "UNAVAILABLE",
+                "read_status": "NO_SOURCE_SNAPSHOT",
+            }
             base = ControlMasterState()
+        else:
+            generated_at = base.last_updated
+            scope_root = self.workspace_root or getattr(
+                getattr(self.repository, "storage", None), "root", None
+            )
+            scope_id = ""
+            if scope_root:
+                scope_material = str(Path(str(scope_root)).resolve()).casefold()
+                scope_id = hashlib.sha256(scope_material.encode("utf-8")).hexdigest()[:20]
+            source_payload = base.model_dump(mode="json")
+            source_metadata = dict(source_payload.get("metadata") or {})
+            source_metadata.pop("_space_time_control_master_source_provenance", None)
+            source_payload["metadata"] = source_metadata
+            source_digest = hashlib.sha256(
+                json.dumps(
+                    source_payload, sort_keys=True, ensure_ascii=False,
+                    separators=(",", ":"),
+                ).encode("utf-8")
+            ).hexdigest()
+            timestamp_valid = (
+                isinstance(generated_at, datetime)
+                and generated_at.tzinfo is not None
+                and generated_at.utcoffset() is not None
+                and generated_at <= source_observed_at
+            )
+            freshness = "FRESH" if timestamp_valid and scope_id else "UNVERIFIED"
+            source_provenance = {
+                "project_id": "IABV_v1.5",
+                "source_object": "control_master/latest.json",
+                "source_state_id": base.state_id,
+                "source_revision_or_digest": "sha256:" + source_digest,
+                "source_generated_at_utc": generated_at.isoformat()
+                if isinstance(generated_at, datetime) else None,
+                "source_observed_at_utc": source_observed_at.isoformat(),
+                "workspace_scope_id": scope_id,
+                "freshness_status": freshness,
+                "read_status": "READ_OK" if freshness == "FRESH" else "UNVERIFIED",
+            }
         rules = self.repository.list_rules()
         decisions = sorted(
             self.repository.list_decisions(),
@@ -83,12 +178,22 @@ class ControlMasterService:
         backlog = self._project_backlog()
         risks = self._project_risks()
         account_inventory = self._project_account_inventory()
+        projection_unresolved: list[str] = []
+        if self.objective_repository is None:
+            projection_unresolved.append("UNRESOLVED:objective_repository_not_connected")
+        if self.pending_issue_repository is None:
+            projection_unresolved.append("UNRESOLVED:pending_issue_repository_not_connected")
+        if self.self_examination_service is None:
+            projection_unresolved.append("UNRESOLVED:self_examination_service_not_connected")
         unresolved = list(dict.fromkeys([
             *base.unresolved_items,
+            *projection_unresolved,
             *self._project_unresolved(),
             *account_inventory.get('unresolved_items', []),
         ]))
         metadata = dict(base.metadata)
+        # Read provenance belongs to this projection only; never persist it as a new state.
+        metadata['_space_time_control_master_source_provenance'] = source_provenance
         metadata['account_inventory'] = account_inventory
         state = base.model_copy(
             update={
@@ -108,7 +213,12 @@ class ControlMasterService:
         return state
 
     def save_state(self, state: ControlMasterState) -> ControlMasterState:
-        return self.repository.save_state(state)
+        # D021 read provenance is ephemeral to the observation/task episode.
+        # Do not turn it into durable governance state through a later write.
+        metadata = dict(state.metadata or {})
+        metadata.pop("_space_time_control_master_source_provenance", None)
+        persistable = state.model_copy(update={"metadata": metadata})
+        return self.repository.save_state(persistable)
 
     def get_rule(self, rule_id: str) -> ControlRule | None:
         return self.repository.get_rule(rule_id)
@@ -295,6 +405,9 @@ class ControlMasterService:
 
         COMPLETED items are excluded.  Projection is idempotent.
         """
+        self._work_queue_diagnostics.errors = []
+        self._work_queue_diagnostics.coverage = {}
+        self._work_queue_diagnostics.reports = {}
         items: list[dict[str, Any]] = []
         seen_ids: set[str] = set()
 
@@ -313,22 +426,8 @@ class ControlMasterService:
         # 5. Failed/stalled interaction episodes from runtime_audit
         items.extend(self._project_runtime_audit_items(seen_ids))
 
-        # 6. Tests state
-        state = self.current_state()
-        ts = state.current_tests_state
-        if ts and ts.get('failed', 0) > 0:
-            tid = 'tests:failing'
-            if tid not in seen_ids:
-                seen_ids.add(tid)
-                items.append(self._make_item(
-                    item_id=tid,
-                    title=f"Tests failing: {ts.get('failed')} of {ts.get('total', '?')}",
-                    status='needs_fix',
-                    source='tests_state',
-                    evidence_refs=[],
-                    next_action='Fix failing tests before merging',
-                    score_components={'test_failure': 70, 'base': 10},
-                ))
+        # 6. Canonical TestEvidence (not the defaultable ControlMaster mirror).
+        items.extend(self._project_test_evidence_items(seen_ids))
 
         # Score and sort
         for item in items:
@@ -337,6 +436,163 @@ class ControlMasterService:
             item['priority_label'] = _score_to_label(item['priority_score'])
         items.sort(key=lambda x: x.get('priority_score', 0), reverse=True)
         return items[:limit]
+
+    def _project_test_evidence_items(
+        self, seen_ids: set[str],
+    ) -> list[dict[str, Any]]:
+        """Project queue work only from canonical, fresh TestEvidence.
+
+        ControlMasterState.current_tests_state is a best-effort mirror and
+        defaults to an empty dict. It is not proof that tests were observed.
+        The canonical P0.29 artifact is data/evolution/test_evidence/latest.json.
+        """
+        if not self.workspace_root:
+            self._record_work_queue_source("tests_state", "NOT_CONFIGURED")
+            return []
+
+        evidence_path = (
+            Path(str(self.workspace_root))
+            / "data"
+            / "evolution"
+            / "test_evidence"
+            / "latest.json"
+        )
+        try:
+            raw = evidence_path.read_text(encoding="utf-8")
+        except FileNotFoundError:
+            self._record_work_queue_source("tests_state", "NO_FILE")
+            return []
+        except OSError:
+            self._record_work_queue_error("TEST_EVIDENCE_READ_FAILED")
+            self._record_work_queue_source("tests_state", "READ_FAILED")
+            return []
+
+        import json as _json
+
+        try:
+            evidence = _json.loads(raw)
+        except (TypeError, ValueError):
+            self._record_work_queue_error("TEST_EVIDENCE_INVALID_JSON")
+            self._record_work_queue_source("tests_state", "READ_FAILED")
+            return []
+
+        if not isinstance(evidence, dict):
+            self._record_work_queue_source("tests_state", "UNVERIFIED")
+            return []
+
+        evidence_id = str(evidence.get("evidence_id") or "").strip()
+        timestamp_value = str(evidence.get("timestamp") or "").strip()
+        if not evidence_id or not timestamp_value:
+            self._record_work_queue_source("tests_state", "UNVERIFIED")
+            return []
+
+        try:
+            generated_at = datetime.fromisoformat(
+                timestamp_value.replace("Z", "+00:00")
+            )
+        except (TypeError, ValueError):
+            self._record_work_queue_source("tests_state", "UNVERIFIED")
+            return []
+        if generated_at.tzinfo is None or generated_at.utcoffset() is None:
+            self._record_work_queue_source("tests_state", "UNVERIFIED")
+            return []
+
+        age_seconds = (utc_now() - generated_at).total_seconds()
+        # The canonical TestEvidence reader's existing freshness contract is 24h.
+        if age_seconds < 0 or age_seconds > 86400:
+            self._record_work_queue_source("tests_state", "UNVERIFIED")
+            return []
+
+        counters: dict[str, int] = {}
+        for key in ("passed", "failed", "errors"):
+            value = evidence.get(key)
+            if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+                self._record_work_queue_source("tests_state", "UNVERIFIED")
+                return []
+            counters[key] = value
+
+        returncode = evidence.get("returncode")
+        timed_out = evidence.get("timed_out")
+        if (
+            isinstance(returncode, bool)
+            or not isinstance(returncode, int)
+            or not isinstance(timed_out, bool)
+        ):
+            self._record_work_queue_source("tests_state", "UNVERIFIED")
+            return []
+
+        try:
+            from iabv_v15.infra.mcp.audit_tools import load_latest_test_evidence
+            validated_evidence = load_latest_test_evidence(
+                Path(str(self.workspace_root))
+            )
+        except Exception:
+            self._record_work_queue_error("TEST_EVIDENCE_VALIDATION_FAILED")
+            self._record_work_queue_source("tests_state", "READ_FAILED")
+            return []
+        if (
+            not isinstance(validated_evidence, dict)
+            or validated_evidence.get("evidence_id") != evidence_id
+            or validated_evidence.get("payload_sha256") != evidence.get("payload_sha256")
+        ):
+            self._record_work_queue_source("tests_state", "READ_UNVERIFIED")
+            return []
+
+        has_failures = (
+            counters["failed"] > 0
+            or counters["errors"] > 0
+            or returncode != 0
+            or timed_out
+        )
+        execution_verified = (
+            returncode == 0
+            and timed_out is False
+            and counters["passed"] > 0
+            and counters["failed"] == 0
+            and counters["errors"] == 0
+        )
+        if not has_failures and not execution_verified:
+            self._record_work_queue_source("tests_state", "READ_UNVERIFIED")
+            return []
+
+        self._record_work_queue_source("tests_state", "READ_OK")
+        item_id = f"tests:{evidence_id}"
+        if not has_failures or item_id in seen_ids:
+            return []
+
+        seen_ids.add(item_id)
+        title = (
+            f"Test run exited with code {returncode} "
+            f"({counters['failed']} failed, {counters['errors']} errors)"
+            if returncode != 0
+            else (
+                f"Tests failed: {counters['failed']} failed, "
+                f"{counters['errors']} errors"
+            )
+        )
+        if timed_out:
+            title = (
+                f"Test execution timed out "
+                f"({counters['failed']} failed, {counters['errors']} errors)"
+            )
+        return [
+            self._make_item(
+                item_id=item_id,
+                title=title,
+                status="needs_fix",
+                source="tests_state",
+                evidence_refs=[
+                    f"data/evolution/test_evidence/latest.json#{evidence_id}"
+                ],
+                next_action="Review the recorded pytest evidence and resolve the failing suite",
+                score_components={"test_failure": 70, "base": 10},
+                updated_at=timestamp_value,
+                reason=(
+                    f"suite={str(evidence.get('suite') or '')[:120]} "
+                    f"returncode={returncode}"
+                ),
+            )
+        ]
 
     def _make_item(
         self,
@@ -375,12 +631,61 @@ class ControlMasterService:
         self, seen_ids: set[str],
     ) -> list[dict[str, Any]]:
         if self.objective_repository is None:
+            self._record_work_queue_source("objective_repository", "NOT_CONFIGURED")
             return []
         items: list[dict[str, Any]] = []
+        successful_reads = 0
+        partial_reads = 0
+        failed_reads = 0
+        diagnostic_reader = getattr(
+            self.objective_repository, "list_recent_with_diagnostics", None
+        )
         for status_val in (ObjectiveStatus.ACTIVE, ObjectiveStatus.PENDING, ObjectiveStatus.BLOCKED):
             try:
-                nodes = self.objective_repository.list_recent(status=status_val, limit=20)
-            except Exception:
+                if callable(diagnostic_reader):
+                    report = diagnostic_reader(status=status_val, limit=20)
+                    self._record_work_queue_read_report(
+                        f"objective_repository:{status_val.value}", report
+                    )
+                    report_status = getattr(
+                        getattr(report, "status", None), "value", ""
+                    )
+                    if report_status in ("READ_OK", "NO_RECORDS_OBSERVED"):
+                        nodes = report.items
+                        successful_reads += 1
+                    elif report_status == "READ_PARTIAL":
+                        partial_reads += 1
+                        self._record_work_queue_error(
+                            f"OBJECTIVES_READ_PARTIAL:{status_val.value}"
+                        )
+                        continue
+                    else:
+                        failed_reads += 1
+                        self._record_work_queue_error(
+                            f"OBJECTIVES_READ_FAILED:{status_val.value}"
+                        )
+                        continue
+                else:
+                    nodes = self.objective_repository.list_recent(
+                        status=status_val, limit=20
+                    )
+                    successful_reads += 1
+            except Exception as exc:
+                report = getattr(exc, "report", None)
+                if report is not None:
+                    self._record_work_queue_read_report(
+                        f"objective_repository:{status_val.value}", report
+                    )
+                report_status = getattr(
+                    getattr(report, "status", None), "value", ""
+                ) if report is not None else ""
+                if report_status == "READ_PARTIAL":
+                    partial_reads += 1
+                    code = "OBJECTIVES_READ_PARTIAL"
+                else:
+                    failed_reads += 1
+                    code = "OBJECTIVES_READ_FAILED"
+                self._record_work_queue_error(f"{code}:{status_val.value}")
                 continue
             for node in nodes:
                 oid = f'objective:{node.objective_id}'
@@ -407,6 +712,12 @@ class ControlMasterService:
                     updated_at=node.updated_at_utc.isoformat(),
                     reason=node.summary,
                 ))
+        objective_status = (
+            "READ_PARTIAL" if partial_reads or (failed_reads and successful_reads)
+            else "READ_FAILED" if failed_reads
+            else "READ_OK"
+        )
+        self._record_work_queue_source("objective_repository", objective_status)
         return items
 
     def _project_platform_pending_items(
@@ -414,12 +725,30 @@ class ControlMasterService:
     ) -> list[dict[str, Any]]:
         queue = self.platform_pending_queue
         if queue is None:
+            self._record_work_queue_source("platform_pending_queue", "NOT_CONFIGURED")
             return []
         items: list[dict[str, Any]] = []
+        if not hasattr(queue, "list_all"):
+            self._record_work_queue_error("PLATFORM_PENDING_QUEUE_READER_UNAVAILABLE")
+            self._record_work_queue_source("platform_pending_queue", "READER_UNAVAILABLE")
+            return items
+        queue_read_status = "READ_OK"
         try:
             from iabv_v15.domain.models import PendingTaskStatus as _PTS
-            all_tasks = queue.list_all() if hasattr(queue, 'list_all') else []
+            diagnostic_reader = getattr(type(queue), "list_all_with_diagnostics", None)
+            if callable(diagnostic_reader):
+                report = queue.list_all_with_diagnostics()
+                all_tasks = list(report.tasks)
+                queue_read_status = str(report.status).upper()
+                if queue_read_status != "READ_OK":
+                    self._record_work_queue_error(
+                        f"PLATFORM_PENDING_QUEUE_{queue_read_status}"
+                    )
+            else:
+                all_tasks = queue.list_all()
         except Exception:
+            self._record_work_queue_error("PLATFORM_PENDING_QUEUE_READ_FAILED")
+            self._record_work_queue_source("platform_pending_queue", "READ_FAILED")
             return []
         for task in all_tasks:
             if task.status == _PTS.COMPLETED:
@@ -446,24 +775,73 @@ class ControlMasterService:
                 updated_at=task.updated_at.isoformat(),
                 reason=task.reason or task.description,
             ))
+        self._record_work_queue_source("platform_pending_queue", queue_read_status)
         return items
 
     def _project_pending_issue_items(
         self, seen_ids: set[str],
     ) -> list[dict[str, Any]]:
         if self.pending_issue_repository is None:
+            self._record_work_queue_source("pending_issue_repository", "NOT_CONFIGURED")
             return []
-        items: list[dict[str, Any]] = []
         candidates: list[Any] = []
-        for method_name in ('list_recent', 'list_open', 'list_pending', 'list_all'):
-            method = getattr(self.pending_issue_repository, method_name, None)
-            if method is None:
-                continue
+        diagnostic_reader = getattr(
+            self.pending_issue_repository, "list_recent_with_diagnostics", None
+        )
+        if callable(diagnostic_reader):
             try:
-                candidates = list(method())
-                break
-            except Exception:
-                continue
+                report = diagnostic_reader(limit=15)
+            except Exception as exc:
+                report = getattr(exc, "report", None)
+                if report is not None:
+                    self._record_work_queue_read_report("pending_issue_repository", report)
+                report_status = getattr(
+                    getattr(report, "status", None), "value", ""
+                ) if report is not None else ""
+                status = "READ_PARTIAL" if report_status == "READ_PARTIAL" else "READ_FAILED"
+                self._record_work_queue_source("pending_issue_repository", status)
+                self._record_work_queue_error(f"PENDING_ISSUES_{status}")
+            else:
+                self._record_work_queue_read_report("pending_issue_repository", report)
+                report_status = getattr(
+                    getattr(report, "status", None), "value", ""
+                )
+                if report_status in ("READ_OK", "NO_RECORDS_OBSERVED"):
+                    candidates = report.items
+                    self._record_work_queue_source("pending_issue_repository", "READ_OK")
+                else:
+                    status = "READ_PARTIAL" if report_status == "READ_PARTIAL" else "READ_FAILED"
+                    self._record_work_queue_source("pending_issue_repository", status)
+                    self._record_work_queue_error(f"PENDING_ISSUES_{status}")
+        else:
+            method = None
+            for method_name in ("list_recent", "list_open", "list_pending", "list_all"):
+                candidate = getattr(self.pending_issue_repository, method_name, None)
+                if callable(candidate):
+                    method = candidate
+                    break
+            if method is None:
+                self._record_work_queue_error("PENDING_ISSUES_READER_UNAVAILABLE")
+                self._record_work_queue_source(
+                    "pending_issue_repository", "READER_UNAVAILABLE"
+                )
+            else:
+                try:
+                    candidates = list(method())
+                except Exception as exc:
+                    report = getattr(exc, "report", None)
+                    if report is not None:
+                        self._record_work_queue_read_report("pending_issue_repository", report)
+                    report_status = getattr(
+                        getattr(report, "status", None), "value", ""
+                    ) if report is not None else ""
+                    status = "READ_PARTIAL" if report_status == "READ_PARTIAL" else "READ_FAILED"
+                    self._record_work_queue_source("pending_issue_repository", status)
+                    self._record_work_queue_error(f"PENDING_ISSUES_{status}")
+                else:
+                    self._record_work_queue_source("pending_issue_repository", "READ_OK")
+
+        items: list[dict[str, Any]] = []
         for issue in candidates[:15]:
             iid = f'issue:{getattr(issue, "issue_id", "") or id(issue)}'
             if iid in seen_ids:
@@ -491,23 +869,57 @@ class ControlMasterService:
             ))
         return items
 
+    def _read_cached_oses_review(self) -> Any:
+        """Read only the public fresh/complete cache contract; never rebuild."""
+        service = self.self_examination_service
+        if service is None:
+            raise RuntimeError("oses_service_not_configured")
+
+        cached_reader = getattr(service, "current_review_cached", None)
+        if not callable(cached_reader):
+            raise RuntimeError("oses_cached_review_reader_unavailable")
+
+        snapshot = cached_reader()
+        if snapshot is None:
+            raise RuntimeError("oses_cached_review_unavailable")
+
+        metadata = getattr(snapshot, "metadata", {}) or {}
+        coverage = getattr(snapshot, "source_coverage", None)
+        if not isinstance(coverage, dict) or not coverage:
+            coverage = metadata.get("source_coverage") if isinstance(metadata, dict) else None
+        if not isinstance(coverage, dict) or not coverage:
+            raise RuntimeError("oses_source_coverage_unverified")
+
+        errors = getattr(snapshot, "source_errors", None)
+        if not isinstance(errors, dict):
+            errors = metadata.get("source_errors", {}) if isinstance(metadata, dict) else {}
+        incomplete = {
+            str(source): str(status)
+            for source, status in coverage.items()
+            if status != "READ_OK"
+        }
+        if incomplete or errors:
+            raise RuntimeError(
+                "oses_source_coverage_incomplete:"
+                + str({"statuses": incomplete, "errors": errors})
+            )
+        return snapshot
+
     def _project_oses_finding_items(
         self, seen_ids: set[str],
     ) -> list[dict[str, Any]]:
         if self.self_examination_service is None:
+            self._record_work_queue_source("self_examination_service", "NOT_CONFIGURED")
             return []
-        snapshot = None
-        for method_name in ('current_review', 'current_snapshot', 'latest_snapshot', 'current', 'latest'):
-            method = getattr(self.self_examination_service, method_name, None)
-            if method is None:
-                continue
-            try:
-                snapshot = method()
-                break
-            except Exception:
-                continue
-        if snapshot is None:
+        try:
+            snapshot = self._read_cached_oses_review()
+        except Exception as exc:
+            reason = str(exc)[:180]
+            self._record_work_queue_error("OSES_FINDINGS_NOT_VERIFIED:" + type(exc).__name__)
+            status = "READ_FAILED" if reason.startswith("oses_cached_review") else "READ_UNVERIFIED"
+            self._record_work_queue_source("self_examination_service", status)
             return []
+        self._record_work_queue_source("self_examination_service", "READ_OK")
         findings = getattr(snapshot, 'findings', None) or []
         items: list[dict[str, Any]] = []
         for finding in findings:
@@ -546,40 +958,95 @@ class ControlMasterService:
     def _project_runtime_audit_items(
         self, seen_ids: set[str],
     ) -> list[dict[str, Any]]:
-        """Project failed/stalled interaction episodes from runtime_audit.jsonl.
+        """Project failed/stalled interactions with a matching fsync receipt."""
+        from iabv_v15.services.evolution.runtime_audit_tracer import validate_durability_ack
 
-        Resolved-sane episodes are NOT projected (no false positives).
-        """
+        lifecycle = self.chat_interaction_lifecycle
         if not self.workspace_root:
+            self._record_work_queue_source("runtime_audit", "NOT_CONFIGURED")
+            self._record_work_queue_source(
+                "runtime_audit_durability",
+                "NOT_CONFIGURED" if lifecycle is None else "READ_UNVERIFIED",
+            )
             return []
+
+        import hashlib as _hashlib
         import json as _json
         audit_path = Path(str(self.workspace_root)) / 'data' / 'logs' / 'runtime_audit.jsonl'
         if not audit_path.exists():
+            self._record_work_queue_source("runtime_audit", "NO_FILE")
+            self._record_work_queue_source(
+                "runtime_audit_durability",
+                "NOT_CONFIGURED" if lifecycle is None else "NO_FILE",
+            )
             return []
+
         items: list[dict[str, Any]] = []
+        interaction_events = 0
+        durability_unverified = False
+        invalid_lines = False
         try:
-            lines = audit_path.read_text(encoding='utf-8', errors='replace').splitlines()
+            raw_lines = audit_path.read_bytes().splitlines(keepends=True)
+            line_ranges: list[tuple[int, int]] = []
+            byte_cursor = 0
+            for raw_line in raw_lines:
+                line_ranges.append((byte_cursor, byte_cursor + len(raw_line)))
+                byte_cursor += len(raw_line)
             count = 0
-            for line in reversed(lines):
+            for raw_line, (line_start, line_end) in reversed(list(zip(raw_lines, line_ranges))):
                 if count >= 10:
                     break
-                if not line.strip():
+                if not raw_line.strip():
                     continue
                 try:
+                    line = raw_line.decode('utf-8')
                     event = _json.loads(line)
                 except Exception:
+                    invalid_lines = True
+                    self._record_work_queue_error("RUNTIME_AUDIT_INVALID_JSON_LINE")
                     continue
                 if event.get('kind') != 'interaction_resolved':
                     continue
                 count += 1
+                interaction_events += 1
                 data = dict(event.get('data') or {})
+                iid = str(data.get('interaction_id') or '')
+                event_seq = event.get('seq')
+                expected_seq = (
+                    event_seq
+                    if isinstance(event_seq, int) and not isinstance(event_seq, bool)
+                    else -1
+                )
+
+                lifecycle_record = None
+                if lifecycle is not None and iid:
+                    try:
+                        reader = getattr(lifecycle, "interaction_info", None)
+                        if callable(reader):
+                            lifecycle_record = reader(iid)
+                    except Exception:
+                        lifecycle_record = None
+                raw_ack = (
+                    lifecycle_record.get("runtime_audit_durability")
+                    if isinstance(lifecycle_record, dict)
+                    else None
+                )
+                ack_check = validate_durability_ack(
+                    raw_ack,
+                    expected_seq=expected_seq,
+                    expected_line_sha256=_hashlib.sha256(raw_line).hexdigest(),
+                    expected_byte_start=line_start,
+                    expected_byte_end=line_end,
+                )
+                if not ack_check.get("accepted"):
+                    durability_unverified = True
+
                 outcome = data.get('outcome', '')
                 stalls = list(data.get('stalls_during') or [])
-                # Only project failed or stalled episodes
                 if outcome == 'resolved' and not stalls:
                     continue
-                iid_raw = data.get('interaction_id', '')
-                aid = f'audit:{iid_raw}'
+
+                aid = f'audit:{iid}'
                 if aid in seen_ids:
                     continue
                 seen_ids.add(aid)
@@ -588,7 +1055,7 @@ class ControlMasterService:
                     score['failed_interaction'] = 35
                 if stalls:
                     score['ui_stalls'] = min(len(stalls) * 15, 45)
-                items.append(self._make_item(
+                item = self._make_item(
                     item_id=aid,
                     title=(
                         f'Interaction {outcome}: '
@@ -597,7 +1064,7 @@ class ControlMasterService:
                     ),
                     status=outcome,
                     source='runtime_audit',
-                    evidence_refs=[f'data/logs/runtime_audit.jsonl#{iid_raw}'],
+                    evidence_refs=[f'data/logs/runtime_audit.jsonl#{iid}'],
                     next_action='Investigate interaction failure/stall pattern',
                     score_components=score,
                     reason=(
@@ -605,9 +1072,29 @@ class ControlMasterService:
                         f'stalls={len(stalls)} '
                         f'window_inactive={data.get("window_went_inactive", False)}'
                     ),
-                ))
+                )
+                item["runtime_audit_event_seq"] = event_seq
+                item["runtime_audit_durability"] = ack_check
+                items.append(item)
         except Exception:
-            pass
+            self._record_work_queue_error("RUNTIME_AUDIT_READ_FAILED")
+            self._record_work_queue_source("runtime_audit", "READ_FAILED")
+            self._record_work_queue_source("runtime_audit_durability", "READ_FAILED")
+            return items
+
+        self._record_work_queue_source(
+            "runtime_audit",
+            "READ_PARTIAL" if invalid_lines else "READ_OK",
+        )
+        if lifecycle is None:
+            durability_status = "NOT_CONFIGURED"
+        elif invalid_lines:
+            durability_status = "READ_PARTIAL"
+        elif interaction_events and durability_unverified:
+            durability_status = "READ_UNVERIFIED"
+        else:
+            durability_status = "READ_OK"
+        self._record_work_queue_source("runtime_audit_durability", durability_status)
         return items
 
     # ------------------------------------------------------------------
@@ -653,18 +1140,17 @@ class ControlMasterService:
         }
         if self.objective_repository is None:
             return buckets
-        try:
-            active = self.objective_repository.list_recent(
-                status=ObjectiveStatus.ACTIVE, limit=50
-            )
-            completed = self.objective_repository.list_recent(
-                status=ObjectiveStatus.COMPLETED, limit=50
-            )
-            paused = self.objective_repository.list_recent(
-                status=ObjectiveStatus.PAUSED, limit=50
-            )
-        except Exception:
-            return buckets
+        # A configured repository that cannot be read is not an empty inventory.
+        # Let the shared digest boundary classify the current-state projection as unavailable.
+        active = self.objective_repository.list_recent(
+            status=ObjectiveStatus.ACTIVE, limit=50
+        )
+        completed = self.objective_repository.list_recent(
+            status=ObjectiveStatus.COMPLETED, limit=50
+        )
+        paused = self.objective_repository.list_recent(
+            status=ObjectiveStatus.PAUSED, limit=50
+        )
         for node in active:
             buckets["active"].append(node.objective_id)
         for node in completed:
@@ -679,16 +1165,30 @@ class ControlMasterService:
     def _project_backlog(self) -> list[dict[str, Any]]:
         if self.pending_issue_repository is None:
             return []
-        candidates: list[Any] = []
-        for method_name in ("list_recent", "list_open", "list_pending", "list_all"):
-            method = getattr(self.pending_issue_repository, method_name, None)
-            if method is None:
-                continue
-            try:
-                candidates = list(method())
-                break
-            except Exception:
-                continue
+        diagnostic_reader = getattr(
+            self.pending_issue_repository, "list_recent_with_diagnostics", None
+        )
+        if callable(diagnostic_reader):
+            report = diagnostic_reader()
+            # Keep partial records inside the exception for diagnostics, but do not
+            # project an incomplete collection into the governance state.
+            candidates = report.require_complete()
+        else:
+            candidates: list[Any] | None = None
+            last_error: Exception | None = None
+            for method_name in ("list_recent", "list_open", "list_pending", "list_all"):
+                method = getattr(self.pending_issue_repository, method_name, None)
+                if method is None:
+                    continue
+                try:
+                    candidates = list(method())
+                    break
+                except Exception as exc:
+                    last_error = exc
+            if candidates is None:
+                if last_error is not None:
+                    raise RuntimeError("pending_issue_projection_read_failed") from last_error
+                raise RuntimeError("pending_issue_projection_reader_unavailable")
         backlog: list[dict[str, Any]] = []
         for item in candidates[:20]:
             if hasattr(item, "model_dump"):
@@ -702,18 +1202,7 @@ class ControlMasterService:
     def _project_risks(self) -> list[dict[str, Any]]:
         if self.self_examination_service is None:
             return []
-        snapshot = None
-        for method_name in ("current_snapshot", "latest_snapshot", "current", "latest"):
-            method = getattr(self.self_examination_service, method_name, None)
-            if method is None:
-                continue
-            try:
-                snapshot = method()
-                break
-            except Exception:
-                continue
-        if snapshot is None:
-            return []
+        snapshot = self._read_cached_oses_review()
         findings = getattr(snapshot, "findings", None) or []
         risks: list[dict[str, Any]] = []
         for finding in findings[:10]:
@@ -762,18 +1251,50 @@ class ControlMasterService:
                 ],
             }
 
-        # Build compact summary for governance
-        queue = data.get('continuity_queue', [])
+        # Coverage is part of the inventory contract, not optional decoration.
+        source_coverage = dict(data.get('source_coverage') or {})
+        source_errors = dict(data.get('source_errors') or {})
+        if not source_coverage:
+            source_status = 'UNVERIFIED'
+        elif any(
+            status in {'READ_FAILED', 'CORRUPT', 'SCHEMA_UNSUPPORTED'}
+            for status in source_coverage.values()
+        ):
+            source_status = 'READ_FAILED'
+        elif source_errors or any(status != 'READ_OK' for status in source_coverage.values()):
+            source_status = 'READ_PARTIAL'
+        else:
+            source_status = 'READ_OK'
+
+        quota_source_status = source_coverage.get('quota_tracker', 'UNVERIFIED')
+        quota_verified = quota_source_status == 'READ_OK'
+        # Never rebuild an actionable recommendation from a snapshot whose
+        # quota proof is absent, failed, corrupt, or unsupported.
+        queue = data.get('continuity_queue', []) if quota_verified else []
         next_recommended = queue[0] if queue else None
+        unresolved_items = list(data.get('unresolved_items', []) or [])
+        if not quota_verified:
+            unresolved_items.append(
+                f'UNRESOLVED:quota_tracker:{quota_source_status}'
+            )
 
         return {
-            'status': 'ok',
-            'active_count': data.get('active_count', 0),
-            'exhausted_count': data.get('exhausted_count', 0),
+            'status': 'ok' if source_status == 'READ_OK' else 'partial_failure',
+            'source_status': source_status,
+            'source_coverage': source_coverage,
+            'source_errors': source_errors,
+            'quota_source_status': quota_source_status,
+            'active_count': data.get('active_count', 0) if quota_verified else 0,
+            'exhausted_count': data.get('exhausted_count', 0) if quota_verified else 0,
             'expired_count': data.get('expired_count', 0),
-            'unresolved_count': data.get('unresolved_count', 0),
-            'total_remaining_messages': data.get('total_remaining_messages', 0),
-            'tools_available': data.get('tools_available', []),
+            'unresolved_count': max(
+                int(data.get('unresolved_count', 0) or 0),
+                1 if not quota_verified else 0,
+            ),
+            'total_remaining_messages': (
+                data.get('total_remaining_messages', 0) if quota_verified else 0
+            ),
+            'tools_available': data.get('tools_available', []) if quota_verified else [],
             'continuity_queue_size': len(queue),
             'next_recommended': {
                 'email': next_recommended.get('email', ''),
@@ -782,23 +1303,15 @@ class ControlMasterService:
                 'quota_remaining': next_recommended.get('quota_remaining', 0),
             } if next_recommended else None,
             'scanned_at': data.get('scanned_at', ''),
-            'unresolved_items': data.get('unresolved_items', []),
+            'unresolved_items': list(dict.fromkeys(unresolved_items)),
         }
 
     def _project_unresolved(self) -> list[str]:
         if self.self_examination_service is None:
             return []
-        for method_name in ("current_snapshot", "latest_snapshot", "current", "latest"):
-            method = getattr(self.self_examination_service, method_name, None)
-            if method is None:
-                continue
-            try:
-                snapshot = method()
-            except Exception:
-                continue
-            unresolved = getattr(snapshot, "unresolved_risks", None) or []
-            return [str(item) for item in unresolved]
-        return []
+        snapshot = self._read_cached_oses_review()
+        unresolved = getattr(snapshot, "unresolved_risks", None) or []
+        return [str(item) for item in unresolved]
 
 
 # ----------------------------------------------------------------------

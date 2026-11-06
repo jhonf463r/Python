@@ -65,6 +65,7 @@ class OperationalSelfExaminationService:
         autonomous_validation_cycle: Any | None = None,
         adaptive_weight_layer: Any | None = None,
         token_rotation_ledger: Any | None = None,
+        discernment_frame_service: Any | None = None,
     ) -> None:
         self.workspace_root = workspace_root
         self._created_at = time.time()
@@ -83,6 +84,9 @@ class OperationalSelfExaminationService:
         # permite cerrar el loop "detectar el patron de expiracion antes
         # de que el user lo note" sin inventar observacion nueva.
         self.token_rotation_ledger: Any | None = token_rotation_ledger
+        # One shared P0.69/P0.70 frame history is injected by AppBootstrap.
+        # OSES must not create a fresh instance just to read an empty ring.
+        self.discernment_frame_service: Any | None = discernment_frame_service
         # PCS v1 — hook opcional. Si un provider con ``snapshot()`` está
         # presente, `_persist_review` incluye las violaciones de
         # encarnamiento en ``metadata['embodiment_violations']`` sin
@@ -93,6 +97,8 @@ class OperationalSelfExaminationService:
         self.boot_profile_store: Any | None = None
         self.chat_message_repository: Any | None = None
         self._current_review: SelfExaminationSnapshot | None = None
+        self._source_coverage: dict[str, str] = {}
+        self._source_errors: dict[str, str] = {}
         # Read-only cache for GitHub API rate-limit data.  Populated
         # externally (e.g. auto-correction scan); _account_resource_health_findings
         # never probes — it only reads if fresh, otherwise skips the finding.
@@ -116,6 +122,162 @@ class OperationalSelfExaminationService:
         review = self.build_review()
         self._current_review = review
         return review
+
+    def current_review_cached(
+        self,
+        *,
+        max_age_seconds: int = 300,
+    ) -> SelfExaminationSnapshot:
+        """Return a fresh persisted review without starting a rebuild or side effects."""
+        cached = self._current_review
+        if cached is None:
+            cached = self._load_latest_review()
+            self._current_review = cached
+        if cached is None:
+            raise RuntimeError("oses_cached_review_unavailable")
+        if not self._is_fresh(cached, max_age_seconds=max_age_seconds):
+            raise RuntimeError("oses_cached_review_stale")
+        metadata = dict(cached.metadata or {})
+        if metadata.get("source_coverage_contract") != _SOURCE_COVERAGE_CONTRACT:
+            raise RuntimeError("oses_source_coverage_contract_unverified")
+        declared_sources = metadata.get("required_source_ids")
+        if (
+            not isinstance(declared_sources, list)
+            or len(declared_sources) != len(_REQUIRED_SOURCE_IDS)
+            or set(declared_sources) != set(_REQUIRED_SOURCE_IDS)
+        ):
+            raise RuntimeError("oses_source_coverage_contract_mismatch")
+
+        typed_coverage = dict(cached.source_coverage or {})
+        metadata_coverage = metadata.get("source_coverage")
+        if not isinstance(metadata_coverage, dict) or not metadata_coverage:
+            raise RuntimeError("oses_source_coverage_metadata_unverified")
+        if typed_coverage != metadata_coverage:
+            raise RuntimeError("oses_source_coverage_representation_mismatch")
+        coverage = typed_coverage
+        missing = sorted(set(_REQUIRED_SOURCE_IDS) - set(coverage))
+        unexpected = sorted(set(coverage) - set(_REQUIRED_SOURCE_IDS))
+        if missing or unexpected:
+            raise RuntimeError(
+                "oses_source_coverage_missing:"
+                + str({"missing": missing, "unexpected": unexpected})
+            )
+        incomplete = {
+            source: str(coverage[source])
+            for source in _REQUIRED_SOURCE_IDS
+            if coverage[source] != "READ_OK"
+        }
+
+        typed_errors = dict(cached.source_errors or {})
+        metadata_errors = metadata.get("source_errors")
+        if not isinstance(metadata_errors, dict):
+            raise RuntimeError("oses_source_errors_metadata_unverified")
+        if typed_errors != metadata_errors:
+            raise RuntimeError("oses_source_errors_representation_mismatch")
+        errors = typed_errors
+
+        if metadata.get("source_coverage_complete") is not True:
+            raise RuntimeError("oses_source_coverage_completion_unverified")
+        incomplete_ids = metadata.get("source_coverage_incomplete_ids")
+        unexpected_ids = metadata.get("source_coverage_unexpected_ids")
+        if not isinstance(incomplete_ids, list) or incomplete_ids:
+            raise RuntimeError("oses_source_coverage_completion_mismatch")
+        if not isinstance(unexpected_ids, list) or unexpected_ids:
+            raise RuntimeError("oses_source_coverage_unexpected_sources")
+        if incomplete or errors:
+            raise RuntimeError(
+                "oses_source_coverage_incomplete:"
+                + str({"statuses": incomplete, "errors": errors})
+            )
+        return cached
+
+    def _record_account_resource_coverage(self, result: Any) -> None:
+        """Propagate nested scanner outcomes without promoting partial reads."""
+        if not isinstance(result, dict):
+            self._record_source_status('account_resource_scanner', 'READ_UNVERIFIED', 'scanner_result_not_object')
+            return
+        coverage = result.get('source_coverage')
+        errors = result.get('source_errors')
+        if not isinstance(coverage, dict) or not coverage:
+            self._record_source_status('account_resource_scanner', 'READ_UNVERIFIED', 'scanner_source_coverage_missing')
+            return
+        if any(
+            not isinstance(key, str) or not key.strip()
+            or not isinstance(value, str) or not value.strip()
+            for key, value in coverage.items()
+        ):
+            self._record_source_status('account_resource_scanner', 'READ_UNVERIFIED', 'scanner_source_coverage_invalid')
+            return
+        if errors is None:
+            errors = {}
+        elif not isinstance(errors, dict) or any(
+            not isinstance(key, str) or not key.strip() or not isinstance(value, str)
+            for key, value in errors.items()
+        ):
+            self._record_source_status('account_resource_scanner', 'READ_UNVERIFIED', 'scanner_source_errors_invalid')
+            return
+        statuses = list(coverage.values())
+        error_keys = sorted(errors)
+        if any(value in {'READ_FAILED', 'CORRUPT', 'SCHEMA_UNSUPPORTED'} for value in statuses):
+            status = 'READ_FAILED'
+        elif all(value == 'READ_OK' for value in statuses):
+            status = 'READ_PARTIAL' if error_keys else 'READ_OK'
+        elif len(set(statuses)) == 1:
+            status = statuses[0]
+        else:
+            status = 'READ_PARTIAL'
+        reason = 'nested_sources=' + ','.join(
+            f'{key}:{coverage[key]}' for key in sorted(coverage)
+        )
+        if error_keys:
+            reason += ';error_sources=' + ','.join(error_keys)
+        self._record_source_status('account_resource_scanner', status, reason[:200])
+
+    def _source_coverage_report(self) -> dict[str, Any]:
+        """Build an explicit inventory; never infer READ_OK from an absent status."""
+        coverage = {
+            source: self._source_coverage.get(source, "NOT_INSTRUMENTED")
+            for source in _REQUIRED_SOURCE_IDS
+        }
+        errors = {
+            source: self._source_errors[source]
+            for source in _REQUIRED_SOURCE_IDS
+            if source in self._source_errors
+        }
+        missing = [
+            source for source, status in coverage.items()
+            if status != "READ_OK"
+        ]
+        unexpected = sorted(set(self._source_coverage) - set(_REQUIRED_SOURCE_IDS))
+        incomplete = sorted(set(missing) | set(errors))
+        return {
+            "contract": _SOURCE_COVERAGE_CONTRACT,
+            "required_source_ids": list(_REQUIRED_SOURCE_IDS),
+            "source_coverage": coverage,
+            "source_errors": errors,
+            "complete": not incomplete and not unexpected,
+            "incomplete_source_ids": incomplete,
+            "unexpected_source_ids": unexpected,
+        }
+
+    def _record_source_status(
+        self, source: str, status: str, error: str = "",
+    ) -> None:
+        previous = self._source_coverage.get(source)
+        # NOT_INSTRUMENTED is a census placeholder and is replaced by the
+        # first observed result. A later success must not erase an earlier
+        # failure from another read of the same source during this review.
+        if previous == "NOT_INSTRUMENTED" or previous is None:
+            self._source_coverage[source] = status
+        elif previous == "READ_OK" and status != "READ_OK":
+            self._source_coverage[source] = status
+        elif previous not in {"READ_FAILED", "READ_PARTIAL", "CORRUPT", "SCHEMA_UNSUPPORTED"}:
+            if status in {"READ_FAILED", "READ_PARTIAL", "CORRUPT", "SCHEMA_UNSUPPORTED", "NOT_CONFIGURED", "CONFIRMED_NOT_FOUND"}:
+                self._source_coverage[source] = status
+        if error:
+            self._source_errors[source] = error[:200]
+        elif status == "READ_OK" and self._source_coverage.get(source) == "READ_OK":
+            self._source_errors.pop(source, None)
 
     def review_summary(self, review: SelfExaminationSnapshot | None = None) -> dict[str, Any]:
         resolved = review or self.current_review()
@@ -158,20 +320,14 @@ class OperationalSelfExaminationService:
         ``WorldModelSnapshot``.  ``WorldModelSnapshot`` has ``block_records``
         (list[OperationalBlockRecord]) and ``detected_blocks`` (list[str]).
         """
-        # Check risk signals from EnvironmentSelfModel (if accessible).
-        try:
-            wm_service = self.world_model_service
-            if wm_service is not None:
-                env_service = getattr(wm_service, 'environment_self_awareness_service', None)
-                if env_service is not None and hasattr(env_service, 'current_model'):
-                    env_model = env_service.current_model()
-                    if env_model is not None:
-                        for signal in (env_model.risk_signals or []):
-                            severity = str(getattr(signal, 'severity', '') or '').upper()
-                            if severity in {'CRITICAL', 'HIGH'}:
-                                return False
-        except Exception:
-            pass
+        # Use the existing EnvironmentSelfAwarenessService reader so its
+        # success/failure is represented in the same source-coverage ledger.
+        env_model = self._environment_model()
+        if env_model is not None:
+            for signal in (env_model.risk_signals or []):
+                severity = str(getattr(signal, 'severity', '') or '').upper()
+                if severity in {'CRITICAL', 'HIGH'}:
+                    return False
 
         # Check operational blocks from WorldModelSnapshot.block_records.
         active_blocks = [
@@ -318,12 +474,15 @@ class OperationalSelfExaminationService:
         findings: list[SelfExaminationFinding] = []
         trail = self.decision_audit_trail
         if trail is None:
+            self._record_source_status('decision_audit_trail', 'NOT_CONFIGURED')
             return findings
 
         try:
             recent = trail.load_recent(limit=50)
-        except Exception:
+        except Exception as exc:
+            self._record_source_status('decision_audit_trail', 'READ_FAILED', type(exc).__name__)
             return findings
+        self._record_source_status('decision_audit_trail', 'READ_OK')
 
         if len(recent) < 5:
             return findings
@@ -581,9 +740,12 @@ class OperationalSelfExaminationService:
         # 2. Provider success correlation: if two providers fail in the
         # same time window, they may share an infrastructure issue.
         trail = self.decision_audit_trail
-        if trail is not None:
+        if trail is None:
+            self._record_source_status('decision_audit_trail', 'NOT_CONFIGURED')
+        else:
             try:
                 entries = trail.load_recent(limit=40)
+                self._record_source_status('decision_audit_trail', 'READ_OK')
                 if len(entries) >= 10:
                     window_failures: dict[str, list[str]] = {}
                     for entry in entries:
@@ -611,8 +773,8 @@ class OperationalSelfExaminationService:
                             ),
                             source_refs=['deep_analysis_queue', 'DecisionAuditTrail'],
                         ))
-            except Exception:
-                pass
+            except Exception as exc:
+                self._record_source_status('decision_audit_trail', 'READ_FAILED', type(exc).__name__)
 
         # 3. IQR outlier detection on latencies.
         all_latencies = sorted(
@@ -652,7 +814,53 @@ class OperationalSelfExaminationService:
 
         return findings[:3]
 
+    def _inspect_runtime_audit_log(self) -> None:
+        """Verify the shared runtime audit JSONL without trusting its consumers."""
+        workspace = str(getattr(self, 'workspace_root', '') or '').strip()
+        if not workspace:
+            self._record_source_status('runtime_audit_log', 'NOT_CONFIGURED', 'workspace_root_missing')
+            return
+
+        audit_path = Path(workspace) / 'data' / 'logs' / 'runtime_audit.jsonl'
+        malformed_rows = 0
+        try:
+            with audit_path.open('r', encoding='utf-8') as handle:
+                for line in handle:
+                    stripped = line.strip()
+                    if not stripped:
+                        continue
+                    try:
+                        payload = json.loads(stripped)
+                    except json.JSONDecodeError:
+                        malformed_rows += 1
+                        continue
+                    if not isinstance(payload, dict):
+                        malformed_rows += 1
+        except FileNotFoundError:
+            self._record_source_status('runtime_audit_log', 'CONFIRMED_NOT_FOUND')
+            return
+        except (OSError, UnicodeError) as exc:
+            self._record_source_status('runtime_audit_log', 'READ_FAILED', type(exc).__name__)
+            return
+        except Exception as exc:
+            self._record_source_status('runtime_audit_log', 'READ_FAILED', type(exc).__name__)
+            return
+
+        if malformed_rows:
+            self._record_source_status(
+                'runtime_audit_log',
+                'READ_PARTIAL',
+                f'malformed_jsonl_rows:{malformed_rows}',
+            )
+        else:
+            self._record_source_status('runtime_audit_log', 'READ_OK')
+
     def build_review(self) -> SelfExaminationSnapshot:
+        self._source_coverage = {
+            source: "NOT_INSTRUMENTED" for source in _REQUIRED_SOURCE_IDS
+        }
+        self._source_errors = {}
+        self._inspect_runtime_audit_log()
         now = utc_now()
         previous_review = self._load_latest_review()
         recent_runs = self._recent_runs()
@@ -789,10 +997,16 @@ class OperationalSelfExaminationService:
         # MetacognitionEvolution: aggregate findings from DecisionSimplifier,
         # PlatformLearning, and provider health monitoring.
         metacog = getattr(self, 'metacognition_evolution', None)
-        if metacog is not None:
+        if metacog is None:
+            self._record_source_status('metacognition_evolution', 'NOT_CONFIGURED')
+        else:
             try:
                 from iabv_v15.domain.models import SelfExaminationFinding, IssueSeverity
+                malformed_findings = False
                 for raw in metacog.all_findings():
+                    if not isinstance(raw, dict):
+                        malformed_findings = True
+                        continue
                     sev_str = str(raw.get('severity', 'MEDIUM')).upper()
                     try:
                         sev = IssueSeverity(sev_str)
@@ -807,7 +1021,13 @@ class OperationalSelfExaminationService:
                         recommendation=raw.get('recommendation', ''),
                         metadata=raw.get('metadata', {}),
                     ))
+                self._record_source_status(
+                    'metacognition_evolution',
+                    'READ_PARTIAL' if malformed_findings else 'READ_OK',
+                    'non_object_findings_observed' if malformed_findings else '',
+                )
             except Exception as exc:
+                self._record_source_status('metacognition_evolution', 'READ_FAILED', type(exc).__name__)
                 logger.warning('oses: metacognition_evolution findings error: %s', exc)
 
         # CodeAuditTrail cross-referencing: detect recurring bug patterns
@@ -914,6 +1134,7 @@ class OperationalSelfExaminationService:
             experiment_runs=experiment_runs,
             validated_improvements=validated_improvements,
         )
+        source_coverage_report = self._source_coverage_report()
         review = SelfExaminationSnapshot(
             created_at_utc=now,
             updated_at_utc=now,
@@ -924,7 +1145,15 @@ class OperationalSelfExaminationService:
             recommended_adjustments=recommended_adjustments[:6],
             validated_improvements=validated_improvements[:4],
             unresolved_risks=unresolved_risks[:8],
+            source_coverage=dict(source_coverage_report["source_coverage"]),
+            source_errors=dict(source_coverage_report["source_errors"]),
             metadata={
+                'source_coverage_contract': source_coverage_report["contract"],
+                'required_source_ids': list(source_coverage_report["required_source_ids"]),
+                'source_coverage': dict(source_coverage_report["source_coverage"]),
+                'source_errors': dict(source_coverage_report["source_errors"]),
+                'source_coverage_complete': bool(source_coverage_report["complete"]),
+                'source_coverage_incomplete_ids': list(source_coverage_report["incomplete_source_ids"]),
                 'recommendation_feedback': recommendation_feedback[:6],
                 'feedback_summary': feedback_summary,
                 'solution_proposals': solution_proposals[:4],
@@ -956,6 +1185,24 @@ class OperationalSelfExaminationService:
                 })
         except Exception:
             pass
+
+        # Refresh the coverage receipt after the adaptive-threshold read above.
+        # The earlier snapshot construction precedes that optional source read.
+        source_coverage_report = self._source_coverage_report()
+        coverage_metadata = {
+            **dict(review.metadata or {}),
+            'source_coverage_contract': source_coverage_report["contract"],
+            'required_source_ids': list(source_coverage_report["required_source_ids"]),
+            'source_coverage': dict(source_coverage_report["source_coverage"]),
+            'source_errors': dict(source_coverage_report["source_errors"]),
+            'source_coverage_complete': bool(source_coverage_report["complete"]),
+            'source_coverage_incomplete_ids': list(source_coverage_report["incomplete_source_ids"]),
+        }
+        review = review.model_copy(update={
+            'source_coverage': dict(source_coverage_report["source_coverage"]),
+            'source_errors': dict(source_coverage_report["source_errors"]),
+            'metadata': coverage_metadata,
+        })
 
         # Persist metacognitive ledger from the FULL findings list (before
         # truncation to 8) so MEDIUM-severity entries are not lost.
@@ -1014,6 +1261,41 @@ class OperationalSelfExaminationService:
 
         import logging
         logger = logging.getLogger(__name__)
+
+_SOURCE_COVERAGE_CONTRACT = 'OSES_SOURCE_COVERAGE_R1'
+_REQUIRED_SOURCE_IDS = (
+    'run_repository',
+    'adaptive_session_repository',
+    'experiment_runs',
+    'experiment_recommendations',
+    'scenario_run_repository',
+    'project_health',
+    'improvement_backlog',
+    'world_model_service',
+    'autonomous_validation_cycle',
+    'previous_review_snapshot',
+    'metacognitive_error_ledger',
+    'validation_feedback_history',
+    'token_rotation_ledger',
+    'decision_audit_trail',
+    'runtime_audit_tracer',
+    'runtime_audit_log',
+    'startup_timeline_log',
+    'startup_ui_presence_log',
+    'freeze_incident_reporter',
+    'discernment_frame_service',
+    'runtime_log',
+    'boot_profile_store',
+    'chat_research_backlog',
+    'account_resource_scanner',
+    'chat_message_repository',
+    'code_audit_trail',
+    'sqlite_incident_file',
+    'environment_self_awareness_service',
+    'test_evidence_file',
+    'experiment_lab_threshold',
+    'metacognition_evolution',
+)
 
         for finding in actionable[:3]:
             action_name = _CATEGORY_TO_ACTION[finding.category]
@@ -1197,9 +1479,17 @@ class OperationalSelfExaminationService:
 
     def _persist_review(self, review: SelfExaminationSnapshot) -> SelfExaminationSnapshot:
         embodiment_violations = self._collect_embodiment_violations()
+        coverage_report = self._source_coverage_report()
         metadata_update: dict[str, Any] = {
             **dict(review.metadata or {}),
             'workspace_root': self.workspace_root,
+            'source_coverage_contract': coverage_report['contract'],
+            'required_source_ids': list(coverage_report['required_source_ids']),
+            'source_coverage': dict(coverage_report['source_coverage']),
+            'source_errors': dict(coverage_report['source_errors']),
+            'source_coverage_complete': bool(coverage_report['complete']),
+            'source_coverage_incomplete_ids': list(coverage_report['incomplete_source_ids']),
+            'source_coverage_unexpected_ids': list(coverage_report['unexpected_source_ids']),
             'source_refs': [
                 'RunRepository',
                 'AdaptiveSessionRepository',
@@ -1230,7 +1520,13 @@ class OperationalSelfExaminationService:
                 'assistant_brief': self._render_assistant_brief(review),
                 'package_path': str(self.storage.resolve('self_examination/latest.json')),
                 'markdown_path': str(self.storage.resolve('self_examination/latest.md')),
-                'metadata': metadata_update,
+                'source_coverage': dict(coverage_report['source_coverage']),
+                'source_errors': dict(coverage_report['source_errors']),
+                'metadata': {
+                    **metadata_update,
+                    'source_coverage': dict(coverage_report['source_coverage']),
+                    'source_errors': dict(coverage_report['source_errors']),
+                },
             }
         )
         archive_json_rel = f'self_examination/history/{review.review_id}.json'
@@ -1282,11 +1578,18 @@ class OperationalSelfExaminationService:
 
     def _load_latest_review(self) -> SelfExaminationSnapshot | None:
         try:
-            if not self.storage.exists('self_examination/latest.json'):
+            # Use a non-creating path resolver: a cache miss must not create
+            # self_examination/ merely because a consumer asked for a cache read.
+            latest_path = self.storage.resolve_managed_path('self_examination/latest.json')
+            if not latest_path.is_file():
+                self._record_source_status('previous_review_snapshot', 'CONFIRMED_NOT_FOUND')
                 return None
-            payload = self.storage.load_json('self_examination/latest.json')
-            return SelfExaminationSnapshot.model_validate(payload)
-        except Exception:
+            payload = json.loads(latest_path.read_text(encoding='utf-8'))
+            review = SelfExaminationSnapshot.model_validate(payload)
+            self._record_source_status('previous_review_snapshot', 'READ_OK')
+            return review
+        except Exception as exc:
+            self._record_source_status('previous_review_snapshot', 'READ_FAILED', type(exc).__name__)
             return None
 
     def _is_fresh(self, review: SelfExaminationSnapshot, *, max_age_seconds: int) -> bool:
@@ -1294,94 +1597,133 @@ class OperationalSelfExaminationService:
             age_seconds = (utc_now() - review.updated_at_utc).total_seconds()
         except Exception:
             return False
-        return age_seconds <= max_age_seconds
+        return 0 <= age_seconds <= max_age_seconds
 
     def _recent_runs(self) -> list[RunRecord]:
         repository = self.run_repository
         if repository is None or not hasattr(repository, 'list_recent'):
+            self._record_source_status('run_repository', 'NOT_CONFIGURED')
             return []
         try:
-            return list(repository.list_recent(limit=60))
-        except Exception:
+            result = list(repository.list_recent(limit=60))
+        except Exception as exc:
+            self._record_source_status('run_repository', 'READ_FAILED', type(exc).__name__)
             return []
+        self._record_source_status('run_repository', 'READ_OK')
+        return result
 
     def _recent_adaptive_sessions(self) -> list[Any]:
         repository = self.adaptive_session_repository
         if repository is None or not hasattr(repository, 'list_recent'):
+            self._record_source_status('adaptive_session_repository', 'NOT_CONFIGURED')
             return []
         try:
-            return list(repository.list_recent(limit=40))
-        except Exception:
+            result = list(repository.list_recent(limit=40))
+        except Exception as exc:
+            self._record_source_status('adaptive_session_repository', 'READ_FAILED', type(exc).__name__)
             return []
+        self._record_source_status('adaptive_session_repository', 'READ_OK')
+        return result
 
     def _recent_experiment_runs(self) -> list[ExperimentRun]:
         repository = self.experiment_lab_repository
         if repository is None or not hasattr(repository, 'list_runs'):
+            self._record_source_status('experiment_runs', 'NOT_CONFIGURED')
             return []
         try:
-            return list(repository.list_runs(limit=60))
-        except Exception:
+            result = list(repository.list_runs(limit=60))
+        except Exception as exc:
+            self._record_source_status('experiment_runs', 'READ_FAILED', type(exc).__name__)
             return []
+        self._record_source_status('experiment_runs', 'READ_OK')
+        return result
 
     def _recent_recommendations(self) -> list[ExperimentRecommendation]:
         repository = self.experiment_lab_repository
         if repository is None or not hasattr(repository, 'list_recommendations'):
+            self._record_source_status('experiment_recommendations', 'NOT_CONFIGURED')
             return []
         try:
-            return list(repository.list_recommendations(limit=12))
-        except Exception:
+            result = list(repository.list_recommendations(limit=12))
+        except Exception as exc:
+            self._record_source_status('experiment_recommendations', 'READ_FAILED', type(exc).__name__)
             return []
+        self._record_source_status('experiment_recommendations', 'READ_OK')
+        return result
 
     def _recent_scenario_runs(self) -> list[Any]:
         repository = self.scenario_run_repository
         if repository is None or not hasattr(repository, 'list_recent'):
+            self._record_source_status('scenario_run_repository', 'NOT_CONFIGURED')
             return []
         try:
-            return list(repository.list_recent(limit=30))
-        except Exception:
+            result = list(repository.list_recent(limit=30))
+        except Exception as exc:
+            self._record_source_status('scenario_run_repository', 'READ_FAILED', type(exc).__name__)
             return []
+        self._record_source_status('scenario_run_repository', 'READ_OK')
+        return result
 
     def _project_health_snapshot(self) -> dict[str, Any]:
         service = self.evolution_review_service
         if service is None or not hasattr(service, 'build_project_health'):
+            self._record_source_status('project_health', 'NOT_CONFIGURED')
             return {}
         try:
-            return service.build_project_health().model_dump(mode='json')
-        except Exception:
+            result = service.build_project_health().model_dump(mode='json')
+        except Exception as exc:
+            self._record_source_status('project_health', 'READ_FAILED', type(exc).__name__)
             return {}
+        self._record_source_status('project_health', 'READ_OK')
+        return result
 
     def _improvement_backlog(self) -> list[dict[str, Any]]:
         service = self.evolution_review_service
         if service is None or not hasattr(service, 'build_improvement_backlog'):
+            self._record_source_status('improvement_backlog', 'NOT_CONFIGURED')
             return []
         try:
-            return [item.model_dump(mode='json') for item in service.build_improvement_backlog(limit=8)]
-        except Exception:
+            result = [
+                item.model_dump(mode='json')
+                for item in service.build_improvement_backlog(limit=8)
+            ]
+        except Exception as exc:
+            self._record_source_status('improvement_backlog', 'READ_FAILED', type(exc).__name__)
             return []
+        self._record_source_status('improvement_backlog', 'READ_OK')
+        return result
 
     def _world_model(self) -> WorldModelSnapshot:
         service = self.world_model_service
         if service is None or not hasattr(service, 'current_model'):
+            self._record_source_status('world_model_service', 'NOT_CONFIGURED')
             return WorldModelSnapshot(unresolved_fields=['UNRESOLVED:world_model'])
         try:
-            return service.current_model()
-        except Exception:
+            result = service.current_model()
+        except Exception as exc:
+            self._record_source_status('world_model_service', 'READ_FAILED', type(exc).__name__)
             return WorldModelSnapshot(unresolved_fields=['UNRESOLVED:world_model'])
+        self._record_source_status('world_model_service', 'READ_OK')
+        return result
 
     def _validation_snapshot(self) -> AutonomousValidationSnapshot:
         service = self.autonomous_validation_cycle
         if service is None or not hasattr(service, 'current_snapshot'):
+            self._record_source_status('autonomous_validation_cycle', 'NOT_CONFIGURED')
             return AutonomousValidationSnapshot(
                 status='idle',
                 unresolved_fields=['UNRESOLVED:validation_cycle'],
             )
         try:
-            return service.current_snapshot()
-        except Exception:
+            result = service.current_snapshot()
+        except Exception as exc:
+            self._record_source_status('autonomous_validation_cycle', 'READ_FAILED', type(exc).__name__)
             return AutonomousValidationSnapshot(
                 status='degraded',
                 unresolved_fields=['UNRESOLVED:validation_cycle'],
             )
+        self._record_source_status('autonomous_validation_cycle', 'READ_OK')
+        return result
 
     # Ventana de recurrencia real para "fallo repetido". Runs anteriores a
     # este margen se consideran historia fria y no cuentan, evitando que un
@@ -1752,11 +2094,14 @@ class OperationalSelfExaminationService:
         """
         ledger = getattr(self, 'token_rotation_ledger', None)
         if ledger is None or not hasattr(ledger, 'predictions'):
+            self._record_source_status('token_rotation_ledger', 'NOT_CONFIGURED')
             return []
         try:
             predictions = list(ledger.predictions() or [])
-        except Exception:
+        except Exception as exc:
+            self._record_source_status('token_rotation_ledger', 'READ_FAILED', type(exc).__name__)
             return []
+        self._record_source_status('token_rotation_ledger', 'READ_OK')
         findings: list[SelfExaminationFinding] = []
         for pred in predictions:
             if not isinstance(pred, dict):
@@ -1934,7 +2279,8 @@ class OperationalSelfExaminationService:
                         events.append(json.loads(line))
                     except json.JSONDecodeError:
                         continue
-        except OSError:
+        except OSError as exc:
+            self._record_source_status('startup_timeline_log', 'READ_FAILED', type(exc).__name__)
             return False
         if not events:
             return False
@@ -1996,8 +2342,12 @@ class OperationalSelfExaminationService:
             return False
         try:
             from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
-            elapsed_ms = float(get_runtime_tracer().current_elapsed_ms())
-        except Exception:
+            tracer = get_runtime_tracer()
+            if tracer is None:
+                raise RuntimeError('runtime_audit_tracer_not_available')
+            elapsed_ms = float(tracer.current_elapsed_ms())
+        except Exception as exc:
+            self._record_source_status('runtime_audit_tracer', 'READ_FAILED', type(exc).__name__)
             elapsed_ms = 0.0
         return elapsed_ms < 120_000.0
 
@@ -2085,7 +2435,8 @@ class OperationalSelfExaminationService:
                 episodes.append(data)
                 if len(episodes) >= 5:
                     break
-        except Exception:
+        except Exception as exc:
+            self._record_source_status('runtime_audit_log', 'READ_FAILED', type(exc).__name__)
             return []
         if not episodes:
             return []
@@ -2247,7 +2598,8 @@ class OperationalSelfExaminationService:
             return []
         try:
             lines = audit_path.read_text(encoding='utf-8', errors='replace').splitlines()
-        except OSError:
+        except OSError as exc:
+            self._record_source_status('runtime_audit_log', 'READ_FAILED', type(exc).__name__)
             return []
 
         resource_pressure_blocks: list[dict[str, Any]] = []
@@ -2409,7 +2761,8 @@ class OperationalSelfExaminationService:
             return []
         try:
             lines = audit_path.read_text(encoding='utf-8', errors='replace').splitlines()
-        except OSError:
+        except OSError as exc:
+            self._record_source_status('runtime_audit_log', 'READ_FAILED', type(exc).__name__)
             return []
 
         _BLOCKED_STATES = {
@@ -2507,7 +2860,8 @@ class OperationalSelfExaminationService:
             return []
         try:
             lines = audit_path.read_text(encoding='utf-8', errors='replace').splitlines()
-        except OSError:
+        except OSError as exc:
+            self._record_source_status('runtime_audit_log', 'READ_FAILED', type(exc).__name__)
             return []
 
         window_unbound: list[dict[str, Any]] = []
@@ -2710,8 +3064,10 @@ class OperationalSelfExaminationService:
         """
         log_path = Path(self.workspace_root) / 'data' / 'logs' / 'startup_timeline.jsonl'
         if not log_path.exists():
+            self._record_source_status('startup_timeline_log', 'CONFIRMED_NOT_FOUND')
             return []
         events: list[dict[str, Any]] = []
+        malformed_lines = False
         try:
             with log_path.open('r', encoding='utf-8') as fh:
                 for line in fh:
@@ -2719,11 +3075,22 @@ class OperationalSelfExaminationService:
                     if not line:
                         continue
                     try:
-                        events.append(json.loads(line))
+                        event = json.loads(line)
                     except json.JSONDecodeError:
+                        malformed_lines = True
                         continue
-        except OSError:
+                    if isinstance(event, dict):
+                        events.append(event)
+                    else:
+                        malformed_lines = True
+        except OSError as exc:
+            self._record_source_status('startup_timeline_log', 'READ_FAILED', type(exc).__name__)
             return []
+        self._record_source_status(
+            'startup_timeline_log',
+            'READ_PARTIAL' if malformed_lines else 'READ_OK',
+            'malformed_or_non_object_jsonl_rows' if malformed_lines else '',
+        )
         if not events:
             return []
         last_run: list[dict[str, Any]] = [events[-1]]
@@ -3356,9 +3723,13 @@ class OperationalSelfExaminationService:
         try:
             incident_path = Path(self.evolution_dir) / 'self_examination' / 'startup_sqlite_incident.json'
             if not incident_path.exists():
+                self._record_source_status('sqlite_incident_file', 'CONFIRMED_NOT_FOUND')
                 return findings
             import json
             incident = json.loads(incident_path.read_text(encoding='utf-8'))
+            if not isinstance(incident, dict):
+                raise TypeError('sqlite_incident_payload_not_object')
+            self._record_source_status('sqlite_incident_file', 'READ_OK')
             findings.append(SelfExaminationFinding(
                 category=incident.get('category', 'sqlite_lock_contention'),
                 title=incident.get('title', 'database is locked durante startup'),
@@ -3373,8 +3744,8 @@ class OperationalSelfExaminationService:
                     'source': 'startup_sqlite_incident.json',
                 },
             ))
-        except Exception:
-            pass
+        except Exception as exc:
+            self._record_source_status('sqlite_incident_file', 'READ_FAILED', type(exc).__name__)
         return findings
 
     # ------------------------------------------------------------------
@@ -3394,16 +3765,20 @@ class OperationalSelfExaminationService:
         """
         store = self.boot_profile_store
         if store is None:
+            self._record_source_status('boot_profile_store', 'NOT_CONFIGURED')
             return []
 
         environment_id = self._boot_profile_environment_id()
         if not environment_id:
+            self._record_source_status('boot_profile_store', 'NOT_CONFIGURED', 'environment_id_unavailable')
             return []
 
         try:
             summary = store.boot_profile_summary(environment_id)
-        except Exception:
+        except Exception as exc:
+            self._record_source_status('boot_profile_store', 'READ_FAILED', type(exc).__name__)
             return []
+        self._record_source_status('boot_profile_store', 'READ_OK')
 
         if summary.get('boot_count', 0) < 2:
             return []
@@ -3507,8 +3882,8 @@ class OperationalSelfExaminationService:
                                 'boot_count': boot_count,
                             },
                         ))
-            except Exception:
-                pass
+            except Exception as exc:
+                self._record_source_status('boot_profile_store', 'READ_PARTIAL', type(exc).__name__)
 
         return findings
 
@@ -3542,11 +3917,14 @@ class OperationalSelfExaminationService:
         """
         audit = getattr(self, 'decision_audit_trail', None)
         if audit is None:
+            self._record_source_status('decision_audit_trail', 'NOT_CONFIGURED')
             return []
         try:
             summary = audit.self_examination_summary()
-        except Exception:
+        except Exception as exc:
+            self._record_source_status('decision_audit_trail', 'READ_FAILED', type(exc).__name__)
             return []
+        self._record_source_status('decision_audit_trail', 'READ_OK')
         if summary.get('status') == 'no_data':
             return []
 
@@ -3698,15 +4076,20 @@ class OperationalSelfExaminationService:
 
         backlog_dir = Path(self.workspace_root) / 'data' / 'chat_research_backlog'
         if not backlog_dir.exists() or not backlog_dir.is_dir():
+            self._record_source_status('chat_research_backlog', 'CONFIRMED_NOT_FOUND')
             return []
 
         try:
             files = sorted(backlog_dir.glob('*.jsonl'))
-        except OSError:
+        except OSError as exc:
+            self._record_source_status('chat_research_backlog', 'READ_FAILED', type(exc).__name__)
             return []
         if not files:
+            self._record_source_status('chat_research_backlog', 'READ_OK')
             return []
 
+        malformed_rows = False
+        failed_files = 0
         # Agrupacion por ``kind``: nos quedamos con la entrada mas reciente
         # por kind para tener la evidencia mas actual sin duplicar findings.
         per_kind: dict[str, dict[str, Any]] = {}
@@ -3722,8 +4105,10 @@ class OperationalSelfExaminationService:
                         try:
                             record = json.loads(stripped)
                         except json.JSONDecodeError:
+                            malformed_rows = True
                             continue
                         if not isinstance(record, dict):
+                            malformed_rows = True
                             continue
                         if str(record.get('status') or 'open') != 'open':
                             continue
@@ -3744,7 +4129,15 @@ class OperationalSelfExaminationService:
                         if str(record.get('detected_at_utc') or '') > str(existing.get('detected_at_utc') or ''):
                             per_kind[kind] = record
             except OSError:
+                failed_files += 1
                 continue
+
+        if failed_files or malformed_rows:
+            status = 'READ_FAILED' if failed_files == len(files) else 'READ_PARTIAL'
+            reason = 'all_backlog_files_unreadable' if failed_files == len(files) else 'some_backlog_rows_or_files_unreadable'
+            self._record_source_status('chat_research_backlog', status, reason)
+        else:
+            self._record_source_status('chat_research_backlog', 'READ_OK')
 
         if not per_kind:
             return []
@@ -3898,14 +4291,17 @@ class OperationalSelfExaminationService:
         if not log_path.exists():
             log_path = Path(self.workspace_root) / 'iabv_v15.log'
         if not log_path.exists():
+            self._record_source_status('runtime_log', 'CONFIRMED_NOT_FOUND')
             return []
 
         try:
-            with log_path.open('r', encoding='utf-8', errors='replace') as fh:
+            with log_path.open('r', encoding='utf-8') as fh:
                 # Read only last N lines to avoid loading huge files
                 lines = fh.readlines()[-self._LOG_TAIL_LINES:]
-        except OSError:
+        except (OSError, UnicodeError) as exc:
+            self._record_source_status('runtime_log', 'READ_FAILED', type(exc).__name__)
             return []
+        self._record_source_status('runtime_log', 'READ_OK')
 
         if not lines:
             return []
@@ -3953,6 +4349,7 @@ class OperationalSelfExaminationService:
         try:
             from iabv_v15.services.account_resource_scanner import scan_browser_accounts
             browser_info = scan_browser_accounts()
+            self._record_account_resource_coverage(browser_info)
             acct_count = browser_info.get('count', 0)
             if acct_count > 0:
                 accounts = browser_info.get('accounts', [])
@@ -3989,8 +4386,8 @@ class OperationalSelfExaminationService:
                             metadata={'browser_accounts': browser_info},
                         )
                     )
-        except Exception:
-            pass  # scanner not available or failed — not critical
+        except Exception as exc:
+            self._record_source_status('account_resource_scanner', 'READ_FAILED', type(exc).__name__)
 
         # Auto-correction loop: when the program detects anomalies in its
         # own logs, attempt corrective actions automatically.
@@ -4833,13 +5230,38 @@ class OperationalSelfExaminationService:
 
         # --- G2: validation feedback persistence ---
         feedback_path = Path(self.workspace_root) / 'data' / 'evolution' / 'validation_feedback' / 'history.jsonl'
-        g2_file_exists = feedback_path.is_file()
+        g2_file_exists = False
         g2_entry_count = 0
-        if g2_file_exists:
-            try:
-                g2_entry_count = sum(1 for line in feedback_path.read_text(encoding='utf-8').splitlines() if line.strip())
-            except Exception:
-                pass
+        malformed_feedback_rows = 0
+        try:
+            feedback_text = feedback_path.read_text(encoding='utf-8')
+        except FileNotFoundError:
+            self._record_source_status('validation_feedback_history', 'CONFIRMED_NOT_FOUND')
+        except (OSError, UnicodeError) as exc:
+            self._record_source_status('validation_feedback_history', 'READ_FAILED', type(exc).__name__)
+        else:
+            g2_file_exists = True
+            for line in feedback_text.splitlines():
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    feedback_item = json.loads(line)
+                except (json.JSONDecodeError, ValueError):
+                    malformed_feedback_rows += 1
+                    continue
+                if not isinstance(feedback_item, dict):
+                    malformed_feedback_rows += 1
+                    continue
+                g2_entry_count += 1
+            if malformed_feedback_rows:
+                self._record_source_status(
+                    'validation_feedback_history',
+                    'READ_PARTIAL',
+                    f'malformed_jsonl_rows:{malformed_feedback_rows}',
+                )
+            else:
+                self._record_source_status('validation_feedback_history', 'READ_OK')
         checks.append({
             'mechanism': 'G2_feedback_persistence',
             'wired': True,
@@ -4960,6 +5382,10 @@ class OperationalSelfExaminationService:
         diagnostic categories are reliable and which need recalibration.
         """
         results: list[SelfExaminationFinding] = []
+        # This ledger is an input source in its own right. Read it on every
+        # review so source coverage does not depend on there being enough
+        # post-review experiment runs for calibration math.
+        ledger = self._load_metacognitive_ledger()
         if previous_review is None or not experiment_runs:
             return results
 
@@ -5164,9 +5590,7 @@ class OperationalSelfExaminationService:
 
         post_success_rate = sum(1 for r in post_runs if r.success) / max(len(post_runs), 1)
 
-        # Historical calibration: load ledger to detect persistent patterns.
-        # Runs independently of calibrated_findings — only needs the ledger.
-        ledger = self._load_metacognitive_ledger()
+        # Historical calibration uses the ledger read at method entry.
         if ledger:
             total_fp = sum(len(entry.get('false_positives') or []) for entry in ledger)
             total_fn = sum(len(entry.get('false_negatives') or []) for entry in ledger)
@@ -5465,8 +5889,10 @@ class OperationalSelfExaminationService:
         """Load the metacognitive error ledger for persistent bias detection."""
         ledger_rel = 'self_examination/metacognitive_ledger.jsonl'
         entries: list[dict[str, Any]] = []
+        malformed_rows = 0
         try:
             if not self.storage.exists(ledger_rel):
+                self._record_source_status('metacognitive_error_ledger', 'CONFIRMED_NOT_FOUND')
                 return entries
             raw = self.storage.load_bytes(ledger_rel).decode('utf-8')
             for line in raw.splitlines():
@@ -5474,11 +5900,25 @@ class OperationalSelfExaminationService:
                 if not line:
                     continue
                 try:
-                    entries.append(json.loads(line))
+                    item = json.loads(line)
                 except (json.JSONDecodeError, ValueError):
+                    malformed_rows += 1
                     continue
-        except Exception:
-            pass
+                if not isinstance(item, dict):
+                    malformed_rows += 1
+                    continue
+                entries.append(item)
+        except Exception as exc:
+            self._record_source_status('metacognitive_error_ledger', 'READ_FAILED', type(exc).__name__)
+            return entries
+
+        if malformed_rows:
+            self._record_source_status(
+                'metacognitive_error_ledger', 'READ_PARTIAL',
+                f'malformed_jsonl_rows:{malformed_rows}',
+            )
+        else:
+            self._record_source_status('metacognitive_error_ledger', 'READ_OK')
         return entries
 
     # ------------------------------------------------------------------
@@ -5486,43 +5926,51 @@ class OperationalSelfExaminationService:
     # ------------------------------------------------------------------
 
     def _load_tried_proposal_keys(self) -> set[str]:
-        """G2: Load proposal keys that have already been validated.
-
-        Reads the JSONL file written by ``AutonomousValidationCycleService._persist_validation_feedback``
-        and returns a set of synthetic keys for proposals that were
-        ``discarded`` or ``unresolved`` — so ``_solution_proposals`` avoids
-        re-proposing the same strategy.  Proposals that were ``promoted``
-        are NOT filtered (they succeeded and may be proposed again for
-        different contexts).
-        """
+        """G2: Load proposal keys that have already been validated."""
         tried: set[str] = set()
+        malformed_rows = 0
+        feedback_path = Path(self.workspace_root) / 'data' / 'evolution' / 'validation_feedback' / 'history.jsonl'
         try:
-            feedback_path = Path(self.workspace_root) / 'data' / 'evolution' / 'validation_feedback' / 'history.jsonl'
-            if not feedback_path.is_file():
-                return tried
-            for line in feedback_path.read_text(encoding='utf-8').splitlines():
-                line = line.strip()
-                if not line:
-                    continue
-                try:
-                    entry = json.loads(line)
-                except (json.JSONDecodeError, ValueError):
-                    continue
-                decision = str(entry.get('decision') or '')
-                if decision not in {'discarded', 'unresolved'}:
-                    continue
-                kind = str(entry.get('proposal_kind') or entry.get('proposal_key') or '').strip()
-                candidate = str(entry.get('candidate_assistant_kind') or '').strip().lower()
-                current = str(entry.get('current_assistant_kind') or '').strip().lower()
-                if kind and candidate and current:
-                    tried.add(f'route_substitution:{current}:{candidate}')
-                if kind and candidate and current:
-                    tried.add(f'collaborative_execution:{candidate}:{current}')
-                    tried.add(f'collaborative_execution:{current}:{candidate}')
-                    tried.add(f'validated_collaboration:{candidate}:{current}')
-                    tried.add(f'validated_collaboration:{current}:{candidate}')
-        except Exception:
-            pass
+            feedback_text = feedback_path.read_text(encoding='utf-8')
+        except FileNotFoundError:
+            self._record_source_status('validation_feedback_history', 'CONFIRMED_NOT_FOUND')
+            return tried
+        except Exception as exc:
+            self._record_source_status('validation_feedback_history', 'READ_FAILED', type(exc).__name__)
+            return tried
+
+        for line in feedback_text.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                entry = json.loads(line)
+            except (json.JSONDecodeError, ValueError):
+                malformed_rows += 1
+                continue
+            if not isinstance(entry, dict):
+                malformed_rows += 1
+                continue
+            decision = str(entry.get('decision') or '')
+            if decision not in {'discarded', 'unresolved'}:
+                continue
+            kind = str(entry.get('proposal_kind') or entry.get('proposal_key') or '').strip()
+            candidate = str(entry.get('candidate_assistant_kind') or '').strip().lower()
+            current = str(entry.get('current_assistant_kind') or '').strip().lower()
+            if kind and candidate and current:
+                tried.add(f'route_substitution:{current}:{candidate}')
+                tried.add(f'collaborative_execution:{candidate}:{current}')
+                tried.add(f'collaborative_execution:{current}:{candidate}')
+                tried.add(f'validated_collaboration:{candidate}:{current}')
+                tried.add(f'validated_collaboration:{current}:{candidate}')
+
+        if malformed_rows:
+            self._record_source_status(
+                'validation_feedback_history', 'READ_PARTIAL',
+                f'malformed_jsonl_rows:{malformed_rows}',
+            )
+        else:
+            self._record_source_status('validation_feedback_history', 'READ_OK')
         return tried
 
     # ------------------------------------------------------------------
@@ -6026,17 +6474,21 @@ class OperationalSelfExaminationService:
         from iabv_v15.domain.models import SelfExaminationFinding, IssueSeverity
         repo = self.chat_message_repository
         if repo is None:
+            self._record_source_status('chat_message_repository', 'NOT_CONFIGURED')
             return []
         try:
             total = repo.count()
-        except Exception:
+        except Exception as exc:
+            self._record_source_status('chat_message_repository', 'READ_FAILED', type(exc).__name__)
             return []
+        self._record_source_status('chat_message_repository', 'READ_OK')
         if total == 0:
             return []
         findings: list[SelfExaminationFinding] = []
         try:
             recent = repo.list_recent(limit=200)
-        except Exception:
+        except Exception as exc:
+            self._record_source_status('chat_message_repository', 'READ_FAILED', type(exc).__name__)
             return []
         if not recent:
             return findings
@@ -6083,7 +6535,11 @@ class OperationalSelfExaminationService:
                 metadata={'no_evidence': no_evidence, 'ratio': evidence_gap_ratio},
             ))
         if total > 1200:
-            sessions = repo.list_sessions()
+            try:
+                sessions = repo.list_sessions()
+            except Exception as exc:
+                self._record_source_status('chat_message_repository', 'READ_FAILED', type(exc).__name__)
+                return findings
             old_sessions = [s for s in sessions if s.get('count', 0) > 0]
             if len(old_sessions) > 20:
                 findings.append(SelfExaminationFinding(
@@ -6230,6 +6686,7 @@ class OperationalSelfExaminationService:
         """
         trail = getattr(self, 'code_audit_trail', None)
         if trail is None:
+            self._record_source_status('code_audit_trail', 'NOT_CONFIGURED')
             return []
         findings: list[SelfExaminationFinding] = []
         try:
@@ -6254,6 +6711,7 @@ class OperationalSelfExaminationService:
                     ))
 
             cross_verifications = trail.pending_cross_verifications()
+            self._record_source_status('code_audit_trail', 'READ_OK')
             windows_pending = [
                 f for f in cross_verifications
                 if f.get('needs_windows_verification')
@@ -6277,6 +6735,7 @@ class OperationalSelfExaminationService:
                     source_refs=['CodeAuditTrail', 'pending_cross_verifications'],
                 ))
         except Exception as exc:
+            self._record_source_status('code_audit_trail', 'READ_FAILED', type(exc).__name__)
             import logging as _logging
             _logging.getLogger(__name__).warning('oses: code_audit_cross_reference error: %s', exc)
         return findings
@@ -6527,6 +6986,9 @@ class OperationalSelfExaminationService:
             accounts = scan_browser_accounts()
             sessions = scan_browser_sessions()
             verified = verify_account_sessions()
+            self._record_account_resource_coverage(accounts)
+            self._record_account_resource_coverage(sessions)
+            self._record_account_resource_coverage(verified)
 
             session_browsers = {s.get('browser', '') for s in sessions.get('sessions', [])}
             account_browsers = {a.get('browser', '') for a in accounts.get('accounts', [])}
@@ -6565,8 +7027,46 @@ class OperationalSelfExaminationService:
             if accounts_with_sessions:
                 from iabv_v15.services.account_resource_scanner import get_all_quota_status
                 quotas = get_all_quota_status()
+                self._record_account_resource_coverage(quotas)
+                quota_coverage = quotas.get('source_coverage')
+                quota_source_status = (
+                    quota_coverage.get('quota_tracker')
+                    if isinstance(quota_coverage, dict)
+                    else 'UNVERIFIED'
+                )
+                quota_errors = quotas.get('source_errors')
+                quota_source_error = (
+                    quota_errors.get('quota_tracker', '')
+                    if isinstance(quota_errors, dict)
+                    else ''
+                )
                 tracked_count = len(quotas.get('statuses', []))
-                if tracked_count == 0 and len(accounts_with_sessions) > 0:
+                if quota_source_status not in {'READ_OK', 'CONFIRMED_NOT_FOUND'}:
+                    findings.append(SelfExaminationFinding(
+                        category='functional_gap',
+                        title='Cuotas de asistentes no verificables',
+                        summary=(
+                            f'{len(accounts_with_sessions)} sesiones de asistentes están detectadas, '
+                            f'pero la lectura del quota tracker está en {quota_source_status}. '
+                            'No inferir que no existen cuentas ni que todavía no hay consumos registrados.'
+                        ),
+                        severity=IssueSeverity.MEDIUM,
+                        confidence=0.95,
+                        recommendation=(
+                            'Restaurar una lectura íntegra del quota tracker y verificar la atribución '
+                            'tool/cuenta antes de usar esos saldos para selección.'
+                        ),
+                        evidence_refs=[
+                            f'quota_tracker_status:{quota_source_status}',
+                        ],
+                        metadata={
+                            'gap_type': 'quota_tracker_unverified',
+                            'quota_source_status': quota_source_status,
+                            'quota_source_error': str(quota_source_error)[:120],
+                            'accounts_with_sessions': len(accounts_with_sessions),
+                        },
+                    ))
+                elif tracked_count == 0:
                     findings.append(SelfExaminationFinding(
                         category='functional_gap',
                         title='Asistentes con sesion activa sin rastreo de cuotas',
@@ -6584,10 +7084,11 @@ class OperationalSelfExaminationService:
                         metadata={
                             'gap_type': 'untracked_quotas',
                             'accounts_with_sessions': len(accounts_with_sessions),
+                            'quota_source_status': quota_source_status,
                         },
                     ))
-        except Exception:
-            pass
+        except Exception as exc:
+            self._record_source_status('account_resource_scanner', 'READ_FAILED', type(exc).__name__)
 
         # Gap 3: Cloud API keys available but not used by intent classifier
         try:
@@ -6638,8 +7139,8 @@ class OperationalSelfExaminationService:
                         'training_examples': training_count,
                     },
                 ))
-        except Exception:
-            pass
+        except Exception as exc:
+            self._record_source_status('account_resource_scanner', 'READ_FAILED', type(exc).__name__)
 
         # Gap 4: Ollama available but not being leveraged for all classifiers
         try:
@@ -6697,17 +7198,54 @@ class OperationalSelfExaminationService:
                 get_all_quota_status,
                 scan_configured_secrets,
             )
-        except Exception:
+        except Exception as exc:
+            self._record_source_status('account_resource_scanner', 'READ_FAILED', type(exc).__name__)
             return findings
 
         # Finding 1: Exhausted quotas blocking execution
         try:
             quotas = get_all_quota_status()
+            self._record_account_resource_coverage(quotas)
+            quota_coverage = quotas.get('source_coverage')
+            quota_source_status = (
+                quota_coverage.get('quota_tracker')
+                if isinstance(quota_coverage, dict)
+                else 'UNVERIFIED'
+            )
+            quota_errors = quotas.get('source_errors')
+            quota_source_error = (
+                quota_errors.get('quota_tracker', '')
+                if isinstance(quota_errors, dict)
+                else ''
+            )
+            if quota_source_status not in {'READ_OK', 'CONFIRMED_NOT_FOUND'}:
+                findings.append(SelfExaminationFinding(
+                    category='functional_gap',
+                    title='Integridad del quota tracker no verificable',
+                    summary=(
+                        f'OSES no puede evaluar disponibilidad ni agotamiento de cuotas: '
+                        f'quota_tracker={quota_source_status}. No inferir un pool vacío '
+                        'ni un estado de agotamiento a partir de esta lectura.'
+                    ),
+                    severity=IssueSeverity.MEDIUM,
+                    confidence=0.95,
+                    recommendation=(
+                        'Recuperar una lectura íntegra del tracker y volver a generar '
+                        'el snapshot antes de evaluar agotamiento o capacidad disponible.'
+                    ),
+                    evidence_refs=[f'quota_tracker_status:{quota_source_status}'],
+                    metadata={
+                        'gap_type': 'quota_tracker_unverified',
+                        'quota_source_status': quota_source_status,
+                        'quota_source_error': str(quota_source_error)[:120],
+                    },
+                ))
+
             exhausted_count = quotas.get('exhausted_count', 0)
             available_count = quotas.get('available_count', 0)
             total = exhausted_count + available_count
 
-            if total > 0 and exhausted_count > 0:
+            if quota_source_status == 'READ_OK' and total > 0 and exhausted_count > 0:
                 ratio = exhausted_count / total
                 if ratio >= 0.5:
                     exhausted_keys = quotas.get('exhausted_keys', [])
@@ -6738,8 +7276,8 @@ class OperationalSelfExaminationService:
                             'exhaustion_ratio': round(ratio, 2),
                         },
                     ))
-        except Exception:
-            pass
+        except Exception as exc:
+            self._record_source_status('account_resource_scanner', 'READ_FAILED', type(exc).__name__)
 
         # Finding 2: API health — consume prior cache only, never probe here.
         # _gh_api_cache is populated externally; if absent or stale we skip.
@@ -6773,6 +7311,7 @@ class OperationalSelfExaminationService:
         # Finding 3: Critical secrets missing
         try:
             secrets = scan_configured_secrets()
+            self._record_account_resource_coverage(secrets)
             missing = secrets.get('missing', [])
             critical_missing = [
                 s for s in missing
@@ -6799,8 +7338,8 @@ class OperationalSelfExaminationService:
                         'missing_secrets': critical_missing,
                     },
                 ))
-        except Exception:
-            pass
+        except Exception as exc:
+            self._record_source_status('account_resource_scanner', 'READ_FAILED', type(exc).__name__)
 
         return findings
 
@@ -6819,11 +7358,19 @@ class OperationalSelfExaminationService:
         try:
             from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
             tracer = get_runtime_tracer()
-        except Exception:
+        except Exception as exc:
+            self._record_source_status('runtime_audit_tracer', 'READ_FAILED', type(exc).__name__)
+            return findings
+        if tracer is None:
+            self._record_source_status('runtime_audit_tracer', 'NOT_CONFIGURED', 'runtime_tracer_unavailable')
             return findings
 
         # 1. repeated_resource_pressure_blocks
-        quiescence_events = tracer.events(kind='external_consultation_quiescence', limit=50)
+        try:
+            quiescence_events = tracer.events(kind='external_consultation_quiescence', limit=50)
+        except Exception as exc:
+            self._record_source_status('runtime_audit_tracer', 'READ_FAILED', type(exc).__name__)
+            return findings
         deferred_count = sum(
             1 for e in quiescence_events
             if e.get('data', {}).get('decision') in ('defer', 'cleanup_needed')
@@ -6843,7 +7390,11 @@ class OperationalSelfExaminationService:
             ))
 
         # 2. startup_heavy_work_starvation
-        startup_events = tracer.events(kind='startup_heavy_work_state', limit=10)
+        try:
+            startup_events = tracer.events(kind='startup_heavy_work_state', limit=10)
+        except Exception as exc:
+            self._record_source_status('runtime_audit_tracer', 'READ_FAILED', type(exc).__name__)
+            return findings
         inhibited = [e for e in startup_events if e.get('data', {}).get('inhibited')]
         if len(inhibited) >= 2:
             findings.append(SelfExaminationFinding(
@@ -6859,7 +7410,11 @@ class OperationalSelfExaminationService:
             ))
 
         # 3. stale_security_verification_repeated
-        scan_events = tracer.events(kind='assistant_web_skill_scan', limit=30)
+        try:
+            scan_events = tracer.events(kind='assistant_web_skill_scan', limit=30)
+        except Exception as exc:
+            self._record_source_status('runtime_audit_tracer', 'READ_FAILED', type(exc).__name__)
+            return findings
         sec_verif_count = sum(
             1 for e in scan_events
             if e.get('data', {}).get('auth_status') == 'security_verification'
@@ -6883,7 +7438,11 @@ class OperationalSelfExaminationService:
 
         # 4. web_skill_profile_missing
         if not scan_events:
-            dispatches = tracer.recent_dispatch_lifecycles(limit=10)
+            try:
+                dispatches = tracer.recent_dispatch_lifecycles(limit=10)
+            except Exception as exc:
+                self._record_source_status('runtime_audit_tracer', 'READ_FAILED', type(exc).__name__)
+                return findings
             ext_dispatches = [d for d in dispatches if d.get('task_name') == 'external_consultation']
             if ext_dispatches:
                 findings.append(SelfExaminationFinding(
@@ -6899,7 +7458,11 @@ class OperationalSelfExaminationService:
                 ))
 
         # 5. devin_repair_worker_available_but_unused
-        devin_events = tracer.events(kind='devin_repair_worker', limit=10)
+        try:
+            devin_events = tracer.events(kind='devin_repair_worker', limit=10)
+        except Exception as exc:
+            self._record_source_status('runtime_audit_tracer', 'READ_FAILED', type(exc).__name__)
+            return findings
         devin_available = any(
             e.get('data', {}).get('available') for e in devin_events
         )
@@ -6907,10 +7470,14 @@ class OperationalSelfExaminationService:
             e.get('data', {}).get('phase') == 'session_created' for e in devin_events
         )
         if devin_available and not devin_used:
-            unresolved_dispatches = [
-                d for d in tracer.recent_dispatch_lifecycles(limit=20)
-                if d.get('unresolved') or 'blocked' in (d.get('terminal_state') or '')
-            ]
+            try:
+                unresolved_dispatches = [
+                    d for d in tracer.recent_dispatch_lifecycles(limit=20)
+                    if d.get('unresolved') or 'blocked' in (d.get('terminal_state') or '')
+                ]
+            except Exception as exc:
+                self._record_source_status('runtime_audit_tracer', 'READ_FAILED', type(exc).__name__)
+                return findings
             if len(unresolved_dispatches) >= 2:
                 findings.append(SelfExaminationFinding(
                     category='devin_repair_worker_available_but_unused',
@@ -6924,6 +7491,7 @@ class OperationalSelfExaminationService:
                     source_refs=['RuntimeAuditTracer.devin_repair_worker'],
                 ))
 
+        self._record_source_status('runtime_audit_tracer', 'READ_OK')
         return findings
 
     def _web_session_findings(self) -> list[SelfExaminationFinding]:
@@ -6939,16 +7507,25 @@ class OperationalSelfExaminationService:
                 check_web_session_health,
                 _WEB_SESSION_COOKIE_DOMAINS,
             )
-        except Exception:
+        except Exception as exc:
+            self._record_source_status('account_resource_scanner', 'READ_FAILED', type(exc).__name__)
             return findings
 
+        health_outcomes: list[str] = []
         for provider in _WEB_SESSION_COOKIE_DOMAINS:
             try:
                 health = check_web_session_health(provider)
             except Exception:
+                health_outcomes.append('READ_FAILED')
+                continue
+            if not isinstance(health, dict):
+                health_outcomes.append('READ_FAILED')
                 continue
 
-            status = health.get('status', 'unknown')
+            status = str(health.get('status') or 'unknown').strip().lower()
+            health_outcomes.append(
+                'READ_OK' if status in {'active', 'expired'} else 'READ_UNVERIFIED'
+            )
             if status == 'expired':
                 label_map = {
                     'chatgpt_web': 'ChatGPT Web',
@@ -6987,6 +7564,19 @@ class OperationalSelfExaminationService:
                     },
                 ))
 
+        if health_outcomes:
+            if 'READ_FAILED' in health_outcomes:
+                web_status = 'READ_FAILED'
+            elif all(item == 'READ_OK' for item in health_outcomes):
+                web_status = 'READ_OK'
+            else:
+                web_status = 'READ_UNVERIFIED'
+            self._record_source_status('account_resource_scanner', web_status)
+        else:
+            self._record_source_status(
+                'account_resource_scanner', 'READ_UNVERIFIED',
+                'no_web_provider_health_checks_executed',
+            )
         return findings
 
     # ==================================================================
@@ -7911,6 +8501,7 @@ class OperationalSelfExaminationService:
     def _compute_current_adaptive_nc(self) -> int | None:
         repo = self.experiment_lab_repository
         if repo is None:
+            self._record_source_status('experiment_lab_threshold', 'NOT_CONFIGURED')
             return None
         try:
             from iabv_v15.services.lab.experiment_lab import ExperimentLab
@@ -7923,8 +8514,11 @@ class OperationalSelfExaminationService:
                 scoring_engine=DecisionScoringEngine(),
                 strategy_selector=StrategySelector(),
             )
-            return lab.calculate_adaptive_threshold()
-        except Exception:
+            threshold = lab.calculate_adaptive_threshold()
+            self._record_source_status('experiment_lab_threshold', 'READ_OK')
+            return threshold
+        except Exception as exc:
+            self._record_source_status('experiment_lab_threshold', 'READ_FAILED', type(exc).__name__)
             return None
 
     # ------------------------------------------------------------------
@@ -7937,24 +8531,12 @@ class OperationalSelfExaminationService:
         previous_review: Any | None = None,
     ) -> list[SelfExaminationFinding]:
         """Detect significant shifts in the adaptive N_c threshold."""
-        repo = self.experiment_lab_repository
-        if repo is None:
+        # Route every threshold read through the shared diagnostic reader.
+        # A transient failure must remain in this review's coverage even if
+        # the later metadata refresh succeeds.
+        current_nc = self._compute_current_adaptive_nc()
+        if current_nc is None:
             return []
-        try:
-            from iabv_v15.services.lab.experiment_lab import ExperimentLab
-            from iabv_v15.services.lab.algorithm_benchmark_registry import AlgorithmBenchmarkRegistry
-            from iabv_v15.services.lab.decision_scoring_engine import DecisionScoringEngine
-            from iabv_v15.services.lab.strategy_selector import StrategySelector
-            lab = ExperimentLab(
-                repository=repo,
-                registry=AlgorithmBenchmarkRegistry(),
-                scoring_engine=DecisionScoringEngine(),
-                strategy_selector=StrategySelector(),
-            )
-            current_nc = lab.calculate_adaptive_threshold()
-        except Exception:
-            return []
-
         previous_nc = 3
         if previous_review is not None:
             meta = getattr(previous_review, 'metadata', None) or {}
@@ -8496,23 +9078,44 @@ class OperationalSelfExaminationService:
             return None
 
     def _environment_model(self) -> Any | None:
-        """Read EnvironmentSelfModel from world_model_service or direct."""
+        """Read EnvironmentSelfModel through WorldModel or its configured source."""
         wms = self.world_model_service
-        if wms is not None:
-            try:
-                snap = wms.current_model()
-                env = getattr(snap, 'environment', None)
-                if env is not None:
-                    return env
-            except Exception:
-                pass
-            try:
-                esas = getattr(wms, 'environment_self_awareness_service', None)
-                if esas is not None:
-                    return esas.current_model()
-            except Exception:
-                pass
-        return None
+        if wms is None:
+            self._record_source_status('environment_self_awareness_service', 'NOT_CONFIGURED')
+            return None
+
+        snapshot_error = ''
+        try:
+            snapshot = wms.current_model()
+            if snapshot is None:
+                raise RuntimeError('world_model_snapshot_unavailable')
+            environment = getattr(snapshot, 'environment', None)
+            if environment is not None:
+                self._record_source_status('environment_self_awareness_service', 'READ_OK')
+                return environment
+        except Exception as exc:
+            snapshot_error = type(exc).__name__
+
+        esas = getattr(wms, 'environment_self_awareness_service', None)
+        if esas is None or not callable(getattr(esas, 'current_model', None)):
+            self._record_source_status(
+                'environment_self_awareness_service',
+                'READ_FAILED' if snapshot_error else 'NOT_CONFIGURED',
+                snapshot_error or 'environment_model_not_exposed',
+            )
+            return None
+        try:
+            environment = esas.current_model()
+            if environment is None:
+                self._record_source_status(
+                    'environment_self_awareness_service', 'READ_PARTIAL', 'environment_model_returned_none'
+                )
+                return None
+            self._record_source_status('environment_self_awareness_service', 'READ_OK')
+            return environment
+        except Exception as exc:
+            self._record_source_status('environment_self_awareness_service', 'READ_FAILED', type(exc).__name__)
+            return None
 
     # ------------------------------------------------------------------
     # Task-packet → pending issues (materialization)
@@ -8582,7 +9185,8 @@ class OperationalSelfExaminationService:
                 if len(events) >= 50:
                     break
             events.reverse()  # restore chronological order
-        except Exception:
+        except Exception as exc:
+            self._record_source_status('runtime_audit_log', 'READ_FAILED', type(exc).__name__)
             return []
         if len(events) < 2:
             return []
@@ -8789,7 +9393,8 @@ class OperationalSelfExaminationService:
                 if len(events) >= 50:
                     break
             events.reverse()
-        except Exception:
+        except Exception as exc:
+            self._record_source_status('runtime_audit_log', 'READ_FAILED', type(exc).__name__)
             return []
         if len(events) < 2:
             return []
@@ -8985,8 +9590,8 @@ class OperationalSelfExaminationService:
                         data = entry.get('data', {})
                         if data.get('block_type') == 'browser_security_verification':
                             block_count += 1
-        except Exception:
-            pass
+        except Exception as exc:
+            self._record_source_status('runtime_audit_log', 'READ_FAILED', type(exc).__name__)
         if block_count >= 2:
             findings.append(SelfExaminationFinding(
                 category='isolated_profile_blocks_user_logged_in_browser',
@@ -9055,26 +9660,54 @@ class OperationalSelfExaminationService:
                         data = entry.get('data', {})
                         if data.get('task_name') == 'chat' and data.get('provider', '') == 'Adaptive local orchestrator':
                             heavy_self_audit_count += 1
-        except Exception:
-            pass
+        except Exception as exc:
+            self._record_source_status('runtime_audit_log', 'READ_FAILED', type(exc).__name__)
 
-        # Check test evidence freshness
+        # Only accept fresh TestEvidence whose exact source revision and
+        # clean worktree were bound across the complete pytest invocation.
         te_path = root / 'data' / 'evolution' / 'test_evidence' / 'latest.json'
         test_evidence_fresh = False
-        if te_path.exists():
+        try:
+            te_raw = te_path.read_bytes()
+        except FileNotFoundError:
+            self._record_source_status('test_evidence_file', 'CONFIRMED_NOT_FOUND')
+        except OSError as exc:
+            self._record_source_status('test_evidence_file', 'READ_FAILED', type(exc).__name__)
+        else:
             try:
                 import json as _json
-                te = _json.loads(te_path.read_text(encoding='utf-8'))
-                from datetime import datetime as _dt, timezone as _tz
-                ts_str = te.get('timestamp', '')
-                if ts_str:
-                    ts = _dt.fromisoformat(ts_str)
-                    if ts.tzinfo is None:
-                        ts = ts.replace(tzinfo=_tz.utc)
-                    age_h = (_dt.now(_tz.utc) - ts).total_seconds() / 3600
-                    test_evidence_fresh = age_h < 24
-            except Exception:
-                pass
+                te = _json.loads(te_raw.decode('utf-8'))
+                if not isinstance(te, dict):
+                    self._record_source_status(
+                        'test_evidence_file', 'SCHEMA_UNSUPPORTED', 'test_evidence_payload_not_object'
+                    )
+                else:
+                    from iabv_v15.infra.mcp.audit_tools import load_latest_test_evidence
+                    trusted_evidence = load_latest_test_evidence(root)
+                    if trusted_evidence is None:
+                        self._record_source_status(
+                            'test_evidence_file',
+                            'READ_PARTIAL',
+                            'fresh_commit_bound_evidence_not_verified',
+                        )
+                    else:
+                        self._record_source_status('test_evidence_file', 'READ_OK')
+                        from datetime import datetime as _dt, timezone as _tz
+                        ts = _dt.fromisoformat(str(trusted_evidence['timestamp']))
+                        if ts.tzinfo is None:
+                            ts = ts.replace(tzinfo=_tz.utc)
+                        age_h = (_dt.now(_tz.utc) - ts).total_seconds() / 3600
+                        test_evidence_fresh = 0 <= age_h < 24
+            except _json.JSONDecodeError:
+                self._record_source_status(
+                    'test_evidence_file', 'CORRUPT', 'test_evidence_invalid_json'
+                )
+            except UnicodeError:
+                self._record_source_status(
+                    'test_evidence_file', 'CORRUPT', 'test_evidence_invalid_utf8'
+                )
+            except Exception as exc:
+                self._record_source_status('test_evidence_file', 'READ_FAILED', type(exc).__name__)
 
         starved = skip_count >= 5 or (not test_evidence_fresh and skip_count >= 2)
         if starved:
@@ -9153,8 +9786,8 @@ class OperationalSelfExaminationService:
                     ):
                         block_then_local += 1
                         saw_block = False
-        except Exception:
-            pass
+        except Exception as exc:
+            self._record_source_status('runtime_audit_log', 'READ_FAILED', type(exc).__name__)
 
         # Source 2: DecisionAuditTrail chat_routing records
         try:
@@ -9187,8 +9820,8 @@ class OperationalSelfExaminationService:
                         ):
                             block_then_local += 1
                             saw_block_d = False
-        except Exception:
-            pass
+        except Exception as exc:
+            self._record_source_status('decision_audit_trail', 'READ_FAILED', type(exc).__name__)
 
         if block_then_local >= 2:
             findings.append(SelfExaminationFinding(
@@ -9246,8 +9879,8 @@ class OperationalSelfExaminationService:
                         cap = entry.get('data', {}).get('capability', '')
                         if cap and cap not in capabilities:
                             capabilities.append(cap)
-        except Exception:
-            pass
+        except Exception as exc:
+            self._record_source_status('runtime_audit_log', 'READ_FAILED', type(exc).__name__)
         if promised_count >= 1:
             findings.append(SelfExaminationFinding(
                 category='capability_promised_but_unavailable',
@@ -9321,8 +9954,8 @@ class OperationalSelfExaminationService:
                     if kind == 'web_skill_profile_built':
                         if data.get('cdp_status') == 'unavailable':
                             cdp_unavailable_count += 1
-        except Exception:
-            pass
+        except Exception as exc:
+            self._record_source_status('runtime_audit_log', 'READ_FAILED', type(exc).__name__)
         if blocked_count >= 2:
             findings.append(SelfExaminationFinding(
                 category='external_readiness_missing',
@@ -9465,8 +10098,8 @@ class OperationalSelfExaminationService:
                                 or 'resource_snapshot_refresh_in_flight' in phase
                                 or 'resource_snapshot_refresh_in_flight' in phase_at_detection):
                             prebuild_resource_snapshot_stall_count += 1
-        except Exception:
-            pass
+        except Exception as exc:
+            self._record_source_status('runtime_audit_log', 'READ_FAILED', type(exc).__name__)
         if external_intent_local_count >= 1:
             findings.append(SelfExaminationFinding(
                 category='external_intent_misrouted_local',
@@ -9657,7 +10290,28 @@ def get_functional_gap_summary() -> list[dict[str, str]]:
         active = [a for a in pool_accounts if a.get('tool_count', 0) > 0]
         if active:
             quotas = get_all_quota_status()
-            if len(quotas.get('statuses', [])) == 0:
+            quota_coverage = quotas.get('source_coverage')
+            quota_source_status = (
+                quota_coverage.get('quota_tracker')
+                if isinstance(quota_coverage, dict)
+                else 'UNVERIFIED'
+            )
+            quota_errors = quotas.get('source_errors')
+            quota_source_error = (
+                quota_errors.get('quota_tracker', '')
+                if isinstance(quota_errors, dict)
+                else ''
+            )
+            if quota_source_status not in {'READ_OK', 'CONFIRMED_NOT_FOUND'}:
+                gaps.append({
+                    'title': 'Cuotas de workers no verificables',
+                    'detail': (
+                        f'{len(active)} asistentes tienen sesiones detectadas, pero '
+                        f'quota_tracker={quota_source_status}; no inferir que el inventario está vacío. '
+                        f'Diagnóstico: {str(quota_source_error)[:100]}'
+                    ),
+                })
+            elif len(quotas.get('statuses', [])) == 0:
                 gaps.append({
                     'title': 'Workers sin rastreo de cuotas',
                     'detail': (
@@ -9732,12 +10386,22 @@ def _discernment_frame_findings_impl(self) -> list:
     - stale_external_data_overrode_live_world_model: stale data used over live
     """
     findings: list = []
-    try:
-        from iabv_v15.services.evolution.discernment_frame_service import DiscernmentFrameService
-        svc = DiscernmentFrameService(workspace_root=getattr(self, 'workspace_root', ''))
-        frames = svc.recent_frames(limit=10)
-    except Exception:
+    svc = getattr(self, 'discernment_frame_service', None)
+    if svc is None:
+        self._record_source_status(
+            'discernment_frame_service',
+            'NOT_CONFIGURED',
+            'shared_discernment_frame_service_not_injected',
+        )
         return findings
+    try:
+        frames = svc.recent_frames(limit=10)
+        if not isinstance(frames, list):
+            raise TypeError('discernment_frames_not_list')
+    except Exception as exc:
+        self._record_source_status('discernment_frame_service', 'READ_FAILED', type(exc).__name__)
+        return findings
+    self._record_source_status('discernment_frame_service', 'READ_OK')
 
     from iabv_v15.domain.models import SelfExaminationFinding, IssueSeverity
 
@@ -9885,8 +10549,14 @@ def _ui_bridge_truth_findings_impl(self) -> list:
     try:
         from iabv_v15.services.evolution.runtime_audit_tracer import get_runtime_tracer
         tracer = get_runtime_tracer()
+        if tracer is None:
+            raise RuntimeError('runtime_audit_tracer_not_available')
         events = tracer.events(limit=200)
+        if not isinstance(events, list):
+            raise TypeError('runtime_tracer_events_not_list')
         for ev in events:
+            if not isinstance(ev, dict):
+                continue
             kind = ev.get('kind', '')
             data = ev.get('data', {})
             if kind == 'ui_bridge_port_conflict':
@@ -9898,50 +10568,83 @@ def _ui_bridge_truth_findings_impl(self) -> list:
                 provider = data.get('provider', '')
                 if provider == 'local' and duration_ms > 5000:
                     local_slow_count += 1
-    except Exception:
-        pass
+        self._record_source_status('runtime_audit_tracer', 'READ_OK')
+    except Exception as exc:
+        self._record_source_status('runtime_audit_tracer', 'READ_FAILED', type(exc).__name__)
 
-    # Read recent freeze incidents for unknown-cause stalls
-    try:
-        from iabv_v15.services.evolution.freeze_incident_reporter import FreezeIncidentReporter
-        workspace = getattr(self, 'workspace_root', '')
-        if workspace:
-            import os
-            evo_dir = os.path.join(workspace, 'data', 'evolution')
-            reporter = FreezeIncidentReporter(evo_dir)
-            for inc in reporter.recent_incidents(limit=10):
-                extra = inc or {}
-                if extra.get('incident_type', '') in ('chat_stall', 'startup_freeze'):
-                    bridge_state = {}
-                    full = reporter.get_report(extra.get('file', ''))
-                    if full:
-                        bridge_state = full.get('ui_bridge_state', {})
-                    if bridge_state.get('bridge_reachable') and not bridge_state.get('control_vm_bound'):
-                        bridge_ready_no_vm += 1
-    except Exception:
-        pass
+    # Read recent freeze incidents from the already-wired reporter.
+    reporter = getattr(self, '_freeze_incident_reporter', None)
+    if reporter is None:
+        self._record_source_status('freeze_incident_reporter', 'NOT_CONFIGURED')
+    else:
+        try:
+            reports = reporter.list_reports(limit=10)
+            if not isinstance(reports, list):
+                raise TypeError('freeze_report_list_not_list')
+            partial = False
+            for meta in reports:
+                if not isinstance(meta, dict):
+                    partial = True
+                    continue
+                if meta.get('error'):
+                    partial = True
+                    continue
+                filename = str(meta.get('file') or '')
+                full = reporter.get_report(filename) if filename else None
+                if not isinstance(full, dict):
+                    partial = True
+                    continue
+                extra = full.get('extra', {})
+                if not isinstance(extra, dict):
+                    partial = True
+                    continue
+                if extra.get('incident_type', full.get('trigger', '')) in ('chat_stall', 'startup_freeze'):
+                    bridge_state = full.get('ui_bridge_state', {})
+                    if isinstance(bridge_state, dict):
+                        if bridge_state.get('bridge_reachable') and not bridge_state.get('control_vm_bound'):
+                            bridge_ready_no_vm += 1
+            self._record_source_status(
+                'freeze_incident_reporter',
+                'READ_PARTIAL' if partial else 'READ_OK',
+                'incident_report_parse_or_shape_error' if partial else '',
+            )
+        except Exception as exc:
+            self._record_source_status('freeze_incident_reporter', 'READ_FAILED', type(exc).__name__)
 
-    # Read startup trace for duplicate bridge
-    try:
-        import os
-        workspace = getattr(self, 'workspace_root', '')
-        if workspace:
-            trace_path = os.path.join(workspace, 'data', 'logs', 'startup_ui_presence.jsonl')
-            if os.path.exists(trace_path):
-                import json
-                with open(trace_path, 'r', encoding='utf-8') as f:
-                    for line in f:
-                        line = line.strip()
-                        if not line:
-                            continue
-                        try:
-                            entry = json.loads(line)
-                            if entry.get('kind') == 'ui_bridge_port_conflict':
-                                duplicate_bridge += 1
-                        except Exception:
-                            pass
-    except Exception:
-        pass
+    # Read startup trace for duplicate bridge. Open directly so access errors
+    # cannot be mistaken for an absent optional log.
+    workspace = getattr(self, 'workspace_root', '')
+    if not workspace:
+        self._record_source_status('startup_ui_presence_log', 'NOT_CONFIGURED')
+    else:
+        trace_path = Path(workspace) / 'data' / 'logs' / 'startup_ui_presence.jsonl'
+        malformed_rows = False
+        try:
+            with trace_path.open('r', encoding='utf-8') as handle:
+                for line in handle:
+                    stripped = line.strip()
+                    if not stripped:
+                        continue
+                    try:
+                        entry = json.loads(stripped)
+                    except Exception:
+                        malformed_rows = True
+                        continue
+                    if not isinstance(entry, dict):
+                        malformed_rows = True
+                        continue
+                    if entry.get('kind') == 'ui_bridge_port_conflict':
+                        duplicate_bridge += 1
+        except FileNotFoundError:
+            self._record_source_status('startup_ui_presence_log', 'CONFIRMED_NOT_FOUND')
+        except Exception as exc:
+            self._record_source_status('startup_ui_presence_log', 'READ_FAILED', type(exc).__name__)
+        else:
+            self._record_source_status(
+                'startup_ui_presence_log',
+                'READ_PARTIAL' if malformed_rows else 'READ_OK',
+                'malformed_jsonl_rows' if malformed_rows else '',
+            )
 
     if bridge_ready_no_vm >= 1:
         findings.append(SelfExaminationFinding(

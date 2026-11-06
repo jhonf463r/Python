@@ -23,6 +23,7 @@ from unittest.mock import MagicMock, patch
 
 from iabv_v15.infra.mcp.audit_tools import (
     _persist_test_evidence,
+    _test_evidence_payload_sha256,
     load_latest_test_evidence,
     run_pytest,
 )
@@ -57,6 +58,26 @@ def _fake_subprocess_runner(
     return runner
 
 
+_TEST_EVIDENCE_COMMIT = "a" * 40
+_TEST_EVIDENCE_BRANCH = "test-branch"
+
+
+def _install_matching_git_provenance(monkeypatch) -> None:
+    from iabv_v15.infra.mcp import audit_tools
+
+    monkeypatch.setattr(
+        audit_tools,
+        "_collect_test_git_provenance",
+        lambda _root: {
+            "commit_sha": _TEST_EVIDENCE_COMMIT,
+            "branch": _TEST_EVIDENCE_BRANCH,
+            "worktree_clean": True,
+            "provenance_status": "COMMIT_BOUND_CLEAN",
+            "worktree_status_sha256": "b" * 64,
+        },
+    )
+
+
 def _write_fresh_evidence(tmpdir: str, *, passed: int = 10, failed: int = 0, errors: int = 0) -> Path:
     """Write a fresh TestEvidence JSON to the expected path."""
     evidence_dir = Path(tmpdir) / "data" / "evolution" / "test_evidence"
@@ -75,8 +96,29 @@ def _write_fresh_evidence(tmpdir: str, *, passed: int = 10, failed: int = 0, err
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "linked_pending_task": "p029",
         "changed_files": ["models.py"],
-        "metadata": {},
+        "commit_sha": "a" * 40,
+        "branch": "test-branch",
+        "worktree_clean": True,
+        "provenance_status": "COMMIT_BOUND_CLEAN",
+        "worktree_status_sha256": "b" * 64,
+        "metadata": {
+            "provenance_before": {
+            "commit_sha": "a" * 40,
+            "branch": "test-branch",
+            "worktree_clean": True,
+            "provenance_status": "COMMIT_BOUND_CLEAN",
+            "worktree_status_sha256": "b" * 64,
+        },
+            "provenance_after": {
+            "commit_sha": "a" * 40,
+            "branch": "test-branch",
+            "worktree_clean": True,
+            "provenance_status": "COMMIT_BOUND_CLEAN",
+            "worktree_status_sha256": "b" * 64,
+        },
+        },
     }
+    evidence["payload_sha256"] = _test_evidence_payload_sha256(evidence)
     latest = evidence_dir / "latest.json"
     latest.write_text(json.dumps(evidence, indent=2), encoding="utf-8")
     return latest
@@ -112,6 +154,12 @@ def test_run_pytest_persists_evidence_when_requested() -> None:
         assert data["linked_pending_task"] == "p029_test"
         assert "file_a.py" in data["changed_files"]
         assert data["timestamp"]  # must be non-empty
+        assert data["provenance_status"] == "UNKNOWN"
+        assert data["worktree_clean"] is None
+        assert len(data["payload_sha256"]) == 64
+        assert result["evidence_persistence"]["status"] == "PERSISTED"
+        assert result["evidence_persistence"]["artifact_sha256"]
+        assert result["evidence_persistence"]["provenance_status"] == "UNKNOWN"
 
         control_master = Path(tmpdir) / "data" / "evolution" / "control_master"
         cm_latest = control_master / "latest.json"
@@ -134,8 +182,34 @@ def test_run_pytest_persists_evidence_when_requested() -> None:
         assert "failed: 1" in md
 
 
-def test_run_pytest_does_not_persist_without_flag() -> None:
-    """run_pytest() without persist_evidence must NOT write latest.json."""
+def test_unbound_passing_test_run_does_not_render_green_control_master_state() -> None:
+    with tempfile.TemporaryDirectory() as tmpdir:
+        src_dir = Path(tmpdir) / "src"
+        src_dir.mkdir()
+        result = run_pytest(
+            tmpdir,
+            runner=_fake_subprocess_runner(passed=5, failed=0, errors=0, returncode=0),
+            persist_evidence=True,
+        )
+
+        cm_latest = Path(tmpdir) / "data" / "evolution" / "control_master" / "latest.json"
+        cm_data = json.loads(cm_latest.read_text(encoding="utf-8"))
+        tests_state = cm_data["current_tests_state"]
+
+        assert result["evidence_persistence"]["provenance_status"] == "UNKNOWN"
+        assert tests_state["health"] == "unknown"
+        assert tests_state["provenance_status"] == "UNKNOWN"
+        assert tests_state["worktree_clean"] is None
+
+
+def test_run_pytest_does_not_persist_without_flag(monkeypatch) -> None:
+    """run_pytest() without persist_evidence must not persist or probe Git."""
+    from iabv_v15.infra.mcp import audit_tools
+
+    def forbidden_git_probe(_root):
+        raise AssertionError("default run must not collect Git provenance")
+
+    monkeypatch.setattr(audit_tools, "_collect_test_git_provenance", forbidden_git_probe)
     with tempfile.TemporaryDirectory() as tmpdir:
         runner = _fake_subprocess_runner(passed=3)
         src_dir = Path(tmpdir) / "src"
@@ -149,12 +223,13 @@ def test_run_pytest_does_not_persist_without_flag() -> None:
 
 # ── Test 2: SelfAuditService reports tests_observed=true ─────────────────
 
-def test_self_audit_tests_observed_true_with_evidence() -> None:
+def test_self_audit_tests_observed_true_with_evidence(monkeypatch) -> None:
     """SelfAuditService._build_cross_source_truth() must set
     tests_observed=true when fresh TestEvidence exists."""
     from iabv_v15.services.evolution.self_audit_service import SelfAuditService
 
     with tempfile.TemporaryDirectory() as tmpdir:
+        _install_matching_git_provenance(monkeypatch)
         _write_fresh_evidence(tmpdir, passed=10, failed=0)
 
         # _storage_root should be data/evolution/self_audit (3 levels below workspace)
@@ -180,6 +255,9 @@ def test_self_audit_tests_observed_true_with_evidence() -> None:
         assert summary["passed"] == 10
         assert summary["failed"] == 0
         assert summary["errors"] == 0
+        assert summary["commit_sha"] == _TEST_EVIDENCE_COMMIT
+        assert summary["branch"] == _TEST_EVIDENCE_BRANCH
+        assert summary["provenance_status"] == "COMMIT_BOUND_CLEAN"
 
 
 def test_self_audit_tests_observed_false_without_evidence() -> None:
@@ -236,7 +314,7 @@ def test_control_master_markdown_renders_tests_state() -> None:
 
 # ── Test 4: PortableContext includes compact test_evidence section ────────
 
-def test_portable_context_includes_test_evidence_section() -> None:
+def test_portable_context_includes_test_evidence_section(monkeypatch) -> None:
     """PortableContextService._test_evidence_section() must produce a
     section with test counts and no logs/PII."""
     from iabv_v15.services.evolution.portable_context_service import (
@@ -244,6 +322,7 @@ def test_portable_context_includes_test_evidence_section() -> None:
     )
 
     with tempfile.TemporaryDirectory() as tmpdir:
+        _install_matching_git_provenance(monkeypatch)
         _write_fresh_evidence(tmpdir, passed=7, failed=2, errors=1)
 
         import types
@@ -263,6 +342,8 @@ def test_portable_context_includes_test_evidence_section() -> None:
         items_str = json.dumps(section.items)
         assert "output_tail" not in items_str
         assert "stderr" not in items_str
+        assert _TEST_EVIDENCE_COMMIT in items_str
+        assert "COMMIT_BOUND_CLEAN" in items_str
 
 
 def test_portable_context_no_evidence_returns_unresolved() -> None:
@@ -337,9 +418,10 @@ def test_stale_evidence_returns_none() -> None:
         assert result is None, "Stale evidence must return None"
 
 
-def test_fresh_evidence_loads_correctly() -> None:
+def test_fresh_evidence_loads_correctly(monkeypatch) -> None:
     """load_latest_test_evidence must return data for fresh evidence."""
     with tempfile.TemporaryDirectory() as tmpdir:
+        _install_matching_git_provenance(monkeypatch)
         _write_fresh_evidence(tmpdir, passed=12, failed=0)
 
         result = load_latest_test_evidence(tmpdir)
@@ -385,3 +467,322 @@ def test_test_evidence_model_validates() -> None:
     assert ev.timestamp  # auto-generated
     assert ev.changed_files == []
     assert ev.linked_pending_task == ""
+    assert ev.commit_sha == ""
+    assert ev.worktree_clean is None
+    assert ev.provenance_status == "UNKNOWN"
+    assert ev.worktree_status_sha256 == ""
+    assert ev.payload_sha256 == ""
+
+
+
+def test_evidence_is_rejected_when_current_worktree_is_dirty(tmp_path, monkeypatch) -> None:
+    from iabv_v15.infra.mcp import audit_tools
+
+    _write_fresh_evidence(str(tmp_path))
+    monkeypatch.setattr(
+        audit_tools,
+        "_collect_test_git_provenance",
+        lambda _root: {
+            "commit_sha": _TEST_EVIDENCE_COMMIT,
+            "branch": _TEST_EVIDENCE_BRANCH,
+            "worktree_clean": False,
+            "provenance_status": "COMMIT_BOUND_DIRTY",
+            "worktree_status_sha256": "c" * 64,
+        },
+    )
+
+    assert load_latest_test_evidence(tmp_path) is None
+
+
+def test_evidence_is_rejected_when_current_commit_differs(tmp_path, monkeypatch) -> None:
+    from iabv_v15.infra.mcp import audit_tools
+
+    _write_fresh_evidence(str(tmp_path))
+    monkeypatch.setattr(
+        audit_tools,
+        "_collect_test_git_provenance",
+        lambda _root: {
+            "commit_sha": "c" * 40,
+            "branch": _TEST_EVIDENCE_BRANCH,
+            "worktree_clean": True,
+            "provenance_status": "COMMIT_BOUND_CLEAN",
+            "worktree_status_sha256": "b" * 64,
+        },
+    )
+
+    assert load_latest_test_evidence(tmp_path) is None
+
+
+def test_evidence_payload_tampering_is_rejected(tmp_path, monkeypatch) -> None:
+    _install_matching_git_provenance(monkeypatch)
+    path = _write_fresh_evidence(str(tmp_path))
+    raw = json.loads(path.read_text(encoding="utf-8"))
+    raw["passed"] += 1
+    path.write_text(json.dumps(raw), encoding="utf-8")
+
+    assert load_latest_test_evidence(tmp_path) is None
+
+
+def test_evidence_without_timestamp_is_rejected(tmp_path, monkeypatch) -> None:
+    _install_matching_git_provenance(monkeypatch)
+    path = _write_fresh_evidence(str(tmp_path))
+    raw = json.loads(path.read_text(encoding="utf-8"))
+    raw["timestamp"] = ""
+    raw["payload_sha256"] = _test_evidence_payload_sha256(raw)
+    path.write_text(json.dumps(raw), encoding="utf-8")
+
+    assert load_latest_test_evidence(tmp_path) is None
+
+
+def test_atomic_evidence_writer_returns_file_and_projection_receipts(tmp_path) -> None:
+    provenance = {
+        "commit_sha": _TEST_EVIDENCE_COMMIT,
+        "branch": _TEST_EVIDENCE_BRANCH,
+        "worktree_clean": True,
+        "provenance_status": "COMMIT_BOUND_CLEAN",
+        "worktree_status_sha256": "b" * 64,
+        "metadata": {
+            "provenance_before": {
+            "commit_sha": "a" * 40,
+            "branch": "test-branch",
+            "worktree_clean": True,
+            "provenance_status": "COMMIT_BOUND_CLEAN",
+            "worktree_status_sha256": "b" * 64,
+        },
+            "provenance_after": {
+            "commit_sha": "a" * 40,
+            "branch": "test-branch",
+            "worktree_clean": True,
+            "provenance_status": "COMMIT_BOUND_CLEAN",
+            "worktree_status_sha256": "b" * 64,
+        },
+        },
+    }
+    receipt = _persist_test_evidence(
+        workspace_root=tmp_path,
+        payload={
+            "suite": "tests/",
+            "keyword": "",
+            "passed": 12,
+            "failed": 0,
+            "errors": 0,
+            "duration_s": 2.5,
+            "returncode": 0,
+            "timed_out": False,
+        },
+        command="python -m pytest tests/ -q",
+        linked_pending_task="r24",
+        changed_files=["src/module.py"],
+        provenance=provenance,
+    )
+
+    evidence_path = tmp_path / "data" / "evolution" / "test_evidence" / "latest.json"
+    evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
+    assert receipt["status"] == "PERSISTED"
+    assert receipt["commit_sha"] == _TEST_EVIDENCE_COMMIT
+    assert receipt["provenance_status"] == "COMMIT_BOUND_CLEAN"
+    assert receipt["control_master_sync"]["status"] == "SYNCED"
+    assert receipt["artifact_sha256"] == __import__("hashlib").sha256(evidence_path.read_bytes()).hexdigest()
+    assert evidence["payload_sha256"] == _test_evidence_payload_sha256(evidence)
+    assert evidence["commit_sha"] == _TEST_EVIDENCE_COMMIT
+    assert receipt["control_master_sync"]["status"] == "SYNCED"
+
+
+def test_control_master_mirror_does_not_mark_zero_collected_run_green(tmp_path) -> None:
+    provenance = {
+        "commit_sha": _TEST_EVIDENCE_COMMIT,
+        "branch": _TEST_EVIDENCE_BRANCH,
+        "worktree_clean": True,
+        "provenance_status": "COMMIT_BOUND_CLEAN",
+        "worktree_status_sha256": "b" * 64,
+        "metadata": {
+            "provenance_before": {
+                "commit_sha": _TEST_EVIDENCE_COMMIT,
+                "branch": _TEST_EVIDENCE_BRANCH,
+                "worktree_clean": True,
+                "provenance_status": "COMMIT_BOUND_CLEAN",
+                "worktree_status_sha256": "b" * 64,
+            },
+            "provenance_after": {
+                "commit_sha": _TEST_EVIDENCE_COMMIT,
+                "branch": _TEST_EVIDENCE_BRANCH,
+                "worktree_clean": True,
+                "provenance_status": "COMMIT_BOUND_CLEAN",
+                "worktree_status_sha256": "b" * 64,
+            },
+        },
+    }
+    _persist_test_evidence(
+        workspace_root=tmp_path,
+        payload={
+            "suite": "tests/",
+            "keyword": "",
+            "passed": 0,
+            "failed": 0,
+            "errors": 0,
+            "duration_s": 0.1,
+            "returncode": 0,
+            "timed_out": False,
+        },
+        command="python -m pytest tests/ -q",
+        linked_pending_task="r24-empty-run",
+        changed_files=[],
+        provenance=provenance,
+    )
+
+    cm_latest = tmp_path / "data" / "evolution" / "control_master" / "latest.json"
+    tests_state = json.loads(cm_latest.read_text(encoding="utf-8"))["current_tests_state"]
+
+    assert tests_state["total"] == 0
+    assert tests_state["execution_status"] == "UNVERIFIED"
+    assert tests_state["health"] == "unknown"
+
+
+def test_evidence_without_returncode_or_timeout_is_rejected(tmp_path, monkeypatch) -> None:
+    _install_matching_git_provenance(monkeypatch)
+    path = _write_fresh_evidence(str(tmp_path))
+    raw = json.loads(path.read_text(encoding="utf-8"))
+    raw.pop("returncode")
+    raw["payload_sha256"] = _test_evidence_payload_sha256(raw)
+    path.write_text(json.dumps(raw), encoding="utf-8")
+
+    assert load_latest_test_evidence(tmp_path) is None
+
+
+def test_evidence_with_coerced_execution_outcome_types_is_rejected(tmp_path, monkeypatch) -> None:
+    _install_matching_git_provenance(monkeypatch)
+    path = _write_fresh_evidence(str(tmp_path))
+    raw = json.loads(path.read_text(encoding="utf-8"))
+    raw["returncode"] = True
+    raw["timed_out"] = "false"
+    raw["payload_sha256"] = _test_evidence_payload_sha256(raw)
+    path.write_text(json.dumps(raw), encoding="utf-8")
+
+    assert load_latest_test_evidence(tmp_path) is None
+
+
+def test_atomic_evidence_writer_surfaces_replace_failure(tmp_path, monkeypatch) -> None:
+    from iabv_v15.infra.mcp import audit_tools
+
+    def fail_replace(_source, _target):
+        raise PermissionError("synthetic atomic replace failure")
+
+    monkeypatch.setattr(audit_tools.os, "replace", fail_replace)
+    receipt = _persist_test_evidence(
+        workspace_root=tmp_path,
+        payload={"suite": "tests/", "passed": 1},
+        command="python -m pytest tests/ -q",
+        linked_pending_task="r24",
+        changed_files=[],
+        provenance={
+            "commit_sha": _TEST_EVIDENCE_COMMIT,
+            "branch": _TEST_EVIDENCE_BRANCH,
+            "worktree_clean": True,
+            "provenance_status": "COMMIT_BOUND_CLEAN",
+            "worktree_status_sha256": "b" * 64,
+        },
+    )
+
+    evidence_path = tmp_path / "data" / "evolution" / "test_evidence" / "latest.json"
+    assert receipt["status"] == "WRITE_FAILED"
+    assert receipt["error_type"] == "PermissionError"
+    assert not evidence_path.exists()
+    assert not list(evidence_path.parent.glob(".latest.*.tmp"))
+
+
+
+def test_evidence_worktree_status_digest_must_match_current_tree(tmp_path, monkeypatch) -> None:
+    from iabv_v15.infra.mcp import audit_tools
+
+    _write_fresh_evidence(str(tmp_path))
+    monkeypatch.setattr(
+        audit_tools,
+        "_collect_test_git_provenance",
+        lambda _root: {
+            "commit_sha": _TEST_EVIDENCE_COMMIT,
+            "branch": _TEST_EVIDENCE_BRANCH,
+            "worktree_clean": True,
+            "provenance_status": "COMMIT_BOUND_CLEAN",
+            "worktree_status_sha256": "c" * 64,
+        },
+    )
+
+    assert load_latest_test_evidence(tmp_path) is None
+
+
+def test_test_evidence_is_untrusted_when_source_changes_during_pytest(tmp_path, monkeypatch) -> None:
+    from iabv_v15.infra.mcp import audit_tools
+
+    src_dir = tmp_path / "src"
+    src_dir.mkdir()
+    snapshots = [
+        {
+            "commit_sha": "a" * 40,
+            "branch": "test-branch",
+            "worktree_clean": True,
+            "provenance_status": "COMMIT_BOUND_CLEAN",
+            "worktree_status_sha256": "b" * 64,
+        },
+        {
+            "commit_sha": "c" * 40,
+            "branch": "test-branch",
+            "worktree_clean": True,
+            "provenance_status": "COMMIT_BOUND_CLEAN",
+            "worktree_status_sha256": "d" * 64,
+        },
+    ]
+    monkeypatch.setattr(
+        audit_tools,
+        "_collect_test_git_provenance",
+        lambda _root: snapshots.pop(0),
+    )
+    result = run_pytest(
+        tmp_path,
+        runner=_fake_subprocess_runner(passed=4, failed=0, errors=0),
+        persist_evidence=True,
+    )
+    evidence_path = tmp_path / "data" / "evolution" / "test_evidence" / "latest.json"
+    evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
+    assert evidence["provenance_status"] == "SOURCE_CHANGED_DURING_TEST"
+    assert evidence["worktree_clean"] is False
+    assert evidence["metadata"]["provenance_before"]["commit_sha"] == "a" * 40
+    assert evidence["metadata"]["provenance_after"]["commit_sha"] == "c" * 40
+    assert result["evidence_persistence"]["provenance_status"] == "SOURCE_CHANGED_DURING_TEST"
+    assert load_latest_test_evidence(tmp_path) is None
+
+
+def test_test_evidence_without_pre_post_pair_is_rejected(tmp_path, monkeypatch) -> None:
+    from iabv_v15.infra.mcp import audit_tools
+
+    _install_matching_git_provenance(monkeypatch)
+    path = _write_fresh_evidence(str(tmp_path))
+    evidence = json.loads(path.read_text(encoding="utf-8"))
+    evidence["metadata"] = {}
+    evidence["payload_sha256"] = _test_evidence_payload_sha256(evidence)
+    path.write_text(json.dumps(evidence), encoding="utf-8")
+    assert load_latest_test_evidence(tmp_path) is None
+
+
+
+def test_test_evidence_provenance_pair_rejects_string_coerced_snapshot_fields() -> None:
+    from iabv_v15.infra.mcp.audit_tools import _test_evidence_has_stable_provenance_pair
+
+    commit_sha = "1" * 40
+    branch = "123"
+    digest = "1" * 64
+    before = {
+        "provenance_status": "COMMIT_BOUND_CLEAN",
+        "worktree_clean": True,
+        "commit_sha": int(commit_sha),
+        "branch": int(branch),
+        "worktree_status_sha256": int(digest),
+    }
+    after = dict(before)
+    metadata = {"provenance_before": before, "provenance_after": after}
+
+    assert not _test_evidence_has_stable_provenance_pair(
+        metadata,
+        commit_sha=commit_sha,
+        branch=branch,
+        worktree_status_sha256=digest,
+    )

@@ -135,10 +135,155 @@ class TestTypedTraceHelpers:
         assert e['kind'] == 'error'
         assert e['data']['error_type'] == 'ImportError'
 
+    def test_typed_error_traces_mask_paths_emails_bearer_and_query_tokens(self, tracer: RuntimeAuditTracer) -> None:
+        raw_error = r"Unable to open 'C:\\Users\\Owner\\private.json' for alice@example.com; Bearer secret-token; ?token=secret-query"
+
+        service = tracer.trace_service_init(
+            'database',
+            5.0,
+            status='error',
+            error=raw_error,
+        )
+        external = tracer.trace_external_query(
+            'chatgpt',
+            'completion',
+            status='error',
+            error=raw_error,
+            response_summary=raw_error,
+        )
+        error = tracer.trace_error(
+            'bootstrap',
+            'OSError',
+            raw_error,
+            debug_path=r'C:\\Users\\Owner\\private.json',
+        )
+        permission = tracer.trace_permission(
+            'browser',
+            'deny',
+            granted=False,
+            reason=raw_error,
+        )
+
+        assert '[LOCAL_PATH]' in service['data']['error']
+        assert '[EMAIL]' in service['data']['error']
+        assert 'Bearer [REDACTED]' in service['data']['error']
+        assert '?token=[REDACTED]' in service['data']['error']
+        assert '[LOCAL_PATH]' in external['data']['error']
+        assert '[EMAIL]' in external['data']['response_summary']
+        assert '[LOCAL_PATH]' in error['data']['message']
+        assert error['data']['error_type'] == 'OSError'
+        assert error['data']['extra_fields_omitted'] is True
+        assert 'debug_path' not in error['data']
+        assert '[EMAIL]' in permission['data']['reason']
+
+        serialized = repr((service, external, error, permission))
+        for private_value in (
+            'C:\\Users\\Owner\\private.json',
+            'alice@example.com',
+            'Bearer secret-token',
+            'secret-query',
+        ):
+            assert private_value not in serialized
+
     def test_trace_ui_event(self, tracer: RuntimeAuditTracer) -> None:
         e = tracer.trace_ui_event('page_load', component='EvolutionCenter')
         assert e['kind'] == 'ui_event'
         assert e['data']['component'] == 'EvolutionCenter'
+
+
+def test_governed_browser_trace_persists_only_safe_launch_reference(tmp_path: Path) -> None:
+    tracer = RuntimeAuditTracer(log_dir=str(tmp_path))
+    tracer.configure(tmp_path)
+    desktop_target = r'C:\\Users\\Owner\\AppData\\Local\\Programs\\Codex\\Codex.exe'
+    web_target = 'https://chatgpt.com/share/private-path?token=private-web-token'
+
+    desktop_event = tracer.trace_governed_browser_session(
+        'started',
+        assistant_kind='codex',
+        launch_target=desktop_target,
+    )
+    web_event = tracer.trace_governed_browser_session(
+        'result',
+        assistant_kind='chatgpt',
+        launch_target=web_target,
+    )
+
+    assert desktop_event['data']['launch_target_ref'] == 'desktop:codex'
+    assert web_event['data']['launch_target_ref'] == 'web:chatgpt'
+    assert 'launch_target' not in desktop_event['data']
+    assert 'launch_target' not in web_event['data']
+    persisted = (tmp_path / 'runtime_audit.jsonl').read_text(encoding='utf-8')
+    assert desktop_target not in persisted
+    assert web_target not in persisted
+    assert 'private-web-token' not in persisted
+
+
+
+def test_governed_browser_trace_minimizes_endpoint_profile_reason_and_extra(tmp_path: Path) -> None:
+    tracer = RuntimeAuditTracer(log_dir=str(tmp_path))
+    tracer.configure(tmp_path)
+    raw_endpoint = 'http://operator:private-pass@localhost:9223/devtools/browser/private-id?token=private-cdp-token'
+    raw_profile = r'C:\Users\Owner\chatgpt_program_session\browser_profile'
+    raw_reason = r'failed at C:\Users\Owner\private-state.json alice@example.com Bearer private-bearer'
+
+    governed = tracer.trace_governed_browser_session(
+        'started',
+        assistant_kind='ChatGPT',
+        cdp_url=raw_endpoint,
+        profile_label=raw_profile,
+        launch_target='https://chatgpt.com/private?token=private-web-token',
+        reason=raw_reason,
+        extra_profile_path=raw_profile,
+        extra_secret='private-extra-secret',
+    )
+    data = governed['data']
+    assert data['assistant_kind'] == 'chatgpt'
+    assert data['cdp_endpoint_ref'] == 'http://localhost:9223'
+    assert data['profile_ref'] == 'chatgpt_profile'
+    assert data['launch_target_ref'] == 'web:chatgpt'
+    assert data['reason_code'] == 'other'
+    assert data['extra_fields_omitted'] is True
+    assert 'cdp_url' not in data
+    assert 'profile_label' not in data
+    assert 'extra_profile_path' not in data
+    assert 'extra_secret' not in data
+
+    unbound = tracer.trace_security_window_unbound(
+        incident_id='inc-p072-1',
+        assistant_kind='chatgpt',
+        profile_label=raw_profile,
+        reason=raw_reason,
+    )
+    assert unbound['data']['profile_ref'] == 'chatgpt_profile'
+    assert unbound['data']['reason_code'] == 'other'
+    assert 'profile_label' not in unbound['data']
+
+    fallback = tracer.trace_visible_fallback(
+        'blocked_no_target',
+        assistant_kind='chatgpt',
+        reason=raw_reason,
+        target_available=False,
+        diagnostic_path=raw_profile,
+    )
+    assert fallback['data']['reason_code'] == 'other'
+    assert fallback['data']['extra_fields_omitted'] is True
+    assert 'diagnostic_path' not in fallback['data']
+
+    persisted = (tmp_path / 'runtime_audit.jsonl').read_text(encoding='utf-8')
+    for private_value in (
+        raw_endpoint,
+        raw_profile,
+        raw_reason,
+        'private-pass',
+        'private-cdp-token',
+        'private-web-token',
+        'private-bearer',
+        'private-extra-secret',
+        'alice@example.com',
+    ):
+        assert private_value not in persisted
+    assert RuntimeAuditTracer._safe_cdp_endpoint_ref('http://10.0.0.7:9223/private') == 'remote_cdp_endpoint'
+
 
 
 class TestBootReport:
@@ -208,3 +353,64 @@ class TestInMemoryLimit:
                 os.environ['IABV_RUNTIME_TRACE'] = old
             else:
                 os.environ.pop('IABV_RUNTIME_TRACE', None)
+
+
+
+def test_trace_memory_only_ack_is_not_accepted(tmp_path: Path) -> None:
+    from iabv_v15.services.evolution.runtime_audit_tracer import validate_durability_ack
+
+    tracer = RuntimeAuditTracer()
+    event = tracer.trace("memory_only_event")
+    acknowledgement = event["durability_ack"]
+    assert acknowledgement["status"] == "MEMORY_ONLY"
+    assert validate_durability_ack(
+        acknowledgement, expected_seq=event["seq"]
+    )["accepted"] is False
+
+
+def test_trace_ack_validator_rejects_malformed_receipts() -> None:
+    from iabv_v15.services.evolution.runtime_audit_tracer import validate_durability_ack
+
+    valid = {
+        "status": "FILE_FSYNCED",
+        "path": "runtime_audit.jsonl",
+        "seq": 4,
+        "byte_start": 10,
+        "byte_end": 100,
+        "line_sha256": "a" * 64,
+    }
+    assert validate_durability_ack(valid, expected_seq=4)["accepted"] is True
+    assert validate_durability_ack(
+        valid, expected_seq=4, expected_line_sha256="a" * 64,
+        expected_byte_start=10, expected_byte_end=100,
+    )["verification"] == "TRACER_RECEIPT_MATCHED_TO_READ_ROW"
+    assert validate_durability_ack(
+        valid, expected_seq=4, expected_line_sha256="b" * 64,
+        expected_byte_start=10, expected_byte_end=100,
+    )["status"] == "ACK_INVALID"
+    assert validate_durability_ack(
+        valid, expected_seq=4, expected_line_sha256="a" * 64,
+        expected_byte_start=9, expected_byte_end=100,
+    )["status"] == "ACK_INVALID"
+    assert validate_durability_ack(valid, expected_seq=5)["status"] == "ACK_INVALID"
+    assert validate_durability_ack(valid, expected_seq=True)["status"] == "ACK_INVALID"
+    assert validate_durability_ack(valid, expected_seq="4")["status"] == "ACK_INVALID"
+    assert validate_durability_ack({**valid, "line_sha256": "bad"})["status"] == "ACK_INVALID"
+    assert validate_durability_ack({**valid, "path": "../runtime_audit.jsonl"})["status"] == "ACK_INVALID"
+
+
+def test_trace_write_failure_returns_explicit_non_durable_ack(tmp_path: Path, monkeypatch) -> None:
+    from pathlib import Path as _Path
+
+    tracer = RuntimeAuditTracer(log_dir=tmp_path)
+    original_open = _Path.open
+
+    def fail_log_write(self, *args, **kwargs):
+        if self.name == "runtime_audit.jsonl":
+            raise PermissionError("synthetic denied write")
+        return original_open(self, *args, **kwargs)
+
+    monkeypatch.setattr(_Path, "open", fail_log_write)
+    event = tracer.trace("write_failure_event")
+    assert event["durability_ack"]["status"] == "WRITE_FAILED"
+    assert tracer.events()[-1]["kind"] == "write_failure_event"
