@@ -268,7 +268,8 @@ def test_snapshot_quota_corruption_remains_unverified_in_portable_context() -> N
     from iabv_v15.domain.models import utc_now
     section = svc._account_resource_section(status=snapshot, now=utc_now())
 
-    assert 'Quota tracker no verificable (CORRUPT)' in section.summary
+    assert 'quota_tracker_corrupt' in section.summary
+    assert 'CORRUPT no verificable' in section.summary
     assert section.confidence == 0.5
     assert 'UNRESOLVED:quota_tracker_corrupt' in section.unresolved_fields
 
