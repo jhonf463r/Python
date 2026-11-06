@@ -74,6 +74,8 @@ def _router(
 
 def _pool_multi_chatgpt() -> dict[str, Any]:
     return {
+        'source_coverage': {'quota_tracker': 'READ_OK'},
+        'source_errors': {},
         'available_count': 3,
         'exhausted_count': 0,
         'total_remaining_messages': 70,
@@ -89,6 +91,8 @@ def _pool_multi_chatgpt() -> dict[str, Any]:
 
 def _pool_mixed() -> dict[str, Any]:
     return {
+        'source_coverage': {'quota_tracker': 'READ_OK'},
+        'source_errors': {},
         'available_count': 3,
         'exhausted_count': 0,
         'total_remaining_messages': 60,
@@ -104,6 +108,8 @@ def _pool_mixed() -> dict[str, Any]:
 
 def _pool_all_exhausted() -> dict[str, Any]:
     return {
+        'source_coverage': {'quota_tracker': 'READ_OK'},
+        'source_errors': {},
         'available_count': 0,
         'exhausted_count': 2,
         'total_remaining_messages': 0,
@@ -192,6 +198,8 @@ def test_gate_top_worker_matches_first_ranked() -> None:
 
 def _pool_with_browser_profile() -> dict[str, Any]:
     return {
+        'source_coverage': {'quota_tracker': 'READ_OK'},
+        'source_errors': {},
         'available_count': 3,
         'exhausted_count': 0,
         'total_remaining_messages': 70,
@@ -269,3 +277,25 @@ def test_gate_no_scanner_still_honest() -> None:
     assert gate['usable'] is False
     assert gate['top_worker'] is None
     assert gate['ranked_workers'] == []
+
+
+
+def test_gate_corrupt_quota_blocks_workers_already_present_in_stale_pool() -> None:
+    pool = _pool_multi_chatgpt()
+    pool['source_coverage'] = {'quota_tracker': 'CORRUPT'}
+    pool['source_errors'] = {'quota_tracker': 'JSONDecodeError'}
+    router = _router(
+        _workspace('corrupt_quota_stale_workers'),
+        account_resource_scanner=lambda: pool,
+    )
+
+    gate = router.worker_health_gate(target_assistant='chatgpt')
+
+    assert gate['usable'] is False
+    assert gate['ranked_workers'] == []
+    assert gate['workers'] == []
+    assert gate['top_worker'] is None
+    assert gate['available_count'] == 0
+    assert gate['quota_source_status'] == 'CORRUPT'
+    assert 'UNRESOLVED:quota_tracker_corrupt' in gate['reason']
+    assert 'no seleccionar workers' in gate['reason']
