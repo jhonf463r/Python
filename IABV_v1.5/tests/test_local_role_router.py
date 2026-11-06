@@ -414,6 +414,40 @@ def test_worker_health_gate_caches_result() -> None:
     assert refreshed['usable'] is True
 
 
+def test_worker_health_gate_invalidates_cache_when_quota_tracker_revision_changes(
+    monkeypatch,
+) -> None:
+    from iabv_v15.services import account_resource_scanner
+
+    revisions = iter([
+        ('quota-tracker', 1, 10, 100, 10),
+        ('quota-tracker', 1, 10, 100, 10),
+        ('quota-tracker', 1, 10, 200, 10),
+        ('quota-tracker', 1, 10, 200, 10),
+    ])
+    monkeypatch.setattr(
+        account_resource_scanner,
+        'quota_tracker_revision',
+        lambda: next(revisions),
+    )
+    call_count = {'n': 0}
+
+    def _counting_scanner() -> dict[str, Any]:
+        call_count['n'] += 1
+        return _fake_pool_healthy()
+
+    router = _router(
+        _workspace('whg_quota_revision_invalidation'),
+        account_resource_scanner=_counting_scanner,
+    )
+    first = router.worker_health_gate()
+    second = router.worker_health_gate()
+
+    assert first['usable'] is True
+    assert second['usable'] is True
+    assert call_count['n'] == 2
+
+
 def test_worker_health_gate_different_targets_not_cross_contaminated() -> None:
     """Cache stores raw pool; different target_assistant values filter independently."""
     call_count = {'n': 0}
