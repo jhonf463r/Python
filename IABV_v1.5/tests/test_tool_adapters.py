@@ -62,6 +62,10 @@ def test_external_assistant_adapter_uses_clipboard_capture_when_runner_returns_t
                 'response_captured': True,
                 'captured_text': 'Causa raiz probable: Bridge saturado. Cambio vertical recomendado: Ajustar drenado.',
                 'error_message': '',
+                'metadata': {
+                    'web_url': 'https://chatgpt.com/private-path?token=nested-result-token',
+                    'launch_target_ref': 'https://chatgpt.com/private-reference?token=reference-token',
+                },
             }
 
     card = ToolCard(
@@ -103,6 +107,11 @@ def test_external_assistant_adapter_uses_clipboard_capture_when_runner_returns_t
     assert 'launch_target' not in result['extracted_data']
     assert str(exe) not in repr(result['metadata'])
     assert str(exe) not in repr(result['extracted_data'])
+    browser_metadata = result['metadata']['browser_dom_metadata']
+    assert browser_metadata['web_url_omitted'] is True
+    assert browser_metadata['launch_target_ref'] == 'desktop:codex'
+    assert 'nested-result-token' not in repr(result['metadata'])
+    assert 'reference-token' not in repr(result['metadata'])
 
 
 def test_external_assistant_adapter_falls_back_to_manual_when_clipboard_capture_is_empty() -> None:
