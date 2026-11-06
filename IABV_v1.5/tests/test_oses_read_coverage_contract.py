@@ -808,3 +808,34 @@ def test_oses_adaptive_threshold_failure_survives_later_success(tmp_path, monkey
     report = service._source_coverage_report()
     assert report["complete"] is False
     assert "experiment_lab_threshold" in report["incomplete_source_ids"]
+
+
+
+def test_oses_low_load_reads_environment_self_awareness_service(tmp_path) -> None:
+    environment = SimpleNamespace(risk_signals=[SimpleNamespace(severity="HIGH")])
+    world_model = SimpleNamespace(
+        current_model=lambda: SimpleNamespace(environment=None),
+        environment_self_awareness_service=SimpleNamespace(current_model=lambda: environment),
+    )
+    service = _service(tmp_path, world_model_service=world_model)
+
+    assert service._is_low_load(SimpleNamespace(block_records=[])) is False
+    assert service._source_coverage["environment_self_awareness_service"] == "READ_OK"
+
+
+def test_oses_runtime_tracer_records_read_ok_only_after_all_reads(tmp_path, monkeypatch) -> None:
+    tracer_module = import_module("iabv_v15.services.evolution.runtime_audit_tracer")
+
+    class EmptyTracer:
+        def events(self, *, kind: str, limit: int):
+            return []
+
+        def recent_dispatch_lifecycles(self, *, limit: int):
+            return []
+
+    monkeypatch.setattr(tracer_module, "get_runtime_tracer", lambda: EmptyTracer())
+    service = _service(tmp_path)
+
+    assert service._resource_quiescence_web_skill_findings() == []
+    assert service._source_coverage["runtime_audit_tracer"] == "READ_OK"
+    assert "runtime_audit_tracer" not in service._source_errors
