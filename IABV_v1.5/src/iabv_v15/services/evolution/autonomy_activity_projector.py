@@ -99,7 +99,7 @@ class AutonomyActivityProjector:
                 'thread_title': str(execution_metadata.get('thread_title') or task_metadata.get('thread_title') or ''),
                 'session_label': str(execution_metadata.get('session_label') or task_metadata.get('session_label') or ''),
                 'session_scope': str(execution_metadata.get('session_scope') or task_metadata.get('session_scope') or ''),
-                'session_profile_dir': str(execution_metadata.get('session_profile_dir') or execution_metadata.get('browser_profile_dir') or task_metadata.get('session_profile_dir') or ''),
+                'session_profile_dir': str(execution_metadata.get('session_profile_dir') or execution_metadata.get('browser_profile_ref') or task_metadata.get('session_profile_dir') or ''),
                 'awaiting_reason': str(execution_metadata.get('awaiting_reason') or task_metadata.get('awaiting_reason') or ''),
                 'last_capture_attempt_utc': str(execution_metadata.get('last_capture_attempt_utc') or task_metadata.get('last_capture_attempt_utc') or ''),
                 'reused_thread': bool(execution_metadata.get('reused_thread', task_metadata.get('reused_thread', False))),
@@ -335,7 +335,7 @@ class AutonomyActivityProjector:
         thread_key = str(execution_metadata.get('thread_key') or task_metadata.get('thread_key') or '').strip()
         thread_title = str(execution_metadata.get('thread_title') or task_metadata.get('thread_title') or '').strip()
         session_scope = str(execution_metadata.get('session_scope') or task_metadata.get('session_scope') or '').strip()
-        session_profile_dir = str(execution_metadata.get('session_profile_dir') or execution_metadata.get('browser_profile_dir') or task_metadata.get('session_profile_dir') or '').strip()
+        session_profile_dir = str(execution_metadata.get('session_profile_dir') or execution_metadata.get('browser_profile_ref') or task_metadata.get('session_profile_dir') or '').strip()
         thread_family = self._assistant_family_from_text(' '.join(part for part in (thread_key, thread_title) if part))
         prompt_family = self._assistant_family_from_text(str(task_metadata.get('context_pack') or goal_parameters.get('context_pack') or ''))
         if thread_family and tool_family and thread_family != tool_family:
