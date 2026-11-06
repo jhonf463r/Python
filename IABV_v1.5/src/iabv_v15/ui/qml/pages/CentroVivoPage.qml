@@ -36,6 +36,8 @@ Item {
             return "Fuente persistida no encontrada."
         if (status === "UNAVAILABLE" || status === "UNVERIFIED")
             return "Fuente no verificada."
+        if (status !== "READ_OK")
+            return "Estado de la fuente no verificado (" + status + "); no equivale a una lista vacía."
         return defaultMessage
     }
 

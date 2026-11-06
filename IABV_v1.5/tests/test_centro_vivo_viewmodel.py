@@ -444,3 +444,19 @@ def test_centro_vivo_does_not_fall_back_to_active_oses_reader_when_cache_missing
     assert vm.get_self_examination_findings() == []
     assert vm.get_source_statuses()['self_examination_service'] == 'READ_UNVERIFIED'
 \n
+
+
+def test_centro_vivo_qml_requires_read_ok_before_showing_empty_state():
+    """Unknown and READ_UNVERIFIED statuses must not fall through to empty labels."""
+    qml_path = (
+        REPO_ROOT
+        / 'src'
+        / 'iabv_v15'
+        / 'ui'
+        / 'qml'
+        / 'pages'
+        / 'CentroVivoPage.qml'
+    )
+    qml_source = qml_path.read_text(encoding='utf-8')
+    assert 'if (status !== "READ_OK")' in qml_source
+    assert 'no equivale a una lista vacía.' in qml_source
