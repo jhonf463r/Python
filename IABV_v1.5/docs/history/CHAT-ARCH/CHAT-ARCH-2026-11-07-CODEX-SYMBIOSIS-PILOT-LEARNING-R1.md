@@ -34,10 +34,16 @@ administrator consent for Pilot.Approve.
 
 A loopback-only PKCE receiver was started for an actual Owner login.
 It keeps tokens in process memory and writes a credential-free outcome
-receipt. At the time of publication Microsoft displayed an account/password rejection
-for the pilot Owner account. The Owner was asked to complete that login or
-choose the account recovery route. The receiver is awaiting a valid login.
-No real-token verification or enrollment completion is claimed.
+receipt. Microsoft initially displayed an account/password rejection for the pilot
+Owner account. After the Owner completed sign-in, the loopback receiver
+terminated successfully with OWNER_IDENTITY_VERIFIED at epoch 1794067656.
+The observed real access token passed RS256 signature verification against
+tenant-specific Microsoft keys, issuer, tenant, API audience, interactive
+client, immutable Owner object ID, delegated Pilot.Approve scope, IABV.Owner
+role and time validation. A credential-free receipt and browser success page
+were observed. Tokens were retained only in process memory. This establishes
+a bounded real Owner-identity observation. Challenge-bound root approval,
+protected issuer enrollment and formal gate acceptance remain pending.
 
 Tenant, account and application identifiers, credentials, tokens, login
 URLs containing transient state, and private root identities are omitted.
@@ -89,9 +95,10 @@ URLs containing transient state, and private root identities are omitted.
 
 IA DESTINO is the current Codex session. Its capability is local source
 editing and testing, GitHub connector access, and verified in-app browser
-navigation. The immediate task is to observe completion of the already
-started Owner login, inspect its credential-free receipt, and reconcile
-it with the exact enrollment challenge before changing gate claims.
+navigation. The immediate task is to bind an explicit Owner root approval to a fresh
+enrollment challenge through the independently protected issuer. The prior
+login verified identity. Its credential-free receipt is a local observation
+and cannot substitute for the signed assertion in a later enrollment.
 
 Recover the existing login process and receiver state before starting
 another attempt. If the process has expired, generate fresh PKCE state and
