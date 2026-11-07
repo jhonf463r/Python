@@ -161,3 +161,12 @@ contract questions or source review after explicit task scope and context
 separation checks. Before a new task, recover prior assignments and results.
 Keep authenticated send/response proof separate from IABV runtime dispatch
 and causal learning.
+
+
+## Coordinated result recovery and native peer observation
+
+The integrated browser recovered a completed G1 contract proposal. The Owner supplied the G2 response from Opera, correcting the coordinator's earlier inference that G2 had not been sent. A failed result-retrieval path does not establish non-dispatch or non-execution. A second integrated-browser conversation was then opened, sent a bounded G2 freshness/revocation question, and its completed response was recovered. These were conceptual assessments without source access, not formal independent reviews. Multiple integrated tabs share the observed account session; separate tabs do not establish separate accounts.
+
+The functional browser path was selected using observed outcomes rather than repeatedly retrying the external debugger connection. No new extension or permission was required for that work. The substantive findings remain proposals: a pre-read currentness check does not make revocation atomic with the read; signatures and a restorable local sequence do not establish freshness or antirollback. Graph, Windows Hello and TPM suggested by one participant are implementation options to evaluate, not automatically adopted normative requirements.
+
+A subsequent isolated candidate change adds windows_issuer_peer.py. It observes the kernel-reported named-pipe server PID, process creation time and token-user SID, and supplies a necessary distinct-principal/pin comparison. Fifteen focused tests passed on Windows, including an actual ephemeral named pipe with explicit DACL and remote clients rejected, actual process/token observations, same-process rejection, malformed handles, and synthetic pin-substitution checks. This result is separate from the historical 175-test selection and is not an aggregate test count. The production issuer, protected credential custody, authenticated channel lifetime, root approval and catalogue/revocation providers remain unimplemented or unverified; no G1–G8 acceptance is claimed. The component is not wired into bootstrap and no Windows service or permission change was installed. Source edits remain local and uncommitted.
