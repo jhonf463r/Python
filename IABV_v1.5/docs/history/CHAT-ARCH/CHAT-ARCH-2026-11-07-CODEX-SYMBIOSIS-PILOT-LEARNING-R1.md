@@ -34,7 +34,9 @@ administrator consent for Pilot.Approve.
 
 A loopback-only PKCE receiver was started for an actual Owner login.
 It keeps tokens in process memory and writes a credential-free outcome
-receipt. At the time of publication the real login is awaiting the Owner.
+receipt. At the time of publication Microsoft displayed an account/password rejection
+for the pilot Owner account. The Owner was asked to complete that login or
+choose the account recovery route. The receiver is awaiting a valid login.
 No real-token verification or enrollment completion is claimed.
 
 Tenant, account and application identifiers, credentials, tokens, login
