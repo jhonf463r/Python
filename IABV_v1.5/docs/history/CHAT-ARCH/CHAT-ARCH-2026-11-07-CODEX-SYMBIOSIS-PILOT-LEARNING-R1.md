@@ -131,3 +131,33 @@ The cumulative local patch SHA-256 is
 `6c811dc6ed987f81fd6b5bdbc736beca714577b9e8bce658dcb2babb1d8eb8e5`.
 Reverse-application checking succeeded against the exact local source.
 The source candidate remains uncommitted and requires integration review.
+
+## Verified two-account browser round trips
+
+A later observation in the same Owner session verified signed-in ChatGPT
+in the in-app browser and Opera. Visible account menus showed distinct
+selected account identifiers. The identifiers were compared in memory
+and are omitted from this public receipt.
+
+Codex sent one bounded connectivity prompt in each session. The in-app
+browser response completed with IABV_COORD_PRIMARY_READY. Opera's response
+completed with IABV_COORD_SECONDARY_READY. Both completion states and
+rendered replies were observed. These tests establish observed authenticated
+send/response capability for those two sessions at that time. They do not
+measure quotas, sustained concurrency or independent source review.
+
+Opening another tab in the same browser does not create an isolated account.
+The verified realization for a second account was Opera's existing separate
+profile/session. No account was signed out. Preserve current session bindings
+and verify availability again before dispatch.
+
+WebMCP tools advertised earlier on signed-out ChatGPT were unavailable in
+the later authenticated in-app document. Codex used the observed UI composer
+and send controls, then inspected terminal response state. Never assume
+an earlier advertised page-tool list remains callable after login/navigation.
+
+The next coordination step can use these verified sessions for bounded
+contract questions or source review after explicit task scope and context
+separation checks. Before a new task, recover prior assignments and results.
+Keep authenticated send/response proof separate from IABV runtime dispatch
+and causal learning.
