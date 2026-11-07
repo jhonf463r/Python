@@ -116,3 +116,18 @@ suitable authenticated review surface is verified.
 Persistence in GitHub makes this record retrievable. Runtime retrieval,
 causal reuse in another session and automatic IABV learning remain
 unverified and require later observation.
+
+## Later enrollment correction in this session
+
+The pending challenge manifest lacked the workspace, checkout and root
+identifiers already required by the read mandate. The isolated candidate
+now uses manifest schema 3 and requires all three bindings in challenge
+issuance, manifest validation and Owner approval evidence. Older schemas
+are rejected and require a new challenge. Tests cover substitution of each
+binding. The combined enrollment, Entra identity and read-authorization
+selection passed 175 tests. This is candidate verification.
+
+The cumulative local patch SHA-256 is
+`6c811dc6ed987f81fd6b5bdbc736beca714577b9e8bce658dcb2babb1d8eb8e5`.
+Reverse-application checking succeeded against the exact local source.
+The source candidate remains uncommitted and requires integration review.
